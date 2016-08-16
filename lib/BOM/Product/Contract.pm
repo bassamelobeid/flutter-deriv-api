@@ -709,39 +709,26 @@ sub _build_opposite_contract {
     # Start by making a copy of the parameters we used to build this bet.
     my %opp_parameters = %{$self->build_parameters};
 
-    my @opposite_contract_parameters = qw(volsurface fordom forqqq domqqq);
-    if ($self->pricing_new) {
-        # setup the parameters for an opposite contract.
-        $opp_parameters{date_start}  = $self->date_start;
-        $opp_parameters{pricing_new} = 1;
-        push @opposite_contract_parameters, qw(pricing_engine_name pricing_spot r_rate q_rate pricing_vol discount_rate mu barriers_for_pricing);
-        push @opposite_contract_parameters, qw(empirical_volsurface long_term_prediction news_adjusted_pricing_vol)
-            if $self->priced_with_intraday_model;
-    } else {
-        # not pricing_new will only happen when we are repricing an
-        # existing contract in our system.
+    # we still want to set for_sale for a forward_starting contracts
+    $opp_parameters{for_sale} = 1;
+    # delete traces of this contract were a forward starting contract before.
+    delete $opp_parameters{starts_as_forward_starting};
+    # duration could be set for an opposite contract from bad hash reference reused.
+    delete $opp_parameters{duration};
 
-        # we still want to set for_sale for a forward_starting contracts
-        $opp_parameters{for_sale} = 1;
-        # delete traces of this contract were a forward starting contract before.
-        delete $opp_parameters{starts_as_forward_starting};
-        # duration could be set for an opposite contract from bad hash reference reused.
-        delete $opp_parameters{duration};
-
-        if (not $self->is_forward_starting) {
-            if ($self->entry_tick) {
-                foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-                    $opp_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
-                }
+    if (not $self->is_forward_starting) {
+        if ($self->entry_tick) {
+            foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
+                $opp_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
             }
-            # We should be looking to move forward in time to a bet starting now.
-            $opp_parameters{date_start}  = $self->effective_start;
-            $opp_parameters{pricing_new} = 1;
-            # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
-            # Currently, 'sell at market' button will appear when current spot == barrier when the duration
-            # of the contract is less than the minimum duration of non ATM contract.
-            $opp_parameters{is_atm_bet} = 0 if ($self->category_code eq 'callput');
         }
+        # We should be looking to move forward in time to a bet starting now.
+        $opp_parameters{date_start}  = $self->effective_start;
+        $opp_parameters{pricing_new} = 1;
+        # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
+        # Currently, 'sell at market' button will appear when current spot == barrier when the duration
+        # of the contract is less than the minimum duration of non ATM contract.
+        $opp_parameters{is_atm_bet} = 0 if ($self->category_code eq 'callput');
     }
 
     # Always switch out the bet type for the other side.
@@ -749,7 +736,7 @@ sub _build_opposite_contract {
     # Don't set the shortcode, as it will change between these.
     delete $opp_parameters{'shortcode'};
     # Save a round trip.. copy market data
-    foreach my $vol_param (@opposite_contract_parameters) {
+    foreach my $vol_param (qw(volsurface fordom forqqq domqqq)) {
         $opp_parameters{$vol_param} = $self->$vol_param;
     }
 
