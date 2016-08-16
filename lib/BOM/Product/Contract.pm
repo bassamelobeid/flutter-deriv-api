@@ -2090,7 +2090,7 @@ sub _build_exit_tick {
             $exit_tick = $ticks_since_start[-1];
             $self->date_expiry(Date::Utility->new($exit_tick->epoch));
         }
-    } elsif ($self->expiry_daily) {
+    } elsif ($self->expiry_daily or $date_expiry->is_same_as($self->calendar->closing_on($date_expiry))) {
         # Expiration based on daily OHLC
         $exit_tick = $underlying->closing_tick_on($self->date_expiry->date);
     } else {
