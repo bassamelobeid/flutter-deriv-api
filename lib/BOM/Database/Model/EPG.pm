@@ -59,7 +59,7 @@ sub complete {
         ", undef, 'AMOUNT_NOT_MATCH', $data->{data}, $id);
         return 0;
     }
-    if ($data->{currency} != $epg_request->{payment_currency}) {
+    if ($data->{currency} ne $epg_request->{payment_currency}) {
         $self->dbh->do("
             UPDATE payment.epg_request SET status = ?, remark = ? WHERE id = ?
         ", undef, 'CURRENCY_NOT_MATCH', $data->{data}, $id);
@@ -79,7 +79,7 @@ sub complete {
     my %payment_args = (
         currency          => $data->{currency},
         amount            => $amount,
-        remark            => '', # 800 chars, $data->{data} is too long to fit
+        remark            => 'FIXME later', # 800 chars, $data->{data} is too long to fit
         staff             => $client->loginid,
         created_by        => '',
         trace_id          => 0,
