@@ -454,10 +454,10 @@ R_100: &6
       spot:
         euro_atm:
           max: 365d
-          min: 0d
-        euro_non_atm: &7
+          min: 15s
+        euro_non_atm: 
           max: 365d
-          min: 1d
+          min: 15s
     intraday:
       forward:
         euro_atm: &8
@@ -487,7 +487,9 @@ R_100: &6
   endsinout:
     daily:
       spot:
-        euro_non_atm: *7
+        euro_non_atm: &7
+          max: 365d
+          min: 1d
     intraday:
       spot:
         euro_non_atm: *8
@@ -623,7 +625,7 @@ frxAUDCAD: &11
       spot:
         euro_atm:
           max: 365d
-          min: 0d
+          min: 2m
     intraday:
       forward:
         euro_atm:
@@ -642,10 +644,10 @@ frxAUDJPY:
       spot:
         euro_atm:
           max: 365d
-          min: 0d
+          min: 1m
         euro_non_atm:
           max: 365d
-          min: 1d
+          min: 15m
     intraday:
       forward:
         euro_atm:
@@ -660,7 +662,7 @@ frxAUDJPY:
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 5h
+          max: 1d
           min: 15m
     tick:
       spot:
@@ -1094,9 +1096,9 @@ frxGBPCAD:
         euro_atm: 
           max: 365d
           min: 0d
-        euro_non_atm: &12
+        euro_non_atm:
           max: 365d
-          min: 1d
+          min: 1m
     intraday:
       forward:
         euro_atm:
@@ -1111,7 +1113,9 @@ frxGBPCAD:
   endsinout:
     daily:
       spot:
-        euro_non_atm: *12
+        euro_non_atm: &12
+          max: 365d
+          min: 1d
   staysinout:
     daily:
       spot:
