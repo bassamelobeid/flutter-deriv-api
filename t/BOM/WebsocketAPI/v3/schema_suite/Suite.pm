@@ -11,8 +11,8 @@ use Test::MockModule;
 use BOM::Database::Model::OAuth;
 use BOM::System::RedisReplicated;
 use BOM::Platform::Client;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase; # we :init later for unit/auth test DBs
+use BOM::Test::Data::Utility::AuthTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use RateLimitations qw (flush_all_service_consumers);
 use File::Slurp;
