@@ -126,7 +126,7 @@ sub _predefined_trading_period {
                 duration   => '2h'
             });
 
-            # Previous 2 hours contract should be always available in the first 15 minutes of the next one 
+            # Previous 2 hours contract should be always available in the first 15 minutes of the next one
             # (except start of the trading day)
             if (($now->epoch - $window_2h->{date_start}->{epoch}) / 60 < 15 && $even_hour - 2 >= 0) {
                 push @$trading_periods,
