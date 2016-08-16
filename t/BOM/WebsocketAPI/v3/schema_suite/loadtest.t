@@ -7,7 +7,7 @@ use lib "$Bin";
 
 use Suite;
 
-use Time::HiRes qw(:hireswallclock tv_interval gettimeofday);
+use Time::HiRes qw(tv_interval gettimeofday);
 use List::Util qw(min max sum);
 
 my @times;
