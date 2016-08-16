@@ -56,13 +56,13 @@ sub complete {
     if ($data->{amount} != $epg_request->{amount}) {
         $self->dbh->do("
             UPDATE payment.epg_request SET status = ?, remark = ? WHERE id = ?
-        ", undef, 'AMOUNT_NOT_MATCH', $data->{amount}, $id);
+        ", undef, 'AMOUNT_NOT_MATCH', $data->{data}, $id);
         return 0;
     }
     if ($data->{currency} != $epg_request->{payment_currency}) {
         $self->dbh->do("
             UPDATE payment.epg_request SET status = ?, remark = ? WHERE id = ?
-        ", undef, 'CURRENCY_NOT_MATCH', $data->{currency}, $id);
+        ", undef, 'CURRENCY_NOT_MATCH', $data->{data}, $id);
         return 0;
     }
 
@@ -107,8 +107,8 @@ sub complete {
     }
 
     $self->dbh->do("
-        UPDATE payment.epg_request SET status = ?, remark = ? WHERE id = ?
-    ", undef, 'OK', $trx->id, $id);
+        UPDATE payment.epg_request SET status = ?, remark = ?, transaction_id = ? WHERE id = ?
+    ", undef, 'OK', $data->{data}, $trx->id, $id);
 
     return $trx->id;
 }
