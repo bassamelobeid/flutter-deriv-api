@@ -75,9 +75,10 @@ sub complete {
         return 0;
     }
 
+    my $amount = $data->{amount};
     my %payment_args = (
         currency          => $data->{currency},
-        amount            => $data->{amount},
+        amount            => $amount,
         remark            => $data->{data},
         staff             => $client->loginid,
         created_by        => '',
@@ -102,7 +103,7 @@ sub complete {
             return 0;
             # "Requested withdrawal amount $currency_code $amount$plusfee exceeds client balance $currency_code $balance"
         }
-        $trx = $client->payment_epg(%payment_args, amount => sprintf("%0.2f", -$data->{amount}));
+        $trx = $client->payment_epg(%payment_args, amount => sprintf("%0.2f", -$amount));
     }
 
     return $trx->id;
