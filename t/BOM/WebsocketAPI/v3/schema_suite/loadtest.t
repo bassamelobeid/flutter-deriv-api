@@ -9,6 +9,9 @@ use Suite;
 
 use Time::HiRes qw(tv_interval gettimeofday);
 use List::Util qw(min max sum);
+# TODO Flag any warnings during initial development - note that this should be handled at
+# prove level as per other repos, see https://github.com/regentmarkets/bom-rpc/pull/435 for example
+use Test::FailWarnings;
 
 my @times;
 for my $iteration (1..10) {
