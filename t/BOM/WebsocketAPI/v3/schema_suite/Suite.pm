@@ -24,17 +24,6 @@ my $response;
 # Used to allow ->run to happen more than once
 my $global_test_iteration = 0;
 
-# Blind search-and-replace for all strings which look like email addresses, to make
-# sure that we don't reuse the same ones in multiple places. Note that this requires
-# that there is no special handling anywhere in the code for specific accounts, which
-# may not be a valid assumption.
-sub remap_email_addresses {
-    my $txt = shift;
-    # Avoid remapping for the moment, test whether the database reset is sufficient.
-    # $txt =~ s{\@binary\.com}{-${global_test_iteration}\@binary.com}g;
-    return $txt
-}
-
 sub run {
     my ($class, $input) = @_;
 
@@ -88,9 +77,7 @@ sub run {
         $counter++;
         next if ($line =~ /^(#.*|)$/);
 
-        $line = remap_email_addresses($line);
-
-    # arbitrary perl code
+        # arbitrary perl code
         if ($line =~ s/^\[%(.*?)%\]//) {
             eval $1;
             die $@ if $@;
@@ -117,8 +104,6 @@ sub run {
         my $call = $1;
 
         my $content = File::Slurp::read_file('config/v3/' . $send_file);
-        # Any email addresses need remapping to avoid conflicts between test runs
-        $content = remap_email_addresses($content);
         $content = _get_values($content, @template_func);
 
         if ($lang || !$t || $reset) {
@@ -133,8 +118,6 @@ sub run {
         $response->{$call} = $result->{$call};
 
         $content = File::Slurp::read_file('config/v3/' . $receive_file);
-        # Any email addresses need remapping to avoid conflicts between test runs
-        $content = remap_email_addresses($content);
 
         $content = _get_values($content, @template_func);
         _test_schema($receive_file, $content, $result, $fail);
