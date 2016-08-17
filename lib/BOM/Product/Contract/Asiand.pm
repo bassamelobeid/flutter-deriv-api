@@ -25,7 +25,10 @@ sub _build_pricing_engine_name {
 }
 
 sub _build_pricing_engine {
-    return Pricing::Engine::Asian->new({bet => shift});
+    my $self = shift;
+
+    my %pricing_parameters = map { $_ => $self->_pricing_parameters->{$_} } @{$self->pricing_engine_name->required_args};
+    return Pricing::Engine::Asian->new(%pricing_parameters);
 }
 
 sub _build_greek_engine {
