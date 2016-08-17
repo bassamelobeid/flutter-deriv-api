@@ -123,8 +123,8 @@ sub run {
 
         if ($lang || !$t || $reset) {
             my $new_lang = $lang || $last_lang;
-            is(defined($new_lang), 'have a defined language') or diag "missing [LANG] tag in config before tests?";
-            is(length($new_lang), 'have a valid language') or diag "invalid [LANG] tag in config or broken test?";
+            ok(defined($new_lang), 'have a defined language') or diag "missing [LANG] tag in config before tests?";
+            ok(length($new_lang), 'have a valid language') or diag "invalid [LANG] tag in config or broken test?";
             $t         = build_mojo_test({language => $new_lang});
             $last_lang = $new_lang;
             $lang      = '';
