@@ -387,7 +387,7 @@ sub _price_stream_results_adjustment {
     });
     $contract_parameters->{theo_probability} = $theo_probability;
 
-    # $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
+    $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
     # my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
 
     # if (my $error = $contract->validate_price) {
@@ -406,11 +406,13 @@ sub _price_stream_results_adjustment {
     # $results->{ask_price} = $results->{display_value} = $contract->ask_price;
     # $results->{payout} = $contract->payout;
     my $price_calculator = Price::Calculator->new(
-        theo_probability    => $theo_probability,
+        theo_probability    => $contract_parameters->{theo_probability},
         # market_name => ... # TODO how to know? May be using contract validator?
-        base_commission_min         => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
-        base_commission_max         => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
-        base_commission_scaling     => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
+        base_commission_min         => $contract_parameters->{base_commission_min},
+        base_commission_max         => $contract_parameters->{base_commission_max},
+        base_commission_scaling     => $contract_parameters->{base_commission_scaling},
+        maximum_total_markup     => $contract_parameters->{maximum_total_markup},
+        app_markup_percentage    => $contract_parameters->{app_markup_percentage},
 
     );
     $results->{ask_price} = $results->{display_value} = $price_calculator->ask_price;
