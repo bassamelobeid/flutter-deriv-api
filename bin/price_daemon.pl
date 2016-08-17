@@ -57,7 +57,7 @@ while (1) {
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.idle.time', 1000 * Time::HiRes::tv_interval($tv, $tv_now), {tags => ['tag:' . $internal_ip]});
         $tv = $tv_now;
 
-        if (Time::HiRes::tv_interval($tv, $tv_appconfig) >= 180) {
+        if (Time::HiRes::tv_interval($tv_appconfig, $tv_now) >= 180) {
             warn "price_daemon($$): Refreshing app_config";
             BOM::Platform::Runtime->instance->app_config->check_for_update;
             $tv_appconfig = $tv_now;
