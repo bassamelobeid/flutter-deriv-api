@@ -67,15 +67,17 @@ sub run {
             Mojo::Util::_stash(stash => @_);
         });
 
-    my @lines = File::Slurp::read_file('t/BOM/WebsocketAPI/v3/schema_suite/' . $input);
-
-    my $counter = 0;
+    my $fh = do {
+        my $path = 't/BOM/WebsocketAPI/v3/schema_suite/' . $input;
+        open my $fh, '<:encoding(UTF-8)', $path or die "Could not open $path - $!";
+        $fh
+    };
 
     my $t;
     my ($lang, $last_lang, $reset) = '';
-    foreach my $line (@lines) {
+    while(my $line = <$fh>) {
+        my $counter = $.; # slightly more informative name, for use in log messages at the end of the loop
         chomp $line;
-        $counter++;
         next if ($line =~ /^(#.*|)$/);
 
         # arbitrary perl code
