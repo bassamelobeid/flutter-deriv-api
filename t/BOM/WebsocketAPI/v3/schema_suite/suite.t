@@ -87,73 +87,71 @@ foreach my $line (@lines) {
     }
 
     my ($send_file, $receive_file, @template_func);
-    chomp $receive_file;
-    diag("\nRunning line $counter [$send_file, $receive_file]\n");
-
     if ($test_stream_id) {
         ($receive_file, @template_func) = split(',', $line);
+        chomp $receive_file;
+        diag("\nRunning line $counter [$receive_file]\n");
         diag("\nTesting stream [$test_stream_id]\n");
         my $content = File::Slurp::read_file('config/v3/' . $receive_file);
         $content = _get_values($content, @template_func);
         die 'wrong stream_id' unless $streams->{$test_stream_id};
         my $result = {};
         my @stream_data = @{$streams->{$test_stream_id}->{stream_data}};
-        $result = @stream_data[-1] if @stream_data;
+        $result = $stream_data[-1] if @stream_data;
         _test_schema($receive_file, $content, $result, $fail);
-
-        # No need to send request
-        next;
     } else {
         ($send_file, $receive_file, @template_func) = split(',', $line);
+        chomp $send_file;
+        chomp $receive_file;
+        diag("\nRunning line $counter [$send_file, $receive_file]\n");
+        $send_file =~ /^(.*)\//;
+        my $call = $1;
+
+        my $content = File::Slurp::read_file('config/v3/' . $send_file);
+        $content = _get_values($content, @template_func);
+        my $req_params = JSON::from_json($content);
+
+        die 'wrong stream parameters' if $start_stream_id && !$req_params->{subscribe};
+
+        if ($lang || !$t || $reset) {
+            my $lang_params = {($lang ne '' ? (language => $lang) : (language => $last_lang))};
+            $t = build_mojo_test($lang_params, {}, \&store_stream_data);
+            $last_lang = $lang;
+            $lang      = '';
+            $reset     = '';
+        }
+
+        $t = $t->send_ok({json => $req_params});
+        my $i = 0;
+        my $result;
+        my @subscribed_streams_ids = map {$_->{id}} values %$streams;
+        while ($i++ < 5 && !$result) {
+            $t->message_ok;
+            my $message = decode_json($t->message->[1]);
+            # skip subscribed stream's messages
+            next if ref $message->{$message->{msg_type}} eq 'HASH'
+                 && grep {$message->{$message->{msg_type}}->{id} eq $_} @subscribed_streams_ids;
+            $result = $message;
+        }
+        if ($i >= 5) {
+            diag("There isn't testing message in last 5 stream messages");
+            next;
+        }
+        $response->{$call} = $result->{$call};
+
+        if ($start_stream_id) {
+            my $id = $result->{$call}->{id};
+            die 'wrong stream response' unless $id;
+            die 'already exists same stream_id' if $streams->{$start_stream_id};
+            $streams->{$start_stream_id}->{id}        = $id;
+            $streams->{$start_stream_id}->{call_name} = $call;
+        }
+
+        $content = File::Slurp::read_file('config/v3/' . $receive_file);
+
+        $content = _get_values($content, @template_func);
+        _test_schema($receive_file, $content, $result, $fail);
     }
-
-    $send_file =~ /^(.*)\//;
-    my $call = $1;
-
-    my $content = File::Slurp::read_file('config/v3/' . $send_file);
-    $content = _get_values($content, @template_func);
-    my $req_params = JSON::from_json($content);
-
-    die 'wrong stream parameters' if $start_stream_id && !$req_params->{subscribe};
-
-    if ($lang || !$t || $reset) {
-        my $lang_params = {($lang ne '' ? (language => $lang) : (language => $last_lang))};
-        $t = build_mojo_test($lang_params, {}, \&store_stream_data);
-        $last_lang = $lang;
-        $lang      = '';
-        $reset     = '';
-    }
-
-    $t = $t->send_ok({json => $req_params});
-    my $i = 0;
-    my $result;
-    my @subscribed_streams_ids = map {$_->{id}} values %$streams;
-    while ($i++ < 5 && !$result) {
-        $t->message_ok;
-        my $message = decode_json($t->message->[1]);
-        # skip subscribed stream's messages
-        next if ref $message->{$message->{msg_type}} eq 'HASH'
-             && grep {$message->{$message->{msg_type}}->{id} eq $_} @subscribed_streams_ids;
-        $result = $message;
-    }
-    if ($i >= 5) {
-        diag("There isn't testing message in last 5 stream messages");
-        next;
-    }
-    $response->{$call} = $result->{$call};
-
-    if ($start_stream_id) {
-        my $id = $result->{$call}->{id};
-        die 'wrong stream response' unless $id;
-        die 'already exists same stream_id' if $streams->{$start_stream_id};
-        $streams->{$start_stream_id}->{id}        = $id;
-        $streams->{$start_stream_id}->{call_name} = $call;
-    }
-
-    $content = File::Slurp::read_file('config/v3/' . $receive_file);
-
-    $content = _get_values($content, @template_func);
-    _test_schema($receive_file, $content, $result, $fail);
 }
 
 done_testing();
