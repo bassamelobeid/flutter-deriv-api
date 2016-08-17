@@ -196,6 +196,8 @@ sub get_bid {
         }
 
         $response = {
+            ask_price           => sprintf('%.2f', $contract->ask_price),
+            bid_price           => sprintf('%.2f', $contract->bid_price),
             current_spot_time   => $contract->current_tick->epoch,
             contract_id         => $contract_id,
             underlying          => $contract->underlying->symbol,
@@ -216,9 +218,6 @@ sub get_bid {
         };
 
         if ($contract->is_spread) {
-            # ask and bid will always be there for spreads
-            $response->{ask_price} = sprintf('%.2f', $contract->ask_price);
-            $response->{bid_price} = sprintf('%.2f', $contract->bid_price);
             # spreads require different set of parameters.
             my $sign = $contract->sentiment eq 'up' ? '+' : '-';
             my $amount_per_point = $sign . $contract->amount_per_point;
@@ -258,13 +257,8 @@ sub get_bid {
                 return;
             }
 
-            # only show prices when client can act on it.
-            if ($contract->is_valid_to_sell) {
-                $response->{ask_price} = sprintf('%.2f', $contract->ask_price);
-                $response->{bid_price} = sprintf('%.2f', $contract->bid_price);
-            } elsif ($contract->primary_validation_error) {
-                $response->{validation_error} = $contract->primary_validation_error->message_to_client;
-            }
+            $response->{validation_error} = $contract->primary_validation_error->message_to_client
+                if (not $contract->is_valid_to_sell and $contract->primary_validation_error);
 
             $response->{has_corporate_actions} = 1 if @{$contract->corporate_actions};
 
