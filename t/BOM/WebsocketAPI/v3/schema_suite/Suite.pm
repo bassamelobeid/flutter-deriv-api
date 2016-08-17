@@ -100,7 +100,6 @@ sub run {
 
         my $t0 = [gettimeofday];
         my ($send_file, $receive_file, @template_func) = split(',', $line);
-        diag("Running line $counter [$send_file, $receive_file]");
 
         $send_file =~ /^(.*)\//;
         my $call = $1;
@@ -124,7 +123,7 @@ sub run {
         $content = _get_values($content, @template_func);
         _test_schema($receive_file, $content, $result, $fail);
         my $elapsed = tv_interval($t0, [gettimeofday]);
-        diag "- took ${elapsed}s";
+        diag("$input:$counter [$send_file, $receive_file] - ${elapsed}s");
     }
 }
 
