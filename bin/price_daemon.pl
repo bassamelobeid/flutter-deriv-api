@@ -64,7 +64,7 @@ while (1) {
         }
 
         my $next = $key->[1];
-        $next =~ s/^PRICER_KEYS:://;
+        next unless $next =~ s/^PRICER_KEYS:://;
         my $payload = JSON::XS::decode_json($next);
         my $params  = {@{$payload}};
 
@@ -103,8 +103,11 @@ while (1) {
         if ($subsribers_count == 0) {
             $redis->del($key->[1], $next);
         }
+
+        $tv_now = [Time::HiRes::gettimeofday];
+
         DataDog::DogStatsd::Helper::stats_count('pricer_daemon.queue.subscribers', $subsribers_count, {tags => ['tag:' . $internal_ip]});
-        DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.time', 1000 * Time::HiRes::tv_interval($tv), {tags => ['tag:' . $internal_ip]});
+        DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.time', 1000 * Time::HiRes::tv_interval($tv, $tv_now), {tags => ['tag:' . $internal_ip]});
         my $end_time = Time::HiRes::time;
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.end_time', 1000 * ($end_time - int($end_time)), {tags => ['tag:' . $internal_ip]});
         $stat_count->{$price_daemon_cmd}++;
@@ -115,7 +118,7 @@ while (1) {
             $stat_count = {};
             $current_pricing_epoch = time;
         }
-        $tv = [Time::HiRes::gettimeofday];
+        $tv = $tv_now;
     }
     $pm->finish;
 }
