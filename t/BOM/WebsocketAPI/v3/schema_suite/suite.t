@@ -112,22 +112,8 @@ foreach my $line (@lines) {
     die 'wrong stream parameters' if $start_stream_id && !$req_params->{subscribe};
 
     if ($lang || !$t || $reset) {
-        $t = build_mojo_test(
-            {($lang ne '' ? (language => $lang) : (language => $last_lang))},
-            {},
-            sub {
-                my ($tx, $result) = @_;
-                my $call_name;
-                for my $stream_id (keys %$streams) {
-                    my $stream = $streams->{$stream_id};
-                    $call_name = $stream->{call_name} if exists $result->{$stream->{call_name}};
-                }
-                return unless $call_name;
-                for my $stream_id (keys %$streams) {
-                    push @{$streams->{$stream_id}->{stream_data}}, $result
-                        if $result->{$call_name}->{id} && $result->{$call_name}->{id} eq $streams->{$stream_id}->{id};
-                }
-            });
+        my $lang_params = {($lang ne '' ? (language => $lang) : (language => $last_lang))};
+        $t = build_mojo_test($lang_params, {}, \&store_stream_data);
         $last_lang = $lang;
         $lang      = '';
         $reset     = '';
@@ -264,4 +250,19 @@ sub _set_allow_omnibus {
     $client->save();
 
     return $r;
+}
+
+sub store_stream_data {
+    my ($tx, $result) = @_;
+    my $call_name;
+    for my $stream_id (keys %$streams) {
+        my $stream = $streams->{$stream_id};
+        $call_name = $stream->{call_name} if exists $result->{$stream->{call_name}};
+    }
+    return unless $call_name;
+    for my $stream_id (keys %$streams) {
+        push @{$streams->{$stream_id}->{stream_data}}, $result
+            if $result->{$call_name}->{id} && $result->{$call_name}->{id} eq $streams->{$stream_id}->{id};
+    }
+    return;
 }
