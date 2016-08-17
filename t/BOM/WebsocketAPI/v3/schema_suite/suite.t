@@ -86,11 +86,12 @@ foreach my $line (@lines) {
         $test_stream_id = $1;
     }
 
-    my ($send_file, $receive_file, @template_func) = split(',', $line);
+    my ($send_file, $receive_file, @template_func);
     chomp $receive_file;
     diag("\nRunning line $counter [$send_file, $receive_file]\n");
 
     if ($test_stream_id) {
+        ($receive_file, @template_func) = split(',', $line);
         diag("\nTesting stream [$test_stream_id]\n");
         my $content = File::Slurp::read_file('config/v3/' . $receive_file);
         $content = _get_values($content, @template_func);
@@ -102,6 +103,8 @@ foreach my $line (@lines) {
 
         # No need to send request
         next;
+    } else {
+        ($send_file, $receive_file, @template_func) = split(',', $line);
     }
 
     $send_file =~ /^(.*)\//;
