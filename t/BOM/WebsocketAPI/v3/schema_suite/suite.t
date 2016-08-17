@@ -136,12 +136,12 @@ foreach my $line (@lines) {
     $t = $t->send_ok({json => $req_params});
     my $i = 0;
     my $result;
-    my @subscribed_streams_ids = map {$_->{id}} values %$streams;
+    my @subscribed_streams_ids = map { $_->{id} } values %$streams;
     while ($i++ < 5 && !$result) {
         $t->message_ok;
         my $message = decode_json($t->message->[1]);
         # skip subscribed stream's messages
-        next if grep {$message->{$message->{msg_type}}->{id} eq $_} @subscribed_streams_ids;
+        next if grep { $message->{$message->{msg_type}}->{id} eq $_ } @subscribed_streams_ids;
         $result = $message;
     }
     if ($i >= 5) {
