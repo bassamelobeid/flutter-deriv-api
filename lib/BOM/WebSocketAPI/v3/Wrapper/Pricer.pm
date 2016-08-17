@@ -387,24 +387,37 @@ sub _price_stream_results_adjustment {
     });
     $contract_parameters->{theo_probability} = $theo_probability;
 
-    $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
-    my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
+    # $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
+    # my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
 
-    if (my $error = $contract->validate_price) {
-        return {
-            error => {
-                message_to_client => $error->{message_to_client},
-                code              => 'ContractBuyValidationError',
-                details           => {
-                    longcode      => $contract->longcode,
-                    display_value => $contract->ask_price,
-                    payout        => $contract->payout,
-                },
-            }};
-    }
+    # if (my $error = $contract->validate_price) {
+    #     return {
+    #         error => {
+    #             message_to_client => $error->{message_to_client},
+    #             code              => 'ContractBuyValidationError',
+    #             details           => {
+    #                 longcode      => $contract->longcode,
+    #                 display_value => $contract->ask_price,
+    #                 payout        => $contract->payout,
+    #             },
+    #         }};
+    # }
 
-    $results->{ask_price} = $results->{display_value} = $contract->ask_price;
-    $results->{payout} = $contract->payout;
+    # $results->{ask_price} = $results->{display_value} = $contract->ask_price;
+    # $results->{payout} = $contract->payout;
+    my $price_calculator = Price::Calculator->new(
+        theo_probability    => $theo_probability,
+        # market_name => ... # TODO how to know? May be using contract validator?
+        base_commission_min         => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
+        base_commission_max         => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
+        base_commission_scaling     => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
+
+    );
+    $results->{ask_price} = $results->{display_value} = $price_calculator->ask_price;
+
+
+
+
     stats_timing('price_adjustment.timing', 1000 * tv_interval($t));
 
     return $results;
