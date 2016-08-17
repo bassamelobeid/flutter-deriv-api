@@ -58,6 +58,7 @@ while (1) {
         $tv = $tv_now;
 
         if (Time::HiRes::tv_interval($tv, $tv_appconfig) >= 180) {
+            warn "price_daemon($$): Refreshing app_config";
             BOM::Platform::Runtime->instance->app_config->check_for_update;
             $tv_appconfig = $tv_now;
         }
