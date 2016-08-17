@@ -125,7 +125,7 @@ foreach my $line (@lines) {
                 return unless $call_name;
                 for my $stream_id (keys %$streams) {
                     push @{$streams->{$stream_id}->{stream_data}}, $result
-                        if $result->{$call_name}->{id} eq $streams->{$stream_id}->{id};
+                        if $result->{$call_name}->{id} && $result->{$call_name}->{id} eq $streams->{$stream_id}->{id};
                 }
             });
         $last_lang = $lang;
@@ -136,12 +136,12 @@ foreach my $line (@lines) {
     $t = $t->send_ok({json => $req_params});
     my $i = 0;
     my $result;
-    my @subscribed_streams_msg_types = map {$_->{call_name}} values %$streams;
+    my @subscribed_streams_ids = map {$_->{id}} values %$streams;
     while ($i++ < 5 && !$result) {
         $t->message_ok;
         my $message = decode_json($t->message->[1]);
         # skip subscribed stream's messages
-        next if grep {$message->{msg_type} eq $_} @subscribed_streams_msg_types;
+        next if grep {$message->{$message->{msg_type}}->{id} eq $_} @subscribed_streams_ids;
         $result = $message;
     }
     if ($i >= 5) {
