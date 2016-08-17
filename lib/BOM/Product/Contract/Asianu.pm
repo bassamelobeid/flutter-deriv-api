@@ -4,7 +4,7 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-use BOM::Product::Pricing::Engine::Asian;
+use Pricing::Engine::Asian;
 use BOM::Product::Pricing::Greeks::Asian;
 
 # Static methods.
