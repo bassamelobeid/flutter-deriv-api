@@ -95,7 +95,9 @@ foreach my $line (@lines) {
         my $content = File::Slurp::read_file('config/v3/' . $receive_file);
         $content = _get_values($content, @template_func);
         die 'wrong stream_id' unless $streams->{$test_stream_id};
-        my $result = $streams->{$test_stream_id}->{stream_data}->[-1];
+        my $result = {};
+        my @stream_data = @{$streams->{$test_stream_id}->{stream_data}};
+        $result = @stream_data[-1] if @stream_data;
         _test_schema($receive_file, $content, $result, $fail);
 
         # No need to send request
