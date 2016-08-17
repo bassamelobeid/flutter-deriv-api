@@ -115,13 +115,14 @@ sub _get_values {
     foreach my $f (@template_func) {
         $c++;
         $f =~ s/^\s+|\s+$//g;
-        my $template_content = '';
+        my $template_content;
         if ($f =~ /^\_.*$/) {
             $template_content = eval $f;
         } else {
             $f =~ s/^\'|\'$//g;
             $template_content = $f;
         }
+        $template_content = '' unless defined $template_content;
         $content =~ s/\[_$c\]/$template_content/mg;
     }
     return $content;
