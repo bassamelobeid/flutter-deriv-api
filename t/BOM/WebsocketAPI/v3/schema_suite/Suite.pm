@@ -50,15 +50,19 @@ sub run {
     # Clear existing state for rate limits: verify email in particular
     flush_all_service_consumers();
 
-    for my $i (1 .. 10) {
-        for my $symbol (qw/R_50 R_100/) {
-            BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                underlying => $symbol,
-                epoch      => Date::Utility->new->epoch,
-                quote      => 100
-            });
+    { # Pre-populate with a few ticks - they need to be 1s apart
+        my $count = 10;
+        my $tick_time = time - $count;
+        for my $i (1 .. $count) {
+            for my $symbol (qw/R_50 R_100/) {
+                BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                    underlying => $symbol,
+                    epoch      => $tick_time,
+                    quote      => 100
+                });
+            }
+            ++$tick_time;
         }
-        sleep 1;
     }
 
     my $stash  = {};
