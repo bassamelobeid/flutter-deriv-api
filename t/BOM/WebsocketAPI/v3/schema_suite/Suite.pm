@@ -15,7 +15,6 @@ use BOM::Test::Data::Utility::UnitTestDatabase; # we :init later for unit/auth t
 use BOM::Test::Data::Utility::AuthTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use RateLimitations qw (flush_all_service_consumers);
-use File::Slurp;
 use Time::HiRes qw(tv_interval gettimeofday);
 
 # Needs to be at top-level scope since _set_allow_omnibus and _get_stashed need access,
@@ -24,6 +23,14 @@ my $response;
 
 # Used to allow ->run to happen more than once
 my $global_test_iteration = 0;
+
+# Return entire contents of file as string
+sub read_file {
+    my $path = shift;
+    open my $fh, '<:encoding(UTF-8)', $path or die "Could not open $path - $!";
+    local $/;
+    <$fh>
+}
 
 sub run {
     my ($class, $input) = @_;
@@ -106,7 +113,7 @@ sub run {
         $send_file =~ /^(.*)\//;
         my $call = $1;
 
-        my $content = File::Slurp::read_file('config/v3/' . $send_file);
+        my $content = read_file('config/v3/' . $send_file);
         $content = _get_values($content, @template_func);
 
         if ($lang || !$t || $reset) {
@@ -120,7 +127,7 @@ sub run {
         my $result = decode_json($t->message->[1]);
         $response->{$call} = $result->{$call};
 
-        $content = File::Slurp::read_file('config/v3/' . $receive_file);
+        $content = read_file('config/v3/' . $receive_file);
 
         $content = _get_values($content, @template_func);
         _test_schema($receive_file, $content, $result, $fail);
