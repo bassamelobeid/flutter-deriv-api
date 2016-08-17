@@ -891,6 +891,8 @@ has price_calculator => (
             risk_markup
             commission_markup
             base_commission
+            commission_from_stake
+            app_markup
             /
     ],
 );
@@ -910,9 +912,11 @@ sub _build_price_calculator {
         price_engine_probability    => $self->price_engine->probability,
         price_engine_bs_probability => $self->price_engine->bs_probability,
         price_engine_risk_markup    => $risk_markup,
+        maximum_total_markup        => BOM::System::Config::quants->{commission}->{maximum_total_markup},
         base_commission_min         => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
         base_commission_max         => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
         base_commission_scaling     => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
+        app_markup_percentage       => $self->app_markup_percentage,
     );
 }
 
@@ -1116,75 +1120,8 @@ sub _calculate_payout {
     return $payout;
 }
 
-my $commission_base_multiplier = 1;
-my $commission_max_multiplier  = 2;
-my $commission_min_std         = 500;
-my $commission_max_std         = 25000;
-my $commission_slope           = ($commission_max_multiplier - $commission_base_multiplier) / ($commission_max_std - $commission_min_std);
-
 sub commission_multiplier {
-    my ($self, $payout) = @_;
-
-    my $theo_probability = $self->theo_probability->amount;
-    my $std = $payout * sqrt($theo_probability * (1 - $theo_probability));
-
-    return $commission_base_multiplier if $std <= $commission_min_std;
-    return $commission_max_multiplier  if $std >= $commission_max_std;
-
-    my $slope      = $commission_slope;
-    my $multiplier = ($std - $commission_min_std) * $slope + 1;
-
-    return $multiplier;
-}
-
-has commission_from_stake => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_commission_from_stake {
-    my $self = shift;
-
-    my $theo_probability    = $self->theo_probability->amount;
-    my $ask_price           = $self->ask_price;
-    my $base_commission     = $self->base_commission;
-    my $app_commission      = $self->app_markup->amount;
-    my $combined_commission = $base_commission + $app_commission;
-
-    # payout calculated with base commission.
-    my $initial_payout = $self->_calculate_payout($combined_commission);
-    if ($self->commission_multiplier($initial_payout) == $commission_base_multiplier) {
-        # a minimum of 2 cents please, payout could be zero.
-        my $minimum_commission = $initial_payout ? 0.02 / $initial_payout : 0.02;
-        return max($minimum_commission, $combined_commission);
-    }
-
-    # payout calculated with 2 times base commission.
-    $combined_commission = $base_commission * 2 + $app_commission;
-    $initial_payout      = $self->_calculate_payout($combined_commission);
-    if ($self->commission_multiplier($initial_payout) == $commission_max_multiplier) {
-        return $combined_commission;
-    }
-
-    my $a = $base_commission * $commission_slope * sqrt($theo_probability * (1 - $theo_probability));
-    my $b = ($theo_probability + $base_commission - $base_commission * $commission_min_std * $commission_slope) + $app_commission;
-    my $c = -$ask_price;
-
-    # sets it to zero first.
-    $initial_payout = 0;
-    # We solve for payout as a quadratic function.
-    for my $w (1, -1) {
-        my $estimated_payout = (-$b + $w * sqrt($b**2 - 4 * $a * $c)) / (2 * $a);
-        if ($estimated_payout > 0) {
-            $initial_payout = $estimated_payout;
-            last;
-        }
-    }
-
-    # die if we could not get a positive payout value.
-    die 'Could not calculate a payout' unless $initial_payout;
-
-    return $base_commission * $self->commission_multiplier($initial_payout) + $app_commission;
+    return shift->price_calculator->commission_multiplier(@_);
 }
 
 # Application developer's commission.
@@ -1194,24 +1131,10 @@ has app_markup_percentage => (
     default => 0,
 );
 
-has [qw(app_markup_dollar_amount app_markup)] => (
+has [qw(app_markup_dollar_amount)] => (
     is         => 'ro',
     lazy_build => 1,
 );
-
-sub _build_app_markup {
-    my $self = shift;
-
-    # app_markup_percentage could potentially be undef.
-    my $app_markup_percentage = $self->app_markup_percentage // 0;
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'app_markup',
-        description => 'commission markup for app developer',
-        set_by      => __PACKAGE__,
-        base_amount => $app_markup_percentage / 100,
-    });
-}
 
 sub _build_app_markup_dollar_amount {
     my $self = shift;
