@@ -5,7 +5,7 @@ use JSON;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../../lib";
-use TestHelper qw/test_schema build_mojo_test/;
+use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
 use Test::MockModule;
 
 use BOM::Database::Model::OAuth;
@@ -28,6 +28,8 @@ for my $i (1 .. 10) {
     }
     sleep 1;
 }
+
+build_test_R_50_data();
 
 my $streams = {};
 my $stash   = {};
