@@ -150,8 +150,7 @@ sub statement {
             $txn_time = $txn->{payment_time};
         }
         $struct->{transaction_time} = Date::Utility->new($txn_time)->epoch;
-        $struct->{app_id}           = BOM::RPC::v3::Utility::mask_app_id($txn->{source}, $txn_time);
-        $struct->{app_name}         = BOM::RPC::v3::Utility::mask_app_id(BOM::RPC::v3::Utility::get_app_name($txn->{source}), $txn_time);
+        $struct->{app_id} = BOM::RPC::v3::Utility::mask_app_id($txn->{source}, $txn_time);
 
         if ($params->{args}->{description}) {
             $struct->{shortcode} = $txn->{short_code} // '';
@@ -212,7 +211,6 @@ sub profit_table {
         $trx{purchase_time}  = Date::Utility->new($row->{purchase_time})->epoch;
         $trx{sell_time}      = Date::Utility->new($row->{sell_time})->epoch;
         $trx{app_id}         = BOM::RPC::v3::Utility::mask_app_id($row->{source}, $row->{purchase_time});
-        $trx{app_name}       = BOM::RPC::v3::Utility::mask_app_id(BOM::RPC::v3::Utility::get_app_name($row->{source}), $row->{purchase_time});
 
         if ($and_description) {
             $trx{shortcode} = $row->{short_code};
