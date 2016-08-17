@@ -91,9 +91,13 @@ foreach my $line (@lines) {
     diag("\nRunning line $counter [$send_file, $receive_file]\n");
 
     if ($test_stream_id) {
+        diag("\nTesting stream [$test_stream_id]\n");
         my $content = _get_values(File::Slurp::read_file('config/v3/' . $receive_file), @template_func);
         die 'wrong stream_id' unless $streams->{$test_stream_id};
         my $result = $streams->{$test_stream_id}->{stream_data}->[-1];
+        warn Dumper $streams;
+        warn Dumper $result;
+        warn Dumper decode_json($result);
         _test_schema($receive_file, $content, $result, $fail);
 
         # No need to send request
@@ -105,8 +109,9 @@ foreach my $line (@lines) {
 
     my $content = File::Slurp::read_file('config/v3/' . $send_file);
     $content = _get_values($content, @template_func);
+    my $req_params = JSON::from_json($content);
 
-    die 'wrong stream parameters' if $start_stream_id && !$content->{subscribe};
+    die 'wrong stream parameters' if $start_stream_id && !$req_params->{subscribe};
 
     if ($lang || !$t || $reset) {
         $t = build_mojo_test(
@@ -114,9 +119,11 @@ foreach my $line (@lines) {
             {},
             sub {
                 my ($tx, $result) = @_;
+                warn Dumper $result;
                 my $call_name;
                 for my $stream_id (keys %$streams) {
-                    $call_name = $streams->{call_name} if exists $result->{$streams->{call_name}};
+                    my $stream = $streams->{$stream_id};
+                    $call_name = $stream->{call_name} if exists $result->{$stream->{call_name}};
                 }
                 return unless $call_name;
                 for my $stream_id (keys %$streams) {
@@ -129,7 +136,7 @@ foreach my $line (@lines) {
         $reset     = '';
     }
 
-    $t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
+    $t = $t->send_ok({json => $req_params})->message_ok;
     my $result = decode_json($t->message->[1]);
     $response->{$call} = $result->{$call};
 
@@ -139,6 +146,8 @@ foreach my $line (@lines) {
         die 'already exists same stream_id' if $streams->{$start_stream_id};
         $streams->{$start_stream_id}->{id}        = $id;
         $streams->{$start_stream_id}->{call_name} = $call;
+        diag(Dumper($streams));
+        diag("\nStarted stream [$start_stream_id]\n");
     }
 
     $content = File::Slurp::read_file('config/v3/' . $receive_file);
