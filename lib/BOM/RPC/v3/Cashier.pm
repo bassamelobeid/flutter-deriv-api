@@ -162,7 +162,7 @@ sub cashier {
         }
 
         if ($client->get_status('withdrawal_locked')) {
-            return $error_sub->(localize('Your account is locked for withdrawal. Please contact customer service.'));
+            return $error_sub->(localize('Your account is locked for withdrawals. Please contact customer service.'));
         }
     }
 
