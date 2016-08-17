@@ -59,9 +59,8 @@ sub lock_client_loginid {
     return;
 }
 
-sub freeze {
-    my @args = @_;
-    return lock_client_loginid(@args);
+BEGIN {
+    *freeze = \&lock_client_loginid;
 }
 
 sub unlock_client_loginid {
@@ -82,11 +81,9 @@ sub unlock_client_loginid {
     return;
 }
 
-sub unfreeze {
-    my @args = @_;
-    return unlock_client_loginid(@args);
+BEGIN {
+    *unfreeze = \&unlock_client_loginid;
 }
-
 
 sub locked_client_list {
     my $self = shift;
