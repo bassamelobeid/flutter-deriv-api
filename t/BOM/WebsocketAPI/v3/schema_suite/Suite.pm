@@ -81,7 +81,8 @@ sub run {
     };
 
     my $t;
-    my ($lang, $last_lang, $reset) = '';
+    my $lang = '';
+    my ($last_lang, $reset);
     while(my $line = <$fh>) {
         my $counter = $.; # slightly more informative name, for use in log messages at the end of the loop
         chomp $line;
@@ -117,8 +118,11 @@ sub run {
         $content = _get_values($content, @template_func);
 
         if ($lang || !$t || $reset) {
-            $t         = build_mojo_test({($lang ne '' ? (language => $lang) : (language => $last_lang))});
-            $last_lang = $lang;
+            my $new_lang = $lang || $last_lang;
+            is(defined($new_lang), 'have a defined language') or diag "missing [LANG] tag in config before tests?";
+            is(length($new_lang), 'have a valid language') or diag "invalid [LANG] tag in config or broken test?";
+            $t         = build_mojo_test({language => $new_lang});
+            $last_lang = $new_lang;
             $lang      = '';
             $reset     = '';
         }
