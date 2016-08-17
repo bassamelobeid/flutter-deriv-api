@@ -137,9 +137,11 @@ sub _get_values {
         if ($f =~ /^\_.*$/) {
             local $@; # ensure we clear this first, to avoid false positive
             $template_content = eval $f;
-            # undef here *probably* means invalid Perl code, which implies a broken test
-            diag "Possible exception on eval \"$f\": $@" if $@;
-            # _get_token may return undef, the template implementation is not advanced
+            # we do not expect any exceptions from the eval, they could indicate
+            # invalid Perl code or bug, either way we need to know about them
+            ok(!$@, "template content can eval successfully") or
+                diag "Possible exception on eval \"$f\": $@" if $@;
+            # note that _get_token may return undef, the template implementation is not advanced
             # enough to support JSON null so we fall back to an empty string
             $template_content //= '';
         } else {
