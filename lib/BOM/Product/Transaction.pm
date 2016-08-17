@@ -847,7 +847,6 @@ not met.
 
 The caller should not retry the operation or try to amend the
 situation. Instead it should pass on the error to the client.
-However, make sure to C<BOM::Database::DataMapper::Client::unfreeze> before.
 
 =back
 
