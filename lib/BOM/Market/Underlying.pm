@@ -229,7 +229,6 @@ has [qw(
         volatility_surface_type
         quoted_currency_symbol
         combined_folder
-        commission_level
         uses_dst_shifted_seasonality
         spot_spread
         spot_spread_size
@@ -574,19 +573,6 @@ has 'uses_dst_shifted_seasonality' => (
     isa     => 'Bool',
     default => 0,
 );
-
-=head2 commission_level
-
-At what level do we charge commissions on this underlying?
-
-=cut
-
-sub _build_commission_level {
-    my $self = shift;
-
-    # For some reason this was unset, so make it the current max: 3
-    return 3;
-}
 
 =head2 spot_spread_size
 
