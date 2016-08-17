@@ -21,11 +21,11 @@ sub _build_ticks_to_expiry {
 }
 
 sub _build_pricing_engine_name {
-    return 'BOM::Product::Pricing::Engine::Asian';
+    return 'Pricing::Engine::Asian';
 }
 
 sub _build_pricing_engine {
-    return BOM::Product::Pricing::Engine::Asian->new({bet => shift});
+    return Pricing::Engine::Asian->new({bet => shift});
 }
 
 sub _build_greek_engine {
