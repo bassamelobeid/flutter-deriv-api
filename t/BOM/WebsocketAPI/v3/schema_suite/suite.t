@@ -115,7 +115,7 @@ foreach my $line (@lines) {
 
         if ($lang || !$t || $reset) {
             my $lang_params = {($lang ne '' ? (language => $lang) : (language => $last_lang))};
-            $t = build_mojo_test($lang_params, {}, \&store_stream_data);
+            $t         = build_mojo_test($lang_params, {}, \&store_stream_data);
             $last_lang = $lang;
             $lang      = '';
             $reset     = '';
@@ -124,13 +124,14 @@ foreach my $line (@lines) {
         $t = $t->send_ok({json => $req_params});
         my $i = 0;
         my $result;
-        my @subscribed_streams_ids = map {$_->{id}} values %$streams;
+        my @subscribed_streams_ids = map { $_->{id} } values %$streams;
         while ($i++ < 5 && !$result) {
             $t->message_ok;
             my $message = decode_json($t->message->[1]);
             # skip subscribed stream's messages
-            next if ref $message->{$message->{msg_type}} eq 'HASH'
-                 && grep {$message->{$message->{msg_type}}->{id} eq $_} @subscribed_streams_ids;
+            next
+                if ref $message->{$message->{msg_type}} eq 'HASH'
+                && grep { $message->{$message->{msg_type}}->{id} && $message->{$message->{msg_type}}->{id} eq $_ } @subscribed_streams_ids;
             $result = $message;
         }
         if ($i >= 5) {
