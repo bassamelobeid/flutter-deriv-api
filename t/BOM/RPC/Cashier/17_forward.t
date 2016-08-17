@@ -158,7 +158,7 @@ subtest 'withdraw' => sub {
         })->token;
 
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has withdrawal lock')
-        ->error_message_is('Your account is locked for withdrawal. Please contact customer service.', 'Client is withdrawal locked');
+        ->error_message_is('Your account is locked for withdrawals. Please contact customer service.', 'Client is withdrawal locked');
 };
 
 subtest 'landing_companies_specific' => sub {
