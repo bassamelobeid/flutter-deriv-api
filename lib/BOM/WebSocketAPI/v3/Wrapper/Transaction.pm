@@ -31,6 +31,12 @@ sub buy_get_contract_params {
             BOM::WebSocketAPI::v3::Wrapper::System::_forget_pricing_subscription($c, $proposal_id);
             return;
         }
+        warn "WSAPI 'buy' buy_get_contract_params error: "
+            . (
+              !$ch         ? "stash does not contains 'pricing_channel'"
+            : !$ch->{uuid} ? "'pricing_channel' does not contains {uuid} branch"
+            :                "'pricing_channel' does not contains provided proposal uuid (double click?)"
+            );
     }
     return $c->new_error(($args->{buy_contract_for_multiple_accounts} ? 'buy_contract_for_multiple_accounts' : 'buy'),
         'InvalidContractProposal', $c->l("Unknown contract proposal"));
