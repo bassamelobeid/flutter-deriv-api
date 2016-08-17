@@ -62,27 +62,6 @@ sub build_mojo_test {
     return $t;
 }
 
-# sub build_mojo_test {
-#     my $args    = shift || {};
-#     my $headers = shift || {};
-
-#     if ($args->{deflate}) {
-#         $headers = {'Sec-WebSocket-Extensions' => 'permessage-deflate'};
-#     }
-#     my $url = "/websockets/$version";
-
-#     my @query_params;
-#     push @query_params, 'l=' . $args->{language}    if $args->{language};
-#     push @query_params, 'debug=' . $args->{debug}   if $args->{debug};
-#     push @query_params, 'app_id=' . $args->{app_id} if $args->{app_id};
-#     $url .= '?' . join('&', @query_params) if @query_params;
-
-#     my $t = Test::Mojo->new('BOM::WebSocketAPI');
-#     $t->websocket_ok($url => $headers);
-
-#     return $t;
-# }
-
 sub test_schema {
     my ($type, $data) = @_;
 
