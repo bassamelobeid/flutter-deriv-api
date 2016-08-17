@@ -95,9 +95,6 @@ foreach my $line (@lines) {
         my $content = _get_values(File::Slurp::read_file('config/v3/' . $receive_file), @template_func);
         die 'wrong stream_id' unless $streams->{$test_stream_id};
         my $result = $streams->{$test_stream_id}->{stream_data}->[-1];
-        warn Dumper $streams;
-        warn Dumper $result;
-        warn Dumper decode_json($result);
         _test_schema($receive_file, $content, $result, $fail);
 
         # No need to send request
@@ -119,7 +116,6 @@ foreach my $line (@lines) {
             {},
             sub {
                 my ($tx, $result) = @_;
-                warn Dumper $result;
                 my $call_name;
                 for my $stream_id (keys %$streams) {
                     my $stream = $streams->{$stream_id};
@@ -136,8 +132,21 @@ foreach my $line (@lines) {
         $reset     = '';
     }
 
-    $t = $t->send_ok({json => $req_params})->message_ok;
-    my $result = decode_json($t->message->[1]);
+    $t = $t->send_ok({json => $req_params});
+    my $i = 0;
+    my $result;
+    my @subscribed_streams_msg_types = map {$_->{call_name}} values %$streams;
+    while ($i++ < 5 && !$result) {
+        $t->message_ok;
+        my $message = decode_json($t->message->[1]);
+        # skip subscribed stream's messages
+        next if grep {$message->{msg_type} eq $_} @subscribed_streams_msg_types;
+        $result = $message;
+    }
+    if ($i >= 5) {
+        diag("There isn't testing message in last 5 stream messages");
+        next;
+    }
     $response->{$call} = $result->{$call};
 
     if ($start_stream_id) {
@@ -146,8 +155,6 @@ foreach my $line (@lines) {
         die 'already exists same stream_id' if $streams->{$start_stream_id};
         $streams->{$start_stream_id}->{id}        = $id;
         $streams->{$start_stream_id}->{call_name} = $call;
-        diag(Dumper($streams));
-        diag("\nStarted stream [$start_stream_id]\n");
     }
 
     $content = File::Slurp::read_file('config/v3/' . $receive_file);
