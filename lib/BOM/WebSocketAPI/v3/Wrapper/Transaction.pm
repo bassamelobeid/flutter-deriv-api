@@ -31,9 +31,7 @@ sub buy_get_contract_params {
             BOM::WebSocketAPI::v3::Wrapper::System::_forget_pricing_subscription($c, $proposal_id);
             return;
         }
-        my $app_id           = $c->stash('source')       // 'unknown';
-        my $validated_app_id = $c->stash('valid_source') // 'unknown';
-        warn "WSAPI 'buy' buy_get_contract_params error (App Id: $app_id / $validated_app_id ) : "
+        warn "WSAPI 'buy' buy_get_contract_params error: "
             . (
               !$ch         ? "stash does not contains 'pricing_channel'"
             : !$ch->{uuid} ? "'pricing_channel' does not contains {uuid} branch"
