@@ -485,7 +485,7 @@ subtest 'volsurfaces become old and invalid' => sub {
 
     $bet = produce_contract($bet_params);
     ok($bet->volsurface->validation_error('fake broken surface'), 'Set broken surface');
-    $expected_reasons = [qr/has smile flags/];
+    $expected_reasons = [qr/fake broken surface/];
     test_error_list('buy', $bet, $expected_reasons);
 
     my $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
