@@ -20,7 +20,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use File::Slurp;
 
-`sudo date -s '2016-08-09 11:59:00'`;
+symtem("sudo date -s '2016-08-09 11:59:00'");
 initialize_realtime_ticks_db();
 build_test_R_50_data();
 _setup_market_data();
@@ -57,7 +57,9 @@ my $counter = 0;
 my $t;
 my ($lang, $last_lang, $reset) = '';
 foreach my $line (@lines) {
-    `sudo date -s '2016-08-09 12:00:00'`;
+    # we are setting the time backward to 12:00:00 for every
+    # tests to ensure time sensitive tests (pricing tests) always start at the same time.
+    system("sudo date -s '2016-08-09 12:00:00'");
     chomp $line;
     $counter++;
     next if ($line =~ /^(#.*|)$/);
