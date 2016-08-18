@@ -493,9 +493,7 @@ sub _build_effective_start {
     my $self = shift;
 
     return
-          ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_start
-        : ($self->date_pricing->is_after($self->date_start))  ? $self->date_pricing
-        :                                                       $self->date_start;
+        ($self->date_pricing->is_after($self->date_start))  ? $self->date_pricing :  $self->date_start;
 }
 
 sub _build_greek_engine {
