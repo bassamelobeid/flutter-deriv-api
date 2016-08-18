@@ -905,6 +905,11 @@ sub _build_price_calculator {
         $risk_markup = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->pricing_engine->risk_markup->amount;
     }
 
+    my $value;
+    if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
+        $value = $self->value;
+    }
+
     return Price::Calculator->new(
         market_name                 => $self->market->name,
         new_interface_engine        => $self->new_interface_engine,
@@ -917,6 +922,8 @@ sub _build_price_calculator {
         base_commission_max         => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
         base_commission_scaling     => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
         app_markup_percentage       => $self->app_markup_percentage,
+        payout                      => $self->payout,
+        value                       => $value,
     );
 }
 
@@ -995,7 +1002,7 @@ sub _build_discounted_probability {
 sub _build_bid_price {
     my $self = shift;
 
-    return $self->_price_from_prob('bid_probability');
+    return $self->price_calculator->price_from_prob('bid_probability', $self->{currency});
 }
 
 sub is_valid_to_buy {
@@ -1083,41 +1090,10 @@ sub _validate_settlement_conditions {
     return ($ref, $hold_for_exit_tick);
 }
 
-#  If your price is payout * some probability, just use this.
-sub _price_from_prob {
-    my ($self, $prob_method) = @_;
-    my $price;
-    if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
-        $price = $self->value;
-    } else {
-        $price = (defined $self->price_calculator->$prob_method) ? $self->payout * $self->price_calculator->$prob_method->amount : undef;
-    }
-    return (defined $price) ? roundnear(($self->{currency} eq 'JPY' ? 1 : 0.01), $price) : undef;
-}
-
 sub _build_ask_price {
     my $self = shift;
 
-    return $self->_price_from_prob('ask_probability');
-}
-
-sub _build_payout {
-    my $self = shift;
-
-    my $payout = max($self->ask_price, $self->_calculate_payout($self->commission_from_stake));
-    return roundnear(($self->{currency} eq 'JPY' ? 1 : 0.01), $payout);
-}
-
-sub _calculate_payout {
-    my ($self, $base_commission) = @_;
-
-    # This is an approximation way of getting ask_prob to solve the issue where min ask price does not apply with predefined ask price.
-    # If the issue still persists, a better quaratic solution is required.
-    my $approximate_ask_prob = $self->theo_probability->amount + $base_commission;
-    my $min_ask_prob         = $self->market->deep_otm_threshold;
-
-    my $payout = ($approximate_ask_prob > $min_ask_prob) ? ($self->ask_price / $approximate_ask_prob) : ($self->ask_price / $min_ask_prob);
-    return $payout;
+    return $self->price_calculator->price_from_prob('ask_probability', $self->{currency});
 }
 
 sub commission_multiplier {
@@ -1145,13 +1121,13 @@ sub _build_app_markup_dollar_amount {
 sub _build_bs_price {
     my $self = shift;
 
-    return $self->_price_from_prob('bs_probability');
+    return $self->price_calculator->price_from_prob('bs_probability', $self->{currency});
 }
 
 sub _build_theo_price {
     my $self = shift;
 
-    return $self->_price_from_prob('theo_probability');
+    return $self->price_calculator->price_from_prob('theo_probability', $self->{currency});
 }
 
 sub _build_shortcode {
