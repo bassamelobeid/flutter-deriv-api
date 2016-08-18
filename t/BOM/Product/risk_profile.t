@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 7;
 use Test::Exception;
 use Test::NoWarnings;
 
@@ -113,6 +113,31 @@ subtest 'empty limit condition' => sub {
     BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles('{"xxx": {"risk_profile": "no_business", "name": "test custom"}}');
     my $rp = BOM::Product::RiskProfile->new(%args);
     is $rp->get_risk_profile, 'low_risk', 'ignore profile with no conditions';
+};
+
+subtest 'check for risk_profile consistency' => sub {
+    # We had a bug where we use 'each' to iterate over match conditions without resetting the iterator.
+    # It is replaced with 'keys'
+    # This test ensures we don't have this problem again.
+    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+        '{"yyy": {"market": "forex", "contract_category": "callput", "risk_profile": "high_risk", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}');
+    my %expected = (
+        callput => 'high_risk',
+        touchnotouch => 'medium_risk',
+    );
+    for (0 .. 4) {
+        for my $bc ('touchnotouch','callput') {
+            my $rp = BOM::Product::RiskProfile->new(
+                underlying        => BOM::Market::Underlying->new('frxUSDJPY'),
+                contract_category => $bc,
+                start_type        => 'spot',
+                expiry_type       => 'tick',
+                currency          => 'USD',
+                barrier_category  => 'euro_atm',
+            );
+            is $rp->get_risk_profile, $expected{$bc}, 'same profile after iteration';
+        }
+    }
 };
 
 #cleanup
