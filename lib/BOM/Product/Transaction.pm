@@ -1720,7 +1720,6 @@ sub __validate_jurisdictional_restrictions {
         );
     }
 
-
     my %legal_allowed_underlyings = map { $_ => 1 } @{$lc->legal_allowed_underlyings};
     if (not $legal_allowed_underlyings{all} and not $legal_allowed_underlyings{$contract->underlying->symbol}) {
         return Error::Base->cuss(
