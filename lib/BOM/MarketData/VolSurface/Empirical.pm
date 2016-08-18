@@ -35,23 +35,21 @@ sub get_volatility {
     my $economic_events = $args->{economic_events};
 
     my $ticks;
-    my $lookback_interval;
     if ($args->{ticks}) {
         $ticks = $args->{ticks};
-        $lookback_interval = Time::Duration::Concise->new(interval => $ticks->[-1]->{epoch} - $ticks->[0]->{epoch});
     } else {
         unless ($args->{current_epoch} and $args->{seconds_to_expiration}) {
-            $self->error('Non zero arguments of \'from\' and \'to\' are required to get_volatility.');
+            $self->error('Non zero arguments of \'current_epoch\' and \'seconds_to_expiration\' are required to get_volatility.');
             return $self->long_term_vol;
         }
 
-        $lookback_interval = Time::Duration::Concise->new(interval => max(900, $args->{seconds_to_expiration}) . 's');
+        my $interval = Time::Duration::Concise->new(interval => max(900, $args->{seconds_to_expiration}) . 's');
         my $fill_cache = $args->{fill_cache} // 1;
 
         my $at    = BOM::Market::AggTicks->new;
         my $ticks = $at->retrieve({
             underlying   => $underlying,
-            interval     => $lookback_interval,
+            interval     => $interval,
             ending_epoch => $args->{current_epoch},
             fill_cache   => $fill_cache,
         });
@@ -59,8 +57,11 @@ sub get_volatility {
 
     $self->error('Insufficient tick interval to get_volatility') if @$ticks <= $returns_sep;
 
+    # $lookback_interval used to be the contract duration, but we have changed the concept.
+    # We will use the any amount of ticks we get from the cache and scale the volatility by duration.
+    # For the ticks that we get, we still do a duplicate checks.
+    my $lookback_interval = Time::Duration::Concise->new(interval => $ticks->[-1]->{epoch} - $ticks->[0]->{epoch});
     my @tick_epochs = uniq map { $_->{epoch} } @$ticks;
-    # check to make sure that 80% of the interval in the lookback period has ticks.
     my $interval_threshold = int(($lookback_interval->minutes * $returns_sep + 1) * 0.8);
     $self->error('Insufficient ticks in each interval to get_volatility') if (scalar(@tick_epochs) < $interval_threshold);
 
