@@ -8,7 +8,6 @@ use List::Util qw(max min sum);
 use Sereal qw(decode_sereal);
 use YAML::XS qw(LoadFile);
 
-use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Runtime;
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
@@ -413,7 +412,6 @@ sub _build_intraday_vanilla_delta {
     });
 
     return Math::Util::CalculatedValue::Validatable->new({
-        language    => request()->language,
         name        => 'intraday_vanilla_delta',
         description => 'The delta of a vanilla call with the same parameters as this bet',
         set_by      => __PACKAGE__,
