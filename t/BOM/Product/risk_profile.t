@@ -115,6 +115,28 @@ subtest 'empty limit condition' => sub {
     is $rp->get_risk_profile, 'low_risk', 'ignore profile with no conditions';
 };
 
+subtest 'loop' => sub {
+    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+        '{"yyy": {"market": "forex", "contract_category": "callput", "risk_profile": "high_risk", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}');
+    my %expected = (
+        callput => 'high_risk',
+        touchnotouch => 'medium_risk',
+    );
+    for (0 .. 4) {
+        for my $bc ('touchnotouch','callput') {
+            my $rp = BOM::Product::RiskProfile->new(
+                underlying        => BOM::Market::Underlying->new('frxUSDJPY'),
+                contract_category => $bc,
+                start_type        => 'spot',
+                expiry_type       => 'tick',
+                currency          => 'USD',
+                barrier_category  => 'euro_atm',
+            );
+            is $rp->get_risk_profile, $expected{$bc}, 'same profile after iteration';
+        }
+    }
+};
+
 #cleanup
 BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles('{}');
 BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles('{}');
