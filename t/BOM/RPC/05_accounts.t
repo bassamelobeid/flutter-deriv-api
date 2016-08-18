@@ -367,8 +367,7 @@ subtest $method => sub {
         'buy_price'      => '100',
         'purchase_time'  => Date::Utility->new($data->[0]{purchase_time})->epoch,
         'payout'         => $contract_expired->payout,
-        'app_id'         => undef,
-        'app_name'       => undef
+        'app_id'         => undef
     };
 
     is_deeply($result->{transactions}[0], $expect0, 'result is correct');
