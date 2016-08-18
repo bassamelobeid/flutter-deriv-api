@@ -115,7 +115,10 @@ subtest 'empty limit condition' => sub {
     is $rp->get_risk_profile, 'low_risk', 'ignore profile with no conditions';
 };
 
-subtest 'loop' => sub {
+subtest 'check for risk_profile consistency' => sub {
+    # We had a bug where we use 'each' to iterate over match conditions without resetting the iterator.
+    # It is replaced with 'keys'
+    # This test ensures we don't have this problem again.
     BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"yyy": {"market": "forex", "contract_category": "callput", "risk_profile": "high_risk", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}');
     my %expected = (
