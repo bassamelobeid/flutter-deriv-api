@@ -5,18 +5,24 @@ use JSON;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../../lib";
-use TestHelper qw/test_schema build_mojo_test/;
+use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
 use Test::MockModule;
+use YAML::XS qw(LoadFile);
 
+use Cache::RedisDB;
+use Sereal::Encoder;
 use BOM::Database::Model::OAuth;
 use BOM::System::RedisReplicated;
 use BOM::Platform::Client;
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use File::Slurp;
 
 initialize_realtime_ticks_db();
+build_test_R_50_data();
+_setup_market_data();
 
 for my $i (1 .. 10) {
     for my $symbol (qw/R_50 R_100/) {
@@ -116,6 +122,7 @@ sub _get_values {
             $f =~ s/^\'|\'$//g;
             $template_content = $f;
         }
+        $template_content = '' unless defined $template_content;
         $content =~ s/\[_$c\]/$template_content/mg;
     }
     return $content;
@@ -200,4 +207,58 @@ sub _set_allow_omnibus {
     $client->save();
 
     return $r;
+}
+
+sub _setup_market_data {
+    my $data = LoadFile('/home/git/regentmarkets/bom-websocket-api/t/BOM/WebsocketAPI/v3/schema_suite/test_data.yml');
+
+    foreach my $d (@$data) {
+        my $key = delete $d->{name};
+        $d->{recorded_date} = Date::Utility->new;
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc($key, $d);
+    }
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'correlation_matrix',
+        {
+            recorded_date  => Date::Utility->new,
+            'correlations' => {
+                'FCHI' => {
+                    'GBP' => {
+                        '12M' => 0.307,
+                        '3M'  => 0.356,
+                        '6M'  => 0.336,
+                        '9M'  => 0.32,
+                    },
+                    'USD' => {
+                        '12M' => 0.516,
+                        '3M'  => 0.554,
+                        '6M'  => 0.538,
+                        '9M'  => 0.525,
+                        }
+
+                }}});
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'economic_events',
+        {
+            events => [{
+                    release_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                    event_name   => 'test',
+                    symbol       => 'FAKE',
+                    impact       => 1,
+                    source       => 'fake source'
+                }]});
+
+    # only populating aggregated ticks for frxUSDJPY
+    my $tick_data   = LoadFile('/home/git/regentmarkets/bom-websocket-api/t/BOM/WebsocketAPI/v3/schema_suite/ticks.yml');
+    my $encoder = Sereal::Encoder->new({
+        canonical => 1,
+    });
+    my $redis = Cache::RedisDB->redis;
+    while (my ($key, $ticks) = each %$tick_data) {
+        $redis->zadd($key, $_->{epoch}, $encoder->encode($_)) for @$ticks;
+    }
+
+    return;
 }
