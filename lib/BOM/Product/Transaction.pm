@@ -1710,6 +1710,7 @@ sub __validate_jurisdictional_restrictions {
         );
     }
 
+    # For certain countries such as Belgium, we are not allow to sell financial product to them.
     if ($residence && $market_name ne 'volidx' && BOM::Platform::Countries->instance->financial_binaries_restricted_country($residence)) {
         return Error::Base->cuss(
             -type => 'FinancialBinariesRestrictedCountry',
