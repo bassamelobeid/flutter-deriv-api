@@ -10,6 +10,7 @@ use BOM::RPC::v3::Contract;
 use sigtrap qw/handler signal_handler normal-signals/;
 use Data::Dumper;
 use LWP::Simple;
+use BOM::Platform::Runtime;
 
 my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 my $workers = 4;
@@ -47,12 +48,20 @@ while (1) {
 
     my $redis = BOM::System::RedisReplicated::redis_pricer;
 
+    my $tv_appconfig          = [0, 0];
     my $tv                    = [Time::HiRes::gettimeofday];
     my $stat_count            = {};
     my $current_pricing_epoch = time;
     while (my $key = $redis->brpop("pricer_jobs", 0)) {
-        DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.idle.time', 1000 * Time::HiRes::tv_interval($tv), {tags => ['tag:' . $internal_ip]});
-        $tv = [Time::HiRes::gettimeofday];
+        my $tv_now = [Time::HiRes::gettimeofday];
+        DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.idle.time', 1000 * Time::HiRes::tv_interval($tv, $tv_now), {tags => ['tag:' . $internal_ip]});
+        $tv = $tv_now;
+
+        if (Time::HiRes::tv_interval($tv, $tv_appconfig) >= 180) {
+            warn "price_daemon($$): Refreshing app_config";
+            BOM::Platform::Runtime->instance->app_config->check_for_update;
+            $tv_appconfig = $tv_now;
+        }
 
         my $next = $key->[1];
         $next =~ s/^PRICER_KEYS:://;
