@@ -20,7 +20,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use File::Slurp;
 
-symtem("sudo date -s '2016-08-09 11:59:00'");
+system("sudo date -s '2016-08-09 11:59:00'");
 initialize_realtime_ticks_db();
 build_test_R_50_data();
 _setup_market_data();
