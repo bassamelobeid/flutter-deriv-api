@@ -33,15 +33,6 @@ my $args = {
 
 subtest 'asian' => sub {
     lives_ok {
-        for (0 .. 4) {
-            BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                underlying => 'R_100',
-                epoch      => $now->epoch + $_,
-                quote      => 100
-            });
-        }
-
-
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Asianu';
         is $c->code, 'ASIANU';
@@ -58,13 +49,13 @@ subtest 'asian' => sub {
     lives_ok {
         my $c = produce_contract($args);
         ok !$c->barrier, 'barrier undef';
-#        for (0 .. 4) {
-#            BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-#                underlying => 'R_100',
-#                epoch      => $now->epoch + $_,
-#                quote      => 100
-#            });
-#        }
+        for (0 .. 4) {
+            BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                underlying => 'R_100',
+                epoch      => $now->epoch + $_,
+                quote      => 100
+            });
+        }
         $args->{date_pricing} = $now->plus_time_interval('5s');
         $c = produce_contract($args);
         is $c->barrier->as_absolute + 0, 100, 'barrier is the average';
