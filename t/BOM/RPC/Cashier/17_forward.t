@@ -145,20 +145,19 @@ subtest 'deposit' => sub {
 
 subtest 'withdraw' => sub {
     $params->{args}->{cashier} = 'withdraw';
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_EMAIL_VERIFY', 'Withdrawal needs verification token')
-        ->error_message_is('Verify your withdraw request.', 'Withdrawal needs verification token');
 
     $client_cr->set_status('withdrawal_locked', 'system', 'locked for security reason');
     $client_cr->save;
 
-    $params->{args}->{verification_code} = BOM::Platform::Token->new({
-            email       => $email,
-            expires_in  => 3600,
-            created_for => 'payment_withdraw'
-        })->token;
-
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has withdrawal lock')
         ->error_message_is('Your account is locked for withdrawals. Please contact customer service.', 'Client is withdrawal locked');
+
+    $client_cr->clr_status('withdrawal_locked');
+    $client_cr->save;
+
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_EMAIL_VERIFY', 'Withdrawal needs verification token')
+        ->error_message_is('Verify your withdraw request.', 'Withdrawal needs verification token');
+
 };
 
 subtest 'landing_companies_specific' => sub {
