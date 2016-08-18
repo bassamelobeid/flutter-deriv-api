@@ -1710,6 +1710,16 @@ sub __validate_jurisdictional_restrictions {
         );
     }
 
+    if ($residence && $market_name ne 'volidx' && BOM::Platform::Countries->instance->financial_binaries_restricted_country($residence)) {
+        return Error::Base->cuss(
+            -type => 'FinancialBinariesRestrictedCountry',
+            -mesg => 'Clients are not allowed to place financial products contracts as their country is restricted.',
+            -message_to_client =>
+                BOM::Platform::Context::localize('Sorry, contracts on Financial Products are not available in your country of residence'),
+        );
+    }
+
+
     my %legal_allowed_underlyings = map { $_ => 1 } @{$lc->legal_allowed_underlyings};
     if (not $legal_allowed_underlyings{all} and not $legal_allowed_underlyings{$contract->underlying->symbol}) {
         return Error::Base->cuss(
