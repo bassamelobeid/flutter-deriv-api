@@ -24,35 +24,38 @@ my $returns_sep     = 4;
 sub get_volatility {
     my ($self, $args) = @_;
 
-    # naked volatility
-    my $underlying = $self->underlying;
-    my ($current_epoch, $seconds_to_expiration, $economic_events, $lookback_seconds) =
-        @{$args}{'current_epoch', 'seconds_to_expiration', 'economic_events', 'lookback_seconds'};
-
-    $self->error('current_epoch is not provided to get_volatility') unless $current_epoch;
-
-    unless ($seconds_to_expiration) {
-        $self->error('seconds_to_expiration is not provided to get_volatility');
-        $seconds_to_expiration = 0;    #hard-coded it to zero second
-    }
-
     # for contract where volatility doesn't matter,
     # we will return the long term vol.
     if ($args->{uses_flat_vol}) {
         return $self->long_term_vol;
     }
 
-    $lookback_seconds = $seconds_to_expiration unless $lookback_seconds;
-    my $lookback_interval = Time::Duration::Concise->new(interval => max(900, $lookback_seconds) . 's');
-    my $fill_cache = $args->{fill_cache} // 1;
+    # naked volatility
+    my $underlying      = $self->underlying;
+    my $economic_events = $args->{economic_events};
 
-    my $at    = BOM::Market::AggTicks->new;
-    my $ticks = $at->retrieve({
-        underlying   => $underlying,
-        interval     => $lookback_interval,
-        ending_epoch => $current_epoch,
-        fill_cache   => $fill_cache,
-    });
+    my $ticks;
+    my $lookback_interval;
+    if ($args->{ticks}) {
+        $ticks = $args->{ticks};
+        $lookback_interval = Time::Duration::Concise->new(interval => $ticks->[-1]->{epoch} - $ticks->[0]->{epoch});
+    } else {
+        unless ($args->{current_epoch} and $args->{seconds_to_expiration}) {
+            $self->error('Non zero arguments of \'from\' and \'to\' are required to get_volatility.');
+            return $self->long_term_vol;
+        }
+
+        $lookback_interval = Time::Duration::Concise->new(interval => max(900, $args->{seconds_to_expiration}) . 's');
+        my $fill_cache = $args->{fill_cache} // 1;
+
+        my $at    = BOM::Market::AggTicks->new;
+        my $ticks = $at->retrieve({
+            underlying   => $underlying,
+            interval     => $lookback_interval,
+            ending_epoch => $args->{current_epoch},
+            fill_cache   => $fill_cache,
+        });
+    }
 
     $self->error('Insufficient tick interval to get_volatility') if @$ticks <= $returns_sep;
 
