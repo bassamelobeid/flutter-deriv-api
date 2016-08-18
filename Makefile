@@ -13,9 +13,6 @@ json_schema:
 loadtest:
 	bash -c 'prove --timer -I./lib -I./t t/BOM/WebsocketAPI/v3/schema_suite/loadtest.t'
 
-loadtest:
-	bash -c 'prove --timer -I./lib -I./t t/BOM/WebsocketAPI/v3/schema_suite/loadtest.t'
-
 structure:
 	prove --timer -I./lib  -I./t t/BOM/*.t
 
