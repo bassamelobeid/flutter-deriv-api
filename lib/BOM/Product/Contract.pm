@@ -30,6 +30,7 @@ use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::EconomicEventCalendar;
 use BOM::Product::Offerings qw( get_contract_specifics get_offerings_flyby);
 use BOM::System::Chronicle;
+use Price::Calculator;
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -874,6 +875,7 @@ sub _build_corporate_actions {
 
 has price_calculator => (
     is         => 'ro',
+    isa        => 'Price::Calculator',
     lazy_build => 1,
     handles    => [
         qw/
@@ -887,23 +889,35 @@ has price_calculator => (
             base_commission
             commission_from_stake
             app_markup
-            payout
             /
     ],
 );
 
+has payout => (
+    is => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_payout {
+    my $self = @_;
+
+    return $self->price_calculator->payout;
+}
+
 sub _build_price_calculator {
     my $self = shift;
 
+# use Carp qw/cluck/;
+# cluck 'here';
     my $risk_markup = 0;
     if ($self->pricing_engine->can('risk_markup')) {
         $risk_markup = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->pricing_engine->risk_markup->amount;
     }
 
-    my $value;
-    if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
-        $value = $self->value;
-    }
+    # my $value;
+    # if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
+    #     $value = $self->value;
+    # }
 
     return Price::Calculator->new(
         market_name                 => $self->market->name,
@@ -917,8 +931,8 @@ sub _build_price_calculator {
         base_commission_max         => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
         base_commission_scaling     => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
         app_markup_percentage       => $self->app_markup_percentage,
-        payout                      => $self->payout,
-        value                       => $value,
+        ($self->has_payout) ? (payout => $self->payout) : (),
+        # value                       => $value,
     );
 }
 
