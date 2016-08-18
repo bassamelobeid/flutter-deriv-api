@@ -207,6 +207,7 @@ sub _match_conditions {
         next if exists $_no_condition{$k};    # skip test
         $real_tests_performed = 1;
         next if $v eq $ci->{$k};              # match: continue with next condition
+        keys %$custom;                        # to reset each iterator
         return;                               # no match
     }
 
