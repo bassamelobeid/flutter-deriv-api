@@ -112,6 +112,8 @@ sub cashier {
         $error = localize('Your account is disabled');
     } elsif ($client->cashier_setting_password) {
         $error = localize('Your cashier is locked as per your request.');
+    } elsif ($action eq 'withdraw' and $client->get_status('withdrawal_locked')) {
+        $error = localize('Your account is locked for withdrawals. Please contact customer service.');
     } elsif ($currency and not $landing_company->is_currency_legal($currency)) {
         $error = localize('[_1] transactions may not be performed with this account.', $currency);
     }
