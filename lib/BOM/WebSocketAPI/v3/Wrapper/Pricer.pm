@@ -415,8 +415,10 @@ sub _price_stream_results_adjustment {
         app_markup_percentage    => $contract_parameters->{app_markup_percentage},
 
     );
-    $results->{ask_price} = $results->{display_value} = $price_calculator->ask_price;
-
+    $results->{ask_price} =
+        $results->{display_value} =
+        $price_calculator->price_from_prob('ask_probability', $contract_parameters->{currency}); # TODO currency
+    $results->{payout} = $price_calculator->payout; # TODO does we have payout here?
 
 
 
