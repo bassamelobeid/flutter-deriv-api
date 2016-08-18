@@ -446,7 +446,6 @@ sub _build_risk_markup {
     });
 
     $risk_markup->include_adjustment('add', $self->economic_events_markup);
-    $risk_markup->include_adjustment('add', $self->eod_market_risk_markup) if not $bet->is_atm_bet;
 
     if ($bet->is_path_dependent) {
         my $iv_risk = Math::Util::CalculatedValue::Validatable->new({
@@ -477,15 +476,6 @@ sub _build_risk_markup {
             base_amount => 0.015,
         });
         $risk_markup->include_adjustment('add', $illiquid_market_markup);
-    }
-    if ($bet->underlying->submarket->name eq 'minor_pairs') {
-        my $minor_fx_market_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'minor_fx_market_markup',
-            description => 'Intraday::Forex markup factor for minor fx pairs',
-            set_by      => __PACKAGE__,
-            base_amount => 0.02,
-        });
-        $risk_markup->include_adjustment('add', $minor_fx_market_markup);
     }
 
     return $risk_markup;
