@@ -71,7 +71,6 @@ subtest 'what happens to an undefined symbol name' => sub {
 
     is($symbol_undefined->pipsized_value(100.1234567), 100.1235, 'an undefined symbol has correct pipsized_value');
 
-    is($symbol_undefined->commission_level, 3,     'an undefined symbol has correct commission_level');
     is($symbol_undefined->spot_spread_size, 50,    'an undefined symbol has correct spot_spread_size');
     is($symbol_undefined->spot_spread,      0.005, 'an undefined symbol has correct spot_spread');
     is($symbol_undefined->delay_amount,     0,     'an undefined symbol has correct delay_amount');
@@ -207,9 +206,6 @@ subtest 'all attributes on a variety of underlyings' => sub {
         if ($underlying->quanto_only or $market eq 'config') {
             is(scalar keys %{$underlying->contracts}, 0, 'Special things should not have contracts');
         }
-        cmp_ok($underlying->commission_level, '==', int $underlying->commission_level, 'Commission level is an integer');
-        cmp_ok($underlying->commission_level, '>=', 1,                                 'and it is at least 1');
-        cmp_ok($underlying->commission_level, '<=', 3,                                 'but not greater than 3');
 
         if ($underlying->inverted) {
             isnt($underlying->system_symbol, $underlying->symbol, 'Inverted underlying has a different sysmbol than system_symbol');
