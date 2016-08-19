@@ -146,17 +146,14 @@ has basis_tick => (
 sub _build_basis_tick {
     my $self = shift;
 
-    my $waiting_for_entry_tick = localize('Waiting for entry tick.');
-    my $missing_market_data    = localize('Trading on this market is suspended due to missing market data.');
     my ($basis_tick, $potential_error);
 
-    # basis_tick is only set to entry_tick when the contract has started.
-    if ($self->pricing_new) {
-        $basis_tick = $self->current_tick;
-        $potential_error = $self->starts_as_forward_starting ? $waiting_for_entry_tick : $missing_market_data;
-    } else {
+    if (not $self->pricing_new and not $self->is_forward_starting) {
         $basis_tick      = $self->entry_tick;
-        $potential_error = $waiting_for_entry_tick;
+        $potential_error = localize('Waiting for entry tick.');
+    } else {
+        $basis_tick      = $self->current_tick;
+        $potential_error = localize('Trading on this market is suspended due to missing market data.');
     }
 
     # if there's no basis tick, don't die but catch the error.
@@ -433,6 +430,11 @@ has [qw(volsurface)] => (
 # discounted_probability - The discounted total probability, given the time value of the money at stake.
 # timeindays/timeinyears - note that for FX contracts of >=1 duration, these values will follow the market convention of integer days
 has [qw(
+        ask_probability
+        theo_probability
+        bid_probability
+        discounted_probability
+        bs_probability
         timeinyears
         timeindays
         )
@@ -629,6 +631,8 @@ sub _build_current_tick {
 sub _build_pricing_new {
     my $self = shift;
 
+    # Forward starting contract bought. Not a new contract.
+    return 0 if $self->starts_as_forward_starting;
     # do not use $self->date_pricing here because milliseconds matters!
     # _date_pricing_milliseconds will not be set if date_pricing is not built.
     my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
@@ -699,26 +703,39 @@ sub _build_opposite_contract {
     # Start by making a copy of the parameters we used to build this bet.
     my %opp_parameters = %{$self->build_parameters};
 
-    # we still want to set for_sale for a forward_starting contracts
-    $opp_parameters{for_sale} = 1;
-    # delete traces of this contract were a forward starting contract before.
-    delete $opp_parameters{starts_as_forward_starting};
-    # duration could be set for an opposite contract from bad hash reference reused.
-    delete $opp_parameters{duration};
-
-    if (not $self->is_forward_starting) {
-        if ($self->entry_tick) {
-            foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-                $opp_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
-            }
-        }
-        # We should be looking to move forward in time to a bet starting now.
-        $opp_parameters{date_start}  = $self->effective_start;
+    my @opposite_contract_parameters = qw(volsurface fordom forqqq domqqq);
+    if ($self->pricing_new) {
+        # setup the parameters for an opposite contract.
+        $opp_parameters{date_start}  = $self->date_start;
         $opp_parameters{pricing_new} = 1;
-        # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
-        # Currently, 'sell at market' button will appear when current spot == barrier when the duration
-        # of the contract is less than the minimum duration of non ATM contract.
-        $opp_parameters{is_atm_bet} = 0 if ($self->category_code eq 'callput');
+        push @opposite_contract_parameters, qw(pricing_engine_name pricing_spot r_rate q_rate pricing_vol discount_rate mu barriers_for_pricing);
+        push @opposite_contract_parameters, qw(empirical_volsurface long_term_prediction news_adjusted_pricing_vol)
+            if $self->priced_with_intraday_model;
+    } else {
+        # not pricing_new will only happen when we are repricing an
+        # existing contract in our system.
+
+        # we still want to set for_sale for a forward_starting contracts
+        $opp_parameters{for_sale} = 1;
+        # delete traces of this contract were a forward starting contract before.
+        delete $opp_parameters{starts_as_forward_starting};
+        # duration could be set for an opposite contract from bad hash reference reused.
+        delete $opp_parameters{duration};
+
+        if (not $self->is_forward_starting) {
+            if ($self->entry_tick) {
+                foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
+                    $opp_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
+                }
+            }
+            # We should be looking to move forward in time to a bet starting now.
+            $opp_parameters{date_start}  = $self->effective_start;
+            $opp_parameters{pricing_new} = 1;
+            # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
+            # Currently, 'sell at market' button will appear when current spot == barrier when the duration
+            # of the contract is less than the minimum duration of non ATM contract.
+            $opp_parameters{is_atm_bet} = 0 if ($self->category_code eq 'callput');
+        }
     }
 
     # Always switch out the bet type for the other side.
@@ -726,7 +743,7 @@ sub _build_opposite_contract {
     # Don't set the shortcode, as it will change between these.
     delete $opp_parameters{'shortcode'};
     # Save a round trip.. copy market data
-    foreach my $vol_param (qw(volsurface fordom forqqq domqqq)) {
+    foreach my $vol_param (@opposite_contract_parameters) {
         $opp_parameters{$vol_param} = $self->$vol_param;
     }
 
@@ -867,11 +884,6 @@ has price_calculator => (
     lazy_build => 1,
     handles    => [
         qw/
-            theo_probability
-            ask_probability
-            bid_probability
-            bs_probability
-            discounted_probability
             base_commission
             commission_markup
             commission_from_stake
@@ -895,27 +907,37 @@ sub _build_price_calculator {
     }
 
     return Price::Calculator->new({
-        market_name                   => $self->market->name,
-        new_interface_engine          => $self->new_interface_engine,
-        pricing_engine_name           => $self->pricing_engine_name,
-        pricing_engine_probability    => $self->pricing_engine->probability,
-        pricing_engine_bs_probability => $self->pricing_engine->bs_probability,
-        pricing_engine_risk_markup    => $risk_markup,
-        maximum_total_markup          => BOM::System::Config::quants->{commission}->{maximum_total_markup},
-        base_commission_min           => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
-        base_commission_max           => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
-        base_commission_scaling       => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
-        underlying_base_commission    => $self->underlying->base_commission,
-        app_markup_percentage         => $self->app_markup_percentage,
-        value                         => $value,
-        currency                      => $self->{currency},
-        ($self->has_payout)    ? (payout    => $self->payout)    : (),
-        ($self->has_ask_price) ? (ask_price => $self->ask_price) : (),
+            market_name                   => $self->market->name,
+            new_interface_engine          => $self->new_interface_engine,
+            pricing_engine_name           => $self->pricing_engine_name,
+            pricing_engine_probability    => $self->pricing_engine->probability,
+            pricing_engine_bs_probability => $self->pricing_engine->bs_probability,
+            pricing_engine_risk_markup    => $risk_markup,
+
+            maximum_total_markup    => BOM::System::Config::quants->{commission}->{maximum_total_markup},
+            base_commission_min     => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
+            base_commission_max     => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
+            base_commission_scaling => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
+
+            underlying_base_commission => $self->underlying->base_commission,
+            app_markup_percentage      => $self->app_markup_percentage,
+            value                      => $value,
+            currency                   => $self->currency,
+            timeinyears                => $self->timeinyears,
+            discount_rate              => $self->discount_rate,
+
+            ($self->has_payout)                 ? (payout                 => $self->payout)                 : (),
+            ($self->has_ask_price)              ? (ask_price              => $self->ask_price)              : (),
+            ($self->has_theo_probability)       ? (theo_probability       => $self->theo_probability)       : (),
+            ($self->has_ask_probability)        ? (ask_probability        => $self->ask_probability)        : (),
+            ($self->has_bs_probability)         ? (bs_probability         => $self->bs_probability)         : (),
+            ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
     });
 }
 
 has payout => (
     is         => 'ro',
+    ias        => 'Num',
     lazy_build => 1,
 );
 
@@ -923,6 +945,30 @@ sub _build_payout {
     my ($self) = @_;
 
     return $self->price_calculator->payout;
+}
+
+sub _build_theo_probability {
+    my $self = shift;
+
+    return $self->price_calculator->theo_probability;
+}
+
+sub _build_ask_probability {
+    my $self = shift;
+
+    return $self->price_calculator->ask_probability;
+}
+
+sub _build_bs_probability {
+    my $self = shift;
+
+    return $self->price_calculator->bs_probability;
+}
+
+sub _build_discounted_probability {
+    my $self = shift;
+
+    return $self->price_calculator->discounted_probability;
 }
 
 # We adopt "near-far" methodology to price in dividends by adjusting spot and strike.
@@ -965,42 +1011,10 @@ sub _build_dividend_adjustment {
 
 }
 
-sub _build_discounted_probability {
-    my $self = shift;
-
-    my $discount = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'discounted_probability',
-        description => 'The discounted probability for both sides of this contract.  Time value.',
-        set_by      => 'BOM::Product::Contract discount_rate and bet duration',
-        minimum     => 0,
-        maximum     => 1,
-    });
-
-    my $quanto = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'discount_rate',
-        description => 'The rate for the payoff currency',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => $self->discount_rate,
-    });
-    my $discount_rate = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'discount_rate',
-        description => 'Full rate to use for discounting.',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => -1,
-    });
-
-    $discount_rate->include_adjustment('multiply', $quanto);
-    $discount_rate->include_adjustment('multiply', $self->timeinyears);
-
-    $discount->include_adjustment('exp', $discount_rate);
-
-    return $discount;
-}
-
 sub _build_bid_price {
     my $self = shift;
 
-    return $self->price_calculator->price_from_prob('bid_probability', $self->{currency});
+    return $self->price_calculator->price_from_prob('bid_probability');
 }
 
 sub is_valid_to_buy {
@@ -1091,7 +1105,7 @@ sub _validate_settlement_conditions {
 sub _build_ask_price {
     my $self = shift;
 
-    return $self->price_calculator->price_from_prob('ask_probability', $self->{currency});
+    return $self->price_calculator->price_from_prob('ask_probability');
 }
 
 sub commission_multiplier {
@@ -1119,22 +1133,19 @@ sub _build_app_markup_dollar_amount {
 sub _build_bs_price {
     my $self = shift;
 
-    return $self->price_calculator->price_from_prob('bs_probability', $self->{currency});
+    return $self->price_calculator->price_from_prob('bs_probability');
 }
 
 sub _build_theo_price {
     my $self = shift;
 
-    return $self->price_calculator->price_from_prob('theo_probability', $self->{currency});
+    return $self->price_calculator->price_from_prob('theo_probability');
 }
 
 sub _build_shortcode {
     my $self = shift;
 
-    my $shortcode_date_start = (
-               $self->is_forward_starting
-            or $self->starts_as_forward_starting
-    ) ? $self->date_start->epoch . 'F' : $self->date_start->epoch;
+    my $shortcode_date_start = $self->is_forward_starting ? $self->date_start->epoch . 'F' : $self->date_start->epoch;
     my $shortcode_date_expiry =
           ($self->tick_expiry)  ? $self->tick_count . 'T'
         : ($self->fixed_expiry) ? $self->date_expiry->epoch . 'F'
