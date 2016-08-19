@@ -19,6 +19,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use File::Slurp;
+use RateLimitations qw (flush_all_service_consumers);
 
 system("sudo date -s '2016-08-09 11:59:00'");
 initialize_realtime_ticks_db();
@@ -36,8 +37,9 @@ for my $i (1 .. 10) {
     sleep 1;
 }
 
-my $stash  = {};
-my $module = Test::MockModule->new('Mojolicious::Controller');
+my $streams = {};
+my $stash   = {};
+my $module  = Test::MockModule->new('Mojolicious::Controller');
 $module->mock(
     'stash',
     sub {
@@ -53,18 +55,21 @@ my @lines = File::Slurp::read_file('t/BOM/WebsocketAPI/v3/schema_suite/suite.con
 
 my $response;
 my $counter = 0;
+my $reset_time = time + 30;
 
 my $t;
 my ($lang, $last_lang, $reset) = '';
+flush_all_service_consumers();
 foreach my $line (@lines) {
     # we are setting the time backward to 12:00:00 for every
     # tests to ensure time sensitive tests (pricing tests) always start at the same time.
-    system("sudo date -s '2016-08-09 12:00:00'");
+    system("sudo date -s \@$reset_time");
+    $reset_time++;
     chomp $line;
     $counter++;
     next if ($line =~ /^(#.*|)$/);
 
-# arbitrary perl code
+    # arbitrary perl code
     if ($line =~ s/^\[%(.*?)%\]//) {
         eval $1;
         die $@ if $@;
@@ -84,31 +89,82 @@ foreach my $line (@lines) {
         $fail = 1;
     }
 
-    my ($send_file, $receive_file, @template_func) = split(',', $line);
-    chomp $receive_file;
-    diag("\nRunning line $counter [$send_file, $receive_file]\n");
-
-    $send_file =~ /^(.*)\//;
-    my $call = $1;
-
-    my $content = File::Slurp::read_file('config/v3/' . $send_file);
-    $content = _get_values($content, @template_func);
-
-    if ($lang || !$t || $reset) {
-        $t         = build_mojo_test({($lang ne '' ? (language => $lang) : (language => $last_lang))});
-        $last_lang = $lang;
-        $lang      = '';
-        $reset     = '';
+    my $start_stream_id;
+    if ($line =~ s/^\{start_stream:(.+?)\}//) {
+        $start_stream_id = $1;
+    }
+    my $test_stream_id;
+    if ($line =~ s/^\{test_last_stream_message:(.+?)\}//) {
+        $test_stream_id = $1;
     }
 
-    $t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
-    my $result = decode_json($t->message->[1]);
-    $response->{$call} = $result->{$call};
+    my ($send_file, $receive_file, @template_func);
+    if ($test_stream_id) {
+        ($receive_file, @template_func) = split(',', $line);
+        chomp $receive_file;
+        diag("\nRunning line $counter [$receive_file]\n");
+        diag("\nTesting stream [$test_stream_id]\n");
+        my $content = File::Slurp::read_file('config/v3/' . $receive_file);
+        $content = _get_values($content, @template_func);
+        die 'wrong stream_id' unless $streams->{$test_stream_id};
+        my $result = {};
+        my @stream_data = @{$streams->{$test_stream_id}->{stream_data} || []};
+        $result = $stream_data[-1] if @stream_data;
+        _test_schema($receive_file, $content, $result, $fail);
+    } else {
+        ($send_file, $receive_file, @template_func) = split(',', $line);
+        chomp $send_file;
+        chomp $receive_file;
+        diag("\nRunning line $counter [$send_file, $receive_file]\n");
+        $send_file =~ /^(.*)\//;
+        my $call = $1;
 
-    $content = File::Slurp::read_file('config/v3/' . $receive_file);
+        my $content = File::Slurp::read_file('config/v3/' . $send_file);
+        $content = _get_values($content, @template_func);
+        my $req_params = JSON::from_json($content);
 
-    $content = _get_values($content, @template_func);
-    _test_schema($receive_file, $content, $result, $fail);
+        die 'wrong stream parameters' if $start_stream_id && !$req_params->{subscribe};
+
+        if ($lang || !$t || $reset) {
+            my $lang_params = {($lang ne '' ? (language => $lang) : (language => $last_lang))};
+            $t         = build_mojo_test($lang_params, {}, \&store_stream_data);
+            $last_lang = $lang;
+            $lang      = '';
+            $reset     = '';
+        }
+
+        $t = $t->send_ok({json => $req_params});
+        my $i = 0;
+        my $result;
+        my @subscribed_streams_ids = map { $_->{id} } values %$streams;
+        while ($i++ < 5 && !$result) {
+            $t->message_ok;
+            my $message = decode_json($t->message->[1]);
+            # skip subscribed stream's messages
+            next
+                if ref $message->{$message->{msg_type}} eq 'HASH'
+                && grep { $message->{$message->{msg_type}}->{id} && $message->{$message->{msg_type}}->{id} eq $_ } @subscribed_streams_ids;
+            $result = $message;
+        }
+        if ($i >= 5) {
+            diag("There isn't testing message in last 5 stream messages");
+            next;
+        }
+        $response->{$call} = $result->{$call};
+
+        if ($start_stream_id) {
+            my $id = $result->{$call}->{id};
+            die 'wrong stream response' unless $id;
+            die 'already exists same stream_id' if $streams->{$start_stream_id};
+            $streams->{$start_stream_id}->{id}        = $id;
+            $streams->{$start_stream_id}->{call_name} = $call;
+        }
+
+        $content = File::Slurp::read_file('config/v3/' . $receive_file);
+
+        $content = _get_values($content, @template_func);
+        _test_schema($receive_file, $content, $result, $fail);
+    }
 }
 
 done_testing();
@@ -211,6 +267,21 @@ sub _set_allow_omnibus {
     $client->save();
 
     return $r;
+}
+
+sub store_stream_data {
+    my ($tx, $result) = @_;
+    my $call_name;
+    for my $stream_id (keys %$streams) {
+        my $stream = $streams->{$stream_id};
+        $call_name = $stream->{call_name} if exists $result->{$stream->{call_name}};
+    }
+    return unless $call_name;
+    for my $stream_id (keys %$streams) {
+        push @{$streams->{$stream_id}->{stream_data}}, $result
+            if $result->{$call_name}->{id} && $result->{$call_name}->{id} eq $streams->{$stream_id}->{id};
+    }
+    return;
 }
 
 sub _setup_market_data {
