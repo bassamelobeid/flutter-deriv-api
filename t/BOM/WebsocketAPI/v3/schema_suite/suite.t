@@ -182,7 +182,7 @@ sub _get_values {
             $f =~ s/^\'|\'$//g;
             $template_content = $f;
         }
-        $template_content = '' unless defined $template_content;
+        $template_content //= '';
         $content =~ s/\[_$c\]/$template_content/mg;
     }
     return $content;
