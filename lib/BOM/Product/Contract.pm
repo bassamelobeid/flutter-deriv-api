@@ -882,15 +882,7 @@ has price_calculator => (
     is         => 'ro',
     isa        => 'Price::Calculator',
     lazy_build => 1,
-    handles    => [
-        qw/
-            base_commission
-            commission_markup
-            commission_from_stake
-            risk_markup
-            app_markup
-            /
-    ],
+    handles    => [qw/commission_from_stake/],
 );
 
 sub _build_price_calculator {
@@ -918,6 +910,9 @@ sub _build_price_calculator {
             base_commission_min     => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
             base_commission_max     => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
             base_commission_scaling => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
+            ($self->has_commission_markup) ? (commission_markup => $self->commission_markup) : (),
+            ($self->has_risk_markup)       ? (risk_markup       => $self->risk_markup)       : (),
+            ($self->has_base_commission)   ? (base_commission   => $self->base_commission)   : (),
 
             underlying_base_commission => $self->underlying->base_commission,
             app_markup_percentage      => $self->app_markup_percentage,
@@ -1119,10 +1114,18 @@ has app_markup_percentage => (
     default => 0,
 );
 
-has [qw(app_markup_dollar_amount)] => (
+sub _build_app_markup_percentage {
+    return shift->price_calculator->app_markup_percentage;
+}
+
+has [qw(app_markup_dollar_amount app_markup)] => (
     is         => 'ro',
     lazy_build => 1,
 );
+
+sub _build_app_markup {
+    return shift->price_calculator->app_markup;
+}
 
 sub _build_app_markup_dollar_amount {
     my $self = shift;
@@ -1134,6 +1137,25 @@ sub _build_bs_price {
     my $self = shift;
 
     return $self->price_calculator->price_from_prob('bs_probability');
+}
+
+# base_commission can be overridden on contract type level.
+# When this happens, underlying base_commission is ignored.
+has [qw(risk_markup commission_markup base_commission)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_risk_markup {
+    return shift->price_calculator->risk_markup;
+}
+
+sub _build_commission_markup {
+    return shift->price_calculator->commission_markup;
+}
+
+sub _build_base_commission {
+    return shift->price_calculator->base_commission;
 }
 
 sub _build_theo_price {
