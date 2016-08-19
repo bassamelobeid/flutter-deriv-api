@@ -47,11 +47,6 @@ has [qw(id pricing_code display_name sentiment other_side_code payout_type payou
     default => undef,
 );
 
-has [qw(long_term_prediction)] => (
-    is      => 'rw',
-    default => undef,
-);
-
 has is_expired => (
     is         => 'ro',
     lazy_build => 1,
@@ -562,15 +557,9 @@ sub _build_pricing_engine {
 
     my $pricing_engine;
     if ($self->priced_with_intraday_model) {
-        my $applicable_ticks = BOM::Market::AggTicks->new->retrieve({
-            underlying   => $self->underlying,
-            ending_epoch => $self->effective_start,
-            interval     => $self->remaining_time,
-        });
         $pricing_engine = $self->pricing_engine_name->new(
-            bet             => $self,
-            ticks           => $applicable_ticks,
-            economic_events => $self->economic_events_for_volatility_calculation,
+            bet                       => $self,
+            volatility_scaling_factor => $self->pricing_args->{volatility_scaling_factory},
         );
     } elsif ($self->new_interface_engine) {
         my %pricing_parameters = map { $_ => $self->_pricing_parameters->{$_} } @{$self->pricing_engine_name->required_args};
@@ -725,7 +714,7 @@ sub _build_opposite_contract {
         $opp_parameters{date_start}  = $self->date_start;
         $opp_parameters{pricing_new} = 1;
         push @opposite_contract_parameters, qw(pricing_engine_name pricing_spot r_rate q_rate pricing_vol discount_rate mu barriers_for_pricing);
-        push @opposite_contract_parameters, qw(empirical_volsurface long_term_prediction news_adjusted_pricing_vol)
+        push @opposite_contract_parameters, qw(empirical_volsurface news_adjusted_pricing_vol)
             if $self->priced_with_intraday_model;
     } else {
         # not pricing_new will only happen when we are repricing an
@@ -1403,8 +1392,9 @@ sub _build_pricing_args {
     };
 
     if ($self->priced_with_intraday_model) {
-        $args->{long_term_prediction} = $self->long_term_prediction;
-        $args->{iv_with_news}         = $self->news_adjusted_pricing_vol;
+        $args->{long_term_prediction}      = $self->empirical_volsurface->long_term_prediction;
+        $args->{volatility_scaling_factor} = $self->empirical_volsurface->volatility_scaling_factor;
+        $args->{iv_with_news}              = $self->news_adjusted_pricing_vol;
     }
 
     return $args;
@@ -1439,7 +1429,6 @@ sub _build_pricing_vol {
             economic_events       => $self->economic_events_for_volatility_calculation,
             uses_flat_vol         => $uses_flat_vol,
         });
-        $self->long_term_prediction($volsurface->long_term_prediction);
         if ($volsurface->error) {
             $self->add_error({
                 message => 'Too few periods for historical vol calculation '
