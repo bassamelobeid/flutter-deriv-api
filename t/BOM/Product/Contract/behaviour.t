@@ -24,8 +24,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         type          => 'early_closes',
         recorded_date => Date::Utility->new('2016-01-01'),
-        # dummy early close
-        calendar => {
+        # dummy early close 
+        calendar      => {
             '22-Dec-2016' => {
                 '18h00m' => ['FOREX'],
             },
@@ -81,11 +81,11 @@ subtest 'entry tick == exit tick' => sub {
 subtest 'entry tick before contract start (only forward starting contracts)' => sub {
     my $contract_duration = 5 * 60;
     create_ticks(([101, $now->epoch - 2, 'R_100'], [103, $now->epoch + $contract_duration, 'R_100']));
-    $bet_params->{date_start}                 = $now;
-    $bet_params->{duration}                   = $contract_duration . 's';
-    $bet_params->{is_forward_starting}        = 1;
+    $bet_params->{date_start}          = $now;
+    $bet_params->{duration}            = $contract_duration . 's';
+    $bet_params->{is_forward_starting} = 1;
     $bet_params->{starts_as_forward_starting} = 1;
-    $bet_params->{date_pricing}               = $now->epoch + $contract_duration + 1;
+    $bet_params->{date_pricing}        = $now->epoch + $contract_duration + 1;
     my $c = produce_contract($bet_params);
     ok $c->is_expired, 'contract expired';
     is $c->entry_tick->quote + 0, 101, 'entry tick is 101';
@@ -95,15 +95,15 @@ subtest 'entry tick before contract start (only forward starting contracts)' => 
 
 subtest 'waiting for entry tick' => sub {
     create_ticks();
-    $bet_params->{date_start}   = $now;
-    $bet_params->{date_pricing} = $now->epoch + 1;
-    $bet_params->{duration}     = '1h';
+    $bet_params->{date_start}          = $now;
+    $bet_params->{date_pricing}        = $now->epoch + 1;
+    $bet_params->{duration}            = '1h';
     delete $bet_params->{is_forward_starting};
     delete $bet_params->{starts_as_forward_starting};
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_sell, 'not valid to sell';
     like($c->primary_validation_error->message, qr/Waiting for entry tick/, 'throws error');
-    create_ticks([101, $now->epoch + 1, 'R_100']);
+    create_ticks([101, $now->epoch+1, 'R_100']);
     $c = produce_contract($bet_params);
     ok $c->entry_tick,       'entry tick defined';
     ok $c->is_valid_to_sell, 'valid to sell';
@@ -118,23 +118,23 @@ subtest 'waiting for entry tick' => sub {
 };
 
 subtest 'tick expiry contract settlement' => sub {
-    create_ticks([100, $now->epoch - 1, 'R_100'], [101, $now->epoch + 1, 'R_100']);
-    $bet_params->{date_start}   = $now;
+    create_ticks([100, $now->epoch - 1, 'R_100'],[101, $now->epoch + 1, 'R_100']);
+    $bet_params->{date_start} = $now;
     $bet_params->{date_pricing} = $now->epoch + 299;
-    $bet_params->{duration}     = '5t';
+    $bet_params->{duration} = '5t';
     my $c = produce_contract($bet_params);
     ok $c->tick_expiry, 'tick expiry contract';
-    ok !$c->is_expired,       'not expired';
-    ok !$c->exit_tick,        'no exit tick';
-    ok !$c->is_after_expiry,  'not after expiry';
+    ok !$c->is_expired, 'not expired';
+    ok !$c->exit_tick, 'no exit tick';
+    ok !$c->is_after_expiry, 'not after expiry';
     ok !$c->is_valid_to_sell, 'not valid to sell';
-    like($c->primary_validation_error->message, qr/resale of tick expiry contract/, 'throws error');
+    like ($c->primary_validation_error->message, qr/resale of tick expiry contract/, 'throws error');
 
     $bet_params->{date_pricing} = $now->epoch + 301;
     $c = produce_contract($bet_params);
     ok $c->tick_expiry, 'tick expiry contract';
     ok !$c->is_expired, 'not expired';
-    ok !$c->exit_tick,  'no exit tick';
+    ok !$c->exit_tick, 'no exit tick';
     ok $c->is_after_expiry, 'is after expiry';
     ok !$c->is_valid_to_sell, 'not valid to sell';
     like($c->primary_validation_error->message, qr/exit tick undefined after 5 minutes of contract start/, 'throws error');
@@ -149,9 +149,9 @@ subtest 'tick expiry contract settlement' => sub {
         [102, $now->epoch + 299, 'R_100']);
     $bet_params->{date_pricing} = $now->epoch + 299;
     $c = produce_contract($bet_params);
-    ok $c->tick_expiry,      'tick expiry contract';
-    ok $c->is_expired,       'expired';
-    ok $c->exit_tick,        'has exit tick';
+    ok $c->tick_expiry, 'tick expiry contract';
+    ok $c->is_expired, 'expired';
+    ok $c->exit_tick, 'has exit tick';
     ok $c->is_valid_to_sell, 'valid to sell';
 };
 
@@ -188,8 +188,8 @@ subtest 'intraday duration contract settlement' => sub {
     create_ticks([101, $now->epoch + 1, 'R_100']);
     $c = produce_contract($bet_params);
     ok $c->is_after_expiry, 'after expiry';
-    ok !$c->exit_tick,           'no exit tick';
-    ok !$c->is_valid_to_sell,    'not valid to sell';
+    ok !$c->exit_tick,        'no exit tick';
+    ok !$c->is_valid_to_sell, 'not valid to sell';
     ok !$c->missing_market_data, 'no missing market data while waiting for exit tick after expiry';
     like($c->primary_validation_error->message, qr/exit tick is undefined/, 'throws error');
 };
@@ -197,99 +197,101 @@ subtest 'intraday duration contract settlement' => sub {
 subtest 'longcode misbehaving for daily contracts' => sub {
     $bet_params->{duration} = '2d';
     my $c = produce_contract($bet_params);
-    ok $c->expiry_daily,                    'multiday contract';
+    ok $c->expiry_daily, 'multiday contract';
     is $c->effective_daily_trading_seconds, 86399;
-    is $c->expiry_type,                     'daily';
+    is $c->expiry_type, 'daily';
     my $expiry_daily_longcode = $c->longcode;
     $bet_params->{date_pricing} = $c->date_start->plus_time_interval('2d');
     $c = produce_contract($bet_params);
     is $c->effective_daily_trading_seconds, 86399;
-    is $c->expiry_type,                     'intraday';
-    ok $c->is_intraday,                     'date_pricing reaches intraday';
-    is $c->longcode,                        $expiry_daily_longcode, 'longcode does not change';
+    is $c->expiry_type, 'intraday';
+    ok $c->is_intraday, 'date_pricing reaches intraday';
+    is $c->longcode, $expiry_daily_longcode, 'longcode does not change';
 };
 
 subtest 'longcode of daily contracts crossing Thursday 21GMT expiring on Friday' => sub {
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463087154_1463173200_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
-    ok $c2->expiry_daily,                   'multiday contract';
-    is $c2->longcode,                       'Win payout if GBP/USD is strictly lower than entry spot at close on 2016-05-13.';
+    ok $c2->expiry_daily, 'multiday contract';
+    is $c2->longcode, 'Win payout if GBP/USD is strictly lower than entry spot at close on 2016-05-13.';
     is $c->effective_daily_trading_seconds, 75600;
-    is $c->expiry_type,                     'daily';
+    is $c->expiry_type, 'daily';
     my $expiry_daily_longcode = $c2->longcode;
-    $c2 = make_similar_contract($c, {date_pricing => $c->date_start->plus_time_interval('5h')});
-    ok $c2->is_intraday,                    'date_pricing reaches intraday';
-    is $c2->longcode,                       $expiry_daily_longcode, 'longcode does not change';
+    $c2 = make_similar_contract($c , {date_pricing => $c->date_start->plus_time_interval('5h')});
+    ok $c2->is_intraday, 'date_pricing reaches intraday';
+    is $c2->longcode, $expiry_daily_longcode, 'longcode does not change';
     is $c->effective_daily_trading_seconds, 75600;
-    is $c->expiry_type,                     'daily';
-
+    is $c->expiry_type, 'daily';
+ 
 };
 
 subtest 'longcode of daily contracts at 10 minutes before friday close' => sub {
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463172600_1463173200_S0P_0', 'usd');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
-    is $c2->longcode,                        'Win payout if GBP/USD is strictly lower than entry spot at 10 minutes after contract start time.';
+    is $c2->longcode, 'Win payout if GBP/USD is strictly lower than entry spot at 10 minutes after contract start time.';
     is $c2->effective_daily_trading_seconds, 75600;
-    is $c2->expiry_type,                     'intraday';
-    ok $c2->is_intraday,                     'is an intraday contract';
+    is $c2->expiry_type, 'intraday';
+    ok $c2->is_intraday, 'is an intraday contract';
 };
 
 subtest 'longcode of 22 hours contract from Thursday 3GMT' => sub {
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463022000_1463101200_S0P_0', 'usd');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
-    is $c2->longcode,                        'Win payout if GBP/USD is strictly lower than entry spot at 22 hours after contract start time.';
+    is $c2->longcode, 'Win payout if GBP/USD is strictly lower than entry spot at 22 hours after contract start time.';
     is $c2->effective_daily_trading_seconds, 75600;
-    is $c2->expiry_type,                     'intraday';
-    ok $c2->is_intraday,                     'is an intraday contract';
+    is $c2->expiry_type, 'intraday';
+    ok $c2->is_intraday, 'is an intraday contract';
 };
+
+
 
 subtest 'longcode of index daily contracts' => sub {
     my $c = produce_contract('PUT_GDAXI_166.27_1469523600_1469633400_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
-    ok $c2->expiry_daily,                   'is daily contract';
-    is $c2->longcode,                       'Win payout if German Index is strictly lower than entry spot at close on 2016-07-27.';
+    ok $c2->expiry_daily, 'is daily contract';
+    is $c2->longcode, 'Win payout if German Index is strictly lower than entry spot at close on 2016-07-27.';
     is $c->effective_daily_trading_seconds, 30600;
-    is $c->expiry_type,                     'daily';
+    is $c->expiry_type, 'daily';
     my $expiry_daily_longcode = $c2->longcode;
-    $c2 = make_similar_contract($c, {date_pricing => $c->date_start->plus_time_interval('8h')});
-    ok $c2->expiry_daily,                   'is daily contract';
-    is $c2->longcode,                       $expiry_daily_longcode, 'longcode does not change';
+    $c2 = make_similar_contract($c , {date_pricing => $c->date_start->plus_time_interval('8h')});
+    ok $c2->expiry_daily, 'is daily contract';
+    is $c2->longcode, $expiry_daily_longcode, 'longcode does not change';
     is $c->effective_daily_trading_seconds, 30600;
-    is $c->expiry_type,                     'daily';
-    $c2 = make_similar_contract($c, {date_pricing => $c->date_start->plus_time_interval('24h')});
-    ok $c2->is_intraday,                    'date_pricing reaches intraday';
-    is $c2->longcode,                       $expiry_daily_longcode, 'longcode does not change';
+    is $c->expiry_type, 'daily';
+    $c2 = make_similar_contract($c , {date_pricing => $c->date_start->plus_time_interval('24h')});
+    ok $c2->is_intraday, 'date_pricing reaches intraday';
+    is $c2->longcode, $expiry_daily_longcode, 'longcode does not change';
     is $c->effective_daily_trading_seconds, 30600;
-    is $c->expiry_type,                     'daily';
-
+    is $c->expiry_type, 'daily';
+ 
 };
 
 subtest 'longcode of daily contract on early close day' => sub {
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1482332400_1482429600_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
-    ok $c2->expiry_daily,                   'is a multiday contract';
-    is $c2->longcode,                       'Win payout if GBP/USD is strictly lower than entry spot at close on 2016-12-22.';
+    ok $c2->expiry_daily, 'is a multiday contract';
+    is $c2->longcode, 'Win payout if GBP/USD is strictly lower than entry spot at close on 2016-12-22.';
     is $c->effective_daily_trading_seconds, 64800;
-    is $c->expiry_type,                     'daily';
+    is $c->expiry_type, 'daily';
 };
 
 subtest 'longcode of intraday contracts' => sub {
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463126400_1463173200_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->is_intraday, 'is an contract';
-    is $c2->longcode,    'Win payout if GBP/USD is strictly lower than entry spot at 13 hours after contract start time.';
+    is $c2->longcode, 'Win payout if GBP/USD is strictly lower than entry spot at 13 hours after contract start time.';
 };
 
 subtest 'ATM and non ATM switches on sellback' => sub {
     my $now = Date::Utility->new;
     create_ticks([101, $now->epoch, 'R_100'], [100, $now->epoch + 1, 'R_100'], [100.1, $now->epoch + 2, 'R_100']);
-    $bet_params->{duration}     = '15m';
-    $bet_params->{date_start}   = $now;
+    $bet_params->{duration} = '15m';
+    $bet_params->{date_start} = $now;
     $bet_params->{date_pricing} = $now->epoch + 2;
-    $bet_params->{barrier}      = 'S10P';
+    $bet_params->{barrier} = 'S10P';
     my $c = produce_contract($bet_params);
-    is $c->current_spot + 0, 100.1, 'current tick is 100.1';
-    is $c->barrier->as_absolute + 0, 100.1, 'barrier is 100.1';
+    is $c->current_spot+0, 100.1, 'current tick is 100.1';
+    is $c->barrier->as_absolute+0, 100.1, 'barrier is 100.1';
     ok !$c->is_atm_bet, 'not atm bet';
 };
 

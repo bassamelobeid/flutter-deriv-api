@@ -368,7 +368,7 @@ for (my $time = $start->epoch; $time <= $end->epoch; $time += 300) {
             $previous{$symbol}->{$wha} ||= $current{$symbol}->{$wha};
             if ($wha eq 'date' and $current{$symbol}->{$wha} ne $previous{$symbol}->{$wha}) {
                 $previous{$symbol}->{$wha . '_changed'}++;
-                # get_volatility interface changes, it won't exactly match the numbers but close enough.
+            # get_volatility interface changes, it won't exactly match the numbers but close enough.
             } elsif ($wha eq 'value' and abs($current{$symbol}->{$wha} - $previous{$symbol}->{$wha}) > 0.0000001) {
                 $previous{$symbol}->{$wha . '_changed'}++;
             }

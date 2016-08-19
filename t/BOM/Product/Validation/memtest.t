@@ -88,9 +88,9 @@ my %correlations = map {
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'correlation_matrix',
     {
-        symbol        => 'indices',
-        correlations  => \%correlations,
-        recorded_date => Date::Utility->new->minus_time_interval('1d'),
+        symbol       => 'indices',
+        correlations => \%correlations,
+        recorded_date=> Date::Utility->new->minus_time_interval('1d'),
     });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

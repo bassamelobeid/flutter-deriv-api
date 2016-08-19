@@ -32,7 +32,7 @@ subtest 'app markup amount' => sub {
     });
 
     is $c2->app_markup->amount, 0.01, 'correct markup amount';
-    is $c2->payout + 0, 18.87, 'correct payout';
+    is $c2->payout+0, 18.87, 'correct payout';
     is $c2->app_markup_dollar_amount, 0.19, 'correct dollar amount';
 
     my $c = produce_contract({
@@ -43,7 +43,7 @@ subtest 'app markup amount' => sub {
         currency              => 'USD',
         amount_type           => 'payout',
         amount                => $c2->payout,
-        app_markup_percentage => 1,             # 1%
+        app_markup_percentage => 1,          # 1%
         base_commission       => 0.02,
     });
 
@@ -78,7 +78,7 @@ subtest 'price check for 1 x base_commission' => sub {
         base_commission       => 0.02,
         theo_probability      => $fake_theo,
     });
-    is $c2->ask_price + 0, 50, 'matched ask_price';
+    is $c2->ask_price+0, 50, 'matched ask_price';
 };
 
 subtest 'price check for 2 x base_commission' => sub {
@@ -107,7 +107,7 @@ subtest 'price check for 2 x base_commission' => sub {
         base_commission       => 0.02,
         theo_probability      => $fake_theo,
     });
-    is $c2->ask_price + 0, 30000, 'matched ask_price';
+    is $c2->ask_price+0, 30000, 'matched ask_price';
 };
 
 subtest 'price check for 1 to 2 x base_commission' => sub {
@@ -136,5 +136,5 @@ subtest 'price check for 1 to 2 x base_commission' => sub {
         base_commission       => 0.02,
         theo_probability      => $fake_theo,
     });
-    is $c2->ask_price + 0, 15000, 'matched ask_price';
+    is $c2->ask_price+0, 15000, 'matched ask_price';
 };

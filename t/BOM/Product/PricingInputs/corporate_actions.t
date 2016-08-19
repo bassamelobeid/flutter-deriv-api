@@ -27,9 +27,9 @@ my $storage_accessor = Quant::Framework::StorageAccessor->new(
     chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
     chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
 );
-my $date = Date::Utility->new('2013-03-27');
+my $date       = Date::Utility->new('2013-03-27');
 
-my $corp_apple  = Quant::Framework::CorporateAction::create($storage_accessor, 'USAAPL', $date);
+my $corp_apple = Quant::Framework::CorporateAction::create($storage_accessor, 'USAAPL', $date);
 my $corp_google = Quant::Framework::CorporateAction::create($storage_accessor, 'USGOOG', $date);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

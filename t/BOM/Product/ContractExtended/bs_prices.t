@@ -72,8 +72,8 @@ foreach my $code (@codes) {
     } elsif (defined $bits[3]) {
         $bet_args{barrier} = BOM::Product::Contract::Strike->strike_string($bits[3], $underlying, $bet_args{bet_type}, $bet_args{date_start});
     }
-    $bet_args{payout}     = 250;
-    $bet_args{currency}   = $currency;
+    $bet_args{payout}       = 250;
+    $bet_args{currency}     = $currency;
     $bet_args{entry_tick} = $bet_args{current_tick} = Quant::Framework::Spot::Tick->new({
         symbol => $underlying->symbol,
         epoch  => $start_time->epoch + 300,

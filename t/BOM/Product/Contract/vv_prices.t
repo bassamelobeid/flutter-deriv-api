@@ -20,11 +20,8 @@ my $now = Date::Utility->new('2014-11-11');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        rates  => {
-            8 => 0,
-            0 => 0
-        },
+        symbol        => $_,
+        rates         => {8 => 0, 0 => 0},
         recorded_date => $now,
     }) for (qw/JPY USD JPY-USD/);
 

@@ -23,28 +23,27 @@ initialize_realtime_ticks_db();
 my $client  = BOM::Platform::Client->new({loginid => 'CR2002'});
 my $account = $client->set_default_account('USD');
 my $db      = $client->set_db('write');
-my $comment_str =
-    'vega[-0.04668] atmf_fct[1.00000] div[0.00730] recalc[3.46000] int[0.00252] theta[1.53101] iv[0.14200] emp[2.62000] fwdst_fct[1.00000] win[5.00000] trade[3.46000] dscrt_fct[1.00000] spot[1.42080] gamma[-5.51036] delta[-0.07218] theo[2.48000] base_spread[0.39126] ia_fct[1.00000] news_fct[1.00000]';
+my $comment_str = 'vega[-0.04668] atmf_fct[1.00000] div[0.00730] recalc[3.46000] int[0.00252] theta[1.53101] iv[0.14200] emp[2.62000] fwdst_fct[1.00000] win[5.00000] trade[3.46000] dscrt_fct[1.00000] spot[1.42080] gamma[-5.51036] delta[-0.07218] theo[2.48000] base_spread[0.39126] ia_fct[1.00000] news_fct[1.00000]';
 my $comment_hash = {
-    vega        => -0.04668,
-    atmf_fct    => 1.00000,
-    div         => 0.00730,
-    recalc      => 3.46000,
-    int         => 0.00252,
-    theta       => 1.53101,
-    iv          => 0.14200,
-    emp         => 2.62000,
-    fwdst_fct   => 1.00000,
-    win         => 5.00000,
-    trade       => 3.46000,
-    dscrt_fct   => 1.00000,
-    spot        => 1.42080,
-    gamma       => -5.51036,
-    delta       => -0.07218,
-    theo        => 2.48000,
+    vega => -0.04668,
+    atmf_fct => 1.00000,
+    div => 0.00730,
+    recalc => 3.46000,
+    int => 0.00252,
+    theta => 1.53101,
+    iv => 0.14200,
+    emp => 2.62000,
+    fwdst_fct => 1.00000,
+    win => 5.00000,
+    trade => 3.46000,
+    dscrt_fct => 1.00000,
+    spot => 1.42080,
+    gamma => -5.51036,
+    delta => -0.07218,
+    theo => 2.48000,
     base_spread => 0.39126,
-    ia_fct      => 1.00000,
-    news_fct    => 1.00000,
+    ia_fct => 1.00000,
+    news_fct => 1.00000,
 };
 my $comment = [$comment_str, $comment_hash];
 
@@ -72,7 +71,7 @@ subtest 'check duplicate sell with Model' => sub {
             contract => $contract,
             client   => $client,
             price    => 3.46,
-            comment  => $comment,
+            comment => $comment,
         });
         $txn_buy->buy(skip_validation => 1);
         $txn_id = $txn_buy->transaction_id;
@@ -82,10 +81,10 @@ subtest 'check duplicate sell with Model' => sub {
     lives_ok {
         # sell
         my $txn = BOM::Product::Transaction->new({
-            contract    => $contract,
-            client      => $client,
-            price       => 1.95,
-            comment     => $comment,
+            contract => $contract,
+            client   => $client,
+            price    => 1.95,
+            comment => $comment,
             contract_id => $txn_buy->contract_id,
         });
         $txn->sell(skip_validation => 1);
@@ -126,7 +125,7 @@ subtest 'check duplicate sell with legacy line' => sub {
             contract => $contract,
             client   => $client,
             price    => 1.2,
-            comment  => $comment,
+            comment => $comment,
         });
         $txn_buy->buy(skip_validation => 1);
         $txn_id = $txn_buy->transaction_id;
@@ -157,10 +156,10 @@ subtest 'check duplicate sell with legacy line' => sub {
 
     # sell with Transaction::buy_sell_contract
     my $txn = BOM::Product::Transaction->new({
-        contract    => $contract,
-        client      => $client,
-        price       => 0,
-        comment     => $comment,
+        contract => $contract,
+        client   => $client,
+        price    => 0,
+        comment => $comment,
         contract_id => $txn_buy->contract_id,
     });
     my $error = $txn->sell(skip_validation => 1);

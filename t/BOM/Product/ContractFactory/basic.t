@@ -167,14 +167,12 @@ subtest 'invalid contracts does not die' => sub {
     lives_ok {
         my $contract = produce_contract($invalid_shortcode, 'GBP');
         isa_ok $contract, 'BOM::Product::Contract::Invalid';
-    }
-    'produce_contract on legacy shortcode lives';
+    } 'produce_contract on legacy shortcode lives';
 
     lives_ok {
         my @info = simple_contract_info($invalid_shortcode, 'GBP');
         like($info[0], qr/Legacy contract. No further information is available/, 'legacy longcode');
-    }
-    'simple_contract_info for legacy shortcode lives';
+    } 'simple_contract_info for legacy shortcode lives';
 };
 
 subtest 'unknown shortcode does not die' => sub {
@@ -182,8 +180,7 @@ subtest 'unknown shortcode does not die' => sub {
     lives_ok {
         my $contract = produce_contract($unknown, 'GBP');
         isa_ok $contract, 'BOM::Product::Contract::Invalid';
-    }
-    'unknown shortcode';
+    } 'unknown shortcode';
 };
 
 1;
