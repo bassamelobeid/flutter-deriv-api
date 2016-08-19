@@ -3,204 +3,204 @@ volatility_coef:
   WLDAUD:
     data:
       error: 0.307318089905644
-      long_term: 0.579
-      short_term: 0.449
+      long_term_weight: 0.579
+      short_term_weight: 0.449
     end_date: 2015-06-03
     start_date: 2015-03-15
   WLDEUR:
     data:
       error: 0.299305915299684
-      long_term: 0.552
-      short_term: 0.504
+      long_term_weight: 0.552
+      short_term_weight: 0.504
     end_date: 2015-06-03
     start_date: 2015-03-15
   WLDGBP:
     data:
       error: 0.303178635219385
-      long_term: 0.524
-      short_term: 0.525
+      long_term_weight: 0.524
+      short_term_weight: 0.525
     end_date: 2015-06-03
     start_date: 2015-03-15
   WLDUSD:
     data:
       error: 0.298655792898955
-      long_term: 0.427
-      short_term: 0.611
+      long_term_weight: 0.427
+      short_term_weight: 0.611
     end_date: 2015-06-03
     start_date: 2015-03-15
   frxAUDJPY:
     data:
       error: 0.290451190524911
-      long_term: 0.523
-      short_term: 0.495
+      long_term_weight: 0.523
+      short_term_weight: 0.495
     end_date: 2015-06-02
     start_date: 2015-01-13
   frxAUDUSD:
     data:
       error: 0.318779003086038
-      long_term: 0.512
-      short_term: 0.512
+      long_term_weight: 0.512
+      short_term_weight: 0.512
     end_date: 2015-06-02
     start_date: 2015-01-13
   frxEURAUD:
     data:
       error: 0.297906225632013
-      long_term: 0.541
-      short_term: 0.484
+      long_term_weight: 0.541
+      short_term_weight: 0.484
     end_date: 2015-06-02
     start_date: 2015-01-13
   frxEURCAD:
     data:
       error: 0.285897250188869
-      long_term: 0.487
-      short_term: 0.556
+      long_term_weight: 0.487
+      short_term_weight: 0.556
     end_date: 2015-06-02
     start_date: 2015-01-13
   frxEURCHF:
     data:
       error: 0.310143795069954
-      long_term: 0.467
-      short_term: 0.575
+      long_term_weight: 0.467
+      short_term_weight: 0.575
     end_date: 2015-06-02
     start_date: 2015-01-13
   frxEURGBP:
     data:
       error: 0.310143795069954
-      long_term: 0.467
-      short_term: 0.575
+      long_term_weight: 0.467
+      short_term_weight: 0.575
     end_date: 2015-06-02
     start_date: 2015-01-13
   frxEURJPY:
     data:
       error: 0.298247801661584
-      long_term: 0.506
-      short_term: 0.529
+      long_term_weight: 0.506
+      short_term_weight: 0.529
     end_date: 2015-06-02
     start_date: 2015-01-13
   frxEURUSD:
     data:
       error: 0.325770581003558
-      long_term: 0.48
-      short_term: 0.569
+      long_term_weight: 0.48
+      short_term_weight: 0.569
     end_date: 2015-06-02
     start_date: 2015-01-13
   frxGBPAUD:
     data:
       error: 0.303910145694644
-      long_term: 0.537
-      short_term: 0.486
+      long_term_weight: 0.537
+      short_term_weight: 0.486
     end_date: 2015-06-02
     start_date: 2015-01-13
   frxGBPCAD:
     data:
       error: 0.287906609870749
-      long_term: 0.481
-      short_term: 0.562
+      long_term_weight: 0.481
+      short_term_weight: 0.562
     end_date: 2015-06-02
     start_date: 2015-01-13
   frxGBPCHF:
     data:
       error: 0.310143795069954
-      long_term: 0.467
-      short_term: 0.575
+      long_term_weight: 0.467
+      short_term_weight: 0.575
     end_date: 2015-06-02
     start_date: 2015-01-13
   frxGBPJPY:
     data:
       error: 0.287383853157286
-      long_term: 0.481
-      short_term: 0.545
+      long_term_weight: 0.481
+      short_term_weight: 0.545
     end_date: 2015-06-02
     start_date: 2015-01-13
   frxGBPUSD:
     data:
       error: 0.302294009180871
-      long_term: 0.445
-      short_term: 0.59
+      long_term_weight: 0.445
+      short_term_weight: 0.59
     end_date: 2015-06-02
     start_date: 2015-01-13
   frxUSDCAD:
     data:
       error: 0.316716443649517
-      long_term: 0.486
-      short_term: 0.559
+      long_term_weight: 0.486
+      short_term_weight: 0.559
     end_date: 2015-06-02
     start_date: 2015-01-13
   frxUSDCHF:
     data:
       error: 0.325770581003558
-      long_term: 0.48
-      short_term: 0.569
+      long_term_weight: 0.48
+      short_term_weight: 0.569
     end_date: 2015-06-02
     start_date: 2015-01-13
   frxUSDJPY:
     data:
       error: 0.313787052897722
-      long_term: 0.453
-      short_term: 0.567
+      long_term_weight: 0.453
+      short_term_weight: 0.567
     end_date: 2015-06-02
     start_date: 2015-01-13
   frxAUDCAD:
     data:
       error: 0.27898552879256
-      long_term: 0.553
-      short_term: 0.467
+      long_term_weight: 0.553
+      short_term_weight: 0.467
     end_date: 2015-06-03
     start_date: 2015-01-14
   frxAUDCHF:
     data:
       error: 0.293836890799242
-      long_term: 0.55
-      short_term: 0.478
+      long_term_weight: 0.55
+      short_term_weight: 0.478
     end_date: 2015-06-03
     start_date: 2015-01-14
   frxAUDNZD:
     data:
       error: 0.307298253730953
-      long_term: 0.512
-      short_term: 0.503
+      long_term_weight: 0.512
+      short_term_weight: 0.503
     end_date: 2015-06-03
     start_date: 2015-01-14
   frxAUDPLN:
     data:
       error: 0.299318486316065
-      long_term: 0.497
-      short_term: 0.523
+      long_term_weight: 0.497
+      short_term_weight: 0.523
     end_date: 2015-06-03
     start_date: 2015-01-14
   frxEURNZD:
     data:
       error: 0.301721624508421
-      long_term: 0.547
-      short_term: 0.476
+      long_term_weight: 0.547
+      short_term_weight: 0.476
     end_date: 2015-06-03
     start_date: 2015-01-14
   frxGBPNZD:
     data:
       error: 0.309464172062522
-      long_term: 0.54
-      short_term: 0.482
+      long_term_weight: 0.54
+      short_term_weight: 0.482
     end_date: 2015-06-03
     start_date: 2015-01-14
   frxNZDUSD:
     data:
       error: 0.309610483285418
-      long_term: 0.523
-      short_term: 0.498
+      long_term_weight: 0.523
+      short_term_weight: 0.498
     end_date: 2015-06-03
     start_date: 2015-01-14
   frxXAGUSD:
     data:
       error: 0.384350230151739
-      long_term: 0.699
-      short_term: 0.374
+      long_term_weight: 0.699
+      short_term_weight: 0.374
     end_date: 2015-06-03
     start_date: 2015-01-14
   frxXAUUSD:
     data:
       error: 0.391236982559451
-      long_term: 0.594
-      short_term: 0.467
+      long_term_weight: 0.594
+      short_term_weight: 0.467
     end_date: 2015-06-03
     start_date: 2015-01-14
 duration_coef:

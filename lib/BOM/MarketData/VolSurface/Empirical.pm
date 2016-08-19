@@ -118,8 +118,8 @@ sub get_volatility {
     my $short_term_prediction = $observed_vol * $stp_volatility_seasonality;
 
     my $volatility_coef  = $self->_get_coefficients('volatility_coef');
-    my $adjusted_ltp     = $long_term_prediction * $volatility_coef->{data}->{long_term};
-    my $adjusted_stp     = $short_term_prediction * $volatility_coef->{data}->{short_term};
+    my $adjusted_ltp     = $long_term_prediction * $volatility_coef->{data}->{long_term_weight};
+    my $adjusted_stp     = $short_term_prediction * $volatility_coef->{data}->{short_term_weight};
     my $seasonalized_vol = $adjusted_ltp + $adjusted_stp;
 
     my $min = 0.5 * $long_term_prediction;
