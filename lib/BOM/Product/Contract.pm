@@ -919,10 +919,10 @@ sub _build_price_calculator {
         base_commission_scaling       => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
         underlying_base_commission    => $self->underlying->base_commission,
         app_markup_percentage         => $self->app_markup_percentage,
+        value                         => $value,
+        currency                      => $self->{currency},
         ($self->has_payout)    ? (payout    => $self->payout)    : (),
         ($self->has_ask_price) ? (ask_price => $self->ask_price) : (),
-        value    => $value,
-        currency => $self->{currency},
     });
 }
 
