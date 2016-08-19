@@ -1103,10 +1103,6 @@ has app_markup_percentage => (
     default => 0,
 );
 
-sub _build_app_markup_percentage {
-    return shift->price_calculator->app_markup_percentage;
-}
-
 has [qw(app_markup_dollar_amount app_markup)] => (
     is         => 'ro',
     lazy_build => 1,
