@@ -216,8 +216,7 @@ sub get_bid {
         };
 
         if ($contract->is_spread) {
-            # ask and bid will always be there for spreads
-            $response->{ask_price} = sprintf('%.2f', $contract->ask_price);
+            # bid price will always be there for spreads
             $response->{bid_price} = sprintf('%.2f', $contract->bid_price);
             # spreads require different set of parameters.
             my $sign = $contract->sentiment eq 'up' ? '+' : '-';
@@ -260,7 +259,6 @@ sub get_bid {
 
             # only show prices when client can act on it.
             if ($contract->is_valid_to_sell) {
-                $response->{ask_price} = sprintf('%.2f', $contract->ask_price);
                 $response->{bid_price} = sprintf('%.2f', $contract->bid_price);
             } elsif ($contract->primary_validation_error) {
                 $response->{validation_error} = $contract->primary_validation_error->message_to_client;
