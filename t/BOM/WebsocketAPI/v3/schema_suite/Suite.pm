@@ -39,6 +39,8 @@ sub read_file {
     <$fh>
 }
 
+my $ticks_inserted;
+
 sub run {
     my ($class, $input) = @_;
 
@@ -63,7 +65,8 @@ sub run {
         # Clear existing state for rate limits: verify email in particular
         flush_all_service_consumers();
 
-        { # Pre-populate with a few ticks - they need to be 1s apart. Note that we insert ticks
+        unless($ticks_inserted) {
+          # Pre-populate with a few ticks - they need to be 1s apart. Note that we insert ticks
           # that are 1..10s in the future here; we'll change the clock a few lines later, so by
           # the time our code is run all these ticks should be in the recent past.
             my $count = 10;
@@ -78,6 +81,9 @@ sub run {
                 }
                 ++$tick_time;
             }
+
+            # We only do this once
+            $ticks_inserted = 1;
         }
         1
     } or do {
