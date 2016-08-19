@@ -47,6 +47,8 @@ sub run {
     # need to share it with other subs in this module, but should always start with an empty state.
     undef $response;
 
+    system("sudo date -s '2016-08-09 11:59:00'");
+
     # Start with a clean database
     BOM::Test::Data::Utility::UnitTestMarketData->import(qw(:init));
     BOM::Test::Data::Utility::UnitTestDatabase->import(qw(:init));
@@ -96,6 +98,10 @@ sub run {
     my $lang = '';
     my ($last_lang, $reset);
     while(my $line = <$fh>) {
+        # we are setting the time backward to 12:00:00 for every
+        # tests to ensure time sensitive tests (pricing tests) always start at the same time.
+        system("sudo date -s '2016-08-09 12:00:00'");
+
         my $counter = $.; # slightly more informative name, for use in log messages at the end of the loop
         chomp $line;
         next if ($line =~ /^(#.*|)$/);
