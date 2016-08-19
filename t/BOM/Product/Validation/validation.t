@@ -296,7 +296,7 @@ subtest 'invalid bet types are dull' => sub {
 };
 
 subtest 'invalid contract stake evokes sympathy' => sub {
-    plan tests => 6;
+    plan tests => 5;
 
     my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
@@ -325,7 +325,7 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     ok($bet->is_valid_to_buy, '..but when we ask for a higher payout, it validates just fine.');
 
     $bet_params->{duration} = '15m';
-    $bet_params->{barrier}  = 'S8500P';
+    $bet_params->{barrier}  = 'S100000500P';
 
     # Between setting up aggregated ticks and mocking objects, I chose the latter.
     # We are not checking volatility and trend calculation here.
@@ -335,8 +335,7 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     my $mocked_engine = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
     $mocked_engine->mock('ticks_for_trend', sub {[]});
     $bet = produce_contract($bet_params);
-    ok $bet->is_valid_to_buy, 'valid to buy';
-    is $bet->theo_probability->amount, 0.1, 'theo floored at 0.1';
+    is $bet->theo_probability->amount, 0, 'theo floored at 0';
     $mocked_engine->unmock_all;
     $mocked_contract->unmock_all;
 
