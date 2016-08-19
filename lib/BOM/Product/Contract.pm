@@ -937,7 +937,7 @@ sub _build_price_calculator {
 
 has payout => (
     is         => 'ro',
-    ias        => 'Num',
+    isa        => 'Num',
     lazy_build => 1,
 );
 
