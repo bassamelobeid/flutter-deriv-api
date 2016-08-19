@@ -31,12 +31,14 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
     {
-        events => [{
-                symbol        => 'USD',
-                impact        => 1,
-                release_date  => $pricing_date->minus_time_interval('10d')->epoch,
-                recorded_date => $pricing_date->epoch,
-            }]
+        events => [
+            {
+                symbol           => 'USD',
+                impact           => 1,
+                release_date     => $pricing_date->minus_time_interval('10d')->epoch,
+                recorded_date    => $pricing_date->epoch,
+            }
+        ]
     },
 );
 

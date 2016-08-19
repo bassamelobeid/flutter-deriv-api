@@ -146,14 +146,17 @@ has basis_tick => (
 sub _build_basis_tick {
     my $self = shift;
 
+    my $waiting_for_entry_tick = localize('Waiting for entry tick.');
+    my $missing_market_data    = localize('Trading on this market is suspended due to missing market data.');
     my ($basis_tick, $potential_error);
 
-    if (not $self->pricing_new and not $self->is_forward_starting) {
-        $basis_tick      = $self->entry_tick;
-        $potential_error = localize('Waiting for entry tick.');
+    # basis_tick is only set to entry_tick when the contract has started.
+    if ($self->pricing_new) {
+        $basis_tick = $self->current_tick;
+        $potential_error = $self->starts_as_forward_starting ? $waiting_for_entry_tick : $missing_market_data;
     } else {
-        $basis_tick      = $self->current_tick;
-        $potential_error = localize('Trading on this market is suspended due to missing market data.');
+        $basis_tick      = $self->entry_tick;
+        $potential_error = $waiting_for_entry_tick;
     }
 
     # if there's no basis tick, don't die but catch the error.
@@ -626,8 +629,6 @@ sub _build_current_tick {
 sub _build_pricing_new {
     my $self = shift;
 
-    # Forward starting contract bought. Not a new contract.
-    return 0 if $self->starts_as_forward_starting;
     # do not use $self->date_pricing here because milliseconds matters!
     # _date_pricing_milliseconds will not be set if date_pricing is not built.
     my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
@@ -698,39 +699,26 @@ sub _build_opposite_contract {
     # Start by making a copy of the parameters we used to build this bet.
     my %opp_parameters = %{$self->build_parameters};
 
-    my @opposite_contract_parameters = qw(volsurface fordom forqqq domqqq);
-    if ($self->pricing_new) {
-        # setup the parameters for an opposite contract.
-        $opp_parameters{date_start}  = $self->date_start;
-        $opp_parameters{pricing_new} = 1;
-        push @opposite_contract_parameters, qw(pricing_engine_name pricing_spot r_rate q_rate pricing_vol discount_rate mu barriers_for_pricing);
-        push @opposite_contract_parameters, qw(empirical_volsurface long_term_prediction news_adjusted_pricing_vol)
-            if $self->priced_with_intraday_model;
-    } else {
-        # not pricing_new will only happen when we are repricing an
-        # existing contract in our system.
+    # we still want to set for_sale for a forward_starting contracts
+    $opp_parameters{for_sale} = 1;
+    # delete traces of this contract were a forward starting contract before.
+    delete $opp_parameters{starts_as_forward_starting};
+    # duration could be set for an opposite contract from bad hash reference reused.
+    delete $opp_parameters{duration};
 
-        # we still want to set for_sale for a forward_starting contracts
-        $opp_parameters{for_sale} = 1;
-        # delete traces of this contract were a forward starting contract before.
-        delete $opp_parameters{starts_as_forward_starting};
-        # duration could be set for an opposite contract from bad hash reference reused.
-        delete $opp_parameters{duration};
-
-        if (not $self->is_forward_starting) {
-            if ($self->entry_tick) {
-                foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-                    $opp_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
-                }
+    if (not $self->is_forward_starting) {
+        if ($self->entry_tick) {
+            foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
+                $opp_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
             }
-            # We should be looking to move forward in time to a bet starting now.
-            $opp_parameters{date_start}  = $self->effective_start;
-            $opp_parameters{pricing_new} = 1;
-            # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
-            # Currently, 'sell at market' button will appear when current spot == barrier when the duration
-            # of the contract is less than the minimum duration of non ATM contract.
-            $opp_parameters{is_atm_bet} = 0 if ($self->category_code eq 'callput');
         }
+        # We should be looking to move forward in time to a bet starting now.
+        $opp_parameters{date_start}  = $self->effective_start;
+        $opp_parameters{pricing_new} = 1;
+        # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
+        # Currently, 'sell at market' button will appear when current spot == barrier when the duration
+        # of the contract is less than the minimum duration of non ATM contract.
+        $opp_parameters{is_atm_bet} = 0 if ($self->category_code eq 'callput');
     }
 
     # Always switch out the bet type for the other side.
@@ -738,7 +726,7 @@ sub _build_opposite_contract {
     # Don't set the shortcode, as it will change between these.
     delete $opp_parameters{'shortcode'};
     # Save a round trip.. copy market data
-    foreach my $vol_param (@opposite_contract_parameters) {
+    foreach my $vol_param (qw(volsurface fordom forqqq domqqq)) {
         $opp_parameters{$vol_param} = $self->$vol_param;
     }
 
@@ -1143,7 +1131,10 @@ sub _build_theo_price {
 sub _build_shortcode {
     my $self = shift;
 
-    my $shortcode_date_start = $self->is_forward_starting ? $self->date_start->epoch . 'F' : $self->date_start->epoch;
+    my $shortcode_date_start = (
+               $self->is_forward_starting
+            or $self->starts_as_forward_starting
+    ) ? $self->date_start->epoch . 'F' : $self->date_start->epoch;
     my $shortcode_date_expiry =
           ($self->tick_expiry)  ? $self->tick_count . 'T'
         : ($self->fixed_expiry) ? $self->date_expiry->epoch . 'F'
