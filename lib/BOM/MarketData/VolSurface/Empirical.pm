@@ -46,8 +46,8 @@ sub get_volatility {
         my $interval = Time::Duration::Concise->new(interval => max(900, $args->{seconds_to_expiration}) . 's');
         my $fill_cache = $args->{fill_cache} // 1;
 
-        my $at    = BOM::Market::AggTicks->new;
-        my $ticks = $at->retrieve({
+        my $at = BOM::Market::AggTicks->new;
+        $ticks = $at->retrieve({
             underlying   => $underlying,
             interval     => $interval,
             ending_epoch => $args->{current_epoch},
@@ -55,7 +55,10 @@ sub get_volatility {
         });
     }
 
-    $self->error('Insufficient tick interval to get_volatility') if @$ticks <= $returns_sep;
+    if (@$ticks <= $returns_sep) {
+        $self->error('Insufficient tick interval to get_volatility');
+        return $self->long_term_vol;
+    }
 
     # $lookback_interval used to be the contract duration, but we have changed the concept.
     # We will use the any amount of ticks we get from the cache and scale the volatility by duration.
@@ -63,10 +66,10 @@ sub get_volatility {
     my $lookback_interval = Time::Duration::Concise->new(interval => $ticks->[-1]->{epoch} - $ticks->[0]->{epoch});
     my @tick_epochs = uniq map { $_->{epoch} } @$ticks;
     my $interval_threshold = int(($lookback_interval->minutes * $returns_sep + 1) * 0.8);
-    $self->error('Insufficient ticks in each interval to get_volatility') if (scalar(@tick_epochs) < $interval_threshold);
-
-    # if there's error we just return long term volatility
-    return $self->long_term_vol if $self->error;
+    if (scalar(@tick_epochs) < $interval_threshold) {
+        $self->error('Insufficient ticks in each interval to get_volatility');
+        return $self->long_term_vol;
+    }
 
     my @time_samples_past  = map { ($tick_epochs[$_] + $tick_epochs[$_ - $returns_sep]) / 2 } ($returns_sep .. $#tick_epochs);
     my $categorized_events = $self->_categorized_economic_events($economic_events);
