@@ -19,6 +19,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use File::Slurp;
+use RateLimitations qw (flush_all_service_consumers);
 
 system("sudo date -s '2016-08-09 11:59:00'");
 initialize_realtime_ticks_db();
@@ -35,8 +36,6 @@ for my $i (1 .. 10) {
     }
     sleep 1;
 }
-
-build_test_R_50_data();
 
 my $streams = {};
 my $stash   = {};
@@ -56,13 +55,16 @@ my @lines = File::Slurp::read_file('t/BOM/WebsocketAPI/v3/schema_suite/suite.con
 
 my $response;
 my $counter = 0;
+my $reset_time = time + 30;
 
 my $t;
 my ($lang, $last_lang, $reset) = '';
+flush_all_service_consumers();
 foreach my $line (@lines) {
     # we are setting the time backward to 12:00:00 for every
     # tests to ensure time sensitive tests (pricing tests) always start at the same time.
-    system("sudo date -s '2016-08-09 12:00:00'");
+    system("sudo date -s \@$reset_time");
+    $reset_time++;
     chomp $line;
     $counter++;
     next if ($line =~ /^(#.*|)$/);
