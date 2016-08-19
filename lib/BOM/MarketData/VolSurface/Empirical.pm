@@ -60,7 +60,7 @@ sub get_volatility {
     # We will use the any amount of ticks we get from the cache and scale the volatility by duration.
     # For the ticks that we get, we still do a duplicate checks.
     my $actual_lookback_interval =
-        Time::Duration::Concise->new(interval => max($requested_interval->seconds, (@$ticks < 2 ? 0 : $ticks->[-1]->{epoch} - $ticks->[0]->{epoch})));
+        Time::Duration::Concise->new(interval => min($requested_interval->seconds, (@$ticks < 2 ? 0 : $ticks->[-1]->{epoch} - $ticks->[0]->{epoch})));
     $self->volatility_scaling_factor($actual_lookback_interval->seconds / $requested_interval->seconds);
     my @tick_epochs = uniq map { $_->{epoch} } @$ticks;
     my $interval_threshold = int(($actual_lookback_interval->minutes * $returns_sep + 1) * 0.8);
