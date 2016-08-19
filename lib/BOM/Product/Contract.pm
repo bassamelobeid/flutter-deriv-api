@@ -882,12 +882,12 @@ has price_calculator => (
             theo_probability
             ask_probability
             bid_probability
-            discounted_probability
             bs_probability
-            risk_markup
-            commission_markup
+            discounted_probability
             base_commission
+            commission_markup
             commission_from_stake
+            risk_markup
             app_markup
             /
     ],
