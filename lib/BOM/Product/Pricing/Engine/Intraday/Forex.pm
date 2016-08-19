@@ -552,7 +552,7 @@ sub _build_vol_spread_markup {
         name        => 'vol_spread_markup',
         set_by      => __PACKAGE__,
         description => 'markup added to account for variable ticks interval for volatility calculation.',
-        base_amount => 0.1 * (1 - ($self->volatility_scaling_factory)**2),
+        base_amount => 0.1 * (1 - ($self->volatility_scaling_factor)**2),
     });
 }
 
