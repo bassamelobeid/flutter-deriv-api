@@ -215,7 +215,7 @@ sub sell {
         operation      => 'replica',
     });
 
-    my @fmbs = @{$clientdb->fetchall_arrayref('select * from bet_v1.get_open_contract_by_id(?)', [$id])};
+    my @fmbs = @{$clientdb->getall_arrayref('select * from bet_v1.get_open_contract_by_id(?)', [$id])};
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidSellContractProposal',
