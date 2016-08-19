@@ -738,7 +738,6 @@ sub _build_opposite_contract {
     return $self->_produce_contract_ref->(\%opp_parameters);
 }
 
-
 sub _build_empirical_volsurface {
     my $self = shift;
     return BOM::MarketData::VolSurface::Empirical->new(underlying => $self->underlying);
