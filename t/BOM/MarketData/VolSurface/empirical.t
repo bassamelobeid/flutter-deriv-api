@@ -669,11 +669,17 @@ subtest 'error check' => sub {
             ),
             0.11, 'vol isnt long term vol';
         ok !$vs->error, 'no error is set when we have less than 80% ticks to calculate volatility';
-        my @stale_ticks = map {$ticks->[0]} (0 .. 21);
-        my @normal_ticks = map {$ticks->[$_]} (22 .. 38);
         $vs->error('');
+        $mock_at->mock(
+            'retrieve',
+            sub {
+                my @stale_ticks = map {$ticks->[0]} (0 .. 21);
+                my @normal_ticks = map {$ticks->[$_]} (22 .. 38);
+                return [@stale_ticks, @normal_ticks];
+            });
         is $vs->get_volatility({
-            ticks => [@stale_ticks, @normal_ticks],
+                current_epoch         => $now->epoch,
+                seconds_to_expiration => 900
             }), 0.11, 'set to long term vol';
         is $vs->error, 'Insufficient ticks in each interval to get_volatility', 'error when there is 20% stale ticks.';
         $vs->error('');
@@ -695,7 +701,7 @@ subtest 'seasonalized volatility' => sub {
                 seconds_to_expiration => 900
             }
             ),
-            0.0944480459725993, '';
+            0.0943759791592579, '';
     }
     'lives through process of getting seasonalized volatility';
 };
@@ -718,7 +724,7 @@ subtest 'seasonalized volatility with news' => sub {
                 include_news_impact   => 1
             }
             ),
-            0.226011967175762, '';
+            0.225988060944357, '';
         ok !$vs->error, 'no error';
     }
     'lives through process of getting seasonalized volatility';
@@ -739,7 +745,7 @@ subtest 'seasonalized volatility with news' => sub {
                 include_news_impact   => 1
             }
             ),
-            0.0944480459725993, '';
+            0.0943759791592579, '';
         ok !$vs->error, 'no error';
     }
     'lives through process of getting seasonalized volatility';
