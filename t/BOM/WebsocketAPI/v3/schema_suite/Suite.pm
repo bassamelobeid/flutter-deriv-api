@@ -61,9 +61,11 @@ sub run {
     # Clear existing state for rate limits: verify email in particular
     flush_all_service_consumers();
 
-    { # Pre-populate with a few ticks - they need to be 1s apart
+    { # Pre-populate with a few ticks - they need to be 1s apart. Note that we insert ticks
+      # that are 1..10s in the future here; we'll change the clock a few lines later, so by
+      # the time our code is run all these ticks should be in the recent past.
         my $count = 10;
-        my $tick_time = time - $count;
+        my $tick_time = time;
         for my $i (1 .. $count) {
             for my $symbol (qw/R_50 R_100/) {
                 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
