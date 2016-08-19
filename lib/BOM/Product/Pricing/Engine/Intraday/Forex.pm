@@ -3,13 +3,9 @@ package BOM::Product::Pricing::Engine::Intraday::Forex;
 use Moose;
 extends 'BOM::Product::Pricing::Engine::Intraday';
 
-use JSON qw(from_json);
 use List::Util qw(max min sum);
-use Sereal qw(decode_sereal);
 use YAML::XS qw(LoadFile);
-use Time::Duration::Concise;
 
-use BOM::Platform::Runtime;
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use VolSurface::Utils qw( get_delta_for_strike );
