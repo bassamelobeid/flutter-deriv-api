@@ -8,6 +8,7 @@ use Data::Dumper;
 use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
 use Test::MockModule;
 use YAML::XS qw(LoadFile);
+use Scalar::Util;
 
 use Cache::RedisDB;
 use Sereal::Encoder;
@@ -224,39 +225,26 @@ sub _get_token {
     return $code;
 }
 
+# Given a path like /some/nested/0/structure/4/here,
+# return $data->{some}{nested}[0]{structure}[4]{here}.
+# See also: L<Data::Visitor>, L<Data::Walker>
+sub walk_hierarchy {
+    my ($path, $data) = @_;
+    $data = Scalar::Util::looks_like_number($_) ? $data->[$_] : $data->{$_} for split qr{/}, $path;
+    return $data;
+}
+
 # responses are stashed in a hash-ref. For example for a sucessful new_account_virtual there will be an new_account_virtual item and there {new_account_virtual}->{oauth_token}
 # you can access the stashed values as a template in your test_receive ([_1]) like _get_stashed('new_account_virtual/oauth_token')
 # you can also use array index like _get_stashed('api_token/tokens/0/token')
 # look at suite.conf for examples
 sub _get_stashed {
-    my @hierarchy = split '/', shift;
-
-    my $r = $response;
-
-    foreach my $l (@hierarchy) {
-        if ($l =~ /^[0-9,.E]+$/) {
-            $r = @{$r}[$l];
-        } else {
-            $r = $r->{$l};
-        }
-    }
-
-    return $r;
+    return walk_hierarchy(shift, $response);
 }
 
 # set allow omnibus flag, as it is required for creating new sub account
 sub _set_allow_omnibus {
-    my @hierarchy = split '/', shift;
-
-    my $r = $response;
-
-    foreach my $l (@hierarchy) {
-        if ($l =~ /^[0-9,.E]+$/) {
-            $r = @{$r}[$l];
-        } else {
-            $r = $r->{$l};
-        }
-    }
+    my $r = walk_hierarchy(shift, $response);
 
     my $client = BOM::Platform::Client->new({loginid => $r});
     $client->allow_omnibus(1);
