@@ -536,8 +536,13 @@ sub _build_economic_events_volatility_risk_markup {
 
 has volatility_scaling_factor => (
     is      => 'ro',
-    default => undef,
+    lazy    => 1,
+    builder => '_build_volatility_scaling_factor',
 );
+
+sub _build_volatility_scaling_factor {
+    return shift->bet->pricing_args->{volatility_scaling_factor};
+}
 
 has vol_spread_markup => (
     is      => 'ro',

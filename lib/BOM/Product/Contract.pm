@@ -559,12 +559,7 @@ sub _build_pricing_engine {
     my $self = shift;
 
     my $pricing_engine;
-    if ($self->priced_with_intraday_model) {
-        $pricing_engine = $self->pricing_engine_name->new(
-            bet                       => $self,
-            volatility_scaling_factor => $self->pricing_args->{volatility_scaling_factory},
-        );
-    } elsif ($self->new_interface_engine) {
+    if ($self->new_interface_engine) {
         my %pricing_parameters = map { $_ => $self->_pricing_parameters->{$_} } @{$self->pricing_engine_name->required_args};
         $pricing_engine = $self->pricing_engine_name->new(%pricing_parameters);
     } else {
