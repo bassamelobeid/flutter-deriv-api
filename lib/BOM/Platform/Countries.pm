@@ -73,7 +73,7 @@ sub virtual_company_for_country {
     my $config = $country && $self->countries_list->{$country};
     return unless $config;
 
-    my $company = ($config->{virtual_company}) ? $config->{virtual_company} : 'fog';
+    my $company = ($config->{virtual_company}) ? $config->{virtual_company} : 'virtual';
     return $company;
 }
 
