@@ -561,7 +561,18 @@ sub _build_pricing_engine {
     my $self = shift;
 
     my $pricing_engine;
-    if ($self->new_interface_engine) {
+    if ($self->priced_with_intraday_model) {
+        my $applicable_ticks = BOM::Market::AggTicks->new->retrieve({
+            underlying   => $self->underlying,
+            ending_epoch => $self->effective_start,
+            interval     => $self->remaining_time,
+        });
+        $pricing_engine = $self->pricing_engine_name->new(
+            bet             => $self,
+            ticks           => $applicable_ticks,
+            economic_events => $self->economic_events_for_volatility_calculation,
+        );
+    } elsif ($self->new_interface_engine) {
         my %pricing_parameters = map { $_ => $self->_pricing_parameters->{$_} } @{$self->pricing_engine_name->required_args};
         $pricing_engine = $self->pricing_engine_name->new(%pricing_parameters);
     } else {

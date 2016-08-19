@@ -7,6 +7,7 @@ use JSON qw(from_json);
 use List::Util qw(max min sum);
 use Sereal qw(decode_sereal);
 use YAML::XS qw(LoadFile);
+use Time::Duration::Concise;
 
 use BOM::Platform::Runtime;
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
@@ -533,6 +534,44 @@ sub _build_economic_events_volatility_risk_markup {
     });
 
     return $markup;
+}
+
+=head2 ticks
+
+Ticks are used to calculate volatility.
+
+=head2 economic_events
+
+Applicable economic event(s) that affect(s) this contract.
+
+=cut
+
+has [qw(ticks economic_events)] => (
+    is      => 'ro',
+    default => sub { [] },
+);
+
+has vol_spread_markup => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_vol_spread_markup',
+);
+
+sub _build_vol_spread_markup {
+    my $self = shift;
+
+    my $contract          = $self->bet;
+    my $contract_duration = $contract->remaining_time;
+    my @ticks             = @{$self->ticks};
+    my $interval          = @ticks < 2 ? 0 : $ticks[-1]->{epoch} - $ticks[0]->{epoch};
+    my $lookback_interval = Time::Duration::Concise->new(interval => $interval);
+
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'vol_spread_markup',
+        set_by      => __PACKAGE__,
+        description => 'markup added to account for variable ticks interval for volatility calculation.',
+        base_amount => 0.1 * (1 - ($lookback_interval->seconds / $contract_duration->seconds)**2),
+    });
 }
 
 no Moose;
