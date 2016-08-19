@@ -34,38 +34,36 @@ sub get_volatility {
     my $underlying      = $self->underlying;
     my $economic_events = $args->{economic_events};
 
-    my $ticks;
-    if ($args->{ticks}) {
-        $ticks = $args->{ticks};
-    } else {
-        unless ($args->{current_epoch} and $args->{seconds_to_expiration}) {
-            $self->error('Non zero arguments of \'current_epoch\' and \'seconds_to_expiration\' are required to get_volatility.');
-            return $self->long_term_vol;
-        }
-
-        my $interval = Time::Duration::Concise->new(interval => max(900, $args->{seconds_to_expiration}) . 's');
-        my $fill_cache = $args->{fill_cache} // 1;
-
-        my $at = BOM::Market::AggTicks->new;
-        $ticks = $at->retrieve({
-            underlying   => $underlying,
-            interval     => $interval,
-            ending_epoch => $args->{current_epoch},
-            fill_cache   => $fill_cache,
-        });
+    unless ($args->{current_epoch} and $args->{seconds_to_expiration}) {
+        $self->error('Non zero arguments of \'current_epoch\' and \'seconds_to_expiration\' are required to get_volatility.');
+        return $self->long_term_vol;
     }
+
+    my $interval = Time::Duration::Concise->new(interval => max(900, $args->{seconds_to_expiration}) . 's');
+    my $fill_cache = $args->{fill_cache} // 1;
+
+    my $at    = BOM::Market::AggTicks->new;
+    my $ticks = $at->retrieve({
+        underlying   => $underlying,
+        interval     => $interval,
+        ending_epoch => $args->{current_epoch},
+        fill_cache   => $fill_cache,
+    });
 
     if (@$ticks <= $returns_sep) {
         $self->error('Insufficient tick interval to get_volatility');
         return $self->long_term_vol;
     }
 
-    # $lookback_interval used to be the contract duration, but we have changed the concept.
+    my $requested_interval = Time::Duration::Concise->new(interval => $args->{seconds_to_expiration});
+    # $actual_lookback_interval used to be the contract duration, but we have changed the concept.
     # We will use the any amount of ticks we get from the cache and scale the volatility by duration.
     # For the ticks that we get, we still do a duplicate checks.
-    my $lookback_interval = Time::Duration::Concise->new(interval => $ticks->[-1]->{epoch} - $ticks->[0]->{epoch});
+    my $actual_lookback_interval =
+        Time::Duration::Concise->new(interval => max($requested_interval->seconds, (@$ticks < 2 ? 0 : $ticks->[-1]->{epoch} - $ticks->[0]->{epoch})));
+    $self->volatility_scaling_factor($actual_lookback_interval->seconds / $requested_interval->seconds);
     my @tick_epochs = uniq map { $_->{epoch} } @$ticks;
-    my $interval_threshold = int(($lookback_interval->minutes * $returns_sep + 1) * 0.8);
+    my $interval_threshold = int(($actual_lookback_interval->minutes * $returns_sep + 1) * 0.8);
     if (scalar(@tick_epochs) < $interval_threshold) {
         $self->error('Insufficient ticks in each interval to get_volatility');
         return $self->long_term_vol;
@@ -118,8 +116,8 @@ sub get_volatility {
     my $short_term_prediction = $observed_vol * $stp_volatility_seasonality;
 
     my $volatility_coef  = $self->_get_coefficients('volatility_coef');
-    my $adjusted_ltp     = $long_term_prediction * $volatility_coef->{data}->{long_term_weight};
-    my $adjusted_stp     = $short_term_prediction * $volatility_coef->{data}->{short_term_weight};
+    my $adjusted_ltp     = $long_term_prediction * (1 + $self->volatility_scaling_factor * ($volatility_coef->{data}->{long_term_weight} - 1));
+    my $adjusted_stp     = $short_term_prediction * $volatility_coef->{data}->{short_term_weight} * $self->volatility_scaling_factor;
     my $seasonalized_vol = $adjusted_ltp + $adjusted_stp;
 
     my $min = 0.5 * $long_term_prediction;
@@ -308,6 +306,21 @@ sub _get_coefficients {
 has [qw(long_term_prediction error)] => (
     is      => 'rw',
     default => undef,
+);
+
+=head2 volatility_scaling_factor
+
+To scale volatility due to uncertainty in volatility calculation algorithm.
+
+On Monday mornings or the begining of the day where previous day is a non-trading day, there won't be ticks available over the weekends.
+
+We could only depend on the long term prediction on our volatility model, hence we need to adjust for that uncertainty in price with a volatility spread markup in Intraday::Forex model.
+
+=cut
+
+has volatility_scaling_factor => (
+    is      => 'rw',
+    default => 1,
 );
 
 no Moose;
