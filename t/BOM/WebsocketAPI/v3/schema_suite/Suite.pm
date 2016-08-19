@@ -9,6 +9,7 @@ use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
 use Test::MockModule;
 use YAML::XS qw(LoadFile);
 use Scalar::Util;
+use Carp;
 
 use Cache::RedisDB;
 use Sereal::Encoder;
@@ -50,33 +51,40 @@ sub run {
 
     system(qw(sudo date -s), '2016-08-09 11:59:00') and die "Failed to set date, do we have sudo access? $!";
 
-    # Start with a clean database
-    BOM::Test::Data::Utility::UnitTestMarketData->import(qw(:init));
-    BOM::Test::Data::Utility::UnitTestDatabase->import(qw(:init));
-    BOM::Test::Data::Utility::AuthTestDatabase->import(qw(:init));
-    initialize_realtime_ticks_db();
-    build_test_R_50_data();
-    _setup_market_data();
+    eval {
+        # Start with a clean database
+        BOM::Test::Data::Utility::UnitTestMarketData->import(qw(:init));
+        BOM::Test::Data::Utility::UnitTestDatabase->import(qw(:init));
+        BOM::Test::Data::Utility::AuthTestDatabase->import(qw(:init));
+        initialize_realtime_ticks_db();
+        build_test_R_50_data();
+        _setup_market_data();
 
-    # Clear existing state for rate limits: verify email in particular
-    flush_all_service_consumers();
+        # Clear existing state for rate limits: verify email in particular
+        flush_all_service_consumers();
 
-    { # Pre-populate with a few ticks - they need to be 1s apart. Note that we insert ticks
-      # that are 1..10s in the future here; we'll change the clock a few lines later, so by
-      # the time our code is run all these ticks should be in the recent past.
-        my $count = 10;
-        my $tick_time = time;
-        for my $i (1 .. $count) {
-            for my $symbol (qw/R_50 R_100/) {
-                BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                    underlying => $symbol,
-                    epoch      => $tick_time,
-                    quote      => 100
-                });
+        { # Pre-populate with a few ticks - they need to be 1s apart. Note that we insert ticks
+          # that are 1..10s in the future here; we'll change the clock a few lines later, so by
+          # the time our code is run all these ticks should be in the recent past.
+            my $count = 10;
+            my $tick_time = time;
+            for my $i (1 .. $count) {
+                for my $symbol (qw/R_50 R_100/) {
+                    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                        underlying => $symbol,
+                        epoch      => $tick_time,
+                        quote      => 100
+                    });
+                }
+                ++$tick_time;
             }
-            ++$tick_time;
         }
-    }
+        1
+    } or do {
+        # Report on the failure for tracing
+        diag Carp::longmess("Test setup failure - $@");
+        BAIL_OUT($@);
+    };
 
     my $stash  = {};
     my $module = Test::MockModule->new('Mojolicious::Controller');
