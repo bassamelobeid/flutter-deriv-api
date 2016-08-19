@@ -48,7 +48,7 @@ sub run {
     # need to share it with other subs in this module, but should always start with an empty state.
     undef $response;
 
-    system("sudo date -s '2016-08-09 11:59:00'");
+    system(qw(sudo date -s), '2016-08-09 11:59:00') and die "Failed to set date, do we have sudo access? $!";
 
     # Start with a clean database
     BOM::Test::Data::Utility::UnitTestMarketData->import(qw(:init));
@@ -101,7 +101,7 @@ sub run {
     while(my $line = <$fh>) {
         # we are setting the time backward to 12:00:00 for every
         # tests to ensure time sensitive tests (pricing tests) always start at the same time.
-        system("sudo date -s '2016-08-09 12:00:00'");
+        system(qw(sudo date -s), '2016-08-09 12:00:00') and die "Failed to set date, do we have sudo access? $!";
 
         my $counter = $.; # slightly more informative name, for use in log messages at the end of the loop
         chomp $line;
