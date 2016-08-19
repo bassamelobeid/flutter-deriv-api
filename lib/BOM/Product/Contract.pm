@@ -907,25 +907,27 @@ sub _build_price_calculator {
     }
 
     return Price::Calculator->new({
-        market_name                 => $self->market->name,
-        new_interface_engine        => $self->new_interface_engine,
+        market_name                   => $self->market->name,
+        new_interface_engine          => $self->new_interface_engine,
         pricing_engine_name           => $self->pricing_engine_name,
         pricing_engine_probability    => $self->pricing_engine->probability,
         pricing_engine_bs_probability => $self->pricing_engine->bs_probability,
         pricing_engine_risk_markup    => $risk_markup,
-        maximum_total_markup        => BOM::System::Config::quants->{commission}->{maximum_total_markup},
-        base_commission_min         => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
-        base_commission_max         => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
-        base_commission_scaling     => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
-        underlying_base_commission  => $self->underlying->base_commission,
-        app_markup_percentage       => $self->app_markup_percentage,
-        ($self->has_payout) ? (payout => $self->payout) : (),
-        value                       => $value,
+        maximum_total_markup          => BOM::System::Config::quants->{commission}->{maximum_total_markup},
+        base_commission_min           => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
+        base_commission_max           => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
+        base_commission_scaling       => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
+        underlying_base_commission    => $self->underlying->base_commission,
+        app_markup_percentage         => $self->app_markup_percentage,
+        ($self->has_payout)    ? (payout    => $self->payout)    : (),
+        ($self->has_ask_price) ? (ask_price => $self->ask_price) : (),
+        value    => $value,
+        currency => $self->{currency},
     });
 }
 
 has payout => (
-    is => 'ro',
+    is         => 'ro',
     lazy_build => 1,
 );
 
