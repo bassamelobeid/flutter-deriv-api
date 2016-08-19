@@ -893,47 +893,46 @@ has price_calculator => (
     ],
 );
 
+sub _build_price_calculator {
+    my $self = shift;
+
+    my $risk_markup = 0;
+    if ($self->pricing_engine->can('risk_markup')) {
+        $risk_markup = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->pricing_engine->risk_markup->amount;
+    }
+
+    my $value;
+    if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
+        $value = $self->value;
+    }
+
+    return Price::Calculator->new({
+        market_name                 => $self->market->name,
+        new_interface_engine        => $self->new_interface_engine,
+        pricing_engine_name           => $self->pricing_engine_name,
+        pricing_engine_probability    => $self->pricing_engine->probability,
+        pricing_engine_bs_probability => $self->pricing_engine->bs_probability,
+        pricing_engine_risk_markup    => $risk_markup,
+        maximum_total_markup        => BOM::System::Config::quants->{commission}->{maximum_total_markup},
+        base_commission_min         => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
+        base_commission_max         => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
+        base_commission_scaling     => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
+        underlying_base_commission  => $self->underlying->base_commission,
+        app_markup_percentage       => $self->app_markup_percentage,
+        ($self->has_payout) ? (payout => $self->payout) : (),
+        value                       => $value,
+    });
+}
+
 has payout => (
     is => 'ro',
     lazy_build => 1,
 );
 
 sub _build_payout {
-    my $self = @_;
+    my ($self) = @_;
 
     return $self->price_calculator->payout;
-}
-
-sub _build_price_calculator {
-    my $self = shift;
-
-# use Carp qw/cluck/;
-# cluck 'here';
-    my $risk_markup = 0;
-    if ($self->pricing_engine->can('risk_markup')) {
-        $risk_markup = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->pricing_engine->risk_markup->amount;
-    }
-
-    # my $value;
-    # if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
-    #     $value = $self->value;
-    # }
-
-    return Price::Calculator->new(
-        market_name                 => $self->market->name,
-        new_interface_engine        => $self->new_interface_engine,
-        price_engine_name           => $self->pricing_engine_name,
-        price_engine_probability    => $self->pricing_engine->probability,
-        price_engine_bs_probability => $self->pricing_engine->bs_probability,
-        price_engine_risk_markup    => $risk_markup,
-        maximum_total_markup        => BOM::System::Config::quants->{commission}->{maximum_total_markup},
-        base_commission_min         => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
-        base_commission_max         => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
-        base_commission_scaling     => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
-        app_markup_percentage       => $self->app_markup_percentage,
-        ($self->has_payout) ? (payout => $self->payout) : (),
-        # value                       => $value,
-    );
 }
 
 # We adopt "near-far" methodology to price in dividends by adjusting spot and strike.
