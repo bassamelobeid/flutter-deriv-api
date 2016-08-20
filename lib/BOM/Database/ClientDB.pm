@@ -104,7 +104,7 @@ sub _cached_db {
 }
 # this will help in calling functions in DB.
 # result must be always rows of JSON
-sub fetchall_arrayref {
+sub getall_arrayref {
     my $self = shift;
     my ($query, $params) = @_;
 
