@@ -18,10 +18,10 @@ for my $iteration (1..10) {
     # Suite->run is likely to set the system date. Rely on the HW clock to give us times, if possible.
     system(qw(sudo hwclock --systohc)) and die "Failed to sync HW clock to system - $!";
     my $t0 = [gettimeofday];
-    Suite->run('loadtest.conf');
+    my $elapsed = Suite->run('loadtest.conf');
     system(qw(sudo hwclock --hctosys)) and die "Failed to sync system clock to HW - $!";
-    my $elapsed = tv_interval( $t0, [gettimeofday]);
-    diag "Took $elapsed seconds for loadtest";
+    my $wallclock = tv_interval( $t0, [gettimeofday]);
+    diag "Took $wallclock seconds wallclock time for loadtest including setup, $elapsed seconds cumulative step time";
     push @times, $elapsed;
 }
 
@@ -30,8 +30,8 @@ my $avg = sum(@times)/@times;
 my $max = max(@times);
 diag sprintf "min/avg/max - %.3fs/%.3fs/%.3fs", $min, $avg, $max;
 
-cmp_ok($avg, '>=', 19, 'average time was above the lower limit, i.e. tests are not suspiciously fast');
-cmp_ok($avg, '<=', 25, 'average time was below our upper limit, i.e. we think overall test time has not increased to a dangerously high level');
+cmp_ok($avg, '>=', 14, 'average time was above the lower limit, i.e. tests are not suspiciously fast');
+cmp_ok($avg, '<=', 19, 'average time was below our upper limit, i.e. we think overall test time has not increased to a dangerously high level');
 
 done_testing();
 
