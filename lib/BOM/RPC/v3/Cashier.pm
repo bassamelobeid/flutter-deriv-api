@@ -112,6 +112,8 @@ sub cashier {
         $error = localize('Your account is disabled');
     } elsif ($client->cashier_setting_password) {
         $error = localize('Your cashier is locked as per your request.');
+    } elsif ($action eq 'withdraw' and $client->get_status('withdrawal_locked')) {
+        $error = localize('Your account is locked for withdrawals. Please contact customer service.');
     } elsif ($currency and not $landing_company->is_currency_legal($currency)) {
         $error = localize('[_1] transactions may not be performed with this account.', $currency);
     }
@@ -1270,7 +1272,7 @@ sub _get_amount_and_count {
         client_loginid => $loginid,
         operation      => 'replica',
     });
-    my $amount_data = $clientdb->fetchall_arrayref('select * from payment_v1.get_today_payment_agent_withdrawal_sum_count(?)', [$loginid]);
+    my $amount_data = $clientdb->getall_arrayref('select * from payment_v1.get_today_payment_agent_withdrawal_sum_count(?)', [$loginid]);
     return ($amount_data->[0]->{amount}, $amount_data->[0]->{count});
 }
 
