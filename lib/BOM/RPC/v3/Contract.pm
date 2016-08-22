@@ -196,6 +196,7 @@ sub get_bid {
         }
 
         $response = {
+            is_valid_to_sell    => $contract->is_valid_to_sell,
             ask_price           => sprintf('%.2f', $contract->ask_price),
             bid_price           => sprintf('%.2f', $contract->bid_price),
             current_spot_time   => $contract->current_tick->epoch,
@@ -203,7 +204,6 @@ sub get_bid {
             underlying          => $contract->underlying->symbol,
             display_name        => $contract->underlying->display_name,
             is_expired          => $contract->is_expired,
-            is_valid_to_sell    => $contract->is_valid_to_sell,
             is_forward_starting => $contract->is_forward_starting,
             is_path_dependent   => $contract->is_path_dependent,
             is_intraday         => $contract->is_intraday,
