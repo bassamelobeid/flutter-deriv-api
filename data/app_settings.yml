@@ -1,5 +1,0 @@
----
-global:
-  quants:
-    internal:
-      custom_client_limits: {}
