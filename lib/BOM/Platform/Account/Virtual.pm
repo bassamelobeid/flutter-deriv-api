@@ -25,6 +25,10 @@ sub create_account {
     my $residence = $details->{residence};
     my $source    = $details->{source};
 
+    my $utm_source   = $details->{utm_source};
+    my $utm_medium   = $details->{utm_medium};
+    my $utm_campaign = $details->{utm_campaign};
+
     # TODO: to be removed later
     BOM::Platform::Account::invalid_japan_access_check($residence, $email);
 
@@ -62,7 +66,6 @@ sub create_account {
             secret_answer                 => '',
             myaffiliates_token_registered => 0,
             checked_affiliate_exposures   => 0,
-            source                        => $source,
             latest_environment            => $details->{latest_environment} // '',
         });
     }
@@ -77,8 +80,11 @@ sub create_account {
     my $user = BOM::Platform::User->create(
         email          => $email,
         password       => $password,
-        email_verified => 1
-    );
+        email_verified => 1,
+        $source       ? (app_id       => $source)       : (),
+        $utm_source   ? (utm_source   => $utm_source)   : (),
+        $utm_medium   ? (utm_medium   => $utm_medium)   : (),
+        $utm_campaign ? (utm_campaign => $utm_campaign) : ());
     $user->add_loginid({loginid => $client->loginid});
     $user->save;
     $client->deposit_virtual_funds($source);
