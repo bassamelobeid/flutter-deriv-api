@@ -149,8 +149,14 @@ sub mt5_get_settings {
                 message_to_client => $settings->{error}});
     }
 
-    my $country_code = Locale::Country::Extra->new()->code_from_country($settings->{country});
-    $settings->{country} = $country_code if ($country_code);
+    if (my $country = $settings->{country}) {
+        my $country_code = Locale::Country::Extra->new()->code_from_country($country);
+        if ($country_code) {
+            $settings->{country} = $country_code;
+        } else {
+            warn "Invalid country name $country for mt5 settings, can't extract code fromm Locale::Country::Extra";
+        }
+    }
 
     return $settings;
 }
