@@ -10,7 +10,7 @@ tidy:
 	find . -name '*.tidyup' -delete
 
 unit_test:
-	prove --timer -l -I./t -r t/
+	/etc/rmg/bin/prove --timer -l -I./t -r t/
 
 i18n:
 	xgettext.pl -P haml=haml -P perl=pl,pm -P tt2=tt,tt2 \
