@@ -203,14 +203,14 @@ sub _match_conditions {
 
     my $real_tests_performed;
     my $ci = $self->contract_info;
-    while (my ($k, $v) = each %$custom) {
-        next if exists $_no_condition{$k};    # skip test
+    foreach my $key (keys %$custom) {
+        next if exists $_no_condition{$key};    # skip test
         $real_tests_performed = 1;
-        next if $v eq $ci->{$k};              # match: continue with next condition
-        return;                               # no match
+        next if $custom->{$key} eq $ci->{$key};    # match: continue with next condition
+        return;                                    # no match
     }
 
-    return $real_tests_performed;             # all conditions match
+    return $real_tests_performed;                  # all conditions match
 }
 
 no Moose;
