@@ -9,6 +9,7 @@ use URL::Encode;
 use Mail::Sender;
 use HTML::FromText;
 use Try::Tiny;
+use Encode;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
@@ -60,6 +61,11 @@ sub send_email {
     $prefix =~ s/\[//;
     $prefix =~ s/\]//;
     $subject = $prefix . $subject;
+
+    # Encode subj here:
+    # Mail::Sender produces too long encoded Subject
+    # which sometimes gets double-encoded after sending
+    $subject = encode('MIME-Q', $subject);
 
     # DON'T send email on devbox except to RMG emails
     return 1
