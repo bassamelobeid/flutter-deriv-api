@@ -118,6 +118,10 @@ sub run {
     my $lang = '';
     my ($last_lang, $reset);
 
+    # Track how long our steps take - we're resetting time so we do this as a sanity
+    # check that our clock reset gives us sensible numbers.
+    my $cumulative_elapsed = 0;
+
     # 30s ahead of test start, minus 10 seconds for the initial ticks
     my $reset_time = time + 20;
     while(my $line = <$fh>) {
@@ -229,10 +233,12 @@ sub run {
             _test_schema($receive_file, $content, $result, $fail);
         }
         my $elapsed = tv_interval($t0, [gettimeofday]);
+        $cumulative_elapsed += $elapsed;
 
         # Stream ID and/or send_file may be undef
         diag(sprintf "%s:%d [%s] - %.3fs", $input, $counter, join(',', grep defined, $test_stream_id, $send_file, $receive_file), $elapsed);
     }
+    diag "Cumulative elapsed time for all steps was ${cumulative_elapsed}s";
 }
 
 sub _get_values {
