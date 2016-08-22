@@ -23,6 +23,7 @@ before_install:
     - git clone git://github.com/binary-com/helpers ~/travis-perl-helpers
     - AUTHOR_TESTING=0 source ~/travis-perl-helpers/init
     - PREBUILT_REPO="git@github.com:binary-com/test-perl.git" build-perl
+    - sudo mkdir -p /etc/rmg; sudo ln -s $(dirname $(which perl)) /etc/rmg/bin
     - /tmp/travis-scripts/setup_ssh.sh
     - /tmp/travis-scripts/websocket_schema_update.sh
 
@@ -60,6 +61,7 @@ install:
     - /tmp/travis-scripts/setup_logs.sh
     - .  /tmp/travis-scripts/setup_perl5lib.sh
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
+    - perl /home/git/regentmarkets/bom-platform/bin/notify_pub.pl &
     - perl -MBOM::Test::Data::Utility::UnitTestRedis -e '1'
     - perl -MBOM::Test /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl  daemon -m production -l http://*:5005/jsonrpc  &
 
