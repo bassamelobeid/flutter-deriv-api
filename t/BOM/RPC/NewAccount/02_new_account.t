@@ -82,6 +82,9 @@ subtest $method => sub {
         created_for => 'account_opening'
     )->token;
     $params->{args}->{residence} = 'id';
+    $params->{args}->{utm_source} = 'google.com';
+    $params->{args}->{utm_medium} = 'email';
+    $params->{args}->{utm_campaign} = 'spring sale';
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
         ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
         ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
