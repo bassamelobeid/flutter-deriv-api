@@ -91,6 +91,8 @@ subtest $method => sub {
 
     my $new_loginid = $rpc_ct->result->{client_id};
     ok $new_loginid =~ /^VRTC\d+/, 'new VR loginid';
+    my $user = BOM::Platform::User->new({email => $email});
+    ok $user->utm_source =~ '^google\.com$', 'utm registered as expected';
 
     my ($resp_loginid, $t, $uaf) = BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token});
     is $resp_loginid, $new_loginid, 'correct oauth token';
