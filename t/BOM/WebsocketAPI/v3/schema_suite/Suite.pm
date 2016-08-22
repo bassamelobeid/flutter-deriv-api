@@ -111,6 +111,9 @@ sub run {
         $fh
     };
 
+    # Track the streaming responses
+    my $streams = {};
+
     my $t;
     my $lang = '';
     my ($last_lang, $reset);
@@ -148,33 +151,81 @@ sub run {
             $fail = 1;
         }
 
-        my $t0 = [gettimeofday];
-        my ($send_file, $receive_file, @template_func) = split(',', $line);
-
-        $send_file =~ /^(.*)\//;
-        my $call = $1;
-
-        my $content = read_file('config/v3/' . $send_file);
-        $content = _get_values($content, @template_func);
-
-        if ($lang || !$t || $reset) {
-            my $new_lang = $lang || $last_lang;
-            ok(defined($new_lang), 'have a defined language') or diag "missing [LANG] tag in config before tests?";
-            ok(length($new_lang), 'have a valid language') or diag "invalid [LANG] tag in config or broken test?";
-            $t         = build_mojo_test({language => $new_lang});
-            $last_lang = $new_lang;
-            $lang      = '';
-            $reset     = '';
+        my $start_stream_id;
+        if ($line =~ s/^\{start_stream:(.+?)\}//) {
+            $start_stream_id = $1;
+        }
+        my $test_stream_id;
+        if ($line =~ s/^\{test_last_stream_message:(.+?)\}//) {
+            $test_stream_id = $1;
         }
 
-        $t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
-        my $result = decode_json($t->message->[1]);
-        $response->{$call} = $result->{$call};
+        my $t0 = [gettimeofday];
+        my ($send_file, $receive_file, @template_func);
+        if ($test_stream_id) {
+            ($receive_file, @template_func) = split(',', $line);
+            diag("\nRunning line $counter [$receive_file]\n");
+            diag("\nTesting stream [$test_stream_id]\n");
+            my $content = read_file('config/v3/' . $receive_file);
+            $content = _get_values($content, @template_func);
+            die 'wrong stream_id' unless $streams->{$test_stream_id};
+            my $result = {};
+            my @stream_data = @{$streams->{$test_stream_id}->{stream_data} || []};
+            $result = $stream_data[-1] if @stream_data;
+            _test_schema($receive_file, $content, $result, $fail);
+        } else {
+            ($send_file, $receive_file, @template_func) = split(',', $line);
 
-        $content = read_file('config/v3/' . $receive_file);
+            $send_file =~ /^(.*)\//;
+            my $call = $1;
 
-        $content = _get_values($content, @template_func);
-        _test_schema($receive_file, $content, $result, $fail);
+            my $content = read_file('config/v3/' . $send_file);
+            $content = _get_values($content, @template_func);
+            my $req_params = JSON::from_json($content);
+
+            die 'wrong stream parameters' if $start_stream_id && !$req_params->{subscribe};
+            if ($lang || !$t || $reset) {
+                my $new_lang = $lang || $last_lang;
+                ok(defined($new_lang), 'have a defined language') or diag "missing [LANG] tag in config before tests?";
+                ok(length($new_lang), 'have a valid language') or diag "invalid [LANG] tag in config or broken test?";
+                $t         = build_mojo_test({language => $new_lang}, {}, sub { store_stream_data($streams, @_) });
+                $last_lang = $new_lang;
+                $lang      = '';
+                $reset     = '';
+            }
+
+            $t = $t->send_ok({json => $req_params});
+            my $i = 0;
+            my $result;
+            my @subscribed_streams_ids = map { $_->{id} } values %$streams;
+            while ($i++ < 5 && !$result) {
+                $t->message_ok;
+                my $message = decode_json($t->message->[1]);
+                # skip subscribed stream's messages
+                next
+                    if ref $message->{$message->{msg_type}} eq 'HASH'
+                    && grep { $message->{$message->{msg_type}}->{id} && $message->{$message->{msg_type}}->{id} eq $_ } @subscribed_streams_ids;
+                $result = $message;
+            }
+            if ($i >= 5) {
+                diag("There isn't testing message in last 5 stream messages");
+                next;
+            }
+            $response->{$call} = $result->{$call};
+
+            if ($start_stream_id) {
+                my $id = $result->{$call}->{id};
+                die 'wrong stream response' unless $id;
+                die 'already exists same stream_id' if $streams->{$start_stream_id};
+                $streams->{$start_stream_id}->{id}        = $id;
+                $streams->{$start_stream_id}->{call_name} = $call;
+            }
+
+            $content = read_file('config/v3/' . $receive_file);
+
+            $content = _get_values($content, @template_func);
+            _test_schema($receive_file, $content, $result, $fail);
+        }
         my $elapsed = tv_interval($t0, [gettimeofday]);
         diag("$input:$counter [$send_file, $receive_file] - ${elapsed}s");
     }
@@ -275,7 +326,7 @@ sub _set_allow_omnibus {
 }
 
 sub store_stream_data {
-    my ($tx, $result) = @_;
+    my ($streams, $tx, $result) = @_;
     my $call_name;
     for my $stream_id (keys %$streams) {
         my $stream = $streams->{$stream_id};
