@@ -196,7 +196,8 @@ sub get_bid {
         }
 
         $response = {
-            is_valid_to_sell    => $contract->is_valid_to_sell,
+            is_valid_to_sell => $contract->is_valid_to_sell,
+            ($contract->is_valid_to_sell ? () : (validation_error => $contract->primary_validation_error->message_to_client)),
             ask_price           => sprintf('%.2f', $contract->ask_price),
             bid_price           => sprintf('%.2f', $contract->bid_price),
             current_spot_time   => $contract->current_tick->epoch,
@@ -256,9 +257,6 @@ sub get_bid {
                         )});
                 return;
             }
-
-            $response->{validation_error} = $contract->primary_validation_error->message_to_client
-                if (not $contract->is_valid_to_sell and $contract->primary_validation_error);
 
             $response->{has_corporate_actions} = 1 if @{$contract->corporate_actions};
 
