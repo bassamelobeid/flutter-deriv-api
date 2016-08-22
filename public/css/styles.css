@@ -14,9 +14,9 @@ p {line-height: 1.4em;}
     #wrapper.login {margin-top: 50px;}
     #frmLogin {margin: 0 15px;}
 }
-#header {text-align: center; margin: 20px 0;}
-#header #logo {width:100%; max-width: 250px;}
-.login #header #logo {margin: 0 auto;}
+#main-header {text-align: center; margin: 20px 0;}
+#main-header #logo {width:100%; max-width: 250px;}
+.login #main-header #logo {margin: 0 auto;}
 
 form input, form button {
     box-sizing: border-box;

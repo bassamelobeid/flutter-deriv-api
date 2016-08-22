@@ -1,5 +1,5 @@
 <div id="wrapper" class="login">
-    <div id="header">
+    <div id="main-header">
         <div id="logo">
             <img src="/oauth2/images/binary-logo.svg" alt="Binary.com" />
         </div>
