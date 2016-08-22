@@ -11,7 +11,7 @@ TESTS=merlin_benchmark \
 
 M=rm -f /tmp/l4p.log && [ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
 D=$(CURDIR)
-P=prove --timer -I$D/lib -I$D -I$D/t  -I/home/git/regentmarkets/bom-postgres/lib
+P=/etc/rmg/bin/prove --timer -I$D/lib -I$D -I$D/t  -I/home/git/regentmarkets/bom-postgres/lib
 L=|| { [ -t 1 -a "$$TRAVIS" != true ] && echo '\033[01;31msee also /tmp/l4p.log\033[00m' || cat /tmp/l4p.log; false; }
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@" $L; }; p
 
@@ -22,39 +22,39 @@ default:
 	@echo "  tidy         - Run perltidy"
 
 critique:
-	prove -l t/BOM/002_autosyntax.t
+	/etc/rmg/bin/prove -l t/BOM/002_autosyntax.t
 
 test: $(TESTS)
 
 merlin_benchmark:
-	perl -Ilib t/run_quant_benchmark_test.pl --which=merlin
+	/etc/rmg/bin/perl -Ilib t/run_quant_benchmark_test.pl --which=merlin
 
 SDFX_benchmark_major:
-	perl -Ilib t/run_quant_benchmark_test.pl --which=sdfx --file=major
+	/etc/rmg/bin/perl -Ilib t/run_quant_benchmark_test.pl --which=sdfx --file=major
 
 SDFX_benchmark_minor:
-	perl -Ilib t/run_quant_benchmark_test.pl --which=sdfx --file=minor
+	/etc/rmg/bin/perl -Ilib t/run_quant_benchmark_test.pl --which=sdfx --file=minor
 
 SDEQ_benchmark_DJI:
-	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=DJI
+	/etc/rmg/bin/perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=DJI
 
 SDEQ_benchmark_FCHI:
-	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=FCHI
+	/etc/rmg/bin/perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=FCHI
 
 SDEQ_benchmark_SPC:
-	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=SPC
+	/etc/rmg/bin/perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=SPC
 
 SDEQ_benchmark_N225:
-	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=N225
+	/etc/rmg/bin/perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=N225
 
 SDEQ_benchmark_SSECOMP:
-	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=SSECOMP
+	/etc/rmg/bin/perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=SSECOMP
 
 SDEQ_benchmark_FTSE:
-	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=FTSE
+	/etc/rmg/bin/perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=FTSE
 
 OVRA_benchmark:
-	perl -Ilib t/run_quant_benchmark_test.pl --which=ovra
+	/etc/rmg/bin/perl -Ilib t/run_quant_benchmark_test.pl --which=ovra
 
 
 tidy:
@@ -63,6 +63,6 @@ tidy:
 	find . -name '*.tidyup' -delete
 
 compile:
-	prove -v -l t/BOM/002_autosyntax.t
+	/etc/rmg/bin/prove -v -l t/BOM/002_autosyntax.t
 
 
