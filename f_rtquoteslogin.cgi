@@ -15,7 +15,38 @@ use Path::Tiny;
 use JSON::XS;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
+use File::ReadBackwards;
+use Date::Utility;
+
 BOM::Backoffice::Sysinit::init();
+
+my $fullfeed_re      = qr/^\d\d?-\w{3}-\d\d.fullfeed(?!\.zip)/;
+my $combined_re      = qr/((\d\d?-\w{3}-\d\d)\.fullfeed)?$/;
+my $fullfeed_line_re = qr/^(\d{2}:\d{2}:\d{2}) (\d{2}:\d{2}) (\d+\.?\d*) (\d+\.?\d*) (\d+\.?\d*).*\n$/;
+
+sub last_quote {
+    my $dir = shift;
+    my ($recent) = sort { -M $a <=> -M $b } $dir->children($fullfeed_re);
+    my $bw = File::ReadBackwards->new($recent)
+        or die "can't read $recent: $!";
+    return ($recent, $bw->readline);
+}
+
+sub parse_quote {
+    my ($file, $line) = @_;
+    my ($epoch, $price);
+    my $provider = $file->parent->parent->basename;
+    if ($provider ne 'combined') {
+        ($epoch, undef, undef, undef, $price) = split ',', $line;
+    } elsif ($line =~ $fullfeed_line_re) {
+        my $time = $1;
+        $price = $5;
+        my $date = ($file->basename =~ s/$combined_re/$2/r);
+        # in case of crash outer try/catch will handle that
+        $epoch = Date::Utility->new($date . ' ' . $time)->epoch;
+    }
+    return ($epoch, $price);
+}
 
 PrintContentType();
 BrokerPresentation('REALTIME QUOTES');
@@ -86,17 +117,14 @@ foreach my $i (@instrumentlist) {
     my $currtime = time;
 
     foreach my $p (@providerlist) {
-        my ($tick, $price, $timestamp);
+        my ($price, $timestamp);
 
-        # For combined folder, we need to look up the correct combined folder.
-        if ($p eq 'combined') {
-            $tick      = $underlying->get_combined_realtime;
-            $timestamp = $tick->{epoch};
-            $price     = $tick->{quote};
-        } else {
-            my $quote = try { decode_json(path('/feed/provider-activity', $p, $underlying->symbol)->slurp) };
-            ($timestamp, $price) = ($quote->{epoch}, $quote->{price}) if $quote and ref $quote eq 'HASH';
-        }
+        my $path = path('/feed', $p, $underlying->symbol);
+        try {
+            my ($file, $line) = last_quote($path);
+            ($price, $timestamp) = parse_quote($file, $line);
+        };
+
         unless (defined $timestamp and defined $price) {
             print "<td bgcolor=#FFFFCE>&nbsp;</td>";
             next;
