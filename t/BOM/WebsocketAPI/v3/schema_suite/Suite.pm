@@ -229,7 +229,9 @@ sub run {
             _test_schema($receive_file, $content, $result, $fail);
         }
         my $elapsed = tv_interval($t0, [gettimeofday]);
-        diag("$input:$counter [$send_file, $receive_file] - ${elapsed}s");
+
+        # Stream ID and/or send_file may be undef
+        diag(sprintf "%s:%d [%s] - %.3fs", $input, $counter, join(',', grep defined, $test_stream_id, $send_file, $receive_file), $elapsed);
     }
 }
 
