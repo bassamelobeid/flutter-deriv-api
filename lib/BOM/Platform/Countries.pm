@@ -93,5 +93,13 @@ sub volidx_restricted_country {
     return ($config->{gaming_company} eq 'none');
 }
 
+sub financial_binaries_restricted_country {
+    my ($self, $country) = @_;
+    my $config = $country && $self->countries_list->{$country};
+    return 1 unless ($config);
+
+    return ($config->{financial_company} eq 'none');
+}
+
 __PACKAGE__->meta->make_immutable;
 1;
