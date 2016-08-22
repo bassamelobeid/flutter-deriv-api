@@ -73,7 +73,7 @@ subtest 'Client withdraw money via payment agent' => sub {
                 client_loginid => $pa_client->loginid,
                 operation      => 'replica',
             });
-        $amount_data = $clientdb->fetchall_arrayref('select * from payment_v1.get_today_payment_agent_withdrawal_sum_count(?)', [$pa_client->loginid]);
+        $amount_data = $clientdb->getall_arrayref('select * from payment_v1.get_today_payment_agent_withdrawal_sum_count(?)', [$pa_client->loginid]);
         ($total_withdrawal, $withdrawal_count) = ($amount_data->[0]->{amount}, $amount_data->[0]->{count});
     }
     'PA get_today_payment_agent_withdrawal_sum_count';
@@ -86,7 +86,7 @@ subtest 'Client withdraw money via payment agent' => sub {
                 client_loginid => $client->loginid,
                 operation      => 'replica',
             });
-        $amount_data = $clientdb->fetchall_arrayref('select * from payment_v1.get_today_payment_agent_withdrawal_sum_count(?)', [$client->loginid]);
+        $amount_data = $clientdb->getall_arrayref('select * from payment_v1.get_today_payment_agent_withdrawal_sum_count(?)', [$client->loginid]);
         ($total_withdrawal, $withdrawal_count) = ($amount_data->[0]->{amount}, $amount_data->[0]->{count});
     }
     'Client get_today_payment_agent_withdrawal_sum_count';
