@@ -51,13 +51,13 @@ sub run {
     # need to share it with other subs in this module, but should always start with an empty state.
     undef $response;
 
-    system(qw(sudo date -s), '2016-08-09 11:59:00') and die "Failed to set date, do we have sudo access? $!";
-
     eval {
         # Start with a clean database
         BOM::Test::Data::Utility::UnitTestMarketData->import(qw(:init));
         BOM::Test::Data::Utility::UnitTestDatabase->import(qw(:init));
         BOM::Test::Data::Utility::AuthTestDatabase->import(qw(:init));
+        system(qw(sudo date -s), '2016-08-09 11:59:00') and die "Failed to set date, do we have sudo access? $!";
+
         initialize_realtime_ticks_db();
         build_test_R_50_data();
         _setup_market_data();
