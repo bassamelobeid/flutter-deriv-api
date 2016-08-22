@@ -946,8 +946,6 @@ sub _build_discounted_probability {
 sub _build_bid_probability {
     my $self = shift;
 
-    return $self->default_probabilities->{bid_probability} if $self->primary_validation_error;
-
     # Effectively you get the same price as if you bought the other side to cancel.
     my $marked_down = Math::Util::CalculatedValue::Validatable->new({
         name        => 'bid_probability',
@@ -988,7 +986,12 @@ sub _build_ask_probability {
 
     my $max_ask = 1 - $min_ask;
     if ($ask_cv->amount > $max_ask) {
-        $ask_cv->include_adjustment('reset', $self->default_probabilities->{ask_probability});
+        return Math::Util::CalculatedValue::Validatable->new({
+            name        => 'ask_probability',
+            description => 'The price we request for this contract.',
+            set_by      => __PACKAGE__,
+            base_amount => 1,
+        });
     }
 
     return $ask_cv;
@@ -2701,36 +2704,6 @@ sub add_error {
     $err->{set_by} = __PACKAGE__;
     $self->primary_validation_error(MooseX::Role::Validatable::Error->new(%$err));
     return;
-}
-
-has default_probabilities => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_default_probabilities {
-    my $self = shift;
-
-    my %probabilities = (
-        ask_probability => {
-            description => 'The price we request for this contract.',
-            default     => 1,
-        },
-        bid_probability => {
-            description => 'The price we would pay for this contract.',
-            default     => 0,
-        },
-    );
-    my %map = map {
-        $_ => Math::Util::CalculatedValue::Validatable->new({
-            name        => $_,
-            description => $probabilities{$_}{description},
-            set_by      => __PACKAGE__,
-            base_amount => $probabilities{$_}{default},
-        });
-    } keys %probabilities;
-
-    return \%map;
 }
 
 has is_sold => (
