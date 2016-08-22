@@ -61,7 +61,10 @@ sub new_account_virtual {
                 client_password => $args->{client_password},
                 residence       => $args->{residence},
                 source          => $params->{source},
-                $args->{affiliate_token} ? (myaffiliates_token => $args->{affiliate_token}) : ()
+                $args->{affiliate_token} ? (myaffiliates_token => $args->{affiliate_token}) : (),
+                $args->{utm_source}      ? (utm_source         => $args->{utm_source})      : (),
+                $args->{utm_medium}      ? (utm_medium         => $args->{utm_medium})      : (),
+                $args->{utm_campaign}    ? (utm_campaign       => $args->{utm_campaign})    : ()
             },
         });
 
