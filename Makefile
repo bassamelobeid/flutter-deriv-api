@@ -1,8 +1,8 @@
 test:
-	prove -lr t/
+	/etc/rmg/bin/prove -lr t/
 
 critique:
-	prove -l t/BOM/003_autosyntax.t
+	/etc/rmg/bin/prove -l t/BOM/003_autosyntax.t
 
 tidy:
 	find . -name '*.p?.bak' -delete
