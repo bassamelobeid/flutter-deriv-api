@@ -93,6 +93,7 @@ sub proposal_open_contract {
                     purchase_time   => $response->{$contract_id}->{purchase_time},
                     is_sold         => $response->{$contract_id}->{is_sold},
                     transaction_ids => $response->{$contract_id}->{transaction_ids},
+                    longcode        => $response->{$contract_id}->{longcode},
                 };
 
                 if (not $uuid = _pricing_channel_for_bid($c, 'subscribe', $args, $cache)) {
@@ -165,6 +166,7 @@ sub _pricing_channel_for_bid {
     $hash{is_sold} = $cache->{is_sold} + 0;
     $hash{language} = $c->stash('language') || 'EN';
     $hash{price_daemon_cmd} = $price_daemon_cmd;
+
     my $redis_channel = _serialized_args(\%hash);
 
     %hash = map { $_ =~ /passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
@@ -262,6 +264,7 @@ sub process_bid_event {
             $response->{buy_price}       = $passed_fields->{buy_price};
             $response->{purchase_time}   = $passed_fields->{purchase_time};
             $response->{is_sold}         = $passed_fields->{is_sold};
+            $response->{longcode}        = $passed_fields->{longcode};
             $results                     = {
                 msg_type                 => 'proposal_open_contract',
                 'proposal_open_contract' => {%$response,},
@@ -330,9 +333,9 @@ sub process_ask_event {
                 $results = {
                     msg_type   => 'proposal',
                     'proposal' => {
-                        id       => $stash_data->{uuid},
-                        longcode => $stash_data->{longcode},
                         %$adjusted_results,
+                        id       => $stash_data->{uuid},
+                        longcode => $stash_data->{cache}->{longcode},
                     },
                 };
             }

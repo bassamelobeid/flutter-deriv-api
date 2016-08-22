@@ -114,10 +114,15 @@ sub run {
     my $t;
     my $lang = '';
     my ($last_lang, $reset);
+    my $reset_time = time + 30;
     while(my $line = <$fh>) {
-        # we are setting the time backward to 12:00:00 for every
-        # tests to ensure time sensitive tests (pricing tests) always start at the same time.
-        system(qw(sudo date -s), '2016-08-09 12:00:00') and die "Failed to set date, do we have sudo access? $!";
+        # we are setting the time one second ahead 12:00:00 for every
+        # test to ensure time sensitive tests (pricing tests) always start at a consistent time.
+        # Note that we have seen problems when resetting the time backwards:
+        # symptoms include account balance going negative when buying
+        # a contract.
+        system(qw(sudo date -s), '@' . $reset_time) and die "Failed to set date, do we have sudo access? $!";
+        ++$reset_time;
 
         my $counter = $.; # slightly more informative name, for use in log messages at the end of the loop
         chomp $line;
@@ -267,6 +272,21 @@ sub _set_allow_omnibus {
     $client->save();
 
     return $r;
+}
+
+sub store_stream_data {
+    my ($tx, $result) = @_;
+    my $call_name;
+    for my $stream_id (keys %$streams) {
+        my $stream = $streams->{$stream_id};
+        $call_name = $stream->{call_name} if exists $result->{$stream->{call_name}};
+    }
+    return unless $call_name;
+    for my $stream_id (keys %$streams) {
+        push @{$streams->{$stream_id}->{stream_data}}, $result
+            if $result->{$call_name}->{id} && $result->{$call_name}->{id} eq $streams->{$stream_id}->{id};
+    }
+    return;
 }
 
 sub _setup_market_data {
