@@ -5,7 +5,6 @@ use Test::Most tests => 3;
 use Test::Exception;
 use Test::FailWarnings;
 
-use BOM::Test::Runtime qw(:normal);
 use BOM::Market;
 use BOM::Market::Registry;
 
