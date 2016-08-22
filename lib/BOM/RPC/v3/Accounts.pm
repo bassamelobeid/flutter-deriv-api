@@ -446,17 +446,23 @@ sub reset_password {
 
     my ($user, @clients);
     $user = BOM::Platform::User->new({email => $email});
+    my $err = BOM::RPC::v3::Utility::create_error({
+            code              => "InternalServerError",
+            message_to_client => localize("Sorry, an error occurred while processing your account.")});
+
     unless ($user) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => "InternalServerError",
-                message_to_client => localize("Sorry, an error occurred while processing your account.")});
+        return $err;
     }
+
     @clients = $user->clients;
+    unless (scalar @clients) {
+        return $err;
+    }
 
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
     my $client = $clients[0];
 
-    unless ($client->is_virtual) {
+    if ($client && not $client->is_virtual) {
         unless ($args->{date_of_birth}) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => "DateOfBirthMissing",
@@ -478,7 +484,7 @@ sub reset_password {
     $user->password($new_password);
     $user->save;
 
-    foreach my $obj ($user->clients) {
+    foreach my $obj (@clients) {
         $obj->password($new_password);
         $obj->save;
     }
