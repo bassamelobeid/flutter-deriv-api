@@ -117,7 +117,9 @@ sub run {
     my $t;
     my $lang = '';
     my ($last_lang, $reset);
-    my $reset_time = time + 30;
+
+    # 30s ahead of test start, minus 10 seconds for the initial ticks
+    my $reset_time = time + 20;
     while(my $line = <$fh>) {
         # we are setting the time one second ahead 12:00:00 for every
         # test to ensure time sensitive tests (pricing tests) always start at a consistent time.
