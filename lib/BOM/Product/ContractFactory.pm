@@ -273,7 +273,7 @@ This whole thing needs to be reconsidered, eventually.
 
 {
     my $sci_keyspace = 'SIMPLE_CONTRACT_INFO';
-    my $sci_ttl      = 5 * 60;             # Tune for cache retention to manage space/time trade-off.
+    my $sci_ttl      = 5 * 60;                   # Tune for cache retention to manage space/time trade-off.
 
     sub simple_contract_info {
         my ($build_arg, $maybe_currency) = @_;
