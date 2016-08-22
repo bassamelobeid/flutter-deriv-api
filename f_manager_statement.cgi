@@ -72,7 +72,7 @@ my $clientdb = BOM::Database::ClientDB->new({
         operation      => 'replica',
     });
 
-my $open_bets = $clientdb->fetchall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false']);
+my $open_bets = $clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false']);
 foreach my $open_bet (@{$open_bets}) {
     my $bet = produce_contract($open_bet->{short_code}, $client->currency);
     $open_bet->{description} = $bet->longcode;
