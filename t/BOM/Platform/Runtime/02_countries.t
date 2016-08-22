@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::Most 0.22 (tests => 8);
+use Test::Most 0.22 (tests => 9);
 use Test::NoWarnings;
 use List::Util qw(first);
 use BOM::Platform::Runtime;
@@ -32,13 +32,14 @@ subtest 'iom countries' => sub {
 
         is(BOM::Platform::Countries->instance->restricted_country($c),            !1,    '! restricted_country');
         is(BOM::Platform::Countries->instance->volidx_restricted_country($c),     !1,    '!volidx _restricted_country');
+        is(BOM::Platform::Countries->instance->financial_binaries_restricted_country($c), !1, '!financial_binaries _restricted_country');
         is(BOM::Platform::Countries->instance->virtual_company_for_country($c),   'fog', 'virtual_company_for_country');
         is(BOM::Platform::Countries->instance->gaming_company_for_country($c),    'iom', 'gaming_company_for_country');
         is(BOM::Platform::Countries->instance->financial_company_for_country($c), 'iom', 'financial_company_for_country');
     }
 };
 
-my @mlt_country = qw( at be bg cy cz dk ee fi hr hu ie lt lv nl pl pt ro se si sk );
+my @mlt_country = qw( at bg cy cz dk ee fi hr hu ie lt lv nl pl pt ro se si sk );
 @countries = @mlt_country;
 subtest 'EU countries' => sub {
     foreach my $c (@countries) {
@@ -49,6 +50,7 @@ subtest 'EU countries' => sub {
 
         is(BOM::Platform::Countries->instance->restricted_country($c),            !1,            '! restricted_country');
         is(BOM::Platform::Countries->instance->volidx_restricted_country($c),     !1,            '! volidx_restricted_country');
+        is(BOM::Platform::Countries->instance->financial_binaries_restricted_country($c), !1, '!financial_binaries _restricted_country');
         is(BOM::Platform::Countries->instance->virtual_company_for_country($c),   'fog',         'virtual_company_for_country');
         is(BOM::Platform::Countries->instance->gaming_company_for_country($c),    'malta',       'gaming_company_for_country');
         is(BOM::Platform::Countries->instance->financial_company_for_country($c), 'maltainvest', 'financial_company_for_country');
@@ -67,6 +69,7 @@ subtest 'EU countries, no Volatility Indices' => sub {
         is(BOM::Platform::Countries->instance->restricted_country($c),            !1,            '! restricted_country');
         is(BOM::Platform::Countries->instance->volidx_restricted_country($c),     1,             'volidx_restricted_country');
         is(BOM::Platform::Countries->instance->virtual_company_for_country($c),   'fog',         'virtual_company_for_country');
+        is(BOM::Platform::Countries->instance->financial_binaries_restricted_country($c), !1, '!financial_binaries _restricted_country');
         is(BOM::Platform::Countries->instance->gaming_company_for_country($c),    undef,         '! gaming_company_for_country');
         is(BOM::Platform::Countries->instance->financial_company_for_country($c), 'maltainvest', 'financial_company_for_country');
     }
@@ -82,8 +85,9 @@ subtest 'restricted countries' => sub {
         is($c_config->{financial_company}, 'none', 'no financial company');
 
         is(BOM::Platform::Countries->instance->restricted_country($c),            1,     'restricted_country');
-        is(BOM::Platform::Countries->instance->volidx_restricted_country($c),     1,     '! volidx_restricted_country');
+        is(BOM::Platform::Countries->instance->volidx_restricted_country($c),     1,     'volidx_restricted_country');
         is(BOM::Platform::Countries->instance->virtual_company_for_country($c),   'fog', 'virtual_company_for_country');
+        is(BOM::Platform::Countries->instance->financial_binaries_restricted_country($c), 1, 'financial_binaries _restricted_country');
         is(BOM::Platform::Countries->instance->gaming_company_for_country($c),    undef, '! gaming_company_for_country');
         is(BOM::Platform::Countries->instance->financial_company_for_country($c), undef, '! financial_company_for_country');
     }
@@ -100,9 +104,26 @@ subtest 'japan' => sub {
     is(BOM::Platform::Countries->instance->volidx_restricted_country($c),     1,               'volidx_restricted_country');
     is(BOM::Platform::Countries->instance->virtual_company_for_country($c),   'japan-virtual', 'virtual_company_for_country');
     is(BOM::Platform::Countries->instance->gaming_company_for_country($c),    undef,           '! gaming_company_for_country');
+    is(BOM::Platform::Countries->instance->financial_binaries_restricted_country($c), !1, '!financial_binaries _restricted_country');
     is(BOM::Platform::Countries->instance->financial_company_for_country($c), 'japan',         'financial_company_for_country');
 };
 
+subtest 'belgium' => sub {
+    my $c        = 'be';
+    my $c_config = $configs->{$c};
+    isnt($c_config->{name}, undef, "$c [$c_config->{name}]");
+    is($c_config->{gaming_company},    'malta',  'gaming company is malta');
+    is($c_config->{financial_company}, 'none', 'financial compaing is none');
+
+    is(BOM::Platform::Countries->instance->restricted_country($c),            !1,              '! restricted_country');
+    is(BOM::Platform::Countries->instance->volidx_restricted_country($c),     !1,              '! volidx_restricted_country');
+    is(BOM::Platform::Countries->instance->virtual_company_for_country($c),   'fog',           'virtual_company_for_country');
+    is(BOM::Platform::Countries->instance->gaming_company_for_country($c),    'malta',         'gaming_company_for_country');
+    is(BOM::Platform::Countries->instance->financial_binaries_restricted_country($c), 1, 'financial_binaries _restricted_country');
+    is(BOM::Platform::Countries->instance->financial_company_for_country($c), undef,          '! financial_company_for_country');
+};
+
+push @mlt_country, 'be';
 my @exclude = (@iom_country, @mlt_country, @mf_only_country, @restricted_country, 'jp');
 @countries = ();
 subtest 'CR countries' => sub {
@@ -127,6 +148,7 @@ subtest 'CR countries' => sub {
             is(BOM::Platform::Countries->instance->gaming_company_for_country($c), 'costarica', 'gaming_company_for_country');
         }
 
+        is(BOM::Platform::Countries->instance->financial_binaries_restricted_country($c), !1, '!financial_binaries _restricted_country');
         is(BOM::Platform::Countries->instance->restricted_country($c),            !1,          '! restricted_country');
         is(BOM::Platform::Countries->instance->virtual_company_for_country($c),   'fog',       'virtual_company_for_country');
         is(BOM::Platform::Countries->instance->financial_company_for_country($c), 'costarica', 'financial_company_for_country');
