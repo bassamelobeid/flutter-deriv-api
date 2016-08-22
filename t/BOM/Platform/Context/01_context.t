@@ -9,7 +9,6 @@ use Test::NoWarnings;
 use Test::MockModule;
 use JSON qw(decode_json);
 
-use BOM::Test::Runtime qw(:normal);
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
 
