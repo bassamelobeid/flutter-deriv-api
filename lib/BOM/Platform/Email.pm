@@ -62,10 +62,10 @@ sub send_email {
     $prefix =~ s/\]//;
     $subject = $prefix . $subject;
 
-    # Encode subj here for Vietnamese language
+    # Encode subj here:
     # Mail::Sender produces too long encoded Subject
     # which sometimes gets double-encoded after sending
-    $subject = encode('MIME-Q', $subject) if $language eq 'VI';
+    $subject = encode('MIME-Q', $subject);
 
     # DON'T send email on devbox except to RMG emails
     return 1
