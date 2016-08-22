@@ -5,7 +5,7 @@ TESTS=unit_test_platform_client \
 M=[ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
 D=$(CURDIR)
 I=-I$D/lib -I$D -I/home/git/regentmarkets/bom/t -I/home/git/regentmarkets/bom-postgres/lib -I/home/git/regentmarkets/bom/lib -I/home/git/regentmarkets/bom-market/lib
-P=prove --timer $I
+P=/etc/rmg/bin/prove --timer $I
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 test: $(TESTS)
@@ -30,5 +30,5 @@ tidy:
 	find . -name '*.tidyup' -delete
 
 syntax_lib:
-	SYNTAX_CHUNK_NAME=lib prove -I./lib -I/home/git/regentmarkets/bom-postgres/lib t/002_autosyntax.t t/BOM/001_structure.t
+	SYNTAX_CHUNK_NAME=lib /etc/rmg/bin/prove -I./lib -I/home/git/regentmarkets/bom-postgres/lib t/002_autosyntax.t t/BOM/001_structure.t
 
