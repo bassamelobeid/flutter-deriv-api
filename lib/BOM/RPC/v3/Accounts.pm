@@ -462,7 +462,7 @@ sub reset_password {
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
     my $client = $clients[0];
 
-    if ($client && not $client->is_virtual) {
+    if ($client and not $client->is_virtual) {
         unless ($args->{date_of_birth}) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => "DateOfBirthMissing",
