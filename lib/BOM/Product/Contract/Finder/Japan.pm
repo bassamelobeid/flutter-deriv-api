@@ -358,7 +358,8 @@ sub _set_predefined_barriers {
         });
 
         # Expires at the end of the available period.
-        Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry - $now->epoch);
+        # The shortest duration is 2h15m. So make refresh the barriers cache at this time
+        Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, 8100);
     }
 
     my $expired_barriers = _get_expired_barriers({
@@ -431,7 +432,7 @@ sub _get_expired_barriers {
         }
     }
     if ($new_added_expired_barrier > 0) {
-        Cache::RedisDB->set($cache_keyspace, $expired_barriers_key, $expired_barriers, $date_expiry - $now);
+        Cache::RedisDB->set($cache_keyspace, $expired_barriers_key, $expired_barriers, 8100);
     }
 
     return $expired_barriers;
