@@ -10,7 +10,6 @@ use File::Spec;
 use JSON qw(decode_json);
 
 use Date::Utility;
-use BOM::Test::Runtime qw(:normal);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 

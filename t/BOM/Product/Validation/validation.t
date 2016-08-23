@@ -10,7 +10,6 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Test::Runtime qw(:normal);
 use Date::Utility;
 use Quant::Framework::Spot::Tick;
 use BOM::Market::Underlying;
@@ -498,7 +497,7 @@ subtest 'volsurfaces become old and invalid' => sub {
 
     $bet = produce_contract($bet_params);
     ok($bet->volsurface->validation_error('fake broken surface'), 'Set broken surface');
-    $expected_reasons = [qr/has smile flags/];
+    $expected_reasons = [qr/fake broken surface/];
     test_error_list('buy', $bet, $expected_reasons);
 
     my $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

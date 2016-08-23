@@ -228,7 +228,7 @@ subtest 'date start blackouts' => sub {
     $bet_params->{duration} = '15m';
     $bet_params->{current_tick} = $hsi_weekday_tick;
     $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_sell, 'not valid to buy';
+    ok !$c->is_valid_to_buy, 'not valid to buy';
     like(($c->primary_validation_error)[0]->{message_to_client}, qr/from 07:25:00 to 07:40:00/, 'throws error');
 
     note('Multiday contract on HSI');
