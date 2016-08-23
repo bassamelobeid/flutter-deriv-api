@@ -20,7 +20,7 @@ use Date::Utility;
 
 BOM::Backoffice::Sysinit::init();
 
-my $fullfeed_re      = qr/^\d\d?-\w{3}-\d\d.fullfeed(?!\.zip)/;
+my $fullfeed_re = qr/^\d\d?-\w{3}-\d\d.fullfeed(?!\.zip)/;
 
 sub last_quote {
     my $dir = shift;
@@ -44,6 +44,13 @@ sub parse_quote {
         $epoch = Date::Utility->new($date . ' ' . $time)->epoch;
     }
     return ($price, $epoch);
+}
+
+sub get_quote {
+    my $dir = shift;
+    my ($file, $line) = last_quote($dir);
+    my ($price, $timestamp) = parse_quote($file, $line);
+    return ($price, $timestamp);
 }
 
 PrintContentType();
@@ -115,12 +122,11 @@ foreach my $i (@instrumentlist) {
     my $currtime = time;
 
     foreach my $p (@providerlist) {
-        my ($price, $timestamp);
+        my ($price, $timestamp, $spot);
 
-        my $path = path('/feed', $p, $underlying->symbol);
         try {
-            my ($file, $line) = last_quote($path);
-            ($price, $timestamp) = parse_quote($file, $line);
+            ($price, $timestamp) = get_quote(path('/feed', $p, $underlying->symbol));
+            ($spot) = ($p ne 'combined') ? get_quote(path('/feed', 'combined', $underlying->symbol)) : ($price);
         };
 
         unless (defined $timestamp and defined $price) {
