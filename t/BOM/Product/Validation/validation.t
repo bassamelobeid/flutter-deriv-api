@@ -634,9 +634,9 @@ subtest 'invalid start times' => sub {
         });
 
     $bet_params->{volsurface}   = $volsurface;
-    $bet_params->{bet_type}     = 'DOUBLEDOWN';
+    $bet_params->{bet_type}     = 'PUT';
     $bet_params->{duration}     = '0d';
-    $bet_params->{date_start}   = $underlying->calendar->closing_on(Date::Utility->new('2013-03-28'))->minus_time_interval('1m');
+    $bet_params->{date_start}   = $underlying->calendar->opening_on(Date::Utility->new('2013-03-28'));
     $bet_params->{date_pricing} = $bet_params->{date_start};
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
@@ -648,7 +648,7 @@ subtest 'invalid start times' => sub {
         {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet              = produce_contract($bet_params);
-    $expected_reasons = [qr/Daily duration.*is outside/];
+    $expected_reasons = [qr/Duration.*not acceptable/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -770,7 +770,7 @@ subtest 'invalid lifetimes.. how rude' => sub {
         {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     my $bet              = produce_contract($bet_params);
-    my $expected_reasons = [qr/Intraday duration.*not acceptable/];
+    my $expected_reasons = [qr/Duration.*not acceptable/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{duration} = '20m';
@@ -792,7 +792,7 @@ subtest 'invalid lifetimes.. how rude' => sub {
 
     $bet = produce_contract($bet_params);
 
-    $expected_reasons = [qr/Daily duration.*outside.*range/];
+    $expected_reasons = [qr/Duration.*not acceptable/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{duration} = '181d';
@@ -836,7 +836,7 @@ subtest 'invalid lifetimes.. how rude' => sub {
     $bet_params->{duration} = '1d';
     $bet_params->{barrier}  = 'S10P';
     $bet                    = produce_contract($bet_params);
-    $expected_reasons       = [qr/Daily duration.*outside acceptable range/];
+    $expected_reasons       = [qr/Duration.*not acceptable/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{duration} = '14d';
@@ -1019,11 +1019,11 @@ subtest 'intraday indices duration test' => sub {
     ok $c->is_valid_to_buy, 'valid 15 minutes Flash on AS51';
     $params->{duration} = '14m';
     $c = produce_contract($params);
-    my $expected_reasons = [qr/Intraday duration.*not acceptable/];
+    my $expected_reasons = [qr/Duration.*not acceptable/];
     test_error_list('buy', $c, $expected_reasons);
     $params->{duration} = '5h1s';
     $c                  = produce_contract($params);
-    $expected_reasons   = [qr/Intraday duration.*not acceptable/];
+    $expected_reasons   = [qr/Duration.*not acceptable/];
     test_error_list('buy', $c, $expected_reasons);
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -1060,7 +1060,7 @@ subtest 'intraday indices duration test' => sub {
     $params->{duration}     = '14m59s';
     $params->{current_tick} = $ftse_tick;
     $c                      = produce_contract($params);
-    $expected_reasons       = [qr/Intraday duration.*not acceptable/];
+    $expected_reasons       = [qr/Duration.*not acceptable/];
     test_error_list('buy', $c, $expected_reasons);
 };
 
