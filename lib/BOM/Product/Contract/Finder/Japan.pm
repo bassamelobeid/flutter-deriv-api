@@ -118,12 +118,26 @@ sub _predefined_trading_period {
         my @skip_even_hour = (grep { $_ eq $symbol } qw(frxUSDJPY frxAUDJPY frxAUDUSD)) ? (18, 20) : (18, 20, 22);
 
         if (not grep { $even_hour == $_ } @skip_even_hour) {
-            $trading_periods = [
-                _get_intraday_trading_window({
+            $trading_periods = [];
+
+            my $window_2h = _get_intraday_trading_window({
+                now        => $now,
+                date_start => $today->plus_time_interval($even_hour . 'h'),
+                duration   => '2h'
+            });
+
+            # Previous 2 hours contract should be always available in the first 15 minutes of the next one
+            # (except start of the trading day)
+            if (($now->epoch - $window_2h->{date_start}->{epoch}) / 60 < 15 && $even_hour - 2 >= 0) {
+                push @$trading_periods,
+                    _get_intraday_trading_window({
                         now        => $now,
-                        date_start => $today->plus_time_interval($even_hour . 'h'),
+                        date_start => $today->plus_time_interval(($even_hour - 2) . 'h'),
                         duration   => '2h'
-                    })];
+                    });
+            }
+
+            push @$trading_periods, $window_2h;
             if ($now_hour > 0 and $now_hour < 18) {
                 my $odd_hour = ($now_hour % 2) ? $now_hour : $now_hour - 1;
                 $odd_hour = $odd_hour % 4 == 1 ? $odd_hour : $odd_hour - 2;
@@ -208,7 +222,8 @@ sub _get_intraday_trading_window {
     my $date_start       = $args->{date_start};
     my $duration         = $args->{duration};
     my $now              = $args->{now};
-    my $early_date_start = ($now->day_of_week == 1 and $date_start->hour == 0) ? $date_start : $date_start->minus_time_interval('15m');
+    my $is_monday_start  = $now->day_of_week == 1 && $date_start->hour == 0;
+    my $early_date_start = $is_monday_start ? $date_start : $date_start->minus_time_interval('15m');
     my $date_expiry      = $date_start->plus_time_interval($duration);
     if ($now->is_before($date_expiry)) {
         return {
@@ -220,7 +235,7 @@ sub _get_intraday_trading_window {
                 date  => $date_expiry->datetime,
                 epoch => $date_expiry->epoch,
             },
-            duration => $duration . '15m',
+            duration => $duration . (!$is_monday_start ? '15m' : ''),
         };
     }
 }
