@@ -30,7 +30,7 @@ sub _build_pricing_engine {
     my $self = shift;
     return Pricing::Engine::Digits->new({
         contract_type => $self->pricing_code,
-        strike        => $self->supplied_barrier
+        strike        => $contract->barrier ? $contract->barrier->as_absolute : undef
     });
 }
 
