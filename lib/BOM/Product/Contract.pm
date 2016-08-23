@@ -1412,7 +1412,6 @@ sub _build_pricing_vol {
             economic_events       => $self->economic_events_for_volatility_calculation,
             uses_flat_vol         => $uses_flat_vol,
         });
-        $self->long_term_prediction($volsurface->long_term_prediction);
         $volatility_error = $volsurface->error if $volsurface->error;
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
