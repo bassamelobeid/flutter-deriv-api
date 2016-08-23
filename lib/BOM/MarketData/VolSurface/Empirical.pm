@@ -50,11 +50,6 @@ sub get_volatility {
         fill_cache   => $fill_cache,
     });
 
-    if (@$ticks <= $returns_sep) {
-        $self->error('Insufficient tick interval to get_volatility');
-        return $self->long_term_vol;
-    }
-
     my $requested_interval = Time::Duration::Concise->new(interval => $args->{seconds_to_expiration});
     # $actual_lookback_interval used to be the contract duration, but we have changed the concept.
     # We will use the any amount of ticks we get from the cache and scale the volatility by duration.
