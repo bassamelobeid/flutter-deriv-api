@@ -303,10 +303,6 @@ system:
       description: "Dummy email address to indicate email sent from our system"
       isa: Str
       default: "system@binary.com"
-    on_production:
-      description: "Are we on Production?"
-      isa: Bool
-      default: 0
     on_development:
       description: "Are we on Development?"
       isa: Bool
