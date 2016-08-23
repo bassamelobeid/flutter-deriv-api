@@ -21,8 +21,6 @@ use Date::Utility;
 BOM::Backoffice::Sysinit::init();
 
 my $fullfeed_re      = qr/^\d\d?-\w{3}-\d\d.fullfeed(?!\.zip)/;
-my $combined_re      = qr/((\d\d?-\w{3}-\d\d)\.fullfeed)?$/;
-my $fullfeed_line_re = qr/^(\d{2}:\d{2}:\d{2}) (\d{2}:\d{2}) (\d+\.?\d*) (\d+\.?\d*) (\d+\.?\d*).*\n$/;
 
 sub last_quote {
     my $dir = shift;
@@ -38,14 +36,14 @@ sub parse_quote {
     my $provider = $file->parent->parent->basename;
     if ($provider ne 'combined') {
         ($epoch, undef, undef, undef, $price) = split ',', $line;
-    } elsif ($line =~ $fullfeed_line_re) {
+    } elsif ($line =~ /^(\d{2}:\d{2}:\d{2}) (\d{2}:\d{2}) (\d+\.?\d*) (\d+\.?\d*) (\d+\.?\d*).*\n$/) {
         my $time = $1;
         $price = $5;
-        my $date = ($file->basename =~ s/$combined_re/$2/r);
+        my $date = ($file->basename =~ s/((\d\d?-\w{3}-\d\d)\.fullfeed)?$/$2/r);
         # in case of crash outer try/catch will handle that
         $epoch = Date::Utility->new($date . ' ' . $time)->epoch;
     }
-    return ($epoch, $price);
+    return ($price, $epoch);
 }
 
 PrintContentType();
