@@ -654,12 +654,12 @@ subtest 'error check' => sub {
                 [map { $ticks->[$_] } (0 .. 46)];
             });
         $vs->error('');
-        isnt $vs->get_volatility({
+        is $vs->get_volatility({
                 current_epoch         => $now->epoch,
                 seconds_to_expiration => 900
             }
             ),
-            0.11, 'vol isnt long term vol';
+            0.0944859248028258, 'vol isnt long term vol';
         ok !$vs->error, 'no error is set when we have less than 80% ticks to calculate volatility';
         $vs->error('');
         $mock_at->mock(
