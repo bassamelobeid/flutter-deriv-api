@@ -10,6 +10,9 @@ v3_3:
 json_schema:
 	PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib -I./t t/BOM/WebsocketAPI/v3/schema_suite/suite.t
 
+loadtest:
+	bash -c 'prove --timer -I./lib -I./t t/BOM/WebsocketAPI/v3/schema_suite/loadtest.t'
+
 structure:
 	PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib  -I./t t/BOM/*.t
 
