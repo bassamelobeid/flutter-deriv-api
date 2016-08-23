@@ -946,8 +946,6 @@ sub _build_discounted_probability {
 sub _build_bid_probability {
     my $self = shift;
 
-    return $self->default_probabilities->{bid_probability} if $self->primary_validation_error;
-
     # Effectively you get the same price as if you bought the other side to cancel.
     my $marked_down = Math::Util::CalculatedValue::Validatable->new({
         name        => 'bid_probability',
@@ -988,7 +986,12 @@ sub _build_ask_probability {
 
     my $max_ask = 1 - $min_ask;
     if ($ask_cv->amount > $max_ask) {
-        $ask_cv->include_adjustment('reset', $self->default_probabilities->{ask_probability});
+        return Math::Util::CalculatedValue::Validatable->new({
+            name        => 'ask_probability',
+            description => 'The price we request for this contract.',
+            set_by      => __PACKAGE__,
+            base_amount => 1,
+        });
     }
 
     return $ask_cv;
@@ -1399,14 +1402,8 @@ sub _build_pricing_vol {
     my $self = shift;
 
     my $vol;
-    my $pen = $self->pricing_engine_name;
-    if ($pen =~ /VannaVolga/) {
-        $vol = $self->volsurface->get_volatility({
-            from  => $self->effective_start,
-            to    => $self->date_expiry,
-            delta => 50
-        });
-    } elsif ($self->priced_with_intraday_model) {
+    my $volatility_error;
+    if ($self->priced_with_intraday_model) {
         my $volsurface       = $self->empirical_volsurface;
         my $duration_seconds = $self->timeindays->amount * 86400;
         # volatility doesn't matter for less than 10 minutes ATM contracts,
@@ -1420,18 +1417,26 @@ sub _build_pricing_vol {
             uses_flat_vol         => $uses_flat_vol,
         });
         $self->long_term_prediction($volsurface->long_term_prediction);
-        if ($volsurface->error) {
-            $self->add_error({
-                message => 'Too few periods for historical vol calculation '
-                    . "[symbol: "
-                    . $self->underlying->symbol . "] "
-                    . "[duration: "
-                    . $self->remaining_time->as_concise_string . "]",
-                message_to_client => localize('Trading on this market is suspended due to missing market data.'),
-            });
-        }
+        $volatility_error = $volsurface->error if $volsurface->error;
     } else {
-        $vol = $self->vol_at_strike;
+        if ($self->pricing_engine_name =~ /VannaVolga/) {
+            $vol = $self->volsurface->get_volatility({
+                from  => $self->effective_start,
+                to    => $self->date_expiry,
+                delta => 50
+            });
+        } else {
+            $vol = $self->vol_at_strike;
+        }
+        # we might get an error while pricing contract, take care of them here.
+        $volatility_error = $self->volsurface->validation_error if $self->volsurface->validation_error;
+    }
+
+    if ($volatility_error) {
+        $self->add_error({
+            message           => $volatility_error,
+            message_to_client => localize('Trading on this market is suspended due to missing market data.'),
+        });
     }
 
     if ($vol <= 0) {
@@ -2700,36 +2705,6 @@ sub add_error {
     $err->{set_by} = __PACKAGE__;
     $self->primary_validation_error(MooseX::Role::Validatable::Error->new(%$err));
     return;
-}
-
-has default_probabilities => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_default_probabilities {
-    my $self = shift;
-
-    my %probabilities = (
-        ask_probability => {
-            description => 'The price we request for this contract.',
-            default     => 1,
-        },
-        bid_probability => {
-            description => 'The price we would pay for this contract.',
-            default     => 0,
-        },
-    );
-    my %map = map {
-        $_ => Math::Util::CalculatedValue::Validatable->new({
-            name        => $_,
-            description => $probabilities{$_}{description},
-            set_by      => __PACKAGE__,
-            base_amount => $probabilities{$_}{default},
-        });
-    } keys %probabilities;
-
-    return \%map;
 }
 
 has is_sold => (
