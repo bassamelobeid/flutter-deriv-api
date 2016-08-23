@@ -2537,6 +2537,7 @@ sub _validate_start_and_expiry_date {
 
     return;
 }
+
 sub _validate_lifetime {
     my $self = shift;
 
@@ -2681,7 +2682,7 @@ sub confirm_validity {
     my @validation_methods = qw(_validate_input_parameters _validate_offerings);
     push @validation_methods, qw(_validate_trading_times _validate_start_and_expiry_date) unless $self->underlying->always_available;
     push @validation_methods, qw( _validate_lifetime _validate_barrier _validate_feed validate_price);
-    push @validation_methods, '_validate_volsurface' unless $self->volsurface->type eq 'flat';
+    push @validation_methods, '_validate_volsurface'                                      unless $self->volsurface->type eq 'flat';
 
     foreach my $method (@validation_methods) {
         if (my $err = $self->$method) {
