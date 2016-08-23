@@ -713,7 +713,7 @@ frxAUDUSD:
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 5h
+          max: 1d
           min: 15m
     tick:
       spot:
@@ -769,7 +769,7 @@ frxEURAUD:
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 5h
+          max: 1d
           min: 15m
     tick:
       spot:
@@ -1307,7 +1307,7 @@ frxUSDCAD:
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 5h
+          max: 1d
           min: 15m
     tick:
       spot:
