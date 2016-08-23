@@ -146,7 +146,7 @@ sub save {
 
 sub check_country_restricted {
     my $country_code = shift;
-    return (    BOM::Platform::Runtime->instance->app_config->system->on_production
+    return (    BOM::System::Config::on_production()
             and BOM::Platform::Countries->instance->restricted_country($country_code));
 }
 
