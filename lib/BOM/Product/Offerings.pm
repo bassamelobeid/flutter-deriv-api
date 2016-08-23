@@ -14,7 +14,6 @@ use Time::Duration::Concise;
 use BOM::Market::Underlying;
 use BOM::Platform::Runtime;
 use BOM::Product::Contract::Category;
-use BOM::Platform::Context;
 use BOM::Platform::LandingCompany::Registry;
 use YAML::XS qw(LoadFile);
 
@@ -99,8 +98,7 @@ sub _make_new_flyby {
         }
     }
     # Machine leveling caching for as long as it is valid.
-    Cache::RedisDB->set($cache_namespace . '_' . BOM::Platform::Context::request()->language . '_' . $landing_company->short,
-        $app_config_rev, $fb, 86399);
+    Cache::RedisDB->set($cache_namespace . '_' . $landing_company->short, $app_config_rev, $fb, 86399);
 
     return $fb;
 }
@@ -114,16 +112,13 @@ sub _make_new_flyby {
         $landing_company = 'costarica' unless $landing_company;
 
         my $app_config_rev = BOM::Platform::Runtime->instance->app_config->current_revision || 0;
-        my $lang = BOM::Platform::Context::request()->language;
 
-        return $cache{$lang}{$landing_company}->[1]
-            if exists $cache{$lang}
-            and exists $cache{$lang}{$landing_company}
-            and $cache{$lang}{$landing_company}->[0] == $app_config_rev;
+        return $cache{$landing_company}->[1]
+            if exists $cache{$landing_company}
+            and $cache{$landing_company}->[0] == $app_config_rev;
 
-        my $cached_fb = Cache::RedisDB->get($cache_namespace . '_' . $lang . '_' . $landing_company, $app_config_rev)
-            // _make_new_flyby($landing_company);
-        $cache{$lang}{$landing_company} = [$app_config_rev, $cached_fb];
+        my $cached_fb = Cache::RedisDB->get($cache_namespace . '_' . $landing_company, $app_config_rev) // _make_new_flyby($landing_company);
+        $cache{$landing_company} = [$app_config_rev, $cached_fb];
 
         return $cached_fb;
     }
