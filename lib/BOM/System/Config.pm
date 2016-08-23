@@ -52,4 +52,9 @@ sub quants {
     }
 }
 
+sub on_production {
+  state $on_production = env() eq 'production';
+  return $on_production;
+}
+
 1;
