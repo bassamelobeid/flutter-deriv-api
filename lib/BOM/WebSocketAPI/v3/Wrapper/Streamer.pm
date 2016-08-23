@@ -71,6 +71,7 @@ sub ticks_history {
     }
 
     my $callback = sub {
+        return unless $c;
         $c->call_rpc({
                 args            => $args,
                 method          => 'ticks_history',
