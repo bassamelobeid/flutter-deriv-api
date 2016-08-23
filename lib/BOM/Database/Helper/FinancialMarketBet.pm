@@ -213,8 +213,7 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
 
     my $transdata = $self->transaction_data || {};
     my $staff_loginid = $transdata->{staff_loginid};
-    $staff_loginid = '#' . $staff_loginid>    # use #CR1234 to distinguish from non-batch buy.
-        if $staff_loginid;
+    $staff_loginid = '#' . $staff_loginid if $staff_loginid;    # use #CR1234 to distinguish from non-batch buy.
 
     my @param = (
         # FMB stuff
