@@ -63,14 +63,14 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $an_hour_earlier,
-    }) for (qw/USD EUR AUD SGD GBP AUD-USD EUR-USD/);
+    }) for (qw/USD EUR AUD SGD GBP CAD AUD-USD EUR-USD CAD-AUD/);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol        => $_,
         recorded_date => $an_hour_earlier->minus_time_interval('150d'),
-    }) for (qw/USD EUR AUD SGD GBP AUD-USD EUR-USD/);
+    }) for (qw/USD EUR AUD SGD GBP CAD AUD-USD EUR-USD CAD-AUD/);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
@@ -329,10 +329,10 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     # Between setting up aggregated ticks and mocking objects, I chose the latter.
     # We are not checking volatility and trend calculation here.
     my $mocked_contract = Test::MockModule->new('BOM::Product::Contract::Call');
-    $mocked_contract->mock('pricing_vol', sub {0.1});
-    $mocked_contract->mock('news_adjusted_pricing_vol', sub {0.1});
+    $mocked_contract->mock('pricing_vol',               sub { 0.1 });
+    $mocked_contract->mock('news_adjusted_pricing_vol', sub { 0.1 });
     my $mocked_engine = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
-    $mocked_engine->mock('ticks_for_trend', sub {[]});
+    $mocked_engine->mock('ticks_for_trend', sub { [] });
     $bet = produce_contract($bet_params);
     ok $bet->is_valid_to_buy, 'valid to buy';
     is $bet->theo_probability->amount, 0.1, 'theo floored at 0.1';
@@ -388,23 +388,23 @@ subtest 'invalid barriers knocked down for great justice' => sub {
     $expected_reasons = [qr/^Mixed.*barriers/, qr/stake.*same as.*payout/, qr/Barrier too far from spot/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{low_barrier} = -100;    # Fine, we'll set our low barrier like you want.
+    $bet_params->{low_barrier} = -100;      # Fine, we'll set our low barrier like you want.
     $bet = produce_contract($bet_params);
     $expected_reasons = [qr/^Non-positive barrier/, qr/stake.*same as.*payout/, qr/Barrier too far from spot/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{low_barrier} = 111;         # Sigh, ok, then, what about this one?
+    $bet_params->{low_barrier} = 111;       # Sigh, ok, then, what about this one?
     $bet = produce_contract($bet_params);
     $expected_reasons = [qr/barriers inverted/, qr/straddle.*spot/, qr/stake.*same as.*payout/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{high_barrier} = 110;
-    $bet_params->{low_barrier} = 110;          # Surely this must be ok.
-    $bet = produce_contract($bet_params);
+    $bet_params->{low_barrier}  = 110;                             # Surely this must be ok.
+    $bet                        = produce_contract($bet_params);
     $expected_reasons = [qr/barriers must be different/, qr/straddle.*spot/, qr/stake.*same as.*payout/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{high_barrier} = 110;                        # Ok, I think I get it now.
+    $bet_params->{high_barrier} = 110;                             # Ok, I think I get it now.
     $bet_params->{low_barrier}  = 90;
     $bet                        = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but with properly set barriers, it validates just fine.');
@@ -534,7 +534,7 @@ subtest 'volsurfaces become old and invalid' => sub {
 };
 
 subtest 'invalid start times' => sub {
-    plan tests => 9;
+    plan tests => 17;
 
     my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
@@ -605,11 +605,93 @@ subtest 'invalid start times' => sub {
     $expected_reasons = [qr/starts in the past/];
     test_error_list('buy', $bet, $expected_reasons);
 
+    $bet_params->{duration}     = '0d';
+    $bet_params->{date_start}   = $underlying->calendar->opening_on(Date::Utility->new($starting));
+    $bet_params->{date_pricing} = $bet_params->{date_start};
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxEURUSD',
+            recorded_date => Date::Utility->new($bet_params->{date_start}),
+        });
+    $bet = produce_contract($bet_params);
+    ok($bet->is_valid_to_buy, 'validate to buy zero day contract');
+
+    $bet_params->{barrier} = 'S10P';
+    $bet = produce_contract($bet_params);
+    ok($bet->is_valid_to_buy, 'validate to buy zero day contract');
+
+    $bet_params->{date_start}   = $underlying->calendar->closing_on(Date::Utility->new($starting))->minus_time_interval('30s');
+    $bet_params->{date_pricing} = $bet_params->{date_start};
+    $bet                        = produce_contract($bet_params);
+    $expected_reasons           = [qr/Duration.*not acceptable/];
+    test_error_list('buy', $bet, $expected_reasons);
+
+    $bet_params->{barrier}      = 'S0P';
+    $bet_params->{bet_type}     = 'DOUBLEDOWN';
+    $bet_params->{date_pricing} = $bet_params->{date_start};
+    $bet                        = produce_contract($bet_params);
+    $expected_reasons           = [qr/Duration.*not acceptable/];
+    test_error_list('buy', $bet, $expected_reasons);
+
+    $underlying = BOM::Market::Underlying->new('R_100');
+    $bet_params->{underlying} = $underlying;
+    my $random_tick = Quant::Framework::Spot::Tick->new({
+        symbol => 'R_100',
+        epoch  => $bet_params->{date_start}->epoch + 1,
+        quote  => 100
+    });
+    $bet_params->{current_tick} = $random_tick;
+    $bet_params->{entry_tick}   = $random_tick;
+    $bet_params->{duration}     = '0d';
+    $bet_params->{date_start}   = $underlying->calendar->opening_on(Date::Utility->new($starting));
+    $bet_params->{date_pricing} = $bet_params->{date_start};
+    $bet                        = produce_contract($bet_params);
+    ok($bet->is_valid_to_buy, 'validate to buy zero day contract');
+
+    $bet_params->{bet_type}     = 'DOUBLEDOWN';
+    $bet_params->{date_start}   = $underlying->calendar->closing_on(Date::Utility->new($starting))->minus_time_interval('10s');
+    $bet_params->{date_pricing} = $bet_params->{date_start};
+    $bet                        = produce_contract($bet_params);
+    $expected_reasons           = [qr/Duration.*not acceptable/];
+    test_error_list('buy', $bet, $expected_reasons);
+
+    $underlying               = BOM::Market::Underlying->new('frxAUDCAD');
+    $bet_params->{underlying} = $underlying;
+    $bet_params->{date_start} = $underlying->calendar->opening_on(Date::Utility->new($starting));
+    my $minor_fx_tick = Quant::Framework::Spot::Tick->new({
+        symbol => 'frxAUDCAD',
+        epoch  => $bet_params->{date_start}->epoch + 1,
+        quote  => 100
+    });
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => $_,
+            recorded_date => Date::Utility->new($bet_params->{date_start}),
+        }) for (qw/frxAUDCAD frxUSDCAD/);
+
+    $bet_params->{current_tick} = $minor_fx_tick;
+    $bet_params->{entry_tick}   = $minor_fx_tick;
+    $bet_params->{duration}     = '0d';
+    $bet_params->{date_pricing} = $bet_params->{date_start};
+    $bet                        = produce_contract($bet_params);
+    ok($bet->is_valid_to_buy, 'validate to buy zero day contract');
+
+    $bet_params->{bet_type}     = 'DOUBLEDOWN';
+    $bet_params->{date_start}   = $underlying->calendar->closing_on(Date::Utility->new($starting))->minus_time_interval('1m');
+    $bet_params->{date_pricing} = $bet_params->{date_start};
+    $bet                        = produce_contract($bet_params);
+    $expected_reasons           = [qr/Duration.*not acceptable/];
+    test_error_list('buy', $bet, $expected_reasons);
+
     $underlying = BOM::Market::Underlying->new('GDAXI');
 
     $bet_params->{underlying}   = $underlying;
     $bet_params->{bet_type}     = 'DOUBLEDOWN';
     $bet_params->{duration}     = '7d';
+    $bet_params->{current_tick} = $tick;
     $bet_params->{date_start}   = $underlying->calendar->opening_on(Date::Utility->new('2013-03-28'));
     $bet_params->{date_pricing} = $bet_params->{date_start};
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
