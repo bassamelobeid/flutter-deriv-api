@@ -71,6 +71,13 @@ sub ticks_history {
     }
 
     my $callback = sub {
+        # Here $c might be undef and will generate an error during shutdown of websockets. Here is Tom's comment:
+        #as far as I can see, the issue here is that we process a Redis response just after the websocket connection has closed.
+        #In this case, we're already in global destruction and there just happens to be a race,
+        #one that we might be able to fix by explicitly closing the Redis connection as one of the first steps during shutdown.
+        #
+        #Explicitly closing the Redis connection wouldn't do anything to help a race between websocket close and Redis response during normal operation, of course,
+        #but until we have a failing test case which demonstrates that, I don't think it's worth spending too much time on.
         return unless $c;
         $c->call_rpc({
                 args            => $args,
