@@ -6,7 +6,6 @@ use warnings;
 use Test::Most;
 use Test::FailWarnings;
 
-use BOM::Test::Runtime qw(:normal);
 use BOM::Market::Registry;
 
 subtest 'Build Registry' => sub {
