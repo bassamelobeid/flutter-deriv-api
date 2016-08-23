@@ -641,21 +641,13 @@ subtest 'error check' => sub {
                 seconds_to_expiration => 900
             }
             ),
-            0.11, 'vol is 0.11';
-        is $vs->error, 'Insufficient tick interval to get_volatility', 'error flagged when ticks are empty';
+            $vs->long_term_prediction, 'vol is long term prediction';
+        ok !$vs->error, 'no error even if there\'s no ticks';
         $mock_at->mock(
             'retrieve',
             sub {
                 [map { $ticks->[$_] } (0 .. 3)];
             });
-        $vs->error('');
-        is $vs->get_volatility({
-                current_epoch         => $now->epoch,
-                seconds_to_expiration => 900
-            }
-            ),
-            0.11, 'vol is 0.11';
-        is $vs->error, 'Insufficient tick interval to get_volatility', 'error flagged when ticks has less than or equals to 4 elements';
         $mock_at->mock(
             'retrieve',
             sub {

@@ -64,51 +64,63 @@ sub get_volatility {
         return $self->long_term_vol;
     }
 
-    my @time_samples_past  = map { ($tick_epochs[$_] + $tick_epochs[$_ - $returns_sep]) / 2 } ($returns_sep .. $#tick_epochs);
     my $categorized_events = $self->_categorized_economic_events($economic_events);
-    my $weights            = _calculate_weights(\@time_samples_past, $categorized_events);
-    my $observed_vol       = _calculate_observed_volatility($ticks, \@time_samples_past, \@tick_epochs, $weights);
 
     my $c_start = $args->{current_epoch};
     my $c_end   = $c_start + $args->{seconds_to_expiration};
     my @time_samples_fut;
+
     for (my $i = $c_start; $i <= $c_end; $i += 15) {
         push @time_samples_fut, $i;
     }
 
-    #seasonality curves
-    my $seasonality_past = $self->_get_volatility_seasonality_areas(\@time_samples_past);
-    my $seasonality_fut  = $self->_get_volatility_seasonality_areas(\@time_samples_fut);
+    #seasonality future
+    my $seasonality_fut = $self->_get_volatility_seasonality_areas(\@time_samples_fut);
 
-    #news triangles
+    #news triangles future
     #no news if not requested
-    my $news_past = [(1) x (scalar @time_samples_past)];
-    my $news_fut  = [(1) x (scalar @time_samples_fut)];
+    my $news_fut = [(1) x (scalar @time_samples_fut)];
     if ($args->{include_news_impact}) {
         my $contract_details = {
             start    => $c_start,
             duration => $args->{seconds_to_expiration},
         };
-        $news_past = _calculate_news_triangle(\@time_samples_past, $categorized_events, $contract_details);
-        $news_fut  = _calculate_news_triangle(\@time_samples_fut,  $categorized_events, $contract_details);
+        $news_fut = _calculate_news_triangle(\@time_samples_fut, $categorized_events, $contract_details);
     }
 
-    my $past_sum           = sum(map { ($seasonality_past->[$_] * $news_past->[$_])**2 * $weights->[$_] } (0 .. $#time_samples_past));
-    my $past_seasonality   = sqrt($past_sum / sum(@$weights));
-    my $future_sum         = sum(map { ($seasonality_fut->[$_] * $news_fut->[$_])**2 } (0 .. $#time_samples_fut));
-    my $future_seasonality = sqrt($future_sum / scalar(@time_samples_fut));
-
+    my $future_sum                 = sum(map { ($seasonality_fut->[$_] * $news_fut->[$_])**2 } (0 .. $#time_samples_fut));
+    my $future_seasonality         = sqrt($future_sum / scalar(@time_samples_fut));
     my $ltp_volatility_seasonality = $future_seasonality;
-    my $stp_volatility_seasonality = $future_seasonality / $past_seasonality;
-    $stp_volatility_seasonality = min(2, max($stp_volatility_seasonality, 0.5));
-
-    my $duration_coef        = $self->_get_coefficients('duration_coef');
-    my $minutes_to_expiry    = $args->{seconds_to_expiration} / 60;
-    my $duration_factor      = exp(log($minutes_to_expiry) * $duration_coef->{data}->{slope} + $duration_coef->{data}->{intercept});
-    my $long_term_prediction = $self->long_term_vol * $ltp_volatility_seasonality * $duration_factor;
-    # hate to have to do this!
+    my $duration_coef              = $self->_get_coefficients('duration_coef');
+    my $minutes_to_expiry          = $args->{seconds_to_expiration} / 60;
+    my $duration_factor            = exp(log($minutes_to_expiry) * $duration_coef->{data}->{slope} + $duration_coef->{data}->{intercept});
+    my $long_term_prediction       = $self->long_term_vol * $ltp_volatility_seasonality * $duration_factor;
+    # hate to have to do this but this is needed in intraday pricing engine!
     $self->long_term_prediction($long_term_prediction);
-    my $short_term_prediction = $observed_vol * $stp_volatility_seasonality;
+
+    my $short_term_prediction;
+    if (@tick_epochs < 5) {
+        # we don't have enough ticks to do anything.
+        $short_term_prediction = machine_epsilon();
+    } else {
+        my @time_samples_past = map { ($tick_epochs[$_] + $tick_epochs[$_ - $returns_sep]) / 2 } ($returns_sep .. $#tick_epochs);
+        my $weights = _calculate_weights(\@time_samples_past, $categorized_events);
+        my $observed_vol     = _calculate_observed_volatility($ticks, \@time_samples_past, \@tick_epochs, $weights);
+        my $seasonality_past = $self->_get_volatility_seasonality_areas(\@time_samples_past);
+        my $news_past        = [(1) x (scalar @time_samples_past)];
+        if ($args->{include_news_impact}) {
+            my $contract_details = {
+                start    => $c_start,
+                duration => $args->{seconds_to_expiration},
+            };
+            $news_past = _calculate_news_triangle(\@time_samples_past, $categorized_events, $contract_details);
+        }
+        my $past_sum                   = sum(map { ($seasonality_past->[$_] * $news_past->[$_])**2 * $weights->[$_] } (0 .. $#time_samples_past));
+        my $past_seasonality           = sqrt($past_sum / sum(@$weights));
+        my $stp_volatility_seasonality = $future_seasonality / $past_seasonality;
+        $stp_volatility_seasonality = min(2, max($stp_volatility_seasonality, 0.5));
+        $short_term_prediction = $observed_vol * $stp_volatility_seasonality;
+    }
 
     my $volatility_coef  = $self->_get_coefficients('volatility_coef');
     my $adjusted_ltp     = $long_term_prediction * (1 + $self->volatility_scaling_factor * ($volatility_coef->{data}->{long_term_weight} - 1));
