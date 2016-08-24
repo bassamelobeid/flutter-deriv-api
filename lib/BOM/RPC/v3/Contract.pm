@@ -198,7 +198,6 @@ sub get_bid {
         $response = {
             is_valid_to_sell => $contract->is_valid_to_sell,
             ($contract->is_valid_to_sell ? () : (validation_error => $contract->primary_validation_error->message_to_client)),
-            ask_price           => sprintf('%.2f', $contract->ask_price),
             bid_price           => sprintf('%.2f', $contract->bid_price),
             current_spot_time   => $contract->current_tick->epoch,
             contract_id         => $contract_id,
