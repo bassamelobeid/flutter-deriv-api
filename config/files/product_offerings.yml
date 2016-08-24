@@ -1,6 +1,8 @@
 ---
 # This file contains all the underlying symbols that
 # we current offer contracts to.
+# For FOREX and random, the min duration had set to same as min of intraday to enable offering of zero day contract
+# We can not use '0d' as min of daily contract because that Time::Duration::Concise will convert it into zero seconds.
 AEX: &limited_equities
   callput:
     daily:
@@ -319,10 +321,10 @@ R_100: &random_index
         euro_atm: *two_minutes_to_day
       spot:
         euro_atm:
-          max: 24h
+          max: 1d
           min: 15s
         euro_non_atm:
-          max: 24h
+          max: 1d
           min: 15s
     tick:
       spot:
