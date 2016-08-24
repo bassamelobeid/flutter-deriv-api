@@ -35,7 +35,7 @@ use JSON;
 use BOM::System::Config;
 
 BEGIN {
-    die "wrong env. Can't run test" unless BOM::System::Config::on_qa;
+    die "wrong env. Can't run test" if (BOM::System::Config::env !~ /^(qa\d+|development)$/);
 }
 
 sub initialize_symbol_dividend {

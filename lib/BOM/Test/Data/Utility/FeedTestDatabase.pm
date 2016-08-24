@@ -16,7 +16,7 @@ our @EXPORT_OK = qw( setup_ticks );
 use BOM::System::Config;
 
 BEGIN {
-    die "wrong env. Can't run test" unless BOM::System::Config::on_qa;
+    die "wrong env. Can't run test" if (BOM::System::Config::env !~ /^(qa\d+|development)$/);
 }
 
 sub _db_name {
