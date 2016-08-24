@@ -48,7 +48,7 @@ BEGIN {
     my $test_data_dir = abs_path("$file_path../../data");
     my $config_dir    = $test_data_dir . '/config';
 
-    if (BOM::System::Config::env =~ /^qa/) {
+    if (BOM::System::Config::on_qa) {
         ## no critic (Variables::RequireLocalizedPunctuationVars)
 
         # Redis rand and replicated servers config

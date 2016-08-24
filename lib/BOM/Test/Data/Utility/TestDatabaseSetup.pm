@@ -13,7 +13,7 @@ requires '_db_name', '_post_import_operations', '_build__connection_parameters',
 use BOM::System::Config;
 
 BEGIN {
-    die "wrong env. Can't run test" if (BOM::System::Config::env !~ /^(qa\d+|development)$/);
+    die "wrong env. Can't run test" unless BOM::System::Config::on_qa;
 }
 
 sub prepare_unit_test_database {

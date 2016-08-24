@@ -5,7 +5,7 @@ use MooseX::Singleton;
 use BOM::System::Config;
 
 BEGIN {
-    die "wrong env. Can't run test" if (BOM::System::Config::env !~ /^(qa\d+|development)$/);
+    die "wrong env. Can't run test" unless BOM::System::Config::on_qa;
 }
 
 sub _db_name {
