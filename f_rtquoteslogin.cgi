@@ -126,6 +126,8 @@ foreach my $i (@instrumentlist) {
 
         try {
             ($price, $timestamp) = get_quote(path('/feed', $p, $underlying->symbol));
+            # This is similar to underlying->spot, i.e. we always get the last value from combined fine for comarison
+            # but if the currect provider is already 'combined' we just copy existing value
             ($spot) = ($p ne 'combined') ? get_quote(path('/feed', 'combined', $underlying->symbol)) : ($price);
         };
 
