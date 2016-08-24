@@ -222,7 +222,8 @@ sub _get_intraday_trading_window {
     my $date_start       = $args->{date_start};
     my $duration         = $args->{duration};
     my $now              = $args->{now};
-    my $early_date_start = ($now->day_of_week == 1 and $date_start->hour == 0) ? $date_start : $date_start->minus_time_interval('15m');
+    my $is_monday_start  = $now->day_of_week == 1 && $date_start->hour == 0;
+    my $early_date_start = $is_monday_start ? $date_start : $date_start->minus_time_interval('15m');
     my $date_expiry      = $date_start->plus_time_interval($duration);
     if ($now->is_before($date_expiry)) {
         return {
@@ -234,7 +235,7 @@ sub _get_intraday_trading_window {
                 date  => $date_expiry->datetime,
                 epoch => $date_expiry->epoch,
             },
-            duration => $duration . '15m',
+            duration => $duration . (!$is_monday_start ? '15m' : ''),
         };
     }
 }
@@ -357,7 +358,8 @@ sub _set_predefined_barriers {
         });
 
         # Expires at the end of the available period.
-        Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry - $now->epoch);
+        # The shortest duration is 2h15m. So make refresh the barriers cache at this time
+        Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, 8100);
     }
 
     my $expired_barriers = _get_expired_barriers({
@@ -430,7 +432,7 @@ sub _get_expired_barriers {
         }
     }
     if ($new_added_expired_barrier > 0) {
-        Cache::RedisDB->set($cache_keyspace, $expired_barriers_key, $expired_barriers, $date_expiry - $now);
+        Cache::RedisDB->set($cache_keyspace, $expired_barriers_key, $expired_barriers, 8100);
     }
 
     return $expired_barriers;
