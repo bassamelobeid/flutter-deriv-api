@@ -260,6 +260,15 @@ my ($dbh, $pid);
 sub _dbh {
     #silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
     return undef if not defined _config()->{chronicle};
+
+    # Our reconnection logic here is quite simple: assume that a PID change means we need to
+    # reconnect to the database. This also assumes that DBI will reconnect as necessary when
+    # the remote server is restarted or the network drops for any other reason.
+    # There is a more advanced Perl module for handling this - https://metacpan.org/pod/DBIx::Connector
+    # - but the code there is more complicated, including features such as threads support and
+    # Apache::DBI, and so far there hasn't been a compelling reason to consider switching.
+    # Note that switching DBIx::Connector's ->ping behaviour would not be much help for Data::Chronicle::*
+    # handles, we'd need to update Data::Chronicle itself to use DBIx::Connector to get that benefit.
     my $db_postfix = $ENV{DB_POSTFIX} // '';
     return $dbh if $dbh and $$ == $pid;
     $pid = $$;
