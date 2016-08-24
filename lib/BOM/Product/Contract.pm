@@ -1227,14 +1227,8 @@ sub _build_pricing_vol {
     my $self = shift;
 
     my $vol;
-    my $pen = $self->pricing_engine_name;
-    if ($pen =~ /VannaVolga/) {
-        $vol = $self->volsurface->get_volatility({
-            from  => $self->effective_start,
-            to    => $self->date_expiry,
-            delta => 50
-        });
-    } elsif ($self->priced_with_intraday_model) {
+    my $volatility_error;
+    if ($self->priced_with_intraday_model) {
         my $volsurface       = $self->empirical_volsurface;
         my $duration_seconds = $self->timeindays->amount * 86400;
         # volatility doesn't matter for less than 10 minutes ATM contracts,
@@ -1248,18 +1242,26 @@ sub _build_pricing_vol {
             uses_flat_vol         => $uses_flat_vol,
         });
         $self->long_term_prediction($volsurface->long_term_prediction);
-        if ($volsurface->error) {
-            $self->add_error({
-                message => 'Too few periods for historical vol calculation '
-                    . "[symbol: "
-                    . $self->underlying->symbol . "] "
-                    . "[duration: "
-                    . $self->remaining_time->as_concise_string . "]",
-                message_to_client => localize('Trading on this market is suspended due to missing market data.'),
-            });
-        }
+        $volatility_error = $volsurface->error if $volsurface->error;
     } else {
-        $vol = $self->vol_at_strike;
+        if ($self->pricing_engine_name =~ /VannaVolga/) {
+            $vol = $self->volsurface->get_volatility({
+                from  => $self->effective_start,
+                to    => $self->date_expiry,
+                delta => 50
+            });
+        } else {
+            $vol = $self->vol_at_strike;
+        }
+        # we might get an error while pricing contract, take care of them here.
+        $volatility_error = $self->volsurface->validation_error if $self->volsurface->validation_error;
+    }
+
+    if ($volatility_error) {
+        $self->add_error({
+            message           => $volatility_error,
+            message_to_client => localize('Trading on this market is suspended due to missing market data.'),
+        });
     }
 
     if ($vol <= 0) {

@@ -10,7 +10,6 @@ use JSON qw(decode_json);
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Market::AggTicks;
 
-use BOM::Test::Runtime qw(:normal);
 use Date::Utility;
 use Format::Util::Numbers qw( roundnear );
 use BOM::Product::ContractFactory qw( produce_contract );
