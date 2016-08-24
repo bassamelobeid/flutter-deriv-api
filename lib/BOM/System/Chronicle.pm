@@ -91,27 +91,27 @@ use BOM::System::RedisReplicated;
 use Data::Chronicle::Reader;
 use Data::Chronicle::Writer;
 
+# Used for any writes to the Chronicle DB
+my $writer_instance;
+# Historical instance will be used for fetching historical chronicle data (e.g. back-testing)
+my $historical_instance;
+# NOTE - if you add other instances, see L</_dbh_changed>
+
 sub get_chronicle_writer {
     state $redis = BOM::System::RedisReplicated::redis_write();
 
-    state $instance;
-    $instance //= Data::Chronicle::Writer->new(
+    $writer_instance //= Data::Chronicle::Writer->new(
         cache_writer => $redis,
         db_handle    => _dbh(),
     );
 
-    return $instance;
+    return $writer_instance;
 }
 
 sub get_chronicle_reader {
     #if for_date is specified, then this chronicle_reader will be used for historical data fetching, so it needs a database connection
     my $for_date = shift;
     state $redis = BOM::System::RedisReplicated::redis_read();
-
-    #historical instance will be used for fetching historical chronicle data (e.g. back-testing)
-    state $historical_instance;
-    #live_instance will be used for live pricing (normal website operations)
-    state $live_instance;
 
     if ($for_date) {
         $historical_instance //= Data::Chronicle::Reader->new(
@@ -121,6 +121,9 @@ sub get_chronicle_reader {
 
         return $historical_instance;
     }
+
+    # Live instance will be used for live pricing (normal website operations)
+    state $live_instance;
 
     #if for_date is not specified, we are doing live_pricing, so no need to send database handler
     $live_instance //= Data::Chronicle::Reader->new(
@@ -267,7 +270,22 @@ sub _dbh {
             RaiseError        => 1,
             pg_server_prepare => 0,
         });
+    _dbh_changed();
     return $dbh;
+}
+
+=head2 _dbh_changed
+
+Refresh anything that uses a chronicle database handle.
+Note that any new Chronicle instances we add to this code must also be listed here
+if you want reconnection to work as expected.
+
+=cut
+
+sub _dbh_changed {
+    undef $writer_instance;
+    undef $historical_instance;
+    undef $live_instance;
 }
 
 my $config;
