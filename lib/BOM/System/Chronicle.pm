@@ -256,7 +256,7 @@ my ($dbh, $pid);
 
 sub _dbh {
     #silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
-    return if not defined _config()->{chronicle};
+    return undef if not defined _config()->{chronicle};
     my $db_postfix = $ENV{DB_POSTFIX} // '';
     return $dbh if $dbh and $$ == $pid;
     $pid = $$;
