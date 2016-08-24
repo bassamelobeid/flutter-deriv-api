@@ -30,8 +30,8 @@ my $avg = sum(@times)/@times;
 my $max = max(@times);
 diag sprintf "min/avg/max - %.3fs/%.3fs/%.3fs", $min, $avg, $max;
 
-cmp_ok($avg, '>=', 14, 'average time was above the lower limit, i.e. tests are not suspiciously fast');
-cmp_ok($avg, '<=', 19, 'average time was below our upper limit, i.e. we think overall test time has not increased to a dangerously high level');
+cmp_ok($avg, '>=', 12, 'average time was above the lower limit, i.e. tests are not suspiciously fast');
+cmp_ok($avg, '<=', 21, 'average time was below our upper limit, i.e. we think overall test time has not increased to a dangerously high level');
 
 done_testing();
 
