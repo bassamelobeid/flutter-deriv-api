@@ -319,10 +319,10 @@ R_100: &random_index
         euro_atm: *two_minutes_to_day
       spot:
         euro_atm:
-          max: 1d
+          max: 24h
           min: 15s
         euro_non_atm:
-          max: 1d
+          max: 24h
           min: 15s
     tick:
       spot:
@@ -421,13 +421,13 @@ frxAUDCAD: &inactive_fx
     intraday:
       forward:
         euro_atm:
-          max: 1d
+          max: 24h
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 2m
-          max: 1d
+          max: 24h
           min: 2m
 frxAUDCHF: *inactive_fx
 frxAUDJPY: &active_fx
@@ -443,18 +443,18 @@ frxAUDJPY: &active_fx
     intraday:
       forward:
         euro_atm:
-          max: 1d
+          max: 24h
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 1m
-          max: 1d
+          max: 24h
           min: 1m
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 1d
+          max: 24h
           min: 15m
     tick:
       spot:
