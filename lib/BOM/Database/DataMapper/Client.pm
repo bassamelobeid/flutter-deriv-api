@@ -59,6 +59,10 @@ sub lock_client_loginid {
     return;
 }
 
+BEGIN {
+    *freeze = \&lock_client_loginid;
+}
+
 sub unlock_client_loginid {
     my $self = shift;
 
@@ -75,6 +79,10 @@ sub unlock_client_loginid {
     }
 
     return;
+}
+
+BEGIN {
+    *unfreeze = \&unlock_client_loginid;
 }
 
 sub locked_client_list {
