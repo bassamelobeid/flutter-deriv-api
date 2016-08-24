@@ -57,6 +57,12 @@ subtest 'stake' => sub {
         currency    => 'USD',
         amount_type => 'stake',
         amount      => $stake,
+        theo_probability =>             Math::Util::CalculatedValue::Validatable->new({
+                name        => 'theo_probability',
+                description => 'test theo',
+                set_by      => 'test',
+                base_amount => 0.5,
+            }),
     });
     is $c->payout, 0.96, 'payout is re-adjusted to 0.96 to get a minimum commission of 2 cents';
 
@@ -78,6 +84,12 @@ subtest 'stake' => sub {
         currency    => 'USD',
         amount_type => 'stake',
         amount      => $stake,
+        theo_probability => Math::Util::CalculatedValue::Validatable->new({
+                name        => 'theo_probability',
+                description => 'test theo',
+                set_by      => 'test',
+                base_amount => 0.015,
+            }),
     });
 
     is $c->payout, 20, "Random's payout is re-adjusted to 20 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;

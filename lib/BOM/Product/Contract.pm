@@ -887,7 +887,7 @@ sub _build_price_calculator {
     }
 
     return Price::Calculator->new({
-            market_name                   => $self->market->name,
+            deep_otm_threshold                   => $self->market->deep_otm_threshold,
             new_interface_engine          => $self->new_interface_engine,
             pricing_engine_name           => $self->pricing_engine_name,
             pricing_engine_probability    => $self->pricing_engine->probability,
