@@ -13,6 +13,7 @@ use List::Util qw(min max first);
 use List::MoreUtils qw(none all);
 use Scalar::Util qw(looks_like_number);
 use BOM::Product::RiskProfile;
+use Machine::Epsilon;
 
 use BOM::Market::UnderlyingDB;
 use Math::Util::CalculatedValue::Validatable;
@@ -1136,7 +1137,7 @@ sub _build_commission_min_std {
     # This looks hacky but currently there's not enough justification to have child classes for each landing company.
     # For japan, we would only increase the commission when payout > 100,000 yen.
     # For everything else, we will increase commission at 1,000 of the respective currency.
-    return $self->currency eq 'JPY' ? 50001 : 500;
+    return $self->currency eq 'JPY' ? 50000 + machine_epsilon() : 500;
 }
 
 has commission_max_std => (
