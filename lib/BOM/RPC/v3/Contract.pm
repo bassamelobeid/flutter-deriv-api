@@ -196,12 +196,15 @@ sub get_bid {
         }
 
         $response = {
+            is_valid_to_sell => $contract->is_valid_to_sell,
+            ($contract->is_valid_to_sell ? () : (validation_error => $contract->primary_validation_error->message_to_client)),
+            ask_price           => sprintf('%.2f', $contract->ask_price),
+            bid_price           => sprintf('%.2f', $contract->bid_price),
             current_spot_time   => $contract->current_tick->epoch,
             contract_id         => $contract_id,
             underlying          => $contract->underlying->symbol,
             display_name        => $contract->underlying->display_name,
             is_expired          => $contract->is_expired,
-            is_valid_to_sell    => $contract->is_valid_to_sell,
             is_forward_starting => $contract->is_forward_starting,
             is_path_dependent   => $contract->is_path_dependent,
             is_intraday         => $contract->is_intraday,
@@ -216,8 +219,6 @@ sub get_bid {
         };
 
         if ($contract->is_spread) {
-            # bid price will always be there for spreads
-            $response->{bid_price} = sprintf('%.2f', $contract->bid_price);
             # spreads require different set of parameters.
             my $sign = $contract->sentiment eq 'up' ? '+' : '-';
             my $amount_per_point = $sign . $contract->amount_per_point;
@@ -255,13 +256,6 @@ sub get_bid {
                             'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
                         )});
                 return;
-            }
-
-            # only show prices when client can act on it.
-            if ($contract->is_valid_to_sell) {
-                $response->{bid_price} = sprintf('%.2f', $contract->bid_price);
-            } elsif ($contract->primary_validation_error) {
-                $response->{validation_error} = $contract->primary_validation_error->message_to_client;
             }
 
             $response->{has_corporate_actions} = 1 if @{$contract->corporate_actions};
