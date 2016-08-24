@@ -6,8 +6,7 @@ use Test::FailWarnings;
 
 use BOM::Test::Data::Utility::UnitTestRedis;
 
-use BOM::Product::Offerings
-    qw( get_offerings_flyby get_offerings_with_filter get_permitted_expiries get_contract_specifics );
+use BOM::Product::Offerings qw( get_offerings_flyby get_offerings_with_filter get_permitted_expiries get_contract_specifics );
 
 subtest 'get_offerings_flyby' => sub {
     my $fb;
@@ -24,9 +23,8 @@ subtest 'get_offerings_flyby' => sub {
                 'exchange_name',                  'sentiment',
                 'start_type',                     'submarket',
                 'underlying_symbol',              'min_contract_duration',
-                'max_contract_duration',
-                'min_historical_pricer_duration', 'max_historical_pricer_duration',
-                'contract_category_display'
+                'max_contract_duration',          'min_historical_pricer_duration',
+                'max_historical_pricer_duration', 'contract_category_display'
             )
         ],
         'Matching key list'
@@ -35,8 +33,9 @@ subtest 'get_offerings_flyby' => sub {
     subtest 'example queries' => sub {
         is(scalar $fb->query('"start_type" IS "forward" -> "market"'),          5,  'Forward-starting is offered on 6 markets.');
         is(scalar $fb->query('"expiry_type" IS "tick" -> "underlying_symbol"'), 24, 'Tick expiries are offered on 24 underlyings.');
-        is(scalar get_offerings_flyby('iom')->query('"contract_category" IS "callput" AND "underlying_symbol" IS "frxUSDJPY"'), 12, '12 callput options on frxUSDJPY');
-        is(scalar $fb->query('"exchange_name" IS "RANDOM" -> "underlying_symbol"'), 6,  'Six underlyings trade on the RANDOM exchange');
+        is(scalar get_offerings_flyby('iom')->query('"contract_category" IS "callput" AND "underlying_symbol" IS "frxUSDJPY"'),
+            12, '12 callput options on frxUSDJPY');
+        is(scalar $fb->query('"exchange_name" IS "RANDOM" -> "underlying_symbol"'), 6, 'Six underlyings trade on the RANDOM exchange');
         is(scalar $fb->query('"market" IS "volidx" -> "underlying_symbol"'),        6, '...out of 6 total random market symbols.');
     };
 };
@@ -90,7 +89,7 @@ subtest 'get_permitted_expiries' => sub {
         contract_category => 'touchnotouch'
     });
 
-    ok !exists $fx_tnt->{intraday},  'no touchnotouch intraday on fx';
+    ok !exists $fx_tnt->{intraday}, 'no touchnotouch intraday on fx';
     ok !exists $mp_tnt->{intraday}, '... but not on minor_pairs';
     ok !exists $fx_tnt->{tick},     '... nor does forex have tick touches';
     ok !exists $mp_tnt->{tick},     '... especially not on minor_pairs.';
@@ -128,11 +127,11 @@ subtest 'get_contract_specifics' => sub {
     };
     throws_ok { get_contract_specifics($params) } qr/Improper arguments/, '... ALL required parameters.';
 
-    $params->{barrier_category} = 'american';
+    $params->{barrier_category}  = 'american';
     $params->{underlying_symbol} = 'R_100';
     my $result = get_contract_specifics($params);
 
-    ok exists $result->{permitted},    'and permitted durations';
+    ok exists $result->{permitted}, 'and permitted durations';
     ok exists $result->{permitted}->{min}, '... including minimum';
     ok exists $result->{permitted}->{max}, '... and maximum';
     ok !exists $result->{historical}, 'but never use an historical pricer';

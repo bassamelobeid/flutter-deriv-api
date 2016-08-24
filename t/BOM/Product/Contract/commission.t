@@ -21,17 +21,16 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 
 subtest 'payout' => sub {
-    my $mocked                = Test::MockModule->new('BOM::Product::Contract::Call');
     my $payout                = 10;
     my $min_commission_markup = 0.02 / $payout;
-    $mocked->mock('base_commission', sub { 0.001 });
-    my $c = produce_contract({
-        bet_type   => 'CALL',
-        underlying => 'R_100',
-        barrier    => 'S0P',
-        duration   => '10m',
-        currency   => 'USD',
-        payout     => $payout,
+    my $c                     = produce_contract({
+        bet_type        => 'CALL',
+        underlying      => 'R_100',
+        barrier         => 'S0P',
+        duration        => '10m',
+        currency        => 'USD',
+        payout          => $payout,
+        base_commission => 0.001,
     });
     is $c->commission_markup->amount, $min_commission_markup, 'commission_markup amount is floored 0.002 when payout is 10';
 };

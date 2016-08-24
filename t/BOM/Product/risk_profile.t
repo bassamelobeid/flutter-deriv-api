@@ -71,7 +71,7 @@ subtest 'custom client profile' => sub {
     note("set volatility index to no business for client XYZ");
     BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(
         '{"XYZ": {"reason": "test XYZ", "custom_limits": {"xxx": {"market": "volidx", "risk_profile": "no_business", "name": "test custom"}}}}');
-    my $rp = BOM::Product::RiskProfile->new(%args);
+    my $rp    = BOM::Product::RiskProfile->new(%args);
     my @cl_pr = $rp->get_client_profiles('ABC');
     ok !@cl_pr, 'no custom client limit';
     @cl_pr = $rp->get_client_profiles('XYZ');
@@ -120,13 +120,14 @@ subtest 'check for risk_profile consistency' => sub {
     # It is replaced with 'keys'
     # This test ensures we don't have this problem again.
     BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
-        '{"yyy": {"market": "forex", "contract_category": "callput", "risk_profile": "high_risk", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}');
+        '{"yyy": {"market": "forex", "contract_category": "callput", "risk_profile": "high_risk", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}'
+    );
     my %expected = (
-        callput => 'high_risk',
+        callput      => 'high_risk',
         touchnotouch => 'medium_risk',
     );
     for (0 .. 4) {
-        for my $bc ('touchnotouch','callput') {
+        for my $bc ('touchnotouch', 'callput') {
             my $rp = BOM::Product::RiskProfile->new(
                 underlying        => BOM::Market::Underlying->new('frxUSDJPY'),
                 contract_category => $bc,

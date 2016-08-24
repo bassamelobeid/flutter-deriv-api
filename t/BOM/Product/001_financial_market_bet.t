@@ -71,7 +71,6 @@ lives_ok {
 }
 'Expect to initialize the object';
 
-
 lives_ok {
     $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
         'client_loginid' => 'CR0011',
@@ -229,7 +228,7 @@ $p_5->{pricing_vol}  = 0.151867027083599;
 my $mock = Test::MockModule->new('BOM::Product::Contract');
 # we need a vol for this.
 $mock->mock('_validate_input_parameters', sub { () });
-$mock->mock('_validate_volsurface', sub { () });
+$mock->mock('_validate_volsurface',       sub { () });
 $contract_5 = produce_contract($p_5);
 set_absolute_time($start_time_5);
 my $transaction_5 = BOM::Product::Transaction->new({
