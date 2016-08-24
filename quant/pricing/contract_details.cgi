@@ -159,12 +159,12 @@ sub _get_pricing_parameter_from_slope_pricer {
     my $commission_markup = $contract->commission_markup->amount;
 
     $pricing_parameters->{ask_probability} = {
-        theoretical_probability => $pe->theo_probability,
+        theoretical_probability => $pe->base_probability,
         risk_markup             => $risk_markup,
         commission_markup       => $commission_markup,
     };
 
-    my $theo_param = $debug_information->{$contract_type}{theo_probability}{parameters};
+    my $theo_param = $debug_information->{$contract_type}{base_probability}{parameters};
 
     if ($contract->priced_with ne 'base') {
         $pricing_parameters->{bs_probability}   = _get_bs_probability_parameters($theo_param->{bs_probability}{parameters});
