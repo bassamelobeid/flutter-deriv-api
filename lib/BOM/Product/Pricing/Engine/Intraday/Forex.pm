@@ -256,20 +256,20 @@ sub _build_intraday_trend {
     my $bet              = $self->bet;
     my $duration_in_secs = $bet->timeindays->amount * 86400;
 
-    my @ticks         = @{$self->ticks_for_trend};
-    my $tick_interval = $ticks[-1]->{epoch} - $ticks[0]->{epoch} if scalar(@ticks) > 1;
-    my $average       = (@ticks) ? sum(map { $_->{quote} } @ticks) / @ticks : $bet->pricing_args->{spot};
-    my $avg_spot      = Math::Util::CalculatedValue::Validatable->new({
+    my @ticks    = @{$self->ticks_for_trend};
+    my $average  = (@ticks) ? sum(map { $_->{quote} } @ticks) / @ticks : $bet->pricing_args->{spot};
+    my $avg_spot = Math::Util::CalculatedValue::Validatable->new({
         name        => 'average_spot',
         description => 'mean of spot over 2 * duration of the contract',
         set_by      => __PACKAGE__,
         base_amount => $average,
     });
 
-    my $trend =
-        $tick_interval
-        ? ((($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($tick_interval / 2)) * $self->slope
-        : 0;
+    my $trend = 0;
+    if (scalar(@ticks) > 1) {
+        my $tick_interval = $ticks[-1]->{epoch} - $ticks[0]->{epoch};
+        $trend = ((($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($tick_interval / 2)) * $self->slope;
+    }
     my $calibration_coef = $self->coefficients->{$bet->underlying->symbol};
     my $trend_cv         = Math::Util::CalculatedValue::Validatable->new({
         name        => 'intraday_trend',
