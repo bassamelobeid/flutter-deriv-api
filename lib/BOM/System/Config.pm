@@ -53,8 +53,11 @@ sub quants {
 }
 
 sub on_production {
-    state $on_production = env() eq 'production';
-    return $on_production;
+    return env() eq 'production';
+}
+
+sub on_qa {
+    return env() =~ /^qa/;
 }
 
 1;
