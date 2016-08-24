@@ -36,108 +36,100 @@ subtest 'payout' => sub {
 };
 
 subtest 'stake' => sub {
-    my $mocked = Test::MockModule->new('BOM::Product::Contract::Call');
-    my $stake  = 0.5;
-    $mocked->mock('base_commission', sub { 0 });
-    $mocked->mock(
-        'theo_probability',
-        sub {
-            Math::Util::CalculatedValue::Validatable->new({
-                name        => 'theo_probability',
-                description => 'test theo',
-                set_by      => 'test',
-                base_amount => 0.5,
-            });
-        });
+    my $mocked           = Test::MockModule->new('BOM::Product::Contract::Call');
+    my $stake            = 0.5;
+    my $base_commission  = 0;
+    my $theo_probability = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'theo_probability',
+        description => 'test theo',
+        set_by      => 'test',
+        base_amount => 0.5,
+    });
     my $c = produce_contract({
-        bet_type    => 'CALL',
-        underlying  => 'R_100',
-        barrier     => 'S0P',
-        duration    => '10m',
-        currency    => 'USD',
-        amount_type => 'stake',
-        amount      => $stake,
-        theo_probability =>             Math::Util::CalculatedValue::Validatable->new({
-                name        => 'theo_probability',
-                description => 'test theo',
-                set_by      => 'test',
-                base_amount => 0.5,
-            }),
+        bet_type         => 'CALL',
+        underlying       => 'R_100',
+        barrier          => 'S0P',
+        duration         => '10m',
+        currency         => 'USD',
+        amount_type      => 'stake',
+        amount           => $stake,
+        theo_probability => $theo_probability,
+        base_commission  => $base_commission,
     });
     is $c->payout, 0.96, 'payout is re-adjusted to 0.96 to get a minimum commission of 2 cents';
 
-    $mocked->mock(
-        'theo_probability',
-        sub {
-            Math::Util::CalculatedValue::Validatable->new({
-                name        => 'theo_probability',
-                description => 'test theo',
-                set_by      => 'test',
-                base_amount => 0.015,
-            });
-        });
+    $theo_probability = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'theo_probability',
+        description => 'test theo',
+        set_by      => 'test',
+        base_amount => 0.015,
+    });
     $c = produce_contract({
-        bet_type    => 'CALL',
-        underlying  => 'R_100',
-        barrier     => 'S0P',
-        duration    => '10m',
-        currency    => 'USD',
-        amount_type => 'stake',
-        amount      => $stake,
-        theo_probability => Math::Util::CalculatedValue::Validatable->new({
-                name        => 'theo_probability',
-                description => 'test theo',
-                set_by      => 'test',
-                base_amount => 0.015,
-            }),
+        bet_type         => 'CALL',
+        underlying       => 'R_100',
+        barrier          => 'S0P',
+        duration         => '10m',
+        currency         => 'USD',
+        amount_type      => 'stake',
+        amount           => $stake,
+        theo_probability => $theo_probability,
+        base_commission  => $base_commission,
     });
 
     is $c->payout, 20, "Random's payout is re-adjusted to 20 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
 
     $c = produce_contract({
-        bet_type    => 'CALL',
-        underlying  => 'frxUSDJPY',
-        barrier     => 'S0P',
-        duration    => '10m',
-        currency    => 'USD',
-        amount_type => 'stake',
-        amount      => $stake,
+        bet_type         => 'CALL',
+        underlying       => 'frxUSDJPY',
+        barrier          => 'S0P',
+        duration         => '10m',
+        currency         => 'USD',
+        amount_type      => 'stake',
+        amount           => $stake,
+        theo_probability => $theo_probability,
+        base_commission  => $base_commission,
     });
 
     is $c->payout, 10, "Forex's payout is re-adjusted to 10 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
 
     $c = produce_contract({
-        bet_type    => 'CALL',
-        underlying  => 'frxXAUUSD',
-        barrier     => 'S0P',
-        duration    => '10m',
-        currency    => 'USD',
-        amount_type => 'stake',
-        amount      => $stake,
+        bet_type         => 'CALL',
+        underlying       => 'frxXAUUSD',
+        barrier          => 'S0P',
+        duration         => '10m',
+        currency         => 'USD',
+        amount_type      => 'stake',
+        amount           => $stake,
+        theo_probability => $theo_probability,
+        base_commission  => $base_commission,
     });
 
     is $c->payout, 5, "Commodities' payout is re-adjusted to 5 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
 
     $c = produce_contract({
-        bet_type    => 'CALL',
-        underlying  => 'GDAXI',
-        barrier     => 'S0P',
-        duration    => '10m',
-        currency    => 'USD',
-        amount_type => 'stake',
-        amount      => $stake,
+        bet_type         => 'CALL',
+        underlying       => 'GDAXI',
+        barrier          => 'S0P',
+        duration         => '10m',
+        currency         => 'USD',
+        amount_type      => 'stake',
+        amount           => $stake,
+        theo_probability => $theo_probability,
+        base_commission  => $base_commission,
     });
 
     is $c->payout, 5, "Indices' payout is re-adjusted to 5 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
 
     $c = produce_contract({
-        bet_type    => 'CALL',
-        underlying  => 'USMSFT',
-        barrier     => 'S0P',
-        duration    => '10m',
-        currency    => 'USD',
-        amount_type => 'stake',
-        amount      => $stake,
+        bet_type         => 'CALL',
+        underlying       => 'USMSFT',
+        barrier          => 'S0P',
+        duration         => '10m',
+        currency         => 'USD',
+        amount_type      => 'stake',
+        amount           => $stake,
+        theo_probability => $theo_probability,
+        base_commission  => $base_commission,
     });
 
     is $c->payout, 5, "Stocks' payout is re-adjusted to 5 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;

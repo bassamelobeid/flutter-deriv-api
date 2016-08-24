@@ -870,16 +870,10 @@ has price_calculator => (
     is         => 'ro',
     isa        => 'Price::Calculator',
     lazy_build => 1,
-    handles    => [qw/commission_from_stake/],
 );
 
 sub _build_price_calculator {
     my $self = shift;
-
-    my $risk_markup = 0;
-    if ($self->pricing_engine->can('risk_markup')) {
-        $risk_markup = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->pricing_engine->risk_markup->amount;
-    }
 
     my $value;
     if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
@@ -887,34 +881,24 @@ sub _build_price_calculator {
     }
 
     return Price::Calculator->new({
-            deep_otm_threshold                   => $self->market->deep_otm_threshold,
-            new_interface_engine          => $self->new_interface_engine,
-            pricing_engine_name           => $self->pricing_engine_name,
-            pricing_engine_probability    => $self->pricing_engine->probability,
-            pricing_engine_bs_probability => $self->pricing_engine->bs_probability,
-            pricing_engine_risk_markup    => $risk_markup,
-
-            maximum_total_markup    => BOM::System::Config::quants->{commission}->{maximum_total_markup},
-            base_commission_min     => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
-            base_commission_max     => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
-            base_commission_scaling => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
-            ($self->has_commission_markup) ? (commission_markup => $self->commission_markup) : (),
-            ($self->has_risk_markup)       ? (risk_markup       => $self->risk_markup)       : (),
-            ($self->has_base_commission)   ? (base_commission   => $self->base_commission)   : (),
-
-            underlying_base_commission => $self->underlying->base_commission,
-            app_markup_percentage      => $self->app_markup_percentage,
-            value                      => $value,
-            currency                   => $self->currency,
-            timeinyears                => $self->timeinyears,
-            discount_rate              => $self->discount_rate,
-
-            ($self->has_payout)                 ? (payout                 => $self->payout)                 : (),
-            ($self->has_ask_price)              ? (ask_price              => $self->ask_price)              : (),
-            ($self->has_theo_probability)       ? (theo_probability       => $self->theo_probability)       : (),
-            ($self->has_ask_probability)        ? (ask_probability        => $self->ask_probability)        : (),
-            ($self->has_bs_probability)         ? (bs_probability         => $self->bs_probability)         : (),
-            ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
+        new_interface_engine    => $self->new_interface_engine,
+        pricing_engine_name     => $self->pricing_engine_name,
+        currency                => $self->currency,
+        deep_otm_threshold      => $self->market->deep_otm_threshold,
+        maximum_total_markup    => BOM::System::Config::quants->{commission}->{maximum_total_markup},
+        base_commission_min     => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
+        base_commission_max     => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
+        base_commission_scaling => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
+        app_markup_percentage   => $self->app_markup_percentage,
+        ($self->has_commission_markup)      ? (commission_markup      => $self->commission_markup)      : (),
+        ($self->has_base_commission)        ? (base_commission        => $self->base_commission)        : (),
+        ($self->has_payout)                 ? (payout                 => $self->payout)                 : (),
+        ($self->has_ask_price)              ? (ask_price              => $self->ask_price)              : (),
+        ($self->has_theo_probability)       ? (theo_probability       => $self->theo_probability)       : (),
+        ($self->has_ask_probability)        ? (ask_probability        => $self->ask_probability)        : (),
+        ($self->has_bs_probability)         ? (bs_probability         => $self->bs_probability)         : (),
+        ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
+        ($value)                            ? (value                  => $value)                        : (),
     });
 }
 
@@ -927,11 +911,18 @@ has payout => (
 sub _build_payout {
     my ($self) = @_;
 
+    $self->price_calculator->ask_probability($self->ask_probability)             unless $self->price_calculator->has_ask_probability;
+    $self->price_calculator->theo_prabability($self->theo_prabability)           unless $self->price_calculator->has_theo_probability;
+    $self->price_calculator->commission_markup($self->commission_markup)         unless $self->price_calculator->has_commission_markup;
+    $self->price_calculator->commission_from_stake($self->commission_from_stake) unless $self->price_calculator->has_commission_from_stake;
+
     return $self->price_calculator->payout;
 }
 
 sub _build_theo_probability {
     my $self = shift;
+
+    $self->price_calculator->pricing_engine_probability($self->pricing_engine->probability);
 
     return $self->price_calculator->theo_probability;
 }
@@ -939,17 +930,25 @@ sub _build_theo_probability {
 sub _build_ask_probability {
     my $self = shift;
 
+    $self->price_calculator->theo_probability($self->theo_probability)   unless $self->price_calculator->has_theo_probability;
+    $self->price_calculator->commission_markup($self->commission_markup) unless $self->price_calculator->has_commission_markup;
+
     return $self->price_calculator->ask_probability;
 }
 
 sub _build_bs_probability {
     my $self = shift;
 
+    $self->price_calculator->pricing_engine_bs_probability($self->pricing_engine->bs_probability);
+
     return $self->price_calculator->bs_probability;
 }
 
 sub _build_discounted_probability {
     my $self = shift;
+
+    $self->price_calculator->timeinyears($self->timeinyears);
+    $self->price_calculator->discount_rate($self->discount_rate);
 
     return $self->price_calculator->discounted_probability;
 }
@@ -997,7 +996,9 @@ sub _build_dividend_adjustment {
 sub _build_bid_price {
     my $self = shift;
 
+    $self->price_calculator->discounted_probability($self->discounted_probability) unless $self->price_calculator->has_discounted_probability;
     $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability);
+
     return $self->price_calculator->price_from_prob('bid_probability');
 }
 
@@ -1092,6 +1093,16 @@ sub _build_ask_price {
     return $self->price_calculator->price_from_prob('ask_probability');
 }
 
+sub commission_from_stake {
+    my $self = shift;
+
+    $self->price_calculator->theo_prabability($self->theo_prabability) unless $self->price_calculator->has_theo_probability;
+    $self->price_calculator->ask_price($self->ask_price)               unless $self->price_calculator->has_ask_price;
+    $self->price_calculator->base_commission($self->base_commission)   unless $self->price_calculator->has_base_commission;
+
+    return $self->price_calculator->commission_from_stake(@_);
+}
+
 sub commission_multiplier {
     return shift->price_calculator->commission_multiplier(@_);
 }
@@ -1132,15 +1143,36 @@ has [qw(risk_markup commission_markup base_commission)] => (
 );
 
 sub _build_risk_markup {
-    return shift->price_calculator->risk_markup;
+    my $self = shift;
+
+    my $base_amount = 0;
+    if ($self->pricing_engine->can('risk_markup')) {
+        $base_amount = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->pricing_engine->risk_markup->amount;
+    }
+
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'risk_markup',
+        description => 'Risk markup for a pricing model',
+        set_by      => $self->pricing_engine_name,
+        base_amount => $base_amount,
+    });
 }
 
 sub _build_commission_markup {
-    return shift->price_calculator->commission_markup;
+    my $self = shift;
+    $self->price_calculator->base_commission($self->base_commission) unless $self->price_calculator->has_base_commission;
+    $self->price_calculator->theo_probability($self->theo_probability)   unless $self->price_calculator->has_theo_probability;
+    $self->price_calculator->commission_from_stake($self->commission_from_stake) unless $self->price_calculator->has_commission_from_stake;
+
+    return $self->price_calculator->commission_markup;
 }
 
 sub _build_base_commission {
-    return shift->price_calculator->base_commission;
+    my $self = shift;
+
+    $self->price_calculator->underlying_base_commission($self->underlying->base_commission);
+
+    return $self->price_calculator->base_commission;
 }
 
 sub _build_theo_price {
