@@ -1,20 +1,23 @@
 v3_1:
-	bash -c 'prove --timer -I./lib -I./t -r t/BOM/WebsocketAPI/v3/{0,1,2,4}*'
+	bash -c 'PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib -I./t -r t/BOM/WebsocketAPI/v3/{0,1,2,4}*'
 
 v3_2:
-	bash -c 'prove --timer -I./lib -I./t -r t/BOM/WebsocketAPI/v3/{5,6,7}*'
+	bash -c 'PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib -I./t -r t/BOM/WebsocketAPI/v3/{5,6,7}*'
 
 v3_3:
-	bash -c 'prove --timer -I./lib -I./t -r t/BOM/WebsocketAPI/v3/{8,9}*'
+	bash -c 'PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib -I./t -r t/BOM/WebsocketAPI/v3/{8,9}*'
 
 json_schema:
-	bash -c "sudo date -s '2016-08-09 12:00:00'; prove --timer -I./lib -I./t t/BOM/WebsocketAPI/v3/schema_suite/suite.t"
+	PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib -I./t t/BOM/WebsocketAPI/v3/schema_suite/suite.t
+
+loadtest:
+	bash -c 'prove --timer -I./lib -I./t t/BOM/WebsocketAPI/v3/schema_suite/loadtest.t'
 
 structure:
-	prove --timer -I./lib  -I./t t/BOM/*.t
+	PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib  -I./t t/BOM/*.t
 
 leaktest:
-	prove --timer -I./lib  -I./t -r t/BOM/WebsocketAPI/leak/v3
+	PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib -I./t -r t/BOM/WebsocketAPI/leak/v3
 
 tidy:
 	find . -name '*.p?.bak' -delete

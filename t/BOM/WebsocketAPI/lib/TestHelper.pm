@@ -9,14 +9,17 @@ use JSON::Schema;
 use JSON;
 use File::Slurp;
 use Data::Dumper;
-
 use Date::Utility;
+
+use BOM::WebSocketAPI;
+
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::System::Password;
 use BOM::Platform::User;
+use Net::EmptyPort qw/empty_port/;
 
 use Test::MockModule;
 use Test::MockObject;
@@ -32,6 +35,7 @@ die 'unknown version' unless $version;
 sub build_mojo_test {
     my $args    = shift || {};
     my $headers = shift || {};
+    my $callback = shift;
 
     if ($args->{deflate}) {
         $headers = {'Sec-WebSocket-Extensions' => 'permessage-deflate'};
@@ -44,8 +48,16 @@ sub build_mojo_test {
     push @query_params, 'app_id=' . $args->{app_id} if $args->{app_id};
     $url .= '?' . join('&', @query_params) if @query_params;
 
-    my $t = Test::Mojo->new('BOM::WebSocketAPI');
+    my $port   = empty_port;
+    my $app    = BOM::WebSocketAPI->new;
+    my $daemon = Mojo::Server::Daemon->new(
+        app    => $app,
+        listen => ["http://127.0.0.1:$port"],
+    );
+    $daemon->start;
+    my $t = Test::Mojo->new($app);
     $t->websocket_ok($url => $headers);
+    $t->tx->on(json => $callback) if $callback;
 
     return $t;
 }
