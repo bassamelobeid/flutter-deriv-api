@@ -39,6 +39,11 @@ require Pricing::Engine::EuropeanDigitalSlope;
 require Pricing::Engine::TickExpiry;
 require BOM::Product::Pricing::Greeks::BlackScholes;
 
+use constant {
+    commission_base_multiplier => 1,
+    commission_max_multiplier  => 2,
+};
+
 sub is_spread { return 0 }
 sub is_legacy { return 0 }
 
@@ -1119,11 +1124,46 @@ sub _calculate_payout {
     return $payout;
 }
 
-my $commission_base_multiplier = 1;
-my $commission_max_multiplier  = 2;
-my $commission_min_std         = 500;
-my $commission_max_std         = 25000;
-my $commission_slope           = ($commission_max_multiplier - $commission_base_multiplier) / ($commission_max_std - $commission_min_std);
+has commission_min_std => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_commission_min_std',
+);
+
+sub _build_commission_min_std {
+    my $self = shift;
+
+    # This looks hacky but currently there's not enough justification to have child classes for each landing company.
+    # For japan, we would only increase the commission when payout > 100,000 yen.
+    # For everything else, we will increase commission at 1,000 of the respective currency.
+    return $self->currency eq 'JPY' ? 50001 : 500;
+}
+
+has commission_max_std => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_commission_max_std',
+);
+
+sub _build_commission_max_std {
+    my $self = shift;
+
+    # For japan, we change 2 x base_commission if the payout exceeds 5,000,000 yen.
+    # For everything else, we change 2 x base_commission if the payout exceeds 50,000 of the respective currency.
+    return $self->currency eq 'JPY' ? 2500000 : 25000;
+}
+
+has commission_slope => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_commission_slope',
+);
+
+sub _build_commission_slope {
+    my $self = shift;
+
+    return ($self->commission_max_multiplier - $self->commission_base_multiplier) / ($self->commission_max_std - $self->commission_min_std);
+}
 
 sub commission_multiplier {
     my ($self, $payout) = @_;
@@ -1131,11 +1171,11 @@ sub commission_multiplier {
     my $theo_probability = $self->theo_probability->amount;
     my $std = $payout * sqrt($theo_probability * (1 - $theo_probability));
 
-    return $commission_base_multiplier if $std <= $commission_min_std;
-    return $commission_max_multiplier  if $std >= $commission_max_std;
+    return $self->commission_base_multiplier if $std <= $self->commission_min_std;
+    return $self->commission_max_multiplier  if $std >= $self->commission_max_std;
 
-    my $slope      = $commission_slope;
-    my $multiplier = ($std - $commission_min_std) * $slope + 1;
+    my $slope      = $self->commission_slope;
+    my $multiplier = ($std - $self->commission_min_std) * $slope + 1;
 
     return $multiplier;
 }
@@ -1156,7 +1196,7 @@ sub _build_commission_from_stake {
 
     # payout calculated with base commission.
     my $initial_payout = $self->_calculate_payout($combined_commission);
-    if ($self->commission_multiplier($initial_payout) == $commission_base_multiplier) {
+    if ($self->commission_multiplier($initial_payout) == $self->commission_base_multiplier) {
         # a minimum of 2 cents please, payout could be zero.
         my $minimum_commission = $initial_payout ? 0.02 / $initial_payout : 0.02;
         return max($minimum_commission, $combined_commission);
@@ -1165,12 +1205,12 @@ sub _build_commission_from_stake {
     # payout calculated with 2 times base commission.
     $combined_commission = $base_commission * 2 + $app_commission;
     $initial_payout      = $self->_calculate_payout($combined_commission);
-    if ($self->commission_multiplier($initial_payout) == $commission_max_multiplier) {
+    if ($self->commission_multiplier($initial_payout) == $self->commission_max_multiplier) {
         return $combined_commission;
     }
 
-    my $a = $base_commission * $commission_slope * sqrt($theo_probability * (1 - $theo_probability));
-    my $b = ($theo_probability + $base_commission - $base_commission * $commission_min_std * $commission_slope) + $app_commission;
+    my $a = $base_commission * $self->commission_slope * sqrt($theo_probability * (1 - $theo_probability));
+    my $b = ($theo_probability + $base_commission - $base_commission * $self->commission_min_std * $self->commission_slope) + $app_commission;
     my $c = -$ask_price;
 
     # sets it to zero first.
