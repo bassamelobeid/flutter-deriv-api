@@ -60,4 +60,8 @@ sub on_qa {
     return env() =~ /^qa/;
 }
 
+sub on_development {
+    return env() eq 'development';
+}
+
 1;
