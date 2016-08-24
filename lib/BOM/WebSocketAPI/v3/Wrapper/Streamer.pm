@@ -153,7 +153,17 @@ sub ticks_history {
 
     # subscribe first with flag of cache passed as 1 to indicate to cache the feed data
     if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
-        if (not _feed_channel_subscribe($c, $args->{ticks_history}, $publish, $args, $callback, 1)) {
+        my $cb_wrapper = sub {
+            # Here $c might be undef and will generate an error during shutdown of websockets. Here is Tom's comment:
+            #as far as I can see, the issue here is that we process a Redis response just after the websocket connection has closed.
+            #In this case, we're already in global destruction and there just happens to be a race,
+            #one that we might be able to fix by explicitly closing the Redis connection as one of the first steps during shutdown.
+            #
+            #Explicitly closing the Redis connection wouldn't do anything to help a race between websocket close and Redis response during normal operation, of course,
+            #but until we have a failing test case which demonstrates that, I don't think it's worth spending too much time on.
+            $c && $callback->();
+        };
+        if (not _feed_channel_subscribe($c, $args->{ticks_history}, $publish, $args, $cb_wrapper, 1)) {
             return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
         }
     } else {
