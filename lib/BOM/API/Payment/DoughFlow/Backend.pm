@@ -6,7 +6,7 @@ use Moo;
 with 'BOM::API::Payment::Role::Plack';
 
 use BOM::Platform::Runtime;
-use BOM::Database::Transaction;
+use BOM::Database::DataMapper::Client;
 use Date::Utility;
 use Guard;
 use BOM::Database::DataMapper::Payment::DoughFlow;
@@ -134,7 +134,7 @@ sub validate_as_payment {
             currency    => $currency,
             amount      => $signed_amount,
             action_type => $action,
-            )
+        );
     }
     catch {
         $err = $_;
@@ -153,13 +153,14 @@ sub write_transaction_line {
     my $client = $c->user;
 
     # Lock the customer's account
-    if (not BOM::Database::Transaction->freeze_client($client->loginid)) {
+    my $client_data_mapper = BOM::Database::DataMapper::Client->new({client_loginid => $client->loginid});
+    if (not $client_data_mapper->freeze) {
         return $c->throw(403, "Unable to lock customer account; please contact customer support");
     }
     ## unfreeze on exit no matter it's succeed or not
     scope_guard {
         # Unlock the customer's account
-        BOM::Database::Transaction->unfreeze_client($client->loginid);
+        $client_data_mapper->unfreeze;
     };
 
     my $currency_code  = $c->request_parameters->{currency_code};
