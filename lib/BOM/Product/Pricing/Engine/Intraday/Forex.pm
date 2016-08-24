@@ -256,17 +256,18 @@ sub _build_intraday_trend {
     my $bet              = $self->bet;
     my $duration_in_secs = $bet->timeindays->amount * 86400;
 
-    my @ticks    = @{$self->ticks_for_trend};
+    my @ticks         = @{$self->ticks_for_trend};
     my $tick_interval = $ticks[-1]->{epoch} - $ticks[0]->{epoch} if scalar(@ticks) > 1;
-    my $average  = (@ticks) ? sum(map { $_->{quote} } @ticks) / @ticks : $bet->pricing_args->{spot};
-    my $avg_spot = Math::Util::CalculatedValue::Validatable->new({
+    my $average       = (@ticks) ? sum(map { $_->{quote} } @ticks) / @ticks : $bet->pricing_args->{spot};
+    my $avg_spot      = Math::Util::CalculatedValue::Validatable->new({
         name        => 'average_spot',
         description => 'mean of spot over 2 * duration of the contract',
         set_by      => __PACKAGE__,
         base_amount => $average,
     });
 
-    my $trend            = $tick_interval
+    my $trend =
+        $tick_interval
         ? ((($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($tick_interval / 2)) * $self->slope
         : 0;
     my $calibration_coef = $self->coefficients->{$bet->underlying->symbol};
@@ -310,7 +311,7 @@ sub calculate_intraday_bounceback {
 
     my $bounceback_safety_max = abs($bounceback_base_max_trend - $bounceback_base_max_trend_with_slope);
     my $bounceback_safety_min = abs($bounceback_base_min_trend - $bounceback_base_min_trend_with_slope);
-    my $bounceback_safety = max($bounceback_safety_min, $bounceback_safety_max);
+    my $bounceback_safety     = max($bounceback_safety_min, $bounceback_safety_max);
 
     if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_st') {
         $bounceback_base_intraday_trend = ($self->bet->code eq 'CALL') ? $bounceback_base_intraday_trend : $bounceback_base_intraday_trend * -1;
