@@ -15,7 +15,6 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
-use BOM::Test::Runtime qw(:normal);
 use Quant::Framework::Spot::Tick;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::ContractFactory qw( produce_contract );

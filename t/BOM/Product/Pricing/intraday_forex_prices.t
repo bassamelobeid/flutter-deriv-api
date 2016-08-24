@@ -5,7 +5,6 @@ use Test::Most tests => 5;
 use Test::NoWarnings;
 use File::Spec;
 use YAML::XS qw(LoadFile);
-use BOM::Test::Runtime qw(:normal);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Market::AggTicks;
 use Date::Utility;

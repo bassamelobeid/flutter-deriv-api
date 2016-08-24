@@ -9,7 +9,6 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
-use BOM::Test::Runtime qw(:normal);
 use Date::Utility;
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw( produce_contract );
