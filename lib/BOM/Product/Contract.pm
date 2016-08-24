@@ -997,6 +997,7 @@ sub _build_dividend_adjustment {
 sub _build_bid_price {
     my $self = shift;
 
+    $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability);
     return $self->price_calculator->price_from_prob('bid_probability');
 }
 
