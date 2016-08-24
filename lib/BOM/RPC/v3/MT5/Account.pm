@@ -34,7 +34,11 @@ sub mt5_new_account {
 
     my $group;
     if ($account_type eq 'demo') {
-        $group = 'demo\demoforex';
+        if ($client and $client->residence eq 'jp') {
+            $group = 'demo\japan-virtual';
+        } else {
+            $group = 'demo\virtual';
+        }
     } elsif (
         any {
             $account_type eq $_;
@@ -112,6 +116,7 @@ sub mt5_new_account {
 
         # deposit failed
         if ($status->{error}) {
+            warn "MT5: deposit failed for virtual account with error " . $status->{error};
             $balance = 0;
         }
     }
