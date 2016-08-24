@@ -146,7 +146,7 @@ sub save {
 
 sub check_country_restricted {
     my $country_code = shift;
-    return (BOM::System::Config::on_production() and BOM::Platform::Countries->instance->restricted_country($country_code));
+    return (BOM::System::Config::on_production and BOM::Platform::Countries->instance->restricted_country($country_code));
 }
 
 sub register_and_return_new_client {
