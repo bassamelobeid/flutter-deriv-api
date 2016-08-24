@@ -382,9 +382,7 @@ subtest 'Validate Jurisdiction Restriction' => sub {
     $error = $new_transaction->_validate_jurisdictional_restrictions;
     is($error, undef, 'British clients are allowed to trade random underlyings');
 
-
     lives_ok { $client->residence('be') } 'set residence to Belgium to test jurisdiction validation for random and financial binaries contracts';
-
 
     $new_transaction = BOM::Product::Transaction->new({
         client   => $client,
@@ -400,9 +398,12 @@ subtest 'Validate Jurisdiction Restriction' => sub {
         contract => $new_contract2,
     });
 
-
     $error = $new_transaction->_validate_jurisdictional_restrictions;
-    is($error->get_type, 'FinancialBinariesRestrictedCountry', 'Belgium clients are not allowed to place forex contracts as their country is restricted.');
+    is(
+        $error->get_type,
+        'FinancialBinariesRestrictedCountry',
+        'Belgium clients are not allowed to place forex contracts as their country is restricted.'
+    );
     like(
         $error->{-message_to_client},
         qr/Sorry, contracts on Financial Products are not available in your country of residence/,
@@ -414,9 +415,12 @@ subtest 'Validate Jurisdiction Restriction' => sub {
         contract => $new_contract3,
     });
 
-
     $error = $new_transaction->_validate_jurisdictional_restrictions;
-    is($error->get_type, 'FinancialBinariesRestrictedCountry', 'Belgium clients are not allowed to place indices contracts as their country is restricted.');
+    is(
+        $error->get_type,
+        'FinancialBinariesRestrictedCountry',
+        'Belgium clients are not allowed to place indices contracts as their country is restricted.'
+    );
     like(
         $error->{-message_to_client},
         qr/Sorry, contracts on Financial Products are not available in your country of residence/,
@@ -428,16 +432,17 @@ subtest 'Validate Jurisdiction Restriction' => sub {
         contract => $new_contract4,
     });
 
-
     $error = $new_transaction->_validate_jurisdictional_restrictions;
-    is($error->get_type, 'FinancialBinariesRestrictedCountry', 'Belgium clients are not allowed to place commodities contracts as their country is restricted.');
+    is(
+        $error->get_type,
+        'FinancialBinariesRestrictedCountry',
+        'Belgium clients are not allowed to place commodities contracts as their country is restricted.'
+    );
     like(
         $error->{-message_to_client},
         qr/Sorry, contracts on Financial Products are not available in your country of residence/,
         'Belgium clients are not allowed to place commodities contracts as their country is restricted due to vat regulations'
     );
-
-
 
     # check if market name is allowed for landing company
     $new_underlying = BOM::Market::Underlying->new('R50');
@@ -464,7 +469,7 @@ subtest 'Validate Jurisdiction Restriction' => sub {
         qr/Please switch accounts to trade this market./,
         'Market name is not in the list of legal allowed markets. Please switch accounts'
     );
- 
+
 };
 
 subtest 'Validate Unwelcome Client' => sub {
