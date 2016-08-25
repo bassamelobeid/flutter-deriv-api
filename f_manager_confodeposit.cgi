@@ -10,6 +10,7 @@ use Try::Tiny;
 
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
+use BOM::Database::DataMapper::Client;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -161,13 +162,21 @@ unless ($params{skip_validation}) {
 
 my $transRef;
 
-BOM::Database::Transaction->freeze_client($loginID) || do {
+my $client_data_mapper = BOM::Database::DataMapper::Client->new({
+    client_loginid => $loginID,
+});
+
+$client_data_mapper->freeze || do {
     print "ERROR: Account stuck in previous transaction $loginID";
     code_exit_BO();
 };
 
+my $to_data_mapper = BOM::Database::DataMapper::Client->new({
+    client_loginid => $loginID,
+});
+
 if ($ttype eq 'TRANSFER') {
-    BOM::Database::Transaction->freeze_client($toLoginID) || do {
+    $to_data_mapper->freeze || do {
         print "ERROR: To-Account stuck in previous transaction $toLoginID";
         code_exit_BO();
         }
@@ -199,8 +208,8 @@ catch {
     printf STDERR "got here\n";
 };
 
-BOM::Database::Transaction->unfreeze_client($loginID);
-BOM::Database::Transaction->unfreeze_client($toLoginID) if $toLoginID;
+$client_data_mapper->unfreeze;
+$to_data_mapper->unfreeze if $toLoginID;
 
 code_exit_BO() if $leave;
 
@@ -262,7 +271,7 @@ print "</form>";
 my $staffemail = $staff->{'email'};
 
 my $email_accountant = BOM::Platform::Runtime->instance->app_config->accounting->email;
-my $toemail          = ($staffemail eq $email_accountant) ? "$staffemail" : "$staffemail,$email_accountant";
+my $toemail = ($staffemail eq $email_accountant) ? "$staffemail" : "$staffemail,$email_accountant";
 
 if ($toemail && $informclient) {
 
