@@ -931,7 +931,8 @@ sub _build_ask_probability {
     my $self = shift;
 
     $self->price_calculator->theo_probability($self->theo_probability)   unless $self->price_calculator->has_theo_probability;
-    $self->price_calculator->commission_markup($self->commission_markup) unless $self->price_calculator->has_commission_markup;
+    $self->price_calculator->base_commission($self->base_commission) unless $self->price_calculator->has_base_commission;
+    $self->price_calculator->payout($self->payout) if !$self->price_calculator->has_commission_markup && $self->has_payout;
 
     return $self->price_calculator->ask_probability;
 }
@@ -996,6 +997,7 @@ sub _build_dividend_adjustment {
 sub _build_bid_price {
     my $self = shift;
 
+    $self->price_calculator->theo_probability($self->theo_probability)   unless $self->price_calculator->has_theo_probability;
     $self->price_calculator->discounted_probability($self->discounted_probability) unless $self->price_calculator->has_discounted_probability;
     $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability);
 
@@ -1090,6 +1092,10 @@ sub _validate_settlement_conditions {
 sub _build_ask_price {
     my $self = shift;
 
+    $self->price_calculator->theo_probability($self->theo_probability)   unless $self->price_calculator->has_theo_probability;
+    $self->price_calculator->base_commission($self->base_commission) unless $self->price_calculator->has_base_commission;
+    $self->price_calculator->payout($self->payout) if !$self->price_calculator->has_commission_markup && $self->has_payout;
+
     return $self->price_calculator->price_from_prob('ask_probability');
 }
 
@@ -1097,7 +1103,7 @@ sub commission_from_stake {
     my $self = shift;
 
     $self->price_calculator->theo_prabability($self->theo_prabability) unless $self->price_calculator->has_theo_probability;
-    $self->price_calculator->ask_price($self->ask_price)               unless $self->price_calculator->has_ask_price;
+    $self->price_calculator->commission_markup($self->commission_markup) unless $self->price_calculator->has_commission_markup;
     $self->price_calculator->base_commission($self->base_commission)   unless $self->price_calculator->has_base_commission;
 
     return $self->price_calculator->commission_from_stake(@_);
@@ -1160,6 +1166,7 @@ sub _build_risk_markup {
 
 sub _build_commission_markup {
     my $self = shift;
+
     $self->price_calculator->base_commission($self->base_commission) unless $self->price_calculator->has_base_commission;
     $self->price_calculator->theo_probability($self->theo_probability)   unless $self->price_calculator->has_theo_probability;
     $self->price_calculator->commission_from_stake($self->commission_from_stake) unless $self->price_calculator->has_commission_from_stake;
