@@ -323,6 +323,14 @@ sub process_ask_event {
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
             $results = $err;
         } else {
+            unless (defined $theo_probability) {
+                warn "process_ask_event got message without theo_probability. contract_parameters:  {"
+                    . join(', ',
+                    map { $_ . ' => "' . ($stash_data->{cache}->{contract_parameters}->{$_} // '') . '"' }
+                        keys %{$stash_data->{cache}->{contract_parameters}})
+                    . "}\n";
+                last;
+            }
             my $adjusted_results =
                 _price_stream_results_adjustment($stash_data->{args}, $stash_data->{cache}->{contract_parameters}, $response, $theo_probability);
             if (my $ref = $adjusted_results->{error}) {
