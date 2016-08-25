@@ -872,13 +872,18 @@ has price_calculator => (
     lazy_build => 1,
 );
 
+sub _price_from_prob {
+    my ($self, $prob) = @_;
+
+    if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
+        $self->price_calculator->value($self->value);
+    }
+
+    return $self->price_calculator->price_from_prob($prob);
+}
+
 sub _build_price_calculator {
     my $self = shift;
-
-    my $value;
-    if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
-        $value = $self->value;
-    }
 
     return Price::Calculator->new({
         new_interface_engine    => $self->new_interface_engine,
@@ -898,7 +903,6 @@ sub _build_price_calculator {
         ($self->has_ask_probability)        ? (ask_probability        => $self->ask_probability)        : (),
         ($self->has_bs_probability)         ? (bs_probability         => $self->bs_probability)         : (),
         ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
-        ($value)                            ? (value                  => $value)                        : (),
     });
 }
 
@@ -1011,7 +1015,7 @@ sub _build_bid_price {
     $self->price_calculator->discounted_probability($self->discounted_probability) unless $self->price_calculator->has_discounted_probability;
     $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability);
 
-    return $self->price_calculator->price_from_prob('bid_probability');
+    return $self->_price_from_prob('bid_probability');
 }
 
 sub is_valid_to_buy {
@@ -1106,7 +1110,7 @@ sub _build_ask_price {
     $self->price_calculator->base_commission($self->base_commission)   unless $self->price_calculator->has_base_commission;
     $self->price_calculator->payout($self->payout) if !$self->price_calculator->has_commission_markup && $self->has_payout;
 
-    return $self->price_calculator->price_from_prob('ask_probability');
+    return $self->_price_from_prob('ask_probability');
 }
 
 sub commission_multiplier {
@@ -1140,7 +1144,7 @@ sub _build_bs_price {
 
     $self->price_calculator->pricing_engine_bs_probability($self->pricing_engine->bs_probability);
 
-    return $self->price_calculator->price_from_prob('bs_probability');
+    return $self->_price_from_prob('bs_probability');
 }
 
 # base_commission can be overridden on contract type level.
@@ -1203,7 +1207,7 @@ sub _build_theo_price {
 
     $self->price_calculator->pricing_engine_probability($self->pricing_engine->probability);
 
-    return $self->price_calculator->price_from_prob('theo_probability');
+    return $self->_price_from_prob('theo_probability');
 }
 
 sub _build_shortcode {
