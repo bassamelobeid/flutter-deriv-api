@@ -32,7 +32,10 @@ is_deeply $old_data, $d_old, "data stored using recorded_date is retrieved succe
 my $d2 = BOM::System::Chronicle::get("vol_surface", "frxUSDJPY");
 is_deeply $d, $d2, "data retrieval works";
 
-sleep 1;
+{ # ensure at least one wallclock second has elapsed
+    my $prev = time;
+    sleep 1 until time - $prev;
+}
 
 my $d3 = {
     xsample1 => [10, 20, 30],
