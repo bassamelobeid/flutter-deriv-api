@@ -236,27 +236,14 @@ sub process_bid_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
     for my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
         my $results;
-        if (
-            !exists $stash_data->{error} && (    # do not rewrite errors
-                !exists $stash_data->{args}      # but if something else is missed - create error
-                || !exists $stash_data->{uuid}
-                || !$stash_data->{uuid} || !exists $stash_data->{cache} || !$stash_data->{cache}))
-        {
-            my $keys_count = scalar keys %{$pricing_channel->{$redis_channel}};
-            warn "Proposal open contract call pricing event processing: stash data missed! serialized_args: $redis_channel, total keys: $keys_count";
-            $response->{error}->{code}              = 'InternalServerError';
-            $response->{error}->{message_to_client} = 'Internal server error';
-        }
-        if ($response and exists $response->{error}) {
-            BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $pricing_channel->{$redis_channel}->{uuid});
-            if ($response->{error}->{message_to_client_array}) {
-                $response->{error}->{message_to_client} = $c->l(@{$response->{error}->{message_to_client_array}});
-            } else {
-                $response->{error}->{message_to_client} = $c->l($response->{error}->{message_to_client});
-            }
-
-            $results = $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
-            $results->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
+        my $corrupted_stash =
+               !exists $stash_data->{args}
+            || !exists $stash_data->{uuid}
+            || !$stash_data->{uuid}
+            || !exists $stash_data->{cache}
+            || !$stash_data->{cache};
+        if (not $response or $corrupted_stash or exists $response->{error}) {
+            $results = _create_error_message('proposal_open_contract', $response, $corrupted_stash, $stash_data->{uuid});
         } else {
             my $passed_fields = $stash_data->{cache};
             $response->{id}              = $stash_data->{uuid};
@@ -303,26 +290,7 @@ sub process_ask_event {
             || !exists $stash_data->{cache}
             || !$stash_data->{cache};
         if (not $response or $corrupted_stash or exists $response->{error}) {
-            my ($err_code, $err_message, $err_details);
-            BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid}) if $stash_data->{uuid};
-            if (not $response or $corrupted_stash) {
-                $err_code    = 'InternalServerError';
-                $err_message = 'Internal server error';
-                warn "Proposal call pricing event processing: " . ($response ? "stash data missed!" : "empty response from pricer daemon") . "\n";
-            } else {
-                $err_code    = $response->{error}->{code};
-                $err_details = $response->{error}->{details};
-                # in pricer_dameon everything happens in Eng to maximize the collisions. If translations has params it will come as message_to_client_array.
-                # eitherway it need l10n here.
-                if ($response->{error}->{message_to_client_array}) {
-                    $err_message = $c->l(@{$response->{error}->{message_to_client_array}});
-                } else {
-                    $err_message = $c->l($response->{error}->{message_to_client});
-                }
-            }
-            my $err = $c->new_error('proposal', $err_code, $$err_message);
-            $err->{error}->{details} = $err_details if $err_details;
-            $results = $err;
+            $results = _create_error_message('proposal', $response, $corrupted_stash, $stash_data->{uuid});
         } else {
             unless (defined $theo_probability) {
                 warn "process_ask_event got message without theo_probability. contract_parameters:  {"
@@ -468,6 +436,32 @@ sub send_proposal_open_contract_last_time {
             error   => $forget_subscr_sub,
         });
     return;
+}
+
+sub _create_error_message {
+    my ($type, $response, $corrupted_stash, $uuid) = @_;
+    my ($err_code, $err_message, $err_details);
+
+    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $uuid) if $uuid;
+
+    if (not $response or $corrupted_stash) {
+        $err_code    = 'InternalServerError';
+        $err_message = 'Internal server error';
+        warn "Pricer '$type' stream event processing error: " . ($response ? "stash data missed" : "empty response from pricer daemon") . "\n";
+    } else {
+        $err_code    = $response->{error}->{code};
+        $err_details = $response->{error}->{details};
+        # in pricer_dameon everything happens in Eng to maximize the collisions. If translations has params it will come as message_to_client_array.
+        # eitherway it need l10n here.
+        if ($response->{error}->{message_to_client_array}) {
+            $err_message = $c->l(@{$response->{error}->{message_to_client_array}});
+        } else {
+            $err_message = $c->l($response->{error}->{message_to_client});
+        }
+    }
+    my $err = $c->new_error($type, $err_code, $err_message);
+    $err->{error}->{details} = $err_details if $err_details;
+    return $err;
 }
 
 1;
