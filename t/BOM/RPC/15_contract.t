@@ -352,8 +352,7 @@ subtest 'get_bid' => sub {
     my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
 
     my @expected_keys = (
-        qw(ask_price
-            bid_price
+        qw(bid_price
             current_spot_time
             contract_id
             underlying
@@ -395,8 +394,7 @@ subtest 'get_bid' => sub {
 
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
 
-    @expected_keys = (
-        qw(ask_price
+    @expected_keys = (qw(
             bid_price
             current_spot_time
             contract_id
@@ -415,7 +413,7 @@ subtest 'get_bid' => sub {
             payout
             contract_type
             display_name
-            ));
+    ));
 
     push @expected_keys, qw(
         barrier
@@ -618,7 +616,6 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
             'date_expiry'           => '1127592000',
             'is_path_dependent'     => '0',
             'display_name'          => 'Apple',
-            'ask_price'             => '100.00',
             'entry_tick_time'       => '1127312430',
             'entry_spot'            => '111.00',
             'has_corporate_actions' => '1',
