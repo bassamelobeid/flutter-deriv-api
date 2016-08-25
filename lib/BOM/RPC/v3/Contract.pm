@@ -359,11 +359,12 @@ sub send_ask {
             %{$params->{args}}};
         my $contract_parameters = prepare_ask($arguments);
         $response = _get_ask($contract_parameters, $params->{app_markup_percentage});
-        $response->{contract_parameters} = $contract_parameters;
+        $response->{contract_parameters}                         = $contract_parameters;
         $response->{contract_parameters}->{maximum_total_markup} = BOM::System::Config::quants->{commission}->{maximum_total_markup};
-        $response->{contract_parameters}->{base_commission_min} = BOM::System::Config::quants->{commission}->{adjustment}->{minimum};
-        $response->{contract_parameters}->{base_commission_max} = BOM::System::Config::quants->{commission}->{adjustment}->{maximum};
-        $response->{contract_parameters}->{base_commission_scaling} = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling;
+        $response->{contract_parameters}->{base_commission_min}  = BOM::System::Config::quants->{commission}->{adjustment}->{minimum};
+        $response->{contract_parameters}->{base_commission_max}  = BOM::System::Config::quants->{commission}->{adjustment}->{maximum};
+        $response->{contract_parameters}->{base_commission_scaling} =
+            BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling;
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
