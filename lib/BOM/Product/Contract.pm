@@ -1128,6 +1128,8 @@ sub _build_app_markup_dollar_amount {
 sub _build_bs_price {
     my $self = shift;
 
+    $self->price_calculator->pricing_engine_bs_probability($self->pricing_engine->bs_probability);
+
     return $self->price_calculator->price_from_prob('bs_probability');
 }
 
@@ -1188,6 +1190,8 @@ sub _build_commission_from_stake {
 
 sub _build_theo_price {
     my $self = shift;
+
+    $self->price_calculator->pricing_engine_probability($self->pricing_engine->probability);
 
     return $self->price_calculator->price_from_prob('theo_probability');
 }
