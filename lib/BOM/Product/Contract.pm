@@ -912,7 +912,7 @@ sub _build_payout {
     my ($self) = @_;
 
     $self->price_calculator->ask_probability($self->ask_probability)             unless $self->price_calculator->has_ask_probability;
-    $self->price_calculator->theo_prabability($self->theo_prabability)           unless $self->price_calculator->has_theo_probability;
+    $self->price_calculator->theo_probability($self->theo_probability)           unless $self->price_calculator->has_theo_probability;
     $self->price_calculator->commission_markup($self->commission_markup)         unless $self->price_calculator->has_commission_markup;
     $self->price_calculator->commission_from_stake($self->commission_from_stake) unless $self->price_calculator->has_commission_from_stake;
 
@@ -1179,7 +1179,7 @@ sub _build_base_commission {
 sub _build_commission_from_stake {
     my $self = shift;
 
-    $self->price_calculator->theo_prabability($self->theo_prabability)   unless $self->price_calculator->has_theo_probability;
+    $self->price_calculator->theo_probability($self->theo_probability)   unless $self->price_calculator->has_theo_probability;
     $self->price_calculator->commission_markup($self->commission_markup) unless $self->price_calculator->has_commission_markup;
     $self->price_calculator->base_commission($self->base_commission)     unless $self->price_calculator->has_base_commission;
 
