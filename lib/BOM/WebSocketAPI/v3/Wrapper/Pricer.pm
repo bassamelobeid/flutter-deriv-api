@@ -391,39 +391,36 @@ sub _price_stream_results_adjustment {
     $contract_parameters->{theo_probability} = $theo_probability;
 
     $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
-    # my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
+    my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
 
-    # if (my $error = $contract->validate_price) {
-    #     return {
-    #         error => {
-    #             message_to_client => $error->{message_to_client},
-    #             code              => 'ContractBuyValidationError',
-    #             details           => {
-    #                 longcode      => $contract->longcode,
-    #                 display_value => $contract->ask_price,
-    #                 payout        => $contract->payout,
-    #             },
-    #         }};
-    # }
+    if (my $error = $contract->validate_price) {
+        return {
+            error => {
+                message_to_client => $error->{message_to_client},
+                code              => 'ContractBuyValidationError',
+                details           => {
+                    longcode      => $contract->longcode,
+                    display_value => $contract->ask_price,
+                    payout        => $contract->payout,
+                },
+            }};
+    }
 
     # $results->{ask_price} = $results->{display_value} = $contract->ask_price;
     # $results->{payout} = $contract->payout;
+
     my $price_calculator = Price::Calculator->new(
-        theo_probability    => $contract_parameters->{theo_probability},
-        # market_name => ... # TODO how to know? May be using contract validator?
-        base_commission_min         => $contract_parameters->{base_commission_min},
-        base_commission_max         => $contract_parameters->{base_commission_max},
-        base_commission_scaling     => $contract_parameters->{base_commission_scaling},
-        maximum_total_markup     => $contract_parameters->{maximum_total_markup},
-        app_markup_percentage    => $contract_parameters->{app_markup_percentage},
+        theo_probability        => $contract_parameters->{theo_probability},
+        base_commission_min     => $contract_parameters->{base_commission_min},
+        base_commission_max     => $contract_parameters->{base_commission_max},
+        base_commission_scaling => $contract_parameters->{base_commission_scaling},
+        maximum_total_markup    => $contract_parameters->{maximum_total_markup},
+        app_markup_percentage   => $contract_parameters->{app_markup_percentage},
+        currency                => $contract_parameters->{currency},
 
     );
-    $results->{ask_price} =
-        $results->{display_value} =
-        $price_calculator->price_from_prob('ask_probability', $contract_parameters->{currency}); # TODO currency
-    $results->{payout} = $price_calculator->payout; # TODO does we have payout here?
-
-
+    $results->{ask_price} = $results->{display_value} = $price_calculator->price_from_prob('ask_probability');
+    $results->{payout} = $price_calculator->payout;
 
     stats_timing('price_adjustment.timing', 1000 * tv_interval($t));
 

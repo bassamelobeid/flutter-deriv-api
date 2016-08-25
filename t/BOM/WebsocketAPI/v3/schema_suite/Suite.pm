@@ -17,7 +17,7 @@ use Sereal::Encoder;
 use BOM::Database::Model::OAuth;
 use BOM::System::RedisReplicated;
 use BOM::Platform::Client;
-use BOM::Test::Data::Utility::UnitTestMarketData; # we :init later for unit/auth test DBs
+use BOM::Test::Data::Utility::UnitTestMarketData;    # we :init later for unit/auth test DBs
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -36,7 +36,7 @@ sub read_file {
     my $path = shift;
     open my $fh, '<:encoding(UTF-8)', $path or die "Could not open $path - $!";
     local $/;
-    <$fh>
+    <$fh>;
 }
 
 my $ticks_inserted;
@@ -65,11 +65,11 @@ sub run {
         # Clear existing state for rate limits: verify email in particular
         flush_all_service_consumers();
 
-        unless($ticks_inserted) {
-          # Pre-populate with a few ticks - they need to be 1s apart. Note that we insert ticks
-          # that are 1..10s in the future here; we'll change the clock a few lines later, so by
-          # the time our code is run all these ticks should be in the recent past.
-            my $count = 10;
+        unless ($ticks_inserted) {
+            # Pre-populate with a few ticks - they need to be 1s apart. Note that we insert ticks
+            # that are 1..10s in the future here; we'll change the clock a few lines later, so by
+            # the time our code is run all these ticks should be in the recent past.
+            my $count     = 10;
             my $tick_time = time;
             for my $i (1 .. $count) {
                 for my $symbol (qw/R_50 R_100/) {
@@ -85,7 +85,7 @@ sub run {
             # We only do this once
             $ticks_inserted = 1;
         }
-        1
+        1;
     } or do {
         # Report on the failure for tracing
         diag Carp::longmess("Test setup failure - $@");
@@ -108,7 +108,7 @@ sub run {
     my $fh = do {
         my $path = 't/BOM/WebsocketAPI/v3/schema_suite/' . $input;
         open my $fh, '<:encoding(UTF-8)', $path or die "Could not open $path - $!";
-        $fh
+        $fh;
     };
 
     # Track the streaming responses
@@ -124,7 +124,7 @@ sub run {
 
     # 30s ahead of test start, minus 10 seconds for the initial ticks
     my $reset_time = time + 20;
-    while(my $line = <$fh>) {
+    while (my $line = <$fh>) {
         # we are setting the time one second ahead 12:00:00 for every
         # test to ensure time sensitive tests (pricing tests) always start at a consistent time.
         # Note that we have seen problems when resetting the time backwards:
@@ -133,7 +133,7 @@ sub run {
         system(qw(sudo date -s), '@' . $reset_time) and die "Failed to set date, do we have sudo access? $!";
         ++$reset_time;
 
-        my $counter = $.; # slightly more informative name, for use in log messages at the end of the loop
+        my $counter = $.;    # slightly more informative name, for use in log messages at the end of the loop
         chomp $line;
         next if ($line =~ /^(#.*|)$/);
 
@@ -193,7 +193,7 @@ sub run {
             if ($lang || !$t || $reset) {
                 my $new_lang = $lang || $last_lang;
                 ok(defined($new_lang), 'have a defined language') or diag "missing [LANG] tag in config before tests?";
-                ok(length($new_lang), 'have a valid language') or diag "invalid [LANG] tag in config or broken test?";
+                ok(length($new_lang),  'have a valid language')   or diag "invalid [LANG] tag in config or broken test?";
                 $t         = build_mojo_test({language => $new_lang}, {}, sub { store_stream_data($streams, @_) });
                 $last_lang = $new_lang;
                 $lang      = '';
@@ -250,12 +250,13 @@ sub _get_values {
         $f =~ s/^\s+|\s+$//g;
         my $template_content;
         if ($f =~ /^\_.*$/) {
-            local $@; # ensure we clear this first, to avoid false positive
+            local $@;    # ensure we clear this first, to avoid false positive
             $template_content = eval $f;
             # we do not expect any exceptions from the eval, they could indicate
             # invalid Perl code or bug, either way we need to know about them
-            ok(!$@, "template content can eval successfully") or
-                diag "Possible exception on eval \"$f\": $@" if $@;
+            ok(!$@, "template content can eval successfully")
+                or diag "Possible exception on eval \"$f\": $@"
+                if $@;
             # note that _get_token may return undef, the template implementation is not advanced
             # enough to support JSON null so we fall back to an empty string
             $template_content //= '';
@@ -393,8 +394,8 @@ sub _setup_market_data {
                 }]});
 
     # only populating aggregated ticks for frxUSDJPY
-    my $tick_data   = LoadFile('/home/git/regentmarkets/bom-websocket-api/t/BOM/WebsocketAPI/v3/schema_suite/ticks.yml');
-    my $encoder = Sereal::Encoder->new({
+    my $tick_data = LoadFile('/home/git/regentmarkets/bom-websocket-api/t/BOM/WebsocketAPI/v3/schema_suite/ticks.yml');
+    my $encoder   = Sereal::Encoder->new({
         canonical => 1,
     });
     my $redis = Cache::RedisDB->redis;
