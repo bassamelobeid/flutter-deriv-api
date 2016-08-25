@@ -1,0 +1,15 @@
+<p>Below, please read PCP as Payout per contract and DT as Daily Turnover.</p>
+
+<p><b>Definitions:</b></p>
+
+[% FOREACH profile IN definitions.keys %]
+    <p>- [% profile %]: [% definitions.$profile.payout.USD %] (PCP), [% definitions.$profile.turnover.USD %] (DT)</p>
+[% END %]
+
+<p><b>Current definition in config:</b></p>
+
+[% FOREACH market IN current.keys %]
+    [% FOREACH sub IN current.$market %]
+        <p>- [% sub.name %]: [% sub.profile_name %]</p>
+    [% END %]
+[% END %]
