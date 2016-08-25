@@ -302,10 +302,10 @@ sub process_ask_event {
             || !$stash_data->{uuid}
             || !exists $stash_data->{cache}
             || !$stash_data->{cache};
-        if (!$response or $corrupted_stash or exists $response->{error}) {
+        if (not $response or $corrupted_stash or exists $response->{error}) {
             my ($err_code, $err_message, $err_details);
             BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid}) if $stash_data->{uuid};
-            if (!$response or $corrupted_stash) {
+            if (not $response or $corrupted_stash) {
                 $err_code    = 'InternalServerError';
                 $err_message = 'Internal server error';
                 warn "Proposal call pricing event processing: " . ($response ? "stash data missed!" : "empty response from pricer daemon") . "\n";
