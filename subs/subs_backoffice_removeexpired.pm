@@ -1,7 +1,6 @@
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
-use BOM::Database::Transaction;
 use BOM::Database::DataMapper::Payment::FreeGift;
 use BOM::Database::DataMapper::Transaction;
 use File::Flock::Tiny;
