@@ -255,7 +255,7 @@ if ($preview and @invalid_lines == 0) {
 
     my $msg = $now->datetime . " $transtype batch transactions done by clerk=$clerk (DCcode=$control_code) $ENV{REMOTE_ADDR}";
     BOM::System::AuditLog::log($msg, '', $clerk);
-    Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")->append($msg);
+    Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")->append_utf8($msg);
 
     send_email({
         'from'    => BOM::Platform::Runtime->instance->app_config->cs->email,

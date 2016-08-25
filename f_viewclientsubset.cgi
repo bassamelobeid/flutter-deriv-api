@@ -495,7 +495,7 @@ sub RecoverFromClientAccount {
     my $acc_balance = $client->currency . $bal;
 
     Path::Tiny::path("/var/log/fixedodds/$broker.funds_withdrawn")
-        ->append(Date::Utility->new->datetime . " $loginID balance $acc_balance withdrawn by $clerk");
+        ->append_utf8(Date::Utility->new->datetime . " $loginID balance $acc_balance withdrawn by $clerk");
 
     $result->{'msg'}          = "<br><span style='color:green;font-weight:bold;'>RECOVERED $acc_balance</span>";
     $result->{'notification'} = $acc_balance;
