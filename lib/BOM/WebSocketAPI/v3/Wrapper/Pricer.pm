@@ -243,7 +243,7 @@ sub process_bid_event {
             || !exists $stash_data->{cache}
             || !$stash_data->{cache};
         if (not $response or $corrupted_stash or exists $response->{error}) {
-            $results = _create_error_message('proposal_open_contract', $response, $corrupted_stash, $stash_data->{uuid});
+            $results = _create_error_message($c, 'proposal_open_contract', $response, $corrupted_stash, $stash_data->{uuid});
         } else {
             my $passed_fields = $stash_data->{cache};
             $response->{id}              = $stash_data->{uuid};
@@ -290,7 +290,7 @@ sub process_ask_event {
             || !exists $stash_data->{cache}
             || !$stash_data->{cache};
         if (not $response or $corrupted_stash or exists $response->{error}) {
-            $results = _create_error_message('proposal', $response, $corrupted_stash, $stash_data->{uuid});
+            $results = _create_error_message($c, 'proposal', $response, $corrupted_stash, $stash_data->{uuid});
         } else {
             unless (defined $theo_probability) {
                 warn "process_ask_event got message without theo_probability. contract_parameters:  {"
@@ -439,7 +439,7 @@ sub send_proposal_open_contract_last_time {
 }
 
 sub _create_error_message {
-    my ($type, $response, $corrupted_stash, $uuid) = @_;
+    my ($c, $type, $response, $corrupted_stash, $uuid) = @_;
     my ($err_code, $err_message, $err_details);
 
     BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $uuid) if $uuid;
