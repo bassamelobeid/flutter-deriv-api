@@ -450,14 +450,10 @@ sub reset_password {
             code              => "InternalServerError",
             message_to_client => localize("Sorry, an error occurred while processing your account.")});
 
-    unless ($user) {
-        return $err;
-    }
+    return $err unless $user;
 
     @clients = $user->clients;
-    unless (scalar @clients) {
-        return $err;
-    }
+    return $err unless scalar @clients;
 
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
     my $client = $clients[0];
