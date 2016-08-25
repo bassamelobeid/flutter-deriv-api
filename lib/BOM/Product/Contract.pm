@@ -1210,15 +1210,15 @@ sub _build_commission_from_stake {
         return $combined_commission;
     }
 
-    my $a = $base_commission * $self->commission_slope * sqrt($theo_probability * (1 - $theo_probability));
-    my $b = ($theo_probability + $base_commission - $base_commission * $self->commission_min_std * $self->commission_slope) + $app_commission;
-    my $c = -$ask_price;
+    my $_a = $base_commission * $self->commission_slope * sqrt($theo_probability * (1 - $theo_probability));
+    my $_b = ($theo_probability + $base_commission - $base_commission * $self->commission_min_std * $self->commission_slope) + $app_commission;
+    my $_c = -$ask_price;
 
     # sets it to zero first.
     $initial_payout = 0;
     # We solve for payout as a quadratic function.
     for my $w (1, -1) {
-        my $estimated_payout = (-$b + $w * sqrt($b**2 - 4 * $a * $c)) / (2 * $a);
+        my $estimated_payout = (-$_b + $w * sqrt($_b**2 - 4 * $_a * $_c)) / (2 * $_a);
         if ($estimated_payout > 0) {
             $initial_payout = $estimated_payout;
             last;
