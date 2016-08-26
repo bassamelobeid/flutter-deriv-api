@@ -48,8 +48,7 @@ sub parse_quote {
 sub get_quote {
     my $dir = shift;
     my ($file, $line) = last_quote($dir);
-    my ($price, $timestamp) = parse_quote($file, $line);
-    return ($price, $timestamp);
+    return parse_quote($file, $line);
 }
 
 PrintContentType();
