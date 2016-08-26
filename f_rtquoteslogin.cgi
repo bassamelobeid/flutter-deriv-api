@@ -123,6 +123,9 @@ foreach my $i (@instrumentlist) {
     foreach my $p (@providerlist) {
         my ($price, $timestamp, $spot);
 
+        # Might die for a couple of reasons: file not exist, or error in parsing last line (partly written).
+        # All this errors are non fatal, and will show just empty cell in backoffice; refresh in browser can fix
+        # situation.
         try {
             ($price, $timestamp) = get_quote(path('/feed', $p, $underlying->symbol));
             # This is similar to underlying->spot, i.e. we always get the last value from combined file for comparison
