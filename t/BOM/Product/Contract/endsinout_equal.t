@@ -116,8 +116,8 @@ subtest 'expiry range' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
-            symbol => 'R_100',
-            recorded_date   => $now,
+            symbol        => 'R_100',
+            recorded_date => $now,
         });
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
