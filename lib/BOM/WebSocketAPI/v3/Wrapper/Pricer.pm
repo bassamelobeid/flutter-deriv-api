@@ -238,7 +238,7 @@ sub process_bid_event {
 
     for my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
         my $results;
-        unless ($results = _invalid_response_or_stash_data($c, $type, $response, $stash_data)) {
+        unless ($results = _invalid_response_or_stash_data($c, $response, $stash_data)->($type)) {
             my $passed_fields = $stash_data->{cache};
             $response->{id}              = $stash_data->{uuid};
             $response->{transaction_ids} = $passed_fields->{transaction_ids};
@@ -248,7 +248,7 @@ sub process_bid_event {
             $response->{longcode}        = $passed_fields->{longcode};
             $results                     = {
                 msg_type => $type,
-                $type    => {%$response,},
+                $type    => $response
             };
             _prepare_results($results, $pricing_channel, $redis_channel, $stash_data);
         }
@@ -277,7 +277,7 @@ sub process_ask_event {
     foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
         my $results;
 
-        unless ($results = _invalid_response_or_stash_data($c, $type, $response, $stash_data)) {
+        unless ($results = _invalid_response_or_stash_data($c, $response, $stash_data, {args => 'contract_type'})->($type)) {
             unless (defined $theo_probability) {
                 warn "process_ask_event got message without theo_probability. contract_parameters:  {"
                     . join(', ',
@@ -310,7 +310,7 @@ sub process_ask_event {
                 method => $type,
             };
         }
-        delete $results->{$type}->{$_} for qw(contract_parameters rpc_time);
+        delete @{$results->{$type}}{qw(contract_parameters rpc_time)};
         $c->send({json => $results});
     }
     return;
@@ -453,18 +453,22 @@ sub _create_error_message {
 }
 
 sub _invalid_response_or_stash_data {
-    my ($c, $type, $response, $stash_data) = @_;
-    my $err;
+    my ($c, $response, $stash_data, $additional_params_to_check) = @_;
 
-    $err =
+    my $err =
           !$response
         || $response->{error}
         || !$stash_data->{args}
         || !$stash_data->{uuid}
         || !$stash_data->{cache};
-    $err ||= !$stash_data->{args}->{contract_type} if $type eq 'proposal';
 
-    return $err ? _create_error_message($c, $type, $response, $stash_data) : undef;
+    if (ref $additional_params_to_check eq 'HASH') {
+        while (my ($key, $value) = each %$additional_params_to_check) {
+            $err ||= !$stash_data->{$key}->{$value};
+        }
+    }
+
+    return $err ? sub { my $type = shift; return _create_error_message($c, $type, $response, $stash_data) } : sub { };
 }
 
 1;
