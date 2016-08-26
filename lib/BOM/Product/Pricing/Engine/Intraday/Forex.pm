@@ -238,12 +238,12 @@ sub _build_lookback_secs {
     my $lookback_secs    = 0;
 
     $lookback_secs = $ticks[-1]->{epoch} - $ticks[0]->{epoch} if scalar(@ticks) > 1;
-    my $ticks_per_sec = $lookback_secs / $duration_in_secs;
 
-    # If gotten lookback ticks period is slightly different from duration*2
-    # then we use duration*2 like lookback to save price values for usual contacts.
-    # And when we have not enought ticks we use lookback instead of duration.
-    if ($ticks_per_sec <= 1.602) {
+    # If gotten lookback ticks period is lower then 80% of duration*2
+    # that means we have not enought ticks to make price
+    # we should use gotten lookback period to correct probability
+    my $ticks_per_sec = $lookback_secs / 2 / $duration_in_secs;
+    if ($ticks_per_sec <= 0.8) {
         return $lookback_secs;
     }
     return $duration_in_secs * 2;
