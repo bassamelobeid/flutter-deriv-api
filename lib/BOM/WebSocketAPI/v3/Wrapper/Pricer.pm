@@ -238,7 +238,7 @@ sub process_bid_event {
 
     for my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
         my $results;
-        unless ($results = _invalid_response_or_stash_data($c, $response, $stash_data)->($type)) {
+        unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data)) {
             my $passed_fields = $stash_data->{cache};
             $response->{id}              = $stash_data->{uuid};
             $response->{transaction_ids} = $passed_fields->{transaction_ids};
@@ -277,7 +277,7 @@ sub process_ask_event {
     foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
         my $results;
 
-        unless ($results = _invalid_response_or_stash_data($c, $response, $stash_data, {args => 'contract_type'})->($type)) {
+        unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
             unless (defined $theo_probability) {
                 warn "process_ask_event got message without theo_probability. contract_parameters:  {"
                     . join(', ',
@@ -469,6 +469,13 @@ sub _invalid_response_or_stash_data {
     }
 
     return $err ? sub { my $type = shift; return _create_error_message($c, $type, $response, $stash_data) } : sub { };
+}
+
+sub _get_validation_for_type {
+    my $type = shift;
+    return sub {
+        return _invalid_response_or_stash_data(@_)->($type);
+        }
 }
 
 1;
