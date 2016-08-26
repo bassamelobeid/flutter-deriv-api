@@ -68,7 +68,7 @@ subtest 'landing_company specifics' => sub {
     }
 
     lives_ok {
-        my $revision = BOM::Platform::Runtime->instance->app_config->current_revision || 0;
+        my $revision = BOM::Platform::Runtime->instance->app_config->current_revision;
         foreach my $lc (@expected_lc) {
             my $fb = Cache::RedisDB->get('OFFERINGS_' . $lc, $revision);
             my @market_lc = $fb->values_for_key('market');
