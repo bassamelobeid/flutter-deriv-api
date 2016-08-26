@@ -95,6 +95,7 @@ sub _build_base_probability {
         description => 'BS pricing based on realized vols',
         set_by      => __PACKAGE__,
         base_amount => $self->formula->($self->_formula_args),
+        minimum     => 0,
     });
 
     $base_probability->include_adjustment('add', $self->intraday_delta_correction);
@@ -119,7 +120,7 @@ sub _build_probability {
         name        => lc($bet->code) . '_theoretical_probability',
         description => 'BS pricing based on realized vols',
         set_by      => __PACKAGE__,
-        minimum     => 0.1,                                           # anything lower than 0.1, we will just sell you at 0.1.
+        minimum     => 0,
         maximum     => 1,
     });
 
@@ -487,6 +488,7 @@ sub _build_risk_markup {
         name        => 'risk_markup',
         description => 'A set of markups added to accommodate for pricing risk',
         set_by      => __PACKAGE__,
+        minimum     => 0,
         base_amount => 0,
     });
 
