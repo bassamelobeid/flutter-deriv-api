@@ -12,7 +12,6 @@ use Proc::Killall;
 use BOM::Market::Registry;
 use Try::Tiny;
 use Path::Tiny;
-use JSON::XS;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use File::ReadBackwards;
