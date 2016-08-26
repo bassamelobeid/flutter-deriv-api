@@ -66,6 +66,7 @@ subtest 'landing_company specifics' => sub {
             cmp_bag(\@type_lc, $expected_type{$lc}, 'contract type list for ' . $lc);
         }
     }
+    'contract list by landing company';
 
     lives_ok {
         my $revision = BOM::Platform::Runtime->instance->app_config->current_revision;
