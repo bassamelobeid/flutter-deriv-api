@@ -226,6 +226,29 @@ sub _build_ticks_for_trend {
     });
 }
 
+has lookback_secs => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_lookback_secs {
+    my $self             = shift;
+    my @ticks            = @{$self->ticks_for_trend};
+    my $duration_in_secs = $self->bet->timeindays->amount * 86400;
+    my $lookback_secs    = 0;
+
+    $lookback_secs = $ticks[-1]->{epoch} - $ticks[0]->{epoch} if scalar(@ticks) > 1;
+    my $ticks_per_sec = $lookback_secs / $duration_in_secs;
+
+    # If gotten lookback ticks period is slightly different from duration*2
+    # then we use duration*2 like lookback to save price values for usual contacts.
+    # And when we have not enought ticks we use lookback instead of duration.
+    if ($ticks_per_sec <= 1.602) {
+        return $lookback_secs;
+    }
+    return $duration_in_secs * 2;
+}
+
 has slope => (
     is         => 'ro',
     lazy_build => 1,
@@ -233,13 +256,9 @@ has slope => (
 
 sub _build_slope {
     my $self             = shift;
-    my @ticks            = @{$self->ticks_for_trend};
     my $duration_in_secs = $self->bet->timeindays->amount * 86400;
-    my $tick_interval    = 0;
 
-    $tick_interval = $ticks[-1]->{epoch} - $ticks[0]->{epoch} if scalar(@ticks) > 1;
-
-    my $ticks_per_sec = $tick_interval / $duration_in_secs;
+    my $ticks_per_sec = $self->lookback_secs / $duration_in_secs;
     return (sqrt(1 - (($ticks_per_sec - 2)**2) / 4));
 }
 
@@ -267,9 +286,8 @@ sub _build_intraday_trend {
     });
 
     my $trend = 0;
-    if (scalar(@ticks) > 1) {
-        my $tick_interval = $ticks[-1]->{epoch} - $ticks[0]->{epoch};
-        $trend = ((($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($tick_interval / 2)) * $self->slope;
+    if (@ticks > 1) {
+        $trend = ((($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($self->lookback_secs / 2)) * $self->slope;
     }
     my $calibration_coef = $self->coefficients->{$bet->underlying->symbol};
     my $trend_cv         = Math::Util::CalculatedValue::Validatable->new({
