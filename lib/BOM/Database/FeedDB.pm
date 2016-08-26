@@ -29,9 +29,4 @@ sub write_dbh {
       || die($DBI::errstr);
 }
 
-sub any_event_connection_str {
-    my $db_postfix = $ENV{DB_POSTFIX} // '';
-    return "host=/var/run/postgresql port=6433 dbname=feed-replica$db_postfix user=read";
-}
-
 1;
