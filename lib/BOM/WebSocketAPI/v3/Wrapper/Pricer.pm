@@ -234,17 +234,11 @@ sub process_pricing_events {
 
 sub process_bid_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
+    my $type = 'proposal_open_contract';
+
     for my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
         my $results;
-        my $corrupted_stash =
-               !exists $stash_data->{args}
-            || !exists $stash_data->{uuid}
-            || !$stash_data->{uuid}
-            || !exists $stash_data->{cache}
-            || !$stash_data->{cache};
-        if (not $response or $corrupted_stash or exists $response->{error}) {
-            $results = _create_error_message($c, 'proposal_open_contract', $response, $corrupted_stash, $stash_data->{uuid});
-        } else {
+        unless ($results = _invalid_response_or_stash_data($c, $type, $response, $stash_data)) {
             my $passed_fields = $stash_data->{cache};
             $response->{id}              = $stash_data->{uuid};
             $response->{transaction_ids} = $passed_fields->{transaction_ids};
@@ -253,18 +247,18 @@ sub process_bid_event {
             $response->{is_sold}         = $passed_fields->{is_sold};
             $response->{longcode}        = $passed_fields->{longcode};
             $results                     = {
-                msg_type                 => 'proposal_open_contract',
-                'proposal_open_contract' => {%$response,},
+                msg_type => $type,
+                $type    => {%$response,},
             };
             _prepare_results($results, $pricing_channel, $redis_channel, $stash_data);
         }
         if ($c->stash('debug')) {
             $results->{debug} = {
-                time   => $results->{proposal_open_contract}->{rpc_time},
-                method => 'proposal_open_contract',
+                time   => $results->{$type}->{rpc_time},
+                method => $type,
             };
         }
-        delete $results->{proposal_open_contract}->{rpc_time};
+        delete $results->{$type}->{rpc_time};
         # creating full response message here.
         # to use hooks for adding debug or other info it will be needed to fully re-create 'req_storage' and
         # pass it as a second argument for 'send'.
@@ -277,21 +271,13 @@ sub process_bid_event {
 
 sub process_ask_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
+    my $type = 'proposal';
 
     my $theo_probability = delete $response->{theo_probability};
     foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
         my $results;
-        my $corrupted_stash =
-               !exists $stash_data->{args}
-            || !exists $stash_data->{args}->{contract_type}
-            || !$stash_data->{args}->{contract_type}
-            || !exists $stash_data->{uuid}
-            || !$stash_data->{uuid}
-            || !exists $stash_data->{cache}
-            || !$stash_data->{cache};
-        if (not $response or $corrupted_stash or exists $response->{error}) {
-            $results = _create_error_message($c, 'proposal', $response, $corrupted_stash, $stash_data->{uuid});
-        } else {
+
+        unless ($results = _invalid_response_or_stash_data($c, $type, $response, $stash_data)) {
             unless (defined $theo_probability) {
                 warn "process_ask_event got message without theo_probability. contract_parameters:  {"
                     . join(', ',
@@ -303,13 +289,13 @@ sub process_ask_event {
             my $adjusted_results =
                 _price_stream_results_adjustment($stash_data->{args}, $stash_data->{cache}->{contract_parameters}, $response, $theo_probability);
             if (my $ref = $adjusted_results->{error}) {
-                my $err = $c->new_error('proposal', $ref->{code}, $ref->{message_to_client});
+                my $err = $c->new_error($type, $ref->{code}, $ref->{message_to_client});
                 $err->{error}->{details} = $ref->{details} if exists $ref->{details};
                 $results = $err;
             } else {
                 $results = {
-                    msg_type   => 'proposal',
-                    'proposal' => {
+                    msg_type => $type,
+                    $type    => {
                         %$adjusted_results,
                         id       => $stash_data->{uuid},
                         longcode => $stash_data->{cache}->{longcode},
@@ -320,11 +306,11 @@ sub process_ask_event {
         }
         if ($c->stash('debug')) {
             $results->{debug} = {
-                time   => $results->{proposal}->{rpc_time},
-                method => 'proposal',
+                time   => $results->{$type}->{rpc_time},
+                method => $type,
             };
         }
-        delete $results->{proposal}->{$_} for qw(contract_parameters rpc_time);
+        delete $results->{$type}->{$_} for qw(contract_parameters rpc_time);
         $c->send({json => $results});
     }
     return;
@@ -439,16 +425,12 @@ sub send_proposal_open_contract_last_time {
 }
 
 sub _create_error_message {
-    my ($c, $type, $response, $corrupted_stash, $uuid) = @_;
+    my ($c, $type, $response, $stash_data) = @_;
     my ($err_code, $err_message, $err_details);
 
-    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $uuid) if $uuid;
+    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid}) if $stash_data->{uuid};
 
-    if (not $response or $corrupted_stash) {
-        $err_code    = 'InternalServerError';
-        $err_message = 'Internal server error';
-        warn "Pricer '$type' stream event processing error: " . ($response ? "stash data missed" : "empty response from pricer daemon") . "\n";
-    } else {
+    if ($response->{error}) {
         $err_code    = $response->{error}->{code};
         $err_details = $response->{error}->{details};
         # in pricer_dameon everything happens in Eng to maximize the collisions. If translations has params it will come as message_to_client_array.
@@ -458,10 +440,29 @@ sub _create_error_message {
         } else {
             $err_message = $c->l($response->{error}->{message_to_client});
         }
+    } else {
+        $err_code    = 'InternalServerError';
+        $err_message = 'Internal server error';
+        warn "Pricer '$type' stream event processing error: " . ($response ? "stash data missed" : "empty response from pricer daemon") . "\n";
     }
     my $err = $c->new_error($type, $err_code, $err_message);
     $err->{error}->{details} = $err_details if $err_details;
     return $err;
+}
+
+sub _invalid_response_or_stash_data {
+    my ($c, $type, $response, $stash_data) = @_;
+    my $err;
+
+    $err =
+          !$response
+        || $response->{error}
+        || !$stash_data->{args}
+        || !$stash_data->{uuid}
+        || !$stash_data->{cache};
+    $err ||= !$stash_data->{args}->{contract_type} if $type eq 'proposal';
+
+    return $err ? _create_error_message($c, $type, $response, $stash_data) : undef;
 }
 
 1;
