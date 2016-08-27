@@ -36,7 +36,7 @@ subtest 'asian' => sub {
     ok !$cat->barrier_at_start, 'barrier determined at expiry';
     is_deeply $cat->supported_expiries,    ['tick'];
     is_deeply $cat->supported_start_types, ['spot'];
-    cmp_bag $cat->available_types, ['ASIANU', 'ASIAND'];
+    cmp_bag $cat->available_types,         ['ASIANU', 'ASIAND'];
 };
 
 subtest 'digits' => sub {
@@ -48,7 +48,7 @@ subtest 'digits' => sub {
     ok $cat->barrier_at_start, 'barrier determined at start';
     is_deeply $cat->supported_expiries,    ['tick'];
     is_deeply $cat->supported_start_types, ['spot'];
-    cmp_bag $cat->available_types, ['DIGITMATCH', 'DIGITDIFF', 'DIGITODD', 'DIGITEVEN', 'DIGITOVER', 'DIGITUNDER'];
+    cmp_bag $cat->available_types,         ['DIGITMATCH', 'DIGITDIFF', 'DIGITODD', 'DIGITEVEN', 'DIGITOVER', 'DIGITUNDER'];
 };
 
 subtest 'touchnotouch' => sub {

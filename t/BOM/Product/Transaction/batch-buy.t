@@ -30,15 +30,15 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 use JSON qw/to_json/;
 my $datadog_mock = Test::MockModule->new('DataDog::DogStatsd');
 my @datadog_actions;
-$datadog_mock->mock(increment => sub {shift; push @datadog_actions, to_json +{increment => [@_]}; return;});
-$datadog_mock->mock(decrement => sub {shift; push @datadog_actions, to_json +{decrement => [@_]}; return;});
-$datadog_mock->mock(timing    => sub {shift; push @datadog_actions, to_json +{timing    => [@_]}; return;});
-$datadog_mock->mock(gauge     => sub {shift; push @datadog_actions, to_json +{gauge     => [@_]}; return;});
-$datadog_mock->mock(count     => sub {shift; push @datadog_actions, to_json +{count     => [@_]}; return;});
+$datadog_mock->mock(increment => sub { shift; push @datadog_actions, to_json + {increment => [@_]}; return; });
+$datadog_mock->mock(decrement => sub { shift; push @datadog_actions, to_json + {decrement => [@_]}; return; });
+$datadog_mock->mock(timing    => sub { shift; push @datadog_actions, to_json + {timing    => [@_]}; return; });
+$datadog_mock->mock(gauge     => sub { shift; push @datadog_actions, to_json + {gauge     => [@_]}; return; });
+$datadog_mock->mock(count     => sub { shift; push @datadog_actions, to_json + {count     => [@_]}; return; });
 
 {
     no warnings 'redefine';
-    *BOM::System::Config::env = sub {return 'production'}; # for testing datadog
+    *BOM::System::Config::env = sub { return 'production' };    # for testing datadog
 }
 
 sub reset_datadog {
@@ -46,13 +46,13 @@ sub reset_datadog {
 }
 
 sub check_datadog {
-    my $item = to_json +{@_};
+    my $item = to_json + {@_};
     if ($_[0] eq 'timing') {
         my ($p1, $p2) = split /,/, $item, 2;
         my $re = qr/\Q$p1\E,[\d.]+,\Q$p2\E/;
-        ok +(!!grep {/$re/} @datadog_actions), "found datadog action: $item";
+        ok + (!!grep { /$re/ } @datadog_actions), "found datadog action: $item";
     } else {
-        ok +(!!grep {$_ eq $item} @datadog_actions), "found datadog action: $item";
+        ok + (!!grep { $_ eq $item } @datadog_actions), "found datadog action: $item";
     }
 }
 
@@ -62,7 +62,7 @@ sub check_datadog {
         EUR => 3,
     );
     no warnings 'redefine';
-    *BOM::Product::Transaction::in_USD = sub { # for testing datadog
+    *BOM::Product::Transaction::in_USD = sub {    # for testing datadog
         my ($amount, $currency) = @_;
         return $amount * $exch{$currency};
     };
@@ -226,11 +226,11 @@ sub check_one_result {
 subtest 'batch-buy success', sub {
     plan tests => 10;
     lives_ok {
-        my $clm = create_client; # manager
+        my $clm = create_client;    # manager
         my $cl1 = create_client;
         my $cl2 = create_client;
 
-        top_up $clm, 'USD', 0;   # the manager has no money
+        top_up $clm, 'USD', 0;      # the manager has no money
         top_up $cl1, 'USD', 5000;
         top_up $cl2, 'USD', 5000;
 
@@ -260,12 +260,7 @@ subtest 'batch-buy success', sub {
             price       => 50.00,
             payout      => $contract->payout,
             amount_type => 'payout',
-            multiple    => [
-                {loginid => $cl2->loginid},
-                {code    => 'ignore'},
-                {loginid => $cl1->loginid},
-                {loginid => $cl2->loginid},
-            ],
+            multiple    => [{loginid => $cl2->loginid}, {code => 'ignore'}, {loginid => $cl1->loginid}, {loginid => $cl2->loginid},],
         });
 
         my $error = do {
@@ -290,9 +285,9 @@ subtest 'batch-buy success', sub {
         check_one_result 'result for client #3', $cl2, $acc2, $m->[3], '4900.0000';
 
         my $expected_status = {
-            active_queues  => 2, # TICK_COUNT and SETTLEMENT_EPOCH
-            open_contracts => 3, # the ones just bought
-            ready_to_sell  => 0, # obviously
+            active_queues  => 2,    # TICK_COUNT and SETTLEMENT_EPOCH
+            open_contracts => 3,    # the ones just bought
+            ready_to_sell  => 0,    # obviously
         };
         is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
     }
@@ -302,9 +297,9 @@ subtest 'batch-buy success', sub {
 subtest 'batch-buy success 2', sub {
     plan tests => 3;
     lives_ok {
-        my $clm = create_client; # manager
+        my $clm = create_client;    # manager
 
-        top_up $clm, 'USD', 0;   # the manager has no money
+        top_up $clm, 'USD', 0;      # the manager has no money
 
         local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
@@ -325,11 +320,7 @@ subtest 'batch-buy success 2', sub {
             price       => 50.00,
             payout      => $contract->payout,
             amount_type => 'payout',
-            multiple    => [
-                {code    => 'ignore'},
-                {},
-                {code    => 'ignore'},
-            ],
+            multiple    => [{code => 'ignore'}, {}, {code => 'ignore'},],
         });
 
         my $error = do {
@@ -347,12 +338,12 @@ subtest 'batch-buy success 2', sub {
 
         is $error, undef, 'successful batch_buy';
         my $expected = [
-            {code    => 'ignore'},
+            {code => 'ignore'},
             {
                 code  => 'InvalidLoginid',
                 error => 'Invalid loginid',
             },
-            {code    => 'ignore'},
+            {code => 'ignore'},
         ];
         is_deeply $txn->multiple, $expected, 'nothing bought';
     }
@@ -362,9 +353,9 @@ subtest 'batch-buy success 2', sub {
 subtest 'contract already started', sub {
     plan tests => 3;
     lives_ok {
-        my $clm = create_client; # manager
+        my $clm = create_client;    # manager
 
-        top_up $clm, 'USD', 0;   # the manager has no money
+        top_up $clm, 'USD', 0;      # the manager has no money
 
         local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
@@ -411,11 +402,11 @@ subtest 'contract already started', sub {
 subtest 'single contract fails in database', sub {
     plan tests => 10;
     lives_ok {
-        my $clm = create_client; # manager
+        my $clm = create_client;    # manager
         my $cl1 = create_client;
         my $cl2 = create_client;
 
-        top_up $clm, 'USD', 0;   # the manager has no money
+        top_up $clm, 'USD', 0;      # the manager has no money
         top_up $cl1, 'USD', 5000;
         top_up $cl2, 'USD', 90;
 
@@ -424,7 +415,7 @@ subtest 'single contract fails in database', sub {
 
         my $bal;
         is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
-        is + ($bal = $acc2->balance + 0), 90, 'USD balance #2 is 90 got: ' . $bal;
+        is + ($bal = $acc2->balance + 0), 90,   'USD balance #2 is 90 got: ' . $bal;
 
         local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
@@ -445,12 +436,7 @@ subtest 'single contract fails in database', sub {
             price       => 50.00,
             payout      => $contract->payout,
             amount_type => 'payout',
-            multiple    => [
-                {loginid => $cl2->loginid},
-                {code    => 'ignore'},
-                {loginid => $cl1->loginid},
-                {loginid => $cl2->loginid},
-            ],
+            multiple    => [{loginid => $cl2->loginid}, {code => 'ignore'}, {loginid => $cl1->loginid}, {loginid => $cl2->loginid},],
         });
 
         my $error = do {
@@ -480,9 +466,9 @@ subtest 'single contract fails in database', sub {
         };
 
         my $expected_status = {
-            active_queues  => 2, # TICK_COUNT and SETTLEMENT_EPOCH
-            open_contracts => 2, # the ones just bought
-            ready_to_sell  => 0, # obviously
+            active_queues  => 2,    # TICK_COUNT and SETTLEMENT_EPOCH
+            open_contracts => 2,    # the ones just bought
+            ready_to_sell  => 0,    # obviously
         };
         is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
     }
@@ -492,7 +478,7 @@ subtest 'single contract fails in database', sub {
 subtest 'batch-buy multiple databases and datadog', sub {
     plan tests => 27;
     lives_ok {
-        my $clm = create_client 'VRTC'; # manager
+        my $clm = create_client 'VRTC';    # manager
         my @cl;
         push @cl, create_client;
         push @cl, create_client;
@@ -500,11 +486,11 @@ subtest 'batch-buy multiple databases and datadog', sub {
         push @cl, create_client 'MF';
         push @cl, create_client 'VRTC';
 
-        top_up $clm, 'USD', 0;   # the manager has no money
+        top_up $clm, 'USD', 0;              # the manager has no money
         top_up $_, 'USD', 5000 for (@cl);
 
         my @acc;
-        isnt + (push @acc, $_->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account #'.@acc for (@cl);
+        isnt + (push @acc, $_->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account #' . @acc for (@cl);
 
         local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
@@ -525,11 +511,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
             price       => 50.00,
             payout      => $contract->payout,
             amount_type => 'payout',
-            multiple    => [
-                (map { +{loginid => $_->loginid} } @cl),
-                {code    => 'ignore'},
-                {loginid => 'NONE000'},
-            ],
+            multiple    => [(map { +{loginid => $_->loginid} } @cl), {code => 'ignore'}, {loginid => 'NONE000'},],
         });
 
         my $error = do {
@@ -550,115 +532,167 @@ subtest 'batch-buy multiple databases and datadog', sub {
 
         is $error, undef, 'successful batch_buy';
         my $m = $txn->multiple;
-        for (my $i = 0; $i<@cl; $i++) {
-            check_one_result 'result for client '.$m->[$i]->{loginid}, $cl[$i], $acc[$i], $m->[$i], '4950.0000';
+        for (my $i = 0; $i < @cl; $i++) {
+            check_one_result 'result for client ' . $m->[$i]->{loginid}, $cl[$i], $acc[$i], $m->[$i], '4950.0000';
         }
 
         my $expected_status = {
-            active_queues  => 2, # TICK_COUNT and SETTLEMENT_EPOCH
-            open_contracts => 5, # the ones just bought
-            ready_to_sell  => 0, # obviously
+            active_queues  => 2,    # TICK_COUNT and SETTLEMENT_EPOCH
+            open_contracts => 5,    # the ones just bought
+            ready_to_sell  => 0,    # obviously
         };
         is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
 
-        check_datadog increment => ["transaction.batch_buy.attempt" => {tags => [
-            qw/ broker:vrtc
-                virtual:yes
-                rmgenv:production
-                contract_class:higher_lower_bet
-                amount_type:payout
-                expiry_type:duration /]}];
-        check_datadog increment => ["transaction.batch_buy.success" => {tags => [
-            qw/ broker:vrtc
-                virtual:yes
-                rmgenv:production
-                contract_class:higher_lower_bet
-                amount_type:payout
-                expiry_type:duration /]}];
-        check_datadog count => ["transaction.buy.attempt" => 1, {tags => [
-            qw/ broker:vrtc
-                virtual:yes
-                rmgenv:production
-                contract_class:higher_lower_bet
-                amount_type:payout
-                expiry_type:duration /]}];
-        check_datadog count => ["transaction.buy.success" => 1, {tags => [
-            qw/ broker:vrtc
-                virtual:yes
-                rmgenv:production
-                contract_class:higher_lower_bet
-                amount_type:payout
-                expiry_type:duration /]}];
-        check_datadog count => ["transaction.buy.attempt" => 2, {tags => [
-            qw/ broker:cr
-                virtual:no
-                rmgenv:production
-                contract_class:higher_lower_bet
-                amount_type:payout
-                expiry_type:duration /]}];
-        check_datadog count => ["transaction.buy.success" => 2, {tags => [
-            qw/ broker:cr
-                virtual:no
-                rmgenv:production
-                contract_class:higher_lower_bet
-                amount_type:payout
-                expiry_type:duration /]}];
-        check_datadog count => ["transaction.buy.attempt" => 2, {tags => [
-            qw/ broker:mf
-                virtual:no
-                rmgenv:production
-                contract_class:higher_lower_bet
-                amount_type:payout
-                expiry_type:duration /]}];
-        check_datadog count => ["transaction.buy.success" => 2, {tags => [
-            qw/ broker:mf
-                virtual:no
-                rmgenv:production
-                contract_class:higher_lower_bet
-                amount_type:payout
-                expiry_type:duration /]}];
-        check_datadog count => ["business.turnover_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'), {tags => [
-            qw/ broker:cr
-                virtual:no
-                rmgenv:production
-                contract_class:higher_lower_bet
-                amount_type:payout
-                expiry_type:duration /]}];
-        check_datadog count => ["business.turnover_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'), {tags => [
-            qw/ broker:mf
-                virtual:no
-                rmgenv:production
-                contract_class:higher_lower_bet
-                amount_type:payout
-                expiry_type:duration /]}];
-        check_datadog count => ["business.buy_minus_sell_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'), {tags => [
-            qw/ broker:cr
-                virtual:no
-                rmgenv:production
-                contract_class:higher_lower_bet
-                amount_type:payout
-                expiry_type:duration /]}];
-        check_datadog count => ["business.buy_minus_sell_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'), {tags => [
-            qw/ broker:mf
-                virtual:no
-                rmgenv:production
-                contract_class:higher_lower_bet
-                amount_type:payout
-                expiry_type:duration /]}];
-        check_datadog timing => ["transaction.batch_buy.elapsed_time" => {tags => [
-            qw/ broker:vrtc
-                virtual:yes
-                rmgenv:production
-                contract_class:higher_lower_bet
-                amount_type:payout
-                expiry_type:duration /]}];
-        check_datadog timing => ["transaction.batch_buy.db_time" => {tags => [
-            qw/ broker:vrtc
-                virtual:yes
-                rmgenv:production
-                contract_class:higher_lower_bet
-                amount_type:payout
-                expiry_type:duration /]}];
+        check_datadog increment => [
+            "transaction.batch_buy.attempt" => {
+                tags => [
+                    qw/ broker:vrtc
+                        virtual:yes
+                        rmgenv:production
+                        contract_class:higher_lower_bet
+                        amount_type:payout
+                        expiry_type:duration /
+                ]}];
+        check_datadog increment => [
+            "transaction.batch_buy.success" => {
+                tags => [
+                    qw/ broker:vrtc
+                        virtual:yes
+                        rmgenv:production
+                        contract_class:higher_lower_bet
+                        amount_type:payout
+                        expiry_type:duration /
+                ]}];
+        check_datadog count => [
+            "transaction.buy.attempt" => 1,
+            {
+                tags => [
+                    qw/ broker:vrtc
+                        virtual:yes
+                        rmgenv:production
+                        contract_class:higher_lower_bet
+                        amount_type:payout
+                        expiry_type:duration /
+                ]}];
+        check_datadog count => [
+            "transaction.buy.success" => 1,
+            {
+                tags => [
+                    qw/ broker:vrtc
+                        virtual:yes
+                        rmgenv:production
+                        contract_class:higher_lower_bet
+                        amount_type:payout
+                        expiry_type:duration /
+                ]}];
+        check_datadog count => [
+            "transaction.buy.attempt" => 2,
+            {
+                tags => [
+                    qw/ broker:cr
+                        virtual:no
+                        rmgenv:production
+                        contract_class:higher_lower_bet
+                        amount_type:payout
+                        expiry_type:duration /
+                ]}];
+        check_datadog count => [
+            "transaction.buy.success" => 2,
+            {
+                tags => [
+                    qw/ broker:cr
+                        virtual:no
+                        rmgenv:production
+                        contract_class:higher_lower_bet
+                        amount_type:payout
+                        expiry_type:duration /
+                ]}];
+        check_datadog count => [
+            "transaction.buy.attempt" => 2,
+            {
+                tags => [
+                    qw/ broker:mf
+                        virtual:no
+                        rmgenv:production
+                        contract_class:higher_lower_bet
+                        amount_type:payout
+                        expiry_type:duration /
+                ]}];
+        check_datadog count => [
+            "transaction.buy.success" => 2,
+            {
+                tags => [
+                    qw/ broker:mf
+                        virtual:no
+                        rmgenv:production
+                        contract_class:higher_lower_bet
+                        amount_type:payout
+                        expiry_type:duration /
+                ]}];
+        check_datadog count => [
+            "business.turnover_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'),
+            {
+                tags => [
+                    qw/ broker:cr
+                        virtual:no
+                        rmgenv:production
+                        contract_class:higher_lower_bet
+                        amount_type:payout
+                        expiry_type:duration /
+                ]}];
+        check_datadog count => [
+            "business.turnover_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'),
+            {
+                tags => [
+                    qw/ broker:mf
+                        virtual:no
+                        rmgenv:production
+                        contract_class:higher_lower_bet
+                        amount_type:payout
+                        expiry_type:duration /
+                ]}];
+        check_datadog count => [
+            "business.buy_minus_sell_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'),
+            {
+                tags => [
+                    qw/ broker:cr
+                        virtual:no
+                        rmgenv:production
+                        contract_class:higher_lower_bet
+                        amount_type:payout
+                        expiry_type:duration /
+                ]}];
+        check_datadog count => [
+            "business.buy_minus_sell_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'),
+            {
+                tags => [
+                    qw/ broker:mf
+                        virtual:no
+                        rmgenv:production
+                        contract_class:higher_lower_bet
+                        amount_type:payout
+                        expiry_type:duration /
+                ]}];
+        check_datadog timing => [
+            "transaction.batch_buy.elapsed_time" => {
+                tags => [
+                    qw/ broker:vrtc
+                        virtual:yes
+                        rmgenv:production
+                        contract_class:higher_lower_bet
+                        amount_type:payout
+                        expiry_type:duration /
+                ]}];
+        check_datadog timing => [
+            "transaction.batch_buy.db_time" => {
+                tags => [
+                    qw/ broker:vrtc
+                        virtual:yes
+                        rmgenv:production
+                        contract_class:higher_lower_bet
+                        amount_type:payout
+                        expiry_type:duration /
+                ]}];
     }
     'survived';
 };
