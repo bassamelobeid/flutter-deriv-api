@@ -4,7 +4,7 @@ TESTS=unit_test_database_datamapper \
 
 M=[ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
 D=$(CURDIR)
-P=prove --timer -I$D/lib -I$D -I$D/t
+P=/etc/rmg/bin/prove --timer -I$D/lib -I$D -I$D/t
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 test: $(TESTS)
