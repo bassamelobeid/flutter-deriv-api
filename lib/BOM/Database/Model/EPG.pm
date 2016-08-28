@@ -3,7 +3,11 @@ package BOM::Database::Model::EPG;
 use Moose;
 use Data::UUID;
 
-has 'client' => (is => 'ro', required => 1, isa => 'BOM::Platform::Client');
+has 'client' => (
+    is       => 'ro',
+    required => 1,
+    isa      => 'BOM::Platform::Client'
+);
 
 has 'dbh' => (
     is         => 'ro',
@@ -18,7 +22,7 @@ sub prepare {
     my $self = shift;
     my %params = @_ % 2 ? %{$_[0]} : @_;
 
-    my $client  = $self->client;
+    my $client = $self->client;
     my $account = $client->default_account || die "no account";
 
     my $id = Data::UUID->new()->create_str();
@@ -33,8 +37,7 @@ sub prepare {
         'PENDING',
         $account->id,
         $account->currency_code,
-        uc($client->residence // '')
-    );
+        uc($client->residence // ''));
 
     return $id;
 }
@@ -42,10 +45,10 @@ sub prepare {
 sub complete {
     my ($self, @success_data) = @_;
 
-    return 0 if @success_data > 1; # require a FIX
+    return 0 if @success_data > 1;    # require a FIX
 
-    my $data = $success_data[0];
-    my $id = $data->{id};
+    my $data          = $success_data[0];
+    my $id            = $data->{id};
     my ($epg_request) = $self->dbh->selectrow_hashref("
         SELECT * FROM payment.epg_request WHERE id = ?
     ", undef, $id);
@@ -66,7 +69,7 @@ sub complete {
         return 0;
     }
 
-    my $client  = $self->client;
+    my $client = $self->client;
     my $account = $client->default_account || die "no account";
     if ($account->id != $epg_request->{account_id}) {
         $self->dbh->do("
@@ -75,11 +78,11 @@ sub complete {
         return 0;
     }
 
-    my $amount = $data->{amount};
+    my $amount       = $data->{amount};
     my %payment_args = (
         currency          => $data->{currency},
         amount            => $amount,
-        remark            => 'FIXME later', # 800 chars, $data->{data} is too long to fit
+        remark            => 'FIXME later',              # 800 chars, $data->{data} is too long to fit
         staff             => $client->loginid,
         created_by        => '',
         trace_id          => 0,
@@ -88,7 +91,7 @@ sub complete {
         # ip_address        => $ip_address, # FIXME
     );
 
-    my $fee = 0; # FIXME
+    my $fee = 0;    # FIXME
 
     # Write the payment transaction
     my $trx;
