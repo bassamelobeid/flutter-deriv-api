@@ -252,15 +252,20 @@ SQL
 #We also have Pg for an archive of data used later for non-live services (e.g back-testing, auditing, ...)
 #And in case for any reason, Redis has problems, we will need to re-populate its information not from Pg
 #But by re-running population scripts
+my ($dbh, $pid);
+
 sub _dbh {
     #silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
     return if not defined _config()->{chronicle};
     my $db_postfix = $ENV{DB_POSTFIX} // '';
-    state $dbh = DBI->connect_cached(
+    return $dbh if $dbh and $$ == $pid;
+    $pid = $$;
+    $dbh = DBI->connect(
         "dbi:Pg:dbname=chronicle$db_postfix;port=6432;host=/var/run/postgresql",
         "write", '',
         {
-            RaiseError => 1,
+            RaiseError        => 1,
+            pg_server_prepare => 0,
         });
     return $dbh;
 }
