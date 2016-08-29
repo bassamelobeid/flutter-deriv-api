@@ -983,7 +983,7 @@ sub _build_ask_probability {
         name        => 'ask_probability',
         description => 'The price we request for this contract.',
         set_by      => 'BOM::Product::Contract',
-        minimum     => max($min_ask, $theo_probability->amount),
+        minimum     => $min_ask,
         maximum     => 1,
     });
 
