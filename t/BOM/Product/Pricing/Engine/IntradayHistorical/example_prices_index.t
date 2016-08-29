@@ -8,7 +8,6 @@ use Test::NoWarnings;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use Format::Util::Numbers qw(roundnear);
-use BOM::Test::Runtime qw(:normal);
 use BOM::Market::AggTicks;
 use Date::Utility;
 use BOM::Market::UnderlyingDB;

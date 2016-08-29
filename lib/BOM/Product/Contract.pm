@@ -145,14 +145,17 @@ has basis_tick => (
 sub _build_basis_tick {
     my $self = shift;
 
+    my $waiting_for_entry_tick = localize('Waiting for entry tick.');
+    my $missing_market_data    = localize('Trading on this market is suspended due to missing market data.');
     my ($basis_tick, $potential_error);
 
-    if (not $self->pricing_new and not $self->is_forward_starting) {
-        $basis_tick      = $self->entry_tick;
-        $potential_error = localize('Waiting for entry tick.');
+    # basis_tick is only set to entry_tick when the contract has started.
+    if ($self->pricing_new) {
+        $basis_tick = $self->current_tick;
+        $potential_error = $self->starts_as_forward_starting ? $waiting_for_entry_tick : $missing_market_data;
     } else {
-        $basis_tick      = $self->current_tick;
-        $potential_error = localize('Trading on this market is suspended due to missing market data.');
+        $basis_tick      = $self->entry_tick;
+        $potential_error = $waiting_for_entry_tick;
     }
 
     # if there's no basis tick, don't die but catch the error.
@@ -634,8 +637,6 @@ sub _build_current_tick {
 sub _build_pricing_new {
     my $self = shift;
 
-    # Forward starting contract bought. Not a new contract.
-    return 0 if $self->starts_as_forward_starting;
     # do not use $self->date_pricing here because milliseconds matters!
     # _date_pricing_milliseconds will not be set if date_pricing is not built.
     my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
@@ -706,39 +707,26 @@ sub _build_opposite_contract {
     # Start by making a copy of the parameters we used to build this bet.
     my %opp_parameters = %{$self->build_parameters};
 
-    my @opposite_contract_parameters = qw(volsurface fordom forqqq domqqq);
-    if ($self->pricing_new) {
-        # setup the parameters for an opposite contract.
-        $opp_parameters{date_start}  = $self->date_start;
-        $opp_parameters{pricing_new} = 1;
-        push @opposite_contract_parameters, qw(pricing_engine_name pricing_spot r_rate q_rate pricing_vol discount_rate mu barriers_for_pricing);
-        push @opposite_contract_parameters, qw(empirical_volsurface long_term_prediction news_adjusted_pricing_vol)
-            if $self->priced_with_intraday_model;
-    } else {
-        # not pricing_new will only happen when we are repricing an
-        # existing contract in our system.
+    # we still want to set for_sale for a forward_starting contracts
+    $opp_parameters{for_sale} = 1;
+    # delete traces of this contract were a forward starting contract before.
+    delete $opp_parameters{starts_as_forward_starting};
+    # duration could be set for an opposite contract from bad hash reference reused.
+    delete $opp_parameters{duration};
 
-        # we still want to set for_sale for a forward_starting contracts
-        $opp_parameters{for_sale} = 1;
-        # delete traces of this contract were a forward starting contract before.
-        delete $opp_parameters{starts_as_forward_starting};
-        # duration could be set for an opposite contract from bad hash reference reused.
-        delete $opp_parameters{duration};
-
-        if (not $self->is_forward_starting) {
-            if ($self->entry_tick) {
-                foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-                    $opp_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
-                }
+    if (not $self->is_forward_starting) {
+        if ($self->entry_tick) {
+            foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
+                $opp_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
             }
-            # We should be looking to move forward in time to a bet starting now.
-            $opp_parameters{date_start}  = $self->effective_start;
-            $opp_parameters{pricing_new} = 1;
-            # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
-            # Currently, 'sell at market' button will appear when current spot == barrier when the duration
-            # of the contract is less than the minimum duration of non ATM contract.
-            $opp_parameters{is_atm_bet} = 0 if ($self->category_code eq 'callput');
         }
+        # We should be looking to move forward in time to a bet starting now.
+        $opp_parameters{date_start}  = $self->effective_start;
+        $opp_parameters{pricing_new} = 1;
+        # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
+        # Currently, 'sell at market' button will appear when current spot == barrier when the duration
+        # of the contract is less than the minimum duration of non ATM contract.
+        $opp_parameters{is_atm_bet} = 0 if ($self->category_code eq 'callput');
     }
 
     # Always switch out the bet type for the other side.
@@ -746,7 +734,7 @@ sub _build_opposite_contract {
     # Don't set the shortcode, as it will change between these.
     delete $opp_parameters{'shortcode'};
     # Save a round trip.. copy market data
-    foreach my $vol_param (@opposite_contract_parameters) {
+    foreach my $vol_param (qw(volsurface fordom forqqq domqqq)) {
         $opp_parameters{$vol_param} = $self->$vol_param;
     }
 
@@ -956,8 +944,6 @@ sub _build_discounted_probability {
 sub _build_bid_probability {
     my $self = shift;
 
-    return $self->default_probabilities->{bid_probability} if $self->primary_validation_error;
-
     # Effectively you get the same price as if you bought the other side to cancel.
     my $marked_down = Math::Util::CalculatedValue::Validatable->new({
         name        => 'bid_probability',
@@ -989,7 +975,7 @@ sub _build_ask_probability {
         name        => 'ask_probability',
         description => 'The price we request for this contract.',
         set_by      => 'BOM::Product::Contract',
-        minimum     => max($min_ask, $theo_probability->amount),
+        minimum     => $min_ask,
         maximum     => 1,
     });
 
@@ -998,7 +984,12 @@ sub _build_ask_probability {
 
     my $max_ask = 1 - $min_ask;
     if ($ask_cv->amount > $max_ask) {
-        $ask_cv->include_adjustment('reset', $self->default_probabilities->{ask_probability});
+        return Math::Util::CalculatedValue::Validatable->new({
+            name        => 'ask_probability',
+            description => 'The price we request for this contract.',
+            set_by      => __PACKAGE__,
+            base_amount => 1,
+        });
     }
 
     return $ask_cv;
@@ -1333,7 +1324,10 @@ sub _build_theo_price {
 sub _build_shortcode {
     my $self = shift;
 
-    my $shortcode_date_start = $self->is_forward_starting ? $self->date_start->epoch . 'F' : $self->date_start->epoch;
+    my $shortcode_date_start = (
+               $self->is_forward_starting
+            or $self->starts_as_forward_starting
+    ) ? $self->date_start->epoch . 'F' : $self->date_start->epoch;
     my $shortcode_date_expiry =
           ($self->tick_expiry)  ? $self->tick_count . 'T'
         : ($self->fixed_expiry) ? $self->date_expiry->epoch . 'F'
@@ -1406,14 +1400,8 @@ sub _build_pricing_vol {
     my $self = shift;
 
     my $vol;
-    my $pen = $self->pricing_engine_name;
-    if ($pen =~ /VannaVolga/) {
-        $vol = $self->volsurface->get_volatility({
-            from  => $self->effective_start,
-            to    => $self->date_expiry,
-            delta => 50
-        });
-    } elsif ($self->priced_with_intraday_model) {
+    my $volatility_error;
+    if ($self->priced_with_intraday_model) {
         my $volsurface       = $self->empirical_volsurface;
         my $duration_seconds = $self->timeindays->amount * 86400;
         # volatility doesn't matter for less than 10 minutes ATM contracts,
@@ -1427,18 +1415,26 @@ sub _build_pricing_vol {
             uses_flat_vol         => $uses_flat_vol,
         });
         $self->long_term_prediction($volsurface->long_term_prediction);
-        if ($volsurface->error) {
-            $self->add_error({
-                message => 'Too few periods for historical vol calculation '
-                    . "[symbol: "
-                    . $self->underlying->symbol . "] "
-                    . "[duration: "
-                    . $self->remaining_time->as_concise_string . "]",
-                message_to_client => localize('Trading on this market is suspended due to missing market data.'),
-            });
-        }
+        $volatility_error = $volsurface->error if $volsurface->error;
     } else {
-        $vol = $self->vol_at_strike;
+        if ($self->pricing_engine_name =~ /VannaVolga/) {
+            $vol = $self->volsurface->get_volatility({
+                from  => $self->effective_start,
+                to    => $self->date_expiry,
+                delta => 50
+            });
+        } else {
+            $vol = $self->vol_at_strike;
+        }
+        # we might get an error while pricing contract, take care of them here.
+        $volatility_error = $self->volsurface->validation_error if $self->volsurface->validation_error;
+    }
+
+    if ($volatility_error) {
+        $self->add_error({
+            message           => $volatility_error,
+            message_to_client => localize('Trading on this market is suspended due to missing market data.'),
+        });
     }
 
     if ($vol <= 0) {
@@ -2688,8 +2684,8 @@ sub confirm_validity {
     # This is the default list of validations.
     my @validation_methods = qw(_validate_input_parameters _validate_offerings _validate_lifetime  _validate_barrier _validate_feed validate_price);
 
-    push @validation_methods, '_validate_volsurface' if (not $self->volsurface->type eq 'flat');
     push @validation_methods, qw(_validate_trading_times _validate_start_and_expiry_date) if not $self->underlying->always_available;
+    push @validation_methods, '_validate_volsurface' if (not $self->volsurface->type eq 'flat');
 
     foreach my $method (@validation_methods) {
         if (my $err = $self->$method) {
@@ -2706,36 +2702,6 @@ sub add_error {
     $err->{set_by} = __PACKAGE__;
     $self->primary_validation_error(MooseX::Role::Validatable::Error->new(%$err));
     return;
-}
-
-has default_probabilities => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_default_probabilities {
-    my $self = shift;
-
-    my %probabilities = (
-        ask_probability => {
-            description => 'The price we request for this contract.',
-            default     => 1,
-        },
-        bid_probability => {
-            description => 'The price we would pay for this contract.',
-            default     => 0,
-        },
-    );
-    my %map = map {
-        $_ => Math::Util::CalculatedValue::Validatable->new({
-            name        => $_,
-            description => $probabilities{$_}{description},
-            set_by      => __PACKAGE__,
-            base_amount => $probabilities{$_}{default},
-        });
-    } keys %probabilities;
-
-    return \%map;
 }
 
 has is_sold => (

@@ -30,6 +30,7 @@ sub _build_probability {
         name        => 'theoretical_probability',
         description => 'Theoretical probability for asian',
         set_by      => __PACKAGE__,
+        minimum     => 0,
         base_amount => $self->bs_probability->amount,
     });
 

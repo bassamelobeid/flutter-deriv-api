@@ -9,7 +9,6 @@ use File::Spec;
 use JSON qw(decode_json);
 
 use Date::Utility;
-use BOM::Test::Runtime qw(:normal);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
@@ -202,8 +201,8 @@ subtest 'Slope' => sub {
     my %params = map { $_ => $expiry_range->_pricing_parameters->{$_} } @{Pricing::Engine::EuropeanDigitalSlope->required_args};
     my $engine = Pricing::Engine::EuropeanDigitalSlope->new(%params);
 
-    ok $engine->theo_probability > 0, 'probability > 0';
-    ok $engine->theo_probability < 1, 'probability < 1';
+    ok $engine->base_probability > 0, 'probability > 0';
+    ok $engine->base_probability < 1, 'probability < 1';
     is scalar keys %{$engine->debug_information}, 3;
     ok exists $engine->debug_information->{CALL};
     ok exists $engine->debug_information->{PUT};

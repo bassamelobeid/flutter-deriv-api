@@ -297,6 +297,7 @@ sub _build_risk_markup {
         name        => 'risk_markup',
         description => 'A set of markups added to accommodate for pricing risk',
         set_by      => __PACKAGE__,
+        minimum     => 0,
         base_amount => 0,
     });
     if ($self->bet->market->markups->apply_traded_markets_markup) {
