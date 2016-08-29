@@ -872,16 +872,6 @@ has price_calculator => (
     lazy_build => 1,
 );
 
-sub _price_from_prob {
-    my ($self, $prob) = @_;
-
-    if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
-        $self->price_calculator->value($self->value);
-    }
-
-    return $self->price_calculator->price_from_prob($prob);
-}
-
 sub _build_price_calculator {
     my $self = shift;
 
@@ -904,6 +894,16 @@ sub _build_price_calculator {
         ($self->has_bs_probability)         ? (bs_probability         => $self->bs_probability)         : (),
         ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
     });
+}
+
+sub _price_from_prob {
+    my ($self, $prob) = @_;
+
+    if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
+        $self->price_calculator->value($self->value);
+    }
+
+    return $self->price_calculator->price_from_prob($prob);
 }
 
 has payout => (
