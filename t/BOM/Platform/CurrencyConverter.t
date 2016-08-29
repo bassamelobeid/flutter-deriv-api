@@ -14,8 +14,6 @@ Cache::RedisDB->redis();
 Cache::RedisDB->set('QUOTE', 'frxNGNUSD', {quote => 167.10});
 Cache::RedisDB->set('QUOTE', 'frxMGNUSD', {quote => 2});
 
-#say Cache::RedisDB->get('COMBINED_REALTIME','frxNGNUSD')->{quote};
-
 is(BOM::Platform::CurrencyConverter::in_USD(1, 'NGN'), Cache::RedisDB->get('QUOTE', 'frxNGNUSD')->{quote}, "1 USD to NGN is 167.10 NGN");
 is(
     BOM::Platform::CurrencyConverter::in_USD(3, 'NGN'),
