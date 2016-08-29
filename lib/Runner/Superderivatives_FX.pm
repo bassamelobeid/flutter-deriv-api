@@ -157,7 +157,7 @@ sub get_bet_results {
 
         my $bom_mid =
               $bet->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'
-            ? $bet->pricing_engine->theo_probability
+            ? $bet->pricing_engine->base_probability
             : $bet->pricing_engine->base_probability->amount;
         my $bom_bs   = $bet->bs_probability->amount;
         my $sd_mid   = $record->{sd_mid};

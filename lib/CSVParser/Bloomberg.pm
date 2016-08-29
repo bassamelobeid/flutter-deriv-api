@@ -291,7 +291,7 @@ sub _build_theo_prob {
     my $bet  = $self->bet;
     my $theo =
           $bet->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'
-        ? $bet->pricing_engine->theo_probability
+        ? $bet->pricing_engine->base_probability
         : $bet->pricing_engine->base_probability->amount;
     return $theo;
 }
