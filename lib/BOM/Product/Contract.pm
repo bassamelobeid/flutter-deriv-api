@@ -1213,6 +1213,7 @@ sub _build_commission_from_stake {
     }
 
     my $_a = $base_commission * $self->commission_slope * sqrt($theo_probability * (1 - $theo_probability));
+    $_a = machine_epsilon() if $_a == 0;    # prevents illegal division by zero error.
     my $_b = ($theo_probability + $base_commission - $base_commission * $self->commission_min_std * $self->commission_slope) + $app_commission;
     my $_c = -$ask_price;
 
