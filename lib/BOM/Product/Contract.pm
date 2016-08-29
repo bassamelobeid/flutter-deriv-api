@@ -1135,7 +1135,9 @@ sub _build_commission_min_std {
     my $self = shift;
 
     # This looks hacky but currently there's not enough justification to have child classes for each landing company.
-    # For japan, we would only increase the commission when payout > 100,000 yen.
+    # For japan, we would only increase the commission when payout > 100,000 yen. Having 50,001 is too much. So adding an
+    # epsilon here to make it work.
+    #
     # For everything else, we will increase commission at 1,000 of the respective currency.
     return $self->currency eq 'JPY' ? 50000 + machine_epsilon() : 500;
 }
