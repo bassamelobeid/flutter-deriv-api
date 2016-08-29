@@ -1728,8 +1728,44 @@ sub _pricing_parameters {
         contract_type     => $self->pricing_code,
         underlying_symbol => $self->underlying->symbol,
         market_data       => $self->_market_data,
+        qf_market_data    => _generate_market_data($self->underlying, $self->date_start),
         market_convention => $self->_market_convention,
     };
+}
+
+sub _generate_market_data {
+    my ($underlying, $date_start) = @_;
+
+    my $for_date = $underlying->for_date;
+    my $result   = {};
+
+    #this is a list of symbols which are applicable when getting important economic events.
+    #Note that other than currency pair of the fx symbol, we include some other important currencies
+    #here because any event for these currencies, can potentially affect all other currencies too
+    my %applicable_symbols = (
+        USD                                 => 1,
+        AUD                                 => 1,
+        CAD                                 => 1,
+        CNY                                 => 1,
+        NZD                                 => 1,
+        $underlying->quoted_currency_symbol => 1,
+        $underlying->asset_symbol           => 1,
+    );
+
+    my $ee = Quant::Framework::EconomicEventCalendar->new({
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($for_date),
+        }
+        )->get_latest_events_for_period({
+            from => $date_start->minus_time_interval('10m'),
+            to   => $date_start->plus_time_interval('10m')});
+
+    my @applicable_news =
+        sort { $a->{release_date} <=> $b->{release_date} } grep { $applicable_symbols{$_->{symbol}} } @$ee;
+
+    #as of now, we only update the result with a raw list of economic events, later that we move to other
+    #engines, we will add other market-data items too (e.g. dividends, vol-surface, ...)
+    $result->{economic_events} = \@applicable_news;
+    return $result;
 }
 
 sub _market_convention {

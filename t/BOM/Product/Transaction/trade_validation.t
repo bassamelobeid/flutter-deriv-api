@@ -22,6 +22,19 @@ use Test::MockModule;
 
 initialize_realtime_ticks_db();
 
+#create an empty un-used even so ask_price won't fail preparing market data for pricing engine
+#Because the code to prepare market data is called for all pricings in Contract
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+    {
+        events           => [{
+                symbol       => 'USD',
+                release_date => 1,
+                source       => 'forexfactory',
+                impact       => 1,
+                event_name   => 'FOMC',
+            }]
+    });
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {

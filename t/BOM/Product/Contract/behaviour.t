@@ -19,18 +19,31 @@ my $now = Date::Utility->new;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => 'USD'});
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'partial_trading',
+#create an empty un-used even so ask_price won't fail preparing market data for pricing engine
+#Because the code to prepare market data is called for all pricings in Contract
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
     {
-        type          => 'early_closes',
-        recorded_date => Date::Utility->new('2016-01-01'),
-        # dummy early close
-        calendar => {
-            '22-Dec-2016' => {
-                '18h00m' => ['FOREX'],
-            },
-        },
+        events           => [{
+                symbol       => 'USD',
+                release_date => 1,
+                source       => 'forexfactory',
+                impact       => 1,
+                event_name   => 'FOMC',
+            }]
     });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+      'partial_trading',
+      {
+          type          => 'early_closes',
+          recorded_date => Date::Utility->new('2016-01-01'),
+          # dummy early close
+          calendar      => {
+              '22-Dec-2016' => {
+                  '18h00m' => ['FOREX'],
+              },
+          },
+      });
 
 my $bet_params = {
     bet_type   => 'CALL',

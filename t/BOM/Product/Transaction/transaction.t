@@ -24,6 +24,19 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
+#create an empty un-used even so ask_price won't fail preparing market data for pricing engine
+#Because the code to prepare market data is called for all pricings in Contract
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+    {
+        events           => [{
+                symbol       => 'USD',
+                release_date => 1,
+                source       => 'forexfactory',
+                impact       => 1,
+                event_name   => 'FOMC',
+            }]
+    });
+
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
