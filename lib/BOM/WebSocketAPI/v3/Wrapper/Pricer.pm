@@ -352,10 +352,10 @@ sub _price_stream_results_adjustment {
         maximum     => 1,
     });
     $contract_parameters->{theo_probability} = $theo_probability;
-
     $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
-    my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
 
+    # TODO REMOVE
+    my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
     if (my $error = $contract->validate_price) {
         return {
             error => {
@@ -368,20 +368,22 @@ sub _price_stream_results_adjustment {
                 },
             }};
     }
-
-    # $results->{ask_price} = $results->{display_value} = $contract->ask_price;
-    # $results->{payout} = $contract->payout;
+    # /TODO REMOVE
 
     my $price_calculator = Price::Calculator->new(
         theo_probability        => $contract_parameters->{theo_probability},
+        deep_otm_threshold      => $contract_parameters->{deep_otm_threshold},
+        underlying_base_commission => $contract_parameters->{underlying_base_commission},
+        maximum_total_markup    => $contract_parameters->{maximum_total_markup},
         base_commission_min     => $contract_parameters->{base_commission_min},
         base_commission_max     => $contract_parameters->{base_commission_max},
         base_commission_scaling => $contract_parameters->{base_commission_scaling},
-        maximum_total_markup    => $contract_parameters->{maximum_total_markup},
         app_markup_percentage   => $contract_parameters->{app_markup_percentage},
         currency                => $contract_parameters->{currency},
-
+        $contract_parameters->{amount_type} eq 'payout' ? (payout => $contract_parameters->{amount}) :
+        $contract_parameters->{amount_type} eq 'stake'  ? (ask_price => $contract_parameters->{amount}) : (),
     );
+
     $results->{ask_price} = $results->{display_value} = $price_calculator->price_from_prob('ask_probability');
     $results->{payout} = $price_calculator->payout;
 
