@@ -1170,6 +1170,14 @@ sub _build_risk_markup {
     });
 }
 
+sub _build_base_commission {
+    my $self = shift;
+
+    $self->price_calculator->underlying_base_commission($self->underlying->base_commission);
+
+    return $self->price_calculator->base_commission;
+}
+
 sub _build_commission_markup {
     my $self = shift;
 
@@ -1182,14 +1190,6 @@ sub _build_commission_markup {
     }
 
     return $self->price_calculator->commission_markup;
-}
-
-sub _build_base_commission {
-    my $self = shift;
-
-    $self->price_calculator->underlying_base_commission($self->underlying->base_commission);
-
-    return $self->price_calculator->base_commission;
 }
 
 sub _build_commission_from_stake {
