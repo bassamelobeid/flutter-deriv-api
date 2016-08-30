@@ -902,14 +902,6 @@ sub _build_price_calculator {
     });
 }
 
-sub _build_bs_probability {
-    my $self = shift;
-
-    $self->price_calculator->pricing_engine_bs_probability($self->pricing_engine->bs_probability);
-
-    return $self->price_calculator->bs_probability;
-}
-
 # We adopt "near-far" methodology to price in dividends by adjusting spot and strike.
 # This returns a hash reference with spot and barrrier adjustment for the bet period.
 
@@ -1137,6 +1129,14 @@ sub _build_app_markup_dollar_amount {
     my $self = shift;
 
     return roundnear(0.01, $self->app_markup->amount * $self->payout);
+}
+
+sub _build_bs_probability {
+    my $self = shift;
+
+    $self->price_calculator->pricing_engine_bs_probability($self->pricing_engine->bs_probability);
+
+    return $self->price_calculator->bs_probability;
 }
 
 sub _build_bs_price {
