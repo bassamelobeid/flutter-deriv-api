@@ -310,6 +310,12 @@ has [qw( longcode shortcode )] => (
     lazy_build => 1,
 );
 
+has payout => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
 has value => (
     is      => 'rw',
     isa     => 'Num',
