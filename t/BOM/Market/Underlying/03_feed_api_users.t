@@ -30,7 +30,7 @@ subtest 'get_combined_realtime' => sub {
         lives_ok {
             Cache::RedisDB->set_nw('QUOTE', 'frxUSDJPY', undef);
         }
-        'We are able to set COMBINED_REALTIME to undef';
+        'We are able to set QUOTE to undef';
 
         $cache = Cache::RedisDB->get('QUOTE', 'frxUSDJPY');
         ok !$cache, 'QUOTE is now empty';
