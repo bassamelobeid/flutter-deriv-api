@@ -1135,7 +1135,10 @@ sub _build_commission_min_std {
     my $self = shift;
 
     # This looks hacky but currently there's not enough justification to have child classes for each landing company.
-    # For japan, we would only increase the commission when payout > 100,000 yen. Having 50,001 is too much. So adding an
+    # For japan, we can't have progressively higher commission as per FFAJ, infact they
+    # want all prices to be an exact multiple (so 52.55 for 100 payout,
+    # 525.5 for 1000 and 5255 for 10000 payout etc.)
+    # We would only increase the commission when payout > 100,000 yen. Having 50,001 is too much. So adding an
     # epsilon here to make it work.
     #
     # For everything else, we will increase commission at 1,000 of the respective currency.
