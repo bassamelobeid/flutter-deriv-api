@@ -902,14 +902,6 @@ sub _build_price_calculator {
     });
 }
 
-sub _build_theo_probability {
-    my $self = shift;
-
-    $self->price_calculator->pricing_engine_probability($self->pricing_engine->probability);
-
-    return $self->price_calculator->theo_probability;
-}
-
 sub _build_bs_probability {
     my $self = shift;
 
@@ -1115,6 +1107,14 @@ sub _build_payout {
 
 sub commission_multiplier {
     return shift->price_calculator->commission_multiplier(@_);
+}
+
+sub _build_theo_probability {
+    my $self = shift;
+
+    $self->price_calculator->pricing_engine_probability($self->pricing_engine->probability);
+
+    return $self->price_calculator->theo_probability;
 }
 
 # Application developer's commission.
