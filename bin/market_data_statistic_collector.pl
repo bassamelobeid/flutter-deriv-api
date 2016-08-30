@@ -25,7 +25,7 @@ use BOM::Platform::Runtime;
 use Quant::Framework::CorrelationMatrix;
 use Quant::Framework::ImpliedRate;
 use Quant::Framework::InterestRate;
-use Quant::Framework::Dividend;
+use Quant::Framework::Asset;
 use Bloomberg::CurrencyConfig;
 use Try::Tiny;
 
@@ -192,11 +192,11 @@ sub _collect_pipsize_stats {
     my @underlyings = map { BOM::Market::Underlying->new($_) } BOM::Market::UnderlyingDB->get_symbols_for(market => ['volidx']);
     foreach my $underlying (@underlyings) {
         my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
-        my $vol = $volsurface->get_volatility();
-        my $pipsize   = $underlying->pip_size;
-        my $spot      = $underlying->spot;
-        my $sigma     = sqrt($vol**2 / 365 / 86400 * 10);
-        my $test_stat = $spot * $sigma / $pipsize;
+        my $vol        = $volsurface->get_volatility();
+        my $pipsize    = $underlying->pip_size;
+        my $spot       = $underlying->spot;
+        my $sigma      = sqrt($vol**2 / 365 / 86400 * 10);
+        my $test_stat  = $spot * $sigma / $pipsize;
         stats_gauge('test_statistic', $test_stat, {tags => ['tag:' . $underlying->{symbol}]});
     }
     return;
@@ -216,7 +216,7 @@ sub _collect_dividend_ages {
     );
 
     foreach my $index (@offer_indices) {
-        my $dividend_in_used = Quant::Framework::Dividend->new(
+        my $dividend_in_used = Quant::Framework::Asset->new(
             symbol           => $index,
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
