@@ -902,16 +902,6 @@ sub _build_price_calculator {
     });
 }
 
-sub _price_from_prob {
-    my ($self, $prob) = @_;
-
-    if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
-        $self->price_calculator->value($self->value);
-    }
-
-    return $self->price_calculator->price_from_prob($prob);
-}
-
 sub _build_theo_probability {
     my $self = shift;
 
@@ -1090,6 +1080,16 @@ sub _validate_settlement_conditions {
     };
 
     return ($ref, $hold_for_exit_tick);
+}
+
+sub _price_from_prob {
+    my ($self, $prob) = @_;
+
+    if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
+        $self->price_calculator->value($self->value);
+    }
+
+    return $self->price_calculator->price_from_prob($prob);
 }
 
 sub _build_ask_price {
