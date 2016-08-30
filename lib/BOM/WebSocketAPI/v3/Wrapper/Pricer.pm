@@ -286,6 +286,7 @@ sub process_ask_event {
                     . "}\n";
                 last;
             }
+            $stash_data->{cache}->{contract_parameters}->{longcode} = $stash_data->{cache}->{longcode};
             my $adjusted_results =
                 _price_stream_results_adjustment($stash_data->{args}, $stash_data->{cache}->{contract_parameters}, $response, $theo_probability);
             if (my $ref = $adjusted_results->{error}) {
@@ -376,7 +377,7 @@ sub _price_stream_results_adjustment {
                 message_to_client => $error->{message_to_client},
                 code              => 'ContractBuyValidationError',
                 details           => {
-                    # longcode      => $contract->longcode,
+                    longcode      => $contract_parameters->{longcode},
                     display_value => $price_calculator->ask_price,
                     payout        => $price_calculator->payout,
                 },
