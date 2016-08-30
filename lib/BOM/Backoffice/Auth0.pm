@@ -80,7 +80,7 @@ sub has_authorisation {
     my $user;
     if ($cache and $user = JSON->new->utf8->decode($cache) and $user->{token} = $auth_token) {
         BOM::System::RedisReplicated::redis_write->expire("BINARYBOLOGIN::" . $staff, 24 * 3600);
-        if (not $groups or not BOM::Platform::Runtime->instance->app_config->system->on_production) {
+        if (not $groups or not BOM::System::Config::on_production()) {
             return 1;
         }
         foreach my $g (@{$user->{groups}}) {
