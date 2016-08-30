@@ -912,12 +912,6 @@ sub _price_from_prob {
     return $self->price_calculator->price_from_prob($prob);
 }
 
-has payout => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
-);
-
 sub _build_payout {
     my ($self) = @_;
 
