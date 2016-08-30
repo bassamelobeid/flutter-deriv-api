@@ -941,31 +941,12 @@ sub _build_ask_probability {
     return $self->price_calculator->ask_probability;
 }
 
-sub _build_bid_probability {
-    my $self = shift;
-
-    $self->price_calculator->theo_probability($self->theo_probability)             unless $self->price_calculator->has_theo_probability;
-    $self->price_calculator->discounted_probability($self->discounted_probability) unless $self->price_calculator->has_discounted_probability;
-    $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability);
-
-    return $self->price_calculator->bid_probability;
-}
-
 sub _build_bs_probability {
     my $self = shift;
 
     $self->price_calculator->pricing_engine_bs_probability($self->pricing_engine->bs_probability);
 
     return $self->price_calculator->bs_probability;
-}
-
-sub _build_discounted_probability {
-    my $self = shift;
-
-    $self->price_calculator->timeinyears($self->timeinyears);
-    $self->price_calculator->discount_rate($self->discount_rate);
-
-    return $self->price_calculator->discounted_probability;
 }
 
 # We adopt "near-far" methodology to price in dividends by adjusting spot and strike.
@@ -1006,6 +987,25 @@ sub _build_dividend_adjustment {
 
     return $dividend_adjustment;
 
+}
+
+sub _build_discounted_probability {
+    my $self = shift;
+
+    $self->price_calculator->timeinyears($self->timeinyears);
+    $self->price_calculator->discount_rate($self->discount_rate);
+
+    return $self->price_calculator->discounted_probability;
+}
+
+sub _build_bid_probability {
+    my $self = shift;
+
+    $self->price_calculator->theo_probability($self->theo_probability)             unless $self->price_calculator->has_theo_probability;
+    $self->price_calculator->discounted_probability($self->discounted_probability) unless $self->price_calculator->has_discounted_probability;
+    $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability);
+
+    return $self->price_calculator->bid_probability;
 }
 
 sub _build_bid_price {
