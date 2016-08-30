@@ -2088,14 +2088,18 @@ sub validate_price {
     return if $self->for_sale;
 
     $self->price_calculator->staking_limits($self->staking_limits);
+    $self->price_calculator->theo_probability($self->theo_probability)           unless $self->price_calculator->has_theo_probability;
+    $self->price_calculator->base_commission($self->base_commission)             unless $self->price_calculator->has_base_commission;
+    $self->price_calculator->commission_markup($self->commission_markup)         unless $self->price_calculator->has_commission_markup;
+    $self->price_calculator->commission_from_stake($self->commission_from_stake) unless $self->price_calculator->has_commission_from_stake;
+    $self->price_calculator->payout($self->payout) if !$self->price_calculator->has_commission_markup && $self->has_payout;
 
     my $res = $self->price_calculator->validate_price;
-    if (exists $res->{message_to_client}) {
+    if ($res && exists $res->{message_to_client}) {
         $res->{message_to_client} = localize(
             exists $res->{message_to_client_array}
-            ? @{ $res->{message_to_client_array} }
-            : $res->{message_to_client}
-        );
+            ? @{$res->{message_to_client_array}}
+            : $res->{message_to_client});
     }
     return $res;
 }
