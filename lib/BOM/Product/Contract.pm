@@ -931,16 +931,6 @@ sub _build_theo_probability {
     return $self->price_calculator->theo_probability;
 }
 
-sub _build_ask_probability {
-    my $self = shift;
-
-    $self->price_calculator->theo_probability($self->theo_probability) unless $self->price_calculator->has_theo_probability;
-    $self->price_calculator->base_commission($self->base_commission)   unless $self->price_calculator->has_base_commission;
-    $self->price_calculator->payout($self->payout) if !$self->price_calculator->has_commission_markup && $self->has_payout;
-
-    return $self->price_calculator->ask_probability;
-}
-
 sub _build_bs_probability {
     my $self = shift;
 
@@ -1016,6 +1006,16 @@ sub _build_bid_price {
     $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability);
 
     return $self->_price_from_prob('bid_probability');
+}
+
+sub _build_ask_probability {
+    my $self = shift;
+
+    $self->price_calculator->theo_probability($self->theo_probability) unless $self->price_calculator->has_theo_probability;
+    $self->price_calculator->base_commission($self->base_commission)   unless $self->price_calculator->has_base_commission;
+    $self->price_calculator->payout($self->payout) if !$self->price_calculator->has_commission_markup && $self->has_payout;
+
+    return $self->price_calculator->ask_probability;
 }
 
 sub is_valid_to_buy {
