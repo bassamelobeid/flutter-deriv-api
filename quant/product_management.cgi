@@ -115,7 +115,6 @@ Bar("Limit Definitions");
 
 my $limit_defs = BOM::System::Config::quants->{risk_profile};
 my $current_definitions = BOM::Product::RiskProfile::get_current_profile_definitions();
-warn Data::Dumper->Dumper($current_definitions);
 
 BOM::Platform::Context::template->process(
     'backoffice/profile_definitions.html.tt',
