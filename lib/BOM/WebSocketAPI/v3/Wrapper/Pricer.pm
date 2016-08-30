@@ -352,20 +352,12 @@ sub _price_stream_results_adjustment {
         minimum     => 0,
         maximum     => 1,
     });
+
     $contract_parameters->{theo_probability}      = $theo_probability;
     $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
 
     my $price_calculator = Price::Calculator->new(
-        theo_probability           => $contract_parameters->{theo_probability},
-        deep_otm_threshold         => $contract_parameters->{deep_otm_threshold},
-        underlying_base_commission => $contract_parameters->{underlying_base_commission},
-        maximum_total_markup       => $contract_parameters->{maximum_total_markup},
-        base_commission_min        => $contract_parameters->{base_commission_min},
-        base_commission_max        => $contract_parameters->{base_commission_max},
-        base_commission_scaling    => $contract_parameters->{base_commission_scaling},
-        app_markup_percentage      => $contract_parameters->{app_markup_percentage},
-        currency                   => $contract_parameters->{currency},
-        staking_limits             => $contract_parameters->{staking_limits},
+        %$contract_parameters,
         $contract_parameters->{amount_type} eq 'payout'  ? (payout    => $contract_parameters->{amount})
         : $contract_parameters->{amount_type} eq 'stake' ? (ask_price => $contract_parameters->{amount})
         :                                                  (),
