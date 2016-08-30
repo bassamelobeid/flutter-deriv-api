@@ -140,17 +140,18 @@ sub _get_ask {
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
 
             $response = {
-                longcode      => $contract->longcode,
-                payout        => $contract->payout,
-                ask_price     => $ask_price,
-                display_value => $display_value,
-                spot_time     => $contract->current_tick->epoch,
-                date_start    => $contract->date_start->epoch,
+                longcode            => $contract->longcode,
+                payout              => $contract->payout,
+                ask_price           => $ask_price,
+                display_value       => $display_value,
+                spot_time           => $contract->current_tick->epoch,
+                date_start          => $contract->date_start->epoch,
                 contract_parameters => {
                     %$p2,
-                    app_markup_percentage => $contract->app_markup_percentage,
-                    deep_otm_threshold => $contract->market->deep_otm_threshold,
+                    app_markup_percentage      => $contract->app_markup_percentage,
+                    deep_otm_threshold         => $contract->market->deep_otm_threshold,
                     underlying_base_commission => $contract->underlying->base_commission,
+                    staking_limits             => $contract->staking_limits,
                 },
             };
 
