@@ -665,21 +665,51 @@ subtest 'error check' => sub {
         $mock_at->mock(
             'retrieve',
             sub {
-                my @stale_ticks = map {$ticks->[0]} (0 .. 21);
-                my @normal_ticks = map {$ticks->[$_]} (22 .. 38);
+                my @stale_ticks = map { $ticks->[0] } (0 .. 21);
+                my @normal_ticks = map { $ticks->[$_] } (22 .. 38);
                 return [@stale_ticks, @normal_ticks];
             });
         is $vs->get_volatility({
                 current_epoch         => $now->epoch,
                 seconds_to_expiration => 900
-            }), 0.0829267162762738, 'calculate vols with remaining ticks.';
+            }
+            ),
+            0.0829267162762738, 'calculate vols with remaining ticks.';
         ok !$vs->error, 'no error if we have stale ticks in cache';
         $vs->error('');
+        $mock_at->mock(
+            'retrieve',
+            sub {
+                my @stale_ticks = map { $ticks->[0] } (10 .. 21);
+                my @normal_ticks = map { $ticks->[$_] } (22 .. 38);
+                return [(map { $ticks->[$_] } (0 .. 9)), @stale_ticks, @normal_ticks];
+            });
+        is $vs->get_volatility({
+                current_epoch         => $now->epoch,
+                seconds_to_expiration => 900
+            }
+            ),
+            0.0829267162762738, 'calculate vols with remaining ticks if there\'s stale ticks in between good ticks.';
+        ok !$vs->error, 'no error if we have stale ticks in between cache.';
+        $vs->error('');
+        $mock_at->mock(
+            'retrieve',
+            sub {
+                return [(map { $ticks->[0] } (0 .. 9))];
+            });
+        is $vs->get_volatility({
+                current_epoch         => $now->epoch,
+                seconds_to_expiration => 900
+            }
+            ),
+            $vs->long_term_prediction, 'use long term vol when there is less than 5 good ticks';
+        ok !$vs->error, 'no error if we have no good ticks';
+        $vs->error('');
         is $vs->get_volatility({current_epoch => $now->epoch}), 0.11, 'vol is 0.11';
-        like( $vs->error, qr/Non zero arguments of/, 'error if seconds_to_expiration is not provided');
+        like($vs->error, qr/Non zero arguments of/, 'error if seconds_to_expiration is not provided');
         $vs->error('');
         is $vs->get_volatility({seconds_to_expiration => 900}), 0.11, 'vol is 0.11';
-        like( $vs->error, qr/Non zero arguments of/, 'error if current_epoch is not provided');
+        like($vs->error, qr/Non zero arguments of/, 'error if current_epoch is not provided');
     }
     'lives through error check';
 };
