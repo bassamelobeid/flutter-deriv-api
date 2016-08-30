@@ -2087,59 +2087,17 @@ sub validate_price {
 
     return if $self->for_sale;
 
-    my $ask_price         = $self->ask_price;
-    my $payout            = $self->payout;
-    my $minimum_ask_price = $self->staking_limits->{min};
-    my $maximum_payout    = $self->staking_limits->{max};
+    $self->price_calculator->staking_limits($self->staking_limits);
 
-    if (not $ask_price) {
-        return {
-            message           => "Empty or zero stake [stake: " . $ask_price . "]",
-            message_to_client => localize("Invalid stake"),
-        };
+    my $res = $self->price_calculator->validate_price;
+    if (exists $res->{message_to_client}) {
+        $res->{message_to_client} = localize(
+            exists $res->{message_to_client_array}
+            ? @{ $res->{message_to_client_array} }
+            : $res->{message_to_client}
+        );
     }
-
-    my $message_to_client = localize(
-        'Minimum stake of [_1] and maximum payout of [_2]',
-        to_monetary_number_format($minimum_ask_price),
-        to_monetary_number_format($maximum_payout));
-    my $message_to_client_array = [
-        'Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($minimum_ask_price),
-        to_monetary_number_format($maximum_payout)];
-    if ($ask_price < $minimum_ask_price) {
-        return {
-            message                 => 'stake is not within limits ' . "[stake: " . $ask_price . "] " . "[min: " . $minimum_ask_price . "] ",
-            message_to_client       => $message_to_client,
-            message_to_client_array => $message_to_client_array,
-        };
-    } elsif ($payout > $maximum_payout) {
-        return {
-            message                 => 'payout amount outside acceptable range ' . "[given: " . $payout . "] " . "[max: " . $maximum_payout . "]",
-            message_to_client       => $message_to_client,
-            message_to_client_array => $message_to_client_array,
-        };
-    }
-
-    my $payout_as_string = "" . $payout;    #Just to be sure we're deailing with a string.
-    $payout_as_string =~ s/[\.0]+$//;       # Strip trailing zeroes and decimal points to be more friendly.
-
-    if ($payout =~ /\.[0-9]{3,}/) {
-        # We did the best we could to clean up looks like still too many decimals
-        return {
-            message           => 'payout amount has too many decimal places ' . "[permitted: 2] " . "[payout: " . $payout . "]",
-            message_to_client => localize('Payout may not have more than two decimal places.',),
-        };
-    }
-
-    # Compared as strings of maximum visible client currency width to avoid floating-point issues.
-    if (sprintf("%.2f", $ask_price) eq sprintf("%.2f", $payout)) {
-        return {
-            message           => 'stake same as payout',
-            message_to_client => localize('This contract offers no return.'),
-        };
-    }
-
-    return;
+    return $res;
 }
 
 sub _validate_input_parameters {
