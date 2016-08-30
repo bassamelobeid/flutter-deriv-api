@@ -27,10 +27,8 @@ sub _build_pricing_engine_name {
 
 sub _build_pricing_engine {
     my $self = shift;
-    return Pricing::Engine::Digits->new({
-        contract_type => $self->pricing_code,
-        strike        => $self->barrier ? $self->barrier->as_absolute : undef
-    });
+    my %pricing_parameters = map { $_ => $self->_pricing_parameters->{$_} } @{$self->pricing_engine_name->required_args};
+    return Pricing::Engine::Digits->new(\%pricing_parameters);
 }
 
 sub _build_greek_engine {
