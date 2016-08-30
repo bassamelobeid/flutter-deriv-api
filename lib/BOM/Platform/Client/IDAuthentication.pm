@@ -9,6 +9,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Client;
 use BOM::Platform::ProveID;
+use BOM::System::Config;
 
 has client => (
     is  => 'ro',
@@ -154,7 +155,7 @@ EOM
 sub _notify {
     my ($self, $id, $msg) = @_;
 
-    return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
+    return unless BOM::System::Config::on_production;
 
     my $client = $self->client;
     $client->add_note($id, $client->loginid . ' ' . $msg);
@@ -164,7 +165,7 @@ sub _notify {
 sub _fetch_proveid {
     my $self = shift;
 
-    return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
+    return unless BOM::System::Config::on_production;
 
     my $premise = $self->client->address_1;
     if ($premise =~ /^(\d+)/) {

@@ -52,4 +52,16 @@ sub quants {
     }
 }
 
+sub on_production {
+    return env() eq 'production';
+}
+
+sub on_qa {
+    return env() =~ /^qa/;
+}
+
+sub on_development {
+    return env() eq 'development';
+}
+
 1;
