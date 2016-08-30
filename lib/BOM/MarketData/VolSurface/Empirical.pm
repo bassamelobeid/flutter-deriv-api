@@ -61,8 +61,9 @@ sub get_volatility {
         unshift @good_ticks, $ticks->[$i - 1] and next
             if ($ticks->[$i]->{epoch} != $ticks->[$i - 1]->{epoch} && $ticks->[$i]->{quote} != $ticks->[$i - 1]->{quote});
         $counter++;
-        # if there's 10 stale intervals, we will discard the rest of the ticks
-        last if ($counter == 10);
+        # if there's 10 stale intervals, we will discard the last added tick
+        # and everything else after that.
+        shift @good_ticks and last if ($counter == 10);
     }
     my $actual_lookback_interval =
         Time::Duration::Concise->new(
