@@ -55,10 +55,10 @@ sub get_volatility {
     # We will use the any amount of good ticks we get from the cache and scale the volatility by duration.
     # Corrupted of duplicated ticks will be discarded.
 
-    my @good_ticks;
-    my $counter = 0;
+    my @good_ticks = $ticks->[-1];    # first tick is always good
+    my $counter    = 0;
     for (my $i = -1; $i >= -$#$ticks; $i--) {
-        unshift @good_ticks, $ticks->[$i]
+        unshift @good_ticks, $ticks->[$i - 1] and next
             if ($ticks->[$i]->{epoch} != $ticks->[$i - 1]->{epoch} && $ticks->[$i]->{quote} != $ticks->[$i - 1]->{quote});
         $counter++;
         # if there's 10 stale intervals, we will discard the rest of the ticks
