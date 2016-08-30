@@ -7,7 +7,7 @@ use Format::Util::Numbers qw(roundnear);
 use Date::Utility;
 use BOM::Market::Underlying;
 use SuperDerivatives::UnderlyingConfig;
-use Quant::Framework::Dividend;
+use Quant::Framework::Asset;
 use BOM::System::Chronicle;
 
 sub process_dividend {
@@ -48,7 +48,7 @@ sub save_dividends {
 
         }
         try {
-            my $dividends = Quant::Framework::Dividend->new(
+            my $dividends = Quant::Framework::Asset->new(
                 symbol           => $symbol,
                 rates            => $rates,
                 discrete_points  => $discrete_points,
@@ -57,7 +57,7 @@ sub save_dividends {
                 chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
             );
             if (exists $otc_indices{'OTC_' . $symbol}) {
-                my $otc_dividend = Quant::Framework::Dividend->new(
+                my $otc_dividend = Quant::Framework::Asset->new(
                     symbol           => 'OTC_' . $symbol,
                     rates            => $rates,
                     discrete_points  => $discrete_points,
