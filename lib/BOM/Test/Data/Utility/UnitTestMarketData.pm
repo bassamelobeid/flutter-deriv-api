@@ -29,7 +29,7 @@ use Quant::Framework::VolSurface::Moneyness;
 use BOM::System::Chronicle;
 use BOM::System::RedisReplicated;
 use Quant::Framework::Utils::Test;
-use Quant::Framework::Dividend;
+use Quant::Framework::Asset;
 use JSON;
 
 use BOM::System::Config;
@@ -48,7 +48,7 @@ sub initialize_symbol_dividend {
         discrete_points => undef
     };
 
-    my $dv = Quant::Framework::Dividend->new(
+    my $dv = Quant::Framework::Asset->new(
         symbol           => $symbol,
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
