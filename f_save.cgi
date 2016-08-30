@@ -218,7 +218,7 @@ my $fage = (-M $overridefilename) * 24 * 60 * 60;
 # a feed file
 if (    -e $overridefilename
     and $fage < 30
-    and not BOM::Platform::Runtime->instance->app_config->system->on_development
+    and not BOM::System::Config::on_qa
     and $overridefilename !~ /\/combined\//)
 {
     print "<P><font color=red>Problem!! The file has been saved by someone else within the last $fage seconds.
@@ -228,7 +228,7 @@ if (    -e $overridefilename
 }
 
 #internal audit warnings
-if ($filen eq 'f_broker/promocodes.txt' and not BOM::Platform::Runtime->instance->app_config->system->on_development and $diff) {
+if ($filen eq 'f_broker/promocodes.txt' and not BOM::System::Config::on_qa and $diff) {
     warn("promocodes.txt EDITED BY $clerk");
     send_email({
             from    => BOM::Platform::Runtime->instance->app_config->system->email,
@@ -304,7 +304,7 @@ unless ($diff eq '0') {
         $message = "FILE $filen CHANGED ON SERVER BY $clerk\n\nDIFFERENCES BETWEEN OLD FILE AND NEW FILE :\n$diff\n";
     }
 }
-if ($message and not BOM::Platform::Runtime->instance->app_config->system->on_development) {
+if ($message and not BOM::System::Config::on_qa) {
     warn("FILECHANGED : File $filen edited by $clerk : $message");
 }
 
