@@ -52,17 +52,22 @@ sub get_volatility {
 
     my $requested_interval = Time::Duration::Concise->new(interval => $args->{seconds_to_expiration});
     # $actual_lookback_interval used to be the contract duration, but we have changed the concept.
-    # We will use the any amount of ticks we get from the cache and scale the volatility by duration.
-    # For the ticks that we get, we still do a duplicate checks.
-    my $actual_lookback_interval =
-        Time::Duration::Concise->new(interval => min($requested_interval->seconds, (@$ticks < 2 ? 0 : $ticks->[-1]->{epoch} - $ticks->[0]->{epoch})));
-    $self->volatility_scaling_factor($actual_lookback_interval->seconds / $requested_interval->seconds);
-    my @tick_epochs = uniq map { $_->{epoch} } @$ticks;
-    my $interval_threshold = int(($actual_lookback_interval->minutes * $returns_sep + 1) * 0.8);
-    if (scalar(@tick_epochs) < $interval_threshold) {
-        $self->error('Insufficient ticks in each interval to get_volatility');
-        return $self->long_term_vol;
+    # We will use the any amount of good ticks we get from the cache and scale the volatility by duration.
+    # Corrupted of duplicated ticks will be discarded.
+
+    my @good_ticks;
+    my $counter = 0;
+    for my ($i = -1; $i >= -$#$ticks; $i--) {
+        unshift @good_ticks, $ticks->[$i]
+            if ($ticks->[$i]->{epoch} != $ticks->[$i - 1]->{epoch} && $ticks->[$i]->{quote} != $ticks->[$i - 1]->{quote});
+        $counter++;
+        # if there's 10 stale intervals, we will discard the rest of the ticks
+        last if ($counter == 10);
     }
+    my $actual_lookback_interval =
+        Time::Duration::Concise->new(
+        interval => min($requested_interval->seconds, (@good_ticks < 2 ? 0 : $good_ticks[-1]->{epoch} - $good_ticks[0]->{epoch})));
+    $self->volatility_scaling_factor($actual_lookback_interval->seconds / $requested_interval->seconds);
 
     my $categorized_events = $self->_categorized_economic_events($economic_events);
 
@@ -99,13 +104,14 @@ sub get_volatility {
     $self->long_term_prediction($long_term_prediction);
 
     my $short_term_prediction;
-    if (@tick_epochs < 5) {
+    if (@good_ticks < 5) {
         # we don't have enough ticks to do anything.
         $short_term_prediction = machine_epsilon();
     } else {
+        my @tick_epochs = map { $_->{epoch} } @good_ticks;
         my @time_samples_past = map { ($tick_epochs[$_] + $tick_epochs[$_ - $returns_sep]) / 2 } ($returns_sep .. $#tick_epochs);
         my $weights = _calculate_weights(\@time_samples_past, $categorized_events);
-        my $observed_vol     = _calculate_observed_volatility($ticks, \@time_samples_past, \@tick_epochs, $weights);
+        my $observed_vol     = _calculate_observed_volatility(\@good_ticks, \@time_samples_past, \@tick_epochs, $weights);
         my $seasonality_past = $self->_get_volatility_seasonality_areas(\@time_samples_past);
         my $news_past        = [(1) x (scalar @time_samples_past)];
         if ($args->{include_news_impact}) {
