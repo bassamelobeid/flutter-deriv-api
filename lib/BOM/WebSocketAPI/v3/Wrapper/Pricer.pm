@@ -354,22 +354,6 @@ sub _price_stream_results_adjustment {
     $contract_parameters->{theo_probability} = $theo_probability;
     $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
 
-    # TODO REMOVE
-    my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
-    if (my $error = $contract->validate_price) {
-        return {
-            error => {
-                message_to_client => $error->{message_to_client},
-                code              => 'ContractBuyValidationError',
-                details           => {
-                    longcode      => $contract->longcode,
-                    display_value => $contract->ask_price,
-                    payout        => $contract->payout,
-                },
-            }};
-    }
-    # /TODO REMOVE
-
     my $price_calculator = Price::Calculator->new(
         theo_probability        => $contract_parameters->{theo_probability},
         deep_otm_threshold      => $contract_parameters->{deep_otm_threshold},
@@ -380,11 +364,25 @@ sub _price_stream_results_adjustment {
         base_commission_scaling => $contract_parameters->{base_commission_scaling},
         app_markup_percentage   => $contract_parameters->{app_markup_percentage},
         currency                => $contract_parameters->{currency},
+        staking_limits          => $contract_parameters->{staking_limits},
         $contract_parameters->{amount_type} eq 'payout' ? (payout => $contract_parameters->{amount}) :
         $contract_parameters->{amount_type} eq 'stake'  ? (ask_price => $contract_parameters->{amount}) : (),
     );
 
-    $results->{ask_price} = $results->{display_value} = $price_calculator->price_from_prob('ask_probability');
+    if (my $error = $price_calculator->validate_price) {
+        return {
+            error => {
+                message_to_client => $error->{message_to_client},
+                code              => 'ContractBuyValidationError',
+                details           => {
+                    # longcode      => $contract->longcode,
+                    display_value => $price_calculator->ask_price,
+                    payout        => $price_calculator->payout,
+                },
+            }};
+    }
+
+    $results->{ask_price} = $results->{display_value} = $price_calculator->ask_price;
     $results->{payout} = $price_calculator->payout;
 
     stats_timing('price_adjustment.timing', 1000 * tv_interval($t));
