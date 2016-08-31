@@ -1804,7 +1804,7 @@ sub sell_expired_contracts {
     my $loginid  = $client->loginid;
 
     my $result = {
-        skip_contract       => $#$contract_ids,
+        skip_contract       => 0,
         total_credited      => 0,
         number_of_sold_bets => 0,
         failures            => [],
