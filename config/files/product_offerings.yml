@@ -1,8 +1,6 @@
 ---
 # This file contains all the underlying symbols that
 # we current offer contracts to.
-# For FOREX and random, the min duration had set to same as min of intraday to enable offering of zero day contract
-# We can not use '0d' as min of daily contract because that Time::Duration::Concise will convert it into zero seconds.
 AEX: &limited_equities
   callput:
     daily:
@@ -310,12 +308,10 @@ R_100: &random_index
   callput:
     daily:
       spot:
-        euro_atm:
+        euro_atm: &one_day_to_year
           max: 365d
-          min: 15s
-        euro_non_atm:
-          max: 365d
-          min: 15s
+          min: 1d
+        euro_non_atm: *one_day_to_year
     intraday:
       forward:
         euro_atm: *two_minutes_to_day
@@ -419,7 +415,7 @@ frxAUDCAD: &inactive_fx
       spot:
         euro_atm:
          max: 365d
-         min: 2m
+         min: 1d
     intraday:
       forward:
         euro_atm:
@@ -438,10 +434,10 @@ frxAUDJPY: &active_fx
       spot:
         euro_atm:
           max: 365d
-          min: 1m
+          min: 1d
         euro_non_atm:
           max: 365d
-          min: 15m
+          min: 1d
     intraday:
       forward:
         euro_atm:
@@ -505,18 +501,18 @@ frxGBPCAD: &no_intraday_pd_fx
       spot:
         euro_atm:
           max: 365d
-          min: 1m
+          min: 1d
         euro_non_atm: *one_day_to_year
     intraday:
       forward:
         euro_atm:
-          max: 1d
+          max: 24h
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 1m
-          max: 1d
+          max: 24h
           min: 1m
   endsinout:
     daily:
