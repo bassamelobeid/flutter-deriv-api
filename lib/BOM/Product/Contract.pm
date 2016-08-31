@@ -2582,10 +2582,15 @@ sub _validate_lifetime {
             $message_to_client = localize('Number of ticks must be between [_1] and [_2]', $min_duration, $max_duration);
             $message_to_client_array = ['Number of ticks must be between [_1] and [_2]', $min_duration, $max_duration];
         }
-    } else {
+    } elsif (not $self->expiry_daily) {
         $duration = $self->get_time_to_expiry({from => $self->date_start})->seconds;
         ($min_duration, $max_duration) = ($min_duration->seconds, $max_duration->seconds);
-        $message = 'Duration not acceptable';
+        $message = 'Intraday duration not acceptable';
+    } else {
+        my $calendar = $self->calendar;
+        $duration = $calendar->trading_date_for($self->date_expiry)->days_between($calendar->trading_date_for($self->date_start));
+        ($min_duration, $max_duration) = ($min_duration->days, $max_duration->days);
+        $message = 'Daily duration is outside acceptable range';
     }
 
     if ($duration < $min_duration or $duration > $max_duration) {
