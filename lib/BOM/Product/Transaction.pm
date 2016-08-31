@@ -1803,8 +1803,14 @@ sub sell_expired_contracts {
     my $currency = $client->currency;
     my $loginid  = $client->loginid;
 
+    my $result = {
+        skip_contract       => $#$contract_ids,
+        total_credited      => 0,
+        number_of_sold_bets => 0,
+        failures            => [],
+    };
     # Apply rate limits before doing the full lookup
-    return
+    return $result
         if (
         $client->is_virtual              # Only virtuals
         and not defined $contract_ids    # who are just selling "whatever"
@@ -1831,7 +1837,7 @@ sub sell_expired_contracts {
         : $clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)',
         [$client->loginid, $client->currency, ($args->{only_expired} ? 'true' : 'false')]);
 
-    return unless $bets and @$bets;
+    return $result unless $bets and @$bets;
 
     my $now = Date::Utility->new;
     my @bets_to_sell;
@@ -1842,16 +1848,29 @@ sub sell_expired_contracts {
     for my $bet (@$bets) {
         my $contract;
         my $error;
+        my $failure = {fmb_id => $bet->{id}};
         try { $contract = produce_contract($bet->{short_code}, $currency); } catch { $error = 1; };
-        next if $error;
+        if ($error) {
+            $failure->{reason} = 'Could not instantiate contract object';
+            push @{$result->{failures}}, $failure;
+            next;
+        }
+
+        $bet_info->{payout} = $contract->is_spread ? $contract->amount_per_point * $contract->stop_profit : $contract->payout;
 
         my $logging_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
         $stats_attempt{$logging_class}++;
         if (not $contract->is_expired) {
             $stats_failure{$logging_class}{'NotExpired'}++;
+            $failure->{reason} = 'not expired';
             next;
         } elsif ($contract->category_code eq 'legacy') {
             $stats_failure{$logging_class}{Legacy}++;
+            $failure->{reason} = 'legacy';
+            next;
+        } elsif (not defined $bet->value) {
+            # $bet->value is set when we confirm expiration status, even further above.
+            $failure->{reason} = 'indeterminate value';
             next;
         }
 
@@ -1896,6 +1915,8 @@ sub sell_expired_contracts {
                 push @quants_bet_variables, $quants_bet_variables;
             } else {
                 $stats_failure{$logging_class}{_normalize_error($contract->primary_validation_error)}++;
+                $failure->{reason} = '$contract->primary_validation_error->message';
+                push $result->{failures}, $failure;
             }
         };
     }
