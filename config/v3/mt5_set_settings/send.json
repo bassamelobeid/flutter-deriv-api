@@ -50,7 +50,7 @@
     },
     "zipCode": {
       "type" : "string",
-      "pattern": "^[\\w\\s-]{0,20}$",
+      "pattern": "^[\\w\\s-]{0,50}$",
       "description": "User's zip code. Optional field."
     },
     "country": {
