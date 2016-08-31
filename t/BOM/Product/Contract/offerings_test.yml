@@ -629,13 +629,13 @@ frxAUDCAD: &11
     intraday:
       forward:
         euro_atm:
-          max: 24h
+          max: 1d
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 2m
-          max: 24h
+          max: 1d
           min: 2m
 frxAUDCHF: *11
 frxAUDJPY:
@@ -651,18 +651,18 @@ frxAUDJPY:
     intraday:
       forward:
         euro_atm:
-          max: 24h
+          max: 1d
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 1m
-          max: 24h
+          max: 1d
           min: 1m
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 24h
+          max: 1d
           min: 15m
     tick:
       spot:
@@ -702,18 +702,18 @@ frxAUDUSD:
     intraday:
       forward:
         euro_atm:
-          max: 24h
+          max: 1d
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 1m
-          max: 24h
+          max: 1d
           min: 1m
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 24h
+          max: 1d
           min: 15m
     tick:
       spot:
@@ -758,18 +758,18 @@ frxEURAUD:
     intraday:
       forward:
         euro_atm:
-          max: 24h
+          max: 1d
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 1m
-          max: 24h
+          max: 1d
           min: 1m
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 24h
+          max: 1d
           min: 15m
     tick:
       spot:
@@ -807,18 +807,18 @@ frxEURCAD:
     intraday:
       forward:
         euro_atm:
-          max: 24h
+          max: 1d
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 1m
-          max: 24h
+          max: 1d
           min: 1m
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 24h
+          max: 1d
           min: 15m
     tick:
       spot:
@@ -856,18 +856,18 @@ frxEURCHF:
     intraday:
       forward:
         euro_atm:
-          max: 24h
+          max: 1d
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 1m
-          max: 24h
+          max: 1d
           min: 1m
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 24h
+          max: 1d
           min: 15m
     tick:
       spot:
@@ -905,18 +905,18 @@ frxEURGBP:
     intraday:
       forward:
         euro_atm:
-          max: 24h
+          max: 1d
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 1m
-          max: 24h
+          max: 1d
           min: 1m
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 24h
+          max: 1d
           min: 15m
     tick:
       spot:
@@ -954,18 +954,18 @@ frxEURJPY:
     intraday:
       forward:
         euro_atm:
-          max: 24h
+          max: 1d
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 1m
-          max: 24h
+          max: 1d
           min: 1m
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 24h
+          max: 1d
           min: 15m
     tick:
       spot:
@@ -1004,18 +1004,18 @@ frxEURUSD:
     intraday:
       forward:
         euro_atm:
-          max: 24h
+          max: 1d
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 1m
-          max: 24h
+          max: 1d
           min: 1m
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 24h
+          max: 1d
           min: 15m
     tick:
       spot:
@@ -1053,18 +1053,18 @@ frxGBPAUD:
     intraday:
       forward:
         euro_atm:
-          max: 24h
+          max: 1d
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 1m
-          max: 24h
+          max: 1d
           min: 1m
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 24h
+          max: 1d
           min: 15m
     tick:
       spot:
@@ -1138,18 +1138,18 @@ frxGBPJPY:
     intraday:
       forward:
         euro_atm:
-          max: 24h
+          max: 1d
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 1m
-          max: 24h
+          max: 1d
           min: 1m
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 24h
+          max: 1d
           min: 15m
     tick:
       spot:
@@ -1202,18 +1202,18 @@ frxGBPUSD:
     intraday:
       forward:
         euro_atm:
-          max: 24h
+          max: 1d
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 1m
-          max: 24h
+          max: 1d
           min: 1m
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 24h
+          max: 1d
           min: 15m
     tick:
       spot:
@@ -1296,18 +1296,18 @@ frxUSDCAD:
     intraday:
       forward:
         euro_atm:
-          max: 24h
+          max: 1d
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 1m
-          max: 24h
+          max: 1d
           min: 1m
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 24h
+          max: 1d
           min: 15m
     tick:
       spot:
@@ -1345,18 +1345,18 @@ frxUSDCHF:
     intraday:
       forward:
         euro_atm:
-          max: 24h
+          max: 1d
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 1m
-          max: 24h
+          max: 1d
           min: 1m
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 24h
+          max: 1d
           min: 15m
     tick:
       spot:
@@ -1394,18 +1394,18 @@ frxUSDJPY:
     intraday:
       forward:
         euro_atm:
-          max: 24h
+          max: 1d
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 1m
-          max: 24h
+          max: 1d
           min: 1m
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 24h
+          max: 1d
           min: 15m
     tick:
       spot:
