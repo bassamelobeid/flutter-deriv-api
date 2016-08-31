@@ -1861,14 +1861,17 @@ sub sell_expired_contracts {
         if (not $contract->is_expired) {
             $stats_failure{$logging_class}{'NotExpired'}++;
             $failure->{reason} = 'not expired';
+            push @{$result->{failures}}, $failure;
             next;
         } elsif ($contract->category_code eq 'legacy') {
             $stats_failure{$logging_class}{Legacy}++;
             $failure->{reason} = 'legacy';
+            push @{$result->{failures}}, $failure;
             next;
         } elsif (not defined $bet->value) {
             # $bet->value is set when we confirm expiration status, even further above.
             $failure->{reason} = 'indeterminate value';
+            push @{$result->{failures}}, $failure;
             next;
         }
 
