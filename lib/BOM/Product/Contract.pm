@@ -896,6 +896,7 @@ sub _build_price_calculator {
             ? (base_commission => $self->base_commission)
             : (underlying_base_commission => $self->underlying->base_commission),
             ($self->has_commission_markup)      ? (commission_markup      => $self->commission_markup)      : (),
+            ($self->has_commission_from_stake)      ? (commission_from_stake      => $self->commission_from_stake)      : (),
             ($self->has_payout)                 ? (payout                 => $self->payout)                 : (),
             ($self->has_ask_price)              ? (ask_price              => $self->ask_price)              : (),
             ($self->has_theo_probability)       ? (theo_probability       => $self->theo_probability)       : (),
@@ -903,6 +904,46 @@ sub _build_price_calculator {
             ($self->has_bs_probability)         ? (bs_probability         => $self->bs_probability)         : (),
             ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
         });
+}
+
+sub _set_price_calculator_params {
+    my ($self, $method) = @_;
+
+    if ($method eq 'theo_probability') {
+        $self->price_calculator->pricing_engine_probability($self->pricing_engine->probability);
+    }
+    elsif ($method eq 'ask_probability') {
+        $self->price_calculator->theo_probability($self->theo_probability);
+    }
+    elsif ($method eq 'bid_probability') {
+        $self->price_calculator->theo_probability($self->theo_probability);
+        $self->price_calculator->discounted_probability($self->discounted_probability);
+        $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability);
+    }
+    elsif ($method eq 'bs_probability') {
+        $self->price_calculator->pricing_engine_bs_probability($self->pricing_engine->bs_probability);
+    }
+    elsif ($method eq 'discounted_probability') {
+        $self->price_calculator->timeinyears($self->timeinyears);
+        $self->price_calculator->discount_rate($self->discount_rate);
+    }
+    elsif ($method eq 'payout') {
+        $self->price_calculator->theo_probability($self->theo_probability);
+        $self->price_calculator->commission_from_stake($self->commission_from_stake);
+    }
+    elsif ($method eq 'commission_from_stake') {
+        $self->price_calculator->theo_probability($self->theo_probability);
+        $self->price_calculator->commission_markup($self->commission_markup);
+    }
+    elsif ($method eq 'commission_markup') {
+        $self->price_calculator->theo_probability($self->theo_probability);
+    }
+    elsif ($method eq 'validate_price') {
+        $self->price_calculator->theo_probability($self->theo_probability);
+        $self->price_calculator->commission_markup($self->commission_markup);
+        $self->price_calculator->commission_from_stake($self->commission_from_stake);
+    }
+    return;
 }
 
 # We adopt "near-far" methodology to price in dividends by adjusting spot and strike.
@@ -948,28 +989,19 @@ sub _build_dividend_adjustment {
 sub _build_discounted_probability {
     my $self = shift;
 
-    $self->price_calculator->timeinyears($self->timeinyears);
-    $self->price_calculator->discount_rate($self->discount_rate);
-
+    $self->_set_price_calculator_params('discounted_probability');
     return $self->price_calculator->discounted_probability;
 }
 
 sub _build_bid_probability {
     my $self = shift;
 
-    $self->price_calculator->theo_probability($self->theo_probability)             unless $self->price_calculator->has_theo_probability;
-    $self->price_calculator->discounted_probability($self->discounted_probability) unless $self->price_calculator->has_discounted_probability;
-    $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability);
-
+    $self->_set_price_calculator_params('bid_probability');
     return $self->price_calculator->bid_probability;
 }
 
 sub _build_bid_price {
     my $self = shift;
-
-    $self->price_calculator->theo_probability($self->theo_probability)             unless $self->price_calculator->has_theo_probability;
-    $self->price_calculator->discounted_probability($self->discounted_probability) unless $self->price_calculator->has_discounted_probability;
-    $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability);
 
     return $self->_price_from_prob('bid_probability');
 }
@@ -977,8 +1009,7 @@ sub _build_bid_price {
 sub _build_ask_probability {
     my $self = shift;
 
-    $self->price_calculator->theo_probability($self->theo_probability) unless $self->price_calculator->has_theo_probability;
-
+    $self->_set_price_calculator_params('ask_probability');
     return $self->price_calculator->ask_probability;
 }
 
@@ -1074,13 +1105,12 @@ sub _price_from_prob {
         $self->price_calculator->value($self->value);
     }
 
+    $self->_set_price_calculator_params($prob);
     return $self->price_calculator->price_from_prob($prob);
 }
 
 sub _build_ask_price {
     my $self = shift;
-
-    $self->price_calculator->theo_probability($self->theo_probability) unless $self->price_calculator->has_theo_probability;
 
     return $self->_price_from_prob('ask_probability');
 }
@@ -1088,9 +1118,7 @@ sub _build_ask_price {
 sub _build_payout {
     my ($self) = @_;
 
-    $self->price_calculator->theo_probability($self->theo_probability)           unless $self->price_calculator->has_theo_probability;
-    $self->price_calculator->commission_from_stake($self->commission_from_stake) unless $self->price_calculator->has_commission_from_stake;
-
+    $self->_set_price_calculator_params('payout');
     return $self->price_calculator->payout;
 }
 
@@ -1101,8 +1129,7 @@ sub commission_multiplier {
 sub _build_theo_probability {
     my $self = shift;
 
-    $self->price_calculator->pricing_engine_probability($self->pricing_engine->probability);
-
+    $self->_set_price_calculator_params('theo_probability');
     return $self->price_calculator->theo_probability;
 }
 
@@ -1131,15 +1158,12 @@ sub _build_app_markup_dollar_amount {
 sub _build_bs_probability {
     my $self = shift;
 
-    $self->price_calculator->pricing_engine_bs_probability($self->pricing_engine->bs_probability);
-
+    $self->_set_price_calculator_params('bs_probability');
     return $self->price_calculator->bs_probability;
 }
 
 sub _build_bs_price {
     my $self = shift;
-
-    $self->price_calculator->pricing_engine_bs_probability($self->pricing_engine->bs_probability);
 
     return $self->_price_from_prob('bs_probability');
 }
@@ -1176,27 +1200,19 @@ sub _build_base_commission {
 sub _build_commission_markup {
     my $self = shift;
 
-    $self->price_calculator->theo_probability($self->theo_probability) unless $self->price_calculator->has_theo_probability;
-    if (!$self->price_calculator->has_commission_from_stake && $self->has_commission_from_stake) {
-        $self->price_calculator->commission_from_stake($self->commission_from_stake);
-    }
-
+    $self->_set_price_calculator_params('commission_markup');
     return $self->price_calculator->commission_markup;
 }
 
 sub _build_commission_from_stake {
     my $self = shift;
 
-    $self->price_calculator->theo_probability($self->theo_probability)   unless $self->price_calculator->has_theo_probability;
-    $self->price_calculator->commission_markup($self->commission_markup) unless $self->price_calculator->has_commission_markup;
-
+    $self->_set_price_calculator_params('commission_from_stake');
     return $self->price_calculator->commission_from_stake;
 }
 
 sub _build_theo_price {
     my $self = shift;
-
-    $self->price_calculator->pricing_engine_probability($self->pricing_engine->probability);
 
     return $self->_price_from_prob('theo_probability');
 }
@@ -2078,10 +2094,7 @@ sub validate_price {
 
     return if $self->for_sale;
 
-    $self->price_calculator->theo_probability($self->theo_probability)           unless $self->price_calculator->has_theo_probability;
-    $self->price_calculator->commission_markup($self->commission_markup)         unless $self->price_calculator->has_commission_markup;
-    $self->price_calculator->commission_from_stake($self->commission_from_stake) unless $self->price_calculator->has_commission_from_stake;
-
+    $self->_set_price_calculator_params('validate_price');
     my $res = $self->price_calculator->validate_price;
     if ($res && exists $res->{message_to_client}) {
         $res->{message_to_client} = localize(
