@@ -896,7 +896,7 @@ sub _build_price_calculator {
             ? (base_commission => $self->base_commission)
             : (underlying_base_commission => $self->underlying->base_commission),
             ($self->has_commission_markup)      ? (commission_markup      => $self->commission_markup)      : (),
-            ($self->has_commission_from_stake)      ? (commission_from_stake      => $self->commission_from_stake)      : (),
+            ($self->has_commission_from_stake)  ? (commission_from_stake  => $self->commission_from_stake)  : (),
             ($self->has_payout)                 ? (payout                 => $self->payout)                 : (),
             ($self->has_ask_price)              ? (ask_price              => $self->ask_price)              : (),
             ($self->has_theo_probability)       ? (theo_probability       => $self->theo_probability)       : (),
@@ -909,40 +909,15 @@ sub _build_price_calculator {
 sub _set_price_calculator_params {
     my ($self, $method) = @_;
 
-    if ($method eq 'theo_probability') {
-        $self->price_calculator->pricing_engine_probability($self->pricing_engine->probability);
-    }
-    elsif ($method eq 'ask_probability') {
-        $self->price_calculator->theo_probability($self->theo_probability);
-    }
-    elsif ($method eq 'bid_probability') {
-        $self->price_calculator->theo_probability($self->theo_probability);
-        $self->price_calculator->discounted_probability($self->discounted_probability);
-        $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability);
-    }
-    elsif ($method eq 'bs_probability') {
-        $self->price_calculator->pricing_engine_bs_probability($self->pricing_engine->bs_probability);
-    }
-    elsif ($method eq 'discounted_probability') {
-        $self->price_calculator->timeinyears($self->timeinyears);
-        $self->price_calculator->discount_rate($self->discount_rate);
-    }
-    elsif ($method eq 'payout') {
-        $self->price_calculator->theo_probability($self->theo_probability);
-        $self->price_calculator->commission_from_stake($self->commission_from_stake);
-    }
-    elsif ($method eq 'commission_from_stake') {
-        $self->price_calculator->theo_probability($self->theo_probability);
-        $self->price_calculator->commission_markup($self->commission_markup);
-    }
-    elsif ($method eq 'commission_markup') {
-        $self->price_calculator->theo_probability($self->theo_probability);
-    }
-    elsif ($method eq 'validate_price') {
-        $self->price_calculator->theo_probability($self->theo_probability);
-        $self->price_calculator->commission_markup($self->commission_markup);
-        $self->price_calculator->commission_from_stake($self->commission_from_stake);
-    }
+    $self->price_calculator->pricing_engine_probability($self->pricing_engine->probability)       if $method =~ /theo/;
+    $self->price_calculator->pricing_engine_bs_probability($self->pricing_engine->bs_probability) if $method =~ /bs_probability/;
+    $self->price_calculator->theo_probability($self->theo_probability)                            if $method =~ /ask|bid|payout|commission|validate/;
+    $self->price_calculator->commission_markup($self->commission_markup)                          if $method =~ /commission_from_stake|validate/;
+    $self->price_calculator->commission_from_stake($self->commission_from_stake)                  if $method =~ /payout|validate/;
+    $self->price_calculator->discounted_probability($self->discounted_probability)                if $method =~ /bid/;
+    $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability)  if $method =~ /bid/;
+    $self->price_calculator->timeinyears($self->timeinyears)                                      if $method =~ /discounted/;
+    $self->price_calculator->discount_rate($self->discount_rate)                                  if $method =~ /discounted/;
     return;
 }
 
