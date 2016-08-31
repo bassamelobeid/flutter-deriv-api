@@ -977,7 +977,6 @@ sub _build_ask_probability {
     my $self = shift;
 
     $self->price_calculator->theo_probability($self->theo_probability) unless $self->price_calculator->has_theo_probability;
-    $self->price_calculator->payout($self->payout) if !$self->price_calculator->has_commission_markup && $self->has_payout;
 
     return $self->price_calculator->ask_probability;
 }
@@ -1081,7 +1080,6 @@ sub _build_ask_price {
     my $self = shift;
 
     $self->price_calculator->theo_probability($self->theo_probability) unless $self->price_calculator->has_theo_probability;
-    $self->price_calculator->payout($self->payout) if !$self->price_calculator->has_commission_markup && $self->has_payout;
 
     return $self->_price_from_prob('ask_probability');
 }
@@ -1180,9 +1178,7 @@ sub _build_commission_markup {
     my $self = shift;
 
     $self->price_calculator->theo_probability($self->theo_probability) unless $self->price_calculator->has_theo_probability;
-    if (!$self->price_calculator->has_payout && $self->has_payout) {
-        $self->price_calculator->payout($self->payout);
-    } elsif (!$self->price_calculator->has_commission_from_stake && $self->has_commission_from_stake) {
+    if (!$self->price_calculator->has_commission_from_stake && $self->has_commission_from_stake) {
         $self->price_calculator->commission_from_stake($self->commission_from_stake);
     }
 
@@ -2086,7 +2082,6 @@ sub validate_price {
     $self->price_calculator->theo_probability($self->theo_probability)           unless $self->price_calculator->has_theo_probability;
     $self->price_calculator->commission_markup($self->commission_markup)         unless $self->price_calculator->has_commission_markup;
     $self->price_calculator->commission_from_stake($self->commission_from_stake) unless $self->price_calculator->has_commission_from_stake;
-    $self->price_calculator->payout($self->payout) if !$self->price_calculator->has_commission_markup && $self->has_payout;
 
     my $res = $self->price_calculator->validate_price;
     if ($res && exists $res->{message_to_client}) {
