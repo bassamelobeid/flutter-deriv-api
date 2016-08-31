@@ -286,7 +286,7 @@ sub sell_expired_contracts {
                     });
 
                     stats_inc("transaction.sell.success", $stats_data->{tags});
-                    if ($rmgenv eq 'production' and $stats_data->{virtual} eq 'no') {
+                    if (BOM::System::Config::on_production() and $stats_data->{virtual} eq 'no') {
                         my $usd_amount = int(in_USD($bet->bid_price, $currency) * 100);
                         stats_count('business.buy_minus_sell_usd', -$usd_amount, $stats_data->{tags});
                     }
@@ -330,7 +330,7 @@ sub sell_expired_contracts {
                 );
         }
 
-        if (BOM::Platform::Runtime->instance->app_config->system->on_production) {
+        if (BOM::System::Config::on_production()) {
             my $sender = Mail::Sender->new({
                 smtp    => 'localhost',
                 from    => '"Autosell" <autosell@regentmarkets.com>',

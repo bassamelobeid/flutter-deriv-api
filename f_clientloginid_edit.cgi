@@ -17,7 +17,7 @@ use BOM::Platform::Client::IDAuthentication;
 use BOM::Platform::Client::Utility;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Client::Utility ();
-use BOM::Backoffice::Sysinit         ();
+use BOM::Backoffice::Sysinit       ();
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Doughflow qw( get_sportsbook );
 use BOM::Database::Model::HandoffToken;
@@ -31,9 +31,9 @@ BOM::Backoffice::Sysinit::init();
 my %input = %{request()->params};
 
 PrintContentType();
-my $dbloc     = BOM::Platform::Runtime->instance->app_config->system->directory->db;
-my $loginid   = $input{loginID};
-if (not $loginid) { print "<p> Empty loginID.</p>"; code_exit_BO();}
+my $dbloc   = BOM::Platform::Runtime->instance->app_config->system->directory->db;
+my $loginid = $input{loginID};
+if (not $loginid) { print "<p> Empty loginID.</p>"; code_exit_BO(); }
 $loginid = trim(uc $loginid);
 
 my $self_post = request()->url_for('backoffice/f_clientloginid_edit.cgi');
@@ -183,11 +183,14 @@ if ($input{whattodo} eq 'uploadID') {
 
     }
 
-    if ($docnationality && $docnationality =~ /[a-z]{2}/ && not BOM::Platform::Countries->instance->restricted_country($docnationality)) {
-        $client->citizen($docnationality);
-    } else {
-        print "<br /><p style=\"color:red; font-weight:bold;\">Error: Please select correct nationality and make sure its not in restricted list</p><br />";
-        code_exit_BO();
+    if ($doctype eq 'passport') {
+        if ($docnationality && $docnationality =~ /[a-z]{2}/ && not BOM::Platform::Countries->instance->restricted_country($docnationality)) {
+            $client->citizen($docnationality);
+        } else {
+            print
+                "<br /><p style=\"color:red; font-weight:bold;\">Error: Please select correct nationality and make sure its not in restricted list</p><br />";
+            code_exit_BO();
+        }
     }
 
     my $newfilename = "$dbloc/clientIDscans/$broker/$loginid.$doctype." . (time()) . ".$docformat";
@@ -681,8 +684,8 @@ print qq{
     <option value="">Please select</option>
 };
 
-foreach my $code (sort BOM::Platform::Countries->instance->countries->all_country_codes) {
-    my $country_name = BOM::Platform::Countries->instance->countries->country_from_code($code);
+foreach my $country_name (sort BOM::Platform::Countries->instance->countries->all_country_names) {
+    my $code = BOM::Platform::Countries->instance->countries->code_from_country($country_name);
     if (BOM::Platform::Countries->instance->restricted_country($code)) {
         print "<option value='$code' disabled>$country_name</option>";
     } else {

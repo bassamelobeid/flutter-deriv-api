@@ -10,11 +10,48 @@ use BOM::Market::UnderlyingDB;
 use BOM::Market::Registry;
 use Proc::Killall;
 use BOM::Market::Registry;
-use Feed::Listener::Quote;
 use Try::Tiny;
+use Path::Tiny;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
+use File::ReadBackwards;
+use Date::Utility;
+use List::Util qw/reduce/;
+
 BOM::Backoffice::Sysinit::init();
+
+my $fullfeed_re = qr/^\d\d?-\w{3}-\d\d.fullfeed(?!\.zip)/;
+
+sub last_quote {
+    my $dir = shift;
+    my $recent = reduce { $a->[1] < $b->[1] ? $a : $b } map {[$_, -M $_]} $dir->children($fullfeed_re);
+    $recent = $recent->[0] // die("Cannot find last quote file in $dir");
+    my $bw = File::ReadBackwards->new($recent)
+        or die "can't read $recent: $!";
+    return ($recent, $bw->readline);
+}
+
+sub parse_quote {
+    my ($file, $line) = @_;
+    my ($epoch, $price);
+    my $provider = $file->parent->parent->basename;
+    if ($provider ne 'combined') {
+        ($epoch, undef, undef, undef, $price) = split ',', $line;
+    } elsif ($line =~ /^(\d{2}:\d{2}:\d{2}) (\d{2}:\d{2}) (\d+\.?\d*) (\d+\.?\d*) (\d+\.?\d*).*\n$/) {
+        my $time = $1;
+        $price = $5;
+        my $date = ($file->basename =~ s/((\d\d?-\w{3}-\d\d)\.fullfeed)?$/$2/r);
+        # in case of crash outer try/catch will handle that
+        $epoch = Date::Utility->new($date . ' ' . $time)->epoch;
+    }
+    return ($price, $epoch);
+}
+
+sub get_quote {
+    my $dir = shift;
+    my ($file, $line) = last_quote($dir);
+    return parse_quote($file, $line);
+}
 
 PrintContentType();
 BrokerPresentation('REALTIME QUOTES');
@@ -85,17 +122,18 @@ foreach my $i (@instrumentlist) {
     my $currtime = time;
 
     foreach my $p (@providerlist) {
-        my ($tick, $price, $timestamp);
+        my ($price, $timestamp, $spot);
 
-        # For combined folder, we need to look up the correct combined folder.
-        if ($p eq 'combined') {
-            $tick      = $underlying->get_combined_realtime;
-            $timestamp = $tick->{epoch};
-            $price     = $tick->{quote};
-        } else {
-            my $quote = try { Cache::RedisDB->get('PROVIDER_LAST_QUOTE', "$p/" . $underlying->symbol) };
-            ($timestamp, $price) = ($quote->epoch, $quote->price) if $quote and ref $quote eq 'Feed::Listener::Quote';
-        }
+        # Might die for a couple of reasons: file not exist, or error in parsing last line (partly written).
+        # All this errors are non fatal, and will show just empty cell in backoffice; refresh in browser can fix
+        # situation.
+        try {
+            ($price, $timestamp) = get_quote(path('/feed', $p, $underlying->symbol));
+            # This is similar to underlying->spot, i.e. we always get the last value from combined file for comparison
+            # but if the current provider is already 'combined' we just copy existing value
+            ($spot) = ($p ne 'combined') ? get_quote(path('/feed', 'combined', $underlying->symbol)) : ($price);
+        };
+
         unless (defined $timestamp and defined $price) {
             print "<td bgcolor=#FFFFCE>&nbsp;</td>";
             next;

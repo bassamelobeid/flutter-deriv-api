@@ -24,6 +24,7 @@ use Cache::RedisDB;
 use Crypt::NamedKeys;
 
 use BOM::Platform::Runtime;
+use BOM::System::Config;
 
 has staff => (
     is       => 'ro',
@@ -44,10 +45,7 @@ has _environment => (
 );
 
 sub _build__environment {
-    my $env = 'others';
-    if (BOM::Platform::Runtime->instance->app_config->system->on_production) {
-        $env = 'production';
-    }
+    my $env = BOM::System::Config::on_production() ? 'production' : 'others';
     return $env;
 }
 
