@@ -1868,11 +1868,11 @@ sub sell_expired_contracts {
             $failure->{reason} = 'legacy';
             push @{$result->{failures}}, $failure;
             next;
-        } elsif (not defined $bet->value) {
-            # $bet->value is set when we confirm expiration status, even further above.
-            $failure->{reason} = 'indeterminate value';
-            push @{$result->{failures}}, $failure;
-            next;
+#        } elsif (not defined $bet->value) {
+#            # $bet->value is set when we confirm expiration status, even further above.
+#            $failure->{reason} = 'indeterminate value';
+#            push @{$result->{failures}}, $failure;
+#            next;
         }
 
         try {
