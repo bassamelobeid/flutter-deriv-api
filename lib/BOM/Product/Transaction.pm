@@ -1856,8 +1856,6 @@ sub sell_expired_contracts {
             next;
         }
 
-        $bet_info->{payout} = $contract->is_spread ? $contract->amount_per_point * $contract->stop_profit : $contract->payout;
-
         my $logging_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
         $stats_attempt{$logging_class}++;
         if (not $contract->is_expired) {
