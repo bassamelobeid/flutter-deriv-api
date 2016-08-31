@@ -1089,7 +1089,6 @@ sub _build_payout {
     my ($self) = @_;
 
     $self->price_calculator->theo_probability($self->theo_probability)           unless $self->price_calculator->has_theo_probability;
-    $self->price_calculator->commission_markup($self->commission_markup)         unless $self->price_calculator->has_commission_markup;
     $self->price_calculator->commission_from_stake($self->commission_from_stake) unless $self->price_calculator->has_commission_from_stake;
 
     return $self->price_calculator->payout;
