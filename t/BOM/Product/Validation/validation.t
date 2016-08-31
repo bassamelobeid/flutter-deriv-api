@@ -533,7 +533,7 @@ subtest 'volsurfaces become old and invalid' => sub {
 };
 
 subtest 'invalid start times' => sub {
-    plan tests => 17;
+    plan tests => 16;
 
     my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
@@ -604,62 +604,81 @@ subtest 'invalid start times' => sub {
     $expected_reasons = [qr/starts in the past/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{duration}     = '24h';
-    $bet_params->{date_start}   = $underlying->calendar->opening_on(Date::Utility->new($starting));
+    $bet_params->{duration} =  '23h';
+    $bet_params->{date_start}   = $underlying->calendar->opening_on(Date::Utility->new('2013-03-28'));
     $bet_params->{date_pricing} = $bet_params->{date_start};
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    my $EURUSD_tick = Quant::Framework::Spot::Tick->new({
+        symbol => 'frxEURUSD',
+        epoch  =>  $bet_params->{date_start}->epoch + 1,
+        quote  => 100
+    });
+ 
+    $bet_params->{current_tick} = $EURUSD_tick;
+     
+
+     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             symbol        => 'frxEURUSD',
             recorded_date => Date::Utility->new($bet_params->{date_start}),
         });
     $bet = produce_contract($bet_params);
-    ok($bet->is_valid_to_buy, 'validate to buy zero day contract');
+    ok($bet->is_valid_to_buy, 'validate to buy 23h contract');
 
     $bet_params->{barrier} = 'S10P';
     $bet = produce_contract($bet_params);
-    ok($bet->is_valid_to_buy, 'validate to buy zero day contract');
+    ok($bet->is_valid_to_buy, 'validate to buy 23h contract');
 
-    $bet_params->{date_start}   = $underlying->calendar->closing_on(Date::Utility->new($starting))->minus_time_interval('30s');
+    delete $bet_params->{duration};
+    my $closing = $underlying->calendar->closing_on(Date::Utility->new('2013-03-28'));
+    $bet_params->{date_expiry} = $closing;
+    $bet_params->{date_start}   = $closing->minus_time_interval('30s');
+    $EURUSD_tick = Quant::Framework::Spot::Tick->new({
+        symbol => 'frxEURUSD',
+        epoch  =>  $bet_params->{date_start}->epoch + 1,
+        quote  => 100
+    });
+ 
+    $bet_params->{current_tick} = $EURUSD_tick;
     $bet_params->{date_pricing} = $bet_params->{date_start};
     $bet                        = produce_contract($bet_params);
-    $expected_reasons           = [qr/Daily duration is outside acceptable/];
-    test_error_list('buy', $bet, $expected_reasons);
-
-    $bet_params->{barrier}      = 'S0P';
-    $bet_params->{bet_type}     = 'DOUBLEDOWN';
-    $bet_params->{date_pricing} = $bet_params->{date_start};
-    $bet                        = produce_contract($bet_params);
-    $expected_reasons           = [qr/Daily duration is outside acceptable/];
+    $expected_reasons           = [qr/Intraday duration not acceptable /];
     test_error_list('buy', $bet, $expected_reasons);
 
     $underlying = BOM::Market::Underlying->new('R_100');
     $bet_params->{underlying} = $underlying;
+    $bet_params->{date_start}   = $underlying->calendar->opening_on(Date::Utility->new('2013-03-28'));
     my $random_tick = Quant::Framework::Spot::Tick->new({
         symbol => 'R_100',
         epoch  => $bet_params->{date_start}->epoch + 1,
         quote  => 100
     });
-    
-    delete $bet_params->{duration};
+   
+    $bet_params->{duration} = '23h'; 
     $bet_params->{current_tick} = $random_tick;
-    $bet_params->{entry_tick}   = $random_tick;
-    $bet_params->{date_expiry}  = $underlying->calendar->closing_on(Date::Utility->new($starting));
-    $bet_params->{date_start}   = $underlying->calendar->opening_on(Date::Utility->new($starting));
+    $bet_params->{date_start}   = $underlying->calendar->opening_on(Date::Utility->new('2013-03-28'));
     $bet_params->{date_pricing} = $bet_params->{date_start};
     $bet                        = produce_contract($bet_params);
-    ok($bet->is_valid_to_buy, 'validate to buy zero day contract');
+    ok($bet->is_valid_to_buy, 'validate to buy 23h contract');
 
-    $bet_params->{bet_type}     = 'DOUBLEDOWN';
-    $bet_params->{date_start}   = $underlying->calendar->closing_on(Date::Utility->new($starting))->minus_time_interval('10s');
+    delete $bet_params->{duration} ;
+    $bet_params->{date_expiry} = $underlying->calendar->closing_on(Date::Utility->new('2013-03-28'));
+    $bet_params->{date_start}   = $underlying->calendar->closing_on(Date::Utility->new('2013-03-28'))->minus_time_interval('10s');
+    $random_tick = Quant::Framework::Spot::Tick->new({
+        symbol => 'R_100',
+        epoch  => $bet_params->{date_start}->epoch + 1,
+        quote  => 100
+    });
+   
+    $bet_params->{current_tick} = $random_tick;
     $bet_params->{date_pricing} = $bet_params->{date_start};
     $bet                        = produce_contract($bet_params);
-    $expected_reasons           = [qr/Daily duration is outside acceptable/];
+    $expected_reasons           = [qr/Intraday duration not acceptable/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $underlying               = BOM::Market::Underlying->new('frxAUDCAD');
     $bet_params->{underlying} = $underlying;
-    $bet_params->{date_start} = $underlying->calendar->opening_on(Date::Utility->new($starting));
+    $bet_params->{date_start} = $underlying->calendar->opening_on(Date::Utility->new('2013-03-28'));
     my $minor_fx_tick = Quant::Framework::Spot::Tick->new({
         symbol => 'frxAUDCAD',
         epoch  => $bet_params->{date_start}->epoch + 1,
@@ -673,18 +692,27 @@ subtest 'invalid start times' => sub {
             recorded_date => Date::Utility->new($bet_params->{date_start}),
         }) for (qw/frxAUDCAD frxUSDCAD/);
 
+    $bet_params->{barrier} = 'S0P';
     $bet_params->{current_tick} = $minor_fx_tick;
-    $bet_params->{entry_tick}   = $minor_fx_tick;
-    $bet_params->{date_expiry}  = $underlying->calendar->closing_on(Date::Utility->new($starting));
+    $bet_params->{duration} = '23h';
     $bet_params->{date_pricing} = $bet_params->{date_start};
     $bet                        = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, 'validate to buy zero day contract');
 
-    $bet_params->{bet_type}     = 'DOUBLEDOWN';
-    $bet_params->{date_start}   = $underlying->calendar->closing_on(Date::Utility->new($starting))->minus_time_interval('1m');
+   
+    delete $bet_params->{duration};
+    $bet_params->{date_expiry}   = $underlying->calendar->closing_on(Date::Utility->new('2013-03-28'));
+    $bet_params->{date_start}   = $underlying->calendar->closing_on(Date::Utility->new('2013-03-28'))->minus_time_interval('1m');
+     $minor_fx_tick = Quant::Framework::Spot::Tick->new({
+        symbol => 'frxAUDCAD',
+        epoch  => $bet_params->{date_start}->epoch + 1,
+        quote  => 100
+    });
+
+    $bet_params->{current_tick} = $minor_fx_tick;
     $bet_params->{date_pricing} = $bet_params->{date_start};
     $bet                        = produce_contract($bet_params);
-    $expected_reasons           = [qr/Daily duration is outside acceptable/];
+    $expected_reasons           = [qr/Intraday duration not acceptable/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $underlying = BOM::Market::Underlying->new('GDAXI');
