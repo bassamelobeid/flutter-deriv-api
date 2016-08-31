@@ -55,7 +55,7 @@
     },
     "city": {
       "type" : "string",
-      "pattern": "^[\\p{L}\\s'.-]{0,35}$",
+      "pattern": "^[\\p{L}\\s'.-]{0,50}$",
       "description": "User's city of residence. Optional field."
     },
     "zipCode": {
