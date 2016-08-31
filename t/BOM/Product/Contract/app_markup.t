@@ -29,6 +29,7 @@ subtest 'app markup amount' => sub {
         app_markup_percentage => 1,            # 1%
         base_commission       => 0.02,
         theo_probability      => $fake_theo,
+        staking_limits        => {},
     });
 
     is $c2->app_markup->amount, 0.01, 'correct markup amount';
@@ -45,6 +46,7 @@ subtest 'app markup amount' => sub {
         amount                => $c2->payout,
         app_markup_percentage => 1,             # 1%
         base_commission       => 0.02,
+        staking_limits        => {},
     });
 
     is $c->app_markup->amount, 0.01, 'correct markup amount';
@@ -64,6 +66,7 @@ subtest 'price check for 1 x base_commission' => sub {
         app_markup_percentage => 1,            # 1%
         base_commission       => 0.02,
         theo_probability      => $fake_theo,
+        staking_limits        => {},
     });
 
     my $c2 = produce_contract({
@@ -77,6 +80,7 @@ subtest 'price check for 1 x base_commission' => sub {
         app_markup_percentage => 1,            # 1%
         base_commission       => 0.02,
         theo_probability      => $fake_theo,
+        staking_limits        => {},
     });
     is $c2->ask_price + 0, 50, 'matched ask_price';
 };
@@ -93,6 +97,7 @@ subtest 'price check for 2 x base_commission' => sub {
         app_markup_percentage => 1,            # 1%
         base_commission       => 0.02,
         theo_probability      => $fake_theo,
+        staking_limits        => {},
     });
 
     my $c2 = produce_contract({
@@ -106,6 +111,7 @@ subtest 'price check for 2 x base_commission' => sub {
         app_markup_percentage => 1,            # 1%
         base_commission       => 0.02,
         theo_probability      => $fake_theo,
+        staking_limits        => {},
     });
     is $c2->ask_price + 0, 30000, 'matched ask_price';
 };
@@ -122,6 +128,7 @@ subtest 'price check for 1 to 2 x base_commission' => sub {
         app_markup_percentage => 1,            # 1%
         base_commission       => 0.02,
         theo_probability      => $fake_theo,
+        staking_limits        => {},
     });
 
     my $c2 = produce_contract({
@@ -135,6 +142,7 @@ subtest 'price check for 1 to 2 x base_commission' => sub {
         app_markup_percentage => 1,            # 1%
         base_commission       => 0.02,
         theo_probability      => $fake_theo,
+        staking_limits        => {},
     });
     is $c2->ask_price + 0, 15000, 'matched ask_price';
 };

@@ -882,26 +882,27 @@ sub _build_price_calculator {
     my $self = shift;
 
     return Price::Calculator->new({
-        new_interface_engine       => $self->new_interface_engine,
-        pricing_engine_name        => $self->pricing_engine_name,
-        currency                   => $self->currency,
-        deep_otm_threshold         => $self->market->deep_otm_threshold,
-        maximum_total_markup       => BOM::System::Config::quants->{commission}->{maximum_total_markup},
-        base_commission_min        => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
-        base_commission_max        => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
-        base_commission_scaling    => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
-        underlying_base_commission => $self->underlying->base_commission,
-        app_markup_percentage      => $self->app_markup_percentage,
-        staking_limits             => $self->staking_limits,
-        ($self->has_commission_markup)      ? (commission_markup      => $self->commission_markup)      : (),
-        ($self->has_base_commission)        ? (base_commission        => $self->base_commission)        : (),
-        ($self->has_payout)                 ? (payout                 => $self->payout)                 : (),
-        ($self->has_ask_price)              ? (ask_price              => $self->ask_price)              : (),
-        ($self->has_theo_probability)       ? (theo_probability       => $self->theo_probability)       : (),
-        ($self->has_ask_probability)        ? (ask_probability        => $self->ask_probability)        : (),
-        ($self->has_bs_probability)         ? (bs_probability         => $self->bs_probability)         : (),
-        ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
-    });
+            new_interface_engine    => $self->new_interface_engine,
+            pricing_engine_name     => $self->pricing_engine_name,
+            currency                => $self->currency,
+            deep_otm_threshold      => $self->market->deep_otm_threshold,
+            maximum_total_markup    => BOM::System::Config::quants->{commission}->{maximum_total_markup},
+            base_commission_min     => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
+            base_commission_max     => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
+            base_commission_scaling => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
+            app_markup_percentage   => $self->app_markup_percentage,
+            staking_limits          => $self->staking_limits,
+            ($self->has_base_commission)
+            ? (base_commission => $self->base_commission)
+            : (underlying_base_commission => $self->underlying->base_commission),
+            ($self->has_commission_markup)      ? (commission_markup      => $self->commission_markup)      : (),
+            ($self->has_payout)                 ? (payout                 => $self->payout)                 : (),
+            ($self->has_ask_price)              ? (ask_price              => $self->ask_price)              : (),
+            ($self->has_theo_probability)       ? (theo_probability       => $self->theo_probability)       : (),
+            ($self->has_ask_probability)        ? (ask_probability        => $self->ask_probability)        : (),
+            ($self->has_bs_probability)         ? (bs_probability         => $self->bs_probability)         : (),
+            ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
+        });
 }
 
 # We adopt "near-far" methodology to price in dividends by adjusting spot and strike.
