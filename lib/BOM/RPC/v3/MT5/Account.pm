@@ -17,10 +17,18 @@ sub mt5_login_list {
     my $params = shift;
     my $client = $params->{client};
 
+    my $setting;
+
     my @array;
     foreach (BOM::Platform::User->new({email => $client->email})->mt5_logins) {
         $_ =~ /^MT(\d+)$/;
         push @array, {login => $1};
+        $setting = mt5_get_settings({
+                client => $client,
+                args   => {login => $1}});
+        if ($setting && $setting->{group}) {
+            push @array, {group => $setting->{group}};
+        }
     }
     return \@array;
 }
