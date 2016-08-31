@@ -63,7 +63,7 @@
     },
     "address_state": {
       "type" : "string",
-      "pattern": "^[\\p{L}\\s'.-]{1,35}$",
+      "pattern": "^[\\p{L}\\p{Nd}\\s'.,-]{0,50}$",
       "description": "Possible value receive from states_list call.",
       "required": 1
     },
