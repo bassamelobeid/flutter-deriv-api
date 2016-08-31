@@ -57,7 +57,7 @@
     },
     "address_city": {
       "type" : "string",
-      "pattern": "^[\\p{L}\\p{Nd}\\s'.,-]{0,35}$",
+      "pattern": "^[\\p{L}\\p{Nd}\\s'.,-]{1,35}$",
       "description": "Within 35 characters",
       "required": 1
     },
