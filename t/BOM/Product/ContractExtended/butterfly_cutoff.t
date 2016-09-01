@@ -94,7 +94,8 @@ subtest 'ON 25D BF > 1.' => sub {
         ok exists $pe->debug_information->{risk_markup}{parameters}{butterfly_markup}, 'apply butterfly markup';
         ok $pe->probability, 'probability returns fine';
         ok $pe->debug_information->{risk_markup}{parameters}{butterfly_markup} > 0, 'butterfly markup > 0';
-    } 'CALL';
+    }
+    'CALL';
 
     my $shortterm_pd = _sample_bet(
         date_expiry => $shortterm_expiry->epoch,
@@ -108,8 +109,9 @@ subtest 'ON 25D BF > 1.' => sub {
         ok $pe->risk_markup, 'call risk_markup';
         ok $pe->risk_markup->peek_amount('butterfly_markup'), 'apply butterfly markup';
         ok $pe->probability, 'probability returns fine';
-        ok $pe->risk_markup->peek_amount('butterfly_markup') > 0 , 'butterfly markup > 0';
-    } 'ONETOUCH';
+        ok $pe->risk_markup->peek_amount('butterfly_markup') > 0, 'butterfly markup > 0';
+    }
+    'ONETOUCH';
 
     my $surface_original  = $shortterm_bet->volsurface;
     my $surface_copy_data = $surface_original->surface;
@@ -126,12 +128,12 @@ sub _sample_surface {
     my %override_smile = @_;
 
     my $surface = Quant::Framework::VolSurface::Delta->new(
-        underlying_config    => $underlying->config,
-        chronicle_reader =>  BOM::System::Chronicle::get_chronicle_reader,
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
-        recorded_date => $bet_start,
-        deltas        => [25, 50, 75],
-        surface       => {
+        underlying_config => $underlying->config,
+        chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader,
+        chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer,
+        recorded_date     => $bet_start,
+        deltas            => [25, 50, 75],
+        surface           => {
             ON => {
                 smile      => {%override_smile},
                 vol_spread => {
