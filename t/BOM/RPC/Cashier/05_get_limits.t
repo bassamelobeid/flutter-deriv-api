@@ -10,6 +10,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use Test::MockModule;
 use Format::Util::Numbers qw(roundnear);
+use BOM::Product::RiskProfile;
 use utf8;
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
@@ -66,7 +67,7 @@ subtest 'CR' => sub {
             'account_balance'                     => $client->get_limit_for_account_balance,
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => $client->get_limit_for_payout,
-            'market_specific'                     => BOM::RPC::v3::Cashier::_get_market_limit_profile($client),
+            'market_specific'                     => BOM::Product::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->for_days,
             'num_of_days_limit'                   => $limits->limit_for_days,
             'lifetime_limit'                      => $limits->lifetime_limit,
@@ -95,7 +96,7 @@ subtest 'CR' => sub {
             'account_balance'   => $client->get_limit_for_account_balance,
             'open_positions'    => $client->get_limit_for_open_positions,
             'payout'            => $client->get_limit_for_payout,
-            'market_specific'   => BOM::RPC::v3::Cashier::_get_market_limit_profile($client),
+            'market_specific'   => BOM::Product::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'       => $limits->for_days,
             'num_of_days_limit' => '99999999',
             'lifetime_limit'    => '99999999',
@@ -141,7 +142,7 @@ subtest 'JP' => sub {
             'account_balance'                     => $client->get_limit_for_account_balance,
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => $client->get_limit_for_payout,
-            'market_specific'                     => BOM::RPC::v3::Cashier::_get_market_limit_profile($client),
+            'market_specific'                     => BOM::Product::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->for_days,
             'num_of_days_limit'                   => $limits->limit_for_days,
             'lifetime_limit'                      => $limits->lifetime_limit,
@@ -173,7 +174,7 @@ subtest 'JP' => sub {
             'account_balance'   => $client->get_limit_for_account_balance,
             'open_positions'    => $client->get_limit_for_open_positions,
             'payout'            => $client->get_limit_for_payout,
-            'market_specific'   => BOM::RPC::v3::Cashier::_get_market_limit_profile($client),
+            'market_specific'   => BOM::Product::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'       => $limits->for_days,
             'num_of_days_limit' => '99999999',
             'lifetime_limit'    => '99999999',
@@ -204,7 +205,7 @@ subtest 'MLT' => sub {
             'account_balance'                     => $client->get_limit_for_account_balance,
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => $client->get_limit_for_payout,
-            'market_specific'                     => BOM::RPC::v3::Cashier::_get_market_limit_profile($client),
+            'market_specific'                     => BOM::Product::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->for_days,
             'num_of_days_limit'                   => $limits->limit_for_days,
             'lifetime_limit'                      => $limits->lifetime_limit,
@@ -236,7 +237,7 @@ subtest 'MLT' => sub {
             'account_balance'   => $client->get_limit_for_account_balance,
             'open_positions'    => $client->get_limit_for_open_positions,
             'payout'            => $client->get_limit_for_payout,
-            'market_specific'   => BOM::RPC::v3::Cashier::_get_market_limit_profile($client),
+            'market_specific'   => BOM::Product::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'       => $limits->for_days,
             'num_of_days_limit' => '99999999',
             'lifetime_limit'    => '99999999',
@@ -267,7 +268,7 @@ subtest 'MX' => sub {
             'account_balance'                     => $client->get_limit_for_account_balance,
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => $client->get_limit_for_payout,
-            'market_specific'                     => BOM::RPC::v3::Cashier::_get_market_limit_profile($client),
+            'market_specific'                     => BOM::Product::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->for_days,
             'num_of_days_limit'                   => $limits->limit_for_days,
             'lifetime_limit'                      => $limits->lifetime_limit,
@@ -299,7 +300,7 @@ subtest 'MX' => sub {
             'account_balance'   => $client->get_limit_for_account_balance,
             'open_positions'    => $client->get_limit_for_open_positions,
             'payout'            => $client->get_limit_for_payout,
-            'market_specific'   => BOM::RPC::v3::Cashier::_get_market_limit_profile($client),
+            'market_specific'   => BOM::Product::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'       => $limits->for_days,
             'num_of_days_limit' => '99999999',
             'lifetime_limit'    => '99999999',
