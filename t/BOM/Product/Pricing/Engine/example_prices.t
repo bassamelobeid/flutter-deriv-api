@@ -34,9 +34,22 @@ my $recorded_date = Date::Utility->new($date_start);
 # This test are benchmarked againsts market rates.
 # The intermittent failure of the test is due to the switching between implied and market rates in app settings.
 my $u_c = Test::MockModule->new('Quant::Framework::Utils::UnderlyingConfig');
-$u_c->mock('uses_implied_rate', sub { return 0 });
-$u_c->mock('uses_implied_rate_for_asset', sub { return 0 });
+$u_c->mock('uses_implied_rate',                     sub { return 0 });
+$u_c->mock('uses_implied_rate_for_asset',           sub { return 0 });
 $u_c->mock('uses_implied_rate_for_quoted_currency', sub { return 0 });
+
+#create an empty un-used even so ask_price won't fail preparing market data for pricing engine
+#Because the code to prepare market data is called for all pricings in Contract
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+    {
+        events           => [{
+                symbol       => 'USD',
+                release_date => 1,
+                source       => 'forexfactory',
+                impact       => 1,
+                event_name   => 'FOMC',
+            }]
+    });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'holiday',
@@ -219,9 +232,9 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
             is($bet->barrier->supplied_barrier, $expectations->{barrier}, 'Barrier is set as expected.');
         }
         my $theo = $bet->theo_probability;
-        is(roundnear(1e-4, $theo->amount),                          roundnear(1e-4,$expectations->{theo_prob}),         'Theo probability is correct.');
+        is(roundnear(1e-4, $theo->amount), roundnear(1e-4, $expectations->{theo_prob}), 'Theo probability is correct.');
         is(roundnear(1e-4, $bet->commission_markup->amount), $expectations->{commission_markup}, 'Commission markup is correct.');
-        is(roundnear(1e-4, $bet->risk_markup->amount),       roundnear(1e-4, $expectations->{risk_markup}),       'Risk markup is correct.');
+        is(roundnear(1e-4, $bet->risk_markup->amount), roundnear(1e-4, $expectations->{risk_markup}), 'Risk markup is correct.');
         $date_pricing++;
         $date_start++;
 

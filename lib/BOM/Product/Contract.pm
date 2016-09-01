@@ -13,6 +13,7 @@ use List::Util qw(min max first);
 use List::MoreUtils qw(none all);
 use Scalar::Util qw(looks_like_number);
 use BOM::Product::RiskProfile;
+use Machine::Epsilon;
 
 use BOM::Market::UnderlyingDB;
 use Math::Util::CalculatedValue::Validatable;
@@ -38,6 +39,11 @@ require BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
 require Pricing::Engine::EuropeanDigitalSlope;
 require Pricing::Engine::TickExpiry;
 require BOM::Product::Pricing::Greeks::BlackScholes;
+
+use constant {
+    commission_base_multiplier => 1,
+    commission_max_multiplier  => 2,
+};
 
 sub is_spread { return 0 }
 sub is_legacy { return 0 }
@@ -225,6 +231,7 @@ sub _check_is_intraday {
     return 0 if $contract_duration > 86400;
 
     # for contract that start at the open of day and expire at the close of day (include early close) should be treated as daily contract
+    # Contract that starts after 21GMT on Thurs and expired on Friday is also a daily contract as it already trades more than a trading day on Friday
     my $closing = $self->calendar->closing_on($self->date_expiry);
     return 0 if $closing and $closing->is_same_as($self->date_expiry) and $contract_duration >= $self->effective_daily_trading_seconds;
 
@@ -1119,11 +1126,51 @@ sub _calculate_payout {
     return $payout;
 }
 
-my $commission_base_multiplier = 1;
-my $commission_max_multiplier  = 2;
-my $commission_min_std         = 500;
-my $commission_max_std         = 25000;
-my $commission_slope           = ($commission_max_multiplier - $commission_base_multiplier) / ($commission_max_std - $commission_min_std);
+has commission_min_std => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_commission_min_std',
+);
+
+sub _build_commission_min_std {
+    my $self = shift;
+
+    # This looks hacky but currently there's not enough justification to have child classes for each landing company.
+    # For japan, we can't have progressively higher commission as per FFAJ, infact they
+    # want all prices to be an exact multiple (so 52.55 for 100 payout,
+    # 525.5 for 1000 and 5255 for 10000 payout etc.)
+    # We would only increase the commission when payout > 100,000 yen. Having 50,001 is too much. So adding an
+    # epsilon here to make it work.
+    #
+    # For everything else, we will increase commission at 1,000 of the respective currency.
+    return $self->currency eq 'JPY' ? 50000 + machine_epsilon() : 500;
+}
+
+has commission_max_std => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_commission_max_std',
+);
+
+sub _build_commission_max_std {
+    my $self = shift;
+
+    # For japan, we change 2 x base_commission if the payout exceeds 5,000,000 yen.
+    # For everything else, we change 2 x base_commission if the payout exceeds 50,000 of the respective currency.
+    return $self->currency eq 'JPY' ? 2500000 : 25000;
+}
+
+has commission_slope => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_commission_slope',
+);
+
+sub _build_commission_slope {
+    my $self = shift;
+
+    return ($self->commission_max_multiplier - $self->commission_base_multiplier) / ($self->commission_max_std - $self->commission_min_std);
+}
 
 sub commission_multiplier {
     my ($self, $payout) = @_;
@@ -1131,11 +1178,11 @@ sub commission_multiplier {
     my $theo_probability = $self->theo_probability->amount;
     my $std = $payout * sqrt($theo_probability * (1 - $theo_probability));
 
-    return $commission_base_multiplier if $std <= $commission_min_std;
-    return $commission_max_multiplier  if $std >= $commission_max_std;
+    return $self->commission_base_multiplier if $std <= $self->commission_min_std;
+    return $self->commission_max_multiplier  if $std >= $self->commission_max_std;
 
-    my $slope      = $commission_slope;
-    my $multiplier = ($std - $commission_min_std) * $slope + 1;
+    my $slope      = $self->commission_slope;
+    my $multiplier = ($std - $self->commission_min_std) * $slope + 1;
 
     return $multiplier;
 }
@@ -1156,7 +1203,7 @@ sub _build_commission_from_stake {
 
     # payout calculated with base commission.
     my $initial_payout = $self->_calculate_payout($combined_commission);
-    if ($self->commission_multiplier($initial_payout) == $commission_base_multiplier) {
+    if ($self->commission_multiplier($initial_payout) == $self->commission_base_multiplier) {
         # a minimum of 2 cents please, payout could be zero.
         my $minimum_commission = $initial_payout ? 0.02 / $initial_payout : 0.02;
         return max($minimum_commission, $combined_commission);
@@ -1165,19 +1212,20 @@ sub _build_commission_from_stake {
     # payout calculated with 2 times base commission.
     $combined_commission = $base_commission * 2 + $app_commission;
     $initial_payout      = $self->_calculate_payout($combined_commission);
-    if ($self->commission_multiplier($initial_payout) == $commission_max_multiplier) {
+    if ($self->commission_multiplier($initial_payout) == $self->commission_max_multiplier) {
         return $combined_commission;
     }
 
-    my $a = $base_commission * $commission_slope * sqrt($theo_probability * (1 - $theo_probability));
-    my $b = ($theo_probability + $base_commission - $base_commission * $commission_min_std * $commission_slope) + $app_commission;
-    my $c = -$ask_price;
+    my $_a = $base_commission * $self->commission_slope * sqrt($theo_probability * (1 - $theo_probability));
+    $_a = machine_epsilon() if $_a == 0;    # prevents illegal division by zero error.
+    my $_b = ($theo_probability + $base_commission - $base_commission * $self->commission_min_std * $self->commission_slope) + $app_commission;
+    my $_c = -$ask_price;
 
     # sets it to zero first.
     $initial_payout = 0;
     # We solve for payout as a quadratic function.
     for my $w (1, -1) {
-        my $estimated_payout = (-$b + $w * sqrt($b**2 - 4 * $a * $c)) / (2 * $a);
+        my $estimated_payout = (-$_b + $w * sqrt($_b**2 - 4 * $_a * $_c)) / (2 * $_a);
         if ($estimated_payout > 0) {
             $initial_payout = $estimated_payout;
             last;
@@ -1731,8 +1779,44 @@ sub _pricing_parameters {
         contract_type     => $self->pricing_code,
         underlying_symbol => $self->underlying->symbol,
         market_data       => $self->_market_data,
+        qf_market_data    => _generate_market_data($self->underlying, $self->date_start),
         market_convention => $self->_market_convention,
     };
+}
+
+sub _generate_market_data {
+    my ($underlying, $date_start) = @_;
+
+    my $for_date = $underlying->for_date;
+    my $result   = {};
+
+    #this is a list of symbols which are applicable when getting important economic events.
+    #Note that other than currency pair of the fx symbol, we include some other important currencies
+    #here because any event for these currencies, can potentially affect all other currencies too
+    my %applicable_symbols = (
+        USD                                 => 1,
+        AUD                                 => 1,
+        CAD                                 => 1,
+        CNY                                 => 1,
+        NZD                                 => 1,
+        $underlying->quoted_currency_symbol => 1,
+        $underlying->asset_symbol           => 1,
+    );
+
+    my $ee = Quant::Framework::EconomicEventCalendar->new({
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($for_date),
+        }
+        )->get_latest_events_for_period({
+            from => $date_start->minus_time_interval('10m'),
+            to   => $date_start->plus_time_interval('10m')});
+
+    my @applicable_news =
+        sort { $a->{release_date} <=> $b->{release_date} } grep { $applicable_symbols{$_->{symbol}} } @$ee;
+
+    #as of now, we only update the result with a raw list of economic events, later that we move to other
+    #engines, we will add other market-data items too (e.g. dividends, vol-surface, ...)
+    $result->{economic_events} = \@applicable_news;
+    return $result;
 }
 
 sub _market_convention {

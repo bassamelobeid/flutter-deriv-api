@@ -22,6 +22,19 @@ use Test::MockModule;
 
 initialize_realtime_ticks_db();
 
+#create an empty un-used even so ask_price won't fail preparing market data for pricing engine
+#Because the code to prepare market data is called for all pricings in Contract
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+    {
+        events           => [{
+                symbol       => 'USD',
+                release_date => 1,
+                source       => 'forexfactory',
+                impact       => 1,
+                event_name   => 'FOMC',
+            }]
+    });
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -357,22 +370,26 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
     subtest 'do not allow move if recomputed is 1' => sub {
         $mock_contract->mock('ask_price', sub { 100 });
-        $mock_contract->mock('commission_markup', sub {
-            return Math::Util::CalculatedValue::Validatable->new({
-                name        => 'commission_markup',
-                description => 'fake commission markup',
-                set_by      => 'BOM::Product::Contract',
-                base_amount => 0.01,
+        $mock_contract->mock(
+            'commission_markup',
+            sub {
+                return Math::Util::CalculatedValue::Validatable->new({
+                    name        => 'commission_markup',
+                    description => 'fake commission markup',
+                    set_by      => 'BOM::Product::Contract',
+                    base_amount => 0.01,
+                });
             });
-        });
-        $mock_contract->mock('risk_markup', sub {
-            return Math::Util::CalculatedValue::Validatable->new({
-                name        => 'risk_markup',
-                description => 'fake risk markup',
-                set_by      => 'BOM::Product::Contract',
-                base_amount => 0,
+        $mock_contract->mock(
+            'risk_markup',
+            sub {
+                return Math::Util::CalculatedValue::Validatable->new({
+                    name        => 'risk_markup',
+                    description => 'fake risk markup',
+                    set_by      => 'BOM::Product::Contract',
+                    base_amount => 0,
+                });
             });
-        });
         my $ask_cv = Math::Util::CalculatedValue::Validatable->new({
             name        => 'ask_probability',
             description => 'fake ask prov',
@@ -415,22 +432,26 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
     subtest 'check price move' => sub {
         $mock_contract->mock('ask_price', sub { 10 });
-        $mock_contract->mock('commission_markup', sub {
-            return Math::Util::CalculatedValue::Validatable->new({
-                name        => 'commission_markup',
-                description => 'fake commission markup',
-                set_by      => 'BOM::Product::Contract',
-                base_amount => 0.01,
+        $mock_contract->mock(
+            'commission_markup',
+            sub {
+                return Math::Util::CalculatedValue::Validatable->new({
+                    name        => 'commission_markup',
+                    description => 'fake commission markup',
+                    set_by      => 'BOM::Product::Contract',
+                    base_amount => 0.01,
+                });
             });
-        });
-        $mock_contract->mock('risk_markup', sub {
-            return Math::Util::CalculatedValue::Validatable->new({
-                name        => 'risk_markup',
-                description => 'fake risk markup',
-                set_by      => 'BOM::Product::Contract',
-                base_amount => 0,
+        $mock_contract->mock(
+            'risk_markup',
+            sub {
+                return Math::Util::CalculatedValue::Validatable->new({
+                    name        => 'risk_markup',
+                    description => 'fake risk markup',
+                    set_by      => 'BOM::Product::Contract',
+                    base_amount => 0,
+                });
             });
-        });
         my $ask_cv = Math::Util::CalculatedValue::Validatable->new({
             name        => 'ask_probability',
             description => 'fake ask prov',
@@ -498,22 +519,26 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
     subtest 'check payout move' => sub {
         $mock_contract->mock('payout', sub { 100 });
-        $mock_contract->mock('commission_markup', sub {
-            return Math::Util::CalculatedValue::Validatable->new({
-                name        => 'commission_markup',
-                description => 'fake commission markup',
-                set_by      => 'BOM::Product::Contract',
-                base_amount => 0.01,
+        $mock_contract->mock(
+            'commission_markup',
+            sub {
+                return Math::Util::CalculatedValue::Validatable->new({
+                    name        => 'commission_markup',
+                    description => 'fake commission markup',
+                    set_by      => 'BOM::Product::Contract',
+                    base_amount => 0.01,
+                });
             });
-        });
-        $mock_contract->mock('risk_markup', sub {
-            return Math::Util::CalculatedValue::Validatable->new({
-                name        => 'risk_markup',
-                description => 'fake risk markup',
-                set_by      => 'BOM::Product::Contract',
-                base_amount => 0,
+        $mock_contract->mock(
+            'risk_markup',
+            sub {
+                return Math::Util::CalculatedValue::Validatable->new({
+                    name        => 'risk_markup',
+                    description => 'fake risk markup',
+                    set_by      => 'BOM::Product::Contract',
+                    base_amount => 0,
+                });
             });
-        });
         my $allowed_move = 0.01 * 0.50;
         my $ask_cv       = Math::Util::CalculatedValue::Validatable->new({
             name        => 'ask_probability',
@@ -628,22 +653,26 @@ subtest 'SELL - sell pricing adjustment' => sub {
 
     subtest 'do not allow move if recomputed is 0' => sub {
         $mock_contract->mock('bid_price', sub { 100 });
-        $mock_contract->mock('commission_markup', sub {
-            return Math::Util::CalculatedValue::Validatable->new({
-                name        => 'commission_markup',
-                description => 'fake commission markup',
-                set_by      => 'BOM::Product::Contract',
-                base_amount => 0.01,
+        $mock_contract->mock(
+            'commission_markup',
+            sub {
+                return Math::Util::CalculatedValue::Validatable->new({
+                    name        => 'commission_markup',
+                    description => 'fake commission markup',
+                    set_by      => 'BOM::Product::Contract',
+                    base_amount => 0.01,
+                });
             });
-        });
-        $mock_contract->mock('risk_markup', sub {
-            return Math::Util::CalculatedValue::Validatable->new({
-                name        => 'risk_markup',
-                description => 'fake risk markup',
-                set_by      => 'BOM::Product::Contract',
-                base_amount => 0,
+        $mock_contract->mock(
+            'risk_markup',
+            sub {
+                return Math::Util::CalculatedValue::Validatable->new({
+                    name        => 'risk_markup',
+                    description => 'fake risk markup',
+                    set_by      => 'BOM::Product::Contract',
+                    base_amount => 0,
+                });
             });
-        });
         my $ask_cv = Math::Util::CalculatedValue::Validatable->new({
             name        => 'bid_probability',
             description => 'fake ask prov',
@@ -679,22 +708,26 @@ subtest 'SELL - sell pricing adjustment' => sub {
 
     subtest 'check price move' => sub {
         $mock_contract->mock('bid_price', sub { 10 });
-        $mock_contract->mock('commission_markup', sub {
-            return Math::Util::CalculatedValue::Validatable->new({
-                name        => 'commission_markup',
-                description => 'fake commission markup',
-                set_by      => 'BOM::Product::Contract',
-                base_amount => 0.01,
+        $mock_contract->mock(
+            'commission_markup',
+            sub {
+                return Math::Util::CalculatedValue::Validatable->new({
+                    name        => 'commission_markup',
+                    description => 'fake commission markup',
+                    set_by      => 'BOM::Product::Contract',
+                    base_amount => 0.01,
+                });
             });
-        });
-        $mock_contract->mock('risk_markup', sub {
-            return Math::Util::CalculatedValue::Validatable->new({
-                name        => 'risk_markup',
-                description => 'fake risk markup',
-                set_by      => 'BOM::Product::Contract',
-                base_amount => 0,
+        $mock_contract->mock(
+            'risk_markup',
+            sub {
+                return Math::Util::CalculatedValue::Validatable->new({
+                    name        => 'risk_markup',
+                    description => 'fake risk markup',
+                    set_by      => 'BOM::Product::Contract',
+                    base_amount => 0,
+                });
             });
-        });
         my $bid_cv = Math::Util::CalculatedValue::Validatable->new({
             name        => 'bid_probability',
             description => 'fake ask prov',
@@ -763,7 +796,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
 
     subtest 'price is undefined' => sub {
         my $mocked = Test::MockModule->new('BOM::Product::Contract');
-        $mocked->mock('bid_price', sub {return 50});
+        $mocked->mock('bid_price', sub { return 50 });
         my $contract = produce_contract({
             underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
             bet_type     => 'CALL',
@@ -794,7 +827,7 @@ subtest 'Purchase Sell Contract' => sub {
     my $client = BOM::Platform::Client->new({loginid => 'CR2002'});
     $client = BOM::Platform::Client::get_instance({'loginid' => $client->loginid});
     my $mocked_client = Test::MockModule->new('BOM::Platform::Client');
-    $mocked_client->mock('residence', sub {return 'al'});
+    $mocked_client->mock('residence', sub { return 'al' });
     my $currency = 'USD';
     $client->set_default_account($currency);
 
@@ -843,12 +876,12 @@ subtest 'Purchase Sell Contract' => sub {
         underlying => 'R_50',
     });
     $contract = produce_contract({
-        underlying   => 'R_50',
-        bet_type     => $bet_type,
-        currency     => $currency,
-        payout       => 100,
-        date_start   => $now,
-        date_expiry  => $expiry,
+        underlying  => 'R_50',
+        bet_type    => $bet_type,
+        currency    => $currency,
+        payout      => 100,
+        date_start  => $now,
+        date_expiry => $expiry,
         # Opposite contract can now be used to purchase. To simulate sellback behaviour,
         # set date_pricing to date_start + 1
         date_pricing => $now->epoch + 1,

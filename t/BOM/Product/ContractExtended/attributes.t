@@ -56,6 +56,20 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         implied_from => 'USD'
     });
 
+#create an empty un-used even so ask_price won't fail preparing market data for pricing engine
+#Because the code to prepare market data is called for all pricings in Contract
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+    {
+        events           => [{
+                symbol       => 'USD',
+                release_date => 1,
+                source       => 'forexfactory',
+                impact       => 1,
+                event_name   => 'FOMC',
+            }]
+    });
+
+
 use BOM::Product::ContractFactory qw( produce_contract );
 
 subtest 'Numbers and stuff.' => sub {
@@ -117,7 +131,7 @@ subtest 'Probabilities etc.' => sub {
 
     my $bet = produce_contract($bet_params);
     isa_ok($bet->discounted_probability, 'Math::Util::CalculatedValue::Validatable', 'isa CalculatedValue.');
-    lives_ok {$bet->bid_probability} 'can call bid_probability for expired contract.';
+    lives_ok { $bet->bid_probability } 'can call bid_probability for expired contract.';
 
 };
 
