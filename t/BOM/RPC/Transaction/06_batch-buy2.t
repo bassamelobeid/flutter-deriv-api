@@ -25,6 +25,18 @@ my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $logi
 
 $client->deposit_virtual_funds;
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+    {
+        events           => [{
+                symbol       => 'USD',
+                release_date => 1,
+                source       => 'forexfactory',
+                impact       => 1,
+                event_name   => 'FOMC',
+            }]
+    });
+
 subtest 'buy' => sub {
     my $contract = BOM::Test::Data::Utility::Product::create_contract();
 
