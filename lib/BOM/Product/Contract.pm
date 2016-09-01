@@ -817,9 +817,10 @@ sub _build_longcode {
 
 =item is_after_settlement
 
-We have two types of expiries:
-- Contracts can expire when a certain number of ticks is received.
-- Contracts can expire when current time has past a pre-determined expiry time.
+This check if the contract already passes the settlement time 
+
+For tick expiry contract, it can expires when a certain number of ticks is received or it already passes the max_tick_expiry_duration.
+For other contracts, it can expires when current time has past a pre-determined settelement time.
 
 =back
 
