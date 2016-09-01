@@ -10,6 +10,17 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
 
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+    {
+        events           => [{
+                symbol       => 'USD',
+                release_date => 1,
+                source       => 'forexfactory',
+                impact       => 1,
+                event_name   => 'FOMC',
+            }]
+    });
+
 build_test_R_50_data();
 
 my $t = build_mojo_test();
