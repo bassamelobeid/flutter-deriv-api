@@ -43,6 +43,17 @@ $client->deposit_virtual_funds;
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+    {
+        events           => [{
+                symbol       => 'USD',
+                release_date => 1,
+                source       => 'forexfactory',
+                impact       => 1,
+                event_name   => 'FOMC',
+            }]
+    });
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
