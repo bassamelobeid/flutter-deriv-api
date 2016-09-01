@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Test::Exception;
 use Test::NoWarnings;
 
@@ -71,7 +71,7 @@ subtest 'custom client profile' => sub {
     note("set volatility index to no business for client XYZ");
     BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(
         '{"XYZ": {"reason": "test XYZ", "custom_limits": {"xxx": {"market": "volidx", "risk_profile": "no_business", "name": "test custom"}}}}');
-    my $rp = BOM::Product::RiskProfile->new(%args);
+    my $rp    = BOM::Product::RiskProfile->new(%args);
     my @cl_pr = $rp->get_client_profiles('ABC');
     ok !@cl_pr, 'no custom client limit';
     @cl_pr = $rp->get_client_profiles('XYZ');
@@ -115,18 +115,72 @@ subtest 'empty limit condition' => sub {
     is $rp->get_risk_profile, 'low_risk', 'ignore profile with no conditions';
 };
 
+## Please see file perltidy.ERR
+subtest 'get_current_profile_definitions' => sub {
+    my $expected = {
+        'commodities' => [{
+                'turnover_limit' => 50000,
+                'payout_limit'   => 5000,
+                'name'           => 'Commodities',
+                'profile_name'   => 'high_risk'
+            }
+        ],
+        'volidx' => [{
+                'turnover_limit' => 500000,
+                'payout_limit'   => 50000,
+                'name'           => 'Volatility Indices',
+                'profile_name'   => 'low_risk'
+            }
+        ],
+        'forex' => [{
+                'turnover_limit' => 50000,
+                'payout_limit'   => 5000,
+                'name'           => 'Smart FX',
+                'profile_name'   => 'high_risk',
+            },
+            {
+                'turnover_limit' => 50000,
+                'payout_limit'   => 5000,
+                'name'           => 'Minor Pairs',
+                'profile_name'   => 'high_risk',
+            },
+            {
+                'turnover_limit' => 100000,
+                'payout_limit'   => 20000,
+                'name'           => 'Major Pairs',
+                'profile_name'   => 'medium_risk',
+            },
+        ],
+        'stocks' => [{
+                'turnover_limit' => 10000,
+                'payout_limit'   => 1000,
+                'name'           => 'OTC Stocks',
+                'profile_name'   => 'extreme_risk'
+            }
+        ],
+        'indices' => [{
+                'turnover_limit' => 100000,
+                'payout_limit'   => 20000,
+                'name'           => 'Indices',
+                'profile_name'   => 'medium_risk'
+            }]};
+    my $general = BOM::Product::RiskProfile::get_current_profile_definitions;
+    is_deeply($general, $expected);
+};
+
 subtest 'check for risk_profile consistency' => sub {
     # We had a bug where we use 'each' to iterate over match conditions without resetting the iterator.
     # It is replaced with 'keys'
     # This test ensures we don't have this problem again.
     BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
-        '{"yyy": {"market": "forex", "contract_category": "callput", "risk_profile": "high_risk", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}');
+        '{"yyy": {"market": "forex", "contract_category": "callput", "risk_profile": "high_risk", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}'
+    );
     my %expected = (
-        callput => 'high_risk',
+        callput      => 'high_risk',
         touchnotouch => 'medium_risk',
     );
     for (0 .. 4) {
-        for my $bc ('touchnotouch','callput') {
+        for my $bc ('touchnotouch', 'callput') {
             my $rp = BOM::Product::RiskProfile->new(
                 underlying        => BOM::Market::Underlying->new('frxUSDJPY'),
                 contract_category => $bc,
