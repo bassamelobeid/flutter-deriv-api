@@ -839,6 +839,28 @@ sub is_after_settlement {
     return;
 }
 
+=item is_after_expiry
+
+This check if the contract already passes the expiry times
+
+For tick expiry contract, there is no expiry time, so it will check again the exit tick
+For other contracts, it will check the remaining time of the contract to expiry.
+=back
+
+=cut
+
+sub is_after_expiry {
+    my $self = shift;
+
+    if ($self->tick_expiry) {
+        return 1
+            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds));
+    } else {
+        return 1 if  $self->remaining_time->seconds == 0;
+    }
+
+    return;
+}
 sub may_settle_automatically {
     my $self = shift;
 
