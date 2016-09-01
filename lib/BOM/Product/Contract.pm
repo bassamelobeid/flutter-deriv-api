@@ -1712,11 +1712,13 @@ sub _build_new_interface_engine {
 
 sub _pricing_parameters {
     my $self = shift;
-
+#
     return {
-        priced_with       => $self->priced_with,
-        spot              => $self->pricing_spot,
-        strikes           => [grep { $_ } values %{$self->barriers_for_pricing}],
+        priced_with => $self->priced_with,
+        spot        => $self->pricing_spot,
+        strikes     => $self->pricing_engine_name eq 'Pricing::Engine::Digits'
+        ? ($self->barrier ? $self->barrier->as_absolute : undef)
+        : [grep { $_ } values %{$self->barriers_for_pricing}],
         date_start        => $self->effective_start,
         date_expiry       => $self->date_expiry,
         date_pricing      => $self->date_pricing,
