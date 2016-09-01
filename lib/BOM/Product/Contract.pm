@@ -40,6 +40,11 @@ require Pricing::Engine::EuropeanDigitalSlope;
 require Pricing::Engine::TickExpiry;
 require BOM::Product::Pricing::Greeks::BlackScholes;
 
+use constant {
+    commission_base_multiplier => 1,
+    commission_max_multiplier  => 2,
+};
+
 sub is_spread { return 0 }
 sub is_legacy { return 0 }
 
@@ -226,6 +231,7 @@ sub _check_is_intraday {
     return 0 if $contract_duration > 86400;
 
     # for contract that start at the open of day and expire at the close of day (include early close) should be treated as daily contract
+    # Contract that starts after 21GMT on Thurs and expired on Friday is also a daily contract as it already trades more than a trading day on Friday
     my $closing = $self->calendar->closing_on($self->date_expiry);
     return 0 if $closing and $closing->is_same_as($self->date_expiry) and $contract_duration >= $self->effective_daily_trading_seconds;
 

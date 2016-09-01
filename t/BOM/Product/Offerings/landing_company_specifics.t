@@ -8,6 +8,9 @@ use Test::Deep;
 use Test::Exception;
 use Test::NoWarnings;
 
+use Cache::RedisDB;
+
+use BOM::Platform::Runtime;
 use BOM::Product::Offerings qw(get_offerings_flyby get_offerings_with_filter);
 
 my @expected_lc   = qw(japan-virtual virtual costarica maltainvest japan malta iom);
@@ -63,6 +66,17 @@ subtest 'landing_company specifics' => sub {
             cmp_bag(\@type_lc, $expected_type{$lc}, 'contract type list for ' . $lc);
         }
     }
+    'contract list by landing company';
+
+    lives_ok {
+        my $revision = BOM::Platform::Runtime->instance->app_config->current_revision;
+        foreach my $lc (@expected_lc) {
+            my $fb = Cache::RedisDB->get('OFFERINGS_' . $lc, $revision);
+            my @market_lc = $fb->values_for_key('market');
+            cmp_bag(\@market_lc, $expected_market{$lc}, 'market list for ' . $lc);
+        }
+    }
+    'market list by landing company from flyby redis cache';
 };
 
 subtest 'offerings check' => sub {

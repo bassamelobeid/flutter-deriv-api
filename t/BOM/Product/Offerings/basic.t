@@ -4,8 +4,10 @@ use warnings;
 use Test::Most (tests => 4);
 use Test::FailWarnings;
 
-use BOM::Test::Data::Utility::UnitTestRedis;
+use Cache::RedisDB;
 
+use BOM::Platform::Runtime;
+use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Product::Offerings qw( get_offerings_flyby get_offerings_with_filter get_permitted_expiries get_contract_specifics );
 
 subtest 'get_offerings_flyby' => sub {
@@ -38,6 +40,9 @@ subtest 'get_offerings_flyby' => sub {
         is(scalar $fb->query('"exchange_name" IS "RANDOM" -> "underlying_symbol"'), 6, 'Six underlyings trade on the RANDOM exchange');
         is(scalar $fb->query('"market" IS "volidx" -> "underlying_symbol"'),        6, '...out of 6 total random market symbols.');
     };
+
+    my $cache_obj = Cache::RedisDB->get('OFFERINGS_costarica', BOM::Platform::Runtime->instance->app_config->current_revision);
+    isa_ok $cache_obj, 'FlyBy', 'got flyby object for costarica as its default';
 };
 
 subtest 'get_offerings_with_filter' => sub {

@@ -6,7 +6,7 @@ use warnings;
 use Format::Util::Numbers qw(roundnear);
 use Test::MockModule;
 use BOM::Product::ContractFactory qw(produce_contract);
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Test::NoWarnings;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -29,9 +29,9 @@ my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol        => 'USD',
+        symbol        => $_,
         recorded_date => $now
-    });
+    }) for qw(USD JPY);
 
 subtest 'payout' => sub {
     my $payout                = 10;
@@ -217,4 +217,28 @@ subtest 'new commission structure' => sub {
             is $c->payout, roundnear(0.01, $data->{payout}), 'correct payout amount';
         }
     }
+};
+
+subtest 'commission for japan' => sub {
+    my $fake_theo = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'theo_probability',
+        description => 'test theo',
+        set_by      => 'test',
+        base_amount => 0.5,
+    });
+    my $args = {
+        bet_type         => 'CALL',
+        underlying       => 'R_100',
+        barrier          => 'S0P',
+        duration         => '1d',
+        amount           => 100000,
+        amount_type      => 'payout',
+        currency         => 'JPY',
+        theo_probability => $fake_theo,
+    };
+    my $c = produce_contract($args);
+    is $c->commission_markup->amount, $c->base_commission, 'at 100,000 yen commission markup is base commission';
+    $args->{amount} = 100001;
+    $c = produce_contract($args);
+    ok $c->commission_markup->amount > $c->base_commission, 'at 100,000 yen commission markup is more than base commission';
 };
