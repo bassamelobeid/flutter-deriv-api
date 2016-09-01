@@ -16,6 +16,7 @@ use List::Util qw(first);
 use Digest::MD5 qw(md5_hex);
 use Date::Utility;
 
+use BOM::System::Config;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -109,6 +110,19 @@ if ($r->param('delete_client')) {
     BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(to_json($current));
     BOM::Platform::Runtime->instance->app_config->save_dynamic;
 }
+
+Bar("Limit Definitions");
+
+my $limit_defs = BOM::System::Config::quants->{risk_profile};
+my $current_definitions = BOM::Product::RiskProfile::get_current_profile_definitions();
+
+BOM::Platform::Context::template->process(
+    'backoffice/profile_definitions.html.tt',
+    {
+        definitions => $limit_defs,
+        current     => $current_definitions,
+    }) || die BOM::Platform::Context::template->error;
+
 
 Bar("Existing limits");
 
