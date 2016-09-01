@@ -195,7 +195,7 @@
     allows_payment_agents: 1
     payment_agents_residence_disable: jp
 'Binary Ltd':
-    short: fog
+    short: virtual
     name: Binary Ltd
     fax: +61 2 94751035
     country: Bahamas
