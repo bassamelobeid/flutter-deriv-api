@@ -126,7 +126,7 @@ subtest 'asian' => sub {
         is $c->date_start->epoch, 1310631887, 'correct start time';
         is $c->tick_count, 2, 'correct number of ticks';
         ok $c->tick_expiry, 'is a tick expiry contract';
-        ok !$c->is_after_expiry, 'is not expired';
+        ok !$c->is_after_settlement, 'is not expired';
         is $c->barrier, undef, 'barrier is undef';
 
         # add ticks
@@ -139,7 +139,7 @@ subtest 'asian' => sub {
         }
 
         $c = produce_contract('ASIANU_R_75_5_1310631887_2T', 'USD');
-        ok $c->is_after_expiry, 'is expired';
+        ok $c->is_after_settlement, 'is expired';
         is $c->underlying->pip_size, 0.0001, 'underlying pip size';
         cmp_ok $c->barrier->as_absolute, '==', 101.50000, 'correct barrier with one more decimal in pip size';
     }

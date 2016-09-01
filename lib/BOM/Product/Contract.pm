@@ -815,7 +815,7 @@ sub _build_longcode {
         ($self->currency, $payout, $self->underlying->translated_display_name, $when_start, $when_end, @barriers));
 }
 
-=item is_after_expiry
+=item is_after_settlement
 
 We have two types of expiries:
 - Contracts can expire when a certain number of ticks is received.
@@ -825,7 +825,7 @@ We have two types of expiries:
 
 =cut
 
-sub is_after_expiry {
+sub is_after_settlement {
     my $self = shift;
 
     if ($self->tick_expiry) {
@@ -1014,7 +1014,7 @@ sub is_valid_to_sell {
         return 0;
     }
 
-    if ($self->is_after_expiry) {
+    if ($self->is_after_settlement) {
         if (my ($ref, $hold_for_exit_tick) = $self->_validate_settlement_conditions) {
             $self->missing_market_data(1) if not $hold_for_exit_tick;
             $self->add_error($ref);
@@ -2344,7 +2344,7 @@ sub _validate_input_parameters {
                 message_to_client => localize("Start time on forward-starting contracts must be more than 5 minutes from now."),
             };
         }
-    } elsif ($self->is_after_expiry) {
+    } elsif ($self->is_after_settlement) {
         return {
             message           => 'already expired contract',
             message_to_client => localize("Contract has already expired."),
