@@ -13,10 +13,10 @@ use Cache::RedisDB;
 use BOM::Platform::Runtime;
 use BOM::Product::Offerings qw(get_offerings_flyby get_offerings_with_filter);
 
-my @expected_lc   = qw(japan-virtual fog costarica maltainvest japan malta iom);
+my @expected_lc   = qw(japan-virtual virtual costarica maltainvest japan malta iom);
 my %expected_type = (
     'japan-virtual' => ['CALLE', 'NOTOUCH', 'ONETOUCH', 'PUT', 'RANGE', 'UPORDOWN', 'EXPIRYRANGEE', 'EXPIRYMISS'],
-    fog             => [
+     virtual        => [
         'ASIAND',   'ASIANU',    'CALL',       'DIGITDIFF',  'DIGITEVEN',   'DIGITMATCH',
         'DIGITODD', 'DIGITOVER', 'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',
         'ONETOUCH', 'PUT',       'RANGE',      'SPREADD',    'SPREADU',     'UPORDOWN',
@@ -43,7 +43,7 @@ my %expected_type = (
 my %expected_market = (
     'japan-virtual' => ['forex'],
     japan           => ['forex'],
-    fog             => ['commodities', 'forex', 'indices', 'volidx', 'stocks'],
+    virtual         => ['commodities', 'forex', 'indices', 'volidx', 'stocks'],
     costarica       => ['commodities', 'forex', 'indices', 'volidx', 'stocks'],
     maltainvest => ['commodities', 'forex', 'indices', 'stocks'],
     malta       => ['volidx'],
@@ -109,7 +109,7 @@ subtest 'offerings check' => sub {
             'volidx',     => 0,
             'stocks'      => 1
         },
-        fog => {
+        virtual => {
             'commodities' => 1,
             'forex'       => 1,
             'indices'     => 1,
