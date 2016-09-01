@@ -33,6 +33,19 @@ my $tick_params = {
 
 my $tick = Quant::Framework::Spot::Tick->new($tick_params);
 
+#create an empty un-used even so ask_price won't fail preparing market data for pricing engine
+#Because the code to prepare market data is called for all pricings in Contract
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+    {
+        events           => [{
+                symbol       => 'USD',
+                release_date => 1,
+                source       => 'forexfactory',
+                impact       => 1,
+                event_name   => 'FOMC',
+            }]
+    });
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'holiday',
     {
@@ -1428,6 +1441,20 @@ subtest 'contract must be held' => sub {
 };
 
 subtest 'zero payout' => sub {
+
+#create an empty un-used even so ask_price won't fail preparing market data for pricing engine
+#Because the code to prepare market data is called for all pricings in Contract
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+        {
+            events           => [{
+                    symbol       => 'USD',
+                    release_date => 1,
+                    source       => 'forexfactory',
+                    impact       => 1,
+                    event_name   => 'FOMC',
+                }]
+        });
+
     lives_ok {
         my $fake_tick = Quant::Framework::Spot::Tick->new({
             underlying => 'R_100',
