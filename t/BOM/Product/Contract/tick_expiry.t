@@ -115,8 +115,8 @@ subtest 'tick expiry digits' => sub {
 
 subtest 'asian' => sub {
     lives_ok {
-        my $time = Date::Utility->new(1310631887);
-        my $c = produce_contract('ASIANU_R_75_5_1310631887_2T', 'USD');
+        my $time   = Date::Utility->new(1310631887);
+        my $c      = produce_contract('ASIANU_R_75_5_1310631887_2T', 'USD');
         my $params = $c->build_parameters;
         $params->{date_pricing} = $c->date_start->epoch + 299;
         $c = produce_contract($params);
@@ -143,17 +143,17 @@ subtest 'asian' => sub {
         is $c->underlying->pip_size, 0.0001, 'underlying pip size';
         cmp_ok $c->barrier->as_absolute, '==', 101.50000, 'correct barrier with one more decimal in pip size';
     }
-    'build from shortcode'; 
+    'build from shortcode';
 
     lives_ok {
         my $c = produce_contract('ASIANU_R_50_100_1466496619_5T_S5P_0', 'USD');
         is $c->shortcode, 'ASIANU_R_50_100_1466496619_5T', 'shortcode is without barrier';
     }
-    'build from shortcode with relative barrier fails'; 
+    'build from shortcode with relative barrier fails';
 
     lives_ok {
         my $c = produce_contract('ASIANU_R_50_100_1466496590_5T_1002000000_0', 'USD');
         is $c->shortcode, 'ASIANU_R_50_100_1466496590_5T', 'shortcode is without barrier';
     }
-    'build from shortcode with absolute barrier fails'; 
+    'build from shortcode with absolute barrier fails';
 };

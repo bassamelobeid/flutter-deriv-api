@@ -36,7 +36,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $now,
-        rates => { 365 => 0 },
+        rates         => {365 => 0},
     }) for qw(R_100 R_25);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -44,7 +44,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => 'RDBULL',
         recorded_date => $now,
-        rates => { 365 => -35 },
+        rates         => {365 => -35},
     });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -52,7 +52,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => 'RDBEAR',
         recorded_date => $now,
-        rates => { 365 => 20 },
+        rates         => {365 => 20},
     });
 
 foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
@@ -69,15 +69,14 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
         my @duration = map { $_ * 86400 } (7, 14);
         foreach my $duration (@duration) {
             my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({
-                    underlying => $ul,
-                    for_date   => $now
-                }
-                );
+                underlying => $ul,
+                for_date   => $now
+            });
             my $vol = $volsurface->get_volatility({
-                    delta => 50,
-                    from => $volsurface->recorded_date,
-                    to => $volsurface->recorded_date->plus_time_interval($duration),
-                });
+                delta => 50,
+                from  => $volsurface->recorded_date,
+                to    => $volsurface->recorded_date->plus_time_interval($duration),
+            });
             my @barriers = @{
                 BOM::Test::Data::Utility::UnitTestPrice::get_barrier_range({
                         type => ($category_obj->two_barriers ? 'double' : 'single'),
@@ -87,7 +86,13 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                         volatility => $vol,
                     })};
 
-            @barriers = ({barrier => 'S0P'}, {barrier => 'S100P'}, {high_barrier => '103', low_barrier=>'94'}) if $ul->market->name eq 'volidx';
+            @barriers = (
+                {barrier => 'S0P'},
+                {barrier => 'S100P'},
+                {
+                    high_barrier => '103',
+                    low_barrier  => '94'
+                }) if $ul->market->name eq 'volidx';
 
             foreach my $barrier (@barriers) {
                 my %equal = (
@@ -108,8 +113,8 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                         duration     => $duration . 's',
                         currency     => $payout_currency,
                         payout       => 1000,
-                        $ul->market->name eq 'volidx' ?  (pricing_vol  => 0.12):(),
-                        $ul->market->name eq 'volidx' ?  (spot  => 100):(),
+                        $ul->market->name eq 'volidx' ? (pricing_vol => 0.12) : (),
+                        $ul->market->name eq 'volidx' ? (spot        => 100)  : (),
                         %$barrier,
                     };
 
@@ -123,7 +128,8 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                         }
                         my $code = join '_', @codes;
                         isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
-                        is roundnear(0.00001,$c->theo_probability->amount), roundnear(0.00001,$expectation->{$code}), 'theo probability matches [' . $code . " - " . $c->shortcode . ']';
+                        is roundnear(0.00001, $c->theo_probability->amount), roundnear(0.00001, $expectation->{$code}),
+                            'theo probability matches [' . $code . " - " . $c->shortcode . ']';
                     }
                     'survived';
                 }

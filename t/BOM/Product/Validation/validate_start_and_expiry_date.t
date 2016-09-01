@@ -432,16 +432,16 @@ subtest 'market_risk blackouts' => sub {
         epoch      => $inefficient_period->minus_time_interval('1h')->epoch,
     });
     my $bet_params = {
-        bet_type     => 'CALL',
-        underlying   => 'frxXAUUSD',
-        date_start   => $inefficient_period->minus_time_interval('1h'),
-        date_pricing => $inefficient_period->minus_time_interval('1h'),
-        barrier      => 'S0P',
-        currency     => 'USD',
-        payout       => 10,
-        duration     => '59m59s',
-        current_tick => $xauusd_tick,
-        pricing_vol  => 0.1,
+        bet_type                  => 'CALL',
+        underlying                => 'frxXAUUSD',
+        date_start                => $inefficient_period->minus_time_interval('1h'),
+        date_pricing              => $inefficient_period->minus_time_interval('1h'),
+        barrier                   => 'S0P',
+        currency                  => 'USD',
+        payout                    => 10,
+        duration                  => '59m59s',
+        current_tick              => $xauusd_tick,
+        pricing_vol               => 0.1,
         news_adjusted_pricing_vol => 0.1,
     };
     my $c = produce_contract($bet_params);
