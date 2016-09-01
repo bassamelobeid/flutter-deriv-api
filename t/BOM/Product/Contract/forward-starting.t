@@ -119,7 +119,7 @@ subtest 'end of day blockout period for random nightly and random daily' => sub 
         date_start   => $now->epoch,
     });
     ok $c->_validate_start_and_expiry_date, 'throw error if contract ends in 1m before expiry';
-    like (($c->_validate_start_and_expiry_date)[0]->{message_to_client}, qr/may not expire between 23:59:00 and 23:59:59/, 'throws error');
+    like(($c->_validate_start_and_expiry_date)[0]->{message_to_client}, qr/may not expire between 23:59:00 and 23:59:59/, 'throws error');
     my $valid_c = make_similar_contract($c, {duration => '9m59s'});
     ok !$valid_c->_validate_start_and_expiry_date;
 };
@@ -130,9 +130,9 @@ subtest 'basis_tick for forward starting contract' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
     # date_pricing is set to a specific time so that we can check conditions easier.
     my $date_pricing = Date::Utility->new('2016-08-15');
-    my $date_start = $date_pricing->plus_time_interval('15m');
+    my $date_start   = $date_pricing->plus_time_interval('15m');
 
-    foreach my $data ([$date_pricing->epoch, 100],[$date_start->epoch, 101],[$date_start->epoch + 1, 102]) {
+    foreach my $data ([$date_pricing->epoch, 100], [$date_start->epoch, 101], [$date_start->epoch + 1, 102]) {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             epoch      => $data->[0],
             underlying => 'frxUSDJPY',
@@ -141,15 +141,15 @@ subtest 'basis_tick for forward starting contract' => sub {
     }
 
     my $expected_shortcode = 'CALL_FRXUSDJPY_10_1471220100F_1471221000_S0P_0';
-    my $args = {
-        bet_type => 'CALL',
-        underlying => 'frxUSDJPY',
-        date_start => $date_start,
+    my $args               = {
+        bet_type     => 'CALL',
+        underlying   => 'frxUSDJPY',
+        date_start   => $date_start,
         date_pricing => $date_pricing,
-        duration => '15m',
-        barrier => 'S0P',
-        currency => 'USD',
-        payout => 10,
+        duration     => '15m',
+        barrier      => 'S0P',
+        currency     => 'USD',
+        payout       => 10,
     };
     my $c = produce_contract($args);
     ok $c->pricing_new, 'is pricing new';
@@ -157,9 +157,9 @@ subtest 'basis_tick for forward starting contract' => sub {
     is $c->basis_tick->epoch, $date_pricing->epoch, 'basis tick epoch is correct';
     is $c->shortcode, $expected_shortcode, 'shortcode is correct';
 
-    $args->{date_pricing} = $date_pricing->plus_time_interval('5m');
-    $args->{starts_as_forward_starting} = 1; #to simulate reprice of an existing forward starting contract
-    $c = produce_contract($args);
+    $args->{date_pricing}               = $date_pricing->plus_time_interval('5m');
+    $args->{starts_as_forward_starting} = 1;                                         #to simulate reprice of an existing forward starting contract
+    $c                                  = produce_contract($args);
     ok $c->pricing_new, 'pricing new return before contract starts';
     is $c->basis_tick->quote, 100, 'basis tick is current tick at date pricing';
     is $c->basis_tick->epoch, $date_pricing->epoch, 'basis tick epoch is correct';
