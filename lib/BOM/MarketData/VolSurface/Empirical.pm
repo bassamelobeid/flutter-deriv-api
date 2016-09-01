@@ -58,8 +58,11 @@ sub get_volatility {
     my @good_ticks = $ticks->[-1];    # first tick is always good
     my $counter    = 0;
     for (my $i = -1; $i >= -$#$ticks; $i--) {
-        unshift @good_ticks, $ticks->[$i - 1] and next
-            if ($ticks->[$i]->{epoch} != $ticks->[$i - 1]->{epoch} && $ticks->[$i]->{quote} != $ticks->[$i - 1]->{quote});
+        if ($ticks->[$i]->{epoch} != $ticks->[$i - 1]->{epoch} && $ticks->[$i]->{quote} != $ticks->[$i - 1]->{quote}) {
+            unshift @good_ticks, $ticks->[$i - 1];
+            $counter = 0;
+            next;
+        }
         $counter++;
         # if there's 10 stale intervals, we will discard the last added tick
         # and everything else after that.
