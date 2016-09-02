@@ -888,8 +888,6 @@ sub _build_price_calculator {
     my $self = shift;
 
     return Price::Calculator->new({
-            new_interface_engine    => $self->new_interface_engine,
-            pricing_engine_name     => $self->pricing_engine_name,
             currency                => $self->currency,
             deep_otm_threshold      => $self->market->deep_otm_threshold,
             maximum_total_markup    => BOM::System::Config::quants->{commission}->{maximum_total_markup},
@@ -915,14 +913,45 @@ sub _build_price_calculator {
 my $pc_params_setters = {
     timeinyears            => sub { my $self = shift; $self->price_calculator->timeinyears($self->timeinyears) },
     discount_rate          => sub { my $self = shift; $self->price_calculator->discount_rate($self->discount_rate) },
-    probability            => sub { my $self = shift; $self->price_calculator->pricing_engine_probability($self->pricing_engine->probability) },
-    bs_probability         => sub { my $self = shift; $self->price_calculator->pricing_engine_bs_probability($self->pricing_engine->bs_probability) },
     theo_prabability       => sub { my $self = shift; $self->price_calculator->theo_probability($self->theo_probability) },
     commission_markup      => sub { my $self = shift; $self->price_calculator->commission_markup($self->commission_markup) },
     commission_from_stake  => sub { my $self = shift; $self->price_calculator->commission_from_stake($self->commission_from_stake) },
     discounted_probability => sub { my $self = shift; $self->price_calculator->discounted_probability($self->discounted_probability) },
-    opposite_ask_probability =>
-        sub { my $self = shift; $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability) },
+
+    probability => sub {
+        my $self        = shift;
+        my $probability = $self->pricing_engine->probability;
+        if ($self->new_interface_engine) {
+            $probability = Math::Util::CalculatedValue::Validatable->new({
+                name        => 'theo_probability',
+                description => 'theoretical value of a contract',
+                set_by      => $self->pricing_engine_name,
+                base_amount => $probability,
+                minimum     => 0,
+                maximum     => 1,
+            });
+        }
+        $self->price_calculator->theo_probability($probability);
+    },
+    bs_probability => sub {
+        my $self           = shift;
+        my $bs_probability = $self->pricing_engine->bs_probability;
+        if ($self->new_interface_engine) {
+            $bs_probability = Math::Util::CalculatedValue::Validatable->new({
+                name        => 'bs_probability',
+                description => 'BlackScholes value of a contract',
+                set_by      => $self->pricing_engine_name,
+                base_amount => $bs_probability,
+                minimum     => 0,
+                maximum     => 1,
+            });
+        }
+        $self->price_calculator->bs_probability($bs_probability);
+    },
+    opposite_ask_probability => sub {
+        my $self = shift;
+        $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability);
+    },
 };
 
 my $pc_needed_params_map = {
