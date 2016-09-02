@@ -502,8 +502,7 @@ sub _build_date_settlement {
 sub _build_effective_start {
     my $self = shift;
 
-    return
-        ($self->date_pricing->is_after($self->date_start))  ? $self->date_pricing :  $self->date_start;
+    return ($self->date_pricing->is_after($self->date_start)) ? $self->date_pricing : $self->date_start;
 }
 
 sub _build_greek_engine {
@@ -863,11 +862,12 @@ sub is_after_expiry {
         return 1
             if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds));
     } else {
-        return 1 if  $self->remaining_time->seconds == 0;
+        return 1 if $self->remaining_time->seconds == 0;
     }
 
     return;
 }
+
 sub may_settle_automatically {
     my $self = shift;
 
@@ -1049,6 +1049,13 @@ sub is_valid_to_sell {
             $self->missing_market_data(1) if not $hold_for_exit_tick;
             $self->add_error($ref);
         }
+    } elsif ($self->is_expired and not $self->is_after_settlement) {
+        $self->add_error({
+
+                message           => 'waiting for settlement',
+                message_to_client => localize('Please wait for contract settlement.'),
+        });
+
     } elsif (not $self->is_expired and not $self->opposite_contract->is_valid_to_buy) {
         # Their errors are our errors, now!
         $self->add_error($self->opposite_contract->primary_validation_error);
@@ -2367,24 +2374,6 @@ sub _validate_input_parameters {
     my $epoch_expiry     = $self->date_expiry->epoch;
     my $epoch_start      = $self->date_start->epoch;
     my $epoch_settlement = $self->date_settlement->epoch;
-
-    if (    $self->for_sale
-        and defined $self->_date_pricing_milliseconds
-        and $self->_date_pricing_milliseconds > $epoch_expiry
-        and $self->_date_pricing_milliseconds < $epoch_settlement)
-    {
-        return {
-            message           => 'waiting for settlement',
-            message_to_client => localize('Please wait for contract settlement.'),
-        };
-    } elsif ($self->for_sale
-        and ($self->date_pricing->is_after($self->date_expiry) and $self->date_pricing->is_before($self->date_settlement)))
-    {
-        return {
-            message           => 'waiting for settlement',
-            message_to_client => localize('Please wait for contract settlement.'),
-        };
-    }
 
     if ($epoch_expiry == $epoch_start) {
         return {
