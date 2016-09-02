@@ -217,7 +217,7 @@ my $now = Date::Utility->new;
 # Logging
 my $msg = $now->datetime . " $ttype $curr$amount $loginID clerk=$clerk (DCcode=$DCcode) $ENV{REMOTE_ADDR}";
 BOM::System::AuditLog::log($msg, $loginID, $clerk);
-Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")->append($msg);
+Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")->append_utf8($msg);
 
 # Print confirmation
 Bar("$ttype confirmed");
