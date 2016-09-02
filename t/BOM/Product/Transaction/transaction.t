@@ -2526,7 +2526,8 @@ subtest 'sell_expired_contracts', sub {
             client => $cl,
             source => 29
         };
-
+        use Data::Dumper;
+        diag(Dumper($res));
         is_deeply $res, +{
             number_of_sold_bets => 3,
             skip_contract       => 5,     # this means the contract was looked at but skipped due to invalid to sell
