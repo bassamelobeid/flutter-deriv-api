@@ -2527,8 +2527,7 @@ subtest 'sell_expired_contracts', sub {
             client => $cl,
             source => 29
         };
-        use Data::Dumper;
-        diag(Dumper($res));
+
         @unexpired_fmbids = sort { $a <=> $b } @unexpired_fmbids;
         $res->{failures} = [sort { $a->{fmb_id} <=> $b->{fmb_id} } @{$res->{failures}}];
         is_deeply $res, +{
