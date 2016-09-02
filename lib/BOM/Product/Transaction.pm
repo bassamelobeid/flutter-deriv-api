@@ -1935,7 +1935,7 @@ sub sell_expired_contracts {
         }
     }
 
-    return unless @bets_to_sell;    # nothing to do
+    return $result unless @bets_to_sell;    # nothing to do
 
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         transaction_data => \@transdata,
@@ -1962,14 +1962,19 @@ sub sell_expired_contracts {
         foreach my $bet (@bets_to_sell) {
             next if $sold_fmbs{$bet->{id}};    # Was not missed.
             $missed{$bet->{bet_class}}++;
+            push $result->{failures},
+                {
+                fmb_id => $bet->{id},
+                reason => _normalize_error("TransactionFailure")};
         }
         foreach my $class (keys %missed) {
             stats_count("transaction.sell.failure", $missed{$class},
                 {tags => [@tags, "contract_class:$class", "reason:" . _normalize_error("TransactionFailure")]});
+
         }
     }
 
-    return unless $sold and @$sold;            # nothing has been sold
+    return $result unless $sold and @$sold;    # nothing has been sold
 
     my $skip_contract  = @$bets - @$sold;
     my $total_credited = 0;
@@ -1987,11 +1992,10 @@ sub sell_expired_contracts {
         }
     }
 
-    return {
-        skip_contract       => $skip_contract,
-        total_credited      => $total_credited,
-        number_of_sold_bets => 0 + @$sold,
-    };
+    $result->{skip_contract}  = $skip_contract;
+    $result->{total_credited} = $total_credited;
+    $result->{number_of_sold_bets} => 0 + @$sold;
+    return $result;
 }
 
 sub report {
