@@ -1992,8 +1992,8 @@ sub sell_expired_contracts {
         }
     }
 
-    $result->{skip_contract}  = $skip_contract;
-    $result->{total_credited} = $total_credited;
+    $result->{skip_contract}       = $skip_contract;
+    $result->{total_credited}      = $total_credited;
     $result->{number_of_sold_bets} = 0 + @$sold;
     return $result;
 }

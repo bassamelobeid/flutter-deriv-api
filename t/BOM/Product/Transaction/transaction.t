@@ -26,16 +26,16 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine
 #Because the code to prepare market data is called for all pricings in Contract
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'economic_events',
     {
-        events           => [{
+        events => [{
                 symbol       => 'USD',
                 release_date => 1,
                 source       => 'forexfactory',
                 impact       => 1,
                 event_name   => 'FOMC',
-            }]
-    });
+            }]});
 
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -2518,6 +2518,7 @@ subtest 'sell_expired_contracts', sub {
             number_of_sold_bets => 2,
             skip_contract       => 0,
             total_credited      => 200,
+            failures            => [],
             },
             'sold the two requested contracts';
 
@@ -2530,6 +2531,7 @@ subtest 'sell_expired_contracts', sub {
             number_of_sold_bets => 3,
             skip_contract       => 5,     # this means the contract was looked at but skipped due to invalid to sell
             total_credited      => 300,
+            failures            => [],
             },
             'sold 3 out of 8 remaining bets';
 
