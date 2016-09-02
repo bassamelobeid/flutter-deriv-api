@@ -759,7 +759,8 @@ sub sell {    ## no critic (RequireArgUnpacking)
             _build_pricing_comment({
                     contract => $self->contract,
                     price    => $self->price,
-                    action   => 'sell'
+                    ($self->probability_slippage) ? (probability_slippage => $self->probability_slippage) : (),
+                    action => 'sell'
                 })) unless @{$self->comment};
     }
 
@@ -1342,6 +1343,8 @@ sub _validate_sell_pricing_adjustment {
         } else {
             if ($move <= $allowed_move and $move >= -$allowed_move) {
                 $final_value = $amount;
+                # We absorbed the probability difference here and we want to keep it in our book.
+                $self->probability_slippage($move);
             } elsif ($move > $allowed_move) {
                 $self->execute_at_better_price(1);
                 $final_value = $recomputed_amount;
@@ -1881,6 +1884,7 @@ sub sell_expired_contracts {
                     source        => $source,
                     };
 
+                # probability_slippage will not happen to expired contract, hence not needed.
                 my $comment_hash = _build_pricing_comment({
                         contract => $contract,
                         action   => 'autosell_expired_contract',
