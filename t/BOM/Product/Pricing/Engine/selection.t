@@ -40,7 +40,8 @@ subtest 'test everything' => sub {
             if ($ref->{contract_category} eq 'digits') {
                 %barriers = (barrier => 1);
             } else {
-                %barriers = $ref->{barriers} == 2
+                %barriers =
+                    $ref->{barriers} == 2
                     ? (
                     high_barrier => $ref->{high_barrier},
                     low_barrier  => $ref->{low_barrier})

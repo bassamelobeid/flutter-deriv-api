@@ -55,7 +55,7 @@ subtest 'tuesday to friday close' => sub {
             date_pricing => $now,
         });
 
-        is roundnear(0.00001,$c->theo_probability->amount), roundnear(0.00001,$data->{$now->datetime}{theo_probability}), 'theo_probability';
-        is $c->timeindays->amount,      $data->{$now->datetime}{timeindays},      'timeindays';
+        is roundnear(0.00001, $c->theo_probability->amount), roundnear(0.00001, $data->{$now->datetime}{theo_probability}), 'theo_probability';
+        is $c->timeindays->amount, $data->{$now->datetime}{timeindays}, 'timeindays';
     }
 };

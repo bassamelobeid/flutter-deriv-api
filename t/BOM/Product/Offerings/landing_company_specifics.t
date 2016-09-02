@@ -8,12 +8,15 @@ use Test::Deep;
 use Test::Exception;
 use Test::NoWarnings;
 
+use Cache::RedisDB;
+
+use BOM::Platform::Runtime;
 use BOM::Product::Offerings qw(get_offerings_flyby get_offerings_with_filter);
 
-my @expected_lc   = qw(japan-virtual fog costarica maltainvest japan malta iom);
+my @expected_lc   = qw(japan-virtual virtual costarica maltainvest japan malta iom);
 my %expected_type = (
     'japan-virtual' => ['CALLE', 'NOTOUCH', 'ONETOUCH', 'PUT', 'RANGE', 'UPORDOWN', 'EXPIRYRANGEE', 'EXPIRYMISS'],
-    fog             => [
+     virtual        => [
         'ASIAND',   'ASIANU',    'CALL',       'DIGITDIFF',  'DIGITEVEN',   'DIGITMATCH',
         'DIGITODD', 'DIGITOVER', 'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',
         'ONETOUCH', 'PUT',       'RANGE',      'SPREADD',    'SPREADU',     'UPORDOWN',
@@ -24,7 +27,7 @@ my %expected_type = (
         'ONETOUCH', 'PUT',       'RANGE',      'SPREADD',    'SPREADU',     'UPORDOWN'
     ],
     maltainvest => ['CALL',  'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH', 'ONETOUCH', 'PUT',      'RANGE',        'UPORDOWN'],
-    japan       => ['CALLE', 'NOTOUCH',    'ONETOUCH',    'PUT',    'RANGE',    'UPORDOWN', 'EXPIRYRANGEE', 'EXPIRYMISS'],
+    japan       => ['CALLE', 'NOTOUCH',    'ONETOUCH',    'PUT',     'RANGE',    'UPORDOWN', 'EXPIRYRANGEE', 'EXPIRYMISS'],
     malta       => [
         'ASIAND',   'ASIANU',    'CALL',       'DIGITDIFF',  'DIGITEVEN',   'DIGITMATCH',
         'DIGITODD', 'DIGITOVER', 'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',
@@ -40,7 +43,7 @@ my %expected_type = (
 my %expected_market = (
     'japan-virtual' => ['forex'],
     japan           => ['forex'],
-    fog             => ['commodities', 'forex', 'indices', 'volidx', 'stocks'],
+    virtual         => ['commodities', 'forex', 'indices', 'volidx', 'stocks'],
     costarica       => ['commodities', 'forex', 'indices', 'volidx', 'stocks'],
     maltainvest => ['commodities', 'forex', 'indices', 'stocks'],
     malta       => ['volidx'],
@@ -49,7 +52,7 @@ my %expected_market = (
 subtest 'landing_company specifics' => sub {
     lives_ok {
         foreach my $lc (@expected_lc) {
-            my $fb = get_offerings_flyby($lc);
+            my $fb        = get_offerings_flyby($lc);
             my @market_lc = $fb->values_for_key('market');
             cmp_bag(\@market_lc, $expected_market{$lc}, 'market list for ' . $lc);
         }
@@ -58,11 +61,22 @@ subtest 'landing_company specifics' => sub {
 
     lives_ok {
         foreach my $lc (@expected_lc) {
-            my $fb = get_offerings_flyby($lc);
+            my $fb      = get_offerings_flyby($lc);
             my @type_lc = $fb->values_for_key('contract_type');
             cmp_bag(\@type_lc, $expected_type{$lc}, 'contract type list for ' . $lc);
         }
     }
+    'contract list by landing company';
+
+    lives_ok {
+        my $revision = BOM::Platform::Runtime->instance->app_config->current_revision;
+        foreach my $lc (@expected_lc) {
+            my $fb = Cache::RedisDB->get('OFFERINGS_' . $lc, $revision);
+            my @market_lc = $fb->values_for_key('market');
+            cmp_bag(\@market_lc, $expected_market{$lc}, 'market list for ' . $lc);
+        }
+    }
+    'market list by landing company from flyby redis cache';
 };
 
 subtest 'offerings check' => sub {
@@ -95,7 +109,7 @@ subtest 'offerings check' => sub {
             'volidx',     => 0,
             'stocks'      => 1
         },
-        fog => {
+        virtual => {
             'commodities' => 1,
             'forex'       => 1,
             'indices'     => 1,
@@ -111,17 +125,13 @@ subtest 'offerings check' => sub {
         },
     );
     foreach my $testname (keys %test) {
-        my $fb = get_offerings_flyby($testname);
+        my $fb     = get_offerings_flyby($testname);
         my $result = $test{$testname};
         foreach my $market (keys %$result) {
             if ($result->{$market}) {
-                ok $fb->query({
-                    market          => $market
-                });
+                ok $fb->query({market => $market});
             } else {
-                ok !$fb->query({
-                    market          => $market
-                });
+                ok !$fb->query({market => $market});
             }
         }
     }
@@ -144,32 +154,32 @@ subtest 'legal allowed underlyings' => sub {
         DEDAI
         DESIE
         USCAT
-        USGLDSCH 
-        USMCDON 
+        USGLDSCH
+        USMCDON
         USMA
         USBRKSHR
-        USBNG 
-        USIBM 
-        USALIBA 
-        USPEP 
-        USEA 
-        USJNJ 
-        USAMX 
-        USPG 
-        UKBP 
-        UKRIO 
-        UKSTAN 
-        UKLLOY 
-        UKTSCO 
-        DEBMW 
-        DENOT 
-        DESAP 
-        DEDBK 
-        DEAIR  
-        INMARUTI 
-        INRIL 
-        INTATAMOTORS 
-        INTATASTEEL 
+        USBNG
+        USIBM
+        USALIBA
+        USPEP
+        USEA
+        USJNJ
+        USAMX
+        USPG
+        UKBP
+        UKRIO
+        UKSTAN
+        UKLLOY
+        UKTSCO
+        DEBMW
+        DENOT
+        DESAP
+        DEDBK
+        DEAIR
+        INMARUTI
+        INRIL
+        INTATAMOTORS
+        INTATASTEEL
         INBHARTIARTL
         OTC_IXIC
         OTC_BSESENSEX30
@@ -205,7 +215,7 @@ subtest 'legal allowed underlyings' => sub {
         frxGBPUSD
         WLDGBP
         DJI
-	FCHI
+        FCHI
         frxGBPNZD
         frxXAGUSD
         frxAUDCHF
