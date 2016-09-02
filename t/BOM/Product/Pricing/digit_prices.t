@@ -84,15 +84,15 @@ subtest 'prices' => sub {
 
             is $c->pricing_code, $bt_code, 'contract type';
             is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Digits', 'pricing engine';
-            _check_amount($c->bs_probability, $expect->{bs_prob}, 'bs_prob');
-            _check_amount($c->commission_markup,   $expect->{markup},  'markup');
+            _check_amount($c->bs_probability,    $expect->{bs_prob}, 'bs_prob');
+            _check_amount($c->commission_markup, $expect->{markup},  'markup');
         };
     }
 
     $params->{barrier}  = 9;
     $params->{bet_type} = 'DIGITDIFF';
     my $c = produce_contract($params);
-    _check_amount($c->bs_probability, 0.9, 'bs_prob');
+    _check_amount($c->bs_probability,    0.9,  'bs_prob');
     _check_amount($c->commission_markup, 0.01, 'markup not the minmum');
 };
 
@@ -101,17 +101,17 @@ subtest 'invalid selections' => sub {
     my $now = time;
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_50',
-        epoch => $now,
+        epoch      => $now,
     });
     my $params = {
-        currency    => 'USD',
-        amount      => 100,
-        date_start  => $now,
-        date_pricing  => $now,
-        underlying  => 'R_50',
-        tick_expiry => 1,
-        tick_count  => 10,
-        amount_type => 'payout',
+        currency     => 'USD',
+        amount       => 100,
+        date_start   => $now,
+        date_pricing => $now,
+        underlying   => 'R_50',
+        tick_expiry  => 1,
+        tick_count   => 10,
+        amount_type  => 'payout',
     };
 
     my %cannots = (

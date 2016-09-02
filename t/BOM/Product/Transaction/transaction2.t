@@ -246,7 +246,7 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             note('mocking custom_product_limits');
-            my $new  = {
+            my $new = {
                 xxx => {
                     "expiry_type"       => "tick",
                     "start_type"        => "spot",
@@ -360,7 +360,7 @@ subtest 'asian_daily_turnover_limit', sub {
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             note('mocking custom_product_limits');
-            my $new  = {
+            my $new = {
                 xxx => {
                     "expiry_type"       => "tick",
                     "contract_category" => "asian",
@@ -482,7 +482,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             note('mocking custom_product_limits');
-            my $new  = {
+            my $new = {
                 xxx => {
                     "expiry_type"       => "intraday",
                     "start_type"        => "spot",
@@ -875,7 +875,7 @@ subtest 'custom client limit' => sub {
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             note('mocking custom_product_profiles');
-            my $new  = {
+            my $new = {
                 xxx => {
                     "expiry_type"       => "tick",
                     "start_type"        => "spot",
@@ -889,7 +889,11 @@ subtest 'custom client limit' => sub {
             note('mocking custom_client_profiles to no_business profile');
             my $fake = {
                 $cl->loginid => {
-                    custom_limits => {xxx => {risk_profile => 'no_business', expiry_type => 'tick'}}
+                    custom_limits => {
+                        xxx => {
+                            risk_profile => 'no_business',
+                            expiry_type  => 'tick'
+                        }}
                 },
             };
             BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(to_json($fake));
@@ -903,7 +907,7 @@ subtest 'custom client limit' => sub {
             is $error->get_type, 'NoBusiness', 'error is NoBusiness';
 
             is $error->{-message_to_client}, 'This contract is unavailable on this account.', 'message_to_client';
-            like($error->{-mesg}, qr/^\D+\d+ manually disabled by quants$/,   'mesg');
+            like($error->{-mesg}, qr/^\D+\d+ manually disabled by quants$/, 'mesg');
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -959,7 +963,7 @@ subtest 'non atm turnover checks' => sub {
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             note('mocking custom_product_profiles');
-            my $new  = {
+            my $new = {
                 xxx => {
                     "expiry_type"       => "tick",
                     "start_type"        => "spot",
@@ -1014,13 +1018,12 @@ subtest 'non atm turnover checks' => sub {
             is $error->get_type, 'tick_expiry_nonatm_turnover_limitExceeded', 'error is tick_expiry_nonatm_turnover_limit';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
-            is $error->{-mesg},              'Exceeds turnover limit on tick_expiry_nonatm_turnover_limit',             'mesg';
+            is $error->{-mesg},              'Exceeds turnover limit on tick_expiry_nonatm_turnover_limit',   'mesg';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
             is $txn->balance_after,  undef, 'txn->balance_after';
         }
-
 
         # now matching exactly the limit -- should succeed
         $error = do {

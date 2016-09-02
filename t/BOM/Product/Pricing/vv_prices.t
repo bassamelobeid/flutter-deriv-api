@@ -27,11 +27,10 @@ my %skip_category = (
     spreads => 1,
 );
 
-my $expectation = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/vv_config.yml');
-my @underlying_symbols =
-    ('frxBROUSD', 'AEX', 'frxXAUUSD', 'RDBEAR', 'RDBULL', 'R_100', 'R_25', 'WLDEUR', 'frxEURSEK', 'frxUSDJPY');
-my $payout_currency = 'USD';
-my $spot            = 100;
+my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/vv_config.yml');
+my @underlying_symbols = ('frxBROUSD', 'AEX', 'frxXAUUSD', 'RDBEAR', 'RDBULL', 'R_100', 'R_25', 'WLDEUR', 'frxEURSEK', 'frxUSDJPY');
+my $payout_currency    = 'USD';
+my $spot               = 100;
 
 foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
     BOM::Test::Data::Utility::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);
@@ -40,7 +39,10 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
         quote      => $spot,
         epoch      => $now->epoch,
     });
-    my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $ul, for_date => $now});
+    my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({
+        underlying => $ul,
+        for_date   => $now
+    });
     foreach my $contract_category (grep { not $skip_category{$_} } get_offerings_with_filter('contract_category', {underlying_symbol => $ul->symbol}))
     {
         my $category_obj = BOM::Product::Contract::Category->new($contract_category);
@@ -82,7 +84,8 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                         }
                         my $code = join '_', @codes;
                         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
-                        is roundnear(0.00001,$c->theo_probability->amount), roundnear(0.00001, $expectation->{$code}), 'theo probability matches [' . $code . ']';
+                        is roundnear(0.00001, $c->theo_probability->amount), roundnear(0.00001, $expectation->{$code}),
+                            'theo probability matches [' . $code . ']';
                     }
                     'survived';
                 }
