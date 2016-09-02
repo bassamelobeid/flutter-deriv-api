@@ -14,7 +14,8 @@ sub log {    ## no critic (ProhibitBuiltinHomonyms)
     my $staff = shift || '';
 
     Path::Tiny::path('/var/log/fixedodds/audit.log')->append(
-        JSON::to_json({
+        # UTF-8 bytes, in case message or staff/user include non-ASCII chars
+        JSON::encode_json({
                 timestamp    => Date::Utility->new->datetime_iso8601,
                 hostname     => Sys::Hostname::hostname,
                 staff        => $staff,
