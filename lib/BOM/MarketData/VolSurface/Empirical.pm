@@ -58,7 +58,7 @@ sub get_volatility {
     my @good_ticks = $ticks->[-1];    # first tick is always good
     my $counter    = 0;
     for (my $i = -1; $i >= -$#$ticks; $i--) {
-        if ($ticks->[$i]->{epoch} != $ticks->[$i - 1]->{epoch} && $ticks->[$i]->{quote} != $ticks->[$i - 1]->{quote}) {
+        if ($ticks->[$i]->{epoch} != $ticks->[$i - 1]->{epoch}) {
             unshift @good_ticks, $ticks->[$i - 1];
             $counter = 0;
             next;
