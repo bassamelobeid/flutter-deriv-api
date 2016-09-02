@@ -112,6 +112,7 @@ sub generate {
                         undef, $open_fmb_id, $value);
                     $open_bets_expired_ref->{$open_fmb_id} = $open_fmb;
                     $open_bets_expired_ref->{$open_fmb_id}->{market_price} = $value;
+                    $open_bets_expired_ref->{$open_fmb_id}->{bet} = $bet;
                 } else {
                     # spreaed does not have greeks
                     if ($bet->is_spread) {
@@ -217,22 +218,7 @@ sub sell_expired_contracts {
 
         my $client = BOM::Platform::Client::get_instance({'loginid' => $client_id});
 
-        my $fmb = BOM::Database::DataMapper::FinancialMarketBet->new({broker_code => $client->broker})->get_fmb_by_id([$fmb_id])->[0]
-            ->financial_market_bet_record;
-
-        my $bet = try { produce_contract($fmb->{short_code}, $currency) };
-        if (not $bet) {
-            # Not a `catch` block, because we need to be able to 'next' the loop
-            $bet_info->{shortcode} = $fmb->short_code;
-            $bet_info->{payout}    = 'unknown';
-            $bet_info->{reason}    = 'Could not instantiate contract object';
-            push @error_lines, $bet_info;
-            next;    # Nothing else to do.
-        }
-
-        # Database sync could be delayed resulting in riskd trying resell them again.
-        # Skip them here.
-        next if $bet->is_sold;
+        my $bet = $open_bets_ref->{$id}{bet};
 
         if (my $bb_symbol = $map_to_bb{$bet->underlying->symbol}) {
             $csv->combine($map_to_bb{$bet->underlying->symbol}, $bet->date_start->db_timestamp, $bet->date_expiry->db_timestamp);
@@ -242,14 +228,7 @@ sub sell_expired_contracts {
         # for spread max payout is determined by stop_profit.
         $bet_info->{payout} = $bet->is_spread ? $bet->amount_per_point * $bet->stop_profit : $bet->payout;
 
-        # We do this here because part of being "initialized_correctly" below
-        # is hidden behind lazy attributes.  Makes you question the name of the method.
-        # Regardless, expiry check will exercise them and we need that info in a couple line anyway.
-        my $expired = $bet->is_expired;
-
-        if (not $expired) {
-            $bet_info->{reason} = 'not expired';
-        } elsif (not defined $bet->value) {
+        if (not defined $bet->value) {
             # $bet->value is set when we confirm expiration status, even further above.
             $bet_info->{reason} = 'indeterminate value';
         } elsif (0 + $bet->bid_price xor 0 + $expected_value) {
