@@ -47,16 +47,15 @@ sub mt5_new_account {
         } else {
             $group = 'demo\virtual';
         }
-    } elsif (
-        any {
-            $account_type eq $_;
+    } elsif ($account_type eq 'gaming') {
+        $group = 'real\costarica';
+
+        # only CR fully authenticated client can open MT real a/c
+        unless ($client->landing_company->short eq 'costarica' and $client->client_fully_authenticated) {
+            return BOM::RPC::v3::Utility::permission_error();
         }
-        qw(vanuatu costarica iom malta maltainvest japan)
-        )
-    {
-        # only enable vanuatu for now, so default all real a/c type to vanuatu
-        $group        = 'real\vanuatu';
-        $account_type = 'vanuatu';
+    } elsif ($account_type eq 'financial') {
+        $group = 'real\vanuatu';
 
         # only CR fully authenticated client can open MT real a/c
         unless ($client->landing_company->short eq 'costarica' and $client->client_fully_authenticated) {
