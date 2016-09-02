@@ -912,18 +912,37 @@ sub _build_price_calculator {
         });
 }
 
+my $pc_params_setters = {
+    timeinyears            => sub { my $self = shift; $self->price_calculator->timeinyears($self->timeinyears) },
+    discount_rate          => sub { my $self = shift; $self->price_calculator->discount_rate($self->discount_rate) },
+    probability            => sub { my $self = shift; $self->price_calculator->pricing_engine_probability($self->pricing_engine->probability) },
+    bs_probability         => sub { my $self = shift; $self->price_calculator->pricing_engine_bs_probability($self->pricing_engine->bs_probability) },
+    theo_prabability       => sub { my $self = shift; $self->price_calculator->theo_probability($self->theo_probability) },
+    commission_markup      => sub { my $self = shift; $self->price_calculator->commission_markup($self->commission_markup) },
+    commission_from_stake  => sub { my $self = shift; $self->price_calculator->commission_from_stake($self->commission_from_stake) },
+    discounted_probability => sub { my $self = shift; $self->price_calculator->discounted_probability($self->discounted_probability) },
+    opposite_ask_probability =>
+        sub { my $self = shift; $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability) },
+};
+
+my $pc_needed_params_map = {
+    theo_probability       => [qw/ probability /],
+    bs_probability         => [qw/ bs_probability /],
+    ask_probability        => [qw/ theo_prabability /],
+    bid_probability        => [qw/ theo_prabability discounted_probability opposite_ask_probability /],
+    payout                 => [qw/ theo_prabability commission_from_stake /],
+    commission_markup      => [qw/ theo_prabability /],
+    commission_from_stake  => [qw/ theo_prabability commission_markup /],
+    validate_price         => [qw/ theo_prabability commission_markup commission_from_stake /],
+    discounted_probability => [qw/ timeinyears discount_rate /],
+};
+
 sub _set_price_calculator_params {
     my ($self, $method) = @_;
 
-    $self->price_calculator->pricing_engine_probability($self->pricing_engine->probability)       if $method =~ /theo/;
-    $self->price_calculator->pricing_engine_bs_probability($self->pricing_engine->bs_probability) if $method =~ /bs_probability/;
-    $self->price_calculator->theo_probability($self->theo_probability)                            if $method =~ /ask|bid|payout|commission|validate/;
-    $self->price_calculator->commission_markup($self->commission_markup)                          if $method =~ /commission_from_stake|validate/;
-    $self->price_calculator->commission_from_stake($self->commission_from_stake)                  if $method =~ /payout|validate/;
-    $self->price_calculator->discounted_probability($self->discounted_probability)                if $method =~ /bid/;
-    $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability)  if $method =~ /bid/;
-    $self->price_calculator->timeinyears($self->timeinyears)                                      if $method =~ /discounted/;
-    $self->price_calculator->discount_rate($self->discount_rate)                                  if $method =~ /discounted/;
+    for my $key (@{$pc_needed_params_map->{$method}}) {
+        $pc_params_setters->{$key}->($self);
+    }
     return;
 }
 

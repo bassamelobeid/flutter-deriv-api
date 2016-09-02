@@ -16,7 +16,7 @@ use BOM::Product::Offerings qw(get_offerings_flyby get_offerings_with_filter);
 my @expected_lc   = qw(japan-virtual virtual costarica maltainvest japan malta iom);
 my %expected_type = (
     'japan-virtual' => ['CALLE', 'NOTOUCH', 'ONETOUCH', 'PUT', 'RANGE', 'UPORDOWN', 'EXPIRYRANGEE', 'EXPIRYMISS'],
-     virtual        => [
+    virtual         => [
         'ASIAND',   'ASIANU',    'CALL',       'DIGITDIFF',  'DIGITEVEN',   'DIGITMATCH',
         'DIGITODD', 'DIGITOVER', 'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',
         'ONETOUCH', 'PUT',       'RANGE',      'SPREADD',    'SPREADU',     'UPORDOWN',
