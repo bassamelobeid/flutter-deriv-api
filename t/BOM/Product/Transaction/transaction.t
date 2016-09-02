@@ -2529,6 +2529,8 @@ subtest 'sell_expired_contracts', sub {
         };
         use Data::Dumper;
         diag(Dumper($res));
+        @unexpired_fmbids = sort { $a <=> $b } @unexpired_fmbids;
+        $res->{failures} = [sort { $a->{fmb_id} <=> $b->{fmb_id} } @{$res->{failures}}];
         is_deeply $res, +{
             number_of_sold_bets => 3,
             skip_contract       => 5,     # this means the contract was looked at but skipped due to invalid to sell
