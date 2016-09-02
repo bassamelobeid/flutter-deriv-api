@@ -483,7 +483,8 @@ sub prepare_buy {    ## no critic (RequireArgUnpacking)
             _build_pricing_comment({
                     contract => $self->contract,
                     price    => $self->price,
-                    action   => 'buy'
+                    ($self->probability_slippage) ? (probability_slippage => $self->probability_slippage) : (),
+                    action => 'buy'
                 })) unless @{$self->comment};
     }
 
@@ -1204,7 +1205,7 @@ BEGIN { _create_validator '_validate_currency' }
 sub _build_pricing_comment {
     my $args = shift;
 
-    my ($contract, $price, $action) = @{$args}{'contract', 'price', 'action'};
+    my ($contract, $price, $action, $probability_slippage) = @{$args}{'contract', 'price', 'action', 'probability_slippage'};
 
     my @comment_fields;
     if ($contract->is_spread) {
@@ -1243,8 +1244,8 @@ sub _build_pricing_comment {
 
         # Record probability slippage in quants bet variable.
         # To always reproduce ask price, we would want to record the slippage allowed during transaction.
-        if ($action eq 'buy' and $self->probability_slippage != 0) {
-            push @comment_fields, (probability_slippage => $self->probability_slippage);
+        if ($action eq 'buy' and defined $probability_slippage) {
+            push @comment_fields, (probability_slippage => $probability_slippage);
         }
 
         my $tick;
