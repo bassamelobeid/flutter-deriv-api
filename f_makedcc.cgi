@@ -80,7 +80,7 @@ if ($input->{'dcctype'} eq 'file_content') {
 
     # Logging
     Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")
-        ->append($now->datetime
+        ->append_utf8($now->datetime
             . "GMT $staff MAKES DUAL CONTROL CODE FOR "
             . $input->{'transtype'}
             . " AMOUNT="
@@ -115,7 +115,7 @@ if ($input->{'dcctype'} eq 'file_content') {
 
     # Logging
     Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")
-        ->append($now->datetime
+        ->append_utf8($now->datetime
             . "GMT $staff MAKES DUAL CONTROL CODE FOR "
             . $input->{'transtype'}
             . " AMOUNT="
