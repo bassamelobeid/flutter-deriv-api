@@ -1756,9 +1756,9 @@ frxAUDJPY_USD_5_FOMC_Statement:
   duration: '1560.000000'
   magnitude: '8.781435'
 frxAUDJPY_USD_5_Fed_Chair_Yellen_Speaks:
-  bias: '0.000000'
-  duration: '60.000000'
-  magnitude: '1.000000'
+  bias: '0.050000'
+  duration: '300.000000'
+  magnitude: '5.000000'
 frxAUDJPY_USD_5_Fed_Chair_Yellen_Testifies:
   bias: '0.000000'
   duration: '60.000000'
@@ -3600,9 +3600,9 @@ frxAUDUSD_USD_5_FOMC_Statement:
   duration: '3060.000000'
   magnitude: '15.921346'
 frxAUDUSD_USD_5_Fed_Chair_Yellen_Speaks:
-  bias: '0.000000'
-  duration: '60.000000'
-  magnitude: '1.000000'
+  bias: '0.050000'
+  duration: '300.000000'
+  magnitude: '10.000000'
 frxAUDUSD_USD_5_Fed_Chair_Yellen_Testifies:
   bias: '0.050000'
   duration: '120.000000'
@@ -5440,9 +5440,9 @@ frxEURAUD_USD_5_FOMC_Statement:
   duration: '2280.000000'
   magnitude: '7.292761'
 frxEURAUD_USD_5_Fed_Chair_Yellen_Speaks:
-  bias: '0.000000'
-  duration: '60.000000'
-  magnitude: '1.000000'
+  bias: '0.050000'
+  duration: '300.000000'
+  magnitude: '5.000000'
 frxEURAUD_USD_5_Fed_Chair_Yellen_Testifies:
   bias: '0.000000'
   duration: '60.000000'
@@ -7276,9 +7276,9 @@ frxEURCAD_USD_5_FOMC_Statement:
   duration: '1560.000000'
   magnitude: '7.785436'
 frxEURCAD_USD_5_Fed_Chair_Yellen_Speaks:
-  bias: '0.000000'
-  duration: '60.000000'
-  magnitude: '1.000000'
+  bias: '0.050000'
+  duration: '300.000000'
+  magnitude: '5.000000'
 frxEURCAD_USD_5_Fed_Chair_Yellen_Testifies:
   bias: '0.000000'
   duration: '60.000000'
@@ -9000,9 +9000,9 @@ frxEURCHF_USD_5_FOMC_Statement:
   duration: '600.000000'
   magnitude: '5.325431'
 frxEURCHF_USD_5_Fed_Chair_Yellen_Speaks:
-  bias: '0.000000'
-  duration: '60.000000'
-  magnitude: '1.000000'
+  bias: '0.050000'
+  duration: '300.000000'
+  magnitude: '5.000000'
 frxEURCHF_USD_5_Fed_Chair_Yellen_Testifies:
   bias: '0.000000'
   duration: '60.000000'
@@ -10824,9 +10824,9 @@ frxEURGBP_USD_5_FOMC_Statement:
   duration: '1140.000000'
   magnitude: '9.497640'
 frxEURGBP_USD_5_Fed_Chair_Yellen_Speaks:
-  bias: '0.000000'
-  duration: '60.000000'
-  magnitude: '1.000000'
+  bias: '0.050000'
+  duration: '300.000000'
+  magnitude: '5.000000'
 frxEURGBP_USD_5_Fed_Chair_Yellen_Testifies:
   bias: '0.000000'
   duration: '60.000000'
@@ -12660,9 +12660,9 @@ frxEURJPY_USD_5_FOMC_Statement:
   duration: '2160.000000'
   magnitude: '5.544524'
 frxEURJPY_USD_5_Fed_Chair_Yellen_Speaks:
-  bias: '0.000000'
-  duration: '60.000000'
-  magnitude: '1.000000'
+  bias: '0.050000'
+  duration: '300.000000'
+  magnitude: '5.000000'
 frxEURJPY_USD_5_Fed_Chair_Yellen_Testifies:
   bias: '0.000000'
   duration: '60.000000'
@@ -14500,9 +14500,9 @@ frxEURUSD_USD_5_FOMC_Statement:
   duration: '2700.000000'
   magnitude: '15.122363'
 frxEURUSD_USD_5_Fed_Chair_Yellen_Speaks:
-  bias: '0.000000'
-  duration: '60.000000'
-  magnitude: '1.000000'
+  bias: '0.050000'
+  duration: '300.000000'
+  magnitude: '10.000000'
 frxEURUSD_USD_5_Fed_Chair_Yellen_Testifies:
   bias: '0.000000'
   duration: '60.000000'
@@ -16332,9 +16332,9 @@ frxGBPAUD_USD_5_FOMC_Statement:
   duration: '1560.000000'
   magnitude: '9.870475'
 frxGBPAUD_USD_5_Fed_Chair_Yellen_Speaks:
-  bias: '0.000000'
-  duration: '60.000000'
-  magnitude: '1.000000'
+  bias: '0.050000'
+  duration: '300.000000'
+  magnitude: '5.000000'
 frxGBPAUD_USD_5_Fed_Chair_Yellen_Testifies:
   bias: '0.000000'
   duration: '60.000000'
@@ -18168,9 +18168,9 @@ frxGBPJPY_USD_5_FOMC_Statement:
   duration: '1500.000000'
   magnitude: '7.251340'
 frxGBPJPY_USD_5_Fed_Chair_Yellen_Speaks:
-  bias: '0.000000'
-  duration: '60.000000'
-  magnitude: '1.000000'
+  bias: '0.050000'
+  duration: '300.000000'
+  magnitude: '5.000000'
 frxGBPJPY_USD_5_Fed_Chair_Yellen_Testifies:
   bias: '0.000000'
   duration: '60.000000'
@@ -20016,9 +20016,9 @@ frxGBPUSD_USD_5_FOMC_Statement:
   duration: '1680.000000'
   magnitude: '13.290778'
 frxGBPUSD_USD_5_Fed_Chair_Yellen_Speaks:
-  bias: '0.000000'
-  duration: '60.000000'
-  magnitude: '1.000000'
+  bias: '0.050000'
+  duration: '300.000000'
+  magnitude: '10.000000'
 frxGBPUSD_USD_5_Fed_Chair_Yellen_Testifies:
   bias: '0.050000'
   duration: '120.000000'
@@ -21860,9 +21860,9 @@ frxUSDCAD_USD_5_FOMC_Statement:
   duration: '1740.000000'
   magnitude: '12.582215'
 frxUSDCAD_USD_5_Fed_Chair_Yellen_Speaks:
-  bias: '0.000000'
-  duration: '60.000000'
-  magnitude: '1.000000'
+  bias: '0.050000'
+  duration: '300.000000'
+  magnitude: '10.000000'
 frxUSDCAD_USD_5_Fed_Chair_Yellen_Testifies:
   bias: '0.050000'
   duration: '120.000000'
@@ -23593,8 +23593,8 @@ frxUSDCHF_USD_5_FOMC_Statement:
   magnitude: '16.417667'
 frxUSDCHF_USD_5_Fed_Chair_Yellen_Speaks:
   bias: '0.050000'
-  duration: '120.000000'
-  magnitude: '3.104548'
+  duration: '300.000000'
+  magnitude: '10.000000'
 frxUSDCHF_USD_5_Fed_Chair_Yellen_Testifies:
   bias: '0.050000'
   duration: '120.000000'
@@ -25432,9 +25432,9 @@ frxUSDJPY_USD_5_FOMC_Statement:
   duration: '3060.000000'
   magnitude: '19.766657'
 frxUSDJPY_USD_5_Fed_Chair_Yellen_Speaks:
-  bias: '0.000000'
-  duration: '60.000000'
-  magnitude: '1.000000'
+  bias: '0.050000'
+  duration: '300.000000'
+  magnitude: '10.000000'
 frxUSDJPY_USD_5_Fed_Chair_Yellen_Testifies:
   bias: '0.050000'
   duration: '120.000000'
