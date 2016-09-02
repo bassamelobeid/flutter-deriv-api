@@ -2533,7 +2533,7 @@ subtest 'sell_expired_contracts', sub {
             number_of_sold_bets => 3,
             skip_contract       => 5,     # this means the contract was looked at but skipped due to invalid to sell
             total_credited      => 300,
-            failures => [map { {reason => 'not expired'}, fmb_id => $_ } @unexpired_fmbids],
+            failures => [map { {reason => 'not expired', fmb_id => $_} } @unexpired_fmbids],
             },
             'sold 3 out of 8 remaining bets';
 
