@@ -93,7 +93,7 @@ if (request()->param('whattodo') eq 'closeatzero') {
 
     # Logging
     Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")
-        ->append($now->datetime
+        ->append_utf8($now->datetime
             . "GMT $ttype($buysell) $qty @ $currency$price $bet_ref $loginID clerk=$clerk fellow="
             . request()->param('DCstaff')
             . " DCcode="

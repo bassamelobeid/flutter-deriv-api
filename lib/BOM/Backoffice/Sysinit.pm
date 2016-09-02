@@ -121,7 +121,7 @@ sub log_bo_access {
     if ((-s "/var/log/fixedodds/staff-$staffname.log" or 0) > 750000) {
         File::Copy::move("/var/log/fixedodds/staff-$staffname.log", "/var/log/fixedodds/staff-$staffname.log.1");
     }
-    Path::Tiny::path("/var/log/fixedodds/staff-$staffname.log")->append(Date::Utility->new->datetime . " $s $l\n");
+    Path::Tiny::path("/var/log/fixedodds/staff-$staffname.log")->append_utf8(Date::Utility->new->datetime . " $s $l\n");
 
     return;
 }
