@@ -1785,6 +1785,7 @@ For contracts with missing market data, settle them manually for real money acco
 Returns: HashRef, with:
 'total_credited', total amount credited to Client
 'skip_contract', count for expired contracts that failed to be sold
+'failures', the failure information
 
 =cut
 
