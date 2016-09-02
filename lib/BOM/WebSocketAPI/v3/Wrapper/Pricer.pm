@@ -338,7 +338,7 @@ sub _price_stream_results_adjustment {
     $_ eq $orig_args->{contract_type} and return $results for qw(SPREADU SPREADD);
 
     # log the instances when pricing server doesn't return theo probability
-    stats_inc('price_adjustment.missing_theo_probability') unless $resp_theo_probability;
+    stats_inc('price_adjustment.missing_theo_probability') unless defined $resp_theo_probability;
 
     my $t = [gettimeofday];
     # overrides the theo_probability which take the most calculation time.
