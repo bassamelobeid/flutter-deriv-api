@@ -1245,7 +1245,7 @@ sub _build_pricing_comment {
 
         # Record probability slippage in quants bet variable.
         # To always reproduce ask price, we would want to record the slippage allowed during transaction.
-        if ($action eq 'buy' and defined $probability_slippage) {
+        if (defined $probability_slippage) {
             push @comment_fields, (probability_slippage => $probability_slippage);
         }
 
