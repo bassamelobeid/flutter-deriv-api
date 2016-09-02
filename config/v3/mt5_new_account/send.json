@@ -45,7 +45,7 @@
     },
     "address": {
       "type" : "string",
-      "pattern": "^[\\p{L}\\p{Nd}\\s'.,-@\\]{0,128}$",
+      "pattern": "^[\\p{L}\\p{Nd}\\s'.,-@\/]{0,128}$",
       "description": "The address of the user. The maximum length of the address is 128 characters. Optional field."
     },
     "state": {
