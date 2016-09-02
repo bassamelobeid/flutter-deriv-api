@@ -705,6 +705,19 @@ subtest 'error check' => sub {
             $vs->long_term_prediction, 'use long term vol when there is less than 5 good ticks';
         ok !$vs->error, 'no error if we have no good ticks';
         $vs->error('');
+        $mock_at->mock(
+            'retrieve',
+            sub {
+                return [(map { {%{$ticks->[$_]},quote => $ticks->[0]->{quote}} } (0 .. 9))];
+            });
+        is $vs->get_volatility({
+                current_epoch         => $now->epoch,
+                seconds_to_expiration => 900
+            }
+            ),
+            0.0718139942565233, 'normal volatility when spots are the same but epochs are different.';
+        ok !$vs->error, 'no error if we have no good ticks with same spot but different epoch';
+        $vs->error('');
         is $vs->get_volatility({current_epoch => $now->epoch}), 0.11, 'vol is 0.11';
         like($vs->error, qr/Non zero arguments of/, 'error if seconds_to_expiration is not provided');
         $vs->error('');
