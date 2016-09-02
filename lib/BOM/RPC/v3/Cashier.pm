@@ -256,7 +256,7 @@ sub cashier {
     }
 
     Path::Tiny::path('/tmp/doughflow_tokens.txt')
-        ->append(join(":", Date::Utility->new()->datetime_ddmmmyy_hhmmss, $df_client->loginid, $handoff_token->key, $action));
+        ->append_utf8(join(":", Date::Utility->new()->datetime_ddmmmyy_hhmmss, $df_client->loginid, $handoff_token->key, $action));
 
     # build DF link
     $url =
