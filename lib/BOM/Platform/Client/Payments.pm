@@ -16,7 +16,6 @@ use BOM::Database::ClientDB;
 
 # NOTE.. this is a 'mix-in' of extra subs for BOM::Platform::Client.  It is not a distinct Class.
 
-#######################################
 sub validate_payment {
     my ($self, %args) = @_;
     my $currency = $args{currency} || die "no currency";
@@ -163,7 +162,6 @@ sub validate_payment {
     return 1;
 }
 
-#######################################
 sub deposit_virtual_funds {
     my ($self, $source) = @_;
     $self->is_virtual || die "not a virtual client";
@@ -218,7 +216,6 @@ sub smart_payment {
     return $self->$payment_handler(%args);
 }
 
-#######################################
 sub payment_legacy_payment {
     my ($self, %args) = @_;
 
@@ -264,7 +261,6 @@ sub payment_legacy_payment {
     return $trx;
 }
 
-#######################################
 sub payment_bank_wire {
     my ($self, %args) = @_;
 
@@ -307,7 +303,6 @@ sub payment_bank_wire {
     return $trx;
 }
 
-#######################################
 sub payment_account_transfer {
     my ($fmClient, %args) = @_;
 
@@ -397,7 +392,6 @@ sub payment_account_transfer {
     return {transaction_id => $fmTrx->id};
 }
 
-#######################################
 sub payment_affiliate_reward {
     my ($self, %args) = @_;
 
@@ -445,7 +439,6 @@ sub payment_affiliate_reward {
     return $trx;
 }
 
-#######################################
 sub payment_doughflow {
     my ($self, %args) = @_;
 
@@ -499,7 +492,6 @@ sub payment_doughflow {
     return $trx;
 }
 
-#######################################
 sub payment_epg {
     my ($self, %args) = @_;
 
@@ -553,7 +545,6 @@ sub payment_epg {
     return $trx;
 }
 
-#######################################
 sub payment_free_gift {
     my ($self, %args) = @_;
 
@@ -593,7 +584,6 @@ sub payment_free_gift {
     return $trx;
 }
 
-#######################################
 sub payment_payment_fee {
     my ($self, %args) = @_;
 
@@ -631,7 +621,6 @@ sub payment_payment_fee {
     return $trx;
 }
 
-#######################################
 sub payment_western_union {
     my ($self, %args) = @_;
 
