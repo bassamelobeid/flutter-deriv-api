@@ -126,7 +126,7 @@
               "pattern": "^(1|0)$"
             }
           }
-        }
+        },
         "mt_gaming_company": {
           "type": ["null", "object"],
           "description": "Landing Company for MT5 gaming contracts (Volatility Indices)",
