@@ -77,7 +77,6 @@ sub mt5_new_account {
     # client can have only 1 MT demo & 1 MT real a/c
     my $user = BOM::Platform::User->new({email => $client->email});
 
-    my $acc = {};
     foreach ($user->mt5_logins) {
         $_ =~ /^MT(\d+)$/;
         my $login = $1;
@@ -86,17 +85,11 @@ sub mt5_new_account {
                 client => $client,
                 args   => {login => $login}});
 
-        if ($setting->{group} =~ /^demo\\/) {
-            $acc->{demo} = $login;
-        } elsif ($setting->{group} =~ /^real\\(\w+)$/) {
-            $acc->{$1} = $login;
+        if ($setting->{group} eq $group) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'MT5CreateUserError',
+                    message_to_client => localize('You already have a [_1] account [_2]', $account_type, $login)});
         }
-    }
-
-    if (exists $acc->{$account_type}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'MT5CreateUserError',
-                message_to_client => localize('You already have a [_1] account [_2]', $account_type, $acc->{$account_type})});
     }
 
     $args->{group} = $group;
