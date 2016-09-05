@@ -30,7 +30,7 @@ sub mt5_login_list {
     foreach (BOM::Platform::User->new({email => $client->email})->mt5_logins) {
         $_ =~ /^MT(\d+)$/;
         my $login = $1;
-        my $acc = { login => $login };
+        my $acc = {login => $login};
 
         $setting = mt5_get_settings({
                 client => $client,
