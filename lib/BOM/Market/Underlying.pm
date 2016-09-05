@@ -1462,9 +1462,7 @@ sub _build_display_decimals {
 sub breaching_tick {
     my ($self, %args) = @_;
 
-    $args{underlying}    = $self->symbol;
-    $args{pip_size}      = $self->pip_size;
-    $args{system_symbol} = $self->system_symbol;
+    $args{underlying}    = $self;
 
     return $self->feed_api->get_first_tick(%args);
 }
