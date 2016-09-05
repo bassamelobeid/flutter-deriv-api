@@ -73,8 +73,21 @@ while (1) {
         my $response;
 
         if ($price_daemon_cmd eq 'price') {
-
-            my $current_spot_ts = BOM::Market::Underlying->new($params->{symbol})->spot_tick->epoch;
+            my $underlying = BOM::Market::Underlying->new($params->{symbol});
+            
+            if (not defined $underlying) {
+                warn "$params->{symbol} doesn't have an underlying obj";
+                next;
+            }
+            if (not defined $underlying->spot_tick) {
+                warn "$params->{symbol} doesn't have spot_tick";
+                next;
+            }
+            if (not defined $underlying->spot_tick->epoch) {
+                warn "$params->{symbol} doesn't have epoch";
+                next;
+            }
+            my $current_spot_ts = $underlying->spot_tick->epoch;
             my $last_price_ts   = $redis->get($next) || 0;
 
             next if ($current_spot_ts == $last_price_ts and $current_time - $last_price_ts <= 10);
