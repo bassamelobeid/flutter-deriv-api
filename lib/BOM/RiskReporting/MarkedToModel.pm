@@ -204,7 +204,6 @@ sub sell_expired_contracts {
         my $fmb_infos = $open_bets_ref->{$client_id};
         for my $id (keys %$fmb_infos) {
             my $fmb_id         = $open_bets_ref->{$id}->{id};
-            my $client_id      = $open_bets_ref->{$id}->{client_loginid};
             my $expected_value = $open_bets_ref->{$id}->{market_price};
             my $currency       = $open_bets_ref->{$id}->{currency_code};
             my $ref_number     = $open_bets_ref->{$id}->{transaction_id};
