@@ -29,13 +29,17 @@ sub mt5_login_list {
     my @array;
     foreach (BOM::Platform::User->new({email => $client->email})->mt5_logins) {
         $_ =~ /^MT(\d+)$/;
-        push @array, {login => $1};
+        my $login = $1;
+        my $acc = { login => $login };
+
         $setting = mt5_get_settings({
                 client => $client,
-                args   => {login => $1}});
+                args   => {login => $login}});
         if ($setting && $setting->{group}) {
-            push @array, {group => $setting->{group}};
+            $acc->{group} = $setting->{group};
         }
+
+        push @array, $acc;
     }
     return \@array;
 }
