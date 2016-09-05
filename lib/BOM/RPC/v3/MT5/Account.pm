@@ -3,6 +3,7 @@ package BOM::RPC::v3::MT5::Account;
 use strict;
 use warnings;
 
+use YAML::XS;
 use List::Util qw(any);
 use Try::Tiny;
 use Locale::Country::Extra;
