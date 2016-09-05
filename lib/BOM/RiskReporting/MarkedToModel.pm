@@ -247,7 +247,7 @@ sub sell_expired_contracts {
             }
 
             push @fmb_ids_to_be_sold, $fmb_id;
-            $bet_infos->{$fmb_id} = $bet_info;
+            $bet_infos{$fmb_id} = $bet_info;
         }
 
         my $result = BOM::Product::Transaction::sell_expired_contracts({
@@ -257,7 +257,7 @@ sub sell_expired_contracts {
         });
     }
     for my $failure (@{$result->{failures}}) {
-        my $bet_info = $bet_infos->{$failure->{fmb_id}};
+        my $bet_info = $bet_infos{$failure->{fmb_id}};
         $bet_info->{reason} = $failure->{reason};
         push @error_lines, $bet_info;
     }
