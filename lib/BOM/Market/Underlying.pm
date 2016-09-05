@@ -166,12 +166,9 @@ sub _build_spot_source {
 }
 
 sub closing_tick_on {
-    my $self = shift;
-    my $end  = shift;
+    my ($self, $end) = @_;
 
-    my $closing = $self->calendar->closing_on(Date::Utility->new($end));
-
-    return $self->spot_source->closing_tick_on($end, $closing);
+    return $self->spot_source->closing_tick_on($end);
 }
 
 sub spot {
