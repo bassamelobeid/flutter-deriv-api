@@ -203,11 +203,11 @@ sub sell_expired_contracts {
     for my $client_id (@client_loginids) {
         my $fmb_infos = $open_bets_ref->{$client_id};
         for my $id (keys %$fmb_infos) {
-            my $fmb_id         = $open_bets_ref->{$id}->{id};
-            my $expected_value = $open_bets_ref->{$id}->{market_price};
-            my $currency       = $open_bets_ref->{$id}->{currency_code};
-            my $ref_number     = $open_bets_ref->{$id}->{transaction_id};
-            my $buy_price      = $open_bets_ref->{$id}->{buy_price};
+            my $fmb_id         = $fmb_infos->{$id}->{id};
+            my $expected_value = $fmb_infos->{$id}->{market_price};
+            my $currency       = $fmb_infos->{$id}->{currency_code};
+            my $ref_number     = $fmb_infos->{$id}->{transaction_id};
+            my $buy_price      = $fmb_infos->{$id}->{buy_price};
 
             my $bet_info = {
                 loginid   => $client_id,
@@ -220,7 +220,7 @@ sub sell_expired_contracts {
 
             my $client = BOM::Platform::Client::get_instance({'loginid' => $client_id});
 
-            my $bet = $open_bets_ref->{$id}{bet};
+            my $bet = $fmb_infos->{$id}{bet};
 
             if (my $bb_symbol = $map_to_bb{$bet->underlying->symbol}) {
                 $csv->combine($map_to_bb{$bet->underlying->symbol}, $bet->date_start->db_timestamp, $bet->date_expiry->db_timestamp);
