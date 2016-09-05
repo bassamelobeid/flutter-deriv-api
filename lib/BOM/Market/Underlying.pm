@@ -1462,7 +1462,7 @@ sub _build_display_decimals {
 sub breaching_tick {
     my ($self, %args) = @_;
 
-    $args{underlying}    = $self;
+    $args{underlying} = $self;
 
     return $self->feed_api->get_first_tick(%args);
 }
