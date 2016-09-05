@@ -202,6 +202,8 @@ sub sell_expired_contracts {
     my $rmgenv = BOM::System::Config::env;
     for my $client_id (@client_loginids) {
         my $fmb_infos = $open_bets_ref->{$client_id};
+        my $client = BOM::Platform::Client::get_instance({'loginid' => $client_id});
+        my (@fmb_ids_to_be_sold, %bet_infos);
         for my $id (keys %$fmb_infos) {
             my $fmb_id         = $fmb_infos->{$id}->{id};
             my $expected_value = $fmb_infos->{$id}->{market_price};
@@ -218,8 +220,6 @@ sub sell_expired_contracts {
                 bb_lookup => '--',
             };
 
-            my $client = BOM::Platform::Client::get_instance({'loginid' => $client_id});
-
             my $bet = $fmb_infos->{$id}{bet};
 
             if (my $bb_symbol = $map_to_bb{$bet->underlying->symbol}) {
@@ -233,29 +233,37 @@ sub sell_expired_contracts {
             if (not defined $bet->value) {
                 # $bet->value is set when we confirm expiration status, even further above.
                 $bet_info->{reason} = 'indeterminate value';
-            } elsif (0 + $bet->bid_price xor 0 + $expected_value) {
+                push @error_lines, $bet_info;
+                next;
+            }
+            if (0 + $bet->bid_price xor 0 + $expected_value) {
                 # We want to be sure that both sides agree that it is either worth nothing or payout.
                 # Sadly, you can't compare the values directly because $expected_value has been
                 # converted to USD and our payout currency might be different.
                 # Since the values can come back as strings, we use the 0 + to force them to be evaluated numerically.
                 $bet_info->{reason} = 'expected to be worth ' . $expected_value . ' got ' . $bet->bid_price;
-            } else {
-                my $result = BOM::Product::Transaction::sell_expired_contracts({
-                    client       => $client,
-                    contract_ids => [$fmb_id],
-                    source       => 3,           # app id for `Binary.com riskd.pl` in auth db => oauth.apps table
-                });
-
-                # we sold only one contract, so if there is a failure, then it must be on that contract
-                $bet_info->{reason} = $result->{failures}[0]{reason} if ($result->{failures}[0]);
+                push @error_lines, $bet_info;
+                next;
             }
 
-            push @error_lines, $bet_info if (exists $bet_info->{reason});
+            push @fmb_ids_to_be_sold, $fmb_id;
+            $bet_infos->{$fmb_id} = $bet_info;
         }
+
+        my $result = BOM::Product::Transaction::sell_expired_contracts({
+            client       => $client,
+            contract_ids => \@fmb_ids_to_be_sold,
+            source       => 3,                      # app id for `Binary.com riskd.pl` in auth db => oauth.apps table
+        });
+    }
+    for my $failure (@{$result->{failures}}) {
+        my $bet_info = $bet_infos->{$failure->{fmb_id}};
+        $bet_info->{reason} = $failure->{reason};
+        push @error_lines, $bet_info;
     }
 
     if (scalar @error_lines) {
-        local ($/, $\) = ("\n", undef);              # in case overridden elsewhere
+        local ($/, $\) = ("\n", undef);                 # in case overridden elsewhere
         Cache::RedisDB->set('AUTOSELL', 'ERRORS', \@error_lines, 3600);
         my $sep     = '---';
         my $subject = 'AutoSell Failures during riskd operation';
