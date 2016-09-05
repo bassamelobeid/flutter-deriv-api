@@ -65,7 +65,11 @@ sub go {
             coalesce(   dw.payment_processor,
                         case p.payment_gateway_code
                             when 'affiliate_reward'       then 'Affiliate Reward'
-                            when 'account_transfer'       then 'Account Transfer'
+                            when 'account_transfer'       then
+                                case
+                                    when p.remark like '%MT5%' then 'MT5 Account Transfer'
+                                    else 'Account Transfer'
+                                end
                             when 'bank_wire'              then 'Bank Wire'
                             when 'free_gift'              then 'Free Gift'
                             when 'payment_agent_transfer' then 'Payment Agent'
