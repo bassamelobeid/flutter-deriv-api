@@ -157,18 +157,13 @@ has spot_source => (
         'spot_time'                  => 'spot_time',
         'spot_age'                   => 'spot_age',
         'tick_at'                    => 'tick_at',
+        'closing_tick_on'            => 'closing_tick_on',
     });
 
 sub _build_spot_source {
     my $self = shift;
 
     return $self->_builder->build_spot;
-}
-
-sub closing_tick_on {
-    my ($self, $end) = @_;
-
-    return $self->spot_source->closing_tick_on($end);
 }
 
 sub spot {
