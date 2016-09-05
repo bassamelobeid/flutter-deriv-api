@@ -34,6 +34,16 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol        => 'R_50',
         recorded_date => $now,
     });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+    {
+        events           => [{
+                symbol       => 'USD',
+                release_date => 1,
+                source       => 'forexfactory',
+                impact       => 1,
+                event_name   => 'FOMC',
+            }]
+    });
 
 subtest 'prices' => sub {
 
