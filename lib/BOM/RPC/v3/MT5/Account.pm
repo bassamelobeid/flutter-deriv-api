@@ -13,6 +13,12 @@ use BOM::Platform::User;
 use BOM::MT5::User;
 use BOM::Database::DataMapper::Client;
 
+my $countries_list;
+
+BEGIN {
+    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+}
+
 sub mt5_login_list {
     my $params = shift;
     my $client = $params->{client};
@@ -47,20 +53,20 @@ sub mt5_new_account {
         } else {
             $group = 'demo\virtual';
         }
-    } elsif ($account_type eq 'gaming') {
-        $group = 'real\costarica';
-
-        # only CR fully authenticated client can open MT real a/c
+    } elsif ($account_type eq 'gaming' or $account_type eq 'financial') {
+        # 5 Sept 2016: only CR fully authenticated client can open MT real a/c
         unless ($client->landing_company->short eq 'costarica' and $client->client_fully_authenticated) {
             return BOM::RPC::v3::Utility::permission_error();
         }
-    } elsif ($account_type eq 'financial') {
-        $group = 'real\vanuatu';
 
-        # only CR fully authenticated client can open MT real a/c
-        unless ($client->landing_company->short eq 'costarica' and $client->client_fully_authenticated) {
+        # get MT company from countries.yml
+        my $mt_company = $countries_list->{$client->residence}->{'mt_' . $account_type . '_company'};
+
+        if ($mt_company eq 'none') {
             return BOM::RPC::v3::Utility::permission_error();
         }
+
+        $group = 'real\\' . $mt_company;
     } else {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccountType',
