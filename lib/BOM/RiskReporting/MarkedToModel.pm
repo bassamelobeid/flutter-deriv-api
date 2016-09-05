@@ -255,11 +255,13 @@ sub sell_expired_contracts {
             contract_ids => \@fmb_ids_to_be_sold,
             source       => 3,                      # app id for `Binary.com riskd.pl` in auth db => oauth.apps table
         });
-    }
-    for my $failure (@{$result->{failures}}) {
-        my $bet_info = $bet_infos{$failure->{fmb_id}};
-        $bet_info->{reason} = $failure->{reason};
-        push @error_lines, $bet_info;
+
+        for my $failure (@{$result->{failures}}) {
+            my $bet_info = $bet_infos{$failure->{fmb_id}};
+            $bet_info->{reason} = $failure->{reason};
+            push @error_lines, $bet_info;
+        }
+
     }
 
     if (scalar @error_lines) {
