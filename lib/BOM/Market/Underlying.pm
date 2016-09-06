@@ -157,21 +157,13 @@ has spot_source => (
         'spot_time'                  => 'spot_time',
         'spot_age'                   => 'spot_age',
         'tick_at'                    => 'tick_at',
+        'closing_tick_on'            => 'closing_tick_on',
     });
 
 sub _build_spot_source {
     my $self = shift;
 
     return $self->_builder->build_spot;
-}
-
-sub closing_tick_on {
-    my $self = shift;
-    my $end  = shift;
-
-    my $closing = $self->calendar->closing_on(Date::Utility->new($end));
-
-    return $self->spot_source->closing_tick_on($end, $closing);
 }
 
 sub spot {
@@ -1471,8 +1463,8 @@ sub breaching_tick {
     my ($self, %args) = @_;
 
     $args{underlying}    = $self->symbol;
-    $args{pip_size}      = $self->pip_size;
     $args{system_symbol} = $self->system_symbol;
+    $args{pip_size}      = $self->pip_size;
 
     return $self->feed_api->get_first_tick(%args);
 }

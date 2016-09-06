@@ -81,7 +81,7 @@ SKIP: {
     subtest 'updated hurray!' => sub {
         my $tmp = File::Temp->newdir;
         # get the real deal because we check date
-        `wget -O $tmp/auto_upload.xls 'https://www.dropbox.com/s/67s60tryh057qx1/auto_upload.xls?dl=1' > /dev/null 2>&1`;
+        `wget -O $tmp/auto_upload.xls 'https://www.dropbox.com/s/yjl5jqe6f71stf5/auto_upload.xls?dl=1' > /dev/null 2>&1`;
         my $au = BOM::MarketData::AutoUpdater::Indices->new(
             file              => "$tmp/auto_upload.xls",
             symbols_to_update => [qw(TOP40)],
