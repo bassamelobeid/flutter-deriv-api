@@ -24,6 +24,19 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
+#create an empty un-used even so ask_price won't fail preparing market data for pricing engine
+#Because the code to prepare market data is called for all pricings in Contract
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+    {
+        events           => [{
+                symbol       => 'USD',
+                release_date => 1,
+                source       => 'forexfactory',
+                impact       => 1,
+                event_name   => 'FOMC',
+            }]
+    });
+
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -81,13 +94,13 @@ my $usdjpy_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 my $tick_r100 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch,
     underlying => 'R_100',
-    quote => 100,
+    quote      => 100,
 });
 
 # Spread is calculated base on spot of the underlying.
 # In this case, we mocked the spot to 100.
 my $mocked_underlying = Test::MockModule->new('BOM::Market::Underlying');
-$mocked_underlying->mock('spot', sub {100});
+$mocked_underlying->mock('spot', sub { 100 });
 
 my $underlying      = BOM::Market::Underlying->new('R_50');
 my $underlying_r100 = BOM::Market::Underlying->new('R_100');
@@ -334,7 +347,7 @@ subtest 'buy a spread bet' => sub {
         like $report, qr/^\s*Price: \Q${\$txn->price}\E$/m,                                           'price';
         like $report, qr/^\s*Payout: \Q${\$txn->payout}\E$/m,                                         'payout';
         like $report, qr/^\s*Amount Type: \Q${\$txn->amount_type}\E$/m,                               'amount_type';
-        like $report, qr/^\s*Comment: \Q${\$txn->comment->[0]}\E$/m,                                       'comment';
+        like $report, qr/^\s*Comment: \Q${\$txn->comment->[0]}\E$/m,                                  'comment';
         like $report, qr/^\s*Staff: \Q${\$txn->staff}\E$/m,                                           'staff';
         like $report, qr/^\s*Transaction Parameters: \$VAR1 = \{$/m,                                  'transaction parameters';
         like $report, qr/^\s*Transaction ID: \Q${\$txn->transaction_id}\E$/m,                         'transaction id';
@@ -433,7 +446,7 @@ subtest 'buy a spread bet' => sub {
         like $report, qr/^\s*Price: \Q${\$txn->price}\E$/m,                                           'price';
         like $report, qr/^\s*Payout: \Q${\$txn->payout}\E$/m,                                         'payout';
         like $report, qr/^\s*Amount Type: \Q${\$txn->amount_type}\E$/m,                               'amount_type';
-        like $report, qr/^\s*Comment: \Q${\$txn->comment->[0]}\E$/m,                                       'comment';
+        like $report, qr/^\s*Comment: \Q${\$txn->comment->[0]}\E$/m,                                  'comment';
         like $report, qr/^\s*Staff: \Q${\$txn->staff}\E$/m,                                           'staff';
         like $report, qr/^\s*Transaction Parameters: \$VAR1 = \{$/m,                                  'transaction parameters';
         like $report, qr/^\s*Transaction ID: \Q${\$txn->transaction_id}\E$/m,                         'transaction id';
@@ -508,7 +521,7 @@ subtest 'sell a spread bet' => sub {
         my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             epoch      => $now->epoch + 1,
             underlying => 'R_100',
-            quote => 101,
+            quote      => 101,
         });
         my $contract = produce_contract({
             underlying       => 'R_100',
@@ -562,7 +575,7 @@ subtest 'sell a spread bet' => sub {
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id}, $new_acc_usd->id, 'account_id';
             is $fmb->{bet_class}, 'spread_bet', 'bet_class';
-            is $fmb->{bet_type},  'SPREADU',             'bet_type';
+            is $fmb->{bet_type},  'SPREADU',    'bet_type';
             is $fmb->{buy_price} + 0, 20, 'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
@@ -576,7 +589,7 @@ subtest 'sell a spread bet' => sub {
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>',  time, 'settlement_time';
             like $fmb->{short_code}, qr/SPREADU/, 'short_code';
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
-            is $fmb->{tick_count},        undef,  'tick_count';
+            is $fmb->{tick_count},        undef,   'tick_count';
             is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
         };
     }
@@ -620,7 +633,7 @@ subtest 'buy a bet', sub {
             like $report, qr/^\s*Price: \Q${\$txn->price}\E$/m,                                           'price';
             like $report, qr/^\s*Payout: \Q${\$txn->payout}\E$/m,                                         'payout';
             like $report, qr/^\s*Amount Type: \Q${\$txn->amount_type}\E$/m,                               'amount_type';
-            like $report, qr/^\s*Comment: \Q${\$txn->comment->[0]}\E$/m,                                       'comment';
+            like $report, qr/^\s*Comment: \Q${\$txn->comment->[0]}\E$/m,                                  'comment';
             like $report, qr/^\s*Staff: \Q${\$txn->staff}\E$/m,                                           'staff';
             like $report, qr/^\s*Transaction Parameters: \$VAR1 = \{$/m,                                  'transaction parameters';
             like $report, qr/^\s*Transaction ID: \Q${\$txn->transaction_id}\E$/m,                         'transaction id';
@@ -1332,15 +1345,15 @@ subtest 'max_payout_open_bets validation', sub {
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
-        my $mock_contract    = Test::MockModule->new('BOM::Product::Contract');
+        my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
         # we are not testing for price accuracy here so it is fine.
         my $fake_ask_prob = Math::Util::CalculatedValue::Validatable->new({
-            name => 'ask_probability',
+            name        => 'ask_probability',
             description => 'fake ask probability',
-            set_by => 'test',
+            set_by      => 'test',
             base_amount => 0.537
         });
-        $mock_contract->mock('ask_probability', sub {note 'mocking ask_probability to 0.537'; $fake_ask_prob});
+        $mock_contract->mock('ask_probability', sub { note 'mocking ask_probability to 0.537'; $fake_ask_prob });
         my $contract = produce_contract({
             underlying   => 'frxUSDJPY',
             bet_type     => 'FLASHU',
@@ -1355,12 +1368,12 @@ subtest 'max_payout_open_bets validation', sub {
         # I am passing in purchase_time as contract->date_start.
         # We are getting false positive failure of 'ContractAlreadyStarted' on this way too often.
         my $txn = BOM::Product::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 5.37,
-            payout      => $contract->payout,
+            client        => $cl,
+            contract      => $contract,
+            price         => 5.37,
+            payout        => $contract->payout,
             purchase_date => $contract->date_start,
-            amount_type => 'payout',
+            amount_type   => 'payout',
         });
 
         my $error = do {
@@ -1368,7 +1381,8 @@ subtest 'max_payout_open_bets validation', sub {
             BOM::System::Config::quants->{client_limits}->{max_payout_open_positions}->{USD} = 29.99;
             my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
 
-            if ($now->is_a_weekend or ($now->day_of_week == 5 and $contract->date_expiry->is_after($now->truncate_to_day->plus_time_interval('21h')))) {
+            if ($now->is_a_weekend or ($now->day_of_week == 5 and $contract->date_expiry->is_after($now->truncate_to_day->plus_time_interval('21h'))))
+            {
                 $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
                 $mock_transaction->mock(_validate_date_pricing => sub { note "mocked Transaction->_validate_date_pricing returning nothing"; () });
@@ -1376,20 +1390,20 @@ subtest 'max_payout_open_bets validation', sub {
 
             }
             is +BOM::Product::Transaction->new({
-                    client      => $cl,
-                    contract    => $contract,
-                    price       => 5.37,
-                    payout      => $contract->payout,
-                    amount_type => 'payout',
+                    client        => $cl,
+                    contract      => $contract,
+                    price         => 5.37,
+                    payout        => $contract->payout,
+                    amount_type   => 'payout',
                     purchase_date => $contract->date_start,
                 })->buy, undef, '1st bet bought';
 
             is +BOM::Product::Transaction->new({
-                    client      => $cl,
-                    contract    => $contract,
-                    price       => 5.37,
-                    payout      => $contract->payout,
-                    amount_type => 'payout',
+                    client        => $cl,
+                    contract      => $contract,
+                    price         => 5.37,
+                    payout        => $contract->payout,
+                    amount_type   => 'payout',
                     purchase_date => $contract->date_start,
                 })->buy, undef, '2nd bet bought';
 
