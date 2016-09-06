@@ -10,6 +10,7 @@ use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
+use BOM::System::Config;
 
 sub clone {
     my ($self, $changes) = @_;
@@ -222,12 +223,12 @@ sub _build_ticks_for_trend {
     });
 }
 
-has lookback_secs => (
+has lookback_seconds => (
     is         => 'ro',
     lazy_build => 1,
 );
 
-sub _build_lookback_secs {
+sub _build_lookback_seconds {
     my $self             = shift;
     my @ticks            = @{$self->ticks_for_trend};
     my $duration_in_secs = $self->bet->timeindays->amount * 86400;
@@ -254,7 +255,7 @@ sub _build_slope {
     my $self             = shift;
     my $duration_in_secs = $self->bet->timeindays->amount * 86400;
 
-    my $ticks_per_sec = $self->lookback_secs / $duration_in_secs;
+    my $ticks_per_sec = $self->lookback_seconds / $duration_in_secs;
     return (sqrt(1 - (($ticks_per_sec - 2)**2) / 4));
 }
 
@@ -286,7 +287,7 @@ sub _build_intraday_trend {
     # But let's be extra careful here.
     my $lookback_seconds = $self->lookback_seconds;
     if (@ticks > 1 and $lookback_seconds > 0) {
-        $trend = ((($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt(lookback_secs / 2)) * $self->slope;
+        $trend = ((($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($lookback_seconds / 2)) * $self->slope;
     }
     my $calibration_coef = $self->coefficients->{$bet->underlying->symbol};
     my $trend_cv         = Math::Util::CalculatedValue::Validatable->new({
