@@ -287,8 +287,9 @@ sub sell_expired_contracts {
                 $sep
                 );
         }
-
+        print "before send email\n";
         if (BOM::System::Config::on_production()) {
+          print "send email\n";
             my $sender = Mail::Sender->new({
                 smtp    => 'localhost',
                 from    => '"Autosell" <autosell@regentmarkets.com>',
