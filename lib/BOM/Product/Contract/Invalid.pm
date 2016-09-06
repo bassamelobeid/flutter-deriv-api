@@ -22,10 +22,7 @@ sub _build_longcode {
     return localize('Legacy contract. No further information is available.');
 }
 
-sub _build_theo_price       { die "Can not price legacy bet: " . shift->shortcode; }
-sub _build_ask_price        { die "Can not price legacy bet: " . shift->shortcode; }
-sub _build_bid_price        { die "Can not price legacy bet: " . shift->shortcode; }
-sub _build_bs_price         { die "Can not price legacy bet: " . shift->shortcode; }
+sub _price_from_prob        { die "Can not price legacy bet: " . shift->shortcode; }
 sub _build_shortcode        { die "Invalid legacy bet type[" . shift->code . ']'; }
 sub is_expired              { return 1; }
 sub _build_ask_probability  { return 1; }
