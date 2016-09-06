@@ -282,8 +282,11 @@ sub _build_intraday_trend {
     });
 
     my $trend = 0;
-    if (@ticks > 1) {
-        $trend = ((($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($self->lookback_secs / 2)) * $self->slope;
+    # Lookback seconds is only set to zero if @ticks has less than or equal to one element.
+    # But let's be extra careful here.
+    my $lookback_seconds = $self->lookback_seconds;
+    if (@ticks > 1 and $lookback_seconds > 0) {
+        $trend = ((($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt(lookback_secs / 2)) * $self->slope;
     }
     my $calibration_coef = $self->coefficients->{$bet->underlying->symbol};
     my $trend_cv         = Math::Util::CalculatedValue::Validatable->new({
