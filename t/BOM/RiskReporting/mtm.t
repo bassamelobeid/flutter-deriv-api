@@ -138,6 +138,10 @@ subtest 'realtime report generation' => sub {
     my $called_count       = 0;
     $mocked_transaction->mock('sell_expired_contracts' => sub { $called_count++; $mocked_transaction->original('sell_expired_contracts')->(@_) });
 
+    #mock on_production to test email
+    my $mocked_system = Test::MockModule->new('BOM::System::Config');
+    $mocked_system->mock('on_production', sub {1});
+
     my $results;
     lives_ok { $results = BOM::RiskReporting::MarkedToModel->new(end => $now, send_alerts => 0)->generate } 'Report generation does not die.';
 
