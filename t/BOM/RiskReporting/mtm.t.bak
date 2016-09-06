@@ -18,6 +18,7 @@ use BOM::RiskReporting::MarkedToModel;
 use BOM::Platform::Runtime;
 use BOM::Database::DataMapper::CollectorReporting;
 
+
 my $now        = Date::Utility->new;
 my $plus5mins  = Date::Utility->new(time + 300);
 my $plus30mins = Date::Utility->new(time + 1800);
@@ -44,6 +45,7 @@ foreach my $symbol (keys %date_string) {
         });
     }
 }
+
 
 subtest 'realtime report generation' => sub {
     plan tests => 3;
@@ -140,10 +142,7 @@ subtest 'realtime report generation' => sub {
     note 'This may not be checking what you think.  It can not tell when things sold.';
     is($dm->get_last_generated_historical_marked_to_market_time, $now->db_timestamp, 'It ran and updated our timestamp.');
     note "Includes a lot of unit test transactions about which we don't care.";
-    my %msg = get_email_by_address_subject(
-        email   => 'quants_market-data@regentmarkets.com',
-        subject => qr/AutoSell FAilures/
-    );
+    my %msg = get_email_by_address_subject(email => 'quants_market-data@regentmarkets.com', subject => qr/AutoSell FAilures/);
     use Data::Dumper;
     diag(Dumper(\%msg));
 };
