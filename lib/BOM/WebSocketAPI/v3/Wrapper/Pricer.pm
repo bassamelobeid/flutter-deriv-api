@@ -11,7 +11,6 @@ use JSON::XS qw(encode_json decode_json);
 use Time::HiRes qw(gettimeofday tv_interval);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
-use BOM::RPC::v3::Contract;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
 my %pricer_cmd_handler = (
