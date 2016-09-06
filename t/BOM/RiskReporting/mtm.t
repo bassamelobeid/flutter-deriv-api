@@ -158,3 +158,117 @@ subtest 'realtime report generation' => sub {
     diag(Dumper(\%msg));
 };
 
+
+subtest 'test error lines' => sub {
+    plan tests => 4;
+
+    my $dm = BOM::Database::DataMapper::CollectorReporting->new({
+        broker_code => 'CR',
+    });
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $USDaccount = $client->set_default_account('USD');
+
+    $client->payment_free_gift(
+        currency => 'USD',
+        amount   => 5000,
+        remark   => 'free gift',
+    );
+
+    my $start_time  = $minus5mins;
+    my $expiry_time = $now;
+
+    my %bet_hash = (
+        bet_type          => 'FLASHU',
+        relative_barrier  => 'S0P',
+        underlying_symbol => 'frxUSDJPY',
+        payout_price      => 100,
+        buy_price         => 53,
+        purchase_time     => $start_time->datetime_yyyymmdd_hhmmss,
+        start_time        => $start_time->datetime_yyyymmdd_hhmmss,
+        expiry_time       => $expiry_time->datetime_yyyymmdd_hhmmss,
+        settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
+    );
+
+    my @shortcode_param = (
+        $bet_hash{bet_type}, $bet_hash{underlying_symbol},
+        $bet_hash{payout_price}, $start_time->epoch, $expiry_time->epoch, $bet_hash{relative_barrier}, 0
+    );
+
+    BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+        type => 'fmb_higher_lower',
+        %bet_hash,
+        account_id => $USDaccount->id,
+        short_code => uc join('_', @shortcode_param),
+    });
+
+    $start_time  = $now;
+    $expiry_time = $plus5mins;
+    %bet_hash    = (
+        bet_type          => 'FLASHU',
+        relative_barrier  => 'S0P',
+        underlying_symbol => 'frxUSDJPY',
+        payout_price      => 101,
+        buy_price         => 52,
+        purchase_time     => $start_time->datetime_yyyymmdd_hhmmss,
+        start_time        => $start_time->datetime_yyyymmdd_hhmmss,
+        expiry_time       => $expiry_time->datetime_yyyymmdd_hhmmss,
+        settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
+    );
+
+    BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+        type => 'fmb_higher_lower',
+        %bet_hash,
+        account_id => $USDaccount->id,
+        short_code => uc join('_', @shortcode_param),
+    });
+
+    $start_time  = $plus5mins;
+    $expiry_time = $plus30mins;
+    %bet_hash    = (
+        bet_type          => 'FLASHU',
+        relative_barrier  => 'S0P',
+        underlying_symbol => 'frxUSDJPY',
+        payout_price      => 101,
+        buy_price         => 52,
+        purchase_time     => $start_time->datetime_yyyymmdd_hhmmss,
+        start_time        => $start_time->datetime_yyyymmdd_hhmmss,
+        expiry_time       => $expiry_time->datetime_yyyymmdd_hhmmss,
+        settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
+    );
+
+    BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+        type => 'fmb_higher_lower',
+        %bet_hash,
+        account_id => $USDaccount->id,
+        short_code => uc join('_', @shortcode_param),
+    });
+
+    is($dm->get_last_generated_historical_marked_to_market_time, undef, 'Start with a clean slate.');
+
+    my $mocked_transaction = Test::MockModule->new('BOM::Product::Transaction');
+    my $called_count       = 0;
+    $mocked_transaction->mock('sell_expired_contracts' => sub { $called_count++; $mocked_transaction->original('sell_expired_contracts')->(@_) });
+
+    #mock on_production to test email
+    my $mocked_system = Test::MockModule->new('BOM::System::Config');
+    $mocked_system->mock('on_production', sub {1});
+
+    my $results;
+    lives_ok { $results = BOM::RiskReporting::MarkedToModel->new(end => $now, send_alerts => 0)->generate } 'Report generation does not die.';
+
+    note 'This may not be checking what you think.  It can not tell when things sold.';
+    is($dm->get_last_generated_historical_marked_to_market_time, $now->db_timestamp, 'It ran and updated our timestamp.');
+    note "Includes a lot of unit test transactions about which we don't care.";
+
+    is($called_count, 1, 'BOM::Product::Transaction::sell_expired_contracts called only once');
+    my %msg = get_email_by_address_subject(
+        email   => 'quants_market-data@regentmarkets.com',
+        subject => qr/AutoSell FAilures/
+    );
+    use Data::Dumper;
+    diag(Dumper(\%msg));
+};
+
