@@ -37,16 +37,16 @@ my ($token_vr) = $oauth->store_access_token_only(1, $test_client_vr->loginid);
 my $account     = $test_client_vr->default_account;
 my $old_balance = $account->balance;
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'economic_events',
     {
-        events           => [{
+        events => [{
                 symbol       => 'USD',
                 release_date => 1,
                 source       => 'forexfactory',
                 impact       => 1,
                 event_name   => 'FOMC',
-            }]
-    });
+            }]});
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
