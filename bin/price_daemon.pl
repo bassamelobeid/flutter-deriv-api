@@ -58,7 +58,6 @@ while (1) {
         $tv = $tv_now;
 
         if (Time::HiRes::tv_interval($tv_appconfig, $tv_now) >= 180) {
-            warn "price_daemon($$): Refreshing app_config\n";
             BOM::Platform::Runtime->instance->app_config->check_for_update;
             $tv_appconfig = $tv_now;
         }
@@ -74,7 +73,7 @@ while (1) {
 
         if ($price_daemon_cmd eq 'price') {
             my $underlying = BOM::Market::Underlying->new($params->{symbol});
-            
+
             if (not defined $underlying) {
                 warn "$params->{symbol} doesn't have an underlying obj";
                 next;
