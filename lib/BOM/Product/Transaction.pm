@@ -1912,7 +1912,7 @@ sub sell_expired_contracts {
                 push @quants_bet_variables, $quants_bet_variables;
             } else {
                 $stats_failure{$logging_class}{_normalize_error($contract->primary_validation_error)}++;
-                $failure->{reason} = '$contract->primary_validation_error->message';
+                $failure->{reason} = $contract->primary_validation_error->message;
                 push $result->{failures}, $failure;
             }
         };
