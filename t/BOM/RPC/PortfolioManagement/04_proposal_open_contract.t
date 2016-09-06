@@ -38,16 +38,16 @@ my @params = (
 $t = Test::Mojo->new('BOM::RPC');
 $rpc_ct = Test::BOM::RPC::Client->new(ua => $t->app->ua);
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'economic_events',
     {
-        events           => [{
+        events => [{
                 symbol       => 'USD',
                 release_date => 1,
                 source       => 'forexfactory',
                 impact       => 1,
                 event_name   => 'FOMC',
-            }]
-    });
+            }]});
 
 initialize_realtime_ticks_db();
 
