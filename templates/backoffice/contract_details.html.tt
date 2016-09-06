@@ -1,7 +1,7 @@
 <p>[% contract.longcode %]</p>
 <form action="" method="post">
     <table>
-        <tr><td>Transaction ID</td><td><input value="[% id %]" size="4" type="text" name="id" id="id"/></td></tr>
+        <tr><td>Transaction ID</td><td><input value="[% id %]" size="20" type="text" name="id" id="id"/></td></tr>
         <tr><td>Start time</td><td><input value="[% start %]" size="20" type="text" name="start" id="start"/> If left empty, it will always price at contract's start time</td></tr>
         <input  type="hidden" value="[% broker %]"name="broker" id="broker"/>
         <tr><td colspan=2><input type="submit" name="price" value="View in Table"/></td></tr>
