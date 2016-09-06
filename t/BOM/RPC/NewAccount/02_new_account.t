@@ -63,7 +63,7 @@ subtest $method => sub {
     $params->{args}->{client_password} = 'verylongandhardpasswordDDD1!';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidToken', 'If email verification_code is wrong it should return error')
-        ->error_message_is('Your token has expired.', 'If email verification_code is wrong it should return error_message');
+        ->error_message_is('Your token has expired or is invalid.', 'If email verification_code is wrong it should return error_message');
 
     $params->{args}->{verification_code} = BOM::Platform::Token->new(
         email       => $email,
