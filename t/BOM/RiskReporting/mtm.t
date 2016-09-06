@@ -46,7 +46,7 @@ foreach my $symbol (keys %date_string) {
 }
 
 subtest 'realtime report generation' => sub {
-    plan tests => 4;
+    plan tests => 3;
 
     my $dm = BOM::Database::DataMapper::CollectorReporting->new({
         broker_code => 'CR',
@@ -131,8 +131,6 @@ subtest 'realtime report generation' => sub {
         account_id => $USDaccount->id,
         short_code => uc join('_', @shortcode_param),
     });
-
-    is($dm->get_last_generated_historical_marked_to_market_time, undef, 'Start with a clean slate.');
 
     my $mocked_transaction = Test::MockModule->new('BOM::Product::Transaction');
     my $called_count       = 0;
