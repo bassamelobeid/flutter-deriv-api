@@ -46,7 +46,7 @@ foreach my $symbol (keys %date_string) {
 }
 
 subtest 'realtime report generation' => sub {
-    plan tests => 3;
+    plan tests => 4;
 
     my $dm = BOM::Database::DataMapper::CollectorReporting->new({
         broker_code => 'CR',
@@ -134,12 +134,18 @@ subtest 'realtime report generation' => sub {
 
     is($dm->get_last_generated_historical_marked_to_market_time, undef, 'Start with a clean slate.');
 
+    my $mocked_transaction = Test::MockModule->new('BOM::Product::Transaction');
+    my $called_count       = 0;
+    $mocked_transaction->mock('sell_expired_contracts' => sub { $called_count++; $mocked_transaction->original('sell_expired_contracts')->(@_) });
+
     my $results;
     lives_ok { $results = BOM::RiskReporting::MarkedToModel->new(end => $now, send_alerts => 0)->generate } 'Report generation does not die.';
 
     note 'This may not be checking what you think.  It can not tell when things sold.';
     is($dm->get_last_generated_historical_marked_to_market_time, $now->db_timestamp, 'It ran and updated our timestamp.');
     note "Includes a lot of unit test transactions about which we don't care.";
+
+    is($called_count, 1, 'BOM::Product::Transaction::sell_expired_contracts called only once');
     my %msg = get_email_by_address_subject(
         email   => 'quants_market-data@regentmarkets.com',
         subject => qr/AutoSell FAilures/
