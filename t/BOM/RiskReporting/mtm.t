@@ -248,8 +248,14 @@ subtest 'test error lines' => sub {
 
     my $mocked_transaction = Test::MockModule->new('BOM::Product::Transaction');
     my $called_count       = 0;
-    $mocked_transaction->mock('sell_expired_contracts' => sub { $called_count++; $mocked_transaction->original('sell_expired_contracts')->(@_) });
-    $mocked_transaction->mock('produce_contract', sub {die "mock error"});
+    my $in_sell_expired_contracts = 0;
+    $mocked_transaction->mock('sell_expired_contracts' => sub { $called_count++;
+                                                                $in_sell_expired_contracts = 1;
+                                                                my @res = $mocked_transaction->original('sell_expired_contracts')->(@_);
+                                                                $in_sell_expired_contracts = 0;
+                                                                return @res;
+                                                              });
+    $mocked_transaction->mock('produce_contract', sub {die "mock error" if $in_sell_expired_contracts});
 
     #mock on_production to test email
     my $mocked_system = Test::MockModule->new('BOM::System::Config');
