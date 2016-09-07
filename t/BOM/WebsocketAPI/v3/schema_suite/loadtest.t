@@ -50,6 +50,7 @@ diag sprintf "min/avg/max - %.3fs/%.3fs/%.3fs", @stats{qw(min avg max)};
 if(defined $ENV{TRAVIS_DATADOG_API_KEY}) {
     my $ua = Mojo::UserAgent->new;
     my $now = Time::HiRes::time;
+    chomp(my $git_info = `git rev-parse --abbrev-ref HEAD`);
     $ua->post(
         'https://app.datadoghq.com/api/v1/series?api_key=' . $ENV{TRAVIS_DATADOG_API_KEY},
         json => {
@@ -59,7 +60,12 @@ if(defined $ENV{TRAVIS_DATADOG_API_KEY}) {
                     host   => $ENV{TRAVIS_DATADOG_API_HOST} // 'travis',
                     type   => 'gauge',
                     # probably want a source:travis tag, but http://docs.datadoghq.com/api/?lang=console#tags claims
-                    # that's not valid
+                    # that's not valid.
+                    # https://help.datadoghq.com/hc/en-us/articles/204312749-Getting-started-with-tags
+                    # "Tags must start with a letter, and after that may contain alphanumerics, underscores,
+                    # minuses, colons, periods and slashes. Other characters will get converted to underscores.
+                    # Tags can be up to 200 characters long and support unicode. Tags will be converted to lowercase."
+                    tags   => ['tag:' . $git_info],
                 }, sort keys %stats
             ],
         }
