@@ -270,10 +270,11 @@ subtest 'test error lines' => sub {
 
     is($called_count, 1, 'BOM::Product::Transaction::sell_expired_contracts called only once');
     my %msg = get_email_by_address_subject(
-        email   => 'quants_market-data@regentmarkets.com',
+        email   => 'quants-market-data@regentmarkets.com',
         subject => qr/AutoSell Failures/
     );
     use Data::Dumper;
+    diag("email:");
     diag(Dumper(\%msg));
 };
 
