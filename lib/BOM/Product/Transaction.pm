@@ -1414,7 +1414,7 @@ sub _validate_trade_pricing_adjustment {
             if ($move <= $allowed_move and $move >= -$allowed_move) {
                 $final_value = $amount;
                 # We absorbed the price difference here and we want to keep it in our book.
-                $self->probability_slippage(roundnear(0.01, $move * $self->payout));
+                $self->price_slippage(roundnear(0.01, $move * $self->payout));
             } elsif ($move > $allowed_move) {
                 $self->execute_at_better_price(1);
                 $final_value = $recomputed_amount;
