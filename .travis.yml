@@ -47,6 +47,5 @@ install:
     - /tmp/travis-scripts/setup_postfix.sh
 script:
     - make unit_test
-    - cat /tmp/default.mailbox
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
