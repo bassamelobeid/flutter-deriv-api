@@ -276,5 +276,7 @@ subtest 'test error lines' => sub {
     use Data::Dumper;
     diag("email:");
     diag(Dumper(\%msg));
+    my @errors = $msg{body} =~ /entry tick is after exit tick/g;
+    is(scalar @errors, 3, "number of contracts that have errors ");
 };
 
