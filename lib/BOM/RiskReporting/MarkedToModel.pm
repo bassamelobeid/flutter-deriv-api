@@ -234,22 +234,6 @@ sub sell_expired_contracts {
         # Skip them here.
         next if $bet->is_sold;
 
-        my $stats_data = do {
-            my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$bet->code};
-            my $broker    = lc($client->broker_code);
-            my $virtual   = $client->is_virtual ? 'yes' : 'no';
-            my $tags      = {
-                tags => [
-                    "broker:$broker",     "virtual:$virtual", "rmgenv:$rmgenv", "contract_class:$bet_class",
-                    "sell_type:autosell", "client:" . lc($client_id),
-                ]};
-            stats_inc("transaction.sell.attempt", $tags);
-            +{
-                tags    => $tags,
-                virtual => $virtual,
-            };
-        };
-
         if (my $bb_symbol = $map_to_bb{$bet->underlying->symbol}) {
             $csv->combine($map_to_bb{$bet->underlying->symbol}, $bet->date_start->db_timestamp, $bet->date_expiry->db_timestamp);
             $bet_info->{bb_lookup} = $csv->string;
@@ -263,9 +247,7 @@ sub sell_expired_contracts {
         # Regardless, expiry check will exercise them and we need that info in a couple line anyway.
         my $expired = $bet->is_expired;
 
-        if ($bet->primary_validation_error) {
-            $bet_info->{reason} = $bet->primary_validation_error->message;
-        } elsif (not $expired) {
+        if (not $expired) {
             $bet_info->{reason} = 'not expired';
         } elsif (not defined $bet->value) {
             # $bet->value is set when we confirm expiration status, even further above.
@@ -277,39 +259,21 @@ sub sell_expired_contracts {
             # Since the values can come back as strings, we use the 0 + to force them to be evaluated numerically.
             $bet_info->{reason} = 'expected to be worth ' . $expected_value . ' got ' . $bet->bid_price;
         } else {
-            try {
-                if ($bet->is_valid_to_sell) {
-                    BOM::Product::Transaction::sell_expired_contracts({
-                        client       => $client,
-                        contract_ids => [$fmb_id],
-                        source       => 3,           # app id for `Binary.com riskd.pl` in auth db => oauth.apps table
-                    });
+            my $result = BOM::Product::Transaction::sell_expired_contracts({
+                client       => $client,
+                contract_ids => [$fmb_id],
+                source       => 3,           # app id for `Binary.com riskd.pl` in auth db => oauth.apps table
+            });
 
-                    stats_inc("transaction.sell.success", $stats_data->{tags});
-                    if (BOM::System::Config::on_production() and $stats_data->{virtual} eq 'no') {
-                        my $usd_amount = int(in_USD($bet->bid_price, $currency) * 100);
-                        stats_count('business.buy_minus_sell_usd', -$usd_amount, $stats_data->{tags});
-                    }
-                } else {
-                    if ($bet->can('corporate_actions') and @{$bet->corporate_actions}) {
-
-                        $bet_info->{reason} =
-                            "This contract is affected by corporate action. Can you please verify the contract has been adjusted correctly to the corporte action.";
-                    } else {
-
-                        $bet_info->{reason} = $bet->primary_validation_error->message;
-                    }
-                }
-            }
-            catch {
-                $bet_info->{reason} = $_;
-            };
+            # we sold only one contract, so if there is a failure, then it must be on that contract
+            $bet_info->{reason} = $result->{failures}[0]{reason} if ($result->{failures}[0]);
         }
+
         push @error_lines, $bet_info if (exists $bet_info->{reason});
     }
 
     if (scalar @error_lines) {
-        local ($/, $\) = ("\n", undef);    # in case overridden elsewhere
+        local ($/, $\) = ("\n", undef);          # in case overridden elsewhere
         Cache::RedisDB->set('AUTOSELL', 'ERRORS', \@error_lines, 3600);
         my $sep     = '---';
         my $subject = 'AutoSell Failures during riskd operation';
