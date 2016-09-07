@@ -255,9 +255,7 @@ sub sell_expired_contracts {
             contract_ids => \@fmb_ids_to_be_sold,
             source       => 3,                      # app id for `Binary.com riskd.pl` in auth db => oauth.apps table
         });
-        use Data::Dumper;
-        print "result :\n";
-        print Dumper($result);
+
         for my $failure (@{$result->{failures}}) {
             my $bet_info = $bet_infos{$failure->{fmb_id}};
             $bet_info->{reason} = $failure->{reason};
@@ -287,9 +285,8 @@ sub sell_expired_contracts {
                 $sep
                 );
         }
-        print "before send email\n";
+
         if (BOM::System::Config::on_production()) {
-          print "send email\n";
             my $sender = Mail::Sender->new({
                 smtp    => 'localhost',
                 from    => '"Autosell" <autosell@regentmarkets.com>',
