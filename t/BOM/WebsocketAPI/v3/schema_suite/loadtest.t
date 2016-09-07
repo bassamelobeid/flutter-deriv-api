@@ -59,7 +59,11 @@ if(defined $ENV{TRAVIS_DATADOG_API_KEY}) {
         # "Tags must start with a letter, and after that may contain alphanumerics, underscores,
         # minuses, colons, periods and slashes. Other characters will get converted to underscores.
         # Tags can be up to 200 characters long and support unicode. Tags will be converted to lowercase."
-        tags   => ['tag:' . $git_info],
+        tags   => [
+            'tag:' . $git_info,
+            ($ENV{TRAVIS_PULL_REQUEST} ? 'pr:' . $ENV{TRAVIS_PULL_REQUEST} : ()),
+            ($ENV{TRAVIS_BRANCH} ? 'branch:' . $ENV{TRAVIS_BRANCH} : ()),
+        ],
         host   => $ENV{TRAVIS_DATADOG_API_HOST} // 'travis',
     );
     $ua->post(
