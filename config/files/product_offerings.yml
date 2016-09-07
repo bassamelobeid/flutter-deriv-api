@@ -411,17 +411,19 @@ frxAUDCAD: &inactive_fx
   callput:
     daily:
       spot:
-        euro_atm: *one_day_to_year
+        euro_atm:
+          max: 365d
+          min: 1d
     intraday:
       forward:
         euro_atm:
-          max: 24h
+          max: 1d
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 2m
-          max: 24h
+          max: 1d
           min: 2m
 frxAUDCHF: *inactive_fx
 frxAUDJPY: &active_fx
@@ -437,18 +439,18 @@ frxAUDJPY: &active_fx
     intraday:
       forward:
         euro_atm:
-          max: 24h
+          max: 1d
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 1m
-          max: 24h
+          max: 1d
           min: 1m
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 24h
+          max: 5h
           min: 15m
     tick:
       spot:
@@ -500,13 +502,13 @@ frxGBPCAD: &no_intraday_pd_fx
     intraday:
       forward:
         euro_atm:
-          max: 24h
+          max: 1d
           min: 5m
       spot:
         euro_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 1m
-          max: 24h
+          max: 1d
           min: 1m
   endsinout:
     daily:
