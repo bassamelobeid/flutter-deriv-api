@@ -56,7 +56,8 @@ if(defined $ENV{TRAVIS_DATADOG_API_KEY}) {
         json => {
             series => [
                 map +{
-                    points => [ map [ $now, $_ ], $stats{$_} ],
+                    metric => 'bom_websocket_api.v_3.loadtest.timing.' . $_,
+                    points => [ [ $now, $stats{$_} ] ],
                     host   => $ENV{TRAVIS_DATADOG_API_HOST} // 'travis',
                     type   => 'gauge',
                     # probably want a source:travis tag, but http://docs.datadoghq.com/api/?lang=console#tags claims
