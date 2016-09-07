@@ -51,23 +51,33 @@ if(defined $ENV{TRAVIS_DATADOG_API_KEY}) {
     my $ua = Mojo::UserAgent->new;
     my $now = Time::HiRes::time;
     chomp(my $git_info = `git rev-parse --abbrev-ref HEAD`);
+    my $metric_base = 'bom_websocket_api.v_3.loadtest.timing';
+    my %args = (
+        # probably want a source:travis tag, but http://docs.datadoghq.com/api/?lang=console#tags claims
+        # that's not valid.
+        # https://help.datadoghq.com/hc/en-us/articles/204312749-Getting-started-with-tags
+        # "Tags must start with a letter, and after that may contain alphanumerics, underscores,
+        # minuses, colons, periods and slashes. Other characters will get converted to underscores.
+        # Tags can be up to 200 characters long and support unicode. Tags will be converted to lowercase."
+        tags   => ['tag:' . $git_info],
+        host   => $ENV{TRAVIS_DATADOG_API_HOST} // 'travis',
+    );
     $ua->post(
         'https://app.datadoghq.com/api/v1/series?api_key=' . $ENV{TRAVIS_DATADOG_API_KEY},
         json => {
             series => [
-                map +{
-                    metric => 'bom_websocket_api.v_3.loadtest.timing.' . $_,
+                (map +{
+                    %args,
+                    metric => $metric_base . '.' . $_,
                     points => [ [ $now, $stats{$_} ] ],
-                    host   => $ENV{TRAVIS_DATADOG_API_HOST} // 'travis',
                     type   => 'gauge',
-                    # probably want a source:travis tag, but http://docs.datadoghq.com/api/?lang=console#tags claims
-                    # that's not valid.
-                    # https://help.datadoghq.com/hc/en-us/articles/204312749-Getting-started-with-tags
-                    # "Tags must start with a letter, and after that may contain alphanumerics, underscores,
-                    # minuses, colons, periods and slashes. Other characters will get converted to underscores.
-                    # Tags can be up to 200 characters long and support unicode. Tags will be converted to lowercase."
-                    tags   => ['tag:' . $git_info],
-                }, sort keys %stats
+                }, sort keys %stats), {
+                    # Include count separately, since it's a different type
+                    %args,
+                    metric => $metric_base . '.count',
+                    points => [ [ $now, scalar @timing ] ],
+                    type   => 'rate',
+                }
             ],
         }
     );
