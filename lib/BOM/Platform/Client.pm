@@ -807,10 +807,10 @@ sub get_withdrawal_limits {
 
     my $withdrawal_limits = $client->get_promocode_dependent_limit();
 
-    my $max_withrawal = 0;
+    my $max_withdrawal = 0;
     if ($client->default_account) {
         my $balance = $client->default_account->balance;
-        $max_withrawal = List::Util::max(0, $balance - $withdrawal_limits->{'frozen_free_gift'});
+        $max_withdrawal = List::Util::max(0, $balance - $withdrawal_limits->{'frozen_free_gift'});
     }
 
     $withdrawal_limits->{'max_withdrawal'} = $max_withdrawal;
