@@ -9,9 +9,12 @@ use Suite;
 
 use Time::HiRes qw(tv_interval gettimeofday);
 use List::Util qw(min max sum);
+use POSIX qw(floor ceil);
 # TODO Flag any warnings during initial development - note that this should be handled at
 # prove level as per other repos, see https://github.com/regentmarkets/bom-rpc/pull/435 for example
 use Test::FailWarnings;
+
+use Mojo::UserAgent;
 
 my @times;
 for my $iteration (1..10) {
@@ -25,13 +28,46 @@ for my $iteration (1..10) {
     push @times, $elapsed;
 }
 
-my $min = min(@times);
-my $avg = sum(@times)/@times;
-my $max = max(@times);
-diag sprintf "min/avg/max - %.3fs/%.3fs/%.3fs", $min, $avg, $max;
+my @sorted = (sort { $a <=> $b } @times);
+# From https://help.datadoghq.com/hc/en-us/articles/206955236-Metric-types-in-Datadog
+# histogram submits as multiple metrics:
+# Name                | Web App type
+# -----               | ------------
+# metric.max          | GAUGE
+# metric.avg          | GAUGE
+# metric.median       | GAUGE
+# metric.95percentile | GAUGE
+# metric.count        | RATE
+my %stats = (
+    'min'          => min(@times),
+    'avg'          => sum(@times) / @times,
+    'median'       => @sorted[floor(@sorted/2)..ceil(@sorted/2)] / 2,
+    '95percentile' => @sorted[0.95 * @sorted],
+    'max'          => max(@times),
+);
+diag sprintf "min/avg/max - %.3fs/%.3fs/%.3fs", @stats{qw(min avg max)};
 
-cmp_ok($avg, '>=', 12, 'average time was above the lower limit, i.e. tests are not suspiciously fast');
-cmp_ok($avg, '<=', 21, 'average time was below our upper limit, i.e. we think overall test time has not increased to a dangerously high level');
+if(defined $ENV{TRAVIS_DATADOG_API_KEY}) {
+    my $ua = Mojo::UserAgent->new;
+    my $now = Time::HiRes::time;
+    $ua->post(
+        'https://app.datadoghq.com/api/v1/series?api_key=' . $ENV{TRAVIS_DATADOG_API_KEY},
+        json => {
+            series => [
+                map +{
+                    points => [ map [ $now, $_ ], $stats{$_} ],
+                    host   => $ENV{TRAVIS_DATADOG_API_HOST} // 'travis',
+                    type   => 'gauge',
+                    # probably want a source:travis tag, but http://docs.datadoghq.com/api/?lang=console#tags claims
+                    # that's not valid
+                }, sort keys %stats
+            ],
+        }
+    );
+}
+
+cmp_ok($stats{avg}, '>=', 12, 'average time was above the lower limit, i.e. tests are not suspiciously fast');
+cmp_ok($stats{avg}, '<=', 21, 'average time was below our upper limit, i.e. we think overall test time has not increased to a dangerously high level');
 
 done_testing();
 
