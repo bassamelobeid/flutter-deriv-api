@@ -147,12 +147,8 @@ sub _get_ask {
             };
 
             # only required for non-spead contracts
-            if ($p2->{from_pricer_daemon} and $p2->{amount_type}) {
+            if ($p2->{from_pricer_daemon} and not $contract->is_spread) {
                 $response->{theo_probability} = $contract->theo_probability->amount;
-            } elsif (defined $p2->{from_pricer_daemon} and not $contract->is_spread) {
-                # All contracts other than spreads should go through pricer daemon.
-                # Trying to find what are the exceptions.
-                warn "potential bug: " . Data::Dumper->Dumper($p2);
             }
 
             if ($contract->underlying->feed_license eq 'realtime') {
