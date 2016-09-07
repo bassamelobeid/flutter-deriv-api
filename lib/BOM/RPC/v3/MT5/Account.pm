@@ -65,7 +65,11 @@ sub mt5_new_account {
         }
 
         # get MT company from countries.yml
-        my $mt_company = $countries_list->{$client->residence}->{'mt_' . $account_type . '_company'};
+        my $mt_key     = 'mt_' . $account_type . '_company';
+        my $mt_company = 'none';
+        if (defined $countries_list->{$client->residence} && defined $countries_list->{$client->residence}->{$mt_key}) {
+            $mt_company = $countries_list->{$client->residence}->{$mt_key};
+        }
 
         if ($mt_company eq 'none') {
             return BOM::RPC::v3::Utility::permission_error();
