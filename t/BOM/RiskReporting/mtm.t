@@ -46,7 +46,7 @@ foreach my $symbol (keys %date_string) {
 }
 
 subtest 'realtime report generation' => sub {
-    plan tests => 4;
+    plan tests => 5;
 
     my $dm = BOM::Database::DataMapper::CollectorReporting->new({
         broker_code => 'CR',
@@ -153,14 +153,19 @@ subtest 'realtime report generation' => sub {
     my %msg = get_email_by_address_subject(
         email   => 'quants_market-data@regentmarkets.com',
         subject => qr/AutoSell FAilures/
-    );
-    use Data::Dumper;
-    diag(Dumper(\%msg));
+                                          );
+        my %msg = get_email_by_address_subject(
+                                               email   => 'quants-market-data@regentmarkets.com',
+                                               subject => qr/AutoSell Failures/
+                                              );
+    my @errors = $msg{body} =~ /entry tick is after exit tick/g;
+    is(scalar @errors, 3, "number of contracts that have errors ");
+
 };
 
 
 subtest 'test error lines' => sub {
-    plan tests => 3;
+    plan tests => 4;
 
     my $dm = BOM::Database::DataMapper::CollectorReporting->new({
         broker_code => 'CR',
@@ -269,14 +274,5 @@ subtest 'test error lines' => sub {
     note "Includes a lot of unit test transactions about which we don't care.";
 
     is($called_count, 1, 'BOM::Product::Transaction::sell_expired_contracts called only once');
-    my %msg = get_email_by_address_subject(
-        email   => 'quants-market-data@regentmarkets.com',
-        subject => qr/AutoSell Failures/
-    );
-    use Data::Dumper;
-    diag("email:");
-    diag(Dumper(\%msg));
-    my @errors = $msg{body} =~ /entry tick is after exit tick/g;
-    is(scalar @errors, 3, "number of contracts that have errors ");
 };
 
