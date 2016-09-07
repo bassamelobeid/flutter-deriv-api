@@ -279,14 +279,6 @@ sub process_ask_event {
         my $results;
 
         unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
-            unless (defined $theo_probability) {
-                warn "process_ask_event got message without theo_probability. contract_parameters:  {"
-                    . join(', ',
-                    map { $_ . ' => "' . ($stash_data->{cache}->{contract_parameters}->{$_} // '') . '"' }
-                        keys %{$stash_data->{cache}->{contract_parameters}})
-                    . "}\n";
-                last;
-            }
             my $adjusted_results =
                 _price_stream_results_adjustment($stash_data->{args}, $stash_data->{cache}->{contract_parameters}, $response, $theo_probability);
             if (my $ref = $adjusted_results->{error}) {
