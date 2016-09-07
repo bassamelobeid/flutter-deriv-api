@@ -54,7 +54,7 @@ has price => (
     isa => 'Maybe[Num]',
 );
 
-has probability_slippage => (
+has price_slippage => (
     is      => 'rw',
     default => 0,
 );
@@ -483,7 +483,7 @@ sub prepare_buy {    ## no critic (RequireArgUnpacking)
             _build_pricing_comment({
                     contract => $self->contract,
                     price    => $self->price,
-                    ($self->probability_slippage) ? (probability_slippage => $self->probability_slippage) : (),
+                    ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
                     action => 'buy'
                 })) unless @{$self->comment};
     }
@@ -759,7 +759,7 @@ sub sell {    ## no critic (RequireArgUnpacking)
             _build_pricing_comment({
                     contract => $self->contract,
                     price    => $self->price,
-                    ($self->probability_slippage) ? (probability_slippage => $self->probability_slippage) : (),
+                    ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
                     action => 'sell'
                 })) unless @{$self->comment};
     }
@@ -1206,7 +1206,7 @@ BEGIN { _create_validator '_validate_currency' }
 sub _build_pricing_comment {
     my $args = shift;
 
-    my ($contract, $price, $action, $probability_slippage) = @{$args}{'contract', 'price', 'action', 'probability_slippage'};
+    my ($contract, $price, $action, $price_slippage) = @{$args}{'contract', 'price', 'action', 'price_slippage'};
 
     my @comment_fields;
     if ($contract->is_spread) {
@@ -1243,10 +1243,10 @@ sub _build_pricing_comment {
             push @comment_fields, (entry_spot_epoch => $contract->entry_tick->epoch);
         }
 
-        # Record probability slippage in quants bet variable.
+        # Record price slippage in quants bet variable.
         # To always reproduce ask price, we would want to record the slippage allowed during transaction.
-        if (defined $probability_slippage) {
-            push @comment_fields, (probability_slippage => $probability_slippage);
+        if (defined $price_slippage) {
+            push @comment_fields, (price_slippage => $price_slippage);
         }
 
         my $tick;
@@ -1343,8 +1343,8 @@ sub _validate_sell_pricing_adjustment {
         } else {
             if ($move <= $allowed_move and $move >= -$allowed_move) {
                 $final_value = $amount;
-                # We absorbed the probability difference here and we want to keep it in our book.
-                $self->probability_slippage($move);
+                # We absorbed the price difference here and we want to keep it in our book.
+                $self->price_slippage(roundnear(0.01, $move*$self->payout));
             } elsif ($move > $allowed_move) {
                 $self->execute_at_better_price(1);
                 $final_value = $recomputed_amount;
@@ -1411,8 +1411,8 @@ sub _validate_trade_pricing_adjustment {
         } else {
             if ($move <= $allowed_move and $move >= -$allowed_move) {
                 $final_value = $amount;
-                # We absorbed the probability difference here and we want to keep it in our book.
-                $self->probability_slippage($move);
+                # We absorbed the price difference here and we want to keep it in our book.
+                $self->probability_slippage(roundnear(0.01, $move*$self->payout));
             } elsif ($move > $allowed_move) {
                 $self->execute_at_better_price(1);
                 $final_value = $recomputed_amount;
@@ -1884,7 +1884,7 @@ sub sell_expired_contracts {
                     source        => $source,
                     };
 
-                # probability_slippage will not happen to expired contract, hence not needed.
+                # price_slippage will not happen to expired contract, hence not needed.
                 my $comment_hash = _build_pricing_comment({
                         contract => $contract,
                         action   => 'autosell_expired_contract',
