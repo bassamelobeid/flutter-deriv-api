@@ -171,7 +171,7 @@ sub after_register_client {
 sub add_details_to_desk {
     my ($client, $details) = @_;
 
-    if (BOM::Platform::Runtime->instance->app_config->system->on_production) {
+    if (BOM::System::Config::on_production()) {
         try {
             my $desk_api = BOM::Platform::Desk->new({
                 desk_url     => BOM::System::Config::third_party->{desk}->{api_uri},
