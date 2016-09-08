@@ -1785,6 +1785,7 @@ For contracts with missing market data, settle them manually for real money acco
 Returns: HashRef, with:
 'total_credited', total amount credited to Client
 'skip_contract', count for expired contracts that failed to be sold
+'failures', the failure information
 
 =cut
 
@@ -1803,8 +1804,14 @@ sub sell_expired_contracts {
     my $currency = $client->currency;
     my $loginid  = $client->loginid;
 
+    my $result = {
+        skip_contract => $contract_ids ? (scalar @$contract_ids) : 0,
+        total_credited      => 0,
+        number_of_sold_bets => 0,
+        failures            => [],
+    };
     # Apply rate limits before doing the full lookup
-    return
+    return $result
         if (
         $client->is_virtual              # Only virtuals
         and not defined $contract_ids    # who are just selling "whatever"
@@ -1831,7 +1838,7 @@ sub sell_expired_contracts {
         : $clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)',
         [$client->loginid, $client->currency, ($args->{only_expired} ? 'true' : 'false')]);
 
-    return unless $bets and @$bets;
+    return $result unless $bets and @$bets;
 
     my $now = Date::Utility->new;
     my @bets_to_sell;
@@ -1842,16 +1849,25 @@ sub sell_expired_contracts {
     for my $bet (@$bets) {
         my $contract;
         my $error;
+        my $failure = {fmb_id => $bet->{id}};
         try { $contract = produce_contract($bet->{short_code}, $currency); } catch { $error = 1; };
-        next if $error;
+        if ($error) {
+            $failure->{reason} = 'Could not instantiate contract object';
+            push @{$result->{failures}}, $failure;
+            next;
+        }
 
         my $logging_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
         $stats_attempt{$logging_class}++;
         if (not $contract->is_expired) {
             $stats_failure{$logging_class}{'NotExpired'}++;
+            $failure->{reason} = 'not expired';
+            push @{$result->{failures}}, $failure;
             next;
         } elsif ($contract->category_code eq 'legacy') {
             $stats_failure{$logging_class}{Legacy}++;
+            $failure->{reason} = 'legacy';
+            push @{$result->{failures}}, $failure;
             next;
         }
 
@@ -1896,6 +1912,8 @@ sub sell_expired_contracts {
                 push @quants_bet_variables, $quants_bet_variables;
             } else {
                 $stats_failure{$logging_class}{_normalize_error($contract->primary_validation_error)}++;
+                $failure->{reason} = $contract->primary_validation_error->message;
+                push $result->{failures}, $failure;
             }
         };
     }
@@ -1904,7 +1922,7 @@ sub sell_expired_contracts {
     my $virtual   = $client->is_virtual ? 'yes' : 'no';
     my $rmgenv    = BOM::System::Config::env;
     my $sell_type = (defined $source and exists $source_to_sell_type{$source}) ? $source_to_sell_type{$source} : 'expired';
-    my @tags      = ("broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "sell_type:$sell_type",);
+    my @tags      = ("broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "sell_type:$sell_type");
 
     for my $class (keys %stats_attempt) {
         stats_count("transaction.sell.attempt", $stats_attempt{$class}, {tags => [@tags, "contract_class:$class"]});
@@ -1918,7 +1936,7 @@ sub sell_expired_contracts {
         }
     }
 
-    return unless @bets_to_sell;    # nothing to do
+    return $result unless @bets_to_sell;    # nothing to do
 
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         transaction_data => \@transdata,
@@ -1945,14 +1963,19 @@ sub sell_expired_contracts {
         foreach my $bet (@bets_to_sell) {
             next if $sold_fmbs{$bet->{id}};    # Was not missed.
             $missed{$bet->{bet_class}}++;
+            push $result->{failures},
+                {
+                fmb_id => $bet->{id},
+                reason => _normalize_error("TransactionFailure")};
         }
         foreach my $class (keys %missed) {
             stats_count("transaction.sell.failure", $missed{$class},
                 {tags => [@tags, "contract_class:$class", "reason:" . _normalize_error("TransactionFailure")]});
+
         }
     }
 
-    return unless $sold and @$sold;            # nothing has been sold
+    return $result unless $sold and @$sold;    # nothing has been sold
 
     my $skip_contract  = @$bets - @$sold;
     my $total_credited = 0;
@@ -1970,11 +1993,10 @@ sub sell_expired_contracts {
         }
     }
 
-    return {
-        skip_contract       => $skip_contract,
-        total_credited      => $total_credited,
-        number_of_sold_bets => 0 + @$sold,
-    };
+    $result->{skip_contract}       = $skip_contract;
+    $result->{total_credited}      = $total_credited;
+    $result->{number_of_sold_bets} = 0 + @$sold;
+    return $result;
 }
 
 sub report {
