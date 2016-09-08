@@ -33,7 +33,10 @@ my $bet =
     : '';
 my ($start, $end, $timestep, $debug_link);
 if ($bet) {
-    $start = (request()->param('start')) ? Date::Utility->new(request()->param('start')) : $bet->date_start;
+    $start =
+          (request()->param('start')) ? Date::Utility->new(request()->param('start'))
+        : (request()->param('purchase_time') and $bet->starts_as_forward_starting) ? Date::Utility->new(request()->param('purchase_time'))
+        :                                                                            $bet->date_start;
     $end =
           (request()->param('end')) ? Date::Utility->new(request()->param('end'))
         : ($bet->tick_expiry)       ? $bet->date_start->plus_time_interval($bet->max_tick_expiry_duration)
