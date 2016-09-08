@@ -26,16 +26,16 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine
 #Because the code to prepare market data is called for all pricings in Contract
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'economic_events',
     {
-        events           => [{
+        events => [{
                 symbol       => 'USD',
                 release_date => 1,
                 source       => 'forexfactory',
                 impact       => 1,
                 event_name   => 'FOMC',
-            }]
-    });
+            }]});
 
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -2464,7 +2464,7 @@ subtest 'sell_expired_contracts', sub {
             purchase_date => $now->epoch - 101,
         });
 
-        my (@expired_txnids, @expired_fmbids);
+        my (@expired_txnids, @expired_fmbids, @unexpired_fmbids);
         # buy 5 expired contracts
         for (1 .. 5) {
             my $error = $txn->buy(skip_validation => 1);
@@ -2500,7 +2500,8 @@ subtest 'sell_expired_contracts', sub {
         for (1 .. 5) {
             my $error = $txn->buy(skip_validation => 1);
             is $error, undef, 'no error: bought 1 contract for 100';
-            push @txnids, $txn->transaction_id;
+            push @txnids,           $txn->transaction_id;
+            push @unexpired_fmbids, $txn->contract_id;
         }
 
         $acc_usd->load;
@@ -2518,6 +2519,7 @@ subtest 'sell_expired_contracts', sub {
             number_of_sold_bets => 2,
             skip_contract       => 0,
             total_credited      => 200,
+            failures            => [],
             },
             'sold the two requested contracts';
 
@@ -2526,10 +2528,13 @@ subtest 'sell_expired_contracts', sub {
             source => 29
         };
 
+        @unexpired_fmbids = sort { $a <=> $b } @unexpired_fmbids;
+        $res->{failures} = [sort { $a->{fmb_id} <=> $b->{fmb_id} } @{$res->{failures}}];
         is_deeply $res, +{
             number_of_sold_bets => 3,
             skip_contract       => 5,     # this means the contract was looked at but skipped due to invalid to sell
             total_credited      => 300,
+            failures => [map { {reason => 'not expired', fmb_id => $_} } @unexpired_fmbids],
             },
             'sold 3 out of 8 remaining bets';
 

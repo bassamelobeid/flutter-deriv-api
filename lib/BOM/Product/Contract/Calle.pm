@@ -12,10 +12,10 @@ sub code { return 'CALLE'; }
 
 sub localizable_description {
     return +{
-        tick                  => localize('Win payout if [_3] after [plural,_5,%d tick,%d ticks] is higher than or equal to [_6].'),
-        daily                 => localize('Win payout if [_3] is higher than or equal to [_6] at [_5].'),
-        intraday              => localize('Win payout if [_3] is higher than or equal to [_6] at [_5] after [_4].'),
-        intraday_fixed_expiry => localize('Win payout if [_3] is higher than or equal to [_6] at [_5].'),
+        tick                  => 'Win payout if [_3] after [plural,_5,%d tick,%d ticks] is higher than or equal to [_6].',
+        daily                 => 'Win payout if [_3] is higher than or equal to [_6] at [_5].',
+        intraday              => 'Win payout if [_3] is higher than or equal to [_6] at [_5] after [_4].',
+        intraday_fixed_expiry => 'Win payout if [_3] is higher than or equal to [_6] at [_5].',
     };
 }
 
