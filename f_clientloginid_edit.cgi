@@ -184,11 +184,10 @@ if ($input{whattodo} eq 'uploadID') {
     }
 
     if ($doctype eq 'passport') {
-        if ($docnationality && $docnationality =~ /[a-z]{2}/ && not BOM::Platform::Countries->instance->restricted_country($docnationality)) {
+        if ($docnationality && $docnationality =~ /[a-z]{2}/) {
             $client->citizen($docnationality);
         } else {
-            print
-                "<br /><p style=\"color:red; font-weight:bold;\">Error: Please select correct nationality and make sure its not in restricted list</p><br />";
+            print "<br /><p style=\"color:red; font-weight:bold;\">Error: Please select correct nationality</p><br />";
             code_exit_BO();
         }
     }
@@ -693,11 +692,7 @@ print qq{
 
 foreach my $country_name (sort BOM::Platform::Countries->instance->countries->all_country_names) {
     my $code = BOM::Platform::Countries->instance->countries->code_from_country($country_name);
-    if (BOM::Platform::Countries->instance->restricted_country($code)) {
-        print "<option value='$code' disabled>$country_name</option>";
-    } else {
-        print "<option value='$code'>$country_name</option>";
-    }
+    print "<option value='$code'>$country_name</option>";
 }
 
 print qq{
