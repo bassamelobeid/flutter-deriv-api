@@ -20,16 +20,16 @@ package MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use Test::Most;
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'economic_events',
     {
-        events           => [{
+        events => [{
                 symbol       => 'USD',
                 release_date => 1,
                 source       => 'forexfactory',
                 impact       => 1,
                 event_name   => 'FOMC',
-            }]
-    });
+            }]});
 
 sub tcall {
     my $self   = shift;

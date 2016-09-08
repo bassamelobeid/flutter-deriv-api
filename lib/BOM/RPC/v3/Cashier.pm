@@ -152,7 +152,7 @@ sub cashier {
         if (not $email or $email =~ /\s+/) {
             $error_sub->(localize("Client email not set."));
         } elsif ($token) {
-            if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($token, $client->email)->{error}) {
+            if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($token, $client->email, 'payment_withdraw')->{error}) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => $err->{code},
                         message_to_client => $err->{message_to_client}});
@@ -648,7 +648,9 @@ sub paymentagent_withdraw {
 
     # expire token only when its not dry run
     if (exists $args->{dry_run} and not $args->{dry_run}) {
-        if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $client->email)->{error}) {
+        if (my $err =
+            BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $client->email, 'paymentagent_withdraw')->{error})
+        {
             return BOM::RPC::v3::Utility::create_error({
                     code              => $err->{code},
                     message_to_client => $err->{message_to_client}});

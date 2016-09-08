@@ -119,14 +119,20 @@ sub check_authorization {
 }
 
 sub is_verification_token_valid {
-    my ($token, $email) = @_;
+    my ($token, $email, $created_for) = @_;
 
     my $verification_token = BOM::Platform::Token->new({token => $token});
-    return create_error({
+    my $response = create_error({
             code              => "InvalidToken",
-            message_to_client => localize('Your token has expired.')}) unless ($verification_token and $verification_token->token);
+            message_to_client => localize('Your token has expired or is invalid.')});
 
-    my $response;
+    return $response unless ($verification_token and $verification_token->token);
+
+    unless ($verification_token->{created_for} eq $created_for) {
+        $verification_token->delete_token;
+        return $response;
+    }
+
     if ($verification_token->email and $verification_token->email eq $email) {
         $response = {status => 1};
     } else {
