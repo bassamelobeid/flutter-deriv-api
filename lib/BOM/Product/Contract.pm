@@ -501,7 +501,10 @@ sub _build_date_settlement {
 sub _build_effective_start {
     my $self = shift;
 
-    return ($self->date_pricing->is_after($self->date_start)) ? $self->date_pricing : $self->date_start;
+    return
+          ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_start
+        : ($self->date_pricing->is_after($self->date_start))  ? $self->date_pricing
+        :                                                       $self->date_start;
 }
 
 sub _build_greek_engine {
@@ -644,6 +647,7 @@ sub _build_pricing_new {
 
     # do not use $self->date_pricing here because milliseconds matters!
     # _date_pricing_milliseconds will not be set if date_pricing is not built.
+    $DB::single = 1;
     my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
     return 0 if $time > $self->date_start->epoch;
     return 1;
