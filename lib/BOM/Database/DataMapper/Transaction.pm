@@ -349,8 +349,9 @@ sub get_transactions_ws {
     $dt_fm ||= '1970-01-01';
     $dt_to ||= Date::Utility->today->plus_time_interval('1d')->datetime;
 
-    my $action_type = ($args->{action_type}) ? 'AND action_type = ?' : '';
-    $sql =~ s/##ACTION_TYPE##/$action_type/;
+    my $action_type = $args->{action_type};
+    my $action_query = ($action_type) ? 'AND action_type = ?' : '';
+    $sql =~ s/##ACTION_TYPE##/$action_query/;
 
     my @binds = ($acc->id, $dt_to, $dt_fm, ($action_type) ? $action_type : (), $limit, $offset);
     return $self->db->dbh->selectall_arrayref($sql, {Slice => {}}, @binds);
