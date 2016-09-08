@@ -49,7 +49,7 @@ sub new_account_virtual {
 
     my $email = BOM::Platform::Token->new({token => $args->{verification_code}})->email;
 
-    if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email)->{error}) {
+    if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email, 'account_opening')->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err->{code},
                 message_to_client => $err->{message_to_client}});
@@ -61,7 +61,10 @@ sub new_account_virtual {
                 client_password => $args->{client_password},
                 residence       => $args->{residence},
                 source          => $params->{source},
-                $args->{affiliate_token} ? (myaffiliates_token => $args->{affiliate_token}) : ()
+                $args->{affiliate_token} ? (myaffiliates_token => $args->{affiliate_token}) : (),
+                $args->{utm_source}      ? (utm_source         => $args->{utm_source})      : (),
+                $args->{utm_medium}      ? (utm_medium         => $args->{utm_medium})      : (),
+                $args->{utm_campaign}    ? (utm_campaign       => $args->{utm_campaign})    : ()
             },
         });
 

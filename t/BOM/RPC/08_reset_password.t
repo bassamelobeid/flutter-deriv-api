@@ -112,7 +112,7 @@ subtest $method => sub {
         }};
 
     # reset password with invalid verification code
-    $c->call_ok($method, $params)->has_error->error_message_is('Your token has expired.', 'InvalidToken');
+    $c->call_ok($method, $params)->has_error->error_message_is('Your token has expired or is invalid.', 'InvalidToken');
 
     $code = BOM::Platform::Token->new({
             email       => $email_cr,

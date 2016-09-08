@@ -438,7 +438,7 @@ sub reset_password {
     my $params = shift;
     my $args   = $params->{args};
     my $email  = BOM::Platform::Token->new({token => $args->{verification_code}})->email;
-    if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email)->{error}) {
+    if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email, 'reset_password')->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err->{code},
                 message_to_client => $err->{message_to_client}});
@@ -446,12 +446,10 @@ sub reset_password {
 
     my ($user, @clients);
     $user = BOM::Platform::User->new({email => $email});
-    unless ($user) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => "InternalServerError",
-                message_to_client => localize("Sorry, an error occurred while processing your account.")});
-    }
-    @clients = $user->clients;
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => "InternalServerError",
+            message_to_client => localize("Sorry, an error occurred while processing your account.")}) unless $user and @clients = $user->clients;
 
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
     my $client = $clients[0];
@@ -478,7 +476,7 @@ sub reset_password {
     $user->password($new_password);
     $user->save;
 
-    foreach my $obj ($user->clients) {
+    foreach my $obj (@clients) {
         $obj->password($new_password);
         $obj->save;
     }
@@ -733,13 +731,12 @@ sub set_self_exclusion {
     ## validate
     my $error_sub = sub {
         my ($error, $field) = @_;
-        my $err = BOM::RPC::v3::Utility::create_error({
+        return BOM::RPC::v3::Utility::create_error({
             code              => 'SetSelfExclusionError',
             message_to_client => $error,
             message           => '',
             details           => $field
         });
-        return $err;
     };
 
     my %args = %{$params->{args}};

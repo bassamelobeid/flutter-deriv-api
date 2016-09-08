@@ -63,7 +63,7 @@ subtest $method => sub {
     $params->{args}->{client_password} = 'verylongandhardpasswordDDD1!';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidToken', 'If email verification_code is wrong it should return error')
-        ->error_message_is('Your token has expired.', 'If email verification_code is wrong it should return error_message');
+        ->error_message_is('Your token has expired or is invalid.', 'If email verification_code is wrong it should return error_message');
 
     $params->{args}->{verification_code} = BOM::Platform::Token->new(
         email       => $email,
@@ -81,13 +81,18 @@ subtest $method => sub {
         email       => $email,
         created_for => 'account_opening'
     )->token;
-    $params->{args}->{residence} = 'id';
+    $params->{args}->{residence}    = 'id';
+    $params->{args}->{utm_source}   = 'google.com';
+    $params->{args}->{utm_medium}   = 'email';
+    $params->{args}->{utm_campaign} = 'spring sale';
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
         ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
         ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
 
     my $new_loginid = $rpc_ct->result->{client_id};
     ok $new_loginid =~ /^VRTC\d+/, 'new VR loginid';
+    my $user = BOM::Platform::User->new({email => $email});
+    ok $user->utm_source =~ '^google\.com$', 'utm registered as expected';
 
     my ($resp_loginid, $t, $uaf) = BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token});
     is $resp_loginid, $new_loginid, 'correct oauth token';

@@ -11,7 +11,6 @@ use DateTime;
 
 use Test::BOM::RPC::Client;
 
-use BOM::Market::Data::DatabaseAPI;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -132,7 +131,7 @@ subtest 'Return not expired client contracts' => sub {
 
         my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
 
-        $fmb = $clientdb->fetchall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false'])->[0];
+        $fmb = $clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false'])->[0];
 
         $expected_contract_data = {
             contract_id    => $fmb->{id},

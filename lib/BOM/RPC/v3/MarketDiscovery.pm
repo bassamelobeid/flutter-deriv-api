@@ -262,7 +262,7 @@ sub active_symbols {
             push @{$active_symbols}, $desc;
         }
 
-        BOM::System::RedisReplicated::redis_write()->set($key, Sereal::Encoder->new({protocol_version => 2})->encode($active_symbols));
+        BOM::System::RedisReplicated::redis_write()->set($key, Sereal::Encoder->new->encode($active_symbols));
         #expire in nearest 5 minute interval
         BOM::System::RedisReplicated::redis_write()->expire($key, 300 - time % 300);
     }

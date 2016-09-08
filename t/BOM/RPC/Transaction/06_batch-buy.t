@@ -26,6 +26,17 @@ my $clm = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $clm->set_default_account('USD');    # the manager needs an account record but no money.
 $clm->save;
 
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'economic_events',
+    {
+        events => [{
+                symbol       => 'USD',
+                release_date => 1,
+                source       => 'forexfactory',
+                impact       => 1,
+                event_name   => 'FOMC',
+            }]});
+
 my $clm_token = BOM::RPC::v3::Accounts::api_token({
         client => $clm,
         args   => {

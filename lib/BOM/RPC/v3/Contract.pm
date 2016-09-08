@@ -10,6 +10,7 @@ use Data::Dumper;
 use BOM::RPC::v3::Utility;
 use BOM::Market::Underlying;
 use BOM::Platform::Context qw (localize request);
+use BOM::Platform::Locale;
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
@@ -146,12 +147,8 @@ sub _get_ask {
             };
 
             # only required for non-spead contracts
-            if ($p2->{from_pricer_daemon} and $p2->{amount_type}) {
+            if ($p2->{from_pricer_daemon} and not $contract->is_spread) {
                 $response->{theo_probability} = $contract->theo_probability->amount;
-            } elsif (defined $p2->{from_pricer_daemon} and not $contract->is_spread) {
-                # All contracts other than spreads should go through pricer daemon.
-                # Trying to find what are the exceptions.
-                warn "potential bug: " . Data::Dumper->Dumper($p2);
             }
 
             if ($contract->underlying->feed_license eq 'realtime') {
@@ -195,14 +192,14 @@ sub get_bid {
         }
 
         $response = {
-            ask_price           => sprintf('%.2f', $contract->ask_price),
+            is_valid_to_sell => $contract->is_valid_to_sell,
+            ($contract->is_valid_to_sell ? () : (validation_error => $contract->primary_validation_error->message_to_client)),
             bid_price           => sprintf('%.2f', $contract->bid_price),
             current_spot_time   => $contract->current_tick->epoch,
             contract_id         => $contract_id,
             underlying          => $contract->underlying->symbol,
             display_name        => $contract->underlying->display_name,
             is_expired          => $contract->is_expired,
-            is_valid_to_sell    => $contract->is_valid_to_sell,
             is_forward_starting => $contract->is_forward_starting,
             is_path_dependent   => $contract->is_path_dependent,
             is_intraday         => $contract->is_intraday,
@@ -255,9 +252,6 @@ sub get_bid {
                         )});
                 return;
             }
-
-            $response->{validation_error} = $contract->primary_validation_error->message_to_client
-                if (not $contract->is_valid_to_sell and $contract->primary_validation_error);
 
             $response->{has_corporate_actions} = 1 if @{$contract->corporate_actions};
 
@@ -318,12 +312,31 @@ sub get_bid {
     return $response;
 }
 
+sub send_bid {
+    my $params = shift;
+
+    my $tv = [Time::HiRes::gettimeofday];
+
+    my $response;
+    try {
+        $response = get_bid($params->{args});
+    }
+    catch {
+        $response = BOM::RPC::v3::Utility::create_error({
+                code              => 'pricing error',
+                message_to_client => BOM::Platform::Locale::error_map()->{'pricing error'}});
+    };
+
+    $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
+
+    return $response;
+}
+
 sub send_ask {
     my $params             = shift;
-    my $args               = $params->{args};
     my $from_pricer_daemon = shift;
 
-    my $symbol   = $args->{symbol};
+    my $symbol   = $params->{args}->{symbol};
     my $response = validate_symbol($symbol);
     if ($response and exists $response->{error}) {
         return BOM::RPC::v3::Utility::create_error({
@@ -333,12 +346,10 @@ sub send_ask {
 
     my $tv = [Time::HiRes::gettimeofday];
 
-    my %details = %{$args};
     try {
         my $arguments = {
             from_pricer_daemon => $from_pricer_daemon,
-            %details,
-        };
+            %{$params->{args}}};
         my $contract_parameters = prepare_ask($arguments);
         $response = _get_ask($contract_parameters, $params->{app_markup_percentage});
         $response->{contract_parameters} = $contract_parameters;
