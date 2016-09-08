@@ -596,12 +596,13 @@ if ($link_acc) {
 }
 
 my $user = BOM::Platform::User->new({email => $client->email});
-
-# show all loginids for user, include disabled acc
 my @siblings = $user->clients(disabled_ok => 1);
+my @mt_logins = $user->mt5_logins;
 
-if (@siblings > 1) {
+if (@siblings > 1 or @mt_logins > 0) {
     print "<p>Corresponding accounts: </p><ul>";
+
+    # show all BOM loginids for user, include disabled acc
     foreach my $sibling (@siblings) {
         my $sibling_id = $sibling->loginid;
         next if ($sibling_id eq $client->loginid);
@@ -613,6 +614,12 @@ if (@siblings > 1) {
             });
         print "<li><a href='$link_href'>$sibling_id</a></li>";
     }
+
+    # show MT5 a/c
+    foreach my $mt_ac (@mt_logins) {
+        print "<li>$mt_ac</li>";
+    }
+
     print "</ul>";
 }
 
