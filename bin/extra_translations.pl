@@ -5,6 +5,7 @@ package RMG::UnderlyingsTranslator;
 use Moose;
 with 'App::Base::Script';
 
+use Try::Tiny;
 use IO::File;
 use Module::Load::Conditional qw( can_load );
 use Locale::Maketext::Extract;
@@ -103,7 +104,10 @@ sub add_contract_types {
 
     my $fh = $self->pot_append_fh;
 
-    foreach my $contract_type (get_offerings_with_filter('contract_type')) {
+    my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_types.yml');
+
+    foreach my $contract_type (keys %{$contract_type_config}) {
+        next if ($contract_type eq 'INVALID');
 
         my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $contract_type;
         if (not can_load(modules => {$contract_class => undef})) {
@@ -120,23 +124,26 @@ sub add_contract_types {
                 print $fh "msgstr \"\"\n";
             }
         }
-        if ($contract_class->localizable_description) {
-            foreach my $description_key (sort keys %{$contract_class->localizable_description}) {
-                my $msgid = $self->msg_id($contract_class->localizable_description->{$description_key});
-                if ($self->is_id_unique($msgid)) {
-                    print $fh "\n";
-                    print $fh "#. %1 - Payout Currency (example USD)\n";
-                    print $fh "#. %2 - Payout value (example 100)\n";
-                    print $fh "#. %3 - Underlying name (example USD/JPY)\n";
-                    print $fh "#. %4 - Starting datetime (may be 'contract start')\n";
-                    print $fh "#. %5 - Expiration datetime\n";
-                    print $fh "#. %6 - High (or single) barrier\n";
-                    print $fh "#. %7 - Low barrier (when present)\n";
-                    print $fh $msgid . "\n";
-                    print $fh "msgstr \"\"\n";
+
+        try {
+            if ($contract_class->localizable_description) {
+                foreach my $description_key (sort keys %{$contract_class->localizable_description}) {
+                    my $msgid = $self->msg_id($contract_class->localizable_description->{$description_key});
+                    if ($self->is_id_unique($msgid)) {
+                        print $fh "\n";
+                        print $fh "#. %1 - Payout Currency (example USD)\n";
+                        print $fh "#. %2 - Payout value (example 100)\n";
+                        print $fh "#. %3 - Underlying name (example USD/JPY)\n";
+                        print $fh "#. %4 - Starting datetime (may be 'contract start')\n";
+                        print $fh "#. %5 - Expiration datetime\n";
+                        print $fh "#. %6 - High (or single) barrier\n";
+                        print $fh "#. %7 - Low barrier (when present)\n";
+                        print $fh $msgid . "\n";
+                        print $fh "msgstr \"\"\n";
+                    }
                 }
             }
-        }
+        };
     }
 
     return;
