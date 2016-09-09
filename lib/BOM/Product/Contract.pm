@@ -53,11 +53,6 @@ has [qw(id pricing_code display_name sentiment other_side_code payout_type payou
     default => undef,
 );
 
-has [qw(long_term_prediction)] => (
-    is      => 'rw',
-    default => undef,
-);
-
 has is_expired => (
     is         => 'ro',
     lazy_build => 1,
@@ -575,7 +570,8 @@ sub _build_pricing_engine {
         $pricing_engine = $self->pricing_engine_name->new(%pricing_parameters);
     } else {
         $pricing_engine = $self->pricing_engine_name->new({
-                bet => $self,
+                bet                     => $self,
+                apply_bounceback_safety => !$self->for_sale,
                 %{$self->pricing_engine_parameters}});
     }
 
@@ -1308,8 +1304,9 @@ sub _build_pricing_args {
     };
 
     if ($self->priced_with_intraday_model) {
-        $args->{long_term_prediction} = $self->long_term_prediction;
-        $args->{iv_with_news}         = $self->news_adjusted_pricing_vol;
+        $args->{long_term_prediction}      = $self->empirical_volsurface->long_term_prediction;
+        $args->{volatility_scaling_factor} = $self->empirical_volsurface->volatility_scaling_factor;
+        $args->{iv_with_news}              = $self->news_adjusted_pricing_vol;
     }
 
     return $args;
@@ -1338,7 +1335,6 @@ sub _build_pricing_vol {
             economic_events       => $self->economic_events_for_volatility_calculation,
             uses_flat_vol         => $uses_flat_vol,
         });
-        $self->long_term_prediction($volsurface->long_term_prediction);
         $volatility_error = $volsurface->error if $volsurface->error;
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
