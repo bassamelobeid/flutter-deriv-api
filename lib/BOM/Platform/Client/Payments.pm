@@ -11,6 +11,7 @@ use List::Util qw(min);
 
 use BOM::Platform::CurrencyConverter qw(amount_from_to_currency);
 use BOM::Platform::Client::IDAuthentication;
+use BOM::Platform::Context qw(localize);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_count);
 use BOM::Database::ClientDB;
 
@@ -175,7 +176,7 @@ sub deposit_virtual_funds {
         currency     => $currency,
         amount       => $amount,
         payment_type => 'virtual_credit',
-        remark       => 'Virtual money credit to account',
+        remark       => localize('Virtual money credit to account'),
         source       => $source,
     );
     return ($currency, $amount, $trx);
