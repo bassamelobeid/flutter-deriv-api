@@ -2158,6 +2158,10 @@ sub validate_price {
     my $res = $self->price_calculator->validate_price;
     if ($res && exists $res->{error_code}) {
         my $details = $res->{error_details} || [];
+        my $localize_params;
+        if ($res->{error_code} =~ /outside_range/) {
+            $localize_params = [to_monetary_number_format($details->[0]), to_monetary_number_format($details->[1])];
+        }
         $res = {
             zero_stake => {
                 message           => "Empty or zero stake [stake: " . $details->[0] . "]",
@@ -2165,19 +2169,13 @@ sub validate_price {
             },
             stake_outside_range => {
                 message                 => 'stake is not within limits ' . "[stake: " . $details->[0] . "] " . "[min: " . $details->[1] . "] ",
-                message_to_client       => localize('Minimum stake of [_1] and maximum payout of [_2]'),
-                message_to_client_array => [
-                    'Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($details->[0]),
-                    to_monetary_number_format($details->[1])
-                ],
+                message_to_client       => localize('Minimum stake of [_1] and maximum payout of [_2]', @$localize_params),
+                message_to_client_array => ['Minimum stake of [_1] and maximum payout of [_2]', @$localize_params],
             },
             payout_outside_range => {
                 message           => 'payout amount outside acceptable range ' . "[given: " . $details->[0] . "] " . "[max: " . $details->[1] . "]",
-                message_to_client => localize('Minimum stake of [_1] and maximum payout of [_2]'),
-                message_to_client_array => [
-                    'Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($details->[0]),
-                    to_monetary_number_format($details->[1])
-                ],
+                message_to_client => localize('Minimum stake of [_1] and maximum payout of [_2]', @$localize_params),
+                message_to_client_array => ['Minimum stake of [_1] and maximum payout of [_2]', @$localize_params]
             },
             payout_too_many_places => {
                 message           => 'payout amount has too many decimal places ' . "[permitted: 2] " . "[payout: " . $details->[0] . "]",
