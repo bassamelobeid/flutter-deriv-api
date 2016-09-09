@@ -24,95 +24,117 @@ my $returns_sep     = 4;
 sub get_volatility {
     my ($self, $args) = @_;
 
-    # naked volatility
-    my $underlying = $self->underlying;
-    my ($current_epoch, $seconds_to_expiration, $economic_events, $lookback_seconds) =
-        @{$args}{'current_epoch', 'seconds_to_expiration', 'economic_events', 'lookback_seconds'};
-
-    $self->error('current_epoch is not provided to get_volatility') unless $current_epoch;
-
-    unless ($seconds_to_expiration) {
-        $self->error('seconds_to_expiration is not provided to get_volatility');
-        $seconds_to_expiration = 0;    #hard-coded it to zero second
-    }
-
     # for contract where volatility doesn't matter,
     # we will return the long term vol.
     if ($args->{uses_flat_vol}) {
         return $self->long_term_vol;
     }
 
-    $lookback_seconds = $seconds_to_expiration unless $lookback_seconds;
-    my $lookback_interval = Time::Duration::Concise->new(interval => max(900, $lookback_seconds) . 's');
+    # naked volatility
+    my $underlying      = $self->underlying;
+    my $economic_events = $args->{economic_events};
+
+    unless ($args->{current_epoch} and $args->{seconds_to_expiration}) {
+        $self->error('Non zero arguments of \'current_epoch\' and \'seconds_to_expiration\' are required to get_volatility.');
+        return $self->long_term_vol;
+    }
+
+    my $interval = Time::Duration::Concise->new(interval => max(900, $args->{seconds_to_expiration}) . 's');
     my $fill_cache = $args->{fill_cache} // 1;
 
     my $at    = BOM::Market::AggTicks->new;
     my $ticks = $at->retrieve({
         underlying   => $underlying,
-        interval     => $lookback_interval,
-        ending_epoch => $current_epoch,
+        interval     => $interval,
+        ending_epoch => $args->{current_epoch},
         fill_cache   => $fill_cache,
     });
 
-    $self->error('Insufficient tick interval to get_volatility') if @$ticks <= $returns_sep;
+    my $requested_interval = Time::Duration::Concise->new(interval => $args->{seconds_to_expiration});
+    # $actual_lookback_interval used to be the contract duration, but we have changed the concept.
+    # We will use the any amount of good ticks we get from the cache and scale the volatility by duration.
+    # Corrupted of duplicated ticks will be discarded.
 
-    my @tick_epochs = uniq map { $_->{epoch} } @$ticks;
-    # check to make sure that 80% of the interval in the lookback period has ticks.
-    my $interval_threshold = int(($lookback_interval->minutes * $returns_sep + 1) * 0.8);
-    $self->error('Insufficient ticks in each interval to get_volatility') if (scalar(@tick_epochs) < $interval_threshold);
+    my @good_ticks = $ticks->[-1];    # first tick is always good
+    my $counter    = 0;
+    for (my $i = -1; $i >= -$#$ticks; $i--) {
+        if ($ticks->[$i]->{epoch} != $ticks->[$i - 1]->{epoch}) {
+            unshift @good_ticks, $ticks->[$i - 1];
+            $counter = 0;
+            next;
+        }
+        $counter++;
+        # if there's 10 stale intervals, we will discard the last added tick
+        # and everything else after that.
+        shift @good_ticks and last if ($counter == 10);
+    }
+    my $actual_lookback_interval =
+        Time::Duration::Concise->new(
+        interval => min($requested_interval->seconds, (@good_ticks < 2 ? 0 : $good_ticks[-1]->{epoch} - $good_ticks[0]->{epoch})));
+    $self->volatility_scaling_factor($actual_lookback_interval->seconds / $requested_interval->seconds);
 
-    # if there's error we just return long term volatility
-    return $self->long_term_vol if $self->error;
-
-    my @time_samples_past  = map { ($tick_epochs[$_] + $tick_epochs[$_ - $returns_sep]) / 2 } ($returns_sep .. $#tick_epochs);
     my $categorized_events = $self->_categorized_economic_events($economic_events);
-    my $weights            = _calculate_weights(\@time_samples_past, $categorized_events);
-    my $observed_vol       = _calculate_observed_volatility($ticks, \@time_samples_past, \@tick_epochs, $weights);
 
     my $c_start = $args->{current_epoch};
     my $c_end   = $c_start + $args->{seconds_to_expiration};
     my @time_samples_fut;
+
     for (my $i = $c_start; $i <= $c_end; $i += 15) {
         push @time_samples_fut, $i;
     }
 
-    #seasonality curves
-    my $seasonality_past = $self->_get_volatility_seasonality_areas(\@time_samples_past);
-    my $seasonality_fut  = $self->_get_volatility_seasonality_areas(\@time_samples_fut);
+    #seasonality future
+    my $seasonality_fut = $self->_get_volatility_seasonality_areas(\@time_samples_fut);
 
-    #news triangles
+    #news triangles future
     #no news if not requested
-    my $news_past = [(1) x (scalar @time_samples_past)];
-    my $news_fut  = [(1) x (scalar @time_samples_fut)];
+    my $news_fut = [(1) x (scalar @time_samples_fut)];
     if ($args->{include_news_impact}) {
         my $contract_details = {
             start    => $c_start,
             duration => $args->{seconds_to_expiration},
         };
-        $news_past = _calculate_news_triangle(\@time_samples_past, $categorized_events, $contract_details);
-        $news_fut  = _calculate_news_triangle(\@time_samples_fut,  $categorized_events, $contract_details);
+        $news_fut = _calculate_news_triangle(\@time_samples_fut, $categorized_events, $contract_details);
     }
 
-    my $past_sum           = sum(map { ($seasonality_past->[$_] * $news_past->[$_])**2 * $weights->[$_] } (0 .. $#time_samples_past));
-    my $past_seasonality   = sqrt($past_sum / sum(@$weights));
-    my $future_sum         = sum(map { ($seasonality_fut->[$_] * $news_fut->[$_])**2 } (0 .. $#time_samples_fut));
-    my $future_seasonality = sqrt($future_sum / scalar(@time_samples_fut));
-
+    my $future_sum                 = sum(map { ($seasonality_fut->[$_] * $news_fut->[$_])**2 } (0 .. $#time_samples_fut));
+    my $future_seasonality         = sqrt($future_sum / scalar(@time_samples_fut));
     my $ltp_volatility_seasonality = $future_seasonality;
-    my $stp_volatility_seasonality = $future_seasonality / $past_seasonality;
-    $stp_volatility_seasonality = min(2, max($stp_volatility_seasonality, 0.5));
-
-    my $duration_coef        = $self->_get_coefficients('duration_coef');
-    my $minutes_to_expiry    = $args->{seconds_to_expiration} / 60;
-    my $duration_factor      = exp(log($minutes_to_expiry) * $duration_coef->{data}->{slope} + $duration_coef->{data}->{intercept});
-    my $long_term_prediction = $self->long_term_vol * $ltp_volatility_seasonality * $duration_factor;
-    # hate to have to do this!
+    my $duration_coef              = $self->_get_coefficients('duration_coef');
+    my $minutes_to_expiry          = $args->{seconds_to_expiration} / 60;
+    my $duration_factor            = exp(log($minutes_to_expiry) * $duration_coef->{data}->{slope} + $duration_coef->{data}->{intercept});
+    my $long_term_prediction       = $self->long_term_vol * $ltp_volatility_seasonality * $duration_factor;
+    # hate to have to do this but this is needed in intraday pricing engine!
     $self->long_term_prediction($long_term_prediction);
-    my $short_term_prediction = $observed_vol * $stp_volatility_seasonality;
+
+    my $short_term_prediction;
+    if (@good_ticks < 5) {
+        # we don't have enough ticks to do anything.
+        $short_term_prediction = machine_epsilon();
+    } else {
+        my @tick_epochs = map { $_->{epoch} } @good_ticks;
+        my @time_samples_past = map { ($tick_epochs[$_] + $tick_epochs[$_ - $returns_sep]) / 2 } ($returns_sep .. $#tick_epochs);
+        my $weights = _calculate_weights(\@time_samples_past, $categorized_events);
+        my $observed_vol     = _calculate_observed_volatility(\@good_ticks, \@time_samples_past, \@tick_epochs, $weights);
+        my $seasonality_past = $self->_get_volatility_seasonality_areas(\@time_samples_past);
+        my $news_past        = [(1) x (scalar @time_samples_past)];
+        if ($args->{include_news_impact}) {
+            my $contract_details = {
+                start    => $c_start,
+                duration => $args->{seconds_to_expiration},
+            };
+            $news_past = _calculate_news_triangle(\@time_samples_past, $categorized_events, $contract_details);
+        }
+        my $past_sum                   = sum(map { ($seasonality_past->[$_] * $news_past->[$_])**2 * $weights->[$_] } (0 .. $#time_samples_past));
+        my $past_seasonality           = sqrt($past_sum / sum(@$weights));
+        my $stp_volatility_seasonality = $future_seasonality / $past_seasonality;
+        $stp_volatility_seasonality = min(2, max($stp_volatility_seasonality, 0.5));
+        $short_term_prediction = $observed_vol * $stp_volatility_seasonality;
+    }
 
     my $volatility_coef  = $self->_get_coefficients('volatility_coef');
-    my $adjusted_ltp     = $long_term_prediction * $volatility_coef->{data}->{long_term};
-    my $adjusted_stp     = $short_term_prediction * $volatility_coef->{data}->{short_term};
+    my $adjusted_ltp     = $long_term_prediction * (1 + $self->volatility_scaling_factor * ($volatility_coef->{data}->{long_term_weight} - 1));
+    my $adjusted_stp     = $short_term_prediction * $volatility_coef->{data}->{short_term_weight} * $self->volatility_scaling_factor;
     my $seasonalized_vol = $adjusted_ltp + $adjusted_stp;
 
     my $min = 0.5 * $long_term_prediction;
@@ -301,6 +323,21 @@ sub _get_coefficients {
 has [qw(long_term_prediction error)] => (
     is      => 'rw',
     default => undef,
+);
+
+=head2 volatility_scaling_factor
+
+To scale volatility due to uncertainty in volatility calculation algorithm.
+
+On Monday mornings or the begining of the day where previous day is a non-trading day, there won't be ticks available over the weekends.
+
+We could only depend on the long term prediction on our volatility model, hence we need to adjust for that uncertainty in price with a volatility spread markup in Intraday::Forex model.
+
+=cut
+
+has volatility_scaling_factor => (
+    is      => 'rw',
+    default => 1,
 );
 
 no Moose;
