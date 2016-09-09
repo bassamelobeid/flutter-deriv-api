@@ -110,7 +110,6 @@ sub ServerWarningBar {
  <tr><td>
  </td><td>~;
 
-    my $runtime   = BOM::Platform::Runtime->instance;
     my $ipmessage = "Your IP: $ENV{'REMOTE_ADDR'}";
 
     my $topbarbackground;
