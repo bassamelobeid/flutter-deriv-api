@@ -12,6 +12,7 @@ use Time::HiRes qw(gettimeofday tv_interval);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
+use Format::Util::Numbers qw(to_monetary_number_format);
 
 my %pricer_cmd_handler = (
     price => \&process_ask_event,
@@ -354,9 +355,22 @@ sub _price_stream_results_adjustment {
     my $price_calculator = Price::Calculator->new(%$contract_parameters);
 
     if (my $error = $price_calculator->validate_price) {
+        my $error_map = {
+            zero_stake          => $c->l("Invalid stake"),
+            stake_outside_range => $c->l(
+                'Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($details->[0]),
+                to_monetary_number_format($details->[1])
+            ),
+            payout_outside_range => $c->l(
+                'Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($details->[0]),
+                to_monetary_number_format($details->[1])
+            ),
+            payout_too_many_places => $c->l('Payout may not have more than two decimal places.'),
+            stake_same_as_payout   => $c->l('This contract offers no return.'),
+        };
         return {
             error => {
-                message_to_client => $error->{message_to_client},
+                message_to_client => $error_map->{$error->{error_code}},
                 code              => 'ContractBuyValidationError',
                 details           => {
                     longcode      => $contract_parameters->{longcode},

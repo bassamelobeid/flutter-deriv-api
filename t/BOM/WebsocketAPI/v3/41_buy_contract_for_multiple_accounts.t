@@ -17,16 +17,16 @@ use BOM::System::RedisReplicated;
 build_test_R_50_data();
 my $t = build_mojo_test();
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'economic_events',
     {
-        events           => [{
+        events => [{
                 symbol       => 'USD',
                 release_date => 1,
                 source       => 'forexfactory',
                 impact       => 1,
                 event_name   => 'FOMC',
-            }]
-    });
+            }]});
 
 # prepare client
 my $email  = 'test-binary@binary.com';

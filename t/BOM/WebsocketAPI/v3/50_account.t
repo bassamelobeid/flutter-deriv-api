@@ -29,16 +29,16 @@ $test_client->payment_free_gift(
     remark   => 'free gift',
 );
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'economic_events',
     {
-        events           => [{
+        events => [{
                 symbol       => $_,
                 release_date => 1,
                 source       => 'forexfactory',
                 impact       => 1,
                 event_name   => 'FOMC',
-            }]
-    }) for [qw(USD JPY)];
+            }]}) for [qw(USD JPY)];
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
