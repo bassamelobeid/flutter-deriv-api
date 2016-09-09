@@ -199,7 +199,9 @@ sub verify_app {
     my $app;
 
     my $oauth = BOM::Database::Model::OAuth->new;
-    if ($app_id !~ /^\d+$/ or not($app = $oauth->verify_app($app_id))) {
+
+    # app id field = Postgres BIGINT, range: -9223372036854775808 to 9223372036854775807  (19 digits)
+    if ($app_id !~ /^\d{1,19}$/ or not($app = $oauth->verify_app($app_id))) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidAppID',
             message_to_client => localize('Your app_id is invalid.'),
