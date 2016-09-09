@@ -35,16 +35,16 @@ my $tick = Quant::Framework::Spot::Tick->new($tick_params);
 
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine
 #Because the code to prepare market data is called for all pricings in Contract
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'economic_events',
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
     {
-        events => [{
+        events           => [{
                 symbol       => 'USD',
                 release_date => 1,
                 source       => 'forexfactory',
                 impact       => 1,
                 event_name   => 'FOMC',
-            }]});
+            }]
+    });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'holiday',
@@ -76,14 +76,14 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $an_hour_earlier,
-    }) for (qw/USD EUR AUD SGD GBP CAD AUD-USD EUR-USD CAD-AUD/);
+    }) for (qw/USD EUR AUD SGD GBP AUD-USD EUR-USD/);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol        => $_,
         recorded_date => $an_hour_earlier->minus_time_interval('150d'),
-    }) for (qw/USD EUR AUD SGD GBP CAD AUD-USD EUR-USD CAD-AUD/);
+    }) for (qw/USD EUR AUD SGD GBP AUD-USD EUR-USD/);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
@@ -546,7 +546,7 @@ subtest 'volsurfaces become old and invalid' => sub {
 };
 
 subtest 'invalid start times' => sub {
-    plan tests => 16;
+    plan tests => 9;
 
     my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
@@ -617,121 +617,11 @@ subtest 'invalid start times' => sub {
     $expected_reasons = [qr/starts in the past/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{duration}     = '23h';
-    $bet_params->{date_start}   = $underlying->calendar->opening_on(Date::Utility->new('2013-03-28'));
-    $bet_params->{date_pricing} = $bet_params->{date_start};
-    my $EURUSD_tick = Quant::Framework::Spot::Tick->new({
-        symbol => 'frxEURUSD',
-        epoch  => $bet_params->{date_start}->epoch + 1,
-        quote  => 100
-    });
-
-    $bet_params->{current_tick} = $EURUSD_tick;
-
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'volsurface_delta',
-        {
-            symbol        => 'frxEURUSD',
-            recorded_date => Date::Utility->new($bet_params->{date_start}),
-        });
-    $bet = produce_contract($bet_params);
-    ok($bet->is_valid_to_buy, 'validate to buy 23h contract');
-
-    $bet_params->{barrier} = 'S10P';
-    $bet = produce_contract($bet_params);
-    ok($bet->is_valid_to_buy, 'validate to buy 23h contract');
-
-    delete $bet_params->{duration};
-    my $closing = $underlying->calendar->closing_on(Date::Utility->new('2013-03-28'));
-    $bet_params->{date_expiry} = $closing;
-    $bet_params->{date_start}  = $closing->minus_time_interval('30s');
-    $EURUSD_tick               = Quant::Framework::Spot::Tick->new({
-        symbol => 'frxEURUSD',
-        epoch  => $bet_params->{date_start}->epoch + 1,
-        quote  => 100
-    });
-
-    $bet_params->{current_tick} = $EURUSD_tick;
-    $bet_params->{date_pricing} = $bet_params->{date_start};
-    $bet                        = produce_contract($bet_params);
-    $expected_reasons           = [qr/Intraday duration not acceptable /];
-    test_error_list('buy', $bet, $expected_reasons);
-
-    $underlying               = BOM::Market::Underlying->new('R_100');
-    $bet_params->{underlying} = $underlying;
-    $bet_params->{date_start} = $underlying->calendar->opening_on(Date::Utility->new('2013-03-28'));
-    my $random_tick = Quant::Framework::Spot::Tick->new({
-        symbol => 'R_100',
-        epoch  => $bet_params->{date_start}->epoch + 1,
-        quote  => 100
-    });
-
-    $bet_params->{duration}     = '23h';
-    $bet_params->{current_tick} = $random_tick;
-    $bet_params->{date_start}   = $underlying->calendar->opening_on(Date::Utility->new('2013-03-28'));
-    $bet_params->{date_pricing} = $bet_params->{date_start};
-    $bet                        = produce_contract($bet_params);
-    ok($bet->is_valid_to_buy, 'validate to buy 23h contract');
-
-    delete $bet_params->{duration};
-    $bet_params->{date_expiry} = $underlying->calendar->closing_on(Date::Utility->new('2013-03-28'));
-    $bet_params->{date_start}  = $underlying->calendar->closing_on(Date::Utility->new('2013-03-28'))->minus_time_interval('10s');
-    $random_tick               = Quant::Framework::Spot::Tick->new({
-        symbol => 'R_100',
-        epoch  => $bet_params->{date_start}->epoch + 1,
-        quote  => 100
-    });
-
-    $bet_params->{current_tick} = $random_tick;
-    $bet_params->{date_pricing} = $bet_params->{date_start};
-    $bet                        = produce_contract($bet_params);
-    $expected_reasons           = [qr/Intraday duration not acceptable/];
-    test_error_list('buy', $bet, $expected_reasons);
-
-    $underlying               = BOM::Market::Underlying->new('frxAUDCAD');
-    $bet_params->{underlying} = $underlying;
-    $bet_params->{date_start} = $underlying->calendar->opening_on(Date::Utility->new('2013-03-28'));
-    my $minor_fx_tick = Quant::Framework::Spot::Tick->new({
-        symbol => 'frxAUDCAD',
-        epoch  => $bet_params->{date_start}->epoch + 1,
-        quote  => 100
-    });
-
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'volsurface_delta',
-        {
-            symbol        => $_,
-            recorded_date => Date::Utility->new($bet_params->{date_start}),
-        }) for (qw/frxAUDCAD frxUSDCAD/);
-
-    $bet_params->{barrier}      = 'S0P';
-    $bet_params->{current_tick} = $minor_fx_tick;
-    $bet_params->{duration}     = '23h';
-    $bet_params->{date_pricing} = $bet_params->{date_start};
-    $bet                        = produce_contract($bet_params);
-    ok($bet->is_valid_to_buy, 'validate to buy zero day contract');
-
-    delete $bet_params->{duration};
-    $bet_params->{date_expiry} = $underlying->calendar->closing_on(Date::Utility->new('2013-03-28'));
-    $bet_params->{date_start}  = $underlying->calendar->closing_on(Date::Utility->new('2013-03-28'))->minus_time_interval('1m');
-    $minor_fx_tick             = Quant::Framework::Spot::Tick->new({
-        symbol => 'frxAUDCAD',
-        epoch  => $bet_params->{date_start}->epoch + 1,
-        quote  => 100
-    });
-
-    $bet_params->{current_tick} = $minor_fx_tick;
-    $bet_params->{date_pricing} = $bet_params->{date_start};
-    $bet                        = produce_contract($bet_params);
-    $expected_reasons           = [qr/Intraday duration not acceptable/];
-    test_error_list('buy', $bet, $expected_reasons);
-
     $underlying = BOM::Market::Underlying->new('GDAXI');
 
     $bet_params->{underlying}   = $underlying;
     $bet_params->{bet_type}     = 'DOUBLEDOWN';
     $bet_params->{duration}     = '7d';
-    $bet_params->{current_tick} = $tick;
     $bet_params->{date_start}   = $underlying->calendar->opening_on(Date::Utility->new('2013-03-28'));
     $bet_params->{date_pricing} = $bet_params->{date_start};
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -756,9 +646,9 @@ subtest 'invalid start times' => sub {
         });
 
     $bet_params->{volsurface}   = $volsurface;
-    $bet_params->{bet_type}     = 'PUT';
-    $bet_params->{duration}     = '5h';
-    $bet_params->{date_start}   = Date::Utility->new('2013-03-27 09:00:00');
+    $bet_params->{bet_type}     = 'DOUBLEDOWN';
+    $bet_params->{duration}     = '0d';
+    $bet_params->{date_start}   = $underlying->calendar->closing_on(Date::Utility->new('2013-03-28'))->minus_time_interval('1m');
     $bet_params->{date_pricing} = $bet_params->{date_start};
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
@@ -768,8 +658,9 @@ subtest 'invalid start times' => sub {
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
         {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
+
     $bet              = produce_contract($bet_params);
-    $expected_reasons = [qr/Intraday duration not acceptable/];
+    $expected_reasons = [qr/Daily duration.*is outside/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -1442,16 +1333,16 @@ subtest 'zero payout' => sub {
 
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine
 #Because the code to prepare market data is called for all pricings in Contract
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'economic_events',
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
         {
-            events => [{
+            events           => [{
                     symbol       => 'USD',
                     release_date => 1,
                     source       => 'forexfactory',
                     impact       => 1,
                     event_name   => 'FOMC',
-                }]});
+                }]
+        });
 
     lives_ok {
         my $fake_tick = Quant::Framework::Spot::Tick->new({
