@@ -8,6 +8,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 use Test::MockModule;
+use BOM::Database::Model::AccessToken;
 
 my $t = build_mojo_test({
         debug    => 1,

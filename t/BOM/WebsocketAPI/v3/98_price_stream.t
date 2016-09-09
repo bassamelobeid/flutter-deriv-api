@@ -9,6 +9,7 @@ use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
+use BOM::Database::Model::AccessToken;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
     {
