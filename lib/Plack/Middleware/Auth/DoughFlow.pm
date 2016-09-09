@@ -22,7 +22,6 @@ sub call {
 
         ## validate timestamp
         my $acceptable_time_diff = $self->acceptable_time_diff || 60;
-        #$log->debug(sprintf ('time %s timestamp %s', time(), $timestamp));
         last if abs(time() - $timestamp) > $acceptable_time_diff;
 
         ## validate hash
