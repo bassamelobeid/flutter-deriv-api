@@ -155,7 +155,7 @@ EOM
 sub _notify {
     my ($self, $id, $msg) = @_;
 
-    return unless BOM::System::Config::on_production;
+    return unless BOM::System::Config::on_production();
 
     my $client = $self->client;
     $client->add_note($id, $client->loginid . ' ' . $msg);
@@ -165,7 +165,7 @@ sub _notify {
 sub _fetch_proveid {
     my $self = shift;
 
-    return unless BOM::System::Config::on_production;
+    return unless BOM::System::Config::on_production();
 
     my $premise = $self->client->address_1;
     if ($premise =~ /^(\d+)/) {
