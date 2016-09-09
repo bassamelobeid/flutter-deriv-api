@@ -97,6 +97,10 @@ sub authorize {
         return $uri;
     };
 
+    ## setup oneall callback url
+    my $oneall_callback = $c->req->url->path('/oauth2/oneall/callback')->to_abs;
+    $c->stash('oneall_callback' => $oneall_callback);
+
     my $client;
     if (    $c->req->method eq 'POST'
         and ($c->csrf_token eq ($c->param('csrftoken') // ''))
@@ -115,10 +119,6 @@ sub authorize {
         $c->session('__is_logined', 1);
         $c->session('__loginid',    $client->loginid);
     }
-
-    ## setup oneall callback url
-    my $oneall_callback = $c->req->url->path('/oauth2/oneall/callback')->to_abs;
-    $c->stash('oneall_callback' => $oneall_callback);
 
     # set session on first page visit (GET)
     # for binary.com, app id = 1
