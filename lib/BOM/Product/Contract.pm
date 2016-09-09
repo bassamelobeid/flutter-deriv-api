@@ -643,7 +643,6 @@ sub _build_pricing_new {
 
     # do not use $self->date_pricing here because milliseconds matters!
     # _date_pricing_milliseconds will not be set if date_pricing is not built.
-    $DB::single = 1;
     my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
     return 0 if $time > $self->date_start->epoch;
     return 1;
