@@ -9,6 +9,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use JSON;
 
 use f_brokerincludeall;
+use BOM::Platform::Countries;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -31,6 +32,7 @@ if (my $code = $input{promocode}) {
 Bar($pc ? "EDIT PROMOTIONAL CODE" : "ADD PROMOTIONAL CODE");
 
 my @messages;
+my $countries_instance = BOM::Platform::Countries->instance;
 
 if ($input{save}) {
     @messages = _validation_errors(%input);
@@ -44,7 +46,7 @@ if ($input{save}) {
 
             if ($input{country_type} eq 'not_offered') {
                 my $countries_not_offered = ref $input{country} ? $input{country} : [$input{country}];
-                my $rt_countries = BOM::Platform::Countries->instance->countries;
+                my $rt_countries = $countries_instance->countries;
                 my @countries_offered;
                 foreach my $country (map { $rt_countries->code_from_country($_) } $rt_countries->all_country_names) {
                     push @countries_offered, $country unless (grep { $_ eq $country } @{$countries_not_offered});
@@ -71,9 +73,10 @@ if ($input{save}) {
 $pc->{_json} ||= eval { JSON::from_json($pc->promo_code_config) } || {};
 
 my $stash = {
-    pc       => $pc,
-    pc_json  => $pc->{_json},
-    messages => \@messages
+    pc                 => $pc,
+    pc_json            => $pc->{_json},
+    messages           => \@messages,
+    countries_instance => $countries_instance
 };
 BOM::Platform::Context::template->process('backoffice/promocode_edit.html.tt', $stash)
     || die("in promocode_edit: " . BOM::Platform::Context::template->error());
