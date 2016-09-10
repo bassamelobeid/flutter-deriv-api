@@ -66,7 +66,7 @@ if(defined $ENV{TRAVIS_DATADOG_API_KEY}) {
         ],
         host   => $ENV{TRAVIS_DATADOG_API_HOST} // 'travis',
     );
-    $ua->post(
+    my $tx = $ua->post(
         'https://app.datadoghq.com/api/v1/series?api_key=' . $ENV{TRAVIS_DATADOG_API_KEY},
         json => {
             series => [
@@ -85,6 +85,10 @@ if(defined $ENV{TRAVIS_DATADOG_API_KEY}) {
             ],
         }
     );
+    unless($tx->success) {
+        my $err = $tx->error;
+        fail('unable to post datadog stats - ' . $err->{code} . ' ' . $err->{message});
+    }
 }
 
 cmp_ok($stats{avg}, '>=', 12, 'average time was above the lower limit, i.e. tests are not suspiciously fast');
