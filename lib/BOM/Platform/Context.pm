@@ -17,6 +17,7 @@ use feature 'state';
 use Scalar::Util qw(weaken);
 use Template;
 use Template::Stash;
+use Template::AutoFilter;
 use base qw( Exporter );
 
 our @EXPORT_OK = qw( request localize template);
@@ -123,7 +124,7 @@ sub _configure_template_for {
 
     push @include_path, '/home/git/regentmarkets/bom-platform/templates/';
 
-    my $template_toolkit = Template->new({
+    my $template_toolkit = Template::AutoFilter->new({
             ENCODING     => 'utf8',
             INCLUDE_PATH => join(':', @include_path),
             INTERPOLATE  => 1,
