@@ -76,14 +76,17 @@ while (1) {
 
             if (not defined $underlying) {
                 warn "$params->{symbol} doesn't have an underlying obj";
+                DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => ['tag:' . $internal_ip]});
                 next;
             }
             if (not defined $underlying->spot_tick) {
                 warn "$params->{symbol} doesn't have spot_tick";
+                DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => ['tag:' . $internal_ip]});
                 next;
             }
             if (not defined $underlying->spot_tick->epoch) {
                 warn "$params->{symbol} doesn't have epoch";
+                DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => ['tag:' . $internal_ip]});
                 next;
             }
             my $current_spot_ts = $underlying->spot_tick->epoch;
@@ -101,6 +104,7 @@ while (1) {
 
         } else {
             warn "Unrecognized Pricer command! Payload is: " . ($next // 'undefined');
+            DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.unknown.invalid", {tags => ['tag:' . $internal_ip]});
             next;
         }
 
