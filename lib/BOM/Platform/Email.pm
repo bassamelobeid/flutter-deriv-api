@@ -52,8 +52,8 @@ sub send_email {
         return 0;
     }
 
-    # strip carriage returns in subject
-    $subject =~ s/[\r\n\f\t]/ /g;
+    # replace all whitespace - including vertical such as CR/LF - with a single space
+    $subject =~ s/\s+/ /g;
     my $prefix = BOM::Platform::Runtime->instance->app_config->system->alerts->email_subject_prefix;
 
     my @name = split(/\./, Sys::Hostname::hostname);
