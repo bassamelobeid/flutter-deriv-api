@@ -110,15 +110,15 @@ while (1) {
 
         warn "Pricing time too long: " . $response->{rpc_time} . ' ' . Data::Dumper::Dumper($params) if $response->{rpc_time}>1000;
 
-        my $subsribers_count = $redis->publish($key->[1], encode_json($response));
+        my $subscribers_count = $redis->publish($key->[1], encode_json($response));
         # if None was subscribed, so delete the job
-        if ($subsribers_count == 0) {
+        if ($subscribers_count == 0) {
             $redis->del($key->[1], $next);
         }
 
         $tv_now = [Time::HiRes::gettimeofday];
 
-        DataDog::DogStatsd::Helper::stats_count('pricer_daemon.queue.subscribers', $subsribers_count, {tags => ['tag:' . $internal_ip]});
+        DataDog::DogStatsd::Helper::stats_count('pricer_daemon.queue.subscribers', $subscribers_count, {tags => ['tag:' . $internal_ip]});
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.time', 1000 * Time::HiRes::tv_interval($tv, $tv_now), {tags => ['tag:' . $internal_ip]});
         my $end_time = Time::HiRes::time;
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.end_time', 1000 * ($end_time - int($end_time)), {tags => ['tag:' . $internal_ip]});
