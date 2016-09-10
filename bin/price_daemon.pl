@@ -19,7 +19,7 @@ GetOptions(
     "workers=i" => \$workers,
 );
 
-my $pm = new Parallel::ForkManager($workers);
+my $pm = Parallel::ForkManager->new($workers);
 
 my @running_forks;
 
