@@ -74,6 +74,7 @@ while (1) {
         if ($price_daemon_cmd eq 'price') {
             my $underlying = BOM::Market::Underlying->new($params->{symbol});
 
+            # FIXME This condition is impossible, but ::Underlying can throw an exception if no symbol was given.
             if (not defined $underlying) {
                 warn "$params->{symbol} doesn't have an underlying obj";
                 DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => ['tag:' . $internal_ip]});
