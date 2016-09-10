@@ -20,6 +20,8 @@ our @EXPORT_OK = qw(send_email);
 
 $Mail::Sender::NO_X_MAILER = 1;    # avoid hostname/IP leak
 
+# Note that this function has two ways to indicate errors: it may raise an exception, or return false.
+# Ideally we should pick one for consistency.
 sub send_email {
     my $args_ref           = shift;
     my $fromemail          = $args_ref->{'from'};
