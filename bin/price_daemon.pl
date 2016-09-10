@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 use Parallel::ForkManager;
-use JSON;
+use JSON::XS;
 use BOM::System::RedisReplicated;
 use Getopt::Long;
 use DataDog::DogStatsd::Helper;
