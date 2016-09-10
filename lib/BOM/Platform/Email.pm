@@ -15,7 +15,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
 use BOM::System::Config;
 
-use base 'Exporter';
+use parent 'Exporter';
 our @EXPORT_OK = qw(send_email);
 
 $Mail::Sender::NO_X_MAILER = 1;    # avoid hostname/IP leak
