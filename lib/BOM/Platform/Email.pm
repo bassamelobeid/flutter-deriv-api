@@ -39,15 +39,15 @@ sub send_email {
 
     if (not $fromemail) {
         warn("fromemail missing - [$fromemail, $email, $subject]");
-        return;
+        return 0;
     }
     if (not $email) {
         warn("email missing - [$fromemail, $email, $subject]");
-        return;
+        return 0;
     }
     if (not $subject) {
         warn("subject missing - [$fromemail, $email, $subject]");
-        return;
+        return 0;
     }
 
     # strip carriage returns in subject
@@ -76,7 +76,7 @@ sub send_email {
     foreach my $toemail (@toemails) {
         if ($toemail and $toemail !~ /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/) {
             warn("erroneous email address $toemail");
-            return;
+            return 0;
         }
     }
 
@@ -109,7 +109,7 @@ sub send_email {
         catch {
             warn("Error sending mail: ", $Mail::Sender::Error // $_) unless $ENV{BOM_SUPPRESS_WARNINGS};
             0;
-        } or return;
+        } or return 0;
     } else {
         unless ($skip_text2html) {
             $message = text2html(
@@ -153,7 +153,7 @@ sub send_email {
         catch {
             warn("Error sending mail [$subject]: ", $Mail::Sender::Error // $_) unless $ENV{BOM_SUPPRESS_WARNINGS};
             0;
-        } or return;
+        } or return 0;
     }
 
     return 1;
