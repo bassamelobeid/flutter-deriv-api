@@ -79,7 +79,7 @@ if(defined $ENV{TRAVIS_DATADOG_API_KEY}) {
                     # Include count separately, since it's a different type
                     %args,
                     metric => $metric_base . '.count',
-                    points => [ [ $now, scalar @timing ] ],
+                    points => [ [ $now, scalar @times ] ],
                     type   => 'rate',
                 }
             ],
