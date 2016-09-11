@@ -6,7 +6,7 @@ use warnings;
 
 use Sys::Hostname qw( );
 use URL::Encode;
-use Mail::Sender;
+use Email::Stuffer;
 use HTML::FromText;
 use Try::Tiny;
 use Encode;
@@ -17,8 +17,6 @@ use BOM::System::Config;
 
 use parent 'Exporter';
 our @EXPORT_OK = qw(send_email);
-
-$Mail::Sender::NO_X_MAILER = 1;    # avoid hostname/IP leak
 
 # Note that this function has two ways to indicate errors: it may raise an exception, or return false.
 # Ideally we should pick one for consistency.
@@ -64,11 +62,6 @@ sub send_email {
     $prefix =~ s/\]//;
     $subject = $prefix . $subject;
 
-    # Encode subj here:
-    # Mail::Sender produces too long encoded Subject
-    # which sometimes gets double-encoded after sending
-    $subject = encode('MIME-Q', $subject);
-
     # DON'T send email on devbox except to RMG emails
     return 1
         if (not BOM::System::Config::on_production()
@@ -93,23 +86,17 @@ sub send_email {
 
     if ($attachment) {
         try {
-            Mail::Sender->new({
-                    smtp      => 'localhost',
-                    from      => $fromemail,
-                    to        => $email,
-                    charset   => 'UTF-8',
-                    b_charset => 'UTF-8',
-                    on_errors => 'die',
-                }
-                )->MailFile({
-                    subject => $subject,
-                    msg     => $message,
-                    ctype   => $ctype,
-                    file    => $attachment,
-                });
+            Email::Stuffer
+                ->from($fromemail)
+                ->to($email)
+                ->subject($subject)
+                ->text_body($message)
+                ->attach_file($attachment)
+                ->send;
+            1
         }
         catch {
-            warn("Error sending mail: ", $Mail::Sender::Error // $_) unless $ENV{BOM_SUPPRESS_WARNINGS};
+            warn("Error sending mail: ", $_) unless $ENV{BOM_SUPPRESS_WARNINGS};
             0;
         } or return 0;
     } else {
@@ -139,21 +126,16 @@ sub send_email {
         }
 
         try {
-            Mail::Sender->new({
-                    smtp      => 'localhost',
-                    from      => $fromemail,
-                    to        => $email,
-                    ctype     => 'text/html',
-                    charset   => 'UTF-8',
-                    encoding  => "quoted-printable",
-                    on_errors => 'die',
-                }
-                )->Open({
-                    subject => $subject,
-                })->SendEnc($mail_message)->Close();
+            Email::Stuffer
+                ->from($fromemail)
+                ->to($email)
+                ->subject($subject)
+                ->html_body($message)
+                ->send;
+            1
         }
         catch {
-            warn("Error sending mail [$subject]: ", $Mail::Sender::Error // $_) unless $ENV{BOM_SUPPRESS_WARNINGS};
+            warn("Error sending mail [$subject]: ", $_) unless $ENV{BOM_SUPPRESS_WARNINGS};
             0;
         } or return 0;
     }
