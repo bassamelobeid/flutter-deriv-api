@@ -27,6 +27,9 @@ sub send_email {
     my @message            = @{$args_ref->{'message'}};
     my $use_email_template = $args_ref->{'use_email_template'};
     my $attachment         = $args_ref->{'attachment'};
+    # This is no longer used, since the MIME type on the attachment is autodetected
+    # ($ctype is slightly confusing as a variable name - it applied only to the
+    # attachment, not any of the other MIME parts...)
     my $ctype              = $args_ref->{'att_type'} // 'text/plain';
     my $skip_text2html     = $args_ref->{'skip_text2html'};
     my $template_loginid   = $args_ref->{template_loginid};
@@ -37,14 +40,17 @@ sub send_email {
     die 'No email provided' unless $email;
 
     if (not $fromemail) {
+        # FIXME so this is most likely going to leave undef warnings
         warn("fromemail missing - [$fromemail, $email, $subject]");
         return 0;
     }
+    # FIXME this is redundant, we already died if this was missing
     if (not $email) {
         warn("email missing - [$fromemail, $email, $subject]");
         return 0;
     }
     if (not $subject) {
+        # FIXME also likely to leave undef warnings
         warn("subject missing - [$fromemail, $email, $subject]");
         return 0;
     }
