@@ -1056,7 +1056,7 @@ sub is_valid_to_sell {
                 message_to_client => localize('Please wait for contract settlement.'),
         });
 
-    } elsif (not $self->is_expired and not $self->opposite_contract->is_valid_to_buy) {
+    } elsif (not $self->opposite_contract->is_valid_to_buy) {
         # Their errors are our errors, now!
         $self->add_error($self->opposite_contract->primary_validation_error);
     }
