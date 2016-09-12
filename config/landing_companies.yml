@@ -317,3 +317,27 @@
     broker_codes:
       - VRTJ
     legal_default_currency: JPY
+'Binary (V) Ltd':
+    short: vanuatu
+    address:
+      - Govant Building
+      - Port Vila
+      - P.O. Box 1276
+      - Vanuatu
+      - Republic of Vanuatu
+    name: Binary (V) Ltd
+    fax: +44 207 6813557
+    country: Republic of Vanuatu
+    legal_allowed_currencies:
+      - USD
+    legal_allowed_markets:
+      - forex
+    legal_allowed_contract_categories:
+      - spreads
+    legal_allowed_contract_types:
+      - SPREADU
+      - SPREADD
+    broker_codes:
+      - MT
+    legal_default_currency: USD
+
