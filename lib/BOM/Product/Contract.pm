@@ -2179,7 +2179,7 @@ sub validate_price {
                 my ($details) = @_;
                 my $localize_params = [to_monetary_number_format($details->[0]), to_monetary_number_format($details->[1])];
                 return {
-                    message           => 'payout amount outside acceptable range ' . "[given: " . $details->[0] . "] " . "[max: " . $details->[1] . "]",
+                    message => 'payout amount outside acceptable range ' . "[given: " . $details->[0] . "] " . "[max: " . $details->[1] . "]",
                     message_to_client => localize('Minimum stake of [_1] and maximum payout of [_2]', @$localize_params),
                     message_to_client_array => ['Minimum stake of [_1] and maximum payout of [_2]', @$localize_params],
                 };
