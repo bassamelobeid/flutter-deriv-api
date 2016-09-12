@@ -33,27 +33,20 @@ test_with_feed(
             payout       => 1,
             currency     => 'USD',
             for_sale     => 1,
+            barrier      => 109,
         };
 
-        # Closing price on 13-Feb-08 is 108.27
-        my %barrier_win_map = (
-            109 => 0,
-        );
+        my $bet = produce_contract($bet_params);
+        ok $bet->is_after_expiry, 'is after expiry';
+        ok !$bet->is_after_settlement, 'is not pass settlement time';
+        ok !$bet->is_valid_to_sell,    'is not valid to sell';
+        is($bet->primary_validation_error->message, 'waiting for settlement', 'Not valid to sell as it is waiting for settlement');
+        ok $bet->is_expired, 'is expired';
+        is($bet->value, 0, 'Correct expiration for strike of 109');
 
-        foreach my $barrier (keys %barrier_win_map) {
-            $bet_params->{barrier} = $barrier;
-            my $bet = produce_contract($bet_params);
-            ok $bet->is_after_expiry, 'is after expiry';
-            ok !$bet->is_after_settlement, 'is not pass settlement time';
-            ok !$bet->is_valid_to_sell,    'is not valid to sell';
-            is($bet->primary_validation_error->message, 'waiting for settlement', 'Not valid to sell as it is waiting for settlement');
-            ok $bet->is_expired, 'is expired';
-            is($bet->value, $barrier_win_map{$barrier}, 'Correct expiration for strike of ' . $barrier);
-
-            my $opposite = $bet->opposite_contract;
-            ok !$opposite->is_valid_to_sell, 'is not valid to sell';
-            is($opposite->primary_validation_error->message, 'waiting for settlement', 'Error msg');
-        }
+        my $opposite = $bet->opposite_contract;
+        ok !$opposite->is_valid_to_sell, 'is not valid to sell';
+        is($opposite->primary_validation_error->message, 'waiting for settlement', 'Error msg');
 
     });
 
