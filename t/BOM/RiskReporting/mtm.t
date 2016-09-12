@@ -83,12 +83,14 @@ subtest 'realtime report generation' => sub {
         $bet_hash{payout_price}, $start_time->epoch, $expiry_time->epoch, $bet_hash{relative_barrier}, 0
     );
 
-    BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+    my $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
         type => 'fmb_higher_lower',
         %bet_hash,
         account_id => $USDaccount->id,
         short_code => uc join('_', @shortcode_param),
     });
+
+    print "fmb id: ". $fmb->id
 
     $start_time  = $now;
     $expiry_time = $plus5mins;
