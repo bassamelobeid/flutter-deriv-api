@@ -113,9 +113,9 @@ sub generate {
                     # We only sell the contracts that already expired for 10+ seconds #
                     # Those other contracts will be sold by expiryd #
                     if (time - $bet->date_expiry->epoch > 10) {
-                        $open_fmb->{market_price}                              = $value;
-                        $open_fmb->{bet}                                       = $bet;
-                        $open_bets_expired_ref->{$open_fmb_id}                 = $open_fmb;
+                        $open_fmb->{market_price}                                           = $value;
+                        $open_fmb->{bet}                                                    = $bet;
+                        $open_bets_expired_ref->{$open_fmb->{client_loginid}}{$open_fmb_id} = $open_fmb;
                     }
                 } else {
                     # spreaed does not have greeks
