@@ -281,7 +281,7 @@ sub process_ask_event {
         unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
             $stash_data->{cache}->{contract_parameters}->{longcode} = $stash_data->{cache}->{longcode};
             my $adjusted_results =
-                _price_stream_results_adjustment($stash_data->{args}, $stash_data->{cache}->{contract_parameters}, $response, $theo_probability);
+                _price_stream_results_adjustment($c, $stash_data->{args}, $stash_data->{cache}->{contract_parameters}, $response, $theo_probability);
             if (my $ref = $adjusted_results->{error}) {
                 my $err = $c->new_error($type, $ref->{code}, $ref->{message_to_client});
                 $err->{error}->{details} = $ref->{details} if exists $ref->{details};
@@ -323,6 +323,7 @@ sub _prepare_results {
 }
 
 sub _price_stream_results_adjustment {
+    my $c = shift;
     my $orig_args             = shift;
     my $contract_parameters   = shift;
     my $results               = shift;
@@ -356,21 +357,23 @@ sub _price_stream_results_adjustment {
 
     if (my $error = $price_calculator->validate_price) {
         my $error_map = {
-            zero_stake          => $c->l("Invalid stake"),
-            stake_outside_range => $c->l(
-                'Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($details->[0]),
-                to_monetary_number_format($details->[1])
-            ),
-            payout_outside_range => $c->l(
-                'Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($details->[0]),
-                to_monetary_number_format($details->[1])
-            ),
-            payout_too_many_places => $c->l('Payout may not have more than two decimal places.'),
-            stake_same_as_payout   => $c->l('This contract offers no return.'),
+            zero_stake => sub {"Invalid stake"},
+            payout_too_many_places => sub {'Payout may not have more than two decimal places.'},
+            stake_same_as_payout   => sub {'This contract offers no return.'},
+            stake_outside_range => sub {
+                my ($details) = @_;
+                return ('Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($details->[0]),
+                to_monetary_number_format($details->[1]));
+            },
+            payout_outside_range => sub {
+                my ($details) = @_;
+                return ('Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($details->[0]),
+                to_monetary_number_format($details->[1]));
+            },
         };
         return {
             error => {
-                message_to_client => $error_map->{$error->{error_code}},
+                message_to_client => $c->l($error_map->{$error->{error_code}}->($error->{error_details} || [])),
                 code              => 'ContractBuyValidationError',
                 details           => {
                     longcode      => $contract_parameters->{longcode},
