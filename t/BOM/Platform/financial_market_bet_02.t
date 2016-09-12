@@ -1459,7 +1459,7 @@ SKIP: {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 limits => {
-                    max_profit => 60 - 0.01,
+                    max_daily_profit => 60 - 0.01,
                 },
                 };
         }
