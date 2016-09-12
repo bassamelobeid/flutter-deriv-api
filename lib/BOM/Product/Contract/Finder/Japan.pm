@@ -29,15 +29,9 @@ sub available_contracts_for_symbol {
     my $calendar = $underlying->calendar;
     my ($open, $close, @offerings);
     if ($calendar->trades_on($now)) {
-        $open  = $calendar->opening_on($now)->epoch;
-        $close = $calendar->closing_on($now)->epoch;
-        my $flyby = BOM::Product::Offerings::get_offerings_flyby('japan');
-        @offerings = $flyby->query({
-                underlying_symbol => $symbol,
-                start_type        => 'spot',
-                expiry_type       => ['daily', 'intraday'],
-                barrier_category  => ['euro_non_atm', 'american']});
-
+        $open      = $calendar->opening_on($now)->epoch;
+        $close     = $calendar->closing_on($now)->epoch;
+        @offerings = get_offerings($symbol);
         @offerings = _predefined_trading_period({
             offerings => \@offerings,
             calendar  => $calendar,
@@ -67,6 +61,38 @@ sub available_contracts_for_symbol {
         close        => $close,
         feed_license => $underlying->feed_license
     };
+}
+
+# this is purely for testability
+sub get_offerings {
+    my $symbol = shift;
+
+    my $flyby = BOM::Product::Offerings::get_offerings_flyby('japan');
+
+    my %similar_args = (
+        underlying_symbol => $symbol,
+        start_type        => 'spot',
+    );
+    my @endsinout = $flyby->query({
+        expiry_type       => 'daily',
+        barrier_category  => 'euro_non_atm',
+        contract_category => 'endsinout',
+        %similar_args,
+    });
+    my @callput = $flyby->query({
+        expiry_type       => ['daily', 'intraday'],
+        barrier_category  => 'euro_non_atm',
+        contract_category => 'callput',
+        %similar_args,
+    });
+    my @american = $flyby->query({
+        expiry_type       => 'daily',
+        barrier_category  => 'american',
+        contract_category => ['touchnotouch', 'staysinout'],
+        %similar_args,
+    });
+
+    return (@endsinout, @callput, @american);
 }
 
 =head2 _predefined_trading_period
