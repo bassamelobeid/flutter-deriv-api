@@ -51,43 +51,37 @@ if(defined $ENV{TRAVIS_DATADOG_API_KEY}) {
     my $ua = Mojo::UserAgent->new;
     my $now = Time::HiRes::time;
     chomp(my $git_info = `git rev-parse --abbrev-ref HEAD`);
-    my $metric_base = 'bom_websocket_api.v_3.loadtest.timing';
-    my %args = (
-        # probably want a source:travis tag, but http://docs.datadoghq.com/api/?lang=console#tags claims
-        # that's not valid.
-        # https://help.datadoghq.com/hc/en-us/articles/204312749-Getting-started-with-tags
-        # "Tags must start with a letter, and after that may contain alphanumerics, underscores,
-        # minuses, colons, periods and slashes. Other characters will get converted to underscores.
-        # Tags can be up to 200 characters long and support unicode. Tags will be converted to lowercase."
-        tags   => [
-            'tag:' . $git_info,
-            ($ENV{TRAVIS_PULL_REQUEST} ? 'pr:' . $ENV{TRAVIS_PULL_REQUEST} : ()),
-            ($ENV{TRAVIS_BRANCH} ? 'branch:' . $ENV{TRAVIS_BRANCH} : ()),
-        ],
-        host   => $ENV{TRAVIS_DATADOG_API_HOST} // 'travis',
-    );
-    my $tx = $ua->post(
-        'https://app.datadoghq.com/api/v1/series?api_key=' . $ENV{TRAVIS_DATADOG_API_KEY},
-        json => {
-            series => [
-                (map +{
-                    %args,
-                    metric => $metric_base . '.' . $_,
-                    points => [ [ $now, $stats{$_} ] ],
-                    type   => 'gauge',
-                }, sort keys %stats), {
-                    # Include count separately, since it's a different type
-                    %args,
-                    metric => $metric_base . '.count',
-                    points => [ [ $now, scalar @times ] ],
-                    type   => 'rate',
-                }
-            ],
+    # we only get 100 custom metrics per host with datadog, so we ignore PRs and branches,
+    # just report on travis runs on master
+    if($git_info eq 'master') {
+        my $metric_base = 'bom_websocket_api.v_3.loadtest.timing';
+        my %args = (
+            tags   => [ ],
+            host   => $ENV{TRAVIS_DATADOG_API_HOST} // 'travis',
+        );
+        my $tx = $ua->post(
+            'https://app.datadoghq.com/api/v1/series?api_key=' . $ENV{TRAVIS_DATADOG_API_KEY},
+            json => {
+                series => [
+                    (map +{
+                        %args,
+                        metric => $metric_base . '.' . $_,
+                        points => [ [ $now, $stats{$_} ] ],
+                        type   => 'gauge',
+                    }, sort keys %stats), {
+                        # Include count separately, since it's a different type
+                        %args,
+                        metric => $metric_base . '.count',
+                        points => [ [ $now, scalar @times ] ],
+                        type   => 'rate',
+                    }
+                ],
+            }
+        );
+        unless($tx->success) {
+            my $err = $tx->error;
+            fail('unable to post datadog stats - ' . $err->{code} . ' ' . $err->{message});
         }
-    );
-    unless($tx->success) {
-        my $err = $tx->error;
-        fail('unable to post datadog stats - ' . $err->{code} . ' ' . $err->{message});
     }
 }
 
