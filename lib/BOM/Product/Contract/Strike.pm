@@ -239,8 +239,8 @@ sub _build_display_text {
             if ($self->underlying->market->name eq 'forex') {
                 $display_barrier =
                     ($pips > 0)
-                    ? localize('entry spot plus [plural,_1,1 pip, %d pips]',  $pips)
-                    : localize('entry spot minus [plural,_1,1 pip, %d pips]', abs $pips);
+                    ? localize('entry spot plus [plural,_1,%d pip, %d pips]',  $pips)
+                    : localize('entry spot minus [plural,_1,%d pip, %d pips]', abs $pips);
             } else {
                 my $abs_diff = $self->_proper_value(abs $strike->as_difference);
                 $display_barrier =
