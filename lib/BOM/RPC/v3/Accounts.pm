@@ -73,15 +73,13 @@ sub landing_company {
 
     $landing_company{id} = $country;
     my $registry = BOM::Platform::LandingCompany::Registry->new;
-    if (($landing_company{gaming_company} // '') ne 'none') {
-        $landing_company{gaming_company} = __build_landing_company($registry->get($landing_company{gaming_company}));
-    } else {
-        delete $landing_company{gaming_company};
-    }
-    if (($landing_company{financial_company} // '') ne 'none') {
-        $landing_company{financial_company} = __build_landing_company($registry->get($landing_company{financial_company}));
-    } else {
-        delete $landing_company{financial_company};
+
+    foreach my $type ('gaming_company', 'financial_company', 'mt_gaming_company', 'mt_financial_company') {
+        if (($landing_company{$type} // '') ne 'none') {
+            $landing_company{$type} = __build_landing_company($registry->get($landing_company{$type}));
+        } else {
+            delete $landing_company{$type};
+        }
     }
 
     return \%landing_company;

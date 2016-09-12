@@ -3,6 +3,7 @@ package BOM::RPC::v3::MT5::Account;
 use strict;
 use warnings;
 
+use YAML::XS;
 use List::Util qw(any);
 use Try::Tiny;
 use Locale::Country::Extra;
@@ -13,6 +14,12 @@ use BOM::Platform::User;
 use BOM::MT5::User;
 use BOM::Database::DataMapper::Client;
 
+my $countries_list;
+
+BEGIN {
+    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+}
+
 sub mt5_login_list {
     my $params = shift;
     my $client = $params->{client};
@@ -22,13 +29,17 @@ sub mt5_login_list {
     my @array;
     foreach (BOM::Platform::User->new({email => $client->email})->mt5_logins) {
         $_ =~ /^MT(\d+)$/;
-        push @array, {login => $1};
+        my $login = $1;
+        my $acc = {login => $login};
+
         $setting = mt5_get_settings({
                 client => $client,
-                args   => {login => $1}});
+                args   => {login => $login}});
         if ($setting && $setting->{group}) {
-            push @array, {group => $setting->{group}};
+            $acc->{group} = $setting->{group};
         }
+
+        push @array, $acc;
     }
     return \@array;
 }
@@ -47,21 +58,24 @@ sub mt5_new_account {
         } else {
             $group = 'demo\virtual';
         }
-    } elsif (
-        any {
-            $account_type eq $_;
-        }
-        qw(vanuatu costarica iom malta maltainvest japan)
-        )
-    {
-        # only enable vanuatu for now, so default all real a/c type to vanuatu
-        $group        = 'real\vanuatu';
-        $account_type = 'vanuatu';
-
-        # only CR fully authenticated client can open MT real a/c
+    } elsif ($account_type eq 'gaming' or $account_type eq 'financial') {
+        # 5 Sept 2016: only CR fully authenticated client can open MT real a/c
         unless ($client->landing_company->short eq 'costarica' and $client->client_fully_authenticated) {
             return BOM::RPC::v3::Utility::permission_error();
         }
+
+        # get MT company from countries.yml
+        my $mt_key     = 'mt_' . $account_type . '_company';
+        my $mt_company = 'none';
+        if (defined $countries_list->{$client->residence} && defined $countries_list->{$client->residence}->{$mt_key}) {
+            $mt_company = $countries_list->{$client->residence}->{$mt_key};
+        }
+
+        if ($mt_company eq 'none') {
+            return BOM::RPC::v3::Utility::permission_error();
+        }
+
+        $group = 'real\\' . $mt_company;
     } else {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccountType',
@@ -71,7 +85,6 @@ sub mt5_new_account {
     # client can have only 1 MT demo & 1 MT real a/c
     my $user = BOM::Platform::User->new({email => $client->email});
 
-    my $acc = {};
     foreach ($user->mt5_logins) {
         $_ =~ /^MT(\d+)$/;
         my $login = $1;
@@ -80,17 +93,11 @@ sub mt5_new_account {
                 client => $client,
                 args   => {login => $login}});
 
-        if ($setting->{group} =~ /^demo\\/) {
-            $acc->{demo} = $login;
-        } elsif ($setting->{group} =~ /^real\\(\w+)$/) {
-            $acc->{$1} = $login;
+        if ($setting->{group} eq $group) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'MT5CreateUserError',
+                    message_to_client => localize('You already have a [_1] account [_2]', $account_type, $login)});
         }
-    }
-
-    if (exists $acc->{$account_type}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'MT5CreateUserError',
-                message_to_client => localize('You already have a [_1] account [_2]', $account_type, $acc->{$account_type})});
     }
 
     $args->{group} = $group;
