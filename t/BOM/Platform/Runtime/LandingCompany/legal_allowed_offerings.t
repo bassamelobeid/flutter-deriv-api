@@ -18,6 +18,7 @@ subtest 'legal_allowed_offerings' => sub {
         virtual => 'common_offerings',
         japan => 'japan_offerings',
         'japan-virtual' => 'japan_offerings',
+        vanuatu => 'common_offerings',
     );
     for (@lc) {
         is $_->legal_allowed_offerings, $expected{$_->short}, 'correct offerings reference for landing company['.$_->short.'].';
