@@ -71,22 +71,22 @@ sub _make_new_flyby {
             underlying_symbol => $ul->symbol,
             exchange_name     => $ul->exchange_name,
         );
-        foreach my $cc_code (sort keys %$offerings) {
+        foreach my $cc_code (sort keys %{$offerings->{$underlying_symbol}}) {
             $record{contract_category} = $cc_code;
             $category_cache{$cc_code} //= BOM::Product::Contract::Category->new($cc_code);
             $record{contract_category_display} = $category_cache{$cc_code}->{display_name};
-            foreach my $expiry_type (sort keys %{$offerings->{$cc_code}}) {
+            foreach my $expiry_type (sort keys %{$offerings->{$underlying_symbol}{$cc_code}}) {
                 $record{expiry_type} = $expiry_type;
-                foreach my $start_type (sort keys %{$offerings->{$cc_code}->{$expiry_type}}) {
+                foreach my $start_type (sort keys %{$offerings->{$underlying_symbol}{$cc_code}{$expiry_type}}) {
                     $record{start_type} = $start_type;
-                    foreach my $barrier_category (sort keys %{$offerings->{$cc_code}->{$expiry_type}->{$start_type}}) {
+                    foreach my $barrier_category (sort keys %{$offerings->{$underlying_symbol}{$cc_code}{$expiry_type}{$start_type}}) {
                         $record{barrier_category} = $barrier_category;
                         foreach my $contract_type (@{$category_cache{$cc_code}->available_types}) {
                             next unless $legal_allowed_contract_types{$contract_type};
                             $record{sentiment}        = $contract_type_config->{$contract_type}{sentiment};
                             $record{contract_display} = $contract_type_config->{$contract_type}{display_name};
                             $record{contract_type}    = $contract_type;
-                            my $permitted = _exists_value($offerings, \%record);
+                            my $permitted = _exists_value($offerings->{$underlying_symbol}, \%record);
                             while (my ($rec_key, $from_attr) = each %record_map) {
                                 $record{$rec_key} = $permitted->{$from_attr};
                             }
