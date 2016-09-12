@@ -1647,7 +1647,7 @@ sub _build_offering_specifics {
             barrier_category  => $self->barrier_category,
         },
         [qw(min_contract_duration max_contract_duration min_historical_pricer_duration max_historical_pricer_duration)]);
-    my ($min, $max, $historical_min, $historical_max) = @{$query_result[0]};
+    my ($min, $max, $historical_min, $historical_max) = @{$query_result[0] // []};
 
     my @data = (['permitted', $min, $max], ['historical', $historical_min, $historical_max]);
     my %specifics =
