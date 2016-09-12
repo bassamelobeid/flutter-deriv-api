@@ -96,6 +96,8 @@ my %OVERRIDE_LIST = (
 );
 
 my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_types.yml');
+my $japan_offerings      = LoadFile('/home/git/regentmarkets/bom-market/config/files/japan_offerings.yml');
+my $common_offerings     = LoadFile('/home/git/regentmarkets/bom-market/config/files/product_offerings.yml');
 
 sub produce_contract {
     my ($build_arg, $maybe_currency, $maybe_sold) = @_;
@@ -232,6 +234,14 @@ sub produce_contract {
                 delete $input_params{$barrier_name};
             }
         }
+
+        # default to costarica if landing company is not provided
+        my $lc = delete $input_params{landing_company} || 'costarica';
+        my $offerings = (
+                   $lc eq 'japan'
+                or $lc eq 'japan-virtual'
+        ) ? $japan_offerings->{$input_params->{underlying}->symbol} : $common_offerings->{$input_params->{underlying}->symbol};
+        $input_params{offerings} = $offerings // {};
 
         # just to make sure that we don't accidentally pass in undef barriers
         delete $input_params{$_} for @barriers;
