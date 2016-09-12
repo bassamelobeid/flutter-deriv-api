@@ -43,13 +43,16 @@ test_with_feed(
         foreach my $barrier (keys %barrier_win_map) {
             $bet_params->{barrier} = $barrier;
             my $bet = produce_contract($bet_params);
-            is($bet->is_expired, 0, 'Past expiry date, but not settlement.');
+            ok $bet->is_after_expiry, 'is after expiry';
+            ok !$bet->is_after_settlement, 'is not pass settlement time';
+            ok !$bet->is_valid_to_sell,    'is not valid to sell';
+            is($bet->primary_validation_error->message, 'waiting for settlement', 'Not valid to sell as it is waiting for settlement');
+            ok $bet->is_expired, 'is expired';
             is($bet->value, $barrier_win_map{$barrier}, 'Correct expiration for strike of ' . $barrier);
 
             my $opposite = $bet->opposite_contract;
-            $opposite->confirm_validity;
+            ok !$opposite->is_valid_to_sell, 'is not valid to sell';
             is($opposite->primary_validation_error->message, 'waiting for settlement', 'Error msg');
-            is($bet->is_valid_to_sell, 0,, 'Is valid to sell check');
         }
 
     });
