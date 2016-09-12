@@ -112,6 +112,9 @@ sub generate {
                         undef, $open_fmb_id, $value);
                     # We only sell the contracts that already expired for 10+ seconds #
                     # Those other contracts will be sold by expiryd #
+                    print "expiry_time in markedtomodel:" . $bet->date_expiry->epoch . "\n";
+                    print "now is " . time ."\n";
+                      
                     if (time - $bet->date_expiry->epoch > 10) {
                         $open_fmb->{market_price}                                           = $value;
                         $open_fmb->{bet}                                                    = $bet;

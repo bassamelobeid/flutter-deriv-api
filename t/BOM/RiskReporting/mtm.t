@@ -32,7 +32,7 @@ my %date_string = (
 );
 
 initialize_realtime_ticks_db();
-
+print "expiry_time: " . $now->epoch, "\n";
 foreach my $symbol (keys %date_string) {
     my @dates = @{$date_string{$symbol}};
     foreach my $date (@dates) {

@@ -46,6 +46,6 @@ install:
     - . /tmp/travis-scripts/setup_perl5lib.sh
     - /tmp/travis-scripts/setup_postfix.sh
 script:
-    - make unit_test
+    - perl -MBOM::Test t/BOM/RiskReporting/mtm.t
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
