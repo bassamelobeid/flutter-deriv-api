@@ -1639,15 +1639,14 @@ sub _build_offering_specifics {
 
     my $fb = get_offerings_flyby();
 
-    my ($min, $max, $historical_min, $historical_max) = (
-        $fb->query({
-                underlying_symbol => $self->underlying->symbol,
-                contract_category => $self->category->code,
-                expiry_type       => $self->expiry_type,
-                start_type        => $self->start_type,
-                barrier_category  => $self->barrier_category,
-            },
-            [qw(min_contract_duration max_contract_duration min_historical_pricer_duration max_historical_pricer_duration)]))[0];
+    my ($min, $max, $historical_min, $historical_max) = $fb->query({
+            underlying_symbol => $self->underlying->symbol,
+            contract_category => $self->category->code,
+            expiry_type       => $self->expiry_type,
+            start_type        => $self->start_type,
+            barrier_category  => $self->barrier_category,
+        },
+        [qw(min_contract_duration max_contract_duration min_historical_pricer_duration max_historical_pricer_duration)])->[0];
 
     my @data = (['permitted', $min, $max], ['historical', $historical_min, $historical_max]);
     my %specifics =
