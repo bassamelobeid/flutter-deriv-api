@@ -83,7 +83,9 @@ has live_open_bets => (
 
 sub _build_live_open_bets {
     my $self = shift;
-    return $self->_db->dbh->selectall_hashref(qq{ SELECT * FROM accounting.get_live_open_bets() }, 'id');
+    my $result = $self->_db->dbh->selectall_hashref(qq{ SELECT * FROM accounting.get_live_open_bets() }, 'id');
+    use Data::Dumper;
+    print "live open bets: " . Dumper($result);
 }
 
 before generate => sub {
