@@ -29,7 +29,7 @@ use BOM::Platform::Context qw(request localize);
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::EconomicEventCalendar;
-use BOM::Product::Offerings qw( get_contract_specifics get_offerings_flyby);
+use BOM::Product::Offerings qw(get_offerings_flyby);
 use BOM::System::Chronicle;
 
 # require Pricing:: modules to avoid circular dependency problems.
@@ -1637,15 +1637,24 @@ has [qw(offering_specifics barrier_category)] => (
 sub _build_offering_specifics {
     my ($self) = @_;
 
-    my $filter = {
-        underlying_symbol => $self->underlying->symbol,
-        contract_category => $self->category->code,
-        expiry_type       => $self->expiry_type,
-        start_type        => $self->start_type,
-        barrier_category  => $self->barrier_category,
-    };
+    my $fb = get_offerings_flyby();
 
-    return get_contract_specifics($filter);
+    my ($min, $max, $historical_min, $historical_max) = (
+        $fb->query({
+                underlying_symbol => $self->underlying->symbol,
+                contract_category => $self->category->code,
+                expiry_type       => $self->expiry_type,
+                start_type        => $self->start_type,
+                barrier_category  => $self->barrier_category,
+            },
+            [qw(min_contract_duration max_contract_duration min_historical_pricer_duration max_historical_pricer_duration)]))[0];
+
+    my @data = (['permitted', $min, $max], ['historical', $historical_min, $historical_max]);
+    my %specifics =
+        map { $_->[0] => {min => Time::Duration::Concise->new(interval => $_->[1]), max => Time::Duration::Concise->new(interval => $_->[2])} }
+        grep { $_->[1] and $_->[2] } @data;
+
+    return \%specifics;
 }
 
 sub _build_barrier_category {
