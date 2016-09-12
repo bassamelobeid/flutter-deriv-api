@@ -1405,6 +1405,71 @@ SKIP: {
             is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
         }
         'setup new client';
+
+        my $today         = Date::Utility::today;
+
+        note "today = " . $today->db_timestamp;
+
+        my @bets_to_sell;
+        lives_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+                +{
+                purchase_time => $today->minus_time_interval('1s')->db_timestamp,
+                };
+            $bal -= 20;
+            push @bets_to_sell, [$acc_usd, $fmbid];
+            is $balance_after + 0, $bal, 'correct balance_after';
+
+            ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+                +{
+                purchase_time => $today->db_timestamp,
+                };
+            $bal -= 20;
+            push @bets_to_sell, [$acc_usd, $fmbid];
+            is $balance_after + 0, $bal, 'correct balance_after';
+
+            ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+                +{
+                purchase_time => $today->plus_time_interval('1s')->db_timestamp,
+                };
+            $bal -= 20;
+            push @bets_to_sell, [$acc_usd, $fmbid];
+            is $balance_after + 0, $bal, 'correct balance_after';
+        }
+        'buy a few bets';
+
+        lives_ok {
+            while (@bets_to_sell) {
+                my ($acc, $fmbid) = @{shift @bets_to_sell};
+                my $txnid = sell_one_bet $acc,
+                    +{
+                    id         => $fmbid,
+                    sell_price => 50,
+                    sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp,
+                    };
+            }
+        }
+        'and sell them for 50';
+
+        # here we have a realized profit for today of 60. We bought 3 bets each
+        # for 20 and sold them for 50. So, each bet brought 30 profit. But the
+        # first bet was bought as of yesterday.
+
+        dies_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+                +{
+                limits => {
+                    max_profit => 60 - 0.01,
+                },
+                };
+        }
+        'max_profit';
+        is_deeply $@,
+            [
+            BI018 => 'ERROR:  maximum daily profit limit exceeded',
+            ],
+            'maximum daily profit limit exceeded';
+
     };
 }
 
