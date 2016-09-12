@@ -110,9 +110,13 @@ sub generate {
                     $total_expired++;
                     $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
                         undef, $open_fmb_id, $value);
-                    $open_fmb->{market_price}                                           = $value;
-                    $open_fmb->{bet}                                                    = $bet;
-                    $open_bets_expired_ref->{$open_fmb->{client_loginid}}{$open_fmb_id} = $open_fmb;
+                    # We only sell the contracts that already expired for 10+ seconds #
+                    # Those other contracts will be sold by expiryd #
+                    if (time - $bet->date_expiry->epoch > 10) {
+                        $open_fmb->{market_price}                              = $value;
+                        $open_fmb->{bet}                                       = $bet;
+                        $open_bets_expired_ref->{$open_fmb_id}                 = $open_fmb;
+                    }
                 } else {
                     # spreaed does not have greeks
                     if ($bet->is_spread) {
