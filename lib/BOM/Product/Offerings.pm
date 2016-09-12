@@ -18,6 +18,10 @@ use BOM::Platform::LandingCompany::Registry;
 use YAML::XS qw(LoadFile);
 
 my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_types.yml');
+my %contract_offerings   = (
+    japan_offerings  => LoadFile('/home/git/regentmarkets/bom-market/config/files/japan_offerings.yml'),
+    common_offerings => LoadFile('/home/git/regentmarkets/bom-market/config/files/product_offerings.yml'),
+);
 
 my $cache_namespace = 'OFFERINGS';
 
@@ -55,13 +59,9 @@ sub _make_new_flyby {
     my $fb                           = FlyBy->new;
     my %legal_allowed_contract_types = map { $_ => 1 } @{$landing_company->legal_allowed_contract_types};
     my %legal_allowed_markets        = map { $_ => 1 } @{$landing_company->legal_allowed_markets};
-    my @legal_allowed_underlyings    = @{$landing_company->legal_allowed_underlyings};
-    my @underlyings =
-          $legal_allowed_underlyings[0] ne 'all'
-        ? @legal_allowed_underlyings
-        : (keys %{$BOM::Market::Underlying::PRODUCT_OFFERINGS});
+    my $offerings                    = $contract_offerings{$landing_company->legal_allowed_offerings};
 
-    foreach my $underlying_symbol (sort @underlyings) {
+    foreach my $underlying_symbol (sort keys %$offerings) {
         next if exists $suspended_underlyings{$underlying_symbol};
         my $ul = BOM::Market::Underlying->new($underlying_symbol);
         next unless $legal_allowed_markets{$ul->market->name};
@@ -71,22 +71,22 @@ sub _make_new_flyby {
             underlying_symbol => $ul->symbol,
             exchange_name     => $ul->exchange_name,
         );
-        foreach my $cc_code (sort keys %{$ul->contracts}) {
+        foreach my $cc_code (sort keys %$offerings) {
             $record{contract_category} = $cc_code;
             $category_cache{$cc_code} //= BOM::Product::Contract::Category->new($cc_code);
             $record{contract_category_display} = $category_cache{$cc_code}->{display_name};
-            foreach my $expiry_type (sort keys %{$ul->contracts->{$cc_code}}) {
+            foreach my $expiry_type (sort keys %{$offerings->{$cc_code}}) {
                 $record{expiry_type} = $expiry_type;
-                foreach my $start_type (sort keys %{$ul->contracts->{$cc_code}->{$expiry_type}}) {
+                foreach my $start_type (sort keys %{$offerings->{$cc_code}->{$expiry_type}}) {
                     $record{start_type} = $start_type;
-                    foreach my $barrier_category (sort keys %{$ul->contracts->{$cc_code}->{$expiry_type}->{$start_type}}) {
+                    foreach my $barrier_category (sort keys %{$offerings->{$cc_code}->{$expiry_type}->{$start_type}}) {
                         $record{barrier_category} = $barrier_category;
                         foreach my $contract_type (@{$category_cache{$cc_code}->available_types}) {
                             next unless $legal_allowed_contract_types{$contract_type};
                             $record{sentiment}        = $contract_type_config->{$contract_type}{sentiment};
                             $record{contract_display} = $contract_type_config->{$contract_type}{display_name};
                             $record{contract_type}    = $contract_type;
-                            my $permitted = _exists_value($ul->contracts, \%record);
+                            my $permitted = _exists_value($offerings, \%record);
                             while (my ($rec_key, $from_attr) = each %record_map) {
                                 $record{$rec_key} = $permitted->{$from_attr};
                             }
