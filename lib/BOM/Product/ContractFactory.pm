@@ -240,7 +240,7 @@ sub produce_contract {
         my $offerings = (
                    $lc eq 'japan'
                 or $lc eq 'japan-virtual'
-        ) ? $japan_offerings->{$input_params->{underlying}->symbol} : $common_offerings->{$input_params->{underlying}->symbol};
+        ) ? $japan_offerings->{$input_params{underlying}->symbol} : $common_offerings->{$input_params{underlying}->symbol};
         $input_params{offerings} = $offerings // {};
 
         # just to make sure that we don't accidentally pass in undef barriers
