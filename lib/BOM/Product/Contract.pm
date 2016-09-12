@@ -116,7 +116,6 @@ sub _build_date_pricing {
     my $time = Time::HiRes::time();
     $self->_date_pricing_milliseconds($time);
     my $now = Date::Utility->new($time);
-
     return ($self->has_pricing_new and $self->pricing_new)
         ? $self->date_start
         : $now;
@@ -710,7 +709,6 @@ sub _build_opposite_contract {
 
     # Start by making a copy of the parameters we used to build this bet.
     my %opp_parameters = %{$self->build_parameters};
-
     # we still want to set for_sale for a forward_starting contracts
     $opp_parameters{for_sale} = 1;
     # delete traces of this contract were a forward starting contract before.
@@ -860,9 +858,13 @@ sub is_after_expiry {
         return 1
             if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds));
     } else {
-        return 1 if $self->remaining_time->seconds == 0;
-    }
 
+        $self->date_pricing if not $self->has_date_pricing;
+
+        my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
+
+        return 1 if $time > $self->date_expiry->epoch;
+    }
     return;
 }
 
