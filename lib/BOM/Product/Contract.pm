@@ -863,7 +863,7 @@ sub is_after_expiry {
 
         my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
 
-        return 1 if $time > $self->date_expiry->epoch;
+        return 1 if $time >= $self->date_expiry->epoch;
     }
     return;
 }
