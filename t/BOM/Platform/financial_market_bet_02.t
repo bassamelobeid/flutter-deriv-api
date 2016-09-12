@@ -568,7 +568,7 @@ subtest 'more validation', sub {
 
 SKIP: {
     my @gmtime = gmtime;
-    skip 'at least one minute must be left before mignight', 2
+    skip 'at least one minute must be left before mignight', 5
         if $gmtime[1] > 58 and $gmtime[2] == 23;
 
     subtest 'specific turnover validation', sub {
@@ -1394,6 +1394,17 @@ SKIP: {
             is $balance_after + 0, $bal, 'correct balance_after';
         }
         '30day turnover validation passed with slightly higher limits (with open bet)';
+    };
+
+    subtest 'max_profit', sub {
+        lives_ok {
+            $cl = create_client;
+
+            top_up $cl, 'USD', 10000;
+            isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+            is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
+        }
+        'setup new client';
     };
 }
 
