@@ -1779,7 +1779,8 @@ sub _pricing_parameters {
         market_convention => $self->_market_convention,
     };
 
-    $result->{qf_market_data} = _generate_market_data($self->underlying, $self->date_start) if grep(/^qf_market_data$/, @{$self->pricing_engine_name->required_args});
+    $result->{qf_market_data} = _generate_market_data($self->underlying, $self->date_start)
+        if grep(/^qf_market_data$/, @{$self->pricing_engine_name->required_args});
 
     return $result;
 }
