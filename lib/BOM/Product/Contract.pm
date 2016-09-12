@@ -1778,7 +1778,7 @@ sub _pricing_parameters {
     #because the calculation is expensive and also it may not be compatible with
     #Engine's configuration (e.g. fetching economic events for a long-term contract)
     $result->{qf_market_data} = _generate_market_data($self->underlying, $self->date_start)
-        if grep(/^qf_market_data$/, @{$self->pricing_engine_name->required_args});
+        if first {$_ eq 'qf_market_data'} @{$self->pricing_engine_name->required_args};
 
     return $result;
 }
