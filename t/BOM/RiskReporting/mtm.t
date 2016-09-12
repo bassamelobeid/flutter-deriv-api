@@ -90,7 +90,7 @@ subtest 'realtime report generation' => sub {
         short_code => uc join('_', @shortcode_param),
     });
 
-    print "fmb id: ". $fmb->id
+    print "fmb id: ". $fmb->id, "\n";
 
     $start_time  = $now;
     $expiry_time = $plus5mins;
