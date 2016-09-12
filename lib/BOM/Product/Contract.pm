@@ -53,11 +53,6 @@ has [qw(id pricing_code display_name sentiment other_side_code payout_type payou
     default => undef,
 );
 
-has [qw(long_term_prediction)] => (
-    is      => 'rw',
-    default => undef,
-);
-
 has is_expired => (
     is         => 'ro',
     lazy_build => 1,
@@ -231,7 +226,6 @@ sub _check_is_intraday {
     return 0 if $contract_duration > 86400;
 
     # for contract that start at the open of day and expire at the close of day (include early close) should be treated as daily contract
-    # Contract that starts after 21GMT on Thurs and expired on Friday is also a daily contract as it already trades more than a trading day on Friday
     my $closing = $self->calendar->closing_on($self->date_expiry);
     return 0 if $closing and $closing->is_same_as($self->date_expiry) and $contract_duration >= $self->effective_daily_trading_seconds;
 
@@ -576,7 +570,8 @@ sub _build_pricing_engine {
         $pricing_engine = $self->pricing_engine_name->new(%pricing_parameters);
     } else {
         $pricing_engine = $self->pricing_engine_name->new({
-                bet => $self,
+                bet                     => $self,
+                apply_bounceback_safety => !$self->for_sale,
                 %{$self->pricing_engine_parameters}});
     }
 
@@ -1434,8 +1429,9 @@ sub _build_pricing_args {
     };
 
     if ($self->priced_with_intraday_model) {
-        $args->{long_term_prediction} = $self->long_term_prediction;
-        $args->{iv_with_news}         = $self->news_adjusted_pricing_vol;
+        $args->{long_term_prediction}      = $self->empirical_volsurface->long_term_prediction;
+        $args->{volatility_scaling_factor} = $self->empirical_volsurface->volatility_scaling_factor;
+        $args->{iv_with_news}              = $self->news_adjusted_pricing_vol;
     }
 
     return $args;
@@ -1464,7 +1460,6 @@ sub _build_pricing_vol {
             economic_events       => $self->economic_events_for_volatility_calculation,
             uses_flat_vol         => $uses_flat_vol,
         });
-        $self->long_term_prediction($volsurface->long_term_prediction);
         $volatility_error = $volsurface->error if $volsurface->error;
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
