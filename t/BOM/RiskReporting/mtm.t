@@ -67,7 +67,7 @@ subtest 'realtime report generation' => sub {
     my $expiry_time = $now;
 
     my %bet_hash = (
-        bet_type          => 'FLASHU',
+        bet_type          => 'SPREADU',
         relative_barrier  => 'S0P',
         underlying_symbol => 'frxUSDJPY',
         payout_price      => 100,
