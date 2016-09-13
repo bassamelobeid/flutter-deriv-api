@@ -1538,6 +1538,51 @@ SKIP: {
             is $balance_after + 0, $bal, 'correct balance_after';
         }
         'max_daily_profit passed with slightly higher limits (with open bet)';
+
+        # now let's repeat the same with 2 open bets to make sure aggregation works
+
+        # We have two open bets with buy_price 20 and payout 60 and buy_price 30
+        # and payout 60. Hence, a potential profit of 40 + 30 = 70.
+
+        # For this bet,
+        # buy_price is 30, payout 60. So, we have a potential profit of
+        # 60 - 30 = 30. An open bet is to 50% going to win. So, only half of the
+        # potential profit is taken into account.
+        #
+        # limit = realized_profit + 0.5 * potential_profit
+        #       = 60 + 0.5 * (70 + 30) = 110
+
+        dies_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+                +{
+                buy_price => 30,
+                payout_price => 60,
+                limits => {
+                    max_daily_profit => 110 - 0.01,
+                },
+                };
+        }
+        'max_profit';
+        is_deeply $@,
+            [
+            BI018 => 'ERROR:  maximum daily profit limit exceeded',
+            ],
+            'maximum daily profit limit exceeded (with 2 open bets)';
+
+
+        lives_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+                +{
+                buy_price => 30,
+                payout_price => 60,
+                limits => {
+                    max_daily_profit => 110,
+                },
+                };
+            $bal -= 30;
+            is $balance_after + 0, $bal, 'correct balance_after';
+        }
+        'max_daily_profit passed with slightly higher limits (with 2 open bets)';
     };
 }
 
