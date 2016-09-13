@@ -105,8 +105,17 @@ subtest 'realtime report generation' => sub {
     });
     print "fmb_id : " . $fmb->id . "\n";
 
-    $start_time  = $now;
-    $expiry_time = $plus5mins;
+    $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+                                                                          type => 'fmb_higher_lower',
+                                                                          %bet_hash,
+                                                                          account_id => $USDaccount->id,
+                                                                          short_code => uc join('_', @shortcode_param),
+                                                                         });
+    print "fmb_id : " . $fmb->id . "\n";
+
+
+    $start_time  = $plus5mins;
+    $expiry_time = $plus30mins;
     %bet_hash    = (
         bet_type          => 'FLASHU',
         relative_barrier  => 'S0P',
