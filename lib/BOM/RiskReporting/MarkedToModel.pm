@@ -39,6 +39,7 @@ use DataDog::DogStatsd::Helper qw (stats_inc stats_timing stats_count);
 use BOM::Platform::Client;
 use BOM::Platform::CurrencyConverter qw (in_USD);
 use BOM::Product::Transaction;
+use Data::Dumper;
 
 # This report will only be run on the MLS.
 sub generate {
@@ -97,13 +98,13 @@ sub generate {
                 $bet_params->{underlying} = $cached_underlyings{$symbol}
                     if ($cached_underlyings{$symbol});
                 my $bet = produce_contract($bet_params);
-                print "underlying "  . $bet->underlying->symbol;
-                print "expiry ".  $bet->date_expiry->datetime;
-                print "is expired ". $bet->is_expired;
-                print "date pricing ". $bet->date_pricing->datetime;
-                print "is_after_expiry" . $bet->is_after_expiry;
-
-                print "\n";
+                #print "underlying "  . $bet->underlying->symbol;
+                #print "expiry ".  $bet->date_expiry->datetime;
+                #print "is expired ". $bet->is_expired;
+                #print "date pricing ". $bet->date_pricing->datetime;
+                #print "is_after_expiry" . $bet->is_after_expiry;
+                #
+                #print "\n";
                 $cached_underlyings{$symbol} ||= $bet->underlying;
 
                 my $is_expired    = $bet->is_expired;
@@ -117,8 +118,8 @@ sub generate {
                         undef, $open_fmb_id, $value);
                     # We only sell the contracts that already expired for 10+ seconds #
                     # Those other contracts will be sold by expiryd #
-                    print "expiry_time in markedtomodel:" . $bet->date_expiry->epoch . "\n";
-                    print "now is " . time ."\n";
+                    #print "expiry_time in markedtomodel:" . $bet->date_expiry->epoch . "\n";
+                    #print "now is " . time ."\n";
                       
                     #if (time - $bet->date_expiry->epoch > 10) {
                         $open_fmb->{market_price}                                           = $value;
@@ -203,6 +204,7 @@ sub sell_expired_contracts {
     my $self          = shift;
     my $open_bets_ref = shift;
 
+    print "open bets ref in sell_expired_contracts " . Dumper($open_bets_ref) ;
     # Now deal with them one by one.
 
     my @error_lines;
