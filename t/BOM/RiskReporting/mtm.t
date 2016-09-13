@@ -19,6 +19,7 @@ use BOM::Platform::Runtime;
 use BOM::Database::DataMapper::CollectorReporting;
 
 my $now        = Date::Utility->new;
+my $minus6mins = Date::Utility->new(time - 360);
 my $plus5mins  = Date::Utility->new(time + 300);
 my $plus30mins = Date::Utility->new(time + 1800);
 my $minus5mins = Date::Utility->new(time - 300);
@@ -120,7 +121,47 @@ subtest 'realtime report generation' => sub {
                                                                          });
     print "fmb_id : " . $fmb->id . "\n";
 
+    $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+                                                                   type => 'fmb_higher_lower',
+                                                                   %bet_hash,
+                                                                   account_id => $USDaccount->id,
+                                                                   short_code => uc join('_', @shortcode_param),
+                                                                  });
+    print "fmb_id : " . $fmb->id . "\n";
 
+
+    # contract that is used to simulate error
+    my $start_time  = $minus6mins;
+    my $expiry_time = $now;
+
+    my %bet_hash = (
+        bet_type          => 'FLASHU',
+        relative_barrier  => 'S0P',
+        underlying_symbol => 'frxUSDJPY',
+        payout_price      => 100,
+        buy_price         => 53,
+        purchase_time     => $start_time->datetime_yyyymmdd_hhmmss,
+        start_time        => $start_time->datetime_yyyymmdd_hhmmss,
+        expiry_time       => $expiry_time->datetime_yyyymmdd_hhmmss,
+        settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
+    );
+
+    @shortcode_param = (
+        $bet_hash{bet_type}, $bet_hash{underlying_symbol},
+        $bet_hash{payout_price}, $start_time->epoch, $expiry_time->epoch, $bet_hash{relative_barrier}, 0
+    );
+
+    $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+        type => 'fmb_higher_lower',
+        %bet_hash,
+        account_id => $USDaccount->id,
+        short_code => uc join('_', @shortcode_param),
+    });
+    print "fmb_id : " . $fmb->id . "\n";
+    my $short_code = $fmb->short_code;
+
+
+    # not expired contract
     $start_time  = $now;
     $expiry_time = Date::Utility->new(time + 24 * 60 * 60);
     %bet_hash    = (
@@ -139,7 +180,7 @@ subtest 'realtime report generation' => sub {
                         $bet_hash{bet_type}, $bet_hash{underlying_symbol},
                         $bet_hash{payout_price}, $start_time->epoch, $expiry_time->epoch, $bet_hash{relative_barrier}, 0
                        );
-    
+
     $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
         type => 'fmb_higher_lower',
         %bet_hash,
@@ -172,8 +213,17 @@ subtest 'realtime report generation' => sub {
 
     my $mocked_transaction = Test::MockModule->new('BOM::Product::Transaction');
     my $called_count       = 0;
-    $mocked_transaction->mock('sell_expired_contracts' => sub { $called_count++; $mocked_transaction->original('sell_expired_contracts')->(@_) });
+    $mocked_transaction->mock('sell_expired_contracts' => sub {
+                                $called_count++;
+                                $mocked_transaction->mock('produce_contract', sub {
+                                                            die "error" if($_[0] eq $short_code);
+                                                            $mocked_transaction->original('produce_contract')->(@_);
+                                                          });
 
+                                my $result = $mocked_transaction->original('sell_expired_contracts')->(@_);
+                                $mocked_transaction->unmock('produce_contract');
+                                return $result;
+                              });
     #mock on_production to test email
     my $mocked_system = Test::MockModule->new('BOM::System::Config');
     $mocked_system->mock('on_production', sub { 1 });
