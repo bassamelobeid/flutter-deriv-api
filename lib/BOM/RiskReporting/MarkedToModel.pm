@@ -98,12 +98,13 @@ sub generate {
                 $bet_params->{underlying} = $cached_underlyings{$symbol}
                     if ($cached_underlyings{$symbol});
                 my $bet = produce_contract($bet_params);
-                if($open_fmb_id == 205679){
-                  print "205679 expired? " . $bet->is_expired . "\n";
-                  print "expiry time: " . $bet->date_expiry->epoch . "\n";
-                  print "curren time: " . time . "\n";
-                  print "exit tick: " . $bet->exit_tick . "\n";
-                }
+                print "underlying "  . $bet->underlying->symbol;
+                print "expiry ".  $bet->date_expiry->datetime;
+                print "is expired ". $bet->is_expired;
+                print "date pricing ". $bet->date_pricing->datetime;
+                print "is_after_expiry" . $bet->is_after_expiry;
+
+                print "\n";
                 $cached_underlyings{$symbol} ||= $bet->underlying;
 
                 my $is_expired    = $bet->is_expired;

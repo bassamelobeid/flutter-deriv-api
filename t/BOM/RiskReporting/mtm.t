@@ -24,13 +24,13 @@ my $plus30mins = Date::Utility->new(time + 1800);
 my $minus5mins = Date::Utility->new(time - 300);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-                                                         'currency', 
-                                                         {    
-                                                          recorded_date => $now,
-                                                          symbol        => $_,
-                                                         }) for qw( EUR GBP XAU USD);
+    'currency',
+    {
+        recorded_date => $now,
+        symbol        => $_,
+    }) for qw( EUR GBP XAU USD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'volsurface_delta', 
+    'volsurface_delta',
     {
         symbol        => $_,
         recorded_date => $now
@@ -45,7 +45,6 @@ my %date_string = (
 );
 
 initialize_realtime_ticks_db();
-print "expiry_time: " . $now->epoch, "\n";
 foreach my $symbol (keys %date_string) {
     my @dates = @{$date_string{$symbol}};
     foreach my $date (@dates) {
@@ -92,8 +91,7 @@ subtest 'realtime report generation' => sub {
         payout_price      => 100,
         buy_price         => 53,
         purchase_time     => $start_time->datetime_yyyymmdd_hhmmss,
-                    date_pricing =>$expiry_time->plus_time_interval('1m')->datetime_yyyymmdd_hhmmss,
-                    start_time        => $start_time->datetime_yyyymmdd_hhmmss,
+        start_time        => $start_time->datetime_yyyymmdd_hhmmss,
         expiry_time       => $expiry_time->datetime_yyyymmdd_hhmmss,
         settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
     );
@@ -110,7 +108,6 @@ subtest 'realtime report generation' => sub {
         short_code => uc join('_', @shortcode_param),
     });
 
-    print "fmb id: " . $fmb->id, "\n";
 
     $start_time  = $now;
     $expiry_time = $plus5mins;
@@ -121,7 +118,6 @@ subtest 'realtime report generation' => sub {
         payout_price      => 101,
         buy_price         => 52,
         purchase_time     => $start_time->datetime_yyyymmdd_hhmmss,
-        date_pricing =>$expiry_time->plus_time_interval('1m')->datetime_yyyymmdd_hhmmss,
         start_time        => $start_time->datetime_yyyymmdd_hhmmss,
         expiry_time       => $expiry_time->datetime_yyyymmdd_hhmmss,
         settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
@@ -143,8 +139,7 @@ subtest 'realtime report generation' => sub {
         payout_price      => 101,
         buy_price         => 52,
         purchase_time     => $start_time->datetime_yyyymmdd_hhmmss,
-                    start_time        => $start_time->datetime_yyyymmdd_hhmmss,
-                    date_pricing =>$expiry_time->plus_time_interval('1m')->datetime_yyyymmdd_hhmmss,
+        start_time        => $start_time->datetime_yyyymmdd_hhmmss,
         expiry_time       => $expiry_time->datetime_yyyymmdd_hhmmss,
         settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
     );
