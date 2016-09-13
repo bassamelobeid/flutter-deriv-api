@@ -931,8 +931,8 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             client_loginid => $client->loginid,
             currency_code  => $currency,
         });
-        my $balance = $account->get_balance();
-        my $price   = $self->price;
+        my $balance = $currency eq 'JPY' ? Format::Util::Numbers::roundnear(1, $account->get_balance()) : $account->get_balance();
+        my $price   = $currency eq 'JPY' ? Format::Util::Numbers::roundnear(1, $self->price)            : $self->price;
 
         return Error::Base->cuss(
             -type              => 'InsufficientBalance',
