@@ -1755,8 +1755,8 @@ sub _build_new_interface_engine {
 
 sub _pricing_parameters {
     my $self = shift;
-#
-    return {
+
+    my $result = {
         priced_with => $self->priced_with,
         spot        => $self->pricing_spot,
         strikes     => $self->pricing_engine_name eq 'Pricing::Engine::Digits'
@@ -1774,9 +1774,16 @@ sub _pricing_parameters {
         contract_type     => $self->pricing_code,
         underlying_symbol => $self->underlying->symbol,
         market_data       => $self->_market_data,
-        qf_market_data    => _generate_market_data($self->underlying, $self->date_start),
         market_convention => $self->_market_convention,
     };
+
+    #Only send qf-market-data if the engine really needs it.
+    #because the calculation is expensive and also it may not be compatible with
+    #Engine's configuration (e.g. fetching economic events for a long-term contract)
+    $result->{qf_market_data} = _generate_market_data($self->underlying, $self->date_start)
+        if first { $_ eq 'qf_market_data' } @{$self->pricing_engine_name->required_args};
+
+    return $result;
 }
 
 sub _generate_market_data {
