@@ -1642,7 +1642,7 @@ has [qw(offering_specifics barrier_category)] => (
 sub _build_offering_specifics {
     my ($self) = @_;
 
-    my $fb = get_offerings_flyby();
+    my $fb = get_offerings_flyby($self->landing_company);
 
     my @query_result = $fb->query({
             underlying_symbol => $self->underlying->symbol,
