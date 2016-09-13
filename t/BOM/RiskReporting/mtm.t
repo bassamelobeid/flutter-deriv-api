@@ -22,7 +22,7 @@ my $now        = Date::Utility->new;
 my $plus5mins  = Date::Utility->new(time + 300);
 my $plus30mins = Date::Utility->new(time + 1800);
 my $minus5mins = Date::Utility->new(time - 300);
-
+print "now is $now\n";
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
