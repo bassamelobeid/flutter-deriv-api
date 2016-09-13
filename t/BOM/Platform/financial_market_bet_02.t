@@ -1454,14 +1454,19 @@ SKIP: {
         # here we have a realized profit for today of 60. We bought 3 bets each
         # for 20 and sold them for 50. So, each bet brought 30 profit. But the
         # first bet was bought as of yesterday.
-        # buy_price is 20, payout 200. So, we have a potential profit of
-        # 200 - 20 + 60 = 240
+        # buy_price is 20, payout 60. So, we have a potential profit of
+        # 60 - 20 = 40. An open bet is to 50% going to win. So, only half of the
+        # potential profit is taken into account.
+        #
+        # limit = realized_profit + 0.5 * potential_profit
+        #       = 60 + 0.5 * 40 = 80
 
         dies_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
+                payout_price => 60,
                 limits => {
-                    max_daily_profit => 240 - 0.01,
+                    max_daily_profit => 80 - 0.01,
                 },
                 };
         }
@@ -1476,8 +1481,9 @@ SKIP: {
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
+                payout_price => 60,
                 limits => {
-                    max_daily_profit => 240,
+                    max_daily_profit => 80,
                 },
                 };
             $bal -= 20;
