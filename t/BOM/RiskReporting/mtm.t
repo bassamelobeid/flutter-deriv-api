@@ -37,11 +37,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     }) for qw (frxEURCHF frxUSDJPY frxEURUSD frxAUDJPY);
 
 my %date_string = (
-    R_50      => [$minus5mins->datetime, $now->datetime, $plus5mins->datetime],
-    frxEURCHF => [$minus5mins->datetime, $now->datetime, $plus5mins->datetime],
-    frxUSDJPY => ['21-Sep-05 06h50GMT', '21-Sep-05 07h00GMT', '21-Sep-05 07h20GMT', '10-May-09 11h00GMT'],
-    frxEURUSD => ['3-Jan-06 10h20GMT',  '27-Apr-09 06h02GMT', '10-May-09 11h00GMT'],
-    frxAUDJPY => ['10-May-09 11h00GMT', '5-Nov-09 14h00GMT',  '9-Nov-09 11h00GMT'],
+    frxUSDJPY => [$minus5mins->datetime, $now->datetime, $plus5mins->datetime, $plus30mins->datetime],
 );
 
 initialize_realtime_ticks_db();
