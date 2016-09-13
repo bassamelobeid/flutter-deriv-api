@@ -71,6 +71,11 @@ has category => (
     handles => [qw(supported_expiries supported_start_types is_path_dependent allow_forward_starting two_barriers barrier_at_start)],
 );
 
+has landing_company => (
+    is      => 'ro',
+    default => 'costarica',
+);
+
 has category_code => (
     is         => 'ro',
     lazy_build => 1,
