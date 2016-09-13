@@ -37,7 +37,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     }) for qw (frxEURCHF frxUSDJPY frxEURUSD frxAUDJPY);
 
 my %date_string = (
-    frxUSDJPY => [$minus5mins->datetime, $now->datetime, $plus5mins->datetime, $plus30mins->datetime],
+    frxUSDJPY => [$minus5mins->datetime, $now->datetime],
 );
 
 initialize_realtime_ticks_db();
