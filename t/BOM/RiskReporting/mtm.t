@@ -217,7 +217,10 @@ subtest 'realtime report generation' => sub {
                                 $called_count++;
                                 $mocked_transaction->mock('produce_contract', sub {
                                                             print "short code in produce_contract: " . $_[0] . "\n";
-                                                            die "error" if($_[0] eq $short_code);
+                                                            if($_[0] eq $short_code){
+                                                              print "simulate error";
+                                                              die "error";
+                                                            }
                                                             $mocked_transaction->original('produce_contract')->(@_);
                                                           });
 
