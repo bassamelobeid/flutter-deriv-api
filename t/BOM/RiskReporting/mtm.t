@@ -244,8 +244,10 @@ subtest 'realtime report generation' => sub {
         email   => 'quants-market-data@regentmarkets.com',
         subject => qr/AutoSell Failures/
     );
-    my @errors = $msg{body} =~ /Could no instantiate contract object/g;
-    is(scalar @errors, 3, "number of contracts that have errors ");
+
+    ok($msg{body} =~ /Shortcode:   $short_code/, "contract $short_code has error");
+    @errors = $msg{body} =~ /Shortcode:/g;
+    is(scalar @errors, 1, "number of contracts that have errors ");
 
 };
 
