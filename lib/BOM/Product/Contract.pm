@@ -1001,14 +1001,16 @@ sub _build_ask_probability {
 
 sub is_valid_to_buy {
     my $self = shift;
+    my $args = shift;
 
-    my $valid = $self->confirm_validity;
+    my $valid = $self->confirm_validity($args);
 
     return ($self->for_sale) ? $valid : $self->_report_validation_stats('buy', $valid);
 }
 
 sub is_valid_to_sell {
     my $self = shift;
+    my $args = shift;
 
     if ($self->is_sold) {
         $self->add_error({
@@ -1023,7 +1025,7 @@ sub is_valid_to_sell {
             $self->missing_market_data(1) if not $hold_for_exit_tick;
             $self->add_error($ref);
         }
-    } elsif (not $self->is_expired and not $self->opposite_contract->is_valid_to_buy) {
+    } elsif (not $self->is_expired and not $self->opposite_contract->is_valid_to_buy($args)) {
         # Their errors are our errors, now!
         $self->add_error($self->opposite_contract->primary_validation_error);
     }
@@ -2756,6 +2758,7 @@ has primary_validation_error => (
 
 sub confirm_validity {
     my $self = shift;
+    my $args = shift;
 
     # if there's initialization error, we will not proceed anyway.
     return 0 if $self->primary_validation_error;
@@ -2765,8 +2768,8 @@ sub confirm_validity {
     # This is the default list of validations.
     my @validation_methods = qw(_validate_input_parameters _validate_offerings);
     push @validation_methods, qw(_validate_trading_times _validate_start_and_expiry_date) unless $self->underlying->always_available;
-    push @validation_methods, qw( _validate_lifetime _validate_barrier _validate_feed validate_price);
-    push @validation_methods, '_validate_volsurface'                                      unless $self->volsurface->type eq 'flat';
+    push @validation_methods, ('_validate_lifetime', $args->{from_pricer_daemon} ? () : ('_validate_barrier'), '_validate_feed', 'validate_price');
+    push @validation_methods, '_validate_volsurface' unless $self->volsurface->type eq 'flat';
 
     foreach my $method (@validation_methods) {
         if (my $err = $self->$method) {
