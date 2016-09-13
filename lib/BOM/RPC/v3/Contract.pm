@@ -148,10 +148,14 @@ sub _get_ask {
                 date_start          => $contract->date_start->epoch,
                 contract_parameters => {
                     %$p2,
-                    app_markup_percentage      => $contract->app_markup_percentage,
+                    !$contract->is_spread
+                    ? (
+                        app_markup_percentage => $contract->app_markup_percentage,
+                        staking_limits        => $contract->staking_limits,
+                        )
+                    : (),
                     deep_otm_threshold         => $contract->market->deep_otm_threshold,
                     underlying_base_commission => $contract->underlying->base_commission,
-                    staking_limits             => $contract->staking_limits,
                 },
             };
 
