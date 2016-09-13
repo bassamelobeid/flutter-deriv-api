@@ -36,6 +36,7 @@ __PACKAGE__->meta->setup(
         entry_spot_epoch        => { type => 'bigint' },
         exit_spot               => { type => 'numeric' },
         exit_spot_epoch         => { type => 'bigint' },
+        price_slippage          => { type => 'numeric' },
     ],
 
     primary_key_columns => [ 'transaction_id' ],
