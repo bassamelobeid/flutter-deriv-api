@@ -24,3 +24,4 @@ log/*
 *.sw?
 tags
 *~
+.DS_Store
