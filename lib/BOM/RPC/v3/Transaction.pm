@@ -35,7 +35,6 @@ sub buy {
 
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
-    $contract_parameters->{app_markup_percentage} = $params->{app_markup_percentage};
 
     my $contract = try { produce_contract($contract_parameters) }
         || return BOM::RPC::v3::Utility::create_error({
