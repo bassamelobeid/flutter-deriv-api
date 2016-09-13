@@ -120,11 +120,11 @@ sub generate {
                     # Those other contracts will be sold by expiryd #
                     #print "expiry_time in markedtomodel:" . $bet->date_expiry->epoch . "\n";
                     #print "now is " . time ."\n";
-                      
+
                     #if (time - $bet->date_expiry->epoch > 10) {
-                        $open_fmb->{market_price}                                           = $value;
-                        $open_fmb->{bet}                                                    = $bet;
-                        $open_bets_expired_ref->{$open_fmb->{client_loginid}}{$open_fmb_id} = $open_fmb;
+                    $open_fmb->{market_price}                                           = $value;
+                    $open_fmb->{bet}                                                    = $bet;
+                    $open_bets_expired_ref->{$open_fmb->{client_loginid}}{$open_fmb_id} = $open_fmb;
                     #}
                 } else {
                     # spreaed does not have greeks
@@ -204,7 +204,6 @@ sub sell_expired_contracts {
     my $self          = shift;
     my $open_bets_ref = shift;
 
-    print "open bets ref in sell_expired_contracts " . Dumper($open_bets_ref) ;
     # Now deal with them one by one.
 
     my @error_lines;
@@ -215,10 +214,12 @@ sub sell_expired_contracts {
 
     my $rmgenv = BOM::System::Config::env;
     for my $client_id (@client_loginids) {
+        print "processing loginid: $client_id\n";
         my $fmb_infos = $open_bets_ref->{$client_id};
         my $client = BOM::Platform::Client::get_instance({'loginid' => $client_id});
         my (@fmb_ids_to_be_sold, %bet_infos);
         for my $id (keys %$fmb_infos) {
+            print "    processing fmb id $id\n";
             my $fmb_id         = $fmb_infos->{$id}->{id};
             my $expected_value = $fmb_infos->{$id}->{market_price};
             my $currency       = $fmb_infos->{$id}->{currency_code};
