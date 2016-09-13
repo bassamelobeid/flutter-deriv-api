@@ -13,6 +13,7 @@ use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Format::Util::Numbers qw(to_monetary_number_format);
+use Price::Calculator;
 
 my %pricer_cmd_handler = (
     price => \&process_ask_event,
