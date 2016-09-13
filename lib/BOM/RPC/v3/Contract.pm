@@ -2,6 +2,7 @@ package BOM::RPC::v3::Contract;
 
 use strict;
 use warnings;
+no indirect;
 
 use Try::Tiny;
 use List::MoreUtils qw(none);
