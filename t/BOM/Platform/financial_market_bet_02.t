@@ -1534,7 +1534,7 @@ SKIP: {
                     max_daily_profit => 95,
                 },
                 };
-            $bal -= 20;
+            $bal -= 30;
             is $balance_after + 0, $bal, 'correct balance_after';
         }
         'max_daily_profit passed with slightly higher limits (with open bet)';
