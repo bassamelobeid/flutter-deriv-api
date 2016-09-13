@@ -102,6 +102,7 @@ sub generate {
                   print "205679 expired? " . $bet->is_expired . "\n";
                   print "expiry time: " . $bet->date_expiry->epoch . "\n";
                   print "curren time: " . time . "\n";
+                  print "exit tick: " . $bet->exit_tick . "\n";
                 }
                 $cached_underlyings{$symbol} ||= $bet->underlying;
 
