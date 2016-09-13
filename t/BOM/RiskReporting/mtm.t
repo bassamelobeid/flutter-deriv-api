@@ -246,7 +246,7 @@ subtest 'realtime report generation' => sub {
     );
 
     ok($msg{body} =~ /Shortcode:   $short_code/, "contract $short_code has error");
-    @errors = $msg{body} =~ /Shortcode:/g;
+    my @errors = $msg{body} =~ /Shortcode:/g;
     is(scalar @errors, 1, "number of contracts that have errors ");
 
 };
