@@ -29,7 +29,7 @@ frxAUDJPY: &japan_fx
         american: *day_to_year
     intraday:
       spot:
-        euro_non_atm: *intraday
+        american: *intraday
   touchnotouch:
     daily:
       spot:
