@@ -97,7 +97,6 @@ subtest 'invalid underlying - contract type combination' => sub {
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->{message}, qr/trying unauthorised combination/, 'Contract type suspended message');
-    $mocked->unmock_all();
 };
 
 subtest 'disable underlying due to corporate action' => sub {
