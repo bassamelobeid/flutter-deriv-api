@@ -121,8 +121,8 @@ subtest 'realtime report generation' => sub {
     print "fmb_id : " . $fmb->id . "\n";
 
 
-    $start_time  = $plus5mins;
-    $expiry_time = $plus30mins;
+    $start_time  = $now;
+    $expiry_time = Date::Utility->new(time + 24 * 60 * 60);
     %bet_hash    = (
         bet_type          => 'FLASHU',
         relative_barrier  => 'S0P',
