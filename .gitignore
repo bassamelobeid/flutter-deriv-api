@@ -1,5 +1,3 @@
-id_dsa
-id_rsa
 *~
 /blib/
 /.build/
@@ -22,3 +20,4 @@ nytprof.out
 /_eumm/
 id_rsa
 id_dsa
+.DS_Store
