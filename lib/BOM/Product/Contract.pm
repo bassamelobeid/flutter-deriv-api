@@ -1650,9 +1650,16 @@ sub _build_offering_specifics {
     my ($min, $max, $historical_min, $historical_max) = @{$query_result[0] // []};
 
     my @data = (['permitted', $min, $max], ['historical', $historical_min, $historical_max]);
-    my %specifics =
-        map { $_->[0] => {min => Time::Duration::Concise->new(interval => $_->[1]), max => Time::Duration::Concise->new(interval => $_->[2])} }
-        grep { $_->[1] and $_->[2] } @data;
+
+    my %specifics;
+    if ($self->expiry_type eq 'tick') {
+        %specifics = map { $_->[0] => {min => $_->[1], max => $_->[2]} }
+            grep { $_->[1] and $_->[2] } @data;
+    } else {
+        %specifics =
+            map { $_->[0] => {min => Time::Duration::Concise->new(interval => $_->[1]), max => Time::Duration::Concise->new(interval => $_->[2])} }
+            grep { $_->[1] and $_->[2] } @data;
+    }
 
     return \%specifics;
 }
