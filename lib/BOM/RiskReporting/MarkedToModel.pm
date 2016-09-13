@@ -88,7 +88,6 @@ sub generate {
         $dbh->do(qq{DELETE FROM accounting.realtime_book});
 
         foreach my $open_fmb_id (@keys) {
-          print "processing fmb_id $open_fmb_id\n";
             $last_fmb_id = $open_fmb_id;
             my $open_fmb = $open_bets_ref->{$open_fmb_id};
             try {
