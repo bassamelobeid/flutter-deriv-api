@@ -19,7 +19,7 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Format::Util::Numbers qw(roundnear);
 use Time::HiRes;
-use DataDog::DogStatsd::Helper qw(stats_timing);
+use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
 sub validate_symbol {
     my $symbol    = shift;
@@ -176,6 +176,7 @@ sub _get_ask {
         stats_timing('compute_price.buy.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
     }
     catch {
+        _log_exception(_get_ask => $_);
         $response = BOM::RPC::v3::Utility::create_error({
             message_to_client => BOM::Platform::Context::localize("Cannot create contract"),
             code              => "ContractCreationFailure"
@@ -320,6 +321,7 @@ sub get_bid {
         stats_timing('compute_price.sell.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
     }
     catch {
+        _log_exception(get_bid => $_);
         $response = BOM::RPC::v3::Utility::create_error({
             message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
             code              => "GetProposalFailure"
@@ -339,6 +341,11 @@ sub send_bid {
         $response = get_bid($params);
     }
     catch {
+        # This should be impossible: get_bid() has an exception wrapper around
+        # all the useful code, so unless the error creation or localize steps
+        # fail, there's not much else that can go wrong. We therefore log and
+        # report anyway.
+        _log_exception(send_bid => "$_ (and it should be impossible for this to happen)");
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'pricing error',
                 message_to_client => BOM::Platform::Locale::error_map()->{'pricing error'}});
@@ -373,6 +380,7 @@ sub send_ask {
             BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling;
     }
     catch {
+        _log_exception(send_ask => $_);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'pricing error',
                 message_to_client => BOM::Platform::Locale::error_map()->{'pricing error'}});
@@ -403,6 +411,7 @@ sub get_contract_details {
         };
     }
     catch {
+        _log_exception(get_contract_details => $_);
         $response = BOM::RPC::v3::Utility::create_error({
             message_to_client => localize('Sorry, an error occurred while processing your request.'),
             code              => "GetContractDetails"
@@ -415,6 +424,15 @@ sub create_contract {
     my $contract_parameters = shift;
 
     return produce_contract($contract_parameters);
+}
+
+sub _log_exception {
+    my ($component, $err) = @_;
+    # so this should never happen, because we're passing fixed strings and only in this module,
+    # but best not to let a typo ruin datadog's day
+    $component =~ s/[^a-z_]+/_/g and warn "invalid component passed to _log_error: $_[0]";
+    warn "Unhandled exception in $component: $err\n";
+    stats_inc('contract.exception.' . $component);
 }
 
 1;
