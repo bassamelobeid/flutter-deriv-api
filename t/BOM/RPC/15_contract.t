@@ -2,7 +2,6 @@
 
 use strict;
 use warnings;
-use utf8;
 use Test::BOM::RPC::Client;
 use Test::Most;
 use Test::Mojo;
