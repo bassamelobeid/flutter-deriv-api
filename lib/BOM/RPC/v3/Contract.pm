@@ -171,7 +171,8 @@ sub _get_ask {
 }
 
 sub get_bid {
-    my $params = shift;
+    my $params             = shift;
+    my $from_pricer_daemon = shift;
     my ($short_code, $contract_id, $currency, $is_sold, $sell_time, $buy_price, $sell_price, $app_markup_percentage) =
         @{$params}{qw/short_code contract_id currency is_sold sell_time buy_price sell_price app_markup_percentage/};
 
@@ -191,9 +192,11 @@ sub get_bid {
             return;
         }
 
+        my $is_valid_to_sell = $contract->is_valid_to_sell({from_pricer_daemon => $from_pricer_daemon});
+
         $response = {
-            is_valid_to_sell => $contract->is_valid_to_sell,
-            ($contract->is_valid_to_sell ? () : (validation_error => $contract->primary_validation_error->message_to_client)),
+            is_valid_to_sell => $is_valid_to_sell,
+            ($is_valid_to_sell ? () : (validation_error => $contract->primary_validation_error->message_to_client)),
             bid_price           => sprintf('%.2f', $contract->bid_price),
             current_spot_time   => $contract->current_tick->epoch,
             contract_id         => $contract_id,
@@ -313,13 +316,14 @@ sub get_bid {
 }
 
 sub send_bid {
-    my $params = shift;
+    my $params             = shift;
+    my $from_pricer_daemon = shift;
 
     my $tv = [Time::HiRes::gettimeofday];
 
     my $response;
     try {
-        $response = get_bid($params->{args});
+        $response = get_bid($params->{args}, $from_pricer_daemon);
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
