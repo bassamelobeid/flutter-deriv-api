@@ -174,7 +174,7 @@ subtest 'app_markup' => sub {
     delete $params->{args}->{price};
 
     $contract = BOM::Test::Data::Utility::Product::create_contract(app_markup_percentage => 1);
-    $params->{app_markup_percentage} = 1;
+    $params->{contract_parameters}->{app_markup_percentage} = 1;
 
     $params->{args}->{price} = $contract->ask_price;
     $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
@@ -188,8 +188,8 @@ subtest 'app_markup' => sub {
         basis                 => 'stake',
         app_markup_percentage => 1
     );
-    $params->{contract_parameters}->{basis} = "stake";
-    $params->{app_markup_percentage} = 1;
+    $params->{contract_parameters}->{basis}                 = "stake";
+    $params->{contract_parameters}->{app_markup_percentage} = 1;
 
     $params->{args}->{price} = $contract->ask_price;
     $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
