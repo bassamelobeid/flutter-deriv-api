@@ -10,6 +10,7 @@ BEGIN {
         ++$stats{$_[0]}
     };
 }
+
 use BOM::RPC::v3::Contract;
 
 is_deeply(\%stats, { }, 'start with no metrics');

@@ -433,6 +433,7 @@ sub _log_exception {
     $component =~ s/[^a-z_]+/_/g and warn "invalid component passed to _log_error: $_[0]";
     warn "Unhandled exception in $component: $err\n";
     stats_inc('contract.exception.' . $component);
+    return;
 }
 
 1;
