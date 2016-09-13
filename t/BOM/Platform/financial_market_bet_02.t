@@ -1447,6 +1447,7 @@ SKIP: {
                     sell_price => 50,
                     sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp,
                     };
+                $bal += 50;
             }
         }
         'and sell them for 50';
