@@ -135,6 +135,11 @@ subtest 'realtime report generation' => sub {
         settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
     );
 
+    @shortcode_param = (
+                        $bet_hash{bet_type}, $bet_hash{underlying_symbol},
+                        $bet_hash{payout_price}, $start_time->epoch, $expiry_time->epoch, $bet_hash{relative_barrier}, 0
+                       );
+    
     $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
         type => 'fmb_higher_lower',
         %bet_hash,
