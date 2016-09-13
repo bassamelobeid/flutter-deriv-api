@@ -91,9 +91,9 @@ subtest 'suspend contract type' => sub {
 };
 
 subtest 'invalid underlying - contract type combination' => sub {
-    my $mocked = Test::MockModule->new('BOM::Market::Underlying');
-    $mocked->mock('contracts', sub { {callput => {intraday => {spot => {euro_atm => {min => '15h', max => '1d'}}}}} });
+    $bet_params->{is_forward_starting} = 1;
     $bet_params->{barrier} = 'S100P';    # non atm
+    $bet_params->{date_start} = $bet_params->{date_pricing}->plus_time_interval('20m');
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->{message}, qr/trying unauthorised combination/, 'Contract type suspended message');
