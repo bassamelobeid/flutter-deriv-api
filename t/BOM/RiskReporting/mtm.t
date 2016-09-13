@@ -103,7 +103,7 @@ subtest 'realtime report generation' => sub {
         account_id => $USDaccount->id,
         short_code => uc join('_', @shortcode_param),
     });
-
+    print "fmb_id : " . $fmb->id . "\n";
 
     $start_time  = $now;
     $expiry_time = $plus5mins;
@@ -119,13 +119,13 @@ subtest 'realtime report generation' => sub {
         settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
     );
 
-    BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+    $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
         type => 'fmb_higher_lower',
         %bet_hash,
         account_id => $USDaccount->id,
         short_code => uc join('_', @shortcode_param),
     });
-
+    print "fmb_id : " . $fmb->id . "\n";
     $start_time  = $plus5mins;
     $expiry_time = $plus30mins;
     %bet_hash    = (
@@ -140,13 +140,13 @@ subtest 'realtime report generation' => sub {
         settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
     );
 
-    BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+    $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
         type => 'fmb_higher_lower',
         %bet_hash,
         account_id => $USDaccount->id,
         short_code => uc join('_', @shortcode_param),
     });
-
+    print "fmb_id : " . $fmb->id . "\n";
     is($dm->get_last_generated_historical_marked_to_market_time, undef, 'Start with a clean slate.');
 
     my $mocked_transaction = Test::MockModule->new('BOM::Product::Transaction');
