@@ -159,7 +159,7 @@ subtest 'realtime report generation' => sub {
     });
     print "fmb_id : " . $fmb->id . "\n";
     my $short_code = $fmb->short_code;
-
+    print "short code: $short_code\n";
 
     # not expired contract
     $start_time  = $now;
@@ -216,6 +216,7 @@ subtest 'realtime report generation' => sub {
     $mocked_transaction->mock('sell_expired_contracts' => sub {
                                 $called_count++;
                                 $mocked_transaction->mock('produce_contract', sub {
+                                                            print "short code in produce_contract: " . $_[0] . "\n";
                                                             die "error" if($_[0] eq $short_code);
                                                             $mocked_transaction->original('produce_contract')->(@_);
                                                           });
