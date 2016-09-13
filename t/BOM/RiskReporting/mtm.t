@@ -59,6 +59,13 @@ foreach my $symbol (keys %date_string) {
     }
 }
 
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                                                         underlying => 'frxUSDJPY',
+                                                         epoch      => $plus5mins->epoch + 2,
+                                                         quote      => 100
+                                                        });
+
+
 subtest 'realtime report generation' => sub {
     plan tests => 5;
 
