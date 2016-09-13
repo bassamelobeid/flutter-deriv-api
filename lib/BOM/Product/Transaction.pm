@@ -1121,6 +1121,16 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -message_to_client => $error_message,
         );
     },
+    BI018 => sub {
+        my $self   = shift;
+        my $client = shift;
+
+        return Error::Base->cuss(
+            -type              => 'DailyProfitLimitExceeded',
+            -mesg              => 'Exceeds daily profit limit',
+            -message_to_client => BOM::Platform::Context::localize('You have exceeded the daily profit limit.'),
+        );
+    },
 );
 
 sub _recover {
