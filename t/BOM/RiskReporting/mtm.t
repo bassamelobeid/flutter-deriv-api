@@ -23,6 +23,19 @@ my $plus5mins  = Date::Utility->new(time + 300);
 my $plus30mins = Date::Utility->new(time + 1800);
 my $minus5mins = Date::Utility->new(time - 300);
 
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+                                                         'currency', 
+                                                         {    
+                                                          recorded_date => $now,
+                                                          symbol        => $_,
+                                                         }) for qw( EUR GBP XAU USD);
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta', 
+    {
+        symbol        => $_,
+        recorded_date => $now
+    }) for qw (frxEURCHF frxUSDJPY frxEURUSD frxAUDJPY);
+
 my %date_string = (
     R_50      => [$minus5mins->datetime, $now->datetime, $plus5mins->datetime],
     frxEURCHF => [$minus5mins->datetime, $now->datetime, $plus5mins->datetime],
@@ -50,8 +63,6 @@ foreach my $symbol (keys %date_string) {
 
     }
 }
-
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => 'USD'});
 
 subtest 'realtime report generation' => sub {
     plan tests => 5;
