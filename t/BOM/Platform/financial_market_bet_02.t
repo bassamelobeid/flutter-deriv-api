@@ -1470,6 +1470,18 @@ SKIP: {
             ],
             'maximum daily profit limit exceeded';
 
+
+        lives_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+                +{
+                limits => {
+                    max_daily_profit => 60,
+                },
+                };
+            $bal -= 20;
+            is $balance_after + 0, $bal, 'correct balance_after';
+        }
+        'max_daily_profit passed with slightly higher limits';
     };
 }
 
