@@ -51,6 +51,8 @@ foreach my $symbol (keys %date_string) {
     }
 }
 
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => 'USD'});
+
 subtest 'realtime report generation' => sub {
     plan tests => 5;
 
