@@ -42,7 +42,13 @@ sub ticks_history {
                 message_to_client => BOM::Platform::Context::localize($response->{error}->{message}, $symbol)});
     }
 
-    my $display_decimals = BOM::Market::Underlying->new($symbol)->display_decimals;
+    my $ul = BOM::Market::Underlying->new($symbol);
+
+    unless ($ul->feed_license =~ /^(realtime|delayed|daily)$/) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'StreamingNotAllowed',
+                message_to_client => BOM::Platform::Context::localize("Streaming for this symbol is not available due to license restrictions.")});
+    }
 
     if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
         my $status = BOM::RPC::v3::Contract::validate_license($symbol);
@@ -59,8 +65,6 @@ sub ticks_history {
                     message_to_client => BOM::Platform::Context::localize($status->{error}->{message}, $symbol)});
         }
     }
-
-    my $ul = BOM::Market::Underlying->new($symbol);
 
     my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
 
@@ -98,7 +102,7 @@ sub ticks_history {
     }
 
     return {
-        stash   => {"${symbol}_display_decimals" => $display_decimals},
+        stash   => {"${symbol}_display_decimals" => $ul->display_decimals},
         type    => $type,
         data    => $result,
         publish => $publish,
@@ -199,12 +203,6 @@ sub _validate_start_end {
     my $ul = $args->{ul} || return BOM::RPC::v3::Utility::create_error({
             code              => 'NoSymbolProvided',
             message_to_client => BOM::Platform::Context::localize("Please provide an underlying symbol.")});
-
-    unless ($ul->feed_license =~ /^(realtime|delayed|daily)$/) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'StreamingNotAllowed',
-                message_to_client => BOM::Platform::Context::localize("Streaming for this symbol is not available due to license restrictions.")});
-    }
 
     my $start       = $args->{start};
     my $end         = $args->{end} !~ /^[0-9]+$/ ? time() : $args->{end};
