@@ -6,6 +6,8 @@ use Test::Warnings qw(warning);
 
 my %stats;
 BEGIN {
+    require DataDog::DogStatsd::Helper;
+    no warnings 'redefine';
     *DataDog::DogStatsd::Helper::stats_inc = sub {
         ++$stats{$_[0]}
     };
