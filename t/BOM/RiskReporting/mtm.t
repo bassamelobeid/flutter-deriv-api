@@ -158,7 +158,7 @@ subtest 'realtime report generation' => sub {
         short_code => uc join('_', @shortcode_param),
     });
     print "fmb_id : " . $fmb->id . "\n";
-    my $short_code = $fmb->short_code;
+    my $short_code =  uc join('_', @shortcode_param);
     print "short code: $short_code\n";
 
     # not expired contract
