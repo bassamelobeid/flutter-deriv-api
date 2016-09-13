@@ -29,6 +29,7 @@ use BOM::Platform::Context qw(request localize);
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::EconomicEventCalendar;
+use BOM::Product::Offerings qw(get_offerings_flyby);
 use BOM::System::Chronicle;
 
 # require Pricing:: modules to avoid circular dependency problems.
@@ -1628,17 +1629,6 @@ sub _build_pricing_spot {
     return $initial_spot;
 }
 
-=head2 offerings_engine
-
-Product offerings flyby object.
-
-=cut
-
-has offerings_engine => (
-    is       => 'ro',
-    required => 1
-);
-
 has [qw(offering_specifics barrier_category)] => (
     is         => 'ro',
     lazy_build => 1,
@@ -1647,7 +1637,9 @@ has [qw(offering_specifics barrier_category)] => (
 sub _build_offering_specifics {
     my ($self) = @_;
 
-    my @query_result = $self->offerings_engine->query({
+    my $fb = get_offerings_flyby();
+
+    my @query_result = $fb->query({
             underlying_symbol => $self->underlying->symbol,
             contract_category => $self->category->code,
             expiry_type       => $self->expiry_type,

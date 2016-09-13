@@ -16,8 +16,8 @@ Some general utility subroutines related to bet parameters.
 use Cache::RedisDB;
 use List::Util qw( first );
 use Time::Duration::Concise;
+use VolSurface::Utils qw(get_strike_for_spot_delta);
 use YAML::XS qw(LoadFile);
-use BOM::Product::Offerings qw(get_offerings_flyby);
 
 use Quant::Framework::Spot::Tick;
 use BOM::Platform::Context qw(request);
@@ -96,6 +96,8 @@ my %OVERRIDE_LIST = (
 );
 
 my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_types.yml');
+my $japan_offerings      = LoadFile('/home/git/regentmarkets/bom-market/config/files/japan_offerings.yml');
+my $common_offerings     = LoadFile('/home/git/regentmarkets/bom-market/config/files/product_offerings.yml');
 
 sub produce_contract {
     my ($build_arg, $maybe_currency, $maybe_sold) = @_;
@@ -235,7 +237,11 @@ sub produce_contract {
 
         # default to costarica if landing company is not provided
         my $lc = delete $input_params{landing_company} || 'costarica';
-        $input_params{offerings_engine} = get_offerings_flyby($lc);
+        my $offerings = (
+                   $lc eq 'japan'
+                or $lc eq 'japan-virtual'
+        ) ? $japan_offerings->{$input_params{underlying}->symbol} : $common_offerings->{$input_params{underlying}->symbol};
+        $input_params{offerings} = $offerings // {};
 
         # just to make sure that we don't accidentally pass in undef barriers
         delete $input_params{$_} for @barriers;
