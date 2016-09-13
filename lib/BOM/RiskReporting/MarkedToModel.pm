@@ -98,7 +98,7 @@ sub generate {
                 $bet_params->{underlying} = $cached_underlyings{$symbol}
                     if ($cached_underlyings{$symbol});
                 my $bet = produce_contract($bet_params);
-                print "short_code : $open_fmb->{short_cod}\n";
+                print "short_code : $open_fmb->{short_code}\n";
                 print " open_fmb_id: $open_fmb_id\n";
                 print " underlying "  . $bet->underlying->symbol;
                 print " expiry ".  $bet->date_expiry->datetime;
