@@ -81,7 +81,8 @@ subtest 'realtime report generation' => sub {
         payout_price      => 100,
         buy_price         => 53,
         purchase_time     => $start_time->datetime_yyyymmdd_hhmmss,
-        start_time        => $start_time->datetime_yyyymmdd_hhmmss,
+                    date_pricing =>$expiry_time->plus_time_interval('1m')->datetime_yyyymmdd_hhmmss,
+                    start_time        => $start_time->datetime_yyyymmdd_hhmmss,
         expiry_time       => $expiry_time->datetime_yyyymmdd_hhmmss,
         settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
     );
@@ -131,7 +132,8 @@ subtest 'realtime report generation' => sub {
         payout_price      => 101,
         buy_price         => 52,
         purchase_time     => $start_time->datetime_yyyymmdd_hhmmss,
-        start_time        => $start_time->datetime_yyyymmdd_hhmmss,
+                    start_time        => $start_time->datetime_yyyymmdd_hhmmss,
+                    date_pricing =>$expiry_time->plus_time_interval('1m')->datetime_yyyymmdd_hhmmss,
         expiry_time       => $expiry_time->datetime_yyyymmdd_hhmmss,
         settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
     );
