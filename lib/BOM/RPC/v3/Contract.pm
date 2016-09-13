@@ -192,7 +192,8 @@ sub get_bid {
             return;
         }
 
-        my $is_valid_to_sell = $contract->is_valid_to_sell({from_pricer_daemon => $from_pricer_daemon});
+        my $is_valid_to_sell =
+            $contract->is_spread ? $contract->is_valid_to_sell : $contract->is_valid_to_sell({from_pricer_daemon => $from_pricer_daemon});
 
         $response = {
             is_valid_to_sell => $is_valid_to_sell,
