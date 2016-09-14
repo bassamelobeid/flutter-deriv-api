@@ -248,13 +248,31 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'    => '51.49',
-        'ask_price'        => '51.49',
-        'longcode'         => 'Win payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
-        'spot'             => '963.3054',
-        'payout'           => '100',
-        'theo_probability' => 0.499862404631018,
-    };
+        'display_value'       => '51.49',
+        'ask_price'           => '51.49',
+        'longcode'            => 'Win payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
+        'spot'                => '963.3054',
+        'payout'              => '100',
+        'theo_probability'    => 0.499862404631018,
+        'contract_parameters' => {
+            'from_pricer_daemon'         => 1,
+            'deep_otm_threshold'         => '0.025',
+            'barrier'                    => 'S0P',
+            'duration'                   => '60s',
+            'bet_type'                   => 'CALL',
+            'amount_type'                => 'payout',
+            'underlying'                 => 'R_50',
+            'currency'                   => 'USD',
+            'underlying_base_commission' => '0.015',
+            'amount'                     => '100',
+            'app_markup_percentage'      => 0,
+            'proposal'                   => 1,
+            'date_start'                 => 0,
+            'staking_limits'             => {
+                'message_to_client'       => 'Minimum stake of 0.35 and maximum payout of 50,000.00',
+                'min'                     => '0.35',
+                'max'                     => 50000,
+                'message_to_client_array' => ['Minimum stake of [_1] and maximum payout of [_2]', '0.35', '50,000.00']}}};
     is_deeply($result, $expected, 'the left values are all right');
 
     $params->{symbol} = "invalid symbol";
