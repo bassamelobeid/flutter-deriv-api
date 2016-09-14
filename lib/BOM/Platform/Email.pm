@@ -11,7 +11,6 @@ use HTML::FromText;
 use Try::Tiny;
 use Encode;
 
-use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
 use BOM::System::Config;
 
@@ -52,15 +51,6 @@ sub send_email {
 
     # strip carriage returns in subject
     $subject =~ s/[\r\n\f\t]/ /g;
-    my $prefix = BOM::Platform::Runtime->instance->app_config->system->alerts->email_subject_prefix;
-
-    my @name = split(/\./, Sys::Hostname::hostname);
-    my $server = $name[0];
-
-    $prefix =~ s/_HOST_/$server/g;
-    $prefix =~ s/\[//;
-    $prefix =~ s/\]//;
-    $subject = $prefix . $subject;
 
     # Encode subj here:
     # Mail::Sender produces too long encoded Subject
