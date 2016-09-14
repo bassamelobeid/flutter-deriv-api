@@ -29,12 +29,16 @@ sub proposal {
             args        => $args,
             method      => 'send_ask',
             msg_type    => 'proposal',
-            call_params => {language => $c->stash('language')},
-            success     => sub {
+            call_params => {
+                language              => $c->stash('language'),
+                app_markup_percentage => $c->stash('app_markup_percentage')
+            },
+            success => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
                 my $cache = {
                     longcode            => $rpc_response->{longcode},
                     contract_parameters => delete $rpc_response->{contract_parameters}};
+                $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
                 $req_storage->{uuid} = _pricing_channel_for_ask($c, 'subscribe', $req_storage->{args}, $cache);
             },
             response => sub {
