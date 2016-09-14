@@ -61,7 +61,7 @@ foreach my $symbol (keys %date_string) {
 }
 
 subtest 'realtime report generation' => sub {
-    plan tests => 7;
+    plan tests => 12;
 
     my $dm = BOM::Database::DataMapper::CollectorReporting->new({
         broker_code => 'CR',
@@ -165,5 +165,12 @@ subtest 'realtime report generation' => sub {
     my @errors = $msg{body} =~ /Shortcode:/g;
     is(scalar @errors, 1, "number of contracts that have errors ");
 
+    my @is_sold = (1,1,0,0,0);
+    for my $index (0..$#fmbs){
+      my $fmb = BOM::Database::DataMapper::FinancialMarketBet->new({broker_code => $client->broker})->get_fmb_by_id([$fmbs[$index]{fmb_id}])->[0]
+            ->financial_market_bet_record;
+      my $is_sold = $fmb->is_sold // 0;
+      is($is_sold, $is_sold[$index], "fmb $fmbs[$index]{fmb_id} is_sold value should be $is_sold[$index]");
+    }
 };
 
