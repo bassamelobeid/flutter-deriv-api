@@ -890,7 +890,6 @@ sub _build_price_calculator {
             base_commission_max     => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
             base_commission_scaling => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
             app_markup_percentage   => $self->app_markup_percentage,
-            staking_limits          => $self->staking_limits,
             ($self->has_base_commission)
             ? (base_commission => $self->base_commission)
             : (underlying_base_commission => $self->underlying->base_commission),
@@ -908,6 +907,7 @@ sub _build_price_calculator {
 my $pc_params_setters = {
     timeinyears            => sub { my $self = shift; $self->price_calculator->timeinyears($self->timeinyears) },
     discount_rate          => sub { my $self = shift; $self->price_calculator->discount_rate($self->discount_rate) },
+    staking_limits         => sub { my $self = shift; $self->price_calculator->staking_limits($self->staking_limits) },
     theo_prabability       => sub { my $self = shift; $self->price_calculator->theo_probability($self->theo_probability) },
     commission_markup      => sub { my $self = shift; $self->price_calculator->commission_markup($self->commission_markup) },
     commission_from_stake  => sub { my $self = shift; $self->price_calculator->commission_from_stake($self->commission_from_stake) },
@@ -957,7 +957,7 @@ my $pc_needed_params_map = {
     payout                 => [qw/ theo_prabability commission_from_stake /],
     commission_markup      => [qw/ theo_prabability /],
     commission_from_stake  => [qw/ theo_prabability commission_markup /],
-    validate_price         => [qw/ theo_prabability commission_markup commission_from_stake /],
+    validate_price         => [qw/ theo_prabability commission_markup commission_from_stake staking_limits /],
     discounted_probability => [qw/ timeinyears discount_rate /],
 };
 
