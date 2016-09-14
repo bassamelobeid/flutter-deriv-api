@@ -18,12 +18,12 @@ use BOM::RiskReporting::MarkedToModel;
 use BOM::Platform::Runtime;
 use BOM::Database::DataMapper::CollectorReporting;
 
-my $now = Date::Utility->new(time);
-my $minus11secs        = Date::Utility->new(time - 11);
-my $minus6mins = Date::Utility->new(time - 360);
-my $minus5mins = Date::Utility->new(time - 300);
-my $plus1day = Date::Utility->new(time + 24 * 60 * 60);
-print "now is " . $minus11secs->datetime, "\n";
+my $now         = Date::Utility->new(time);
+my $minus11secs = Date::Utility->new(time - 11);
+my $minus6mins  = Date::Utility->new(time - 360);
+my $minus5mins  = Date::Utility->new(time - 300);
+my $plus1day    = Date::Utility->new(time + 24 * 60 * 60);
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -59,7 +59,6 @@ foreach my $symbol (keys %date_string) {
 
     }
 }
-
 
 subtest 'realtime report generation' => sub {
     plan tests => 7;
@@ -108,21 +107,12 @@ subtest 'realtime report generation' => sub {
     print "fmb_id : " . $fmb->id . "\n";
 
     $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
-                                                                          type => 'fmb_higher_lower',
-                                                                          %bet_hash,
-                                                                          account_id => $USDaccount->id,
-                                                                          short_code => uc join('_', @shortcode_param),
-                                                                         });
+        type => 'fmb_higher_lower',
+        %bet_hash,
+        account_id => $USDaccount->id,
+        short_code => uc join('_', @shortcode_param),
+    });
     print "fmb_id : " . $fmb->id . "\n";
-
-    $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
-                                                                   type => 'fmb_higher_lower',
-                                                                   %bet_hash,
-                                                                   account_id => $USDaccount->id,
-                                                                   short_code => uc join('_', @shortcode_param),
-                                                                  });
-    print "fmb_id : " . $fmb->id . "\n";
-
 
     # contract that is used to simulate error
     my $start_time  = $minus6mins;
@@ -144,7 +134,7 @@ subtest 'realtime report generation' => sub {
         $bet_hash{bet_type}, $bet_hash{underlying_symbol},
         $bet_hash{payout_price}, $start_time->epoch, $expiry_time->epoch, $bet_hash{relative_barrier}, 0
     );
-    my $short_code =  uc join('_', @shortcode_param);
+    my $short_code = uc join('_', @shortcode_param);
     $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
         type => 'fmb_higher_lower',
         %bet_hash,
@@ -182,7 +172,6 @@ subtest 'realtime report generation' => sub {
     });
     print "fmb_id : " . $fmb->id . "\n";
 
-
     # not expired contract
     $start_time  = $minus11secs;
     $expiry_time = $plus1day;
@@ -199,9 +188,9 @@ subtest 'realtime report generation' => sub {
     );
 
     @shortcode_param = (
-                        $bet_hash{bet_type}, $bet_hash{underlying_symbol},
-                        $bet_hash{payout_price}, $start_time->epoch, $expiry_time->epoch, $bet_hash{relative_barrier}, 0
-                       );
+        $bet_hash{bet_type}, $bet_hash{underlying_symbol},
+        $bet_hash{payout_price}, $start_time->epoch, $expiry_time->epoch, $bet_hash{relative_barrier}, 0
+    );
 
     $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
         type => 'fmb_higher_lower',
@@ -215,21 +204,24 @@ subtest 'realtime report generation' => sub {
 
     my $mocked_transaction = Test::MockModule->new('BOM::Product::Transaction');
     my $called_count       = 0;
-    $mocked_transaction->mock('sell_expired_contracts' => sub {
-                                $called_count++;
-                                $mocked_transaction->mock('produce_contract', sub {
-                                                            print "short code in produce_contract: " . $_[0] . "\n";
-                                                            if($_[0] eq $short_code){
-                                                              print "simulate error";
-                                                              die "error";
-                                                            }
-                                                            $mocked_transaction->original('produce_contract')->(@_);
-                                                          });
+    $mocked_transaction->mock(
+        'sell_expired_contracts' => sub {
+            $called_count++;
+            $mocked_transaction->mock(
+                'produce_contract',
+                sub {
+                    print "short code in produce_contract: " . $_[0] . "\n";
+                    if ($_[0] eq $short_code) {
+                        print "simulate error";
+                        die "error";
+                    }
+                    $mocked_transaction->original('produce_contract')->(@_);
+                });
 
-                                my $result = $mocked_transaction->original('sell_expired_contracts')->(@_);
-                                $mocked_transaction->unmock('produce_contract');
-                                return $result;
-                              });
+            my $result = $mocked_transaction->original('sell_expired_contracts')->(@_);
+            $mocked_transaction->unmock('produce_contract');
+            return $result;
+        });
     #mock on_production to test email
     my $mocked_system = Test::MockModule->new('BOM::System::Config');
     $mocked_system->mock('on_production', sub { 1 });
