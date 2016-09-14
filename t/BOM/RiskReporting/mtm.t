@@ -68,7 +68,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 
 
 subtest 'realtime report generation' => sub {
-    plan tests => 5;
+    plan tests => 6;
 
     my $dm = BOM::Database::DataMapper::CollectorReporting->new({
         broker_code => 'CR',
