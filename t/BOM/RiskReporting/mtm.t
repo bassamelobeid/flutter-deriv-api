@@ -21,9 +21,8 @@ use BOM::Database::DataMapper::CollectorReporting;
 my $now = Date::Utility->new(time);
 my $minus11secs        = Date::Utility->new(time - 11);
 my $minus6mins = Date::Utility->new(time - 360);
-my $plus5mins  = Date::Utility->new(time + 300);
-my $plus30mins = Date::Utility->new(time + 1800);
 my $minus5mins = Date::Utility->new(time - 300);
+my $plus1day = Date::Utility->new(time + 24 * 60 * 60);
 print "now is " . $minus11secs->datetime, "\n";
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -60,12 +59,6 @@ foreach my $symbol (keys %date_string) {
 
     }
 }
-
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                                                         underlying => 'frxUSDJPY',
-                                                         epoch      => $plus5mins->epoch + 2,
-                                                         quote      => 100
-                                                        });
 
 
 subtest 'realtime report generation' => sub {
@@ -192,7 +185,7 @@ subtest 'realtime report generation' => sub {
 
     # not expired contract
     $start_time  = $minus11secs;
-    $expiry_time = Date::Utility->new(time + 24 * 60 * 60);
+    $expiry_time = $plus1day;
     %bet_hash    = (
         bet_type          => 'FLASHU',
         relative_barrier  => 'S0P',
