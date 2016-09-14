@@ -200,6 +200,7 @@ sub get_bid {
             underlying          => $contract->underlying->symbol,
             display_name        => $contract->underlying->display_name,
             is_expired          => $contract->is_expired,
+            is_after_settlement => $contract->is_after_settlement,
             is_forward_starting => $contract->is_forward_starting,
             is_path_dependent   => $contract->is_path_dependent,
             is_intraday         => $contract->is_intraday,
