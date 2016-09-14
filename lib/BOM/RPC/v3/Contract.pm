@@ -274,7 +274,7 @@ sub get_bid {
                 }
             }
 
-            if ($contract->exit_tick) {
+            if ($contract->exit_tick and $contract->is_after_settlement) {
                 $response->{exit_tick}      = $contract->underlying->pipsized_value($contract->exit_tick->quote);
                 $response->{exit_tick_time} = $contract->exit_tick->epoch;
             }
