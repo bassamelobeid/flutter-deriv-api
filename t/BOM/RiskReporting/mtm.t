@@ -18,7 +18,7 @@ use BOM::RiskReporting::MarkedToModel;
 use BOM::Platform::Runtime;
 use BOM::Database::DataMapper::CollectorReporting;
 
-my $now        = Date::Utility->new;
+my $now        = Date::Utility->new(time - 11);
 my $minus6mins = Date::Utility->new(time - 360);
 my $plus5mins  = Date::Utility->new(time + 300);
 my $plus30mins = Date::Utility->new(time + 1800);
@@ -68,7 +68,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 
 
 subtest 'realtime report generation' => sub {
-    plan tests => 6;
+    plan tests => 7;
 
     my $dm = BOM::Database::DataMapper::CollectorReporting->new({
         broker_code => 'CR',
@@ -242,6 +242,7 @@ subtest 'realtime report generation' => sub {
         email   => 'quants-market-data@regentmarkets.com',
         subject => qr/AutoSell Failures/
     );
+    ok(%msg, "find the email");
     $short_code =~ s/FLASHU/CALL/;
     ok($msg{body} =~ /Shortcode:   $short_code/, "contract $short_code has error");
     my @errors = $msg{body} =~ /Shortcode:/g;
