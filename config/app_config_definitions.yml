@@ -66,38 +66,10 @@ cgi:
       isa: Str
       default: ""
       global: 1
-cs:
-  description: "CS Settings"
-  isa: section
-  contains:
-    email:
-      description: "Email address for cs"
-      isa: Str
-      default: "support@binary.com"
-      global: 1
-marketing:
-  description: "Marketing Settings"
-  isa: section
-  contains:
-    email:
-      description: "Email address for marketing group"
-      isa: Str
-      default: "x-marketing@binary.com"
-      global: 1
-    myaffiliates_email:
-      description: "Email address for myaffiliates group"
-      isa: Str
-      default: "affiliates@binary.com"
-      global: 1
 payments:
   description: "Control parameters for cashier and other payment systems"
   isa: section
   contains:
-    email:
-      description: "Payment management email."
-      isa: Str
-      default: "payments@binary.com"
-      global: 1
     payment_limits:
       description: 'Staff limit for payment'
       isa: json_string
@@ -299,10 +271,6 @@ system:
   description: "Various parameters determining core application functionality"
   isa: section
   contains:
-    email:
-      description: "Dummy email address to indicate email sent from our system"
-      isa: Str
-      default: "system@binary.com"
     suspend:
       description: "Suspend one or more of our services"
       isa: section
@@ -404,27 +372,3 @@ system:
           description: "The recipient for system alerts related to hardware, operating system, and other configuration problems"
           isa: Str
           default: x-sysadmin-alert@binary.com
-compliance:
-  description: "Compliance related configuration"
-  isa: section
-  contains:
-    email:
-      description: "Email for compliance team"
-      isa: Str
-      default: "compliance@binary.com"
-accounting:
-  description: "Account team related configuration"
-  isa: section
-  contains:
-    email:
-      description: "Email for account team"
-      isa: Str
-      default: "x-acc@binary.com"
-tech:
-  description: "Technical team related configuration"
-  isa: section
-  contains:
-    email:
-      description: "Email for technical team"
-      isa: Str
-      default: "x-tech@binary.com"
