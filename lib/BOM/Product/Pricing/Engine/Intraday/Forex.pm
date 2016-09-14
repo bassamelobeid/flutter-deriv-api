@@ -3,17 +3,14 @@ package BOM::Product::Pricing::Engine::Intraday::Forex;
 use Moose;
 extends 'BOM::Product::Pricing::Engine::Intraday';
 
-use JSON qw(from_json);
 use List::Util qw(max min sum);
-use Sereal qw(decode_sereal);
 use YAML::XS qw(LoadFile);
 
-use BOM::Platform::Context qw(request localize);
-use BOM::Platform::Runtime;
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
+use BOM::System::Config;
 
 sub clone {
     my ($self, $changes) = @_;
@@ -33,6 +30,11 @@ has coefficients => (
 has [qw(long_term_prediction)] => (
     is         => 'ro',
     lazy_build => 1,
+);
+
+has apply_bounceback_safety => (
+    is      => 'ro',
+    default => undef,
 );
 
 has [qw(pricing_vol news_adjusted_pricing_vol)] => (
@@ -219,7 +221,42 @@ sub _build_ticks_for_trend {
         fill_cache   => !$bet->backtest,
         aggregated   => $self->more_than_short_term_cutoff,
     });
+}
 
+has lookback_seconds => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_lookback_seconds {
+    my $self             = shift;
+    my @ticks            = @{$self->ticks_for_trend};
+    my $duration_in_secs = $self->bet->timeindays->amount * 86400;
+    my $lookback_secs    = 0;
+
+    $lookback_secs = $ticks[-1]->{epoch} - $ticks[0]->{epoch} if scalar(@ticks) > 1;
+
+    # If gotten lookback ticks period is lower then 80% of duration*2
+    # that means we have not enought ticks to make price
+    # we should use gotten lookback period to correct probability
+    my $ticks_per_sec = $lookback_secs / 2 / $duration_in_secs;
+    if ($ticks_per_sec <= 0.8) {
+        return $lookback_secs;
+    }
+    return $duration_in_secs * 2;
+}
+
+has slope => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_slope {
+    my $self             = shift;
+    my $duration_in_secs = $self->bet->timeindays->amount * 86400;
+
+    my $ticks_per_sec = $self->lookback_seconds / $duration_in_secs;
+    return (sqrt(1 - (($ticks_per_sec - 2)**2) / 4));
 }
 
 =head1 intraday_trend
@@ -245,13 +282,19 @@ sub _build_intraday_trend {
         base_amount => $average,
     });
 
-    my $trend            = (($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($duration_in_secs);
+    my $trend = 0;
+    # Lookback seconds is only set to zero if @ticks has less than or equal to one element.
+    # But let's be extra careful here.
+    my $lookback_seconds = $self->lookback_seconds;
+    if (@ticks > 1 and $lookback_seconds > 0) {
+        $trend = ((($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($lookback_seconds / 2)) * $self->slope;
+    }
     my $calibration_coef = $self->coefficients->{$bet->underlying->symbol};
     my $trend_cv         = Math::Util::CalculatedValue::Validatable->new({
         name        => 'intraday_trend',
         description => 'Intraday trend based on historical data',
-        minimum     => $calibration_coef->{trend_min},
-        maximum     => $calibration_coef->{trend_max},
+        minimum     => $calibration_coef->{trend_min} * $self->slope,
+        maximum     => $calibration_coef->{trend_max} * $self->slope,
         set_by      => __PACKAGE__,
         base_amount => $trend,
     });
@@ -274,23 +317,43 @@ sub _build_more_than_short_term_cutoff {
 sub calculate_intraday_bounceback {
     my ($self, $t_mins, $st_or_lt) = @_;
 
+    my $calibration_coef = $self->coefficients->{$self->bet->underlying->symbol};
+    my $slope            = $self->slope;
+
+    my $bounceback_base_intraday_trend = $self->calculate_bounceback_base($t_mins, $st_or_lt, $self->intraday_trend->amount);
+
+    my $bounceback_base_max_trend            = $self->calculate_bounceback_base($t_mins, $st_or_lt, ($calibration_coef->{trend_max}));
+    my $bounceback_base_max_trend_with_slope = $self->calculate_bounceback_base($t_mins, $st_or_lt, ($slope * $calibration_coef->{trend_max}));
+
+    my $bounceback_base_min_trend            = $self->calculate_bounceback_base($t_mins, $st_or_lt, ($calibration_coef->{trend_min}));
+    my $bounceback_base_min_trend_with_slope = $self->calculate_bounceback_base($t_mins, $st_or_lt, ($slope * $calibration_coef->{trend_min}));
+
+    my $bounceback_safety_max = abs($bounceback_base_max_trend - $bounceback_base_max_trend_with_slope);
+    my $bounceback_safety_min = abs($bounceback_base_min_trend - $bounceback_base_min_trend_with_slope);
+    my $bounceback_safety     = max($bounceback_safety_min, $bounceback_safety_max);
+
+    if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_st') {
+        $bounceback_base_intraday_trend = ($self->bet->code eq 'CALL') ? $bounceback_base_intraday_trend : $bounceback_base_intraday_trend * -1;
+    }
+    if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_lt') {
+        $bounceback_safety = ($self->bet->code eq 'CALL') ? $bounceback_safety : $bounceback_safety * -1;
+    }
+
+    $bounceback_base_intraday_trend += $bounceback_safety if $self->apply_bounceback_safety;
+
+    return $bounceback_base_intraday_trend;
+}
+
+sub calculate_bounceback_base {
+    my ($self, $t_mins, $st_or_lt, $trend_value) = @_;
+
     my @coef_name = map { $_ . $st_or_lt } qw(A B C D);
     my $calibration_coef = $self->coefficients->{$self->bet->underlying->symbol};
     my ($coef_A, $coef_B, $coef_C, $coef_D) = map { $calibration_coef->{$_} } @coef_name;
     my $coef_D_multiplier = ($st_or_lt eq '_lt') ? 1 : 1 / $coef_D;
-
     my $duration_in_secs = $t_mins * 60;
-    my $bounceback_base =
-        $coef_A /
-        ($coef_D * $coef_D_multiplier) *
-        $duration_in_secs**$coef_B *
-        (1 / (1 + exp($coef_C * $self->intraday_trend->amount * $coef_D)) - 0.5);
 
-    if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_st') {
-        $bounceback_base = ($self->bet->code eq 'CALL') ? $bounceback_base : $bounceback_base * -1;
-    }
-
-    return $bounceback_base;
+    return $coef_A / ($coef_D * $coef_D_multiplier) * $duration_in_secs**$coef_B * (1 / (1 + exp($coef_C * $trend_value * $coef_D)) - 0.5);
 }
 
 sub calculate_expected_spot {
@@ -298,7 +361,7 @@ sub calculate_expected_spot {
 
     my $bet = $self->bet;
     my $expected_spot =
-        $self->calculate_intraday_bounceback($t, "_lt") * $self->intraday_trend->peek_amount('average_spot') * sqrt($t * 60) +
+        $self->intraday_trend->peek_amount('average_spot') * $self->calculate_intraday_bounceback($t, "_lt") * sqrt($t * 60) +
         $bet->pricing_args->{spot};
     return $expected_spot;
 }
@@ -414,7 +477,6 @@ sub _build_intraday_vanilla_delta {
     });
 
     return Math::Util::CalculatedValue::Validatable->new({
-        language    => request()->language,
         name        => 'intraday_vanilla_delta',
         description => 'The delta of a vanilla call with the same parameters as this bet',
         set_by      => __PACKAGE__,
@@ -480,6 +542,8 @@ sub _build_risk_markup {
         $risk_markup->include_adjustment('add', $illiquid_market_markup);
     }
 
+    $risk_markup->include_adjustment('add', $self->vol_spread_markup);
+
     return $risk_markup;
 }
 
@@ -537,6 +601,33 @@ sub _build_economic_events_volatility_risk_markup {
     });
 
     return $markup;
+}
+
+has volatility_scaling_factor => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_volatility_scaling_factor',
+);
+
+sub _build_volatility_scaling_factor {
+    return shift->bet->pricing_args->{volatility_scaling_factor};
+}
+
+has vol_spread_markup => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_vol_spread_markup',
+);
+
+sub _build_vol_spread_markup {
+    my $self = shift;
+
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'vol_spread_markup',
+        set_by      => __PACKAGE__,
+        description => 'markup added to account for variable ticks interval for volatility calculation.',
+        base_amount => 0.1 * (1 - ($self->volatility_scaling_factor)**2),
+    });
 }
 
 no Moose;
