@@ -18,27 +18,28 @@ use BOM::RiskReporting::MarkedToModel;
 use BOM::Platform::Runtime;
 use BOM::Database::DataMapper::CollectorReporting;
 
-my $now        = Date::Utility->new(time - 11);
+my $now = Date::Utility->new(time);
+my $minus11secs        = Date::Utility->new(time - 11);
 my $minus6mins = Date::Utility->new(time - 360);
 my $plus5mins  = Date::Utility->new(time + 300);
 my $plus30mins = Date::Utility->new(time + 1800);
 my $minus5mins = Date::Utility->new(time - 300);
-print "now is " . $now->datetime, "\n";
+print "now is " . $minus11secs->datetime, "\n";
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        recorded_date => $now,
+        recorded_date => $minus11secs,
         symbol        => $_,
     }) for qw( EUR GBP XAU USD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => $_,
-        recorded_date => $now
+        recorded_date => $minus11secs
     }) for qw (frxEURCHF frxUSDJPY frxEURUSD frxAUDJPY);
 
 my %date_string = (
-    frxUSDJPY => [$minus5mins->datetime, $now->datetime],
+    frxUSDJPY => [$minus5mins->datetime, $minus11secs->datetime],
 );
 
 initialize_realtime_ticks_db();
@@ -86,7 +87,7 @@ subtest 'realtime report generation' => sub {
     );
 
     my $start_time  = $minus5mins;
-    my $expiry_time = $now;
+    my $expiry_time = $minus11secs;
 
     my %bet_hash = (
         bet_type          => 'FLASHU',
@@ -132,7 +133,7 @@ subtest 'realtime report generation' => sub {
 
     # contract that is used to simulate error
     my $start_time  = $minus6mins;
-    my $expiry_time = $now;
+    my $expiry_time = $minus11secs;
 
     my %bet_hash = (
         bet_type          => 'FLASHU',
@@ -159,8 +160,38 @@ subtest 'realtime report generation' => sub {
     });
     print "fmb_id : " . $fmb->id . "\n";
 
+    # expired but less than 10 seconds
+    $start_time  = $minus5mins;
+    $expiry_time = $now;
+
+    %bet_hash = (
+        bet_type          => 'FLASHU',
+        relative_barrier  => 'S0P',
+        underlying_symbol => 'frxUSDJPY',
+        payout_price      => 100,
+        buy_price         => 53,
+        purchase_time     => $start_time->datetime_yyyymmdd_hhmmss,
+        start_time        => $start_time->datetime_yyyymmdd_hhmmss,
+        expiry_time       => $expiry_time->datetime_yyyymmdd_hhmmss,
+        settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
+    );
+
+    @shortcode_param = (
+        $bet_hash{bet_type}, $bet_hash{underlying_symbol},
+        $bet_hash{payout_price}, $start_time->epoch, $expiry_time->epoch, $bet_hash{relative_barrier}, 0
+    );
+    $short_code =  uc join('_', @shortcode_param);
+    $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+        type => 'fmb_higher_lower',
+        %bet_hash,
+        account_id => $USDaccount->id,
+        short_code => $short_code,
+    });
+    print "fmb_id : " . $fmb->id . "\n";
+
+
     # not expired contract
-    $start_time  = $now;
+    $start_time  = $minus11secs;
     $expiry_time = Date::Utility->new(time + 24 * 60 * 60);
     %bet_hash    = (
         bet_type          => 'FLASHU',
