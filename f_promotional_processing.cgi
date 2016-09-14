@@ -2,7 +2,6 @@
 package main;
 use strict 'vars';
 
-use BOM::Platform::Runtime;
 use BOM::Platform::Context;
 use JSON;
 
@@ -68,7 +67,7 @@ foreach my $loginid (@approved, @rejected) {
                 name          => $client_name,
                 currency      => $currency,
                 amount        => $amount,
-                support_email => BOM::Platform::Runtime->instance->app_config->cs->email,
+                support_email => 'support@binary.com',
                 tac_url       => $tac_url,
                 website_name  => 'Binary.com',
             },
@@ -98,7 +97,7 @@ foreach my $loginid (@approved, @rejected) {
 
     if ($input{"${loginid}_notify"}) {
         send_email({
-            from               => BOM::Platform::Runtime->instance->app_config->cs->email,
+            from               => 'support@binary.com',
             to                 => $client->email,
             subject            => $email_subject,
             message            => [$email_content],

@@ -231,8 +231,8 @@ if (    -e $overridefilename
 if ($filen eq 'f_broker/promocodes.txt' and not BOM::System::Config::on_qa and $diff) {
     warn("promocodes.txt EDITED BY $clerk");
     send_email({
-            from    => BOM::Platform::Runtime->instance->app_config->system->email,
-            to      => BOM::Platform::Runtime->instance->app_config->compliance->email,
+            from    => 'system@binary.com',
+            to      => 'compliance@binary.com',
             subject => "Promotional Codes edited by $clerk",
             message => ["$ENV{'REMOTE_ADDR'}\n$ENV{'HTTP_USER_AGENT'} \nDIFF=\n$diff", '================', 'NEW FILE=', @lines]});
 }

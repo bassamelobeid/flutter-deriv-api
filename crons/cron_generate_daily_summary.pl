@@ -58,7 +58,7 @@ foreach my $broker (keys %{$total_pl}) {
 }
 send_email({
     'from'    => 'system@binary.com',
-    'to'      => BOM::Platform::Runtime->instance->app_config->accounting->email,
+    'to'      => 'x-acc@binary.com',
     'subject' => 'Daily Outstanding Bets Profit / Lost [' . $run_for->date . ']',
     'message' => \@mail_msg,
 });

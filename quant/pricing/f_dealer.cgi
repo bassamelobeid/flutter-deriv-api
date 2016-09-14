@@ -39,7 +39,7 @@ my $qty      = request()->param('qty');
 my $bet_ref  = request()->param('ref');
 my $subject;
 my @body;
-my $to = BOM::Platform::Runtime->instance->app_config->system->alerts->quants;
+my $to = 'x-quants-alert@binary.com';
 
 # Make transaction on client account
 if (request()->param('whattodo') eq 'closeatzero') {
@@ -121,7 +121,7 @@ if (request()->param('whattodo') eq 'closeatzero') {
     @body    = ("We manually closed the contract [Ref: $bet_ref] at price $currency 0 for client[$loginID]. \n");
 
     send_email({
-        from    => BOM::Platform::Runtime->instance->app_config->system->email,
+        from    => 'system@binary.com',
         to      => $to,
         subject => $subject,
         message => \@body,

@@ -51,7 +51,7 @@ if (not defined $pid) {
         print "An error has occurred -- child comes back with $?";
     } else {
         print "Fetch Myaffiliates payment triggered, info will be emailed soon to "
-            . BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email;
+            . 'affiliates@binary.com';
     }
 } else {
     # 1st, break parent/child relationship
@@ -93,8 +93,8 @@ if (not defined $pid) {
         }
 
         send_email({
-            from       => BOM::Platform::Runtime->instance->app_config->system->email,
-            to         => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
+            from       => 'system@binary.com',
+            to         => 'affiliates@binary.com',
             subject    => 'Fetch Myaffiliates payment info: (' . $from->date_yyyymmdd . ' - ' . $to->date_yyyymmdd . ')',
             message    => \@message,
             attachment => \@csv_file_locs,
