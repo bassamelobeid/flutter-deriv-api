@@ -5,7 +5,6 @@ use warnings;
 
 use JSON qw(encode_json);
 use BOM::Platform::Account::Real::default;
-use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Email qw(send_email);
 
@@ -60,7 +59,7 @@ sub create_account {
     if ($financial_assessment->{total_score} > 59) {
         send_email({
             from    => 'support@binary.com',
-            to      => BOM::Platform::Runtime->instance->app_config->compliance->email,
+            to      => 'compliance@binary.com',
             subject => $client->loginid . ' considered as professional trader',
             message =>
                 [$client->loginid . ' scored ' . $financial_assessment->{total_score} . ' and is therefore considered a professional trader.'],
