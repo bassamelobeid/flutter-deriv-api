@@ -59,7 +59,7 @@ sub create_account {
 
     if ($financial_assessment->{total_score} > 59) {
         send_email({
-            from    => BOM::Platform::Runtime->instance->app_config->cs->email,
+            from    => 'support@binary.com',
             to      => BOM::Platform::Runtime->instance->app_config->compliance->email,
             subject => $client->loginid . ' considered as professional trader',
             message =>

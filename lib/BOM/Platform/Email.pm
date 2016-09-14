@@ -80,7 +80,7 @@ sub send_email {
         }
     }
 
-    if ($fromemail eq BOM::Platform::Runtime->instance->app_config->cs->email) {
+    if ($fromemail eq 'support@binary.com') {
         $fromemail = "\"Binary.com\" <$fromemail>";
     }
 
