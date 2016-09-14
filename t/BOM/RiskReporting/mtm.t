@@ -78,130 +78,51 @@ subtest 'realtime report generation' => sub {
         remark   => 'free gift',
     );
 
-    my $start_time  = $minus5mins;
-    my $expiry_time = $minus11secs;
-
-    my %bet_hash = (
-        bet_type          => 'FLASHU',
-        relative_barrier  => 'S0P',
-        underlying_symbol => 'frxUSDJPY',
-        payout_price      => 100,
-        buy_price         => 53,
-        purchase_time     => $start_time->datetime_yyyymmdd_hhmmss,
-        start_time        => $start_time->datetime_yyyymmdd_hhmmss,
-        expiry_time       => $expiry_time->datetime_yyyymmdd_hhmmss,
-        settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
+    my @times = (
+        [$minus5mins,  $minus11secs],    # 0 contracts that expired more than 10 seconds
+        [$minus5mins,  $minus11secs],    # 1 contracts that expired more than 10 seconds
+        [$minus6mins,  $minus11secs],    # 2 contracts that be used to simulate error
+        [$minus5mins,  $now],            # 3 contracts that expired less than 10 seconds
+        [$minus11secs, $plus1day],       # 4 contracts that not expired
     );
+    my ($contract_ok1_index, $contract_ok2_index, $contract_error_index, $contract_just_expired_index, $contract_not_expired) = (0 .. $#times);
 
-    my @shortcode_param = (
-        $bet_hash{bet_type}, $bet_hash{underlying_symbol},
-        $bet_hash{payout_price}, $start_time->epoch, $expiry_time->epoch, $bet_hash{relative_barrier}, 0
-    );
+    my @fmbs;
+    for my $t (@times) {
+        my ($start_time, $expiry_time) = @$t;
+        my %bet_hash = (
+            bet_type          => 'FLASHU',
+            relative_barrier  => 'S0P',
+            underlying_symbol => 'frxUSDJPY',
+            payout_price      => 100,
+            buy_price         => 53,
+            purchase_time     => $start_time->datetime_yyyymmdd_hhmmss,
+            start_time        => $start_time->datetime_yyyymmdd_hhmmss,
+            expiry_time       => $expiry_time->datetime_yyyymmdd_hhmmss,
+            settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
+        );
 
-    my $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
-        type => 'fmb_higher_lower',
-        %bet_hash,
-        account_id => $USDaccount->id,
-        short_code => uc join('_', @shortcode_param),
-    });
-    print "fmb_id : " . $fmb->id . "\n";
-
-    $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
-        type => 'fmb_higher_lower',
-        %bet_hash,
-        account_id => $USDaccount->id,
-        short_code => uc join('_', @shortcode_param),
-    });
-    print "fmb_id : " . $fmb->id . "\n";
-
-    # contract that is used to simulate error
-    my $start_time  = $minus6mins;
-    my $expiry_time = $minus11secs;
-
-    my %bet_hash = (
-        bet_type          => 'FLASHU',
-        relative_barrier  => 'S0P',
-        underlying_symbol => 'frxUSDJPY',
-        payout_price      => 100,
-        buy_price         => 53,
-        purchase_time     => $start_time->datetime_yyyymmdd_hhmmss,
-        start_time        => $start_time->datetime_yyyymmdd_hhmmss,
-        expiry_time       => $expiry_time->datetime_yyyymmdd_hhmmss,
-        settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
-    );
-
-    @shortcode_param = (
-        $bet_hash{bet_type}, $bet_hash{underlying_symbol},
-        $bet_hash{payout_price}, $start_time->epoch, $expiry_time->epoch, $bet_hash{relative_barrier}, 0
-    );
-    my $short_code = uc join('_', @shortcode_param);
-    $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
-        type => 'fmb_higher_lower',
-        %bet_hash,
-        account_id => $USDaccount->id,
-        short_code => $short_code,
-    });
-    print "fmb_id : " . $fmb->id . "\n";
-
-    # expired but less than 10 seconds
-    $start_time  = $minus5mins;
-    $expiry_time = $now;
-
-    %bet_hash = (
-        bet_type          => 'FLASHU',
-        relative_barrier  => 'S0P',
-        underlying_symbol => 'frxUSDJPY',
-        payout_price      => 100,
-        buy_price         => 53,
-        purchase_time     => $start_time->datetime_yyyymmdd_hhmmss,
-        start_time        => $start_time->datetime_yyyymmdd_hhmmss,
-        expiry_time       => $expiry_time->datetime_yyyymmdd_hhmmss,
-        settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
-    );
-
-    @shortcode_param = (
-        $bet_hash{bet_type}, $bet_hash{underlying_symbol},
-        $bet_hash{payout_price}, $start_time->epoch, $expiry_time->epoch, $bet_hash{relative_barrier}, 0
-    );
-
-    $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
-        type => 'fmb_higher_lower',
-        %bet_hash,
-        account_id => $USDaccount->id,
-        short_code => uc join('_', @shortcode_param),
-    });
-    print "fmb_id : " . $fmb->id . "\n";
-
-    # not expired contract
-    $start_time  = $minus11secs;
-    $expiry_time = $plus1day;
-    %bet_hash    = (
-        bet_type          => 'FLASHU',
-        relative_barrier  => 'S0P',
-        underlying_symbol => 'frxUSDJPY',
-        payout_price      => 101,
-        buy_price         => 52,
-        purchase_time     => $start_time->datetime_yyyymmdd_hhmmss,
-        start_time        => $start_time->datetime_yyyymmdd_hhmmss,
-        expiry_time       => $expiry_time->datetime_yyyymmdd_hhmmss,
-        settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
-    );
-
-    @shortcode_param = (
-        $bet_hash{bet_type}, $bet_hash{underlying_symbol},
-        $bet_hash{payout_price}, $start_time->epoch, $expiry_time->epoch, $bet_hash{relative_barrier}, 0
-    );
-
-    $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
-        type => 'fmb_higher_lower',
-        %bet_hash,
-        account_id => $USDaccount->id,
-        short_code => uc join('_', @shortcode_param),
-    });
-    print "fmb_id : " . $fmb->id . "\n";
+        my @shortcode_param = (
+            $bet_hash{bet_type}, $bet_hash{underlying_symbol},
+            $bet_hash{payout_price}, $start_time->epoch, $expiry_time->epoch, $bet_hash{relative_barrier}, 0
+        );
+        my $short_code = uc join('_', @shortcode_param);
+        my $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+            type => 'fmb_higher_lower',
+            %bet_hash,
+            account_id => $USDaccount->id,
+            short_code => $short_code,
+        });
+        my $fmb_info = {
+            fmb_id     => $fmb->id,
+            short_code => $short_code,
+        };
+        push @fmbs, $fmb_info;
+    }
 
     is($dm->get_last_generated_historical_marked_to_market_time, undef, 'Start with a clean slate.');
 
+    my $short_code         = $fmbs->[$contract_error_index]{short_code};
     my $mocked_transaction = Test::MockModule->new('BOM::Product::Transaction');
     my $called_count       = 0;
     $mocked_transaction->mock(
