@@ -56,8 +56,6 @@ sub cashier {
         });
     }
 
-    my $app_config = BOM::Platform::Runtime->instance->app_config;
-
     my $args = $params->{args};
     my $action = $args->{cashier} // 'deposit';
 
@@ -73,7 +71,7 @@ sub cashier {
         @siblings && $siblings[0]->default_account->currency_code;
     };
 
-    my $current_tnc_version = $app_config->cgi->terms_conditions_version;
+    my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
     my $client_tnc_status   = $client->get_status('tnc_approval');
     if (not $client_tnc_status or ($client_tnc_status->reason ne $current_tnc_version)) {
         return BOM::RPC::v3::Utility::create_error({
@@ -622,7 +620,7 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
     );
 
     send_email({
-        'from'               => BOM::Platform::Runtime->instance->app_config->cs->email,
+        'from'               => 'support@binary.com',
         'to'                 => $client_to->email,
         'subject'            => localize('Acknowledgement of Money Transfer'),
         'message'            => [$emailcontent],
@@ -815,11 +813,10 @@ sub paymentagent_withdraw {
     }
 
     if ($amount_transferred > 1500) {
-        my $support = BOM::Platform::Runtime->instance->app_config->cs->email;
         my $message = "Client $client_loginid transferred \$$amount_transferred to payment agent today";
         send_email({
-            from    => $support,
-            to      => $support,
+            from    => 'support@binary.com',
+            to      => 'support@binary.com',
             subject => $message,
             message => [$message],
         });
@@ -892,7 +889,7 @@ sub paymentagent_withdraw {
         localize('The [_1] team.', $website_name),
     ];
     send_email({
-        from               => BOM::Platform::Runtime->instance->app_config->cs->email,
+        from               => 'support@binary.com',
         to                 => $paymentagent->email,
         subject            => localize('Acknowledgement of Withdrawal Request'),
         message            => $emailcontent,
@@ -910,12 +907,12 @@ sub __output_payments_error_message {
     my $args           = shift;
     my $client         = $args->{'client'};
     my $action         = $args->{'action'};
-    my $payment_type   = $args->{'payment_type'} || 'n/a';                                # used for reporting; if not given, not applicable
+    my $payment_type   = $args->{'payment_type'} || 'n/a';    # used for reporting; if not given, not applicable
     my $currency       = $args->{'currency'};
     my $amount         = $args->{'amount'};
     my $error_message  = $args->{'error_msg'};
-    my $payments_email = BOM::Platform::Runtime->instance->app_config->payments->email;
-    my $cs_email       = BOM::Platform::Runtime->instance->app_config->cs->email;
+    my $payments_email = 'payments@binary.com';
+    my $cs_email       = 'support@binary.com';
 
     # amount is not always exist because error may happen before client submit the form
     # or when redirected from 3rd party site to failure script where no data is returned

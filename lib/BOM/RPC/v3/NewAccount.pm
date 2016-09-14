@@ -106,7 +106,7 @@ sub verify_email {
 
     if (BOM::Platform::User->new({email => $email}) && $type eq 'reset_password') {
         send_email({
-                from    => BOM::Platform::Runtime->instance->app_config->cs->email,
+                from    => 'support@binary.com',
                 to      => $email,
                 subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
                 message => [
@@ -120,7 +120,7 @@ sub verify_email {
     } elsif ($type eq 'account_opening') {
         unless (BOM::Platform::User->new({email => $email})) {
             send_email({
-                    from    => BOM::Platform::Runtime->instance->app_config->cs->email,
+                    from    => 'support@binary.com',
                     to      => $email,
                     subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
                     message => [
@@ -133,7 +133,7 @@ sub verify_email {
                 });
         } else {
             send_email({
-                    from    => BOM::Platform::Runtime->instance->app_config->cs->email,
+                    from    => 'support@binary.com',
                     to      => $email,
                     subject => BOM::Platform::Context::localize('A Duplicate Email Address Has Been Submitted - [_1]', $params->{website_name}),
                     message => [
@@ -148,7 +148,7 @@ sub verify_email {
         }
     } elsif ($type eq 'paymentagent_withdraw' && BOM::Platform::User->new({email => $email})) {
         send_email({
-                from    => BOM::Platform::Runtime->instance->app_config->cs->email,
+                from    => 'support@binary.com',
                 to      => $email,
                 subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
                 message => [
@@ -161,7 +161,7 @@ sub verify_email {
             });
     } elsif ($type eq 'payment_withdraw' && BOM::Platform::User->new({email => $email})) {
         send_email({
-                from    => BOM::Platform::Runtime->instance->app_config->cs->email,
+                from    => 'support@binary.com',
                 to      => $email,
                 subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
                 message => [
