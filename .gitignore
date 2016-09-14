@@ -21,3 +21,4 @@ tags
 *.bs
 *.sw?
 statics/javascript/data
+.DS_Store
