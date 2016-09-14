@@ -123,11 +123,11 @@ sub generate {
                     #print "expiry_time in markedtomodel:" . $bet->date_expiry->epoch . "\n";
                     #print "now is " . time ."\n";
 
-                    #if (time - $bet->date_expiry->epoch > 10) {
+                    if (time - $bet->date_expiry->epoch > 10) {
                     $open_fmb->{market_price}                                           = $value;
                     $open_fmb->{bet}                                                    = $bet;
                     $open_bets_expired_ref->{$open_fmb->{client_loginid}}{$open_fmb_id} = $open_fmb;
-                    #}
+                    }
                 } else {
                     # spreaed does not have greeks
                     if ($bet->is_spread) {
