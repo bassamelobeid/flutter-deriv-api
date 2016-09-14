@@ -10,7 +10,7 @@ use List::Util qw(min max first);
 use JSON qw( from_json );
 use Date::Utility;
 use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
-use Format::Util::Numbers qw(roundnear to_monetary_number_format);
+use Format::Util::Numbers qw(commas roundnear to_monetary_number_format);
 use RateLimitations qw(within_rate_limits);
 use Try::Tiny;
 
@@ -931,15 +931,16 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             client_loginid => $client->loginid,
             currency_code  => $currency,
         });
-        my $balance = $currency eq 'JPY' ? Format::Util::Numbers::roundnear(1, $account->get_balance()) : $account->get_balance();
-        my $price   = $currency eq 'JPY' ? Format::Util::Numbers::roundnear(1, $self->price)            : $self->price;
+        my $balance = $currency eq 'JPY' ? commas($account->get_balance(), 0) : to_monetary_number_format($account->get_balance());
+        my $price   = $currency eq 'JPY' ? commas($self->price,            0) : to_monetary_number_format($self->price);
 
         return Error::Base->cuss(
             -type              => 'InsufficientBalance',
             -message           => 'Client\'s account balance was insufficient to buy bet.',
             -message_to_client => BOM::Platform::Context::localize(
-                'Your account balance ([_1][_2]) is insufficient to buy this contract ([_1][_3]).', $currency,
-                to_monetary_number_format($balance),                                                to_monetary_number_format($price)));
+                'Your account balance ([_1][_2]) is insufficient to buy this contract ([_1][_3]).',
+                $currency, $balance, $price
+            ));
     },
     BI007 => sub {
         my $self   = shift;
