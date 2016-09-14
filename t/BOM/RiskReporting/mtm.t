@@ -122,7 +122,7 @@ subtest 'realtime report generation' => sub {
 
     is($dm->get_last_generated_historical_marked_to_market_time, undef, 'Start with a clean slate.');
 
-    my $short_code         = $fmbs->[$contract_error_index]{short_code};
+    my $short_code         = $fmbs[$contract_error_index]{short_code};
     my $mocked_transaction = Test::MockModule->new('BOM::Product::Transaction');
     my $called_count       = 0;
     $mocked_transaction->mock(
