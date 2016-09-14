@@ -13,7 +13,6 @@ use List::Util qw(min max first);
 use List::MoreUtils qw(none all);
 use Scalar::Util qw(looks_like_number);
 use BOM::Product::RiskProfile;
-use Machine::Epsilon;
 
 use BOM::Market::UnderlyingDB;
 use Math::Util::CalculatedValue::Validatable;
@@ -31,6 +30,7 @@ use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::EconomicEventCalendar;
 use BOM::Product::Offerings qw( get_contract_specifics get_offerings_flyby);
 use BOM::System::Chronicle;
+use Price::Calculator;
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -873,6 +873,103 @@ sub _build_corporate_actions {
     return \@actions;
 }
 
+has price_calculator => (
+    is         => 'ro',
+    isa        => 'Price::Calculator',
+    lazy_build => 1,
+);
+
+sub _build_price_calculator {
+    my $self = shift;
+
+    return Price::Calculator->new({
+            currency                => $self->currency,
+            deep_otm_threshold      => $self->market->deep_otm_threshold,
+            maximum_total_markup    => BOM::System::Config::quants->{commission}->{maximum_total_markup},
+            base_commission_min     => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
+            base_commission_max     => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
+            base_commission_scaling => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
+            app_markup_percentage   => $self->app_markup_percentage,
+            ($self->has_base_commission)
+            ? (base_commission => $self->base_commission)
+            : (underlying_base_commission => $self->underlying->base_commission),
+            ($self->has_commission_markup)      ? (commission_markup      => $self->commission_markup)      : (),
+            ($self->has_commission_from_stake)  ? (commission_from_stake  => $self->commission_from_stake)  : (),
+            ($self->has_payout)                 ? (payout                 => $self->payout)                 : (),
+            ($self->has_ask_price)              ? (ask_price              => $self->ask_price)              : (),
+            ($self->has_theo_probability)       ? (theo_probability       => $self->theo_probability)       : (),
+            ($self->has_ask_probability)        ? (ask_probability        => $self->ask_probability)        : (),
+            ($self->has_bs_probability)         ? (bs_probability         => $self->bs_probability)         : (),
+            ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
+        });
+}
+
+my $pc_params_setters = {
+    timeinyears            => sub { my $self = shift; $self->price_calculator->timeinyears($self->timeinyears) },
+    discount_rate          => sub { my $self = shift; $self->price_calculator->discount_rate($self->discount_rate) },
+    staking_limits         => sub { my $self = shift; $self->price_calculator->staking_limits($self->staking_limits) },
+    theo_prabability       => sub { my $self = shift; $self->price_calculator->theo_probability($self->theo_probability) },
+    commission_markup      => sub { my $self = shift; $self->price_calculator->commission_markup($self->commission_markup) },
+    commission_from_stake  => sub { my $self = shift; $self->price_calculator->commission_from_stake($self->commission_from_stake) },
+    discounted_probability => sub { my $self = shift; $self->price_calculator->discounted_probability($self->discounted_probability) },
+
+    probability => sub {
+        my $self        = shift;
+        my $probability = $self->pricing_engine->probability;
+        if ($self->new_interface_engine) {
+            $probability = Math::Util::CalculatedValue::Validatable->new({
+                name        => 'theo_probability',
+                description => 'theoretical value of a contract',
+                set_by      => $self->pricing_engine_name,
+                base_amount => $probability,
+                minimum     => 0,
+                maximum     => 1,
+            });
+        }
+        $self->price_calculator->theo_probability($probability);
+    },
+    bs_probability => sub {
+        my $self           = shift;
+        my $bs_probability = $self->pricing_engine->bs_probability;
+        if ($self->new_interface_engine) {
+            $bs_probability = Math::Util::CalculatedValue::Validatable->new({
+                name        => 'bs_probability',
+                description => 'BlackScholes value of a contract',
+                set_by      => $self->pricing_engine_name,
+                base_amount => $bs_probability,
+                minimum     => 0,
+                maximum     => 1,
+            });
+        }
+        $self->price_calculator->bs_probability($bs_probability);
+    },
+    opposite_ask_probability => sub {
+        my $self = shift;
+        $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability);
+    },
+};
+
+my $pc_needed_params_map = {
+    theo_probability       => [qw/ probability /],
+    bs_probability         => [qw/ bs_probability /],
+    ask_probability        => [qw/ theo_prabability /],
+    bid_probability        => [qw/ theo_prabability discounted_probability opposite_ask_probability /],
+    payout                 => [qw/ theo_prabability commission_from_stake /],
+    commission_markup      => [qw/ theo_prabability /],
+    commission_from_stake  => [qw/ theo_prabability commission_markup /],
+    validate_price         => [qw/ theo_prabability commission_markup commission_from_stake staking_limits /],
+    discounted_probability => [qw/ timeinyears discount_rate /],
+};
+
+sub _set_price_calculator_params {
+    my ($self, $method) = @_;
+
+    for my $key (@{$pc_needed_params_map->{$method}}) {
+        $pc_params_setters->{$key}->($self);
+    }
+    return;
+}
+
 # We adopt "near-far" methodology to price in dividends by adjusting spot and strike.
 # This returns a hash reference with spot and barrrier adjustment for the bet period.
 
@@ -916,52 +1013,15 @@ sub _build_dividend_adjustment {
 sub _build_discounted_probability {
     my $self = shift;
 
-    my $discount = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'discounted_probability',
-        description => 'The discounted probability for both sides of this contract.  Time value.',
-        set_by      => 'BOM::Product::Contract discount_rate and bet duration',
-        minimum     => 0,
-        maximum     => 1,
-    });
-
-    my $quanto = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'discount_rate',
-        description => 'The rate for the payoff currency',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => $self->discount_rate,
-    });
-    my $discount_rate = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'discount_rate',
-        description => 'Full rate to use for discounting.',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => -1,
-    });
-
-    $discount_rate->include_adjustment('multiply', $quanto);
-    $discount_rate->include_adjustment('multiply', $self->timeinyears);
-
-    $discount->include_adjustment('exp', $discount_rate);
-
-    return $discount;
+    $self->_set_price_calculator_params('discounted_probability');
+    return $self->price_calculator->discounted_probability;
 }
 
 sub _build_bid_probability {
     my $self = shift;
 
-    # Effectively you get the same price as if you bought the other side to cancel.
-    my $marked_down = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'bid_probability',
-        description => 'The price we would pay for this contract.',
-        set_by      => 'BOM::Product::Contract',
-        minimum     => 0,
-        maximum     => $self->theo_probability->amount,
-    });
-
-    $marked_down->include_adjustment('add', $self->discounted_probability);
-    $self->opposite_contract->ask_probability->exclude_adjustment('deep_otm_markup');
-    $marked_down->include_adjustment('subtract', $self->opposite_contract->ask_probability);
-
-    return $marked_down;
+    $self->_set_price_calculator_params('bid_probability');
+    return $self->price_calculator->bid_probability;
 }
 
 sub _build_bid_price {
@@ -973,30 +1033,8 @@ sub _build_bid_price {
 sub _build_ask_probability {
     my $self = shift;
 
-    my $theo_probability = $self->theo_probability;
-    my $min_ask          = $self->market->deep_otm_threshold;
-    my $ask_cv           = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'ask_probability',
-        description => 'The price we request for this contract.',
-        set_by      => 'BOM::Product::Contract',
-        minimum     => $min_ask,
-        maximum     => 1,
-    });
-
-    $ask_cv->include_adjustment('reset', $self->theo_probability);
-    $ask_cv->include_adjustment('add',   $self->commission_markup);
-
-    my $max_ask = 1 - $min_ask;
-    if ($ask_cv->amount > $max_ask) {
-        return Math::Util::CalculatedValue::Validatable->new({
-            name        => 'ask_probability',
-            description => 'The price we request for this contract.',
-            set_by      => __PACKAGE__,
-            base_amount => 1,
-        });
-    }
-
-    return $ask_cv;
+    $self->_set_price_calculator_params('ask_probability');
+    return $self->price_calculator->ask_probability;
 }
 
 sub is_valid_to_buy {
@@ -1086,16 +1124,15 @@ sub _validate_settlement_conditions {
     return ($ref, $hold_for_exit_tick);
 }
 
-#  If your price is payout * some probability, just use this.
 sub _price_from_prob {
-    my ($self, $prob_method) = @_;
-    my $price;
+    my ($self, $prob) = @_;
+
     if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
-        $price = $self->value;
-    } else {
-        $price = (defined $self->$prob_method) ? $self->payout * $self->$prob_method->amount : undef;
+        $self->price_calculator->value($self->value);
     }
-    return (defined $price) ? roundnear(($self->{currency} eq 'JPY' ? 1 : 0.01), $price) : undef;
+
+    $self->_set_price_calculator_params($prob);
+    return $self->price_calculator->price_from_prob($prob);
 }
 
 sub _build_ask_price {
@@ -1105,151 +1142,21 @@ sub _build_ask_price {
 }
 
 sub _build_payout {
-    my $self = shift;
+    my ($self) = @_;
 
-    my $payout = max($self->ask_price, $self->_calculate_payout($self->commission_from_stake));
-    return roundnear(($self->{currency} eq 'JPY' ? 1 : 0.01), $payout);
-}
-
-sub _calculate_payout {
-    my ($self, $base_commission) = @_;
-
-    # This is an approximation way of getting ask_prob to solve the issue where min ask price does not apply with predefined ask price.
-    # If the issue still persists, a better quaratic solution is required.
-    my $approximate_ask_prob = $self->theo_probability->amount + $base_commission;
-    my $min_ask_prob         = $self->market->deep_otm_threshold;
-
-    my $payout = ($approximate_ask_prob > $min_ask_prob) ? ($self->ask_price / $approximate_ask_prob) : ($self->ask_price / $min_ask_prob);
-    return $payout;
-}
-
-has commission_min_std => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_commission_min_std',
-);
-
-sub _build_commission_min_std {
-    my $self = shift;
-
-    # This looks hacky but currently there's not enough justification to have child classes for each landing company.
-    # For japan, we can't have progressively higher commission as per FFAJ, infact they
-    # want all prices to be an exact multiple (so 52.55 for 100 payout,
-    # 525.5 for 1000 and 5255 for 10000 payout etc.)
-    # We would only increase the commission when payout > 100,000 yen. Having 50,001 is too much. So adding an
-    # epsilon here to make it work.
-    #
-    # For everything else, we will increase commission at 1,000 of the respective currency.
-    return $self->currency eq 'JPY' ? 50000 + machine_epsilon() : 500;
-}
-
-has commission_max_std => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_commission_max_std',
-);
-
-sub _build_commission_max_std {
-    my $self = shift;
-
-    # For japan, we change 2 x base_commission if the payout exceeds 5,000,000 yen.
-    # For everything else, we change 2 x base_commission if the payout exceeds 50,000 of the respective currency.
-    return $self->currency eq 'JPY' ? 2500000 : 25000;
-}
-
-has commission_slope => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_commission_slope',
-);
-
-sub _build_commission_slope {
-    my $self = shift;
-
-    return ($self->commission_max_multiplier - $self->commission_base_multiplier) / ($self->commission_max_std - $self->commission_min_std);
+    $self->_set_price_calculator_params('payout');
+    return $self->price_calculator->payout;
 }
 
 sub commission_multiplier {
-    my ($self, $payout) = @_;
-
-    my $theo_probability = $self->theo_probability->amount;
-    my $std = $payout * sqrt($theo_probability * (1 - $theo_probability));
-
-    return $self->commission_base_multiplier if $std <= $self->commission_min_std;
-    return $self->commission_max_multiplier  if $std >= $self->commission_max_std;
-
-    my $slope      = $self->commission_slope;
-    my $multiplier = ($std - $self->commission_min_std) * $slope + 1;
-
-    return $multiplier;
-}
-
-has commission_from_stake => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_commission_from_stake {
-    my $self = shift;
-
-    my $theo_probability    = $self->theo_probability->amount;
-    my $ask_price           = $self->ask_price;
-    my $base_commission     = $self->base_commission;
-    my $app_commission      = $self->app_markup->amount;
-    my $combined_commission = $base_commission + $app_commission;
-
-    # payout calculated with base commission.
-    my $initial_payout = $self->_calculate_payout($combined_commission);
-    if ($self->commission_multiplier($initial_payout) == $self->commission_base_multiplier) {
-        # a minimum of 2 cents please, payout could be zero.
-        my $minimum_commission = $initial_payout ? 0.02 / $initial_payout : 0.02;
-        return max($minimum_commission, $combined_commission);
-    }
-
-    # payout calculated with 2 times base commission.
-    $combined_commission = $base_commission * 2 + $app_commission;
-    $initial_payout      = $self->_calculate_payout($combined_commission);
-    if ($self->commission_multiplier($initial_payout) == $self->commission_max_multiplier) {
-        return $combined_commission;
-    }
-
-    my $_a = $base_commission * $self->commission_slope * sqrt($theo_probability * (1 - $theo_probability));
-    $_a = machine_epsilon() if $_a == 0;    # prevents illegal division by zero error.
-    my $_b = ($theo_probability + $base_commission - $base_commission * $self->commission_min_std * $self->commission_slope) + $app_commission;
-    my $_c = -$ask_price;
-
-    # sets it to zero first.
-    $initial_payout = 0;
-    # We solve for payout as a quadratic function.
-    for my $w (1, -1) {
-        my $estimated_payout = (-$_b + $w * sqrt($_b**2 - 4 * $_a * $_c)) / (2 * $_a);
-        if ($estimated_payout > 0) {
-            $initial_payout = $estimated_payout;
-            last;
-        }
-    }
-
-    # die if we could not get a positive payout value.
-    die 'Could not calculate a payout' unless $initial_payout;
-
-    return $base_commission * $self->commission_multiplier($initial_payout) + $app_commission;
+    return shift->price_calculator->commission_multiplier(@_);
 }
 
 sub _build_theo_probability {
     my $self = shift;
 
-    if ($self->new_interface_engine) {
-        return Math::Util::CalculatedValue::Validatable->new({
-            name        => 'theo_probability',
-            description => 'theorectical value of a contract',
-            set_by      => $self->pricing_engine_name,
-            base_amount => $self->pricing_engine->probability,
-            minimum     => 0,
-            maximum     => 1,
-        });
-    }
-
-    return $self->pricing_engine->probability;
+    $self->_set_price_calculator_params('theo_probability');
+    return $self->price_calculator->theo_probability;
 }
 
 # Application developer's commission.
@@ -1265,17 +1172,7 @@ has [qw(app_markup_dollar_amount app_markup)] => (
 );
 
 sub _build_app_markup {
-    my $self = shift;
-
-    # app_markup_percentage could potentially be undef.
-    my $app_markup_percentage = $self->app_markup_percentage // 0;
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'app_markup',
-        description => 'commission markup for app developer',
-        set_by      => __PACKAGE__,
-        base_amount => $app_markup_percentage / 100,
-    });
+    return shift->price_calculator->app_markup;
 }
 
 sub _build_app_markup_dollar_amount {
@@ -1287,20 +1184,8 @@ sub _build_app_markup_dollar_amount {
 sub _build_bs_probability {
     my $self = shift;
 
-    my $bs_prob;
-    # Have to keep it this way until we remove CalculatedValue in Contract.
-    if ($self->new_interface_engine) {
-        $bs_prob = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'bs_probability',
-            description => 'BlackScholes value of a contract',
-            set_by      => $self->pricing_engine_name,
-            base_amount => $self->pricing_engine->bs_probability,
-        });
-    } else {
-        $bs_prob = $self->pricing_engine->bs_probability;
-    }
-
-    return $bs_prob;
+    $self->_set_price_calculator_params('bs_probability');
+    return $self->price_calculator->bs_probability;
 }
 
 sub _build_bs_price {
@@ -1311,7 +1196,7 @@ sub _build_bs_price {
 
 # base_commission can be overridden on contract type level.
 # When this happens, underlying base_commission is ignored.
-has [qw(risk_markup commission_markup base_commission)] => (
+has [qw(risk_markup commission_markup base_commission commission_from_stake)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -1335,31 +1220,21 @@ sub _build_risk_markup {
 sub _build_base_commission {
     my $self = shift;
 
-    my $minimum        = BOM::System::Config::quants->{commission}->{adjustment}->{minimum} / 100;
-    my $maximum        = BOM::System::Config::quants->{commission}->{adjustment}->{maximum} / 100;
-    my $scaling_factor = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling / 100;
-    $scaling_factor = max($minimum, min($maximum, $scaling_factor));
-
-    return $self->underlying->base_commission * $scaling_factor;
+    return $self->price_calculator->base_commission;
 }
 
 sub _build_commission_markup {
     my $self = shift;
 
-    my $base_amount   = $self->base_commission * $self->commission_multiplier($self->payout);
-    my %min           = ($self->has_payout and $self->payout != 0) ? (minimum => 0.02 / $self->payout) : ();
-    my $commission_cv = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'commission_markup',
-        description => 'Commission markup for a pricing model',
-        set_by      => __PACKAGE__,
-        base_amount => $base_amount,
-        maximum     => BOM::System::Config::quants->{commission}->{maximum_total_markup} / 100,
-        %min,
-    });
+    $self->_set_price_calculator_params('commission_markup');
+    return $self->price_calculator->commission_markup;
+}
 
-    $commission_cv->include_adjustment('add', $self->app_markup);
+sub _build_commission_from_stake {
+    my $self = shift;
 
-    return $commission_cv;
+    $self->_set_price_calculator_params('commission_from_stake');
+    return $self->price_calculator->commission_from_stake;
 }
 
 sub _build_theo_price {
@@ -2288,59 +2163,53 @@ sub validate_price {
 
     return if $self->for_sale;
 
-    my $ask_price         = $self->ask_price;
-    my $payout            = $self->payout;
-    my $minimum_ask_price = $self->staking_limits->{min};
-    my $maximum_payout    = $self->staking_limits->{max};
-
-    if (not $ask_price) {
-        return {
-            message           => "Empty or zero stake [stake: " . $ask_price . "]",
-            message_to_client => localize("Invalid stake"),
-        };
+    $self->_set_price_calculator_params('validate_price');
+    my $res = $self->price_calculator->validate_price;
+    if ($res && exists $res->{error_code}) {
+        my $details = $res->{error_details} || [];
+        $res = {
+            zero_stake => sub {
+                my ($details) = @_;
+                return {
+                    message           => "Empty or zero stake [stake: " . $details->[0] . "]",
+                    message_to_client => localize("Invalid stake"),
+                };
+            },
+            stake_outside_range => sub {
+                my ($details) = @_;
+                my $localize_params = [to_monetary_number_format($details->[0]), to_monetary_number_format($details->[1])];
+                return {
+                    message                 => 'stake is not within limits ' . "[stake: " . $details->[0] . "] " . "[min: " . $details->[1] . "] ",
+                    message_to_client       => localize('Minimum stake of [_1] and maximum payout of [_2]', @$localize_params),
+                    message_to_client_array => ['Minimum stake of [_1] and maximum payout of [_2]', @$localize_params],
+                };
+            },
+            payout_outside_range => sub {
+                my ($details) = @_;
+                my $localize_params = [to_monetary_number_format($details->[0]), to_monetary_number_format($details->[1])];
+                return {
+                    message => 'payout amount outside acceptable range ' . "[given: " . $details->[0] . "] " . "[max: " . $details->[1] . "]",
+                    message_to_client => localize('Minimum stake of [_1] and maximum payout of [_2]', @$localize_params),
+                    message_to_client_array => ['Minimum stake of [_1] and maximum payout of [_2]', @$localize_params],
+                };
+            },
+            payout_too_many_places => sub {
+                my ($details) = @_;
+                return {
+                    message           => 'payout amount has too many decimal places ' . "[permitted: 2] " . "[payout: " . $details->[0] . "]",
+                    message_to_client => localize('Payout may not have more than two decimal places.'),
+                };
+            },
+            stake_same_as_payout => sub {
+                my ($details) = @_;
+                return {
+                    message           => 'stake same as payout',
+                    message_to_client => localize('This contract offers no return.'),
+                };
+            },
+        }->{$res->{error_code}}->($details);
     }
-
-    my $message_to_client = localize(
-        'Minimum stake of [_1] and maximum payout of [_2]',
-        to_monetary_number_format($minimum_ask_price),
-        to_monetary_number_format($maximum_payout));
-    my $message_to_client_array = [
-        'Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($minimum_ask_price),
-        to_monetary_number_format($maximum_payout)];
-    if ($ask_price < $minimum_ask_price) {
-        return {
-            message                 => 'stake is not within limits ' . "[stake: " . $ask_price . "] " . "[min: " . $minimum_ask_price . "] ",
-            message_to_client       => $message_to_client,
-            message_to_client_array => $message_to_client_array,
-        };
-    } elsif ($payout > $maximum_payout) {
-        return {
-            message                 => 'payout amount outside acceptable range ' . "[given: " . $payout . "] " . "[max: " . $maximum_payout . "]",
-            message_to_client       => $message_to_client,
-            message_to_client_array => $message_to_client_array,
-        };
-    }
-
-    my $payout_as_string = "" . $payout;    #Just to be sure we're deailing with a string.
-    $payout_as_string =~ s/[\.0]+$//;       # Strip trailing zeroes and decimal points to be more friendly.
-
-    if ($payout =~ /\.[0-9]{3,}/) {
-        # We did the best we could to clean up looks like still too many decimals
-        return {
-            message           => 'payout amount has too many decimal places ' . "[permitted: 2] " . "[payout: " . $payout . "]",
-            message_to_client => localize('Payout may not have more than two decimal places.',),
-        };
-    }
-
-    # Compared as strings of maximum visible client currency width to avoid floating-point issues.
-    if (sprintf("%.2f", $ask_price) eq sprintf("%.2f", $payout)) {
-        return {
-            message           => 'stake same as payout',
-            message_to_client => localize('This contract offers no return.'),
-        };
-    }
-
-    return;
+    return $res;
 }
 
 sub _validate_input_parameters {
