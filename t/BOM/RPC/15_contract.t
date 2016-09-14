@@ -361,7 +361,6 @@ subtest 'get_bid' => sub {
         currency    => $client->currency,
         is_sold     => 0,
     };
-
     $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')
         ->error_message_is(
         'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
@@ -379,7 +378,6 @@ subtest 'get_bid' => sub {
         is_sold     => 0,
     };
     my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-
     my @expected_keys = (
         qw(bid_price
             current_spot_time
@@ -430,6 +428,7 @@ subtest 'get_bid' => sub {
             underlying
             is_expired
             is_valid_to_sell
+            is_after_settlement
             is_forward_starting
             is_path_dependent
             is_intraday
