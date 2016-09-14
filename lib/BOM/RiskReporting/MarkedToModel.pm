@@ -39,7 +39,6 @@ use DataDog::DogStatsd::Helper qw (stats_inc stats_timing stats_count);
 use BOM::Platform::Client;
 use BOM::Platform::CurrencyConverter qw (in_USD);
 use BOM::Product::Transaction;
-use Data::Dumper;
 
 # This report will only be run on the MLS.
 sub generate {
@@ -98,15 +97,6 @@ sub generate {
                 $bet_params->{underlying} = $cached_underlyings{$symbol}
                     if ($cached_underlyings{$symbol});
                 my $bet = produce_contract($bet_params);
-                print "short_code : $open_fmb->{short_code}\n";
-                print " open_fmb_id: $open_fmb_id\n";
-                print " underlying "  . $bet->underlying->symbol;
-                print " expiry ".  $bet->date_expiry->datetime;
-                print " is expired ". $bet->is_expired;
-                print " date pricing ". $bet->date_pricing->datetime;
-                print " is_after_expiry" . $bet->is_after_expiry;
-                
-                print "\n";
                 $cached_underlyings{$symbol} ||= $bet->underlying;
 
                 my $is_expired    = $bet->is_expired;
@@ -120,13 +110,10 @@ sub generate {
                         undef, $open_fmb_id, $value);
                     # We only sell the contracts that already expired for 10+ seconds #
                     # Those other contracts will be sold by expiryd #
-                    #print "expiry_time in markedtomodel:" . $bet->date_expiry->epoch . "\n";
-                    #print "now is " . time ."\n";
-
                     if (time - $bet->date_expiry->epoch > 10) {
-                    $open_fmb->{market_price}                                           = $value;
-                    $open_fmb->{bet}                                                    = $bet;
-                    $open_bets_expired_ref->{$open_fmb->{client_loginid}}{$open_fmb_id} = $open_fmb;
+                        $open_fmb->{market_price}                                           = $value;
+                        $open_fmb->{bet}                                                    = $bet;
+                        $open_bets_expired_ref->{$open_fmb->{client_loginid}}{$open_fmb_id} = $open_fmb;
                     }
                 } else {
                     # spreaed does not have greeks
@@ -216,12 +203,10 @@ sub sell_expired_contracts {
 
     my $rmgenv = BOM::System::Config::env;
     for my $client_id (@client_loginids) {
-        print "processing loginid: $client_id\n";
         my $fmb_infos = $open_bets_ref->{$client_id};
         my $client = BOM::Platform::Client::get_instance({'loginid' => $client_id});
         my (@fmb_ids_to_be_sold, %bet_infos);
         for my $id (keys %$fmb_infos) {
-            print "    processing fmb id $id\n";
             my $fmb_id         = $fmb_infos->{$id}->{id};
             my $expected_value = $fmb_infos->{$id}->{market_price};
             my $currency       = $fmb_infos->{$id}->{currency_code};
@@ -272,7 +257,6 @@ sub sell_expired_contracts {
             contract_ids => \@fmb_ids_to_be_sold,
             source       => 3,                      # app id for `Binary.com riskd.pl` in auth db => oauth.apps table
         });
-        print "result: " . Dumper($result);
         for my $failure (@{$result->{failures}}) {
             my $bet_info = $bet_infos{$failure->{fmb_id}};
             $bet_info->{reason} = $failure->{reason};

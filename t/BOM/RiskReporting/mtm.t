@@ -131,9 +131,7 @@ subtest 'realtime report generation' => sub {
             $mocked_transaction->mock(
                 'produce_contract',
                 sub {
-                    print "short code in produce_contract: " . $_[0] . "\n";
                     if ($_[0] eq $short_code) {
-                        print "simulate error";
                         die "error";
                     }
                     $mocked_transaction->original('produce_contract')->(@_);
@@ -165,12 +163,12 @@ subtest 'realtime report generation' => sub {
     my @errors = $msg{body} =~ /Shortcode:/g;
     is(scalar @errors, 1, "number of contracts that have errors ");
 
-    my @is_sold = (1,1,0,0,0);
-    for my $index (0..$#fmbs){
-      my $fmb = BOM::Database::DataMapper::FinancialMarketBet->new({broker_code => $client->broker})->get_fmb_by_id([$fmbs[$index]{fmb_id}])->[0]
+    my @is_sold = (1, 1, 0, 0, 0);
+    for my $index (0 .. $#fmbs) {
+        my $fmb = BOM::Database::DataMapper::FinancialMarketBet->new({broker_code => $client->broker})->get_fmb_by_id([$fmbs[$index]{fmb_id}])->[0]
             ->financial_market_bet_record;
-      my $is_sold = $fmb->is_sold // 0;
-      is($is_sold, $is_sold[$index], "fmb $fmbs[$index]{fmb_id} is_sold value should be $is_sold[$index]");
+        my $is_sold = $fmb->is_sold // 0;
+        is($is_sold, $is_sold[$index], "fmb $fmbs[$index]{fmb_id} is_sold value should be $is_sold[$index]");
     }
 };
 
