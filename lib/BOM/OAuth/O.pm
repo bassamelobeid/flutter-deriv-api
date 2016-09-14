@@ -9,7 +9,6 @@ use Email::Valid;
 use Mojo::Util qw(url_escape);
 use List::MoreUtils qw(any firstval);
 
-use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Client;
 use BOM::Platform::User;
@@ -302,7 +301,6 @@ sub __login {
         return;
     }
 
-    state $app_config = BOM::Platform::Runtime->instance->app_config;
     my $r       = $c->stash('request');
     my $options = {
         domain  => $r->cookie_domain,
@@ -357,7 +355,7 @@ sub __login {
                     }
 
                     send_email({
-                        from               => BOM::Platform::Runtime->instance->app_config->cs->email,
+                        from               => 'support@binary.com',
                         to                 => $client->email,
                         subject            => localize('New Sign-In Activity Detected'),
                         message            => [$message],
