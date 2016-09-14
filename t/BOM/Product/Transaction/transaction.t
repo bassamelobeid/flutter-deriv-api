@@ -2564,6 +2564,7 @@ subtest 'transaction slippage' => sub {
     is + ($bal = $acc_usd->balance + 0), 1000, 'USD balance is 1000 got: ' . $bal;
 
     my $fmb_id;
+    my $mock_pc = Test::MockModule->new('Price::Calculator');
     my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
     $mock_contract->mock('ask_price', sub { 10 });
     $mock_contract->mock(
@@ -2593,8 +2594,7 @@ subtest 'transaction slippage' => sub {
                 set_by      => 'BOM::Product::Contract',
                 base_amount => 0.1
             });
-        $mock_contract->mock('ask_probability', sub { $ask_cv });
-
+        $mock_pc->mock('ask_probability', sub { $ask_cv });
 
         # 50% of commission
         my $allowed_move = 0.01 * 0.50;
@@ -2653,7 +2653,7 @@ subtest 'transaction slippage' => sub {
                 set_by      => 'BOM::Product::Contract',
                 base_amount => 0.1
             });
-        $mock_contract->mock('bid_probability', sub { $bid_cv });
+        $mock_pc->mock('bid_probability', sub { $bid_cv });
 
         my $contract = produce_contract({
                 underlying   => 'R_100',
@@ -2692,6 +2692,7 @@ subtest 'transaction slippage' => sub {
                 price       => $price,
                 source      => 23,
             });
+
         ok !$transaction->sell, 'no error when sell';
         my ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $transaction->transaction_id;
         is $fmb->{sell_price}, $price, 'sell at requested price';

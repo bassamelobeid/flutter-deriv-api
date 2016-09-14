@@ -24,16 +24,16 @@ initialize_realtime_ticks_db();
 
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine
 #Because the code to prepare market data is called for all pricings in Contract
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'economic_events',
     {
-        events           => [{
+        events => [{
                 symbol       => 'USD',
                 release_date => 1,
                 source       => 'forexfactory',
                 impact       => 1,
                 event_name   => 'FOMC',
-            }]
-    });
+            }]});
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -205,7 +205,7 @@ subtest 'Is contract valid to sell' => sub {
     is($transaction->_is_valid_to_sell, undef, 'Contract is valid to sell');
 
     $mock_contract->unmock_all;
-    $mock_contract->mock('_validate_trading_times', sub { undef });
+    $mock_contract->mock('_validate_trading_times',         sub { undef });
     $mock_contract->mock('_validate_start_and_expiry_date', sub { undef });
 
     $contract1 = make_similar_contract($contract1, {date_expiry => $now->epoch + 10});
