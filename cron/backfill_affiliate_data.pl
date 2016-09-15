@@ -6,6 +6,7 @@ use warnings;
 
 use Date::Utility;
 use BOM::Platform::Email qw(send_email);
+use BOM::System::Config;
 use BOM::MyAffiliates::BackfillManager;
 
 local $SIG{ALRM} = sub { die "alarm\n" };
@@ -21,8 +22,8 @@ push @{$full_report}, ('', 'Promo Codes:', '');
 push @{$full_report}, @backfill_promo_codes_report;
 
 send_email({
-    from    => 'system@binary.com',
-    to      => 'affiliates@binary.com',
+    from    => BOM::System::Config::email_address->{system},
+    to      => BOM::System::Config::email_address->{affiliates},
     subject => 'CRON backfill_affiliate_data: Report for ' . $runtime->datetime_yyyymmdd_hhmmss_TZ,
     message => $full_report,
 });
