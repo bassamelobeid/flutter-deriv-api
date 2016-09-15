@@ -8,6 +8,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 use Test::MockModule;
+use BOM::Database::Model::AccessToken;
 
 my $t = build_mojo_test({
         debug    => 1,
@@ -68,7 +69,7 @@ my $token = BOM::Database::Model::AccessToken->new->create_token("CR0021", 'Test
 $t       = $t->send_ok({json => {authorize => $token}})->message_ok;
 $res     = decode_json($t->message->[1]);
 @$timing = ();
-$t = $t->send_ok({
+$t       = $t->send_ok({
         json => {
             buy   => 1,
             price => 1,
