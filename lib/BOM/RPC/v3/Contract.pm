@@ -97,8 +97,9 @@ sub prepare_ask {
     $p2{underlying}  = delete $p2{symbol};
     $p2{bet_type}    = delete $p2{contract_type};
     $p2{amount_type} = delete $p2{basis} if exists $p2{basis};
+    $p2{duration_unit} //= 's';
     if ($p2{duration} and not exists $p2{date_expiry}) {
-        $p2{duration} .= delete $p2{duration_unit} if exists $p2{duration_unit};
+        $p2{duration} .= delete $p2{duration_unit};
     }
 
     return \%p2;
