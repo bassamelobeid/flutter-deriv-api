@@ -47,7 +47,7 @@ SELECT
 
     regexp_replace(b.underlying_symbol, 'frx', '') as currency_pair,
 
-    round(b.payout_price / 1000, 2) as lot,
+    1 as lot,
     'buy' as buy_sell,
 
     CASE
