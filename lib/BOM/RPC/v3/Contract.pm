@@ -7,10 +7,12 @@ use Try::Tiny;
 use List::MoreUtils qw(none);
 use Data::Dumper;
 
+use BOM::System::Config;
 use BOM::RPC::v3::Utility;
 use BOM::Market::Underlying;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Locale;
+use BOM::Platform::Runtime;
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
@@ -139,12 +141,23 @@ sub _get_ask {
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
 
             $response = {
-                longcode      => $contract->longcode,
-                payout        => $contract->payout,
-                ask_price     => $ask_price,
-                display_value => $display_value,
-                spot_time     => $contract->current_tick->epoch,
-                date_start    => $contract->date_start->epoch,
+                longcode            => $contract->longcode,
+                payout              => $contract->payout,
+                ask_price           => $ask_price,
+                display_value       => $display_value,
+                spot_time           => $contract->current_tick->epoch,
+                date_start          => $contract->date_start->epoch,
+                contract_parameters => {
+                    %$p2,
+                    !$contract->is_spread
+                    ? (
+                        app_markup_percentage => $contract->app_markup_percentage,
+                        staking_limits        => $contract->staking_limits,
+                        )
+                    : (),
+                    deep_otm_threshold         => $contract->market->deep_otm_threshold,
+                    underlying_base_commission => $contract->underlying->base_commission,
+                },
             };
 
             # only required for non-spead contracts
@@ -351,9 +364,14 @@ sub send_ask {
         my $arguments = {
             from_pricer_daemon => $from_pricer_daemon,
             %{$params->{args}}};
-        my $contract_parameters = prepare_ask($arguments);
-        $response = _get_ask($contract_parameters, $params->{app_markup_percentage});
-        $response->{contract_parameters} = $contract_parameters;
+
+        $response = _get_ask(prepare_ask($arguments), $params->{app_markup_percentage});
+
+        $response->{contract_parameters}->{maximum_total_markup} = BOM::System::Config::quants->{commission}->{maximum_total_markup};
+        $response->{contract_parameters}->{base_commission_min}  = BOM::System::Config::quants->{commission}->{adjustment}->{minimum};
+        $response->{contract_parameters}->{base_commission_max}  = BOM::System::Config::quants->{commission}->{adjustment}->{maximum};
+        $response->{contract_parameters}->{base_commission_scaling} =
+            BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling;
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
