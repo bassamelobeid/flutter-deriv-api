@@ -116,7 +116,7 @@ subtest 'realtime report generation' => sub {
         my $fmb_info = {
             fmb_id     => $fmb->id,
             short_code => $short_code,
-        }; print "fmb_id in mtm.t: " . $fmb->id . "\n";
+        };
         push @fmbs, $fmb_info;
     }
 
