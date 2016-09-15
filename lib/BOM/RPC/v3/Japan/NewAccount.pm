@@ -12,6 +12,7 @@ use BOM::Platform::Locale;
 use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
+use BOM::System::Config;
 use BOM::Platform::Context qw (localize);
 use BOM::System::AuditLog;
 use BOM::Platform::LandingCompany::Registry;
@@ -215,7 +216,7 @@ support@binary.com',
         );
 
         send_email({
-            from               => 'support@binary.com',
+            from               => BOM::System::Config::email_address->{support},
             to                 => $client->email,
             subject            => localize('Kindly send us your documents for verification.'),
             message            => [$email_content],
@@ -362,7 +363,7 @@ sub set_jp_settings {
     $message .= "\n" . localize('The [_1] team.', $website_name);
 
     send_email({
-        from               => 'support@binary.com',
+        from               => BOM::System::Config::email_address->{support},
         to                 => $client->email,
         subject            => $client->loginid . ' ' . localize('Change in account settings'),
         message            => [$message],
