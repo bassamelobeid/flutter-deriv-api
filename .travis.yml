@@ -44,9 +44,8 @@ install:
     - /tmp/travis-scripts/setup_authdb.sh
     - /tmp/travis-scripts/setup_usersdb.sh
     - . /tmp/travis-scripts/setup_perl5lib.sh
-
+    - /tmp/travis-scripts/setup_postfix.sh
 script:
     - make unit_test
-
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
