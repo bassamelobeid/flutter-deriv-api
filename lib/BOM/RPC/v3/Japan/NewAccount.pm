@@ -360,7 +360,18 @@ sub set_jp_settings {
         my $new = $args->{$key} // '';
 
         if ($ori ne $new) {
-            push @updated, [$text->{$key}, localize($ori), localize($new)];
+            my ($translate_ori, $translate_new);
+
+            if ($key eq 'hedge_asset_amount') {
+                # pure number, no need translation
+                $translate_ori = $ori;
+                $translate_new = $new;
+            } else {
+                $translate_ori = localize('{JAPAN ONLY}' . $ori);
+                $translate_new = localize('{JAPAN ONLY}' . $new);
+            }
+
+            push @updated, [$text->{$key}, $translate_ori, $translate_new];
             $fin_change = 1;
         }
     }
