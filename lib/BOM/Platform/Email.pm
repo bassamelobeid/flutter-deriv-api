@@ -11,6 +11,7 @@ use HTML::FromText;
 use Try::Tiny;
 use Encode;
 
+use BOM::System::Config;
 use BOM::Platform::Context qw(request);
 use BOM::System::Config;
 
@@ -70,7 +71,7 @@ sub send_email {
         }
     }
 
-    if ($fromemail eq 'support@binary.com') {
+    if ($fromemail eq BOM::System::Config::email_address->{support}) {
         $fromemail = "\"Binary.com\" <$fromemail>";
     }
 
