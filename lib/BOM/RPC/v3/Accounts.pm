@@ -859,7 +859,7 @@ sub set_self_exclusion {
         $message = "Client $client set the following self-exclusion limits:\n\n$message";
         send_email({
             from    => 'compliance@binary.com',
-            to      => 'compliance@binary.com' . ',' . 'support@binary.com',
+            to      => 'compliance@binary.com,support@binary.com',
             subject => "Client set self-exclusion limits",
             message => [$message],
         });
