@@ -19,7 +19,7 @@ use BOM::Platform::Runtime;
 use BOM::Database::DataMapper::CollectorReporting;
 
 my $now         = Date::Utility->new(time);
-my $minus11secs = Date::Utility->new(time - 11);
+my $minus16secs = Date::Utility->new(time - 16);
 my $minus6mins  = Date::Utility->new(time - 360);
 my $minus5mins  = Date::Utility->new(time - 300);
 my $plus1day    = Date::Utility->new(time + 24 * 60 * 60);
@@ -27,18 +27,18 @@ my $plus1day    = Date::Utility->new(time + 24 * 60 * 60);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        recorded_date => $minus11secs,
+        recorded_date => $minus16secs,
         symbol        => $_,
     }) for qw( EUR GBP XAU USD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => $_,
-        recorded_date => $minus11secs
+        recorded_date => $minus16secs
     }) for qw (frxEURCHF frxUSDJPY frxEURUSD frxAUDJPY);
 
 my %date_string = (
-    frxUSDJPY => [$minus5mins->datetime, $minus11secs->datetime],
+    frxUSDJPY => [$minus5mins->datetime, $minus16secs->datetime],
 );
 
 initialize_realtime_ticks_db();
@@ -79,11 +79,11 @@ subtest 'realtime report generation' => sub {
     );
 
     my @times = (
-        [$minus5mins,  $minus11secs],    # 0 contracts that expired more than 10 seconds
-        [$minus5mins,  $minus11secs],    # 1 contracts that expired more than 10 seconds
-        [$minus6mins,  $minus11secs],    # 2 contracts that be used to simulate error
-        [$minus5mins,  $now],            # 3 contracts that expired less than 10 seconds
-        [$minus11secs, $plus1day],       # 4 contracts that not expired
+        [$minus5mins,  $minus16secs],    # 0 contracts that expired more than 15 seconds
+        [$minus5mins,  $minus16secs],    # 1 contracts that expired more than 15 seconds
+        [$minus6mins,  $minus16secs],    # 2 contracts that be used to simulate error
+        [$minus5mins,  $now],            # 3 contracts that expired less than 15 seconds
+        [$minus16secs, $plus1day],       # 4 contracts that not expired
     );
     my ($contract_ok1_index, $contract_ok2_index, $contract_error_index, $contract_just_expired_index, $contract_not_expired) = (0 .. $#times);
 
