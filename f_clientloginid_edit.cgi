@@ -226,7 +226,6 @@ if ($input{whattodo} eq 'uploadID') {
 # PERFORM ON-DEMAND ID CHECKS
 if (my $check_str = $input{do_id_check}) {
     my $result;
-    warn "Going to perform IDAuthentication";
     my $id_auth = BOM::Platform::Client::IDAuthentication->new(
         client        => $client,
         force_recheck => 1
