@@ -284,7 +284,10 @@ sub set_jp_settings {
 
     my @updated;
     if ($client->occupation && $client->occupation ne $args->{occupation}) {
-        push @updated, [localize('{JAPAN ONLY}Occupation'), $client->occupation, $args->{occupation}];
+        my $translate_old = localize('{JAPAN ONLY}' . $client->occupation);
+        my $translate_new = localize('{JAPAN ONLY}' . $args->{occupation});
+
+        push @updated, [localize('{JAPAN ONLY}Occupation'), $translate_old, $translate_new];
         $client->occupation($args->{occupation});
     }
 
