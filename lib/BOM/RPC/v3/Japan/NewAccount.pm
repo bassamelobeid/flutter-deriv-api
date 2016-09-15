@@ -291,6 +291,50 @@ sub set_jp_settings {
     my $ori_fin    = JSON::from_json($client->financial_assessment->data);
     my $fin_change = 0;
 
+    # 2016-09-15: Don't remove these localize text, so they ended up in backend .po files for translation
+    # After settings change, email is sent to Client & CS. Japan team wants content (value changed) to be in Japanese
+    # used in L363
+
+    # Occupation
+    localize('{JAPAN ONLY}Office worker');
+    localize('{JAPAN ONLY}Director');
+    localize('{JAPAN ONLY}Public worker');
+    localize('{JAPAN ONLY}Self-employed');
+    localize('{JAPAN ONLY}Housewife / Househusband');
+    localize('{JAPAN ONLY}Contract / Temporary / Part Time');
+    localize('{JAPAN ONLY}Student');
+    localize('{JAPAN ONLY}Unemployed');
+    localize('{JAPAN ONLY}Others');
+
+    # Income
+    localize('{JAPAN ONLY}Less than 1 million JPY');
+    localize('{JAPAN ONLY}1-3 million JPY');
+    localize('{JAPAN ONLY}3-5 million JPY');
+    localize('{JAPAN ONLY}5-10 million JPY');
+    localize('{JAPAN ONLY}10-30 million JPY');
+    localize('{JAPAN ONLY}30-50 million JPY');
+    localize('{JAPAN ONLY}50-100 million JPY');
+    localize('{JAPAN ONLY}Over 100 million JPY');
+
+    # Trading Experience
+    localize('{JAPAN ONLY}No experience');
+    localize('{JAPAN ONLY}Less than 6 months');
+    localize('{JAPAN ONLY}6 months to 1 year');
+    localize('{JAPAN ONLY}1-3 years');
+    localize('{JAPAN ONLY}3-5 years');
+    localize('{JAPAN ONLY}Over 5 years');
+
+    # purpose of trading
+    localize('{JAPAN ONLY}Targeting short-term profits');
+    localize('{JAPAN ONLY}Targeting medium-term / long-term profits');
+    localize('{JAPAN ONLY}Both the above');
+    localize('{JAPAN ONLY}Hedging');
+
+    # asset hedge
+    localize('{JAPAN ONLY}Foreign currency deposit');
+    localize('{JAPAN ONLY}Margin FX');
+    localize('{JAPAN ONLY}Other');
+
     foreach my $key (qw(
         trading_purpose
         hedge_asset
@@ -316,7 +360,7 @@ sub set_jp_settings {
         my $new = $args->{$key} // '';
 
         if ($ori ne $new) {
-            push @updated, [$text->{$key}, $ori, $new];
+            push @updated, [$text->{$key}, localize($ori), localize($new)];
             $fin_change = 1;
         }
     }
@@ -372,11 +416,11 @@ sub set_jp_settings {
     });
     BOM::System::AuditLog::log('Your settings have been updated successfully', $client->loginid);
 
-    my $cs_msg = "Please note that client " . $client->loginid . " settings has been updated as below:\n\n";
+    my $cs_msg = localize('Please note that client [_1] settings has been updated as below:', $client->loginid) . "\n\n";
     foreach my $field (@updated) {
-        $cs_msg .= $field->[0] . ":" . "\n\t old value: " . $field->[1] . "\n\t new value: " . $field->[2] . "\n\n";
+        $cs_msg .= $field->[0] . ":" . "\n\t" . localize('Old value: ') . $field->[1] . "\n\t" . localize('New value: ') . $field->[2] . "\n\n";
     }
-    $client->add_note($client->loginid . ' ' . 'Japan Client Change in account settings notification', $cs_msg);
+    $client->add_note($client->loginid . ' ' . localize('Japan Client Change in account settings notification'), $cs_msg);
 
     return {status => 1};
 }
