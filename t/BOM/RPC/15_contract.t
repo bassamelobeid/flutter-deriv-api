@@ -783,6 +783,7 @@ subtest 'app_markup_percentage' => sub {
         client => $client,
         spread => 0
     );
+
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 
     $contract = create_contract(
@@ -882,8 +883,16 @@ sub create_contract {
     my $client = $args{client};
     #postpone 10 minutes to avoid conflicts
     $now = $now->plus_time_interval('10m');
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch - 99,
+        underlying => 'R_50',
+    });
 
-    create_ticks([100, $now->epoch - 99, 'R_50'], [100, $now->epoch - 52, 'R_50']);
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch - 52,
+        underlying => 'R_50',
+    });
+
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch,
         underlying => 'R_50',
