@@ -57,7 +57,7 @@ BOM::Platform::Context::template->process(
     {
         'link'     => $link,
         'token'    => $token,
-        'helpdesk' => 'support@binary.com',
+        'helpdesk' => BOM::System::Config::email_address->{support}
     },
     \$lost_pass_email
 );
@@ -68,7 +68,7 @@ Bar('emailing change password link to ' . $loginID);
 print '<p class="success_message">Emailing change password link to ' . $client_name . ' at ' . $email . ' ...</p>';
 
 my $result = send_email({
-    from               => 'support@binary.com',
+    from               => BOM::System::Config::email_address->{support},
     to                 => $email,
     subject            => localize('New Password Request'),
     message            => [$lost_pass_email,],

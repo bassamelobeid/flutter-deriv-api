@@ -6,6 +6,7 @@ use Getopt::Long;
 use Text::CSV;
 use IO::File;
 use BOM::MyAffiliates::PaymentToAccountManager;
+use BOM::System::Config;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -51,7 +52,7 @@ if (not defined $pid) {
         print "An error has occurred -- child comes back with $?";
     } else {
         print "Fetch Myaffiliates payment triggered, info will be emailed soon to "
-            . 'affiliates@binary.com';
+            . BOM::System::Config::email_address->{affiliates};
     }
 } else {
     # 1st, break parent/child relationship
@@ -93,8 +94,8 @@ if (not defined $pid) {
         }
 
         send_email({
-            from       => 'system@binary.com',
-            to         => 'affiliates@binary.com',
+            from       => BOM::System::Config::email_address->{system},
+            to         => BOM::System::Config::email_address->{affiliates},
             subject    => 'Fetch Myaffiliates payment info: (' . $from->date_yyyymmdd . ' - ' . $to->date_yyyymmdd . ')',
             message    => \@message,
             attachment => \@csv_file_locs,
