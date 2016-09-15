@@ -399,7 +399,7 @@ sub set_jp_settings {
         $message .=
               "<tr><td style='text-align:left'><strong>"
             . $field->[0]
-            . "</strong></td><td>:</td><td style='text-align:left'>"
+            . "</strong></td><td> : </td><td style='text-align:left'>"
             . $field->[2]
             . "</td></tr>";
     }
