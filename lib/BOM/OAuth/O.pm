@@ -16,6 +16,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
 use BOM::Platform::LandingCompany::Registry;
 use BOM::Platform::Countries;
+use BOM::System::Config;
 
 sub __oauth_model {
     state $oauth_model = BOM::Database::Model::OAuth->new;
@@ -356,7 +357,7 @@ sub __login {
                     }
 
                     send_email({
-                        from               => 'support@binary.com',
+                        from               => BOM::System::Config::email_address->{support},
                         to                 => $client->email,
                         subject            => localize('New Sign-In Activity Detected'),
                         message            => [$message],
