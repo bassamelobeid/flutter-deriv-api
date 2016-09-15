@@ -2564,56 +2564,57 @@ subtest 'transaction slippage' => sub {
     is + ($bal = $acc_usd->balance + 0), 1000, 'USD balance is 1000 got: ' . $bal;
 
     my $fmb_id;
-    my $mock_pc = Test::MockModule->new('Price::Calculator');
+    my $mock_pc       = Test::MockModule->new('Price::Calculator');
     my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
     $mock_contract->mock('ask_price', sub { 10 });
     $mock_contract->mock(
         'commission_markup',
         sub {
             return Math::Util::CalculatedValue::Validatable->new({
-                    name        => 'commission_markup',
-                    description => 'fake commission markup',
-                    set_by      => 'BOM::Product::Contract',
-                    base_amount => 0.01,
-                });
+                name        => 'commission_markup',
+                description => 'fake commission markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0.01,
+            });
         });
     $mock_contract->mock(
         'risk_markup',
         sub {
             return Math::Util::CalculatedValue::Validatable->new({
-                    name        => 'risk_markup',
-                    description => 'fake risk markup',
-                    set_by      => 'BOM::Product::Contract',
-                    base_amount => 0,
-                });
+                name        => 'risk_markup',
+                description => 'fake risk markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0,
+            });
         });
     subtest 'buy slippage' => sub {
         my $ask_cv = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'ask_probability',
-                description => 'fake ask prov',
-                set_by      => 'BOM::Product::Contract',
-                base_amount => 0.1
-            });
+            name        => 'ask_probability',
+            description => 'fake ask prov',
+            set_by      => 'BOM::Product::Contract',
+            base_amount => 0.1
+        });
         $mock_pc->mock('ask_probability', sub { $ask_cv });
 
         # 50% of commission
         my $allowed_move = 0.01 * 0.50;
 
         my $contract = produce_contract({
-                underlying   => 'R_100',
-                bet_type     => 'CALL',
-                currency     => 'USD',
-                payout       => 100,
-                date_start   => $now,
-                date_pricing => $now,
-                date_expiry  => $now->plus_time_interval('15m'),
-                current_tick => $tick,
-                barrier      => 'S0P',
-            });
+            underlying   => 'R_100',
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            date_start   => $now,
+            date_pricing => $now,
+            date_expiry  => $now->plus_time_interval('15m'),
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
 
         # we just want to _validate_trade_pricing_adjustment
         my $mocked = Test::MockModule->new('BOM::Product::Transaction');
-        $mocked->mock($_ => sub {''}) for (
+        $mocked->mock($_ => sub { '' })
+            for (
             qw/
             _validate_buy_transaction_rate
             _validate_iom_withdrawal_limit
@@ -2626,18 +2627,18 @@ subtest 'transaction slippage' => sub {
             _validate_date_pricing
             _validate_payout_limit
             _validate_stake_limit/
-        );
+            );
         # no limits
-        $mocked->mock('limits', sub {{}});
+        $mocked->mock('limits', sub { {} });
 
         my $price = $contract->ask_price - ($allowed_move * $contract->payout / 2);
         my $transaction = BOM::Product::Transaction->new({
-                client   => $cl,
-                contract => $contract,
-                action   => 'BUY',
-                price    => $price,
-                purchase_date => $now,
-            });
+            client        => $cl,
+            contract      => $contract,
+            action        => 'BUY',
+            price         => $price,
+            purchase_date => $now,
+        });
 
         ok !$transaction->buy, 'buy without error.';
         my ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $transaction->transaction_id;
@@ -2648,24 +2649,24 @@ subtest 'transaction slippage' => sub {
 
     subtest 'sell slippage' => sub {
         my $bid_cv = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'bid_probability',
-                description => 'fake ask prov',
-                set_by      => 'BOM::Product::Contract',
-                base_amount => 0.1
-            });
+            name        => 'bid_probability',
+            description => 'fake ask prov',
+            set_by      => 'BOM::Product::Contract',
+            base_amount => 0.1
+        });
         $mock_pc->mock('bid_probability', sub { $bid_cv });
 
         my $contract = produce_contract({
-                underlying   => 'R_100',
-                bet_type     => 'CALL',
-                currency     => 'USD',
-                payout       => 100,
-                date_start   => $now->plus_time_interval('5m'),
-                date_pricing => $now->plus_time_interval('5m'),
-                date_expiry  => $now->plus_time_interval('15m'),
-                current_tick => $tick,
-                barrier      => 'S0P',
-            });
+            underlying   => 'R_100',
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            date_start   => $now->plus_time_interval('5m'),
+            date_pricing => $now->plus_time_interval('5m'),
+            date_expiry  => $now->plus_time_interval('15m'),
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
 
         my $allowed_move = 0.01 * 0.80;
 
@@ -2673,7 +2674,8 @@ subtest 'transaction slippage' => sub {
 
         # we just want to _validate_trade_pricing_adjustment
         my $mocked = Test::MockModule->new('BOM::Product::Transaction');
-        $mocked->mock($_ => sub {''}) for (
+        $mocked->mock($_ => sub { '' })
+            for (
             qw/
             _validate_sell_transaction_rate
             _validate_iom_withdrawal_limit
@@ -2681,17 +2683,17 @@ subtest 'transaction slippage' => sub {
             _validate_available_currency
             _validate_currency
             _validate_date_pricing/
-        );
+            );
         # no limits
-        $mocked->mock('limits', sub {{}});
+        $mocked->mock('limits', sub { {} });
 
         my $transaction = BOM::Product::Transaction->new({
-                client      => $cl,
-                contract    => $contract,
-                contract_id => $fmb_id,
-                price       => $price,
-                source      => 23,
-            });
+            client      => $cl,
+            contract    => $contract,
+            contract_id => $fmb_id,
+            price       => $price,
+            source      => 23,
+        });
 
         ok !$transaction->sell, 'no error when sell';
         my ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $transaction->transaction_id;
