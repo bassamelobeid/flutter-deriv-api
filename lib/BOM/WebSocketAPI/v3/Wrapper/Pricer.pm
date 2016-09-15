@@ -11,8 +11,9 @@ use JSON::XS qw(encode_json decode_json);
 use Time::HiRes qw(gettimeofday tv_interval);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
-use BOM::RPC::v3::Contract;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
+use Format::Util::Numbers qw(to_monetary_number_format);
+use Price::Calculator;
 
 my %pricer_cmd_handler = (
     price => \&process_ask_event,
@@ -28,12 +29,16 @@ sub proposal {
             args        => $args,
             method      => 'send_ask',
             msg_type    => 'proposal',
-            call_params => {language => $c->stash('language')},
-            success     => sub {
+            call_params => {
+                language              => $c->stash('language'),
+                app_markup_percentage => $c->stash('app_markup_percentage')
+            },
+            success => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
                 my $cache = {
                     longcode            => $rpc_response->{longcode},
                     contract_parameters => delete $rpc_response->{contract_parameters}};
+                $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
                 $req_storage->{uuid} = _pricing_channel_for_ask($c, 'subscribe', $req_storage->{args}, $cache);
             },
             response => sub {
@@ -279,8 +284,9 @@ sub process_ask_event {
         my $results;
 
         unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
+            $stash_data->{cache}->{contract_parameters}->{longcode} = $stash_data->{cache}->{longcode};
             my $adjusted_results =
-                _price_stream_results_adjustment($stash_data->{args}, $stash_data->{cache}->{contract_parameters}, $response, $theo_probability);
+                _price_stream_results_adjustment($c, $stash_data->{args}, $stash_data->{cache}->{contract_parameters}, $response, $theo_probability);
             if (my $ref = $adjusted_results->{error}) {
                 my $err = $c->new_error($type, $ref->{code}, $ref->{message_to_client});
                 $err->{error}->{details} = $ref->{details} if exists $ref->{details};
@@ -322,6 +328,7 @@ sub _prepare_results {
 }
 
 sub _price_stream_results_adjustment {
+    my $c                     = shift;
     my $orig_args             = shift;
     my $contract_parameters   = shift;
     my $results               = shift;
@@ -347,26 +354,47 @@ sub _price_stream_results_adjustment {
         minimum     => 0,
         maximum     => 1,
     });
-    $contract_parameters->{theo_probability} = $theo_probability;
 
+    $contract_parameters->{theo_probability}      = $theo_probability;
     $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
-    my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
 
-    if (my $error = $contract->validate_price) {
+    my $price_calculator = Price::Calculator->new(%$contract_parameters);
+
+    if (my $error = $price_calculator->validate_price) {
+        my $error_map = {
+            zero_stake             => sub { "Invalid stake" },
+            payout_too_many_places => sub { 'Payout may not have more than two decimal places.' },
+            stake_same_as_payout   => sub { 'This contract offers no return.' },
+            stake_outside_range    => sub {
+                my ($details) = @_;
+                return (
+                    'Minimum stake of [_1] and maximum payout of [_2]',
+                    to_monetary_number_format($details->[0]),
+                    to_monetary_number_format($details->[1]));
+            },
+            payout_outside_range => sub {
+                my ($details) = @_;
+                return (
+                    'Minimum stake of [_1] and maximum payout of [_2]',
+                    to_monetary_number_format($details->[0]),
+                    to_monetary_number_format($details->[1]));
+            },
+        };
         return {
             error => {
-                message_to_client => $error->{message_to_client},
+                message_to_client => $c->l($error_map->{$error->{error_code}}->($error->{error_details} || [])),
                 code              => 'ContractBuyValidationError',
                 details           => {
-                    longcode      => $contract->longcode,
-                    display_value => $contract->ask_price,
-                    payout        => $contract->payout,
+                    longcode      => $contract_parameters->{longcode},
+                    display_value => $price_calculator->ask_price,
+                    payout        => $price_calculator->payout,
                 },
             }};
     }
 
-    $results->{ask_price} = $results->{display_value} = $contract->ask_price;
-    $results->{payout} = $contract->payout;
+    $results->{ask_price} = $results->{display_value} = $price_calculator->ask_price;
+    $results->{payout} = $price_calculator->payout;
+
     stats_timing('price_adjustment.timing', 1000 * tv_interval($t));
 
     return $results;
