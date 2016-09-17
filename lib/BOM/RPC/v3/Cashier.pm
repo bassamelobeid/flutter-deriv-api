@@ -135,8 +135,8 @@ sub cashier {
     ## if cashier provider == 'epg', we'll use EPG cashier
     if (($args->{provider} // '') eq 'epg') {
         BOM::System::AuditLog::log('redirecting to epg');
-        return 'https://www.binary' . $params->{server_name} . '.com/epg/'
-            if ($params->{server_name} // '') =~ /qa/;    # for QA server
+        return 'https://www.' . lc($params->{website_name}) . '/epg/'
+            if ($params->{website_name} // '') =~ /qa/;    # for QA server
         return 'https://epg.binary.com/';
     }
 
