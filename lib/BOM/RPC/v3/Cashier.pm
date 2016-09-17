@@ -135,9 +135,9 @@ sub cashier {
     ## if cashier provider == 'epg', we'll use EPG cashier
     if (($args->{provider} // '') eq 'epg') {
         BOM::System::AuditLog::log('redirecting to epg');
-        return 'https://www.' . lc($params->{website_name}) . '/epg/'
+        return 'https://www.' . lc($params->{website_name}) . '/epg/?currency=' . $currency
             if ($params->{website_name} // '') =~ /qa/;    # for QA server
-        return 'https://epg.binary.com/';
+        return 'https://epg.binary.com/?currency=' . $currency;
     }
 
     my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client_loginid});
