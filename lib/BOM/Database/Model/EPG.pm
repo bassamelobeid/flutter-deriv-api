@@ -24,7 +24,7 @@ sub prepare {
     my $client = $self->client;
     my $account = $client->default_account || die "no account";
 
-    my $id = Data::UUID->new()->create_str();
+    my $id = Data::UUID->new()->create_str(); $id =~ s/\-//g;
 
     $self->dbh->do("
         INSERT INTO payment.epg_request
