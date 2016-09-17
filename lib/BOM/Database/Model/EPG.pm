@@ -28,15 +28,17 @@ sub prepare {
 
     $self->dbh->do("
         INSERT INTO payment.epg_request
-            (id, amount, payment_type_code, status, account_id, payment_currency, payment_country)
+            (id, amount, payment_type_code, status, account_id, payment_currency, payment_country, ip_address)
         VALUES
-            (?, ?, ?, ?, ?, ?, ?)
+            (?, ?, ?, ?, ?, ?, ?, ?)
     ", undef,
         $id, $params{amount}, $params{payment_type_code},
         'PENDING',
         $account->id,
         $account->currency_code,
-        uc($client->residence // ''));
+        uc($client->residence // ''),
+        $params{ip_address} || '',
+    );
 
     return $id;
 }
@@ -81,13 +83,13 @@ sub complete {
     my %payment_args = (
         currency          => $data->{currency},
         amount            => $amount,
-        remark            => 'FIXME later',              # 800 chars, $data->{data} is too long to fit
+        remark            => $data->{data},
         staff             => $client->loginid,
         created_by        => '',
         trace_id          => 0,
         payment_processor => $data->{paymentSolution},
         # transaction_id    => $transaction_id,
-        # ip_address        => $ip_address, # FIXME
+        ip_address => $epg_request->{ip_address},
     );
 
     my $fee = 0;    # FIXME
