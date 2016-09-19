@@ -70,7 +70,7 @@ sub send_email {
         }
     }
 
-    if ($fromemail eq BOM::System::Config::email_address->{support}) {
+    if ($fromemail eq BOM::System::Config::email_address('support')) {
         $fromemail = "\"Binary.com\" <$fromemail>";
     }
 
