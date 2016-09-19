@@ -216,7 +216,7 @@ support@binary.com',
         );
 
         send_email({
-            from               => BOM::System::Config::email_address->{support},
+            from               => BOM::System::Config::email_address('support'),
             to                 => $client->email,
             subject            => localize('Kindly send us your documents for verification.'),
             message            => [$email_content],
@@ -363,7 +363,7 @@ sub set_jp_settings {
     $message .= "\n" . localize('The [_1] team.', $website_name);
 
     send_email({
-        from               => BOM::System::Config::email_address->{support},
+        from               => BOM::System::Config::email_address('support'),
         to                 => $client->email,
         subject            => $client->loginid . ' ' . localize('Change in account settings'),
         message            => [$message],
