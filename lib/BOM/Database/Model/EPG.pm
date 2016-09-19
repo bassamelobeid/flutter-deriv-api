@@ -24,7 +24,8 @@ sub prepare {
     my $client = $self->client;
     my $account = $client->default_account || die "no account";
 
-    my $id = Data::UUID->new()->create_str(); $id =~ s/\-//g;
+    my $id = Data::UUID->new()->create_str();
+    $id =~ s/\-//g;
 
     $self->dbh->do("
         INSERT INTO payment.epg_request
@@ -83,7 +84,7 @@ sub complete {
     my %payment_args = (
         currency          => $data->{currency},
         amount            => $amount,
-        remark            => $data->{data},
+        remark            => substr($data->{data}, 0, 800),    # b/c payment table remark is character varying(800)
         staff             => $client->loginid,
         created_by        => '',
         trace_id          => 0,
@@ -92,7 +93,7 @@ sub complete {
         ip_address => $epg_request->{ip_address},
     );
 
-    my $fee = 0;    # FIXME
+    my $fee = 0;                                               # FIXME
 
     # Write the payment transaction
     my $trx;
