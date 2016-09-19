@@ -194,19 +194,7 @@ sub get_settings_by_group {
                 payments.payment_limits
                 payments.doughflow.location
                 payments.doughflow.passcode
-                payments.email
-                )
-        ],
-        marketing => [qw(
-                marketing.email
-                marketing.myaffiliates_email
-                )
-        ],
-        cs => [qw(
-                cs.email
-                )
-        ],
-    };
+                )]};
 
     my $settings;
 

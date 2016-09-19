@@ -14,6 +14,7 @@ use BOM::Database::DataMapper::Client;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::System::Config;
 use BOM::Platform::Context;
 use BOM::System::AuditLog;
 use BOM::ContractInfo;
@@ -270,7 +271,7 @@ print "</form>";
 # Email staff who input payment
 my $staffemail = $staff->{'email'};
 
-my $email_accountant = BOM::Platform::Runtime->instance->app_config->accounting->email;
+my $email_accountant = BOM::System::Config::email_address('accounting');
 my $toemail = ($staffemail eq $email_accountant) ? "$staffemail" : "$staffemail,$email_accountant";
 
 if ($toemail && $informclient) {
@@ -284,7 +285,7 @@ if ($toemail && $informclient) {
         . localize('Kind Regards') . "\n\n"
         . 'Binary.com';
 
-    my $support_email = BOM::Platform::Runtime->instance->app_config->cs->email;
+    my $support_email = BOM::System::Config::email_address('support');
 
     my $result = send_email({
         from               => $support_email,

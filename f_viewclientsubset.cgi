@@ -6,6 +6,8 @@ use POSIX;
 use BOM::Database::DataMapper::Account;
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
+use BOM::System::Config;
+use BOM::Platform::Runtime;
 use BOM::Platform::CurrencyConverter qw(in_USD);
 use BOM::Platform::Email qw(send_email);
 use open qw[ :encoding(UTF-8) ];
@@ -170,10 +172,10 @@ foreach my $loginID (keys %{$results}) {
 if ($email_notification) {
     my $email_to =
         join(',',
-        (BOM::Platform::Runtime->instance->app_config->compliance->email, BOM::Platform::Runtime->instance->app_config->accounting->email,));
+        (BOM::System::Config::email_address('compliance'), BOM::System::Config::email_address('accounting')));
 
     my $ret = send_email({
-        'from'    => BOM::Platform::Runtime->instance->app_config->system->email,
+        'from'    => BOM::System::Config::email_address('system'),
         'to'      => $email_to,
         'subject' => 'Funds withdrawn for disabled accounts',
         'message' => ["To be informed that the funds have been withdrawn for the following disabled account(s):\n\n$email_notification"],
