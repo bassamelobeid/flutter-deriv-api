@@ -11,6 +11,7 @@
     },
     "provider": {
       "enum": ["doughflow", "epg"],
+      "default": "doughflow",
       "description": "Note only doughflow is supported currently, epg is only for test."
     },
     "verification_code": {
