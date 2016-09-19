@@ -337,7 +337,6 @@
     legal_allowed_contract_types:
       - SPREADU
       - SPREADD
-    broker_codes:
-      - MT
+    broker_codes: []
     legal_default_currency: USD
 
