@@ -123,6 +123,7 @@ sub add_japan_settings {
         '{JAPAN ONLY}Other'
     );
 
+    my $fh = $self->pot_append_fh;
     foreach my $txt (@texts) {
         my $msgid = $self->msg_id($txt);
         if ($self->is_id_unique($msgid)) {
