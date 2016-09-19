@@ -78,8 +78,8 @@ sub script_run {
 sub add_japan_settings {
     my $self = shift;
 
-    # In set settings, upon settings changes, system email client & CS for changes details.
-    # These are needed for old & new values to be translated in email
+    # After client settings update, system email client & CS for changes. These translate old & new settings in email
+    # use in BOM::RPC::v3::Japan::NewAccount::set_jp_settings
 
     my @texts = (
         # Occupation
