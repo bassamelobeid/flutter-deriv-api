@@ -13,7 +13,6 @@ use Encode;
 
 use BOM::System::Config;
 use BOM::Platform::Context qw(request);
-use BOM::System::Config;
 
 use base 'Exporter';
 our @EXPORT_OK = qw(send_email);
