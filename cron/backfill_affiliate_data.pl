@@ -22,8 +22,8 @@ push @{$full_report}, ('', 'Promo Codes:', '');
 push @{$full_report}, @backfill_promo_codes_report;
 
 send_email({
-    from    => BOM::System::Config::email_address->{system},
-    to      => BOM::System::Config::email_address->{affiliates},
+    from    => BOM::System::Config::email_address('system'),
+    to      => BOM::System::Config::email_address('affiliates'),
     subject => 'CRON backfill_affiliate_data: Report for ' . $runtime->datetime_yyyymmdd_hhmmss_TZ,
     message => $full_report,
 });
