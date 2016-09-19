@@ -5,7 +5,6 @@ use strict 'vars';
 use URL::Encode qw( url_encode );
 
 use f_brokerincludeall;
-use BOM::Platform::Runtime;
 use BOM::Platform::Context;
 use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -58,7 +57,7 @@ BOM::Platform::Context::template->process(
     {
         'link'     => $link,
         'token'    => $token,
-        'helpdesk' => BOM::Platform::Runtime->instance->app_config->cs->email,
+        'helpdesk' => BOM::System::Config::email_address('support')
     },
     \$lost_pass_email
 );
@@ -69,7 +68,7 @@ Bar('emailing change password link to ' . $loginID);
 print '<p class="success_message">Emailing change password link to ' . $client_name . ' at ' . $email . ' ...</p>';
 
 my $result = send_email({
-    from               => BOM::Platform::Runtime->instance->app_config->cs->email,
+    from               => BOM::System::Config::email_address('support'),
     to                 => $email,
     subject            => localize('New Password Request'),
     message            => [$lost_pass_email,],

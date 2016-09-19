@@ -25,12 +25,10 @@ if (request()->param('page') eq 'global') {
     my $group_to_display = request()->param('group');
     my $authorisations   = {
         shutdown_suspend => 'IT',
-        cs               => 'CS',
         quant            => 'Quants',
         it               => 'IT',
         others           => 'IT',
         payments         => 'IT',
-        marketing        => 'IT',
     };
 
     if ($authorisations->{$group_to_display}) {

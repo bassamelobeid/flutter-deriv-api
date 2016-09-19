@@ -281,12 +281,10 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
 					<form action="~ . request()->url_for('backoffice/f_dynamic_settings.cgi') . qq~" method="get"><font size=2>
                         <b>Group: </b><select name=group>
                             <option value=shutdown_suspend>Shutdown/Suspend</option>
-                            <option value=cs>CS</option>
                             <option value=quant>Quant</option>
                             <option value=it>IT</option>
                             <option value=others>Others</option>
                             <option value=payments>Payments</option>
-                            <option value=marketing>Marketing</option>
                         </select>
 						<input type=hidden name=broker value=FOG>
 						<input type=hidden name=page value=global>
