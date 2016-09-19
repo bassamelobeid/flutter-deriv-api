@@ -220,6 +220,12 @@ sub _validate_start_end {
     $start = (not $start and $count and $granularity) ? $end - ($count * $granularity) : $start;
     # we must not return to the client any ticks/candles after this epoch
     my $licensed_epoch = $ul->last_licensed_display_epoch;
+    unless ($end
+        and $end =~ /^[0-9]+$/
+        and $end > $start)
+    {
+        $end = time();
+    }
     # max allow 3 years
     unless ($start
         and $start =~ /^[0-9]+$/
@@ -227,12 +233,6 @@ sub _validate_start_end {
         and $start < $licensed_epoch)
     {
         $start = $licensed_epoch - 86400;
-    }
-    unless ($end
-        and $end =~ /^[0-9]+$/
-        and $end > $start)
-    {
-        $end = time();
     }
     unless ($count
         and $count =~ /^[0-9]+$/
