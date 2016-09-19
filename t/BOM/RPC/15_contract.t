@@ -459,20 +459,14 @@ subtest 'get_bid' => sub {
 };
 
 subtest 'get_bid_skip_barrier_validation' => sub {
-    # just one tick for missing market data
     my ($contract, $params, $result);
 
     set_fixed_time($now->epoch);
-    #restore_time();
-    my $t = time;
 
     $contract = create_contract(
         client        => $client,
         spread        => 0,
-        #date_start    => $t - 200,
         date_expiry   => $now->epoch + 900,
-        #date_expiry   => $t + 300,
-        #purchase_date => $t - 201,
         bet_type      => 'ONETOUCH',
         barrier       => 963.3055,
         date_pricing  => $now->epoch-100,
