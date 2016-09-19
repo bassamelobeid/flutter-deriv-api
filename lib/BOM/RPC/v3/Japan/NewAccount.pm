@@ -282,6 +282,7 @@ sub set_jp_settings {
         'hedge_asset_amount'                          => localize('{JAPAN ONLY}Amount of hedging assets'),
     };
 
+    # translation added in bom-backoffice: bin/extra_translations.pl
     my @updated;
     if ($client->occupation && $client->occupation ne $args->{occupation}) {
         my $translate_old = localize('{JAPAN ONLY}' . $client->occupation);
@@ -293,50 +294,6 @@ sub set_jp_settings {
 
     my $ori_fin    = JSON::from_json($client->financial_assessment->data);
     my $fin_change = 0;
-
-    # 2016-09-15: Don't remove these localize text, so they ended up in backend .po files for translation
-    # After settings change, email is sent to Client & CS. Japan team wants content (value changed) to be in Japanese
-    # used in L363
-
-    # Occupation
-    localize('{JAPAN ONLY}Office worker');
-    localize('{JAPAN ONLY}Director');
-    localize('{JAPAN ONLY}Public worker');
-    localize('{JAPAN ONLY}Self-employed');
-    localize('{JAPAN ONLY}Housewife / Househusband');
-    localize('{JAPAN ONLY}Contract / Temporary / Part Time');
-    localize('{JAPAN ONLY}Student');
-    localize('{JAPAN ONLY}Unemployed');
-    localize('{JAPAN ONLY}Others');
-
-    # Income
-    localize('{JAPAN ONLY}Less than 1 million JPY');
-    localize('{JAPAN ONLY}1-3 million JPY');
-    localize('{JAPAN ONLY}3-5 million JPY');
-    localize('{JAPAN ONLY}5-10 million JPY');
-    localize('{JAPAN ONLY}10-30 million JPY');
-    localize('{JAPAN ONLY}30-50 million JPY');
-    localize('{JAPAN ONLY}50-100 million JPY');
-    localize('{JAPAN ONLY}Over 100 million JPY');
-
-    # Trading Experience
-    localize('{JAPAN ONLY}No experience');
-    localize('{JAPAN ONLY}Less than 6 months');
-    localize('{JAPAN ONLY}6 months to 1 year');
-    localize('{JAPAN ONLY}1-3 years');
-    localize('{JAPAN ONLY}3-5 years');
-    localize('{JAPAN ONLY}Over 5 years');
-
-    # purpose of trading
-    localize('{JAPAN ONLY}Targeting short-term profits');
-    localize('{JAPAN ONLY}Targeting medium-term / long-term profits');
-    localize('{JAPAN ONLY}Both the above');
-    localize('{JAPAN ONLY}Hedging');
-
-    # asset hedge
-    localize('{JAPAN ONLY}Foreign currency deposit');
-    localize('{JAPAN ONLY}Margin FX');
-    localize('{JAPAN ONLY}Other');
 
     foreach my $key (qw(
         trading_purpose
