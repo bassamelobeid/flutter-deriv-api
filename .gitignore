@@ -21,3 +21,4 @@ nytprof.out
 /_eumm/
 *.swp
 *.bak
+.DS_Store
