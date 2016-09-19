@@ -93,7 +93,8 @@ sub complete {
         ip_address => $epg_request->{ip_address},
     );
 
-    my $fee = 0;                                               # FIXME
+    # FIXME, remove when we start charging fee per transaction
+    my $fee = 0;
 
     # Write the payment transaction
     my $trx;
