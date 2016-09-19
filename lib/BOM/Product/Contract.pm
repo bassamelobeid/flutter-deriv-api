@@ -838,7 +838,7 @@ sub is_after_settlement {
         return 1 if $self->get_time_to_settlement->seconds == 0;
     }
 
-    return;
+    return 0;
 }
 
 =item is_after_expiry
