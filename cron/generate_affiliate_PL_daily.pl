@@ -9,6 +9,7 @@ use Date::Utility;
 use BOM::Platform::Email qw(send_email);
 use BOM::MyAffiliates::ActivityReporter;
 use BOM::Platform::Runtime;
+use BOM::System::Config;
 
 local $SIG{ALRM} = sub { die "alarm\n" };
 alarm 1800;
@@ -70,12 +71,9 @@ while ($to_date->days_between($processing_date) >= 0) {
 
 # email CSV out for reporting purposes
 send_email({
-        from    => BOM::Platform::Runtime->instance->app_config->system->email,
-        to      => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
-        subject => 'CRON generate_affiliate_PL_daily: '
-            . ' for date range '
-            . $from_date->date_yyyymmdd . ' - '
-            . $to_date->date_yyyymmdd,
-        message    => ['Find attached the CSV that was generated.'],
-        attachment => \@csv_filenames,
-    });
+    from       => BOM::System::Config::email_address('system'),
+    to         => BOM::System::Config::email_address('affiliates'),
+    subject    => 'CRON generate_affiliate_PL_daily: ' . ' for date range ' . $from_date->date_yyyymmdd . ' - ' . $to_date->date_yyyymmdd,
+    message    => ['Find attached the CSV that was generated.'],
+    attachment => \@csv_filenames,
+});

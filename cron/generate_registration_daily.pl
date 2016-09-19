@@ -2,8 +2,8 @@
 package main;
 
 use BOM::MyAffiliates::GenerateRegistrationDaily;
-use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
+use BOM::System::Config;
 
 local $SIG{ALRM} = sub { die "alarm\n" };
 alarm 1800;
@@ -19,8 +19,8 @@ sub run {
 
     my $result = BOM::MyAffiliates::GenerateRegistrationDaily->new->run;
     send_email({
-        from    => BOM::Platform::Runtime->instance->app_config->system->email,
-        to      => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
+        from    => BOM::System::Config::email_address('system'),
+        to      => BOM::System::Config::email_address('affiliates'),
         subject => 'CRON registrations: Report for ' . $result->{start_time}->datetime_yyyymmdd_hhmmss_TZ,
         message => $result->{report},
     });
