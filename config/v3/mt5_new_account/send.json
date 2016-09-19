@@ -75,7 +75,7 @@
     },
     "phone": {
       "type" : "string",
-      "pattern": "^\+?\d{0,50}$",
+      "pattern": "^\\+?\\d{0,50}$",
       "description": "User's phone number. Optional field. Max length 50"
     },
     "phonePassword": {
