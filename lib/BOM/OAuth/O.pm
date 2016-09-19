@@ -357,7 +357,7 @@ sub __login {
                     }
 
                     send_email({
-                        from               => BOM::System::Config::email_address->{support},
+                        from               => BOM::System::Config::email_address('support'),
                         to                 => $client->email,
                         subject            => localize('New Sign-In Activity Detected'),
                         message            => [$message],
