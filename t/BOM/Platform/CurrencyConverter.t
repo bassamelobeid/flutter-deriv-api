@@ -14,12 +14,8 @@ Cache::RedisDB->redis();
 Cache::RedisDB->set('QUOTE', 'frxNGNUSD', {quote => 167.10});
 Cache::RedisDB->set('QUOTE', 'frxMGNUSD', {quote => 2});
 
-is(BOM::Platform::CurrencyConverter::in_USD(1, 'NGN'), Cache::RedisDB->get('QUOTE', 'frxNGNUSD')->{quote}, "1 USD to NGN is 167.10 NGN");
-is(
-    BOM::Platform::CurrencyConverter::in_USD(3, 'NGN'),
-    Cache::RedisDB->get('QUOTE', 'frxNGNUSD')->{quote} * 3,
-    "3 USD to NGN is 501.30 NGN"
-);
+is(BOM::Platform::CurrencyConverter::in_USD(1, 'NGN'), Cache::RedisDB->get('QUOTE', 'frxNGNUSD')->{quote},     "1 USD to NGN is 167.10 NGN");
+is(BOM::Platform::CurrencyConverter::in_USD(3, 'NGN'), Cache::RedisDB->get('QUOTE', 'frxNGNUSD')->{quote} * 3, "3 USD to NGN is 501.30 NGN");
 dies_ok { BOM::Platform::CurrencyConverter::in_USD('NGN', '') } 'No valid amount or source currency was provided - non-numeric amount';
 dies_ok { BOM::Platform::CurrencyConverter::in_USD('NGN', undef) } 'No valid amount or source currency was provided - non-numeric amount';
 dies_ok { BOM::Platform::CurrencyConverter::in_USD(undef, '') } 'No valid amount or source currency was provided - undefined amount';
