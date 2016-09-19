@@ -9,7 +9,6 @@ use Email::Valid;
 use Mojo::Util qw(url_escape);
 use List::MoreUtils qw(any firstval);
 
-use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Client;
 use BOM::Platform::User;
@@ -17,6 +16,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
 use BOM::Platform::LandingCompany::Registry;
 use BOM::Platform::Countries;
+use BOM::System::Config;
 
 sub __oauth_model {
     state $oauth_model = BOM::Database::Model::OAuth->new;
@@ -268,8 +268,8 @@ sub __login {
         # get last login before current login to get last record
         $last_login = $user->get_last_successful_login_history();
         my $result = $user->login(
-            password    => $password,
-            environment => $c->__login_env(),
+            password        => $password,
+            environment     => $c->__login_env(),
             is_social_login => $oneall_user_id ? 1 : 0,
         );
 
@@ -302,7 +302,6 @@ sub __login {
         return;
     }
 
-    state $app_config = BOM::Platform::Runtime->instance->app_config;
     my $r       = $c->stash('request');
     my $options = {
         domain  => $r->cookie_domain,
@@ -349,7 +348,8 @@ sub __login {
                     if ($app->{id} eq '1') {
                         $message = localize(
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
-                            $client->email, $r->client_ip, BOM::Platform::Countries->instance->countries->country_from_code($country_code) // $country_code, $user_agent);
+                            $client->email, $r->client_ip,
+                            BOM::Platform::Countries->instance->countries->country_from_code($country_code) // $country_code, $user_agent);
                     } else {
                         $message = localize(
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3], browser: [_4] and app: [_5]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
@@ -357,7 +357,7 @@ sub __login {
                     }
 
                     send_email({
-                        from               => BOM::Platform::Runtime->instance->app_config->cs->email,
+                        from               => BOM::System::Config::email_address('support'),
                         to                 => $client->email,
                         subject            => localize('New Sign-In Activity Detected'),
                         message            => [$message],
@@ -437,7 +437,7 @@ sub __get_details_from_environment {
 
     return {
         ip         => $ip,
-        country    => uc ($country // 'unknown'),
+        country    => uc($country // 'unknown'),
         user_agent => $user_agent
     };
 }

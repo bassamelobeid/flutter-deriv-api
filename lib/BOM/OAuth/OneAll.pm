@@ -26,7 +26,7 @@ sub callback {
 
     if ($data->{response}->{result}->{status}->{code} != 200) {
         $c->session(__oneall_error => localize('Failed to get user identity.'));
-        return $c->redirect_to( $redirect_uri );
+        return $c->redirect_to($redirect_uri);
     }
 
     my $provider_data = $data->{response}->{result}->{data};
@@ -35,12 +35,12 @@ sub callback {
 
     unless ($user_id) {
         $c->session(__oneall_error => localize('User is not connected.'));
-        return $c->redirect_to( $redirect_uri );
+        return $c->redirect_to($redirect_uri);
     }
 
     ## login him in
     $c->session(__oneall_user_id => $user_id);
-    return $c->redirect_to( $redirect_uri );
+    return $c->redirect_to($redirect_uri);
 }
 
 1;
