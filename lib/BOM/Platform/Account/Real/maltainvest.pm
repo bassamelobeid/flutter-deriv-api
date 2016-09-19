@@ -59,8 +59,8 @@ sub create_account {
 
     if ($financial_assessment->{total_score} > 59) {
         send_email({
-            from    => BOM::System::Config::email_address->{support},
-            to      => BOM::System::Config::email_address->{compliance},
+            from    => BOM::System::Config::email_address('support'),
+            to      => BOM::System::Config::email_address('compliance'),
             subject => $client->loginid . ' considered as professional trader',
             message =>
                 [$client->loginid . ' scored ' . $financial_assessment->{total_score} . ' and is therefore considered a professional trader.'],

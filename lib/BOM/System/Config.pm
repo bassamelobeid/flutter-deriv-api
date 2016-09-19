@@ -65,6 +65,7 @@ sub on_development {
 }
 
 sub email_address {
+    my $type = shift;
     state $emails = {
         support      => 'support@binary.com',
         payments     => 'payments@binary.com',
@@ -74,7 +75,8 @@ sub email_address {
         accounting   => 'x-acc@binary.com',
         alert_quants => 'x-quants-alert@binary.com'
     };
-    return $emails;
+    warn "Unknow email type $type" unless exists $emails->{$type};
+    return $emails->{$type} // 'support@binary.com';
 }
 
 1;
