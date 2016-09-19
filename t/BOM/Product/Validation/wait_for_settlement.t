@@ -26,6 +26,14 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => Date::Utility->new,
     });
 
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol        => $_,
+        recorded_date => Date::Utility->new
+    }) for qw(USD JPY JPY-USD EUR EUR-USD);
+
+
 Cache::RedisDB->flushall;
 
 subtest 'FOREX settlement check on Wednesday' => sub {
