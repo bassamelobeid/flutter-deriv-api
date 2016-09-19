@@ -184,7 +184,7 @@ sub _get_ask {
 }
 
 sub get_bid {
-    my $params             = shift;
+    my $params = shift;
     my ($short_code, $contract_id, $currency, $is_sold, $sell_time, $buy_price, $sell_price, $app_markup_percentage) =
         @{$params}{qw/short_code contract_id currency is_sold sell_time buy_price sell_price app_markup_percentage/};
 
@@ -204,8 +204,7 @@ sub get_bid {
             return;
         }
 
-        my $is_valid_to_sell =
-            $contract->is_spread ? $contract->is_valid_to_sell : $contract->is_valid_to_sell($params->{validation_params});
+        my $is_valid_to_sell = $contract->is_spread ? $contract->is_valid_to_sell : $contract->is_valid_to_sell($params->{validation_params});
 
         $response = {
             is_valid_to_sell => $is_valid_to_sell,
@@ -329,7 +328,7 @@ sub get_bid {
 }
 
 sub send_bid {
-    my $params             = shift;
+    my $params = shift;
 
     my $tv = [Time::HiRes::gettimeofday];
 
