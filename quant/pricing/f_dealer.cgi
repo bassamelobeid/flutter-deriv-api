@@ -40,7 +40,7 @@ my $qty      = request()->param('qty');
 my $bet_ref  = request()->param('ref');
 my $subject;
 my @body;
-my $to = BOM::System::Config::email_address->{alert_quants};
+my $to = BOM::System::Config::email_address('alert_quants');
 
 # Make transaction on client account
 if (request()->param('whattodo') eq 'closeatzero') {
@@ -122,7 +122,7 @@ if (request()->param('whattodo') eq 'closeatzero') {
     @body    = ("We manually closed the contract [Ref: $bet_ref] at price $currency 0 for client[$loginID]. \n");
 
     send_email({
-        from    => BOM::System::Config::email_address->{system},
+        from    => BOM::System::Config::email_address('system'),
         to      => $to,
         subject => $subject,
         message => \@body,

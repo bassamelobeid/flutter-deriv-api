@@ -68,7 +68,7 @@ foreach my $loginid (@approved, @rejected) {
                 name          => $client_name,
                 currency      => $currency,
                 amount        => $amount,
-                support_email => BOM::System::Config::email_address->{support},
+                support_email => BOM::System::Config::email_address('support'),
                 tac_url       => $tac_url,
                 website_name  => 'Binary.com',
             },
@@ -98,7 +98,7 @@ foreach my $loginid (@approved, @rejected) {
 
     if ($input{"${loginid}_notify"}) {
         send_email({
-            from               => BOM::System::Config::email_address->{support},
+            from               => BOM::System::Config::email_address('support'),
             to                 => $client->email,
             subject            => $email_subject,
             message            => [$email_content],

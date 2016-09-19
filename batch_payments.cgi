@@ -259,8 +259,8 @@ if ($preview and @invalid_lines == 0) {
     Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")->append_utf8($msg);
 
     send_email({
-        'from'    => BOM::System::Config::email_address->{support},
-        'to'      => BOM::System::Config::email_address->{accounting},
+        'from'    => BOM::System::Config::email_address('support'),
+        'to'      => BOM::System::Config::email_address('accounting'),
         'subject' => 'Batch debit/credit client account on ' . Date::Utility->new->date_ddmmmyy,
         'message' => \@clients_has_been_processed,
     });

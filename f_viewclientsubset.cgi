@@ -172,10 +172,10 @@ foreach my $loginID (keys %{$results}) {
 if ($email_notification) {
     my $email_to =
         join(',',
-        (BOM::System::Config::email_address->{compliance}, BOM::System::Config::email_address->{accounting},));
+        (BOM::System::Config::email_address('compliance'), BOM::System::Config::email_address('accounting')));
 
     my $ret = send_email({
-        'from'    => BOM::System::Config::email_address->{system},
+        'from'    => BOM::System::Config::email_address('system'),
         'to'      => $email_to,
         'subject' => 'Funds withdrawn for disabled accounts',
         'message' => ["To be informed that the funds have been withdrawn for the following disabled account(s):\n\n$email_notification"],

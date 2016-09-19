@@ -56,8 +56,8 @@ foreach my $broker (keys %{$total_pl}) {
     }
 }
 send_email({
-    'from'    => BOM::System::Config::email_address->{system},
-    'to'      => BOM::System::Config::email_address->{accounting},
+    'from'    => BOM::System::Config::email_address('system'),
+    'to'      => BOM::System::Config::email_address('accounting'),
     'subject' => 'Daily Outstanding Bets Profit / Lost [' . $run_for->date . ']',
     'message' => \@mail_msg,
 });
