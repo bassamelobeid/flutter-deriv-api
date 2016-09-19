@@ -88,7 +88,6 @@ sub generate {
         $dbh->do(qq{DELETE FROM accounting.realtime_book});
 
         foreach my $open_fmb_id (@keys) {
-
             $last_fmb_id = $open_fmb_id;
             my $open_fmb = $open_bets_ref->{$open_fmb_id};
             try {
@@ -98,7 +97,6 @@ sub generate {
                 $bet_params->{underlying} = $cached_underlyings{$symbol}
                     if ($cached_underlyings{$symbol});
                 my $bet = produce_contract($bet_params);
-
                 $cached_underlyings{$symbol} ||= $bet->underlying;
 
                 my $is_after_settlement    = $bet->is_after_settlement;
@@ -110,8 +108,13 @@ sub generate {
                     $total_expired++;
                     $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
                         undef, $open_fmb_id, $value);
-                    $open_bets_expired_ref->{$open_fmb_id} = $open_fmb;
-                    $open_bets_expired_ref->{$open_fmb_id}->{market_price} = $value;
+                    # We only sell the contracts that already expired for 10+ seconds #
+                    # Those other contracts will be sold by expiryd #
+                    if (time - $bet->date_expiry->epoch > 15) {
+                        $open_fmb->{market_price}                                           = $value;
+                        $open_fmb->{bet}                                                    = $bet;
+                        $open_bets_expired_ref->{$open_fmb->{client_loginid}}{$open_fmb_id} = $open_fmb;
+                    }
                 } else {
                     # spreaed does not have greeks
                     if ($bet->is_spread) {
@@ -193,87 +196,77 @@ sub sell_expired_contracts {
     # Now deal with them one by one.
 
     my @error_lines;
-    my @full_list = keys %{$open_bets_ref};
+    my @client_loginids = keys %{$open_bets_ref};
+
     my %map_to_bb = reverse Bloomberg::UnderlyingConfig::bloomberg_to_binary();
     my $csv       = Text::CSV->new;
 
     my $rmgenv = BOM::System::Config::env;
-    while (my $id = shift @full_list) {
-        my $fmb_id         = $open_bets_ref->{$id}->{id};
-        my $client_id      = $open_bets_ref->{$id}->{client_loginid};
-        my $expected_value = $open_bets_ref->{$id}->{market_price};
-        my $currency       = $open_bets_ref->{$id}->{currency_code};
-        my $ref_number     = $open_bets_ref->{$id}->{transaction_id};
-        my $buy_price      = $open_bets_ref->{$id}->{buy_price};
-
-        my $bet_info = {
-            loginid   => $client_id,
-            ref       => $ref_number,
-            fmb_id    => $fmb_id,
-            buy_price => $buy_price,
-            currency  => $currency,
-            bb_lookup => '--',
-        };
-
+    for my $client_id (@client_loginids) {
+        my $fmb_infos = $open_bets_ref->{$client_id};
         my $client = BOM::Platform::Client::get_instance({'loginid' => $client_id});
+        my (@fmb_ids_to_be_sold, %bet_infos);
+        for my $id (keys %$fmb_infos) {
+            my $fmb_id         = $fmb_infos->{$id}->{id};
+            my $expected_value = $fmb_infos->{$id}->{market_price};
+            my $currency       = $fmb_infos->{$id}->{currency_code};
+            my $ref_number     = $fmb_infos->{$id}->{transaction_id};
+            my $buy_price      = $fmb_infos->{$id}->{buy_price};
 
-        my $fmb = BOM::Database::DataMapper::FinancialMarketBet->new({broker_code => $client->broker})->get_fmb_by_id([$fmb_id])->[0]
-            ->financial_market_bet_record;
+            my $bet_info = {
+                loginid   => $client_id,
+                ref       => $ref_number,
+                fmb_id    => $fmb_id,
+                buy_price => $buy_price,
+                currency  => $currency,
+                bb_lookup => '--',
+            };
 
-        my $bet = try { produce_contract($fmb->{short_code}, $currency) };
-        if (not $bet) {
-            # Not a `catch` block, because we need to be able to 'next' the loop
-            $bet_info->{shortcode} = $fmb->short_code;
-            $bet_info->{payout}    = 'unknown';
-            $bet_info->{reason}    = 'Could not instantiate contract object';
+            my $bet = $fmb_infos->{$id}{bet};
+
+            if (my $bb_symbol = $map_to_bb{$bet->underlying->symbol}) {
+                $csv->combine($map_to_bb{$bet->underlying->symbol}, $bet->date_start->db_timestamp, $bet->date_expiry->db_timestamp);
+                $bet_info->{bb_lookup} = $csv->string;
+            }
+            $bet_info->{shortcode} = $bet->shortcode;
+            # for spread max payout is determined by stop_profit.
+            $bet_info->{payout} = $bet->is_spread ? $bet->amount_per_point * $bet->stop_profit : $bet->payout;
+
+            if (not defined $bet->value) {
+                # $bet->value is set when we confirm expiration status, even further above.
+                $bet_info->{reason} = 'indeterminate value';
+                push @error_lines, $bet_info;
+                next;
+            }
+            if (0 + $bet->bid_price xor 0 + $expected_value) {
+                # We want to be sure that both sides agree that it is either worth nothing or payout.
+                # Sadly, you can't compare the values directly because $expected_value has been
+                # converted to USD and our payout currency might be different.
+                # Since the values can come back as strings, we use the 0 + to force them to be evaluated numerically.
+                $bet_info->{reason} = 'expected to be worth ' . $expected_value . ' got ' . $bet->bid_price;
+                push @error_lines, $bet_info;
+                next;
+            }
+
+            push @fmb_ids_to_be_sold, $fmb_id;
+            $bet_infos{$fmb_id} = $bet_info;
+        }
+
+        my $result = BOM::Product::Transaction::sell_expired_contracts({
+            client       => $client,
+            contract_ids => \@fmb_ids_to_be_sold,
+            source       => 3,                      # app id for `Binary.com riskd.pl` in auth db => oauth.apps table
+        });
+        for my $failure (@{$result->{failures}}) {
+            my $bet_info = $bet_infos{$failure->{fmb_id}};
+            $bet_info->{reason} = $failure->{reason};
             push @error_lines, $bet_info;
-            next;    # Nothing else to do.
         }
 
-        # Database sync could be delayed resulting in riskd trying resell them again.
-        # Skip them here.
-        next if $bet->is_sold;
-
-        if (my $bb_symbol = $map_to_bb{$bet->underlying->symbol}) {
-            $csv->combine($map_to_bb{$bet->underlying->symbol}, $bet->date_start->db_timestamp, $bet->date_expiry->db_timestamp);
-            $bet_info->{bb_lookup} = $csv->string;
-        }
-        $bet_info->{shortcode} = $bet->shortcode;
-        # for spread max payout is determined by stop_profit.
-        $bet_info->{payout} = $bet->is_spread ? $bet->amount_per_point * $bet->stop_profit : $bet->payout;
-
-        # We do this here because part of being "initialized_correctly" below
-        # is hidden behind lazy attributes.  Makes you question the name of the method.
-        # Regardless, expiry check will exercise them and we need that info in a couple line anyway.
-        my $expired = $bet->is_expired;
-
-        if (not $expired) {
-            $bet_info->{reason} = 'not expired';
-        } elsif (not defined $bet->value) {
-            # $bet->value is set when we confirm expiration status, even further above.
-            $bet_info->{reason} = 'indeterminate value';
-        } elsif (0 + $bet->bid_price xor 0 + $expected_value) {
-            # We want to be sure that both sides agree that it is either worth nothing or payout.
-            # Sadly, you can't compare the values directly because $expected_value has been
-            # converted to USD and our payout currency might be different.
-            # Since the values can come back as strings, we use the 0 + to force them to be evaluated numerically.
-            $bet_info->{reason} = 'expected to be worth ' . $expected_value . ' got ' . $bet->bid_price;
-        } else {
-            my $result = BOM::Product::Transaction::sell_expired_contracts({
-                client       => $client,
-                contract_ids => [$fmb_id],
-                source       => 3,           # app id for `Binary.com riskd.pl` in auth db => oauth.apps table
-            });
-
-            # we sold only one contract, so if there is a failure, then it must be on that contract
-            $bet_info->{reason} = $result->{failures}[0]{reason} if ($result->{failures}[0]);
-        }
-
-        push @error_lines, $bet_info if (exists $bet_info->{reason});
     }
 
     if (scalar @error_lines) {
-        local ($/, $\) = ("\n", undef);          # in case overridden elsewhere
+        local ($/, $\) = ("\n", undef);                 # in case overridden elsewhere
         Cache::RedisDB->set('AUTOSELL', 'ERRORS', \@error_lines, 3600);
         my $sep     = '---';
         my $subject = 'AutoSell Failures during riskd operation';

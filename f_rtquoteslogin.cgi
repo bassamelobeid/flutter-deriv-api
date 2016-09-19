@@ -147,7 +147,6 @@ foreach my $i (@instrumentlist) {
         elsif ($age > 180)       { print "<td bgcolor=FF8888>$price<br><b>$age secs.</b></td>"; }
         else {
             #compare it to combined feed
-            my $spot = $underlying->spot;
             if (abs($spot - $price) > abs($price) * $MAXDIFF)    #0.2% diff
             {
                 print "<td bgcolor=#FF0000>!$price!<br>TS $age secs</td>";
