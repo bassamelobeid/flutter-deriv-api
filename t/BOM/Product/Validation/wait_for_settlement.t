@@ -14,27 +14,43 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use Cache::RedisDB;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'correlation_matrix',
+    {
+        recorded_date => Date::Utility->new('2008-02-18'),
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => 'frxUSDJPY',
-        recorded_date => Date::Utility->new,
-    });
+        symbol        => $_,
+        recorded_date => Date::Utility->new('2008-02-13'),
+    }) for qw(frxUSDJPY frxEURUSD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'GDAXI',
-        recorded_date => Date::Utility->new,
+        recorded_date => Date::Utility->new('2008-02-18'),
     });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol        => $_,
-        recorded_date => Date::Utility->new
-    }) for qw(USD JPY JPY-USD EUR EUR-USD);
+        recorded_date => Date::Utility->new('2008-02-13'),
+    }) for qw(USD JPY-USD);
 
-
-Cache::RedisDB->flushall;
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol        => $_,
+        recorded_date => Date::Utility->new('2008-02-18'),
+    }) for qw(EUR EUR-USD);
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'index',
+    {
+        symbol        => 'GDAXI',
+        recorded_date => Date::Utility->new('2008-02-18'),
+    });
 
 subtest 'FOREX settlement check on Wednesday' => sub {
 
@@ -182,7 +198,7 @@ subtest 'FOREX settlement check on Friday' => sub {
     ok $bet->is_expired,          'is expired';
     is($bet->exit_tick->quote, '108',        'exit tick is 108');
     is($bet->exit_tick->epoch, '1203109200', 'the exit tick is the one at 21:00');
-    is($bet->bid_price,            0,            'Correct expiration with zero price as the exit tick is 108');
+    is($bet->bid_price,        0,            'Correct expiration with zero price as the exit tick is 108');
 };
 subtest 'Index settlement check on ' => sub {
 
@@ -234,7 +250,7 @@ subtest 'Index settlement check on ' => sub {
     ok $bet->is_expired, 'is expired';
     is($bet->exit_tick->quote, '1008',       'exit tick is 1008');
     is($bet->exit_tick->epoch, '1203438600', 'the exit tick is the one at 16:30');
-    is($bet->bid_price,            1,            'Indicative outcome with full payout as the exit tick is 1008');
+    is($bet->bid_price,        1,            'Indicative outcome with full payout as the exit tick is 1008');
 
     my $opposite = $bet->opposite_contract;
     ok !$opposite->is_valid_to_sell, 'is not valid to sell';
@@ -257,7 +273,7 @@ subtest 'Index settlement check on ' => sub {
     ok $bet->is_expired,          'is expired';
     is($bet->exit_tick->quote, '1003',     'exit tick is 1003');
     is($bet->exit_tick->epoch, 1203438600, 'the exit tick is the one at 16:30:00');
-    is($bet->bid_price,            0,          'Correct expiration with full payout as the exit tick is 1003');
+    is($bet->bid_price,        0,          'Correct expiration with full payout as the exit tick is 1003');
 
 };
 
