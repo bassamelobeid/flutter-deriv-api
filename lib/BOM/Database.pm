@@ -34,6 +34,9 @@ our @DBH;
 # Where we registered the dbh originally
 our %DBH_SOURCE;
 
+# Last PID we saw - used for invalidating stale DBH on fork
+our $PID = $$;
+
 =head2 register_dbh
 
 Records the given database handle as being active and available for running transactions against.
@@ -52,15 +55,16 @@ Example:
 sub register_dbh {
     my ($dbh) = @_;
     die "too many parameters to register_dbh: @_" if @_;
+    _check_fork();
     my $addr = refaddr $dbh;
     if(exists $DBH_SOURCE{$addr}) {
         warn "already registered this database handle at " . $DBH_SOURCE{$addr};
         return;
     }
     push @DBH, $dbh;
+    weaken($DBH[-1]);
     # filename:line (package::sub)
     $DBH_SOURCE{$addr} = sprintf "%s:%d (%s::%s)", (caller 1)[1,2,0,3];
-    weaken($DBH[-1]);
     $dbh
 }
 
@@ -84,6 +88,7 @@ Example:
 sub release_dbh {
     my ($dbh) = @_;
     die "too many parameters to release_dbh: @_" if @_;
+    _check_fork();
     my $addr = refaddr $dbh;
     delete $DBH_SOURCE{$addr};
     # avoiding grep here because these are weakrefs and we want them to stay that way
@@ -108,6 +113,7 @@ Example:
 
 sub txn(&;@) {
     my $code = shift;
+    _check_fork();
     if(my $count =()= extract_by { !defined($_) } @DBH) {
         warn "Had $count database handles that were not released via release_dbh, probable candidates follow:\n";
         my %addr = map {; refaddr($_) => 1 } @DBH;
@@ -117,6 +123,7 @@ sub txn(&;@) {
     eval {
         $_->begin_work for @DBH;
         $code->(@_);
+        _check_fork();
         $_->commit for grep defined, @DBH; # might have closed database handle(s) in $code
         1
     } or do {
@@ -129,6 +136,22 @@ sub txn(&;@) {
         die $err;
     };
     return;
+}
+
+=head2 _check_fork
+
+Test whether we have forked recently, and invalidate all our caches if we have.
+
+Returns true if there has been a fork since last check, false otherwise.
+
+=cut
+
+sub _check_fork {
+    return 0 if $PID == $$;
+    $PID = $$;
+    @DBH = ();
+    %DBH_SOURCE = ();
+    return 1;
 }
 
 1;
