@@ -1,7 +1,7 @@
 package BOM::Database::Model::EPG;
 
 use Moose;
-use Data::UUID;
+use UUID::Tiny ':std';
 
 has 'client' => (
     is       => 'ro',
@@ -24,19 +24,22 @@ sub prepare {
     my $client = $self->client;
     my $account = $client->default_account || die "no account";
 
-    my $id = Data::UUID->new()->create_str();
+    my $id = UUID::Tiny::create_uuid_as_string(UUID_V4);
+    $id =~ s/\-//g;    # length 32 to meet EPG max
 
     $self->dbh->do("
         INSERT INTO payment.epg_request
-            (id, amount, payment_type_code, status, account_id, payment_currency, payment_country)
+            (id, amount, payment_type_code, status, account_id, payment_currency, payment_country, ip_address)
         VALUES
-            (?, ?, ?, ?, ?, ?, ?)
+            (?, ?, ?, ?, ?, ?, ?, ?)
     ", undef,
         $id, $params{amount}, $params{payment_type_code},
         'PENDING',
         $account->id,
         $account->currency_code,
-        uc($client->residence // ''));
+        uc($client->residence // ''),
+        $params{ip_address} || '',
+    );
 
     return $id;
 }
@@ -81,16 +84,17 @@ sub complete {
     my %payment_args = (
         currency          => $data->{currency},
         amount            => $amount,
-        remark            => 'FIXME later',              # 800 chars, $data->{data} is too long to fit
+        remark            => substr($data->{data}, 0, 800),    # b/c payment table remark is character varying(800)
         staff             => $client->loginid,
         created_by        => '',
         trace_id          => 0,
         payment_processor => $data->{paymentSolution},
         # transaction_id    => $transaction_id,
-        # ip_address        => $ip_address, # FIXME
+        ip_address => $epg_request->{ip_address},
     );
 
-    my $fee = 0;    # FIXME
+    # FIXME, remove when we start charging fee per transaction
+    my $fee = 0;
 
     # Write the payment transaction
     my $trx;
