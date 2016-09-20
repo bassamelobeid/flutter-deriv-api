@@ -3,7 +3,7 @@ package BOM::Platform::Runtime;
 use Moose;
 use feature 'state';
 
-use App::Config;
+use App::Config::Chronicle;
 use BOM::System::Chronicle;
 
 has 'app_config' => (
@@ -26,7 +26,7 @@ sub instance {
 
 sub _build_app_config {
     my $self = shift;
-    return App::Config->new(
+    return App::Config::Chronicle->new(
         definition_yml   => '/home/git/regentmarkets/bom-platform/config/app_config_definitions.yml',
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),

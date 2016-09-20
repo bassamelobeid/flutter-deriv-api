@@ -2,1229 +2,1721 @@ ad:
   name: "Andorra"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ae:
   name: "United Arab Emirates"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 af:
   name: "Afghanistan"
   gaming_company: none
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 ag:
   name: "Antigua and Barbuda"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ai:
   name: "Anguilla"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 al:
   name: "Albania"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 am:
   name: "Armenia"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 an:
   name: "Netherlands Antilles"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ao:
   name: "Angola"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 aq:
   name: "Antarctica"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ar:
   name: "Argentina"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 as:
   name: "American Samoa"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 at:
   name: "Austria"
   gaming_company: malta
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 au:
   name: "Australia"
   gaming_company: none
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 aw:
   name: "Aruba"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ax:
   name: "Aland Islands"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 az:
   name: "Azerbaijan"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ba:
   name: "Bosnia and Herzegovina"
   gaming_company: none
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 bb:
   name: "Barbados"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 bd:
   name: "Bangladesh"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 be:
   name: "Belgium"
   gaming_company: malta
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 bf:
   name: "Burkina Faso"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 bg:
   name: "Bulgaria"
   gaming_company: malta
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 bh:
   name: "Bahrain"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 bi:
   name: "Burundi"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 bj:
   name: "Benin"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 bl:
   name: "Saint-Barthélemy"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 bm:
   name: "Bermuda"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 bn:
   name: "Brunei Darussalam"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 bo:
   name: "Bolivia"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 br:
   name: "Brazil"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 bs:
   name: "Bahamas"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 bt:
   name: "Bhutan"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 bv:
   name: "Bouvet Island"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 bw:
   name: "Botswana"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 by:
   name: "Belarus"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 bz:
   name: "Belize"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ca:
   name: "Canada"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 cc:
   name: "Cocos (Keeling) Islands"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 cd:
   name: "Congo, The Democratic Republic of the"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 cf:
   name: "Central African Republic"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 cg:
   name: "Congo"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ch:
   name: "Switzerland"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ci:
   name: "Cote D'Ivoire"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ck:
   name: "Cook Islands"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 cl:
   name: "Chile"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 cm:
   name: "Cameroon"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 cn:
   name: "China"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 co:
   name: "Colombia"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 cr:
   name: "Costa Rica"
   gaming_company: none
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 cu:
   name: "Cuba"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 cv:
   name: "Cape Verde"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 cx:
   name: "Christmas Island"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 cy:
   name: "Cyprus"
   gaming_company: malta
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 cz:
   name: "Czech Republic"
   gaming_company: malta
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 de:
   name: "Germany"
   gaming_company: none
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 dj:
   name: "Djibouti"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 dk:
   name: "Denmark"
   gaming_company: malta
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 dm:
   name: "Dominica"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 do:
   name: "Dominican Republic"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 dz:
   name: "Algeria"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ec:
   name: "Ecuador"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ee:
   name: "Estonia"
   gaming_company: malta
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 eg:
   name: "Egypt"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 eh:
   name: "Western Sahara"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 er:
   name: "Eritrea"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 es:
   name: "Spain"
   gaming_company: none
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 et:
   name: "Ethiopia"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 fi:
   name: "Finland"
   gaming_company: malta
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 fj:
   name: "Fiji"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 fk:
   name: "Falkland Islands (Malvinas)"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 fm:
   name: "Micronesia, Federated States of"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 fo:
   name: "Faroe Islands"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 fr:
   name: "France"
   gaming_company: none
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 ga:
   name: "Gabon"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 gb:
   name: "United Kingdom"
   gaming_company: iom
   financial_company: iom
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 gd:
   name: "Grenada"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ge:
   name: "Georgia"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 gf:
   name: "French Guiana"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 gg:
   name: "Guernsey"
   gaming_company: none
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 gh:
   name: "Ghana"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 gi:
   name: "Gibraltar"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 gl:
   name: "Greenland"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 gm:
   name: "Gambia"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 gn:
   name: "Guinea"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 gp:
   name: "Guadeloupe"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 gq:
   name: "Equatorial Guinea"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 gr:
   name: "Greece"
   gaming_company: none
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 gs:
   name: "South Georgia and the South Sandwich Islands"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 gt:
   name: "Guatemala"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 gu:
   name: "Guam"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 gw:
   name: "Guinea-Bissau"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 gy:
   name: "Guyana"
   gaming_company: none
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 hk:
   name: "Hong Kong"
   gaming_company: none
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 hm:
   name: "Heard Island and McDonald Islands"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 hn:
   name: "Honduras"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 hr:
   name: "Croatia"
   gaming_company: malta
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 ht:
   name: "Haiti"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 hu:
   name: "Hungary"
   gaming_company: malta
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 id:
   name: "Indonesia"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ie:
   name: "Ireland"
   gaming_company: malta
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 il:
   name: "Israel"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 im:
   name: "Isle of Man"
   gaming_company: iom
   financial_company: iom
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 in:
   name: "India"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 io:
   name: "British Indian Ocean Territory"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 iq:
   name: "Iraq"
   gaming_company: none
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 ir:
   name: "Iran, Islamic Republic of"
   gaming_company: none
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 is:
   name: "Iceland"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 it:
   name: "Italy"
   gaming_company: none
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 je:
   name: "Jersey"
   gaming_company: none
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 jm:
   name: "Jamaica"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 jo:
   name: "Jordan"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 jp:
   name: "Japan"
   gaming_company: none
   financial_company: japan
+  mt_gaming_company: none
+  mt_financial_company: none
   virtual_company: japan-virtual
 ke:
   name: "Kenya"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 kg:
   name: "Kyrgyzstan"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 kh:
   name: "Cambodia"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ki:
   name: "Kiribati"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 km:
   name: "Comoros"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 kn:
   name: "Saint Kitts and Nevis"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 kp:
   name: "Korea, Democratic People's Republic of"
   gaming_company: none
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 kr:
   name: "Korea, Republic of"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 kw:
   name: "Kuwait"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ky:
   name: "Cayman Islands"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 kz:
   name: "Kazakhstan"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 la:
   name: "Lao People's Democratic Republic"
   gaming_company: none
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 lb:
   name: "Lebanon"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 lc:
   name: "Saint Lucia"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 li:
   name: "Liechtenstein"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 lk:
   name: "Sri Lanka"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 lr:
   name: "Liberia"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ls:
   name: "Lesotho"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 lt:
   name: "Lithuania"
   gaming_company: malta
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 lu:
   name: "Luxembourg"
   gaming_company: none
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 lv:
   name: "Latvia"
   gaming_company: malta
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 ly:
   name: "Libyan Arab Jamahiriya"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ma:
   name: "Morocco"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 mc:
   name: "Monaco"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 md:
   name: "Moldova, Republic of"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 me:
   name: "Montenegro"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 mf:
   name: "Saint-Martin (French part)"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 mg:
   name: "Madagascar"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 mh:
   name: "Marshall Islands"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 mk:
   name: "Macedonia"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ml:
   name: "Mali"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 mm:
   name: "Myanmar"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 mn:
   name: "Mongolia"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 mo:
   name: "Macao"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 mp:
   name: "Northern Mariana Islands"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 mq:
   name: "Martinique"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 mr:
   name: "Mauritania"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ms:
   name: "Montserrat"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 mt:
   name: "Malta"
   gaming_company: none
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 mu:
   name: "Mauritius"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 mv:
   name: "Maldives"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 mw:
   name: "Malawi"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 mx:
   name: "Mexico"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 my:
   name: "Malaysia"
   gaming_company: none
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 mz:
   name: "Mozambique"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 na:
   name: "Namibia"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 nc:
   name: "New Caledonia"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ne:
   name: "Niger"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 nf:
   name: "Norfolk Island"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ng:
   name: "Nigeria"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ni:
   name: "Nicaragua"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 nl:
   name: "Netherlands"
   gaming_company: malta
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 no:
   name: "Norway"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 np:
   name: "Nepal"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 nr:
   name: "Nauru"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 nu:
   name: "Niue"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 nz:
   name: "New Zealand"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 om:
   name: "Oman"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 pa:
   name: "Panama"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 pe:
   name: "Peru"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 pf:
   name: "French Polynesia"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 pg:
   name: "Papua New Guinea"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ph:
   name: "Philippines"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 pk:
   name: "Pakistan"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 pl:
   name: "Poland"
   gaming_company: malta
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 pm:
   name: "Saint Pierre and Miquelon"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 pn:
   name: "Pitcairn"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 pr:
   name: "Puerto Rico"
-  gaming_company: costarica
-  financial_company: costarica
-  virtual_company: fog
+  gaming_company: none
+  financial_company: none
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 ps:
   name: "Palestinian Territory, Occupied"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 pt:
   name: "Portugal"
   gaming_company: malta
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 pw:
   name: "Palau"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 py:
   name: "Paraguay"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 qa:
   name: "Qatar"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 re:
   name: "Reunion"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ro:
   name: "Romania"
   gaming_company: malta
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 rs:
   name: "Serbia"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ru:
   name: "Russian Federation"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 rw:
   name: "Rwanda"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 sa:
   name: "Saudi Arabia"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 sb:
   name: "Solomon Islands"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 sc:
   name: "Seychelles"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 sd:
   name: "Sudan"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 se:
   name: "Sweden"
   gaming_company: malta
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 sg:
   name: "Singapore"
   gaming_company: none
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 sh:
   name: "Saint Helena"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 si:
   name: "Slovenia"
   gaming_company: malta
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 sj:
   name: "Svalbard and Jan Mayen"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 sk:
   name: "Slovakia"
   gaming_company: malta
   financial_company: maltainvest
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 sl:
   name: "Sierra Leone"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 sm:
   name: "San Marino"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 sn:
   name: "Senegal"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 so:
   name: "Somalia"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 sr:
   name: "Suriname"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 st:
   name: "Sao Tome and Principe"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 sv:
   name: "El Salvador"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 sy:
   name: "Syrian Arab Republic"
   gaming_company: none
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 sz:
   name: "Swaziland"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 tc:
   name: "Turks and Caicos Islands"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 td:
   name: "Chad"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 tf:
   name: "French Southern Territories"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 tg:
   name: "Togo"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 th:
   name: "Thailand"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 tj:
   name: "Tajikistan"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 tk:
   name: "Tokelau"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 tl:
   name: "Timor-Leste"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 tm:
   name: "Turkmenistan"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 tn:
   name: "Tunisia"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 to:
   name: "Tonga"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 tr:
   name: "Turkey"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 tt:
   name: "Trinidad and Tobago"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 tv:
   name: "Tuvalu"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 tw:
   name: "Taiwan, Province of China"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 tz:
   name: "Tanzania, United Republic of"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ua:
   name: "Ukraine"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ug:
   name: "Uganda"
   gaming_company: none
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 um:
   name: "United States Minor Outlying Islands"
   gaming_company: none
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 us:
   name: "United States"
   gaming_company: none
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 uy:
   name: "Uruguay"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 uz:
   name: "Uzbekistan"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 va:
   name: "Holy See (Vatican City State)"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 vc:
   name: "Saint Vincent and the Grenadines"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ve:
   name: "Venezuela"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 vg:
   name: "Virgin Islands, British"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 vi:
   name: "Virgin Islands, U.S."
   gaming_company: none
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 vn:
   name: "Vietnam"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 vu:
   name: "Vanuatu"
   gaming_company: none
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 wf:
   name: "Wallis and Futuna"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ws:
   name: "Samoa"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 ye:
   name: "Yemen"
   gaming_company: none
   financial_company: none
-  virtual_company: fog
+  mt_gaming_company: none
+  mt_financial_company: none
+  virtual_company: virtual
 yt:
   name: "Mayotte"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 za:
   name: "South Africa"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 zm:
   name: "Zambia"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual
 zw:
   name: "Zimbabwe"
   gaming_company: costarica
   financial_company: costarica
-  virtual_company: fog
+  mt_gaming_company: costarica
+  mt_financial_company: vanuatu
+  virtual_company: virtual

@@ -28,7 +28,7 @@ sub get_sportsbook {
     my ($broker, $currency) = @_;
     my $sportsbook;
 
-    if (BOM::System::Config::env ne 'production') {
+    if (not BOM::System::Config::on_production()) {
         return 'test';
     }
 

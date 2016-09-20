@@ -146,8 +146,7 @@ sub save {
 
 sub check_country_restricted {
     my $country_code = shift;
-    return (    BOM::Platform::Runtime->instance->app_config->system->on_production
-            and BOM::Platform::Countries->instance->restricted_country($country_code));
+    return (BOM::System::Config::on_production() and BOM::Platform::Countries->instance->restricted_country($country_code));
 }
 
 sub register_and_return_new_client {
@@ -708,7 +707,7 @@ working going forward with any input, it should die.
 sub add_note {
     my ($self, $subject, $content) = @_;
     return if -e '/etc/rmg/travis';
-    my $to = BOM::Platform::Runtime->instance->app_config->cs->email;
+    my $to = BOM::System::Config::email_address('support');
     local $\ = undef;
     my $from    = $to;
     my $replyto = $to;
@@ -807,10 +806,14 @@ sub get_withdrawal_limits {
     my $client = shift;
 
     my $withdrawal_limits = $client->get_promocode_dependent_limit();
-    my $balance           = $client->default_account->balance;
 
-    my $balance_minus_gift = List::Util::max(0, $balance - $withdrawal_limits->{'frozen_free_gift'});
-    $withdrawal_limits->{'max_withdrawal'} = $balance_minus_gift;
+    my $max_withdrawal = 0;
+    if ($client->default_account) {
+        my $balance = $client->default_account->balance;
+        $max_withdrawal = List::Util::max(0, $balance - $withdrawal_limits->{'frozen_free_gift'});
+    }
+
+    $withdrawal_limits->{'max_withdrawal'} = $max_withdrawal;
 
     return $withdrawal_limits;
 }

@@ -152,9 +152,9 @@ sub buy_multiple_bets {
     };
 
     my $fmb = BOM::Database::Helper::FinancialMarketBet->new({
-        bet_data         => $bet_data,
-        account_data     => [map { +{client_loginid => $_->client_loginid, currency_code => $_->currency_code} } @$acc],
-        limits           => undef,
+        bet_data     => $bet_data,
+        account_data => [map { +{client_loginid => $_->client_loginid, currency_code => $_->currency_code} } @$acc],
+        limits       => undef,
         transaction_data => {staff_loginid => 'CL001'},
         db               => db,
     });
@@ -1471,7 +1471,7 @@ subtest 'batch_buy', sub {
             is $txn->{financial_market_bet_id}, $fmb->{id}, 'txn fmb id matches';
             is $txn->{amount},        '-20.0000',  'txn amount';
             is $txn->{balance_after}, '4980.0000', 'txn balance_after';
-            is $txn->{staff_loginid}, '#CL001', 'txn staff_loginid';
+            is $txn->{staff_loginid}, '#CL001',    'txn staff_loginid';
 
             my $note = $notifications{$txn->{id}};
             isnt $note, undef, 'found notification';
@@ -1516,7 +1516,7 @@ subtest 'batch_buy', sub {
             is $txn->{financial_market_bet_id}, $fmb->{id}, 'txn fmb id matches';
             is $txn->{amount},        '-20.0000',  'txn amount';
             is $txn->{balance_after}, '9980.0000', 'txn balance_after';
-            is $txn->{staff_loginid}, '#CL001', 'txn staff_loginid';
+            is $txn->{staff_loginid}, '#CL001',    'txn staff_loginid';
 
             my $note = $notifications{$txn->{id}};
             isnt $note, undef, 'found notification';

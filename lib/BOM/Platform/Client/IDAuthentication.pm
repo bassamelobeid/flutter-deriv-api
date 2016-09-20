@@ -5,10 +5,10 @@ use Moose;
 use namespace::autoclean;
 
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Client;
 use BOM::Platform::ProveID;
+use BOM::System::Config;
 
 has client => (
     is  => 'ro',
@@ -122,7 +122,7 @@ sub _request_id_authentication {
     $self->_notify("SET TO $status PENDING EMAIL REQUEST FOR ID", 'client received an email requesting identity proof');
 
     my $client_name   = join(' ', $client->salutation, $client->first_name, $client->last_name);
-    my $support_email = BOM::Platform::Runtime->instance->app_config->cs->email;
+    my $support_email = BOM::System::Config::email_address('support');
     my $ce_subject    = localize('Documents are required to verify your identity');
     my $ce_body       = localize(<<'EOM', $client_name, $support_email);
 Dear [_1],
@@ -154,7 +154,7 @@ EOM
 sub _notify {
     my ($self, $id, $msg) = @_;
 
-    return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
+    return unless BOM::System::Config::on_production();
 
     my $client = $self->client;
     $client->add_note($id, $client->loginid . ' ' . $msg);
@@ -164,7 +164,7 @@ sub _notify {
 sub _fetch_proveid {
     my $self = shift;
 
-    return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
+    return unless BOM::System::Config::on_production();
 
     my $premise = $self->client->address_1;
     if ($premise =~ /^(\d+)/) {
