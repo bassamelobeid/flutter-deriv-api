@@ -12,8 +12,8 @@ use BOM::Platform::Locale;
 use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
+use BOM::System::Config;
 use BOM::Platform::Context qw (localize);
-use BOM::Platform::Runtime;
 use BOM::System::AuditLog;
 use BOM::Platform::LandingCompany::Registry;
 
@@ -216,7 +216,7 @@ support@binary.com',
         );
 
         send_email({
-            from               => BOM::Platform::Runtime->instance->app_config->cs->email,
+            from               => BOM::System::Config::email_address('support'),
             to                 => $client->email,
             subject            => localize('Kindly send us your documents for verification.'),
             message            => [$email_content],
@@ -282,9 +282,13 @@ sub set_jp_settings {
         'hedge_asset_amount'                          => localize('{JAPAN ONLY}Amount of hedging assets'),
     };
 
+    # translation added in bom-backoffice: bin/extra_translations.pl
     my @updated;
     if ($client->occupation && $client->occupation ne $args->{occupation}) {
-        push @updated, [localize('{JAPAN ONLY}Occupation'), $client->occupation, $args->{occupation}];
+        my $translate_old = localize('{JAPAN ONLY}' . $client->occupation);
+        my $translate_new = localize('{JAPAN ONLY}' . $args->{occupation});
+
+        push @updated, [localize('{JAPAN ONLY}Occupation'), $translate_old, $translate_new];
         $client->occupation($args->{occupation});
     }
 
@@ -316,7 +320,18 @@ sub set_jp_settings {
         my $new = $args->{$key} // '';
 
         if ($ori ne $new) {
-            push @updated, [$text->{$key}, $ori, $new];
+            my ($translate_ori, $translate_new);
+
+            if ($key eq 'hedge_asset_amount') {
+                # pure number, no need translation
+                $translate_ori = $ori;
+                $translate_new = $new;
+            } else {
+                $translate_ori = localize('{JAPAN ONLY}' . $ori);
+                $translate_new = localize('{JAPAN ONLY}' . $new);
+            }
+
+            push @updated, [$text->{$key}, $translate_ori, $translate_new];
             $fin_change = 1;
         }
     }
@@ -355,7 +370,7 @@ sub set_jp_settings {
         $message .=
               "<tr><td style='text-align:left'><strong>"
             . $field->[0]
-            . "</strong></td><td>:</td><td style='text-align:left'>"
+            . "</strong></td><td> : </td><td style='text-align:left'>"
             . $field->[2]
             . "</td></tr>";
     }
@@ -363,7 +378,7 @@ sub set_jp_settings {
     $message .= "\n" . localize('The [_1] team.', $website_name);
 
     send_email({
-        from               => BOM::Platform::Runtime->instance->app_config->cs->email,
+        from               => BOM::System::Config::email_address('support'),
         to                 => $client->email,
         subject            => $client->loginid . ' ' . localize('Change in account settings'),
         message            => [$message],
@@ -372,11 +387,11 @@ sub set_jp_settings {
     });
     BOM::System::AuditLog::log('Your settings have been updated successfully', $client->loginid);
 
-    my $cs_msg = "Please note that client " . $client->loginid . " settings has been updated as below:\n\n";
+    my $cs_msg = localize('Please note that client [_1] settings has been updated as below:', $client->loginid) . "\n\n";
     foreach my $field (@updated) {
-        $cs_msg .= $field->[0] . ":" . "\n\t old value: " . $field->[1] . "\n\t new value: " . $field->[2] . "\n\n";
+        $cs_msg .= $field->[0] . ":" . "\n\t" . localize('Old value: ') . $field->[1] . "\n\t" . localize('New value: ') . $field->[2] . "\n\n";
     }
-    $client->add_note($client->loginid . ' ' . 'Japan Client Change in account settings notification', $cs_msg);
+    $client->add_note($client->loginid . ' ' . localize('Japan Client Change in account settings notification'), $cs_msg);
 
     return {status => 1};
 }

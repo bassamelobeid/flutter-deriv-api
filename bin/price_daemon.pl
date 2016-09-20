@@ -101,7 +101,8 @@ while (1) {
 
         } elsif ($price_daemon_cmd eq 'bid') {
 
-            $response = BOM::RPC::v3::Contract::send_bid({args => $params});
+            $params->{validation_params} = {skip_barrier_validation => 1};
+            $response = BOM::RPC::v3::Contract::send_bid($params);
 
         } else {
             warn "Unrecognized Pricer command! Payload is: " . ($next // 'undefined');
@@ -113,7 +114,7 @@ while (1) {
         DataDog::DogStatsd::Helper::stats_timing("pricer_daemon.$price_daemon_cmd.time", $response->{rpc_time}, {tags => ['tag:' . $internal_ip]});
         $response->{price_daemon_cmd} = $price_daemon_cmd;
 
-        warn "Pricing time too long: " . $response->{rpc_time} . ' ' . Data::Dumper::Dumper($params) if $response->{rpc_time}>1000;
+        warn "Pricing time too long: " . $response->{rpc_time} . ' - ' . join(', ', map "$_ = $params->{$_}", sort keys %$params) . "\n" if $response->{rpc_time}>1000;
 
         my $subscribers_count = $redis->publish($key->[1], encode_json($response));
         # if None was subscribed, so delete the job
