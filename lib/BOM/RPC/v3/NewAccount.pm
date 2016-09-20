@@ -148,11 +148,15 @@ sub verify_email {
                     use_email_template => 1
                 });
         }
-    }
-    # we need to check for loginid same way we do for cashier withdraw but this may break current
-    # apps so not doing for this as third party apps may call verify email when they are not authenticated
-    # need to do it in next api version
-    elsif ($type eq 'paymentagent_withdraw' && BOM::Platform::User->new({email => $email})) {
+    } elsif ($type eq 'paymentagent_withdraw') {
+        my $skip_email = 0;
+        # we should only check for loginid email but as its v3 so need to have backward compatibility
+        # in next version need to remove else
+        if ($loginid) {
+            $skip_email = 1 unless (BOM::Platform::Client->new({loginid => $loginid})->email eq $email);
+        } else {
+            $skip_email = 1 unless BOM::Platform::User->new({email => $email});
+        }
         send_email({
                 from    => BOM::System::Config::email_address('support'),
                 to      => $email,
@@ -164,8 +168,16 @@ sub verify_email {
                     )
                 ],
                 use_email_template => 1
-            });
-    } elsif ($type eq 'payment_withdraw' && $loginid && BOM::Platform::Client->new({loginid => $loginid})->email eq $email) {
+            }) unless $skip_email;
+    } elsif ($type eq 'payment_withdraw') {
+        my $skip_email = 0;
+        # we should only check for loginid email but as its v3 so need to have backward compatibility
+        # in next version need to remove else
+        if ($loginid) {
+            $skip_email = 1 unless (BOM::Platform::Client->new({loginid => $loginid})->email eq $email);
+        } else {
+            $skip_email = 1 unless BOM::Platform::User->new({email => $email});
+        }
         send_email({
                 from    => BOM::System::Config::email_address('support'),
                 to      => $email,
@@ -177,7 +189,7 @@ sub verify_email {
                     )
                 ],
                 use_email_template => 1
-            });
+            }) unless $skip_email;
     }
 
     return {status => 1};    # always return 1, so not to leak client's email
