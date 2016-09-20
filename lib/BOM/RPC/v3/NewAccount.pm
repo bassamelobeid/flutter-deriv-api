@@ -103,6 +103,7 @@ sub verify_email {
             expires_in  => 3600,
             created_for => $type,
         })->token;
+    my $loginid = $params->{token_details} ? $params->{token_details}->{loginid} : undef;
 
     if (BOM::Platform::User->new({email => $email}) && $type eq 'reset_password') {
         send_email({
@@ -146,7 +147,11 @@ sub verify_email {
                     use_email_template => 1
                 });
         }
-    } elsif ($type eq 'paymentagent_withdraw' && BOM::Platform::User->new({email => $email})) {
+    }
+    # we need to check for loginid same way we do for cashier withdraw but this may break current
+    # apps so not doing for this as third party apps may call verify email when they are not authenticated
+    # need to do it in next api version
+    elsif ($type eq 'paymentagent_withdraw' && BOM::Platform::User->new({email => $email})) {
         send_email({
                 from    => BOM::Platform::Runtime->instance->app_config->cs->email,
                 to      => $email,
@@ -159,7 +164,7 @@ sub verify_email {
                 ],
                 use_email_template => 1
             });
-    } elsif ($type eq 'payment_withdraw' && BOM::Platform::User->new({email => $email})) {
+    } elsif ($type eq 'payment_withdraw' && $loginid && BOM::Platform::Client->new({loginid => $loginid})->email eq $email) {
         send_email({
                 from    => BOM::Platform::Runtime->instance->app_config->cs->email,
                 to      => $email,
