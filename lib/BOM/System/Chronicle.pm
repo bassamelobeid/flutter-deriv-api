@@ -250,12 +250,14 @@ SELECT $4, $1, $2, $3
 SQL
 }
 
-#According to discussions made, we are supposed to support "Redis only" installation where there is not Pg.
-#The assumption is that we have Redis for all data which is important for continutation of our services
-#We also have Pg for an archive of data used later for non-live services (e.g back-testing, auditing, ...)
-#And in case for any reason, Redis has problems, we will need to re-populate its information not from Pg
-#But by re-running population scripts
-my ($dbh, $pid);
+# According to discussions made, we are supposed to support "Redis only" installation where there is not Pg.
+# The assumption is that we have Redis for all data which is important for continutation of our services
+# We also have Pg for an archive of data used later for non-live services (e.g back-testing, auditing, ...)
+# And in case for any reason, Redis has problems, we will need to re-populate its information not from Pg
+# But by re-running population scripts
+my $dbh;
+
+my $pid = $$;
 
 sub _dbh {
     #silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
