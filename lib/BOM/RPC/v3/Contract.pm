@@ -204,9 +204,11 @@ sub get_bid {
             return;
         }
 
+        my $is_valid_to_sell = $contract->is_spread ? $contract->is_valid_to_sell : $contract->is_valid_to_sell($params->{validation_params});
+
         $response = {
-            is_valid_to_sell => $contract->is_valid_to_sell,
-            ($contract->is_valid_to_sell ? () : (validation_error => $contract->primary_validation_error->message_to_client)),
+            is_valid_to_sell => $is_valid_to_sell,
+            ($is_valid_to_sell ? () : (validation_error => $contract->primary_validation_error->message_to_client)),
             bid_price           => sprintf('%.2f', $contract->bid_price),
             current_spot_time   => $contract->current_tick->epoch,
             contract_id         => $contract_id,
@@ -332,7 +334,7 @@ sub send_bid {
 
     my $response;
     try {
-        $response = get_bid($params->{args});
+        $response = get_bid($params);
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
