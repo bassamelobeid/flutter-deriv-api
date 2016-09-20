@@ -34,7 +34,7 @@ my $pg = Test::PostgreSQL->new or plan skip_all => $Test::PostgreSQL::errstr;
     if(my $pid = fork // die "fork failed - $!") {
         # Parent
         is(refaddr(BOM::System::Chronicle::_dbh()), refaddr($dbh), 'refaddr still the same in parent after fork');
-        note 'Waiting for child process'
+        note 'Waiting for child process';
         waitpid $pid, 0;
     } else {
         # Child
