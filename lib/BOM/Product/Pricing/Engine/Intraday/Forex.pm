@@ -569,6 +569,39 @@ sub _build_risk_markup {
     return $risk_markup;
 }
 
+has jump_metric => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_jump_metric {
+    my $self = shift;
+
+    my $bet             = $self->bet;
+    my $past_ten_minute = $bet->date_pricing->minus_time_interval('2m');
+    # requesting for 700 ticks for an estimate of 2-minute period
+    my @ticks = sort { $a <=> $b } map { $_->{quote} } grep { $_->{epoch} > $past_ten_minute->epoch } @{
+        $self->tick_source->retrieve({
+                underlying   => $bet->underlying,
+                tick_count   => 120,
+                ending_epoch => $bet->date_pricing->epoch,
+            })};
+
+    my $median = do {
+        my $median_spot = $bet->pricing_args->{spot};
+        if (@ticks > 1) {
+            my $size  = @ticks;
+            my $index = int($size / 2);
+            $median_spot = ($size % 2) ? $ticks[$index] : (($ticks[$index] + $ticks[$index - 1]) / 2);
+        }
+        $median_spot;
+    };
+
+    my $metric = ($median - $bet->pricing_args->{spot}) / $median;
+
+    return $metric;
+}
+
 has [qw(intraday_vega_correction intraday_vega)] => (
     is         => 'ro',
     lazy_build => 1,
