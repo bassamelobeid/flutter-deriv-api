@@ -544,6 +544,28 @@ sub _build_risk_markup {
 
     $risk_markup->include_adjustment('add', $self->vol_spread_markup);
 
+    my $metric_benchmark = 3 * 0.03 * sqrt(60 / (86400 * 365));
+    my $apply_metric = do {
+        my $jump_metric = $self->jump_metric;
+        my $apply       = 0;
+        if (abs($jump_metric) > $metric_benchmark) {
+            if (($jump_metric > 0 and $bet->code eq 'CALL') or ($jump_metric < 0 and $bet->code eq 'PUT')) {
+                $apply = 1;
+            }
+        }
+        $apply;
+    };
+
+    if ($apply_metric) {
+        my $spot_jump_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'spot_jump_markup',
+            description => '10% markup for spot jump',
+            set_by      => __PACKAGE__,
+            base_amount => 0.1,
+        });
+        $risk_markup->include_adjustment('add', $spot_jump_markup);
+    }
+
     return $risk_markup;
 }
 
