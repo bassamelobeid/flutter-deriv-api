@@ -1041,9 +1041,7 @@ sub is_valid_to_buy {
     my $self = shift;
     my $args = shift;
 
-    my $valid = $self->confirm_validity($args);
-
-    return ($self->for_sale) ? $valid : $self->_report_validation_stats('buy', $valid);
+    return ($self->for_sale) ? $self->confirm_validity($args) : $self->_report_validation_stats('buy', $valid);
 }
 
 sub is_valid_to_sell {
