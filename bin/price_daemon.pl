@@ -97,7 +97,8 @@ while (1) {
 
         } elsif ($price_daemon_cmd eq 'bid') {
 
-            $response = BOM::RPC::v3::Contract::send_bid({args => $params});
+            $params->{validation_params} = {skip_barrier_validation => 1};
+            $response = BOM::RPC::v3::Contract::send_bid($params);
 
         } else {
             warn "Unrecognized Pricer command! Payload is: " . ($next // 'undefined');
