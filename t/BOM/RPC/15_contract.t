@@ -7,7 +7,7 @@ use Test::BOM::RPC::Client;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
-use Test::MockTime qw/:all/;
+use Test::MockTime::HiRes;
 use Date::Utility;
 
 use Data::Dumper;
@@ -458,6 +458,37 @@ subtest 'get_bid' => sub {
 
 };
 
+subtest 'get_bid_skip_barrier_validation' => sub {
+    my ($contract, $params, $result);
+
+    set_fixed_time($now->epoch);
+
+    $contract = create_contract(
+        client        => $client,
+        spread        => 0,
+        date_expiry   => $now->epoch + 900,
+        bet_type      => 'ONETOUCH',
+        barrier       => 963.3055,
+        date_pricing  => $now->epoch-100,
+    );
+
+    $params = {
+        short_code  => $contract->shortcode,
+        contract_id => $contract->id,
+        currency    => $client->currency,
+        is_sold     => 0,
+    };
+
+    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    like $result->{validation_error}, qr/^Barrier must be at least/, "Barrier error expected";
+
+    $params->{validation_params} = {skip_barrier_validation => 1};
+    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    cmp_ok $result->{validation_error}, 'eq', '', "No barrier validation error";
+
+    restore_time();
+};
+
 my $method = 'get_contract_details';
 subtest $method => sub {
     my $params = {token => '12345'};
@@ -532,16 +563,16 @@ subtest $method => sub {
         'barrier'         => '0.99360',
         'contract_id'     => 10,
         'currency'        => 'USD',
-        'date_expiry'     => 1127287060,
-        'date_settlement' => 1127287060,
-        'date_start'      => 1127286660,
+        'date_expiry'     => 1127287660,
+        'date_settlement' => 1127287660,
+        'date_start'      => 1127287260,
         'entry_spot'      => '0.99360',
         'entry_tick'      => '0.99360',
-        'entry_tick_time' => 1127286661,
+        'entry_tick_time' => 1127287261,
         'exit_tick'       => '0.99380',
-        'exit_tick_time'  => 1127287059,
+        'exit_tick_time'  => 1127287659,
         'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
-        'shortcode'       => 'CALL_FRXAUDCAD_200.8_1127286660_1127287060_S0P_0',
+        'shortcode'       => 'CALL_FRXAUDCAD_200.8_1127287260_1127287660_S0P_0',
         'underlying'      => 'frxAUDCAD',
         is_valid_to_sell  => 0,
         validation_error  => 'This contract has been sold.'
@@ -799,6 +830,7 @@ subtest 'app_markup_percentage' => sub {
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 };
 
+
 done_testing();
 
 sub create_contract {
@@ -835,7 +867,7 @@ sub create_contract {
         stake                 => 100,
         date_start            => $args{date_start} // $date_start,
         date_expiry           => $args{date_expiry} // $date_expiry,
-        barrier               => 'S0P',
+        barrier               => $args{barrier} // 'S0P',
         app_markup_percentage => $args{app_markup_percentage} // 0
     };
     if ($args{date_pricing}) { $contract_data->{date_pricing} = $args{date_pricing}; }
