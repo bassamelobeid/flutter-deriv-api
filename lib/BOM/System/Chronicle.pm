@@ -271,18 +271,23 @@ sub _dbh {
     # Apache::DBI, and so far there hasn't been a compelling reason to consider switching.
     # Note that switching DBIx::Connector's ->ping behaviour would not be much help for Data::Chronicle::*
     # handles, we'd need to update Data::Chronicle itself to use DBIx::Connector to get that benefit.
-    my $db_postfix = $ENV{DB_POSTFIX} // '';
     return $dbh if $dbh and $$ == $pid;
     $pid = $$;
     $dbh = DBI->connect(
-        "dbi:Pg:dbname=chronicle$db_postfix;port=6432;host=/var/run/postgresql",
-        "write", '',
+        '' . _dbh_dsn(),
+        # User and password are part of the DSN
+        '', '',
         {
             RaiseError        => 1,
             pg_server_prepare => 0,
         });
     _dbh_changed();
     return $dbh;
+}
+
+sub _dbh_dsn {
+    my $db_postfix = $ENV{DB_POSTFIX} // '';
+    return "dbi:Pg:dbname=chronicle$db_postfix;port=6432;host=/var/run/postgresql;user=write";
 }
 
 =head2 _dbh_changed
