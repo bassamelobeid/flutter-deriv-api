@@ -10,7 +10,7 @@ use Test::PostgreSQL;
 use Test::SharedFork;
 use Scalar::Util qw(refaddr);
 
-use Devel::CheckOS;
+use Devel::CheckOS qw(die_if_os_is);
 
 use BOM::System::Chronicle;
       
