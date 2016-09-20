@@ -77,10 +77,10 @@ As we continue migrating new data types to this model, there will probably be mo
 use strict;
 use warnings;
 
-#we cache connection to Postgres, so we use state feature.
+# we cache connection to Redis, so we use state feature.
 use feature "state";
 
-#used for loading chronicle config file which contains connection information
+# used for loading chronicle config file which contains connection information
 use YAML::XS;
 use JSON;
 use DBI;
@@ -95,7 +95,10 @@ use Data::Chronicle::Writer;
 my $writer_instance;
 # Historical instance will be used for fetching historical chronicle data (e.g. back-testing)
 my $historical_instance;
+# Live instance will be used for live pricing (normal website operations)
+my $live_instance;
 # NOTE - if you add other instances, see L</_dbh_changed>
+
 
 sub get_chronicle_writer {
     state $redis = BOM::System::RedisReplicated::redis_write();
@@ -121,9 +124,6 @@ sub get_chronicle_reader {
 
         return $historical_instance;
     }
-
-    # Live instance will be used for live pricing (normal website operations)
-    state $live_instance;
 
     #if for_date is not specified, we are doing live_pricing, so no need to send database handler
     $live_instance //= Data::Chronicle::Reader->new(
@@ -292,7 +292,9 @@ sub _dbh_dsn {
 
 =head2 _dbh_changed
 
-Refresh anything that uses a chronicle database handle.
+Used to ensure we will refresh anything that uses a chronicle database handle
+the next time an instance is requested.
+
 Note that any new Chronicle instances we add to this code must also be listed here
 if you want reconnection to work as expected.
 
