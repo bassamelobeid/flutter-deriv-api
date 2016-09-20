@@ -1,7 +1,7 @@
 package BOM::Database::Model::EPG;
 
 use Moose;
-use String::Random ();
+use UUID::Tiny ':std';
 
 has 'client' => (
     is       => 'ro',
@@ -24,7 +24,8 @@ sub prepare {
     my $client = $self->client;
     my $account = $client->default_account || die "no account";
 
-    my $id = String::Random::random_regex('[a-zA-Z0-9]{32}');
+    my $id = UUID::Tiny::create_uuid_as_string(UUID_V4);
+    $id =~ s/\-//g;    # length 32 to meet EPG max
 
     $self->dbh->do("
         INSERT INTO payment.epg_request
