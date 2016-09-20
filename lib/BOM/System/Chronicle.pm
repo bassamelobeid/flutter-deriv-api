@@ -99,7 +99,6 @@ my $historical_instance;
 my $live_instance;
 # NOTE - if you add other instances, see L</_dbh_changed>
 
-
 sub get_chronicle_writer {
     state $redis = BOM::System::RedisReplicated::redis_write();
 

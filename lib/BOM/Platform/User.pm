@@ -45,7 +45,7 @@ sub new {
         )->load(speculative => 1);
         bless $self, 'BOM::Platform::User';
     }
-    catch {};
+    catch { };
     return $self;
 }
 
