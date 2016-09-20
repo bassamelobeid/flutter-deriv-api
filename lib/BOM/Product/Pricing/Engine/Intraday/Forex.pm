@@ -577,14 +577,14 @@ has jump_metric => (
 sub _build_jump_metric {
     my $self = shift;
 
-    my $bet             = $self->bet;
-    my $past_ten_minute = $bet->date_pricing->minus_time_interval('2m');
+    my $bet = $self->bet;
     # requesting for 700 ticks for an estimate of 2-minute period
-    my @ticks = sort { $a <=> $b } map { $_->{quote} } grep { $_->{epoch} > $past_ten_minute->epoch } @{
+    my @ticks = sort { $a <=> $b } map { $_->{quote} } @{
         $self->tick_source->retrieve({
                 underlying   => $bet->underlying,
-                tick_count   => 120,
+                interval     => Time::Duration::Concise->new(interval => '2m'),
                 ending_epoch => $bet->date_pricing->epoch,
+                aggregated   => 0,
             })};
 
     my $median = do {
