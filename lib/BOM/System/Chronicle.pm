@@ -172,6 +172,8 @@ sub get {
     my $cached_data = BOM::System::RedisReplicated::redis_read()->get($key);
 
     return JSON::from_json($cached_data) if defined $cached_data;
+    # FIXME assuming scalar context here, very dangerous - audit all callers
+    # and replace with return undef;
     return;
 }
 
