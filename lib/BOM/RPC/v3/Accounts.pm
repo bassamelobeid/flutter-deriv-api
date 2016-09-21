@@ -301,7 +301,7 @@ sub change_password {
 
     BOM::System::AuditLog::log('password has been changed', $client->email);
     send_email({
-            from    => BOM::Platform::Runtime->instance->app_config->cs->email,
+            from    => BOM::System::Config::email_address('support'),
             to      => $client->email,
             subject => localize('Your password has been changed.'),
             message => [
@@ -365,7 +365,7 @@ sub cashier_password {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
         } else {
             send_email({
-                    'from'    => BOM::Platform::Runtime->instance->app_config->cs->email,
+                    'from'    => BOM::System::Config::email_address('support'),
                     'to'      => $client->email,
                     'subject' => localize("Cashier password updated"),
                     'message' => [
@@ -391,7 +391,7 @@ sub cashier_password {
         if (!BOM::System::Password::checkpw($unlock_password, $cashier_password)) {
             BOM::System::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
             send_email({
-                    'from'    => BOM::Platform::Runtime->instance->app_config->cs->email,
+                    'from'    => BOM::System::Config::email_address('support'),
                     'to'      => $client->email,
                     'subject' => localize("Failed attempt to unlock cashier section"),
                     'message' => [
@@ -413,7 +413,7 @@ sub cashier_password {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
         } else {
             send_email({
-                    'from'    => BOM::Platform::Runtime->instance->app_config->cs->email,
+                    'from'    => BOM::System::Config::email_address('support'),
                     'to'      => $client->email,
                     'subject' => localize("Cashier password updated"),
                     'message' => [
@@ -481,7 +481,7 @@ sub reset_password {
 
     BOM::System::AuditLog::log('password has been reset', $email, $args->{verification_code});
     send_email({
-            from    => BOM::Platform::Runtime->instance->app_config->cs->email,
+            from    => BOM::System::Config::email_address('support'),
             to      => $email,
             subject => localize('Your password has been reset.'),
             message => [
@@ -653,7 +653,7 @@ sub set_settings {
     $message .= "\n" . localize('The [_1] team.', $website_name);
 
     send_email({
-        from               => BOM::Platform::Runtime->instance->app_config->cs->email,
+        from               => BOM::System::Config::email_address('support'),
         to                 => $client->email,
         subject            => $client->loginid . ' ' . localize('Change in account settings'),
         message            => [$message],
@@ -856,11 +856,10 @@ sub set_self_exclusion {
     }
 
     if ($message) {
-        my $compliance_email = BOM::Platform::Runtime->instance->app_config->compliance->email;
         $message = "Client $client set the following self-exclusion limits:\n\n$message";
         send_email({
-            from    => $compliance_email,
-            to      => $compliance_email . ',' . BOM::Platform::Runtime->instance->app_config->cs->email,
+            from    => BOM::System::Config::email_address('compliance'),
+            to      => BOM::System::Config::email_address('compliance') . ',' . BOM::System::Config::email_address('support'),
             subject => "Client set self-exclusion limits",
             message => [$message],
         });
@@ -1068,8 +1067,8 @@ sub set_financial_assessment {
     };
 
     send_email({
-        from    => BOM::Platform::Runtime->instance->app_config->cs->email,
-        to      => BOM::Platform::Runtime->instance->app_config->compliance->email,
+        from    => BOM::System::Config::email_address('support'),
+        to      => BOM::System::Config::email_address('compliance'),
         subject => $subject,
         message => $message,
     });
