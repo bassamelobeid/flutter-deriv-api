@@ -305,6 +305,7 @@ sub _dbh_changed {
     undef $writer_instance;
     undef $historical_instance;
     undef $live_instance;
+    return;
 }
 
 my $config;
