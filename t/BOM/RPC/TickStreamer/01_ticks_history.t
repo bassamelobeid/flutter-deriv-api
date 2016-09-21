@@ -143,7 +143,8 @@ subtest '_validate_start_end' => sub {
 
     $params->{args}->{start} = $now->minus_time_interval('1m')->epoch;
     $params->{args}->{end}   = $end->epoch;
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('InvalidStartEnd', 'It should return error if start > end time');
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('InvalidStartEnd', 'It should return error if start > end time');
 
     $params->{args}->{end}   = 'invalid';
     $params->{args}->{count} = 10;
