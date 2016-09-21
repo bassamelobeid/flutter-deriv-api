@@ -209,8 +209,9 @@ sub _validate_start_end {
     my $count       = $args->{count};
     my $granularity = $args->{granularity};
 
+    # special case to send explicit error when
     # both are timestamp & start > end time
-    if ($start =~ /^[0-9]+$/ and $end =~ /^[0-9]+$/ and $start > $end) {
+    if ($start and $end and $start =~ /^[0-9]+$/ and $end =~ /^[0-9]+$/ and $start > $end) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidStartEnd',
                 message_to_client => BOM::Platform::Context::localize("Start time [_1] must be before end time [_2]", $start, $end)});
