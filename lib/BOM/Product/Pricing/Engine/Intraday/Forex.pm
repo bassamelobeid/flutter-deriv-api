@@ -543,7 +543,8 @@ sub _build_risk_markup {
     }
 
     $risk_markup->include_adjustment('add', $self->vol_spread_markup);
-
+    # 3 is 3 times standard deviation.
+    # 0.03 is the base volatility observed for one minute during inefficient period.
     my $metric_benchmark = 3 * 0.03 * sqrt(60 / (86400 * 365));
     my $apply_metric = do {
         my $jump_metric = $self->jump_metric;
