@@ -859,6 +859,8 @@ sub is_after_expiry {
             if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds));
     } else {
 
+        # For opposite contract, date_pricing is set to date_start after expiry, so we need to use _date_pricing_milliseconds to compare with date_expiry,
+        # and _date_pricing_milliseconds will only be set when date_pricing is called.
         $self->date_pricing if not $self->has_date_pricing;
 
         my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
