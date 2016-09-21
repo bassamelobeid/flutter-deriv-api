@@ -459,12 +459,12 @@ subtest 'get_bid_skip_barrier_validation' => sub {
     set_fixed_time($now->epoch);
 
     $contract = create_contract(
-        client        => $client,
-        spread        => 0,
-        date_expiry   => $now->epoch + 900,
-        bet_type      => 'ONETOUCH',
-        barrier       => 963.3055,
-        date_pricing  => $now->epoch-100,
+        client       => $client,
+        spread       => 0,
+        date_expiry  => $now->epoch + 900,
+        bet_type     => 'ONETOUCH',
+        barrier      => 963.3055,
+        date_pricing => $now->epoch - 100,
     );
 
     $params = {
@@ -487,7 +487,6 @@ subtest 'get_bid_skip_barrier_validation' => sub {
 my $method = 'get_contract_details';
 subtest $method => sub {
     my $params = {token => '12345'};
-
     $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'invalid token');
     $client->set_status('disabled', 1, 'test');
     $client->save;
@@ -550,7 +549,7 @@ subtest $method => sub {
         'entry_tick'      => '0.99350',
         'entry_tick_time' => 1127286661,
         'exit_tick'       => '0.99380',
-        'exit_tick_time'  => 1127287659,
+        'exit_tick_time'  => 1127287059,
         'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
         'shortcode'       => 'CALL_FRXAUDCAD_158.95_1127286660_1127287060_S0P_0',
         'underlying'      => 'frxAUDCAD',
@@ -891,7 +890,6 @@ subtest 'app_markup_percentage' => sub {
     );
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 };
-
 
 done_testing();
 
