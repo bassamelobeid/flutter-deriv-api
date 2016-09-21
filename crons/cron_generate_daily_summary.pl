@@ -17,7 +17,6 @@ use BOM::DailySummaryReport;
 use BOM::Platform::LandingCompany;
 use BOM::Platform::LandingCompany::Registry;
 
-
 BOM::Backoffice::Sysinit::init();
 
 my ($jobs, $currencies, $brokercodes, $for_date);
@@ -57,8 +56,8 @@ foreach my $broker (keys %{$total_pl}) {
     }
 }
 send_email({
-    'from'    => 'system@binary.com',
-    'to'      => BOM::Platform::Runtime->instance->app_config->accounting->email,
+    'from'    => BOM::System::Config::email_address('system'),
+    'to'      => BOM::System::Config::email_address('accounting'),
     'subject' => 'Daily Outstanding Bets Profit / Lost [' . $run_for->date . ']',
     'message' => \@mail_msg,
 });
