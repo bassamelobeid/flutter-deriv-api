@@ -95,7 +95,7 @@ sub proposal_open_contract {
 
     if (my $contract_id = $params->{args}->{contract_id}) {
         @fmbs = @{__get_contract_details_by_id($client, $contract_id)};
-        if (!$client->default_account
+        if (not $client->default_account
                 or scalar @fmbs and $fmbs[0]->{account_id} ne $client->default_account->id) {
             @fmbs = ();
         }
