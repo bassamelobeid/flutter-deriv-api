@@ -583,7 +583,7 @@ sub _build_jump_metric {
     my $self = shift;
 
     my $bet = $self->bet;
-    # requesting for 700 ticks for an estimate of 2-minute period
+    # jump metric is built on top of 2-minute lookback window.
     my @ticks = sort { $a <=> $b } map { $_->{quote} } @{
         $self->tick_source->retrieve({
                 underlying   => $bet->underlying,
