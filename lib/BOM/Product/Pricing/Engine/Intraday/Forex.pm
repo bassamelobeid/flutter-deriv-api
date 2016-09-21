@@ -598,6 +598,9 @@ sub _build_jump_metric {
             my $size  = @ticks;
             my $index = int($size / 2);
             $median_spot = ($size % 2) ? $ticks[$index] : (($ticks[$index] + $ticks[$index - 1]) / 2);
+        } else {
+            # if redis cache is close to empty, we want to know about it.
+            warn "Failed to fetch ticks from redis cache for " . $bet->underlying->symbol;
         }
         $median_spot;
     };
