@@ -1096,7 +1096,7 @@ sub is_valid_to_sell {
                 message_to_client => localize('Please wait for contract settlement.'),
         });
 
-    } elsif (not $self->opposite_contract->is_valid_to_buy) {
+    } elsif (not $self->opposite_contract->is_valid_to_buy($args)) {
         # Their errors are our errors, now!
         $self->add_error($self->opposite_contract->primary_validation_error);
     }
@@ -2654,6 +2654,7 @@ has primary_validation_error => (
 sub confirm_validity {
     my $self = shift;
     my $args = shift;
+
 
     # if there's initialization error, we will not proceed anyway.
     return 0 if $self->primary_validation_error;
