@@ -10,6 +10,8 @@ use Data::Dumper;
 
 use Test::BOM::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
+use BOM::RPC::v3::Utility;
+use BOM::Database::Model::AccessToken;
 use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
 
 use utf8;
@@ -24,6 +26,11 @@ my @params = (
         language => 'EN',
         country  => 'ru',
     });
+
+{
+    # cleanup
+    BOM::Database::Model::AccessToken->new->dbh->do('DELETE FROM auth.access_token');
+}
 
 subtest 'Initialization' => sub {
     lives_ok {
@@ -129,6 +136,9 @@ subtest 'Payment agent withdraw' => sub {
     $params[1]->{server_name}          = 'binary.com';
     $params[1]->{link}                 = 'binary.com/some_url';
 
+    my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
+    $params[1]->{params}->{token_details} = BOM::RPC::v3::Utility::get_token_details($token);
+
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
@@ -138,6 +148,48 @@ subtest 'Payment agent withdraw' => sub {
     );
     ok keys %msg, 'Email sent successfully';
     clear_mailbox();
+
+    $params[1]->{args}->{verify_email} = 'dummy@email.com';
+    $rpc_ct->call_ok(@params)
+        ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
+
+    %msg = get_email_by_address_subject(
+        email   => $params[1]->{args}->{verify_email},
+        subject => qr/Verify your withdrawal request/
+    );
+    is %msg, 0, 'no email as token email different from passed email';
+};
+
+subtest 'Payment withdraw' => sub {
+    clear_mailbox();
+
+    $params[1]->{args}->{verify_email} = $email;
+    $params[1]->{args}->{type}         = 'payment_withdraw';
+    $params[1]->{server_name}          = 'binary.com';
+    $params[1]->{link}                 = 'binary.com/some_url';
+
+    my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token 1');
+    $params[1]->{params}->{token_details} = BOM::RPC::v3::Utility::get_token_details($token);
+
+    $rpc_ct->call_ok(@params)
+        ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
+
+    my %msg = get_email_by_address_subject(
+        email   => $params[1]->{args}->{verify_email},
+        subject => qr/Verify your withdrawal request/
+    );
+    ok keys %msg, 'Email sent successfully';
+    clear_mailbox();
+
+    $params[1]->{args}->{verify_email} = 'dummy@email.com';
+    $rpc_ct->call_ok(@params)
+        ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
+
+    %msg = get_email_by_address_subject(
+        email   => $params[1]->{args}->{verify_email},
+        subject => qr/Verify your withdrawal request/
+    );
+    is %msg, 0, 'no email as token email different from passed email';
 };
 
 done_testing();

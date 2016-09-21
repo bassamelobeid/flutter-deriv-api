@@ -105,6 +105,39 @@ sub verify_email {
             created_for => $type,
         })->token;
 
+    my $loginid = $params->{token_details} ? $params->{token_details}->{loginid} : undef;
+    my $payment_sub = sub {
+        my $type_call = shift;
+
+        my $skip_email = 0;
+        # we should only check for loginid email but as its v3 so need to have backward compatibility
+        # in next version need to remove else
+        if ($loginid) {
+            $skip_email = 1 unless (BOM::Platform::Client->new({loginid => $loginid})->email eq $email);
+        } else {
+            $skip_email = 1 unless BOM::Platform::User->new({email => $email});
+        }
+
+        my $message =
+            $type_call eq 'payment_withdraw'
+            ? BOM::Platform::Context::localize(
+            '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment withdrawal form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With Regards,<br/>Binary.com</p>',
+            $code
+            )
+            : BOM::Platform::Context::localize(
+            '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment agent withdrawal form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With Regards,<br/>Binary.com</p>',
+            $code
+            );
+
+        send_email({
+                from               => BOM::System::Config::email_address('support'),
+                to                 => $email,
+                subject            => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
+                message            => [$message],
+                use_email_template => 1
+            }) unless $skip_email;
+    };
+
     if (BOM::Platform::User->new({email => $email}) && $type eq 'reset_password') {
         send_email({
                 from    => BOM::System::Config::email_address('support'),
@@ -147,32 +180,10 @@ sub verify_email {
                     use_email_template => 1
                 });
         }
-    } elsif ($type eq 'paymentagent_withdraw' && BOM::Platform::User->new({email => $email})) {
-        send_email({
-                from    => BOM::System::Config::email_address('support'),
-                to      => $email,
-                subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
-                message => [
-                    BOM::Platform::Context::localize(
-                        '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment agent withdrawal form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With Regards,<br/>Binary.com</p>',
-                        $code
-                    )
-                ],
-                use_email_template => 1
-            });
-    } elsif ($type eq 'payment_withdraw' && BOM::Platform::User->new({email => $email})) {
-        send_email({
-                from    => BOM::System::Config::email_address('support'),
-                to      => $email,
-                subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
-                message => [
-                    BOM::Platform::Context::localize(
-                        '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment withdrawal form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With Regards,<br/>Binary.com</p>',
-                        $code
-                    )
-                ],
-                use_email_template => 1
-            });
+    } elsif ($type eq 'paymentagent_withdraw') {
+        $payment_sub->($type);
+    } elsif ($type eq 'payment_withdraw') {
+        $payment_sub->($type);
     }
 
     return {status => 1};    # always return 1, so not to leak client's email
