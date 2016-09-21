@@ -2655,7 +2655,6 @@ sub confirm_validity {
     my $self = shift;
     my $args = shift;
 
-
     # if there's initialization error, we will not proceed anyway.
     return 0 if $self->primary_validation_error;
 
