@@ -34,6 +34,16 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol        => 'R_50',
         recorded_date => $now,
     });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
+    {
+        events           => [{
+                symbol       => 'USD',
+                release_date => 1,
+                source       => 'forexfactory',
+                impact       => 1,
+                event_name   => 'FOMC',
+            }]
+    });
 
 subtest 'prices' => sub {
 
@@ -83,9 +93,10 @@ subtest 'prices' => sub {
             my $expect = $expectations{$bt_code};
 
             is $c->pricing_code, $bt_code, 'contract type';
-            is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Digits', 'pricing engine';
-            _check_amount($c->bs_probability,    $expect->{bs_prob}, 'bs_prob');
-            _check_amount($c->commission_markup, $expect->{markup},  'markup');
+
+            is $c->pricing_engine_name, 'Pricing::Engine::Digits', 'pricing engine';
+            _check_amount($c->bs_probability, $expect->{bs_prob}, 'bs_prob');
+            _check_amount($c->commission_markup,   $expect->{markup},  'markup');
         };
     }
 

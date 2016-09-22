@@ -1253,7 +1253,7 @@ expected_result:
       barrier: 1
       commission_markup: 0.01
       duration: 5t
-      price_engine: BOM::Product::Pricing::Engine::Digits
+      price_engine: Pricing::Engine::Digits
       risk_markup: 0
       spot: 9518.2
       theo_prob: 0.1
