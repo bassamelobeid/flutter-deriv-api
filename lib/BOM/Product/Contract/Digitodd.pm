@@ -5,7 +5,7 @@ extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
 use BOM::Product::Contract::Strike::Digit;
-use BOM::Product::Pricing::Engine::Digits;
+use Pricing::Engine::Digits;
 use BOM::Product::Pricing::Greeks::Digits;
 
 sub code { return 'DIGITODD'; }
@@ -21,11 +21,13 @@ sub _build_ticks_to_expiry {
 }
 
 sub _build_pricing_engine_name {
-    return 'BOM::Product::Pricing::Engine::Digits';
+    return 'Pricing::Engine::Digits';
 }
 
 sub _build_pricing_engine {
-    return BOM::Product::Pricing::Engine::Digits->new({bet => shift});
+    my $self = shift;
+    my %pricing_parameters = map { $_ => $self->_pricing_parameters->{$_} } @{$self->pricing_engine_name->required_args};
+    return Pricing::Engine::Digits->new(\%pricing_parameters);
 }
 
 sub _build_greek_engine {
