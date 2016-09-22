@@ -1652,6 +1652,7 @@ sub _build_new_interface_engine {
     my $self = shift;
 
     my %engines = (
+        'Pricing::Engine::Digits'               => 1,
         'Pricing::Engine::TickExpiry'           => 1,
         'Pricing::Engine::EuropeanDigitalSlope' => 1,
     );
@@ -1663,9 +1664,11 @@ sub _pricing_parameters {
     my $self = shift;
 
     my $result = {
-        priced_with       => $self->priced_with,
-        spot              => $self->pricing_spot,
-        strikes           => [grep { $_ } values %{$self->barriers_for_pricing}],
+        priced_with => $self->priced_with,
+        spot        => $self->pricing_spot,
+        strikes     => $self->pricing_engine_name eq 'Pricing::Engine::Digits'
+        ? ($self->barrier ? $self->barrier->as_absolute : undef)
+        : [grep { $_ } values %{$self->barriers_for_pricing}],
         date_start        => $self->effective_start,
         date_expiry       => $self->date_expiry,
         date_pricing      => $self->date_pricing,
