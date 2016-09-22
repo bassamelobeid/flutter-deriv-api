@@ -859,7 +859,6 @@ sub is_after_expiry {
             if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds));
     } else {
 
-
         return 1 if $self->date_pricing->epoch >= $self->date_expiry->epoch;
     }
     return 0;
