@@ -104,9 +104,6 @@ subtest 'FOREX settlement check on Wednesday' => sub {
     is($bet->exit_tick->epoch, '1202936400', 'the exit tick is the one at 21:00');
     is($bet->bid_price,        0,            'Indicative outcome is 0 as the exit tick is 108');
 
-    my $opposite = $bet->opposite_contract;
-    ok !$opposite->is_valid_to_sell, 'is not valid to sell';
-    is($opposite->primary_validation_error->message, 'waiting for settlement', 'Error msg');
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
         epoch      => 1202947199,    # 13 Feb 2008 23:59:59
@@ -252,9 +249,6 @@ subtest 'Index settlement check on ' => sub {
     is($bet->exit_tick->epoch, '1203438600', 'the exit tick is the one at 16:30');
     is($bet->bid_price,        1,            'Indicative outcome with full payout as the exit tick is 1008');
 
-    my $opposite = $bet->opposite_contract;
-    ok !$opposite->is_valid_to_sell, 'is not valid to sell';
-    is($opposite->primary_validation_error->message, 'waiting for settlement', 'Error msg');
     BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
             underlying => 'GDAXI',
             epoch      => 1203379200,    # 19 Feb 2008 00:00:00 GMT
