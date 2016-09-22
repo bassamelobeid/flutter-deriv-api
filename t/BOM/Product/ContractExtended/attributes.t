@@ -26,9 +26,15 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for (qw/JPY USD/);
+        symbol        => 'USD',
+        recorded_date => Date::Utility->new(1200614400),
+    });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol        => 'JPY',
+        recorded_date => Date::Utility->new('6-Feb-08'),
+    });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
@@ -40,7 +46,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => 'JPY',
+        symbol => 'JPY-USD',
         rates  => {
             1   => 0.2,
             2   => 0.15,
@@ -51,9 +57,9 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             186 => 0.1,
             365 => 0.13,
         },
-        date         => Date::Utility->new,
-        type         => 'implied',
-        implied_from => 'USD'
+        recorded_date => Date::Utility->new(1200614400),
+        type          => 'implied',
+        implied_from  => 'USD'
     });
 
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine
@@ -82,6 +88,7 @@ subtest 'Numbers and stuff.' => sub {
     my $bet_params = {
         bet_type     => 'CALL',
         date_expiry  => '13-Feb-08',    # 13-Feb-08 107.36 108.38 106.99 108.27
+        date_pricing => '13-Feb-08',
         date_start   => 1200614400,     # 18-Jan-08 106.42 107.59 106.38 106.88
         underlying   => 'frxUSDJPY',
         payout       => 1,
@@ -91,7 +98,6 @@ subtest 'Numbers and stuff.' => sub {
     };
 
     my $bet = produce_contract($bet_params);
-
     ok(looks_like_number($bet->pricing_vol), 'Pricing iv looks like a number.');
     ok(looks_like_number($bet->pricing_mu),  'Pricing mu looks like a number.');
     ok(looks_like_number($bet->bid_price),   'Bid price looks like a number.');
@@ -103,7 +109,6 @@ subtest 'Numbers and stuff.' => sub {
     lives_ok { shortcode_to_parameters($bet->shortcode) } 'Can extracts parameters from shortcode.';
 
     ok(not($bet->pricing_new), 'Pricing in the past, so we expect pricing_new to be false.');
-
     my $remaining_time = $bet->remaining_time;
     isa_ok($remaining_time, 'Time::Duration::Concise', 'remaining_time');
     cmp_ok($remaining_time->seconds, '==', 0, ' of 0 on expired.');
@@ -119,6 +124,7 @@ subtest 'Probabilities etc.' => sub {
     my $bet_params = {
         bet_type     => 'RANGE',
         date_expiry  => '6-Feb-08',
+        date_pricing => '6-Feb-08',
         date_start   => 1199836800,
         underlying   => 'frxUSDJPY',
         payout       => 1000,
