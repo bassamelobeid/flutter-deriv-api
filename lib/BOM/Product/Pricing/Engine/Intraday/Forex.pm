@@ -544,7 +544,73 @@ sub _build_risk_markup {
 
     $risk_markup->include_adjustment('add', $self->vol_spread_markup);
 
+    if ($self->apply_spot_jump_markup) {
+        my $spot_jump_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'spot_jump_markup',
+            description => '10% markup for spot jump',
+            set_by      => __PACKAGE__,
+            base_amount => 0.1,
+        });
+        $risk_markup->include_adjustment('add', $spot_jump_markup);
+    }
+
     return $risk_markup;
+}
+
+has apply_spot_jump_markup => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_apply_spot_jump_markup {
+    my $self = shift;
+    my $hour = $self->bet->date_pricing->hour + 0;
+    # we only want to charge this markup during market inefficient period 20:00 GMT to end of day
+    return 0 if $hour < 20;
+    # 3 is 3 times standard deviation.
+    # 0.03 is the base volatility observed for one minute during inefficient period.
+    my $metric_benchmark = 3 * 0.03 * sqrt(60 / (86400 * 365));
+    my $jump_metric = $self->jump_metric;
+    return 0 if abs($jump_metric) < $metric_benchmark;
+    return 1 if ($jump_metric > 0 and $self->bet->code eq 'CALL');
+    return 1 if ($jump_metric < 0 and $self->bet->code eq 'PUT');
+    return 0;
+}
+
+has jump_metric => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_jump_metric {
+    my $self = shift;
+
+    my $bet = $self->bet;
+    # jump metric is built on top of 2-minute lookback window.
+    my @ticks = sort { $a <=> $b } map { $_->{quote} } @{
+        $self->tick_source->retrieve({
+                underlying   => $bet->underlying,
+                interval     => Time::Duration::Concise->new(interval => '2m'),
+                ending_epoch => $bet->date_pricing->epoch,
+                aggregated   => 0,
+            })};
+
+    my $median = do {
+        my $median_spot = $bet->pricing_args->{spot};
+        if (@ticks > 1) {
+            my $size  = @ticks;
+            my $index = int($size / 2);
+            $median_spot = ($size % 2) ? $ticks[$index] : (($ticks[$index] + $ticks[$index - 1]) / 2);
+        } else {
+            # if redis cache is close to empty, we want to know about it.
+            warn "Failed to fetch ticks from redis cache for " . $bet->underlying->symbol;
+        }
+        $median_spot;
+    };
+
+    my $metric = ($median - $bet->pricing_args->{spot}) / $median;
+
+    return $metric;
 }
 
 has [qw(intraday_vega_correction intraday_vega)] => (
