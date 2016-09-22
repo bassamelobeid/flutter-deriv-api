@@ -15,19 +15,17 @@ use Date::Utility;
 use BOM::Market::AggTicks;
 use BOM::Market::Underlying;
 
-my $now = Date::Utility->new;
+my $now = Date::Utility->new('2016-09-22 20:00:00');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
-        recorded_date => $now
-    });
+        recorded_date => $now->minus_time_interval('1s')});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol        => $_,
-        recorded_date => $now
-    }) for qw(USD JPY JPY-USD);
+        recorded_date => $now->minus_time_interval('1s')}) for qw(USD JPY JPY-USD);
 my $start = $now->epoch - 300;
 
 subtest 'spot drops' => sub {
@@ -56,8 +54,16 @@ subtest 'spot drops' => sub {
     my $c = produce_contract($params);
     ok $c->ask_price, 'can get a price';
     ok $c->pricing_engine->risk_markup->peek_amount('spot_jump_markup'), 'spot_jump_markup is applied';
-    $params->{bet_type} = 'PUT';
+    $params->{date_start} = $params->{date_pricing} = $now->epoch - 1;
+    note('set time to 19:59:59');
     $c = produce_contract($params);
+    ok $c->ask_price, 'can get a price';
+    ok !$c->pricing_engine->risk_markup->peek_amount('spot_jump_markup'),
+        'spot_jump_markup is not applied if date pricing is not in inefficient period';
+    note('set time to 20:00:00');
+    $params->{date_start} = $params->{date_pricing} = $now->epoch;
+    $params->{bet_type}   = 'PUT';
+    $c                    = produce_contract($params);
     ok $c->ask_price, 'can get a price';
     ok !$c->pricing_engine->risk_markup->peek_amount('spot_jump_markup'), 'spot_jump_markup is not applied';
 };
