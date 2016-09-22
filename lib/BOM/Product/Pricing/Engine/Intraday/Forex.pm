@@ -564,6 +564,9 @@ has apply_spot_jump_markup => (
 
 sub _build_apply_spot_jump_markup {
     my $self = shift;
+    my $hour = $self->date_pricing->hour + 0;
+    # we only want to charge this markup during market inefficient period 20:00 GMT to end of day
+    return 0 if $hour < 20;
     # 3 is 3 times standard deviation.
     # 0.03 is the base volatility observed for one minute during inefficient period.
     my $metric_benchmark = 3 * 0.03 * sqrt(60 / (86400 * 365));
