@@ -107,7 +107,7 @@ sub prepare_ask {
 }
 
 sub _get_ask {
-    my $p2                    = { %{+shift} };
+    my $p2                    = {%{+shift}};
     my $app_markup_percentage = shift;
     my $streaming_params      = delete $p2->{streaming_params};
 
