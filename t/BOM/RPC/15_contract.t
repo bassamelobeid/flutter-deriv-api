@@ -242,7 +242,7 @@ subtest 'get_ask' => sub {
         "duration"         => "60",
         "duration_unit"    => "s",
         "symbol"           => "R_50",
-        from_pricer_daemon => 1,
+        "streaming_params" => {add_theo_probability => 1},
     };
     my $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
     ok(delete $result->{spot_time},  'result have spot time');
@@ -255,7 +255,6 @@ subtest 'get_ask' => sub {
         'payout'              => '100',
         'theo_probability'    => 0.499862404631018,
         'contract_parameters' => {
-            'from_pricer_daemon'         => 1,
             'deep_otm_threshold'         => '0.025',
             'barrier'                    => 'S0P',
             'duration'                   => '60s',
@@ -306,7 +305,7 @@ subtest 'send_ask' => sub {
             "duration"         => "60",
             "duration_unit"    => "s",
             "symbol"           => "R_50",
-            from_pricer_daemon => 1,
+            "streaming_params" => {add_theo_probability => 1},
         }};
 
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
@@ -759,15 +758,14 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
 
 subtest 'app_markup_percentage' => sub {
     my $params = {
-        "proposal"         => 1,
-        "amount"           => "100",
-        "basis"            => "payout",
-        "contract_type"    => "CALL",
-        "currency"         => "USD",
-        "duration"         => "60",
-        "duration_unit"    => "s",
-        "symbol"           => "R_50",
-        from_pricer_daemon => 1,
+        "proposal"      => 1,
+        "amount"        => "100",
+        "basis"         => "payout",
+        "contract_type" => "CALL",
+        "currency"      => "USD",
+        "duration"      => "60",
+        "duration_unit" => "s",
+        "symbol"        => "R_50",
     };
     my $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
     my $val    = $result->{ask_price};
@@ -777,15 +775,14 @@ subtest 'app_markup_percentage' => sub {
 
     # check app_markup for stake proposal
     $params = {
-        "proposal"         => 1,
-        "amount"           => "100",
-        "basis"            => "stake",
-        "contract_type"    => "CALL",
-        "currency"         => "USD",
-        "duration"         => "60",
-        "duration_unit"    => "s",
-        "symbol"           => "R_50",
-        from_pricer_daemon => 1,
+        "proposal"      => 1,
+        "amount"        => "100",
+        "basis"         => "stake",
+        "contract_type" => "CALL",
+        "currency"      => "USD",
+        "duration"      => "60",
+        "duration_unit" => "s",
+        "symbol"        => "R_50",
     };
     $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
     $val    = $result->{payout};
