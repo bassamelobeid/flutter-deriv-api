@@ -226,7 +226,7 @@ sub startup {
         ['set_financial_assessment', {require_auth => 'admin'}],
         ['get_financial_assessment', {require_auth => 'admin'}],
         ['reality_check',            {require_auth => 'read'}],
-        ['verify_email',             {stash_params => [qw/ server_name /]}],
+        ['verify_email',             {stash_params => [qw/ server_name token /]}],
         ['new_account_virtual',      {stash_params => [qw/ server_name client_ip user_agent /]}],
         ['reset_password'],
 
