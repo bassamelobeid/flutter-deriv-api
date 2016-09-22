@@ -247,6 +247,8 @@ sub cashier {
             });
         }
 
+        warn "Unknown Doughflow error: $errortext\n";
+
         return $error_sub->(
             localize('Sorry, an error has occurred, Please try accessing our Cashier again.'),
             'Error with DF CreateCustomer API loginid[' . $df_client->loginid . '] error[' . $errortext . ']'
