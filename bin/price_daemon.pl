@@ -93,11 +93,12 @@ while (1) {
 
             $redis->set($next, $current_time);
             $redis->expire($next, 300);
-            $response = BOM::RPC::v3::Contract::send_ask({args => $params}, 1);
+            $params->{streaming_params}->{add_theo_probability} = 1;
+            $response = BOM::RPC::v3::Contract::send_ask({args=>$params});
 
         } elsif ($price_daemon_cmd eq 'bid') {
 
-            $params->{validation_params} = {skip_barrier_validation => 1};
+            $params->{validation_params}->{skip_barrier_validation} = 1;
             $response = BOM::RPC::v3::Contract::send_bid($params);
 
         } else {
