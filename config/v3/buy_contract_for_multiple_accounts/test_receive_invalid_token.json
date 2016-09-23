@@ -35,14 +35,7 @@
       }
     },
     "echo_req": {
-      "type": "object",
-      "title": "Echo request",
-      "description": "Echo of the request made",
-      "properties": {
-        "buy_contract_for_multiple_accounts": {
-          "type": "string",
-          "title": "Buy_contract_for_multiple_accounts schema.",
-          "description": "Buy_contract_for_multiple_accounts schema."
+       "required": "1"
         },
         "price": {
           "type": "integer",
