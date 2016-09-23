@@ -150,19 +150,31 @@ sub get_contract_specifics {
     die 'Improper arguments to get_contract_specifics'
         unless (all { exists $args->{$_} } (qw(underlying_symbol contract_category barrier_category expiry_type start_type)));
 
-    my $to_format = ($args->{expiry_type} eq 'tick') ? sub { $_[0]; } : sub { Time::Duration::Concise->new(interval => $_[0]) };
-    my $ul = BOM::Market::Underlying->new($args->{underlying_symbol});
+    my $fb = get_offerings_flyby($args->{landing_company});
 
-    my $result = {};
-    if (my $allowed = _exists_value($ul->contracts, $args)) {
-        foreach my $side (grep { exists $allowed->{$_} } (qw(min max historical_pricer_min historical_pricer_max))) {
-            my $shortened = $side;
-            $shortened =~ s/^historical_pricer_//;
-            $result->{($shortened eq $side) ? 'permitted' : 'historical'}{$shortened} = $to_format->($allowed->{$side});
-        }
+    my @query_result = $fb->query({
+            underlying_symbol => $args->{underlying_symbol},
+            contract_category => $args->{contract_category},
+            expiry_type       => $args->{expiry_type},
+            start_type        => $args->{start_type},
+            barrier_category  => $args->{barrier_category},
+        },
+        [qw(min_contract_duration max_contract_duration min_historical_pricer_duration max_historical_pricer_duration)]);
+    my ($min, $max, $historical_min, $historical_max) = @{$query_result[0] // []};
+
+    my @data = (['permitted', $min, $max], ['historical', $historical_min, $historical_max]);
+
+    my %specifics;
+    if ($self->expiry_type eq 'tick') {
+        %specifics = map { $_->[0] => {min => $_->[1], max => $_->[2]} }
+            grep { $_->[1] and $_->[2] } @data;
+    } else {
+        %specifics =
+            map { $_->[0] => {min => Time::Duration::Concise->new(interval => $_->[1]), max => Time::Duration::Concise->new(interval => $_->[2])} }
+            grep { $_->[1] and $_->[2] } @data;
     }
 
-    return $result;
+    return \%specifics;
 }
 
 sub _exists_value {

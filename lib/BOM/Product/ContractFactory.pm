@@ -96,8 +96,6 @@ my %OVERRIDE_LIST = (
 );
 
 my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_types.yml');
-my $japan_offerings      = LoadFile('/home/git/regentmarkets/bom-market/config/files/japan_offerings.yml');
-my $common_offerings     = LoadFile('/home/git/regentmarkets/bom-market/config/files/product_offerings.yml');
 
 sub produce_contract {
     my ($build_arg, $maybe_currency, $maybe_sold) = @_;
