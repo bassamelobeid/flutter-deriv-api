@@ -5,9 +5,9 @@ use warnings;
 
 use JSON qw(encode_json);
 use BOM::Platform::Account::Real::default;
-use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Email qw(send_email);
+use BOM::System::Config;
 
 sub _validate {
     my $args = shift;
@@ -59,8 +59,8 @@ sub create_account {
 
     if ($financial_assessment->{total_score} > 59) {
         send_email({
-            from    => BOM::Platform::Runtime->instance->app_config->cs->email,
-            to      => BOM::Platform::Runtime->instance->app_config->compliance->email,
+            from    => BOM::System::Config::email_address('support'),
+            to      => BOM::System::Config::email_address('compliance'),
             subject => $client->loginid . ' considered as professional trader',
             message =>
                 [$client->loginid . ' scored ' . $financial_assessment->{total_score} . ' and is therefore considered a professional trader.'],
