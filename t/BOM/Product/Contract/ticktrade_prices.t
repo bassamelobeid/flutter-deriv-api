@@ -71,7 +71,7 @@ $c = produce_contract({
     date_pricing => $now,
     bet_type     => 'ASIANU',
 });
-is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Asian', 'correct pricing engine';
+is $c->pricing_engine_name, 'Pricing::Engine::Asian', 'correct pricing engine';
 is roundnear(0.0001, $c->bs_probability->amount), 0.4999, 'correct bs probability';
 is $c->commission_markup->amount, 0.015, 'correct total markup';
 
@@ -81,6 +81,6 @@ $c = produce_contract({
     date_pricing => $now,
     bet_type     => 'ASIAND',
 });
-is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Asian', 'correct pricing engine';
+is $c->pricing_engine_name, 'Pricing::Engine::Asian', 'correct pricing engine';
 is roundnear(0.0001, $c->bs_probability->amount), 0.5001, 'correct bs probability';
 is $c->commission_markup->amount, 0.015, 'correct total markup';

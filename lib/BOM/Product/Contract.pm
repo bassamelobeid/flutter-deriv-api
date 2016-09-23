@@ -609,8 +609,6 @@ sub _build_q_rate {
     my $rate;
     if ($underlying->market->prefer_discrete_dividend) {
         $rate = 0;
-    } elsif ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Asian' and $underlying->market->name eq 'volidx') {
-        $rate = $q_rate / 2;
     } else {
         $rate = $q_rate;
     }
@@ -1622,6 +1620,7 @@ sub _build_new_interface_engine {
     my $self = shift;
 
     my %engines = (
+        'Pricing::Engine::Asian'                => 1,
         'Pricing::Engine::Digits'               => 1,
         'Pricing::Engine::TickExpiry'           => 1,
         'Pricing::Engine::EuropeanDigitalSlope' => 1,
