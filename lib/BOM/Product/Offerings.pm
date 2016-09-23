@@ -165,7 +165,7 @@ sub get_contract_specifics {
     my @data = (['permitted', $min, $max], ['historical', $historical_min, $historical_max]);
 
     my %specifics;
-    if ($self->expiry_type eq 'tick') {
+    if ($args->{expiry_type} eq 'tick') {
         %specifics = map { $_->[0] => {min => $_->[1], max => $_->[2]} }
             grep { $_->[1] and $_->[2] } @data;
     } else {
