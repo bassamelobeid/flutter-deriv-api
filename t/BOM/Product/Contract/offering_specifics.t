@@ -12,7 +12,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
 
-my $now = Date::Utility->new;
+my $now = Date::Utility->new('2016-09-22');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
@@ -37,7 +37,7 @@ my $bet_params = {
     date_start   => $now,
     date_pricing => $now,
     duration     => '2m',
-    barrier      => '100.1',
+    barrier      => '101.1',
     currency     => 'USD',
     payout       => 10
 };
