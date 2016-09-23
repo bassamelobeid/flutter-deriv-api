@@ -226,7 +226,7 @@ sub startup {
         ['set_financial_assessment', {require_auth => 'admin'}],
         ['get_financial_assessment', {require_auth => 'admin'}],
         ['reality_check',            {require_auth => 'read'}],
-        ['verify_email',             {stash_params => [qw/ server_name /]}],
+        ['verify_email',             {stash_params => [qw/ server_name token /]}],
         ['new_account_virtual',      {stash_params => [qw/ server_name client_ip user_agent /]}],
         ['reset_password'],
 
@@ -313,7 +313,13 @@ sub startup {
                 response     => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('transfer_between_accounts'),
             }
         ],
-        ['cashier', {require_auth => 'payments'}],
+        [
+            'cashier',
+            {
+                require_auth => 'payments',
+                stash_params => [qw/ server_name /],
+            }
+        ],
         [
             'new_account_real',
             {
