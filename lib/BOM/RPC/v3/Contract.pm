@@ -333,6 +333,10 @@ sub send_bid {
 
     my $tv = [Time::HiRes::gettimeofday];
 
+    my $client = $params->{client};
+    # provide landing_company information when it is available.
+    $params->{args}->{landing_company} = $client->landing_company->short if $client;
+
     my $response;
     try {
         $response = get_bid($params);
@@ -350,6 +354,10 @@ sub send_bid {
 
 sub send_ask {
     my $params = shift;
+
+    my $client = $params->{client};
+    # provide landing_company information when it is available.
+    $params->{args}->{landing_company} = $client->landing_company->short if $client;
 
     my $symbol   = $params->{args}->{symbol};
     my $response = validate_symbol($symbol);
