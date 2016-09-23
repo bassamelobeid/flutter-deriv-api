@@ -19,6 +19,7 @@
             "properties": {
               "code": {
                 "type": "string",
+                "pattern": "^AppGet$",
                 "description": "Error code"
               },
               "message_to_client": {
