@@ -410,10 +410,4 @@ sub get_contract_details {
     return $response;
 }
 
-sub create_contract {
-    my $contract_parameters = shift;
-
-    return produce_contract($contract_parameters);
-}
-
 1;
