@@ -28,6 +28,7 @@
               },
               "token": {
                 "type": "string",
+                "pattern": "^AppGet$",
                 "description": "Token returned"
               }
             }
