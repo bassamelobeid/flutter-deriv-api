@@ -2502,6 +2502,24 @@ sub _validate_start_and_expiry_date {
     return;
 }
 
+has market_is_inefficient => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_market_is_inefficient {
+    my $self = shift;
+
+    # market inefficiency only applies to forex and commodities.
+    return 0 unless ($self->market->name eq 'forex' or $self->market->name eq 'commodities');
+    return 0 if $self->expiry_daily;
+
+    my $hour = $self->date_pricing->hour + 0;
+    # only 20:00 GMT to end of day
+    return 0 if $hour < 20;
+    return 1;
+}
+
 sub _validate_lifetime {
     my $self = shift;
 
@@ -2510,6 +2528,14 @@ sub _validate_lifetime {
         return {
             message           => 'resale of tick expiry contract',
             message_to_client => localize('Resale of this contract is not offered.'),
+        };
+    }
+
+    # We decided to disable intraday trading on forex and commodities from 20:00 GMT to end of day.
+    if ($self->market_is_inefficient) {
+        return {
+            message           => 'trading disabled on inefficient period.',
+            message_to_client => localize('Trading is temporarily suspended.'),
         };
     }
 
