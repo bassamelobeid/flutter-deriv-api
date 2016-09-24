@@ -609,8 +609,6 @@ sub _build_q_rate {
     my $rate;
     if ($underlying->market->prefer_discrete_dividend) {
         $rate = 0;
-    } elsif ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Asian' and $underlying->market->name eq 'volidx') {
-        $rate = $q_rate / 2;
     } else {
         $rate = $q_rate;
     }
@@ -1622,6 +1620,8 @@ sub _build_new_interface_engine {
     my $self = shift;
 
     my %engines = (
+        'Pricing::Engine::Asian'                => 1,
+        'Pricing::Engine::Digits'               => 1,
         'Pricing::Engine::TickExpiry'           => 1,
         'Pricing::Engine::EuropeanDigitalSlope' => 1,
     );
@@ -1633,9 +1633,11 @@ sub _pricing_parameters {
     my $self = shift;
 
     my $result = {
-        priced_with       => $self->priced_with,
-        spot              => $self->pricing_spot,
-        strikes           => [grep { $_ } values %{$self->barriers_for_pricing}],
+        priced_with => $self->priced_with,
+        spot        => $self->pricing_spot,
+        strikes     => $self->pricing_engine_name eq 'Pricing::Engine::Digits'
+        ? ($self->barrier ? $self->barrier->as_absolute : undef)
+        : [grep { $_ } values %{$self->barriers_for_pricing}],
         date_start        => $self->effective_start,
         date_expiry       => $self->date_expiry,
         date_pricing      => $self->date_pricing,
@@ -2500,6 +2502,24 @@ sub _validate_start_and_expiry_date {
     return;
 }
 
+has market_is_inefficient => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_market_is_inefficient {
+    my $self = shift;
+
+    # market inefficiency only applies to forex and commodities.
+    return 0 unless ($self->market->name eq 'forex' or $self->market->name eq 'commodities');
+    return 0 if $self->expiry_daily;
+
+    my $hour = $self->date_pricing->hour + 0;
+    # only 20:00 GMT to end of day
+    return 0 if $hour < 20;
+    return 1;
+}
+
 sub _validate_lifetime {
     my $self = shift;
 
@@ -2508,6 +2528,14 @@ sub _validate_lifetime {
         return {
             message           => 'resale of tick expiry contract',
             message_to_client => localize('Resale of this contract is not offered.'),
+        };
+    }
+
+    # We decided to disable intraday trading on forex and commodities from 20:00 GMT to end of day.
+    if ($self->market_is_inefficient) {
+        return {
+            message           => 'trading disabled on inefficient period.',
+            message_to_client => localize('Trading is temporarily suspended.'),
         };
     }
 

@@ -70,6 +70,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             }}});
 
 subtest 'date start blackouts' => sub {
+    my $mocked = Test::MockModule->new('BOM::Product::Contract');
+    $mocked->mock('market_is_inefficient', sub {0});
     note('Testing date_start blackouts for frxAUDUSD');
     my $one_second_since_open = $weekday->plus_time_interval('1s');
     my $bet_params            = {
@@ -132,7 +134,8 @@ subtest 'date start blackouts' => sub {
     $c = produce_contract($bet_params);
     # the reason we mock it here is because to get tick expiry pricing work, it need proper Aggtick setup which need to dump a lots of tick
     # since this test is mainly test for blackout period, it is not matter what price it is .
-    my $mocked = Test::MockModule->new('BOM::Product::Contract::Call');
+    $mocked = Test::MockModule->new('BOM::Product::Contract::Call');
+    $mocked->mock('market_is_inefficient', sub{0});
     $mocked->mock(
         'ask_probability',
         Math::Util::CalculatedValue::Validatable->new({
