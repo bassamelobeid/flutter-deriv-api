@@ -4,7 +4,7 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-use BOM::Product::Pricing::Engine::Asian;
+use Pricing::Engine::Asian;
 use BOM::Product::Pricing::Greeks::Asian;
 
 # Static methods.
@@ -21,11 +21,13 @@ sub _build_ticks_to_expiry {
 }
 
 sub _build_pricing_engine_name {
-    return 'BOM::Product::Pricing::Engine::Asian';
+    return 'Pricing::Engine::Asian';
 }
 
 sub _build_pricing_engine {
-    return BOM::Product::Pricing::Engine::Asian->new({bet => shift});
+    my $self = shift;
+    my %pricing_parameters = map { $_ => $self->_pricing_parameters->{$_} } @{$self->pricing_engine_name->required_args};
+    return Pricing::Engine::Asian->new(\%pricing_parameters);
 }
 
 sub _build_greek_engine {
