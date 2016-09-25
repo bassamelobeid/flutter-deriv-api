@@ -68,7 +68,6 @@ sub authorize {
             currency             => ($account ? $account->currency_code : ''),
             landing_company_name => $client->landing_company->short,
             is_virtual           => ($client->is_virtual ? 1 : 0),
-            offerings_type       => $client->landing_company->legal_allowed_offerings,
         },
     };
 }
