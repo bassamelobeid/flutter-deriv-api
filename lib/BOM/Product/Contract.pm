@@ -1332,6 +1332,7 @@ sub _build_uses_empirical_volatility {
 
     # only applicable for forex because it has not been studied on other markets.
     return 0 if $self->market->name ne 'forex';
+    return 0 if $self->is_forward_starting;
 
     # first term on volsurface.
     my $overnight_tenor = $self->volsurface->original_term_for_smile->[0];
