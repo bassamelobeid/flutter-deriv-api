@@ -1129,7 +1129,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         return Error::Base->cuss(
             -type              => 'DailyProfitLimitExceeded',
             -mesg              => 'Exceeds daily profit limit',
-            -message_to_client => BOM::Platform::Context::localize('You have exceeded the daily profit limit.'),
+            -message_to_client => BOM::Platform::Context::localize('No further trading is allowed for the current trading session.'),
         );
     },
 );
