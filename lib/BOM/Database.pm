@@ -114,15 +114,24 @@ Example:
 sub txn(&;@) {
     my $code = shift;
     _check_fork();
+    my $wantarray = wantarray;
     if(my $count =()= extract_by { !defined($_) } @DBH) {
         warn "Had $count database handles that were not released via release_dbh, probable candidates follow:\n";
         my %addr = map {; refaddr($_) => 1 } @DBH;
         warn "unreleased dbh in $_\n" for sort delete @DBH_SOURCE{grep !exists $addr{$_}, keys %DBH_SOURCE};
     }
 
+    my @rslt;
     eval {
         $_->begin_work for @DBH;
-        $code->(@_);
+        # We want to pass through list/scalar/void context to the coderef
+        if($wantarray) {
+            @rslt = $code->(@_);
+        } elsif(defined $wantarray {
+            $rslt[0] = $code->(@_);
+        } else {
+            $code->(@_);
+        }
         _check_fork();
         $_->commit for grep defined, @DBH; # might have closed database handle(s) in $code
         1
@@ -135,7 +144,7 @@ sub txn(&;@) {
         } or warn "after $err also had failure in rollback: $@" for grep defined, @DBH;
         die $err;
     };
-    return;
+    return $wantarray ? @rslt : $rslt[0];
 }
 
 =head2 _check_fork
