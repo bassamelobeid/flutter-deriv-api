@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More (tests => 11);
+use Test::More (tests => 10);
 use Test::Exception;
 use BOM::Database::Model::Account;
 use BOM::Database::Model::FinancialMarketBet::HigherLowerBet;

@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More (tests => 14);
+use Test::More (tests => 13);
 use Test::Exception;
 use Date::Utility;
 use BOM::Database::Model::HandoffToken;

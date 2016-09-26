@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests=>16;
+use Test::More tests=>15;
 use Test::Exception;
 use BOM::Database::Model::Account;
 use BOM::Database::Model::FinancialMarketBet;
