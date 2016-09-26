@@ -82,8 +82,8 @@ sub mt5_new_account {
         $group = 'real\\' . $mt_company;
     } else {
         return BOM::RPC::v3::Utility::create_error({
-        code              => 'InvalidAccountType',
-        message_to_client => localize('Invalid account type.')});
+                code              => 'InvalidAccountType',
+                message_to_client => localize('Invalid account type.')});
     }
 
     # client can have only 1 MT demo & 1 MT real a/c
