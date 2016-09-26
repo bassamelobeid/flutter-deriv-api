@@ -68,7 +68,7 @@ sub register_dbh {
     $dbh
 }
 
-=head2 register_dbh
+=head2 release_dbh
 
 Marks the given database handle as no longer active - it will not be used for any further transaction requests
 via L</txn>.
