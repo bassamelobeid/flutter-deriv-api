@@ -140,7 +140,7 @@ sub dbi_connect {
     );
 
     my $dbh = DBI->connect(@params) || croak $DBI::errstr;
-    BOM::Database::register_dbh($dbh);
+    BOM::Database::register_dbh($dbh) unless BOM::Database::dbh_is_registered($dbh);
     return $dbh;
 }
 
