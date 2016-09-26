@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More (tests => 14);
+use Test::More (tests => 17);
 use DBI;
 use DBD::SQLite;
 use Test::Exception;
