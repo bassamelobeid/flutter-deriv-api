@@ -21,7 +21,7 @@ to request a transaction against all active database handles.
 use Scalar::Util qw(weaken refaddr);
 use List::UtilsBy qw(extract_by);
 
-our @EXPORT_OK = qw(register_dbh release_dbh txn);
+our @EXPORT_OK = qw(register_dbh release_dbh dbh_is_registered txn);
 
 # List of all retained handles. Since we don't expect to update the list
 # often, and the usual action is to iterate through them all in sequence,
@@ -97,6 +97,24 @@ sub release_dbh {
     # since they're weakrefs, some of these may be undef
     extract_by { $addr = (defined($_) ? refaddr($_) : 0) } @DBH;
     return $dbh;
+}
+
+=head2 dbh_is_registered
+
+Returns true if the provided database handle has been registered already.
+
+Used when registering a handle acquired via L<DBI/connect_cached>.
+
+    register_dbh($dbh) unless dbh_is_registered($dbh);
+
+=cut
+
+sub dbh_is_registered {
+    my ($dbh) = @_;
+    die "too many parameters to register_dbh: @_" if @_ > 1;
+    _check_fork();
+    my $addr = refaddr $dbh;
+    return exists $DBH_SOURCE{$addr} ? 1 : 0;
 }
 
 =head2 txn
