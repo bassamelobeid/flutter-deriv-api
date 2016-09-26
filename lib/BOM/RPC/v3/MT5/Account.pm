@@ -58,29 +58,33 @@ sub mt5_new_account {
         } else {
             $group = 'demo\virtual';
         }
-    } elsif ($account_type eq 'gaming' or $account_type eq 'financial') {
-        # 5 Sept 2016: only CR fully authenticated client can open MT real a/c
-        unless ($client->landing_company->short eq 'costarica' and $client->client_fully_authenticated) {
-            return BOM::RPC::v3::Utility::permission_error();
-        }
-
-        # get MT company from countries.yml
-        my $mt_key     = 'mt_' . $account_type . '_company';
-        my $mt_company = 'none';
-        if (defined $countries_list->{$client->residence} && defined $countries_list->{$client->residence}->{$mt_key}) {
-            $mt_company = $countries_list->{$client->residence}->{$mt_key};
-        }
-
-        if ($mt_company eq 'none') {
-            return BOM::RPC::v3::Utility::permission_error();
-        }
-
-        $group = 'real\\' . $mt_company;
-    } else {
+    } elsif ($account_type ne 'gaming' and $account_type ne 'financial') {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccountType',
                 message_to_client => localize('Invalid account type.')});
     }
+
+    # 5 Sept 2016: only CR fully authenticated client can open MT real a/c
+    unless ($client->landing_company->short eq 'costarica') {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
+
+    if ($account_type eq 'financial' && !$client->client_fully_authenticated) {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
+
+    # get MT company from countries.yml
+    my $mt_key     = 'mt_' . $account_type . '_company';
+    my $mt_company = 'none';
+    if (defined $countries_list->{$client->residence} && defined $countries_list->{$client->residence}->{$mt_key}) {
+        $mt_company = $countries_list->{$client->residence}->{$mt_key};
+    }
+
+    if ($mt_company eq 'none') {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
+
+    $group = 'real\\' . $mt_company;
 
     # client can have only 1 MT demo & 1 MT real a/c
     my $user = BOM::Platform::User->new({email => $client->email});
