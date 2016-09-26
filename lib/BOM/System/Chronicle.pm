@@ -87,7 +87,6 @@ use DBI;
 use DateTime;
 use Date::Utility;
 use BOM::System::RedisReplicated;
-use BOM::Database;
 
 use Data::Chronicle::Reader;
 use Data::Chronicle::Writer;
@@ -274,7 +273,6 @@ sub _dbh {
     # Note that switching DBIx::Connector's ->ping behaviour would not be much help for Data::Chronicle::*
     # handles, we'd need to update Data::Chronicle itself to use DBIx::Connector to get that benefit.
     return $dbh if $dbh and $$ == $pid;
-    BOM::Database::release_dbh($dbh) if $dbh;
     $pid = $$;
     $dbh = DBI->connect(
         '' . _dbh_dsn(),
@@ -284,7 +282,6 @@ sub _dbh {
             RaiseError        => 1,
             pg_server_prepare => 0,
         });
-    BOM::Database::register_dbh($dbh);
     _dbh_changed();
     return $dbh;
 }
