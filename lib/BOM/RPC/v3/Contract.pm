@@ -186,15 +186,16 @@ sub _get_ask {
 
 sub get_bid {
     my $params = shift;
-    my ($short_code, $contract_id, $currency, $is_sold, $sell_time, $buy_price, $sell_price, $app_markup_percentage) =
-        @{$params}{qw/short_code contract_id currency is_sold sell_time buy_price sell_price app_markup_percentage/};
+    my ($short_code, $contract_id, $currency, $is_sold, $sell_time, $buy_price, $sell_price, $app_markup_percentage, $landing_company) =
+        @{$params}{qw/short_code contract_id currency is_sold sell_time buy_price sell_price app_markup_percentage landing_company/};
 
     my $response;
     try {
         my $tv = [Time::HiRes::gettimeofday];
         my $bet_params = shortcode_to_parameters($short_code, $currency);
-        $bet_params->{is_sold} = $is_sold;
+        $bet_params->{is_sold}               = $is_sold;
         $bet_params->{app_markup_percentage} = $app_markup_percentage // 0;
+        $bet_params->{landing_company}       = $landing_company if $landing_company;
         my $contract = produce_contract($bet_params);
 
         if ($contract->is_legacy) {
@@ -333,10 +334,6 @@ sub send_bid {
 
     my $tv = [Time::HiRes::gettimeofday];
 
-    my $client = $params->{client};
-    # provide landing_company information when it is available.
-    $params->{args}->{landing_company} = $client->landing_company->short if $client;
-
     my $response;
     try {
         $response = get_bid($params);
@@ -355,9 +352,8 @@ sub send_bid {
 sub send_ask {
     my $params = shift;
 
-    my $client = $params->{client};
     # provide landing_company information when it is available.
-    $params->{args}->{landing_company} = $client->landing_company->short if $client;
+    $params->{args}->{landing_company} = $params->{landing_company} if $params->{landing_company};
 
     my $symbol   = $params->{args}->{symbol};
     my $response = validate_symbol($symbol);
