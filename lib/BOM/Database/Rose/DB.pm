@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use Carp;
 
+use BOM::Database;
+
 use Mojo::Exception;
 
 use parent 'Rose::DB';

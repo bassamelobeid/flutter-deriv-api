@@ -6,6 +6,8 @@ use warnings;
 use YAML::XS;
 use DBI;
 
+use BOM::Database;
+
 my $config;
 BEGIN {
   $config = YAML::XS::LoadFile('/etc/rmg/feeddb.yml');
