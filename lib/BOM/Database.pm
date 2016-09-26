@@ -54,7 +54,7 @@ Example:
 
 sub register_dbh {
     my ($dbh) = @_;
-    die "too many parameters to register_dbh: @_" if @_;
+    die "too many parameters to register_dbh: @_" if @_ > 1;
     _check_fork();
     my $addr = refaddr $dbh;
     if(exists $DBH_SOURCE{$addr}) {
@@ -87,7 +87,7 @@ Example:
 
 sub release_dbh {
     my ($dbh) = @_;
-    die "too many parameters to release_dbh: @_" if @_;
+    die "too many parameters to release_dbh: @_" if @_ > 1;
     _check_fork();
     my $addr = refaddr $dbh;
     delete $DBH_SOURCE{$addr};
