@@ -107,8 +107,9 @@ sub prepare_ask {
 }
 
 sub _get_ask {
-    my $p2                    = shift;
+    my $p2                    = {%{+shift}};
     my $app_markup_percentage = shift;
+    my $streaming_params      = delete $p2->{streaming_params};
 
     my $response;
     try {
@@ -160,7 +161,7 @@ sub _get_ask {
             };
 
             # only required for non-spead contracts
-            if ($p2->{from_pricer_daemon} and not $contract->is_spread) {
+            if ($streaming_params->{add_theo_probability} and not $contract->is_spread) {
                 $response->{theo_probability} = $contract->theo_probability->amount;
             }
 
@@ -348,8 +349,7 @@ sub send_bid {
 }
 
 sub send_ask {
-    my $params             = shift;
-    my $from_pricer_daemon = shift;
+    my $params = shift;
 
     my $symbol   = $params->{args}->{symbol};
     my $response = validate_symbol($symbol);
@@ -362,11 +362,8 @@ sub send_ask {
     my $tv = [Time::HiRes::gettimeofday];
 
     try {
-        my $arguments = {
-            from_pricer_daemon => $from_pricer_daemon,
-            %{$params->{args}}};
 
-        $response = _get_ask(prepare_ask($arguments), $params->{app_markup_percentage});
+        $response = _get_ask(prepare_ask($params->{args}), $params->{app_markup_percentage});
 
         $response->{contract_parameters}->{maximum_total_markup} = BOM::System::Config::quants->{commission}->{maximum_total_markup};
         $response->{contract_parameters}->{base_commission_min}  = BOM::System::Config::quants->{commission}->{adjustment}->{minimum};

@@ -242,7 +242,7 @@ subtest 'get_ask' => sub {
         "duration"         => "60",
         "duration_unit"    => "s",
         "symbol"           => "R_50",
-        from_pricer_daemon => 1,
+        "streaming_params" => {add_theo_probability => 1},
     };
     my $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
     ok(delete $result->{spot_time},  'result have spot time');
@@ -255,7 +255,6 @@ subtest 'get_ask' => sub {
         'payout'              => '100',
         'theo_probability'    => 0.499862404631018,
         'contract_parameters' => {
-            'from_pricer_daemon'         => 1,
             'deep_otm_threshold'         => '0.025',
             'barrier'                    => 'S0P',
             'duration'                   => '60s',
@@ -306,7 +305,7 @@ subtest 'send_ask' => sub {
             "duration"         => "60",
             "duration_unit"    => "s",
             "symbol"           => "R_50",
-            from_pricer_daemon => 1,
+            "streaming_params" => {add_theo_probability => 1},
         }};
 
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
@@ -337,11 +336,7 @@ subtest 'send_ask' => sub {
 
 subtest 'get_bid' => sub {
     # just one tick for missing market data
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 899,
-        underlying => 'R_50',
-    });
-
+    create_ticks([100, $now->epoch - 899, 'R_50']);
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch,
         underlying => 'R_50',
@@ -379,7 +374,6 @@ subtest 'get_bid' => sub {
         is_sold     => 0,
     };
     my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-
     my @expected_keys = (
         qw(bid_price
             current_spot_time
@@ -464,12 +458,12 @@ subtest 'get_bid_skip_barrier_validation' => sub {
     set_fixed_time($now->epoch);
 
     $contract = create_contract(
-        client        => $client,
-        spread        => 0,
-        date_expiry   => $now->epoch + 900,
-        bet_type      => 'ONETOUCH',
-        barrier       => 963.3055,
-        date_pricing  => $now->epoch-100,
+        client       => $client,
+        spread       => 0,
+        date_expiry  => $now->epoch + 900,
+        bet_type     => 'ONETOUCH',
+        barrier      => 963.3055,
+        date_pricing => $now->epoch - 100,
     );
 
     $params = {
@@ -492,7 +486,6 @@ subtest 'get_bid_skip_barrier_validation' => sub {
 my $method = 'get_contract_details';
 subtest $method => sub {
     my $params = {token => '12345'};
-
     $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'invalid token');
     $client->set_status('disabled', 1, 'test');
     $client->save;
@@ -518,35 +511,19 @@ subtest $method => sub {
         },
         'result is ok'
     );
-
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 899,
-        underlying => 'frxAUDCAD',
-        quote      => 0.9936
-    });
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 501,
-        underlying => 'frxAUDCAD',
-        quote      => 0.9938
-    });
-
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 499,
-        underlying => 'frxAUDCAD',
-        quote      => 0.9939
-    });
+    create_ticks([0.9935, $now->epoch - 899, 'frxAUDCAD'], [0.9938, $now->epoch - 501, 'frxAUDCAD'], [0.9939, $now->epoch - 499, 'frxAUDCAD']);
 
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        quote      => 0.9935,
         epoch      => $now->epoch,
         underlying => 'frxAUDCAD',
-        quote      => 0.9935
     });
 
     $contract = create_contract(
         client        => $client,
         spread        => 0,
-        current_tick  => $tick,
         underlying    => 'frxAUDCAD',
+        current_tick  => $tick,
         date_start    => $now->epoch - 900,
         date_expiry   => $now->epoch - 500,
         purchase_date => $now->epoch - 901,
@@ -556,28 +533,110 @@ subtest $method => sub {
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => 'USD',
-        is_sold     => 1,
     };
     my $res = $c->call_ok('get_bid', $params)->result;
     my $expected_result = {
-        'barrier'         => '0.99360',
+        'barrier'         => '0.99350',
         'contract_id'     => 10,
         'currency'        => 'USD',
+        'bid_price'       => '158.95',
+        'payout'          => '158.95',
         'date_expiry'     => 1127287660,
         'date_settlement' => 1127287660,
         'date_start'      => 1127287260,
-        'entry_spot'      => '0.99360',
-        'entry_tick'      => '0.99360',
+        'entry_spot'      => '0.99350',
+        'entry_tick'      => '0.99350',
         'entry_tick_time' => 1127287261,
         'exit_tick'       => '0.99380',
         'exit_tick_time'  => 1127287659,
         'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
-        'shortcode'       => 'CALL_FRXAUDCAD_200.8_1127287260_1127287660_S0P_0',
+        'shortcode'       => 'CALL_FRXAUDCAD_158.95_1127287260_1127287660_S0P_0',
+        'underlying'      => 'frxAUDCAD',
+        is_valid_to_sell  => 1,
+    };
+
+    foreach my $key (keys %$expected_result) {
+        cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
+    }
+
+    create_ticks([0.9936, $now->epoch - 499, 'frxAUDCAD'], [0.9938, $now->epoch - 100, 'frxAUDCAD'], [0.9934, $now->epoch - 99, 'frxAUDCAD']);
+
+    $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        quote      => 0.9935,
+        epoch      => $now->epoch,
+        underlying => 'frxAUDCAD',
+    });
+
+    $contract = create_contract(
+        client        => $client,
+        spread        => 0,
+        current_tick  => $tick,
+        underlying    => 'frxAUDCAD',
+        date_start    => $now->epoch - 500,
+        date_expiry   => $now->epoch - 98,
+        purchase_date => $now->epoch - 501,
+        date_pricing  => $now->epoch,
+    );
+    $params = {
+        short_code  => $contract->shortcode,
+        contract_id => $contract->id,
+        currency    => 'USD',
+        is_sold     => 0,
+    };
+    $res = $c->call_ok('get_bid', $params)->result;
+    $expected_result = {
+        'barrier'         => '0.99360',
+        'bid_price'       => '0.00',
+        'is_expired'      => 1,
+        'contract_id'     => 10,
+        'currency'        => 'USD',
+        'date_expiry'     => 1127288662,
+        'date_settlement' => 1127288662,
+        'date_start'      => 1127288260,
+        'payout'          => '200.67',
+        'entry_spot'      => '0.99360',
+        'entry_tick'      => '0.99360',
+        'entry_tick_time' => 1127288261,
+        'exit_tick'       => '0.99340',
+        'exit_tick_time'  => 1127288661,
+        'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 42 seconds after contract start time.',
+        'shortcode'       => 'CALL_FRXAUDCAD_200.67_1127288260_1127288662_S0P_0',
+        'underlying'      => 'frxAUDCAD',
+        is_valid_to_sell  => 1,
+    };
+
+    foreach my $key (keys %$expected_result) {
+        cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
+    }
+
+    $params = {
+        short_code  => $contract->shortcode,
+        contract_id => $contract->id,
+        currency    => 'USD',
+        is_sold     => 1,
+    };
+    $res = $c->call_ok('get_bid', $params)->result;
+    $expected_result = {
+        'barrier'         => '0.99360',
+        'bid_price'       => '0.00',
+        'is_expired'      => 1,
+        'contract_id'     => 10,
+        'currency'        => 'USD',
+        'payout'          => '200.67',
+        'date_expiry'     => 1127288662,
+        'date_settlement' => 1127288662,
+        'date_start'      => 1127288260,
+        'entry_spot'      => '0.99360',
+        'entry_tick'      => '0.99360',
+        'entry_tick_time' => 1127288261,
+        'exit_tick'       => '0.99340',
+        'exit_tick_time'  => 1127288661,
+        'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 42 seconds after contract start time.',
+        'shortcode'       => 'CALL_FRXAUDCAD_200.67_1127288260_1127288662_S0P_0',
         'underlying'      => 'frxAUDCAD',
         is_valid_to_sell  => 0,
         validation_error  => 'This contract has been sold.'
     };
-
     foreach my $key (keys %$expected_result) {
         cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
     }
@@ -699,15 +758,14 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
 
 subtest 'app_markup_percentage' => sub {
     my $params = {
-        "proposal"         => 1,
-        "amount"           => "100",
-        "basis"            => "payout",
-        "contract_type"    => "CALL",
-        "currency"         => "USD",
-        "duration"         => "60",
-        "duration_unit"    => "s",
-        "symbol"           => "R_50",
-        from_pricer_daemon => 1,
+        "proposal"      => 1,
+        "amount"        => "100",
+        "basis"         => "payout",
+        "contract_type" => "CALL",
+        "currency"      => "USD",
+        "duration"      => "60",
+        "duration_unit" => "s",
+        "symbol"        => "R_50",
     };
     my $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
     my $val    = $result->{ask_price};
@@ -717,15 +775,14 @@ subtest 'app_markup_percentage' => sub {
 
     # check app_markup for stake proposal
     $params = {
-        "proposal"         => 1,
-        "amount"           => "100",
-        "basis"            => "stake",
-        "contract_type"    => "CALL",
-        "currency"         => "USD",
-        "duration"         => "60",
-        "duration_unit"    => "s",
-        "symbol"           => "R_50",
-        from_pricer_daemon => 1,
+        "proposal"      => 1,
+        "amount"        => "100",
+        "basis"         => "stake",
+        "contract_type" => "CALL",
+        "currency"      => "USD",
+        "duration"      => "60",
+        "duration_unit" => "s",
+        "symbol"        => "R_50",
     };
     $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
     $val    = $result->{payout};
@@ -753,6 +810,7 @@ subtest 'app_markup_percentage' => sub {
         client => $client,
         spread => 0
     );
+
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 
     $contract = create_contract(
@@ -830,8 +888,21 @@ subtest 'app_markup_percentage' => sub {
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 };
 
-
 done_testing();
+
+sub create_ticks {
+    my @ticks = @_;
+
+    for my $tick (@ticks) {
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            quote      => $tick->[0],
+            epoch      => $tick->[1],
+            underlying => $tick->[2],
+        });
+
+    }
+    return;
+}
 
 sub create_contract {
     my %args = @_;
@@ -839,7 +910,6 @@ sub create_contract {
     my $client = $args{client};
     #postpone 10 minutes to avoid conflicts
     $now = $now->plus_time_interval('10m');
-
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch - 99,
         underlying => 'R_50',
@@ -854,6 +924,7 @@ sub create_contract {
         epoch      => $now->epoch,
         underlying => 'R_50',
     });
+
     my $symbol        = $args{underlying} ? $args{underlying} : 'R_50';
     my $date_start    = $now->epoch - 100;
     my $date_expiry   = $now->epoch - 50;

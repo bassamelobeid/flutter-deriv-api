@@ -209,15 +209,27 @@ sub _validate_start_end {
     my $count       = $args->{count};
     my $granularity = $args->{granularity};
 
+    # special case to send explicit error when
     # both are timestamp & start > end time
-    if ($start =~ /^[0-9]+$/ and $end =~ /^[0-9]+$/ and $start > $end) {
+    if ($start and $end and $start =~ /^[0-9]+$/ and $end =~ /^[0-9]+$/ and $start > $end) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidStartEnd',
                 message_to_client => BOM::Platform::Context::localize("Start time [_1] must be before end time [_2]", $start, $end)});
     }
 
     # if no start but there is count and granularity, use count and granularity to calculate the start time to look back
-    $start = (not $start and $count and $granularity) ? $end - ($count * $granularity) : $start;
+    if (not $start and $count and $granularity) {
+        my $expected_start = Date::Utility->new($end - ($count * $granularity));
+        # handle for non trading day as well
+        unless ($ul->calendar->trades_on($expected_start)) {
+            my $count = 0;
+            do {
+                $expected_start = $expected_start->minus_time_interval('1d');
+                $count++;
+            } while ($count < 5 and not $ul->calendar->trades_on($expected_start));
+        }
+        $start = $expected_start->epoch;
+    }
     # we must not return to the client any ticks/candles after this epoch
     my $licensed_epoch = $ul->last_licensed_display_epoch;
     # max allow 3 years
