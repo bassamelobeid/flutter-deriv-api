@@ -1,5 +1,5 @@
 use 5.010;
-use Test::Most 0.22 (tests => 2);
+use Test::Most 0.22 (tests => 1);
 use Test::Exception;
 
 use BOM::Database::DataMapper::Transaction;
