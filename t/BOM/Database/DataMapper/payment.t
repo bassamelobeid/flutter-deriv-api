@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use Test::More tests => 11;
-use Test::NoWarnings;
 use Test::Exception;
 
 use Date::Utility;

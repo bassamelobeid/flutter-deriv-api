@@ -2,7 +2,6 @@ use strict;
 use warnings;
 
 use Test::More (tests => 4);
-use Test::NoWarnings;
 use Test::Exception;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);

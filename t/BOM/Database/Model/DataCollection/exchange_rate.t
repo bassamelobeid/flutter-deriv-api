@@ -3,7 +3,6 @@
 use strict;
 use warnings;
 use Test::More (tests => 5);
-use Test::NoWarnings;
 use Test::Exception;
 use BOM::Database::Model::ExchangeRate;
 use BOM::Database::ClientDB;

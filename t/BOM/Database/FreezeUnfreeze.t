@@ -1,6 +1,5 @@
 use Test::More tests => 8;
 use Test::Exception;
-use Test::NoWarnings;
 
 use BOM::Database::DataMapper::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);

@@ -2,7 +2,6 @@ use strict;
 
 use Test::More tests => 12;
 
-use Test::NoWarnings;
 use DBI;
 use DBD::SQLite;
 use Test::Exception;

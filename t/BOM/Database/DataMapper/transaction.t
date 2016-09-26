@@ -1,7 +1,6 @@
 use strict;
 use warnings;
 use Test::Most (tests => 31);
-use Test::NoWarnings;
 use Test::MockTime qw( set_absolute_time restore_time );
 use Test::Exception;
 

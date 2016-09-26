@@ -4,9 +4,7 @@ use strict;
 use warnings;
 
 use Test::More (tests => 37);
-use Test::NoWarnings;
 use Test::Exception;
-use Test::Warn;
 
 use BOM::Database::ClientDB;
 

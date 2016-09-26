@@ -1,7 +1,6 @@
 use strict;
 use warnings;
 use Test::More (tests => 32);
-use Test::NoWarnings;
 
 use Test::Exception;
 use BOM::Database::DataMapper::FinancialMarketBet;

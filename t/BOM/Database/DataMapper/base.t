@@ -1,7 +1,6 @@
 use strict;
 use warnings;
 use Test::More (tests => 13);
-use Test::NoWarnings;
 
 use Test::Exception;
 use BOM::Database::DataMapper::Base;
