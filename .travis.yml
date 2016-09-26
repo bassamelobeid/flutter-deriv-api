@@ -1,6 +1,8 @@
 language: perl
 perl:
     - "5.14.2-thr"
+matrix:
+    fast_finish: true
 cache: apt
 before_install:
     - git clone https://d34c443afcc0c115c07590c76f7e3886190b3a76@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
