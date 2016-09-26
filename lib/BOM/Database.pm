@@ -89,11 +89,14 @@ sub release_dbh {
     my ($dbh) = @_;
     die "too many parameters to release_dbh: @_" if @_ > 1;
     _check_fork();
-    my $addr = refaddr $dbh;
+    # At destruction we may have an invalid handle
+    my $addr = refaddr $dbh or return $dbh;
+    warn "releasing unregistered dbh $dbh" unless exists $DBH_SOURCE{$addr};
     delete $DBH_SOURCE{$addr};
-    # avoiding grep here because these are weakrefs and we want them to stay that way
-    extract_by { $_ == $addr } @DBH;
-    $dbh
+    # avoiding grep here because these are weakrefs and we want them to stay that way.
+    # since they're weakrefs, some of these may be undef
+    extract_by { $addr = (defined($_) ? refaddr($_) : 0) } @DBH;
+    return $dbh;
 }
 
 =head2 txn
