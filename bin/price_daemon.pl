@@ -43,6 +43,59 @@ sub signal_handler {
     exit 0;
 }
 
+sub process_job {
+    my ($redis, $next, $params) = @_;
+
+    my $price_daemon_cmd = delete $params->{price_daemon_cmd} || '';
+    my $current_time     = time;
+    my $response;
+
+    if ($price_daemon_cmd eq 'price') {
+        # ::Underlying can throw an exception if no symbol was given.
+        my $underlying = eval {
+            BOM::Market::Underlying->new($params->{symbol})
+        } or do {
+            warn "$params->{symbol} doesn't have an underlying obj - exception was $@";
+            DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => ['tag:' . $internal_ip]});
+            return undef;
+        };
+        if (not defined $underlying->spot_tick) {
+            warn "$params->{symbol} doesn't have spot_tick";
+            DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => ['tag:' . $internal_ip]});
+            return undef;
+        }
+        if (not defined $underlying->spot_tick->epoch) {
+            warn "$params->{symbol} doesn't have epoch";
+            DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => ['tag:' . $internal_ip]});
+            return undef;
+        }
+        my $current_spot_ts = $underlying->spot_tick->epoch;
+        my $last_price_ts   = $redis->get($next) || 0;
+
+        return undef if ($current_spot_ts == $last_price_ts and $current_time - $last_price_ts <= 10);
+
+        $redis->set($next, $current_time);
+        $redis->expire($next, 300);
+        $params->{streaming_params}->{add_theo_probability} = 1;
+        $response = BOM::RPC::v3::Contract::send_ask({args=>$params});
+
+    } elsif ($price_daemon_cmd eq 'bid') {
+
+        $params->{validation_params}->{skip_barrier_validation} = 1;
+        $response = BOM::RPC::v3::Contract::send_bid($params);
+
+    } else {
+        warn "Unrecognized Pricer command! Payload is: " . ($next // 'undefined');
+        DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.unknown.invalid", {tags => ['tag:' . $internal_ip]});
+        return undef;
+    }
+
+    DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.call", {tags => ['tag:' . $internal_ip]});
+    DataDog::DogStatsd::Helper::stats_timing("pricer_daemon.$price_daemon_cmd.time", $response->{rpc_time}, {tags => ['tag:' . $internal_ip]});
+    $response->{price_daemon_cmd} = $price_daemon_cmd;
+    return $response;
+}
+
 while (1) {
     $pm->start and next;
 
@@ -67,53 +120,7 @@ while (1) {
         my $payload = JSON::XS::decode_json($next);
         my $params  = {@{$payload}};
 
-        my $price_daemon_cmd = delete $params->{price_daemon_cmd} || '';
-        my $current_time     = time;
-        my $response;
-
-        if ($price_daemon_cmd eq 'price') {
-            # ::Underlying can throw an exception if no symbol was given.
-            my $underlying = eval {
-                BOM::Market::Underlying->new($params->{symbol})
-            } or do {
-                warn "$params->{symbol} doesn't have an underlying obj - exception was $@";
-                DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => ['tag:' . $internal_ip]});
-                next;
-            };
-            if (not defined $underlying->spot_tick) {
-                warn "$params->{symbol} doesn't have spot_tick";
-                DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => ['tag:' . $internal_ip]});
-                next;
-            }
-            if (not defined $underlying->spot_tick->epoch) {
-                warn "$params->{symbol} doesn't have epoch";
-                DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => ['tag:' . $internal_ip]});
-                next;
-            }
-            my $current_spot_ts = $underlying->spot_tick->epoch;
-            my $last_price_ts   = $redis->get($next) || 0;
-
-            next if ($current_spot_ts == $last_price_ts and $current_time - $last_price_ts <= 10);
-
-            $redis->set($next, $current_time);
-            $redis->expire($next, 300);
-            $params->{streaming_params}->{add_theo_probability} = 1;
-            $response = BOM::RPC::v3::Contract::send_ask({args=>$params});
-
-        } elsif ($price_daemon_cmd eq 'bid') {
-
-            $params->{validation_params}->{skip_barrier_validation} = 1;
-            $response = BOM::RPC::v3::Contract::send_bid($params);
-
-        } else {
-            warn "Unrecognized Pricer command! Payload is: " . ($next // 'undefined');
-            DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.unknown.invalid", {tags => ['tag:' . $internal_ip]});
-            next;
-        }
-
-        DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.call", {tags => ['tag:' . $internal_ip]});
-        DataDog::DogStatsd::Helper::stats_timing("pricer_daemon.$price_daemon_cmd.time", $response->{rpc_time}, {tags => ['tag:' . $internal_ip]});
-        $response->{price_daemon_cmd} = $price_daemon_cmd;
+        my $response = process_job($redis, $next, $params) or next;
 
         warn "Pricing time too long: " . $response->{rpc_time} . ' - ' . join(', ', map "$_ = $params->{$_}", sort keys %$params) . "\n" if $response->{rpc_time}>1000;
 
