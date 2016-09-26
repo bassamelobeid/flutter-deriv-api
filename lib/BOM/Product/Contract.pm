@@ -1332,6 +1332,8 @@ sub _build_uses_empirical_volatility {
 
     # only applicable for forex because it has not been studied on other markets.
     return 0 if $self->market->name ne 'forex';
+    # some forex has flat volatility, e.g. WLDUSD
+    return 0 if $self->underlying->volatility_surface_type eq 'flat';
     return 0 if $self->is_forward_starting;
 
     # first term on volsurface.
