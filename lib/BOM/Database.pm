@@ -127,7 +127,7 @@ sub txn(&;@) {
         # We want to pass through list/scalar/void context to the coderef
         if($wantarray) {
             @rslt = $code->(@_);
-        } elsif(defined $wantarray {
+        } elsif(defined $wantarray) {
             $rslt[0] = $code->(@_);
         } else {
             $code->(@_);
