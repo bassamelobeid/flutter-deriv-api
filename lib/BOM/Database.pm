@@ -95,7 +95,7 @@ sub release_dbh {
     delete $DBH_SOURCE{$addr};
     # avoiding grep here because these are weakrefs and we want them to stay that way.
     # since they're weakrefs, some of these may be undef
-    extract_by { $addr = (defined($_) ? refaddr($_) : 0) } @DBH;
+    extract_by { $addr == (defined($_) ? refaddr($_) : 0) } @DBH;
     return $dbh;
 }
 
