@@ -10,13 +10,7 @@ use Test::PostgreSQL;
 use Test::SharedFork;
 use Scalar::Util qw(refaddr);
 
-use Devel::CheckOS qw(die_if_os_is);
-
 use BOM::System::Chronicle;
-      
-# Not expecting us to switch any time soon, but our test depends on
-# non-Windows behaviour for fork().
-die_if_os_is 'MSWin32';
 
 my $pg = Test::PostgreSQL->new or plan skip_all => $Test::PostgreSQL::errstr;
 
