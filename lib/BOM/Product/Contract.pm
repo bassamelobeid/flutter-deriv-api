@@ -1322,12 +1322,29 @@ has [qw(pricing_vol news_adjusted_pricing_vol)] => (
     lazy_build => 1,
 );
 
+has uses_empirical_volatility => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_uses_empirical_volatility {
+    my $self = shift;
+
+    # only applicable for forex because it has not been studied on other markets.
+    return 0 if $self->market->name ne 'forex';
+
+    # first term on volsurface.
+    my $overnight_tenor = $self->volsurface->original_term_for_smile->[0];
+    return 0 if $self->timeindays->amount >= $overnight_tenor;
+    return 1;
+}
+
 sub _build_pricing_vol {
     my $self = shift;
 
     my $vol;
     my $volatility_error;
-    if ($self->priced_with_intraday_model) {
+    if ($self->uses_empirical_volatility) {
         my $volsurface       = $self->empirical_volsurface;
         my $duration_seconds = $self->timeindays->amount * 86400;
         # volatility doesn't matter for less than 10 minutes ATM contracts,
