@@ -640,7 +640,7 @@ sub _build_intraday_vega_correction {
     return $vc;
 }
 
-has economic_events_volatility_risk_markup => (
+has [qw(economic_events_volatility_risk_markup economic_events_spot_risk_markup)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -668,6 +668,70 @@ sub _build_economic_events_volatility_risk_markup {
 
     return $markup;
 }
+
+sub _build_economic_events_spot_risk_markup {
+    my $self = shift;
+
+    my $bet   = $self->bet;
+    my $start = $bet->effective_start;
+    my $end   = $bet->date_expiry;
+    my @time_samples;
+    for (my $i = $start->epoch; $i <= $end->epoch; $i += 15) {
+        push @time_samples, $i;
+    }
+
+    my $contract_duration = $bet->remaining_time->seconds;
+    my $lookback          = $start->minus_time_interval($contract_duration + 3600);
+    my $news_array        = $self->_get_economic_events($lookback, $end);
+
+    my @combined = (0) x scalar(@time_samples);
+    foreach my $news (@$news_array) {
+        my $effective_news_time = _get_effective_news_time($news->{release_time}, $start->epoch, $contract_duration);
+        # +1e-9 is added to prevent a division by zero error if news magnitude is 1
+        my $decay_coef = -log(2 / ($news->{magnitude} + 1e-9)) / $news->{duration};
+        my @triangle;
+        foreach my $time (@time_samples) {
+            if ($time < $effective_news_time) {
+                push @triangle, 0;
+            } else {
+                my $chunk = $news->{bias} * exp(-$decay_coef * ($time - $effective_news_time));
+                push @triangle, $chunk;
+            }
+        }
+        @combined = map { max($triangle[$_], $combined[$_]) } (0 .. $#time_samples);
+    }
+
+    my $spot_risk_markup = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'economic_events_spot_risk_markup',
+        description => 'markup to account for spot risk of economic events',
+        set_by      => __PACKAGE__,
+        maximum     => 0.15,
+        base_amount => sum(@combined) / scalar(@combined),
+    });
+
+    return $spot_risk_markup;
+}
+
+sub _get_effective_news_time {
+    my ($news_time, $contract_start, $contract_duration) = @_;
+
+    my $five_minutes_in_seconds = 5 * 60;
+    my $shift_seconds           = 0;
+    my $contract_end            = $contract_start + $contract_duration;
+    if ($news_time > $contract_start - $five_minutes_in_seconds and $news_time < $contract_start) {
+        $shift_seconds = $contract_start - $news_time;
+    } elsif ($news_time < $contract_end + $five_minutes_in_seconds and $news_time > $contract_end - $five_minutes_in_seconds) {
+        # Always shifts to the contract start time if duration is less than 5 minutes.
+        my $max_shift = min($five_minutes_in_seconds, $contract_duration);
+        my $desired_start = $contract_end - $max_shift;
+        $shift_seconds = $desired_start - $news_time;
+    }
+
+    my $effective_time = $news_time + $shift_seconds;
+
+    return $effective_time;
+}
+
 
 has volatility_scaling_factor => (
     is      => 'ro',
