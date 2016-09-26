@@ -1335,8 +1335,8 @@ sub _build_uses_empirical_volatility {
     return 0 if $self->is_forward_starting;
 
     # first term on volsurface.
-    my $overnight_tenor = $self->volsurface->original_term_for_smile->[0];
-    return 0 if $self->timeindays->amount >= $overnight_tenor;
+    my $overnight_epoch = (sort { $a <=> $b } keys %{$self->volsurface->variance_table})[1];
+    return 0 if $self->date_expiry->epoch >= $overnight_epoch;
     return 1;
 }
 
