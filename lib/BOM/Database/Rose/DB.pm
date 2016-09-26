@@ -138,8 +138,14 @@ sub dbi_connect {
     );
 
     my $dbh = DBI->connect(@params) || croak $DBI::errstr;
-
+    BOM::Database::register_dbh($dbh);
     return $dbh;
+}
+
+sub disconnect {
+    my $self = shift;
+    BOM::Database::release_dbh($self->{dbh}) if $self->{dbh};
+    $self->SUPER::disconnect(@_);
 }
 
 1;
