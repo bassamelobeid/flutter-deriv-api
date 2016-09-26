@@ -203,6 +203,12 @@ sub output_validation {
 
     return unless $req_storage;
 
+    # Because of the implementation of "Mojo::WebSocketProxy::Dispatcher", a request reached
+    # rate limit will still be validated, which should be ignored.
+    if (ref $api_response eq 'HASH' and exists $api_response->{error}) {
+        return if exists $api_response->{error}{code} and $api_response->{error}{code} eq 'RateLimit';
+    }
+
     if ($req_storage->{out_validator}) {
         my $output_validation_result = $req_storage->{out_validator}->validate($api_response);
         if (not $output_validation_result) {
