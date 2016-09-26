@@ -857,7 +857,7 @@ sub is_after_expiry {
             if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds));
     } else {
 
-        return 1 if $self->date_pricing->epoch >= $self->date_expiry->epoch;
+        return 1 if $self->get_time_to_expiry->seconds == 0;
     }
     return 0;
 }
@@ -2083,7 +2083,7 @@ sub _build_exit_tick {
     } elsif ($self->is_after_expiry and not $self->is_after_settlement) {
         # After expiry and yet pass the settlement, use current tick at the date_expiry
         # to determine the pre-settlement value. It might diff with actual settlement value
-        $exit_tick = $self->current_tick;
+        $exit_tick = $self->tick_at($self->date_expiry->epoch, {allow_inconsistent => 1});
     } elsif ($self->expiry_daily or $self->date_expiry->is_same_as($self->calendar->closing_on($self->date_expiry))) {
         # Expiration based on daily OHLC
         $exit_tick = $underlying->closing_tick_on($self->date_expiry->date);
