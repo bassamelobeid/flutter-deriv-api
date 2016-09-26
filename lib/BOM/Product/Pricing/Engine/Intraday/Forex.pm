@@ -732,7 +732,6 @@ sub _get_effective_news_time {
     return $effective_time;
 }
 
-
 has volatility_scaling_factor => (
     is      => 'ro',
     lazy    => 1,
