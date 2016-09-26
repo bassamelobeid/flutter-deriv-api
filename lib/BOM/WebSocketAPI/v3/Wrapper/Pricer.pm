@@ -153,7 +153,7 @@ sub _pricing_channel_for_ask {
 
     delete $args_hash{passthrough};
 
-    $args_hash{language} = $c->stash('language') || 'EN';
+    $args_hash{language}         = $c->stash('language') || 'EN';
     $args_hash{price_daemon_cmd} = $price_daemon_cmd;
     $args_hash{landing_company}  = $c->stash('landing_company_name');
     my $redis_channel = _serialized_args(\%args_hash);
@@ -172,7 +172,7 @@ sub _pricing_channel_for_bid {
     my %hash;
     @hash{qw(short_code contract_id currency sell_time)} = delete @{$cache}{qw(short_code contract_id currency sell_time)};
     $hash{is_sold} = $cache->{is_sold} + 0;
-    $hash{language} = $c->stash('language') || 'EN';
+    $hash{language}         = $c->stash('language') || 'EN';
     $hash{price_daemon_cmd} = $price_daemon_cmd;
     $hash{landing_company}  = $c->stash('landing_company_name');
     my $redis_channel = _serialized_args(\%hash);
