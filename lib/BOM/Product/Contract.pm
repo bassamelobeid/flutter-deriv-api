@@ -2537,7 +2537,7 @@ sub _validate_lifetime {
         my $from = $self->date_pricing->is_dst_in_zone('America/New_York') ? '20:00' : '21:00';
         return {
             message           => 'trading disabled on inefficient period.',
-            message_to_client => localize('Contracts of less of than 24h in duration are not available between [_1]-23:59:59 GMT.', $from),
+            message_to_client => localize('Contracts of less than 24h in duration are not available between [_1]-23:59:59 GMT.', $from),
         };
     }
 
