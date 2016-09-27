@@ -141,7 +141,7 @@ sub _setup_rates {
         $asset->save;
     } else {
         if ($underlying->market->name eq 'indices') {
-            $asset = Quant::Framework::Dividend->new(
+            $asset = Quant::Framework::Asset->new(
                 symbol           => $asset->symbol,
                 rates            => $rates->{asset_rate}->{continuous},
                 discrete_points  => $rates->{asset_rate}->{discrete},
