@@ -491,6 +491,12 @@ my $iv_risk_interpolator = Math::Function::Interpolator->new(
         0.95 => 0.15,
     });
 
+my $shortterm_risk_interpolator = Math::Function::Interpolator->new(
+    points => {
+        1  => 0.15,
+        15 => 0.01,
+    });
+
 =head1 risk_markup
 
 Markup added to accommdate for pricing uncertainty
@@ -552,6 +558,17 @@ sub _build_risk_markup {
             base_amount => 0.1,
         });
         $risk_markup->include_adjustment('add', $spot_jump_markup);
+    }
+
+    if ($self->bet->is_atm_bet and $bet->remaining_time->minutes <= 15) {
+        my $amount                         = $shortterm_risk_interpolator->linear($bet->remaining_time->minutes);
+        my $shortterm_kurtosis_risk_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'short_term_kurtosis_risk_markup',
+            description => 'shortterm markup added for kurtosis risk for contract less than 15 minutes',
+            set_by      => __PACKAGE__,
+            base_amount => $amount,
+        });
+        $risk_markup->include_adjustment('add', $shortterm_kurtosis_risk_markup);
     }
 
     return $risk_markup;
