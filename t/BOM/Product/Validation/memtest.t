@@ -5,8 +5,7 @@ use warnings;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
-use Test::More tests => 2;
-use Test::NoWarnings;
+use Test::More tests => 1;
 use Test::Exception;
 use Test::Memory::Cycle;
 

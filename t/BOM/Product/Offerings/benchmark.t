@@ -1,7 +1,6 @@
 #!/etc/rmg/bin/perl
 
-use Test::More tests => 2;
-use Test::NoWarnings;
+use Test::More tests => 1;
 
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Platform::LandingCompany::Registry;
