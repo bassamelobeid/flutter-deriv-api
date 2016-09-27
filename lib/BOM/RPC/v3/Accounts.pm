@@ -520,9 +520,10 @@ sub get_settings {
     $jp_real_settings = BOM::RPC::v3::Japan::NewAccount::get_jp_settings($client) if ($client->landing_company->short eq 'japan');
 
     return {
-        email        => $client->email,
-        country      => $country,
-        country_code => $country_code,
+        email         => $client->email,
+        country       => $country,
+        country_code  => $country_code,
+        email_consent => BOM::Platform::User->new({email => $client->email})->email_consent,
         (
             $client->is_virtual
             ? ()
@@ -555,6 +556,13 @@ sub set_settings {
         @{$params}{qw/website_name client_ip user_agent language args/};
 
     my $residence = $args->{residence};
+    # email consent is per user whereas other settings are per client
+    # so need to save it separately
+    if (exists $args->{email_consent}) {
+        my $user = BOM::Platform::User->new({email => $client->email});
+        $user->email_consent($args->{email_consent});
+        $user->save;
+    }
     if ($client->is_virtual) {
         # Virtual client can only update residence, if residence not set. But not for Japan
         if (not $client->residence and $residence and $residence ne 'jp') {
