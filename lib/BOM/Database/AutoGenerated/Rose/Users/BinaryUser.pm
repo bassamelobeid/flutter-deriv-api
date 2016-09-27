@@ -17,7 +17,7 @@ __PACKAGE__->meta->setup(
         utm_medium     => { type => 'varchar', length => 100, remarks => 'Required parameter to identify the medium the link was used upon such as: email, CPC, or other method of sharing' },
         utm_campaign   => { type => 'varchar', length => 100, remarks => 'Required parameter to identify a specific product promotion or strategic campaign such as a spring sale or other promotion' },
         app_id         => { type => 'bigint', remarks => 'Refers to the values found in oauth.apps.id' },
-        email_consent  => { type => 'boolean' },
+        email_consent  => { type => 'boolean', default => 'false' },
     ],
 
     primary_key_columns => [ 'id' ],
