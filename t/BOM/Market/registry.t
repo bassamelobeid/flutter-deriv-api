@@ -129,7 +129,7 @@ subtest 'Market builds or configs test' => sub {
         ok !$indices->foreign_bs_probability;
         ok !$indices->absolute_barrier_multiplier;
 
-        cmp_deeply($indices->providers, ['idata', 'telekurs', 'tenfore']);
+        cmp_deeply($indices->providers, ['idata', 'telekurs']);
 
         is $indices->license, 'daily';
         ok $indices->official_ohlc;
