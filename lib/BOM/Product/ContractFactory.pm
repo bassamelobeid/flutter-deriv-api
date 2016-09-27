@@ -233,9 +233,6 @@ sub produce_contract {
             }
         }
 
-        # default to costarica if landing company is not provided
-        $input_params{landing_company} //= 'costarica';
-
         # just to make sure that we don't accidentally pass in undef barriers
         delete $input_params{$_} for @barriers;
 
