@@ -560,7 +560,7 @@ sub _build_risk_markup {
         $risk_markup->include_adjustment('add', $spot_jump_markup);
     }
 
-    if ($self->bet->is_atm_bet and $bet->remaining_time->minutes <= 15) {
+    if (not $self->bet->is_atm_bet and $bet->remaining_time->minutes <= 15) {
         my $amount                         = $shortterm_risk_interpolator->linear($bet->remaining_time->minutes);
         my $shortterm_kurtosis_risk_markup = Math::Util::CalculatedValue::Validatable->new({
             name        => 'short_term_kurtosis_risk_markup',
