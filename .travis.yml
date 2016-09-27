@@ -2,7 +2,7 @@ language: perl
 perl:
     - "5.14.2-thr"
 matrix:
-    fast_finish: true
+    fast_finish: false
 env:
     - TEST_SUITE=unit_test_product_contract
     - TEST_SUITE=unit_test_product_contract_extended
