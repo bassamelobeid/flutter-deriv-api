@@ -63,7 +63,7 @@ subtest 'inefficient period' => sub {
     ok !$c->is_valid_to_buy, 'valid to buy';
     like(
         $c->primary_validation_error->message_to_client,
-        qr/Contracts less than 24h in duration are not available between 2(0|1):00-23:59:59 GMT/,
+        qr/Contracts of less than 24h in duration are not available between 2(0|1):00-23:59:59 GMT/,
         'throws error'
     );
     $bet_params->{underlying} = 'R_100';
@@ -82,7 +82,7 @@ subtest 'inefficient period' => sub {
     ok !$c->is_valid_to_buy, 'not valid';
     like(
         $c->primary_validation_error->message_to_client,
-        qr/Contracts less than 24h in duration are not available between 2(0|1):00-23:59:59 GMT/,
+        qr/Contracts of less than 24h in duration are not available between 2(0|1):00-23:59:59 GMT/,
         'throws error'
     );
 };
@@ -110,7 +110,7 @@ subtest 'non dst' => sub {
     ok !$c->is_valid_to_buy, 'valid to buy';
     like(
         $c->primary_validation_error->message_to_client,
-        qr/Contracts less than 24h in duration are not available between 21:00-23:59:59 GMT/,
+        qr/Contracts of less than 24h in duration are not available between 21:00-23:59:59 GMT/,
         'throws error'
     );
 };
