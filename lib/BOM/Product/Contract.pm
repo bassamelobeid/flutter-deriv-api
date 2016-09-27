@@ -2531,11 +2531,12 @@ sub _validate_lifetime {
         };
     }
 
-    # We decided to disable intraday trading on forex and commodities from 20:00 GMT to end of day.
+    # We decided to disable intraday trading on forex and commodities from 20:00/21:00 GMT to end of day.
     if ($self->market_is_inefficient) {
+        my $from = $self->date_pricing->is_dst_in_zone('America/New_York') ? '20:00' : '21:00';
         return {
             message           => 'trading disabled on inefficient period.',
-            message_to_client => localize('Trading is temporarily suspended.'),
+            message_to_client => localize('Contracts less than 24h in duration are not available between [_1]-23:59:59 GMT.', $from),
         };
     }
 
