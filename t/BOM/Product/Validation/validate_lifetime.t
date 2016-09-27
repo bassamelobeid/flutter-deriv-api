@@ -47,7 +47,7 @@ subtest 'inefficient period' => sub {
     note('price at 2016-09-19 20:00:00');
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'valid to buy';
-    like($c->primary_validation_error->message_to_client, qr/Trading is temporarily suspended/, 'throws error');
+    like($c->primary_validation_error->message_to_client, qr/Contracts less than 24h in duration are not available between 2(0|1):00-23:59:59 GMT/, 'throws error');
     $bet_params->{underlying} = 'R_100';
     note('set underlying to R_100. Makes sure only forex is affected.');
     $c = produce_contract($bet_params);
@@ -62,7 +62,7 @@ subtest 'inefficient period' => sub {
     $bet_params->{duration} = '5t';
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid';
-    like($c->primary_validation_error->message_to_client, qr/Trading is temporarily suspended/, 'throws error');
+    like($c->primary_validation_error->message_to_client, qr/Contracts less than 24h in duration are not available between 2(0|1):00-23:59:59 GMT/, 'throws error');
 };
 
 done_testing();
