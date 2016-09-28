@@ -275,21 +275,39 @@ subtest 'get_ask' => sub {
     is_deeply($result, $expected, 'the left values are all right');
 
     $params->{symbol} = "invalid symbol";
-    is_deeply(
-        BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),
-        {
-            error => {
-                message_to_client => 'Cannot create contract',
-                code              => "ContractCreationFailure",
-            }});
+    cmp_deeply(
+        [ warnings {
+            is_deeply(
+                BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),
+                {
+                    error => {
+                        message_to_client => 'Cannot create contract',
+                        code              => "ContractCreationFailure",
+                    }
+                },
+                'ContractCreationFailure with invalid symbol'
+            );
+        } ],
+        bag(re('Could not load volsurface for invalid symbol')),
+        'had warning about volsurface for invalid symbol'
+    );
 
-    is_deeply(
-        BOM::RPC::v3::Contract::_get_ask({}),
-        {
-            error => {
-                message_to_client => 'Cannot create contract',
-                code              => "ContractCreationFailure",
-            }});
+    cmp_deeply(
+        [ warnings {
+            is_deeply(
+                BOM::RPC::v3::Contract::_get_ask({}),
+                {
+                    error => {
+                        message_to_client => 'Cannot create contract',
+                        code              => "ContractCreationFailure",
+                    }
+                },
+                'ContractCreationFailure with empty parameters'
+            );
+        } ],
+        bag(re('bet_type is required')),
+        'bet_type is required warning'
+    );
 
 };
 
@@ -506,8 +524,15 @@ subtest $method => sub {
     $client->clr_status('disabled');
     $client->save;
 
-    $c->call_ok($method, $params)
-        ->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'will report error if no short_code and currency');
+    cmp_deeply(
+        [ warnings {
+            $c->call_ok($method, $params)
+                ->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'will report error if no short_code and currency');
+        } ],
+        # We get several undef warnings too, but we'll ignore them for this test
+        supersetof(re('currency is required')),
+        '... and had warning about missing currency'
+    );
 
     my $contract = create_contract(
         client => $client,
