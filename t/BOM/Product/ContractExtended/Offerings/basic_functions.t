@@ -8,10 +8,9 @@ use File::Spec;
 use JSON qw(decode_json);
 
 use BOM::Test::Data::Utility::UnitTestRedis;
-use Test::More (tests => 5);
+use Test::More (tests => 4);
 use Test::Exception;
 use Test::Differences;
-use Test::NoWarnings;
 
 use List::MoreUtils qw( all none );
 

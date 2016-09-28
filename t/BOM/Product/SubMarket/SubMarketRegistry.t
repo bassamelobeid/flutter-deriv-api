@@ -2,8 +2,7 @@ use strict;
 use warnings;
 
 use Test::MockTime qw(:all);
-use Test::More tests => 2;
-use Test::NoWarnings;
+use Test::More tests => 1;
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);

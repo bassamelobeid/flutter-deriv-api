@@ -3,9 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 31;
+use Test::More tests => 30;
 use Test::Exception;
-use Test::NoWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
