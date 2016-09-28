@@ -4,8 +4,7 @@ use strict;
 use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 26;
-use Test::NoWarnings ();    # no END block test
+use Test::More tests => 25;
 use Test::Exception;
 use Guard;
 use Crypt::NamedKeys;
@@ -2705,7 +2704,5 @@ subtest 'transaction slippage' => sub {
 # see further transaction2.t: special turnover limits
 #             transaction3.t: intraday fx action
 $mocked_underlying->unmock_all;
-
-Test::NoWarnings::had_no_warnings;
 
 done_testing;

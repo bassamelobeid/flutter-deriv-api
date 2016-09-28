@@ -3,9 +3,8 @@
 use strict;
 use warnings;
 use utf8;
-use Test::More 0.22 tests => 5;
+use Test::More 0.22 tests => 4;
 use Test::Exception;
-use Test::NoWarnings;
 use Test::Warn;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);

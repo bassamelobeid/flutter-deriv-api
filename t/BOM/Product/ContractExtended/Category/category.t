@@ -1,9 +1,8 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 8;
+use Test::Most tests => 7;
 use Test::Deep;
-use Test::NoWarnings;
 use Test::Exception;
 use BOM::Product::Contract::Category;
 

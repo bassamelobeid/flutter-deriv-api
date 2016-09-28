@@ -1,7 +1,6 @@
 use strict;
 use warnings;
-use Test::Most (tests => 13);
-use Test::NoWarnings;
+use Test::Most (tests => 12);
 use Test::MockModule;
 use Test::MockTime::HiRes;
 use Test::Exception;

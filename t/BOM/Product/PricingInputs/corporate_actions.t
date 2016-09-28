@@ -2,9 +2,8 @@
 use strict;
 use warnings;
 
-use Test::More (tests => 8);
+use Test::More (tests => 7);
 use Test::Exception;
-use Test::NoWarnings;
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);

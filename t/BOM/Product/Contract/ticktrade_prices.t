@@ -3,8 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 13;
-use Test::NoWarnings;
+use Test::More tests => 12;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use Format::Util::Numbers qw(roundnear);

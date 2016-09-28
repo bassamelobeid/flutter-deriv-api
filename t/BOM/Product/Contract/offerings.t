@@ -3,10 +3,9 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More tests => 4;
 use Test::Deep;
 use Test::Exception;
-use Test::NoWarnings;
 use YAML::XS qw(LoadFile);
 
 use BOM::Market::Underlying;

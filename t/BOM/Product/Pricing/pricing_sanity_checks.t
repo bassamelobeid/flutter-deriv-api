@@ -3,12 +3,11 @@
 use strict;
 use warnings;
 
-use Test::More tests => 2;
+use Test::More tests => 1;
 
 use BOM::Product::ContractFactory qw( produce_contract );
 use Date::Utility;
 
-use Test::NoWarnings;
 use BOM::Test::Data::Utility::UnitTestPrice qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);

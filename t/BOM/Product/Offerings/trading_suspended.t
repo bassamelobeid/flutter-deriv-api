@@ -3,8 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
-use Test::NoWarnings;
+use Test::More tests => 3;
 
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Platform::Runtime;

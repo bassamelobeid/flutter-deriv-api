@@ -7,7 +7,6 @@ use warnings;
 use Test::More skip_all => 'we are not using pute for japan any more';
 
 use Test::Exception;
-use Test::NoWarnings;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);

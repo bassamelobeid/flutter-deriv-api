@@ -3,8 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 15;
-use Test::NoWarnings;
+use Test::More tests => 14;
 
 use Time::HiRes;
 use Cache::RedisDB;

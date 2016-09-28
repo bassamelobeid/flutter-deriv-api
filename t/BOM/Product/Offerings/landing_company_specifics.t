@@ -3,10 +3,9 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 3;
 use Test::Deep;
 use Test::Exception;
-use Test::NoWarnings;
 
 use Cache::RedisDB;
 

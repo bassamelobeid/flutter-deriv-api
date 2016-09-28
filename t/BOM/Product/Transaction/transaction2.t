@@ -7,7 +7,6 @@ use JSON qw(to_json);
 use Test::MockTime qw/:all/;
 use Test::MockModule;
 use Test::More;    # tests => 4;
-use Test::NoWarnings ();    # no END block test
 use Test::Exception;
 use Guard;
 use BOM::Platform::Client;
@@ -1063,6 +1062,5 @@ subtest 'non atm turnover checks' => sub {
 my $empty_hashref = {};
 BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($empty_hashref));
 BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(to_json($empty_hashref));
-Test::NoWarnings::had_no_warnings;
 
 done_testing;

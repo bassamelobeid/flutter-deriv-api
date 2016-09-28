@@ -1,8 +1,7 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 10;
-use Test::NoWarnings;
+use Test::Most tests => 9;
 use File::Spec;
 use JSON qw(decode_json);
 

@@ -6,7 +6,6 @@ use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
 use Test::More;    # tests => 4;
-use Test::NoWarnings ();    # no END block test
 use Test::Exception;
 use Guard;
 use BOM::Platform::Client;
@@ -709,7 +708,5 @@ subtest 'batch-buy multiple databases and datadog', sub {
     }
     'survived';
 };
-
-Test::NoWarnings::had_no_warnings;
 
 done_testing;
