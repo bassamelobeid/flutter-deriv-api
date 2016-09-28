@@ -2531,12 +2531,12 @@ sub _validate_start_and_expiry_date {
         if (not $available_contracts->{$expiry_epoch}) {
             return {
                 message => 'Invalid contract expiry[' . $self->date_expiry->datetime . '] for japan at ' . $self->date_pricing->datetime . '.',
-                message_to_client => localize('Invalid expiry time.');
+                message_to_client => localize('Invalid expiry time.'),
             };
         } elsif ($available_contracts->{$expiry_epoch}->{date_start} > $self->effective_start->epoch) {
             return {
                 message => 'Invalid contract start time[' . $self->date_start->datetime . '] for japan at ' . $self->date_pricing->datetime . '.',
-                message_to_client => localize('Invalid start time.');
+                message_to_client => localize('Invalid start time.'),
             };
         }
     }

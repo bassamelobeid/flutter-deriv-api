@@ -92,7 +92,7 @@ sub _validate_barrier {
                     . $self->code
                     . '] for japan at '
                     . $self->date_pricing->datetime . '.',
-                message_to_client => localize('Invalid barrier.');
+                message_to_client => localize('Invalid barrier.'),
             };
         }
     }
