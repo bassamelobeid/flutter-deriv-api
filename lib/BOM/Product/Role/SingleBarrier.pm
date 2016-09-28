@@ -82,7 +82,7 @@ sub _validate_barrier {
         };
     } elsif (%{$self->predefined_contracts} and my $info = $self->predefined_contracts->{$self->date_expiry->epoch}) {
         my @available_barriers = @{$info->{availalable_barriers} // []};
-        if (not(@available_barriers and first { $self->barrier->as_absolute == $_ } @available_barrier)) {
+        if (not(@available_barriers and first { $self->barrier->as_absolute == $_ } @available_barriers)) {
             return {
                 message => 'Invalid barrier['
                     . $self->barrier->as_absolute
