@@ -325,8 +325,9 @@ subtest 'send_ask' => sub {
             } ],
             bag(
                 re('Use of uninitialized value in pattern match'),
+                re('bet_type is required'),
             ),
-            'undef warning when checking contract_type'
+            'missing bet_type and undef warnings when checking contract_type'
         );
 
         my $mock_contract = Test::MockModule->new('BOM::RPC::v3::Contract');
