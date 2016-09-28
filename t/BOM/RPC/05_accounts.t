@@ -1272,7 +1272,6 @@ subtest 'get and set self_exclusion' => sub {
     is $self_excl->exclude_until, $exclude_until . 'T00:00:00', 'exclude_until in db is right';
     is $self_excl->timeout_until, $timeout_until->epoch, 'timeout_until is right';
     is $self_excl->session_duration_limit, 1440, 'all good';
-
 };
 
 done_testing();
