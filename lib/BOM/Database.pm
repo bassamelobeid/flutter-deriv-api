@@ -3,7 +3,7 @@ package BOM::Database;
 use strict;
 use warnings;
 
-use parent qw(Exporter);
+use Exporter qw(import export_to_level);
 
 =head1 NAME
 
