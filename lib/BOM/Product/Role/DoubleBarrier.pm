@@ -175,7 +175,7 @@ sub _validate_barrier {
 
         my @filtered;
         foreach my $pair (@available_barriers) {
-            next if (first { $pair->[0] + 0 == $_->[0] + 0 and $pair->[1] + 0 == $_->[1] + 0} @expired_barriers);
+            next if (first { $pair->[0] + 0 == $_->[0] + 0 and $pair->[1] + 0 == $_->[1] + 0 } @expired_barriers);
             push @filtered, $pair;
         }
 
