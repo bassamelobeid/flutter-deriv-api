@@ -5,6 +5,7 @@ use warnings;
 use Test::BOM::RPC::Client;
 use Test::Most;
 use Test::Mojo;
+use Test::Warnings qw(warnings);
 use Test::MockModule;
 use Test::MockTime::HiRes;
 use Date::Utility;
@@ -327,9 +328,15 @@ subtest 'send_ask' => sub {
             ->error_message_is('Cannot create contract');
 
         my $mock_contract = Test::MockModule->new('BOM::RPC::v3::Contract');
-        $mock_contract->mock('_get_ask', sub { die });
-        $c->call_ok('send_ask', {args => {symbol => 'R_50'}})->has_error->error_code_is('pricing error')
-            ->error_message_is('Unable to price the contract.');
+        $mock_contract->mock('_get_ask', sub { die "mock _get_ask dying on purpose" });
+        cmp_deeply(
+            [ warnings {
+                $c->call_ok('send_ask', {args => {symbol => 'R_50'}})->has_error->error_code_is('pricing error')
+                    ->error_message_is('Unable to price the contract.');
+            } ],
+            bag(re('mock _get_ask dying')),
+            'have expected warning'
+        );
     }
 };
 
