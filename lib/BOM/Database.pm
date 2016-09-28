@@ -29,13 +29,13 @@ our @EXPORT_OK = qw(register_dbh release_dbh dbh_is_registered txn);
 # Each $dbh will be stored as a weakref: all calls to register_dbh should
 # be matched with a release_dbh or global destruction, but we can recover
 # (and complain) if that doesn't happen.
-our @DBH;
+my @DBH;
 
 # Where we registered the dbh originally
-our %DBH_SOURCE;
+my %DBH_SOURCE;
 
 # Last PID we saw - used for invalidating stale DBH on fork
-our $PID = $$;
+my $PID = $$;
 
 =head2 register_dbh
 
