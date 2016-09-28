@@ -76,7 +76,6 @@ indices:
     providers:
         - 'idata'
         - 'telekurs'
-        - 'tenfore'
     markups:
         apply_traded_markets_markup: 1
 stocks:
@@ -100,7 +99,6 @@ stocks:
     providers:
         - 'idata'
         - 'telekurs'
-        - 'tenfore'
         - 'panda'
     intradays_must_be_same_day: 1
     markups:
