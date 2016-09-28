@@ -19,7 +19,7 @@ use BOM::RPC::v3::Contract;
 is_deeply(\%stats, { }, 'start with no metrics');
 cmp_deeply(
     [ warnings { BOM::RPC::v3::Contract::_log_exception(something => 'details here') } ],
-    bag(qr/^Unhandled exception in something: details here/),
+    bag(re('Unhandled exception in something: details here')),
     'saw warning'
 );
 
@@ -31,8 +31,8 @@ is_deeply(\%stats, {
 cmp_deeply(
     [ warnings { BOM::RPC::v3::Contract::_log_exception('invalid.component' => 'details here') } ],
     bag(
-        qr/Unhandled exception in (\S+) details here/,
-        qr/Invalid component/
+        re('Unhandled exception in (\S+) details here'),
+        re('invalid component passed'),
     ),
     'saw both warnings on invalid component name'
 );
