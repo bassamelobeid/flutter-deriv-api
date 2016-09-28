@@ -11,6 +11,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
+BOM::Market::AggTicks->new->flush();
 
 my $now = Date::Utility->new('2016-09-22');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -39,7 +40,8 @@ my $bet_params = {
     duration     => '2m',
     barrier      => '101.1',
     currency     => 'USD',
-    payout       => 10
+    payout       => 10,
+    predefined_contracts => {}, # by right japan contracts are predefined. But these tests are not for them.
 };
 
 subtest '2-minute non ATM callput' => sub {
