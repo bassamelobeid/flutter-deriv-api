@@ -144,6 +144,7 @@ sub _validate_barrier {
             };
         }
     }
+
     my ($min_move, $max_move) = (0.25, 2.5);
     foreach my $pair (['low' => $low_barrier], ['high' => $high_barrier]) {
         my ($label, $barrier) = @$pair;
@@ -163,6 +164,25 @@ sub _validate_barrier {
                 ? localize('Low barrier is out of acceptable range. Please adjust the low barrier.')
                 : localize('High barrier is out of acceptable range. Please adjust the high barrier.'),
                 ,
+            };
+        }
+    }
+
+    if (%{$self->predefined_contracts} and my $info = $self->predefined_contracts->{$self->date_expiry->epoch}) {
+        my @available_barriers = @{$info->{availalable_barriers} // []};
+        if (not(@available_barriers and first { $low_barrier->as_absolute == $_->[0] and $high_barrier->as_absolute == $_->[1] } @available_barrier))
+        {
+            return {
+                message => 'Invalid barriers['
+                    . $low_barrier->as_absolute . ','
+                    . $high_barrier->as_absolute
+                    . '] for expiry ['
+                    . $self->date_expiry->datetime
+                    . '] and contract type['
+                    . $self->code
+                    . '] for japan at '
+                    . $self->date_pricing->datetime . '.',
+                message_to_client => localize('Invalid barrier.');
             };
         }
     }

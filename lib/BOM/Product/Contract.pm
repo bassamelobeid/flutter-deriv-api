@@ -31,6 +31,7 @@ use Quant::Framework::EconomicEventCalendar;
 use BOM::Product::Offerings qw(get_contract_specifics);
 use BOM::System::Chronicle;
 use Price::Calculator;
+use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -2523,6 +2524,23 @@ sub _validate_start_and_expiry_date {
         }
     }
 
+    # for japan, we only allow pre-defined start and expiry times.
+    if (%{$self->predefined_contracts}) {
+        my $available_contracts = $self->predefined_contracts;
+        my $expiry_epoch        = $self->date_expiry->epoch;
+        if (not $available_contracts->{$expiry_epoch}) {
+            return {
+                message => 'Invalid contract expiry[' . $self->date_expiry->datetime . '] for japan at ' . $self->date_pricing->datetime . '.',
+                message_to_client => localize('Invalid expiry time.');
+            };
+        } elsif ($available_contracts->{$expiry_epoch}->{date_start} > $self->effective_start->epoch) {
+            return {
+                message => 'Invalid contract start time[' . $self->date_start->datetime . '] for japan at ' . $self->date_pricing->datetime . '.',
+                message_to_client => localize('Invalid start time.');
+            };
+        }
+    }
+
     return;
 }
 
@@ -2741,6 +2759,30 @@ sub _build_risk_profile {
         currency          => $self->currency,
         barrier_category  => $self->barrier_category,
     );
+}
+
+has predefined_contracts => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_predefined_contracts {
+    my $self = shift;
+
+    my $lc = $self->landing_company;
+    return {} if (not($lc eq 'japan' or $lc eq 'japan-virtual'));
+
+    my @contracts =
+        grep { $_->{contract_type} eq $self->code } @{available_contracts_for_symbol({symbol => $self->underlying->symbol})->{available}};
+
+    # restructure contract information for easier processing
+    my %info = map {
+        $_->{trading_period}{date_expiry}{epoch} => {
+            date_start         => $_->{trading_period}{date_start}{epoch},
+            available_barriers => $_->{available_barriers}}
+    } @contracts;
+
+    return \%info;
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.

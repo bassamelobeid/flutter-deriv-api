@@ -80,6 +80,21 @@ sub _validate_barrier {
             severity          => 1,
             message_to_client => localize('Absolute barrier cannot be zero'),
         };
+    } elsif (%{$self->predefined_contracts} and my $info = $self->predefined_contracts->{$self->date_expiry->epoch}) {
+        my @available_barriers = @{$info->{availalable_barriers} // []};
+        if (not(@available_barriers and first { $self->barrier->as_absolute == $_ } @available_barrier)) {
+            return {
+                message => 'Invalid barrier['
+                    . $self->barrier->as_absolute
+                    . '] for expiry ['
+                    . $self->date_expiry->datetime
+                    . '] and contract type['
+                    . $self->code
+                    . '] for japan at '
+                    . $self->date_pricing->datetime . '.',
+                message_to_client => localize('Invalid barrier.');
+            };
+        }
     }
 
     return;
