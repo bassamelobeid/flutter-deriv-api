@@ -2515,8 +2515,9 @@ sub _build_market_is_inefficient {
     return 0 if $self->expiry_daily;
 
     my $hour = $self->date_pricing->hour + 0;
-    # only 20:00 GMT to end of day
-    return 0 if $hour < 20;
+    # only 20:00/21:00 GMT to end of day
+    my $disable_hour = $self->date_pricing->is_dst_in_zone('America/New_York') ? 20 : 21;
+    return 0 if $hour < $disable_hour;
     return 1;
 }
 
@@ -2531,11 +2532,12 @@ sub _validate_lifetime {
         };
     }
 
-    # We decided to disable intraday trading on forex and commodities from 20:00 GMT to end of day.
+    # We decided to disable intraday trading on forex and commodities from 20:00/21:00 GMT to end of day.
     if ($self->market_is_inefficient) {
+        my $from = $self->date_pricing->is_dst_in_zone('America/New_York') ? '20:00' : '21:00';
         return {
             message           => 'trading disabled on inefficient period.',
-            message_to_client => localize('Trading is temporarily suspended.'),
+            message_to_client => localize('Contracts of less than 24h in duration are not available between [_1]-23:59:59 GMT.', $from),
         };
     }
 
