@@ -2779,7 +2779,8 @@ sub _build_predefined_contracts {
     my %info = map {
         $_->{trading_period}{date_expiry}{epoch} => {
             date_start         => $_->{trading_period}{date_start}{epoch},
-            available_barriers => $_->{available_barriers}}
+            available_barriers => $_->{available_barriers},
+            expiry_barriers    => $_->{expired_barriers}}
     } @contracts;
 
     return \%info;

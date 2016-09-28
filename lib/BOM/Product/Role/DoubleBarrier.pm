@@ -171,9 +171,11 @@ sub _validate_barrier {
 
     if (%{$self->predefined_contracts} and my $info = $self->predefined_contracts->{$self->date_expiry->epoch}) {
         my @available_barriers = @{$info->{available_barriers} // []};
+        my %expired_barriers = map { $_ => 1 } @{$info->{expired_barriers} // []};
         if (
             not(@available_barriers
-                and first { $low_barrier->as_absolute + 0 == $_->[0] + 0 and $high_barrier->as_absolute + 0 == $_->[1] + 0 } @available_barriers))
+                and first { $low_barrier->as_absolute + 0 == $_->[0] + 0 and $high_barrier->as_absolute + 0 == $_->[1] + 0 }
+                grep { not $expired_barriers{$_} } @available_barriers))
         {
             return {
                 message => 'Invalid barriers['

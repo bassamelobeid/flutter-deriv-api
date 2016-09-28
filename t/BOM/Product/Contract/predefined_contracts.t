@@ -86,6 +86,15 @@ subtest 'predefined_contracts' => sub {
     });
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
+    $bet_params->{predefined_contracts} = {
+        $expiry_epoch => {
+            date_start         => $now->plus_time_interval('15m')->epoch,
+            available_barriers => ['100.010'],
+            expired_barriers   => ['100.010'],
+        }};
+    $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'not valid to buy if barrier expired';
+    like($c->primary_validation_error->message_to_client, qr/Invalid barrier/, 'throws error');
 };
 
 done_testing();

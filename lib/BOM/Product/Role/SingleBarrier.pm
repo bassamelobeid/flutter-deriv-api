@@ -83,8 +83,9 @@ sub _validate_barrier {
         };
     } elsif (%{$self->predefined_contracts} and my $info = $self->predefined_contracts->{$self->date_expiry->epoch}) {
         my @available_barriers = @{$info->{available_barriers} // []};
+        my %expired_barriers = map { $_ => 1 } @{$info->{expired_barriers} // []};
         # barriers are pipsized, make them numbers.
-        if (not(@available_barriers and first { $self->barrier->as_absolute + 0 == $_ + 0 } @available_barriers)) {
+        if (not(@available_barriers and first { $self->barrier->as_absolute + 0 == $_ + 0 } grep { not $expired_barriers{$_} } @available_barriers)) {
             return {
                 message => 'Invalid barrier['
                     . $self->barrier->as_absolute
