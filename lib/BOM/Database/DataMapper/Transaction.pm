@@ -531,11 +531,13 @@ sub get_details_by_transaction_ref {
         b.short_code AS shortcode,
         b.buy_price as ask_price,
         b.sell_price as bid_price,
-        a.currency_code AS currency_code
+        a.currency_code AS currency_code,
+        d.price_slippage AS price_slippage
     FROM
         transaction.transaction t
         JOIN bet.financial_market_bet b ON t.financial_market_bet_id=b.id
         JOIN transaction.account a on a.id=t.account_id
+        JOIN data_collection.quants_bet_variables d on d.transaction_id = t.id
     WHERE
         t.id = $1
    };
