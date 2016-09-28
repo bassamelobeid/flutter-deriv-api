@@ -65,7 +65,7 @@ my $dbloc   = BOM::Platform::Runtime->instance->app_config->system->directory->d
 my $tmp_dir = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
 
 my $now          = Date::Utility->new;
-my @providerlist = qw(idata random telekurs sd tenfore bloomberg olsen synthetic combined panda);
+my @providerlist = qw(idata random telekurs sd bloomberg olsen synthetic combined panda);
 
 Bar("Compare providers");
 
