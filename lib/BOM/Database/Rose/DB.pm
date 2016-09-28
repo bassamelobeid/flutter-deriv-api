@@ -139,15 +139,26 @@ sub dbi_connect {
             keepalives_count=10 /,
     );
 
-    my $dbh = DBI->connect(@params) || croak $DBI::errstr;
-    BOM::Database::register_dbh($dbh) unless BOM::Database::dbh_is_registered($dbh);
-    return $dbh;
+    return DBI->connect(@params) || croak $DBI::errstr;
 }
 
 sub disconnect {
     my $self = shift;
-    BOM::Database::release_dbh($self->{dbh}) if $self->{dbh};
+    BOM::Database::release_dbh($self->domain => $self->{dbh}) if $self->{dbh};
     $self->SUPER::disconnect(@_);
+}
+
+sub new_or_cached {
+    my $class = shift;
+    unshift @_, 'type' if @_ == 1;
+    my %args = @_;
+    my $category = $args{domain} // $class->default_domain;
+
+    # Remove trailing 'db', so userdb => user, authdb => auth etc.
+    $category =~ s/db$// unless $category eq 'db';
+    my $db = $class->SUPER::new_or_cached(%args);
+    BOM::Database::register_dbh($category => $db->{dbh}) unless BOM::Database::dbh_is_registered($dbh);
+    return $db;
 }
 
 1;

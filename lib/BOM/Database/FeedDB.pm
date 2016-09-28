@@ -19,7 +19,7 @@ sub read_dbh {
         "dbi:Pg:dbname=feed-replica$db_postfix;port=6433;host=/var/run/postgresql",
         "read", "", {pg_server_prepare => 0} )
       || die($DBI::errstr);
-    BOM::Database::register_dbh($dbh);
+    BOM::Database::register_dbh(feed => $dbh);
     return $dbh;
 }
 
@@ -31,7 +31,7 @@ sub write_dbh {
         "dbi:Pg:dbname=feed$db_postfix;port=5433;host=" . $config->{write}->{$ip},
         "write", $config->{password} )
       || die($DBI::errstr);
-    BOM::Database::register_dbh($dbh);
+    BOM::Database::register_dbh(feed => $dbh);
     return $dbh;
 }
 
