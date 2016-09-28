@@ -260,7 +260,7 @@ sub __login {
 
             $user = BOM::Platform::User->new({email => $email});
             unless ($user) {
-                $err = localize('Invalid email and password combination.');
+                $err = localize('Incorrect email or password.');
                 last;
             }
         }
