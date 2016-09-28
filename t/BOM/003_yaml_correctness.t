@@ -4,7 +4,6 @@ use warnings;
 
 use Test::More qw(no_plan);
 use Test::Exception;
-use Test::NoWarnings;
 
 use Cwd qw(abs_path);
 use File::Basename qw(dirname);

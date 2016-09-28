@@ -4,7 +4,6 @@ use warnings;
 use Test::Exception;
 use Test::Memory::Cycle;
 use Test::More qw( no_plan );
-use Test::NoWarnings;
 use Test::Warn;
 use Test::MockModule;
 use File::Spec;
