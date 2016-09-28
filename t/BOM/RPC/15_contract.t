@@ -508,7 +508,7 @@ subtest 'get_bid_skip_barrier_validation' => sub {
 
     $params->{validation_params} = {skip_barrier_validation => 1};
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-    cmp_ok $result->{validation_error}, 'eq', '', "No barrier validation error";
+    ok(!exists $result->{validation_error},  "No barrier validation error") or diag "validatione error: " . ($result->{validation_error} // '<undef>');
 
     restore_time();
 };
