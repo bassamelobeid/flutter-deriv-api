@@ -30,7 +30,7 @@ is_deeply(\%stats, {
 
 cmp_deeply(
     [ warnings { BOM::RPC::v3::Contract::_log_exception('invalid.component' => 'details here') } ],
-    bag(qr/^Invalid component.*Unhandled exception in something: details here/s),
+    bag(qr/^Invalid component.*Unhandled exception in invalid_component: details here/s),
     'saw both warnings on invalid component name'
 );
 
