@@ -3,9 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More tests => 4;
 use Test::Exception;
-use Test::NoWarnings;
 use Test::MockModule;
 use Format::Util::Numbers qw/roundnear/;
 
