@@ -3,9 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More (tests => 4);
+use Test::More (tests => 3);
 use Test::Exception;
-use Test::NoWarnings;
 use File::Basename qw(dirname);
 use Test::MockObject::Extends;
 

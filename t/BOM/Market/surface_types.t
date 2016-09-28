@@ -19,8 +19,7 @@ __PACKAGE__->meta->make_immutable;
 
 package main;
 
-use Test::More (tests => 4);
-use Test::NoWarnings;
+use Test::More (tests => 3);
 use Test::Exception;
 
 #use BOM::Market::Types;
