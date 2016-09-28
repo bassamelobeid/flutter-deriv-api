@@ -4,7 +4,6 @@ use warnings;
 
 use Test::Most 0.22;
 use Test::MockTime qw(set_relative_time);
-require Test::NoWarnings;
 use YAML::XS qw(DumpFile LoadFile);
 
 use BOM::Market::UnderlyingDB;
@@ -212,5 +211,4 @@ subtest 'including disabled' => sub {
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy($orig_buy);
 };
 
-Test::NoWarnings::had_no_warnings();
 done_testing;

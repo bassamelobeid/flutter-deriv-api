@@ -9,7 +9,6 @@ use File::Temp;
 use Test::Deep qw( cmp_deeply );
 use Test::MockTime qw( restore_time set_absolute_time );
 use Test::More qw( no_plan );
-use Test::NoWarnings;
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
