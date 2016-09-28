@@ -21,6 +21,8 @@ use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);
 use BOM::Backoffice::Sysinit ();
+use Price::RoundPrecision::JPY;
+use Format::Util::Numbers qw(roundnear);
 BOM::Backoffice::Sysinit::init();
 BOM::Backoffice::Auth0::can_access(['Quants']);
 my %params = %{request()->params};
@@ -28,6 +30,7 @@ my ($pricing_parameters, @contract_details, $start);
 
 my $broker = $params{broker} // request()->broker_code;
 my $id = $params{id} ? $params{id} : '';
+my $JPY_precision = Price::RoundPrecision::JPY->precision;
 
 if ($broker and $id) {
     my $details = BOM::Database::DataMapper::Transaction->new({
@@ -40,7 +43,11 @@ if ($broker and $id) {
     $start = $params{start} ? Date::Utility->new($params{start}) : $original_contract->date_start;
     my $pricing_args = $original_contract->build_parameters;
     $pricing_args->{date_pricing} = $start;
-    my $contract = produce_contract($pricing_args);
+    my $contract       = produce_contract($pricing_args);
+    my $traded_bid     = $details->{bid_price};
+    my $traded_ask     = $details->{ask_price};
+    my $slippage_price = roundnear($JPY_precision, $details->{price_slippage});
+    my $action_type    = $details->{action_type};
 
     $pricing_parameters =
           $contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex' ? _get_pricing_parameter_from_IH_pricer($contract)
@@ -48,14 +55,17 @@ if ($broker and $id) {
         :   die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
 
     @contract_details = (
-        login_id    => $details->{loginid},
+        login_id       => $details->{loginid},
+        slippage_price => $slippage_price,
+        order_type => $action_type,
+        order_price => ($action_type eq 'buy') ? $traded_ask : $traded_bid,
         trans_id    => $id,
         short_code  => $contract->shortcode,
         payout      => $contract->payout,
         description => $contract->longcode,
         ccy         => $details->{currency_code},
-        ask_price   => $details->{ask_price},
-        bid_price   => $details->{bid_price} // 'NA. (unsold)',
+        trade_ask_price => $traded_ask,
+        trade_bid_price => $traded_bid // 'NA. (unsold)',
     );
 }
 my $display = $params{download} ? 'download' : 'display';
