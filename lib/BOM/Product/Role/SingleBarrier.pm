@@ -3,6 +3,7 @@ package BOM::Product::Role::SingleBarrier;
 use Moose::Role;
 with 'BOM::Product::Role::BarrierBuilder';
 
+use List::Util qw(first);
 use BOM::Platform::Context qw(localize);
 
 has supplied_barrier => (is => 'ro');
@@ -81,8 +82,9 @@ sub _validate_barrier {
             message_to_client => localize('Absolute barrier cannot be zero'),
         };
     } elsif (%{$self->predefined_contracts} and my $info = $self->predefined_contracts->{$self->date_expiry->epoch}) {
-        my @available_barriers = @{$info->{availalable_barriers} // []};
-        if (not(@available_barriers and first { $self->barrier->as_absolute == $_ } @available_barriers)) {
+        my @available_barriers = @{$info->{available_barriers} // []};
+        # barriers are pipsized, make them numbers.
+        if (not(@available_barriers and first { $self->barrier->as_absolute + 0 == $_ + 0 } @available_barriers)) {
             return {
                 message => 'Invalid barrier['
                     . $self->barrier->as_absolute
