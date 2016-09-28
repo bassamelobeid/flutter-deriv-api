@@ -1127,9 +1127,10 @@ sub _price_from_prob {
 
     if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
         $self->price_calculator->value($self->value);
-    }
+    } else {
 
-    $self->_set_price_calculator_params($prob);
+        $self->_set_price_calculator_params($prob);
+    }
     return $self->price_calculator->price_from_prob($prob);
 }
 
