@@ -532,6 +532,7 @@ sub get_details_by_transaction_ref {
         b.buy_price as ask_price,
         b.sell_price as bid_price,
         a.currency_code AS currency_code,
+        t.action_type as action_type,
         d.price_slippage AS price_slippage
     FROM
         transaction.transaction t
