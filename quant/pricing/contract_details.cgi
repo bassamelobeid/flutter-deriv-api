@@ -46,7 +46,7 @@ if ($broker and $id) {
     my $contract       = produce_contract($pricing_args);
     my $traded_bid     = $details->{bid_price};
     my $traded_ask     = $details->{ask_price};
-    my $slippage_price = roundnear($JPY_precision, $details->{price_slippage});
+    my $slippage_price = $details->{price_slippage};
     my $action_type    = $details->{action_type};
 
     $pricing_parameters =
@@ -56,7 +56,7 @@ if ($broker and $id) {
 
     @contract_details = (
         login_id       => $details->{loginid},
-        slippage_price => $slippage_price,
+        slippage_price => $slippage_price ? roundnear($JPY_precision, $slippage_price) : 'NA.',
         order_type => $action_type,
         order_price => ($action_type eq 'buy') ? $traded_ask : $traded_bid,
         trans_id    => $id,
