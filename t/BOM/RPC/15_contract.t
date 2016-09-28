@@ -318,14 +318,16 @@ subtest 'send_ask' => sub {
         'long code  is correct'
     );
     {
-        local $SIG{'__WARN__'} = sub {
-            my $msg = shift;
-            if ($msg !~ /Use of uninitialized value in pattern match/) {
-                print STDERR $msg;
-            }
-        };
-        $c->call_ok('send_ask', {args => {symbol => 'R_50'}})->has_error->error_code_is('ContractCreationFailure')
-            ->error_message_is('Cannot create contract');
+        cmp_deeply(
+            [ warnings {
+                $c->call_ok('send_ask', {args => {symbol => 'R_50'}})->has_error->error_code_is('ContractCreationFailure')
+                    ->error_message_is('Cannot create contract');
+            } ],
+            bag(
+                re('Use of uninitialized value in pattern match'),
+            ),
+            'undef warning when checking contract_type'
+        );
 
         my $mock_contract = Test::MockModule->new('BOM::RPC::v3::Contract');
         $mock_contract->mock('_get_ask', sub { die "mock _get_ask dying on purpose" });
@@ -334,8 +336,11 @@ subtest 'send_ask' => sub {
                 $c->call_ok('send_ask', {args => {symbol => 'R_50'}})->has_error->error_code_is('pricing error')
                     ->error_message_is('Unable to price the contract.');
             } ],
-            bag(re('mock _get_ask dying')),
-            'have expected warning'
+            bag(
+                re('mock _get_ask dying'),
+                re('Use of uninitialized value in pattern match'),
+            ),
+            'have expected warnings when _get_ask dies'
         );
     }
 };
