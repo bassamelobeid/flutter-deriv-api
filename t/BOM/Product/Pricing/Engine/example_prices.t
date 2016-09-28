@@ -2,8 +2,7 @@ use strict;
 use warnings;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
-use Test::Most 0.22 (tests => 131);
-use Test::NoWarnings;
+use Test::Most 0.22 (tests => 130);
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
