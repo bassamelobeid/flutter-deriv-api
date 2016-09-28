@@ -108,7 +108,7 @@ Returns true if the provided database handle has been registered already.
 
 Used when registering a handle acquired via L<DBI/connect_cached>.
 
-    register_dbh($dbh) unless dbh_is_registered($dbh);
+    register_dbh($category => $dbh) unless dbh_is_registered($category => $dbh);
 
 =cut
 
