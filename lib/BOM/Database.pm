@@ -23,15 +23,16 @@ use List::UtilsBy qw(extract_by);
 
 our @EXPORT_OK = qw(register_dbh release_dbh dbh_is_registered txn);
 
-# List of all retained handles. Since we don't expect to update the list
-# often, and the usual action is to iterate through them all in sequence,
-# we're using an array rather than a hash.
+# List of all retained handles by category. Since we don't expect to update
+# the list often, and the usual action is to iterate through them all in
+# sequence, we're using an array rather than a hash.
 # Each $dbh will be stored as a weakref: all calls to register_dbh should
 # be matched with a release_dbh or global destruction, but we can recover
 # (and complain) if that doesn't happen.
-my @DBH;
+my %DBH;
 
-# Where we registered the dbh originally
+# Where we registered the dbh originally - top level key is category, second
+# level is refaddr.
 my %DBH_SOURCE;
 
 # Last PID we saw - used for invalidating stale DBH on fork
@@ -41,30 +42,32 @@ my $PID = $$;
 
 Records the given database handle as being active and available for running transactions against.
 
+Expects a category (string value) and L<DBI::db> instance.
+
 Returns the database handle.
 
 Example:
 
     sub _dbh {
         my $dbh = DBI->connect('dbi:Pg', '', '', { RaiseError => 1});
-        return BOM::Database::register_dbh($dbh);
+        return BOM::Database::register_dbh(feed => $dbh);
     }
 
 =cut
 
 sub register_dbh {
-    my ($dbh) = @_;
-    die "too many parameters to register_dbh: @_" if @_ > 1;
+    my ($category, $dbh) = @_;
+    die "too many parameters to register_dbh: @_" if @_ > 2;
     _check_fork();
     my $addr = refaddr $dbh;
-    if(exists $DBH_SOURCE{$addr}) {
-        warn "already registered this database handle at " . $DBH_SOURCE{$addr};
+    if(exists $DBH_SOURCE{$category}{$addr}) {
+        warn "already registered this database handle at " . $DBH_SOURCE{$category}{$addr};
         return;
     }
-    push @DBH, $dbh;
-    weaken($DBH[-1]);
+    push @{$DBH{$category}}, $dbh;
+    weaken($DBH{$category}[-1]);
     # filename:line (package::sub)
-    $DBH_SOURCE{$addr} = sprintf "%s:%d (%s::%s)", (caller 1)[1,2,0,3];
+    $DBH_SOURCE{$category}{$addr} = sprintf "%s:%d (%s::%s)", (caller 1)[1,2,0,3];
     $dbh
 }
 
@@ -86,16 +89,16 @@ Example:
 =cut
 
 sub release_dbh {
-    my ($dbh) = @_;
-    die "too many parameters to release_dbh: @_" if @_ > 1;
+    my ($category, $dbh) = @_;
+    die "too many parameters to release_dbh: @_" if @_ > 2;
     _check_fork();
     # At destruction we may have an invalid handle
     my $addr = refaddr $dbh or return $dbh;
-    warn "releasing unregistered dbh $dbh" unless exists $DBH_SOURCE{$addr};
-    delete $DBH_SOURCE{$addr};
+    warn "releasing unregistered dbh $dbh" unless exists $DBH_SOURCE{$category}{$addr};
+    delete $DBH_SOURCE{$category}{$addr};
     # avoiding grep here because these are weakrefs and we want them to stay that way.
     # since they're weakrefs, some of these may be undef
-    extract_by { $addr == (defined($_) ? refaddr($_) : 0) } @DBH;
+    extract_by { $addr == (defined($_) ? refaddr($_) : 0) } @{$DBH{$category}};
     return $dbh;
 }
 
@@ -110,51 +113,58 @@ Used when registering a handle acquired via L<DBI/connect_cached>.
 =cut
 
 sub dbh_is_registered {
-    my ($dbh) = @_;
+    my ($category, $dbh) = @_;
     die "too many parameters to register_dbh: @_" if @_ > 1;
     _check_fork();
     my $addr = refaddr $dbh;
-    return exists $DBH_SOURCE{$addr} ? 1 : 0;
+    return exists $DBH_SOURCE{$category}{$addr} ? 1 : 0;
 }
 
 =head2 txn
 
 Runs the given coderef in a transaction.
 
-Will call L<DBI/begin_work> for every known database handle, run the code, then call
-L<DBI/commit> on success, or L<DBI/rollback> on failure.
+Expects a coderef and a database handle category.
+
+Will call L<DBI/begin_work> for every known database handle in the given category,
+run the code, then call L<DBI/commit> on success, or L<DBI/rollback> on failure.
 
 Will raise an exception on failure, or return an empty list on success.
 
 Example:
 
-    txn { dbh()->do('NOTIFY something') };
+    txn { dbh()->do('NOTIFY something') } 'feed';
+
+WARNING: This only applies transactions to known database handles. Anything else -
+Redis, cache layers, files on disk - is out of scope. Transactions are a simple
+L<DBI/begin_work> / L<DBI/commit> pair, there's no 2-phase commit or other
+distributed transaction co-ordination happening here.
 
 =cut
 
 sub txn(&;@) {
-    my $code = shift;
+    my ($code, $category) = @_;
     _check_fork();
     my $wantarray = wantarray;
-    if(my $count =()= extract_by { !defined($_) } @DBH) {
+    if(my $count =()= extract_by { !defined($_) } @{$DBH{$category}}) {
         warn "Had $count database handles that were not released via release_dbh, probable candidates follow:\n";
-        my %addr = map {; refaddr($_) => 1 } @DBH;
-        warn "unreleased dbh in $_\n" for sort delete @DBH_SOURCE{grep !exists $addr{$_}, keys %DBH_SOURCE};
+        my %addr = map {; refaddr($_) => 1 } @{$DBH{$category}};
+        warn "unreleased dbh in $_\n" for sort delete @{$DBH_SOURCE{$category}}{grep !exists $addr{$_}, keys %DBH_SOURCE};
     }
 
     my @rslt;
     eval {
-        $_->begin_work for @DBH;
+        $_->begin_work for @{$DBH{$category}};
         # We want to pass through list/scalar/void context to the coderef
         if($wantarray) {
-            @rslt = $code->(@_);
+            @rslt = $code->();
         } elsif(defined $wantarray) {
-            $rslt[0] = $code->(@_);
+            $rslt[0] = $code->();
         } else {
-            $code->(@_);
+            $code->();
         }
         _check_fork();
-        $_->commit for grep defined, @DBH; # might have closed database handle(s) in $code
+        $_->commit for grep defined, @{$DBH{$category}}; # might have closed database handle(s) in $code
         1
     } or do {
         my $err = $@;
@@ -162,7 +172,7 @@ sub txn(&;@) {
         eval {
             $_->rollback;
             1
-        } or warn "after $err also had failure in rollback: $@" for grep defined, @DBH;
+        } or warn "after $err also had failure in rollback: $@" for grep defined, @{$DBH{$category}};
         die $err;
     };
     return $wantarray ? @rslt : $rslt[0];
@@ -179,7 +189,7 @@ Returns true if there has been a fork since last check, false otherwise.
 sub _check_fork {
     return 0 if $PID == $$;
     $PID = $$;
-    @DBH = ();
+    %DBH = ();
     %DBH_SOURCE = ();
     return 1;
 }
