@@ -30,7 +30,7 @@ my $limit_profile  = BOM::System::Config::quants->{risk_profile};
 my %known_profiles = map { $_ => 1 } keys %$limit_profile;
 
 if ($r->param('update_limit')) {
-    my @known_keys = qw(contract_category market submarket underlying_symbol start_type expiry_type barrier_category);
+    my @known_keys = qw(contract_category market submarket underlying_symbol start_type expiry_type barrier_category landing_company);
     my %known_values = map { $_ => [get_offerings_with_filter($_)] } @known_keys;
     my %ref;
 
