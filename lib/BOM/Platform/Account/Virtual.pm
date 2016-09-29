@@ -23,11 +23,6 @@ sub create_account {
     my $email     = lc $details->{email};
     my $password  = BOM::System::Password::hashpw($details->{client_password});
     my $residence = $details->{residence};
-    my $source    = $details->{source};
-
-    my $utm_source   = $details->{utm_source};
-    my $utm_medium   = $details->{utm_medium};
-    my $utm_campaign = $details->{utm_campaign};
 
     # TODO: to be removed later
     BOM::Platform::Account::invalid_japan_access_check($residence, $email);
@@ -77,14 +72,21 @@ sub create_account {
         return {error => 'invalid'};
     }
 
+    my $source        = $details->{source};
+    my $utm_source    = $details->{utm_source};
+    my $utm_medium    = $details->{utm_medium};
+    my $utm_campaign  = $details->{utm_campaign};
+    my $email_consent = $details->{email_consent};
+
     my $user = BOM::Platform::User->create(
         email          => $email,
         password       => $password,
         email_verified => 1,
-        $source       ? (app_id       => $source)       : (),
-        $utm_source   ? (utm_source   => $utm_source)   : (),
-        $utm_medium   ? (utm_medium   => $utm_medium)   : (),
-        $utm_campaign ? (utm_campaign => $utm_campaign) : ());
+        $email_consent ? (email_consent => $email_consent) : (),
+        $source        ? (app_id        => $source)        : (),
+        $utm_source    ? (utm_source    => $utm_source)    : (),
+        $utm_medium    ? (utm_medium    => $utm_medium)    : (),
+        $utm_campaign  ? (utm_campaign  => $utm_campaign)  : ());
     $user->add_loginid({loginid => $client->loginid});
     $user->save;
     $client->deposit_virtual_funds($source);
