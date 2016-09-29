@@ -30,7 +30,7 @@ my ($pricing_parameters, @contract_details, $start);
 
 my $broker = $params{broker} // request()->broker_code;
 my $id = $params{id} ? $params{id} : '';
-my $JPY_precision = Price::RoundPrecision::JPY->precision;
+my $JPY_precision = Price::RoundPrecision::JPY->payout_precision;
 
 if ($broker and $id) {
     my $details = BOM::Database::DataMapper::Transaction->new({
