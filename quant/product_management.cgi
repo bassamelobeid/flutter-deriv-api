@@ -16,6 +16,7 @@ use List::Util qw(first);
 use Digest::MD5 qw(md5_hex);
 use Date::Utility;
 
+use BOM::Platform::LandingCompany::Registry;
 use BOM::System::Config;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -32,6 +33,8 @@ my %known_profiles = map { $_ => 1 } keys %$limit_profile;
 if ($r->param('update_limit')) {
     my @known_keys = qw(contract_category market submarket underlying_symbol start_type expiry_type barrier_category landing_company);
     my %known_values = map { $_ => [get_offerings_with_filter($_)] } @known_keys;
+    # landing company is not part of offerings object.
+    $known_values{landing_company} = [map { $_->short } BOM::Platform::LandingCompany::Registry::all()];
     my %ref;
 
     foreach my $key (@known_keys) {
@@ -113,7 +116,7 @@ if ($r->param('delete_client')) {
 
 Bar("Limit Definitions");
 
-my $limit_defs = BOM::System::Config::quants->{risk_profile};
+my $limit_defs          = BOM::System::Config::quants->{risk_profile};
 my $current_definitions = BOM::Product::RiskProfile::get_current_profile_definitions();
 
 BOM::Platform::Context::template->process(
@@ -122,7 +125,6 @@ BOM::Platform::Context::template->process(
         definitions => $limit_defs,
         current     => $current_definitions,
     }) || die BOM::Platform::Context::template->error;
-
 
 Bar("Existing limits");
 
