@@ -13,6 +13,7 @@ use Data::Validate::Sanctions qw(is_sanctioned);
 use BOM::Platform::Desk;
 use BOM::System::Config;
 use BOM::Platform::Runtime;
+use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Client;
 use BOM::Platform::User;
@@ -140,7 +141,15 @@ sub after_register_client {
     my $client_loginid = $client->loginid;
     my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
     if (is_sanctioned($client->first_name, $client->last_name)) {
+        $client->set_status('disabled', 'system', 'client disabled as marked as UNTERR');
+        $client->save;
         $client->add_note('UNTERR', "UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list.");
+        send_email({
+            from    => BOM::System::Config::email_address('support'),
+            to      => BOM::System::Config::email_address('compliance'),
+            subject => $client->loginid . ' marked as UNTERR',
+            message => ["UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list."],
+        });
     }
 
     my $notemsg = "$client_loginid - Name and Address\n\n\n\t\t $client_name \n\t\t";
