@@ -148,7 +148,7 @@ sub dbh_is_registered {
 sub register_cached_dbh {
     my ($category, $dbh) = @_;
     register_dbh($category => $dbh) unless BOM::Database::dbh_is_registered(feed => $dbh);
-    $dbh->begin_work if $IN_TRANSACTION;
+    $dbh->begin_work if $IN_TRANSACTION && $dbh->{AutoCommit};
     $dbh;
 }
 
