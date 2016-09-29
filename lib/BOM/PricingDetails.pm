@@ -254,7 +254,12 @@ sub _get_volsurface {
     # If we do, just carry on; we don't need to show these dates.
     my $dates = [];
     try {
-        $dates = $self->_fetch_historical_surface_date({back_to => 20, $bet->underlying->symbol});
+        $dates = $self->_fetch_historical_surface_date({
+            back_to => 20,
+            symbol  => $bet->underlying->symbol
+        });
+    } catch {
+        warn "Failed to fetch historical surface data (usually just a timeout): $_";
     };
 
     my $tabs;
