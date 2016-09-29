@@ -94,7 +94,27 @@ sub release_dbh {
     _check_fork();
     # At destruction we may have an invalid handle
     my $addr = refaddr $dbh or return $dbh;
-    warn "releasing unregistered dbh $dbh" unless exists $DBH_SOURCE{$category}{$addr};
+    unless(exists $DBH_SOURCE{$category}{$addr}) {
+        my @other_categories = grep exists $DBH_SOURCE{$_}{$addr}, sort keys %DBH_SOURCE;
+        warn "releasing unregistered dbh $dbh for category $category" . (@other_categories ? " (but found it in these categories instead: " . join ', ', @other_categories : '');
+        # If we did find it elsewhere, make sure we do cleanup to reduce confusion
+        _remove_dbh_from_category($_ => $dbh) for @other_categories;
+    }
+    _remove_dbh_from_category($category => $dbh);
+    return $dbh;
+}
+
+=head2 _remove_dbh_from_category
+
+Helper function to reduce common code - removes the given C<$dbh> from a single category.
+
+Used internally.
+
+=cut
+
+sub _remove_dbh_from_category {
+    my ($category, $dbh) = @_;
+    my $addr = refaddr $dbh or return $dbh;
     delete $DBH_SOURCE{$category}{$addr};
     # avoiding grep here because these are weakrefs and we want them to stay that way.
     # since they're weakrefs, some of these may be undef
