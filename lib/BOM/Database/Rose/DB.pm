@@ -161,7 +161,7 @@ sub new_or_cached {
         # Remove trailing 'db', so userdb => user, authdb => auth etc.
         $category =~ s/db$// unless $category eq 'db';
         if(my $dbh = $db->{dbh}) {
-            BOM::Database::register_dbh($category => $dbh) unless BOM::Database::dbh_is_registered($dbh);
+            BOM::Database::register_dbh($category => $dbh) unless BOM::Database::dbh_is_registered($category => $dbh);
         } else {
             warn "No database handle assigned for category [$category]";
         }
