@@ -4,8 +4,7 @@ use strict;
 use warnings;
 use Test::Exception;
 use Test::MockObject::Extends;
-use Test::More tests => 2;
-use Test::NoWarnings;
+use Test::More tests => 1;
 
 use Path::Tiny;
 use Bloomberg::FileDownloader;
