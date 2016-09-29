@@ -523,7 +523,7 @@ sub get_settings {
         email         => $client->email,
         country       => $country,
         country_code  => $country_code,
-        email_consent => BOM::Platform::User->new({email => $client->email})->email_consent,
+        email_consent => do { my $user = BOM::Platform::User->new({email => $client->email}); ($user && $user->email_consent) ? 1 : 0 },
         (
             $client->is_virtual
             ? ()
