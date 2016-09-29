@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 27;
+use Test::More tests => 28;
+use Test::NoWarnings ();    # no END block test
 use Test::Exception;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Platform::Client;
@@ -567,7 +568,7 @@ subtest 'more validation', sub {
 
 SKIP: {
     my @gmtime = gmtime;
-    skip 'at least one minute must be left before mignight', 2
+    skip 'at least one minute must be left before mignight', 5
         if $gmtime[1] > 58 and $gmtime[2] == 23;
 
     subtest 'specific turnover validation', sub {
@@ -1393,6 +1394,192 @@ SKIP: {
             is $balance_after + 0, $bal, 'correct balance_after';
         }
         '30day turnover validation passed with slightly higher limits (with open bet)';
+    };
+
+    subtest 'max_profit', sub {
+        lives_ok {
+            $cl = create_client;
+
+            top_up $cl, 'USD', 10000;
+            isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+            is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
+        }
+        'setup new client';
+
+        my $today         = Date::Utility::today;
+
+        note "today = " . $today->db_timestamp;
+
+        my @bets_to_sell;
+        lives_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+                +{
+                purchase_time => $today->minus_time_interval('1s')->db_timestamp,
+                };
+            $bal -= 20;
+            push @bets_to_sell, [$acc_usd, $fmbid];
+            is $balance_after + 0, $bal, 'correct balance_after';
+
+            ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+                +{
+                purchase_time => $today->db_timestamp,
+                };
+            $bal -= 20;
+            push @bets_to_sell, [$acc_usd, $fmbid];
+            is $balance_after + 0, $bal, 'correct balance_after';
+
+            ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+                +{
+                purchase_time => $today->plus_time_interval('1s')->db_timestamp,
+                };
+            $bal -= 20;
+            push @bets_to_sell, [$acc_usd, $fmbid];
+            is $balance_after + 0, $bal, 'correct balance_after';
+        }
+        'buy a few bets';
+
+        lives_ok {
+            while (@bets_to_sell) {
+                my ($acc, $fmbid) = @{shift @bets_to_sell};
+                my $txnid = sell_one_bet $acc,
+                    +{
+                    id         => $fmbid,
+                    sell_price => 50,
+                    sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp,
+                    };
+                $bal += 50;
+            }
+        }
+        'and sell them for 50';
+
+        # here we have a realized profit for today of 60. We bought 3 bets each
+        # for 20 and sold them for 50. So, each bet brought 30 profit. But the
+        # first bet was bought as of yesterday.
+        # buy_price is 20, payout 60. So, we have a potential profit of
+        # 60 - 20 = 40.
+        #
+        # limit = realized_profit + potential_profit
+        #       = 60 + 40 = 100
+
+        dies_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+                +{
+                payout_price => 60,
+                limits => {
+                    max_daily_profit => 100 - 0.01,
+                },
+                };
+        }
+        'max_profit';
+        is_deeply $@,
+            [
+            BI018 => 'ERROR:  maximum daily profit limit exceeded',
+            ],
+            'maximum daily profit limit exceeded';
+
+
+        lives_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+                +{
+                payout_price => 60,
+                limits => {
+                    max_daily_profit => 100,
+                },
+                };
+            $bal -= 20;
+            is $balance_after + 0, $bal, 'correct balance_after';
+        }
+        'max_daily_profit passed with slightly higher limits';
+
+        # here we have a realized profit for today of 60. We bought 3 bets each
+        # for 20 and sold them for 50. So, each bet brought 30 profit. But the
+        # first bet was bought as of yesterday.
+
+        # Further, we have one open bet with buy_price 20 and payout 60. Hence,
+        # a potential profit of 40.
+
+        # For this bet,
+        # buy_price is 30, payout 60. So, we have a potential profit of
+        # 60 - 30 = 30.
+        #
+        # limit = realized_profit + potential_profit
+        #       = 60 + 40 + 30 = 130
+
+        dies_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+                +{
+                buy_price => 30,
+                payout_price => 60,
+                limits => {
+                    max_daily_profit => 130 - 0.01,
+                },
+                };
+        }
+        'max_profit';
+        is_deeply $@,
+            [
+            BI018 => 'ERROR:  maximum daily profit limit exceeded',
+            ],
+            'maximum daily profit limit exceeded (with open bet)';
+
+
+        lives_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+                +{
+                buy_price => 30,
+                payout_price => 60,
+                limits => {
+                    max_daily_profit => 130,
+                },
+                };
+            $bal -= 30;
+            is $balance_after + 0, $bal, 'correct balance_after';
+        }
+        'max_daily_profit passed with slightly higher limits (with open bet)';
+
+        # now let's repeat the same with 2 open bets to make sure aggregation works
+
+        # We have two open bets with buy_price 20 and payout 60 and buy_price 30
+        # and payout 60. Hence, a potential profit of 40 + 30 = 70.
+
+        # For this bet,
+        # buy_price is 30, payout 60. So, we have a potential profit of
+        # 60 - 30 = 30.
+        #
+        # limit = realized_profit + potential_profit
+        #       = 60 + 70 + 30 = 160
+
+        dies_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+                +{
+                buy_price => 30,
+                payout_price => 60,
+                limits => {
+                    max_daily_profit => 160 - 0.01,
+                },
+                };
+        }
+        'max_profit';
+        is_deeply $@,
+            [
+            BI018 => 'ERROR:  maximum daily profit limit exceeded',
+            ],
+            'maximum daily profit limit exceeded (with 2 open bets)';
+
+
+        lives_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+                +{
+                buy_price => 30,
+                payout_price => 60,
+                limits => {
+                    max_daily_profit => 160,
+                },
+                };
+            $bal -= 30;
+            is $balance_after + 0, $bal, 'correct balance_after';
+        }
+        'max_daily_profit passed with slightly higher limits (with 2 open bets)';
     };
 }
 
