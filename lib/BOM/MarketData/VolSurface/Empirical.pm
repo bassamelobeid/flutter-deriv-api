@@ -50,8 +50,8 @@ sub get_volatility {
         fill_cache   => $fill_cache,
     });
 
-    # minimum of epsilon to avoid division by zero error.
-    my $requested_interval = Time::Duration::Concise->new(interval => min(machine_epsilon(), $args->{seconds_to_expiration}));
+    # minimum of 1 second to avoid division by zero error.
+    my $requested_interval = Time::Duration::Concise->new(interval => min(1, $args->{seconds_to_expiration}));
     # $actual_lookback_interval used to be the contract duration, but we have changed the concept.
     # We will use the any amount of good ticks we get from the cache and scale the volatility by duration.
     # Corrupted of duplicated ticks will be discarded.
