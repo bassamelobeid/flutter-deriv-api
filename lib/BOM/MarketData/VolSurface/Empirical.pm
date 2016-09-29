@@ -51,7 +51,7 @@ sub get_volatility {
     });
 
     # minimum of 1 second to avoid division by zero error.
-    my $requested_interval = Time::Duration::Concise->new(interval => min(1, $args->{seconds_to_expiration}));
+    my $requested_interval = Time::Duration::Concise->new(interval => max(1, $args->{seconds_to_expiration}));
     # $actual_lookback_interval used to be the contract duration, but we have changed the concept.
     # We will use the any amount of good ticks we get from the cache and scale the volatility by duration.
     # Corrupted of duplicated ticks will be discarded.
