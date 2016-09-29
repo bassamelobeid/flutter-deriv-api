@@ -124,7 +124,7 @@ sub dbh_is_registered {
 
 Runs the given coderef in a transaction.
 
-Expects a coderef and a database handle category.
+Expects a coderef and one or more database handle categories.
 
 Will call L<DBI/begin_work> for every known database handle in the given category,
 run the code, then call L<DBI/commit> on success, or L<DBI/rollback> on failure.
@@ -143,18 +143,23 @@ distributed transaction co-ordination happening here.
 =cut
 
 sub txn(&;@) {
-    my ($code, $category) = @_;
+    my ($code, @categories) = @_;
+    die "Need a database category" unless @categories;
     _check_fork();
     my $wantarray = wantarray;
-    if(my $count =()= extract_by { !defined($_) } @{$DBH{$category}}) {
-        warn "Had $count database handles that were not released via release_dbh, probable candidates follow:\n";
-        my %addr = map {; refaddr($_) => 1 } @{$DBH{$category}};
-        warn "unreleased dbh in $_\n" for sort delete @{$DBH_SOURCE{$category}}{grep !exists $addr{$_}, keys %DBH_SOURCE};
+    for my $category (@categories) {
+        if(my $count =()= extract_by { !defined($_) } @{$DBH{$category}}) {
+            warn "Had $count database handles that were not released via release_dbh, probable candidates follow:\n";
+            my %addr = map {; refaddr($_) => 1 } @{$DBH{$category}};
+            warn "unreleased dbh in $_\n" for sort delete @{$DBH_SOURCE{$category}}{grep !exists $addr{$_}, keys %DBH_SOURCE};
+        }
     }
 
     my @rslt;
     eval {
-        $_->begin_work for @{$DBH{$category}};
+        for my $category (@categories) {
+            $_->begin_work for @{$DBH{$category}};
+        }
         # We want to pass through list/scalar/void context to the coderef
         if($wantarray) {
             @rslt = $code->();
@@ -164,15 +169,21 @@ sub txn(&;@) {
             $code->();
         }
         _check_fork();
-        $_->commit for grep defined, @{$DBH{$category}}; # might have closed database handle(s) in $code
+        for my $category (@categories) {
+            # Note that we may hit exceptions here, and we want to raise them since it means the
+            # database activity did not complete as expected
+            $_->commit for grep defined, @{$DBH{$category}}; # might have closed database handle(s) in $code
+        }
         1
     } or do {
         my $err = $@;
         warn "Error in transaction: $err";
-        eval {
-            $_->rollback;
-            1
-        } or warn "after $err also had failure in rollback: $@" for grep defined, @{$DBH{$category}};
+        for my $category (@categories) {
+            eval {
+                $_->rollback;
+                1
+            } or warn "after $err also had failure in rollback for dbh in category $category: $@" for grep defined, @{$DBH{$category}};
+        }
         die $err;
     };
     return $wantarray ? @rslt : $rslt[0];
