@@ -1,5 +1,5 @@
 test:
-	/etc/rmg/bin/prove -lr t/
+	/etc/rmg/bin/prove -lr --exec '/etc/rmg/bin/perl -MTest::FailWarnings=-allow_deps,1' t/
 
 critique:
 	/etc/rmg/bin/prove -l t/BOM/003_autosyntax.t
