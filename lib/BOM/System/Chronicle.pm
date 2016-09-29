@@ -263,7 +263,7 @@ my $pid = $$;
 
 sub _dbh {
     # Silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
-    return undef if not defined _config()->{chronicle}; ## no critic (ProhibitExplicitReturnUndef)
+    return undef if not defined _config()->{chronicle};
 
     # Our reconnection logic here is quite simple: assume that a PID change means we need to
     # reconnect to the database. This also assumes that DBI will reconnect as necessary when
