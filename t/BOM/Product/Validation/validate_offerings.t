@@ -1,7 +1,6 @@
 #!/etc/rmg/bin/perl
 
-use Test::More tests => 8;
-use Test::NoWarnings;
+use Test::More tests => 7;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Market::Underlying;
