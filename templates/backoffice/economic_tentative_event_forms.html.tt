@@ -6,6 +6,7 @@
         <td>Currency:</td>
         <td>Impact:</td>
         <td></td>
+        <td>Expected Return:</td> 
         <td></td>
         <td></td>
     </tr>
@@ -17,6 +18,7 @@
         <td>[% row.symbol %]</td>
         <td>[% row.impact %]</td>
         <td>[% row.event_name %]</td>
+        <td><input type="text" style='width: 30px' alue="[% row.blankout %]">&nbsp;%
         <td><button onclick=
         "updateEvent('[% row.id %]');">Update</button></td>
         <td class="result"></td>
