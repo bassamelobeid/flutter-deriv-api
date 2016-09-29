@@ -144,7 +144,11 @@ sub dbi_connect {
 
 sub disconnect {
     my $self = shift;
-    BOM::Database::release_dbh($self->domain => $self->{dbh}) if $self->{dbh};
+    if(my $category = $self->{domain} // $self->default_domain) {
+        BOM::Database::release_dbh($category => $self->{dbh}) if $self->{dbh};
+    } else {
+        warn "No database category, cannot unregister";
+    }
     $self->SUPER::disconnect(@_);
 }
 
