@@ -18,12 +18,10 @@ for (my $i = 0; $i < @{RISK_PROFILES()}; $i++) {
     $risk_profile_rank{RISK_PROFILES->[$i]} = $i;
 }
 
-has [qw(contract_category underlying expiry_type start_type currency barrier_category)] => (
+has [qw(contract_category underlying expiry_type start_type currency barrier_category landing_company)] => (
     is       => 'ro',
     required => 1,
 );
-
-has landing_company => (is => 'ro');
 
 has [qw(contract_info)] => (
     is         => 'ro',

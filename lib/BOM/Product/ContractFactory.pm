@@ -136,6 +136,8 @@ sub produce_contract {
             if (not($input_params{underlying}->for_date and $input_params{underlying}->for_date->is_same_as($pricing)));
     }
 
+    $input_params{landing_company} = 'costarica' unless defined $input_params{landing_company};
+
     my $contract_obj;
     if ($input_params{category} eq 'spreads') {
         $input_params{date_start} = Date::Utility->new if not $input_params{date_start};

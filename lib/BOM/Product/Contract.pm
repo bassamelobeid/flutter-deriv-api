@@ -73,8 +73,8 @@ has category => (
 );
 
 has landing_company => (
-    is      => 'ro',
-    default => 'costarica',
+    is       => 'ro',
+    required => 1,
 );
 
 has category_code => (
