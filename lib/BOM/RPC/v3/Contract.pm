@@ -395,6 +395,7 @@ sub get_contract_details {
     try {
         my $bet_params = shortcode_to_parameters($params->{short_code}, $params->{currency});
         $bet_params->{app_markup_percentage} = $params->{app_markup_percentage} // 0;
+        $bet_params->{landing_company} = $client->landing_company->short;
 
         my $contract = produce_contract($bet_params);
 
