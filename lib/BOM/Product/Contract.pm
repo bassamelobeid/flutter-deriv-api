@@ -2763,6 +2763,12 @@ sub _build_risk_profile {
     );
 }
 
+=head2 predefined_contracts
+
+Some landing company requires script contract offerings in which we will have pre-set
+contract barriers, start and expiry time. As of now, this is only applicable for japan.
+
+=cut
 has predefined_contracts => (
     is         => 'ro',
     lazy_build => 1,
