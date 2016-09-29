@@ -29,6 +29,7 @@ sub proposal {
             args        => $args,
             method      => 'send_ask',
             msg_type    => 'proposal',
+            origin_args => $req_storage->{origin_args},
             call_params => {
                 language              => $c->stash('language'),
                 app_markup_percentage => $c->stash('app_markup_percentage')
