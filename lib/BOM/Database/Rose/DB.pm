@@ -152,22 +152,26 @@ sub disconnect {
     $self->SUPER::disconnect(@_);
 }
 
-sub new_or_cached {
-    my $class = shift;
-    unshift @_, 'type' if @_ == 1;
-    my %args = @_;
-    my $db = $class->SUPER::new_or_cached(%args);
-    if(my $category = $class->_category_from_domain($args{domain})) {
-        if(my $dbh = $db->{dbh}) {
-            BOM::Database::register_dbh($category => $dbh) unless BOM::Database::dbh_is_registered($category => $dbh);
-        } else {
-            warn "No database handle assigned for category [$category]";
-        }
+=head2 init_dbh
+
+Overrides L<Rose::DB/init_dbh> to register with L<BOM::Database>.
+
+Returns the database handle if we had one.
+
+=cut
+
+sub init_dbh {
+    my $self = shift;
+    my $dbh = $self->SUPER::init_dbh(@_);
+    return $dbh unless $dbh;
+
+    if(my $category = $self->_category_from_domain) {
+        BOM::Database::register_dbh($category => $dbh) unless BOM::Database::dbh_is_registered($category => $dbh);
     } else {
         # Should never happen, since we have a default
         warn "No database category, cannot register";
     }
-    return $db;
+    return $dbh;
 }
 
 =head2 _category_from_domain
