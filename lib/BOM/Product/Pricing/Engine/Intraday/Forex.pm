@@ -3,7 +3,7 @@ package BOM::Product::Pricing::Engine::Intraday::Forex;
 use Moose;
 extends 'BOM::Product::Pricing::Engine::Intraday';
 
-use List::Util qw(max min sum);
+use List::Util qw(max min sum first);
 use YAML::XS qw(LoadFile);
 
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
