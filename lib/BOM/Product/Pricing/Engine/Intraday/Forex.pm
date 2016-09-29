@@ -729,10 +729,10 @@ sub _build_economic_events_spot_risk_markup {
     return $spot_risk_markup;
 }
 
+my $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
 sub _get_economic_events {
     my ($self, $start, $end) = @_;
 
-    state $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
     my $underlying = $self->bet->underlying;
 
     my $raw_events = Quant::Framework::EconomicEventCalendar->new({
