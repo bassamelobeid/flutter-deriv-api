@@ -51,7 +51,7 @@ my $bet_params = {
 subtest 'non atm short term kurtosis markup' => sub {
     my $c = produce_contract($bet_params);
     is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'intraday forex engine.';
-    is $c->pricing_engine->risk_markup->peek_amount('short_term_kurtosis_risk_markup'), 0.01, 'kurtosis risk markup of 0.01 for a 15m contract.';
+    is $c->pricing_engine->risk_markup->peek_amount('short_term_kurtosis_risk_markup'), 0, 'kurtosis risk markup of 0.01 for a 15m contract.';
     $bet_params->{duration} = '15m1s';
     $c = produce_contract($bet_params);
     is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'intraday forex engine.';
@@ -59,12 +59,12 @@ subtest 'non atm short term kurtosis markup' => sub {
     $bet_params->{duration} = '14m59s';
     $c = produce_contract($bet_params);
     is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'intraday forex engine.';
-    is $c->pricing_engine->risk_markup->peek_amount('short_term_kurtosis_risk_markup'), 0.0101666666666667,
+    is $c->pricing_engine->risk_markup->peek_amount('short_term_kurtosis_risk_markup'), 0.000166666666666676,
         'kurtosis risk markup of 0.0101666666666667 for a 14m59s contract.';
     $bet_params->{duration} = '2m';
     $c = produce_contract($bet_params);
     is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'intraday forex engine.';
-    is $c->pricing_engine->risk_markup->peek_amount('short_term_kurtosis_risk_markup'), 0.14, 'kurtosis risk markup of 0.14 for a 2m contract.';
+    is $c->pricing_engine->risk_markup->peek_amount('short_term_kurtosis_risk_markup'), 0.13, 'kurtosis risk markup of 0.13 for a 2m contract.';
 };
 
 subtest 'atm short term kurtosis markup' => sub {

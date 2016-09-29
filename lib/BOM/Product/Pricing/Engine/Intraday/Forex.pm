@@ -493,8 +493,8 @@ my $iv_risk_interpolator = Math::Function::Interpolator->new(
 
 my $shortterm_risk_interpolator = Math::Function::Interpolator->new(
     points => {
-        1  => 0.15,
-        15 => 0.01,
+        0  => 0.15,
+        15 => 0,
     });
 
 =head1 risk_markup
