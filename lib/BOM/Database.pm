@@ -134,7 +134,7 @@ Used when registering a handle acquired via L<DBI/connect_cached>.
 
 sub dbh_is_registered {
     my ($category, $dbh) = @_;
-    die "too many parameters to register_dbh: @_" if @_ > 1;
+    die "too many parameters to register_dbh: @_" if @_ > 2;
     _check_fork();
     my $addr = refaddr $dbh;
     return exists $DBH_SOURCE{$category}{$addr} ? 1 : 0;
