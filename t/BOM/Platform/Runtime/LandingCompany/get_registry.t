@@ -1,5 +1,4 @@
-use Test::Most 0.22 (tests => 8);
-use Test::NoWarnings;
+use Test::Most 0.22 (tests => 7);
 use Sys::Hostname;
 
 use BOM::Platform::LandingCompany;

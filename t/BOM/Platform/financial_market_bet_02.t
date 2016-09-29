@@ -3,8 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 28;
-use Test::NoWarnings ();    # no END block test
+use Test::More tests => 27;
 use Test::Exception;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Platform::Client;
@@ -1538,7 +1537,5 @@ subtest 'batch_buy', sub {
     # note "exception is $@";
     like $@, qr/^invalid currency/i, 'invalid currency';
 };
-
-Test::NoWarnings::had_no_warnings;
 
 done_testing;

@@ -3,9 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 2;
+use Test::More tests => 1;
 use Test::Deep;
-use Test::NoWarnings;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::LandingCompany::Registry;
