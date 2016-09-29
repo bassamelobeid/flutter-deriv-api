@@ -144,7 +144,7 @@ sub dbi_connect {
 
 sub disconnect {
     my $self = shift;
-    if(my $category = $self->{domain} // $self->default_domain) {
+    if(my $category = $self->_category_from_domain) {
         BOM::Database::release_dbh($category => $self->{dbh}) if $self->{dbh};
     } else {
         warn "No database category, cannot unregister";
@@ -157,9 +157,7 @@ sub new_or_cached {
     unshift @_, 'type' if @_ == 1;
     my %args = @_;
     my $db = $class->SUPER::new_or_cached(%args);
-    if(my $category = $args{domain} // $class->default_domain) {
-        # Remove trailing 'db', so userdb => user, authdb => auth etc.
-        $category =~ s/db$// unless $category eq 'db';
+    if(my $category = $class->_category_from_domain($args{domain})) {
         if(my $dbh = $db->{dbh}) {
             BOM::Database::register_dbh($category => $dbh) unless BOM::Database::dbh_is_registered($category => $dbh);
         } else {
@@ -170,6 +168,31 @@ sub new_or_cached {
         warn "No database category, cannot register";
     }
     return $db;
+}
+
+=head2 _category_from_domain
+
+Takes an optional domain and returns a suitable category string for use with L<BOM::Database> registration.
+
+Will apply the default domain from the class if nothing else is found.
+
+May return undef if it was not possible to determine a suitable category - but since we have a default, this should
+not happen.
+
+=cut
+
+sub _category_from_domain {
+    # Note that this can be called as an instance method or a class method, guard all attribute
+    # lookups with a ref($self) check
+    my ($self, $domain) = @_;
+
+    my $category = $domain;
+    $category //= $self->{domain} if ref $self;
+    $category //= $self->default_domain or return undef;
+
+    # Remove trailing 'db', so userdb => user, authdb => auth etc.
+    $category =~ s/db$// unless $category eq 'db';
+    return $category;
 }
 
 1;
