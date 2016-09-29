@@ -9,7 +9,7 @@
     </table>
 </form>
 
-[% IF pricing_parameters.size > 0 %]
+[% IF pricing_parameters.size AND pricing_parameters.size > 0 %]
         <p><b>LOGIN_ID =  [% contract_details.login_id  %]</b></p>
         <p><b>TRANS_ID = [% contract_details.trans_id  %]</b></p>
         <p><b>SHORT_CODE = [% contract_details.short_code  %]</b></p>
