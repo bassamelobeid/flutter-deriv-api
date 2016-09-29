@@ -20,7 +20,7 @@ sub read_dbh {
         "read", "", {pg_server_prepare => 0} )
       || die($DBI::errstr);
     # Since we're using L<DBI/connect_cached>, we may get an existing value back
-    BOM::Database::register_dbh(feed => $dbh) unless BOM::Database::dbh_is_registered(feed => $dbh);
+    BOM::Database::register_cached_dbh(feed => $dbh);
     return $dbh;
 }
 
@@ -33,7 +33,7 @@ sub write_dbh {
         "write", $config->{password} )
       || die($DBI::errstr);
     # Since we're using L<DBI/connect_cached>, we may get an existing value back
-    BOM::Database::register_dbh(feed => $dbh) unless BOM::Database::dbh_is_registered(feed => $dbh);
+    BOM::Database::register_cached_dbh(feed => $dbh);
     return $dbh;
 }
 

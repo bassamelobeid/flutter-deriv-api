@@ -38,6 +38,8 @@ my %DBH_SOURCE;
 # Last PID we saw - used for invalidating stale DBH on fork
 my $PID = $$;
 
+our $IN_TRANSACTION = 0;
+
 =head2 register_dbh
 
 Records the given database handle as being active and available for running transactions against.
@@ -68,6 +70,9 @@ sub register_dbh {
     weaken($DBH{$category}[-1]);
     # filename:line (package::sub)
     $DBH_SOURCE{$category}{$addr} = sprintf "%s:%d (%s::%s)", (caller 1)[1,2,0,3];
+    # We may be connecting partway through a transaction - if so, we want to join this handle onto the list of
+    # active transactions
+    $dbh->begin_work if $IN_TRANSACTION;	
     $dbh
 }
 
@@ -140,6 +145,13 @@ sub dbh_is_registered {
     return exists $DBH_SOURCE{$category}{$addr} ? 1 : 0;
 }
 
+sub register_cached_dbh {
+    my ($category, $dbh) = @_;
+    register_dbh($category => $dbh) unless BOM::Database::dbh_is_registered(feed => $dbh);
+    $dbh->begin_work if $IN_TRANSACTION;
+    $dbh;
+}
+
 =head2 txn
 
 Runs the given coderef in a transaction.
@@ -180,6 +192,7 @@ sub txn(&;@) {
         for my $category (@categories) {
             $_->begin_work for @{$DBH{$category}};
         }
+        local $IN_TRANSACTION = 1;
         # We want to pass through list/scalar/void context to the coderef
         if($wantarray) {
             @rslt = $code->();
