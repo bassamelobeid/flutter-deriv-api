@@ -61,6 +61,16 @@ for (my $i = 0; $i < 4; $i++) {
 $res = decode_json($t->message->[1]);
 is $res->{error}->{code}, 'RateLimit';
 
+my $res2;
+for (my $i = 0; $i < 300; $i++) {
+    $t->send_ok({
+            json => {
+                payout_currencies => 1 
+            }})->message_ok;
+}
+$res2 = decode_json($t->message->[1]);
+is $res2->{error}->{code}, 'RateLimit';
+
 $t->finish_ok;
 
 done_testing();
