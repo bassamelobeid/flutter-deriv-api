@@ -123,7 +123,7 @@ while (1) {
 
         my $response = txn {
             process_job($redis, $next, $params);
-        } or next;
+        } qw(feed chronicle) or next;
 
         warn "Pricing time too long: " . $response->{rpc_time} . ' - ' . join(', ', map "$_ = $params->{$_}", sort keys %$params) . "\n" if $response->{rpc_time}>1000;
 
