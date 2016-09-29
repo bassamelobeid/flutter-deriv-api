@@ -47,7 +47,7 @@ sub signal_handler {
 sub process_job {
     my ($redis, $next, $params) = @_;
 
-    my $price_daemon_cmd = delete $params->{price_daemon_cmd} || '';
+    my $price_daemon_cmd = $params->{price_daemon_cmd} || '';
     my $current_time     = time;
     my $response;
 
@@ -139,7 +139,7 @@ while (1) {
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.time', 1000 * Time::HiRes::tv_interval($tv, $tv_now), {tags => ['tag:' . $internal_ip]});
         my $end_time = Time::HiRes::time;
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.end_time', 1000 * ($end_time - int($end_time)), {tags => ['tag:' . $internal_ip]});
-        $stat_count->{$price_daemon_cmd}++;
+        $stat_count->{$params->{price_daemon_cmd}}++;
         if ($current_pricing_epoch != time) {
             for my $key (keys %$stat_count) {
                 DataDog::DogStatsd::Helper::stats_gauge("pricer_daemon.$key.count_per_second", $stat_count->{$key}, {tags => ['tag:' . $internal_ip]});
