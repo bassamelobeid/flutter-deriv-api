@@ -195,7 +195,7 @@ sub get_bid {
         my $bet_params = shortcode_to_parameters($short_code, $currency);
         $bet_params->{is_sold}               = $is_sold;
         $bet_params->{app_markup_percentage} = $app_markup_percentage // 0;
-        $bet_params->{landing_company}       = $landing_company if $landing_company;
+        $bet_params->{landing_company}       = $landing_company;
         my $contract = produce_contract($bet_params);
 
         if ($contract->is_legacy) {
