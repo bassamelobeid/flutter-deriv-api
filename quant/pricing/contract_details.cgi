@@ -18,6 +18,7 @@ use f_brokerincludeall;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Database::ClientDB;
+use BOM::Platform::Client;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);
 use BOM::Backoffice::Sysinit ();
@@ -39,10 +40,12 @@ if ($broker and $id) {
         })->get_details_by_transaction_ref($id);
 
     my $original_contract = produce_contract($details->{shortcode}, $details->{currency_code});
+    my $client = BOM::Platform::Client::get_instance({'loginid' => $details->{loginid}});
 
     $start = $params{start} ? Date::Utility->new($params{start}) : $original_contract->date_start;
     my $pricing_args = $original_contract->build_parameters;
     $pricing_args->{date_pricing} = $start;
+    $pricing_args->{landing_company} = $client->landing_company->short;
     my $contract       = produce_contract($pricing_args);
     my $traded_bid     = $details->{bid_price};
     my $traded_ask     = $details->{ask_price};
