@@ -24,7 +24,6 @@ use BOM::Market::Underlying;
 use BOM::Product::Contract::Category;
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Platform::Context qw(localize);
-use BOM::Market;
 use BOM::Market::SubMarket;
 use BOM::Market::SubMarket::Registry;
 use Cache::RedisDB;

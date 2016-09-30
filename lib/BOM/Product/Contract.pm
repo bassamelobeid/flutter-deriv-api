@@ -2096,7 +2096,7 @@ sub _validate_offerings {
         };
     }
 
-    my $underlying      = $self->underlying;
+    my $underlying = $self->underlying;
 
     if ($underlying->is_trading_suspended) {
         return {
@@ -2139,7 +2139,7 @@ sub _validate_feed {
 
     return if $self->is_expired;
 
-    my $underlying      = $self->underlying;
+    my $underlying = $self->underlying;
 
     if (not $self->current_tick) {
         return {
