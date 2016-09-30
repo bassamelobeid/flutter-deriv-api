@@ -1176,8 +1176,15 @@ sub _build_is_trading_suspended {
 
     return (
                not keys %{$self->contracts}
-            or $self->market->disabled
+            or $self->_market_disabled
             or grep { $_ eq $self->symbol } (@{BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades}));
+}
+
+sub _market_disabled {
+    my $self = shift;
+
+    my $disabled_markets = BOM::Platform::Runtime->instance->app_config->quants->markets->disabled;
+    return (grep { $self->market->name eq $_ } @$disabled_markets);
 }
 
 =head2 fullfeed_file

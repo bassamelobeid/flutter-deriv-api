@@ -239,45 +239,6 @@ sub translated_display_name {
     return BOM::Platform::Context::localize($self->display_name);
 }
 
-has '_recheck_appconfig' => (
-    is      => 'rw',
-    default => sub { return time; },
-);
-
-=head2 disabled
-
-Is this market disabled 
-
-=cut
-
-my $appconfig_attrs = [qw(disabled)];
-has $appconfig_attrs => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-before $appconfig_attrs => sub {
-    my $self = shift;
-
-    my $now = time;
-    if ($now >= $self->_recheck_appconfig) {
-        $self->_recheck_appconfig($now + 23);
-        foreach my $attr (@{$appconfig_attrs}) {
-            my $clearer = 'clear_' . $attr;
-            $self->$clearer;
-        }
-    }
-
-};
-
-sub _build_disabled {
-    my $self = shift;
-    my $disabled;
-
-    my $disabled_markets = BOM::Platform::Runtime->instance->app_config->quants->markets->disabled;
-    return (grep { $self->name eq $_ } @$disabled_markets);
-}
-
 =head2 deep_otm_threshold
 
 Threshold for ask price value to which deep_otm contracts will be
