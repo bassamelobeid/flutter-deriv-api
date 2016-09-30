@@ -173,17 +173,18 @@ sub _validate_barrier {
         my @available_barriers = @{$info->{available_barriers} // []};
         my @expired_barriers   = @{$info->{expired_barriers}   // []};
 
+        my $epsilon = 1e10;
         my @filtered;
         foreach my $pair (@available_barriers) {
             # checks for expired barriers and exclude them from available barriers.
-            my $barrier_expired = first { $pair->[0] eq $_->[0] and $pair->[1] eq $_->[1] } @expired_barriers;
+            my $barrier_expired = first { abs($pair->[0] - $_->[0]) < $epsilon and abs($pair->[1] - $_->[1]) < $epsilon } @expired_barriers;
             next if $barrier_expired;
             push @filtered, $pair;
         }
 
         if (
             not(@filtered
-                and first { $low_barrier->as_absolute eq $_->[0] and $high_barrier->as_absolute eq $_->[1] } @filtered))
+                and first { abs($low_barrier->as_absolute - $_->[0]) < $epsilon and abs($high_barrier->as_absolute - $_->[1]) < $epsilon } @filtered))
         {
             return {
                 message => 'Invalid barriers['

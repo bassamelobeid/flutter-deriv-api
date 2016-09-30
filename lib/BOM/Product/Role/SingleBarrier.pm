@@ -85,7 +85,11 @@ sub _validate_barrier {
         my @available_barriers = @{$info->{available_barriers} // []};
         my %expired_barriers = map { $_ => 1 } @{$info->{expired_barriers} // []};
         # barriers are pipsized, make them numbers.
-        if (not(@available_barriers and first { $self->barrier->as_absolute eq $_ } grep { not $expired_barriers{$_} } @available_barriers)) {
+        my $epsilon = 1e10;
+        if (
+            not(@available_barriers
+                and first { abs($self->barrier->as_absolute - $_) < $epsilon } grep { not $expired_barriers{$_} } @available_barriers))
+        {
             return {
                 message => 'Invalid barrier['
                     . $self->barrier->as_absolute
