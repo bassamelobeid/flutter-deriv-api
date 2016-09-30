@@ -97,18 +97,6 @@ has 'resets_at_open' => (
     default => 0,
 );
 
-=head1 METHODS
-=head2 translated_display_name
-
-The display name after translating to the language provided.
-
-=cut
-
-sub translated_display_name {
-    my $self = shift;
-    return localize($self->display_name);
-}
-
 =head2 intradays_must_be_same_day
 
 Can this submarket be allowed to have intradays which cross days?

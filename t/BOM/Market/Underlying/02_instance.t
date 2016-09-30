@@ -59,7 +59,6 @@ my $looks_like_currency = qr/^[A-Z]{3}/;
 subtest 'what happens to an undefined symbol name' => sub {
     my $symbol_undefined = BOM::Market::Underlying->new('an_undefined_symbol');
     is($symbol_undefined->display_name,            'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct display_name');
-    is($symbol_undefined->translated_display_name, 'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct translated_display_name');
 
     warning_like {
         is($symbol_undefined->market->name, 'config', 'an undefined symbol has correct market');
@@ -480,9 +479,6 @@ subtest 'all methods on a selection of underlyings' => sub {
     is($nonsense->market->name, 'nonsense',      'Nonsense symbols do not have markets');
     is($EURUSD->system_symbol,  $EURUSD->symbol, 'System symbol and symbol are same for non-inverted');
     isnt($USDEUR->system_symbol, $USDEUR->symbol, ' and different for inverted');
-
-    # We don't have translations in the sandbox.. we should probably fix that.
-    is($AS51->display_name, $AS51->translated_display_name, 'Translated to undefined is English');
 
     is($AS51->exchange->symbol, $AS51->exchange_name, 'Got our exchange from the provided name');
 

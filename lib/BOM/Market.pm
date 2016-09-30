@@ -17,7 +17,6 @@ use Moose;
 use BOM::Platform::Runtime;
 use BOM::Market::Markups;
 use BOM::Market::Types;
-use BOM::Platform::Context qw(request localize);
 use BOM::Market::UnderlyingDB;
 use BOM::Market::Underlying;
 
@@ -225,19 +224,6 @@ has 'display_order' => (
     is  => 'ro',
     isa => 'Int',
 );
-
-=head1 METHODS
-=head2 translated_display_name
-
-The display name after translating to the language provided.
-
-=cut
-
-sub translated_display_name {
-    my $self = shift;
-
-    return BOM::Platform::Context::localize($self->display_name);
-}
 
 =head2 deep_otm_threshold
 

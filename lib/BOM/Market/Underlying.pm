@@ -650,17 +650,6 @@ sub _build_display_name {
     return uc $self->symbol;
 }
 
-=head2 translated_display_name
-
-Returns a name for the underlying, after translating to the client's local language, which will appear reasonable to a client.
-
-=cut
-
-sub translated_display_name {
-    my $self = shift;
-    return localize($self->display_name);
-}
-
 =head2 exchange_name
 
 To which exchange does the underlying belong. example: FOREX, NASDAQ, etc.

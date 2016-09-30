@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 3;
+use Test::Most tests => 2;
 use Test::Exception;
 use Test::FailWarnings;
 

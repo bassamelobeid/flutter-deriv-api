@@ -37,7 +37,6 @@ subtest 'Market builds or configs test' => sub {
         isa_ok $config, 'BOM::Market';
         ok !$config->display_name, 'Display Name';
         ok !$config->equity;
-        ok !$config->disabled,                 'disabled';
         ok !$config->reduced_display_decimals, 'Reduced Display Decimals';
         is $config->asset_type,         'asset';
         is $config->deep_otm_threshold, 0.10;
