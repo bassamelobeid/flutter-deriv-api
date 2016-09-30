@@ -5,7 +5,6 @@ use warnings;
 
 use Moose;
 
-
 use MooseX::Types::Moose qw(Int Num Str);
 use MooseX::Types -declare => [
     map { "bom_$_" }
