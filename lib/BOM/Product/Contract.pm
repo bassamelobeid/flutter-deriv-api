@@ -58,7 +58,7 @@ has is_expired => (
     lazy_build => 1,
 );
 
-has is_after_settlement => (
+has is_settled => (
     is         => 'rw',
     lazy_build => 1,
 );
@@ -831,7 +831,7 @@ For other contracts, it can expires when current time has past a pre-determined 
 
 =cut
 
-sub _build_is_after_settlement {
+sub is_after_settlement {
     my $self = shift;
 
     if ($self->tick_expiry) {
@@ -1088,7 +1088,7 @@ sub is_valid_to_sell {
             $self->missing_market_data(1) if not $hold_for_exit_tick;
             $self->add_error($ref);
         }
-    } elsif ($self->is_expired) {
+    } elsif ($self->is_after_expiry) {
         $self->add_error({
 
                 message => 'waiting for settlement',
