@@ -689,22 +689,6 @@ subtest 'max_suspend_trading_feed_delay' => sub {
     }
 };
 
-subtest 'max_failover_feed_delay' => sub {
-    plan tests => 6;
-    # Right now these are all the same.. but what if they weren't?
-    my %expectations = (
-        'frxEURUSD' => 120,
-        'frxBROUSD' => 120,
-        'AS51'      => 120,
-        'USAAPL'    => 180,
-        'R_100'     => 120,
-        'RDBULL'    => 120,
-    );
-
-    foreach my $ul (map { BOM::Market::Underlying->new($_) } (keys %expectations)) {
-        is($ul->max_failover_feed_delay->seconds, $expectations{$ul->symbol}, $ul->symbol . ' sets max_failover_feed_delay as expected.');
-    }
-};
 subtest 'last_licensed_display_epoch' => sub {
     my $time      = time;
     my $frxEURUSD = BOM::Market::Underlying->new('frxEURUSD');

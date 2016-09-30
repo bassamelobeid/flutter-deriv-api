@@ -158,13 +158,6 @@ How long (in seconds) before we consider to switch over to secondary feed provid
 
 =cut
 
-has max_failover_feed_delay => (
-    is      => 'ro',
-    isa     => 'bom_time_interval',
-    default => sub { return shift->market->max_failover_feed_delay; },
-    coerce  => 1,
-);
-
 has [qw(sod_blackout_start eod_blackout_start eod_blackout_expiry)] => (
     is         => 'ro',
     lazy_build => 1,

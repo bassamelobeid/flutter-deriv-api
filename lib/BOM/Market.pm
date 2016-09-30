@@ -215,19 +215,6 @@ has max_suspend_trading_feed_delay => (
     coerce  => 1,
 );
 
-=head2 max_failover_feed_delay
-
-How long before we switch to secondary feed provider?
-
-=cut
-
-has max_failover_feed_delay => (
-    is      => 'ro',
-    isa     => 'bom_time_interval',
-    default => '2m',
-    coerce  => 1,
-);
-
 =head2 display_order
 
 The order with which this market has to be displayed

@@ -441,25 +441,6 @@ sub _build_max_suspend_trading_feed_delay {
     return $self->submarket->max_suspend_trading_feed_delay;
 }
 
-=head2 max_failover_feed_delay
-
-The threshold to fail over to secondary feed provider.
-
-=cut
-
-has max_failover_feed_delay => (
-    is         => 'ro',
-    isa        => 'bom_time_interval',
-    lazy_build => 1,
-    coerce     => 1,
-);
-
-sub _build_max_failover_feed_delay {
-    my $self = shift;
-
-    return $self->submarket->max_failover_feed_delay;
-}
-
 has [qw(sod_blackout_start eod_blackout_start eod_blackout_expiry)] => (
     is         => 'ro',
     lazy_build => 1,
