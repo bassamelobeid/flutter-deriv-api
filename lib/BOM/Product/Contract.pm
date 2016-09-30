@@ -1083,7 +1083,7 @@ sub is_valid_to_sell {
             $self->missing_market_data(1) if not $hold_for_exit_tick;
             $self->add_error($ref);
         }
-    } elsif ($self->is_after_expiry) {
+    } elsif ($self->is_expired) {
         $self->add_error({
 
                 message => 'waiting for settlement',
