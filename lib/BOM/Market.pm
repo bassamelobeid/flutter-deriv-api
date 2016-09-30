@@ -14,14 +14,7 @@ my $forex = BOM::Market->new({name => 'forex'});
 
 use Moose;
 
-use BOM::Platform::Runtime;
 use BOM::Market::Markups;
-use BOM::Market::Types;
-use BOM::Market::UnderlyingDB;
-use BOM::Market::Underlying;
-
-use List::Util qw(first);
-use JSON qw( from_json );
 
 has 'name' => (
     is       => 'ro',
