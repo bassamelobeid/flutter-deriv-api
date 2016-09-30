@@ -87,7 +87,7 @@ sub _init {
                 'quants' => {
                     'underlyings' => {'disabled_due_to_corporate_actions' => []},
                     'markets'     => {
-                        'disabled'   => ['sectors'],
+                        'disabled' => ['sectors'],
                     },
                     'features' => {
                         'suspend_claim_types' => [],
