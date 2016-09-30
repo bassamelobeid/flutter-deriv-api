@@ -31,7 +31,7 @@ BOM::Backoffice::Auth0::can_access(['Quants']);
 Bar("Bet Parameters");
 
 my $bet = do {
-    my $contrct_object = '';
+    my $contract_object = '';
     my ($loginid, $shortcode, $currency) = map {request()->param($_)} qw(loginid shortcode currency);
     if ($loginid and $shortcode and $currency) {
         my $client = BOM::Platform::Client::get_instance({'loginid' => $loginid});
@@ -39,7 +39,7 @@ my $bet = do {
         $contract_parameters->{landing_company} = $client->landing_company->short;
         $contract_object = produce_contract($contract_parameters);
     }
-    $ontract_object;
+    $contract_object;
 };
 
 my ($start, $end, $timestep, $debug_link);
