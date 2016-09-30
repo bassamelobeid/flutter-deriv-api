@@ -93,6 +93,7 @@ BOM::Platform::Context::template->process(
         open_bets => $open_bets,
         balance   => $acnt_dm->get_balance(),
         currency  => $client->currency,
+        loginid   => $client->loginid,
     },
 ) || die BOM::Platform::Context::template->error();
 
