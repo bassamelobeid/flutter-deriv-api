@@ -40,6 +40,7 @@ use POSIX qw( );
 use DateTime;
 use Data::Validate::IP qw( );
 use Math::BigInt;
+use Time::Duration::Concise;
 
 use MooseX::Types::Moose qw(Int Num Str);
 use MooseX::Types -declare => [

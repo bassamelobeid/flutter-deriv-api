@@ -13,6 +13,7 @@ my $forex = BOM::Market::SubMarket->new({name => 'random_daily'});
 =cut
 
 use Moose;
+use BOM::Market::Types;
 
 =head1 ATTRIBUTES
 
