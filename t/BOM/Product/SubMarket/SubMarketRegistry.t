@@ -6,6 +6,7 @@ use Test::More tests => 1;
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
+use BOM::Market::Registry;
 use BOM::Market::SubMarket;
 use BOM::Market::SubMarket::Registry;
 
