@@ -1086,8 +1086,9 @@ sub is_valid_to_sell {
     } elsif ($self->is_after_expiry) {
         $self->add_error({
 
-                message           => 'waiting for settlement',
-                message_to_client => localize('Please wait for contract settlement. The final settlement price may differ from the indicative price.'),
+                message => 'waiting for settlement',
+                message_to_client =>
+                    localize('Please wait for contract settlement. The final settlement price may differ from the indicative price.'),
         });
 
     } elsif (not $self->opposite_contract->is_valid_to_buy($args)) {
