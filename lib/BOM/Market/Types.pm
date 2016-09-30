@@ -5,7 +5,6 @@ use warnings;
 
 use Moose;
 
-use Time::Duration::Concise;
 
 use MooseX::Types::Moose qw(Int Num Str);
 use MooseX::Types -declare => [
@@ -13,14 +12,14 @@ use MooseX::Types -declare => [
         qw(
         financial_market
         submarket
-        contract_type
         market_markups
-        market_feed
         date_object
         time_interval
+        underlying_object
         )];
 
 use Moose::Util::TypeConstraints;
+use Time::Duration::Concise;
 
 subtype 'bom_time_interval', as 'Time::Duration::Concise';
 coerce 'bom_time_interval', from 'Str', via { Time::Duration::Concise->new(interval => $_) };
