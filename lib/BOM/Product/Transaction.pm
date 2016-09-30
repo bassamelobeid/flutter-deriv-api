@@ -1894,6 +1894,10 @@ sub sell_expired_contracts {
             $failure->{reason} = 'not expired';
             push @{$result->{failures}}, $failure;
             next;
+        } elsif (not $contract->is_after_settlement) {
+            $stats_failure{$logging_class}{'NotExpired'}++;
+            $failure->{reason} = 'not pass settlement time';
+            next;
         } elsif ($contract->category_code eq 'legacy') {
             $stats_failure{$logging_class}{Legacy}++;
             $failure->{reason} = 'legacy';
