@@ -832,9 +832,6 @@ sub is_after_settlement {
     if ($self->tick_expiry) {
         return 1
             if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds));
-    } elsif ($self->barrier_category eq 'american' and $self->is_expired) {
-        # For ameican contract, as long as the barrier is touched, there is no need to wait for after settlement time
-        return 1;
     } else {
         return 1 if $self->get_time_to_settlement->seconds == 0;
     }
