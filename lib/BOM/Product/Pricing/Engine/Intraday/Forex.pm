@@ -734,7 +734,6 @@ my $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/
 sub _get_economic_events {
     my ($self, $start, $end) = @_;
 
-    state $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
     my $underlying = $self->bet->underlying;
 
     my $raw_events = Quant::Framework::EconomicEventCalendar->new({
