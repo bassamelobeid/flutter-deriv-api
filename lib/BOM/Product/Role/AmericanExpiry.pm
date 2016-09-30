@@ -25,7 +25,7 @@ sub _build_is_expired {
     }
 
     # For path dependent contract, as long as it is expired, no need to wait for settlement
-    $self->is_after_settlement = 1 ? $is_expired : 0;
+    $self->is_after_settlement($is_expired // 0);
     return $is_expired;
 }
 
