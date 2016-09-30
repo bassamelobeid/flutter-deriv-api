@@ -83,7 +83,6 @@ subtest 'predefined_contracts' => sub {
     ok $c->is_valid_to_buy, 'valid to buy';
     $bet_params->{predefined_contracts} = {
         $expiry_epoch => {
-            date_start         => $now->plus_time_interval('15m')->epoch,
             available_barriers => ['100.010'],
             expired_barriers   => ['100.010'],
         }};
@@ -96,7 +95,6 @@ subtest 'predefined_contracts' => sub {
     $bet_params->{low_barrier} = 99;
     $bet_params->{predefined_contracts} = {
         $expiry_epoch => {
-            date_start         => $now->plus_time_interval('15m')->epoch,
             available_barriers => [['99.100', '100.000']],
         }};
     $c = produce_contract($bet_params);
@@ -104,14 +102,12 @@ subtest 'predefined_contracts' => sub {
     like($c->primary_validation_error->message_to_client, qr/Invalid barrier/, 'throws error');
     $bet_params->{predefined_contracts} = {
         $expiry_epoch => {
-            date_start         => $now->plus_time_interval('15m')->epoch,
             available_barriers => [['99.000', '101.000']],
         }};
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
     $bet_params->{predefined_contracts} = {
         $expiry_epoch => {
-            date_start         => $now->plus_time_interval('15m')->epoch,
             available_barriers => [['99.000', '101.000']],
             expired_barriers => [['99.000', '101.000']],
         }};
