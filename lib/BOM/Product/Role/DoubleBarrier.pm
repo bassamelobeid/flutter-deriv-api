@@ -175,12 +175,14 @@ sub _validate_barrier {
 
         my @filtered;
         foreach my $pair (@available_barriers) {
-            next if (first { $pair->[0] + 0 == $_->[0] + 0 and $pair->[1] + 0 == $_->[1] + 0 } @expired_barriers);
+            # checks for expired barriers and exclude them from available barriers.
+            my $barrier_expired = first { $pair->[0] + 0 == $_->[0] + 0 and $pair->[1] + 0 == $_->[1] + 0 } @expired_barriers;
+            next if $barrier_expired;
             push @filtered, $pair;
         }
 
         if (
-            not(@available_barriers
+            not(@filtered
                 and first { $low_barrier->as_absolute + 0 == $_->[0] + 0 and $high_barrier->as_absolute + 0 == $_->[1] + 0 } @filtered))
         {
             return {

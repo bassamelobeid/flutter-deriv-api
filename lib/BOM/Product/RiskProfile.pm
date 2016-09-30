@@ -39,7 +39,7 @@ sub _build_contract_info {
         expiry_type       => $self->expiry_type,
         start_type        => $self->start_type,
         barrier_category  => $self->barrier_category,
-        $self->landing_company ? (landing_company => $self->landing_company) : (),
+        landing_company   => $self->landing_company,
     };
 }
 
