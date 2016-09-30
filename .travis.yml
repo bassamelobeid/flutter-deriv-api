@@ -4,7 +4,7 @@ perl:
 matrix:
     fast_finish: true
 env:
-    - TEST_SUITE=unit_test_market-autoupload
+    - TEST_SUITE=unit_test_market-autoupdater
 services:
     - redis-server
 addons:
