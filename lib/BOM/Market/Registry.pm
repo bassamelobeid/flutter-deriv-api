@@ -25,7 +25,6 @@ use namespace::autoclean;
 use MooseX::Singleton;
 
 use BOM::Market;
-use List::Util qw( first );
 
 with 'MooseX::Role::Registry';
 

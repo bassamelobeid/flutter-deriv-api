@@ -14,11 +14,6 @@ my $forex = BOM::Market::SubMarket->new({name => 'random_daily'});
 
 use Moose;
 
-use BOM::Market::Registry;
-use BOM::Market::Types;
-use BOM::Platform::Context qw(request localize);
-use JSON qw(from_json);
-
 =head1 ATTRIBUTES
 
 =head2 name
