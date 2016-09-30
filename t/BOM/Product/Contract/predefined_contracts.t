@@ -73,11 +73,6 @@ subtest 'predefined_contracts' => sub {
         }};
     delete $bet_params->{duration};
     $bet_params->{date_expiry} = $expiry_epoch;
-    $c = produce_contract($bet_params);
-    ok $c->date_expiry->epoch == $expiry_epoch, 'contract expiry properly set';
-    ok exists $c->predefined_contracts->{$expiry_epoch}, 'predefined contract\'s expiry properly set';
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    like($c->primary_validation_error->message_to_client, qr/Invalid start time/, 'throws error');
     $bet_params->{date_start} = $bet_params->{date_pricing} = $now->plus_time_interval('15m1s');
     $bet_params->{current_tick} = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',

@@ -2534,11 +2534,6 @@ sub _validate_start_and_expiry_date {
                 message => 'Invalid contract expiry[' . $self->date_expiry->datetime . '] for japan at ' . $self->date_pricing->datetime . '.',
                 message_to_client => localize('Invalid expiry time.'),
             };
-        } elsif ($available_contracts->{$expiry_epoch}->{date_start} > $self->effective_start->epoch) {
-            return {
-                message => 'Invalid contract start time[' . $self->date_start->datetime . '] for japan at ' . $self->date_pricing->datetime . '.',
-                message_to_client => localize('Invalid start time.'),
-            };
         }
     }
 
@@ -2785,12 +2780,11 @@ sub _build_predefined_contracts {
         grep { $_->{contract_type} eq $self->code } @{available_contracts_for_symbol({symbol => $self->underlying->symbol})->{available}};
 
     # restructure contract information for easier processing
-    my %info = map {
-        $_->{trading_period}{date_expiry}{epoch} => {
-            date_start         => $_->{trading_period}{date_start}{epoch},
-            available_barriers => $_->{available_barriers},
-            expiry_barriers    => $_->{expired_barriers}}
-    } @contracts;
+    my %info;
+    foreach my $d (@contracts) {
+        push @{$info{$d->{trading_period}{date_expiry}{epoch}}{available_barriers}}, @{$d->{available_barriers}};
+        push @{$info{$d->{trading_period}{date_expiry}{epoch}}{expired_barriers}},   @{$d->{expired_barriers}};
+    }
 
     return \%info;
 }
