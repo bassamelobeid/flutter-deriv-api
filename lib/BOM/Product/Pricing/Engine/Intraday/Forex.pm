@@ -734,6 +734,7 @@ my $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/
 sub _get_economic_events {
     my ($self, $start, $end) = @_;
 
+    state $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
     my $underlying = $self->bet->underlying;
 
     my $raw_events = Quant::Framework::EconomicEventCalendar->new({
@@ -745,16 +746,25 @@ sub _get_economic_events {
 
     my $default_underlying = 'frxUSDJPY';
     my @events;
+    # Sometimes new economic events pops up.
+    # We will need some time to figure out what to do with them.
+    # But at the mean time, they can be ignored.
+    my %known_skips = ('OPEC Meetings' => 1);
     foreach my $event (@$raw_events) {
         my $event_name = $event->{event_name};
+        next if ($known_skips{$event_name});
         $event_name =~ s/\s/_/g;
-        my $key = first { exists $news_categories->{$_} } grep { defined $_ }
-            map { (
+        my $key = first { exists $news_categories->{$_} }
+        map { (
                 $_ . '_' . $event->{symbol} . '_' . $event->{impact} . '_' . $event_name,
                 $_ . '_' . $event->{symbol} . '_' . $event->{impact} . '_default'
                 )
-            } ($underlying->symbol, $default_underlying);
-
+        } ($underlying->symbol, $default_underlying);
+        unless ($key) {
+            # we want to know about the new economic events.
+            warn "Name: $event_name, affected currency: $event->{symbol}";
+            next;
+        }
         my $news_parameters = $news_categories->{$key};
         next unless $news_parameters;
         $news_parameters->{release_time} = $event->{release_date};
