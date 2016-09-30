@@ -58,6 +58,11 @@ has is_expired => (
     lazy_build => 1,
 );
 
+has is_after_settlement => (
+    is         => 'rw',
+    lazy_build => 1,
+);
+
 has missing_market_data => (
     is      => 'rw',
     isa     => 'Bool',
@@ -826,7 +831,7 @@ For other contracts, it can expires when current time has past a pre-determined 
 
 =cut
 
-sub is_after_settlement {
+sub _build_is_after_settlement {
     my $self = shift;
 
     if ($self->tick_expiry) {

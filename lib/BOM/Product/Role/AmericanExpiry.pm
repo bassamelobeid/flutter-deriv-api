@@ -6,7 +6,7 @@ use BOM::Platform::Context qw(localize);
 
 sub _build_is_expired {
     my $self = shift;
-
+    my $is_expired;
     my ($barrier, $barrier2) =
         $self->two_barriers ? ($self->high_barrier->as_absolute, $self->low_barrier->as_absolute) : ($self->barrier->as_absolute);
     my $spot = $self->entry_spot;
@@ -19,10 +19,14 @@ sub _build_is_expired {
         });
         # Was expired at start, making it an unfair bet, so value goes to 0 without regard to bet conditions.
         $self->value(0);
-        return 1;
+        $is_expired = 1;
     } else {
-        return $self->check_expiry_conditions;
+        $is_expired = $self->check_expiry_conditions;
     }
+
+    # For path dependent contract, as long as it is expired, no need to wait for settlement
+    $self->is_after_settlement = 1 ? $is_expired : 0;
+    return $is_expired;
 }
 
 has hit_tick => (
