@@ -24,24 +24,10 @@ use BOM::Market::Underlying;
 use List::Util qw(first);
 use JSON qw( from_json );
 
-=head1 ATTRIBUTES
-
-=head2 name
-
-Name of the market
-
-=cut
-
 has 'name' => (
     is       => 'ro',
     required => 1,
 );
-
-=head2 suspicious_move
-
-Allowed percentage of spot price move over one day.
-
-=cut
 
 has suspicious_move => (
     is => 'ro',
@@ -69,29 +55,13 @@ has display_current_spot => (
     default => 0,
 );
 
-=head2 display_name
-
-The name of the market to be displayed
-
-=cut
-
 has 'display_name' => (
     is => 'ro',
 );
 
-=head2 explanation
-
-Explanation of what this market is
-
-=cut
-
 has 'explanation' => (
     is => 'ro',
 );
-
-=head2 volatility_surface_type
-Type of surface this financial market should have.
-=cut
 
 has volatility_surface_type => (
     is      => 'ro',
@@ -293,7 +263,7 @@ Is this market disabled
 
 =cut
 
-my $appconfig_attrs = [qw(disabled disable_iv)];
+my $appconfig_attrs = [qw(disabled)];
 has $appconfig_attrs => (
     is         => 'ro',
     lazy_build => 1,
@@ -319,18 +289,6 @@ sub _build_disabled {
 
     my $disabled_markets = BOM::Platform::Runtime->instance->app_config->quants->markets->disabled;
     return (grep { $self->name eq $_ } @$disabled_markets);
-}
-
-=head2 disable_iv
-
-Is iv disabled on this market
-
-=cut
-
-sub _build_disable_iv {
-    my $self       = shift;
-    my $disable_iv = BOM::Platform::Runtime->instance->app_config->quants->markets->disable_iv;
-    return (grep { $self->name eq $_ } @$disable_iv);
 }
 
 =head2 deep_otm_threshold

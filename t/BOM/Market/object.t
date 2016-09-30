@@ -16,12 +16,3 @@ subtest 'disabled' => sub {
         ok !$bfm->disabled, 'Forex Not disabled';
     };
 };
-
-subtest 'disable_iv' => sub {
-    BOM::Platform::Runtime->instance->app_config->quants->markets->disable_iv(['stocks']);
-    my $bfm = new_ok('BOM::Market' => [{'name' => 'stocks'}]);
-    ok $bfm->disable_iv;
-
-    $bfm = new_ok('BOM::Market' => [{'name' => 'forex'}]);
-    ok !$bfm->disable_iv;
-};
