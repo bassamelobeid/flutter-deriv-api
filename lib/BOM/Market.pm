@@ -15,6 +15,7 @@ my $forex = BOM::Market->new({name => 'forex'});
 use Moose;
 
 use BOM::Market::Markups;
+use BOM::Market::Types;
 
 has 'name' => (
     is       => 'ro',
