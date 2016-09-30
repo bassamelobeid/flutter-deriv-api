@@ -814,7 +814,7 @@ sub _build_longcode {
     @barriers = map { $_->display_text if $_ } @barriers;
 
     return localize($localizable_description,
-        ($self->currency, $payout, $self->underlying->translated_display_name, $when_start, $when_end, @barriers));
+        ($self->currency, $payout, localize($self->underlying->display_name), $when_start, $when_end, @barriers));
 }
 
 =item is_after_expiry
@@ -2097,7 +2097,6 @@ sub _validate_offerings {
     }
 
     my $underlying      = $self->underlying;
-    my $translated_name = $underlying->translated_display_name();
 
     if ($underlying->is_trading_suspended) {
         return {
@@ -2141,7 +2140,6 @@ sub _validate_feed {
     return if $self->is_expired;
 
     my $underlying      = $self->underlying;
-    my $translated_name = $underlying->translated_display_name();
 
     if (not $self->current_tick) {
         return {
@@ -2474,7 +2472,7 @@ sub _validate_start_and_expiry_date {
         [[$start_epoch, $end_epoch], $self->market_risk_blackouts, "Trading is not available from [_2] to [_3]"],
     );
 
-    my @args = ($self->underlying->translated_display_name);
+    my @args = (localize($self->underlying->display_name));
 
     foreach my $blackout (@blackout_checks) {
         my ($epochs, $periods, $message_to_client) = @{$blackout}[0 .. 2];

@@ -93,7 +93,7 @@ has c => (
 
 my %known_decorations = (
 
-    name => sub { return $_->translated_display_name },
+    name => sub { return localize($_->display_name) },
 
     times => sub {
         my ($parent_obj, $self) = @_;
@@ -235,7 +235,7 @@ sub _build_tree {
                 parent      => $market_info,
             };
             foreach my $ul (
-                sort { $a->translated_display_name() cmp $b->translated_display_name() }
+                sort { localize($a->display_name) cmp localize($b->display_name) }
                 map  { BOM::Market::Underlying->new($_) } get_offerings_with_filter(
                     'underlying_symbol',
                     {

@@ -10,12 +10,11 @@ use BOM::Market::SubMarket;
 use BOM::Market::SubMarket::Registry;
 
 subtest 'BOM::Market::SubMarket::Registry' => sub {
-    plan tests => 25;
+    plan tests => 24;
 
     my $random_daily = BOM::Market::SubMarket::Registry->instance->get('random_daily');
     is($random_daily->name,                      'random_daily',        'name');
     is($random_daily->display_name,              'Daily Reset Indices', 'display name');
-    is($random_daily->translated_display_name(), 'Daily Reset Indices', 'translated display name - by default language = EN');
     is($random_daily->market->name,              'volidx',              'market');
 
     my $invalid = BOM::Market::SubMarket::Registry->instance->get('forex_test');
