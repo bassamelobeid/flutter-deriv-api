@@ -88,7 +88,6 @@ sub _init {
                     'underlyings' => {'disabled_due_to_corporate_actions' => []},
                     'markets'     => {
                         'disabled'   => ['sectors'],
-                        'disable_iv' => []
                     },
                     'features' => {
                         'suspend_claim_types' => [],
