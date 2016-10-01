@@ -1096,7 +1096,7 @@ sub is_valid_to_sell {
                     localize('Please wait for contract settlement. The final settlement price may differ from the indicative price.'),
         });
 
-    } elsif (not $self->opposite_contract->is_valid_to_buy($args)) {
+    } elsif (not $self->is_expired and not $self->opposite_contract->is_valid_to_buy($args)) {
         # Their errors are our errors, now!
         $self->add_error($self->opposite_contract->primary_validation_error);
     }
