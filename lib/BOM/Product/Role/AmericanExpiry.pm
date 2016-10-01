@@ -27,15 +27,12 @@ sub _build_is_expired {
     return $is_expired;
 }
 
-
 sub _build_is_settled {
     my $self = shift;
 
-   return $self->is_expired // 0;
+    return $self->is_expired // 0;
 
 }
-
-
 
 has hit_tick => (
     is         => 'ro',
