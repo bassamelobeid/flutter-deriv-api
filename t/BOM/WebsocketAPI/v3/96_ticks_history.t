@@ -32,7 +32,7 @@ subtest 'validations' => sub {
     $t->send_ok({json => $req_storage});
     $t   = $t->message_ok;
     $res = decode_json($t->message->[1]);
-    is $res->{echo_req}->{granularity}, 60, 'Should set default granularity if it is empty';
+    is_deeply($res->{echo_req}, $req_storage, 'Echo request is the same');
 
     $req_storage->{style} = 'sample';
     $t->send_ok({json => $req_storage});

@@ -81,6 +81,7 @@ sub ticks_history {
         return unless $c;
         $c->call_rpc({
                 args            => $args,
+                origin_args     => $req_storage->{origin_args},
                 method          => 'ticks_history',
                 rpc_response_cb => sub {
                     my ($c, $rpc_response, $req_storage) = @_;
