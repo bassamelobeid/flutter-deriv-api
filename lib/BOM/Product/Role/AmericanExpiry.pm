@@ -24,10 +24,18 @@ sub _build_is_expired {
         $is_expired = $self->check_expiry_conditions;
     }
 
-    # For path dependent contract, as long as it is expired, no need to wait for settlement
-    $self->is_settled($is_expired // 0);
     return $is_expired;
 }
+
+
+sub _buid_is_settled {
+    my $self = shift;
+
+   return $self->is_expired // 0;
+
+}
+
+
 
 has hit_tick => (
     is         => 'ro',
