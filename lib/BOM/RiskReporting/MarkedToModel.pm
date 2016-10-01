@@ -99,12 +99,11 @@ sub generate {
                 my $bet = produce_contract($bet_params);
                 $cached_underlyings{$symbol} ||= $bet->underlying;
 
-                my $is_after_settlement    = $bet->is_after_settlement;
                 my $current_value = $bet->is_spread ? $bet->bid_price : $bet->theo_price;
                 my $value         = $self->amount_in_usd($current_value, $open_fmb->{currency_code});
                 $totals{value} += $value;
 
-                if ($is_after_settlement and $bet->exit_tick) {
+                if ($bet->is_expired and $bet->is_settled) {
                     $total_expired++;
                     $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
                         undef, $open_fmb_id, $value);
