@@ -15,45 +15,45 @@ my $underlying = BOM::Market::Underlying->new($underlying_symbol);
 =cut
 
 use open qw[ :encoding(UTF-8) ];
-use BOM::Market::Types;
-
-use Math::Round qw(round);
-use JSON qw(from_json);
-use List::MoreUtils qw( any );
-use List::Util qw( first max min);
-use Scalar::Util qw( looks_like_number );
-use Memoize;
-use Time::HiRes;
-use Finance::Asset;
-use Quant::Framework::Spot;
-use Quant::Framework::Spot::Tick;
-
-use Quant::Framework::Exchange;
-use Quant::Framework::TradingCalendar;
-use Quant::Framework::CorporateAction;
 use Cache::RedisDB;
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
-use Time::Duration::Concise;
+use JSON qw(from_json);
+use List::MoreUtils qw( any );
+use List::Util qw( first max min);
+use Math::Round qw(round);
+use Memoize;
 use POSIX;
-use YAML::XS qw(LoadFile);
+use Scalar::Util qw( looks_like_number );
+use Time::HiRes;
+use Time::Duration::Concise;
 use Try::Tiny;
-use BOM::Platform::Runtime;
-use Quant::Framework::Spot::DatabaseAPI;
+use YAML::XS qw(LoadFile);
+
+use Finance::Asset;
+
+use BOM::System::Config;
+use BOM::System::Chronicle;
+use BOM::Market;
+use BOM::Market::Registry;
+use BOM::Market::SubMarket::Registry;
+use BOM::Market::Types;
 use BOM::Database::FeedDB;
 use BOM::Platform::Context qw(request localize);
-use BOM::Market::Types;
+use BOM::Platform::Runtime;
+
+use Quant::Framework::Spot;
+use Quant::Framework::Spot::Tick;
+use Quant::Framework::Exchange;
+use Quant::Framework::TradingCalendar;
+use Quant::Framework::CorporateAction;
+use Quant::Framework::Spot::DatabaseAPI;
 use Quant::Framework::Asset;
 use Quant::Framework::Currency;
 use Quant::Framework::ExpiryConventions;
 use Quant::Framework::StorageAccessor;
 use Quant::Framework::Utils::UnderlyingConfig;
 use Quant::Framework::Utils::Builder;
-use BOM::System::Chronicle;
-use BOM::Market::SubMarket::Registry;
-use BOM::Market;
-use BOM::Market::Registry;
-use BOM::System::Config;
 
 our $PRODUCT_OFFERINGS = LoadFile('/home/git/regentmarkets/bom-market/config/files/product_offerings.yml');
 
