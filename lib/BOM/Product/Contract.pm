@@ -2,48 +2,47 @@ package BOM::Product::Contract;
 
 use Moose;
 
-# very bad name, not sure why it needs to be
-# attached to Validatable.
 use MooseX::Role::Validatable::Error;
 use Math::Function::Interpolator;
-use Quant::Framework::Currency;
-use BOM::Product::Contract::Category;
 use Time::HiRes qw(time);
 use List::Util qw(min max first);
 use List::MoreUtils qw(none all);
 use Scalar::Util qw(looks_like_number);
-use BOM::Product::RiskProfile;
-
-use BOM::Market::UnderlyingDB;
 use Math::Util::CalculatedValue::Validatable;
 use Date::Utility;
-use BOM::Market::Underlying;
-use Quant::Framework::Spot::Tick;
-use Quant::Framework::CorrelationMatrix;
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use Time::Duration::Concise;
-use BOM::Product::Types;
+
+use Quant::Framework::Currency;
 use Quant::Framework::VolSurface::Utils;
-use BOM::Platform::Context qw(request localize);
+use Quant::Framework::EconomicEventCalendar;
+use Quant::Framework::Spot::Tick;
+use Quant::Framework::CorrelationMatrix;
+
+use Price::Calculator;
+use Pricing::Engine::EuropeanDigitalSlope;
+use Pricing::Engine::TickExpiry;
+
+use BOM::System::Chronicle;
+
+use BOM::Platform::Context qw(localize);
+
+use BOM::Market::UnderlyingDB;
+use BOM::Market::Underlying;
+
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
-use Quant::Framework::EconomicEventCalendar;
+
+use BOM::Product::Contract::Category;
+use BOM::Product::RiskProfile;
+use BOM::Product::Types;
 use BOM::Product::Offerings qw( get_contract_specifics get_offerings_flyby);
-use BOM::System::Chronicle;
-use Price::Calculator;
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
 require BOM::Product::Pricing::Engine::Intraday::Index;
 require BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
-require Pricing::Engine::EuropeanDigitalSlope;
-require Pricing::Engine::TickExpiry;
 require BOM::Product::Pricing::Greeks::BlackScholes;
-
-use constant {
-    commission_base_multiplier => 1,
-    commission_max_multiplier  => 2,
-};
 
 sub is_spread { return 0 }
 sub is_legacy { return 0 }
