@@ -6,7 +6,7 @@ if (my $r =
     `git grep BOM::|grep -v BOM::Test|grep -v BOM::Database|grep -v BOM::System|grep -v BOM::Platform|grep -v BOM::Market`)
 {
     print $r;
-    ok 0, "Wrong strucutre dependency $r";
+    ok 0, "Wrong structre dependency $r";
 } else {
-    ok 1, "Strucutre dependency is OK";
+    ok 1, "Structre dependency is OK";
 }
