@@ -2719,7 +2719,6 @@ sub _build_risk_profile {
     );
 }
 
-
 # Don't mind me, I just need to make sure my attibutes are available.
 with 'BOM::Product::Role::Reportable';
 
