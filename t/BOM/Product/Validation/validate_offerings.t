@@ -1,6 +1,6 @@
 #!/etc/rmg/bin/perl
 
-use Test::More tests => 7;
+use Test::More tests => 6;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Market::Underlying;
@@ -63,17 +63,6 @@ subtest 'suspend trade on underlyings' => sub {
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->{message}, qr/Underlying trades suspended/, 'Underlying trades suspended message');
     $mocked->unmock_all();
-    $c = produce_contract($bet_params);
-    ok $c->is_valid_to_buy, 'ok to buy';
-};
-
-subtest 'market disabled' => sub {
-    $mocked_market = Test::MockModule->new('BOM::Market');
-    $mocked_market->mock('disabled', sub { 1 });
-    my $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    like($c->primary_validation_error->{message}, qr/Underlying trades suspended/, 'Underlying trades suspended message');
-    $mocked_market->unmock_all;
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'ok to buy';
 };

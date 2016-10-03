@@ -333,7 +333,7 @@ sub _build_longcode {
     }
 
     return localize($description,
-        ($self->currency, to_monetary_number_format($self->amount_per_point), $self->underlying->translated_display_name, @other));
+        ($self->currency, to_monetary_number_format($self->amount_per_point), localize($self->underlying->display_name), @other));
 }
 
 sub breaching_tick {
