@@ -8,6 +8,7 @@ use Cwd qw/abs_path/;
 
 use BOM::Market::Underlying;
 use BOM::Market::AggTicks;
+use BOM::Market::UnderlyingDB;
 
 use base qw( Exporter );
 our @EXPORT_OK = qw(initialize_realtime_ticks_db update_combined_realtime);
