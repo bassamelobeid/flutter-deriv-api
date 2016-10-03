@@ -290,17 +290,17 @@ sub _build_config {
     my $default_dividend_rate = undef;
 
     $default_dividend_rate = 0 if $zero_rate{$self->submarket->name};
+    $default_dividend_rate = -35 if $self->symbol eq 'RDBULL';
+    $default_dividend_rate = 20 if $self->symbol eq 'RDBEAR';
 
-    if ($self->market->name eq 'volidx') {
-        #TODO: hard code values for rates
-        my $div = Quant::Framework::Asset->new({
-            symbol           => $self->symbol,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-        });
-        my @rates = values %{$div->rates};
-        $default_dividend_rate = pop @rates;
-    }
+    $default_dividend_rate = 20 if $self->symbol eq 'RDYIN';
+    $default_dividend_rate = -35 if $self->symbol eq 'RDYANG';
+
+    $default_dividend_rate = 0 if $self->symbol eq 'RDMOON';
+    $default_dividend_rate = 0 if $self->symbol eq 'RDSUN';
+
+    $default_dividend_rate = 0 if $self->symbol eq 'RDMARS';
+    $default_dividend_rate = 0 if $self->symbol eq 'RDVENUS';
 
     my $build_args = {underlying => $self->system_symbol};
 
