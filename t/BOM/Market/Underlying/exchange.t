@@ -6,7 +6,6 @@ use Test::FailWarnings;
 use Data::Chronicle::Mock;
 
 use BOM::System::Chronicle;
-use BOM::Market::SubMarket;
 use BOM::Market::UnderlyingDB;
 use BOM::Market::Underlying;
 use BOM::Test::Data::Utility::UnitTestMarketData;
