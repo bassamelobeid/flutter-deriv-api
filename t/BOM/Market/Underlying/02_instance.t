@@ -113,6 +113,11 @@ subtest 'display_decimals' => sub {
         is $r100->dividend_rate_for(0.5), 0, 'correct dividend rate';
         is $r100->dividend_rate_for(1.0), 0, 'correct dividend rate';
 
+
+        my $rdbull = BOM::Market::Underlying->new({symbol => 'RDBULL'});
+        is $rdbull->dividend_rate_for(0.5), -35, 'correct dividend rate';
+        is $rdbull->dividend_rate_for(1.0), -35, 'correct dividend rate';
+
     };
 
     subtest 'indices' => sub {
