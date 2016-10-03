@@ -64,7 +64,7 @@ our $PRODUCT_OFFERINGS = LoadFile('/home/git/regentmarkets/bom-market/config/fil
 #A value of 1 means assuming real-time feed license for all underlyings.
 our $FORCE_REALTIME_FEED = 0;
 
-our $interest_rates_source = "implied";
+our $interest_rates_source   = "implied";
 our $extra_vol_diff_by_delta = 0.1;
 
 =head1 METHODS
