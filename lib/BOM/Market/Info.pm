@@ -23,6 +23,12 @@ has underlying => (
     required => 1,
 );
 
+
+has combined_folder => (
+    is => 'ro',
+    lazy_build => 1,
+);
+
 =head2 combined_folder
 
 Return the directory name where we keep our quotes.
@@ -75,7 +81,7 @@ has '_recheck_appconfig' => (
     default => sub { return time; },
 );
 
-my $appconfig_attrs = [qw(is_buying_suspended is_trading_suspended)];
+my $appconfig_attrs = [qw(is_trading_suspended)];
 has $appconfig_attrs => (
     is         => 'ro',
     lazy_build => 1,
@@ -94,20 +100,6 @@ before $appconfig_attrs => sub {
     }
 };
 
-=head2 is_buying_suspended
-
-Has buying of this underlying been suspended?
-
-=cut
-
-sub _build_is_buying_suspended {
-    my $self = shift;
-
-    # Trade suspension implies buying suspension, as well.
-    return (
-        $self->is_trading_suspended
-            or grep { $_ eq $self->underlying->symbol } (@{BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy}));
-}
 
 =head2 is_trading_suspended
 

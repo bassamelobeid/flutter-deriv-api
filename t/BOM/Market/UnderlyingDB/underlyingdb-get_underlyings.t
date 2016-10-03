@@ -7,6 +7,7 @@ use Test::MockTime qw(set_relative_time);
 use YAML::XS qw(DumpFile LoadFile);
 
 use BOM::Market::UnderlyingDB;
+use BOM::Platform::Runtime;
 
 my $udb;
 lives_ok {

@@ -227,7 +227,6 @@ has [qw(
         asset_symbol
         volatility_surface_type
         quoted_currency_symbol
-        combined_folder
         uses_dst_shifted_seasonality
         spot_spread
         spot_spread_size
@@ -1567,11 +1566,9 @@ sub _build_base_commission {
 sub calculate_spread {
     my ($self, $volatility) = @_;
 
-    die 'volatility is zero for ' . $self->symbol if $volatility == 0;
+    die 'volatility is invalid ' . $self->symbol if $volatility < 0.0001;
 
-    my $spread_multiplier = $self->quants_config->{commission}->{adjustment}->{spread_multiplier};
-    # since it is only vol indices
-    my $spread  = $self->spot * sqrt($volatility**2 * 2 / (365 * 86400)) * $spread_multiplier;
+    my $spread  = $self->spot * sqrt($volatility**2 * 2 / (365 * 86400));
     my $y       = POSIX::floor(log($spread) / log(10));
     my $x       = $spread / (10**$y);
     my $rounded = max(2, round($x / 2) * 2);

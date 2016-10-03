@@ -23,7 +23,7 @@ use BOM::System::Chronicle;
 use Finance::Asset::SubMarket;
 use BOM::Market::UnderlyingDB;
 use BOM::Market::Underlying;
-use BOM::Marlet::Info;
+use BOM::Market::Info;
 use Quant::Framework::Spot;
 
 
@@ -497,25 +497,18 @@ subtest 'all methods on a selection of underlyings' => sub {
     my $eurusd_info = BOM::Market::Info->new(underlying => $EURUSD);
 
     is($eurusd_info->is_trading_suspended, 0, 'Underlying can be traded');
-    is($eurusd_info->is_buying_suspended,  0, 'Underlying can be bought');
 
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy([$EURUSD->symbol]);
     $eurusd_info->clear_is_trading_suspended;
-    $eurusd_info->clear_is_buying_suspended;
     is($eurusd_info->is_trading_suspended, 0, ' now traded');
-    ok($eurusd_info->is_buying_suspended, ' but not bought');
 
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades([$EURUSD->symbol]);
     $eurusd_info->clear_is_trading_suspended;
-    $eurusd_info->clear_is_buying_suspended;
     ok($eurusd_info->is_trading_suspended, ' now not tradeable');
-    ok($eurusd_info->is_buying_suspended,  ' nor buyable');
 
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy([]);
     $eurusd_info->clear_is_trading_suspended;
-    $eurusd_info->clear_is_buying_suspended;
     ok($eurusd_info->is_trading_suspended, ' still not tradeable');
-    ok($eurusd_info->is_buying_suspended,  ' nor buyable');
 
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy($orig_buy);
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades($orig_trades);

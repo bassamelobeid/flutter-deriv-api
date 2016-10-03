@@ -1,7 +1,3 @@
-commission:
-  adjustment:
-    spread_multiplier: 1
-
 market_data:
   interest_rates_source: "implied"
   extra_vol_diff_by_delta: 0.1
