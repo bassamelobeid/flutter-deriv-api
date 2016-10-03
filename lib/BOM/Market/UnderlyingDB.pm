@@ -37,9 +37,10 @@ use List::Util qw(first);
 use List::MoreUtils qw( uniq );
 use Memoize;
 
-use BOM::Market::Registry;
-use BOM::Market::SubMarket::Registry;
-use BOM::Market::SubMarket;
+use Finance::Asset::Market::Registry;
+use Finance::Asset::SubMarket::Registry;
+use Finance::Asset::SubMarket;
+use Finance::Asset::Market;
 use BOM::Market::Underlying;
 
 has _file_content => (
@@ -100,7 +101,7 @@ Return list of all markets
 sub markets {
     my $self = shift;
     my @markets =
-        map { $_->name } BOM::Market::Registry->instance->display_markets;
+        map { $_->name } Finance::Asset::Market::Registry->instance->display_markets;
     return @markets;
 }
 
