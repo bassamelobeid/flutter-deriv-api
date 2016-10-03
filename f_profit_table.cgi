@@ -12,7 +12,7 @@ use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Market::Registry;
+use Finance::Asset::Market::Registry;
 use BOM::ContractInfo;
 
 use Performance::Probability qw(get_performance_probability);
@@ -121,7 +121,7 @@ BOM::Platform::Context::template->process(
     {
         sold_contracts              => $sold_contracts,
         open_contracts              => $open_contracts,
-        markets                     => [BOM::Market::Registry->instance->display_markets],
+        markets                     => [Finance::Asset::Market::Registry->instance->display_markets],
         email                       => $client->email,
         full_name                   => $client->full_name,
         loginid                     => $client->loginid,
