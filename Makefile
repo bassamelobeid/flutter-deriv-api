@@ -1,4 +1,4 @@
-TESTS=unit_test_market-autoupdater
+TESTS=unit_test_marketdataautoupdater
 
 M=[ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
 D=$(CURDIR)
@@ -7,7 +7,7 @@ PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 export PERL5OPTS=-MTest::FailWarnings=-allow_deps,1
 test: $(TESTS)
 
-unit_test_market-autoupdater:
+unit_test_marketdataautoupdater:
 	@$(PROVE) -r t/BOM/
 
 tidy:
