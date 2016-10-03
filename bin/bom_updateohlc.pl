@@ -37,4 +37,4 @@ no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
 package main;
-exit BOM::System::Script::UpdateOhlc->new->run;
+exit BOM::MarketDataAutoUpdater::UpdateOhlc->new->run;

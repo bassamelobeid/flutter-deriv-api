@@ -81,5 +81,5 @@ sub script_run {
 no Moose;
 __PACKAGE__->meta->make_immutable;
 package main;
-exit BOM::System::Script::UpdateSmartFxRates->new->run;
+exit BOM::MarketDataAutoUpdater::UpdateSmartFxRates->new->run;
 1;

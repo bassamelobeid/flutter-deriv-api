@@ -73,4 +73,4 @@ __PACKAGE__->meta->make_immutable;
 
 package main;
 
-exit BOM::System::Script::UpdateEconomicEvents->new()->run();
+exit BOM::MarketDataAutoUpdater::UpdateEconomicEvents->new()->run();

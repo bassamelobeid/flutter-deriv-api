@@ -104,4 +104,4 @@ __PACKAGE__->meta->make_immutable;
 package main;
 use strict;
 
-exit BOM::System::Script::UpdateCorpActions->new->run;
+exit BOM::MarketDataAutoUpdater::UpdateCorpActions->new->run;

@@ -18,4 +18,4 @@ sub script_run {
 no Moose;
 __PACKAGE__->meta->make_immutable;
 package main;
-exit BOM::System::Script::UpdateImpliedInterestRates->new()->run();
+exit BOM::MarketDataAutoUpdater::UpdateImpliedInterestRates->new()->run();

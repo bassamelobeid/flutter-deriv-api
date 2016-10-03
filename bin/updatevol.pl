@@ -50,5 +50,5 @@ no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
 package main;
-exit BOM::System::Script::UpdateVol->new->run;
+exit BOM::MarketDataAutoUpdater::UpdateVol->new->run;
 
