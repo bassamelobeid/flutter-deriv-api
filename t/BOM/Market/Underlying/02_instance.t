@@ -20,7 +20,7 @@ use Cache::RedisDB;
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
 use BOM::System::Chronicle;
-use Finance::Asset::Market::SubMarket;
+use Finance::Asset::SubMarket;
 use BOM::Market::UnderlyingDB;
 use BOM::Market::Underlying;
 use Quant::Framework::Spot;
