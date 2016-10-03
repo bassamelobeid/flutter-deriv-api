@@ -3,16 +3,6 @@ package BOM::Product::ContractFactory;
 use strict;
 use warnings;
 
-=head1 NAME
-
-BOM::Product::ContractFactory
-
-=head1 DESCRIPTION
-
-Some general utility subroutines related to bet parameters.
-
-=cut
-
 use Cache::RedisDB;
 use List::Util qw( first );
 use Time::Duration::Concise;
@@ -20,6 +10,7 @@ use VolSurface::Utils qw(get_strike_for_spot_delta);
 use YAML::XS qw(LoadFile);
 
 use Quant::Framework::Spot::Tick;
+
 use BOM::Platform::Context qw(request);
 use BOM::Product::ContractFactory::Parser qw(
     shortcode_to_parameters

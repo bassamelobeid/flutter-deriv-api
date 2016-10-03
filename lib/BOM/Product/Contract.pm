@@ -2,49 +2,48 @@ package BOM::Product::Contract;
 
 use Moose;
 
-# very bad name, not sure why it needs to be
-# attached to Validatable.
 use MooseX::Role::Validatable::Error;
 use Math::Function::Interpolator;
-use Quant::Framework::Currency;
-use BOM::Product::Contract::Category;
 use Time::HiRes qw(time);
 use List::Util qw(min max first);
 use List::MoreUtils qw(none all);
 use Scalar::Util qw(looks_like_number);
-use BOM::Product::RiskProfile;
-
-use BOM::Market::UnderlyingDB;
 use Math::Util::CalculatedValue::Validatable;
 use Date::Utility;
-use BOM::Market::Underlying;
-use Quant::Framework::Spot::Tick;
-use Quant::Framework::CorrelationMatrix;
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use Time::Duration::Concise;
-use BOM::Product::Types;
+
+use Quant::Framework::Currency;
 use Quant::Framework::VolSurface::Utils;
-use BOM::Platform::Context qw(request localize);
+use Quant::Framework::EconomicEventCalendar;
+use Quant::Framework::Spot::Tick;
+use Quant::Framework::CorrelationMatrix;
+
+use Price::Calculator;
+use Pricing::Engine::EuropeanDigitalSlope;
+use Pricing::Engine::TickExpiry;
+
+use BOM::System::Chronicle;
+
+use BOM::Platform::Context qw(localize);
+
+use BOM::Market::UnderlyingDB;
+use BOM::Market::Underlying;
+
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
-use Quant::Framework::EconomicEventCalendar;
-use BOM::Product::Offerings qw(get_contract_specifics);
-use BOM::System::Chronicle;
-use Price::Calculator;
+
+use BOM::Product::Contract::Category;
+use BOM::Product::RiskProfile;
+use BOM::Product::Types;
 use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
+use BOM::Product::Offerings qw(get_contract_specifics);
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
 require BOM::Product::Pricing::Engine::Intraday::Index;
 require BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
-require Pricing::Engine::EuropeanDigitalSlope;
-require Pricing::Engine::TickExpiry;
 require BOM::Product::Pricing::Greeks::BlackScholes;
-
-use constant {
-    commission_base_multiplier => 1,
-    commission_max_multiplier  => 2,
-};
 
 sub is_spread { return 0 }
 sub is_legacy { return 0 }
@@ -820,7 +819,7 @@ sub _build_longcode {
     @barriers = map { $_->display_text if $_ } @barriers;
 
     return localize($localizable_description,
-        ($self->currency, $payout, $self->underlying->translated_display_name, $when_start, $when_end, @barriers));
+        ($self->currency, $payout, localize($self->underlying->display_name), $when_start, $when_end, @barriers));
 }
 
 =item is_after_expiry
@@ -2121,8 +2120,7 @@ sub _validate_offerings {
         };
     }
 
-    my $underlying      = $self->underlying;
-    my $translated_name = $underlying->translated_display_name();
+    my $underlying = $self->underlying;
 
     if ($underlying->is_trading_suspended) {
         return {
@@ -2165,8 +2163,7 @@ sub _validate_feed {
 
     return if $self->is_expired;
 
-    my $underlying      = $self->underlying;
-    my $translated_name = $underlying->translated_display_name();
+    my $underlying = $self->underlying;
 
     if (not $self->current_tick) {
         return {
@@ -2499,7 +2496,7 @@ sub _validate_start_and_expiry_date {
         [[$start_epoch, $end_epoch], $self->market_risk_blackouts, "Trading is not available from [_2] to [_3]"],
     );
 
-    my @args = ($self->underlying->translated_display_name);
+    my @args = (localize($self->underlying->display_name));
 
     foreach my $blackout (@blackout_checks) {
         my ($epochs, $periods, $message_to_client) = @{$blackout}[0 .. 2];
