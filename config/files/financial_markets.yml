@@ -48,7 +48,6 @@ futures:
     display_name: "Futures"
     eod_blackout_expiry: '59s'
     sod_blackout_start: '10m'
-    max_failover_feed_delay: '3m'
     equity: 1
     license: "daily"
     providers:
@@ -88,7 +87,6 @@ stocks:
     eod_blackout_start: '1h'
     sod_blackout_start: '10m'
     display_order: 3
-    max_failover_feed_delay: '3m'
     absolute_barrier_multiplier: 1
     prefer_discrete_dividend: 1
     affected_by_corporate_actions: 1

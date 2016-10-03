@@ -14,34 +14,13 @@ my $forex = BOM::Market->new({name => 'forex'});
 
 use Moose;
 
-use BOM::Platform::Runtime;
 use BOM::Market::Markups;
 use BOM::Market::Types;
-use BOM::Platform::Context qw(request localize);
-use BOM::Market::UnderlyingDB;
-use BOM::Market::Underlying;
-
-use List::Util qw(first);
-use JSON qw( from_json );
-
-=head1 ATTRIBUTES
-
-=head2 name
-
-Name of the market
-
-=cut
 
 has 'name' => (
     is       => 'ro',
     required => 1,
 );
-
-=head2 suspicious_move
-
-Allowed percentage of spot price move over one day.
-
-=cut
 
 has suspicious_move => (
     is => 'ro',
@@ -69,29 +48,13 @@ has display_current_spot => (
     default => 0,
 );
 
-=head2 display_name
-
-The name of the market to be displayed
-
-=cut
-
 has 'display_name' => (
     is => 'ro',
 );
 
-=head2 explanation
-
-Explanation of what this market is
-
-=cut
-
 has 'explanation' => (
     is => 'ro',
 );
-
-=head2 volatility_surface_type
-Type of surface this financial market should have.
-=cut
 
 has volatility_surface_type => (
     is      => 'ro',
@@ -245,19 +208,6 @@ has max_suspend_trading_feed_delay => (
     coerce  => 1,
 );
 
-=head2 max_failover_feed_delay
-
-How long before we switch to secondary feed provider?
-
-=cut
-
-has max_failover_feed_delay => (
-    is      => 'ro',
-    isa     => 'bom_time_interval',
-    default => '2m',
-    coerce  => 1,
-);
-
 =head2 display_order
 
 The order with which this market has to be displayed
@@ -268,70 +218,6 @@ has 'display_order' => (
     is  => 'ro',
     isa => 'Int',
 );
-
-=head1 METHODS
-=head2 translated_display_name
-
-The display name after translating to the language provided.
-
-=cut
-
-sub translated_display_name {
-    my $self = shift;
-
-    return BOM::Platform::Context::localize($self->display_name);
-}
-
-has '_recheck_appconfig' => (
-    is      => 'rw',
-    default => sub { return time; },
-);
-
-=head2 disabled
-
-Is this market disabled 
-
-=cut
-
-my $appconfig_attrs = [qw(disabled disable_iv)];
-has $appconfig_attrs => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-before $appconfig_attrs => sub {
-    my $self = shift;
-
-    my $now = time;
-    if ($now >= $self->_recheck_appconfig) {
-        $self->_recheck_appconfig($now + 23);
-        foreach my $attr (@{$appconfig_attrs}) {
-            my $clearer = 'clear_' . $attr;
-            $self->$clearer;
-        }
-    }
-
-};
-
-sub _build_disabled {
-    my $self = shift;
-    my $disabled;
-
-    my $disabled_markets = BOM::Platform::Runtime->instance->app_config->quants->markets->disabled;
-    return (grep { $self->name eq $_ } @$disabled_markets);
-}
-
-=head2 disable_iv
-
-Is iv disabled on this market
-
-=cut
-
-sub _build_disable_iv {
-    my $self       = shift;
-    my $disable_iv = BOM::Platform::Runtime->instance->app_config->quants->markets->disable_iv;
-    return (grep { $self->name eq $_ } @$disable_iv);
-}
 
 =head2 deep_otm_threshold
 
