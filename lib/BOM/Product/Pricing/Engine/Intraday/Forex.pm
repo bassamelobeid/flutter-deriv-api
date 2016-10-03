@@ -701,7 +701,7 @@ sub _build_vol_spread_markup {
         name        => 'bet_vega',
         set_by      => __PACKAGE__,
         description => 'The absolute value of vega of a priced option',
-        base_amount => abs($self->bet->vega->amount),
+        base_amount => abs($self->bet->vega),
     });
 
     my $vsm = Math::Util::CalculatedValue::Validatable->new({
