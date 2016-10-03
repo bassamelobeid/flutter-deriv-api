@@ -1,3 +1,5 @@
+id_dsa
+id_rsa
 /blib/
 /.build/
 _build/
@@ -17,4 +19,6 @@ nytprof.out
 /pm_to_blib
 *.o
 *.bs
+*.swp
 /_eumm/
+.DS_Store

@@ -1,0 +1,52 @@
+language: perl
+perl:
+    - "5.14.2-thr"
+matrix:
+    fast_finish: true
+env:
+    - TEST_SUITE=unit_test_marketdataautoupdater
+services:
+    - redis-server
+addons:
+    postgresql: "9.3"
+cache: apt
+before_install:
+    - git clone https://d34c443afcc0c115c07590c76f7e3886190b3a76@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - /tmp/travis-scripts/setup_ssh.sh
+    - git clone git://github.com/binary-com/helpers ~/travis-perl-helpers
+    - AUTHOR_TESTING=0 source ~/travis-perl-helpers/init
+    - PREBUILT_REPO="git@github.com:binary-com/test-perl.git" build-perl
+    - sudo mkdir -p /etc/rmg; sudo ln -s $(dirname $(which perl)) /etc/rmg/bin
+    - /tmp/travis-scripts/fixHostName.sh
+    - dpkg -l | grep postgres
+    - pg_lsclusters
+    - /tmp/travis-scripts/postgres.sh
+    - sudo mkdir -p /home/git/regentmarkets
+
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
+
+
+    - /tmp/travis-scripts/postgres_restart.sh
+    - /tmp/travis-scripts/redis.sh
+
+install:
+    - source /tmp/travis-scripts/devbox_path.sh
+    - sudo ln -s $PWD /home/git/regentmarkets/bom-marketdataautoupdater
+    - /tmp/travis-scripts/devbox.sh *.yml
+
+    - /tmp/travis-scripts/remove_postgresdb_config.sh
+    - /tmp/travis-scripts/setup_feeddb.sh
+    - /tmp/travis-scripts/setup_chronicledb.sh
+
+    - /tmp/travis-scripts/setup_logs.sh
+    - . /tmp/travis-scripts/setup_perl5lib.sh
+
+script:
+    - make $TEST_SUITE
+
+after_script:
+    - /tmp/travis-scripts/wait_for_ssh.sh
