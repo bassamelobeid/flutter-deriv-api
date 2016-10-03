@@ -24,6 +24,7 @@ call I<new>, just get the object using I<instance> method.
 use namespace::autoclean;
 use MooseX::Singleton;
 
+use BOM::Market::Types;
 use BOM::Market::SubMarket;
 
 with 'MooseX::Role::Registry';

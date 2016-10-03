@@ -37,7 +37,6 @@ subtest 'Market builds or configs test' => sub {
         isa_ok $config, 'BOM::Market';
         ok !$config->display_name, 'Display Name';
         ok !$config->equity;
-        ok !$config->disabled,                 'disabled';
         ok !$config->reduced_display_decimals, 'Reduced Display Decimals';
         is $config->asset_type,         'asset';
         is $config->deep_otm_threshold, 0.10;
@@ -63,7 +62,6 @@ subtest 'Market builds or configs test' => sub {
         is $forex->display_name, 'Forex', 'Correct display name';
         is $forex->display_order, 1;
         ok !$forex->equity;
-        ok !$forex->disabled, 'But its not disabled';
         ok $forex->reduced_display_decimals;
         is $forex->asset_type,         'currency';
         is $forex->deep_otm_threshold, 0.05;
@@ -90,7 +88,6 @@ subtest 'Market builds or configs test' => sub {
         is $commodities->display_name,  'Commodities';
         is $commodities->display_order, 4;
         ok !$commodities->equity;
-        ok !$commodities->disabled;
         ok $commodities->reduced_display_decimals;
         is $commodities->deep_otm_threshold, 0.10;
         is $commodities->asset_type,         'currency';
@@ -117,7 +114,6 @@ subtest 'Market builds or configs test' => sub {
         is $indices->display_name,  'Indices';
         is $indices->display_order, 2;
         ok $indices->equity;
-        ok !$indices->disabled;
         ok !$indices->reduced_display_decimals;
         is $indices->deep_otm_threshold, 0.10;
         is $indices->asset_type,         'index';
@@ -145,7 +141,6 @@ subtest 'Market builds or configs test' => sub {
         is $random->display_name,  'Volatility Indices';
         is $random->display_order, 5;
         ok !$random->equity;
-        ok !$random->disabled;
         ok $random->reduced_display_decimals;
         is $random->deep_otm_threshold, 0.025;
         is $random->asset_type,         'synthetic';
