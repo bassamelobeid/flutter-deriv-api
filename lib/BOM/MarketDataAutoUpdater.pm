@@ -31,7 +31,7 @@ sub run {
     my @successes = ('SUCCESSES');
     my @failures  = ('FAILURES');
     my @errors    = ('ERRORS');
-    foreach my $symbol (keys %$report) {
+    foreach my $symbol (sort keys %$report) {
         if ($symbol eq 'error') {
             push @errors, @{$report->{$symbol}};
         } else {
