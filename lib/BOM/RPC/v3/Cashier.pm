@@ -38,9 +38,7 @@ use String::UTF8::MD5;
 use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 
-use BOM::Market::Registry;
 use JSON qw(from_json);
-use BOM::Market::SubMarket::Registry;
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Platform::LandingCompany::Registry;
 
