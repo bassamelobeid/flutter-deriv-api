@@ -7,7 +7,7 @@ use Test::Exception;
 use Date::Utility;
 
 use BOM::Market::Underlying;
-use BOM::Market::Registry;
+use Finance::Asset::Market::Registry;
 
 my $index_symbol   = 'GDAXI';
 my $forex_symbol   = 'frxUSDJPY';
@@ -66,7 +66,7 @@ new_ok(
             market => 'forex'
         }]);
 
-my $market = BOM::Market::Registry->get('forex');
+my $market = Finance::Asset::Market::Registry->get('forex');
 new_ok(
     'BOM::Market::Underlying' => [{
             symbol => 'frxUSDJPY',

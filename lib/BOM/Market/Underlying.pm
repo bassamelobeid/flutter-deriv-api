@@ -15,45 +15,46 @@ my $underlying = BOM::Market::Underlying->new($underlying_symbol);
 =cut
 
 use open qw[ :encoding(UTF-8) ];
-use BOM::Market::Types;
-
-use Math::Round qw(round);
-use JSON qw(from_json);
-use List::MoreUtils qw( any );
-use List::Util qw( first max min);
-use Scalar::Util qw( looks_like_number );
-use Memoize;
-use Time::HiRes;
-use Finance::Asset;
-use Quant::Framework::Spot;
-use Quant::Framework::Spot::Tick;
-
-use Quant::Framework::Exchange;
-use Quant::Framework::TradingCalendar;
-use Quant::Framework::CorporateAction;
 use Cache::RedisDB;
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
-use Time::Duration::Concise;
+use JSON qw(from_json);
+use List::MoreUtils qw( any );
+use List::Util qw( first max min);
+use Math::Round qw(round);
+use Memoize;
 use POSIX;
-use YAML::XS qw(LoadFile);
+use Scalar::Util qw( looks_like_number );
+use Time::HiRes;
+use Time::Duration::Concise;
 use Try::Tiny;
-use BOM::Platform::Runtime;
-use Quant::Framework::Spot::DatabaseAPI;
+use YAML::XS qw(LoadFile);
+
+use Finance::Asset;
+
+use BOM::System::Config;
+use BOM::System::Chronicle;
+use Finance::Asset::Market;
+use BOM::Market::Types;
+use Finance::Asset::Market::Registry;
+use Finance::Asset::SubMarket::Registry;
+use Finance::Asset::Market::Types;
 use BOM::Database::FeedDB;
 use BOM::Platform::Context qw(request localize);
-use BOM::Market::Types;
+use BOM::Platform::Runtime;
+
+use Quant::Framework::Spot;
+use Quant::Framework::Spot::Tick;
+use Quant::Framework::Exchange;
+use Quant::Framework::TradingCalendar;
+use Quant::Framework::CorporateAction;
+use Quant::Framework::Spot::DatabaseAPI;
 use Quant::Framework::Asset;
 use Quant::Framework::Currency;
 use Quant::Framework::ExpiryConventions;
 use Quant::Framework::StorageAccessor;
 use Quant::Framework::Utils::UnderlyingConfig;
 use Quant::Framework::Utils::Builder;
-use BOM::System::Chronicle;
-use BOM::Market::SubMarket::Registry;
-use BOM::Market;
-use BOM::Market::Registry;
-use BOM::System::Config;
 
 our $PRODUCT_OFFERINGS = LoadFile('/home/git/regentmarkets/bom-market/config/files/product_offerings.yml');
 
@@ -233,7 +234,7 @@ has [qw(
 
 has 'market' => (
     is         => 'ro',
-    isa        => 'bom_financial_market',
+    isa        => 'financial_market',
     lazy_build => 1,
     coerce     => 1,
 );
@@ -361,7 +362,7 @@ sub _build_contracts {
 
 has submarket => (
     is      => 'ro',
-    isa     => 'bom_submarket',
+    isa     => 'submarket',
     coerce  => 1,
     default => 'config',
 );
@@ -439,25 +440,6 @@ sub _build_max_suspend_trading_feed_delay {
     my $self = shift;
 
     return $self->submarket->max_suspend_trading_feed_delay;
-}
-
-=head2 max_failover_feed_delay
-
-The threshold to fail over to secondary feed provider.
-
-=cut
-
-has max_failover_feed_delay => (
-    is         => 'ro',
-    isa        => 'bom_time_interval',
-    lazy_build => 1,
-    coerce     => 1,
-);
-
-sub _build_max_failover_feed_delay {
-    my $self = shift;
-
-    return $self->submarket->max_failover_feed_delay;
 }
 
 has [qw(sod_blackout_start eod_blackout_start eod_blackout_expiry)] => (
@@ -609,13 +591,13 @@ sub _build_market {
 
     # The default market is config.
     my $symbol = uc $self->symbol;
-    my $market = BOM::Market->new({name => 'nonsense'});
+    my $market = Finance::Asset::Market->new({name => 'nonsense'});
     if ($symbol =~ /^FUT/) {
-        $market = BOM::Market::Registry->instance->get('futures');
+        $market = Finance::Asset::Market::Registry->instance->get('futures');
     } elsif ($symbol =~ /^I_/) {
-        $market = BOM::Market::Registry->instance->get('config');
+        $market = Finance::Asset::Market::Registry->instance->get('config');
     } elsif (length($symbol) >= 15) {
-        $market = BOM::Market::Registry->instance->get('config');
+        $market = Finance::Asset::Market::Registry->instance->get('config');
         warn("Unknown symbol, symbol[$symbol]");
     }
 
@@ -667,17 +649,6 @@ has display_name => (
 sub _build_display_name {
     my ($self) = @_;
     return uc $self->symbol;
-}
-
-=head2 translated_display_name
-
-Returns a name for the underlying, after translating to the client's local language, which will appear reasonable to a client.
-
-=cut
-
-sub translated_display_name {
-    my $self = shift;
-    return localize($self->display_name);
 }
 
 =head2 exchange_name
@@ -1195,8 +1166,15 @@ sub _build_is_trading_suspended {
 
     return (
                not keys %{$self->contracts}
-            or $self->market->disabled
+            or $self->_market_disabled
             or grep { $_ eq $self->symbol } (@{BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades}));
+}
+
+sub _market_disabled {
+    my $self = shift;
+
+    my $disabled_markets = BOM::Platform::Runtime->instance->app_config->quants->markets->disabled;
+    return (grep { $self->market->name eq $_ } @$disabled_markets);
 }
 
 =head2 fullfeed_file

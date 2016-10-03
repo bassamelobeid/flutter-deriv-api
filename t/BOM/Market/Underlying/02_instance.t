@@ -20,7 +20,7 @@ use Cache::RedisDB;
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
 use BOM::System::Chronicle;
-use BOM::Market::SubMarket;
+use Finance::Asset::SubMarket;
 use BOM::Market::UnderlyingDB;
 use BOM::Market::Underlying;
 use Quant::Framework::Spot;
@@ -59,7 +59,6 @@ my $looks_like_currency = qr/^[A-Z]{3}/;
 subtest 'what happens to an undefined symbol name' => sub {
     my $symbol_undefined = BOM::Market::Underlying->new('an_undefined_symbol');
     is($symbol_undefined->display_name,            'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct display_name');
-    is($symbol_undefined->translated_display_name, 'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct translated_display_name');
 
     warning_like {
         is($symbol_undefined->market->name, 'config', 'an undefined symbol has correct market');
@@ -274,7 +273,7 @@ subtest 'sub market' => sub {
 
     foreach my $symbol (@symbols) {
         my $underlying  = BOM::Market::Underlying->new($symbol);
-        my @submarkets  = BOM::Market::SubMarket::Registry->find_by_market($underlying->market->name);
+        my @submarkets  = Finance::Asset::SubMarket::Registry->find_by_market($underlying->market->name);
         my $match_count = grep { $_->name eq $underlying->submarket->name } (@submarkets);
 
         cmp_ok($match_count, '==', 1, $underlying->symbol . ' has a properly defined submarket.');
@@ -481,9 +480,6 @@ subtest 'all methods on a selection of underlyings' => sub {
     is($EURUSD->system_symbol,  $EURUSD->symbol, 'System symbol and symbol are same for non-inverted');
     isnt($USDEUR->system_symbol, $USDEUR->symbol, ' and different for inverted');
 
-    # We don't have translations in the sandbox.. we should probably fix that.
-    is($AS51->display_name, $AS51->translated_display_name, 'Translated to undefined is English');
-
     is($AS51->exchange->symbol, $AS51->exchange_name, 'Got our exchange from the provided name');
 
     # Assumption: EUR/USD still has the 1030 to 1330 restriction.
@@ -689,22 +685,6 @@ subtest 'max_suspend_trading_feed_delay' => sub {
     }
 };
 
-subtest 'max_failover_feed_delay' => sub {
-    plan tests => 6;
-    # Right now these are all the same.. but what if they weren't?
-    my %expectations = (
-        'frxEURUSD' => 120,
-        'frxBROUSD' => 120,
-        'AS51'      => 120,
-        'USAAPL'    => 180,
-        'R_100'     => 120,
-        'RDBULL'    => 120,
-    );
-
-    foreach my $ul (map { BOM::Market::Underlying->new($_) } (keys %expectations)) {
-        is($ul->max_failover_feed_delay->seconds, $expectations{$ul->symbol}, $ul->symbol . ' sets max_failover_feed_delay as expected.');
-    }
-};
 subtest 'last_licensed_display_epoch' => sub {
     my $time      = time;
     my $frxEURUSD = BOM::Market::Underlying->new('frxEURUSD');
