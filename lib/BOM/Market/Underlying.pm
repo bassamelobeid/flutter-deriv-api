@@ -36,13 +36,6 @@ use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
 use Finance::Asset::Market::Types;
 
-use BOM::System::Config;
-use BOM::System::Chronicle;
-use BOM::Market::Types;
-use BOM::Database::FeedDB;
-
-use BOM::Platform::Runtime;
-
 use Quant::Framework::Spot;
 use Quant::Framework::Spot::Tick;
 use Quant::Framework::Exchange;
@@ -55,6 +48,19 @@ use Quant::Framework::ExpiryConventions;
 use Quant::Framework::StorageAccessor;
 use Quant::Framework::Utils::UnderlyingConfig;
 use Quant::Framework::Utils::Builder;
+
+#FeedDB::read_dbh is passed to Quant::Framework to be used to retrieve latest spot
+use BOM::Database::FeedDB;
+
+#Passed to Quant::Framework to read/write data
+use BOM::System::Chronicle;
+
+#Includes conversion code for Time::Duration::Concise, Date::Utility and Underlying
+use BOM::Market::Types;
+
+#Three quant-related settings which are read from a yml file
+use BOM::System::Config;
+
 
 our $PRODUCT_OFFERINGS = LoadFile('/home/git/regentmarkets/bom-market/config/files/product_offerings.yml');
 
