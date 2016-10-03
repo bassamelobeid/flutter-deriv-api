@@ -135,4 +135,4 @@ sub _market_disabled {
     return (grep { $self->underlying->market->name eq $_ } @$disabled_markets);
 }
 
-
+1;

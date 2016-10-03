@@ -23,6 +23,7 @@ use BOM::System::Chronicle;
 use Finance::Asset::SubMarket;
 use BOM::Market::UnderlyingDB;
 use BOM::Market::Underlying;
+use BOM::Marlet::Info;
 use Quant::Framework::Spot;
 
 
@@ -493,26 +494,28 @@ subtest 'all methods on a selection of underlyings' => sub {
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy([]);
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades([]);
 
-    is($EURUSD->is_trading_suspended, 0, 'Underlying can be traded');
-    is($EURUSD->is_buying_suspended,  0, 'Underlying can be bought');
+    my $eurusd_info = BOM::Market::Info->new(underlying => $EURUSD);
+
+    is($eurusd_info->is_trading_suspended, 0, 'Underlying can be traded');
+    is($eurusd_info->is_buying_suspended,  0, 'Underlying can be bought');
 
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy([$EURUSD->symbol]);
-    $EURUSD->clear_is_trading_suspended;
-    $EURUSD->clear_is_buying_suspended;
-    is($EURUSD->is_trading_suspended, 0, ' now traded');
-    ok($EURUSD->is_buying_suspended, ' but not bought');
+    $eurusd_info->clear_is_trading_suspended;
+    $eurusd_info->clear_is_buying_suspended;
+    is($eurusd_info->is_trading_suspended, 0, ' now traded');
+    ok($eurusd_info->is_buying_suspended, ' but not bought');
 
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades([$EURUSD->symbol]);
-    $EURUSD->clear_is_trading_suspended;
-    $EURUSD->clear_is_buying_suspended;
-    ok($EURUSD->is_trading_suspended, ' now not tradeable');
-    ok($EURUSD->is_buying_suspended,  ' nor buyable');
+    $eurusd_info->clear_is_trading_suspended;
+    $eurusd_info->clear_is_buying_suspended;
+    ok($eurusd_info->is_trading_suspended, ' now not tradeable');
+    ok($eurusd_info->is_buying_suspended,  ' nor buyable');
 
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy([]);
-    $EURUSD->clear_is_trading_suspended;
-    $EURUSD->clear_is_buying_suspended;
-    ok($EURUSD->is_trading_suspended, ' still not tradeable');
-    ok($EURUSD->is_buying_suspended,  ' nor buyable');
+    $eurusd_info->clear_is_trading_suspended;
+    $eurusd_info->clear_is_buying_suspended;
+    ok($eurusd_info->is_trading_suspended, ' still not tradeable');
+    ok($eurusd_info->is_buying_suspended,  ' nor buyable');
 
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy($orig_buy);
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades($orig_trades);
@@ -520,11 +523,11 @@ subtest 'all methods on a selection of underlyings' => sub {
     my $eu_symbol       = $EURUSD->symbol;
     my $looks_like_euff = qr%$eu_symbol/\d{1,2}-[A-Z]{1}[a-z]{2}-\d{1,2}(?:-fullfeed\.csv|\.fullfeed)%;
 
-    like($EURUSD->fullfeed_file('19-Jan-12'), $looks_like_euff, "Standard fullfeed file looks right");
-    like($EURUSD->fullfeed_file('1-JUN-12'),  $looks_like_euff, "Miscapitalized fullfeed file looks right");
-    like($EURUSD->fullfeed_file('1-JUN-12', 'backtest'), $looks_like_euff, "Miscapitalized fullfeed file with override dir looks right");
+    like($eurusd_info->fullfeed_file('19-Jan-12'), $looks_like_euff, "Standard fullfeed file looks right");
+    like($eurusd_info->fullfeed_file('1-JUN-12'),  $looks_like_euff, "Miscapitalized fullfeed file looks right");
+    like($eurusd_info->fullfeed_file('1-JUN-12', 'backtest'), $looks_like_euff, "Miscapitalized fullfeed file with override dir looks right");
 
-    throws_ok { $EURUSD->fullfeed_file(1338794173) } qr/Bad date for fullfeed_file/, 'Sending in a nonstandard date string makes things die';
+    throws_ok { $eurusd_info->fullfeed_file(1338794173) } qr/Bad date for fullfeed_file/, 'Sending in a nonstandard date string makes things die';
 
     my $test_date = $oldEU->for_date;
 
