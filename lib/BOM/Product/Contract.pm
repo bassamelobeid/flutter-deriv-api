@@ -2097,7 +2097,7 @@ sub _validate_offerings {
     }
 
     my $underlying = $self->underlying;
-    my $info = BOM::Market::Info ->new(underlying => $underlying);
+    my $info = BOM::Market::Info->new(underlying => $underlying);
 
     if ($info->is_trading_suspended) {
         return {
