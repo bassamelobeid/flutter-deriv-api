@@ -18,6 +18,7 @@ use Date::Utility;
 use List::Util qw/reduce/;
 
 BOM::Backoffice::Sysinit::init();
+$BOM::Market::Underlying::FORCE_REALTIME_FEED = 1;
 
 my $fullfeed_re = qr/^\d\d?-\w{3}-\d\d.fullfeed(?!\.zip)/;
 
