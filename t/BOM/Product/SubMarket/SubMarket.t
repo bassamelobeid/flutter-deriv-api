@@ -5,6 +5,7 @@ use Test::More (tests => 1);
 use Test::Exception;
 
 use Date::Utility;
+use BOM::Market::Registry;
 use BOM::Market::SubMarket;
 
 subtest 'SubMarket' => sub {
