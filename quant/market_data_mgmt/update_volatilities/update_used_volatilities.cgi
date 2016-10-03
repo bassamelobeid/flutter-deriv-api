@@ -56,13 +56,13 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::MarketData::Display::VolatilitySurface;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::UnderlyingDB;
-use BOM::Market::Registry;
+use Finance::Asset::Market::Registry;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
-my @all_markets = BOM::Market::Registry->instance->all_market_names();
+my @all_markets = Finance::Asset::Market::Registry->instance->all_market_names();
 my @update_markets;
 foreach my $market (@all_markets) {
     push @update_markets, $market if request()->param('update_$market');
