@@ -19,13 +19,13 @@ use namespace::autoclean;
 
 use List::MoreUtils qw(uniq first_index);
 
-use BOM::Market::Registry;
+use Finance::Asset::Market::Registry;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Category;
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Platform::Context qw(localize);
-use BOM::Market::SubMarket;
-use BOM::Market::SubMarket::Registry;
+use Finance::Asset::SubMarket;
+use Finance::Asset::SubMarket::Registry;
 use Cache::RedisDB;
 use BOM::Platform::Context qw(request);
 
@@ -208,7 +208,7 @@ sub _build_tree {
 
     foreach my $market (
         sort { $a->display_order <=> $b->display_order }
-        map { BOM::Market::Registry->instance->get($_) } get_offerings_with_filter('market', {landing_company => $self->landing_company}))
+        map { Finance::Asset::Market::Registry->instance->get($_) } get_offerings_with_filter('market', {landing_company => $self->landing_company}))
     {
         my $children    = [];
         my $market_info = {
@@ -218,7 +218,7 @@ sub _build_tree {
         };
         foreach my $submarket (
             sort { $a->display_order <=> $b->display_order }
-            map  { BOM::Market::SubMarket::Registry->instance->get($_) } get_offerings_with_filter(
+            map  { Finance::Asset::SubMarket::Registry->instance->get($_) } get_offerings_with_filter(
                 'submarket',
                 {
                     market          => $market->name,
