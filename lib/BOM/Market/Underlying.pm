@@ -591,7 +591,7 @@ sub _build_market {
 
     # The default market is config.
     my $symbol = uc $self->symbol;
-    my $market = BOM::Market->new({name => 'nonsense'});
+    my $market = Finance::Asset::Market->new({name => 'nonsense'});
     if ($symbol =~ /^FUT/) {
         $market = Finance::Asset::Market::Registry->instance->get('futures');
     } elsif ($symbol =~ /^I_/) {
