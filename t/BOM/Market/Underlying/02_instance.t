@@ -35,14 +35,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     }) for (qw/AUD EUR GBP HKD IDR JPY NZD SGD USD XAU ZAR/);
 
 Quant::Framework::Utils::Test::create_doc(
-    'randomindex',
-    {
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-        rates            => {7 => 3.5},
-    });
-
-Quant::Framework::Utils::Test::create_doc(
     'stock',
     {
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
@@ -118,8 +110,8 @@ subtest 'display_decimals' => sub {
         }
 
         my $r100 = BOM::Market::Underlying->new({symbol => 'R_100'});
-        is $r100->dividend_rate_for(0.5), 3.5, 'correct dividend rate';
-        is $r100->dividend_rate_for(1.0), 3.5, 'correct dividend rate';
+        is $r100->dividend_rate_for(0.5), 0, 'correct dividend rate';
+        is $r100->dividend_rate_for(1.0), 0, 'correct dividend rate';
 
     };
 
@@ -248,7 +240,8 @@ subtest 'all attributes on a variety of underlyings' => sub {
             is($underlying->delay_amount, 0, 'Realtime license means no feed delay');
         }
 
-        like($underlying->combined_folder, qr%combined%, 'Combined folder looks reasonable enough');
+        my $ul_info = BOM::Market::Info->new(underlying => $underlying);
+        like($ul_info->combined_folder, qr%combined%, 'Combined folder looks reasonable enough');
 
         is((scalar grep { $underlying->instrument_type eq $_ } qw(forex stockindex commodities config futures)),
             1, 'Instrument type is exactly one of our allowed values');
