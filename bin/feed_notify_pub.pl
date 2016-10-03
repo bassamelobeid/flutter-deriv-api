@@ -10,7 +10,7 @@ use Try::Tiny;
 use BOM::Database::FeedDB;
 
 use BOM::Market::UnderlyingDB;
-use BOM::Market::Registry;
+use Finance::Asset::Market::Registry;
 use BOM::System::RedisReplicated;
 
 update_crossing_underlyings();
@@ -46,7 +46,7 @@ sub _publish {
 
 sub update_crossing_underlyings {
     my @all_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
-        market            => [BOM::Market::Registry->instance->all_market_names],
+        market            => [Finance::Asset::Market::Registry->instance->all_market_names],
         contract_category => 'ANY'
     );
     my $update = '';
