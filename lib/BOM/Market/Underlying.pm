@@ -441,25 +441,6 @@ sub _build_max_suspend_trading_feed_delay {
     return $self->submarket->max_suspend_trading_feed_delay;
 }
 
-=head2 max_failover_feed_delay
-
-The threshold to fail over to secondary feed provider.
-
-=cut
-
-has max_failover_feed_delay => (
-    is         => 'ro',
-    isa        => 'bom_time_interval',
-    lazy_build => 1,
-    coerce     => 1,
-);
-
-sub _build_max_failover_feed_delay {
-    my $self = shift;
-
-    return $self->submarket->max_failover_feed_delay;
-}
-
 has [qw(sod_blackout_start eod_blackout_start eod_blackout_expiry)] => (
     is         => 'ro',
     lazy_build => 1,
@@ -667,17 +648,6 @@ has display_name => (
 sub _build_display_name {
     my ($self) = @_;
     return uc $self->symbol;
-}
-
-=head2 translated_display_name
-
-Returns a name for the underlying, after translating to the client's local language, which will appear reasonable to a client.
-
-=cut
-
-sub translated_display_name {
-    my $self = shift;
-    return localize($self->display_name);
 }
 
 =head2 exchange_name
@@ -1195,8 +1165,15 @@ sub _build_is_trading_suspended {
 
     return (
                not keys %{$self->contracts}
-            or $self->market->disabled
+            or $self->_market_disabled
             or grep { $_ eq $self->symbol } (@{BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades}));
+}
+
+sub _market_disabled {
+    my $self = shift;
+
+    my $disabled_markets = BOM::Platform::Runtime->instance->app_config->quants->markets->disabled;
+    return (grep { $self->market->name eq $_ } @$disabled_markets);
 }
 
 =head2 fullfeed_file
