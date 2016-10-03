@@ -58,11 +58,8 @@ use BOM::System::Chronicle;
 #Includes conversion code for Time::Duration::Concise, Date::Utility and Underlying
 use BOM::Market::Types;
 
-#Three quant-related settings which are read from a yml file
-use BOM::System::Config;
-
-
 our $PRODUCT_OFFERINGS = LoadFile('/home/git/regentmarkets/bom-market/config/files/product_offerings.yml');
+
 
 #This has to be set to 1 only on the backoffice server. 
 #A value of 1 means assuming real-time feed license for all underlyings.
@@ -331,7 +328,7 @@ sub _build_config {
         uses_implied_rate_for_quoted_currency => $self->uses_implied_rate($self->quoted_currency_symbol) // '',
         asset_symbol                          => $self->asset_symbol,
         quoted_currency_symbol                => $self->quoted_currency_symbol,
-        extra_vol_diff_by_delta               => BOM::System::Config::quants->{market_data}->{extra_vol_diff_by_delta},
+        extra_vol_diff_by_delta               => $self->quants_config->{market_data}->{extra_vol_diff_by_delta},
         market_convention                     => $self->market_convention,
         asset_class                           => $asset_class,
         default_dividend_rate                 => $default_dividend_rate,
@@ -1091,7 +1088,7 @@ sub uses_implied_rate {
     my ($self, $which) = @_;
 
     return
-        if BOM::System::Config::quants->{market_data}->{interest_rates_source} eq 'market';
+        if  $self->quants_config->{market_data}->{interest_rates_source} eq 'market';
     return unless $self->forward_feed;
     return unless $self->market->name eq 'forex';    # only forex for now
     return $self->rate_to_imply eq $which ? 1 : 0;
@@ -1573,7 +1570,7 @@ sub calculate_spread {
 
     die 'volatility is zero for ' . $self->symbol if $volatility == 0;
 
-    my $spread_multiplier = BOM::System::Config::quants->{commission}->{adjustment}->{spread_multiplier};
+    my $spread_multiplier = $self->quants_config->{commission}->{adjustment}->{spread_multiplier};
     # since it is only vol indices
     my $spread  = $self->spot * sqrt($volatility**2 * 2 / (365 * 86400)) * $spread_multiplier;
     my $y       = POSIX::floor(log($spread) / log(10));
@@ -1581,6 +1578,12 @@ sub calculate_spread {
     my $rounded = max(2, round($x / 2) * 2);
 
     return $rounded * 10**$y;
+}
+
+sub quants_config {
+    my $self = shift;
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-market/config/files/quants_underlying_config.yml');
+    return $config;
 }
 
 no Moose;
