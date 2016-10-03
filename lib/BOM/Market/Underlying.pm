@@ -60,8 +60,7 @@ use BOM::Market::Types;
 
 our $PRODUCT_OFFERINGS = LoadFile('/home/git/regentmarkets/bom-market/config/files/product_offerings.yml');
 
-
-#This has to be set to 1 only on the backoffice server. 
+#This has to be set to 1 only on the backoffice server.
 #A value of 1 means assuming real-time feed license for all underlyings.
 our $FORCE_REALTIME_FEED = 0;
 
@@ -292,11 +291,11 @@ sub _build_config {
 
     my $default_dividend_rate = undef;
 
-    $default_dividend_rate = 0 if $zero_rate{$self->submarket->name};
+    $default_dividend_rate = 0   if $zero_rate{$self->submarket->name};
     $default_dividend_rate = -35 if $self->symbol eq 'RDBULL';
-    $default_dividend_rate = 20 if $self->symbol eq 'RDBEAR';
+    $default_dividend_rate = 20  if $self->symbol eq 'RDBEAR';
 
-    $default_dividend_rate = 20 if $self->symbol eq 'RDYIN';
+    $default_dividend_rate = 20  if $self->symbol eq 'RDYIN';
     $default_dividend_rate = -35 if $self->symbol eq 'RDYANG';
 
     $default_dividend_rate = 0 if $self->symbol eq 'RDMOON';
@@ -1088,7 +1087,7 @@ sub uses_implied_rate {
     my ($self, $which) = @_;
 
     return
-        if  $self->quants_config->{market_data}->{interest_rates_source} eq 'market';
+        if $self->quants_config->{market_data}->{interest_rates_source} eq 'market';
     return unless $self->forward_feed;
     return unless $self->market->name eq 'forex';    # only forex for now
     return $self->rate_to_imply eq $which ? 1 : 0;
