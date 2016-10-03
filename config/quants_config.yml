@@ -8,6 +8,7 @@ commission:
   adjustment:
     minimum: 1
     maximum: 500
+    forward_start_factor: 1.5
 
 bet_limits:
   holiday_blackout_start: 345
