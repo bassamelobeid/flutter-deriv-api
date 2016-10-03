@@ -1,4 +1,5 @@
-# bom-market-autoupdater
+# bom-marketdataautoupdater
+
 Code that pulls market data from third party systems (Bloomberg, ForexFactory) into our system.
 
 #a) bin/bom_updateohlc.pl
