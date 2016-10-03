@@ -5,7 +5,6 @@ use strict;
 use warnings;
 
 use Try::Tiny;
-use List::MoreUtils qw(pairwise);
 
 use Moose;
 with 'App::Base::Script';
@@ -17,7 +16,6 @@ use Date::Utility;
 use Quant::Framework::CorporateAction;
 use Quant::Framework::StorageAccessor;
 use BOM::Platform::Runtime;
-use Mail::Sender;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 
 sub documentation {

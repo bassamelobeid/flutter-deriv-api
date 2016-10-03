@@ -14,12 +14,9 @@ Updates our vols with the latest quotes we have received from Bloomberg.
 use Moose;
 with 'App::Base::Script';
 
-use List::Util qw(first);
 use BOM::Market::Underlying;
 use Quant::Framework::InterestRate;
 use Date::Utility;
-
-use JSON qw(from_json);
 
 has world_symbols => (
     is => 'ro',

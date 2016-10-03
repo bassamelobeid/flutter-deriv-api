@@ -13,11 +13,7 @@ Updates our vols with the latest quotes we have received from Bloomberg.
 
 use Moose;
 with 'App::Base::Script';
-use lib qw( /home/git/regentmarkets/bom/cgi );
 
-use File::Find::Rule;
-
-use BOM::Platform::Runtime;
 use BOM::MarketDataAutoUpdater::Forex;
 use BOM::MarketDataAutoUpdater::Indices;
 
