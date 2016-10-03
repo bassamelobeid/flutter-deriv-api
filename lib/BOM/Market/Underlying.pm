@@ -64,6 +64,9 @@ our $PRODUCT_OFFERINGS = LoadFile('/home/git/regentmarkets/bom-market/config/fil
 #A value of 1 means assuming real-time feed license for all underlyings.
 our $FORCE_REALTIME_FEED = 0;
 
+our $interest_rates_source = "implied";
+our $extra_vol_diff_by_delta = 0.1;
+
 =head1 METHODS
 
 =cut
@@ -329,7 +332,7 @@ sub _build_config {
         uses_implied_rate_for_quoted_currency => $self->uses_implied_rate($self->quoted_currency_symbol) // '',
         asset_symbol                          => $self->asset_symbol,
         quoted_currency_symbol                => $self->quoted_currency_symbol,
-        extra_vol_diff_by_delta               => $self->quants_config->{market_data}->{extra_vol_diff_by_delta},
+        extra_vol_diff_by_delta               => $extra_vol_diff_by_delta,
         market_convention                     => $self->market_convention,
         asset_class                           => $asset_class,
         default_dividend_rate                 => $default_dividend_rate,
@@ -1088,7 +1091,7 @@ sub uses_implied_rate {
     my ($self, $which) = @_;
 
     return
-        if $self->quants_config->{market_data}->{interest_rates_source} eq 'market';
+        if $interest_rates_source eq 'market';
     return unless $self->forward_feed;
     return unless $self->market->name eq 'forex';    # only forex for now
     return $self->rate_to_imply eq $which ? 1 : 0;
@@ -1576,12 +1579,6 @@ sub calculate_spread {
     my $rounded = max(2, round($x / 2) * 2);
 
     return $rounded * 10**$y;
-}
-
-sub quants_config {
-    my $self = shift;
-    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-market/config/files/quants_underlying_config.yml');
-    return $config;
 }
 
 no Moose;
