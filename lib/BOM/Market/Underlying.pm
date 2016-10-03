@@ -34,10 +34,10 @@ use Finance::Asset;
 
 use BOM::System::Config;
 use BOM::System::Chronicle;
-use BOM::Market;
+use Finance::Asset::Market;
+use BOM::Market::Types;
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
-use BOM::Market::Types;
 use Finance::Asset::Market::Types;
 use BOM::Database::FeedDB;
 use BOM::Platform::Context qw(request localize);
