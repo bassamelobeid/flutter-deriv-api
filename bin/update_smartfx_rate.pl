@@ -1,5 +1,5 @@
 #!/etc/rmg/bin/perl
-package BOM::System::Script::UpdateSmartFxRates;
+package BOM::MarketDataAutoUpdater::UpdateSmartFxRates;
 
 =head1 NAME
 

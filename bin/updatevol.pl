@@ -1,5 +1,5 @@
 #!/etc/rmg/bin/perl
-package BOM::System::Script::UpdateVol;
+package BOM::MarketDataAutoUpdater::UpdateVol;
 
 =head1 NAME
 

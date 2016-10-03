@@ -1,5 +1,5 @@
 #!/etc/rmg/bin/perl
-package BOM::System::Script::UpdateInterestRates;
+package BOM::MarketDataAutoUpdater::UpdateInterestRates;
 
 use Moose;
 with 'App::Base::Script';

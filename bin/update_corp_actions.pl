@@ -1,5 +1,5 @@
 #!/etc/rmg/bin/perl
-package BOM::System::Script::UpdateCorpActions;
+package BOM::MarketDataAutoUpdater::UpdateCorpActions;
 
 use strict;
 use warnings;

@@ -1,6 +1,6 @@
 #!/etc/rmg/bin/perl
 
-package BOM::System::Script::UpdateEconomicEvents;
+package BOM::MarketDataAutoUpdater::UpdateEconomicEvents;
 
 use Moose;
 with 'App::Base::Script';

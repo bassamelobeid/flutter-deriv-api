@@ -1,5 +1,5 @@
 #!/etc/rmg/bin/perl
-package BOM::System::Script::UpdateOhlc;
+package BOM::MarketDataAutoUpdater::UpdateOhlc;
 
 use Moose;
 with 'App::Base::Script';
