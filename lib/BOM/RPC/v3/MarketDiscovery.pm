@@ -294,7 +294,7 @@ sub _description {
         submarket              => $ul->submarket->name,
         submarket_display_name => localize($ul->submarket->display_name),
         exchange_is_open       => $exchange_is_open || 0,
-        is_trading_suspended   => $info->is_trading_suspended,
+        is_trading_suspended   => $ul_info->is_trading_suspended,
         pip                    => $ul->pip_size
     };
 
