@@ -303,6 +303,9 @@ sub _build_config {
     $default_dividend_rate = 0 if $self->symbol eq 'RDMARS';
     $default_dividend_rate = 0 if $self->symbol eq 'RDVENUS';
 
+    $default_dividend_rate = 0 if $self->symbol eq 'R_100' or $self->symbol eq 'R_75';
+    $default_dividend_rate = 0 if $self->symbol eq 'R_50'  or $self->symbol eq 'R_25';
+
     my $build_args = {underlying => $self->system_symbol};
 
     $build_args->{use_official_ohlc} = 1 if ($self->use_official_ohlc);
