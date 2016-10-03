@@ -23,9 +23,8 @@ has underlying => (
     required => 1,
 );
 
-
 has combined_folder => (
-    is => 'ro',
+    is         => 'ro',
     lazy_build => 1,
 );
 
@@ -99,7 +98,6 @@ before $appconfig_attrs => sub {
         }
     }
 };
-
 
 =head2 is_trading_suspended
 
