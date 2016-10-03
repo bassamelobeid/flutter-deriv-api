@@ -273,7 +273,7 @@ subtest 'sub market' => sub {
 
     foreach my $symbol (@symbols) {
         my $underlying  = BOM::Market::Underlying->new($symbol);
-        my @submarkets  = BOM::Market::SubMarket::Registry->find_by_market($underlying->market->name);
+        my @submarkets  = Finance::Asset::SubMarket::Registry->find_by_market($underlying->market->name);
         my $match_count = grep { $_->name eq $underlying->submarket->name } (@submarkets);
 
         cmp_ok($match_count, '==', 1, $underlying->symbol . ' has a properly defined submarket.');

@@ -7,7 +7,7 @@ use Text::CSV::Slurp;
 use File::Slurp;
 
 use Date::Utility;
-use BOM::Market::Registry;
+use Finance::Asset::Market::Registry;
 use BOM::Market::UnderlyingDB;
 use BOM::Platform::Runtime;
 use Bloomberg::FileDownloader;
@@ -192,7 +192,7 @@ sub verify_ohlc_update {
 
     return if $self->is_a_weekend;
 
-    my @all_markets = map { $_->name } BOM::Market::Registry->instance->display_markets;
+    my @all_markets = map { $_->name } Finance::Asset::Market::Registry->instance->display_markets;
 
     my @underlying_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
         market            => \@all_markets,

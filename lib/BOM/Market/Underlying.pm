@@ -35,9 +35,10 @@ use Finance::Asset;
 use BOM::System::Config;
 use BOM::System::Chronicle;
 use BOM::Market;
-use BOM::Market::Registry;
-use BOM::Market::SubMarket::Registry;
+use Finance::Asset::Market::Registry;
+use Finance::Asset::SubMarket::Registry;
 use BOM::Market::Types;
+use Finance::Asset::Market::Types;
 use BOM::Database::FeedDB;
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Runtime;
@@ -233,7 +234,7 @@ has [qw(
 
 has 'market' => (
     is         => 'ro',
-    isa        => 'bom_financial_market',
+    isa        => 'financial_market',
     lazy_build => 1,
     coerce     => 1,
 );
@@ -361,7 +362,7 @@ sub _build_contracts {
 
 has submarket => (
     is      => 'ro',
-    isa     => 'bom_submarket',
+    isa     => 'submarket',
     coerce  => 1,
     default => 'config',
 );
@@ -592,11 +593,11 @@ sub _build_market {
     my $symbol = uc $self->symbol;
     my $market = BOM::Market->new({name => 'nonsense'});
     if ($symbol =~ /^FUT/) {
-        $market = BOM::Market::Registry->instance->get('futures');
+        $market = Finance::Asset::Market::Registry->instance->get('futures');
     } elsif ($symbol =~ /^I_/) {
-        $market = BOM::Market::Registry->instance->get('config');
+        $market = Finance::Asset::Market::Registry->instance->get('config');
     } elsif (length($symbol) >= 15) {
-        $market = BOM::Market::Registry->instance->get('config');
+        $market = Finance::Asset::Market::Registry->instance->get('config');
         warn("Unknown symbol, symbol[$symbol]");
     }
 
