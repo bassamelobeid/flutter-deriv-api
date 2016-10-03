@@ -2,8 +2,6 @@ package BOM::Market::Info;
 use 5.010;
 use Moose;
 
-
-
 use BOM::Platform::Runtime;
 use BOM::Market::Underlying;
 
@@ -19,7 +17,6 @@ Provides access to some built-in settings and configurations about underlying.
 my $underlying_info = BOM::Market::Info->new('frxEURUSD');
 
 =cut
-
 
 has underlying => (
     is       => 'ro',
