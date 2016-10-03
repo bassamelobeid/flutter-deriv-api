@@ -223,11 +223,6 @@ quants:
           isa: ArrayRef
           default: []
           global: 1
-        disable_iv:
-          description: "Disable buying of IV contracts on a particular underlying. Allow selling off these contracts."
-          isa: ArrayRef
-          default: []
-          global: 1
     underlyings:
       description: "Underlying-specific variables"
       isa: section
