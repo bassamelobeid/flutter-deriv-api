@@ -45,6 +45,8 @@ has uses_binary_spot => (
     },
 );
 
+# We have a script on Amazon which will call SD macro to update vol of different underlying on the auto_upload.xls and auto_upload_stocks.xls on hourly basic and copy the file to our dropbox.
+
 sub _build_file {
     my $self     = shift;
     my $filename = $self->filename;

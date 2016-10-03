@@ -3,11 +3,12 @@ package BOM::MarketDataAutoUpdater::UpdateSmartFxRates;
 
 =head1 NAME
 
-BOM::System::Script::UpdateVol;
+BOM::MarketDataAutoUpdater::UpdateSmartFxRates
+
 
 =head1 DESCRIPTION
 
-Updates our vols with the latest quotes we have received from Bloomberg.
+Update interest rate of smart fx based on the interest rate of the forex pairs of the basket
 
 =cut
 
