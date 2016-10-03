@@ -843,7 +843,6 @@ sub feed_license {
 
     my $feed_license = $self->_feed_license || $self->market->license;
 
-    # IMPORTANT! do *not* translate the return values!
     if ($FORCE_REALTIME_FEED) {
         $feed_license = 'realtime';
     }
