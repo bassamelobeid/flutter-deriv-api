@@ -31,16 +31,16 @@ use Try::Tiny;
 use YAML::XS qw(LoadFile);
 
 use Finance::Asset;
-
-use BOM::System::Config;
-use BOM::System::Chronicle;
 use Finance::Asset::Market;
-use BOM::Market::Types;
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
 use Finance::Asset::Market::Types;
+
+use BOM::System::Config;
+use BOM::System::Chronicle;
+use BOM::Market::Types;
 use BOM::Database::FeedDB;
-use BOM::Platform::Context qw(request localize);
+
 use BOM::Platform::Runtime;
 
 use Quant::Framework::Spot;
@@ -57,6 +57,10 @@ use Quant::Framework::Utils::UnderlyingConfig;
 use Quant::Framework::Utils::Builder;
 
 our $PRODUCT_OFFERINGS = LoadFile('/home/git/regentmarkets/bom-market/config/files/product_offerings.yml');
+
+#This has to be set to 1 only on the backoffice server. 
+#A value of 1 means assuming real-time feed license for all underlyings.
+our $FORCE_REALTIME_FEED = 0;
 
 =head1 METHODS
 
@@ -288,6 +292,7 @@ sub _build_config {
     $default_dividend_rate = 0 if $zero_rate{$self->submarket->name};
 
     if ($self->market->name eq 'volidx') {
+        #TODO: hard code values for rates
         my $div = Quant::Framework::Asset->new({
             symbol           => $self->symbol,
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
@@ -718,7 +723,6 @@ sub _build_calendar {
     return Quant::Framework::TradingCalendar->new({
         symbol           => $self->exchange_name,
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
-        locale           => BOM::Platform::Context::request()->language,
         for_date         => $self->for_date
     });
 }
@@ -814,27 +818,6 @@ has divisor => (
     default => 1,
 );
 
-=head2 combined_folder
-
-Return the directory name where we keep our quotes.
-
-=cut
-
-# sooner or later this should go away... or at least be private.
-sub _build_combined_folder {
-    my $self              = shift;
-    my $underlying_symbol = $self->system_symbol;
-    my $market            = $self->market;
-
-    if ($market->name eq 'config') {
-        $underlying_symbol =~ s/^FRX/^frx/;
-        return 'combined/' . $underlying_symbol . '/quant';
-    }
-
-# For not config/vols return combined. Feed is saved in combined/ (no subfolder)
-    return 'combined';
-}
-
 =head2 feed_license
 
 What does our license for the feed permit us to display to the client?
@@ -860,7 +843,7 @@ sub feed_license {
     my $feed_license = $self->_feed_license || $self->market->license;
 
     # IMPORTANT! do *not* translate the return values!
-    if (_force_realtime_license()) {
+    if ($FORCE_REALTIME_FEED) {
         $feed_license = 'realtime';
     }
 
@@ -901,13 +884,6 @@ sub last_licensed_display_epoch {
     } else {
         die "don't know how to deal with '$lic' license of " . $self->symbol;
     }
-}
-
-# Force the underlying to behave as if we have a license allowing realtime data display.
-# This should only be used internally or for auditing.
-
-sub _force_realtime_license {
-    return (request()->backoffice) ? 1 : undef;
 }
 
 =head2 quoted_currency
@@ -1115,94 +1091,6 @@ sub uses_implied_rate {
     return $self->rate_to_imply eq $which ? 1 : 0;
 }
 
-has '_recheck_appconfig' => (
-    is      => 'rw',
-    default => sub { return time; },
-);
-
-my $appconfig_attrs = [qw(is_buying_suspended is_trading_suspended)];
-has $appconfig_attrs => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-before $appconfig_attrs => sub {
-    my $self = shift;
-
-    my $now = time;
-    if ($now >= $self->_recheck_appconfig) {
-        $self->_recheck_appconfig($now + 19);
-        foreach my $attr (@{$appconfig_attrs}) {
-            my $clearer = 'clear_' . $attr;
-            $self->$clearer;
-        }
-    }
-
-};
-
-=head2 is_buying_suspended
-
-Has buying of this underlying been suspended?
-
-=cut
-
-sub _build_is_buying_suspended {
-    my $self = shift;
-
-    # Trade suspension implies buying suspension, as well.
-    return (
-        $self->is_trading_suspended
-            or grep { $_ eq $self->symbol } (@{BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy}));
-}
-
-=head2 is_trading_suspended
-
-Has all trading on this underlying been suspended?
-
-=cut
-
-sub _build_is_trading_suspended {
-    my $self = shift;
-
-    return (
-               not keys %{$self->contracts}
-            or $self->_market_disabled
-            or grep { $_ eq $self->symbol } (@{BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades}));
-}
-
-sub _market_disabled {
-    my $self = shift;
-
-    my $disabled_markets = BOM::Platform::Runtime->instance->app_config->quants->markets->disabled;
-    return (grep { $self->market->name eq $_ } @$disabled_markets);
-}
-
-=head2 fullfeed_file
-
-Where do we find the fullfeed file for the provided date?  Second argument allows override of the 'combined' portion of the path.
-
-=cut
-
-sub fullfeed_file {
-    my ($self, $date, $override_folder) = @_;
-
-    if ($date =~ /^(\d\d?)\-(\w\w\w)\-(\d\d)$/) {
-        $date = $1 . '-' . ucfirst(lc($2)) . '-' . $3;
-    }    #convert 10-JAN-05 to 10-Jan-05
-    else {
-        die 'Bad date for fullfeed_file';
-    }
-
-    my $folder = $override_folder || $self->combined_folder;
-
-    return
-          BOM::Platform::Runtime->instance->app_config->system->directory->feed . '/'
-        . $folder . '/'
-        . $self->system_symbol . '/'
-        . $date
-        . ($override_folder ? "-fullfeed.csv" : ".fullfeed");
-}
-
 =head2 is_in_quiet_period
 
 Are we currently in a quiet traidng period for this underlying?
@@ -1223,7 +1111,6 @@ sub is_in_quiet_period {
             $_ => Quant::Framework::TradingCalendar->new({
                     symbol           => $_,
                     chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
-                    locale           => BOM::Platform::Context::request()->language,
                     for_date         => $self->for_date
                 })
         } (qw(NYSE FSE LSE TSE SES ASX))};
