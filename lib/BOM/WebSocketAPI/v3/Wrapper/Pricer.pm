@@ -455,6 +455,7 @@ sub _create_error_message {
     my ($c, $type, $response, $stash_data) = @_;
     my ($err_code, $err_message, $err_details);
 
+    #
     BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid}) if $stash_data->{uuid};
 
     if ($response->{error}) {
