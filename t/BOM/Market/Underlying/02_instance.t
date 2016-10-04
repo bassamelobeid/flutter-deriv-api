@@ -146,8 +146,10 @@ subtest 'display_decimals' => sub {
         }
 
         my $stock = BOM::Market::Underlying->new({symbol => 'USAAPL'});
+        $stock->set_combined_realtime({epoch => time, quote => 8});
         is roundnear(0.0001, $stock->dividend_rate_for(0.5)), 0.0103, 'correct dividend rate for stocks';
         is $stock->dividend_rate_for(1.0), 0.0073, 'correct dividend rate for stocks';
+        Cache::RedisDB->del('QUOTE', $stock->symbol);
     };
 };
 
@@ -234,7 +236,9 @@ subtest 'all attributes on a variety of underlyings' => sub {
         is((scalar grep { exists $underlying->market_convention->{$_} } qw(delta_style delta_premium_adjusted)),
             2, ' with at least the minimal key set');
 
+        $underlying->set_combined_realtime({epoch => time, quote => 8});
         ok(looks_like_number($underlying->_builder->build_trading_calendar->closed_weight), 'Closed weight is numeric');
+        Cache::RedisDB->del('QUOTE', $underlying->symbol);
         cmp_ok($underlying->_builder->build_trading_calendar->closed_weight, '>=', 0, ' nonnegative');
         cmp_ok($underlying->_builder->build_trading_calendar->closed_weight, '<',  1, ' and smaller than 1');
 
@@ -406,12 +410,12 @@ subtest 'all methods on a selection of underlyings' => sub {
     };
 
     warnings_like {
-        $FRW_frxEURUSD_ON->set_combined_realtime($fake_forward_data);
-        $FRW_frxEURUSD_TN->set_combined_realtime($fake_forward_data);
-        $FRW_frxEURUSD_1W->set_combined_realtime($fake_forward_data);
-        $FRW_frxUSDEUR_ON->set_combined_realtime($fake_forward_data);
-        $FRW_frxUSDEUR_TN->set_combined_realtime($fake_forward_data);
-        $FRW_frxUSDEUR_1W->set_combined_realtime($fake_forward_data);
+        $FRW_frxEURUSD_ON->market->name;
+        $FRW_frxEURUSD_TN->market->name;
+        $FRW_frxEURUSD_1W->market->name;
+        $FRW_frxUSDEUR_ON->market->name;
+        $FRW_frxUSDEUR_TN->market->name;
+        $FRW_frxUSDEUR_1W->market->name;
     } 
     [qr/^Unknown symbol/, qr/^Unknown symbol/, qr/^Unknown symbol/, 
         qr/^Unknown symbol/, qr/^Unknown symbol/, qr/^Unknown symbol/], "Expected warning is thrown";

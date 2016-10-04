@@ -195,14 +195,18 @@ has 'feed_api' => (
 );
 
 sub _build_feed_api {
+    my $self = shift;
 
-    my $spot_db_args = sub {
+    my $build_args = {underlying => $self->system_symbol};
+    $build_args->{use_official_ohlc} = $self->use_official_ohlc;
+    $build_args->{invert_values}     = $self->inverted;
+    $build_args->{db_handle}         = sub {
         my $dbh = Postgres::FeedDB::read_dbh;
         $dbh->{RaiseError} = 1;
         return $dbh;
     };
 
-    return Postgres::FeedDB::Spot::DatabaseAPI->new($spot_db_args);
+    return Postgres::FeedDB::Spot::DatabaseAPI->new($build_args);
 }
 
 sub spot {
