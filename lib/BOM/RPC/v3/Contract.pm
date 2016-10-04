@@ -119,9 +119,10 @@ sub _get_ask {
         my $contract = produce_contract($p2);
 
         if (!$contract->is_valid_to_buy) {
-            my ($message_to_client, $code);
+            my ($message, $message_to_client, $code);
 
             if (my $pve = $contract->primary_validation_error) {
+                $message           = $pve->message;
                 $message_to_client = $pve->message_to_client;
                 $code              = "ContractBuyValidationError";
             } else {
@@ -129,6 +130,7 @@ sub _get_ask {
                 $code              = "ContractValidationError";
             }
             $response = BOM::RPC::v3::Utility::create_error({
+                    message           => $message,
                     message_to_client => $message_to_client,
                     code              => $code,
                     details           => {
