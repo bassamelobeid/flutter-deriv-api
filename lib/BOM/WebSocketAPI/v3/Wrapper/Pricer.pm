@@ -39,7 +39,7 @@ sub proposal {
                     longcode            => $rpc_response->{longcode},
                     contract_parameters => delete $rpc_response->{contract_parameters}};
                 $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
-                $req_storage->{uuid} = _pricing_channel_for_ask($c, 'subscribe', $req_storage->{args}, $cache);
+                $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
             },
             response => sub {
                 my ($rpc_response, $api_response, $req_storage) = @_;
@@ -102,7 +102,7 @@ sub proposal_open_contract {
                     longcode        => $response->{$contract_id}->{longcode},
                 };
 
-                if (not $uuid = _pricing_channel_for_bid($c, 'subscribe', $args, $cache)) {
+                if (not $uuid = _pricing_channel_for_bid($c, $args, $cache)) {
                     my $error =
                         $c->new_error('proposal_open_contract', 'AlreadySubscribed', $c->l('You are already subscribed to proposal_open_contract.'));
                     $c->send({json => $error}, $req_storage);
@@ -140,7 +140,7 @@ sub _serialized_args {
 }
 
 sub _pricing_channel_for_ask {
-    my ($c, $subs, $args, $cache) = @_;
+    my ($c, $args, $cache) = @_;
     my $price_daemon_cmd = 'price';
 
     my %args_hash = %{$args};
@@ -164,7 +164,7 @@ sub _pricing_channel_for_ask {
 }
 
 sub _pricing_channel_for_bid {
-    my ($c, $subs, $args, $cache) = @_;
+    my ($c, $args, $cache) = @_;
     my $price_daemon_cmd = 'bid';
 
     my %hash;
@@ -190,6 +190,9 @@ sub _create_pricer_channel {
 
     # already subscribed
     if (exists $pricing_channel->{$redis_channel} and exists $pricing_channel->{$redis_channel}->{$subchannel}) {
+        return $pricing_channel->{$redis_channel}->{$subchannel}->{uuid}
+            if not(exists $args->{subscribe} and $args->{subscribe} == 1)
+            and exists $pricing_channel->{$redis_channel}->{$subchannel}->{uuid};
         return;
     }
 

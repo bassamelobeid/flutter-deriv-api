@@ -1,6 +1,8 @@
 language: perl
 perl:
     - "5.14.2-thr"
+matrix:
+    fast_finish: true
 go:
     - 1.5
 node_js:
