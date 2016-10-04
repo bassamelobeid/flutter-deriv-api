@@ -453,7 +453,7 @@ subtest 'get_bid' => sub {
             underlying
             is_expired
             is_valid_to_sell
-            is_settled
+            is_settleable
             is_forward_starting
             is_path_dependent
             is_intraday

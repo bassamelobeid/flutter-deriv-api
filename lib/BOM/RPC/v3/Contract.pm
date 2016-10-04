@@ -271,7 +271,7 @@ sub get_bid {
                 return;
             }
 
-            $response->{is_settled} = $contract->is_settled;
+            $response->{is_settleable} = $contract->is_settleable;
             $response->{has_corporate_actions} = 1 if @{$contract->corporate_actions};
 
             $response->{barrier_count} = $contract->two_barriers ? 2 : 1;
