@@ -10,8 +10,8 @@ use IO::File;
 use Module::Load::Conditional qw( can_load );
 use Locale::Maketext::Extract;
 
-use BOM::Market::Registry;
-use BOM::Market::SubMarket::Registry;
+use Finance::Asset::Market::Registry;
+use Finance::Asset::SubMarket::Registry;
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Market::Underlying;
 use BOM::Market::UnderlyingDB;
@@ -140,7 +140,7 @@ sub add_underlyings {
     my $self = shift;
 
     my @underlyings = map { BOM::Market::Underlying->new($_) } BOM::Market::UnderlyingDB->get_symbols_for(
-        market           => [BOM::Market::Registry->all_market_names],
+        market           => [Finance::Asset::Market::Registry->all_market_names],
         exclude_disabled => 1
     );
 
@@ -244,7 +244,7 @@ sub add_markets {
 
     my $fh = $self->pot_append_fh;
 
-    foreach my $market (BOM::Market::Registry->all) {
+    foreach my $market (Finance::Asset::Market::Registry->all) {
         if ($market->display_name) {
             my $msgid = $self->msg_id($market->display_name);
             if ($self->is_id_unique($msgid)) {
@@ -271,7 +271,7 @@ sub add_submarkets {
 
     my $fh = $self->pot_append_fh;
 
-    foreach my $submarket (BOM::Market::SubMarket::Registry->all) {
+    foreach my $submarket (Finance::Asset::SubMarket::Registry->all) {
         if ($submarket->display_name) {
             my $msgid = $self->msg_id($submarket->display_name);
             if ($self->is_id_unique($msgid)) {
