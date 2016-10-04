@@ -7,8 +7,6 @@ use Test::Warn;
 use File::Slurp;
 use List::Util qw(max min);
 use Scalar::Util qw(looks_like_number);
-use Test::MockTime qw( set_absolute_time );
-use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
@@ -16,6 +14,8 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use DateTime;
+use Test::MockTime qw( set_absolute_time );
+use Test::MockModule;
 use Cache::RedisDB;
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
