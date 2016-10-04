@@ -142,12 +142,16 @@ sub dbi_connect {
     return DBI->connect(@params) || croak $DBI::errstr;
 }
 
+=head2 disconnect
+
+Overrides L<Rose::DB/disconnect> to remove previous registration.
+
+=cut
+
 sub disconnect {
     my $self = shift;
     if(my $category = $self->_category_from_domain) {
-        BOM::Database::release_dbh($category => $self->{dbh}) if $self->{dbh};
-    } else {
-        warn "No database category, cannot unregister";
+        BOM::Database::release_dbh($category => $self->{dbh}) if $self->_category_requires_registration($category) && $self->{dbh};
     }
     $self->SUPER::disconnect(@_);
 }
@@ -163,14 +167,16 @@ Returns the database handle if we had one.
 sub init_dbh {
     my $self = shift;
     my $dbh = $self->SUPER::init_dbh(@_);
+
+    # Return failure state if we didn't get a $dbh
     return $dbh unless $dbh;
 
-    if(my $category = $self->_category_from_domain) {
-        BOM::Database::register_dbh($category => $dbh) unless BOM::Database::dbh_is_registered($category => $dbh);
-    } else {
-        # Should never happen, since we have a default
-        warn "No database category, cannot register";
-    }
+    my $category = $self->_category_from_domain or return $dbh;
+
+    return $dbh unless $self->_category_requires_registration($category);
+    return $dbh if BOM::Database::dbh_is_registered($category => $dbh);
+
+    BOM::Database::register_dbh($category => $dbh);
     return $dbh;
 }
 
@@ -197,6 +203,20 @@ sub _category_from_domain {
     # Remove trailing 'db', so userdb => user, authdb => auth etc.
     $category =~ s/db$// unless $category eq 'db';
     return $category;
+}
+
+=head2 _category_requires_registration
+
+Provides blacklist for databases which we do not want
+to register - currently just the client database, since
+high transaction churn there could be problematic.
+
+=cut
+
+sub _category_requires_registration {
+    my ($self, $category) = @_;
+    return 0 if $category eq 'client';
+    return 1;
 }
 
 1;
