@@ -146,7 +146,7 @@ sub get_bet_results {
         } else {
             $bet_args->{barrier} = $record->{barrier};
         }
-        $bet_args->{current_tick} = Quant::Framework::Spot::Tick->new(
+        $bet_args->{current_tick} = Postgres::FeedDB::Spot::Tick->new(
             underlying => $bet_args->{underlying}->symbol,
             quote      => $bet_args->{current_spot},
             epoch      => $bet_args->{date_start}->epoch,
