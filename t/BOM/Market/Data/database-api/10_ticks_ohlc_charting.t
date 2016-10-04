@@ -15,7 +15,7 @@ use BOM::Market::Underlying;
 use Date::Utility;
 
 use Postgres::FeedDB::Spot::DatabaseAPI;
-my $dbh = BOM::Database::FeedDB::read_dbh;
+my $dbh = Postgres::FeedDB::read_dbh;
 $dbh->{RaiseError} = 1;
 
 subtest 'prepare ticks' => sub {

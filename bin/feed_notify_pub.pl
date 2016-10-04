@@ -7,7 +7,7 @@ use DBI;
 use DBD::Pg;
 use IO::Select;
 use Try::Tiny;
-use BOM::Database::FeedDB;
+use Postgres::FeedDB;
 
 use BOM::Market::UnderlyingDB;
 use Finance::Asset::Market::Registry;
@@ -16,7 +16,7 @@ use BOM::System::RedisReplicated;
 update_crossing_underlyings();
 while (1) {
     try {
-        my $dbh   = BOM::Database::FeedDB::write_dbh();
+        my $dbh   = Postgres::FeedDB::write_dbh();
 
         my $MAX_FEED_CHANNELS = 80;
         $dbh->do("LISTEN feed_watchers_$_") for (1..$MAX_FEED_CHANNELS);
@@ -59,7 +59,7 @@ sub update_crossing_underlyings {
                 . $u->calendar->market_times()->{standard}->{daily_close}->seconds . ");";
         }
     }
-    BOM::Database::FeedDB::write_dbh()->do("
+    Postgres::FeedDB::write_dbh()->do("
         BEGIN;
         DELETE FROM feed.underlying_open_close;
         $update

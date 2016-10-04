@@ -11,7 +11,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use Postgres::FeedDB::Spot::DatabaseAPI;
 
 use Postgres::FeedDB::Spot::DatabaseAPI;
-my $dbh = BOM::Database::FeedDB::read_dbh;
+my $dbh = Postgres::FeedDB::read_dbh;
 $dbh->{RaiseError} = 1;
 
 subtest 'Object creation' => sub {

@@ -36,6 +36,7 @@ use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
 use Finance::Asset::Market::Types;
 
+use Postgres::FeedDB;
 use Postgres::FeedDB::Spot;
 use Postgres::FeedDB::Spot::Tick;
 use Postgres::FeedDB::Spot::DatabaseAPI;
@@ -48,9 +49,6 @@ use Quant::Framework::ExpiryConventions;
 use Quant::Framework::StorageAccessor;
 use Quant::Framework::Utils::UnderlyingConfig;
 use Quant::Framework::Utils::Builder;
-
-#FeedDB::read_dbh is passed to Quant::Framework to be used to retrieve latest spot
-use Postgres::FeedDB;
 
 #Passed to Quant::Framework to read/write data
 use BOM::System::Chronicle;
@@ -342,7 +340,7 @@ sub _build_config {
 
     my $build_args = {underlying => $self->system_symbol};
 
-    $build_args->{invert_values}     = 1 if $self->inverted;
+    $build_args->{invert_values} = 1 if $self->inverted;
 
     return Quant::Framework::Utils::UnderlyingConfig->new({
         symbol                                => $self->symbol,
@@ -1155,8 +1153,6 @@ sub is_in_quiet_period {
 =head1 FEED METHODS
 
 =cut
-
-
 
 =head2 next_tick_after
 

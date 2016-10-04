@@ -12,7 +12,7 @@ use Postgres::FeedDB::Spot::DatabaseAPI;
 use DateTime;
 use Date::Utility;
 
-my $dbh = BOM::Database::FeedDB::read_dbh;
+my $dbh = Postgres::FeedDB::read_dbh;
 $dbh->{RaiseError} = 1;
 
 subtest 'No Ticks' => sub {

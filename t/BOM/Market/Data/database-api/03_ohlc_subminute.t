@@ -8,14 +8,14 @@ use Test::Exception;
 use Test::Warn;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Database::FeedDB;
+use Postgres::FeedDB;
 
 use Postgres::FeedDB::Spot::OHLC;
 use DateTime;
 use Date::Utility;
 
 use Postgres::FeedDB::Spot::DatabaseAPI;
-my $dbh = BOM::Database::FeedDB::read_dbh;
+my $dbh = Postgres::FeedDB::read_dbh;
 $dbh->{RaiseError} = 1;
 
 subtest 'prepare ticks' => sub {
