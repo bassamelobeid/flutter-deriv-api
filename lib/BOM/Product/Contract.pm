@@ -58,7 +58,7 @@ has is_expired => (
     lazy_build => 1,
 );
 
-has is_settled => (
+has is_settleable => (
     is         => 'rw',
     lazy_build => 1,
 );

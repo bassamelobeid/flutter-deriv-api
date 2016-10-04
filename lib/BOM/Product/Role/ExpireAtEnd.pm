@@ -17,7 +17,7 @@ sub _build_is_expired {
     return 1;
 }
 
-sub _build_is_settled {
+sub _build_is_settleable {
     my $self = shift;
 
     my $settleable = ($self->is_after_settlement and $self->exit_tick) ? 1 : 0;

@@ -1889,7 +1889,7 @@ sub sell_expired_contracts {
 
         my $logging_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
         $stats_attempt{$logging_class}++;
-        if (not $contract->is_settled) {
+        if (not $contract->is_settleable) {
             $stats_failure{$logging_class}{'NotExpired'}++;
             $failure->{reason} = 'not expired';
             push @{$result->{failures}}, $failure;
