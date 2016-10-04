@@ -167,9 +167,8 @@ sub _predefined_trading_period {
                 calendar => $calendar
             });
 
-        my $key_expiry = $now_minute < 45 ? $now_date . ' ' . $now_hour . ':45:00' : $now_date . ' ' . $now_hour . ':00:00';
-        Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, Date::Utility->new($key_expiry)->epoch - $now->epoch);
-
+        # TTL: if minutes < 45 - seconds up to 45 mins, else - up to the end of the hour
+        Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, ($now_minute < 45 ? 2700 : 3600) - $now_minute * 60);
     }
 
     my @new_offerings;
