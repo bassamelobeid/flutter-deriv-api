@@ -61,6 +61,7 @@ has price_slippage => (
     default => 0,
 );
 
+# trading period of a contract
 has trading_period => (
     is => 'ro',
 );
