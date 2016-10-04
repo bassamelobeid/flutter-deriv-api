@@ -86,6 +86,10 @@
         "stop_loss": {
           "type": "number",
           "description":"[For spread contracts only] Stop loss amount"
+        },
+        "trading_period": {
+          "type": "string",
+          "description":"[For japan only] The trading period of the contract"
         }
       }
     },
