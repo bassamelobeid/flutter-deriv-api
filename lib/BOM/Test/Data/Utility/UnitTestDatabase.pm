@@ -280,7 +280,7 @@ sub create_fmb_with_ticks {
     $dbh->{RaiseError} = 1;
 
     for my $epoch ($start->epoch, $start->epoch + 1, $expire->epoch) {
-        my $api = Quant::Framework::Spot::DatabaseAPI->new({
+        my $api = Postgres::FeedDB::Spot::DatabaseAPI->new({
             underlying => 'R_100',
             db_handle  => $dbh
         });

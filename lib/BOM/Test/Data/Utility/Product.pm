@@ -104,7 +104,7 @@ sub create_contract {
     push @epoches, @$tick_epoches;
     @epoches = sort { $a <=> $b } @epoches;
     for my $epoch (@epoches) {
-        my $api = Quant::Framework::Spot::DatabaseAPI->new(
+        my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(
             underlying => $underlying_symbol,
             db_handle  => $dbh
         );
