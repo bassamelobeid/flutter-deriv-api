@@ -41,8 +41,9 @@ sub log_call_timing_connection {
 sub add_req_data {
     my ($c, $req_storage, $api_response) = @_;
     if ($req_storage) {
-        $api_response->{echo_req} = $req_storage->{args};
-        $api_response->{req_id} = $req_storage->{args}->{req_id} if $req_storage->{args}->{req_id};
+        my $args = $req_storage->{origin_args} || $req_storage->{args};
+        $api_response->{echo_req} = $args;
+        $api_response->{req_id} = $args->{req_id} if $args->{req_id};
     }
     return;
 }
@@ -128,6 +129,7 @@ sub _set_defaults {
 sub before_forward {
     my ($c, $req_storage) = @_;
 
+    $req_storage->{origin_args} = {%{$req_storage->{args}}};
     my $args = $req_storage->{args};
     if (not $c->stash('connection_id')) {
         $c->stash('connection_id' => &BOM::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string());
