@@ -20,9 +20,10 @@ use Cache::RedisDB;
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
 use BOM::System::Chronicle;
-use BOM::Market::SubMarket;
+use Finance::Asset::SubMarket;
 use BOM::Market::UnderlyingDB;
 use BOM::Market::Underlying;
+use BOM::Market::Info;
 use Quant::Framework::Spot;
 
 
@@ -32,14 +33,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol => $_,
         date   => Date::Utility->new,
     }) for (qw/AUD EUR GBP HKD IDR JPY NZD SGD USD XAU ZAR/);
-
-Quant::Framework::Utils::Test::create_doc(
-    'randomindex',
-    {
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-        rates            => {7 => 3.5},
-    });
 
 Quant::Framework::Utils::Test::create_doc(
     'stock',
@@ -59,7 +52,6 @@ my $looks_like_currency = qr/^[A-Z]{3}/;
 subtest 'what happens to an undefined symbol name' => sub {
     my $symbol_undefined = BOM::Market::Underlying->new('an_undefined_symbol');
     is($symbol_undefined->display_name,            'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct display_name');
-    is($symbol_undefined->translated_display_name, 'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct translated_display_name');
 
     warning_like {
         is($symbol_undefined->market->name, 'config', 'an undefined symbol has correct market');
@@ -118,8 +110,13 @@ subtest 'display_decimals' => sub {
         }
 
         my $r100 = BOM::Market::Underlying->new({symbol => 'R_100'});
-        is $r100->dividend_rate_for(0.5), 3.5, 'correct dividend rate';
-        is $r100->dividend_rate_for(1.0), 3.5, 'correct dividend rate';
+        is $r100->dividend_rate_for(0.5), 0, 'correct dividend rate';
+        is $r100->dividend_rate_for(1.0), 0, 'correct dividend rate';
+
+
+        my $rdbull = BOM::Market::Underlying->new({symbol => 'RDBULL'});
+        is $rdbull->dividend_rate_for(0.5), -35, 'correct dividend rate';
+        is $rdbull->dividend_rate_for(1.0), -35, 'correct dividend rate';
 
     };
 
@@ -248,7 +245,8 @@ subtest 'all attributes on a variety of underlyings' => sub {
             is($underlying->delay_amount, 0, 'Realtime license means no feed delay');
         }
 
-        like($underlying->combined_folder, qr%combined%, 'Combined folder looks reasonable enough');
+        my $ul_info = BOM::Market::Info->new(underlying => $underlying);
+        like($ul_info->combined_folder, qr%combined%, 'Combined folder looks reasonable enough');
 
         is((scalar grep { $underlying->instrument_type eq $_ } qw(forex stockindex commodities config futures)),
             1, 'Instrument type is exactly one of our allowed values');
@@ -274,7 +272,7 @@ subtest 'sub market' => sub {
 
     foreach my $symbol (@symbols) {
         my $underlying  = BOM::Market::Underlying->new($symbol);
-        my @submarkets  = BOM::Market::SubMarket::Registry->find_by_market($underlying->market->name);
+        my @submarkets  = Finance::Asset::SubMarket::Registry->find_by_market($underlying->market->name);
         my $match_count = grep { $_->name eq $underlying->submarket->name } (@submarkets);
 
         cmp_ok($match_count, '==', 1, $underlying->symbol . ' has a properly defined submarket.');
@@ -481,9 +479,6 @@ subtest 'all methods on a selection of underlyings' => sub {
     is($EURUSD->system_symbol,  $EURUSD->symbol, 'System symbol and symbol are same for non-inverted');
     isnt($USDEUR->system_symbol, $USDEUR->symbol, ' and different for inverted');
 
-    # We don't have translations in the sandbox.. we should probably fix that.
-    is($AS51->display_name, $AS51->translated_display_name, 'Translated to undefined is English');
-
     is($AS51->exchange->symbol, $AS51->exchange_name, 'Got our exchange from the provided name');
 
     # Assumption: EUR/USD still has the 1030 to 1330 restriction.
@@ -497,26 +492,21 @@ subtest 'all methods on a selection of underlyings' => sub {
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy([]);
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades([]);
 
-    is($EURUSD->is_trading_suspended, 0, 'Underlying can be traded');
-    is($EURUSD->is_buying_suspended,  0, 'Underlying can be bought');
+    my $eurusd_info = BOM::Market::Info->new(underlying => $EURUSD);
+
+    is($eurusd_info->is_trading_suspended, 0, 'Underlying can be traded');
 
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy([$EURUSD->symbol]);
-    $EURUSD->clear_is_trading_suspended;
-    $EURUSD->clear_is_buying_suspended;
-    is($EURUSD->is_trading_suspended, 0, ' now traded');
-    ok($EURUSD->is_buying_suspended, ' but not bought');
+    $eurusd_info->clear_is_trading_suspended;
+    is($eurusd_info->is_trading_suspended, 0, ' now traded');
 
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades([$EURUSD->symbol]);
-    $EURUSD->clear_is_trading_suspended;
-    $EURUSD->clear_is_buying_suspended;
-    ok($EURUSD->is_trading_suspended, ' now not tradeable');
-    ok($EURUSD->is_buying_suspended,  ' nor buyable');
+    $eurusd_info->clear_is_trading_suspended;
+    ok($eurusd_info->is_trading_suspended, ' now not tradeable');
 
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy([]);
-    $EURUSD->clear_is_trading_suspended;
-    $EURUSD->clear_is_buying_suspended;
-    ok($EURUSD->is_trading_suspended, ' still not tradeable');
-    ok($EURUSD->is_buying_suspended,  ' nor buyable');
+    $eurusd_info->clear_is_trading_suspended;
+    ok($eurusd_info->is_trading_suspended, ' still not tradeable');
 
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy($orig_buy);
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades($orig_trades);
@@ -524,11 +514,11 @@ subtest 'all methods on a selection of underlyings' => sub {
     my $eu_symbol       = $EURUSD->symbol;
     my $looks_like_euff = qr%$eu_symbol/\d{1,2}-[A-Z]{1}[a-z]{2}-\d{1,2}(?:-fullfeed\.csv|\.fullfeed)%;
 
-    like($EURUSD->fullfeed_file('19-Jan-12'), $looks_like_euff, "Standard fullfeed file looks right");
-    like($EURUSD->fullfeed_file('1-JUN-12'),  $looks_like_euff, "Miscapitalized fullfeed file looks right");
-    like($EURUSD->fullfeed_file('1-JUN-12', 'backtest'), $looks_like_euff, "Miscapitalized fullfeed file with override dir looks right");
+    like($eurusd_info->fullfeed_file('19-Jan-12'), $looks_like_euff, "Standard fullfeed file looks right");
+    like($eurusd_info->fullfeed_file('1-JUN-12'),  $looks_like_euff, "Miscapitalized fullfeed file looks right");
+    like($eurusd_info->fullfeed_file('1-JUN-12', 'backtest'), $looks_like_euff, "Miscapitalized fullfeed file with override dir looks right");
 
-    throws_ok { $EURUSD->fullfeed_file(1338794173) } qr/Bad date for fullfeed_file/, 'Sending in a nonstandard date string makes things die';
+    throws_ok { $eurusd_info->fullfeed_file(1338794173) } qr/Bad date for fullfeed_file/, 'Sending in a nonstandard date string makes things die';
 
     my $test_date = $oldEU->for_date;
 
@@ -689,22 +679,6 @@ subtest 'max_suspend_trading_feed_delay' => sub {
     }
 };
 
-subtest 'max_failover_feed_delay' => sub {
-    plan tests => 6;
-    # Right now these are all the same.. but what if they weren't?
-    my %expectations = (
-        'frxEURUSD' => 120,
-        'frxBROUSD' => 120,
-        'AS51'      => 120,
-        'USAAPL'    => 180,
-        'R_100'     => 120,
-        'RDBULL'    => 120,
-    );
-
-    foreach my $ul (map { BOM::Market::Underlying->new($_) } (keys %expectations)) {
-        is($ul->max_failover_feed_delay->seconds, $expectations{$ul->symbol}, $ul->symbol . ' sets max_failover_feed_delay as expected.');
-    }
-};
 subtest 'last_licensed_display_epoch' => sub {
     my $time      = time;
     my $frxEURUSD = BOM::Market::Underlying->new('frxEURUSD');
