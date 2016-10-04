@@ -237,8 +237,6 @@ subtest 'invalid underlying is a weak foundation' => sub {
     $bet_params->{current_tick} = $tick;
     $bet = produce_contract($bet_params);
     ok(BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades(['frxAUDUSD']), 'Suspending trading on this underlying.');
-    $bet->underlying->clear_is_buying_suspended;
-    $bet->underlying->clear_is_trading_suspended;
     $expected_reasons = [qr/^Underlying.*suspended/];
     test_error_list('buy', $bet, $expected_reasons);
     ok(BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades($orig_trades), 'Restoring trading to original state..');
