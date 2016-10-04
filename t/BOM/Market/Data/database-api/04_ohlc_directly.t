@@ -9,8 +9,8 @@ use Test::Warn;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-use Quant::Framework::Spot::DatabaseAPI;
-use Quant::Framework::Spot::OHLC;
+use Postgres::FeedDB::Spot::DatabaseAPI;
+use Postgres::FeedDB::Spot::OHLC;
 use DateTime;
 use Date::Utility;
 
@@ -66,7 +66,7 @@ subtest 'prepare ohlc' => sub {
 };
 
 subtest 'Daily - Start-End - Official' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(
+    my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(
         underlying        => 'frxUSDJPY',
         use_official_ohlc => 1,
         db_handle         => $dbh,
@@ -83,7 +83,7 @@ subtest 'Daily - Start-End - Official' => sub {
     subtest 'OHLC datatype' => sub {
         foreach my $tick (@$ticks) {
             my $date = Date::Utility->new({epoch => $tick->epoch});
-            isa_ok $tick, 'Quant::Framework::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $tick, 'Postgres::FeedDB::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 
@@ -105,7 +105,7 @@ subtest 'Daily - Start-End - Official' => sub {
 };
 
 subtest 'Daily - Start-End - Simple' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(
+    my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(
         underlying        => 'frxUSDJPY',
         use_official_ohlc => 1,
         db_handle         => $dbh,
@@ -122,7 +122,7 @@ subtest 'Daily - Start-End - Simple' => sub {
     subtest 'OHLC datatype' => sub {
         foreach my $tick (@$ticks) {
             my $date = Date::Utility->new({epoch => $tick->epoch});
-            isa_ok $tick, 'Quant::Framework::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $tick, 'Postgres::FeedDB::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 
@@ -144,7 +144,7 @@ subtest 'Daily - Start-End - Simple' => sub {
 };
 
 subtest 'Daily - Start-End - Beserk User' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
+    my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
 
     throws_ok {
         warnings_like {

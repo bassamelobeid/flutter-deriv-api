@@ -8,7 +8,7 @@ use Test::Exception;
 use Test::Warn;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use Quant::Framework::Spot::DatabaseAPI;
+use Postgres::FeedDB::Spot::DatabaseAPI;
 use DateTime;
 use Date::Utility;
 
@@ -16,7 +16,7 @@ my $dbh = BOM::Database::FeedDB::read_dbh;
 $dbh->{RaiseError} = 1;
 
 subtest 'No Ticks' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
+    my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
     my $tick;
     lives_ok {
         $tick = $api->tick_after('2012-05-13 05:10:01');
@@ -44,7 +44,7 @@ subtest 'Tick before request time' => sub {
     }
     'Tick 1 - 2012-05-13 05:10:00';
 
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
+    my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
     my $tick;
     lives_ok {
         $tick = $api->tick_after('2012-05-13 05:10:01');
@@ -73,7 +73,7 @@ subtest 'Tick at request time' => sub {
     }
     'Tick 1 - 2012-05-13 05:10:01';
 
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
+    my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
     my $tick;
     lives_ok {
         $tick = $api->tick_after('2012-05-13 05:10:01');
@@ -102,7 +102,7 @@ subtest 'Tick after request time' => sub {
     }
     'Tick 1 - 2012-05-13 05:10:30';
 
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
+    my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
     my $tick;
     lives_ok {
         $tick = $api->tick_after('2012-05-13 05:10:01');
@@ -116,7 +116,7 @@ subtest 'Tick after request time' => sub {
 };
 
 subtest 'Invert' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
+    my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
     my $tick;
     lives_ok {
         $tick = $api->tick_after('2012-05-13 05:10:01');
@@ -150,7 +150,7 @@ subtest 'Tick much later' => sub {
     }
     'Tick 1 - 2012-05-13 05:10:30';
 
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
+    my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
     my $tick;
     lives_ok {
         $tick = $api->tick_after('2012-05-13 05:10:01');

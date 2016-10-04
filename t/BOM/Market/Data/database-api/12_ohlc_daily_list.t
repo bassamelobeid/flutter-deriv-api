@@ -9,8 +9,8 @@ use Test::Warn;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-use Quant::Framework::Spot::DatabaseAPI;
-use Quant::Framework::Spot::OHLC;
+use Postgres::FeedDB::Spot::DatabaseAPI;
+use Postgres::FeedDB::Spot::OHLC;
 use DateTime;
 use Date::Utility;
 
@@ -115,7 +115,7 @@ subtest 'Preparing records' => sub {
 };
 
 subtest 'Simple OHLC fetch' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(
+    my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(
         underlying        => 'frxUSDJPY',
         use_official_ohlc => 1,
         db_handle         => $dbh,
@@ -207,7 +207,7 @@ subtest 'Simple OHLC fetch' => sub {
 };
 
 subtest 'Testing selection when both are present' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(
+    my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(
         underlying        => 'frxUSDJPY',
         use_official_ohlc => 1,
         db_handle         => $dbh,
@@ -250,8 +250,8 @@ subtest 'Testing selection when both are present' => sub {
 };
 
 subtest 'Tail End ticks' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
-    my $official_api = Quant::Framework::Spot::DatabaseAPI->new(
+    my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
+    my $official_api = Postgres::FeedDB::Spot::DatabaseAPI->new(
         underlying        => 'frxUSDJPY',
         use_official_ohlc => 1,
         db_handle         => $dbh,
@@ -378,7 +378,7 @@ subtest 'Tail End ticks' => sub {
 };
 
 subtest 'Non Official OHLC' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
+    my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
 
     subtest 'One OHLC Data' => sub {
         my $data = $api->ohlc_daily_list({

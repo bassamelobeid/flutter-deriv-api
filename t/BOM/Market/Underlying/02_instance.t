@@ -24,7 +24,7 @@ use Finance::Asset::SubMarket;
 use BOM::Market::UnderlyingDB;
 use BOM::Market::Underlying;
 use BOM::Market::Info;
-use Quant::Framework::Spot;
+use Postgres::FeedDB::Spot;
 
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
