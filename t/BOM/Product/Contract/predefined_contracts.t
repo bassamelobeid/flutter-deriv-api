@@ -12,7 +12,9 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
-
+use Cache::RedisDB;
+Cache::RedisDB->flushall;
+initialize_realtime_ticks_db;
 my $now = Date::Utility->new('2016-09-28 10:00:00');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
@@ -52,25 +54,18 @@ subtest 'predefined_contracts' => sub {
         current_tick => $fake_tick,
     };
     my $c = produce_contract($bet_params);
-    is $c->landing_company, 'costarica', 'landing company is costarica';
-    ok !%{$c->predefined_contracts}, 'no predefined_contracts for costarica';
+    ok !$c->can('predefined_contracts'), 'no predefined_contracts for costarica';
     ok $c->is_valid_to_buy, 'valid to buy.';
 
     $bet_params->{landing_company} = 'japan';
     $bet_params->{bet_type}        = 'CALLE';
     $bet_params->{barrier}         = 'S10P';
     $c                             = produce_contract($bet_params);
-    is $c->landing_company, 'japan', 'landing company is japan';
     ok %{$c->predefined_contracts}, 'has predefined_contracts for japan';
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->message_to_client, qr/Invalid expiry time/, 'throws error');
     note('sets predefined_contracts with valid expiry time.');
     my $expiry_epoch = $now->plus_time_interval('1h')->epoch;
-    $bet_params->{predefined_contracts} = {
-        $expiry_epoch => {
-            date_start         => $now->plus_time_interval('15m')->epoch,
-            available_barriers => ['100.010'],
-        }};
     delete $bet_params->{duration};
     $bet_params->{date_expiry} = $expiry_epoch;
     $bet_params->{date_start} = $bet_params->{date_pricing} = $now->plus_time_interval('15m1s');
@@ -80,38 +75,43 @@ subtest 'predefined_contracts' => sub {
         quote      => 100,
     });
     $c = produce_contract($bet_params);
+    $c->predefined_contracts({
+        $expiry_epoch => {
+            date_start         => $now->plus_time_interval('15m')->epoch,
+            available_barriers => ['100.010'],
+        }});
     ok $c->is_valid_to_buy, 'valid to buy';
-    $bet_params->{predefined_contracts} = {
+    $c = produce_contract($bet_params);
+    $c->predefined_contracts({
         $expiry_epoch => {
             available_barriers => ['100.010'],
             expired_barriers   => ['100.010'],
-        }};
-    $c = produce_contract($bet_params);
+        }});
     ok !$c->is_valid_to_buy, 'not valid to buy if barrier expired';
     like($c->primary_validation_error->message_to_client, qr/Invalid barrier/, 'throws error');
 
     $bet_params->{bet_type} = 'EXPIRYMISS';
     $bet_params->{high_barrier} = 101;
     $bet_params->{low_barrier} = 99;
-    $bet_params->{predefined_contracts} = {
+    $c = produce_contract($bet_params);
+    $c->predefined_contracts({
         $expiry_epoch => {
             available_barriers => [['99.100', '100.000']],
-        }};
-    $c = produce_contract($bet_params);
+        }});
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->message_to_client, qr/Invalid barrier/, 'throws error');
-    $bet_params->{predefined_contracts} = {
+    $c = produce_contract($bet_params);
+    $c->predefined_contracts({
         $expiry_epoch => {
             available_barriers => [['99.000', '101.000']],
-        }};
-    $c = produce_contract($bet_params);
+        }});
     ok $c->is_valid_to_buy, 'valid to buy';
-    $bet_params->{predefined_contracts} = {
+    $c = produce_contract($bet_params);
+    $c->predefined_contracts({
         $expiry_epoch => {
             available_barriers => [['99.000', '101.000']],
             expired_barriers => [['99.000', '101.000']],
-        }};
-    $c = produce_contract($bet_params);
+        }});
     ok !$c->is_valid_to_buy, 'not valid to buy if barrier expired';
     like($c->primary_validation_error->message_to_client, qr/Invalid barrier/, 'throws error');
 };
