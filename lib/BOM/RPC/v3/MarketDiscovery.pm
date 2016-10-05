@@ -12,7 +12,7 @@ use BOM::Market::Underlying;
 use BOM::Platform::Client;
 use BOM::Platform::Context qw (localize request);
 use BOM::Product::Contract::Offerings;
-use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
+use BOM::Platform::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::System::RedisReplicated;
 use Sereal::Encoder;
 use BOM::Platform::Runtime;

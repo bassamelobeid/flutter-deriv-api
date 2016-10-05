@@ -14,7 +14,7 @@ use BOM::Market::Underlying;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
-use BOM::Product::Offerings qw(get_offerings_with_filter);
+use BOM::Platform::Offerings qw(get_offerings_with_filter);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Format::Util::Numbers qw(roundnear);
