@@ -342,7 +342,7 @@ sub calculate_limits {
     $limits{max_turnover} = $client->get_limit_for_daily_turnover;
 
     my $rp    = $contract->risk_profile;
-    my @cl_rp = $rp->get_client_profiles($client->loginid);
+    my @cl_rp = $rp->get_client_profiles($client);
     if ($contract->is_spread) {
         # limits are calculated differently for spreads
         $limits{spread_bet_profit_limit} = $static_config->{risk_profile}{$rp->get_risk_profile(\@cl_rp)}{turnover}{$currency};
@@ -1654,7 +1654,7 @@ sub __validate_payout_limit {
     return if $contract->is_spread;
 
     my $rp    = $self->contract->risk_profile;
-    my @cl_rp = $rp->get_client_profiles($client->loginid);
+    my @cl_rp = $rp->get_client_profiles($client);
 
     # setups client specific payout and turnover limits, if any.
     if (@cl_rp) {

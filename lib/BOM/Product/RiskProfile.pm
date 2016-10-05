@@ -18,7 +18,7 @@ for (my $i = 0; $i < @{RISK_PROFILES()}; $i++) {
     $risk_profile_rank{RISK_PROFILES->[$i]} = $i;
 }
 
-has [qw(contract_category underlying expiry_type start_type currency barrier_category landing_company)] => (
+has [qw(contract_category underlying expiry_type start_type currency barrier_category)] => (
     is       => 'ro',
     required => 1,
 );
@@ -39,7 +39,6 @@ sub _build_contract_info {
         expiry_type       => $self->expiry_type,
         start_type        => $self->start_type,
         barrier_category  => $self->barrier_category,
-        landing_company   => $self->landing_company,
     };
 }
 
@@ -138,7 +137,7 @@ sub get_turnover_limit_parameters {
     ];
 }
 
-has custom_profiles => (
+has raw_custom_profiles => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -147,14 +146,25 @@ has custom_profiles => (
 my $product_profiles_txt      = '';
 my $product_profiles_compiled = {};
 
-sub _build_custom_profiles {
+sub _build_raw_custom_profiles {
     my $self = shift;
 
     my $ptr = \BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles;    # use a pointer to avoid copying
     $product_profiles_compiled = from_json($product_profiles_txt = $$ptr)                        # copy and compile
         unless $$ptr eq $product_profiles_txt;
 
-    my @profiles = grep { $self->_match_conditions($_) } values %$product_profiles_compiled;
+    return $product_profiles_compiled;
+}
+
+has custom_profiles => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_custom_profiles {
+    my $self = shift;
+
+    my @profiles = grep { $self->_match_conditions($_) } values %{$self->raw_custom_profiles};
 
     my $ul           = $self->underlying;
     my $risk_profile = $ul->risk_profile;
@@ -184,16 +194,34 @@ my $custom_limits_txt      = '';
 my $custom_limits_compiled = {};
 
 sub get_client_profiles {
-    my ($self, $loginid) = @_;
+    my ($self, $client) = @_;
 
-    if ($loginid) {
-        my $ptr = \BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles;    # use a pointer to avoid copying
-        $custom_limits_compiled = from_json($custom_limits_txt = $$ptr)                             # copy and compile
+    if ($client) {
+        my $loginid = $client->loginid;
+        my $ptr     = \BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles;    # use a pointer to avoid copying
+        $custom_limits_compiled = from_json($custom_limits_txt = $$ptr)                                 # copy and compile
             unless $$ptr eq $custom_limits_txt;
 
-        my $cl;
-        return grep { $self->_match_conditions($_) } values %$cl
-            if $cl = $custom_limits_compiled->{$loginid} and $cl = $cl->{custom_limits};
+        my @client_limits = do {
+            my @limits = ();
+            my $cl;
+            if ($cl = $custom_limits_compiled->{$loginid} and $cl = $cl->{custom_limits}) {
+                @limits = grep { $self->_match_conditions($_) } values %$cl;
+            }
+            @limits;
+        };
+
+        my @landing_company_limits = ();
+        my $lcn                    = $client->landing_company->short;
+        foreach my $custom (values %{$self->raw_custom_profiles}) {
+            my %copy = %$custom;
+            next unless exists $copy{landing_company};
+            next if $lcn ne $copy{landing_company};
+            delete $copy{landing_company};
+            push @landing_company_limits, $custom if $self->_match_conditions(\%copy);
+        }
+
+        return (@client_limits, @landing_company_limits);
     }
 
     return;
@@ -252,11 +280,11 @@ sub _match_conditions {
     foreach my $key (keys %$custom) {
         next if exists $_no_condition{$key};    # skip test
         $real_tests_performed = 1;
-        next if $custom->{$key} eq $ci->{$key};    # match: continue with next condition
-        return;                                    # no match
+        next if exists $ci->{$key} and $custom->{$key} eq $ci->{$key};    # match: continue with next condition
+        return;                                                           # no match
     }
 
-    return $real_tests_performed;                  # all conditions match
+    return $real_tests_performed;                                         # all conditions match
 }
 
 no Moose;

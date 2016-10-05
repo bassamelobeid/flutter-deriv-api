@@ -575,14 +575,8 @@ sub _build_risk_profile {
         start_type        => 'spot',
         currency          => $self->currency,
         barrier_category  => 'spread',
-        landing_company   => $self->landing_company,
     );
 }
-
-has landing_company => (
-    is       => 'ro',
-    required => 1,
-);
 
 no Moose;
 __PACKAGE__->meta->make_immutable;
