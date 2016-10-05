@@ -54,8 +54,15 @@ has [qw(id pricing_code display_name sentiment other_side_code payout_type payou
     default => undef,
 );
 
+# Check whether the contract is expired or not . It is expired only if it passes the expiry time time and has valid exit tick
 has is_expired => (
     is         => 'ro',
+    lazy_build => 1,
+);
+
+# Check whether the contract is settelable or not. To be able to settle, it need pass the settlement time and has valid exit tick
+has is_settleable => (
+    is         => 'rw',
     lazy_build => 1,
 );
 
@@ -117,7 +124,6 @@ sub _build_date_pricing {
     my $time = Time::HiRes::time();
     $self->_date_pricing_milliseconds($time);
     my $now = Date::Utility->new($time);
-
     return ($self->has_pricing_new and $self->pricing_new)
         ? $self->date_start
         : $now;
@@ -709,7 +715,6 @@ sub _build_opposite_contract {
 
     # Start by making a copy of the parameters we used to build this bet.
     my %opp_parameters = %{$self->build_parameters};
-
     # we still want to set for_sale for a forward_starting contracts
     $opp_parameters{for_sale} = 1;
     # delete traces of this contract were a forward starting contract before.
@@ -724,7 +729,7 @@ sub _build_opposite_contract {
             }
         }
         # We should be looking to move forward in time to a bet starting now.
-        $opp_parameters{date_start}  = $self->effective_start;
+        $opp_parameters{date_start}  = $self->date_pricing;
         $opp_parameters{pricing_new} = 1;
         # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
         # Currently, 'sell at market' button will appear when current spot == barrier when the duration
@@ -831,12 +836,36 @@ sub _build_longcode {
         ($self->currency, $payout, localize($self->underlying->display_name), $when_start, $when_end, @barriers));
 }
 
+=item is_after_settlement
+
+This check if the contract already passes the settlement time 
+
+For tick expiry contract, it can expires when a certain number of ticks is received or it already passes the max_tick_expiry_duration.
+For other contracts, it can expires when current time has past a pre-determined settelement time.
+
+=back
+
+=cut
+
+sub is_after_settlement {
+    my $self = shift;
+
+    if ($self->tick_expiry) {
+        return 1
+            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds));
+    } else {
+        return 1 if $self->get_time_to_settlement->seconds == 0;
+    }
+
+    return 0;
+}
+
 =item is_after_expiry
 
-We have two types of expiries:
-- Contracts can expire when a certain number of ticks is received.
-- Contracts can expire when current time has past a pre-determined expiry time.
+This check if the contract already passes the expiry times
 
+For tick expiry contract, there is no expiry time, so it will check again the exit tick
+For other contracts, it will check the remaining time of the contract to expiry.
 =back
 
 =cut
@@ -848,10 +877,10 @@ sub is_after_expiry {
         return 1
             if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds));
     } else {
-        return 1 if $self->get_time_to_settlement->seconds == 0;
-    }
 
-    return;
+        return 1 if $self->get_time_to_expiry->seconds == 0;
+    }
+    return 0;
 }
 
 sub may_settle_automatically {
@@ -1070,11 +1099,19 @@ sub is_valid_to_sell {
         return 0;
     }
 
-    if ($self->is_after_expiry) {
+    if ($self->is_after_settlement) {
         if (my ($ref, $hold_for_exit_tick) = $self->_validate_settlement_conditions) {
             $self->missing_market_data(1) if not $hold_for_exit_tick;
             $self->add_error($ref);
         }
+    } elsif ($self->is_after_expiry) {
+        $self->add_error({
+
+                message => 'waiting for settlement',
+                message_to_client =>
+                    localize('Please wait for contract settlement. The final settlement price may differ from the indicative price.'),
+        });
+
     } elsif (not $self->is_expired and not $self->opposite_contract->is_valid_to_buy($args)) {
         # Their errors are our errors, now!
         $self->add_error($self->opposite_contract->primary_validation_error);
@@ -1138,7 +1175,6 @@ sub _validate_settlement_conditions {
 
 sub _price_from_prob {
     my ($self, $prob) = @_;
-
     if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
         $self->price_calculator->value($self->value);
     } else {
@@ -2084,7 +2120,11 @@ sub _build_exit_tick {
             $exit_tick = $ticks_since_start[-1];
             $self->date_expiry(Date::Utility->new($exit_tick->epoch));
         }
-    } elsif ($self->expiry_daily) {
+    } elsif ($self->is_after_expiry and not $self->is_after_settlement) {
+        # After expiry and yet pass the settlement, use current tick at the date_expiry
+        # to determine the pre-settlement value. It might diff with actual settlement value
+        $exit_tick = $underlying->tick_at($self->date_expiry->epoch, {allow_inconsistent => 1});
+    } elsif ($self->expiry_daily or $self->date_expiry->is_same_as($self->calendar->closing_on($self->date_expiry))) {
         # Expiration based on daily OHLC
         $exit_tick = $underlying->closing_tick_on($self->date_expiry->date);
     } else {
@@ -2254,24 +2294,6 @@ sub _validate_input_parameters {
     my $epoch_start      = $self->date_start->epoch;
     my $epoch_settlement = $self->date_settlement->epoch;
 
-    if (    $self->for_sale
-        and defined $self->_date_pricing_milliseconds
-        and $self->_date_pricing_milliseconds > $epoch_expiry
-        and $self->_date_pricing_milliseconds < $epoch_settlement)
-    {
-        return {
-            message           => 'waiting for settlement',
-            message_to_client => localize('Please wait for contract settlement.'),
-        };
-    } elsif ($self->for_sale
-        and ($self->date_pricing->is_after($self->date_expiry) and $self->date_pricing->is_before($self->date_settlement)))
-    {
-        return {
-            message           => 'waiting for settlement',
-            message_to_client => localize('Please wait for contract settlement.'),
-        };
-    }
-
     if ($epoch_expiry == $epoch_start) {
         return {
             message           => 'Start and Expiry times are the same ' . "[start: " . $epoch_start . "] " . "[expiry: " . $epoch_expiry . "]",
@@ -2301,7 +2323,7 @@ sub _validate_input_parameters {
                 message_to_client => localize("Start time on forward-starting contracts must be more than 5 minutes from now."),
             };
         }
-    } elsif ($self->is_after_expiry) {
+    } elsif ($self->is_after_settlement) {
         return {
             message           => 'already expired contract',
             message_to_client => localize("Contract has already expired."),
