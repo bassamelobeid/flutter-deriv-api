@@ -567,7 +567,13 @@ sub set_settings {
                         code              => 'InternalServerError',
                         message_to_client => localize('Sorry, an error occurred while processing your account.')});
             }
-        } elsif (not defined $args->{email_consent}) {
+        } elsif (
+            grep {
+                $_ !~ /passthrough|set_settings|jp_settings|email_consent|residence/
+            } keys %$args
+            )
+        {
+            # we only allow these keys in virtual set settings any other key will result in permission error
             $err = BOM::RPC::v3::Utility::permission_error();
         }
     } else {
