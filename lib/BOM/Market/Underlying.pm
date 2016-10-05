@@ -298,6 +298,37 @@ sub spot {
     return $self->pipsized_value($self->spot_source->spot_quote);
 }
 
+#Daily ohlc from feed.ohlc_daily table can't be used, as there are computed based on GMT day.
+#In this case, daily ohlc need to be computed from feed.ohlc_hourly table, based on actual market open time
+sub ohlc_daily_open {
+    my $self = shift;
+
+    my $today    = Date::Utility->today;
+    my $calendar = $self->calendar;
+    my $trading_day =
+        ($calendar->trades_on($today))
+        ? $today
+        : $calendar->trade_date_after($today);
+
+    my $open  = $calendar->opening_on($trading_day);
+    my $close = $calendar->closing_on($trading_day);
+
+    if ($close->days_between($open) > 0) {
+        return $open->seconds_after_midnight;
+    }
+    return;
+}
+
+sub breaching_tick {
+    my ($self, %args) = @_;
+
+    $args{underlying}    = $self->symbol;
+    $args{system_symbol} = $self->system_symbol;
+    $args{pip_size}      = $self->pip_size;
+
+    return $self->feed_api->get_first_tick(%args);
+}
+
 ################################################
 ##### Calculated attributes       ##############
 ################################################
@@ -680,100 +711,6 @@ before 'calendar' => sub {
     $self->clear_calendar if ($self->_exchange_refreshed + 17 < time);
 };
 
-=head2 divisor
-
-Divisor
-
-=cut
-
-has divisor => (
-    is      => 'ro',
-    isa     => 'Num',
-    default => 1,
-);
-
-=head2 feed_license
-
-What does our license for the feed permit us to display to the client?
-
-Most of the time the license is take from the underlyings.yml
-
-Returns one of:
-
-* realtime: we can redistribute realtime data
-* delayed: we can redistribute only 15/20/30min delayed data
-* daily: we can redistribute only after market close
-* chartonly: we can draw chart only (but display no prices)
-* none: we cannot redistribute anything
-
-For clients subscribed to realtime feed for certain instruments,
-the client's cookie is checked and if applicable we return realtime.
-
-=cut
-
-sub feed_license {
-    my $self = shift;
-
-    my $feed_license = $self->_feed_license || $self->market->license;
-
-    if ($FORCE_REALTIME_FEED) {
-        $feed_license = 'realtime';
-    }
-
-    return $feed_license;
-}
-
-=head2 $self->last_licensed_display_epoch
-
-This returns timestamp after which we can't display ticks for the
-underlying to client due to feed license restrictions.
-
-=cut
-
-sub last_licensed_display_epoch {
-    my $self = shift;
-
-    my $lic  = $self->feed_license;
-    my $time = time;
-    if ($lic eq 'realtime') {
-        return $time;
-    } elsif ($lic eq 'delayed') {
-        return $time - 60 * $self->delay_amount;
-    } elsif ($lic eq 'daily') {
-        my $today  = Date::Utility->today;
-        my $closes = $self->calendar->closing_on($today);
-        if ($closes and $time >= $closes->epoch) {
-            $time = $closes->epoch;
-        } else {
-            my $opens = $self->calendar->opening_on($today);
-            $time =
-                ($opens and $opens->is_before($today))
-                ? $opens->epoch - 1
-                : $today->epoch - 1;
-        }
-        return $time;
-    } elsif ($lic eq 'chartonly') {
-        return 0;
-    } else {
-        die "don't know how to deal with '$lic' license of " . $self->symbol;
-    }
-}
-
-# End of builders.
-
-=head2 intraday_interval
-
-Return interval between available starts for forward starting contracts
-
-=cut
-
-has intraday_interval => (
-    is      => 'ro',
-    isa     => 'bom_time_interval',
-    default => '5m',
-    coerce  => 1,
-);
-
 =head2 rate_to_imply
 
 The general rule to determine which currency's rate should be implied are as below:
@@ -840,193 +777,7 @@ sub _build_rate_to_imply_from {
         : $self->quoted_currency_symbol;
 }
 
-=head2 dividend_rate_for
-
-Get the dividend rate for this underlying over a given time period (expressed in timeinyears.)
-
-=cut
-
-sub dividend_rate_for {
-    my ($self, $tiy) = @_;
-
-    return $self->_builder->build_dividend->dividend_rate_for($tiy);
-}
-
-=head2 interest_rate_for
-
-Get the interest rate for this underlying over a given time period (expressed in timeinyears.)
-
-=cut
-
-sub interest_rate_for {
-    my ($self, $tiy) = @_;
-
-    return $self->_builder->build_interest_rate->interest_rate_for($tiy);
-}
-
-sub get_discrete_dividend_for_period {
-    my ($self, $args) = @_;
-
-    return $self->_builder->build_dividend->get_discrete_dividend_for_period($args);
-}
-
-sub dividend_adjustments_for_period {
-    my ($self, $args) = @_;
-
-    return $self->_builder->build_dividend->dividend_adjustments_for_period($args);
-}
-
-sub uses_implied_rate {
-    my ($self, $which) = @_;
-
-    return
-        if $interest_rates_source eq 'market';
-    return unless $self->forward_feed;
-    return unless $self->market->name eq 'forex';    # only forex for now
-    return $self->rate_to_imply eq $which ? 1 : 0;
-}
-
-=head2 is_in_quiet_period
-
-Are we currently in a quiet traidng period for this underlying?
-
-Keeping this as a method will allow us to have long-lived objects
-
-=cut
-
-sub is_in_quiet_period {
-    my $self = shift;
-
-    my $quiet = 0;
-
-    # Cache the exchange objects for faster service
-    # The times should not reasonably change in a process-lifetime
-    state $exchanges = {
-        map {
-            $_ => Quant::Framework::TradingCalendar->new({
-                    symbol           => $_,
-                    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
-                    for_date         => $self->for_date
-                })
-        } (qw(NYSE FSE LSE TSE SES ASX))};
-
-    if ($self->market->name eq 'forex') {
-        # Pretty much everything trades in these big centers of activity
-        my @check_if_open = ('LSE', 'FSE', 'NYSE');
-
-        my @currencies = ($self->asset_symbol, $self->quoted_currency_symbol);
-
-        if (grep { $_ eq 'JPY' } @currencies) {
-
-            # The yen is also heavily traded in
-            # Australia, Singapore and Tokyo
-            push @check_if_open, ('ASX', 'SES', 'TSE');
-        } elsif (
-            grep {
-                $_ eq 'AUD'
-            } @currencies
-            )
-        {
-
-            # The Aussie dollar is also heavily traded in
-            # Australia and Singapore
-            push @check_if_open, ('ASX', 'SES');
-        }
-
-        # If any of the places we've listed have an exchange open, we are not in a quiet period.
-        my $when = $self->for_date // time;
-        $quiet = (any { $exchanges->{$_}->is_open_at($when) } @check_if_open) ? 0 : 1;
-    }
-
-    return $quiet;
-}
-
-=head1 FEED METHODS
-
-=cut
-
-=head2 next_tick_after
-
-Get next tick after a given time. What is the next tick on this underlying after the given epoch timestamp?
-    my $tick = $underlying->next_tick_after(1234567890);
-
-Return:
-    'Postgres::FeedDB::Spot::Tick' Object
-
-=head2 breaching_tick
-
-Get first tick in a provided period which breaches a barrier (either 'higher' or 'lower')
-
-Return:
-    'Postgres::FeedDB::Spot::Tick' Object or undef
-
-=head2 ticks_in_between_start_end
-
-Gets ticks for specified start_time, end_time as all ticks between start_time and end_time
-
-Returns,
-    ArrayRef[Postgres::FeedDB::Spot::Tick] on success
-    empty ArrayRef on failure
-
-=head2 ticks_in_between_start_limit
-
-Get ticks for specified start_time, limit as limit number of ticks from start_time
-
-Returns,
-    ArrayRef[Postgres::FeedDB::Spot::Tick] on success
-    empty ArrayRef on failure
-
-=head2 ticks_in_between_end_limit
-
-Get ticks for specified end_time, limit as limit number of ticks from end_time.
-
-Returns,
-    ArrayRef[Postgres::FeedDB::Spot::Tick] on success
-    empty ArrayRef on failure
-
-=head2 ohlc_between_start_end
-
-Gets ohlc for specified start_time, end_time, aggregation_period
-
-Returns,
-    ArrayRef[Postgres::FeedDB::Spot::OHLC] on success
-    empty ArrayRef on failure
-
-
-=cut
-
-=head2 ohlc_daily_open
-
-Daily ohlc from feed.ohlc_daily table can't be used, as there are computed based on GMT day.
-In this case, daily ohlc need to be computed from feed.ohlc_hourly table, based on actual market open time
-
-=cut
-
-sub ohlc_daily_open {
-    my $self = shift;
-
-    my $today    = Date::Utility->today;
-    my $calendar = $self->calendar;
-    my $trading_day =
-        ($calendar->trades_on($today))
-        ? $today
-        : $calendar->trade_date_after($today);
-
-    my $open  = $calendar->opening_on($trading_day);
-    my $close = $calendar->closing_on($trading_day);
-
-    if ($close->days_between($open) > 0) {
-        return $open->seconds_after_midnight;
-    }
-    return;
-}
-
-=head2 display_decimals
-
-How many decimals to display for this underlying
-
-=cut
-
+#How many decimals to display for this underlying
 has display_decimals => (
     is         => 'ro',
     isa        => 'Num',
@@ -1039,17 +790,7 @@ sub _build_display_decimals {
     return log(1 / $self->pip_size) / log(10);
 }
 
-sub breaching_tick {
-    my ($self, %args) = @_;
-
-    $args{underlying}    = $self->symbol;
-    $args{system_symbol} = $self->system_symbol;
-    $args{pip_size}      = $self->pip_size;
-
-    return $self->feed_api->get_first_tick(%args);
-}
-
-has [qw(spread_divisor)] => (
+has spread_divisor => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -1057,17 +798,6 @@ has [qw(spread_divisor)] => (
 sub _build_spread_divisor {
     my $self = shift;
     return $self->submarket->spread_divisor || $self->market->spread_divisor;
-}
-
-=head2 use_official_ohlc
-
-Should this underlying use official OHLC
-
-=cut
-
-sub use_official_ohlc {
-    my $self = shift;
-    return $self->submarket->official_ohlc;
 }
 
 =head2 corporate_actions
@@ -1181,25 +911,6 @@ sub _build_corporate_actions {
     return \@ordered_actions;
 }
 
-=head2 pipsized_value
-
-Resize a value to conform to the pip size of this underlying
-
-=cut
-
-sub pipsized_value {
-    my ($self, $value, $custom) = @_;
-
-    my ($pip_size, $display_decimals) =
-          ($custom)
-        ? ($custom, log(1 / $custom) / log(10))
-        : ($self->pip_size, $self->display_decimals);
-    if (defined $value and looks_like_number($value)) {
-        $value = sprintf '%.' . $display_decimals . 'f', $value;
-    }
-    return $value;
-}
-
 sub _build_applicable_corporate_actions {
     my $self = shift;
 
@@ -1207,12 +918,7 @@ sub _build_applicable_corporate_actions {
 
 }
 
-=head2 get_applicable_corporate_actions_for_period
-
-Returns an array of corporate actions within the given date, in the order that they will be executed.
-
-=cut
-
+#Returns an array of corporate actions within the given date, in the order that they will be executed.
 sub get_applicable_corporate_actions_for_period {
     my ($self, $args) = @_;
 
@@ -1275,19 +981,6 @@ sub _build_base_commission {
     my $self = shift;
 
     return $self->submarket->base_commission;
-}
-
-sub calculate_spread {
-    my ($self, $volatility) = @_;
-
-    die 'volatility is invalid ' . $self->symbol if $volatility < 0.0001;
-
-    my $spread  = $self->spot * sqrt($volatility**2 * 2 / (365 * 86400));
-    my $y       = POSIX::floor(log($spread) / log(10));
-    my $x       = $spread / (10**$y);
-    my $rounded = max(2, round($x / 2) * 2);
-
-    return $rounded * 10**$y;
 }
 
 ###
@@ -1365,6 +1058,210 @@ has inverted => (
     isa     => 'Bool',
     default => 0,
 );
+
+=head2 feed_license
+
+What does our license for the feed permit us to display to the client?
+
+Most of the time the license is take from the underlyings.yml
+
+Returns one of:
+
+* realtime: we can redistribute realtime data
+* delayed: we can redistribute only 15/20/30min delayed data
+* daily: we can redistribute only after market close
+* chartonly: we can draw chart only (but display no prices)
+* none: we cannot redistribute anything
+
+For clients subscribed to realtime feed for certain instruments,
+the client's cookie is checked and if applicable we return realtime.
+
+=cut
+
+sub feed_license {
+    my $self = shift;
+
+    my $feed_license = $self->_feed_license || $self->market->license;
+
+    if ($FORCE_REALTIME_FEED) {
+        $feed_license = 'realtime';
+    }
+
+    return $feed_license;
+}
+
+=head2 $self->last_licensed_display_epoch
+
+This returns timestamp after which we can't display ticks for the
+underlying to client due to feed license restrictions.
+
+=cut
+
+sub last_licensed_display_epoch {
+    my $self = shift;
+
+    my $lic  = $self->feed_license;
+    my $time = time;
+    if ($lic eq 'realtime') {
+        return $time;
+    } elsif ($lic eq 'delayed') {
+        return $time - 60 * $self->delay_amount;
+    } elsif ($lic eq 'daily') {
+        my $today  = Date::Utility->today;
+        my $closes = $self->calendar->closing_on($today);
+        if ($closes and $time >= $closes->epoch) {
+            $time = $closes->epoch;
+        } else {
+            my $opens = $self->calendar->opening_on($today);
+            $time =
+                ($opens and $opens->is_before($today))
+                ? $opens->epoch - 1
+                : $today->epoch - 1;
+        }
+        return $time;
+    } elsif ($lic eq 'chartonly') {
+        return 0;
+    } else {
+        die "don't know how to deal with '$lic' license of " . $self->symbol;
+    }
+}
+
+=head2 intraday_interval
+
+Return interval between available starts for forward starting contracts
+
+=cut
+
+has intraday_interval => (
+    is      => 'ro',
+    isa     => 'bom_time_interval',
+    default => '5m',
+    coerce  => 1,
+);
+
+#Get the dividend rate for this underlying over a given time period (expressed in timeinyears.)
+sub dividend_rate_for {
+    my ($self, $tiy) = @_;
+
+    return $self->_builder->build_dividend->dividend_rate_for($tiy);
+}
+
+#Get the interest rate for this underlying over a given time period (expressed in timeinyears.)
+sub interest_rate_for {
+    my ($self, $tiy) = @_;
+
+    return $self->_builder->build_interest_rate->interest_rate_for($tiy);
+}
+
+sub get_discrete_dividend_for_period {
+    my ($self, $args) = @_;
+
+    return $self->_builder->build_dividend->get_discrete_dividend_for_period($args);
+}
+
+sub dividend_adjustments_for_period {
+    my ($self, $args) = @_;
+
+    return $self->_builder->build_dividend->dividend_adjustments_for_period($args);
+}
+
+sub uses_implied_rate {
+    my ($self, $which) = @_;
+
+    return
+        if $interest_rates_source eq 'market';
+    return unless $self->forward_feed;
+    return unless $self->market->name eq 'forex';    # only forex for now
+    return $self->rate_to_imply eq $which ? 1 : 0;
+}
+
+=head2 is_in_quiet_period
+
+Are we currently in a quiet traidng period for this underlying?
+
+Keeping this as a method will allow us to have long-lived objects
+
+=cut
+
+sub is_in_quiet_period {
+    my $self = shift;
+
+    my $quiet = 0;
+
+    # Cache the exchange objects for faster service
+    # The times should not reasonably change in a process-lifetime
+    state $exchanges = {
+        map {
+            $_ => Quant::Framework::TradingCalendar->new({
+                    symbol           => $_,
+                    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
+                    for_date         => $self->for_date
+                })
+        } (qw(NYSE FSE LSE TSE SES ASX))};
+
+    if ($self->market->name eq 'forex') {
+        # Pretty much everything trades in these big centers of activity
+        my @check_if_open = ('LSE', 'FSE', 'NYSE');
+
+        my @currencies = ($self->asset_symbol, $self->quoted_currency_symbol);
+
+        if (grep { $_ eq 'JPY' } @currencies) {
+
+            # The yen is also heavily traded in
+            # Australia, Singapore and Tokyo
+            push @check_if_open, ('ASX', 'SES', 'TSE');
+        } elsif (
+            grep {
+                $_ eq 'AUD'
+            } @currencies
+            )
+        {
+
+            # The Aussie dollar is also heavily traded in
+            # Australia and Singapore
+            push @check_if_open, ('ASX', 'SES');
+        }
+
+        # If any of the places we've listed have an exchange open, we are not in a quiet period.
+        my $when = $self->for_date // time;
+        $quiet = (any { $exchanges->{$_}->is_open_at($when) } @check_if_open) ? 0 : 1;
+    }
+
+    return $quiet;
+}
+
+#Should this underlying use official OHLC
+sub use_official_ohlc {
+    my $self = shift;
+    return $self->submarket->official_ohlc;
+}
+
+#Resize a value to conform to the pip size of this underlying
+sub pipsized_value {
+    my ($self, $value, $custom) = @_;
+
+    my ($pip_size, $display_decimals) =
+          ($custom)
+        ? ($custom, log(1 / $custom) / log(10))
+        : ($self->pip_size, $self->display_decimals);
+    if (defined $value and looks_like_number($value)) {
+        $value = sprintf '%.' . $display_decimals . 'f', $value;
+    }
+    return $value;
+}
+
+sub calculate_spread {
+    my ($self, $volatility) = @_;
+
+    die 'volatility is invalid ' . $self->symbol if $volatility < 0.0001;
+
+    my $spread  = $self->spot * sqrt($volatility**2 * 2 / (365 * 86400));
+    my $y       = POSIX::floor(log($spread) / log(10));
+    my $x       = $spread / (10**$y);
+    my $rounded = max(2, round($x / 2) * 2);
+
+    return $rounded * 10**$y;
+}
 
 no Moose;
 
