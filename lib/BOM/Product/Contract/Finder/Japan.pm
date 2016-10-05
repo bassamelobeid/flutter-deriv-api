@@ -167,12 +167,27 @@ sub _predefined_trading_period {
                 calendar => $calendar
             });
 
-        # TTL: if minutes < 45 - seconds up to 45 mins, else - up to the end of the hour
+# Japan's intraday predefined trading window are as follow:
+# 2 hours and 15 min duration:
+# 00:00-02:00,01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00 21:45:00, 23:45-02:00,01:45-04:00, 03:45-06:00
+#
+# 5 hours and 15 min duration:
+# 00:45-06:00 ; 04:45-10:00 ; 08:45-14:00 ; 12:45-18:00
+#
+# Hence, we will generate the window at HH::45 (HH is the predefined trading hour) to include any new trading window and will also generate the trading window again at the next HH:00 to remove any expired trading window.
+#
+# TTL is the remaining seconds until the forthcoming HH:45 (if current minute is < 45) or the forthcoming HH:)) (if the current time is >= 45)
 
-        # For Japan, we start the trading period at 45min of the predefined trading hour.
-        # Hence, we need to generate new trading window when it pass 45 mins and we need to remove expired trading window
-        # at the end of predefined trading window which always happen at 00min.
-        # So the trading window will be created at 45min and also 00min of hours
+# So cache TTL is (in mins for comfort) :
+# hh:00 => ttl = 45 min
+# hh:03 => ttl = 42 min
+# hh:29 => ttl = 16 min
+# hh:44 => ttl = 1 min
+# hh:45 => ttl = 15 min
+# hh:54 => ttl = 6 min
+# hh:59 => ttl = 1 min
+# hh:00 => ttl = 45 min
+
         Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, ($now_minute < 45 ? 2700 : 3600) - $now_minute * 60 - $now->second);
     }
 
