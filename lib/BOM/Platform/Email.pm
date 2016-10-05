@@ -59,8 +59,8 @@ sub send_email {
 
     # DON'T send email on devbox except to RMG emails
     return 1
-        if (not BOM::System::Config::on_production()
-        and $email !~ /(?:binary|regentmarkets|betonmarkets)\.com$/);
+        if ((!BOM::System::Config::on_production()
+        and $email !~ /(?:binary|regentmarkets|betonmarkets)\.com$/) || $ENV{SKIP_EMAIL});
 
     my @toemails = split(/\s*\,\s*/, $email);
     foreach my $toemail (@toemails) {
