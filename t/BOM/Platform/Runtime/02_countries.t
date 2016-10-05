@@ -3,8 +3,7 @@
 use strict;
 use warnings;
 
-use Test::Most 0.22 (tests => 9);
-use Test::NoWarnings;
+use Test::Most 0.22 (tests => 8);
 use List::Util qw(first);
 use BOM::Platform::Runtime;
 use BOM::Platform::Countries;

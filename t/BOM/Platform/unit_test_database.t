@@ -1,8 +1,7 @@
 #!/etc/rmg/bin/perl
 use strict;
 use warnings;
-use Test::More $ENV{AUTHOR_TESTING} ? (tests => 9) : (skip_all => 'Author tests. Set AUTHOR_TESTING to run it.');
-use Test::NoWarnings;
+use Test::More $ENV{AUTHOR_TESTING} ? (tests => 8) : (skip_all => 'Author tests. Set AUTHOR_TESTING to run it.');
 use Test::Exception;
 use BOM::Database::Model::Account;
 use BOM::Database::Model::Constants;
