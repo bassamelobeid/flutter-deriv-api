@@ -343,9 +343,8 @@ sub _build_config {
     $default_dividend_rate = 0 if $self->symbol eq 'R_100' or $self->symbol eq 'R_75';
     $default_dividend_rate = 0 if $self->symbol eq 'R_50'  or $self->symbol eq 'R_25';
 
-    my $build_args = {underlying => $self->system_symbol};
-
-    $build_args->{invert_values} = 1 if $self->inverted;
+    my $spot = undef;
+    $spot = $self->spot_tick->quote if defined $self->spot_tick;
 
     return Quant::Framework::Utils::UnderlyingConfig->new({
         symbol                                => $self->symbol,
@@ -366,7 +365,7 @@ sub _build_config {
         default_dividend_rate                 => $default_dividend_rate,
         use_official_ohlc                     => $self->use_official_ohlc,
         pip_size                              => $self->pip_size,
-        spot                                  => $self->spot_tick->quote,
+        spot                                  => $spot,
     });
 }
 
