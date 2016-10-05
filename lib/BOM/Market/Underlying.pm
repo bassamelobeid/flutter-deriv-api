@@ -125,6 +125,20 @@ has exchange_name => (
     is         => 'ro',
 );
 
+#Indicate whether the seasonality trend of this underlying need to be shifted by Day Light Saving
+has 'uses_dst_shifted_seasonality' => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => 0,
+);
+
+#The number of pips in the expected bid-ask spread.  Presently hard-coded.
+# Assume 50 pips if it's not set in the YAML.
+has spot_spread_size => (
+    is => 'ro',
+    default => 50,
+);
+
 
 ################################################
 ##### Calculated attributes       ##############
@@ -228,6 +242,17 @@ sub _build_quoted_currency_symbol {
     return $symbol;
 }
 
+has spot_spread => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+#The bid-ask spread we see on this underlying.  Right now using hard-coded values.
+sub _build_spot_spread {
+    my $self = shift;
+
+    return $self->spot_spread_size * $self->pip_size;
+}
 
 ################################################
 ##### FeedDB access               ##############
@@ -303,7 +328,6 @@ sub spot {
 
 
 has [qw(
-        uses_dst_shifted_seasonality
         spot_spread
         spot_spread_size
         instrument_type
@@ -601,46 +625,6 @@ around BUILDARGS => sub {
     return $class->$orig($params_ref);
 };
 
-=head2 uses_dst_shifted_seasonality
-
-Indicate whether the seasonality trend of this underlying need to be shifted by Day Light Saving
-
-=cut
-
-has 'uses_dst_shifted_seasonality' => (
-    is      => 'ro',
-    isa     => 'Bool',
-    default => 0,
-);
-
-=head2 spot_spread_size
-
-The number of pips in the expected bid-ask spread.
-
-Presently hard-coded.
-
-
-=cut
-
-sub _build_spot_spread_size {
-
-    # Assume 50 pips if it's not set in the YAML.
-    return 50;
-}
-
-=head2 spot_spread
-
-The bid-ask spread we see on this underlying.
-
-Right now using hard-coded values.
-
-=cut
-
-sub _build_spot_spread {
-    my $self = shift;
-
-    return $self->spot_spread_size * $self->pip_size;
-}
 
 =head2 submarket
 
