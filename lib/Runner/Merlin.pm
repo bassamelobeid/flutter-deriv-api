@@ -3,7 +3,7 @@ package Runner::Merlin;
 use Moose;
 use lib qw(/home/git/regentmarkets/bom/t/BOM/Product);
 use Date::Utility;
-use Quant::Framework::Spot::Tick;
+use Postgres::FeedDB::Spot::Tick;
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw( produce_contract );
 use CSVParser::Merlin;
@@ -97,7 +97,7 @@ sub _calculate_results {
     foreach my $record (@{$parser->records}) {
         my $bet_args = _get_bet_args($record);
         next if _skip($record);
-        $bet_args->{current_tick} = Quant::Framework::Spot::Tick->new(
+        $bet_args->{current_tick} = Postgres::FeedDB::Spot::Tick->new(
             underlying => $bet_args->{underlying}->symbol,
             quote      => $bet_args->{current_spot},
             epoch      => $bet_args->{date_start}->epoch,

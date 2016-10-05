@@ -31,7 +31,7 @@ use BOM::MarketData::Fetcher::VolSurface;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 use BOM::Market::Underlying;
 use Try::Tiny;
-use Quant::Framework::Spot::Tick;
+use Postgres::FeedDB::Spot::Tick;
 use YAML::CacheLoader qw(LoadFile);
 
 sub max_number_of_uploadable_rows {
@@ -254,7 +254,7 @@ sub _build_bet {
      });
 
     $bet_args->{volsurface}   = $surface;
-    $bet_args->{current_tick} = Quant::Framework::Spot::Tick->new(
+    $bet_args->{current_tick} = Postgres::FeedDB::Spot::Tick->new(
         underlying => $bet_args->{underlying}->symbol,
         quote      => $bet_args->{current_spot},
         epoch      => $bet_args->{date_start}->epoch,
