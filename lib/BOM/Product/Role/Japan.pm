@@ -2,11 +2,13 @@ package BOM::Product::Role::Japan;
 
 use Moose::Role;
 
+use List::Util qw(first);
 use BOM::Platform::Context qw(localize);
 use BOM::Product::Offerings qw(get_contract_specifics);
 use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 
 my $landing_company = 'japan';
+
 =head2 predefined_contracts
 
 Some landing company requires script contract offerings in which we will have pre-set
@@ -23,7 +25,12 @@ sub _build_predefined_contracts {
     my $self = shift;
 
     my @contracts =
-        grep { $_->{contract_type} eq $self->code } @{available_contracts_for_symbol({symbol => $self->underlying->symbol})->{available}};
+        grep { $_->{contract_type} eq $self->code } @{
+        available_contracts_for_symbol({
+                symbol => $self->underlying->symbol,
+                date   => $self->underlying->for_date
+            }
+        )->{available}};
 
     # restructure contract information for easier processing
     my %info;
@@ -75,7 +82,7 @@ around _validate_start_and_expiry_date => sub {
     my $expiry_epoch        = $self->date_expiry->epoch;
     if (not $available_contracts->{$expiry_epoch}) {
         return {
-            message => 'Invalid contract expiry[' . $self->date_expiry->datetime . '] for japan at ' . $self->date_pricing->datetime . '.',
+            message           => 'Invalid contract expiry[' . $self->date_expiry->datetime . '] for japan at ' . $self->date_pricing->datetime . '.',
             message_to_client => localize('Invalid expiry time.'),
         };
     }
@@ -139,7 +146,8 @@ sub _subvalidate_double_barrier {
         }
 
         my $matched_barrier =
-            first { abs($self->low_barrier->as_absolute - $_->[0]) < $epsilon and abs($self->high_barrier->as_absolute - $_->[1]) < $epsilon } @filtered;
+            first { abs($self->low_barrier->as_absolute - $_->[0]) < $epsilon and abs($self->high_barrier->as_absolute - $_->[1]) < $epsilon }
+        @filtered;
         unless ($matched_barrier) {
             return {
                 message => 'Invalid barriers['
