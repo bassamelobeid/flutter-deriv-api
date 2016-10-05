@@ -41,7 +41,7 @@ sub _build_underlying {
 
 has basis_tick => (
     is       => 'ro',
-    isa      => 'Quant::Framework::Spot::Tick',
+    isa      => 'Postgres::FeedDB::Spot::Tick',
     required => 1,
 );
 

@@ -9,7 +9,7 @@ use Format::Util::Numbers qw(roundnear);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Contract::Strike;
 use BOM::Market::Underlying;
-use Quant::Framework::Spot::Tick;
+use Postgres::FeedDB::Spot::Tick;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -74,7 +74,7 @@ foreach my $code (@codes) {
     }
     $bet_args{payout}     = 250;
     $bet_args{currency}   = $currency;
-    $bet_args{entry_tick} = $bet_args{current_tick} = Quant::Framework::Spot::Tick->new({
+    $bet_args{entry_tick} = $bet_args{current_tick} = Postgres::FeedDB::Spot::Tick->new({
         symbol => $underlying->symbol,
         epoch  => $start_time->epoch + 300,
         quote  => 1.6084
