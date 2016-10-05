@@ -27,7 +27,6 @@ use BOM::Market::Underlying;
 use BOM::Market::Info;
 use Postgres::FeedDB::Spot;
 
-
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -54,10 +53,6 @@ subtest 'what happens to an undefined symbol name' => sub {
     my $symbol_undefined = BOM::Market::Underlying->new('an_undefined_symbol');
     is($symbol_undefined->display_name,            'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct display_name');
 
-    warning_like {
-        is($symbol_undefined->market->name, 'config', 'an undefined symbol has correct market');
-    }
-    [qr/^Unknown symbol/], "Expected warning is thrown";
     is($symbol_undefined->instrument_type,  'config',   'an undefined symbol has correct instrument_type');
     is($symbol_undefined->feed_license,     'realtime', 'an undefined symbol has correct feed_license');
     is($symbol_undefined->display_decimals, 4,          'an undefined symbol has correct display_decimals');
@@ -194,7 +189,7 @@ subtest 'all attributes on a variety of underlyings' => sub {
                 my $ass = $underlying->asset_symbol;
                 like($symbol, qr/^FUT$ass/, 'Future might have the correct asset');
             } elsif ($special_market) {
-                is($underlying->asset_symbol, '', 'special markets are not based on assets');
+                is($underlying->asset_symbol, 'HSI', 'special markets are not based on assets');
             } else {
                 is($underlying->asset_symbol, $symbol, 'Asset is also the same');
             }
@@ -216,7 +211,6 @@ subtest 'all attributes on a variety of underlyings' => sub {
         cmp_ok($underlying->display_decimals, '>=', 1,  'at least 1 decimal');
         cmp_ok($underlying->display_decimals, '<=', 12, '   but no more than 7');
 
-        is(ref $underlying->comment,       '', 'Comment is some kind of human readable thing');
         is(ref $underlying->display_name,  '', 'Display name is some kind of human readable thing');
         is(ref $underlying->exchange_name, '', 'Exchange name is some kind of human readable thing');
 
@@ -410,17 +404,6 @@ subtest 'all methods on a selection of underlyings' => sub {
         ticks => 1
     };
 
-    warnings_like {
-        $FRW_frxEURUSD_ON->market->name;
-        $FRW_frxEURUSD_TN->market->name;
-        $FRW_frxEURUSD_1W->market->name;
-        $FRW_frxUSDEUR_ON->market->name;
-        $FRW_frxUSDEUR_TN->market->name;
-        $FRW_frxUSDEUR_1W->market->name;
-    } 
-    [qr/^Unknown symbol/, qr/^Unknown symbol/, qr/^Unknown symbol/, 
-        qr/^Unknown symbol/, qr/^Unknown symbol/, qr/^Unknown symbol/], "Expected warning is thrown";
-
     $USDEUR->set_combined_realtime($fake_forward_data);
     lives_ok {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -480,7 +463,6 @@ subtest 'all methods on a selection of underlyings' => sub {
     }
     'Preparing ohlc';
 
-    is($nonsense->market->name, 'nonsense',      'Nonsense symbols do not have markets');
     is($EURUSD->system_symbol,  $EURUSD->symbol, 'System symbol and symbol are same for non-inverted');
     isnt($USDEUR->system_symbol, $USDEUR->symbol, ' and different for inverted');
 

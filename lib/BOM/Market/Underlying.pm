@@ -122,7 +122,8 @@ has 'symbol' => (
 );
 
 has exchange_name => (
-    is         => 'ro',
+    is      => 'ro',
+    default => 'FOREX',
 );
 
 #Indicate whether the seasonality trend of this underlying need to be shifted by Day Light Saving
@@ -135,10 +136,9 @@ has 'uses_dst_shifted_seasonality' => (
 #The number of pips in the expected bid-ask spread.  Presently hard-coded.
 # Assume 50 pips if it's not set in the YAML.
 has spot_spread_size => (
-    is => 'ro',
+    is      => 'ro',
     default => 50,
 );
-
 
 ################################################
 ##### Calculated attributes       ##############
@@ -192,7 +192,6 @@ sub _build_asset_symbol {
 
     return $symbol;
 }
-
 
 has volatility_surface_type => (
     is         => 'ro',
@@ -320,16 +319,7 @@ sub spot {
     return $self->pipsized_value($self->spot_source->spot_quote);
 }
 
-
-
-
-
-
-
-
 has [qw(
-        spot_spread
-        spot_spread_size
         instrument_type
         )
     ] => (
@@ -338,10 +328,10 @@ has [qw(
     );
 
 has 'market' => (
-    is         => 'ro',
-    isa        => 'financial_market',
-    lazy_build => 1,
-    coerce     => 1,
+    is      => 'ro',
+    isa     => 'financial_market',
+    coerce  => 1,
+    default => 'config',
 );
 
 has _feed_license => (
@@ -625,7 +615,6 @@ around BUILDARGS => sub {
     return $class->$orig($params_ref);
 };
 
-
 =head2 submarket
 
 Returns the SubMarket on which this underlying can be found.
@@ -897,7 +886,6 @@ sub _build_asset {
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     });
 }
-
 
 # End of builders.
 
