@@ -164,7 +164,7 @@ The reference key to landing company specific offerings.
 
 has legal_allowed_offerings => (
     is      => 'ro',
-    default => 'common_offerings',
+    default => 'common',
 );
 
 =head2 allows_payment_agents
