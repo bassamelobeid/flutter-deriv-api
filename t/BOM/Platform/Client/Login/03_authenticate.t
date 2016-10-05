@@ -3,9 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More (tests => 4);
+use Test::More (tests => 3);
 use Test::Exception;
-use Test::NoWarnings;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::System::Password;
 use BOM::Platform::Client;

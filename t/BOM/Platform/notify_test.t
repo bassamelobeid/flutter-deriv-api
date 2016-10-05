@@ -2,8 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 7;
-use Test::NoWarnings;
+use Test::More tests => 5;
 use Test::Exception;
 use BOM::Database::Model::Account;
 use BOM::Database::Model::DataCollection::QuantsBetVariables;
@@ -411,4 +410,3 @@ subtest 'survived notify payments', sub {
     });
 };
 
-Test::NoWarnings::had_no_warnings;
