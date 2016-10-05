@@ -8,7 +8,7 @@ use JSON qw(decode_json);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
-use Quant::Framework::Spot::OHLC;
+use Postgres::FeedDB::Spot::OHLC;
 use BOM::Market::Underlying;
 use Date::Utility;
 
@@ -128,7 +128,7 @@ subtest 'Daily OHLC' => sub {
     subtest 'ohlc datatype' => sub {
         foreach my $ohlc (@$ohlcs) {
             my $date = Date::Utility->new({epoch => $ohlc->epoch});
-            isa_ok $ohlc, 'Quant::Framework::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $ohlc, 'Postgres::FeedDB::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 
@@ -176,7 +176,7 @@ subtest 'Weekly OHLC' => sub {
     subtest 'ohlc datatype' => sub {
         foreach my $ohlc (@$ohlcs) {
             my $date = Date::Utility->new({epoch => $ohlc->epoch});
-            isa_ok $ohlc, 'Quant::Framework::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $ohlc, 'Postgres::FeedDB::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 
@@ -225,7 +225,7 @@ subtest 'Monthly OHLC' => sub {
     subtest 'ohlc datatype' => sub {
         foreach my $ohlc (@$ohlcs) {
             my $date = Date::Utility->new({epoch => $ohlc->epoch});
-            isa_ok $ohlc, 'Quant::Framework::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $ohlc, 'Postgres::FeedDB::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 
@@ -267,7 +267,7 @@ subtest '2-Week OHLC' => sub {
     subtest 'ohlc datatype' => sub {
         foreach my $ohlc (@$ohlcs) {
             my $date = Date::Utility->new({epoch => $ohlc->epoch});
-            isa_ok $ohlc, 'Quant::Framework::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $ohlc, 'Postgres::FeedDB::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 
@@ -312,7 +312,7 @@ subtest 'Hourly OHLC' => sub {
     subtest 'ohlc datatype' => sub {
         foreach my $ohlc (@$ohlcs) {
             my $date = Date::Utility->new({epoch => $ohlc->epoch});
-            isa_ok $ohlc, 'Quant::Framework::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $ohlc, 'Postgres::FeedDB::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 
@@ -369,7 +369,7 @@ subtest 'Daily OHLC with limit for charting' => sub {
     subtest 'ohlc datatype' => sub {
         foreach my $ohlc (@$ohlcs) {
             my $date = Date::Utility->new({epoch => $ohlc->epoch});
-            isa_ok $ohlc, 'Quant::Framework::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $ohlc, 'Postgres::FeedDB::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 
@@ -422,7 +422,7 @@ subtest 'Weekly OHLC with limit for charting' => sub {
     subtest 'ohlc datatype' => sub {
         foreach my $ohlc (@$ohlcs) {
             my $date = Date::Utility->new({epoch => $ohlc->epoch});
-            isa_ok $ohlc, 'Quant::Framework::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $ohlc, 'Postgres::FeedDB::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 
@@ -470,7 +470,7 @@ subtest 'Monthly OHLC with limit for charting' => sub {
     subtest 'ohlc datatype' => sub {
         foreach my $ohlc (@$ohlcs) {
             my $date = Date::Utility->new({epoch => $ohlc->epoch});
-            isa_ok $ohlc, 'Quant::Framework::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $ohlc, 'Postgres::FeedDB::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 
@@ -509,7 +509,7 @@ subtest '2-Week OHLC with limit for charting' => sub {
     subtest 'ohlc datatype' => sub {
         foreach my $ohlc (@$ohlcs) {
             my $date = Date::Utility->new({epoch => $ohlc->epoch});
-            isa_ok $ohlc, 'Quant::Framework::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $ohlc, 'Postgres::FeedDB::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 
@@ -554,7 +554,7 @@ subtest 'Hourly OHLC with limit for charting' => sub {
     subtest 'ohlc datatype' => sub {
         foreach my $ohlc (@$ohlcs) {
             my $date = Date::Utility->new({epoch => $ohlc->epoch});
-            isa_ok $ohlc, 'Quant::Framework::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $ohlc, 'Postgres::FeedDB::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 

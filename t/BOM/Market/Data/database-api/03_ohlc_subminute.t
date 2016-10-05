@@ -8,14 +8,14 @@ use Test::Exception;
 use Test::Warn;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Database::FeedDB;
+use Postgres::FeedDB;
 
-use Quant::Framework::Spot::OHLC;
+use Postgres::FeedDB::Spot::OHLC;
 use DateTime;
 use Date::Utility;
 
-use Quant::Framework::Spot::DatabaseAPI;
-my $dbh = BOM::Database::FeedDB::read_dbh;
+use Postgres::FeedDB::Spot::DatabaseAPI;
+my $dbh = Postgres::FeedDB::read_dbh;
 $dbh->{RaiseError} = 1;
 
 subtest 'prepare ticks' => sub {
@@ -151,7 +151,7 @@ subtest 'prepare ticks' => sub {
 };
 
 subtest '30s OHLC Fetch - Start-End' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh );
+    my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh );
 
     my $ohlcs = $api->ohlc_start_end({
         start_time         => '2012-07-01 10:00:00',
@@ -164,7 +164,7 @@ subtest '30s OHLC Fetch - Start-End' => sub {
     subtest 'ohlc datatype' => sub {
         foreach my $ohlc (@$ohlcs) {
             my $date = Date::Utility->new({epoch => $ohlc->epoch});
-            isa_ok $ohlc, 'Quant::Framework::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $ohlc, 'Postgres::FeedDB::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 
@@ -218,7 +218,7 @@ subtest '30s OHLC Fetch - Start-End' => sub {
 };
 
 subtest '30s OHLC Fetch - Start-End - Narrower' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh );
+    my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh );
 
     my $start_time = '2012-07-01 10:00:00';
     my $end_time   = '2012-07-01 10:01:00';
@@ -262,7 +262,7 @@ subtest '30s OHLC Fetch - Start-End - Narrower' => sub {
 };
 
 subtest '30s OHLC Fetch - Start-End - Way off mark' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh );
+    my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh );
 
     my $ohlcs = $api->ohlc_start_end({
         start_time         => '2012-03-15 00:00:00',
@@ -274,7 +274,7 @@ subtest '30s OHLC Fetch - Start-End - Way off mark' => sub {
 };
 
 subtest '30s OHLC Fetch - Start-End - Beserk User' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh );
+    my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh );
 
     throws_ok {
         warning_like {
