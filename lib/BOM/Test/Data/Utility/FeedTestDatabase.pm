@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use MooseX::Singleton;
-use BOM::Platform::Runtime;
 use Postgres::FeedDB;
 use Postgres::FeedDB::Spot::Tick;
 use Postgres::FeedDB::Spot::OHLC;
