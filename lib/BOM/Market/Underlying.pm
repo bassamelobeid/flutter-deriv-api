@@ -171,11 +171,9 @@ has spot_source => (
 sub _build_spot_source {
     my $self = shift;
 
-    #use system_symbol because we always need spot and sometimes underlying is created using inverted 
-    #symbol name in which case spot will be undef
     return Postgres::FeedDB::Spot->new(
         for_date          => $self->for_date,
-        symbol            => $self->system_symbol,
+        symbol            => $self->symbol,
         calendar          => $self->calendar,
         feed_api          => $self->feed_api,
         use_official_ohlc => $self->use_official_ohlc,
@@ -192,6 +190,7 @@ has 'feed_api' => (
         ohlc_between_start_end       => 'ohlc_start_end',
         next_tick_after              => 'tick_after',
         get_high_low_for_period      => 'get_high_low_for_period',
+        get_ohlc_data_for_period     => 'get_ohlc_data_for_period',
     },
     lazy_build => 1,
 );
