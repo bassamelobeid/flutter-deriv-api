@@ -8,6 +8,7 @@ use List::Util qw( first );
 use Time::Duration::Concise;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 use YAML::XS qw(LoadFile);
+use Try::Tiny;
 
 use Postgres::FeedDB::Spot::Tick;
 
@@ -16,6 +17,8 @@ use BOM::Product::ContractFactory::Parser qw(
     shortcode_to_parameters
     financial_market_bet_to_parameters
 );
+
+require UNIVERSAL::require;
 
 use base qw( Exporter );
 our @EXPORT_OK = qw( produce_contract make_similar_contract simple_contract_info );
@@ -127,6 +130,12 @@ sub produce_contract {
             if (not($input_params{underlying}->for_date and $input_params{underlying}->for_date->is_same_as($pricing)));
     }
 
+    # load it first
+    my $landing_company = delete $input_params{landing_company} // 'costarica';
+    my $role            = 'BOM::Product::Role::' . ucfirst lc $landing_company;
+    my $loaded          = try { $role->require } || 0;
+    $input_params{role} = $role if $loaded;
+
     my $contract_obj;
     if ($input_params{category} eq 'spreads') {
         $input_params{date_start} = Date::Utility->new if not $input_params{date_start};
@@ -235,11 +244,8 @@ sub produce_contract {
         $contract_obj = $contract_class->new(\%input_params);
     }
 
-    my $landing_company = delete $input_params{landing_company} // 'costarica';
-    if ($landing_company eq 'japan' or $landing_company eq 'japan-virtual') {
-        require BOM::Product::Role::Japan;
-        BOM::Product::Role::Japan->meta->apply($contract_obj);
-    }
+    # apply it here.
+    $role->meta->apply($contract_obj) if $loaded;
 
     return $contract_obj;
 }

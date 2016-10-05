@@ -2,6 +2,8 @@ package BOM::Product::Contract;
 
 use Moose;
 
+require UNIVERSAL::require;
+
 use MooseX::Role::Validatable::Error;
 use Math::Function::Interpolator;
 use Time::HiRes qw(time);
@@ -37,7 +39,6 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Contract::Category;
 use BOM::Product::RiskProfile;
 use BOM::Product::Types;
-use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 use BOM::Product::Offerings qw(get_contract_specifics);
 
 # require Pricing:: modules to avoid circular dependency problems.
@@ -747,8 +748,10 @@ sub _build_opposite_contract {
     }
 
     my $opp_contract = $self->_produce_contract_ref->(\%opp_parameters);
-    if ($self->does('BOM::Product::Role::Japan')) {
-        BOM::Product::Role::Japan->meta->apply($opp_contract);
+
+    if (my $role = $opp_parameters{role}) {
+        $role->require;
+        $role->meta->apply($opp_contract);
     }
 
     return $opp_contract;
