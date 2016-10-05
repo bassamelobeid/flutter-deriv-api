@@ -8,7 +8,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Model::Account;
 use BOM::Database::Model::FinancialMarketBet;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use Quant::Framework::Spot::Tick;
+use Postgres::FeedDB::Spot::Tick;
 use BOM::Database::Helper::FinancialMarketBet;
 
 use BOM::Platform::Client;
@@ -101,7 +101,7 @@ my $tick_params = {
     quote  => 100
 };
 
-my $tick = Quant::Framework::Spot::Tick->new($tick_params);
+my $tick = Postgres::FeedDB::Spot::Tick->new($tick_params);
 $p->{date_pricing} = $start_time;
 $p->{current_tick} = $tick;
 $contract          = produce_contract($p);
@@ -123,7 +123,7 @@ my $tick_params_2 = {
     quote  => 100
 };
 
-my $tick_2 = Quant::Framework::Spot::Tick->new($tick_params_2);
+my $tick_2 = Postgres::FeedDB::Spot::Tick->new($tick_params_2);
 $p_2->{date_pricing} = $start_time_2;
 $p_2->{current_tick} = $tick_2;
 $contract_2          = produce_contract($p_2);
@@ -144,7 +144,7 @@ my $tick_params_3 = {
     quote  => 100
 };
 
-my $tick_3 = Quant::Framework::Spot::Tick->new($tick_params_3);
+my $tick_3 = Postgres::FeedDB::Spot::Tick->new($tick_params_3);
 $p_3->{date_pricing} = $start_time_3;
 $p_3->{current_tick} = $tick_3;
 $contract_3          = produce_contract($p_3);
@@ -165,7 +165,7 @@ my $tick_params_4 = {
     quote  => 100
 };
 
-my $tick_4 = Quant::Framework::Spot::Tick->new($tick_params_4);
+my $tick_4 = Postgres::FeedDB::Spot::Tick->new($tick_params_4);
 $p_4->{date_pricing} = $start_time_4;
 $p_4->{current_tick} = $tick_4;
 $contract_4          = produce_contract($p_4);
@@ -220,7 +220,7 @@ my $tick_params_5 = {
     epoch  => $start_time_5,
     quote  => 100
 };
-my $tick_5 = Quant::Framework::Spot::Tick->new($tick_params_5);
+my $tick_5 = Postgres::FeedDB::Spot::Tick->new($tick_params_5);
 $p_5->{date_pricing} = $start_time_5;
 $p_5->{current_tick} = $tick_5;
 $p_5->{pricing_vol}  = 0.151867027083599;
@@ -250,7 +250,7 @@ my $tick_params_6 = {
     quote  => 100
 };
 
-my $tick_6 = Quant::Framework::Spot::Tick->new($tick_params_6);
+my $tick_6 = Postgres::FeedDB::Spot::Tick->new($tick_params_6);
 $p_6->{date_pricing} = $start_time_6;
 $p_6->{current_tick} = $tick_6;
 $contract_6          = produce_contract($p_6);

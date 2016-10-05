@@ -3,12 +3,12 @@
 use Test::Most (tests => 2);
 use Test::FailWarnings;
 
-use Quant::Framework::Spot::Tick;
+use Postgres::FeedDB::Spot::Tick;
 use BOM::Product::Contract::Strike::Digit;
 
 subtest 'construction' => sub {
     my $test_symbol = 'frxUSDJPY';
-    my $basis_tick  = Quant::Framework::Spot::Tick->new(
+    my $basis_tick  = Postgres::FeedDB::Spot::Tick->new(
         epoch  => time,
         quote  => 100,
         symbol => $test_symbol,
@@ -61,7 +61,7 @@ subtest 'construction' => sub {
 
 subtest 'some digits' => sub {
     my $test_symbol = 'frxUSDJPY';
-    my $basis_tick  = Quant::Framework::Spot::Tick->new(
+    my $basis_tick  = Postgres::FeedDB::Spot::Tick->new(
         epoch  => time,
         quote  => 100,
         symbol => $test_symbol,

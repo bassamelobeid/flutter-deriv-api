@@ -101,7 +101,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => Date::Utility->new($date_pricing),
     });
 
-my $current_tick = Quant::Framework::Spot::Tick->new({
+my $current_tick = Postgres::FeedDB::Spot::Tick->new({
     underlying => 'frxUSDJPY',
     epoch      => 1352344145,
     quote      => 76,
