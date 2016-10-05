@@ -5,8 +5,8 @@ use Moose;
 use BOM::Platform::Runtime;
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Market::Underlying;
-use BOM::Market::Registry;
-use BOM::Market::SubMarket::Registry;
+use Finance::Asset::Market::Registry;
+use Finance::Asset::SubMarket::Registry;
 use BOM::System::Config;
 
 use JSON qw(from_json);
@@ -209,14 +209,14 @@ sub get_current_profile_definitions {
         ($currency, $landing_company) = ('USD', 'costarica');
     }
 
-    my @markets = map { BOM::Market::Registry->get($_) } get_offerings_with_filter('market', {landing_company => $landing_company});
+    my @markets = map { Finance::Asset::Market::Registry->get($_) } get_offerings_with_filter('market', {landing_company => $landing_company});
     my $limit_ref = BOM::System::Config::quants->{risk_profile};
 
     my %limits;
     foreach my $market (@markets) {
         my @submarket_list =
             grep { $_->risk_profile }
-            map { BOM::Market::SubMarket::Registry->get($_) } get_offerings_with_filter('submarket', {market => $market->name});
+            map { Finance::Asset::SubMarket::Registry->get($_) } get_offerings_with_filter('submarket', {market => $market->name});
         if (@submarket_list) {
             my @list = map { {
                     name           => $_->display_name,

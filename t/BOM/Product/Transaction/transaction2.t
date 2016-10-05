@@ -717,7 +717,7 @@ subtest 'spreads', sub {
 
         local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $now          = time;
-        my $current_tick = Quant::Framework::Spot::Tick->new({
+        my $current_tick = Postgres::FeedDB::Spot::Tick->new({
             underlying => 'R_100',
             epoch      => $now,
             quote      => 100,
