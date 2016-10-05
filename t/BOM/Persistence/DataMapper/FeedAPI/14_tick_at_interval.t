@@ -9,8 +9,8 @@ use Test::Warn;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-use BOM::Database::FeedDB;
-use Quant::Framework::Spot::DatabaseAPI;
+use Postgres::FeedDB;
+use Postgres::FeedDB::Spot::DatabaseAPI;
 use DateTime;
 use Date::Utility;
 
@@ -119,10 +119,10 @@ subtest 'Prepare ticks' => sub {
     }
 };
 
-my $dbh = BOM::Database::FeedDB::read_dbh;
+my $dbh = Postgres::FeedDB::read_dbh;
 $dbh->{RaiseError} = 1;
 
-my $api = Quant::Framework::Spot::DatabaseAPI->new(
+my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(
     underlying => 'frxUSDJPY',
     db_handle  => $dbh
 );
