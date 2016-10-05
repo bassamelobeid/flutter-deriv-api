@@ -136,9 +136,10 @@ subtest 'tick expiry contract settlement' => sub {
     $bet_params->{duration}     = '5t';
     my $c = produce_contract($bet_params);
     ok $c->tick_expiry, 'tick expiry contract';
-    ok !$c->is_expired,       'not expired';
-    ok !$c->exit_tick,        'no exit tick';
-    ok !$c->is_after_expiry,  'not after expiry';
+    ok !$c->is_expired, 'not expired';
+    ok !$c->exit_tick, 'no exit tick';
+    ok !$c->is_after_expiry, 'not after expiry';
+    ok !$c->is_after_settlement, 'not after settlement';
     ok !$c->is_valid_to_sell, 'not valid to sell';
     like($c->primary_validation_error->message, qr/resale of tick expiry contract/, 'throws error');
 
@@ -146,8 +147,9 @@ subtest 'tick expiry contract settlement' => sub {
     $c = produce_contract($bet_params);
     ok $c->tick_expiry, 'tick expiry contract';
     ok !$c->is_expired, 'not expired';
-    ok !$c->exit_tick,  'no exit tick';
+    ok !$c->exit_tick, 'no exit tick';
     ok $c->is_after_expiry, 'is after expiry';
+    ok $c->is_after_settlement, 'is after settlement';
     ok !$c->is_valid_to_sell, 'not valid to sell';
     like($c->primary_validation_error->message, qr/exit tick undefined after 5 minutes of contract start/, 'throws error');
 
@@ -163,6 +165,8 @@ subtest 'tick expiry contract settlement' => sub {
     $c = produce_contract($bet_params);
     ok $c->tick_expiry,      'tick expiry contract';
     ok $c->is_expired,       'expired';
+    ok $c->is_after_expiry,  'is after expiry';
+    ok $c->is_after_settlement, 'is after settlement';
     ok $c->exit_tick,        'has exit tick';
     ok $c->is_valid_to_sell, 'valid to sell';
 };
@@ -191,7 +195,7 @@ subtest 'intraday duration contract settlement' => sub {
 
     create_ticks([100, $now->epoch - 1, 'R_100']);
     $c = produce_contract($bet_params);
-    ok $c->is_after_expiry, 'after expiry';
+    ok $c->is_after_settlement, 'after expiry';
     ok !$c->entry_tick,       'no entry tick';
     ok !$c->is_valid_to_sell, 'not valid to sell';
     ok $c->missing_market_data, 'missing market data if entry tick is undef after expiry';
@@ -200,8 +204,10 @@ subtest 'intraday duration contract settlement' => sub {
     create_ticks([101, $now->epoch + 1, 'R_100']);
     $c = produce_contract($bet_params);
     ok $c->is_after_expiry, 'after expiry';
-    ok !$c->exit_tick,           'no exit tick';
-    ok !$c->is_valid_to_sell,    'not valid to sell';
+    ok !$c->is_expired, 'is not expired as no exit tick';
+    ok $c->is_after_settlement, 'after settlement';
+    ok !$c->exit_tick,        'no exit tick';
+    ok !$c->is_valid_to_sell, 'not valid to sell';
     ok !$c->missing_market_data, 'no missing market data while waiting for exit tick after expiry';
     like($c->primary_validation_error->message, qr/exit tick is undefined/, 'throws error');
 };
