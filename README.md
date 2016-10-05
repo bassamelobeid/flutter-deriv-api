@@ -2,7 +2,7 @@
 
 Code that pulls market data from third party systems (Bloomberg, ForexFactory) into our system.
 
-1. bin/bom_updateohlc.pl <br />
+(1) bin/bom_updateohlc.pl
 
 A script runs BOM::MarketDataAutoUpdater::OHLC to update indices' official daily open, high , low and close value on the db file which will then be populated to feed.ohlc_daily db table. This script also do some sanity check of ohlc updated to the db file.
 
@@ -15,9 +15,9 @@ Source: Bloomberg Data License
 
 Package depedency: BOM::MarketDataAutoUpdater::OHLC
 
-Frequency of this script being called: Hourly basic
+Frequency of this script being called: Hourly basic 
 
-2. bin/bom_update_economic_events.pl
+(2) bin/bom_update_economic_events.pl 
 
 A script runs ForexFactory::extract_economic_events to extract economic events for 2 weeks and update economic event chronicle documents.
 
@@ -31,7 +31,7 @@ Package dependency: BOM::MarketDataAutoUpdater::UpdateEconomicEvents, ForexFacto
 
 Frequency of this script being called: 00GMT on daily basic
 
-3. bin/update_corp_actions.pl
+(3) bin/update_corp_actions.pl
 
 A script runs Bloomberg::CorporateAction to process the corporate actions of offered stocks and update corporate action chronicle documents. It will also set trading suspended on those stocks that has bankruptcy action.
 
@@ -45,7 +45,7 @@ Package dependency: Bloomberg::CorporateAction, Bloomberg::FileDownloader, Quant
 
 Frequency of this script being called: 06GMT, 12GMT and 23GMT. (Although it runs for several time per day, the content is remaining the same as we are only getting corporate action from Bloomberg once per day.)
 
-4. bin/update_interest_rates.pl
+(4) bin/update_interest_rates.pl
 
 A script run BOM::MarketDataAutoUpdater::InterestRates to update currency interest rate. 
 
@@ -59,7 +59,7 @@ Package dependency:  BOM::MarketDataAutoUpdater::InterestRates
 
 Frequency of this script being called: 16:50GMT on daily basic. (Libor updates rate at 11:45 London time and Bloomberg updated it at 4 hours after that, hence we scheduled the run time at 17GMT to make sure we have updated rate from Bloomberg)
 
-5. bin/update_implied_interest_rates.pl
+(5) bin/update_implied_interest_rates.pl
 
 A script run BOM::MarketDataAutoUpdater::ImpliedInterestRates to update implied interest rate. For each currency pair, to hold the interest rate parity, the rate of one the currency need to be implied from the forward rate of pair and the market rate of corresponding currency. Example: USDJPY, interest rate of JPY on this pair need to implied from the forward rate of USDJPY and the market rate of USD.
 
@@ -74,7 +74,7 @@ Package dependency: BOM::MarketDataAutoUpdater::ImpliedInterestRates
 
 Frequency of this script being called: 17GMT on daily basic. (This script must be run after bin/update_interest_rates.pl as it depends on the market interest rate of the corresponding currency of the pair).
 
-6. bin/update_smartfx_rate.pl
+(6) bin/update_smartfx_rate.pl
 
 A scripts to update interest rate of smart fx based on the rate of the forex pairs of the basket.
 
@@ -88,7 +88,7 @@ Package dependency: BOM::MarketDataAutoUpdater::ImpliedInterestRates
 
 Frequency of this script being called: 00GMT on daily basic
 
-7. bin/updatevol.pl
+(7) bin/updatevol.pl
 
 A script runs BOM::MarketDataAutoUpdater::Indices to update vol of indices and stocks and BOM::MarketDataAutoUpdater::Forex to update vol of forex and commodities
 
