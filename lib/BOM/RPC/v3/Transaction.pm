@@ -33,7 +33,7 @@ sub buy {
     my $contract_parameters = $params->{contract_parameters};
     my $args                = $params->{args};
 
-    my $trading_period = $contract_parameters->{trading_period} //= "";
+    my $trading_period_start = $contract_parameters->{trading_period_start};
 
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
@@ -44,12 +44,12 @@ sub buy {
             message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
 
     my $trx = BOM::Product::Transaction->new({
-        client         => $client,
-        contract       => $contract,
-        price          => ($args->{price} || 0),
-        purchase_date  => $purchase_date,
-        source         => $source,
-        trading_period => $trading_period,
+        client               => $client,
+        contract             => $contract,
+        price                => ($args->{price} || 0),
+        purchase_date        => $purchase_date,
+        source               => $source,
+        trading_period_start => $trading_period_start,
     });
 
     if (my $err = $trx->buy) {
