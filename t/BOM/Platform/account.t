@@ -1,7 +1,6 @@
 use strict;
 use warnings;
-use Test::More (tests => 4);
-use Test::NoWarnings;
+use Test::More (tests => 3);
 use Test::Exception;
 use BOM::Database::DataMapper::Account;
 use BOM::Platform::Client::Payments;

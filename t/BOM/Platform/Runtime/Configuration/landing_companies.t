@@ -1,5 +1,4 @@
-use Test::Most 0.22 (tests => 6);
-use Test::NoWarnings;
+use Test::Most 0.22 (tests => 5);
 use BOM::Platform::Runtime;
 use BOM::Platform::LandingCompany::Registry;
 

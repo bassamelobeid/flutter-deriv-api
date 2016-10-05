@@ -5,7 +5,6 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
-use Test::NoWarnings ();
 
 use BOM::Platform::Client;
 use BOM::Platform::Client::PaymentAgent;
