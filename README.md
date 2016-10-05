@@ -2,7 +2,7 @@
 
 Code that pulls market data from third party systems (Bloomberg, ForexFactory) into our system.
 
-1. bin/bom_updateohlc.pl
+1. bin/bom_updateohlc.pl <br />
 
 A script runs BOM::MarketDataAutoUpdater::OHLC to update indices' official daily open, high , low and close value on the db file which will then be populated to feed.ohlc_daily db table. This script also do some sanity check of ohlc updated to the db file.
 
