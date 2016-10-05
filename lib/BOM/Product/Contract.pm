@@ -781,6 +781,14 @@ sub _build_pricing_mu {
     return $self->mu;
 }
 
+=head2 _build_longcode
+
+Returns the (localized) longcode for this contract.
+
+May throw an exception if an invalid expiry type is requested for this contract type.
+
+=cut
+
 sub _build_longcode {
     my $self = shift;
 
@@ -788,7 +796,7 @@ sub _build_longcode {
     # Don't use $self->expiry_type because that's use to price a contract at effective_start time.
     my $expiry_type = $self->tick_expiry ? 'tick' : $self->_check_is_intraday($self->date_start) == 0 ? 'daily' : 'intraday';
     $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $self->starts_as_forward_starting and $self->fixed_expiry;
-    my $localizable_description = $self->localizable_description->{$expiry_type};
+    my $localizable_description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
 
     my ($when_end, $when_start);
     if ($expiry_type eq 'intraday_fixed_expiry') {
