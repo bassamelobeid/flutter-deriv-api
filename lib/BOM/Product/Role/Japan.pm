@@ -4,7 +4,7 @@ use Moose::Role;
 
 use List::Util qw(first);
 use BOM::Platform::Context qw(localize);
-use BOM::Product::Offerings qw(get_contract_specifics);
+use BOM::Platform::Offerings qw(get_contract_specifics);
 use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 
 my $landing_company = 'japan';
