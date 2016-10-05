@@ -62,8 +62,10 @@ has price_slippage => (
 );
 
 # trading period of a contract
-has trading_period => (
-    is => 'ro',
+has trading_period_start => (
+    is     => 'rw',
+    isa    => 'bom_date_object',
+    coerce => 1,
 );
 
 has transaction_record => (
@@ -491,7 +493,7 @@ sub prepare_buy {    ## no critic (RequireArgUnpacking)
                     contract => $self->contract,
                     price    => $self->price,
                     ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
-                    ($self->trading_period) ? (trading_period => $self->trading_period) : (),
+                    ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
                     action => 'buy'
                 })) unless @{$self->comment};
     }
@@ -768,7 +770,7 @@ sub sell {    ## no critic (RequireArgUnpacking)
                     contract => $self->contract,
                     price    => $self->price,
                     ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
-                    ($self->trading_period) ? (trading_period => $self->trading_period) : (),
+                    ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
                     action => 'sell'
                 })) unless @{$self->comment};
     }
