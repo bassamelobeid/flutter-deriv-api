@@ -9,6 +9,7 @@ use Time::Duration::Concise;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 use YAML::XS qw(LoadFile);
 
+use Role::Tiny::With;
 use Postgres::FeedDB::Spot::Tick;
 
 use BOM::Platform::Context qw(request);
@@ -127,8 +128,6 @@ sub produce_contract {
             if (not($input_params{underlying}->for_date and $input_params{underlying}->for_date->is_same_as($pricing)));
     }
 
-    $input_params{landing_company} = 'costarica' unless defined $input_params{landing_company};
-
     my $contract_obj;
     if ($input_params{category} eq 'spreads') {
         $input_params{date_start} = Date::Utility->new if not $input_params{date_start};
@@ -235,6 +234,12 @@ sub produce_contract {
         $input_params{'_produce_contract_ref'} = \&produce_contract;
 
         $contract_obj = $contract_class->new(\%input_params);
+    }
+
+    my $landing_company = delete $input_params{landing_company} // 'costarica';
+    if ($landing_company eq 'japan' or $landing_company eq 'japan-virtual') {
+        require BOM::Product::Role::Japan;
+        BOM::Product::Role::Japan->meta->apply($contract_obj);
     }
 
     return $contract_obj;

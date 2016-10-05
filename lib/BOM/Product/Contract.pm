@@ -72,11 +72,6 @@ has category => (
     handles => [qw(supported_expiries supported_start_types is_path_dependent allow_forward_starting two_barriers barrier_at_start)],
 );
 
-has landing_company => (
-    is       => 'ro',
-    required => 1,
-);
-
 has category_code => (
     is         => 'ro',
     lazy_build => 1,
@@ -746,7 +741,12 @@ sub _build_opposite_contract {
         $opp_parameters{$vol_param} = $self->$vol_param;
     }
 
-    return $self->_produce_contract_ref->(\%opp_parameters);
+    my $opp_contract = $self->_produce_contract_ref->(\%opp_parameters);
+    if ($self->does('BOM::Product::Role::Japan')) {
+        BOM::Product::Role::Japan->meta->apply($opp_contract);
+    }
+
+    return $opp_contract;
 }
 
 sub _build_empirical_volsurface {
@@ -1552,7 +1552,6 @@ sub _build_offering_specifics {
         barrier_category  => $self->barrier_category,
         expiry_type       => $self->expiry_type,
         start_type        => $self->start_type,
-        landing_company   => $self->landing_company,
         contract_category => $self->category->code,
     });
 }
@@ -2532,18 +2531,6 @@ sub _validate_start_and_expiry_date {
         }
     }
 
-    # for japan, we only allow pre-defined start and expiry times.
-    if (%{$self->predefined_contracts}) {
-        my $available_contracts = $self->predefined_contracts;
-        my $expiry_epoch        = $self->date_expiry->epoch;
-        if (not $available_contracts->{$expiry_epoch}) {
-            return {
-                message => 'Invalid contract expiry[' . $self->date_expiry->datetime . '] for japan at ' . $self->date_pricing->datetime . '.',
-                message_to_client => localize('Invalid expiry time.'),
-            };
-        }
-    }
-
     return;
 }
 
@@ -2761,39 +2748,8 @@ sub _build_risk_profile {
         start_type        => $self->start_type,
         currency          => $self->currency,
         barrier_category  => $self->barrier_category,
-        landing_company   => $self->landing_company,
+        landing_company   => 'costarica',
     );
-}
-
-=head2 predefined_contracts
-
-Some landing company requires script contract offerings in which we will have pre-set
-contract barriers, start and expiry time. As of now, this is only applicable for japan.
-
-=cut
-
-has predefined_contracts => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_predefined_contracts {
-    my $self = shift;
-
-    my $lc = $self->landing_company;
-    return {} if (not($lc eq 'japan' or $lc eq 'japan-virtual'));
-
-    my @contracts =
-        grep { $_->{contract_type} eq $self->code } @{available_contracts_for_symbol({symbol => $self->underlying->symbol})->{available}};
-
-    # restructure contract information for easier processing
-    my %info;
-    foreach my $d (@contracts) {
-        push @{$info{$d->{trading_period}{date_expiry}{epoch}}{available_barriers}}, @{$d->{available_barriers}};
-        push @{$info{$d->{trading_period}{date_expiry}{epoch}}{expired_barriers}},   @{$d->{expired_barriers}};
-    }
-
-    return \%info;
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.

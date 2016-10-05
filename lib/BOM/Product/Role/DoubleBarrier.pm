@@ -169,37 +169,6 @@ sub _validate_barrier {
         }
     }
 
-    if (%{$self->predefined_contracts} and my $info = $self->predefined_contracts->{$self->date_expiry->epoch}) {
-        my @available_barriers = @{$info->{available_barriers} // []};
-        my @expired_barriers   = @{$info->{expired_barriers}   // []};
-
-        my $epsilon = 1e-10;
-        my @filtered;
-        foreach my $pair (@available_barriers) {
-            # checks for expired barriers and exclude them from available barriers.
-            my $barrier_expired = first { abs($pair->[0] - $_->[0]) < $epsilon and abs($pair->[1] - $_->[1]) < $epsilon } @expired_barriers;
-            next if $barrier_expired;
-            push @filtered, $pair;
-        }
-
-        my $matched_barrier =
-            first { abs($low_barrier->as_absolute - $_->[0]) < $epsilon and abs($high_barrier->as_absolute - $_->[1]) < $epsilon } @filtered;
-        unless ($matched_barrier) {
-            return {
-                message => 'Invalid barriers['
-                    . $low_barrier->as_absolute . ','
-                    . $high_barrier->as_absolute
-                    . '] for expiry ['
-                    . $self->date_expiry->datetime
-                    . '] and contract type['
-                    . $self->code
-                    . '] for japan at '
-                    . $self->date_pricing->datetime . '.',
-                message_to_client => localize('Invalid barrier.'),
-            };
-        }
-    }
-
     return;
 }
 
