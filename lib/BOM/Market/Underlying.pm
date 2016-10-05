@@ -65,16 +65,7 @@ our $FORCE_REALTIME_FEED = 0;
 our $interest_rates_source   = "implied";
 our $extra_vol_diff_by_delta = 0.1;
 
-=head1 METHODS
-
-=cut
-
-=head2 new($symbol, [$for_date])
-
-Return BOM::Market::Underlying object for given I<$symbol>. possibly at a given I<Date::Utility>.
-
-=cut
-
+#Return BOM::Market::Underlying object for given I<$symbol>. possibly at a given I<Date::Utility>.
 sub new {
     my ($self, $args, $when) = @_;
 
@@ -106,53 +97,141 @@ sub new {
     return $obj;
 }
 
-=head2 comment
-
-Internal use annotation.
-
-=cut
-
-has 'comment' => (
-    is      => 'ro',
-    isa     => 'Str',
-    default => '',
-);
-
-=head2 for_date
-
-The Date::Utility wherein this underlying is fixed.
-
-=cut
-
+#The Date::Utility wherein this underlying is fixed.
 has 'for_date' => (
     is      => 'ro',
     isa     => 'Maybe[Date::Utility]',
     default => undef,
 );
 
-=head2 inefficient_periods
+################################################
+##### Finance::Asset dependencies ##############
+################################################
 
-Parts of the days wherein the market does not show proper efficiency
-
-=cut
-
+#Parts of the days wherein the market does not show proper efficiency
 has inefficient_periods => (
     is      => 'ro',
     isa     => 'ArrayRef[HashRef]',
     default => sub { return []; },
 );
 
-=head2 symbol
-
-What is the proper-cased symbol for our underlying?
-
-=cut
-
 has 'symbol' => (
     is       => 'ro',
     isa      => 'Str',
     required => 1,
 );
+
+has exchange_name => (
+    is         => 'ro',
+);
+
+
+################################################
+##### Calculated attributes       ##############
+################################################
+
+#The symbol used by the system to look up data.  May be different from symbol, particularly on inverted forex pairs.
+#Can not be made into an attribute to avoid the caching problem.
+has 'system_symbol' => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_system_symbol {
+    my $self = shift;
+
+    return ($self->inverted)
+        ? 'frx' . $self->quoted_currency_symbol . $self->asset_symbol
+        : $self->symbol;
+}
+
+#The amount by which we much delay the feed for display
+has delay_amount => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
+#This really has to constructed in conjunction with feed_licence
+sub _build_delay_amount {
+    my $self = shift;
+
+    my $license = $self->feed_license;
+
+    my $delay_amount = ($license eq 'realtime') ? 0 : $self->exchange->delay_amount;
+
+    return $delay_amount;
+}
+
+has asset_symbol => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_asset_symbol {
+    my $self   = shift;
+    my $symbol = '';
+
+    if ($self->symbol =~ /^FUT(\w+)_/) {
+        $symbol = $1;
+    }
+
+    return $symbol;
+}
+
+
+has volatility_surface_type => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_volatility_surface_type {
+    my $self = shift;
+    my $type = $self->submarket->volatility_surface_type ? $self->submarket->volatility_surface_type : $self->market->volatility_surface_type;
+    return $type;
+}
+
+has quoted_currency => (
+    is         => 'ro',
+    isa        => 'Maybe[Quant::Framework::Currency]',
+    lazy_build => 1,
+);
+
+#In which currency are the prices for this underlying quoted?
+sub _build_quoted_currency {
+    my $self = shift;
+
+    if ($self->quoted_currency_symbol) {
+        return Quant::Framework::Currency->new({
+            symbol           => $self->quoted_currency_symbol,
+            for_date         => $self->for_date,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        });
+    }
+    return;
+}
+
+has quoted_currency_symbol => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_quoted_currency_symbol {
+    my $self   = shift;
+    my $symbol = '';
+
+    if (scalar grep { $self->market->name eq $_ } qw( futures )) {
+        $symbol = BOM::Market::Underlying->new($self->asset_symbol)->quoted_currency_symbol;
+    }
+
+    return $symbol;
+}
+
+
+################################################
+##### FeedDB access               ##############
+################################################
 
 has spot_source => (
     is         => 'ro',
@@ -216,54 +295,14 @@ sub spot {
     return $self->pipsized_value($self->spot_source->spot_quote);
 }
 
-# Can not be made into an attribute to avoid the caching problem.
 
-=head2 system_symbol
 
-The symbol used by the system to look up data.  May be different from symbol, particularly on inverted forex pairs.
 
-=cut
 
-has 'system_symbol' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
 
-sub _build_system_symbol {
-    my $self = shift;
 
-    return ($self->inverted)
-        ? 'frx' . $self->quoted_currency_symbol . $self->asset_symbol
-        : $self->symbol;
-}
-
-=head2 delay_amount
-
-The amount by which we much delay the feed for display
-
-=cut
-
-has delay_amount => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
-);
-
-#This really has to constructed in conjunction with feed_licence
-sub _build_delay_amount {
-    my $self = shift;
-
-    my $license = $self->feed_license;
-
-    my $delay_amount = ($license eq 'realtime') ? 0 : $self->exchange->delay_amount;
-
-    return $delay_amount;
-}
 
 has [qw(
-        asset_symbol
-        volatility_surface_type
-        quoted_currency_symbol
         uses_dst_shifted_seasonality
         spot_spread
         spot_spread_size
@@ -603,39 +642,6 @@ sub _build_spot_spread {
     return $self->spot_spread_size * $self->pip_size;
 }
 
-=head2 market
-
-Returns which market this underlying is a part of. This is largely used on the
-front end to seperate stocks, forex, commodoties, etc into categories. Note that
-the market is normally taken from the underlyings.yml, this sub is called only
-for underlyings not in the file.
-
-=cut
-
-sub _build_market {
-    my $self = shift;
-
-    # The default market is config.
-    my $symbol = uc $self->symbol;
-    my $market = Finance::Asset::Market->new({name => 'nonsense'});
-    if ($symbol =~ /^FUT/) {
-        $market = Finance::Asset::Market::Registry->instance->get('futures');
-    } elsif ($symbol =~ /^I_/) {
-        $market = Finance::Asset::Market::Registry->instance->get('config');
-    } elsif (length($symbol) >= 15) {
-        $market = Finance::Asset::Market::Registry->instance->get('config');
-        warn("Unknown symbol, symbol[$symbol]");
-    }
-
-    return $market;
-}
-
-sub _build_volatility_surface_type {
-    my $self = shift;
-    my $type = $self->submarket->volatility_surface_type ? $self->submarket->volatility_surface_type : $self->market->volatility_surface_type;
-    return $type;
-}
-
 =head2 submarket
 
 Returns the SubMarket on which this underlying can be found.
@@ -675,28 +681,6 @@ has display_name => (
 sub _build_display_name {
     my ($self) = @_;
     return uc $self->symbol;
-}
-
-=head2 exchange_name
-
-To which exchange does the underlying belong. example: FOREX, NASDAQ, etc.
-
-=cut
-
-has _exchange_name => (
-    is => 'ro',
-);
-
-has exchange_name => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_exchange_name {
-    my $self = shift;
-    my $exchange_name = $self->_exchange_name || 'FOREX';
-
-    return $exchange_name;
 }
 
 has expiry_conventions => (
@@ -906,26 +890,6 @@ sub last_licensed_display_epoch {
     }
 }
 
-=head2 quoted_currency
-
-In which currency are the prices for this underlying quoted?
-
-=cut
-
-sub _build_quoted_currency {
-    my $self = shift;
-
-    if ($self->quoted_currency_symbol) {
-        return Quant::Framework::Currency->new({
-            symbol           => $self->quoted_currency_symbol,
-            for_date         => $self->for_date,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-        });
-    }
-    return;
-}
-
 =head2 asset
 
 Return the asset object depending on the market type.
@@ -950,27 +914,6 @@ sub _build_asset {
     });
 }
 
-sub _build_asset_symbol {
-    my $self   = shift;
-    my $symbol = '';
-
-    if ($self->symbol =~ /^FUT(\w+)_/) {
-        $symbol = $1;
-    }
-
-    return $symbol;
-}
-
-sub _build_quoted_currency_symbol {
-    my $self   = shift;
-    my $symbol = '';
-
-    if (scalar grep { $self->market->name eq $_ } qw( futures )) {
-        $symbol = BOM::Market::Underlying->new($self->asset_symbol)->quoted_currency_symbol;
-    }
-
-    return $symbol;
-}
 
 # End of builders.
 
