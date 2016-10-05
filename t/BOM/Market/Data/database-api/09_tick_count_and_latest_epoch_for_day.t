@@ -9,12 +9,12 @@ use Test::Warn;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-use Quant::Framework::Spot::DatabaseAPI;
+use Postgres::FeedDB::Spot::DatabaseAPI;
 use DateTime;
 use Date::Utility;
 
-use Quant::Framework::Spot::DatabaseAPI;
-my $dbh = BOM::Database::FeedDB::read_dbh;
+use Postgres::FeedDB::Spot::DatabaseAPI;
+my $dbh = Postgres::FeedDB::read_dbh;
 $dbh->{RaiseError} = 1;
 
 my $symbol = 'frxUSDJPY';

@@ -15,8 +15,8 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use Date::Utility;
 use BOM::Market::Underlying;
 use Cache::RedisDB;
-use BOM::Database::FeedDB;
-use Quant::Framework::Spot::OHLC;
+use Postgres::FeedDB;
+use Postgres::FeedDB::Spot::OHLC;
 
 subtest 'get_combined_realtime' => sub {
     #Rewind back to a simpler time.
