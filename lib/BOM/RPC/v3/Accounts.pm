@@ -569,7 +569,7 @@ sub set_settings {
             }
         } elsif (
             grep {
-                $_ !~ /passthrough|set_settings|jp_settings|email_consent|residence/
+                $_ !~ /passthrough|set_settings|email_consent|residence/
             } keys %$args
             )
         {
