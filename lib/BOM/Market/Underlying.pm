@@ -146,7 +146,7 @@ has _feed_license => (
 
 #User friendly name for the underlying
 has display_name => (
-    is         => 'ro',
+    is => 'ro',
 );
 
 #The pip value for a forex asset
@@ -160,6 +160,143 @@ has quanto_only => (
     isa     => 'Bool',
     default => 0,
 );
+
+has forward_feed => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => 0,
+);
+
+=head2 market_convention
+
+Returns a hashref. Keys and possible values are:
+
+=over 4
+
+=item * atm_setting
+
+Value can be one of:
+    - atm_delta_neutral_straddle
+    - atm_forward
+    - atm_spot
+
+=item * delta_premium_adjusted
+
+Value can be one of:
+    - 1
+    - 0
+
+=item * delta_style
+
+Value can be one of:
+    - spot_delta
+    - forward_delta
+
+=item * rr (Risk Reversal)
+
+Value can be one of:
+    - call-put
+    - put-call
+
+=item * bf (Butterfly)
+
+Value can be one of:
+    - 2_vol
+
+=back
+
+=cut
+
+has market_convention => (
+    is      => 'ro',
+    isa     => 'HashRef',
+    default => sub {
+        return {
+            delta_style            => 'spot_delta',
+            delta_premium_adjusted => 0,
+        };
+    },
+);
+
+has submarket => (
+    is      => 'ro',
+    isa     => 'submarket',
+    coerce  => 1,
+    default => 'config',
+);
+
+has 'market' => (
+    is      => 'ro',
+    isa     => 'financial_market',
+    coerce  => 1,
+    default => 'config',
+);
+
+################################################
+##### FeedDB access               ##############
+################################################
+
+has spot_source => (
+    is         => 'ro',
+    lazy_build => 1,
+    handles    => {
+        'set_combined_realtime'      => 'set_spot_tick',
+        'get_combined_realtime_tick' => 'spot_tick',
+        'get_combined_realtime'      => 'spot_tick_hash',
+        'spot_tick'                  => 'spot_tick',
+        'spot_time'                  => 'spot_time',
+        'spot_age'                   => 'spot_age',
+        'tick_at'                    => 'tick_at',
+        'closing_tick_on'            => 'closing_tick_on',
+    });
+
+sub _build_spot_source {
+    my $self = shift;
+
+    return Postgres::FeedDB::Spot->new(
+        for_date          => $self->for_date,
+        symbol            => $self->symbol,
+        calendar          => $self->calendar,
+        feed_api          => $self->feed_api,
+        use_official_ohlc => $self->use_official_ohlc,
+    );
+}
+
+has 'feed_api' => (
+    is      => 'ro',
+    isa     => 'Postgres::FeedDB::Spot::DatabaseAPI',
+    handles => {
+        ticks_in_between_start_end   => 'ticks_start_end',
+        ticks_in_between_start_limit => 'ticks_start_limit',
+        ticks_in_between_end_limit   => 'ticks_end_limit',
+        ohlc_between_start_end       => 'ohlc_start_end',
+        next_tick_after              => 'tick_after',
+        get_high_low_for_period      => 'get_high_low_for_period',
+        get_ohlc_data_for_period     => 'get_ohlc_data_for_period',
+    },
+    lazy_build => 1,
+);
+
+sub _build_feed_api {
+    my $self = shift;
+
+    my $build_args = {underlying => $self->system_symbol};
+    $build_args->{use_official_ohlc} = $self->use_official_ohlc;
+    $build_args->{invert_values}     = $self->inverted;
+    $build_args->{db_handle}         = sub {
+        my $dbh = Postgres::FeedDB::read_dbh;
+        $dbh->{RaiseError} = 1;
+        return $dbh;
+    };
+
+    return Postgres::FeedDB::Spot::DatabaseAPI->new($build_args);
+}
+
+sub spot {
+    my $self = shift;
+
+    return $self->pipsized_value($self->spot_source->spot_quote);
+}
 
 ################################################
 ##### Calculated attributes       ##############
@@ -274,20 +411,14 @@ sub _build_spot_spread {
     return $self->spot_spread_size * $self->pip_size;
 }
 
-
-has instrument_type (
+has instrument_type => (
     is         => 'ro',
     lazy_build => 1,
 );
 
-=head2 instrument_type
-
-Returns what type of instrument it is (useful for knowing whether it is prone to
-stock splits or jumpy random movements. Most of the time, the type will be taken
-from underlyings.yml
-
-=cut
-
+#Returns what type of instrument it is (useful for knowing whether it is prone to
+#stock splits or jumpy random movements. Most of the time, the type will be taken
+#from underlyings.yml
 sub _build_instrument_type {
     my $self            = shift;
     my $market          = $self->market;
@@ -299,108 +430,30 @@ sub _build_instrument_type {
 
     return $instrument_type;
 }
-################################################
-##### FeedDB access               ##############
-################################################
-
-has spot_source => (
-    is         => 'ro',
-    lazy_build => 1,
-    handles    => {
-        'set_combined_realtime'      => 'set_spot_tick',
-        'get_combined_realtime_tick' => 'spot_tick',
-        'get_combined_realtime'      => 'spot_tick_hash',
-        'spot_tick'                  => 'spot_tick',
-        'spot_time'                  => 'spot_time',
-        'spot_age'                   => 'spot_age',
-        'tick_at'                    => 'tick_at',
-        'closing_tick_on'            => 'closing_tick_on',
-    });
-
-sub _build_spot_source {
-    my $self = shift;
-
-    return Postgres::FeedDB::Spot->new(
-        for_date          => $self->for_date,
-        symbol            => $self->symbol,
-        calendar          => $self->calendar,
-        feed_api          => $self->feed_api,
-        use_official_ohlc => $self->use_official_ohlc,
-    );
-}
-
-has 'feed_api' => (
-    is      => 'ro',
-    isa     => 'Postgres::FeedDB::Spot::DatabaseAPI',
-    handles => {
-        ticks_in_between_start_end   => 'ticks_start_end',
-        ticks_in_between_start_limit => 'ticks_start_limit',
-        ticks_in_between_end_limit   => 'ticks_end_limit',
-        ohlc_between_start_end       => 'ohlc_start_end',
-        next_tick_after              => 'tick_after',
-        get_high_low_for_period      => 'get_high_low_for_period',
-        get_ohlc_data_for_period     => 'get_ohlc_data_for_period',
-    },
-    lazy_build => 1,
-);
-
-sub _build_feed_api {
-    my $self = shift;
-
-    my $build_args = {underlying => $self->system_symbol};
-    $build_args->{use_official_ohlc} = $self->use_official_ohlc;
-    $build_args->{invert_values}     = $self->inverted;
-    $build_args->{db_handle}         = sub {
-        my $dbh = Postgres::FeedDB::read_dbh;
-        $dbh->{RaiseError} = 1;
-        return $dbh;
-    };
-
-    return Postgres::FeedDB::Spot::DatabaseAPI->new($build_args);
-}
-
-sub spot {
-    my $self = shift;
-
-    return $self->pipsized_value($self->spot_source->spot_quote);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-has 'market' => (
-    is      => 'ro',
-    isa     => 'financial_market',
-    coerce  => 1,
-    default => 'config',
-);
 
 has asset => (
     is         => 'ro',
     lazy_build => 1,
 );
 
-has quoted_currency => (
-    is         => 'ro',
-    isa        => 'Maybe[Quant::Framework::Currency]',
-    lazy_build => 1,
-);
+#Return the asset object depending on the market type.
+sub _build_asset {
+    my $self = shift;
 
-has inverted => (
-    is      => 'ro',
-    isa     => 'Bool',
-    default => 0,
-    );
+    return unless $self->asset_symbol;
+    my $type =
+          $self->submarket->asset_type eq 'currency'
+        ? $self->submarket->asset_type
+        : $self->market->asset_type;
+    my $which = $type eq 'currency' ? 'Quant::Framework::Currency' : 'Quant::Framework::Asset';
+
+    return $which->new({
+        symbol           => $self->asset_symbol,
+        for_date         => $self->for_date,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+    });
+}
 
 has 'config' => (
     is         => 'ro',
@@ -495,42 +548,18 @@ sub _build_contracts {
     return $PRODUCT_OFFERINGS->{$self->symbol} // {};
 }
 
-has submarket => (
-    is      => 'ro',
-    isa     => 'submarket',
-    coerce  => 1,
-    default => 'config',
-);
-
-has forward_tickers => (
-    is      => 'ro',
-    isa     => 'HashRef',
-    default => sub { return {}; },
-);
-
 has providers => (
     is         => 'ro',
     lazy_build => 1,
 );
 
-=head2 providers
-
-A list of feed providers for this underlying in the order of priority.
-
-=cut
-
+#A list of feed providers for this underlying in the order of priority.
 sub _build_providers {
     my $self = shift;
 
     return $self->market->providers;
 
 }
-
-has forward_feed => (
-    is      => 'ro',
-    isa     => 'Bool',
-    default => 0,
-);
 
 has 'intradays_must_be_same_day' => (
     is         => 'ro',
@@ -544,13 +573,8 @@ sub _build_intradays_must_be_same_day {
     return $self->submarket->intradays_must_be_same_day;
 }
 
-=head2 max_suspend_trading_feed_delay
-
-The maximum acceptable feed delay for an underlying.
-Trading will be suspended if feed delay exceeds this threshold.
-
-=cut
-
+#The maximum acceptable feed delay for an underlying.
+#Trading will be suspended if feed delay exceeds this threshold.
 has 'max_suspend_trading_feed_delay' => (
     is         => 'ro',
     isa        => 'bom_time_interval',
@@ -584,88 +608,6 @@ sub _build_eod_blackout_expiry {
     return $self->submarket->eod_blackout_expiry;
 }
 
-###
-# End of Attribute section
-###
-
-###
-# Moose lets us munge up the arguments to the constructor before we build the object.
-# This is the function which actually does that.  Try to keep it as simple as possible.
-# In fact, simplifying it as it stands would be cool.
-###
-
-around BUILDARGS => sub {
-    my $orig       = shift;
-    my $class      = shift;
-    my $params_ref = shift;
-
-    # Proper casing.
-    $params_ref->{'symbol'} =~ s/^FRX/frx/i;
-    $params_ref->{'symbol'} =~ s/^RAN/ran/i;
-
-    # Basically if we don't have parameters this underlying doesn't exist, but
-    # we have volatilities and etc, which shouldn't be here IMO, but
-    # unfortunately they are
-
-    my $params = Finance::Asset->instance->get_parameters_for($params_ref->{symbol});
-    if ($params) {
-        @$params_ref{keys %$params} = @$params{keys %$params};
-    } elsif ($params_ref->{'symbol'} =~ /^frx/) {
-        my $requested_symbol = $params_ref->{symbol};
-
-        # This might be an inverted pair from what we expected.
-        my $asset = substr($params_ref->{symbol}, 3, 3);
-        my $quoted = substr($params_ref->{symbol}, 6);
-
-        my $inverted_symbol = 'frx' . $quoted . $asset;
-
-        $params = Finance::Asset->instance->get_parameters_for($inverted_symbol);
-        if ($params) {
-            @$params_ref{keys %$params} = @$params{keys %$params};
-            $params_ref->{inverted} = 1;
-        }
-        $params_ref->{symbol}          = $requested_symbol;
-        $params_ref->{asset}           = $asset;
-        $params_ref->{quoted_currency} = $quoted;
-    }
-
-    # Pre-convert to seconds.  let underlyings.yml have easy to read.
-    # These don't change from day to day.
-    my @seconds;
-    foreach my $ie (@{$params_ref->{inefficient_periods}}) {
-        foreach my $key (qw(start end)) {
-            $ie->{$key} = Time::Duration::Concise->new(
-                interval => $ie->{$key},
-            )->seconds;
-        }
-        push @seconds, $ie;
-    }
-    $params_ref->{inefficient_periods} = \@seconds;
-
-    $params_ref->{asset_symbol} = $params_ref->{asset}
-        if (defined $params_ref->{asset});
-    delete $params_ref->{asset};
-    $params_ref->{quoted_currency_symbol} = $params_ref->{quoted_currency}
-        if (defined $params_ref->{quoted_currency});
-    delete $params_ref->{quoted_currency};
-
-    # Force re-evaluation.
-    if ($params_ref->{feed_license}) {
-        $params_ref->{_feed_license} = $params_ref->{feed_license};
-        delete $params_ref->{feed_license};
-    }
-
-    return $class->$orig($params_ref);
-};
-
-=head2 submarket
-
-Returns the SubMarket on which this underlying can be found.
-Required.
-
-=cut
-
-
 has expiry_conventions => (
     is         => 'ro',
     isa        => 'Quant::Framework::ExpiryConventions',
@@ -688,14 +630,9 @@ sub _build_expiry_conventions {
     );
 }
 
-=head2 calendar
-
-Returns a Quant::Framework::TradingCalendar object where this underlying is traded.  Useful for
-determining market open and closing times and other restrictions which may
-apply on that basis.
-
-=cut
-
+#Returns a Quant::Framework::TradingCalendar object where this underlying is traded.  Useful for
+#determining market open and closing times and other restrictions which may
+#apply on that basis.
 has calendar => (
     is         => 'ro',
     isa        => 'Quant::Framework::TradingCalendar',
@@ -742,57 +679,6 @@ before 'calendar' => sub {
     my $self = shift;
     $self->clear_calendar if ($self->_exchange_refreshed + 17 < time);
 };
-
-=head2 market_convention
-
-Returns a hashref. Keys and possible values are:
-
-=over 4
-
-=item * atm_setting
-
-Value can be one of:
-    - atm_delta_neutral_straddle
-    - atm_forward
-    - atm_spot
-
-=item * delta_premium_adjusted
-
-Value can be one of:
-    - 1
-    - 0
-
-=item * delta_style
-
-Value can be one of:
-    - spot_delta
-    - forward_delta
-
-=item * rr (Risk Reversal)
-
-Value can be one of:
-    - call-put
-    - put-call
-
-=item * bf (Butterfly)
-
-Value can be one of:
-    - 2_vol
-
-=back
-
-=cut
-
-has market_convention => (
-    is      => 'ro',
-    isa     => 'HashRef',
-    default => sub {
-        return {
-            delta_style            => 'spot_delta',
-            delta_premium_adjusted => 0,
-        };
-    },
-);
 
 =head2 divisor
 
@@ -871,30 +757,6 @@ sub last_licensed_display_epoch {
     } else {
         die "don't know how to deal with '$lic' license of " . $self->symbol;
     }
-}
-
-=head2 asset
-
-Return the asset object depending on the market type.
-
-=cut
-
-sub _build_asset {
-    my $self = shift;
-
-    return unless $self->asset_symbol;
-    my $type =
-          $self->submarket->asset_type eq 'currency'
-        ? $self->submarket->asset_type
-        : $self->market->asset_type;
-    my $which = $type eq 'currency' ? 'Quant::Framework::Currency' : 'Quant::Framework::Asset';
-
-    return $which->new({
-        symbol           => $self->asset_symbol,
-        for_date         => $self->for_date,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-    });
 }
 
 # End of builders.
@@ -1427,6 +1289,82 @@ sub calculate_spread {
 
     return $rounded * 10**$y;
 }
+
+###
+# Moose lets us munge up the arguments to the constructor before we build the object.
+# This is the function which actually does that.  Try to keep it as simple as possible.
+# In fact, simplifying it as it stands would be cool.
+###
+
+around BUILDARGS => sub {
+    my $orig       = shift;
+    my $class      = shift;
+    my $params_ref = shift;
+
+    # Proper casing.
+    $params_ref->{'symbol'} =~ s/^FRX/frx/i;
+    $params_ref->{'symbol'} =~ s/^RAN/ran/i;
+
+    # Basically if we don't have parameters this underlying doesn't exist, but
+    # we have volatilities and etc, which shouldn't be here IMO, but
+    # unfortunately they are
+
+    my $params = Finance::Asset->instance->get_parameters_for($params_ref->{symbol});
+    if ($params) {
+        @$params_ref{keys %$params} = @$params{keys %$params};
+    } elsif ($params_ref->{'symbol'} =~ /^frx/) {
+        my $requested_symbol = $params_ref->{symbol};
+
+        # This might be an inverted pair from what we expected.
+        my $asset = substr($params_ref->{symbol}, 3, 3);
+        my $quoted = substr($params_ref->{symbol}, 6);
+
+        my $inverted_symbol = 'frx' . $quoted . $asset;
+
+        $params = Finance::Asset->instance->get_parameters_for($inverted_symbol);
+        if ($params) {
+            @$params_ref{keys %$params} = @$params{keys %$params};
+            $params_ref->{inverted} = 1;
+        }
+        $params_ref->{symbol}          = $requested_symbol;
+        $params_ref->{asset}           = $asset;
+        $params_ref->{quoted_currency} = $quoted;
+    }
+
+    # Pre-convert to seconds.  let underlyings.yml have easy to read.
+    # These don't change from day to day.
+    my @seconds;
+    foreach my $ie (@{$params_ref->{inefficient_periods}}) {
+        foreach my $key (qw(start end)) {
+            $ie->{$key} = Time::Duration::Concise->new(
+                interval => $ie->{$key},
+            )->seconds;
+        }
+        push @seconds, $ie;
+    }
+    $params_ref->{inefficient_periods} = \@seconds;
+
+    $params_ref->{asset_symbol} = $params_ref->{asset}
+        if (defined $params_ref->{asset});
+    delete $params_ref->{asset};
+    $params_ref->{quoted_currency_symbol} = $params_ref->{quoted_currency}
+        if (defined $params_ref->{quoted_currency});
+    delete $params_ref->{quoted_currency};
+
+    # Force re-evaluation.
+    if ($params_ref->{feed_license}) {
+        $params_ref->{_feed_license} = $params_ref->{feed_license};
+        delete $params_ref->{feed_license};
+    }
+
+    return $class->$orig($params_ref);
+};
+
+has inverted => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => 0,
+);
 
 no Moose;
 
