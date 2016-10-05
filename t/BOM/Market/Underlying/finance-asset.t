@@ -20,10 +20,6 @@ subtest market_convention => sub {
     is $forex->market_convention->{atm_setting}, 'atm_delta_neutral_straddle', 'market_convention->atm_setting';
 };
 
-subtest divisor => sub {
-    is $forex->divisor, 1, 'divisor';
-};
-
 subtest display_name => sub {
     is $forex->display_name, 'AUD/USD', 'display_name';
 };
