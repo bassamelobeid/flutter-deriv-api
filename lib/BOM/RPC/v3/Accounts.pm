@@ -555,35 +555,44 @@ sub set_settings {
     my ($website_name, $client_ip, $user_agent, $language, $args) =
         @{$params}{qw/website_name client_ip user_agent language args/};
 
-    my $residence = $args->{residence};
+    my ($residence, $err) = ($args->{residence});
+    if ($client->is_virtual) {
+        # Virtual client can update
+        # - residence, if residence not set. But not for Japan
+        # - email_consent (common to real account as well)
+        if (not $client->residence and $residence and $residence ne 'jp') {
+            $client->residence($residence);
+            if (not $client->save()) {
+                $err = BOM::RPC::v3::Utility::create_error({
+                        code              => 'InternalServerError',
+                        message_to_client => localize('Sorry, an error occurred while processing your account.')});
+            }
+        } elsif (not defined $args->{email_consent}) {
+            $err = BOM::RPC::v3::Utility::permission_error();
+        }
+    } else {
+        # real client is not allowed to update residence
+        $err = BOM::RPC::v3::Utility::permission_error() if $residence;
+
+        # handle Japan settings update separately
+        if ($client->residence eq 'jp') {
+            # this may return error or {status => 1}
+            $err = BOM::RPC::v3::Japan::NewAccount::set_jp_settings($params);
+        }
+    }
+
+    return $err if $err->{error};
+
     # email consent is per user whereas other settings are per client
     # so need to save it separately
-    if (exists $args->{email_consent}) {
+    if (defined $args->{email_consent}) {
         my $user = BOM::Platform::User->new({email => $client->email});
         $user->email_consent($args->{email_consent});
         $user->save;
     }
-    if ($client->is_virtual) {
-        # Virtual client can only update residence, if residence not set. But not for Japan
-        if (not $client->residence and $residence and $residence ne 'jp') {
-            $client->residence($residence);
-            if (not $client->save()) {
-                return BOM::RPC::v3::Utility::create_error({
-                        code              => 'InternalServerError',
-                        message_to_client => localize('Sorry, an error occurred while processing your account.')});
-            }
-            return {status => 1};
-        }
-        return BOM::RPC::v3::Utility::permission_error();
-    } else {
-        # real client not allow to update residence
-        return BOM::RPC::v3::Utility::permission_error() if ($residence);
 
-        # handle Japan settings update separately
-        if ($client->residence eq 'jp') {
-            return BOM::RPC::v3::Japan::NewAccount::set_jp_settings($params);
-        }
-    }
+    # need to handle for $err->{status} as that come from japan settings
+    return {status => 1} if ($client->is_virtual || $err->{status});
 
     my $now             = Date::Utility->new;
     my $address1        = $args->{'address_line_1'};
@@ -646,8 +655,13 @@ sub set_settings {
                 . $client->postcode . ', '
                 . $residence_country
         ],
-        [localize('Telephone'), $client->phone],
-    );
+        [localize('Telephone'), $client->phone]);
+    push @updated_fields,
+        [
+        localize('Receive news and special offers'),
+        BOM::Platform::User->new({email => $client->email})->email_consent ? localize("Yes") : localize("No")]
+        if exists $args->{email_consent};
+
     $message .= "<table>";
     foreach my $updated_field (@updated_fields) {
         $message .=
