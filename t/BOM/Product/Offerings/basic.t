@@ -8,7 +8,7 @@ use Cache::RedisDB;
 
 use BOM::Platform::Runtime;
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Platform::Offerings qw( get_offerings_flyby get_offerings_with_filter get_permitted_expiries get_contract_specifics );
+use BOM::Product::Offerings qw( get_offerings_flyby get_offerings_with_filter get_permitted_expiries get_contract_specifics );
 
 subtest 'get_offerings_flyby' => sub {
     my $fb;

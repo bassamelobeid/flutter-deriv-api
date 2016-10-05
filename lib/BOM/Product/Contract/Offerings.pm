@@ -8,7 +8,7 @@ BOM::Product::Contract::Offerings
 
 Help for getting insight into what is offered.
 
-To be deprecated in favor of BOM::Platform::Offerings
+To be deprecated in favor of BOM::Product::Offerings
 
 my $offerings = BOM::Product::Contract::Offerings->new;
 
@@ -22,7 +22,7 @@ use List::MoreUtils qw(uniq first_index);
 use Finance::Asset::Market::Registry;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Category;
-use BOM::Platform::Offerings qw(get_offerings_with_filter);
+use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Platform::Context qw(localize);
 use Finance::Asset::SubMarket;
 use Finance::Asset::SubMarket::Registry;

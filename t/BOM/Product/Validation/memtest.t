@@ -12,7 +12,7 @@ use Test::Memory::Cycle;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Platform::Offerings qw(get_offerings_with_filter);
+use BOM::Product::Offerings qw(get_offerings_with_filter);
 use Date::Utility;
 use Finance::Asset;
 use BOM::Market::Underlying;

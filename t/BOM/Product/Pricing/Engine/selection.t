@@ -9,7 +9,7 @@ use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-use BOM::Platform::Offerings qw(get_offerings_with_filter);
+use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
 use BOM::Product::ContractFactory qw(produce_contract);
 use YAML::XS;

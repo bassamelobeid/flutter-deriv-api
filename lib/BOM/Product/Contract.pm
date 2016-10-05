@@ -38,7 +38,7 @@ use BOM::Product::Contract::Category;
 use BOM::Product::RiskProfile;
 use BOM::Product::Types;
 use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
-use BOM::Platform::Offerings qw(get_contract_specifics);
+use BOM::Product::Offerings qw(get_contract_specifics);
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -1599,7 +1599,7 @@ sub _build_barrier_category {
     if ($self->category->code eq 'callput') {
         $barrier_category = ($self->is_atm_bet) ? 'euro_atm' : 'euro_non_atm';
     } else {
-        $barrier_category = $BOM::Platform::Offerings::BARRIER_CATEGORIES->{$self->category->code}->[0];
+        $barrier_category = $BOM::Product::Offerings::BARRIER_CATEGORIES->{$self->category->code}->[0];
     }
 
     return $barrier_category;
