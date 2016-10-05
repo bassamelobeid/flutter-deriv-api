@@ -16,7 +16,7 @@ use Time::Duration::Concise;
 use Quant::Framework::Currency;
 use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
-use Quant::Framework::Spot::Tick;
+use Postgres::FeedDB::Spot::Tick;
 use Quant::Framework::CorrelationMatrix;
 
 use Price::Calculator;
@@ -145,7 +145,7 @@ has [qw(backtest tick_expiry)] => (
 
 has basis_tick => (
     is         => 'ro',
-    isa        => 'Quant::Framework::Spot::Tick',
+    isa        => 'Postgres::FeedDB::Spot::Tick',
     lazy_build => 1,
 );
 
@@ -167,7 +167,7 @@ sub _build_basis_tick {
 
     # if there's no basis tick, don't die but catch the error.
     unless ($basis_tick) {
-        $basis_tick = Quant::Framework::Spot::Tick->new({
+        $basis_tick = Postgres::FeedDB::Spot::Tick->new({
             # slope pricer will die with illegal division by zero error when we get the slope
             quote  => $self->underlying->pip_size * 2,
             epoch  => time,
