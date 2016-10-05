@@ -8,7 +8,7 @@ use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Market::Underlying;
 use Date::Utility;
-use BOM::Database::FeedDB;
+use Postgres::FeedDB;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 sub client_buy_bet {
@@ -96,7 +96,7 @@ sub create_contract {
     my $expire = $start->plus_time_interval($interval);
     prepare_contract_db($underlying_symbol);
 
-    my $dbh = BOM::Database::FeedDB::read_dbh;
+    my $dbh = Postgres::FeedDB::read_dbh;
     $dbh->{RaiseError} = 1;
 
     my @ticks;
@@ -104,7 +104,7 @@ sub create_contract {
     push @epoches, @$tick_epoches;
     @epoches = sort { $a <=> $b } @epoches;
     for my $epoch (@epoches) {
-        my $api = Quant::Framework::Spot::DatabaseAPI->new(
+        my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(
             underlying => $underlying_symbol,
             db_handle  => $dbh
         );

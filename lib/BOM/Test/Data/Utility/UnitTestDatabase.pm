@@ -8,7 +8,7 @@ use BOM::Database::Model::FinancialMarketBet::SpreadBet;
 use BOM::Database::Model::FinancialMarketBet::TouchBet;
 use BOM::Database::Model::FinancialMarketBet::RangeBet;
 use BOM::Database::Helper::FinancialMarketBet;
-use BOM::Database::FeedDB;
+use Postgres::FeedDB;
 
 use Date::Utility;
 
@@ -276,11 +276,11 @@ sub create_fmb_with_ticks {
     $start = $start->minus_time_interval('1h 2m') if $is_expired;
     my $expire = $start->plus_time_interval('2m');
 
-    my $dbh = BOM::Database::FeedDB::read_dbh;
+    my $dbh = Postgres::FeedDB::read_dbh;
     $dbh->{RaiseError} = 1;
 
     for my $epoch ($start->epoch, $start->epoch + 1, $expire->epoch) {
-        my $api = Quant::Framework::Spot::DatabaseAPI->new({
+        my $api = Postgres::FeedDB::Spot::DatabaseAPI->new({
             underlying => 'R_100',
             db_handle  => $dbh
         });

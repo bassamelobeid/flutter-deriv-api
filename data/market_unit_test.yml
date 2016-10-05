@@ -306,7 +306,7 @@ realtime_book:
     gamma: 1
 
 tick:
-  class_name: 'Quant::Framework::Spot::Tick'
+  class_name: 'Postgres::FeedDB::Spot::Tick'
   data:
     underlying: frxUSDJPY
     epoch: 1325462400           #Sun, 02 Jan 2012 00:00:00 GMT
@@ -315,7 +315,7 @@ tick:
     ask: 76.5030
 
 ohlc_daily:
-  class_name: 'Quant::Framework::Spot::OHLC'
+  class_name: 'Postgres::FeedDB::Spot::OHLC'
   data:
     underlying: frxUSDJPY
     epoch: 1325462400           #Sun, 02 Jan 2012 00:00:00 GMT

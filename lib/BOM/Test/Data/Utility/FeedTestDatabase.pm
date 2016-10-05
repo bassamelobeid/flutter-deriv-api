@@ -5,9 +5,9 @@ use warnings;
 
 use MooseX::Singleton;
 use BOM::Platform::Runtime;
-use BOM::Database::FeedDB;
-use Quant::Framework::Spot::Tick;
-use Quant::Framework::Spot::OHLC;
+use Postgres::FeedDB;
+use Postgres::FeedDB::Spot::Tick;
+use Postgres::FeedDB::Spot::OHLC;
 use Try::Tiny;
 
 use base qw( Exporter );
@@ -105,7 +105,7 @@ sub create_tick {
     # date for database
     my $ts = Date::Utility->new($defaults{epoch})->datetime_yyyymmdd_hhmmss;
 
-    my $dbh = BOM::Database::FeedDB::write_dbh;
+    my $dbh = Postgres::FeedDB::write_dbh;
     $dbh->{PrintWarn}  = 0;
     $dbh->{PrintError} = 0;
     $dbh->{RaiseError} = 1;
@@ -123,7 +123,7 @@ EOD
     $sth->bind_param(5, $defaults{quote});
     $sth->execute();
 
-    return Quant::Framework::Spot::Tick->new(\%defaults);
+    return Postgres::FeedDB::Spot::Tick->new(\%defaults);
 }
 
 sub create_ohlc_daily {
@@ -147,7 +147,7 @@ sub create_ohlc_daily {
     # date for database
     my $ts = Date::Utility->new($defaults{epoch})->datetime_yyyymmdd_hhmmss;
 
-    my $dbh = BOM::Database::FeedDB::write_dbh;
+    my $dbh = Postgres::FeedDB::write_dbh;
 
     my $tick_sql = <<EOD;
 INSERT INTO feed.ohlc_daily(underlying, ts, open, high, low, close, official)
@@ -165,12 +165,12 @@ EOD
     $sth->execute();
 
     delete $defaults{underlying};
-    return Quant::Framework::Spot::OHLC->new(\%defaults);
+    return Postgres::FeedDB::Spot::OHLC->new(\%defaults);
 }
 
 sub _create_table_for_date {
     my $date = shift;
-    my $dbh  = BOM::Database::FeedDB::write_dbh;
+    my $dbh  = Postgres::FeedDB::write_dbh;
 
     my $table_name = 'tick_' . $date->year . '_' . $date->month;
     my $stmt       = $dbh->prepare(' select count(*) from pg_tables where schemaname=\'feed\' and tablename = \'' . $table_name . '\'');
