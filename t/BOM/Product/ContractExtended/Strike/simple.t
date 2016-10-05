@@ -3,12 +3,12 @@
 use Test::Most (tests => 4);
 use Test::FailWarnings;
 
-use Quant::Framework::Spot::Tick;
+use Postgres::FeedDB::Spot::Tick;
 use BOM::Product::Contract::Strike;
 
 subtest 'construction' => sub {
     my $test_symbol = 'frxUSDJPY';
-    my $basis_tick  = Quant::Framework::Spot::Tick->new(
+    my $basis_tick  = Postgres::FeedDB::Spot::Tick->new(
         epoch  => time,
         quote  => 100,
         symbol => $test_symbol,
@@ -42,7 +42,7 @@ subtest 'construction' => sub {
 
 subtest 'ATM representation' => sub {
     my $test_symbol = 'frxUSDJPY';
-    my $basis_tick  = Quant::Framework::Spot::Tick->new(
+    my $basis_tick  = Postgres::FeedDB::Spot::Tick->new(
         epoch  => time,
         quote  => 100,
         symbol => $test_symbol,
@@ -75,7 +75,7 @@ subtest 'ATM representation' => sub {
 
 subtest 'up barrier representation' => sub {
     my $test_symbol = 'R_100';
-    my $basis_tick  = Quant::Framework::Spot::Tick->new(
+    my $basis_tick  = Postgres::FeedDB::Spot::Tick->new(
         epoch  => time,
         quote  => 20000,
         symbol => $test_symbol,
@@ -108,7 +108,7 @@ subtest 'up barrier representation' => sub {
 
 subtest 'down barrier representation' => sub {
     my $test_symbol = 'R_50';
-    my $basis_tick  = Quant::Framework::Spot::Tick->new(
+    my $basis_tick  = Postgres::FeedDB::Spot::Tick->new(
         epoch  => time,
         quote  => 3000,
         symbol => $test_symbol,
