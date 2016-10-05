@@ -58,9 +58,8 @@ sub send_email {
     $subject = encode('MIME-Q', $subject);
 
     # DON'T send email on devbox except to RMG emails
-    return 1
-        if ((!BOM::System::Config::on_production() && $email !~ /(?:binary|regentmarkets|betonmarkets)\.com$/)
-        || $ENV{SKIP_EMAIL});
+    return 1 if !BOM::System::Config::on_production() && $email !~ /(?:binary|regentmarkets|betonmarkets)\.com$/;
+    return 1 if $ENV{SKIP_EMAIL};
 
     my @toemails = split(/\s*\,\s*/, $email);
     foreach my $toemail (@toemails) {
