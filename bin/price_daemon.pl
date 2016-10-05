@@ -125,7 +125,7 @@ while (1) {
             process_job($redis, $next, $params);
         } qw(feed chronicle) or next;
 
-        warn "Pricing time too long: " . $response->{rpc_time} . ' - ' . join(', ', map "$_ = $params->{$_}", sort keys %$params) . "\n" if $response->{rpc_time}>1000;
+        warn "Pricing time too long: " . $response->{rpc_time} . ': ' . join(', ', map $_." = ".($params->{$_}//'"undef"'), sort keys %$params) . "\n" if $response->{rpc_time}>1000;
 
         my $subscribers_count = $redis->publish($key->[1], encode_json($response));
         # if None was subscribed, so delete the job
