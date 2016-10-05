@@ -173,7 +173,7 @@ sub _predefined_trading_period {
         # Hence, we need to generate new trading window when it pass 45 mins and we need to remove expired trading window
         # at the end of predefined trading window which always happen at 00min.
         # So the trading window will be created at 45min and also 00min of hours
-        Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, ($now_minute < 45 ? 2700 : 3600) - $now_minute * 60);
+        Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, ($now_minute < 45 ? 2700 : 3600) - $now_minute * 60 - $now->second);
     }
 
     my @new_offerings;
