@@ -16,7 +16,7 @@ use Time::Duration::Concise;
 use Quant::Framework::Currency;
 use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
-use Quant::Framework::Spot::Tick;
+use Postgres::FeedDB::Spot::Tick;
 use Quant::Framework::CorrelationMatrix;
 
 use Price::Calculator;
@@ -139,7 +139,7 @@ has [qw(backtest tick_expiry)] => (
 
 has basis_tick => (
     is         => 'ro',
-    isa        => 'Quant::Framework::Spot::Tick',
+    isa        => 'Postgres::FeedDB::Spot::Tick',
     lazy_build => 1,
 );
 
@@ -161,7 +161,7 @@ sub _build_basis_tick {
 
     # if there's no basis tick, don't die but catch the error.
     unless ($basis_tick) {
-        $basis_tick = Quant::Framework::Spot::Tick->new({
+        $basis_tick = Postgres::FeedDB::Spot::Tick->new({
             # slope pricer will die with illegal division by zero error when we get the slope
             quote  => $self->underlying->pip_size * 2,
             epoch  => time,
@@ -781,6 +781,14 @@ sub _build_pricing_mu {
     return $self->mu;
 }
 
+=head2 _build_longcode
+
+Returns the (localized) longcode for this contract.
+
+May throw an exception if an invalid expiry type is requested for this contract type.
+
+=cut
+
 sub _build_longcode {
     my $self = shift;
 
@@ -788,7 +796,7 @@ sub _build_longcode {
     # Don't use $self->expiry_type because that's use to price a contract at effective_start time.
     my $expiry_type = $self->tick_expiry ? 'tick' : $self->_check_is_intraday($self->date_start) == 0 ? 'daily' : 'intraday';
     $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $self->starts_as_forward_starting and $self->fixed_expiry;
-    my $localizable_description = $self->localizable_description->{$expiry_type};
+    my $localizable_description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
 
     my ($when_end, $when_start);
     if ($expiry_type eq 'intraday_fixed_expiry') {

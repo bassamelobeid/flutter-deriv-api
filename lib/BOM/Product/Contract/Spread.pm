@@ -13,7 +13,7 @@ use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 
 use BOM::Platform::Context qw(localize request);
 use BOM::MarketData::Fetcher::VolSurface;
-use Quant::Framework::Spot::Tick;
+use Postgres::FeedDB::Spot::Tick;
 use BOM::Market::Underlying;
 use BOM::Product::Types;
 use BOM::Product::RiskProfile;
@@ -360,7 +360,7 @@ has _pip_size_tick => (
 sub _build__pip_size_tick {
     my $self = shift;
 
-    return Quant::Framework::Spot::Tick->new({
+    return Postgres::FeedDB::Spot::Tick->new({
         quote  => $self->underlying->pip_size,
         epoch  => 1,                             # Intentionally very old for recognizability.
         symbol => $self->underlying->symbol,

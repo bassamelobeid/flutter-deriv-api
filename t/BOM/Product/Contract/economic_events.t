@@ -9,7 +9,7 @@ use JSON qw(decode_json);
 
 use Cache::RedisDB;
 use Date::Utility;
-use Quant::Framework::Spot::Tick;
+use Postgres::FeedDB::Spot::Tick;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
