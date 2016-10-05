@@ -271,6 +271,7 @@ sub get_bid {
                 return;
             }
 
+            $response->{is_settleable} = $contract->is_settleable;
             $response->{has_corporate_actions} = 1 if @{$contract->corporate_actions};
 
             $response->{barrier_count} = $contract->two_barriers ? 2 : 1;
@@ -291,7 +292,7 @@ sub get_bid {
                 }
             }
 
-            if ($contract->exit_tick) {
+            if ($contract->exit_tick and $contract->is_after_settlement) {
                 $response->{exit_tick}      = $contract->underlying->pipsized_value($contract->exit_tick->quote);
                 $response->{exit_tick_time} = $contract->exit_tick->epoch;
             }
