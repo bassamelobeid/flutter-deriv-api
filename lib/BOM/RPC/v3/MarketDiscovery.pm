@@ -16,6 +16,7 @@ use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries)
 use BOM::System::RedisReplicated;
 use Sereal::Encoder;
 use BOM::Platform::Runtime;
+use BOM::Market::Info;
 
 my %name_mapper = (
     DVD_STOCK  => localize('Stock Dividend'),
@@ -147,14 +148,14 @@ sub asset_index {
     my $asset_index = BOM::Product::Contract::Offerings->new(landing_company => $landing_company_name)->decorate_tree(
         markets => {
             code => sub { $_->name },
-            name => sub { $_->translated_display_name }
+            name => sub { localize($_->display_name) }
         },
         submarkets => {
             code => sub {
                 $_->name;
             },
             name => sub {
-                $_->translated_display_name;
+                localize($_->display_name);
             }
         },
         underlyings => {
@@ -162,7 +163,7 @@ sub asset_index {
                 $_->symbol;
             },
             name => sub {
-                $_->translated_display_name;
+                localize($_->display_name);
             }
         },
         contract_categories => {
@@ -170,7 +171,7 @@ sub asset_index {
                 $_->code;
             },
             name => sub {
-                $_->translated_display_name;
+                localize($_->display_name);
             },
             expiries => sub {
                 my $underlying = shift;
@@ -282,16 +283,18 @@ sub _description {
         $spot_time = $ul->spot_time;
         $spot_age  = $ul->spot_age;
     }
+    my $ul_info = BOM::Market::Info->new(underlying => $ul);
+
     my $response = {
         symbol                 => $symbol,
         display_name           => $ul->display_name,
         symbol_type            => $ul->instrument_type,
-        market_display_name    => $ul->market->translated_display_name,
+        market_display_name    => localize($ul->market->display_name),
         market                 => $ul->market->name,
         submarket              => $ul->submarket->name,
-        submarket_display_name => $ul->submarket->translated_display_name,
+        submarket_display_name => localize($ul->submarket->display_name),
         exchange_is_open       => $exchange_is_open || 0,
-        is_trading_suspended   => $ul->is_trading_suspended,
+        is_trading_suspended   => $ul_info->is_trading_suspended,
         pip                    => $ul->pip_size
     };
 
