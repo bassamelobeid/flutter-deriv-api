@@ -214,11 +214,9 @@ sub get_client_profiles {
         my @landing_company_limits = ();
         my $lcn                    = $client->landing_company->short;
         foreach my $custom (values %{$self->raw_custom_profiles}) {
-            my %copy = %$custom;
-            next unless exists $copy{landing_company};
-            next if $lcn ne $copy{landing_company};
-            delete $copy{landing_company};
-            push @landing_company_limits, $custom if $self->_match_conditions(\%copy);
+            next unless exists $custom->{landing_company};
+            next if $lcn ne $custom->{landing_company};
+            push @landing_company_limits, $custom if $self->_match_conditions($custom, {landing_company => $lcn});
         }
 
         return (@client_limits, @landing_company_limits);
@@ -273,10 +271,11 @@ my %_no_condition;
 @_no_condition{qw(name risk_profile updated_by updated_on)} = ();
 
 sub _match_conditions {
-    my ($self, $custom) = @_;
+    my ($self, $custom, $additional_info) = @_;
 
+    $additional_info = {} unless defined $additional_info;
     my $real_tests_performed;
-    my $ci = $self->contract_info;
+    my $ci = {%{$self->contract_info}, %$additional_info};
     foreach my $key (keys %$custom) {
         next if exists $_no_condition{$key};    # skip test
         $real_tests_performed = 1;
