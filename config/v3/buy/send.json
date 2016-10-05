@@ -89,7 +89,7 @@
         },
         "trading_period": {
           "type": "string",
-          "description":"[For japan only] The trading period of the contract"
+          "description":"[For japan only] A predefined trading period of the contract"
         }
       }
     },
