@@ -36,21 +36,19 @@ use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
 use Finance::Asset::Market::Types;
 
-use Quant::Framework::Spot;
-use Quant::Framework::Spot::Tick;
+use Postgres::FeedDB;
+use Postgres::FeedDB::Spot;
+use Postgres::FeedDB::Spot::Tick;
+use Postgres::FeedDB::Spot::DatabaseAPI;
 use Quant::Framework::Exchange;
 use Quant::Framework::TradingCalendar;
 use Quant::Framework::CorporateAction;
-use Quant::Framework::Spot::DatabaseAPI;
 use Quant::Framework::Asset;
 use Quant::Framework::Currency;
 use Quant::Framework::ExpiryConventions;
 use Quant::Framework::StorageAccessor;
 use Quant::Framework::Utils::UnderlyingConfig;
 use Quant::Framework::Utils::Builder;
-
-#FeedDB::read_dbh is passed to Quant::Framework to be used to retrieve latest spot
-use BOM::Database::FeedDB;
 
 #Passed to Quant::Framework to read/write data
 use BOM::System::Chronicle;
@@ -173,7 +171,43 @@ has spot_source => (
 sub _build_spot_source {
     my $self = shift;
 
-    return $self->_builder->build_spot;
+    return Postgres::FeedDB::Spot->new(
+        for_date          => $self->for_date,
+        symbol            => $self->symbol,
+        calendar          => $self->calendar,
+        feed_api          => $self->feed_api,
+        use_official_ohlc => $self->use_official_ohlc,
+    );
+}
+
+has 'feed_api' => (
+    is      => 'ro',
+    isa     => 'Postgres::FeedDB::Spot::DatabaseAPI',
+    handles => {
+        ticks_in_between_start_end   => 'ticks_start_end',
+        ticks_in_between_start_limit => 'ticks_start_limit',
+        ticks_in_between_end_limit   => 'ticks_end_limit',
+        ohlc_between_start_end       => 'ohlc_start_end',
+        next_tick_after              => 'tick_after',
+        get_high_low_for_period      => 'get_high_low_for_period',
+        get_ohlc_data_for_period     => 'get_ohlc_data_for_period',
+    },
+    lazy_build => 1,
+);
+
+sub _build_feed_api {
+    my $self = shift;
+
+    my $build_args = {underlying => $self->system_symbol};
+    $build_args->{use_official_ohlc} = $self->use_official_ohlc;
+    $build_args->{invert_values}     = $self->inverted;
+    $build_args->{db_handle}         = sub {
+        my $dbh = Postgres::FeedDB::read_dbh;
+        $dbh->{RaiseError} = 1;
+        return $dbh;
+    };
+
+    return Postgres::FeedDB::Spot::DatabaseAPI->new($build_args);
 }
 
 sub spot {
@@ -310,15 +344,8 @@ sub _build_config {
     $default_dividend_rate = 0 if $self->symbol eq 'R_50'  or $self->symbol eq 'R_25';
     $default_dividend_rate = 0 if $self->symbol eq 'R_10';
 
-    my $build_args = {underlying => $self->system_symbol};
-
-    $build_args->{use_official_ohlc} = 1 if ($self->use_official_ohlc);
-    $build_args->{invert_values}     = 1 if $self->inverted;
-    $build_args->{db_handle}         = sub {
-        my $dbh = BOM::Database::FeedDB::read_dbh;
-        $dbh->{RaiseError} = 1;
-        return $dbh;
-    };
+    my $spot = undef;
+    $spot = $self->spot_tick->quote if defined $self->spot_tick;
 
     return Quant::Framework::Utils::UnderlyingConfig->new({
         symbol                                => $self->symbol,
@@ -339,7 +366,7 @@ sub _build_config {
         default_dividend_rate                 => $default_dividend_rate,
         use_official_ohlc                     => $self->use_official_ohlc,
         pip_size                              => $self->pip_size,
-        spot_db_args                          => $build_args,
+        spot                                  => $spot,
     });
 }
 
@@ -408,19 +435,6 @@ has forward_feed => (
     is      => 'ro',
     isa     => 'Bool',
     default => 0,
-);
-
-has 'feed_api' => (
-    is      => 'ro',
-    isa     => 'Quant::Framework::Spot::DatabaseAPI',
-    handles => {
-        ticks_in_between_start_end   => 'ticks_start_end',
-        ticks_in_between_start_limit => 'ticks_start_limit',
-        ticks_in_between_end_limit   => 'ticks_end_limit',
-        ohlc_between_start_end       => 'ohlc_start_end',
-        next_tick_after              => 'tick_after',
-    },
-    lazy_build => 1,
 );
 
 has 'intradays_must_be_same_day' => (
@@ -959,18 +973,6 @@ sub _build_quoted_currency_symbol {
     return $symbol;
 }
 
-=head2 feed_api
-
-Returns, an instance of I<Quant::Framework::Spot::DatabaseAPI> based on information that it can collect from underlying.
-
-=cut
-
-sub _build_feed_api {
-    my $self = shift;
-
-    return $self->_builder->build_feed_api;
-}
-
 # End of builders.
 
 =head2 intraday_interval
@@ -1157,96 +1159,27 @@ sub is_in_quiet_period {
 
 =cut
 
-sub get_ohlc_data_for_period {
-    my ($self, $args) = @_;
-
-    my ($start, $end) = @{$args}{'start', 'end'};
-
-    my $start_date = Date::Utility->new($start);
-    my $end_date   = Date::Utility->new($end);
-
-    if ($end_date->epoch < $start_date->epoch) {
-        die "[$0][get_ohlc_data_for_period] start_date > end_date ("
-            . $start_date->datetime . ' > '
-            . $end_date->datetime
-            . ") with input: $start > $end";
-    }
-
-    if ($end_date->epoch == $end_date->truncate_to_day->epoch) {
-
-        # if is 00:00:00, make it 23:59:59 (end of the day)
-        $end_date = Date::Utility->new($end_date->epoch + 86399);
-    }
-
-    my @ohlcs = @{
-        $self->feed_api->ohlc_daily_list({
-                start_time => $start_date->datetime_yyyymmdd_hhmmss,
-                end_time   => $end_date->datetime_yyyymmdd_hhmmss,
-            })};
-
-    return @ohlcs;
-}
-
-=head2 get_high_low_for_period
-
-Usage:
-
-  $u->get_high_low_for_period({start => "10-Jan-00", end => "20-Jan-00"});
-
-Returns a hash ref with the following keys:
-high  => The high over the period.
-low   => The low over the period.
-
-=cut
-
-sub get_high_low_for_period {
-    my ($self, $args) = @_;
-
-    # Sleep for 10ms to give feed replicas a bit of time to catch the latest tick if the sell time is now
-    Time::HiRes::sleep(0.01) if Date::Utility->new($args->{end})->epoch == time;
-    my @ohlcs = $self->get_ohlc_data_for_period($args);
-
-    my ($final_high, $final_low, $final_close);
-    foreach my $ohlc (@ohlcs) {
-        my $high = $ohlc->high;
-        my $low  = $ohlc->low;
-
-        $final_high = $high unless $final_high;
-        $final_low  = $low  unless $final_low;
-
-        $final_high = $high if $high > $final_high;
-        $final_low  = $low  if $low < $final_low;
-        $final_close = $ohlc->close;
-    }
-
-    return {
-        high  => $final_high,
-        low   => $final_low,
-        close => $final_close,
-    };
-}
-
 =head2 next_tick_after
 
 Get next tick after a given time. What is the next tick on this underlying after the given epoch timestamp?
     my $tick = $underlying->next_tick_after(1234567890);
 
 Return:
-    'Quant::Framework::Spot::Tick' Object
+    'Postgres::FeedDB::Spot::Tick' Object
 
 =head2 breaching_tick
 
 Get first tick in a provided period which breaches a barrier (either 'higher' or 'lower')
 
 Return:
-    'Quant::Framework::Spot::Tick' Object or undef
+    'Postgres::FeedDB::Spot::Tick' Object or undef
 
 =head2 ticks_in_between_start_end
 
 Gets ticks for specified start_time, end_time as all ticks between start_time and end_time
 
 Returns,
-    ArrayRef[Quant::Framework::Spot::Tick] on success
+    ArrayRef[Postgres::FeedDB::Spot::Tick] on success
     empty ArrayRef on failure
 
 =head2 ticks_in_between_start_limit
@@ -1254,7 +1187,7 @@ Returns,
 Get ticks for specified start_time, limit as limit number of ticks from start_time
 
 Returns,
-    ArrayRef[Quant::Framework::Spot::Tick] on success
+    ArrayRef[Postgres::FeedDB::Spot::Tick] on success
     empty ArrayRef on failure
 
 =head2 ticks_in_between_end_limit
@@ -1262,7 +1195,7 @@ Returns,
 Get ticks for specified end_time, limit as limit number of ticks from end_time.
 
 Returns,
-    ArrayRef[Quant::Framework::Spot::Tick] on success
+    ArrayRef[Postgres::FeedDB::Spot::Tick] on success
     empty ArrayRef on failure
 
 =head2 ohlc_between_start_end
@@ -1270,7 +1203,7 @@ Returns,
 Gets ohlc for specified start_time, end_time, aggregation_period
 
 Returns,
-    ArrayRef[Quant::Framework::Spot::OHLC] on success
+    ArrayRef[Postgres::FeedDB::Spot::OHLC] on success
     empty ArrayRef on failure
 
 
