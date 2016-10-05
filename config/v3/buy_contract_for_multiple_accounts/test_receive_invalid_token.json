@@ -19,7 +19,6 @@
             "properties": {
               "code": {
                 "type": "string",
-                "pattern": "^AppGet$",
                 "description": "Error code"
               },
               "message_to_client": {
@@ -28,31 +27,14 @@
               },
               "token": {
                 "type": "string",
-                "pattern": "^AppGet$",
                 "description": "Token returned"
               }
             }
           }
         }
       }
-    },
-    "echo_req": {
-       "required": "1"
-        },
-        "price": {
-          "type": "integer",
-          "title": "Price schema.",
-          "description": "Price schema"
-        },
-        "tokens": {
-          "type": "array",
-          "title": "Tokens schema.",          
-          "items": {
-            "type": "string",
-            "description": "Receipt of contract"
-          }
-        }
-      }
+    }
+      
     },
     "msg_type": {
       "type": "string",
@@ -60,4 +42,3 @@
       "description": "buy_contract_for_multiple_accounts"
     }
   }
-}
