@@ -171,9 +171,11 @@ has spot_source => (
 sub _build_spot_source {
     my $self = shift;
 
+    #use system_symbol because we always need spot and sometimes underlying is created using inverted 
+    #symbol name in which case spot will be undef
     return Postgres::FeedDB::Spot->new(
         for_date          => $self->for_date,
-        symbol            => $self->symbol,
+        symbol            => $self->system_symbol,
         calendar          => $self->calendar,
         feed_api          => $self->feed_api,
         use_official_ohlc => $self->use_official_ohlc,
