@@ -140,6 +140,27 @@ has spot_spread_size => (
     default => 50,
 );
 
+has _feed_license => (
+    is => 'ro',
+);
+
+#User friendly name for the underlying
+has display_name => (
+    is         => 'ro',
+);
+
+#The pip value for a forex asset
+has pip_size => (
+    is      => 'ro',
+    default => 0.0001,
+);
+
+has quanto_only => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => 0,
+);
+
 ################################################
 ##### Calculated attributes       ##############
 ################################################
@@ -253,6 +274,31 @@ sub _build_spot_spread {
     return $self->spot_spread_size * $self->pip_size;
 }
 
+
+has instrument_type (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+=head2 instrument_type
+
+Returns what type of instrument it is (useful for knowing whether it is prone to
+stock splits or jumpy random movements. Most of the time, the type will be taken
+from underlyings.yml
+
+=cut
+
+sub _build_instrument_type {
+    my $self            = shift;
+    my $market          = $self->market;
+    my $instrument_type = '';
+
+    if (scalar grep { $market->name eq $_ } qw(config futures forex)) {
+        $instrument_type = $market->name;
+    }
+
+    return $instrument_type;
+}
 ################################################
 ##### FeedDB access               ##############
 ################################################
@@ -319,23 +365,24 @@ sub spot {
     return $self->pipsized_value($self->spot_source->spot_quote);
 }
 
-has [qw(
-        instrument_type
-        )
-    ] => (
-    is         => 'ro',
-    lazy_build => 1,
-    );
+
+
+
+
+
+
+
+
+
+
+
+
 
 has 'market' => (
     is      => 'ro',
     isa     => 'financial_market',
     coerce  => 1,
     default => 'config',
-);
-
-has _feed_license => (
-    is => 'ro',
 );
 
 has asset => (
@@ -349,11 +396,7 @@ has quoted_currency => (
     lazy_build => 1,
 );
 
-has [qw(
-        inverted
-        quanto_only
-        )
-    ] => (
+has inverted => (
     is      => 'ro',
     isa     => 'Bool',
     default => 0,
@@ -620,41 +663,8 @@ around BUILDARGS => sub {
 Returns the SubMarket on which this underlying can be found.
 Required.
 
-=head2 instrument_type
-
-Returns what type of instrument it is (useful for knowing whether it is prone to
-stock splits or jumpy random movements. Most of the time, the type will be taken
-from underlyings.yml
-
 =cut
 
-sub _build_instrument_type {
-    my $self            = shift;
-    my $market          = $self->market;
-    my $instrument_type = '';
-
-    if (scalar grep { $market->name eq $_ } qw(config futures forex)) {
-        $instrument_type = $market->name;
-    }
-
-    return $instrument_type;
-}
-
-=head2 display_name
-
-User friendly name for the underlying
-
-=cut
-
-has display_name => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_display_name {
-    my ($self) = @_;
-    return uc $self->symbol;
-}
 
 has expiry_conventions => (
     is         => 'ro',
@@ -1148,17 +1158,6 @@ sub ohlc_daily_open {
     }
     return;
 }
-
-=head2 pip_size
-
-The pip value for a forex asset
-
-=cut
-
-has pip_size => (
-    is      => 'ro',
-    default => 0.0001,
-);
 
 =head2 display_decimals
 
