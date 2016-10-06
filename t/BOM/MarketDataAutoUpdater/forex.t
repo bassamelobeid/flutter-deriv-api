@@ -20,6 +20,7 @@ Test::MockModule->new('Postgres::FeedDB::Spot')->mock('spot_tick',
             quote => 100,
         };
     });
+
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::MarketDataAutoUpdater::Forex;

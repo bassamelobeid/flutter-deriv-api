@@ -190,7 +190,7 @@ sub run {
             if ($quanto_only eq 'NO') {
                 $self->report->{$symbol} = {
                     success => 0,
-                    reason  => $volsurface->validation_error,
+                    reason  => $volsurface->validation_error . " " . "S $symbol and for_date is ".$underlying;
                 };
             }
         }
