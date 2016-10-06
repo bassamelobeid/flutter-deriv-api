@@ -2715,6 +2715,25 @@ sub _build_risk_profile {
     );
 }
 
+has market_is_inefficient => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_market_is_inefficient {
+    my $self = shift;
+
+    # market inefficiency only applies to forex and commodities.
+    return 0 unless ($self->market->name eq 'forex' or $self->market->name eq 'commodities');
+    return 0 if $self->expiry_daily;
+
+    my $hour = $self->date_pricing->hour + 0;
+    # only 20:00/21:00 GMT to end of day
+    my $disable_hour = $self->date_pricing->is_dst_in_zone('America/New_York') ? 20 : 21;
+    return 0 if $hour < $disable_hour;
+    return 1;
+}
+
 # Don't mind me, I just need to make sure my attibutes are available.
 with 'BOM::Product::Role::Reportable';
 
