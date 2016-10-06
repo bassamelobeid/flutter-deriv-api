@@ -12,6 +12,7 @@ use Test::More qw( no_plan );
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
+use Data::Dumper;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -195,6 +196,7 @@ subtest 'save valid' => sub {
             }});
     lives_ok { $au->run } 'run without dying';
     ok $au->report->{frxUSDJPY}->{success}, 'update successful';
+    diag Dumper($au->report->{frxUSDJPY});
 };
 
 subtest "Friday after close, weekend, won't open check." => sub {
@@ -270,6 +272,7 @@ subtest 'do not update one hour after rollover' => sub {
             }});
     lives_ok { $au->run } 'run without dying';
     ok $au->report->{frxUSDJPY}->{success}, 'update successful';
+    diag Dumper($au->report->{frxUSDJPY});
 };
 
 restore_time();
