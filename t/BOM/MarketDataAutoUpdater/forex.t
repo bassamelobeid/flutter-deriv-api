@@ -22,6 +22,14 @@ use BOM::MarketDataAutoUpdater::Forex;
 my $fake_date = Date::Utility->new('2012-08-13 15:55:55');
 set_absolute_time($fake_date->epoch);
 
+
+Test::MockModule->new('Postgres::FeedDB::Spot')->mock('spot_tick', 
+    sub { return {
+            epoch => time,
+            quote => 100,
+        };
+    });
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
