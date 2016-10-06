@@ -1349,10 +1349,7 @@ sub _validate_sell_pricing_adjustment {
     my $contract = $self->contract;
     my $currency = $contract->currency;
 
-    my $requested = $self->price / $self->payout;
-    # set the requested price and recomputed  price to be store in db
-    $self->requested_price($self->price);
-    $self->recomputed_price($contract->bid_price);
+    my $requested         = $self->price / $self->payout;
     my $recomputed        = $contract->bid_probability->amount;
     my $move              = $recomputed - $requested;
     my $commission_markup = 0;
@@ -1362,6 +1359,9 @@ sub _validate_sell_pricing_adjustment {
     my $allowed_move = $commission_markup * 0.8;
     $allowed_move = 0 if $recomputed == 1;
     my ($amount, $recomputed_amount) = ($self->price, $contract->bid_price);
+    # set the requested price and recomputed  price to be store in db
+    $self->requested_price($amount);
+    $self->recomputed_price($recomputed_amount);
 
     if ($move != 0) {
         my $final_value;
@@ -1413,10 +1413,7 @@ sub _validate_trade_pricing_adjustment {
     my $contract    = $self->contract;
     my $currency    = $contract->currency;
 
-    my $requested = $self->price / $self->payout;
-    # set the requested price and recomputed price to be store in db
-    $self->requested_price($self->price);
-    $self->recomputed_price($contract->ask_price);
+    my $requested         = $self->price / $self->payout;
     my $recomputed        = $contract->ask_probability->amount;
     my $move              = $requested - $recomputed;
     my $commission_markup = 0;
@@ -1426,6 +1423,9 @@ sub _validate_trade_pricing_adjustment {
     my $allowed_move = ($self->contract->category->code eq 'digits') ? $commission_markup : ($commission_markup * 0.5);
     $allowed_move = 0 if $recomputed == 1;
     my ($amount, $recomputed_amount) = $amount_type eq 'payout' ? ($self->price, $contract->ask_price) : ($self->payout, $contract->payout);
+    # set the requested price and recomputed price to be store in db
+    $self->requested_price($amount);
+    $self->recomputed_price($recomputed_amount);
 
     if ($move != 0) {
         my $final_value;
