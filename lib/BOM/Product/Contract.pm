@@ -2252,6 +2252,10 @@ sub validate_price {
             },
             stake_same_as_payout => sub {
                 my ($details) = @_;
+
+                #WARNING:
+                #Please change the code in lib/BOM/WebsocketAPI/v3/Wrapper/Pricer.pm if you are changing the message here.
+                #Otherwise the logic in Pricer.pm will break. Changing message_to_client is fine.
                 return {
                     message           => 'stake same as payout',
                     message_to_client => localize('This contract offers no return.'),
