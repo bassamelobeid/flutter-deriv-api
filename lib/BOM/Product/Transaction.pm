@@ -1350,7 +1350,6 @@ sub _validate_sell_pricing_adjustment {
 
             #Record failed transaction here.
             my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
-                    id                      => undef,
                     login_id                => $self->client->loginid,
                     financial_market_bet_id => $self->financial_market_bet_id,
                     shortcode               => $self->contract->shortcode,
@@ -1435,7 +1434,6 @@ sub _validate_trade_pricing_adjustment {
 
             #Record failed transaction here.
             my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
-                    id          => undef,
                     login_id    => $self->client->loginid,
                     shortcode   => $self->contract->shortcode,
                     action_type => 'buy',
