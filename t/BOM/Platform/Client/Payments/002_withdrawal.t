@@ -148,8 +148,8 @@ subtest 'CR withdrawal' => sub {
         lives_ok { $client->validate_payment(%withdrawal, amount => -10001) } 'Authed CR withdrawal more than USD10K';
 
         subtest 'perform withdraw' => sub {
-            lives_ok { $client->smart_payment(%withdrawal, amount => -5000) }, 'first 5k withdrawal';
-            lives_ok { $client->smart_payment(%withdrawal, amount => -6000) }, 'subsequent 6k withdrawal';
+            lives_ok { $client->smart_payment(%withdrawal, amount => -5000) } 'first 5k withdrawal';
+            lives_ok { $client->smart_payment(%withdrawal, amount => -6000) } 'subsequent 6k withdrawal';
         };
     };
 };

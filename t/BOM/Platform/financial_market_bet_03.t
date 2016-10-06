@@ -3,9 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 2;
-
-use Test::NoWarnings ();    # no END block test
+use Test::More tests => 1;
 use Test::Exception;
 use BOM::Database::ClientDB;
 
@@ -90,7 +88,5 @@ subtest 'check daily_aggregates' => sub {
     is($res->{unequal}, 0, "No difference between daily_aggregate and agg select");
 
 };
-
-Test::NoWarnings::had_no_warnings;
 
 done_testing;

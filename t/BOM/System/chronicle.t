@@ -2,9 +2,8 @@ use strict;
 use warnings;
 
 use Test::MockTime qw(:all);
-use Test::More tests => 8;
+use Test::More tests => 7;
 use Test::Exception;
-use Test::NoWarnings;
 use Time::HiRes;
 use Time::Local ();
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
