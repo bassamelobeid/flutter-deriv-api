@@ -93,9 +93,24 @@ subtest $method => sub {
     ok $new_loginid =~ /^VRTC\d+/, 'new VR loginid';
     my $user = BOM::Platform::User->new({email => $email});
     ok $user->utm_source =~ '^google\.com$', 'utm registered as expected';
+    is $user->email_consent, undef, 'email consent not passed during account creation so its undef';
 
     my ($resp_loginid, $t, $uaf) = BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token});
     is $resp_loginid, $new_loginid, 'correct oauth token';
+
+    my $vr_email = 'new_email' . rand(999) . '@binary.com';
+    $params->{args}->{verification_code} = BOM::Platform::Token->new(
+        email       => $vr_email,
+        created_for => 'account_opening'
+    )->token;
+    $params->{args}->{email_consent} = 1;
+
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
+        ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
+        ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+
+    $user = BOM::Platform::User->new({email => $vr_email});
+    is $user->email_consent, 1, 'email consent is correct';
 };
 
 $method = 'new_account_real';
