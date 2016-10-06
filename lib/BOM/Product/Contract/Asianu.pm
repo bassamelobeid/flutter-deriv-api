@@ -53,7 +53,7 @@ sub _build_supplied_barrier {
             })};
 
     return unless @ticks_since_start;
-    return if $self->is_after_expiry and $hmt != @ticks_since_start;
+    return if $self->is_after_settlement and $hmt != @ticks_since_start;
 
     my $sum = 0;
     for (@ticks_since_start) {

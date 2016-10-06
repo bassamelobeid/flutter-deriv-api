@@ -167,9 +167,28 @@ sub _predefined_trading_period {
                 calendar => $calendar
             });
 
-        my $key_expiry = $now_minute < 45 ? $now_date . ' ' . $now_hour . ':45:00' : $now_date . ' ' . $now_hour . ':00:00';
-        Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, Date::Utility->new($key_expiry)->epoch - $now->epoch);
+# Japan's intraday predefined trading window are as follow:
+# 2 hours and 15 min duration:
+# 00:00-02:00,01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00 21:45:00, 23:45-02:00,01:45-04:00, 03:45-06:00
+#
+# 5 hours and 15 min duration:
+# 00:45-06:00 ; 04:45-10:00 ; 08:45-14:00 ; 12:45-18:00
+#
+# Hence, we will generate the window at HH::45 (HH is the predefined trading hour) to include any new trading window and will also generate the trading window again at the next HH:00 to remove any expired trading window.
+#
+# TTL is the remaining seconds until the forthcoming HH:45 (if current minute is < 45) or the forthcoming HH:)) (if the current time is >= 45)
 
+# So cache TTL is (in mins for comfort) :
+# hh:00 => ttl = 45 min
+# hh:03 => ttl = 42 min
+# hh:29 => ttl = 16 min
+# hh:44 => ttl = 1 min
+# hh:45 => ttl = 15 min
+# hh:54 => ttl = 6 min
+# hh:59 => ttl = 1 min
+# hh:00 => ttl = 45 min
+
+        Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, ($now_minute < 45 ? 2700 : 3600) - $now_minute * 60 - $now->second);
     }
 
     my @new_offerings;

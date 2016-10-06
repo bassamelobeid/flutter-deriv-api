@@ -712,7 +712,7 @@ sub prepare_bet_data_for_sell {
         id         => scalar $self->contract_id,
         sell_price => scalar $self->price,
         sell_time  => scalar $contract->date_pricing->db_timestamp,
-        $contract->category_code eq 'asian' && $contract->is_after_expiry
+        $contract->category_code eq 'asian' && $contract->is_after_settlement
         ? (absolute_barrier => scalar $contract->barrier->as_absolute)
         : (),
     };
@@ -1906,7 +1906,7 @@ sub sell_expired_contracts {
 
         my $logging_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
         $stats_attempt{$logging_class}++;
-        if (not $contract->is_expired) {
+        if (not $contract->is_settleable) {
             $stats_failure{$logging_class}{'NotExpired'}++;
             $failure->{reason} = 'not expired';
             push @{$result->{failures}}, $failure;
@@ -1922,7 +1922,7 @@ sub sell_expired_contracts {
             if ($contract->is_valid_to_sell) {
                 @{$bet}{qw/sell_price sell_time/} = ($contract->bid_price, $contract->date_pricing->db_timestamp);
                 $bet->{absolute_barrier} = $contract->barrier->as_absolute
-                    if $contract->category_code eq 'asian' and $contract->is_after_expiry;
+                    if $contract->category_code eq 'asian' and $contract->is_after_settlement;
                 push @bets_to_sell, $bet;
                 push @transdata,
                     {

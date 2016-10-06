@@ -52,6 +52,16 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch + 1,
     quote      => 0.9936,
 });
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'frxUSDCAD',
+    epoch      => $now->epoch + 1,
+    quote      => 0.9936,
+});
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'frxAUDUSD',
+    epoch      => $now->epoch + 1,
+    quote      => 0.9936,
+});
 
 my $args = {
     bet_type     => 'CALL',
