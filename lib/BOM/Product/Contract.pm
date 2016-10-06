@@ -2421,12 +2421,6 @@ sub _build_date_start_blackouts {
         }
     }
 
-    # Due to uncertainty in volsurface rollover time, we will stay out.
-    if ($self->market->name eq 'forex' and not $self->is_atm_bet and $self->timeindays->amount <= 3) {
-        my $rollover_date = Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($self->date_start);
-        push @periods, [$rollover_date->minus_time_interval('1h')->epoch, $rollover_date->plus_time_interval('1h')->epoch];
-    }
-
     return \@periods;
 }
 
@@ -2532,25 +2526,6 @@ sub _validate_start_and_expiry_date {
     return;
 }
 
-has market_is_inefficient => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_market_is_inefficient {
-    my $self = shift;
-
-    # market inefficiency only applies to forex and commodities.
-    return 0 unless ($self->market->name eq 'forex' or $self->market->name eq 'commodities');
-    return 0 if $self->expiry_daily;
-
-    my $hour = $self->date_pricing->hour + 0;
-    # only 20:00/21:00 GMT to end of day
-    my $disable_hour = $self->date_pricing->is_dst_in_zone('America/New_York') ? 20 : 21;
-    return 0 if $hour < $disable_hour;
-    return 1;
-}
-
 sub _validate_lifetime {
     my $self = shift;
 
@@ -2559,15 +2534,6 @@ sub _validate_lifetime {
         return {
             message           => 'resale of tick expiry contract',
             message_to_client => localize('Resale of this contract is not offered.'),
-        };
-    }
-
-    # We decided to disable intraday trading on forex and commodities from 20:00/21:00 GMT to end of day.
-    if ($self->market_is_inefficient) {
-        my $from = $self->date_pricing->is_dst_in_zone('America/New_York') ? '20:00' : '21:00';
-        return {
-            message           => 'trading disabled on inefficient period.',
-            message_to_client => localize('Contracts of less than 24h in duration are not available between [_1]-23:59:59 GMT.', $from),
         };
     }
 
