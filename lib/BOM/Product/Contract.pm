@@ -1585,8 +1585,10 @@ sub _build_staking_limits {
     my $bet_limits = $static->{bet_limits};
     # NOTE: this evaluates only the contract-specific payout limit. There may be further
     # client-specific restrictions which are evaluated in B:P::Transaction.
-    my $per_contract_payout_limit = $static->{risk_profile}{$self->risk_profile->get_risk_profile}{payout}{$self->currency};
-    my @possible_payout_maxes = ($bet_limits->{maximum_payout}->{$curr}, $per_contract_payout_limit);
+    my $per_contract_payout_limit             = $static->{risk_profile}{$self->risk_profile->get_risk_profile}{payout}{$self->currency};
+    my @possible_payout_maxes                 = ($bet_limits->{maximum_payout}->{$curr}, $per_contract_payout_limit);
+    my $apply_inefficient_market_payout_limit = $self->market_is_inefficient && $self->priced_with_intraday_model;
+    push @possible_payout_maxes, $bet_limits->{inefficient_period_payout_max}->{$self->currency} if $apply_inefficient_market_payout_limit;
 
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
     my $payout_min =
