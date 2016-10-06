@@ -1347,6 +1347,8 @@ sub _validate_sell_pricing_adjustment {
                 'sell price'
             );
 
+            #Record failed transaction here.
+
             return Error::Base->cuss(
                 -type => 'PriceMoved',
                 -mesg =>
