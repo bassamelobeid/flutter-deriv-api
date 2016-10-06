@@ -565,6 +565,7 @@ sub _build_pricing_engine {
         $pricing_engine = $self->pricing_engine_name->new({
             bet                     => $self,
             apply_bounceback_safety => !$self->for_sale,
+            inefficient_period      => $self->market_is_inefficient,
         });
     }
 

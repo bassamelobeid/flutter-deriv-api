@@ -22,6 +22,11 @@ sub clone {
 
 my $coefficient = LoadFile('/home/git/regentmarkets/bom/config/files/intraday_trend_calibration.yml');
 
+has inefficient_period => (
+    is      => 'ro',
+    default => 0,
+);
+
 has coefficients => (
     is      => 'ro',
     default => sub { $coefficient },
@@ -552,6 +557,16 @@ sub _build_risk_markup {
             base_amount => 0.1,
         });
         $risk_markup->include_adjustment('add', $spot_jump_markup);
+    }
+
+    if (not $self->bet->is_atm_bet and $self->inefficient_period) {
+        my $end_of_day_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'intraday_eod_markup',
+            description => '10% markup for inefficient period',
+            set_by      => __PACKAGE__,
+            base_amount => 0.1,
+        });
+        $risk_markup->include_adjustment('add', $end_of_day_markup);
     }
 
     return $risk_markup;
