@@ -185,6 +185,10 @@ $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 
 subtest 'save valid' => sub {
+    BOM::Market::Underlying->new('frxUSDJPY')->set_combined_realtime({
+            epoch => $fake_surface->recorded_date->epoch,
+            quote => 100,
+        });
     my $au = BOM::MarketDataAutoUpdater::Forex->new(
         symbols_to_update  => ['frxUSDJPY'],
         _connect_ftp       => 0,
