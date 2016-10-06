@@ -135,11 +135,7 @@ sub _passes_sanity_check {
         return 'OHLC for ' . $symbol . ' is not updated. Incorrect date [' . $date . ']';
     }
     my $skip_close_check = (grep { $_ eq $bom_underlying_symbol } @symbols_to_update) ? 0 : 1;
-    my $divisor = $underlying->divisor;
-    $data->{PX_OPEN}     ? $data->{PX_OPEN}     : $data->{PX_YEST_OPEN}  /= $divisor;
-    $data->{PX_HIGH}     ? $data->{PX_HIGH}     : $data->{PX_YEST_HIGH}  /= $divisor;
-    $data->{PX_LOW}      ? $data->{PX_LOW}      : $data->{PX_YEST_LOW}   /= $divisor;
-    $data->{PX_LAST_EOD} ? $data->{PX_LAST_EOD} : $data->{PX_YEST_CLOSE} /= $divisor;
+
     my $open  = $data->{PX_OPEN}     ? $data->{PX_OPEN}     : $data->{PX_YEST_OPEN};
     my $high  = $data->{PX_HIGH}     ? $data->{PX_HIGH}     : $data->{PX_YEST_HIGH};
     my $low   = $data->{PX_LOW}      ? $data->{PX_LOW}      : $data->{PX_YEST_LOW};
