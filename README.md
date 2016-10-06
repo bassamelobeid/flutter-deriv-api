@@ -17,6 +17,10 @@ Package depedency: BOM::MarketDataAutoUpdater::OHLC
 
 Frequency of this script being called: Hourly basic 
 
+Input file: ohlc file type from Bloomberg::FileDownloader e.g. ohlc_NIFTY_i.csv.enc 
+
+Output:
+
 (2) bin/bom_update_economic_events.pl 
 
 A script runs ForexFactory::extract_economic_events to extract economic events for 2 weeks and update economic event chronicle documents.
