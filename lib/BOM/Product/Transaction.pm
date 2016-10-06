@@ -7,7 +7,7 @@ use Path::Tiny;
 use Scalar::Util qw(blessed);
 use Time::HiRes qw(tv_interval gettimeofday time);
 use List::Util qw(min max first);
-use JSON qw( from_json );
+use JSON qw( from_json to_json );
 use Date::Utility;
 use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
 use Format::Util::Numbers qw(commas roundnear to_monetary_number_format);
@@ -1350,14 +1350,18 @@ sub _validate_sell_pricing_adjustment {
 
             #Record failed transaction here.
             my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
-                id                      => undef,
-                login_id                => $self->client->loginid,
-                financial_market_bet_id => $self->financial_market_bet_id,
-                shortcode               => $self->contract->shortcode,
-                action_type             => 'sell',
-                reason                  => undef,
-                details                 => undef,
-            });
+                    id                      => undef,
+                    login_id                => $self->client->loginid,
+                    financial_market_bet_id => $self->financial_market_bet_id,
+                    shortcode               => $self->contract->shortcode,
+                    action_type             => 'sell',
+                    reason                  => 'SLIPPAGE',
+                    details                 => JSON::to_json({
+                            order_price      => $amount,
+                            recomputed_price => $recomputed_amount,
+                            slippage         => roundnear(0.01, $move * $self->payout)}
+                    ),
+                });
             $rejected_trade->record_fail_txn();
 
             return Error::Base->cuss(
@@ -1430,13 +1434,17 @@ sub _validate_trade_pricing_adjustment {
 
             #Record failed transaction here.
             my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
-                id          => undef,
-                login_id    => $self->client->loginid,
-                shortcode   => $self->contract->shortcode,
-                action_type => 'buy',
-                reason      => undef,
-                details     => undef,
-            });
+                    id          => undef,
+                    login_id    => $self->client->loginid,
+                    shortcode   => $self->contract->shortcode,
+                    action_type => 'buy',
+                    reason      => 'SLIPPAGE',
+                    details     => JSON::to_json({
+                            order_price      => $amount,
+                            recomputed_price => $recomputed_amount,
+                            slippage         => roundnear(0.01, $move * $self->payout)}
+                    ),
+                });
             $rejected_trade->record_fail_txn();
 
             return Error::Base->cuss(
