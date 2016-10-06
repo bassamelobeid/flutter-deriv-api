@@ -95,7 +95,11 @@ around _validate_barrier => sub {
     my $self = shift;
 
     # if normal barrier validation fails, don't bother to validate further.
-    return if $self->$orig(@_);
+    if (my $err = $self->$orig(@_)) {
+        return $err;
+    }
+
+    return if $self->for_sale;
 
     return $self->_subvalidate_double_barrier() if ($self->two_barriers);
     return $self->_subvalidate_single_barrier();
