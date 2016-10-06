@@ -31,6 +31,7 @@ use BOM::Database::Model::Account;
 use BOM::Database::Model::DataCollection::QuantsBetVariables;
 use BOM::Database::Model::Constants;
 use BOM::Database::Helper::FinancialMarketBet;
+use BOM::Database::Helper::RejectedTrade;
 use BOM::Product::Offerings qw/get_offerings_with_filter/;
 use BOM::Platform::LandingCompany::Registry;
 use BOM::Database::ClientDB;
@@ -1348,6 +1349,16 @@ sub _validate_sell_pricing_adjustment {
             );
 
             #Record failed transaction here.
+            my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
+                id                      => undef,
+                login_id                => $self->client->loginid,
+                financial_market_bet_id => $self->financial_market_bet_id,
+                shortcode               => $self->contract->shortcode,
+                action_type             => 'sell',
+                reason                  => undef,
+                details                 => undef,
+            });
+            $rejected_trade->record_fail_txn();
 
             return Error::Base->cuss(
                 -type => 'PriceMoved',
@@ -1416,6 +1427,17 @@ sub _validate_trade_pricing_adjustment {
                 to_monetary_number_format($recomputed_amount),
                 $what_changed
             );
+
+            #Record failed transaction here.
+            my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
+                id          => undef,
+                login_id    => $self->client->loginid,
+                shortcode   => $self->contract->shortcode,
+                action_type => 'buy',
+                reason      => undef,
+                details     => undef,
+            });
+            $rejected_trade->record_fail_txn();
 
             return Error::Base->cuss(
                 -type => 'PriceMoved',
