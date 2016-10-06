@@ -13,6 +13,18 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
+use Postgres::FeedDB::Spot;
+my $module = Test::MockModule->new('Postgres::FeedDB::Spot');
+$module->mock('spot_tick', 
+    sub { 
+        my $self = shift;
+        return Postgres::FeedDB::Spot::Tick->new({
+            epoch => time,
+            quote => 100,
+        });
+    });
+
+
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::MarketDataAutoUpdater::Forex;
@@ -20,6 +32,8 @@ use BOM::MarketDataAutoUpdater::Forex;
 # Prep:
 my $fake_date = Date::Utility->new('2012-08-13 15:55:55');
 set_absolute_time($fake_date->epoch);
+
+
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -248,6 +262,7 @@ subtest "Friday after close, weekend, won't open check." => sub {
 
 subtest 'do not update one hour after rollover' => sub {
     my $rollover_date = Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($fake_date);
+
     my $au = BOM::MarketDataAutoUpdater::Forex->new(
         symbols_to_update  => ['frxUSDJPY'],
         _connect_ftp       => 0,
