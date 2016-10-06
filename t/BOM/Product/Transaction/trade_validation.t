@@ -474,11 +474,12 @@ subtest 'BUY - trade pricing adjustment' => sub {
         });
 
         # amount_type = payout, price increase > allowed move
+        my $requested_price =  $contract->ask_price - ($allowed_move * $contract->payout + 0.1);
         my $transaction = BOM::Product::Transaction->new({
             client   => $client,
             contract => $contract,
             action   => 'BUY',
-            price    => $contract->ask_price - ($allowed_move * $contract->payout + 0.1),
+            price    => $requested_price,
         });
         my $error = $transaction->_validate_trade_pricing_adjustment;
         is($error->get_type, 'PriceMoved', 'Price move too much opposite favour of client');
@@ -488,7 +489,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
             'price move - msg to client'
         );
         is $transaction->price_slippage, 0, 'correct probability slippage set';
-
+        is $transaction->requested_price, $requested_price , 'correct requested price'; 
         # amount_type = payout, price increase < allowed move
         my $price = $contract->ask_price - ($allowed_move * $contract->payout / 2);
         $transaction = BOM::Product::Transaction->new({
@@ -502,7 +503,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
         is($error, undef, 'BUY price increase within allowable move');
         cmp_ok($transaction->price, '==', $price, 'BUY with original price');
         is $transaction->price_slippage, -0.25, 'correct probability slippage set';
-
+        is $transaction->requested_price, $price , 'correct requested price';
         # amount_type = payout, price decrease => better execution price
         $price = $contract->ask_price + ($allowed_move * $contract->payout * 2);
         $transaction = BOM::Product::Transaction->new({
@@ -515,7 +516,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
         is($error, undef, 'BUY price decrease, better execution price');
         cmp_ok($transaction->price, '<', $price, 'BUY with lower price');
         is $transaction->price_slippage, 0, 'correct probability slippage set';
-
+        is $transaction->requested_price, $price , 'correct requested price';
         $mock_contract->unmock_all;
     };
 
@@ -580,7 +581,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
             'payout move - msg to client'
         );
         is $transaction->price_slippage, 0, 'correct probability slippage set';
-
+        is $transaction->requested_price, 10, 'correct requested price';
         $ask_cv = Math::Util::CalculatedValue::Validatable->new({
             name        => 'ask_probability',
             description => 'fake ask prov',
@@ -603,7 +604,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
         is($error, undef, 'BUY decrease within allowable move');
         cmp_ok($transaction->payout, '==', 100, 'BUY with original payout');
         is $transaction->price_slippage, -0.4, 'correct probability slippage set';
-
+        is $transaction->requested_price, 10, 'correct requested price';
         # amount_type = stake, payout increase within  range of allowed move
         $ask_cv = Math::Util::CalculatedValue::Validatable->new({
             name        => 'ask_probability',
@@ -626,7 +627,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
         is($error, undef, 'BUY decrease within allowable move');
         cmp_ok($transaction->payout, '==', 100, 'BUY with original payout');
         is $transaction->price_slippage, 0.4, 'correct probability slippage set';
-
+        is $transaction->requested_price, 10, 'correct requested price';
         # amount_type = stake, payout increase => better execution price
         $ask_cv = Math::Util::CalculatedValue::Validatable->new({
             name        => 'ask_probability',
@@ -650,7 +651,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
         cmp_ok($transaction->payout, '>',  100,     'BUY with higher payout');
         cmp_ok($transaction->payout, '==', 106.383, 'payout');
         is $transaction->price_slippage, 0, 'correct probability slippage set';
-
+        is $transaction->requested_price, 10, 'correct requested price';
         $mock_contract->unmock_all;
     };
 
@@ -759,11 +760,12 @@ subtest 'SELL - sell pricing adjustment' => sub {
         });
 
         # amount_type = payout, sell price increase > allowed move
+        my $requested_price = $contract->bid_price + ($allowed_move * $contract->payout + 0.1);
         my $transaction = BOM::Product::Transaction->new({
             client   => $client,
             contract => $contract,
             action   => 'SELL',
-            price    => $contract->bid_price + ($allowed_move * $contract->payout + 0.1),
+            price    => $requested_price,
         });
 
         my $error = $transaction->_validate_sell_pricing_adjustment;
@@ -774,7 +776,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
             'price move - msg to client'
         );
         is $transaction->price_slippage, 0, 'correct probability slippage set';
-
+        is $transaction->requested_price, $requested_price, 'correct requested price';
         # amount_type = payout, sell price decrease < allowed move
         my $price = $contract->bid_price + ($allowed_move * $contract->payout - 0.1);
         $transaction = BOM::Product::Transaction->new({
@@ -788,7 +790,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
         is($error, undef, 'SELL price descrease within allowable move');
         cmp_ok($transaction->price, '==', $price, 'SELL with original price');
         is $transaction->price_slippage, -0.7, 'correct probability slippage set';
-
+        is $transaction->requested_price, $price, 'correct requested price';
         # amount_type = payout, sell price increase => better execution price
         $price = $contract->bid_price - ($allowed_move * $contract->payout * 2);
         $transaction = BOM::Product::Transaction->new({
@@ -801,7 +803,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
         is($error, undef, 'SELL price increase, better execution price');
         cmp_ok($transaction->price, '>', $price, 'SELL with higher price');
         is $transaction->price_slippage, 0, 'correct probability slippage set';
-
+        is $transaction->requested_price, $price, 'correct requested price';
         $mock_contract->unmock_all;
     };
 

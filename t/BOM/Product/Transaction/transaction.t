@@ -2643,6 +2643,7 @@ subtest 'transaction slippage' => sub {
         my ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $transaction->transaction_id;
         is $fmb->{buy_price}, $price, 'buy at requested price';
         is $qv1->{price_slippage}, -0.25, 'slippage stored';
+        is $qv1->{requested_price}, $price, 'correct requested price stored';
         $fmb_id = $fmb->{id};
     };
 
@@ -2698,6 +2699,8 @@ subtest 'transaction slippage' => sub {
         my ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $transaction->transaction_id;
         is $fmb->{sell_price}, $price, 'sell at requested price';
         is $qv1->{price_slippage}, -0.7, 'slippage stored';
+        is $qv1->{requested_price}, $price, 'correct requested price stored';
+
     };
 };
 
