@@ -14,6 +14,12 @@ use File::Spec;
 use JSON qw(decode_json);
 use Data::Dumper;
 
+Test::MockModule->new('Postgres::FeedDB::Spot')->mock('spot_tick', 
+    sub { return {
+            epoch => time,
+            quote => 100,
+        };
+    });
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::MarketDataAutoUpdater::Forex;
@@ -23,12 +29,6 @@ my $fake_date = Date::Utility->new('2012-08-13 15:55:55');
 set_absolute_time($fake_date->epoch);
 
 
-Test::MockModule->new('Postgres::FeedDB::Spot')->mock('spot_tick', 
-    sub { return {
-            epoch => time,
-            quote => 100,
-        };
-    });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -194,7 +194,7 @@ $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 subtest 'save valid' => sub {
     BOM::Market::Underlying->new('frxUSDJPY')->set_combined_realtime({
-            epoch => $fake_surface->recorded_date->epoch,
+            epoch => time,
             quote => 100,
         });
     my $au = BOM::MarketDataAutoUpdater::Forex->new(
@@ -264,7 +264,7 @@ subtest 'do not update one hour after rollover' => sub {
     my $rollover_date = Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($fake_date);
 
     BOM::Market::Underlying->new('frxUSDJPY')->set_combined_realtime({
-            epoch => $rollover_date->epoch,
+            epoch => time,
             quote => 100,
         });
     my $au = BOM::MarketDataAutoUpdater::Forex->new(
@@ -279,7 +279,7 @@ subtest 'do not update one hour after rollover' => sub {
     lives_ok { $au->run } 'run without dying';
     ok !$au->report->{frxUSDJPY}, 'update skipped';
     BOM::Market::Underlying->new('frxUSDJPY')->set_combined_realtime({
-            epoch => $rollover_date->plus_time_interval('1h1s')->epoch,
+            epoch => time,
             quote => 100,
         });
     $au = BOM::MarketDataAutoUpdater::Forex->new(
