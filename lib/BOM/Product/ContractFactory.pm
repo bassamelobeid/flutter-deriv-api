@@ -91,7 +91,7 @@ my %OVERRIDE_LIST = (
 
 my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_types.yml');
 {
-    my $loaded;
+    my %loaded = ();
 
     sub produce_contract {
         my ($build_arg, $maybe_currency, $maybe_sold) = @_;
@@ -135,10 +135,10 @@ my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/co
         # load it first
         my $landing_company = delete $input_params{landing_company} // 'costarica';
         my $role = 'BOM::Product::Role::' . ucfirst lc $landing_company;
-        unless ($loaded) {
-            $loaded = try { $role->require } || 0;
+        unless ($loaded{$role}) {
+            $loaded{$role} = try { $role->require } || 0;
         }
-        $input_params{role} = $role if $loaded;
+        $input_params{role} = $role if $loaded{$role};
 
         my $contract_obj;
         if ($input_params{category} eq 'spreads') {
@@ -249,7 +249,7 @@ my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/co
         }
 
         # apply it here.
-        $role->meta->apply($contract_obj) if $loaded;
+        $role->meta->apply($contract_obj) if $loaded{$role};
 
         return $contract_obj;
     }
