@@ -554,19 +554,6 @@ sub _match_symbol {
     return;
 }
 
-=item pricing_engine_parameters
-
-Extra parameters to be sent to the pricing engine.  This can be very dangerous or incorrect if you
-don't know what you are doing or why.  Use with caution.
-
-=cut
-
-has pricing_engine_parameters => (
-    is      => 'ro',
-    isa     => 'HashRef',
-    default => sub { return {}; },
-);
-
 sub _build_pricing_engine {
     my $self = shift;
 
@@ -576,9 +563,9 @@ sub _build_pricing_engine {
         $pricing_engine = $self->pricing_engine_name->new(%pricing_parameters);
     } else {
         $pricing_engine = $self->pricing_engine_name->new({
-                bet                     => $self,
-                apply_bounceback_safety => !$self->for_sale,
-                %{$self->pricing_engine_parameters}});
+            bet                     => $self,
+            apply_bounceback_safety => !$self->for_sale,
+        });
     }
 
     return $pricing_engine;
