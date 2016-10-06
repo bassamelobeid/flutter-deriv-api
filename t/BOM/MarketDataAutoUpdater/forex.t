@@ -14,12 +14,17 @@ use File::Spec;
 use JSON qw(decode_json);
 use Data::Dumper;
 
-Test::MockModule->new('Postgres::FeedDB::Spot')->mock('spot_tick', 
-    sub { return {
+use Postgres::FeedDB::Spot;
+my $module = Test::MockModule->new('Postgres::FeedDB::Spot');
+$module->mock('spot_tick', 
+    sub { 
+        my $self = shift;
+        return Postgres::FeedDB::Spot::Tick->new({
             epoch => time,
             quote => 100,
-        };
+        });
     });
+
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
