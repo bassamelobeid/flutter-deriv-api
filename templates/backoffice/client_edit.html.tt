@@ -455,8 +455,8 @@ table#client_edit td{
     [% END %]
     [% IF show_risk_approval %]
         <tr>
-            <td class="label">Client acknowledges financial risk?</td>
-            <td><input type="checkbox" [% IF financial_risk_status %]checked[% END %] disabled="disabled"/></td>
+            <td class="label"><input type="checkbox" [% IF financial_risk_status %]checked[% END %] disabled="disabled"/></td>
+            <td>Client acknowledges financial risk?</td>
         </tr>
     [% END %]
     <tr>
