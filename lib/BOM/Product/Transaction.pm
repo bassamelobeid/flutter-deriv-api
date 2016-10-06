@@ -1356,8 +1356,8 @@ sub _validate_sell_pricing_adjustment {
                     action_type             => 'sell',
                     reason                  => 'SLIPPAGE',
                     details                 => JSON::to_json({
-                            order_price      => $amount,
-                            recomputed_price => $recomputed_amount,
+                            order_price      => $self->price,
+                            recomputed_price => $contract->bid_price,
                             slippage         => roundnear(0.01, $move * $self->payout)}
                     ),
                     db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
@@ -1439,8 +1439,8 @@ sub _validate_trade_pricing_adjustment {
                     action_type => 'buy',
                     reason      => 'SLIPPAGE',
                     details     => JSON::to_json({
-                            order_price      => $amount,
-                            recomputed_price => $recomputed_amount,
+                            order_price      => $self->price,
+                            recomputed_price => $contract->ask_price,
                             slippage         => roundnear(0.01, $move * $self->payout)}
                     ),
                     db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
