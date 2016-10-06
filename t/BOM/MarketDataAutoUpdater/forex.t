@@ -250,6 +250,11 @@ subtest "Friday after close, weekend, won't open check." => sub {
 
 subtest 'do not update one hour after rollover' => sub {
     my $rollover_date = Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($fake_date);
+
+    BOM::Market::Underlying->new('frxUSDJPY')->set_combined_realtime({
+            epoch => $rollover_date->epoch,
+            quote => 100,
+        });
     my $au = BOM::MarketDataAutoUpdater::Forex->new(
         symbols_to_update  => ['frxUSDJPY'],
         _connect_ftp       => 0,
