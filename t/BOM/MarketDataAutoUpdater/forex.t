@@ -270,6 +270,10 @@ subtest 'do not update one hour after rollover' => sub {
             }});
     lives_ok { $au->run } 'run without dying';
     ok !$au->report->{frxUSDJPY}, 'update skipped';
+    BOM::Market::Underlying->new('frxUSDJPY')->set_combined_realtime({
+            epoch => $rollover_date->plus_time_interval('1h1s')->epoch,
+            quote => 100,
+        });
     $au = BOM::MarketDataAutoUpdater::Forex->new(
         symbols_to_update  => ['frxUSDJPY'],
         _connect_ftp       => 0,
