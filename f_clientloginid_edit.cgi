@@ -652,6 +652,11 @@ if (not $client->is_virtual) {
     };
 }
 
+Bar("Email Consent");
+print '<br/>';
+print 'Email consent for marketing: ' . ($user->email_consent ? 'Yes' : 'No');
+print '<br/><br/>';
+
 #upload new ID doc
 Bar("Upload new ID document");
 print qq{
