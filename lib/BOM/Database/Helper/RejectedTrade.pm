@@ -39,7 +39,14 @@ has 'db' => (
 );
 
 sub record_fail_txn {
-    return;
+    my $self = shift;
+
+    $self->db->dbh->do(
+        'INSERT INTO data_collection.rejected_trades (id,login_id,financial_market_bet_id,shortcode,action_type,reason,details) values(?,?,?,?,?,?,?)',
+        undef, $self->id, $self->login_id, $self->financial_market_bet_id, $self->short_code, $self->action_type, $self->reason, $self->details
+    );
+
+    return 1;
 }
 
 no Moose;
