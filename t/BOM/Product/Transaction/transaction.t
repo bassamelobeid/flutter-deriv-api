@@ -2644,6 +2644,7 @@ subtest 'transaction slippage' => sub {
         is $fmb->{buy_price}, $price, 'buy at requested price';
         is $qv1->{price_slippage}, -0.25, 'slippage stored';
         is $qv1->{requested_price}, $price, 'correct requested price stored';
+        is $qv1->{recomputed_price}, $contract->ask_price, 'correct recomputed price stored';
         $fmb_id = $fmb->{id};
     };
 
@@ -2700,7 +2701,7 @@ subtest 'transaction slippage' => sub {
         is $fmb->{sell_price}, $price, 'sell at requested price';
         is $qv1->{price_slippage}, -0.7, 'slippage stored';
         is $qv1->{requested_price}, $price, 'correct requested price stored';
-
+        is $qv1->{recomputed_price}, $contract->bid_price, 'correct recomputed price stored';
     };
 };
 
