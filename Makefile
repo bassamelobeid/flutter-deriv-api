@@ -8,7 +8,7 @@ export PERL5OPTS=-MTest::FailWarnings=-allow_deps,1
 test: $(TESTS)
 
 unit_test_marketdataautoupdater:
-	@$(PROVE) -v -r t/BOM/
+	@$(PROVE) -r t/BOM/
 
 tidy:
 	find . -name '*.p?.bak' -delete
