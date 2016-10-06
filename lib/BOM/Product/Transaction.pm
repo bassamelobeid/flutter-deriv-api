@@ -1361,6 +1361,7 @@ sub _validate_sell_pricing_adjustment {
                             recomputed_price => $recomputed_amount,
                             slippage         => roundnear(0.01, $move * $self->payout)}
                     ),
+                    db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
                 });
             $rejected_trade->record_fail_txn();
 
@@ -1444,6 +1445,7 @@ sub _validate_trade_pricing_adjustment {
                             recomputed_price => $recomputed_amount,
                             slippage         => roundnear(0.01, $move * $self->payout)}
                     ),
+                    db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
                 });
             $rejected_trade->record_fail_txn();
 
