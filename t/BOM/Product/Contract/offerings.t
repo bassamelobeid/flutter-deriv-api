@@ -3,13 +3,13 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 3;
 use Test::Deep;
 use Test::Exception;
 use YAML::XS qw(LoadFile);
 
 use BOM::Market::Underlying;
-use BOM::Product::Offerings qw(get_offerings_with_filter);
+use BOM::Platform::Offerings qw(get_offerings_with_filter);
 use BOM::System::Chronicle;
 
 # test wriiten date.
@@ -61,22 +61,4 @@ subtest 'underlying symbols' => sub {
         }
     }
     'lives through underlying symbol test';
-};
-
-subtest 'contract offerings' => sub {
-    my $expected = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Contract/offerings_test.yml');
-    lives_ok {
-        foreach my $underlying_symbol (get_offerings_with_filter('underlying_symbol')) {
-            if (not $expected->{$underlying_symbol}) {
-                fail("underlying symbol [$underlying_symbol] not found");
-            } else {
-                is_deeply(
-                    BOM::Market::Underlying->new($underlying_symbol)->contracts,
-                    $expected->{$underlying_symbol},
-                    'correct contract offerings for ' . $underlying_symbol
-                );
-            }
-        }
-    }
-    'lives through contract offerings';
 };
