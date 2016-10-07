@@ -16,7 +16,6 @@ use BOM::Platform::Offerings qw(get_offerings_with_filter get_permitted_expiries
 use BOM::System::RedisReplicated;
 use Sereal::Encoder;
 use BOM::Platform::Runtime;
-use BOM::Market::Info;
 
 my %name_mapper = (
     DVD_STOCK  => localize('Stock Dividend'),
@@ -283,8 +282,6 @@ sub _description {
         $spot_time = $ul->spot_time;
         $spot_age  = $ul->spot_age;
     }
-    my $ul_info = BOM::Market::Info->new(underlying => $ul);
-
     my $response = {
         symbol                 => $symbol,
         display_name           => $ul->display_name,
@@ -294,7 +291,7 @@ sub _description {
         submarket              => $ul->submarket->name,
         submarket_display_name => localize($ul->submarket->display_name),
         exchange_is_open       => $exchange_is_open || 0,
-        is_trading_suspended   => $ul_info->is_trading_suspended,
+        is_trading_suspended   => 0,
         pip                    => $ul->pip_size
     };
 
