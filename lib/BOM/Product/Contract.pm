@@ -415,7 +415,7 @@ A TimeInterval which expresses the maximum time a tick trade may run, even if th
 
 has max_tick_expiry_duration => (
     is      => 'ro',
-    isa     => 'bom_time_interval',
+    isa     => 'time_interval',
     default => '5m',
     coerce  => 1,
 );
