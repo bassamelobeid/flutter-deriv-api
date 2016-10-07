@@ -12,7 +12,7 @@ use Locale::Maketext::Extract;
 
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
-use BOM::Product::Offerings qw(get_offerings_with_filter);
+use BOM::Platform::Offerings qw(get_offerings_with_filter);
 use BOM::Market::Underlying;
 use BOM::Market::UnderlyingDB;
 use YAML::XS qw(LoadFile);
