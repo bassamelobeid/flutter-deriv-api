@@ -39,7 +39,7 @@ use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 
 use JSON qw(from_json);
-use BOM::Product::Offerings qw(get_offerings_with_filter);
+use BOM::Platform::Offerings qw(get_offerings_with_filter);
 use BOM::Platform::LandingCompany::Registry;
 
 sub cashier {
