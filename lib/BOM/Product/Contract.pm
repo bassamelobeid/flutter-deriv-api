@@ -2,6 +2,8 @@ package BOM::Product::Contract;
 
 use Moose;
 
+require UNIVERSAL::require;
+
 use MooseX::Role::Validatable::Error;
 use Math::Function::Interpolator;
 use Time::HiRes qw(time);
@@ -29,7 +31,6 @@ use BOM::Platform::Context qw(localize);
 
 use BOM::Market::UnderlyingDB;
 use BOM::Market::Underlying;
-use BOM::Market::Info;
 
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
@@ -37,7 +38,7 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Contract::Category;
 use BOM::Product::RiskProfile;
 use BOM::Product::Types;
-use BOM::Product::Offerings qw( get_contract_specifics get_offerings_flyby);
+use BOM::Platform::Offerings qw(get_contract_specifics);
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -745,7 +746,14 @@ sub _build_opposite_contract {
         $opp_parameters{$vol_param} = $self->$vol_param;
     }
 
-    return $self->_produce_contract_ref->(\%opp_parameters);
+    my $opp_contract = $self->_produce_contract_ref->(\%opp_parameters);
+
+    if (my $role = $opp_parameters{role}) {
+        $role->require;
+        $role->meta->apply($opp_contract);
+    }
+
+    return $opp_contract;
 }
 
 sub _build_empirical_volsurface {
@@ -1362,12 +1370,32 @@ has [qw(pricing_vol news_adjusted_pricing_vol)] => (
     lazy_build => 1,
 );
 
+has uses_empirical_volatility => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_uses_empirical_volatility {
+    my $self = shift;
+
+    # only applicable for forex and commodities because it has not been studied on other markets.
+    return 0 if (not($self->market->name eq 'forex' or $self->market->name eq 'commodities'));
+    # some forex has flat volatility, e.g. WLDUSD
+    return 0 if $self->underlying->volatility_surface_type eq 'flat';
+    return 0 if $self->is_forward_starting;
+
+    # first term on volsurface.
+    my $overnight_epoch = (sort { $a <=> $b } keys %{$self->volsurface->variance_table})[1];
+    return 0 if $self->date_expiry->epoch >= $overnight_epoch;
+    return 1;
+}
+
 sub _build_pricing_vol {
     my $self = shift;
 
     my $vol;
     my $volatility_error;
-    if ($self->priced_with_intraday_model) {
+    if ($self->uses_empirical_volatility) {
         my $volsurface       = $self->empirical_volsurface;
         my $duration_seconds = $self->timeindays->amount * 86400;
         # volatility doesn't matter for less than 10 minutes ATM contracts,
@@ -1555,17 +1583,15 @@ has [qw(offering_specifics barrier_category)] => (
 );
 
 sub _build_offering_specifics {
-    my ($self) = @_;
+    my $self = shift;
 
-    my $filter = {
+    return get_contract_specifics({
         underlying_symbol => $self->underlying->symbol,
-        contract_category => $self->category->code,
+        barrier_category  => $self->barrier_category,
         expiry_type       => $self->expiry_type,
         start_type        => $self->start_type,
-        barrier_category  => $self->barrier_category,
-    };
-
-    return get_contract_specifics($filter);
+        contract_category => $self->category->code,
+    });
 }
 
 sub _build_barrier_category {
@@ -1575,7 +1601,7 @@ sub _build_barrier_category {
     if ($self->category->code eq 'callput') {
         $barrier_category = ($self->is_atm_bet) ? 'euro_atm' : 'euro_non_atm';
     } else {
-        $barrier_category = $BOM::Product::Offerings::BARRIER_CATEGORIES->{$self->category->code}->[0];
+        $barrier_category = $BOM::Platform::Offerings::BARRIER_CATEGORIES->{$self->category->code}->[0];
     }
 
     return $barrier_category;
@@ -2144,16 +2170,7 @@ sub _validate_offerings {
         };
     }
 
-    my $underlying = $self->underlying;
-    my $info = BOM::Market::Info->new(underlying => $underlying);
-
-    if ($info->is_trading_suspended) {
-        return {
-            message           => "Underlying trades suspended [symbol: " . $underlying->symbol . "]",
-            message_to_client => $message_to_client,
-        };
-    }
-
+    my $underlying    = $self->underlying;
     my $contract_code = $self->code;
     # check if trades are suspended on that claimtype
     my $suspend_claim_types = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types;
@@ -2167,6 +2184,13 @@ sub _validate_offerings {
     if (first { $_ eq $underlying->symbol } @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions}) {
         return {
             message           => "Underlying trades suspended due to corporate actions [symbol: " . $underlying->symbol . "]",
+            message_to_client => $message_to_client,
+        };
+    }
+
+    if (first { $_ eq $underlying->symbol } @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades}) {
+        return {
+            message           => "Underlying trades suspended [symbol: " . $underlying->symbol . "]",
             message_to_client => $message_to_client,
         };
     }

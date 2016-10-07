@@ -25,6 +25,7 @@ sub _build_longcode {
 sub _price_from_prob        { die "Can not price legacy bet: " . shift->shortcode; }
 sub _build_shortcode        { die "Invalid legacy bet type[" . shift->code . ']'; }
 sub is_expired              { return 1; }
+sub is_settleable           { return 1; }
 sub _build_ask_probability  { return 1; }
 sub _build_bid_probability  { return 1; }
 sub _build_theo_probability { return 1; }
