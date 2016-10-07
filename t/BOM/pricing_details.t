@@ -10,9 +10,10 @@ use Test::More;
 use Test::Exception;
 use Test::FailWarnings;
 use Date::Utility;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
 
-my $u = BOM::Market::Underlying->new('frxUSDJPY');
+my $u = create_underlying('frxUSDJPY');
 my $now = time;
 foreach my $rd ($now-5 .. $now) {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('volsurface_delta', {recorded_date => Date::Utility->new($rd), underlying_config => $u->config});

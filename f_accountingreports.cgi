@@ -7,7 +7,7 @@ use List::MoreUtils qw(any);
 use DateTime;
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Market::UnderlyingDB;
+use BOM::MarketData qw(create_underlying_db);
 use BOM::Platform::LandingCompany::Registry;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -146,7 +146,7 @@ Bar("USEFUL EXCHANGE RATES");
 print "The following exchange rates are from our live data feed. They are live rates as of right now (" . Date::Utility->new->datetime . "<ul>";
 
 foreach my $curr (qw(GBPUSD EURUSD USDHKD USDCNY AUDUSD GBPHKD AUDHKD EURHKD)) {
-    my $underlying = BOM::Market::Underlying->new('frx' . $curr);
+    my $underlying = create_underlying('frx' . $curr);
     print "<li>$curr: " . $underlying->spot . "</li>";
 }
 print "</ul>";

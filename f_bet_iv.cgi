@@ -7,7 +7,7 @@ use open qw[ :encoding(UTF-8) ];
 use f_brokerincludeall;
 use BOM::System::Config;
 use subs::subs_dividend_from_excel_file;
-use BOM::Market::UnderlyingDB;
+use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData::Fetcher::CorporateAction;
 use Bloomberg::FileDownloader;
 use Bloomberg::RequestFiles;

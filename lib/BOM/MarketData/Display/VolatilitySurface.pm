@@ -8,7 +8,8 @@ use BOM::Platform::Context qw(request template);
 use Format::Util::Numbers qw( roundnear );
 use VolSurface::Utils qw( get_1vol_butterfly );
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
 use BOM::Backoffice::GNUPlot;
 use List::Util qw(uniq);
 use Try::Tiny;
@@ -50,7 +51,7 @@ sub rmg_table_format {
     foreach my $date (@{$dates}) {
         my $surface_date   = Date::Utility->new($date);
         my $new_volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({
-            underlying => BOM::Market::Underlying->new($volsurface->symbol, $volsurface->for_date),
+            underlying => create_underlying($volsurface->symbol, $volsurface->for_date),
             for_date   => $surface_date
         });
         # We are working on a new calibration method.
@@ -74,7 +75,7 @@ sub rmg_table_format {
     my @surface;
     my @days       = @{$volsurface->original_term_for_smile};
     my @tenors     = map { $volsurface->surface->{$_}->{tenor} || 'n/a' } @days;
-    my $underlying = BOM::Market::Underlying->new($volsurface->symbol, $volsurface->for_date);
+    my $underlying = create_underlying($volsurface->symbol, $volsurface->for_date);
 
     if ($volsurface->type eq 'moneyness') {
         push @headers, qw(tenor date forward_vol RR 2vBF 1vBF skew kurtosis);
@@ -244,7 +245,7 @@ sub get_forward_vol {
     my %weights;
     for (my $i = 1; $i <= $days[scalar(@days) - 1]; $i++) {
         my $date = Date::Utility->new({epoch => ($volsurface->recorded_date->epoch + $i * 86400)});
-        $weights{$i} = BOM::Market::Underlying->new($volsurface->symbol, $volsurface->for_date)->_builder->build_trading_calendar->weight_on($date);
+        $weights{$i} = create_underlying($volsurface->symbol, $volsurface->for_date)->_builder->build_trading_calendar->weight_on($date);
     }
 
     my $forward_vols;
@@ -573,7 +574,7 @@ sub calculate_moneyness_vol_for_display {
     my $self = shift;
 
     my $volsurface = $self->surface;
-    my $underlying = BOM::Market::Underlying->new($volsurface->symbol, $volsurface->for_date);
+    my $underlying = create_underlying($volsurface->symbol, $volsurface->for_date);
     my $fv         = $self->get_forward_vol();
     my @surface;
 

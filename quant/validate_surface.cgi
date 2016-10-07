@@ -27,7 +27,7 @@ BOM::Backoffice::Sysinit::init();
 # Our very own %input processing logic seems to strip
 # out characters from my URL encoded JSON, breaking it.
 my $cgi           = CGI->new;
-my $underlying    = BOM::Market::Underlying->new($cgi->param('symbol'));
+my $underlying    = create_underlying($cgi->param('symbol'));
 my $recorded_date = Date::Utility->new($cgi->param('recorded_epoch'));
 my $type          = $cgi->param('type');
 my $spot          = $cgi->param('spot');

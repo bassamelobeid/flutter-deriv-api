@@ -20,7 +20,8 @@ use Try::Tiny;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
 use Date::Utility;
 use Format::Util::Numbers qw( roundnear );
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );

@@ -13,8 +13,9 @@ use Locale::Maketext::Extract;
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
 use BOM::Platform::Offerings qw(get_offerings_with_filter);
-use BOM::Market::Underlying;
-use BOM::Market::UnderlyingDB;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
+use BOM::MarketData qw(create_underlying_db);
 use YAML::XS qw(LoadFile);
 
 my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_types.yml');
@@ -139,7 +140,7 @@ sub add_japan_settings {
 sub add_underlyings {
     my $self = shift;
 
-    my @underlyings = map { BOM::Market::Underlying->new($_) } BOM::Market::UnderlyingDB->get_symbols_for(
+    my @underlyings = map { create_underlying($_) } Quant::Framework::UnderlyingDB->get_symbols_for(
         market           => [Finance::Asset::Market::Registry->all_market_names],
         exclude_disabled => 1
     );

@@ -8,7 +8,8 @@ use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
 use Postgres::FeedDB::Spot::DatabaseAPI;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
 use BOM::Charting;
 
 use String::UTF8::MD5;
@@ -239,7 +240,7 @@ sub doPlot {
         $underlying_symbol = $1;
     }
 
-    my $underlying = BOM::Market::Underlying->new($underlying_symbol);
+    my $underlying = create_underlying($underlying_symbol);
     my $pip_size   = $underlying->pip_size;
 
     # get data from history server
@@ -367,7 +368,7 @@ sub doDailyPlot {
     my (@graph_x, @graph_y);
     my $firsty = "";
 
-    my $underlying = BOM::Market::Underlying->new($underlying_symbol);
+    my $underlying = create_underlying($underlying_symbol);
 
     my $ohlcs = Postgres::FeedDB::Spot::DatabaseAPI->new($underlying->config->spot_db_args)->ohlc_daily_until_now_for_charting({
         limit => 99999,

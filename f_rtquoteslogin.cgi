@@ -6,7 +6,7 @@ use open qw[ :encoding(UTF-8) ];
 
 use HTML::Entities;
 use f_brokerincludeall;
-use BOM::Market::UnderlyingDB;
+use BOM::MarketData qw(create_underlying_db);
 use Finance::Asset::Market::Registry;
 use Proc::Killall;
 use Try::Tiny;
@@ -18,7 +18,7 @@ use Date::Utility;
 use List::Util qw/reduce/;
 
 BOM::Backoffice::Sysinit::init();
-$BOM::Market::Underlying::FORCE_REALTIME_FEED = 1;
+$Quant::Framework::Underlying::FORCE_REALTIME_FEED = 1;
 
 my $fullfeed_re = qr/^\d\d?-\w{3}-\d\d.fullfeed(?!\.zip)/;
 
@@ -76,7 +76,7 @@ print "<LI><font color=F09999>Shadow tick file over 180 seconds</font>";
 print "<LI><font color=FF0000>More than 0.2\% away from combined quote (0.4\% for stocks)</font>";
 print "</UL>";
 
-my @instrumentlist = sort BOM::Market::UnderlyingDB->instance->get_symbols_for(
+my @instrumentlist = sort create_underlying_db->get_symbols_for(
     market => [@all_markets],
 );
 
@@ -96,7 +96,7 @@ print "</tr>";
 my $all = request()->param('what');
 foreach my $i (@instrumentlist) {
 
-    my $underlying = BOM::Market::Underlying->new($i);
+    my $underlying = create_underlying($i);
 
     next unless $all or $underlying->calendar->is_open;
 

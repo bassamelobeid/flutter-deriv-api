@@ -55,7 +55,7 @@ use Quant::Framework::VolSurface::Delta;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::MarketData::Display::VolatilitySurface;
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::Market::UnderlyingDB;
+use BOM::MarketData qw(create_underlying_db);
 use Finance::Asset::Market::Registry;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -81,14 +81,14 @@ my @markets;
 push @markets, split /\s+/, $markets if $markets;
 if ($update_including_intraday_double) {
     push @markets,
-        BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        create_underlying_db->get_symbols_for(
         market            => \@update_markets,
         contract_category => 'ANY',
         broker            => 'VRT',
         );
 } else {
     push @markets,
-        BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        create_underlying_db->get_symbols_for(
         market            => \@update_markets,
         contract_category => 'IV',
         broker            => $broker,
@@ -101,7 +101,7 @@ my $dm = BOM::MarketData::Fetcher::VolSurface->new;
 my %volatility_surfaces;
 foreach my $market (@markets) {
 
-    my $underlying = BOM::Market::Underlying->new($market);
+    my $underlying = create_underlying($market);
     # when we are updating surface, fetch New York 10 for FX
     my $args = {
         underlying => $underlying,

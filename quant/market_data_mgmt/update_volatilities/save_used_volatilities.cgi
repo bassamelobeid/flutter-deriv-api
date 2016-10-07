@@ -20,7 +20,7 @@ BrokerPresentation("", "");
 
 foreach my $symbol (@markets) {
     local $/ = "\n";
-    my $underlying = BOM::Market::Underlying->new($symbol);
+    my $underlying = create_underlying($symbol);
     # when we are updating surface, fetch New York 10 for FX
     my $args = {
         underlying => $underlying,

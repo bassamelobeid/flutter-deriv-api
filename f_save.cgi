@@ -63,7 +63,7 @@ $text =~ s/\n\r/\n/g;
 my @lines = split(/\n/, $text);
 
 if ($filen eq 'editvol') {
-    my $underlying = BOM::Market::Underlying->new($vol_update_symbol);
+    my $underlying = create_underlying($vol_update_symbol);
     my $market     = $underlying->market->name;
     my $model =
         ($underlying->volatility_surface_type eq 'moneyness')
