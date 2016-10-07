@@ -17,7 +17,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use BOM::Product::ContractFactory qw( produce_contract );
 use Date::Utility;
 use BOM::Platform::Runtime;

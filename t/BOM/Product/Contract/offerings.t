@@ -9,7 +9,7 @@ use Test::Exception;
 use YAML::XS qw(LoadFile);
 
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use BOM::Platform::Offerings qw(get_offerings_with_filter);
 use BOM::System::Chronicle;
 

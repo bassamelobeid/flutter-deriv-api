@@ -15,7 +15,7 @@ use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 use YAML::XS qw(LoadFile);
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use Storable qw(dclone);
 
 Cache::RedisDB->flushall;

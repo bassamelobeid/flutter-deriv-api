@@ -5,7 +5,7 @@ use Date::Utility;
 use Time::Duration::Concise;
 use BOM::Platform::Offerings qw(get_offerings_flyby);
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use BOM::Product::Contract::Category;
 use Format::Util::Numbers qw(roundnear);
 use List::Util qw(reduce);

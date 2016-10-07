@@ -4,7 +4,7 @@ use Test::More tests => 4;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use Date::Utility;
 
 use BOM::Platform::Runtime;
@@ -59,8 +59,8 @@ subtest 'system wide suspend trading' => sub {
 
 subtest 'invalid underlying - contract type combination' => sub {
     $bet_params->{is_forward_starting} = 1;
-    $bet_params->{barrier} = 'S100P';    # non atm
-    $bet_params->{date_start} = $bet_params->{date_pricing}->plus_time_interval('20m');
+    $bet_params->{barrier}             = 'S100P';                                                  # non atm
+    $bet_params->{date_start}          = $bet_params->{date_pricing}->plus_time_interval('20m');
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->{message}, qr/trying unauthorised combination/, 'Contract type suspended message');

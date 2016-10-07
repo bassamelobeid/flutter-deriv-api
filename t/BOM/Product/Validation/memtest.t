@@ -16,12 +16,12 @@ use BOM::Platform::Offerings qw(get_offerings_with_filter);
 use Date::Utility;
 use Finance::Asset;
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 
 my $now            = Date::Utility->new;
 my @contract_types = get_offerings_with_filter('contract_type');
 my @submarkets     = get_offerings_with_filter('submarket');
-my @underlyings = map { create_underlying($_) } map { (get_offerings_with_filter('underlying_symbol', {submarket => $_}))[0] } @submarkets;
+my @underlyings    = map { create_underlying($_) } map { (get_offerings_with_filter('underlying_symbol', {submarket => $_}))[0] } @submarkets;
 
 # just do for everything
 my $all                     = Finance::Asset->all_parameters;

@@ -9,7 +9,7 @@ use Format::Util::Numbers qw(roundnear);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Contract::Strike;
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use Postgres::FeedDB::Spot::Tick;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);

@@ -10,7 +10,7 @@ use Postgres::FeedDB::Spot::Tick;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Date::Utility;
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 
 my @date_start = ('2016-02-15 08:15:00', '2016-02-15 08:30:00', '2016-02-16 08:30:00');
 my @duration   = ('20m',                 '24h',                 '2m');

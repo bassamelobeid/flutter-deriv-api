@@ -15,7 +15,7 @@ use BOM::Platform::Context qw(localize request);
 use BOM::MarketData::Fetcher::VolSurface;
 use Postgres::FeedDB::Spot::Tick;
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use BOM::Product::Types;
 use BOM::Product::RiskProfile;
 

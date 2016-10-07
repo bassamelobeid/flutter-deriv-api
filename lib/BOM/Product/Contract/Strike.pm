@@ -9,7 +9,7 @@ use Readonly;
 
 use Date::Utility;
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use BOM::Platform::Context qw(localize);
 use Format::Util::Numbers qw(roundnear);
 use feature "state";

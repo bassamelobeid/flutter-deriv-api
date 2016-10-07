@@ -13,7 +13,7 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
 use Postgres::FeedDB::Spot::Tick;
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use BOM::Product::ContractFactory qw( produce_contract );
 
 use BOM::Platform::Runtime;
@@ -23,7 +23,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
 my $mocked = Test::MockModule->new('BOM::Product::Contract');
-$mocked->mock('market_is_inefficient', sub{0});
+$mocked->mock('market_is_inefficient', sub { 0 });
 my $oft_used_date   = Date::Utility->new('2013-03-29 15:00:34');
 my $an_hour_earlier = Date::Utility->new($oft_used_date->epoch - 3600);
 my $that_morning    = Date::Utility->new('2013-03-29 08:43:00');

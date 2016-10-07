@@ -12,7 +12,7 @@ use Date::Utility;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use Text::CSV::Slurp;
 
 use BOM::Test::Data::Utility::UnitTestRedis;
@@ -931,6 +931,6 @@ foreach my $d (@$data) {
         });
 
     my $c = produce_contract($params);
-    is roundnear(0.01, $c->theo_probability->amount),  0.52,  'theo prob checked';
+    is roundnear(0.01, $c->theo_probability->amount),  0.52, 'theo prob checked';
     is roundnear(0.01, $c->commission_markup->amount), 0.03, 'commission markup checked';
 }
