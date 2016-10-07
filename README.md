@@ -17,9 +17,9 @@ Package depedency: BOM::MarketDataAutoUpdater::OHLC
 
 Frequency of this script being called: Hourly basic 
 
-Input file: ohlc file type from Bloomberg::FileDownloader e.g. ohlc_NIFTY_i.csv.enc 
+Input: ohlc file type from Bloomberg::FileDownloader e.g. ohlc_NIFTY_i.csv.enc 
 
-Output:
+Output: db_file at directory_to_save/underlying.db to Chronicle
 
 (2) bin/bom_update_economic_events.pl 
 
