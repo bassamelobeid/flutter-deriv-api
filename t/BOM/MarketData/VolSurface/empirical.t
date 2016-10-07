@@ -8,6 +8,8 @@ use Test::Exception;
 use Test::MockModule;
 use Format::Util::Numbers qw/roundnear/;
 
+use BOM::MarketData;
+use BOM::MarketData::Types;
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData qw(create_underlying);
 use BOM::Market::AggTicks;

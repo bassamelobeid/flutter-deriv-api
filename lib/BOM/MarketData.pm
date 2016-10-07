@@ -5,6 +5,8 @@ use strict;
 use warnings;
 
 use BOM::System::Chronicle;
+use BOM::Platform::Runtime;
+
 use Quant::Framework::Underlying;
 use Quant::Framework::UnderlyingDB;
 
@@ -38,3 +40,5 @@ sub create_underlying_db {
     return $result;
 
 }
+
+1;

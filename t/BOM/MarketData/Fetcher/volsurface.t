@@ -9,6 +9,7 @@ use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
 use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Moneyness;

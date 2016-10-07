@@ -291,7 +291,7 @@ sub _build_per_second_seasonality_curve {
 
 has underlying => (
     is       => 'ro',
-    isa      => 'bom_underlying_object',
+    isa      => 'underlying_object',
     coerce   => 1,
     required => 1,
 );
