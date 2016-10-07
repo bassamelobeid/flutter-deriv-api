@@ -975,7 +975,10 @@ sub create_contract {
         date_start            => $args{date_start} // $date_start,
         date_expiry           => $args{date_expiry} // $date_expiry,
         barrier               => $args{barrier} // 'S0P',
-        app_markup_percentage => $args{app_markup_percentage} // 0
+        app_markup_percentage => $args{app_markup_percentage} // 0,
+        # this is not what we want to test here.
+        # setting it to false.
+        uses_empirical_volatility => 0,
     };
     if ($args{date_pricing}) { $contract_data->{date_pricing} = $args{date_pricing}; }
 
