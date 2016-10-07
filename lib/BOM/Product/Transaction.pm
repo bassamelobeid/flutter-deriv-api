@@ -1390,6 +1390,8 @@ sub _validate_sell_pricing_adjustment {
                 $self->price_slippage(roundnear(0.01, $move * $self->payout));
             } elsif ($move > $allowed_move) {
                 $self->execute_at_better_price(1);
+                # We need to keep record of slippage even it is executed at better price
+                $self->price_slippage(roundnear(0.01, $move * $self->payout));
                 $final_value = $recomputed_amount;
             }
         }
@@ -1461,6 +1463,8 @@ sub _validate_trade_pricing_adjustment {
                 $self->price_slippage(roundnear(0.01, $move * $self->payout));
             } elsif ($move > $allowed_move) {
                 $self->execute_at_better_price(1);
+                # We need to keep record of slippage even it is executed at better price
+                $self->price_slippage(roundnear(0.01, $move * $self->payout));
                 $final_value = $recomputed_amount;
             }
         }
