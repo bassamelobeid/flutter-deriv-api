@@ -2188,6 +2188,13 @@ sub _validate_offerings {
         };
     }
 
+    if (first { $_ eq $underlying->symbol } @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades}) {
+        return {
+            message           => "Underlying trades suspended [symbol: " . $underlying->symbol . "]",
+            message_to_client => $message_to_client,
+        };
+    }
+
     # NOTE: this check only validates the contract-specific risk profile.
     # There may also be a client specific one which is validated in B:P::Transaction
     if ($self->risk_profile->get_risk_profile eq 'no_business') {
