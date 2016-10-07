@@ -418,6 +418,7 @@ sub _build_is_expired {
     return $is_expired;
 }
 
+# there is no settlement time concept on spread, as soon as it is expired, it is settleable
 has is_settelable => (
     is         => 'ro',
     lazy_build => 1,
