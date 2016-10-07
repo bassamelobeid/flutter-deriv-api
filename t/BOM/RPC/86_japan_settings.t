@@ -107,32 +107,16 @@ subtest 'VRTJ get_settings' => sub {
     is($res->{jp_settings}, undef, "no JP settings for Japan Virtual Acc");
 };
 
-subtest 'JP get_settings' => sub {
-    $res = BOM::RPC::v3::Accounts::get_settings({client => $jp_client});
-
-    my %jp_specific = (
-        salutation    => '',
-        country_code  => 'jp',
-        date_of_birth => Date::Utility->new($jp_client_details{date_of_birth})->epoch
-    );
-
-    my @settings = qw(
-        first_name
-        last_name
-        address_line_1
-        address_line_2
-        address_city
-        address_state
-        address_postcode
-        phone
-    );
-
-    # fields common for all clients
-    is($res->{$_}, $jp_client_details{$_}, "OK: $_") for (@settings);
-    is($res->{$_}, $jp_specific{$_},       "OK: $_") for (keys %jp_specific);
-
-    # fields only for Japan real client
-    is($res->{jp_settings}->{$_}, $jp_client_details{$_}, "OK: $_") for (@jp_only);
+subtest 'JP set_settings' => sub {
+    my $params = {
+        client       => $jp_client,
+        website_name => 'Binary.com',
+        client_ip    => '127.0.0.1',
+        user_agent   => 'sdssasd',
+        language     => 'ja',
+        args         => {jp_settings => {occupation => 'Financial Director'}}};
+    $res = BOM::RPC::v3::Accounts::set_settings($params);
+    ok $res->{status}, 'Settings updated accordingly';
 };
 
 subtest 'non-JP client get_settings' => sub {
@@ -187,4 +171,3 @@ sub create_vr_account {
 
     return ($acc->{client}, $acc->{user});
 }
-

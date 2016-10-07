@@ -87,6 +87,22 @@ $user->add_loginid({loginid => $test_client_vr->loginid});
 $user->save;
 clear_mailbox();
 
+my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+$test_client_cr->email('sample@binary.com');
+$test_client_cr->set_default_account('USD');
+$test_client_cr->save;
+
+my $user_cr = BOM::Platform::User->create(
+    email    => 'sample@binary.com',
+    password => $hash_pwd
+);
+$user_cr->save;
+$user_cr->add_loginid({loginid => $test_client_cr->loginid});
+$user_cr->save;
+clear_mailbox();
+
 my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
 });
@@ -100,7 +116,7 @@ $test_client_disabled->save();
 
 my $m              = BOM::Database::Model::AccessToken->new;
 my $token1         = $m->create_token($test_loginid, 'test token');
-my $token_21       = $m->create_token('CR0021', 'test token');
+my $token_21       = $m->create_token($test_client_cr->loginid, 'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
 my $token_vr       = $m->create_token($test_client_vr->loginid, 'test token');
 my $token_with_txn = $m->create_token($test_client2->loginid, 'test token');
@@ -454,8 +470,8 @@ subtest $method => sub {
         $result,
         {
             'currency' => 'USD',
-            'balance'  => '1505.00',
-            'loginid'  => 'CR0021'
+            'balance'  => '0.00',
+            'loginid'  => $test_client_cr->loginid
         },
         'result is correct'
     );
@@ -842,23 +858,25 @@ subtest $method => sub {
         token => $token_21,
     };
     my $result = $c->tcall($method, $params);
+    note explain $result;
     is_deeply(
         $result,
         {
-            'country'                        => 'Australia',
-            'salutation'                     => 'Ms',
+            'country'                        => 'Indonesia',
+            'salutation'                     => 'MR',
             'is_authenticated_payment_agent' => '0',
-            'country_code'                   => 'au',
-            'date_of_birth'                  => '315532800',
-            'address_state'                  => '',
-            'address_postcode'               => '85010',
-            'phone'                          => '069782001',
-            'last_name'                      => 'tee',
-            'email'                          => 'shuwnyuan@regentmarkets.com',
-            'address_line_2'                 => 'Jln Address 2 Jln Address 3 Jln Address 4',
-            'address_city'                   => 'Segamat',
-            'address_line_1'                 => '53, Jln Address 1',
-            'first_name'                     => 'shuwnyuan'
+            'country_code'                   => 'id',
+            'date_of_birth'                  => '267408000',
+            'address_state'                  => 'LA',
+            'address_postcode'               => '232323',
+            'phone'                          => '+112123121',
+            'last_name'                      => 'pItT',
+            'email'                          => 'sample@binary.com',
+            'address_line_2'                 => '301',
+            'address_city'                   => 'Beverly Hills',
+            'address_line_1'                 => 'Civic Center',
+            'first_name'                     => 'bRaD',
+            'email_consent'                  => '0'
         });
 
     $params->{token} = $token1;
@@ -869,9 +887,10 @@ subtest $method => sub {
     is_deeply(
         $c->tcall($method, $params),
         {
-            'email'        => 'abc@binary.com',
-            'country'      => 'Indonesia',
-            'country_code' => 'id',
+            'email'         => 'abc@binary.com',
+            'country'       => 'Indonesia',
+            'country_code'  => 'id',
+            'email_consent' => '0'
         },
         'vr client return less messages'
     );
@@ -1046,6 +1065,7 @@ subtest $method => sub {
     $mocked_client->mock('add_note', sub { $add_note_called = 1 });
     my $old_latest_environment = $test_client->latest_environment;
     clear_mailbox();
+    $params->{args}->{email_consent} = 1;
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
     ok($add_note_called, 'add_note is called, so the email should be sent to support address');
     $test_client->load();
@@ -1058,6 +1078,8 @@ subtest $method => sub {
     ok(%msg, 'send a email to client');
     like($msg{body}, qr/>address line 1, address line 2, address city, address state, 12345, Indonesia/s, 'email content correct');
     clear_mailbox();
+
+    is($c->tcall('get_settings', {token => $token1})->{email_consent}, 1, "Was able to set email consent correctly");
 };
 
 # set_self_exclusion && get_self_exclusion
@@ -1250,7 +1272,6 @@ subtest 'get and set self_exclusion' => sub {
     is $self_excl->exclude_until, $exclude_until . 'T00:00:00', 'exclude_until in db is right';
     is $self_excl->timeout_until, $timeout_until->epoch, 'timeout_until is right';
     is $self_excl->session_duration_limit, 1440, 'all good';
-
 };
 
 done_testing();
