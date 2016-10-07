@@ -930,6 +930,6 @@ foreach my $d (@$data) {
         });
 
     my $c = produce_contract($params);
-    is roundnear(0.01, $c->theo_probability->amount),  0.5,  'theo prob checked';
+    is roundnear(0.01, $c->theo_probability->amount),  0.52,  'theo prob checked';
     is roundnear(0.01, $c->commission_markup->amount), 0.03, 'commission markup checked';
 }
