@@ -418,6 +418,18 @@ sub _build_is_expired {
     return $is_expired;
 }
 
+has is_settelable => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_is_settleable {
+    my $self = shift;
+
+    return $self->is_expired // 0;
+
+}
+
 sub current_value {
     my $self = shift;
     $self->_recalculate_value($self->sell_level);
