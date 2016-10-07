@@ -20,6 +20,10 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 
 my $underlying       = create_underlying('frxUSDJPY');
 my $bet_start        = Date::Utility->new('2012-02-01 01:00:00');

@@ -9,6 +9,10 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Product::RiskProfile;
 use BOM::Platform::Runtime;
 
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 subtest 'init' => sub {
     throws_ok { BOM::Product::RiskProfile->new } qr/required/, 'throws if required args not provided';
     lives_ok {

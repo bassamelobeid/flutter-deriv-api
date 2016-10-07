@@ -21,6 +21,10 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine

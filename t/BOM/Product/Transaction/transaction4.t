@@ -24,6 +24,10 @@ use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Database::DataMapper::FinancialMarketBet;
 
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 initialize_realtime_ticks_db();
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

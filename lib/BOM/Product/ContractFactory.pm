@@ -20,6 +20,10 @@ use BOM::Product::ContractFactory::Parser qw(
 
 require UNIVERSAL::require;
 
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 use base qw( Exporter );
 our @EXPORT_OK = qw( produce_contract make_similar_contract simple_contract_info );
 
