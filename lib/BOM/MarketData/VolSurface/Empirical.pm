@@ -15,7 +15,7 @@ use Quant::Framework::EconomicEventCalendar;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::AggTicks;
 use BOM::MarketData qw(create_underlying);
-use BOM::Market::Types;
+use Finance::Asset::Market::Types;
 
 my $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
 my $coefficients    = LoadFile('/home/git/regentmarkets/bom-market/config/files/volatility_calibration_coefficients.yml');

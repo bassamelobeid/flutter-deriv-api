@@ -6,41 +6,25 @@ use warnings;
 
 use BOM::System::Chronicle;
 use Quant::Framework::Underlying;
+use Quant::Framework::UnderlyingDB;
 
 use base qw( Exporter );
 our @EXPORT_OK = qw( create_underlying create_underlying_db );
 
 sub create_underlying {
-    die "Underlying cannot have more than two inputs" if scalar @_ > 2;
+    my $args = shift;
+    my $for_date = shift;
 
-    my $symbol;
-    my $for_date;
-
-    #input can be two scalar for symbol name and for_date
-    if ( scalar @_ == 2 ) {
-        $symbol = shift;
-        $for_date = shift;
-    } else {
-        my $input = shift;
-
-
-        #Input can be a scalar representing symbol name,
-        if ( not ref($input) ) {
-            $symbol = shift;
-        } else {
-            #input can be a hash-ref containing symbol and for_date
-            my $hash_ref = shift;
-            $symbol = $hash_ref->{symbol};
-            $for_date = $hash_ref->{for_date} if exists $hash_ref->{for_date};
-        }
+    if ( not ref($args) ) {
+        my $symbol = $args;
+        $args = {};
+        $args->{symbol} = $symbol;
     }
 
-    return Quant::Framework::Underlying->new({
-            symbol => $symbol,
-            for_date => $for_date,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($for_date),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer()
-        });
+    $args->{chronicle_reader} = BOM::System::Chronicle::get_chronicle_reader($for_date);
+    $args->{chronicle_writer} = BOM::System::Chronicle::get_chronicle_writer();
+
+    return Quant::Framework::Underlying->new($args, $for_date);
 }
 
 sub create_underlying_db {

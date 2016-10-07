@@ -32,7 +32,7 @@ my $encoder = Sereal::Encoder->new({
 });
 my $decoder = Sereal::Decoder->new;
 
-use BOM::Market::Types;
+use Finance::Asset::Market::Types;
 
 =head2 agg_interval
 
@@ -42,7 +42,7 @@ A Time::Duration::Concise representing the time between aggregations.
 
 has agg_interval => (
     is      => 'ro',
-    isa     => 'bom_time_interval',
+    isa     => 'time_interval',
     default => '15s',
     coerce  => 1,
 );
@@ -55,7 +55,7 @@ A Time::Duration::Concise representing the time to hold unaggregated ticks.
 
 has unagg_retention_interval => (
     is      => 'ro',
-    isa     => 'bom_time_interval',
+    isa     => 'time_interval',
     default => '31m',
     coerce  => 1,
 );
@@ -68,7 +68,7 @@ A Time::Duration::Concise representing the time between return calculations.
 
 has returns_interval => (
     is      => 'ro',
-    isa     => 'bom_time_interval',
+    isa     => 'time_interval',
     default => '1m',
     coerce  => 1,
 );
@@ -120,7 +120,7 @@ A Time::Duration::Concise representing the total time we wish to keep aggregated
 
 has agg_retention_interval => (
     is      => 'ro',
-    isa     => 'bom_time_interval',
+    isa     => 'time_interval',
     default => '12h',
     coerce  => 1,
 );

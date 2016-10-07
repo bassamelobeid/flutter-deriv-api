@@ -197,10 +197,10 @@ subtest 'all attributes on a variety of underlyings' => sub {
 
         is($underlying->asset_symbol, $underlying->asset->symbol, 'Asset symbol and object match') if ($underlying->asset_symbol);
 
-        is(ref $underlying->contracts, 'HASH', 'contracts is a hash ref');
-        if ($underlying->quanto_only or $market eq 'config') {
-            is(scalar keys %{$underlying->contracts}, 0, 'Special things should not have contracts');
-        }
+        # is(ref $underlying->contracts, 'HASH', 'contracts is a hash ref');
+        # if ($underlying->quanto_only or $market eq 'config') {
+        #     is(scalar keys %{$underlying->contracts}, 0, 'Special things should not have contracts');
+        # }
 
         if ($underlying->inverted) {
             isnt($underlying->system_symbol, $underlying->symbol, 'Inverted underlying has a different sysmbol than system_symbol');

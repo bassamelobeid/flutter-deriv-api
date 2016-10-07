@@ -44,6 +44,7 @@ isnt $forex, $index,  'But different from index';
 new_ok('Quant::Framework::Underlying' => [$unknown_symbol]);
 new_ok('Quant::Framework::Underlying' => [$unknown_symbol, $yesterday]);
 
+
 throws_ok { create_underlying } qr/No symbol provided to constructor/, 'Can not construct without symbol';
 throws_ok { create_underlying({sym => $forex_symbol}) } qr/No symbol provided to constructor/,
     'Can not construct via hashref without symbol';
