@@ -19,7 +19,7 @@ Frequency of this script being called: Hourly basic
 
 Input: ohlc file type from Bloomberg::FileDownloader e.g. ohlc_NIFTY_i.csv.enc 
 
-Output: db_file at directory_to_save/underlying.db to Chronicle
+Output: db_file and feed.ohlc_daily db table which can be retrieved from directory_to_save/underlying.db at Chronicle
 
 (2) bin/bom_update_economic_events.pl 
 
@@ -35,6 +35,10 @@ Package dependency: BOM::MarketDataAutoUpdater::UpdateEconomicEvents, ForexFacto
 
 Frequency of this script being called: 00GMT on daily basic
 
+Input: www.forexfactory.com
+
+Output: Chronicle
+
 (3) bin/update_corp_actions.pl
 
 A script runs Bloomberg::CorporateAction to process the corporate actions of offered stocks and update corporate action chronicle documents. It will also set trading suspended on those stocks that has bankruptcy action.
@@ -49,6 +53,10 @@ Package dependency: Bloomberg::CorporateAction, Bloomberg::FileDownloader, Quant
 
 Frequency of this script being called: 06GMT, 12GMT and 23GMT. (Although it runs for several time per day, the content is remaining the same as we are only getting corporate action from Bloomberg once per day.)
 
+Input: corporate actions file type from Bloomberg::FileDownloader e.g. corporate.csv.enc 
+
+Output: Chronicle
+
 (4) bin/update_interest_rates.pl
 
 A script run BOM::MarketDataAutoUpdater::InterestRates to update currency interest rate. 
@@ -62,6 +70,10 @@ Source: Bloomberg Data License
 Package dependency:  BOM::MarketDataAutoUpdater::InterestRates
 
 Frequency of this script being called: 16:50GMT on daily basic. (Libor updates rate at 11:45 London time and Bloomberg updated it at 4 hours after that, hence we scheduled the run time at 17GMT to make sure we have updated rate from Bloomberg)
+
+Input: interest rates file type from Bloomberg::FileDownloaderBloomberg e.g. interest_rate.csv 
+
+Output: Chronicle
 
 (5) bin/update_implied_interest_rates.pl
 
