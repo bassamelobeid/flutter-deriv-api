@@ -23,8 +23,8 @@ coerce 'bom_time_interval', from 'Str', via { Time::Duration::Concise->new(inter
 subtype 'bom_date_object', as 'Date::Utility';
 coerce 'bom_date_object', from 'Str', via { Date::Utility->new($_) };
 
-subtype 'bom_underlying_object', as 'BOM::Market::Underlying';
-coerce 'bom_underlying_object', from 'Str', via { BOM::Market::Underlying->new($_) };
+# subtype 'bom_underlying_object', as 'BOM::Market::Underlying';
+# coerce 'bom_underlying_object', from 'Str', via { BOM::Market::Underlying->new($_) };
 
 no Moose;
 no Moose::Util::TypeConstraints;
