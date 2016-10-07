@@ -90,6 +90,12 @@ Package dependency: BOM::MarketDataAutoUpdater::ImpliedInterestRates
 
 Frequency of this script being called: 17GMT on daily basic. (This script must be run after bin/update_interest_rates.pl as it depends on the market interest rate of the corresponding currency of the pair).
 
+Input: 
+interest rates file type from Bloomberg::FileDownloaderBloomberg e.g. interest_rate.csv 
+forward rates file type from Bloomberg::FileDownloaderBloomberg forward_rates.csv 
+
+Output: Chronicle
+
 (6) bin/update_smartfx_rate.pl
 
 A scripts to update interest rate of smart fx based on the rate of the forex pairs of the basket.
@@ -103,6 +109,12 @@ Source: The market rate of the currency
 Package dependency: BOM::MarketDataAutoUpdater::ImpliedInterestRates
 
 Frequency of this script being called: 00GMT on daily basic
+
+Input: 
+interest rates file type from Bloomberg::FileDownloaderBloomberg e.g. interest_rate.csv 
+forward rates file type from Bloomberg::FileDownloaderBloomberg forward_rates.csv 
+
+Output: Chronicle
 
 (7) bin/updatevol.pl
 
@@ -118,4 +130,10 @@ Source: Bloomberg Data License (Forex and Commodities), Superderivaties (Stocks 
 
 Frequency of this script being called: Hourly basic (Indices and stocks), 10min basic (Forex and commodities)
 
+Input:
+- volatility file type from Bloomberg::FileDownloaderBloomberg e.g. 
+weekday vols : fxvol%02d45_points.csv, quantovol.csv, fxvol%02d45_tenors.csv 
+weekend vols : fxvol_wknd.csv, quantovol_wknd.csv, fxvol_wknd_tenors.csv 
+- volatility file type from SuperDerivatives e.g. auto_upload.xls, auto_upload_stocks.xls
 
+Output: Chronicle
