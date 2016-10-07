@@ -10,7 +10,7 @@ use Test::Exception;
 use Cache::RedisDB;
 
 use BOM::Platform::Runtime;
-use BOM::Product::Offerings qw(get_offerings_flyby get_offerings_with_filter);
+use BOM::Platform::Offerings qw(get_offerings_flyby get_offerings_with_filter);
 
 my @expected_lc   = qw(japan-virtual virtual costarica maltainvest japan malta iom);
 my %expected_type = (

@@ -7,13 +7,13 @@ use Test::FailWarnings;
 use BOM::Test::Data::Utility::UnitTestRedis;
 
 use BOM::Market::UnderlyingDB;
-use BOM::Product::Offerings qw( get_offerings_with_filter );
+use BOM::Platform::Offerings qw( get_offerings_with_filter );
 
 my $udb = BOM::Market::UnderlyingDB->new;
 
 subtest 'Sets match' => sub {
 
-    my %expected = %{$BOM::Product::Offerings::BARRIER_CATEGORIES};
+    my %expected = %{$BOM::Platform::Offerings::BARRIER_CATEGORIES};
 
     eq_or_diff(
         [sort(get_offerings_with_filter('contract_category'))],
