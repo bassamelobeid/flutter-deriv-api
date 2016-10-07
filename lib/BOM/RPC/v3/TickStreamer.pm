@@ -11,7 +11,7 @@ use BOM::RPC::v3::Contract;
 use BOM::Market::Underlying;
 use BOM::Platform::Context qw (localize request);
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
-use BOM::Product::Offerings qw(get_offerings_with_filter);
+use BOM::Platform::Offerings qw(get_offerings_with_filter);
 
 sub ticks {
     my $params = shift;

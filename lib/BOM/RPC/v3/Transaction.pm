@@ -9,6 +9,7 @@ use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
+use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Product::Transaction;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Client;
@@ -37,6 +38,7 @@ sub buy {
 
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
+    $contract_parameters->{landing_company} = $client->landing_company->short;
 
     my $contract = try { produce_contract($contract_parameters) }
         || return BOM::RPC::v3::Utility::create_error({
@@ -154,6 +156,7 @@ sub buy_contract_for_multiple_accounts {
 
         my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
         $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
+        $contract_parameters->{landing_company} = $client->landing_company->short;
 
         $contract = try { produce_contract({%$contract_parameters}) }
             || return BOM::RPC::v3::Utility::create_error({
@@ -223,8 +226,10 @@ sub sell {
             code              => 'InvalidSellContractProposal',
             message_to_client => BOM::Platform::Context::localize('Unknown contract sell proposal')}) unless @fmbs;
 
-    my $contract = produce_contract($fmbs[0]->{short_code}, $client->currency);
-    my $trx = BOM::Product::Transaction->new({
+    my $contract_parameters = shortcode_to_parameters($fmbs[0]->{short_code}, $client->currency);
+    $contract_parameters->{landing_company} = $client->landing_company->short;
+    my $contract = produce_contract($contract_parameters);
+    my $trx      = BOM::Product::Transaction->new({
         client      => $client,
         contract    => $contract,
         contract_id => $id,
