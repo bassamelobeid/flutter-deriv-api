@@ -135,7 +135,10 @@ my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/co
         # load it first
         my $landing_company = delete $input_params{landing_company} // 'costarica';
         my $role = 'BOM::Product::Role::' . ucfirst lc $landing_company;
-        unless ($loaded{$role}) {
+        # We'll cache positive + negative results here, and we don't expect files to appear/disappear
+        # after startup so we don't ever clear the cache.
+        unless (exists $loaded{$role}) {
+            # Ignoring the return of try on purpose: we just want to know whether the file exists
             $loaded{$role} = try { $role->require } || 0;
         }
         $input_params{role} = $role if $loaded{$role};
