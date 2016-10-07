@@ -812,12 +812,32 @@ has vol_spread_markup => (
 sub _build_vol_spread_markup {
     my $self = shift;
 
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'vol_spread_markup',
+    my $vol_spread = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'vol_spread',
         set_by      => __PACKAGE__,
         description => 'markup added to account for variable ticks interval for volatility calculation.',
-        base_amount => 0.1 * (1 - ($self->volatility_scaling_factor)**2),
+        minimum     => 0,
+        maximum     => 0.1,
+        base_amount => (0.1 * (1 - ($self->volatility_scaling_factor)**2)) / 2,
     });
+
+    my $vega = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'bet_vega',
+        set_by      => __PACKAGE__,
+        description => 'The absolute value of vega of a priced option',
+        base_amount => abs($self->bet->vega),
+    });
+
+    my $vsm = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'vol_spread_markup',
+        set_by      => __PACKAGE__,
+        description => 'vol spread adjustment',
+    });
+
+    $vsm->include_adjustment('reset',    $vega);
+    $vsm->include_adjustment('multiply', $vol_spread);
+
+    return $vsm;
 }
 
 no Moose;
