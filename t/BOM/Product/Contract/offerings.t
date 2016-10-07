@@ -62,21 +62,3 @@ subtest 'underlying symbols' => sub {
     }
     'lives through underlying symbol test';
 };
-
-subtest 'contract offerings' => sub {
-    my $expected = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Contract/offerings_test.yml');
-    lives_ok {
-        foreach my $underlying_symbol (get_offerings_with_filter('underlying_symbol')) {
-            if (not $expected->{$underlying_symbol}) {
-                fail("underlying symbol [$underlying_symbol] not found");
-            } else {
-                is_deeply(
-                    BOM::Market::Underlying->new($underlying_symbol)->contracts,
-                    $expected->{$underlying_symbol},
-                    'correct contract offerings for ' . $underlying_symbol
-                );
-            }
-        }
-    }
-    'lives through contract offerings';
-};
