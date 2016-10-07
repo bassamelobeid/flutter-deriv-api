@@ -150,7 +150,7 @@ sub create_doc {
 
         if ($yaml_db eq 'volsurface_delta' or $yaml_db eq 'volsurface_moneyness') {
             if (exists($data_mod->{symbol}) and not exists($data_mod->{underlying_config})) {
-                $data_mod->{underlying_config} = BOM::Market::Underlying->new($data_mod->{symbol})->config;
+                $data_mod->{underlying_config} = create_underlying($data_mod->{symbol})->config;
                 delete $data_mod->{symbol};
             } elsif (exists($data_mod->{underlying}) and not exists($data_mod->{underlying_config})) {
                 $data_mod->{underlying_config} = $data_mod->{underlying}->config;
