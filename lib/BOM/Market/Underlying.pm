@@ -564,19 +564,6 @@ sub _build__builder {
     });
 }
 
-has contracts => (
-    is         => 'ro',
-    isa        => 'HashRef',
-    lazy_build => 1,
-);
-
-sub _build_contracts {
-    my $self = shift;
-
-    return {} if $self->quanto_only;
-    return $PRODUCT_OFFERINGS->{$self->symbol} // {};
-}
-
 has providers => (
     is         => 'ro',
     lazy_build => 1,
