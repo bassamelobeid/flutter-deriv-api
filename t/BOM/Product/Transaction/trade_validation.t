@@ -517,9 +517,9 @@ subtest 'BUY - trade pricing adjustment' => sub {
         $error = $transaction->_validate_trade_pricing_adjustment;
         is($error, undef, 'BUY price decrease, better execution price');
         cmp_ok($transaction->price, '<', $price, 'BUY with lower price');
-        is $transaction->price_slippage, 0, 'correct probability slippage set';
-        is $transaction->requested_price, $price , 'correct requested price';
-        is $transaction->recomputed_price, $contract->ask_price , 'correct recomputed price';
+        is $transaction->price_slippage, 1, 'correct probability slippage set';
+        is $transaction->requested_price, $price , "correct requested price $price";
+        is $transaction->recomputed_price, $contract->ask_price , 'correct recomputed price '. $contract->ask_price;
         $mock_contract->unmock_all;
     };
 
@@ -656,9 +656,9 @@ subtest 'BUY - trade pricing adjustment' => sub {
         is($error, undef, 'payout increase, better execution price');
         cmp_ok($transaction->payout, '>',  100,     'BUY with higher payout');
         cmp_ok($transaction->payout, '==', 106.383, 'payout');
-        is $transaction->price_slippage, 0, 'correct probability slippage set';
-        is $transaction->requested_price, 10, 'correct requested price';
-        is $transaction->recomputed_price, $contract->ask_price, 'correct recomputed price';
+        is $transaction->price_slippage, 0.6, 'correct probability slippage set';
+        is $transaction->requested_price, 10, 'correct requested price 10';
+        is $transaction->recomputed_price, $contract->ask_price, 'correct recomputed price '.$contract->ask_price;
         $mock_contract->unmock_all;
     };
 
@@ -811,9 +811,9 @@ subtest 'SELL - sell pricing adjustment' => sub {
         $error = $transaction->_validate_sell_pricing_adjustment;
         is($error, undef, 'SELL price increase, better execution price');
         cmp_ok($transaction->price, '>', $price, 'SELL with higher price');
-        is $transaction->price_slippage, 0, 'correct probability slippage set';
-        is $transaction->requested_price, $price, 'correct requested price';
-        is $transaction->recomputed_price, $contract->bid_price, 'correct recomputed price';
+        is $transaction->price_slippage, 1.6, 'correct probability slippage set';
+        is $transaction->requested_price, $price, "correct requested price $price";
+        is $transaction->recomputed_price, $contract->bid_price, 'correct recomputed price '.  $contract->bid_price;
         $mock_contract->unmock_all;
     };
 
