@@ -24,6 +24,10 @@ use BOM::Platform::Runtime;
 use Carp qw( croak );
 use YAML::XS;
 
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Moneyness;
 use BOM::System::Chronicle;

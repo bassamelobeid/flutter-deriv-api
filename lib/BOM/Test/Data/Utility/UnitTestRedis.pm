@@ -6,8 +6,8 @@ use warnings;
 use File::Spec;
 use Cwd qw/abs_path/;
 
-use BOM::MarketData qw(create_underlying);
 use BOM::Market::AggTicks;
+use BOM::MarketData qw(create_underlying);
 use BOM::MarketData qw(create_underlying_db);
 
 use base qw( Exporter );
