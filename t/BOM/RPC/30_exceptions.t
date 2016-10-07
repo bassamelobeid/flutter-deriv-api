@@ -6,40 +6,34 @@ use Test::Deep;
 use Test::Warnings qw(warnings);
 
 my %stats;
+
 BEGIN {
     require DataDog::DogStatsd::Helper;
     no warnings 'redefine';
     *DataDog::DogStatsd::Helper::stats_inc = sub {
-        ++$stats{$_[0]}
+        ++$stats{$_[0]};
     };
 }
 
 use BOM::RPC::v3::Contract;
 
-is_deeply(\%stats, { }, 'start with no metrics');
+is_deeply(\%stats, {}, 'start with no metrics');
 cmp_deeply(
-    [ warnings { BOM::RPC::v3::Contract::_log_exception(something => 'details here') } ],
+    [warnings { BOM::RPC::v3::Contract::_log_exception(something => 'details here') }],
     bag(re('Unhandled exception in something: details here')),
     'saw warning'
 );
 
-is_deeply(\%stats, {
-    'contract.exception.something' => 1
-}, 'had statsd inc');
+is_deeply(\%stats, {'contract.exception.something' => 1}, 'had statsd inc');
 %stats = ();
 
 cmp_deeply(
-    [ warnings { BOM::RPC::v3::Contract::_log_exception('invalid.component' => 'details here') } ],
-    bag(
-        re('Unhandled exception in (\S+) details here'),
-        re('invalid component passed'),
-    ),
+    [warnings { BOM::RPC::v3::Contract::_log_exception('invalid.component' => 'details here') }],
+    bag(re('Unhandled exception in (\S+) details here'), re('invalid component passed'),),
     'saw both warnings on invalid component name'
 );
 
-cmp_deeply(\%stats, {
-    'contract.exception.invalid_component' => 1
-}, 'but still had relevant statsd inc');
+cmp_deeply(\%stats, {'contract.exception.invalid_component' => 1}, 'but still had relevant statsd inc');
 
 done_testing;
 

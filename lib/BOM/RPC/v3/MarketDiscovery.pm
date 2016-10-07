@@ -9,7 +9,7 @@ use Time::Duration::Concise::Localize;
 
 use BOM::RPC::v3::Utility;
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use BOM::Platform::Client;
 use BOM::Platform::Context qw (localize request);
 use BOM::Product::Contract::Offerings;

@@ -9,7 +9,7 @@ use Date::Utility;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Contract;
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use BOM::Platform::Context qw (localize request);
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
 use BOM::Product::Offerings qw(get_offerings_with_filter);

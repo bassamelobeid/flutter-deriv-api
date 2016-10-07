@@ -275,36 +275,38 @@ subtest 'get_ask' => sub {
     is_deeply($result, $expected, 'the left values are all right');
 
     $params->{symbol} = "invalid symbol";
-    cmp_deeply(
-        [ warnings {
-            is_deeply(
-                BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),
-                {
-                    error => {
-                        message_to_client => 'Cannot create contract',
-                        code              => "ContractCreationFailure",
-                    }
-                },
-                'ContractCreationFailure with invalid symbol'
-            );
-        } ],
+    cmp_deeply([
+            warnings {
+                is_deeply(
+                    BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),
+                    {
+                        error => {
+                            message_to_client => 'Cannot create contract',
+                            code              => "ContractCreationFailure",
+                        }
+                    },
+                    'ContractCreationFailure with invalid symbol'
+                );
+            }
+        ],
         bag(re('Could not load volsurface for invalid symbol')),
         'had warning about volsurface for invalid symbol'
     );
 
-    cmp_deeply(
-        [ warnings {
-            is_deeply(
-                BOM::RPC::v3::Contract::_get_ask({}),
-                {
-                    error => {
-                        message_to_client => 'Cannot create contract',
-                        code              => "ContractCreationFailure",
-                    }
-                },
-                'ContractCreationFailure with empty parameters'
-            );
-        } ],
+    cmp_deeply([
+            warnings {
+                is_deeply(
+                    BOM::RPC::v3::Contract::_get_ask({}),
+                    {
+                        error => {
+                            message_to_client => 'Cannot create contract',
+                            code              => "ContractCreationFailure",
+                        }
+                    },
+                    'ContractCreationFailure with empty parameters'
+                );
+            }
+        ],
         bag(re('bet_type is required')),
         'bet_type is required warning'
     );
@@ -336,29 +338,25 @@ subtest 'send_ask' => sub {
         'long code  is correct'
     );
     {
-        cmp_deeply(
-            [ warnings {
-                $c->call_ok('send_ask', {args => {symbol => 'R_50'}})->has_error->error_code_is('ContractCreationFailure')
-                    ->error_message_is('Cannot create contract');
-            } ],
-            bag(
-                re('Use of uninitialized value in pattern match'),
-                re('bet_type is required'),
-            ),
+        cmp_deeply([
+                warnings {
+                    $c->call_ok('send_ask', {args => {symbol => 'R_50'}})->has_error->error_code_is('ContractCreationFailure')
+                        ->error_message_is('Cannot create contract');
+                }
+            ],
+            bag(re('Use of uninitialized value in pattern match'), re('bet_type is required'),),
             'missing bet_type and undef warnings when checking contract_type'
         );
 
         my $mock_contract = Test::MockModule->new('BOM::RPC::v3::Contract');
         $mock_contract->mock('_get_ask', sub { die "mock _get_ask dying on purpose" });
-        cmp_deeply(
-            [ warnings {
-                $c->call_ok('send_ask', {args => {symbol => 'R_50'}})->has_error->error_code_is('pricing error')
-                    ->error_message_is('Unable to price the contract.');
-            } ],
-            bag(
-                re('mock _get_ask dying'),
-                re('Use of uninitialized value in pattern match'),
-            ),
+        cmp_deeply([
+                warnings {
+                    $c->call_ok('send_ask', {args => {symbol => 'R_50'}})->has_error->error_code_is('pricing error')
+                        ->error_message_is('Unable to price the contract.');
+                }
+            ],
+            bag(re('mock _get_ask dying'), re('Use of uninitialized value in pattern match'),),
             'have expected warnings when _get_ask dies'
         );
     }
@@ -508,7 +506,7 @@ subtest 'get_bid_skip_barrier_validation' => sub {
 
     $params->{validation_params} = {skip_barrier_validation => 1};
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-    ok(!exists $result->{validation_error},  "No barrier validation error") or diag "validatione error: " . ($result->{validation_error} // '<undef>');
+    ok(!exists $result->{validation_error}, "No barrier validation error") or diag "validatione error: " . ($result->{validation_error} // '<undef>');
 
     restore_time();
 };
@@ -524,11 +522,12 @@ subtest $method => sub {
     $client->clr_status('disabled');
     $client->save;
 
-    cmp_deeply(
-        [ warnings {
-            $c->call_ok($method, $params)
-                ->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'will report error if no short_code and currency');
-        } ],
+    cmp_deeply([
+            warnings {
+                $c->call_ok($method, $params)->has_error->error_message_is('Sorry, an error occurred while processing your request.',
+                    'will report error if no short_code and currency');
+            }
+        ],
         # We get several undef warnings too, but we'll ignore them for this test
         supersetof(re('currency is required')),
         '... and had warning about missing currency'

@@ -11,7 +11,7 @@ use Data::Dumper;
 use BOM::System::Config;
 use BOM::RPC::v3::Utility;
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
