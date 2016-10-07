@@ -1228,7 +1228,8 @@ BEGIN { _create_validator '_validate_currency' }
 sub _build_pricing_comment {
     my $args = shift;
 
-    my ($contract, $price, $action, $price_slippage, $trading_period) = @{$args}{'contract', 'price', 'action', 'price_slippage', 'trading_period'};
+    my ($contract, $price, $action, $price_slippage, $trading_period_start) =
+        @{$args}{'contract', 'price', 'action', 'price_slippage', 'trading_period_start'};
 
     my @comment_fields;
     if ($contract->is_spread) {
@@ -1271,8 +1272,8 @@ sub _build_pricing_comment {
             push @comment_fields, (price_slippage => $price_slippage);
         }
 
-        if (defined $trading_period) {
-            push @comment_fields, (trading_period => $trading_period);
+        if (defined $trading_period_start) {
+            push @comment_fields, (trading_period_start => $trading_period_start);
         }
 
         my $tick;
