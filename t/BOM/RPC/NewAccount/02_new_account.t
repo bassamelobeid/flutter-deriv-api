@@ -326,7 +326,7 @@ subtest $method => sub {
         ok $new_loginid =~ /^MF\d+/, 'new MF loginid';
 
         ok(BOM::Platform::Client->new({loginid => $new_loginid})->get_status('financial_risk_approval'),
-            'For mf accounts we will set financual risk approval status');
+            'For mf accounts we will set financial risk approval status');
 
         my ($resp_loginid, $t, $uaf) = BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token});
         is $resp_loginid, $new_loginid, 'correct oauth token';
