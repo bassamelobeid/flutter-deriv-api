@@ -1272,10 +1272,6 @@ sub _build_pricing_comment {
             push @comment_fields, (price_slippage => $price_slippage);
         }
 
-        if (defined $trading_period_start) {
-            push @comment_fields, (trading_period_start => $trading_period_start);
-        }
-
         my $tick;
         if ($action eq 'sell') {
             # current tick is lazy, even though the realtime cache might have changed during the course of the transaction.
@@ -1311,6 +1307,11 @@ sub _build_pricing_comment {
     }
 
     my $comment_str = sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
+
+    if (defined $trading_period_start) {
+        push @comment_fields, (trading_period_start => $trading_period_start);
+    }
+
     my %comment_hash = map { $_ } @comment_fields;
 
     return [$comment_str, \%comment_hash];
