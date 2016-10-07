@@ -133,21 +133,21 @@ has underlying => (
 
 has date_start => (
     is       => 'ro',
-    isa      => 'bom_date_object',
+    isa      => 'date_object',
     coerce   => 1,
     required => 1,
 );
 
 has date_pricing => (
     is      => 'ro',
-    isa     => 'bom_date_object',
+    isa     => 'date_object',
     coerce  => 1,
     default => sub { Date::Utility->new },
 );
 
 has [qw(date_expiry date_settlement)] => (
     is         => 'ro',
-    isa        => 'bom_date_object',
+    isa        => 'date_object',
     lazy_build => 1,
 );
 

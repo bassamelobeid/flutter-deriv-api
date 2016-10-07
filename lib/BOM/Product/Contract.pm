@@ -108,7 +108,7 @@ has _date_pricing_milliseconds => (
 
 has [qw(date_start date_settlement date_pricing effective_start)] => (
     is         => 'ro',
-    isa        => 'bom_date_object',
+    isa        => 'date_object',
     lazy_build => 1,
     coerce     => 1,
 );
@@ -132,7 +132,7 @@ sub _build_date_pricing {
 
 has date_expiry => (
     is       => 'rw',
-    isa      => 'bom_date_object',
+    isa      => 'date_object',
     coerce   => 1,
     required => 1,
 );
