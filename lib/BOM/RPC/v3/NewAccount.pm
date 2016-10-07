@@ -65,7 +65,8 @@ sub new_account_virtual {
                 $args->{affiliate_token} ? (myaffiliates_token => $args->{affiliate_token}) : (),
                 $args->{utm_source}      ? (utm_source         => $args->{utm_source})      : (),
                 $args->{utm_medium}      ? (utm_medium         => $args->{utm_medium})      : (),
-                $args->{utm_campaign}    ? (utm_campaign       => $args->{utm_campaign})    : ()
+                $args->{utm_campaign}    ? (utm_campaign       => $args->{utm_campaign})    : (),
+                $args->{email_consent}   ? (email_consent      => $args->{email_consent})   : (),
             },
         });
 
