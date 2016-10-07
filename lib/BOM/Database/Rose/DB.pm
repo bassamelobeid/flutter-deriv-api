@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use Carp;
 
+use BOM::Database;
+
 use Mojo::Exception;
 
 use parent 'Rose::DB';
@@ -137,9 +139,84 @@ sub dbi_connect {
             keepalives_count=10 /,
     );
 
-    my $dbh = DBI->connect(@params) || croak $DBI::errstr;
+    return DBI->connect(@params) || croak $DBI::errstr;
+}
 
+=head2 disconnect
+
+Overrides L<Rose::DB/disconnect> to remove previous registration.
+
+=cut
+
+sub disconnect {
+    my $self = shift;
+    if(my $category = $self->_category_from_domain) {
+        BOM::Database::release_dbh($category => $self->{dbh}) if $self->_category_requires_registration($category) && $self->{dbh};
+    }
+    $self->SUPER::disconnect(@_);
+}
+
+=head2 init_dbh
+
+Overrides L<Rose::DB/init_dbh> to register with L<BOM::Database>.
+
+Returns the database handle if we had one.
+
+=cut
+
+sub init_dbh {
+    my $self = shift;
+    my $dbh = $self->SUPER::init_dbh(@_);
+
+    # Return failure state if we didn't get a $dbh
+    return $dbh unless $dbh;
+
+    my $category = $self->_category_from_domain or return $dbh;
+
+    return $dbh unless $self->_category_requires_registration($category);
+    return $dbh if BOM::Database::dbh_is_registered($category => $dbh);
+
+    BOM::Database::register_dbh($category => $dbh);
     return $dbh;
+}
+
+=head2 _category_from_domain
+
+Takes an optional domain and returns a suitable category string for use with L<BOM::Database> registration.
+
+Will apply the default domain from the class if nothing else is found.
+
+May return undef if it was not possible to determine a suitable category - but since we have a default, this should
+not happen.
+
+=cut
+
+sub _category_from_domain {
+    # Note that this can be called as an instance method or a class method, guard all attribute
+    # lookups with a ref($self) check
+    my ($self, $domain) = @_;
+
+    my $category = $domain;
+    $category //= $self->{domain} if ref $self;
+    $category //= $self->default_domain or return undef;
+
+    # Remove trailing 'db', so userdb => user, authdb => auth etc.
+    $category =~ s/db$// unless $category eq 'db';
+    return $category;
+}
+
+=head2 _category_requires_registration
+
+Provides blacklist for databases which we do not want
+to register - currently just the client database, since
+high transaction churn there could be problematic.
+
+=cut
+
+sub _category_requires_registration {
+    my ($self, $category) = @_;
+    return 0 if $category eq 'client';
+    return 1;
 }
 
 1;
