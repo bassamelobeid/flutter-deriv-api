@@ -1,6 +1,6 @@
 #!/etc/rmg/bin/perl
 
-use Test::More tests => 6;
+use Test::More tests => 4;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Market::Underlying;
@@ -52,28 +52,6 @@ subtest 'system wide suspend trading' => sub {
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->{message}, qr/All trading suspended on system/, 'trading suspended message');
     BOM::Platform::Runtime->instance->app_config->system->suspend->trading(0);
-    $c = produce_contract($bet_params);
-    ok $c->is_valid_to_buy, 'ok to buy';
-};
-
-subtest 'suspend trade on underlyings' => sub {
-    my $mocked = Test::MockModule->new('BOM::Market::Underlying');
-    $mocked->mock('contracts', sub { {} });
-    my $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    like($c->primary_validation_error->{message}, qr/Underlying trades suspended/, 'Underlying trades suspended message');
-    $mocked->unmock_all();
-    $c = produce_contract($bet_params);
-    ok $c->is_valid_to_buy, 'ok to buy';
-};
-
-subtest 'suspend contract type' => sub {
-    my $orig = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types;
-    BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types(['CALL']);
-    my $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    like($c->primary_validation_error->{message}, qr/Trading suspended for contract type/, 'Contract type suspended message');
-    BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types($orig);
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'ok to buy';
 };
