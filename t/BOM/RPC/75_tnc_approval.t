@@ -34,6 +34,7 @@ clear_mailbox();
 
 my $res = BOM::RPC::v3::Static::website_status({country_code => ''});
 is $res->{terms_conditions_version}, 'version 1', 'version 1';
+is $res->{supported_languegas}, @{BOM::Platform::Runtime->instance->app_config->cgi->supported_languages}, 'Correct supported languages';
 
 # cleanup
 BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid);
