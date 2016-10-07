@@ -100,7 +100,7 @@ sub generate {
                 $cached_underlyings{$symbol} ||= $bet->underlying;
 
                 my $current_value = $bet->is_spread ? $bet->bid_price : $bet->theo_price;
-                my $value         = $self->amount_in_usd($current_value, $open_fmb->{currency_code});
+                my $value = $self->amount_in_usd($current_value, $open_fmb->{currency_code});
                 $totals{value} += $value;
 
                 if ($bet->is_settleable) {

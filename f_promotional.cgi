@@ -274,7 +274,6 @@ foreach my $client (@clients) {
         $total_turnover .= $currency . sprintf("%.2f", $account_turnover) . ' ';
     }
 
-
     $total_turnover ||= '&nbsp;';
 
     my $clientdetail_link = '<a href="'

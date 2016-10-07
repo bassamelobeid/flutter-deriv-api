@@ -36,14 +36,14 @@ if (request()->param('sig_response')) {
 
 if ($try_to_login and my $staff = BOM::Backoffice::Auth0::login(request()->param('access_token'))) {
     my $bo_cookies = BOM::Backoffice::Cookie::build_cookies({
-            staff       => $staff->{nickname},
-            auth_token  => request()->param('access_token'),
-        });
+        staff      => $staff->{nickname},
+        auth_token => request()->param('access_token'),
+    });
 
-    PrintContentType({ 'cookies' => $bo_cookies });
+    PrintContentType({'cookies' => $bo_cookies});
 } elsif (request()->param('whattodo') eq 'logout') {
     my $expire_cookies = BOM::Backoffice::Cookie::expire_cookies();
-    PrintContentType({ 'cookies' => $expire_cookies });
+    PrintContentType({'cookies' => $expire_cookies});
 
     BOM::Backoffice::Auth0::logout();
     print '<script>window.location = "' . request()->url_for('backoffice/login.cgi') . '"</script>';

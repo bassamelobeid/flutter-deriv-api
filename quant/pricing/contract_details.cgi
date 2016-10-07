@@ -44,7 +44,7 @@ if ($broker and $id) {
 
     $start = $params{start} ? Date::Utility->new($params{start}) : $original_contract->date_start;
     my $pricing_args = $original_contract->build_parameters;
-    $pricing_args->{date_pricing} = $start;
+    $pricing_args->{date_pricing}    = $start;
     $pricing_args->{landing_company} = $client->landing_company->short;
     my $contract       = produce_contract($pricing_args);
     my $traded_bid     = $details->{bid_price};
@@ -60,7 +60,7 @@ if ($broker and $id) {
     @contract_details = (
         login_id       => $details->{loginid},
         slippage_price => $slippage_price ? roundnear($JPY_precision, $slippage_price) : 'NA.',
-        order_type => $action_type,
+        order_type     => $action_type,
         order_price => ($action_type eq 'buy') ? $traded_ask : $traded_bid,
         trans_id    => $id,
         short_code  => $contract->shortcode,
@@ -151,13 +151,13 @@ sub _get_pricing_parameter_from_IH_pricer {
 
     my $risk_markup = $pe->risk_markup;
     $pricing_parameters->{risk_markup} = {
-        economic_events_markup      => $pe->economic_events_markup->amount,
-        intraday_historical_iv_risk => $risk_markup->peek_amount('intraday_historical_iv_risk') // 0,
-        quiet_period_markup         => $risk_markup->peek_amount('quiet_period_markup')         // 0,
-        vol_spread_markup           => $risk_markup->peek_amount('vol_spread_markup')           // 0,
-        eod_market_risk_markup      => $pe->eod_market_risk_markup->amount                      // 0,
-        spot_jump_markup            => $risk_markup->peek_amount('spot_jump_markup')           // 0,
-        short_term_kurtosis_risk_markup => $risk_markup->peek_amount('short_term_kurtosis_risk_markup')           // 0,
+        economic_events_markup          => $pe->economic_events_markup->amount,
+        intraday_historical_iv_risk     => $risk_markup->peek_amount('intraday_historical_iv_risk') // 0,
+        quiet_period_markup             => $risk_markup->peek_amount('quiet_period_markup') // 0,
+        vol_spread_markup               => $risk_markup->peek_amount('vol_spread_markup') // 0,
+        eod_market_risk_markup          => $pe->eod_market_risk_markup->amount // 0,
+        spot_jump_markup                => $risk_markup->peek_amount('spot_jump_markup') // 0,
+        short_term_kurtosis_risk_markup => $risk_markup->peek_amount('short_term_kurtosis_risk_markup') // 0,
 
     };
 

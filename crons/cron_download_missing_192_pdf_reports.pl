@@ -11,7 +11,6 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Client;
 use BOM::Platform::LandingCompany;
 
-
 my $accounts_dir = BOM::Platform::Runtime->instance->app_config->system->directory->db . "/f_accounts";
 
 for my $broker (BOM::Platform::LandingCompany::Registry::all_broker_codes) {

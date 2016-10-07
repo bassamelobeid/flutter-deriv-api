@@ -24,7 +24,7 @@ my $fullfeed_re = qr/^\d\d?-\w{3}-\d\d.fullfeed(?!\.zip)/;
 
 sub last_quote {
     my $dir = shift;
-    my $recent = reduce { $a->[1] < $b->[1] ? $a : $b } map {[$_, -M $_]} $dir->children($fullfeed_re);
+    my $recent = reduce { $a->[1] < $b->[1] ? $a : $b } map { [$_, -M $_] } $dir->children($fullfeed_re);
     $recent = $recent->[0] // die("Cannot find last quote file in $dir");
     my $bw = File::ReadBackwards->new($recent)
         or die "can't read $recent: $!";

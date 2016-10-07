@@ -6,7 +6,7 @@ use Spreadsheet::ParseExcel;
 use Format::Util::Numbers qw(roundnear);
 use Date::Utility;
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use SuperDerivatives::UnderlyingConfig;
 use Quant::Framework::Asset;
 use BOM::System::Chronicle;

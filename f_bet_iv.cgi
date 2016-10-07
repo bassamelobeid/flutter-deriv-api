@@ -40,7 +40,7 @@ unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::System::Config::node(
         "<font color=red><b>WARNING! You are not on the Master Live Server. Suggest you use these tools on the Master Live Server instead.</b></font><P>";
 }
 
-my $bbdl             = Bloomberg::FileDownloader->new();
+my $bbdl                  = Bloomberg::FileDownloader->new();
 my $directory_listing_url = request()->url_for('backoffice/f_bbdl_list_directory.cgi');
 print '<LI><b>BBDL FTP directory listing<b> - click this button to list the contents of the BBDL servers.';
 print qq~

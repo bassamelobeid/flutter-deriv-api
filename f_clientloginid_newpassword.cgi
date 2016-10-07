@@ -46,7 +46,7 @@ my $token = BOM::Platform::Token->new({
 
 # don't want to touch url_for for this only, need this change else reset password url will have backoffice.binary.com if send from production
 if (BOM::System::Config::on_production) {
-    $link = 'https://www.binary.com/' . lc $lang . '/user/reset_passwordws.html' ;
+    $link = 'https://www.binary.com/' . lc $lang . '/user/reset_passwordws.html';
 } else {
     $link = request()->url_for('/user/reset_passwordws');
 }

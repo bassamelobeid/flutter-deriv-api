@@ -14,7 +14,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Date::Utility;
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use BOM::RiskReporting::MarkedToModel;
 use BOM::Platform::Runtime;
 use BOM::Database::DataMapper::CollectorReporting;

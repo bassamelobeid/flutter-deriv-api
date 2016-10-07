@@ -14,6 +14,6 @@ use BOM::Backoffice::Auth0;
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Client;
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 
 1;

@@ -21,7 +21,7 @@ use Try::Tiny;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use Date::Utility;
 use Format::Util::Numbers qw( roundnear );
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
@@ -206,7 +206,10 @@ sub _get_moneyness_surface {
     my $dates = [];
     my $bet   = $self->bet;
     try {
-        $dates = $self->_fetch_historical_surface_date({back_to => 20, symbol => $bet->underlying->symbol});
+        $dates = $self->_fetch_historical_surface_date({
+            back_to => 20,
+            symbol  => $bet->underlying->symbol
+        });
     }
     catch {
         warn("caught error in _get_moneyness_surface: $_");
@@ -231,14 +234,14 @@ sub _fetch_historical_surface_date {
     my $back_to = $args->{back_to} || 1;
     my $symbol = $args->{symbol} or die "Must pass in symbol to fetch surface dates.";
 
-    my $reader = BOM::System::Chronicle::get_chronicle_reader(1);
-    my $vdoc = $reader->get('volatility_surfaces', $symbol);
+    my $reader       = BOM::System::Chronicle::get_chronicle_reader(1);
+    my $vdoc         = $reader->get('volatility_surfaces', $symbol);
     my $current_date = $vdoc->{date};
 
     my @dates = ($current_date);
 
     for (2 .. $back_to) {
-        $vdoc = $reader->get_for('volatility_surfaces', $symbol, Date::Utility->new($current_date)->epoch - 1); 
+        $vdoc = $reader->get_for('volatility_surfaces', $symbol, Date::Utility->new($current_date)->epoch - 1);
         last if not $vdoc or not keys %{$vdoc};
         $current_date = $vdoc->{date};
         push @dates, $current_date;
@@ -259,7 +262,8 @@ sub _get_volsurface {
             back_to => 20,
             symbol  => $bet->underlying->symbol
         });
-    } catch {
+    }
+    catch {
         warn "Failed to fetch historical surface data (usually just a timeout): $_";
     };
 

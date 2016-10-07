@@ -9,7 +9,7 @@ use Format::Util::Numbers qw( roundnear );
 use VolSurface::Utils qw( get_1vol_butterfly );
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use BOM::Backoffice::GNUPlot;
 use List::Util qw(uniq);
 use Try::Tiny;
@@ -455,9 +455,9 @@ sub print_comparison_between_volsurface {
     $ref_surface_source ||= "USED";
     $surface_source     ||= "NEW";
 
-    my @new_days = @{$surface->original_term_for_smile};
+    my @new_days      = @{$surface->original_term_for_smile};
     my @existing_days = @{$ref_surface->original_term_for_smile};
-    my @days = uniq(@new_days, @existing_days);
+    my @days          = uniq(@new_days, @existing_days);
 
     my @column_names;
     my $vol_type = $surface->type;
@@ -494,8 +494,8 @@ sub print_comparison_between_volsurface {
         push @output, "<TH>$days[$i]</TH>";
         foreach my $col_point (sort { $a <=> $b } @surface_vol_point) {
 
-            my $vol = roundnear( 0.0001, $surface->get_surface_volatility($days[$i], $col_point));
-            my $ref_vol = roundnear( 0.0001, $ref_surface->get_surface_volatility($days[$i], $col_point));
+            my $vol = roundnear(0.0001, $surface->get_surface_volatility($days[$i], $col_point));
+            my $ref_vol = roundnear(0.0001, $ref_surface->get_surface_volatility($days[$i], $col_point));
 
             if (defined $vol and defined $ref_vol) {
                 my $vol_picture =
@@ -527,7 +527,7 @@ sub print_comparison_between_volsurface {
 
                 push @output, qq~<TD align="center" bgcolor="$bgcolor">$vol($surface_source) $html_picture_tag $ref_vol($ref_surface_source)</TD>~;
             } else {
-                my $which_vol = defined$vol ? $vol : $ref_vol;
+                my $which_vol = defined $vol ? $vol : $ref_vol;
                 push @output, qq~<TD align="center">$which_vol($surface_source)</TD>~;
             }
         }

@@ -14,7 +14,7 @@ use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
 use BOM::Platform::Offerings qw(get_offerings_with_filter);
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use BOM::MarketData qw(create_underlying_db);
 use YAML::XS qw(LoadFile);
 
@@ -74,7 +74,6 @@ sub script_run {
 
     return 0;
 }
-
 
 sub add_japan_settings {
     my $self = shift;

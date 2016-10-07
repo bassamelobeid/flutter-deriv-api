@@ -12,7 +12,7 @@ use BOM::Backoffice::Sysinit ();
 use BOM::Database::Model::ExchangeRate;
 use BOM::Database::ClientDB;
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use BOM::MarketData qw(create_underlying_db);
 use Date::Utility;
 

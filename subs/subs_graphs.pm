@@ -9,7 +9,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
 use Postgres::FeedDB::Spot::DatabaseAPI;
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use BOM::Charting;
 
 use String::UTF8::MD5;

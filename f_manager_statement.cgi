@@ -68,9 +68,9 @@ BOM::Product::Transaction::sell_expired_contracts({
 });
 
 my $clientdb = BOM::Database::ClientDB->new({
-        client_loginid => $client->loginid,
-        operation      => 'replica',
-    });
+    client_loginid => $client->loginid,
+    operation      => 'replica',
+});
 
 my $open_bets = $clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false']);
 foreach my $open_bet (@{$open_bets}) {

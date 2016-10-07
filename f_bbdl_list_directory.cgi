@@ -16,8 +16,8 @@ use BOM::Platform::Runtime;
 PrintContentType();
 BrokerPresentation('BBDL LIST DIRECTORY');
 
-my $cgi       = CGI->new;
-my $broker    = $cgi->param('broker');
+my $cgi    = CGI->new;
+my $broker = $cgi->param('broker');
 
 my $bbdl = Bloomberg::FileDownloader->new();
 

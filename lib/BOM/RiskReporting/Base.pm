@@ -20,7 +20,6 @@ use BOM::System::Config;
 use BOM::Platform::CurrencyConverter qw(in_USD);
 use BOM::Platform::LandingCompany::Registry;
 
-
 local $\ = undef;    # Sigh.
 
 use Moose;
