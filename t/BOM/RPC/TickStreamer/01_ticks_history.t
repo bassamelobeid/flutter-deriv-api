@@ -189,7 +189,7 @@ subtest '_validate_start_end' => sub {
     $params->{args}->{start}         = $now->minus_time_interval('1h30m')->epoch;
     $params->{args}->{end}           = $now->plus_time_interval('1d')->epoch;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is $rpc_ct->result->{data}->{history}->{times}->[-1], $now->epoch - BOM::Market::Underlying->new('HSI')->delay_amount * 60,
+    is $rpc_ct->result->{data}->{history}->{times}->[-1], $now->epoch - create_underlying('HSI')->delay_amount * 60,
         'It should return last licensed tick for delayed symbol';
     my $ticks_count_without_adjust_time = @{$rpc_ct->result->{data}->{history}->{times}};
 
@@ -199,7 +199,7 @@ subtest '_validate_start_end' => sub {
         'If sent adjust_start_time param then it should return ticks with shifted start time';
 
     set_fixed_time($now->plus_time_interval('5h')->epoch);
-    my $ul = BOM::Market::Underlying->new('HSI');
+    my $ul = create_underlying('HSI');
     $params->{args}->{end}   = $ul->calendar->closing_on($now)->plus_time_interval('1m')->epoch;
     $params->{args}->{start} = $ul->calendar->closing_on($now)->minus_time_interval('39m')->epoch;
     delete $params->{args}->{count};

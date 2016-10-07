@@ -201,7 +201,7 @@ sub create_contract {
         epoch      => $now->epoch,
         underlying => 'R_50',
     });
-    my $underlying    = BOM::Market::Underlying->new('R_50');
+    my $underlying    = create_underlying('R_50');
     my $contract_data = {
         underlying   => $underlying,
         bet_type     => 'FLASHU',

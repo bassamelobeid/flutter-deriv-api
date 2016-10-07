@@ -54,7 +54,7 @@ sub process_job {
     if ($price_daemon_cmd eq 'price') {
         # ::Underlying can throw an exception if no symbol was given.
         my $underlying = eval {
-            BOM::Market::Underlying->new($params->{symbol})
+            create_underlying($params->{symbol})
         } or do {
             warn "$params->{symbol} doesn't have an underlying obj - exception was $@";
             DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => ['tag:' . $internal_ip]});

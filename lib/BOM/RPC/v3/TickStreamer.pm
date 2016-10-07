@@ -8,7 +8,8 @@ use Date::Utility;
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Contract;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
 use BOM::Platform::Context qw (localize request);
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
@@ -24,7 +25,7 @@ sub ticks {
                 message_to_client => BOM::Platform::Context::localize($response->{error}->{message}, $symbol)});
     }
 
-    my $display_decimals = BOM::Market::Underlying->new($symbol)->display_decimals;
+    my $display_decimals = create_underlying($symbol)->display_decimals;
 
     return {stash => {"${symbol}_display_decimals" => $display_decimals}};
 }
@@ -42,7 +43,7 @@ sub ticks_history {
                 message_to_client => BOM::Platform::Context::localize($response->{error}->{message}, $symbol)});
     }
 
-    my $ul = BOM::Market::Underlying->new($symbol);
+    my $ul = create_underlying($symbol);
 
     unless ($ul->feed_license =~ /^(realtime|delayed|daily)$/) {
         return BOM::RPC::v3::Utility::create_error({

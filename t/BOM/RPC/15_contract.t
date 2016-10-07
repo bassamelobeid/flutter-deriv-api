@@ -681,9 +681,9 @@ subtest $method => sub {
 };
 
 subtest 'get_bid_affected_by_corporate_action' => sub {
-    my $opening    = BOM::Market::Underlying->new('USAAPL')->calendar->opening_on($now);
-    my $closing    = BOM::Market::Underlying->new('USAAPL')->calendar->closing_on($now);
-    my $underlying = BOM::Market::Underlying->new('USAAPL');
+    my $opening    = create_underlying('USAAPL')->calendar->opening_on($now);
+    my $closing    = create_underlying('USAAPL')->calendar->closing_on($now);
+    my $underlying = create_underlying('USAAPL');
     my $starting   = $opening->plus_time_interval('50m');
     my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'USAAPL',
@@ -965,7 +965,7 @@ sub create_contract {
     my $symbol        = $args{underlying} ? $args{underlying} : 'R_50';
     my $date_start    = $now->epoch - 100;
     my $date_expiry   = $now->epoch - 50;
-    my $underlying    = BOM::Market::Underlying->new($symbol);
+    my $underlying    = create_underlying($symbol);
     my $purchase_date = $now->epoch - 101;
     my $contract_data = {
         underlying            => $underlying,
