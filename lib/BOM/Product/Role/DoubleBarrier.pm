@@ -3,6 +3,7 @@ package BOM::Product::Role::DoubleBarrier;
 use Moose::Role;
 with 'BOM::Product::Role::BarrierBuilder';
 
+use List::Util qw(first);
 use BOM::Platform::Context qw(localize);
 
 sub BUILD {
@@ -144,6 +145,7 @@ sub _validate_barrier {
             };
         }
     }
+
     my ($min_move, $max_move) = (0.25, 2.5);
     foreach my $pair (['low' => $low_barrier], ['high' => $high_barrier]) {
         my ($label, $barrier) = @$pair;

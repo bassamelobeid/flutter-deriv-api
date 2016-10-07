@@ -3,6 +3,7 @@ package BOM::Product::Role::SingleBarrier;
 use Moose::Role;
 with 'BOM::Product::Role::BarrierBuilder';
 
+use List::Util qw(first);
 use BOM::Platform::Context qw(localize);
 
 has supplied_barrier => (is => 'ro');
