@@ -44,4 +44,13 @@ sub create_underlying {
 }
 
 sub create_underlying_db {
+    my $quant_config = BOM::Platform::Runtime->instance->app_config->quants->underlyings;
+    my $result = Quant::Framework::UnderlyingDB->instance;
+
+    $result->chronicle_reader(BOM::System::Chronicle::get_chronicle_reader);
+    $result->chronicle_writer(BOM::System::Chronicle::get_chronicle_writer);
+    $result->quant_config($quant_config);
+
+    return $result;
+
 }

@@ -16,11 +16,11 @@ use Moose;
 
 use BOM::Platform::Runtime;
 with 'App::Base::Script';
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData::VolSurface::Flat;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
-use BOM::Market::UnderlyingDB;
+use BOM::MarketData qw(create_underlying_db);
 use BOM::Platform::Runtime;
 use Quant::Framework::CorrelationMatrix;
 use Quant::Framework::ImpliedRate;
@@ -41,7 +41,7 @@ sub script_run {
 
 sub _collect_vol_ages {
 
-    my @quanto_currencies = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my @quanto_currencies = create_underlying_db->get_symbols_for(
         market      => ['forex', 'commodities',],
         quanto_only => 1,
     );
@@ -50,30 +50,30 @@ sub _collect_vol_ages {
         @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol},
         qw(OMXS30 IBOV KOSPI2 SPTSX60 USAAPL USGOOG USMSFT USORCL USQCOM USQQQQ frxBROUSD frxBROAUD frxBROEUR frxBROGBP frxXPTAUD frxXPDAUD frxAUDSAR)
         );
-    my @offered_forex = grep { not $skip_list{$_} } BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my @offered_forex = grep { not $skip_list{$_} } create_underlying_db->get_symbols_for(
         market            => 'forex',
         submarket         => ['major_pairs', 'minor_pairs'],
         broker            => 'VRT',
         contract_category => 'ANY',
     );
-    my @offered_others = grep { not $skip_list{$_} and $_ !~ /^SYN/ } BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my @offered_others = grep { not $skip_list{$_} and $_ !~ /^SYN/ } create_underlying_db->get_symbols_for(
         market            => ['indices', 'commodities'],
         broker            => 'VRT',
         contract_category => 'ANY',
     );
-    my @smart_fx = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my @smart_fx = create_underlying_db->get_symbols_for(
         market    => 'forex',
         submarket => 'smart_fx'
     );
 
-    my @smart_indices = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my @smart_indices = create_underlying_db->get_symbols_for(
         market    => 'indices',
         submarket => 'smart_index'
     );
 
     my @offer_underlyings = (@offered_forex, @offered_others, @smart_fx, @smart_indices);
     push @offer_underlyings,
-        BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        create_underlying_db->get_symbols_for(
         market            => 'stocks',
         contract_category => 'ANY',
         broker            => 'VRT',
@@ -81,7 +81,7 @@ sub _collect_vol_ages {
 
     my @symbols = grep { !$skip_list{$_} } (@offer_underlyings, @quanto_currencies);
     foreach my $symbol (@symbols) {
-        my $underlying = BOM::Market::Underlying->new($symbol);
+        my $underlying = create_underlying($symbol);
         next if $underlying->volatility_surface_type eq 'flat';
         my $dm              = BOM::MarketData::Fetcher::VolSurface->new;
         my $surface_in_used = $dm->fetch_surface({underlying => $underlying});
@@ -109,14 +109,14 @@ sub _collect_vol_ages {
 sub _collect_rates_ages {
 
     my @implied_symbols_to_update;
-    my @offer_currencies = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my @offer_currencies = create_underlying_db->get_symbols_for(
         market            => ['forex'],
         submarket         => ['major_pairs', 'minor_pairs'],
         contract_category => 'ANY',
         broker            => 'VRT',
     );
 
-    my @quanto_currencies = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my @quanto_currencies = create_underlying_db->get_symbols_for(
         market      => ['forex'],
         submarket   => ['major_pairs', 'minor_pairs'],
         quanto_only => 1,
@@ -125,7 +125,7 @@ sub _collect_rates_ages {
     my @symbols = (@offer_currencies, @quanto_currencies);
 
     foreach my $symbol (@symbols) {
-        my $u = BOM::Market::Underlying->new($symbol);
+        my $u = create_underlying($symbol);
         next if $u->volatility_surface_type eq 'flat';
         next if not $u->forward_feed;
         my $imply_symbol      = $u->rate_to_imply;
@@ -160,7 +160,7 @@ sub _collect_rates_ages {
         stats_gauge('interest_rate_age', $currency_rate_age, {tags => ['tag:' . $currency_symbol_to_update]});
     }
 
-    my @smart_fx = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my @smart_fx = create_underlying_db->get_symbols_for(
         market    => 'forex',
         submarket => 'smart_fx'
     );
@@ -189,7 +189,7 @@ sub _collect_correlation_ages {
 }
 
 sub _collect_pipsize_stats {
-    my @underlyings = map { BOM::Market::Underlying->new($_) } BOM::Market::UnderlyingDB->get_symbols_for(market => ['volidx']);
+    my @underlyings = map { create_underlying($_) } Quant::Framework::UnderlyingDB->get_symbols_for(market => ['volidx']);
     foreach my $underlying (@underlyings) {
         my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
         my $vol        = $volsurface->get_volatility();
@@ -209,7 +209,7 @@ sub _collect_dividend_ages {
         @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol},
         qw(OMXS30 USAAPL USGOOG USMSFT USORCL USQCOM USQQQQ frxBROUSD frxBROAUD frxBROEUR frxBROGBP frxXPTAUD frxXPDAUD)
         );
-    my @offer_indices = grep { not $skip_list{$_} and $_ !~ /^SYN/ } BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my @offer_indices = grep { not $skip_list{$_} and $_ !~ /^SYN/ } create_underlying_db->get_symbols_for(
         market            => ['indices'],
         broker            => 'VRT',
         contract_category => 'ANY',

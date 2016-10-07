@@ -3,7 +3,7 @@ use 5.010;
 use Moose;
 
 use BOM::Platform::Runtime;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
 
 =head1 NAME
 

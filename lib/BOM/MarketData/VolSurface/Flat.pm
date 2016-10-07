@@ -17,7 +17,7 @@ Represents a flat volatility surface, with vols at all points being the same
 
 =head1 SYNOPSIS
 
-    my $surface = BOM::MarketData::VolSurface::Flat->new({underlying => BOM::Market::Underlying->new('frxUSDJPY')});
+    my $surface = BOM::MarketData::VolSurface::Flat->new({underlying => create_underlying('frxUSDJPY')});
     my $vol     = $surface->get_volatility();
 
 =cut
@@ -52,7 +52,7 @@ sub _build_underlying {
         symbol => $self->symbol,
         ($self->for_date) ? (for_date => $self->for_date) : (),
     };
-    return BOM::Market::Underlying->new($args);
+    return create_underlying($args);
 }
 
 =head2 flat_vol

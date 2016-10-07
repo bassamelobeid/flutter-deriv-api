@@ -8,7 +8,7 @@ use JSON qw(decode_json);
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Moneyness;
@@ -28,7 +28,7 @@ my $dm = BOM::MarketData::Fetcher::VolSurface->new;
 subtest 'Saving delta then moneyness.' => sub {
     plan tests => 2;
 
-    my $forex = BOM::Market::Underlying->new('frxUSDJPY');
+    my $forex = create_underlying('frxUSDJPY');
 
     my $delta_surface = Quant::Framework::VolSurface::Delta->new({
             deltas        => [75, 50, 25],
@@ -57,7 +57,7 @@ subtest 'Saving delta then moneyness.' => sub {
 
     is_deeply($saved->surface, $delta_surface->surface, 'Delta surface matches.');
 
-    my $indices           = BOM::Market::Underlying->new('GDAXI');
+    my $indices           = create_underlying('GDAXI');
     my $moneyness_surface = Quant::Framework::VolSurface::Moneyness->new({
             moneynesses   => [99, 100, 101],
             underlying_config    => $indices->config,
@@ -92,13 +92,13 @@ subtest 'recorded_date on Randoms.' => sub {
     my $now = Date::Utility->new('2012-08-01 10:00:00');
     set_absolute_time($now->epoch);
     my $surface = $dm->fetch_surface({
-        underlying => BOM::Market::Underlying->new('R_100'),
+        underlying => create_underlying('R_100'),
         for_date   => $now->minus_time_interval('1d'),
     });
     note('Recorded date should be at most 2 seconds from ' . $now->datetime);
     cmp_ok($surface->recorded_date->epoch - $now->epoch, '<=', 2, 'fetch_surface on a Random Index surface with given for_date.');
 
-    $surface = $dm->fetch_surface({underlying => BOM::Market::Underlying->new('R_100')});
+    $surface = $dm->fetch_surface({underlying => create_underlying('R_100')});
     is($surface->recorded_date->datetime, $now->datetime, 'fetch_surface on a Random Index surface "now".');
     restore_time();
 };
@@ -106,7 +106,7 @@ subtest 'recorded_date on Randoms.' => sub {
 subtest 'Consecutive saves.' => sub {
     plan tests => 4;
 
-    my $underlying = BOM::Market::Underlying->new('frxEURUSD');
+    my $underlying = create_underlying('frxEURUSD');
 
     my $surface = Quant::Framework::Utils::Test::create_doc(
         'volsurface_delta',

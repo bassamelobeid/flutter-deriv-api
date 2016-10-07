@@ -25,7 +25,7 @@ use Time::Duration::Concise;
 use Scalar::Util qw( blessed );
 use Sereal::Encoder;
 use Sereal::Decoder;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
 
 my $encoder = Sereal::Encoder->new({
     canonical => 1,
@@ -191,7 +191,7 @@ Return the aggregated tick data for an underlying over the last BOM:TimeInterval
 sub retrieve {
     my ($self, $args) = @_;
 
-    $args->{underlying} = BOM::Market::Underlying->new($args->{underlying}) if ref $args->{underlying} ne 'BOM::Market::Underlying';
+    $args->{underlying} = create_underlying($args->{underlying}) if ref $args->{underlying} ne 'Quant::Framework::Underlying';
     return $self->_retrieve_from_database($args) if $args->{underlying}->for_date;
     return $self->_retrieve_from_cache($args);
 }
@@ -391,7 +391,7 @@ sub fill_from_historical_feed {
 sub _make_key {
     my ($self, $which, $agg) = @_;
 
-    my $symbol = (ref $which eq 'BOM::Market::Underlying') ? $which->symbol : $which;
+    my $symbol = (ref $which eq 'Quant::Framework::Underlying') ? $which->symbol : $which;
     my @bits = ("AGGTICKS", $symbol);
     if ($agg) {
         push @bits, ($self->agg_interval->as_concise_string, 'AGG');

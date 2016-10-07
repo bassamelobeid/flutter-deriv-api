@@ -22,8 +22,8 @@ use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
 use BOM::System::Chronicle;
 use Finance::Asset::SubMarket;
-use BOM::Market::UnderlyingDB;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
 use BOM::Market::Info;
 use Postgres::FeedDB::Spot;
 
@@ -50,7 +50,7 @@ my $looks_like_currency = qr/^[A-Z]{3}/;
 # reason: if we only test existing symbols, attributes are set by config file,
 # and _build methods are not called.
 subtest 'what happens to an undefined symbol name' => sub {
-    my $symbol_undefined = BOM::Market::Underlying->new('an_undefined_symbol');
+    my $symbol_undefined = create_underlying('an_undefined_symbol');
     is($symbol_undefined->display_name, undef, 'an undefined symbol has correct display_name');
 
     is($symbol_undefined->instrument_type,  'config',   'an undefined symbol has correct instrument_type');
@@ -73,7 +73,7 @@ subtest 'display_decimals' => sub {
         my $underlying;
         foreach my $symbol (keys %$symbols_decimals) {
             print "trying dd for $symbol...\n";
-            $underlying = BOM::Market::Underlying->new({symbol => $symbol});
+            $underlying = create_underlying({symbol => $symbol});
             my $decimals = $symbols_decimals->{$symbol};
             is $underlying->display_decimals, $decimals, $symbol . ' display_decimals';
         }
@@ -86,7 +86,7 @@ subtest 'display_decimals' => sub {
         };
         my $underlying;
         foreach my $symbol (keys %$symbols_decimals) {
-            $underlying = BOM::Market::Underlying->new({symbol => $symbol});
+            $underlying = create_underlying({symbol => $symbol});
             my $decimals = $symbols_decimals->{$symbol};
             is $underlying->display_decimals, $decimals, $symbol . ' display_decimals';
         }
@@ -100,17 +100,17 @@ subtest 'display_decimals' => sub {
         };
         my $underlying;
         foreach my $symbol (qw(R_100 R_75 R_50)) {
-            $underlying = BOM::Market::Underlying->new({symbol => $symbol});
+            $underlying = create_underlying({symbol => $symbol});
             my $decimals = $symbols_decimals->{$symbol};
             is $underlying->display_decimals, $decimals, $symbol . ' display_decimals';
         }
 
-        my $r100 = BOM::Market::Underlying->new({symbol => 'R_100'});
+        my $r100 = create_underlying({symbol => 'R_100'});
         is $r100->dividend_rate_for(0.5), 0, 'correct dividend rate';
         is $r100->dividend_rate_for(1.0), 0, 'correct dividend rate';
 
 
-        my $rdbull = BOM::Market::Underlying->new({symbol => 'RDBULL'});
+        my $rdbull = create_underlying({symbol => 'RDBULL'});
         is $rdbull->dividend_rate_for(0.5), -35, 'correct dividend rate';
         is $rdbull->dividend_rate_for(1.0), -35, 'correct dividend rate';
 
@@ -123,7 +123,7 @@ subtest 'display_decimals' => sub {
         };
         my $underlying;
         foreach my $symbol (qw(DJI AEX)) {
-            $underlying = BOM::Market::Underlying->new({symbol => $symbol});
+            $underlying = create_underlying({symbol => $symbol});
             my $decimals = $symbols_decimals->{$symbol};
             is $underlying->display_decimals, $decimals, $symbol . ' display_decimals';
         }
@@ -136,12 +136,12 @@ subtest 'display_decimals' => sub {
         };
         my $underlying;
         foreach my $symbol (qw(USAAPL UKBAY)) {
-            $underlying = BOM::Market::Underlying->new({symbol => $symbol});
+            $underlying = create_underlying({symbol => $symbol});
             my $decimals = $symbols_decimals->{$symbol};
             is $underlying->display_decimals, $decimals, $symbol . ' display_decimals';
         }
 
-        my $stock = BOM::Market::Underlying->new({symbol => 'USAAPL'});
+        my $stock = create_underlying({symbol => 'USAAPL'});
         $stock->set_combined_realtime({epoch => time, quote => 8});
         is roundnear(0.0001, $stock->dividend_rate_for(0.5)), 0.0103, 'correct dividend rate for stocks';
         is $stock->dividend_rate_for(1.0), 0.0073, 'correct dividend rate for stocks';
@@ -155,7 +155,7 @@ subtest 'all attributes on a variety of underlyings' => sub {
         ('frxUSDZAR', 'GDAXI', 'HSI', 'FRXUSDJPY', 'frxEURUSD', 'frxXAUUSD', 'R_100', 'frxHKDUSD', 'frxUSDEUR', 'FUTHSI_BOM', 'frxNZDAUD',);
     foreach my $symbol (@symbols) {
 
-        my $underlying = BOM::Market::Underlying->new($symbol);
+        my $underlying = create_underlying($symbol);
         my $market     = $underlying->market->name;
         my $markets    = scalar grep { $market eq $_ } qw(indices volidx commodities forex config futures);
         is($markets, 1, $symbol . ' has exactly one of our expected markets');
@@ -270,7 +270,7 @@ subtest 'sub market' => sub {
     );
 
     foreach my $symbol (@symbols) {
-        my $underlying  = BOM::Market::Underlying->new($symbol);
+        my $underlying  = create_underlying($symbol);
         my @submarkets  = Finance::Asset::SubMarket::Registry->find_by_market($underlying->market->name);
         my $match_count = grep { $_->name eq $underlying->submarket->name } (@submarkets);
 
@@ -280,28 +280,28 @@ subtest 'sub market' => sub {
 };
 
 subtest 'is_OTC' => sub {
-    my @OTC_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(market => ['forex', 'commodities', 'voldix']);
+    my @OTC_symbols = create_underlying_db->get_symbols_for(market => ['forex', 'commodities', 'voldix']);
     push @OTC_symbols,
-        BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        create_underlying_db->get_symbols_for(
         market    => 'indices',
         submarket => ['otc_index', 'smart_index'],
         );
-    my @OTC_stocks = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my @OTC_stocks = create_underlying_db->get_symbols_for(
         market    => 'stocks',
         submarket => ['au_otc_stock', 'ge_otc_stock', 'uk_otc_stock', 'us_otc_stock'],
     );
     push @OTC_symbols, @OTC_stocks;
     foreach my $symbol (@OTC_symbols) {
-        my $underlying = BOM::Market::Underlying->new($symbol);
+        my $underlying = create_underlying($symbol);
 
         is($underlying->submarket->is_OTC, 1, "$symbol submarket is OTC");
     }
     my @non_OTC_symbols,
-        BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        create_underlying_db->get_symbols_for(
         market    => 'indices',
         submarket => ['asia_oceania', 'europe_africa', 'americas', 'middle_east']);
     foreach my $symbol (@non_OTC_symbols) {
-        my $underlying = BOM::Market::Underlying->new($symbol);
+        my $underlying = create_underlying($symbol);
 
         is($underlying->submarket->is_OTC, 0, "$symbol submarket is non OTC");
 
@@ -315,7 +315,7 @@ subtest 'tick_at' => sub {
     # will always be that, we return undef.
     # This is likely to bite you if you happen to be asking for ->tick_at(now), which will only give you
     # a valid result if you received a tick at that exact second
-    my $u    = BOM::Market::Underlying->new('frxEURUSD');
+    my $u    = create_underlying('frxEURUSD');
     my $date = Date::Utility->new('2009-05-11 06:10:39');
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $date->epoch,
@@ -357,7 +357,7 @@ subtest 'tick_at' => sub {
 subtest vol_expiry_date => sub {
     plan tests => 5;
 
-    my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
+    my $underlying = create_underlying('frxUSDJPY');
 
     my @tests = (
         ['2013-01-02', 1, 'Normal day, Wed -> Thur.'],
@@ -380,21 +380,21 @@ subtest vol_expiry_date => sub {
 };
 subtest 'all methods on a selection of underlyings' => sub {
     my $simulated_time = 1326957372;
-    my $AS51           = BOM::Market::Underlying->new('AS51');
-    my $FTSE           = BOM::Market::Underlying->new('FTSE');
-    my $EURUSD         = BOM::Market::Underlying->new('frxEURUSD');
-    my $USDEUR         = BOM::Market::Underlying->new('frxUSDEUR');
-    my $USDJPY         = BOM::Market::Underlying->new('frxUSDJPY');
-    my $RND50          = BOM::Market::Underlying->new('R_50');
-    my $oldEU          = BOM::Market::Underlying->new('frxEURUSD', Date::Utility->new('2012-01-19 07:16:12'));
-    my $nonsense       = BOM::Market::Underlying->new('nonsense');
+    my $AS51           = create_underlying('AS51');
+    my $FTSE           = create_underlying('FTSE');
+    my $EURUSD         = create_underlying('frxEURUSD');
+    my $USDEUR         = create_underlying('frxUSDEUR');
+    my $USDJPY         = create_underlying('frxUSDJPY');
+    my $RND50          = create_underlying('R_50');
+    my $oldEU          = create_underlying('frxEURUSD', Date::Utility->new('2012-01-19 07:16:12'));
+    my $nonsense       = create_underlying('nonsense');
 
-    my $FRW_frxEURUSD_ON  = BOM::Market::Underlying->new('FRW_frxEURUSD_ON');
-    my $FRW_frxEURUSD_TN  = BOM::Market::Underlying->new('FRW_frxEURUSD_TN');
-    my $FRW_frxEURUSD_1W  = BOM::Market::Underlying->new('FRW_frxEURUSD_1W');
-    my $FRW_frxUSDEUR_ON  = BOM::Market::Underlying->new('FRW_frxUSDEUR_ON');
-    my $FRW_frxUSDEUR_1W  = BOM::Market::Underlying->new('FRW_frxUSDEUR_1W');
-    my $FRW_frxUSDEUR_TN  = BOM::Market::Underlying->new('FRW_frxUSDEUR_TN');
+    my $FRW_frxEURUSD_ON  = create_underlying('FRW_frxEURUSD_ON');
+    my $FRW_frxEURUSD_TN  = create_underlying('FRW_frxEURUSD_TN');
+    my $FRW_frxEURUSD_1W  = create_underlying('FRW_frxEURUSD_1W');
+    my $FRW_frxUSDEUR_ON  = create_underlying('FRW_frxUSDEUR_ON');
+    my $FRW_frxUSDEUR_1W  = create_underlying('FRW_frxUSDEUR_1W');
+    my $FRW_frxUSDEUR_TN  = create_underlying('FRW_frxUSDEUR_TN');
     my $fake_forward_data = {
         epoch => time,
         open  => 1,
@@ -536,27 +536,27 @@ subtest 'all methods on a selection of underlyings' => sub {
     my $eod =
         Quant::Framework::TradingCalendar->new({
                 symbol => 'NYSE',
-                underlying_config => BOM::Market::Underlying->new('DJI')->config,
+                underlying_config => create_underlying('DJI')->config,
                 chronicle_reader => BOM::System::Chronicle::get_chronicle_reader()
         })->closing_on(Date::Utility->new('2016-04-05'));
     foreach my $pair (qw(frxUSDJPY frxEURUSD frxAUDUSD)) {
-        my $worm = BOM::Market::Underlying->new($pair, $eod->minus_time_interval('1s'));
+        my $worm = create_underlying($pair, $eod->minus_time_interval('1s'));
         is($worm->is_in_quiet_period, 0, $worm->symbol . ' not in a quiet period before New York closes');
-        $worm = BOM::Market::Underlying->new($pair, $eod->plus_time_interval('1s'));
+        $worm = create_underlying($pair, $eod->plus_time_interval('1s'));
         ok($worm->is_in_quiet_period, $worm->symbol . ' is quiet after New York closes');
     }
 
     Quant::Framework::Utils::Test::create_doc(
       'volsurface_delta',
       {
-        underlying_config        => BOM::Market::Underlying->new('frxEURUSD')->config,
+        underlying_config        => create_underlying('frxEURUSD')->config,
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         recorded_date => Date::Utility->new,
       });
 
     my $today = Date::Utility->today;
-    my $audusd = BOM::Market::Underlying->new('frxAUDUSD');
+    my $audusd = create_underlying('frxAUDUSD');
     foreach my $ul ($AS51, $audusd) {
         my $prev_weight = 0;
         my $builder = Quant::Framework::Utils::Builder->new({
@@ -595,7 +595,7 @@ subtest 'all methods on a selection of underlyings' => sub {
 subtest combined_realtime => sub {
     plan tests => 7;
 
-    my $EURUSD    = BOM::Market::Underlying->new('frxEURUSD');
+    my $EURUSD    = create_underlying('frxEURUSD');
     my $fake_tick = {
         epoch => time,
         quote => 8,
@@ -615,7 +615,7 @@ subtest combined_realtime => sub {
     my $eleventh = Date::Utility->new('2010-01-11 02:00:00');
     set_absolute_time($eleventh->epoch);    # before opening time
 
-    my $SPC = BOM::Market::Underlying->new('SPC');
+    my $SPC = create_underlying('SPC');
     ok($SPC->trades_on($eleventh), 'SPC trades on our chosen date.');
 
     Cache::RedisDB->del('QUOTE', $SPC->symbol);
@@ -640,7 +640,7 @@ subtest 'daily close crossing intradays' => sub {
         'RDBULL'    => 1,
     );
 
-    foreach my $ul (map { BOM::Market::Underlying->new($_) } (keys %expectations)) {
+    foreach my $ul (map { create_underlying($_) } (keys %expectations)) {
         is($ul->intradays_must_be_same_day, $expectations{$ul->symbol}, $ul->symbol . ' sets intradays_must_be_same_day as expected.');
     }
 };
@@ -657,7 +657,7 @@ subtest 'max_suspend_trading_feed_delay' => sub {
         'RDBULL'    => 300,
     );
 
-    foreach my $ul (map { BOM::Market::Underlying->new($_) } (keys %expectations)) {
+    foreach my $ul (map { create_underlying($_) } (keys %expectations)) {
         is(
             $ul->max_suspend_trading_feed_delay->seconds,
             $expectations{$ul->symbol},
@@ -668,15 +668,15 @@ subtest 'max_suspend_trading_feed_delay' => sub {
 
 subtest 'last_licensed_display_epoch' => sub {
     my $time      = time;
-    my $frxEURUSD = BOM::Market::Underlying->new('frxEURUSD');
+    my $frxEURUSD = create_underlying('frxEURUSD');
     # realtime license
     ok $frxEURUSD->last_licensed_display_epoch >= $time, "Can display any realtime ticks";
     # delayed license
-    my $GDAXI = BOM::Market::Underlying->new('GDAXI');
+    my $GDAXI = create_underlying('GDAXI');
     ok $GDAXI->last_licensed_display_epoch < $time - 10 * 60, "Can't display latest 10 minutes for GDAXI";
     ok $GDAXI->last_licensed_display_epoch > $time - 20 * 60, "Can display ticks older than 20 minutes for GDAXI";
     # daily license
-    my $N225  = BOM::Market::Underlying->new('N225');
+    my $N225  = create_underlying('N225');
     my $today = Date::Utility->today;
     my $close = $N225->calendar->closing_on($today);
     if (not $close or time < $close->epoch) {
@@ -685,16 +685,16 @@ subtest 'last_licensed_display_epoch' => sub {
         ok $N225->last_licensed_display_epoch == $close, "Display ticks up to close epoch";
     }
     # chartonly license
-    my $DJI = BOM::Market::Underlying->new('DJI');
+    my $DJI = create_underlying('DJI');
     ok $DJI->last_licensed_display_epoch == 0, "Do not display any ticks for 'chartonly'";
 };
 
 subtest 'risk type' => sub {
-    is (BOM::Market::Underlying->new('frxUSDJPY')->risk_profile, 'medium_risk', 'USDJPY is medium risk');
-    is (BOM::Market::Underlying->new('frxAUDCAD')->risk_profile, 'high_risk', 'AUDCAD is high risk');
-    is (BOM::Market::Underlying->new('AEX')->risk_profile, 'medium_risk', 'AEX is medium risk');
-    is (BOM::Market::Underlying->new('frxXAUUSD')->risk_profile, 'high_risk', 'XAUUSD is high risk');
-    is (BOM::Market::Underlying->new('R_100')->risk_profile, 'low_risk', 'R_100 is low risk');
+    is (create_underlying('frxUSDJPY')->risk_profile, 'medium_risk', 'USDJPY is medium risk');
+    is (create_underlying('frxAUDCAD')->risk_profile, 'high_risk', 'AUDCAD is high risk');
+    is (create_underlying('AEX')->risk_profile, 'medium_risk', 'AEX is medium risk');
+    is (create_underlying('frxXAUUSD')->risk_profile, 'high_risk', 'XAUUSD is high risk');
+    is (create_underlying('R_100')->risk_profile, 'low_risk', 'R_100 is low risk');
 };
 
 done_testing;
