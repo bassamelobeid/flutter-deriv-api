@@ -20,7 +20,8 @@ use namespace::autoclean;
 use List::MoreUtils qw(uniq first_index);
 
 use Finance::Asset::Market::Registry;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
 use BOM::Product::Contract::Category;
 use BOM::Platform::Offerings qw(get_offerings_with_filter);
 use BOM::Platform::Context qw(localize);
@@ -235,7 +236,7 @@ sub _build_tree {
             };
             foreach my $ul (
                 sort { localize($a->display_name) cmp localize($b->display_name) }
-                map  { BOM::Market::Underlying->new($_) } get_offerings_with_filter(
+                map  { create_underlying($_) } get_offerings_with_filter(
                     'underlying_symbol',
                     {
                         submarket       => $submarket->name,

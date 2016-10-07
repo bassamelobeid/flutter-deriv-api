@@ -14,7 +14,8 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
 use Path::Tiny;
 use YAML::XS qw(LoadFile);
 use Test::MockModule;

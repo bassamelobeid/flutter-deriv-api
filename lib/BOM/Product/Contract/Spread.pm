@@ -14,7 +14,8 @@ use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use BOM::Platform::Context qw(localize request);
 use BOM::MarketData::Fetcher::VolSurface;
 use Postgres::FeedDB::Spot::Tick;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
 use BOM::Product::Types;
 use BOM::Product::RiskProfile;
 
@@ -124,7 +125,7 @@ sub _build_stop_loss {
 
 has underlying => (
     is       => 'ro',
-    isa      => 'bom_underlying_object',
+    isa      => 'underlying_object',
     coerce   => 1,
     required => 1,
     handles  => ['market', 'submarket'],

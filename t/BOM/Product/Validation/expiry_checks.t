@@ -1492,7 +1492,7 @@ my $oft_used_date = Date::Utility->new('2013-03-29 15:00:34');
 test_with_feed(
     [[$oft_used_date->epoch + 700, 100.11, 'frxUSDJPY'], [$oft_used_date->epoch + 1800, 100.12, 'frxUSDJPY'],],
     'sell if entry tick is within start and expiry' => sub {
-        my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
+        my $underlying = create_underlying('frxUSDJPY');
         my $starting   = $oft_used_date->epoch;
 
         my $bet_params = {
@@ -1513,7 +1513,7 @@ test_with_feed(
 test_with_feed(
     [[$oft_used_date->epoch - 700, 100.11, 'frxUSDJPY'], [$oft_used_date->epoch + 1800, 100.12, 'frxUSDJPY'],],
     'entry_tick is too early on forward starter to allow sale' => sub {
-        my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
+        my $underlying = create_underlying('frxUSDJPY');
         my $starting   = $oft_used_date->epoch;
 
         my $bet_params = {
@@ -1539,7 +1539,7 @@ test_with_feed([
         [$oft_used_date->epoch + 1801, 101.00, 'frxUSDJPY'],
     ],
     'cannot buy and sell on the same tick' => sub {
-        my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
+        my $underlying = create_underlying('frxUSDJPY');
         my $starting   = $oft_used_date->epoch;
 
         my $bet_params = {
@@ -1566,7 +1566,7 @@ test_with_feed([
         [$midnight_one_day->epoch + 60, 101.00, 'frxUSDJPY'],
     ],
     'can expire across 0000GMT' => sub {
-        my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
+        my $underlying = create_underlying('frxUSDJPY');
         my $starting   = $midnight_one_day->epoch - 60;
 
         my $bet_params = {
@@ -1592,7 +1592,7 @@ test_with_feed([
         [$oft_used_date->epoch + 1801, 101.00, 'frxUSDJPY'],
     ],
     'can sell if exit tick is within start and expiry' => sub {
-        my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
+        my $underlying = create_underlying('frxUSDJPY');
         my $starting   = $oft_used_date->epoch;
 
         my $bet_params = {
@@ -1618,7 +1618,7 @@ test_with_feed([
         [$oft_used_date->epoch + 9, 1000.50, 'R_100'],
     ],
     'digits contracts' => sub {
-        my $underlying = BOM::Market::Underlying->new('R_100');
+        my $underlying = create_underlying('R_100');
         my $starting   = $oft_used_date->epoch;
 
         my %expectations = (

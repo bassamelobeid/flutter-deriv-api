@@ -14,7 +14,8 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 use YAML::XS qw(LoadFile);
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
 use Storable qw(dclone);
 
 Cache::RedisDB->flushall;
@@ -33,7 +34,7 @@ subtest 'tuesday to friday close' => sub {
         BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'volsurface_delta',
             {
-                underlying    => BOM::Market::Underlying->new('frxUSDJPY'),
+                underlying    => create_underlying('frxUSDJPY'),
                 surface       => $surface_data,
                 recorded_date => $now
             });

@@ -23,7 +23,8 @@ Some general utility subroutines related to bet parameters.
 
 use Date::Utility;
 use BOM::Platform::Offerings qw(get_offerings_with_filter);
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
 use BOM::Database::Model::Constants;
 use BOM::Platform::LandingCompany::Registry;
 use List::MoreUtils qw(uniq);
@@ -47,7 +48,7 @@ sub financial_market_bet_to_parameters {
         return shortcode_to_parameters($fmb->short_code, $currency, $fmb->is_sold);
     }
 
-    my $underlying     = BOM::Market::Underlying->new($fmb->underlying_symbol);
+    my $underlying     = create_underlying($fmb->underlying_symbol);
     my $bet_parameters = {
         bet_type    => $fmb->bet_type,
         underlying  => $underlying,
@@ -149,7 +150,7 @@ sub shortcode_to_parameters {
         return {
             shortcode        => $shortcode,
             bet_type         => $1,
-            underlying       => BOM::Market::Underlying->new($2),
+            underlying       => create_underlying($2),
             amount_per_point => $3,
             date_start       => $4,
             stop_loss        => $5,
@@ -217,7 +218,7 @@ sub shortcode_to_parameters {
         return $legacy_params;
     }
 
-    my $underlying = BOM::Market::Underlying->new($underlying_symbol);
+    my $underlying = create_underlying($underlying_symbol);
     if (Date::Utility::is_ddmmmyy($date_expiry)) {
         my $calendar = $underlying->calendar;
         $date_expiry = Date::Utility->new($date_expiry);

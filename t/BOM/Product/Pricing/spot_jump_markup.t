@@ -13,7 +13,8 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
 use BOM::Market::AggTicks;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
 
 my $now = Date::Utility->new('2016-09-22 20:00:00');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

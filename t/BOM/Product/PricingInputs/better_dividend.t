@@ -16,7 +16,8 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 initialize_realtime_ticks_db();
 
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
 use BOM::Product::ContractFactory qw( produce_contract );
 use Date::Utility;
 use BOM::Platform::Runtime;
@@ -33,7 +34,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 subtest 'discrete points on forex' => sub {
     plan tests => 2;
-    my $fx         = BOM::Market::Underlying->new('frxUSDJPY');
+    my $fx         = create_underlying('frxUSDJPY');
     my $bet_params = {
         bet_type     => 'CALL',
         underlying   => $fx,
@@ -76,7 +77,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 subtest 'discrete dividend on stocks' => sub {
     plan tests => 7;
-    my $index      = BOM::Market::Underlying->new('DEDAI');
+    my $index      = create_underlying('DEDAI');
     my $bet_params = {
         bet_type     => 'CALL',
         underlying   => $index,

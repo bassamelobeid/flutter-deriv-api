@@ -266,12 +266,12 @@ $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
     'client_loginid' => $new_loginid,
     'currency_code'  => 'USD',
 });
-my @indices_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(market => 'indices');
-my @smart_index = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+my @indices_symbols = create_underlying_db->get_symbols_for(market => 'indices');
+my @smart_index = create_underlying_db->get_symbols_for(
     market    => 'indices',
     submarket => 'smart_index'
 );
-my @smart_fx = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+my @smart_fx = create_underlying_db->get_symbols_for(
     market    => 'forex',
     submarket => 'smart_fx'
 );

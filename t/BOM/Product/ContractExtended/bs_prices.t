@@ -8,7 +8,8 @@ use Test::More tests => 8;
 use Format::Util::Numbers qw(roundnear);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Contract::Strike;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
 use Postgres::FeedDB::Spot::Tick;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -61,7 +62,7 @@ foreach my $code (@codes) {
 
     my $symbol = $bits[1];
     $symbol =~ s/-/_/g;
-    my $underlying = BOM::Market::Underlying->new($symbol);
+    my $underlying = create_underlying($symbol);
     my $what_is_two = ($bits[2] =~ /[st]$/) ? 'duration' : 'date_expiry';
     $bet_args{$what_is_two} = $bits[2];
     $bet_args{underlying} = $underlying;

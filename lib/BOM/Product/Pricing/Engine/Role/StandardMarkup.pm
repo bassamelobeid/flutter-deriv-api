@@ -262,7 +262,7 @@ sub _build_spot_spread_markup {
     my $spot_spread = Math::Util::CalculatedValue::Validatable->new({
         name        => 'spot_spread',
         description => 'Underlying bid-ask spread',
-        set_by      => 'BOM::Market::Underlying',
+        set_by      => 'Quant::Framework::Underlying',
         base_amount => $self->bet->underlying->spot_spread,
     });
 

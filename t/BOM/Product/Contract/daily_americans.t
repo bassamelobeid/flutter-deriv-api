@@ -14,7 +14,7 @@ use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 
 initialize_realtime_ticks_db();
-my $ul   = BOM::Market::Underlying->new('DJI');
+my $ul   = create_underlying('DJI');
 my $when = Date::Utility->new('2015-11-08 16:00:00');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',

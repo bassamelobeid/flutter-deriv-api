@@ -10,7 +10,8 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 use Date::Utility;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestDatabase qw( :init );
 
@@ -64,7 +65,7 @@ subtest 'financial_market_bet_to_parameters' => sub {
 };
 
 subtest 'shortcode_to_parameters' => sub {
-    my $frxUSDJPY = BOM::Market::Underlying->new('frxUSDJPY');
+    my $frxUSDJPY = create_underlying('frxUSDJPY');
 
     my $legacy = shortcode_to_parameters('DOUBLEDBL_frxUSDJPY_100_10_OCT_12_I_10H10_U_11H10_D_12H10', 'USD');
     is($legacy->{bet_type}, 'Invalid', 'Legacy shortcode.');

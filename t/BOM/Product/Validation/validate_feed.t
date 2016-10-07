@@ -6,7 +6,8 @@ use warnings;
 use Test::More tests => 2;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
 use Date::Utility;
 
 use BOM::Platform::Runtime;

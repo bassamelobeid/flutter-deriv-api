@@ -52,7 +52,7 @@ my $loginid  = $client->loginid;
 my $currency = 'USD';
 my $account  = $client->default_account;
 
-my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
+my $underlying = create_underlying('frxUSDJPY');
 my $contract   = produce_contract({
     underlying   => $underlying,
     bet_type     => 'FLASHU',
@@ -222,7 +222,7 @@ subtest 'Validate Jurisdiction Restriction' => sub {
 
     lives_ok { $client->residence('de') } 'set residence to Germany to test jurisdiction validation for random';
 
-    my $new_underlying = BOM::Market::Underlying->new('R_100');
+    my $new_underlying = create_underlying('R_100');
     my $new_contract   = produce_contract({
         underlying   => $new_underlying,
         bet_type     => 'FLASHU',
@@ -249,7 +249,7 @@ subtest 'Validate Jurisdiction Restriction' => sub {
 
     #Checking that bets can be placed on other underlyings.
 
-    my $new_underlying2 = BOM::Market::Underlying->new('frxAUDJPY');
+    my $new_underlying2 = create_underlying('frxAUDJPY');
     my $new_contract2   = produce_contract({
         underlying   => $new_underlying2,
         bet_type     => 'FLASHU',
@@ -269,7 +269,7 @@ subtest 'Validate Jurisdiction Restriction' => sub {
     $error = $new_transaction2->_validate_jurisdictional_restrictions;
     is($error, undef, 'German clients are allowed to trade forex underlyings');
 
-    my $new_underlying3 = BOM::Market::Underlying->new('GDAXI');
+    my $new_underlying3 = create_underlying('GDAXI');
     my $new_contract3   = produce_contract({
         underlying   => $new_underlying3,
         bet_type     => 'FLASHU',
@@ -289,7 +289,7 @@ subtest 'Validate Jurisdiction Restriction' => sub {
     $error = $new_transaction3->_validate_jurisdictional_restrictions;
     is($error, undef, 'German clients are allowed to trade index underlyings');
 
-    my $new_underlying4 = BOM::Market::Underlying->new('frxBROUSD');
+    my $new_underlying4 = create_underlying('frxBROUSD');
     my $new_contract4   = produce_contract({
         underlying   => $new_underlying4,
         bet_type     => 'FLASHU',
@@ -362,7 +362,7 @@ subtest 'Validate Jurisdiction Restriction' => sub {
     lives_ok { $client->residence('gb') } 'set residence back to gb';
     lives_ok { $client->save({'log' => 0, 'clerk' => 'raunak'}); } "Can save residence changes back to the client";
 
-    my $new_underlying5 = BOM::Market::Underlying->new('R_100');
+    my $new_underlying5 = create_underlying('R_100');
     my $new_contract5   = produce_contract({
         underlying   => $new_underlying,
         bet_type     => 'FLASHU',
@@ -445,7 +445,7 @@ subtest 'Validate Jurisdiction Restriction' => sub {
     );
 
     # check if market name is allowed for landing company
-    $new_underlying = BOM::Market::Underlying->new('R50');
+    $new_underlying = create_underlying('R50');
     $new_contract   = produce_contract({
         underlying   => $new_underlying,
         bet_type     => 'FLASHU',

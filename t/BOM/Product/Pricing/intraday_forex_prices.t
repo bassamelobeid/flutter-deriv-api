@@ -25,7 +25,7 @@ my $date_start = Date::Utility->new(1352345145);
 note('Pricing on ' . $date_start->datetime);
 my $date_pricing    = $date_start;
 my $date_expiry     = $date_start->plus_time_interval('1000s');
-my $underlying      = BOM::Market::Underlying->new('frxUSDJPY', $date_pricing);
+my $underlying      = create_underlying('frxUSDJPY', $date_pricing);
 my $barrier         = 'S3P';
 my $barrier_low     = 'S-3P';
 my $payout          = 100;

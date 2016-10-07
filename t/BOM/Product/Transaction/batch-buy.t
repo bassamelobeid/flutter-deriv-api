@@ -137,10 +137,10 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
 });
 
-my $underlying        = BOM::Market::Underlying->new('frxUSDJPY');
-my $underlying_GDAXI  = BOM::Market::Underlying->new('GDAXI');
-my $underlying_WLDUSD = BOM::Market::Underlying->new('WLDUSD');
-my $underlying_R50    = BOM::Market::Underlying->new('R_50');
+my $underlying        = create_underlying('frxUSDJPY');
+my $underlying_GDAXI  = create_underlying('GDAXI');
+my $underlying_WLDUSD = create_underlying('WLDUSD');
+my $underlying_R50    = create_underlying('R_50');
 
 sub db {
     return BOM::Database::ClientDB->new({

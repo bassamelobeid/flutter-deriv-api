@@ -59,7 +59,7 @@ subtest 'entry tick' => sub {
 };
 
 subtest 'current tick' => sub {
-    my $u = Test::MockModule->new('BOM::Market::Underlying');
+    my $u = Test::MockModule->new('Quant::Framework::Underlying');
     $u->mock('spot_tick', sub { undef });
     my $c = produce_contract($params);
     is $c->current_tick->quote, 0.01, 'current tick is pip size value if current tick is undefined';

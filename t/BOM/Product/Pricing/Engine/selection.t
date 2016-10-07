@@ -27,7 +27,7 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => 100,
     epoch      => $now->epoch,
 });
-my $mocked_underlying = Test::MockModule->new('BOM::Market::Underlying');
+my $mocked_underlying = Test::MockModule->new('Quant::Framework::Underlying');
 $mocked_underlying->mock('spot_tick', sub { return $tick });
 
 subtest 'test everything' => sub {

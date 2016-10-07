@@ -21,7 +21,7 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 
-my $underlying       = BOM::Market::Underlying->new('frxUSDJPY');
+my $underlying       = create_underlying('frxUSDJPY');
 my $bet_start        = Date::Utility->new('2012-02-01 01:00:00');
 my $longterm_expiry  = Date::Utility->new($bet_start->epoch + 7 * 86400);
 my $shortterm_expiry = Date::Utility->new($bet_start->epoch + 23 * 3540);

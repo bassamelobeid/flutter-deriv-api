@@ -29,8 +29,9 @@ use BOM::System::Chronicle;
 
 use BOM::Platform::Context qw(localize);
 
-use BOM::Market::UnderlyingDB;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
 
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
@@ -469,7 +470,7 @@ has fixed_expiry => (
 
 has underlying => (
     is      => 'ro',
-    isa     => 'bom_underlying_object',
+    isa     => 'underlying_object',
     coerce  => 1,
     handles => [qw(market pip_size)],
 );
@@ -520,7 +521,7 @@ sub _build_pricing_engine_name {
     my $engine_name = $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'Pricing::Engine::EuropeanDigitalSlope';
 
     if ($self->tick_expiry) {
-        my @symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        my @symbols = create_underlying_db->get_symbols_for(
             market            => 'forex',     # forex is the only financial market that offers tick expiry contracts for now.
             contract_category => 'callput',
             expiry_type       => 'tick',
@@ -533,7 +534,7 @@ sub _build_pricing_engine_name {
         )
     {
         my $func = (first { $self->market->name eq $_ } qw(forex commodities)) ? 'symbols_for_intraday_fx' : 'symbols_for_intraday_index';
-        my @symbols = BOM::Market::UnderlyingDB->instance->$func;
+        my @symbols = create_underlying_db->$func;
         if (_match_symbol(\@symbols, $self->underlying->symbol) and my $loc = $self->offering_specifics->{historical}) {
             my $duration = $self->remaining_time;
             my $name = $self->market->name eq 'indices' ? 'Index' : 'Forex';
@@ -1823,7 +1824,7 @@ sub _market_data {
         },
         get_economic_event => sub {
             my $args = shift;
-            my $underlying = $underlyings{$args->{underlying_symbol}} // BOM::Market::Underlying->new({
+            my $underlying = $underlyings{$args->{underlying_symbol}} // create_underlying({
                 symbol   => $args->{underlying_symbol},
                 for_date => $for_date
             });
@@ -1854,7 +1855,7 @@ sub _market_data {
         get_ticks => sub {
             my $args              = shift;
             my $underlying_symbol = delete $args->{underlying_symbol};
-            $args->{underlying} = $underlyings{$underlying_symbol} // BOM::Market::Underlying->new({
+            $args->{underlying} = $underlyings{$underlying_symbol} // create_underlying({
                 symbol   => $underlying_symbol,
                 for_date => $for_date
             });
@@ -1932,7 +1933,7 @@ sub _build_rho {
         my $index           = $self->underlying->asset_symbol;
         my $payout_currency = $self->currency;
         my $tiy             = $self->timeinyears->amount;
-        my $correlation_u   = BOM::Market::Underlying->new($index);
+        my $correlation_u   = create_underlying($index);
 
         $rhos{fd_dq} = $rho_data->correlation_for($index, $payout_currency, $tiy, $correlation_u->expiry_conventions);
     }
@@ -1991,7 +1992,7 @@ sub _build_domqqq {
     my $result = {};
 
     if ($self->priced_with eq 'quanto') {
-        $result->{underlying} = BOM::Market::Underlying->new({
+        $result->{underlying} = create_underlying({
             symbol   => 'frx' . $self->underlying->quoted_currency_symbol . $self->currency,
             for_date => $self->underlying->for_date
         });
@@ -2011,7 +2012,7 @@ sub _build_forqqq {
     my $result = {};
 
     if ($self->priced_with eq 'quanto' and ($self->underlying->market->name eq 'forex' or $self->underlying->market->name eq 'commodities')) {
-        $result->{underlying} = BOM::Market::Underlying->new({
+        $result->{underlying} = create_underlying({
             symbol   => 'frx' . $self->underlying->asset_symbol . $self->currency,
             for_date => $self->underlying->for_date
         });
