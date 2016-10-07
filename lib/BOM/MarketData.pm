@@ -29,8 +29,7 @@ sub create_underlying {
 
     my $result = Quant::Framework::Underlying->new($args, $for_date);
 
-    $DB::single=1 if not $result->chronicle_reader;
-
+    $DB::single = 1 if not $result->chronicle_reader;
 
     return $result;
 }
