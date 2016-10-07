@@ -109,14 +109,16 @@ sub proposal_open_contract {
             my $sell_time;
             $sell_time = Date::Utility->new($fmb->{sell_time})->epoch if $fmb->{sell_time};
             my $bid = BOM::RPC::v3::Contract::get_bid({
-                    short_code            => $fmb->{short_code},
-                    contract_id           => $id,
-                    currency              => $client->currency,
-                    is_sold               => $fmb->{is_sold},
-                    sell_time             => $sell_time,
-                    sell_price            => $fmb->{sell_price},
-                    buy_price             => $fmb->{buy_price},
-                    app_markup_percentage => $params->{app_markup_percentage}});
+                short_code            => $fmb->{short_code},
+                contract_id           => $id,
+                currency              => $client->currency,
+                is_sold               => $fmb->{is_sold},
+                sell_time             => $sell_time,
+                sell_price            => $fmb->{sell_price},
+                buy_price             => $fmb->{buy_price},
+                app_markup_percentage => $params->{app_markup_percentage},
+                landing_company       => $client->landing_company->short,
+            });
             if (exists $bid->{error}) {
                 $response->{$id} = $bid;
             } else {
