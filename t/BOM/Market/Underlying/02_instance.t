@@ -197,11 +197,6 @@ subtest 'all attributes on a variety of underlyings' => sub {
 
         is($underlying->asset_symbol, $underlying->asset->symbol, 'Asset symbol and object match') if ($underlying->asset_symbol);
 
-        # is(ref $underlying->contracts, 'HASH', 'contracts is a hash ref');
-        # if ($underlying->quanto_only or $market eq 'config') {
-        #     is(scalar keys %{$underlying->contracts}, 0, 'Special things should not have contracts');
-        # }
-
         if ($underlying->inverted) {
             isnt($underlying->system_symbol, $underlying->symbol, 'Inverted underlying has a different sysmbol than system_symbol');
         }
@@ -473,34 +468,10 @@ subtest 'all methods on a selection of underlyings' => sub {
     my $half_ten = Date::Utility->new(Date::Utility->today->epoch + 37800);
     my $half_one = Date::Utility->new(Date::Utility->today->epoch + 48600);
 
-    my $orig_buy    = BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy;
-    my $orig_trades = BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades;
-
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy([]);
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades([]);
-
-    my $eurusd_info = BOM::Market::Info->new(underlying => $EURUSD);
-
-    is($eurusd_info->is_trading_suspended, 0, 'Underlying can be traded');
-
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy([$EURUSD->symbol]);
-    $eurusd_info->clear_is_trading_suspended;
-    is($eurusd_info->is_trading_suspended, 0, ' now traded');
-
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades([$EURUSD->symbol]);
-    $eurusd_info->clear_is_trading_suspended;
-    ok($eurusd_info->is_trading_suspended, ' now not tradeable');
-
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy([]);
-    $eurusd_info->clear_is_trading_suspended;
-    ok($eurusd_info->is_trading_suspended, ' still not tradeable');
-
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy($orig_buy);
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades($orig_trades);
-
     my $eu_symbol       = $EURUSD->symbol;
     my $looks_like_euff = qr%$eu_symbol/\d{1,2}-[A-Z]{1}[a-z]{2}-\d{1,2}(?:-fullfeed\.csv|\.fullfeed)%;
 
+    my $eurusd_info = BOM::Market::Info->new(underlying => $EURUSD);
     like($eurusd_info->fullfeed_file('19-Jan-12'), $looks_like_euff, "Standard fullfeed file looks right");
     like($eurusd_info->fullfeed_file('1-JUN-12'),  $looks_like_euff, "Miscapitalized fullfeed file looks right");
     like($eurusd_info->fullfeed_file('1-JUN-12', 'backtest'), $looks_like_euff, "Miscapitalized fullfeed file with override dir looks right");
