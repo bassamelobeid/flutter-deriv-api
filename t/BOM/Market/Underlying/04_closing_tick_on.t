@@ -84,7 +84,7 @@ subtest 'closing_tick_on - official OHLC' => sub {
     };
 
     subtest 'closing_tick_on - should use official OHLC for DJI' => sub {
-        my $underlying = new_ok('Quant::Framework::Underlying' => [{symbol => 'DJI'}]);
+        my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'DJI'}]);
         is $underlying->closing_tick_on('2012-05-30')->close, 12118.57, 'close for 2012-05-30';
         is $underlying->closing_tick_on('2012-05-31')->close, 12101.46, 'close for 2012-05-31';
         is $underlying->closing_tick_on('2012-06-01'), undef, 'no official close yet for 2012-06-01';
@@ -129,7 +129,7 @@ subtest 'closing_tick_on - unofficial OHLC' => sub {
     };
 
     subtest 'closing_tick_on - should use unofficial OHLC for frxUSDJPY' => sub {
-        my $underlying = new_ok('Quant::Framework::Underlying' => [{symbol => 'frxUSDJPY'}]);
+        my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxUSDJPY'}]);
         is $underlying->closing_tick_on('2012-05-30')->close, 90.1, 'close for 2012-05-30';
         is $underlying->closing_tick_on('2012-05-31')->close, 91.1, 'close for 2012-05-31';
         is $underlying->closing_tick_on('2012-06-01'), undef, 'ohlc for 2012-06-01 not aggregated yet';
@@ -137,4 +137,10 @@ subtest 'closing_tick_on - unofficial OHLC' => sub {
     };
 };
 
+sub check_new_ok {
+    my $module = shift;
+    my $ul_args = shift;
+
+    return create_underlying($ul_args->[0]);
+}
 done_testing;
