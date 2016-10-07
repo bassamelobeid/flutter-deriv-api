@@ -31,7 +31,6 @@ use BOM::Platform::Context qw(localize);
 
 use BOM::Market::UnderlyingDB;
 use BOM::Market::Underlying;
-use BOM::Market::Info;
 
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
@@ -2171,16 +2170,7 @@ sub _validate_offerings {
         };
     }
 
-    my $underlying = $self->underlying;
-    my $info = BOM::Market::Info->new(underlying => $underlying);
-
-    if ($info->is_trading_suspended) {
-        return {
-            message           => "Underlying trades suspended [symbol: " . $underlying->symbol . "]",
-            message_to_client => $message_to_client,
-        };
-    }
-
+    my $underlying    = $self->underlying;
     my $contract_code = $self->code;
     # check if trades are suspended on that claimtype
     my $suspend_claim_types = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types;
