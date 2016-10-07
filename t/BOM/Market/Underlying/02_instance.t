@@ -472,6 +472,7 @@ subtest 'all methods on a selection of underlyings' => sub {
     my $eu_symbol       = $EURUSD->symbol;
     my $looks_like_euff = qr%$eu_symbol/\d{1,2}-[A-Z]{1}[a-z]{2}-\d{1,2}(?:-fullfeed\.csv|\.fullfeed)%;
 
+    my $eurusd_info = BOM::Market::Info->new(underlying => $EURUSD);
     like($eurusd_info->fullfeed_file('19-Jan-12'), $looks_like_euff, "Standard fullfeed file looks right");
     like($eurusd_info->fullfeed_file('1-JUN-12'),  $looks_like_euff, "Miscapitalized fullfeed file looks right");
     like($eurusd_info->fullfeed_file('1-JUN-12', 'backtest'), $looks_like_euff, "Miscapitalized fullfeed file with override dir looks right");
