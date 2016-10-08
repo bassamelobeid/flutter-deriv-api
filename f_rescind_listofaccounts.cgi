@@ -7,7 +7,7 @@ use warnings;
 use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Client;
-use BOM::Platform::CurrencyConverter qw(in_USD);
+use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use BOM::Product::Transaction;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 
