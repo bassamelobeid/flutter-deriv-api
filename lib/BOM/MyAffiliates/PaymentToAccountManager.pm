@@ -21,7 +21,7 @@ use Text::Trim;
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
 use List::MoreUtils qw(any);
-use BOM::Platform::CurrencyConverter qw(amount_from_to_currency);
+use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 use BOM::Platform::Runtime;
 use BOM::Platform::Client;
 use BOM::MyAffiliates;
