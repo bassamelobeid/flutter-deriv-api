@@ -12,7 +12,7 @@ use JSON qw(decode_json);
 
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
-use BOM::Platform::CurrencyConverter qw(amount_from_to_currency);
+use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);

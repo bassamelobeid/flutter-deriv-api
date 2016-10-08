@@ -28,7 +28,7 @@ use BOM::Database::Rose::DB::StringifyRules;
 use BOM::Database::Rose::DB::Relationships;
 use BOM::Platform::Client::PaymentAgent;
 use BOM::Platform::Client::Payments;
-use BOM::Platform::CurrencyConverter qw(in_USD);
+use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use BOM::Platform::LandingCompany::Registry;
 use BOM::System::Config;
 
