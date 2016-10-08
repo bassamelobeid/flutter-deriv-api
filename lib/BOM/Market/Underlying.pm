@@ -56,8 +56,6 @@ use BOM::System::Chronicle;
 #Includes conversion code for Time::Duration::Concise, Date::Utility and Underlying
 use BOM::Market::Types;
 
-our $PRODUCT_OFFERINGS = LoadFile('/home/git/regentmarkets/bom-market/config/files/product_offerings.yml');
-
 #This has to be set to 1 only on the backoffice server.
 #A value of 1 means assuming real-time feed license for all underlyings.
 our $FORCE_REALTIME_FEED = 0;
@@ -565,19 +563,6 @@ sub _build__builder {
         chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer,
         underlying_config => $self->config
     });
-}
-
-has contracts => (
-    is         => 'ro',
-    isa        => 'HashRef',
-    lazy_build => 1,
-);
-
-sub _build_contracts {
-    my $self = shift;
-
-    return {} if $self->quanto_only;
-    return $PRODUCT_OFFERINGS->{$self->symbol} // {};
 }
 
 has providers => (

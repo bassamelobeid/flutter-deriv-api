@@ -42,6 +42,7 @@ use Finance::Asset::SubMarket::Registry;
 use Finance::Asset::SubMarket;
 use Finance::Asset::Market;
 use BOM::Market::Underlying;
+use BOM::Platform::Offerings qw(get_offerings_flyby);
 
 has _file_content => (
     is      => 'ro',
@@ -242,21 +243,14 @@ memoize('_get_symbols_for', NORMALIZER => '_normalize_method_args');
 sub _matches_types {
     my ($ul, $expiry_types, $start_types, $contract_categories, $barrier_categories) = @_;
 
-    my $found;
+    my $found = get_offerings_flyby()->query({
+        underlying_symbol => $ul->symbol,
+        barrier_category  => $barrier_categories,
+        contract_category => $contract_categories,
+        start_type        => $start_types,
+        expiry_type       => $expiry_types,
+    });
 
-    if (my $checkref = {%{$ul->contracts}}) {
-        SEARCH:
-        for (my $i = 0; $i < scalar(@$expiry_types); $i++) {
-            my $expiry_type = $expiry_types->[$i];
-            for (my $j = 0; $j < scalar(@$start_types); $j++) {
-                my $start_type = $start_types->[$j];
-                foreach my $barrier_category (@{$barrier_categories}) {
-                    $found = first { $checkref->{$_}->{$expiry_type}->{$start_type}->{$barrier_category} } @$contract_categories;
-                    last SEARCH if ($found);
-                }
-            }
-        }
-    }
     return $found;
 }
 
