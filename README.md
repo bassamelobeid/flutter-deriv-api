@@ -55,7 +55,7 @@ Frequency of this script being called: 06GMT, 12GMT and 23GMT. (Although it runs
 
 Input: corporate actions file type from Bloomberg::FileDownloader e.g. corporate.csv.enc 
 
-Output: Chronicle
+Output: category='corporate_actions' at Chronicle
 
 (4) bin/update_interest_rates.pl
 
