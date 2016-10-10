@@ -134,6 +134,7 @@ my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/co
 
         # load it first
         my $landing_company = delete $input_params{landing_company} // 'costarica';
+        # landing company short name for japan virtual is with '-'. Removing it here.
         $landing_company =~ s/-//;
         my $role = 'BOM::Product::Role::' . ucfirst lc $landing_company;
         # We'll cache positive + negative results here, and we don't expect files to appear/disappear
