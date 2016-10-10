@@ -8,7 +8,7 @@ use Scalar::Util qw(looks_like_number);
 use Text::CSV::Slurp;
 
 use Bloomberg::FileDownloader;
-use BOM::Market::UnderlyingDB;
+use BOM::MarketData qw(create_underlying_db);
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
 use Bloomberg::CurrencyConfig;
@@ -79,7 +79,7 @@ sub run {
 sub _passes_sanity_check {
     my ($self, $data, $symbol) = @_;
 
-    my @iv_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my @iv_symbols = create_underlying_db->get_symbols_for(
         market            => 'forex, commodities',
         contract_category => 'IV',
         broker            => 'FOG',

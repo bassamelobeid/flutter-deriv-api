@@ -7,7 +7,8 @@ use Scalar::Util qw(looks_like_number);
 use Text::CSV::Slurp;
 
 use Format::Util::Numbers qw(roundnear);
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
 use BOM::System::Chronicle;
 use Bloomberg::FileDownloader;
 use BOM::Platform::Runtime;
@@ -64,7 +65,7 @@ sub run {
     UNDERLYING:
     foreach my $underlying_symbol (keys %$forward_rates) {
 
-        my $underlying                    = BOM::Market::Underlying->new($underlying_symbol);
+        my $underlying                    = create_underlying($underlying_symbol);
         my $spot                          = $forward_rates->{$underlying_symbol}->{rates}->{'SP'};
         my $currency_to_imply_symbol      = $underlying->rate_to_imply;
         my $currency_to_imply_from_symbol = $underlying->rate_to_imply_from;

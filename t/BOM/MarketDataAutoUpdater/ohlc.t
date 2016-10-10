@@ -11,7 +11,7 @@ use Test::MockObject::Extends;
 use Test::MockModule;
 my $abspath   = rel2abs((splitpath(__FILE__))[1]);
 my $data_path = $abspath . '/../../data/bbdl/ohlc';
-my $module    = Test::MockModule->new('BOM::Market::Underlying');
+my $module    = Test::MockModule->new('Quant::Framework::Underlying');
 $module->mock('has_holiday_on', sub { 0 });
 initialize_realtime_ticks_db();
 subtest everything => sub {
