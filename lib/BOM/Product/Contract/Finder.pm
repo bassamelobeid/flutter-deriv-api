@@ -11,7 +11,7 @@ use VolSurface::Utils qw(get_strike_for_spot_delta);
 
 use BOM::Market::Underlying;
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::Product::Offerings qw(get_offerings_flyby);
+use BOM::Platform::Offerings qw(get_offerings_flyby);
 use BOM::Product::Contract::Category;
 use BOM::Product::Contract::Strike;
 

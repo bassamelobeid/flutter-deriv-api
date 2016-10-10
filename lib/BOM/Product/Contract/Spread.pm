@@ -418,6 +418,19 @@ sub _build_is_expired {
     return $is_expired;
 }
 
+# there is no settlement time concept on spread, as soon as it is expired, it is settleable
+has is_settleable => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_is_settleable {
+    my $self = shift;
+
+    return $self->is_expired // 0;
+
+}
+
 sub current_value {
     my $self = shift;
     $self->_recalculate_value($self->sell_level);

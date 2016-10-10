@@ -3,7 +3,7 @@ package BOM::Product::Pricing::Engine::Intraday::Forex;
 use Moose;
 extends 'BOM::Product::Pricing::Engine::Intraday';
 
-use List::Util qw(max min sum);
+use List::Util qw(max min sum first);
 use YAML::XS qw(LoadFile);
 
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
@@ -491,6 +491,12 @@ my $iv_risk_interpolator = Math::Function::Interpolator->new(
         0.95 => 0.15,
     });
 
+my $shortterm_risk_interpolator = Math::Function::Interpolator->new(
+    points => {
+        0  => 0.15,
+        15 => 0,
+    });
+
 =head1 risk_markup
 
 Markup added to accommdate for pricing uncertainty
@@ -552,6 +558,17 @@ sub _build_risk_markup {
             base_amount => 0.1,
         });
         $risk_markup->include_adjustment('add', $spot_jump_markup);
+    }
+
+    if (not $self->bet->is_atm_bet and $bet->remaining_time->minutes <= 15) {
+        my $amount                         = $shortterm_risk_interpolator->linear($bet->remaining_time->minutes);
+        my $shortterm_kurtosis_risk_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'short_term_kurtosis_risk_markup',
+            description => 'shortterm markup added for kurtosis risk for contract less than 15 minutes',
+            set_by      => __PACKAGE__,
+            base_amount => $amount,
+        });
+        $risk_markup->include_adjustment('add', $shortterm_kurtosis_risk_markup);
     }
 
     return $risk_markup;
@@ -640,7 +657,7 @@ sub _build_intraday_vega_correction {
     return $vc;
 }
 
-has economic_events_volatility_risk_markup => (
+has [qw(economic_events_volatility_risk_markup economic_events_spot_risk_markup)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -669,6 +686,113 @@ sub _build_economic_events_volatility_risk_markup {
     return $markup;
 }
 
+sub _build_economic_events_spot_risk_markup {
+    my $self = shift;
+
+    my $bet   = $self->bet;
+    my $start = $bet->effective_start;
+    my $end   = $bet->date_expiry;
+    my @time_samples;
+    for (my $i = $start->epoch; $i <= $end->epoch; $i += 15) {
+        push @time_samples, $i;
+    }
+
+    my $contract_duration = $bet->remaining_time->seconds;
+    my $lookback          = $start->minus_time_interval($contract_duration + 3600);
+    my $news_array        = $self->_get_economic_events($lookback, $end);
+
+    my @combined = (0) x scalar(@time_samples);
+    foreach my $news (@$news_array) {
+        my $effective_news_time = _get_effective_news_time($news->{release_time}, $start->epoch, $contract_duration);
+        # +1e-9 is added to prevent a division by zero error if news magnitude is 1
+        my $decay_coef = -log(2 / ($news->{magnitude} + 1e-9)) / $news->{duration};
+        my @triangle;
+        foreach my $time (@time_samples) {
+            if ($time < $effective_news_time) {
+                push @triangle, 0;
+            } else {
+                my $chunk = $news->{bias} * exp(-$decay_coef * ($time - $effective_news_time));
+                push @triangle, $chunk;
+            }
+        }
+        @combined = map { max($triangle[$_], $combined[$_]) } (0 .. $#time_samples);
+    }
+
+    my $spot_risk_markup = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'economic_events_spot_risk_markup',
+        description => 'markup to account for spot risk of economic events',
+        set_by      => __PACKAGE__,
+        maximum     => 0.15,
+        base_amount => sum(@combined) / scalar(@combined),
+    });
+
+    return $spot_risk_markup;
+}
+
+my $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
+
+sub _get_economic_events {
+    my ($self, $start, $end) = @_;
+
+    my $underlying = $self->bet->underlying;
+
+    my $raw_events = Quant::Framework::EconomicEventCalendar->new({
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($underlying->for_date),
+        }
+        )->get_latest_events_for_period({
+            from => Date::Utility->new($start),
+            to   => Date::Utility->new($end)});
+
+    my $default_underlying = 'frxUSDJPY';
+    my @events;
+    # Sometimes new economic events pops up.
+    # We will need some time to figure out what to do with them.
+    # But at the mean time, they can be ignored.
+    my %known_skips = ('OPEC Meetings' => 1);
+    foreach my $event (@$raw_events) {
+        my $event_name = $event->{event_name};
+        next if ($known_skips{$event_name});
+        $event_name =~ s/\s/_/g;
+        my $key = first { exists $news_categories->{$_} }
+        map { (
+                $_ . '_' . $event->{symbol} . '_' . $event->{impact} . '_' . $event_name,
+                $_ . '_' . $event->{symbol} . '_' . $event->{impact} . '_default'
+                )
+        } ($underlying->symbol, $default_underlying);
+        unless ($key) {
+            # we want to know about the new economic events.
+            warn "Name: $event_name, affected currency: $event->{symbol}";
+            next;
+        }
+        my $news_parameters = $news_categories->{$key};
+        next unless $news_parameters;
+        $news_parameters->{release_time} = $event->{release_date};
+        push @events, $news_parameters;
+    }
+
+    return \@events;
+}
+
+sub _get_effective_news_time {
+    my ($news_time, $contract_start, $contract_duration) = @_;
+
+    my $five_minutes_in_seconds = 5 * 60;
+    my $shift_seconds           = 0;
+    my $contract_end            = $contract_start + $contract_duration;
+    if ($news_time > $contract_start - $five_minutes_in_seconds and $news_time < $contract_start) {
+        $shift_seconds = $contract_start - $news_time;
+    } elsif ($news_time < $contract_end + $five_minutes_in_seconds and $news_time > $contract_end - $five_minutes_in_seconds) {
+        # Always shifts to the contract start time if duration is less than 5 minutes.
+        my $max_shift = min($five_minutes_in_seconds, $contract_duration);
+        my $desired_start = $contract_end - $max_shift;
+        $shift_seconds = $desired_start - $news_time;
+    }
+
+    my $effective_time = $news_time + $shift_seconds;
+
+    return $effective_time;
+}
+
 has volatility_scaling_factor => (
     is      => 'ro',
     lazy    => 1,
@@ -688,12 +812,32 @@ has vol_spread_markup => (
 sub _build_vol_spread_markup {
     my $self = shift;
 
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'vol_spread_markup',
+    my $vol_spread = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'vol_spread',
         set_by      => __PACKAGE__,
         description => 'markup added to account for variable ticks interval for volatility calculation.',
-        base_amount => 0.1 * (1 - ($self->volatility_scaling_factor)**2),
+        minimum     => 0,
+        maximum     => 0.1,
+        base_amount => (0.1 * (1 - ($self->volatility_scaling_factor)**2)) / 2,
     });
+
+    my $vega = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'bet_vega',
+        set_by      => __PACKAGE__,
+        description => 'The absolute value of vega of a priced option',
+        base_amount => abs($self->bet->vega),
+    });
+
+    my $vsm = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'vol_spread_markup',
+        set_by      => __PACKAGE__,
+        description => 'vol spread adjustment',
+    });
+
+    $vsm->include_adjustment('reset',    $vega);
+    $vsm->include_adjustment('multiply', $vol_spread);
+
+    return $vsm;
 }
 
 no Moose;
