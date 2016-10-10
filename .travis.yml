@@ -1,0 +1,41 @@
+language: perl
+perl:
+    - "5.14.2-thr"
+matrix:
+    fast_finish: true
+go:
+    - 1.5
+node_js:
+    - "4.1"
+addons:
+    postgresql: "9.3"
+services:
+    - redis-server
+cache: apt
+before_install:
+    - git clone https://aeb2d033edae71197c4f3258e6361f2bcc73fd18@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - git clone git://github.com/binary-com/helpers ~/travis-perl-helpers
+    - AUTHOR_TESTING=0 source ~/travis-perl-helpers/init
+    - PREBUILT_REPO="git@github.com:binary-com/test-perl.git" build-perl
+    - sudo mkdir -p /etc/rmg; sudo ln -s $(dirname $(which perl)) /etc/rmg/bin
+    - /tmp/travis-scripts/setup_ssh.sh
+
+    - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
+    - /tmp/travis-scripts/fixHostName.sh
+    - /tmp/travis-scripts/postgres.sh
+    - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
+
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
+
+install:
+    - /tmp/travis-scripts/devbox.sh
+    - .  /tmp/travis-scripts/setup_perl5lib.sh
+
+script:
+    - /etc/rmg/bin/prove --timer -lr --exec 'perl -MTest::FailWarnings=-allow_deps,1 -MBOM::Test'  t/
+
+after_script:
+    - /tmp/travis-scripts/wait_for_ssh.sh
