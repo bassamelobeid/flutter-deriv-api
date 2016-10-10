@@ -22,7 +22,7 @@ env:
     - TEST_SUITE=loadtest SH=bash
     - secure: "PVLFC2gYVgnJT45GYcg1fvaCuij9P85sr0h+NZ/CCO9eCqpscBx1NQIGnUa5LgeFIKTr2xJGQ8f/Q4ydkrq1bNkGWvvhtNXBZiK15R7qX3XnyCSOrhmpHsNC/zYmRvl/7tpkR0LAscDGCckUjXjVy6rl1ihgI6QvQTMigS+fNWJaW8zkW10ZV7KAYodOLRRlrFYURZ6FNwNzI3kSXacUhNITs/WsYTMYsOVmagXfRExdUaL8PWMfqXssHGEvsT2IHwk2tWhHujDNdqBPIoyUEQZSIRhq39qJKERukpc1UQEmhCx+P1biYl1ShOY5KHWoFluPdwlAfN1WqeeYQF4jxKpVh5d71paE6K5oBKMsjkcLG3gusJs8y827Iyn3XVaG4WF/3yX63HnpwyIqmUeZvtU28n996zkMYMRSMYLqWnO+5LMIBRxLTDZrNwFHoUZnrRY0GOgba4ERLTk8iblcrW3dYqKkPzFAwMFJfrst12+sLSwa3TvO7IFjnqaCoEuP4l21SrWgzUlf55x+lPsT1JsCV1u1ufZu6uuIBahgiBQrk/c1xKlM019Bc3+TBTP90wEafHr6pKNb4rOQpdyTddFubNFnpQV2WhHxoeuG/Hv32Aiwz/PlsOlr2t9B4a3g1a8UexF8gnHGLCSxVJdiFvbR1RdlkJtbdo3Pf/3Ud+8="
 before_install:
-    - git clone https://d34c443afcc0c115c07590c76f7e3886190b3a76@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - git clone https://aeb2d033edae71197c4f3258e6361f2bcc73fd18@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
     - git clone git://github.com/binary-com/helpers ~/travis-perl-helpers
     - AUTHOR_TESTING=0 source ~/travis-perl-helpers/init
     - PREBUILT_REPO="git@github.com:binary-com/test-perl.git" build-perl
