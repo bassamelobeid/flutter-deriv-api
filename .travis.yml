@@ -48,6 +48,8 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
     - /tmp/travis-scripts/clone_branch.sh binary-com/websocket-bench
     - /tmp/travis-scripts/redis.sh
+    - git clone https://aeb2d033edae71197c4f3258e6361f2bcc73fd18@github.com/evostrov/perl-websocket-tests /tmp/perl-websocket-tests
+    - (cd /tmp/perl-websocket-tests && git checkout evgeniy/remove_bom_prefix)
 
 install:
     - sudo ln -s $PWD /home/git/regentmarkets/bom-websocket-api
@@ -65,8 +67,7 @@ install:
     - .  /tmp/travis-scripts/setup_perl5lib.sh
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
     - perl /home/git/regentmarkets/bom-platform/bin/notify_pub.pl 2>&1 | grep -Ev '(connection has been closed unexpectedly)|(terminating connection due to administrator)' &
-    - perl -MBOM::Test::Data::Utility::UnitTestRedis -e '1'
-    - perl -MBOM::Test /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl  daemon -m production -l http://*:5005/jsonrpc  &
+    - perl /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl  daemon -m production -l http://*:5005/jsonrpc  &
 
 before_script:
     - /tmp/travis-scripts/wait_for_rpc.sh
