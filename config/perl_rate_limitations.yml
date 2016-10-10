@@ -8,17 +8,17 @@ virtual_batch_sell:
     1m: 10
     1h: 300
 websocket_call:
-    1m: 240
-    1h: 14400
+    1m: 5280
+    1h: 316800
 websocket_call_expensive:
-    1m: 60
-    1h: 3600
+    1m: 1320
+    1h: 79200
 websocket_call_pricing:
-    1m: 60
-    1h: 3600
+    1m: 1320
+    1h: 79200
 websocket_call_email:
     1m: 3
     1h: 180
 websocket_real_pricing:
-    1m: 240
-    1h: 14400
+    1m: 5280
+    1h: 316800

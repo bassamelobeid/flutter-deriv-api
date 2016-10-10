@@ -248,6 +248,7 @@
       - Japan
     fax: +81 3 4333 0208
     country: Japan
+    legal_allowed_offerings: japan
     legal_allowed_currencies:
       - JPY
     legal_allowed_markets:
@@ -283,7 +284,8 @@
 'Binary Virtual Japan':
     short: japan-virtual
     fax: +81 3 4333 0208
-    country: Antarctica
+    country: Japan
+    legal_allowed_offerings: japan
     legal_allowed_currencies:
       - JPY
     legal_allowed_markets:
