@@ -32,7 +32,7 @@ use BOM::Database::Model::DataCollection::QuantsBetVariables;
 use BOM::Database::Model::Constants;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::Helper::RejectedTrade;
-use BOM::Product::Offerings qw/get_offerings_with_filter/;
+use BOM::Platform::Offerings qw/get_offerings_with_filter/;
 use BOM::Platform::LandingCompany::Registry;
 use BOM::Database::ClientDB;
 
