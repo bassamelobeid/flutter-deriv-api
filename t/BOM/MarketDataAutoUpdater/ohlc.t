@@ -9,6 +9,10 @@ use Date::Utility;
 use BOM::MarketDataAutoUpdater::OHLC;
 use Test::MockObject::Extends;
 use Test::MockModule;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 my $abspath   = rel2abs((splitpath(__FILE__))[1]);
 my $data_path = $abspath . '/../../data/bbdl/ohlc';
 my $module    = Test::MockModule->new('Quant::Framework::Underlying');

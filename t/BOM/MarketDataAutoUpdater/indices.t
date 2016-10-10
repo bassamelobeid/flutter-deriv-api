@@ -12,6 +12,10 @@ use Date::Utility;
 use File::Temp;
 use File::Basename qw(dirname);
 use BOM::MarketDataAutoUpdater::Indices;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -28,10 +32,10 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 my $test_surface = Quant::Framework::Utils::Test::create_doc(
     'volsurface_moneyness',
     {
-        underlying_config        => create_underlying('TOP40')->config,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
-        recorded_date => Date::Utility->new,
+        underlying_config => create_underlying('TOP40')->config,
+        chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader,
+        chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer,
+        recorded_date     => Date::Utility->new,
     });
 
 subtest 'more than 4 hours old' => sub {
@@ -61,10 +65,10 @@ subtest 'surface has not change' => sub {
     my $existing_surface = Quant::Framework::Utils::Test::create_doc(
         'volsurface_moneyness',
         {
-          underlying_config        => create_underlying('TOP40')->config,
-          chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
-          chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
-          recorded_date => Date::Utility->new(Date::Utility->new - 18000),
+            underlying_config => create_underlying('TOP40')->config,
+            chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader,
+            chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer,
+            recorded_date     => Date::Utility->new(Date::Utility->new - 18000),
         });
     my $au = BOM::MarketDataAutoUpdater::Indices->new(
         file               => $test_file,

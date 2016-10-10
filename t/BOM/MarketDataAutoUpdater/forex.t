@@ -15,8 +15,9 @@ use JSON qw(decode_json);
 
 use Postgres::FeedDB::Spot;
 my $module = Test::MockModule->new('Postgres::FeedDB::Spot');
-$module->mock('spot_tick', 
-    sub { 
+$module->mock(
+    'spot_tick',
+    sub {
         my $self = shift;
         return Postgres::FeedDB::Spot::Tick->new({
             epoch => time,
@@ -24,16 +25,17 @@ $module->mock('spot_tick',
         });
     });
 
-
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::MarketDataAutoUpdater::Forex;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 
 # Prep:
 my $fake_date = Date::Utility->new('2012-08-13 15:55:55');
 set_absolute_time($fake_date->epoch);
-
-
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',

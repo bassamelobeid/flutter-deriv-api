@@ -21,7 +21,7 @@ use Date::Utility;
 use Try::Tiny;
 use File::Find::Rule;
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Utils;

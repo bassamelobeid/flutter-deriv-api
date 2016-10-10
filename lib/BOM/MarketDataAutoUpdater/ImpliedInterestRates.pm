@@ -8,7 +8,7 @@ use Text::CSV::Slurp;
 
 use Format::Util::Numbers qw(roundnear);
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use BOM::System::Chronicle;
 use Bloomberg::FileDownloader;
 use BOM::Platform::Runtime;

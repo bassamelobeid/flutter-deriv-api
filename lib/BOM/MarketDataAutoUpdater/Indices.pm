@@ -14,7 +14,7 @@ use Moose;
 extends 'BOM::MarketDataAutoUpdater';
 
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use BOM::Platform::Runtime;
 use BOM::MarketData qw(create_underlying_db);
 use SuperDerivatives::VolSurface;
