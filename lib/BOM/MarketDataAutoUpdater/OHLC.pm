@@ -8,6 +8,7 @@ use File::Slurp;
 
 use Date::Utility;
 use Finance::Asset::Market::Registry;
+use BOM::MarketData qw(create_underlying);
 use BOM::MarketData qw(create_underlying_db);
 use BOM::Platform::Runtime;
 use Bloomberg::FileDownloader;
