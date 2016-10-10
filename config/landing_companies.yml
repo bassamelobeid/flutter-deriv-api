@@ -282,7 +282,7 @@
     legal_default_currency: JPY
     has_reality_check: 0
 'Binary Virtual Japan':
-    short: japanvirtual
+    short: japan-virtual
     fax: +81 3 4333 0208
     country: Japan
     legal_allowed_offerings: japan

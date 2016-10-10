@@ -17,7 +17,7 @@ subtest 'legal_allowed_offerings' => sub {
         costarica => 'common',
         virtual => 'common',
         japan => 'japan',
-        'japanvirtual' => 'japan',
+        'japan-virtual' => 'japan',
         vanuatu => 'common',
     );
     for (@lc) {
