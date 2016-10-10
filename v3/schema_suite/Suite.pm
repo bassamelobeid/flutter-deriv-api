@@ -294,7 +294,6 @@ sub _test_schema {
             diag " - $_" foreach $result->errors;
         }
     }
-    return;
 }
 
 # fetch the token related to a specific email
