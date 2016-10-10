@@ -47,9 +47,9 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/php-mt5-webapi
     - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
     - /tmp/travis-scripts/clone_branch.sh binary-com/websocket-bench
-    - /tmp/travis-scripts/redis.sh
     - git clone https://aeb2d033edae71197c4f3258e6361f2bcc73fd18@github.com/evostrov/perl-websocket-tests /tmp/perl-websocket-tests
     - (cd /tmp/perl-websocket-tests && git checkout evgeniy/remove_bom_prefix)
+    - /tmp/travis-scripts/redis.sh
 
 install:
     - sudo ln -s $PWD /home/git/regentmarkets/bom-websocket-api
