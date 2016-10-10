@@ -18,6 +18,10 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Database::Model::OAuth;
 use Data::Dumper;
 
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 use Quant::Framework::CorporateAction;
 use Quant::Framework::StorageAccessor;
 use Quant::Framework::Utils::Test;

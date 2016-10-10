@@ -14,6 +14,10 @@ use Data::Dumper;
 use Quant::Framework::Utils::Test;
 use Quant::Framework::CorporateAction;
 use Quant::Framework::StorageAccessor;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 
 use BOM::RPC::v3::Contract;
 use BOM::Platform::Context qw (request);

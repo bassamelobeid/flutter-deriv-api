@@ -20,6 +20,10 @@ use BOM::Database::Model::AccessToken;
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Database::Model::OAuth;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 
 use utf8;
 
