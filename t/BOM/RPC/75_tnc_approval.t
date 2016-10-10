@@ -52,7 +52,7 @@ $version = 2;
 
 $res = BOM::RPC::v3::Static::website_status({country_code => ''});
 is $res->{terms_conditions_version}, 'version 2', 'version 2';
-is @{$res->{supported_languages}}, @{BOM::Platform::Runtime->instance->app_config->cgi->supported_languages}, 'Correct supported languages';
+is_deeply $res->{supported_languages}, BOM::Platform::Runtime->instance->app_config->cgi->supported_languages, 'Correct supported languages';
 
 $res = BOM::RPC::v3::Accounts::tnc_approval({client => $test_client});
 is_deeply $res, {status => 1};
