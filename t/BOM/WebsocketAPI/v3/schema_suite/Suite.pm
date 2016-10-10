@@ -399,7 +399,8 @@ sub _setup_market_data {
         canonical => 1,
     });
     my $redis = Cache::RedisDB->redis;
-    while (my ($key, $ticks) = each %$tick_data) {
+    for my $key (sort keys %$tick_data) {
+        my $ticks = $tick_data->{$key};
         $redis->zadd($key, $_->{epoch}, $encoder->encode($_)) for @$ticks;
     }
 
