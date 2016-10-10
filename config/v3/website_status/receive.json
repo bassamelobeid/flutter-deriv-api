@@ -26,7 +26,7 @@
         },
         "supported_languages": {
           "type": "array",
-          "description": "Provides iso codes for languages supported",
+          "description": "Provides codes for languages supported",
           "items": {
             "type": "string"
           }
