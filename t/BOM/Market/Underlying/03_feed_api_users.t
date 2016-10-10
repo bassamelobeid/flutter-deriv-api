@@ -398,7 +398,8 @@ subtest 'tick_at scenarios' => sub {
             my $test_time = $first_tick_date->plus_time_interval('2m');
 
             ok !$underlying->spot_source->tick_at($test_time), 'No price as we are not sure if there is another tick coming';
-            is $underlying->spot_source->tick_at($test_time, {allow_inconsistent => 1})->quote, 6080.73, 'If we are ok with inconsistent price then get our tick';
+            is $underlying->spot_source->tick_at($test_time, {allow_inconsistent => 1})->quote, 6080.73,
+                'If we are ok with inconsistent price then get our tick';
         };
 
         subtest 'tick at exact time' => sub {
@@ -418,7 +419,8 @@ subtest 'tick_at scenarios' => sub {
             my $test_time = $first_tick_date->plus_time_interval('2m');
 
             is $underlying->spot_source->tick_at($test_time)->quote, 6080.73, 'Get our first added tick';
-            is $underlying->spot_source->tick_at($test_time->epoch, {allow_inconsistent => 1})->quote, 6080.73, '... and possibly inconsistent is the same';
+            is $underlying->spot_source->tick_at($test_time->epoch, {allow_inconsistent => 1})->quote, 6080.73,
+                '... and possibly inconsistent is the same';
         };
     };
 
@@ -533,9 +535,8 @@ subtest 'get_ohlc_data_for_period' => sub {
     };
 };
 
-
 sub check_new_ok {
-    my $module = shift;
+    my $module  = shift;
     my $ul_args = shift;
 
     return create_underlying($ul_args->[0]);

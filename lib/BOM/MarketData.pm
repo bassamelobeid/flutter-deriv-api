@@ -24,7 +24,7 @@ sub create_underlying {
         $args->{symbol} = $symbol;
     }
 
-    $for_date = $args->{for_date} if ( exists $args->{for_date} ) and not $for_date;
+    $for_date = $args->{for_date} if (exists $args->{for_date}) and not $for_date;
 
     $args->{chronicle_reader} = BOM::System::Chronicle::get_chronicle_reader($for_date);
     $args->{chronicle_writer} = BOM::System::Chronicle::get_chronicle_writer();

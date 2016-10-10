@@ -109,7 +109,6 @@ subtest 'display_decimals' => sub {
         is $r100->dividend_rate_for(0.5), 0, 'correct dividend rate';
         is $r100->dividend_rate_for(1.0), 0, 'correct dividend rate';
 
-
         my $rdbull = create_underlying({symbol => 'RDBULL'});
         is $rdbull->dividend_rate_for(0.5), -35, 'correct dividend rate';
         is $rdbull->dividend_rate_for(1.0), -35, 'correct dividend rate';
@@ -142,7 +141,10 @@ subtest 'display_decimals' => sub {
         }
 
         my $stock = create_underlying({symbol => 'USAAPL'});
-        $stock->set_combined_realtime({epoch => time, quote => 8});
+        $stock->set_combined_realtime({
+            epoch => time,
+            quote => 8
+        });
         is roundnear(0.0001, $stock->dividend_rate_for(0.5)), 0.0103, 'correct dividend rate for stocks';
         is $stock->dividend_rate_for(1.0), 0.0073, 'correct dividend rate for stocks';
         Cache::RedisDB->del('QUOTE', $stock->symbol);
@@ -151,8 +153,7 @@ subtest 'display_decimals' => sub {
 
 subtest 'all attributes on a variety of underlyings' => sub {
     # In case we want to randomly select symbols later, there's this:
-    my @symbols =
-        ('frxUSDZAR', 'GDAXI', 'HSI', 'FRXUSDJPY', 'frxEURUSD', 'frxXAUUSD', 'R_100', 'frxHKDUSD', 'frxUSDEUR', 'FUTHSI_BOM', 'frxNZDAUD',);
+    my @symbols = ('frxUSDZAR', 'GDAXI', 'HSI', 'FRXUSDJPY', 'frxEURUSD', 'frxXAUUSD', 'R_100', 'frxHKDUSD', 'frxUSDEUR', 'FUTHSI_BOM', 'frxNZDAUD',);
     foreach my $symbol (@symbols) {
 
         my $underlying = create_underlying($symbol);
@@ -226,7 +227,10 @@ subtest 'all attributes on a variety of underlyings' => sub {
         is((scalar grep { exists $underlying->market_convention->{$_} } qw(delta_style delta_premium_adjusted)),
             2, ' with at least the minimal key set');
 
-        $underlying->set_combined_realtime({epoch => time, quote => 8});
+        $underlying->set_combined_realtime({
+            epoch => time,
+            quote => 8
+        });
         ok(looks_like_number($underlying->_builder->build_trading_calendar->closed_weight), 'Closed weight is numeric');
         Cache::RedisDB->del('QUOTE', $underlying->symbol);
         cmp_ok($underlying->_builder->build_trading_calendar->closed_weight, '>=', 0, ' nonnegative');
@@ -458,7 +462,7 @@ subtest 'all methods on a selection of underlyings' => sub {
     }
     'Preparing ohlc';
 
-    is($EURUSD->system_symbol,  $EURUSD->symbol, 'System symbol and symbol are same for non-inverted');
+    is($EURUSD->system_symbol, $EURUSD->symbol, 'System symbol and symbol are same for non-inverted');
     isnt($USDEUR->system_symbol, $USDEUR->symbol, ' and different for inverted');
 
     is($AS51->exchange->symbol, $AS51->exchange_name, 'Got our exchange from the provided name');
@@ -481,13 +485,14 @@ subtest 'all methods on a selection of underlyings' => sub {
     my $test_date = $oldEU->for_date;
 
     is($EURUSD->spot_source->tick_at($test_date->epoch)->quote, '1.2859', 'spot_source->tick_at has some value');
-    cmp_ok($EURUSD->spot_source->tick_at($test_date->epoch)->quote, '==', $oldEU->spot, 'Spot for wormholed underlying and tick_at on standard underlying match');
+    cmp_ok($EURUSD->spot_source->tick_at($test_date->epoch)->quote,
+        '==', $oldEU->spot, 'Spot for wormholed underlying and tick_at on standard underlying match');
 
     cmp_ok($EURUSD->spot_source->spot_tick->epoch, '>',  $test_date->epoch, 'current spot is newer than the wormhole date');
     cmp_ok($oldEU->spot_source->spot_tick->epoch,  '<=', $test_date->epoch, ' plus, spot_tick for old EURUSD is NOT');
     cmp_ok($oldEU->spot_source->spot_tick->epoch,  '==', 1326957371,        ' in fact, it is exactly the time we expect');
 
-    cmp_ok($oldEU->spot,                               '==', 1.2859,           'spot for old EURUSD is correct');
+    cmp_ok($oldEU->spot,                                            '==', 1.2859,           'spot for old EURUSD is correct');
     cmp_ok($USDEUR->spot_source->tick_at($test_date->epoch)->quote, '==', 1 / $oldEU->spot, 'And the inverted underlying is flipped');
     my $next_tick     = $EURUSD->next_tick_after($test_date->epoch);
     my $inverted_next = $USDEUR->next_tick_after($test_date->epoch);
@@ -504,12 +509,10 @@ subtest 'all methods on a selection of underlyings' => sub {
         is($EURUSD->spot_source->tick_at(1242022222), undef, 'Undefined prices way in history when no data');
     };
 
-    my $eod =
-        Quant::Framework::TradingCalendar->new({
-                symbol => 'NYSE',
-                underlying_config => create_underlying('DJI')->config,
-                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader()
-        })->closing_on(Date::Utility->new('2016-04-05'));
+    my $eod = Quant::Framework::TradingCalendar->new({
+            symbol            => 'NYSE',
+            underlying_config => create_underlying('DJI')->config,
+            chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader()})->closing_on(Date::Utility->new('2016-04-05'));
     foreach my $pair (qw(frxUSDJPY frxEURUSD frxAUDUSD)) {
         my $worm = create_underlying($pair, $eod->minus_time_interval('1s'));
         is($worm->is_in_quiet_period, 0, $worm->symbol . ' not in a quiet period before New York closes');
@@ -518,29 +521,32 @@ subtest 'all methods on a selection of underlyings' => sub {
     }
 
     Quant::Framework::Utils::Test::create_doc(
-      'volsurface_delta',
-      {
-        underlying_config        => create_underlying('frxEURUSD')->config,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-        recorded_date => Date::Utility->new,
-      });
+        'volsurface_delta',
+        {
+            underlying_config => create_underlying('frxEURUSD')->config,
+            chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
+            recorded_date     => Date::Utility->new,
+        });
 
-    my $today = Date::Utility->today;
+    my $today  = Date::Utility->today;
     my $audusd = create_underlying('frxAUDUSD');
     foreach my $ul ($AS51, $audusd) {
         my $prev_weight = 0;
-        my $builder = Quant::Framework::Utils::Builder->new({
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        my $builder     = Quant::Framework::Utils::Builder->new({
+            chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
             underlying_config => $ul->config,
-          });
+        });
         foreach my $days_hence (1 .. 7) {
             my $test_day      = $today->plus_time_interval($days_hence . 'd');
             my $day_weight    = $builder->build_trading_calendar->weight_on($test_day);
             my $period_weight = $builder->build_trading_calendar->weighted_days_in_period($today, $test_day);
-            cmp_ok($day_weight, '>=', $builder->build_trading_calendar->closed_weight,
-                $ul->display_name . ' weight for ' . $test_day->date . ' is at least as big as the closed weight');
+            cmp_ok(
+                $day_weight, '>=',
+                $builder->build_trading_calendar->closed_weight,
+                $ul->display_name . ' weight for ' . $test_day->date . ' is at least as big as the closed weight'
+            );
             cmp_ok($day_weight, '<=', 1, 'And no larger than 1');
             cmp_ok(
                 roundnear(0.01, $period_weight - $prev_weight),
@@ -661,11 +667,11 @@ subtest 'last_licensed_display_epoch' => sub {
 };
 
 subtest 'risk type' => sub {
-    is (create_underlying('frxUSDJPY')->risk_profile, 'medium_risk', 'USDJPY is medium risk');
-    is (create_underlying('frxAUDCAD')->risk_profile, 'high_risk', 'AUDCAD is high risk');
-    is (create_underlying('AEX')->risk_profile, 'medium_risk', 'AEX is medium risk');
-    is (create_underlying('frxXAUUSD')->risk_profile, 'high_risk', 'XAUUSD is high risk');
-    is (create_underlying('R_100')->risk_profile, 'low_risk', 'R_100 is low risk');
+    is(create_underlying('frxUSDJPY')->risk_profile, 'medium_risk', 'USDJPY is medium risk');
+    is(create_underlying('frxAUDCAD')->risk_profile, 'high_risk',   'AUDCAD is high risk');
+    is(create_underlying('AEX')->risk_profile,       'medium_risk', 'AEX is medium risk');
+    is(create_underlying('frxXAUUSD')->risk_profile, 'high_risk',   'XAUUSD is high risk');
+    is(create_underlying('R_100')->risk_profile,     'low_risk',    'R_100 is low risk');
 };
 
 done_testing;

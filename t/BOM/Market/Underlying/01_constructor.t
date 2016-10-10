@@ -44,12 +44,9 @@ isnt $forex, $index,  'But different from index';
 new_ok('Quant::Framework::Underlying' => [$unknown_symbol]);
 new_ok('Quant::Framework::Underlying' => [$unknown_symbol, $yesterday]);
 
-
 throws_ok { create_underlying } qr/No symbol provided to constructor/, 'Can not construct without symbol';
-throws_ok { create_underlying({sym => $forex_symbol}) } qr/No symbol provided to constructor/,
-    'Can not construct via hashref without symbol';
-throws_ok { create_underlying($forex_symbol, time) } qr/Attribute \(for_date\) does not pass the type constraint/,
-    'for_date must be Date::Utility';
+throws_ok { create_underlying({sym => $forex_symbol}) } qr/No symbol provided to constructor/, 'Can not construct via hashref without symbol';
+throws_ok { create_underlying($forex_symbol, time) } qr/Attribute \(for_date\) does not pass the type constraint/, 'for_date must be Date::Utility';
 
 new_ok(
     'Quant::Framework::Underlying' => [{
@@ -76,8 +73,7 @@ new_ok(
 throws_ok { create_underlying({symbol => $unknown_symbol, market => 'bomba'}) } qr/Attribute \(market\) does not pass the type constraint/;
 
 my $fake_market = Date::Utility->new();
-throws_ok { create_underlying({symbol => $unknown_symbol, market => $fake_market}) }
-qr/Attribute \(market\) does not pass the type constraint/;
+throws_ok { create_underlying({symbol => $unknown_symbol, market => $fake_market}) } qr/Attribute \(market\) does not pass the type constraint/;
 new_ok(
     'Quant::Framework::Underlying' => [{
             symbol => 'frxUSDJPY',

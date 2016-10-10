@@ -138,7 +138,7 @@ subtest 'closing_tick_on - unofficial OHLC' => sub {
 };
 
 sub check_new_ok {
-    my $module = shift;
+    my $module  = shift;
     my $ul_args = shift;
 
     return create_underlying($ul_args->[0]);
