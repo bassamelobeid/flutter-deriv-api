@@ -12,9 +12,9 @@ use Cache::RedisDB;
 use BOM::Platform::Runtime;
 use BOM::Platform::Offerings qw(get_offerings_flyby get_offerings_with_filter);
 
-my @expected_lc   = qw(japanvirtual virtual costarica maltainvest japan malta iom);
+my @expected_lc   = qw(japan-virtual virtual costarica maltainvest japan malta iom);
 my %expected_type = (
-    'japanvirtual' => ['CALLE', 'NOTOUCH', 'ONETOUCH', 'PUT', 'RANGE', 'UPORDOWN', 'EXPIRYRANGEE', 'EXPIRYMISS'],
+    'japan-virtual' => ['CALLE', 'NOTOUCH', 'ONETOUCH', 'PUT', 'RANGE', 'UPORDOWN', 'EXPIRYRANGEE', 'EXPIRYMISS'],
     virtual         => [
         'ASIAND',   'ASIANU',    'CALL',       'DIGITDIFF',  'DIGITEVEN',   'DIGITMATCH',
         'DIGITODD', 'DIGITOVER', 'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',
@@ -40,7 +40,7 @@ my %expected_type = (
 
 );
 my %expected_market = (
-    'japanvirtual' => ['forex'],
+    'japan-virtual' => ['forex'],
     japan           => ['forex'],
     virtual         => ['commodities', 'forex', 'indices', 'volidx', 'stocks'],
     costarica       => ['commodities', 'forex', 'indices', 'volidx', 'stocks'],
@@ -87,7 +87,7 @@ subtest 'offerings check' => sub {
             'volidx',     => 0,
             'stocks'      => 0
         },
-        'japanvirtual' => {
+        'japan-virtual' => {
             'commodities' => 0,
             'forex'       => 1,
             'indices'     => 0,
@@ -252,7 +252,7 @@ subtest 'legal allowed underlyings' => sub {
     );
     my %expected_list = (
         japan           => [qw(frxAUDJPY frxAUDUSD frxEURGBP frxEURJPY frxEURUSD frxGBPJPY frxGBPUSD frxUSDCAD frxUSDJPY)],
-        'japanvirtual' => [qw(frxAUDJPY frxAUDUSD frxEURGBP frxEURJPY frxEURUSD frxGBPJPY frxGBPUSD frxUSDCAD frxUSDJPY)],
+        'japan-virtual' => [qw(frxAUDJPY frxAUDUSD frxEURGBP frxEURJPY frxEURUSD frxGBPJPY frxGBPUSD frxUSDCAD frxUSDJPY)],
         malta           => [@random],
         maltainvest     => [@non_random],
         iom             => [@random, @non_random],
