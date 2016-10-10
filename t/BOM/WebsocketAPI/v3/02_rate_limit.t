@@ -40,7 +40,7 @@ ok(BOM::WebSocketAPI::Hooks::reached_limit_check(1, 'proposal', 0)) or die "here
 {
     my $i = 0;
     my $failed;
-    while($i < 5000) {
+    while ($i < 5000) {
         $failed = $_ for grep BOM::WebSocketAPI::Hooks::reached_limit_check(1, $_, 0), qw(portfolio profit_table);
         last if $failed;
         ++$i;
@@ -70,12 +70,8 @@ is $res->{error}->{code}, 'RateLimit';
 {
     my $res2;
     my $i = 0;
-    while($i < 10000) {
-        $t->tx->send({
-            json => {
-                payout_currencies => 1 
-            }
-        }, sub { Mojo::IOLoop->stop });
+    while ($i < 10000) {
+        $t->tx->send({json => {payout_currencies => 1}}, sub { Mojo::IOLoop->stop });
         Mojo::IOLoop->start;
         note "still waiting after $i iterations" unless $i % 100;
         $res2 = decode_json($t->_wait->[1]);
