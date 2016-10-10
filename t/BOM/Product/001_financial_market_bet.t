@@ -10,6 +10,10 @@ use BOM::Database::Model::FinancialMarketBet;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Postgres::FeedDB::Spot::Tick;
 use BOM::Database::Helper::FinancialMarketBet;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 
 use BOM::Platform::Client;
 use BOM::Product::Transaction;
