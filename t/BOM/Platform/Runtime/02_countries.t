@@ -101,7 +101,7 @@ subtest 'japan' => sub {
 
     is(BOM::Platform::Countries->instance->restricted_country($c),                    !1,              '! restricted_country');
     is(BOM::Platform::Countries->instance->volidx_restricted_country($c),             1,               'volidx_restricted_country');
-    is(BOM::Platform::Countries->instance->virtual_company_for_country($c),           'japan-virtual', 'virtual_company_for_country');
+    is(BOM::Platform::Countries->instance->virtual_company_for_country($c),           'japanvirtual', 'virtual_company_for_country');
     is(BOM::Platform::Countries->instance->gaming_company_for_country($c),            undef,           '! gaming_company_for_country');
     is(BOM::Platform::Countries->instance->financial_binaries_restricted_country($c), !1,              '!financial_binaries _restricted_country');
     is(BOM::Platform::Countries->instance->financial_company_for_country($c),         'japan',         'financial_company_for_country');
