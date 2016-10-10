@@ -15,7 +15,7 @@ use BOM::MarketData::Types;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
-use BOM::Product::Offerings qw(get_offerings_with_filter);
+use BOM::Platform::Offerings qw(get_offerings_with_filter);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Format::Util::Numbers qw(roundnear);
@@ -189,15 +189,16 @@ sub _get_ask {
 
 sub get_bid {
     my $params = shift;
-    my ($short_code, $contract_id, $currency, $is_sold, $sell_time, $buy_price, $sell_price, $app_markup_percentage) =
-        @{$params}{qw/short_code contract_id currency is_sold sell_time buy_price sell_price app_markup_percentage/};
+    my ($short_code, $contract_id, $currency, $is_sold, $sell_time, $buy_price, $sell_price, $app_markup_percentage, $landing_company) =
+        @{$params}{qw/short_code contract_id currency is_sold sell_time buy_price sell_price app_markup_percentage landing_company/};
 
     my $response;
     try {
         my $tv = [Time::HiRes::gettimeofday];
         my $bet_params = shortcode_to_parameters($short_code, $currency);
-        $bet_params->{is_sold} = $is_sold;
+        $bet_params->{is_sold}               = $is_sold;
         $bet_params->{app_markup_percentage} = $app_markup_percentage // 0;
+        $bet_params->{landing_company}       = $landing_company;
         my $contract = produce_contract($bet_params);
 
         if ($contract->is_legacy) {
@@ -361,6 +362,9 @@ sub send_bid {
 sub send_ask {
     my $params = shift;
 
+    # provide landing_company information when it is available.
+    $params->{args}->{landing_company} = $params->{landing_company} if $params->{landing_company};
+
     my $symbol   = $params->{args}->{symbol};
     my $response = validate_symbol($symbol);
     if ($response and exists $response->{error}) {
@@ -402,6 +406,7 @@ sub get_contract_details {
     try {
         my $bet_params = shortcode_to_parameters($params->{short_code}, $params->{currency});
         $bet_params->{app_markup_percentage} = $params->{app_markup_percentage} // 0;
+        $bet_params->{landing_company} = $client->landing_company->short;
 
         my $contract = produce_contract($bet_params);
 
@@ -422,12 +427,6 @@ sub get_contract_details {
     return $response;
 }
 
-sub create_contract {
-    my $contract_parameters = shift;
-
-    return produce_contract($contract_parameters);
-}
-
 sub _log_exception {
     my ($component, $err) = @_;
     # so this should never happen, because we're passing fixed strings and only in this module,
@@ -437,5 +436,4 @@ sub _log_exception {
     stats_inc('contract.exception.' . $component);
     return;
 }
-
 1;
