@@ -37,7 +37,7 @@ Frequency of this script being called: 00GMT on daily basic
 
 Input: www.forexfactory.com
 
-Output: Chronicle
+Output: category='economic_events'at Chronicle
 
 (3) bin/update_corp_actions.pl
 
