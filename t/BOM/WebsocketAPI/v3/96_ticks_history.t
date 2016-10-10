@@ -8,7 +8,8 @@ use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
 
 my $now = Date::Utility->new('2012-03-14 07:00:00');
 set_fixed_time($now->epoch);
@@ -53,7 +54,7 @@ subtest 'call_ticks_history' => sub {
         subscribe     => 1
     };
 
-    my $is_open = BOM::Market::Underlying->new('frxUSDJPY')->calendar->is_open;
+    my $is_open = create_underlying('frxUSDJPY')->calendar->is_open;
 
     $t->send_ok({json => $req_storage});
     $t   = $t->message_ok;
