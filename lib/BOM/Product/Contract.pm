@@ -914,8 +914,6 @@ sub _build_price_calculator {
     my $self = shift;
 
     return Price::Calculator->new({
-            # apply flooring on ask_probability in inefficient period for ATMs.
-            (($self->apply_market_inefficient_limit and $self->is_atm_bet) ? (minimum_ask_probability => 0.7) : ()),
             currency                => $self->currency,
             deep_otm_threshold      => $self->market->deep_otm_threshold,
             maximum_total_markup    => BOM::System::Config::quants->{commission}->{maximum_total_markup},
@@ -934,6 +932,8 @@ sub _build_price_calculator {
             ($self->has_ask_probability)        ? (ask_probability        => $self->ask_probability)        : (),
             ($self->has_bs_probability)         ? (bs_probability         => $self->bs_probability)         : (),
             ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
+            # apply flooring on ask_probability in inefficient period for ATMs.
+            (($self->apply_market_inefficient_limit and $self->is_atm_bet) ? (minimum_ask_probability => 0.7) : ()),
         });
 }
 
