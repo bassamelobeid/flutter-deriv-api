@@ -73,7 +73,6 @@ sub test_schema {
         diag Dumper(\$data);
         diag " - $_" foreach $result->errors;
     }
-    return;
 }
 
 sub build_test_R_50_data {
@@ -86,7 +85,6 @@ sub build_test_R_50_data {
             symbol => 'R_50',
             date   => Date::Utility->new
         });
-    return;
 }
 
 sub create_test_user {
