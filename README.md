@@ -94,7 +94,7 @@ Input:
 interest rates file type from Bloomberg::FileDownloaderBloomberg e.g. interest_rate.csv 
 forward rates file type from Bloomberg::FileDownloaderBloomberg forward_rates.csv 
 
-Output: Chronicle
+Output: 'interest_rates' at Chronicle
 
 (6) bin/update_smartfx_rate.pl
 
