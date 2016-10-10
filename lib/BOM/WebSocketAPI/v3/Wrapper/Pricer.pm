@@ -457,9 +457,9 @@ sub _create_error_message {
     my ($c, $type, $response, $stash_data) = @_;
     my ($err_code, $err_message, $err_details);
 
-    unless ($response->{error} and $response->{error}->{message} eq 'stake same as payout') {
-        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid}) if $stash_data->{uuid};
-    }
+    #unless ($response->{error} and $response->{error}->{message} eq 'stake same as payout') {
+    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid}) if $stash_data->{uuid};
+    #}
 
     if ($response->{error}) {
         $err_code    = $response->{error}->{code};
