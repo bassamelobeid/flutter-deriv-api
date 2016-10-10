@@ -11,8 +11,9 @@ use TestHelper qw/test_schema build_mojo_test/;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types; 
 
-my $now = Date::Utility->new('2012-03-14 07:00:00');
-set_fixed_time($now->epoch);
+my $time      = Date::Utility->new;
+my $test_date = Date::Utility->new('2012-03-14 07:00:00');
+set_fixed_time($test_date->epoch);
 
 my $t = build_mojo_test();
 my ($req_storage, $res, $start, $end);
@@ -44,7 +45,7 @@ subtest 'validations' => sub {
 };
 
 subtest 'call_ticks_history' => sub {
-    my $start = $now->minus_time_interval('7h');
+    my $start = $test_date->minus_time_interval('7h');
     my $end   = $start->plus_time_interval('1m');
     $req_storage = {
         ticks_history => 'frxUSDJPY',
@@ -54,7 +55,7 @@ subtest 'call_ticks_history' => sub {
         subscribe     => 1
     };
 
-    my $is_open = create_underlying('frxUSDJPY')->calendar->is_open;
+    my $is_open = create_underlying('frxUSDJPY')->calendar->is_open_at($time);
 
     $t->send_ok({json => $req_storage});
     $t   = $t->message_ok;
