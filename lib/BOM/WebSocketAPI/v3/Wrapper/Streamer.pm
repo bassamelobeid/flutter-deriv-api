@@ -10,7 +10,7 @@ use List::MoreUtils qw(last_index);
 use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use Time::HiRes qw(gettimeofday);

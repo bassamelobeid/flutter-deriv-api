@@ -14,6 +14,10 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Transaction;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 
 my $t = build_mojo_test({language => 'EN'});
 
