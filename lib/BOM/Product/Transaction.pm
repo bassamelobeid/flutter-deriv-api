@@ -1351,7 +1351,7 @@ sub _validate_sell_pricing_adjustment {
             #Record failed transaction here.
             my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
                     login_id                => $self->client->loginid,
-                    financial_market_bet_id => $self->financial_market_bet_id,
+                    financial_market_bet_id => $self->contract_id,
                     shortcode               => $self->contract->shortcode,
                     action_type             => 'sell',
                     reason                  => 'SLIPPAGE',
