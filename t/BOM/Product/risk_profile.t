@@ -5,7 +5,7 @@ use warnings;
 
 use Test::More tests => 7;
 use Test::Exception;
-
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Product::RiskProfile;
 use BOM::Platform::Runtime;
 
@@ -19,6 +19,7 @@ subtest 'init' => sub {
             expiry_type       => 'tick',
             currency          => 'USD',
             barrier_category  => 'euro_atm',
+            landing_company   => 'costarica',
             )
     }
     'ok if required args provided';
@@ -31,7 +32,9 @@ my %args = (
     expiry_type       => 'tick',
     currency          => 'USD',
     barrier_category  => 'euro_atm',
+    landing_company   => 'costarica',
 );
+
 subtest 'get_risk_profile' => sub {
     note("no custom profile set, gets the default risk profile for underlying");
     my $rp = BOM::Product::RiskProfile->new(%args);
@@ -56,6 +59,21 @@ subtest 'get_risk_profile' => sub {
     is $limit->[0]->{risk_profile}, 'no_business',                'risk_profile is no business';
     is $limit->[0]->{market},       'forex',                      'market specific';
 
+    note("set custom_product_profiles to no_business for landing_company japan");
+    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+        '{"xxx": {"landing_company": "japan", "risk_profile": "no_business", "name": "test japan"}}');
+    $rp = BOM::Product::RiskProfile->new(%args);
+    is $rp->get_risk_profile, 'medium_risk', 'default medium_risk profile received because mismatch of landing_company';
+    $limit = $rp->custom_profiles;
+    is scalar(@$limit), 1, 'only one profile';
+    $rp = BOM::Product::RiskProfile->new(%args, landing_company => 'japan');
+    my $jp = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'JP'});
+    my @cp = $rp->get_client_profiles($jp);
+    is $rp->get_risk_profile(\@cp), 'no_business', 'no_business overrides default medium_risk profile when landing_company matches';
+    $limit = $rp->custom_profiles;
+    is scalar(@$limit), 1, 'only one profile from custom';
+    is scalar(@cp),     1, 'one from client';
+
     $args{underlying} = BOM::Market::Underlying->new('R_100');
     $rp = BOM::Product::RiskProfile->new(%args);
     is $rp->get_risk_profile, 'low_risk', 'low risk is default for volatility index';
@@ -68,12 +86,20 @@ subtest 'get_risk_profile' => sub {
 
 subtest 'custom client profile' => sub {
     note("set volatility index to no business for client XYZ");
+    my $cr_valid = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        loginid     => 'CR1'
+    });
+    my $cr_invalid = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        loginid     => 'CR2'
+    });
     BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(
-        '{"XYZ": {"reason": "test XYZ", "custom_limits": {"xxx": {"market": "volidx", "risk_profile": "no_business", "name": "test custom"}}}}');
+        '{"CR1": {"reason": "test XYZ", "custom_limits": {"xxx": {"market": "volidx", "risk_profile": "no_business", "name": "test custom"}}}}');
     my $rp    = BOM::Product::RiskProfile->new(%args);
-    my @cl_pr = $rp->get_client_profiles('ABC');
+    my @cl_pr = $rp->get_client_profiles($cr_invalid);
     ok !@cl_pr, 'no custom client limit';
-    @cl_pr = $rp->get_client_profiles('XYZ');
+    @cl_pr = $rp->get_client_profiles($cr_valid);
     ok @cl_pr, 'custom client limit';
 };
 
@@ -114,7 +140,6 @@ subtest 'empty limit condition' => sub {
     is $rp->get_risk_profile, 'low_risk', 'ignore profile with no conditions';
 };
 
-## Please see file perltidy.ERR
 subtest 'get_current_profile_definitions' => sub {
     my $expected = {
         'commodities' => [{
@@ -187,6 +212,7 @@ subtest 'check for risk_profile consistency' => sub {
                 expiry_type       => 'tick',
                 currency          => 'USD',
                 barrier_category  => 'euro_atm',
+                landing_company   => 'costarica',
             );
             is $rp->get_risk_profile, $expected{$bc}, 'same profile after iteration';
         }

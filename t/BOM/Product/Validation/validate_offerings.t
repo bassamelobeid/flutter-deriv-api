@@ -1,6 +1,6 @@
 #!/etc/rmg/bin/perl
 
-use Test::More tests => 6;
+use Test::More tests => 4;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Market::Underlying;
@@ -56,36 +56,15 @@ subtest 'system wide suspend trading' => sub {
     ok $c->is_valid_to_buy, 'ok to buy';
 };
 
-subtest 'suspend trade on underlyings' => sub {
-    my $mocked = Test::MockModule->new('BOM::Market::Underlying');
-    $mocked->mock('contracts', sub { {} });
-    my $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    like($c->primary_validation_error->{message}, qr/Underlying trades suspended/, 'Underlying trades suspended message');
-    $mocked->unmock_all();
-    $c = produce_contract($bet_params);
-    ok $c->is_valid_to_buy, 'ok to buy';
-};
-
-subtest 'suspend contract type' => sub {
-    my $orig = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types;
-    BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types(['CALL']);
-    my $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    like($c->primary_validation_error->{message}, qr/Trading suspended for contract type/, 'Contract type suspended message');
-    BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types($orig);
-    $c = produce_contract($bet_params);
-    ok $c->is_valid_to_buy, 'ok to buy';
-};
-
 subtest 'invalid underlying - contract type combination' => sub {
-    my $mocked = Test::MockModule->new('BOM::Market::Underlying');
-    $mocked->mock('contracts', sub { {callput => {intraday => {spot => {euro_atm => {min => '15h', max => '1d'}}}}} });
+    $bet_params->{is_forward_starting} = 1;
     $bet_params->{barrier} = 'S100P';    # non atm
+    $bet_params->{date_start} = $bet_params->{date_pricing}->plus_time_interval('20m');
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->{message}, qr/trying unauthorised combination/, 'Contract type suspended message');
-    $mocked->unmock_all();
+    delete $bet_params->{is_forward_starting};
+    $bet_params->{date_start} = $bet_params->{date_pricing};
 };
 
 subtest 'disable underlying due to corporate action' => sub {

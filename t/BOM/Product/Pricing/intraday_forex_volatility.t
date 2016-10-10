@@ -49,7 +49,7 @@ subtest 'no ticks in agg ticks' => sub {
     my $c = produce_contract($contract_args);
     $c->pricing_args;
     is $c->pricing_vol, $c->pricing_args->{long_term_prediction}, 'we rely solely on long term prediction if there is no aggregated ticks.';
-    is $c->pricing_engine->risk_markup->peek_amount('vol_spread_markup'), 0.1, 'charged a 10% vol spread markup due to shortterm uncertainty';
+    is $c->pricing_engine->risk_markup->peek_amount('vol_spread'), 0.05, 'charged a 10% vol spread markup due to shortterm uncertainty';
 };
 
 subtest 'one tick in agg ticks' => sub {
@@ -57,7 +57,7 @@ subtest 'one tick in agg ticks' => sub {
     my $c = produce_contract($contract_args);
     $c->pricing_args;
     is $c->pricing_vol, $c->pricing_args->{long_term_prediction}, 'we rely solely on long term prediction if there is only one aggregated tick.';
-    is $c->pricing_engine->risk_markup->peek_amount('vol_spread_markup'), 0.1, 'charged a 10% vol spread markup due to shortterm uncertainty';
+    is $c->pricing_engine->risk_markup->peek_amount('vol_spread'), 0.05, 'charged a 10% vol spread markup due to shortterm uncertainty';
 };
 
 subtest 'ten ticks in agg ticks' => sub {
@@ -70,7 +70,7 @@ subtest 'ten ticks in agg ticks' => sub {
     $c->pricing_args;
     is $c->pricing_vol, 0.118725511279854, 'we rely solely on long term prediction if there is only one aggregated tick.';
     is $c->pricing_args->{volatility_scaling_factor}, 135 / 1800, 'scaling factor is non zero';
-    is $c->pricing_engine->risk_markup->peek_amount('vol_spread_markup'), 0.0994375, 'charged a 9.9 vol spread markup due to shortterm uncertainty';
+    is $c->pricing_engine->risk_markup->peek_amount('vol_spread'), 0.04971875, 'charged a 9.9 vol spread markup due to shortterm uncertainty';
 };
 
 subtest 'full set of agg ticks' => sub {
