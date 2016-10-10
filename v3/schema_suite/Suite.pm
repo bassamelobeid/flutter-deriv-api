@@ -145,9 +145,8 @@ sub run {
 
         # arbitrary perl code
         if ($line =~ s/^\[%(.*?)%\]//) {
-            my $code = $1;
-            my $res = eval { $code };
-            die $@ if $@;
+            eval $1;         ## no critic
+            die $EVAL_ERROR if $EVAL_ERROR;
         }
 
         if ($line =~ s/^\[(\w+)\]//) {
@@ -258,7 +257,8 @@ sub _get_values {
         my $template_content;
         if ($f =~ /^\_.*$/) {
             local $@;    # ensure we clear this first, to avoid false positive
-            $template_content = eval { $f };
+            $template_content = eval $f;    ## no critic
+
             # we do not expect any exceptions from the eval, they could indicate
             # invalid Perl code or bug, either way we need to know about them
             ok(!$@, "template content can eval successfully")
@@ -294,6 +294,7 @@ sub _test_schema {
             diag " - $_" foreach $result->errors;
         }
     }
+    return;
 }
 
 # fetch the token related to a specific email
