@@ -363,13 +363,13 @@ table#client_edit td{
     </tr>
     <tr>
        [% maybe_disabled = promo_code_access ? '' : 'disabled' %]
-       [% maybe_auth_msg = promo_code_access ? '' : '<font color=red><b>[Staff authorization required]</b></font>' %]
+       [% maybe_auth_msg = promo_code_access ? '' : '[Staff authorization required]' %]
 
         <td class="label">Promotional code</td>
         <td>:
             <input type="text" name="promo_code" [% maybe_disabled %] value="[% client.promo_code %]" size="20" />
             [% client.client_promo_code.promotion %]
-            [% maybe_auth_msg %]
+            [% IF maybe_auth_msg %]<font color="red"><b>[% maybe_auth_msg %]</b></font>[% END %]
         </td>
     </tr>
     <tr>
@@ -401,12 +401,14 @@ table#client_edit td{
                     [% END %]
                 [% END %]
             </select>
-            [% maybe_auth_msg %]
+            [% IF maybe_auth_msg %]<font color="red"><b>[% maybe_auth_msg %]</b></font>[% END %]
         </td>
     </tr>
     <tr>
         <td class="label">Apply date</td>
-        <td>: [% client.promo_code_apply_date %] [% maybe_auth_msg %] </td>
+        <td>: [% client.promo_code_apply_date %] [% maybe_auth_msg %]
+            [% IF maybe_auth_msg %]<font color="red"><b>[% maybe_auth_msg %]</b></font>[% END %]
+        </td>
     </tr>
     <tr>
         <td class="small_header" colspan="2">#Marketing</td>
