@@ -293,8 +293,7 @@ subtest 'date start blackouts' => sub {
         epoch      => $valid_start->epoch
     });
     $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    like($c->primary_validation_error->message, qr/blackout period.*\[from: 1459281600\] \[to: 1459288800\]/, 'throws error');
+    ok $c->is_valid_to_buy, 'not valid to buy';
     $bet_params->{duration} = '3d';
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
