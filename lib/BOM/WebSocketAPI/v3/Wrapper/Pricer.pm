@@ -480,7 +480,7 @@ sub _create_error_message {
     }
     my $err = $c->new_error($type, $err_code, $err_message);
     $err->{error}->{details} = $err_details if $err_details;
-    $err->{echo_req} = $stash_data->{args} if $stash_data->{args};
+    #$err->{echo_req} = $stash_data->{args} if $stash_data->{args};
     return $err;
 }
 
