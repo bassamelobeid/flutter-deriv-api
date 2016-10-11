@@ -316,8 +316,8 @@ sub process_ask_event {
         }
 
         #$err->{echo_req} = $stash_data->{args} if $stash_data->{args};
-        if (not $result->{echo_req}) {
-            $result->{echo_req} = $stash_data->{args} if $stash_data->{args};
+        if (not $results->{echo_req}) {
+            $results->{echo_req} = $stash_data->{args} if $stash_data->{args};
         }
 
         delete @{$results->{$type}}{qw(contract_parameters rpc_time)};
