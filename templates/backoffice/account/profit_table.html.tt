@@ -48,7 +48,7 @@
 [%- MACRO navigator BLOCK -%]
 <div id="statement-table" class="grd-parent grd-grid-12 grd-row-padding">
     <div class="grd-grid-6 left-aligned">
-        <FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') %]" METHOD="POST">
+        <FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') | none %]" METHOD="POST">
                 <INPUT name=enddate type=hidden value="[% startdate %]" />
                 <INPUT type=hidden name="loginID" value="[% loginid %]" />
                 <INPUT type=hidden name="broker" value="[% request.broker_code %]" />
