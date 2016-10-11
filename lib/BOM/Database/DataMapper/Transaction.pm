@@ -535,8 +535,9 @@ sub get_details_by_transaction_ref {
         t.action_type as action_type,
         d.price_slippage AS price_slippage,
         b.sell_time as sell_time,
-        b.purchase_time as purchase_time
-    FROM
+        b.purchase_time as purchase_time,
+        d.requested_price as order_price
+      FROM
         transaction.transaction t
         JOIN bet.financial_market_bet b ON t.financial_market_bet_id=b.id
         JOIN transaction.account a on a.id=t.account_id
