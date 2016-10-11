@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Carp;
 
-use DBIx::TransactionManager::Distributed qw(release_dbh dbh_is_registered register_dbh)
+use DBIx::TransactionManager::Distributed qw(release_dbh dbh_is_registered register_dbh);
 
 use Mojo::Exception;
 
