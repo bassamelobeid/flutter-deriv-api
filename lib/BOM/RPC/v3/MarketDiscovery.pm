@@ -5,6 +5,8 @@ use warnings;
 
 use Try::Tiny;
 use Date::Utility;
+use Cache::RedisDB;
+use Sereal::Encoder;
 use Time::Duration::Concise::Localize;
 
 use BOM::RPC::v3::Utility;
@@ -13,8 +15,6 @@ use BOM::Platform::Client;
 use BOM::Platform::Context qw (localize request);
 use BOM::Product::Contract::Offerings;
 use BOM::Platform::Offerings qw(get_offerings_with_filter get_permitted_expiries);
-use BOM::System::RedisReplicated;
-use Sereal::Encoder;
 use BOM::Platform::Runtime;
 
 my %name_mapper = (
@@ -239,12 +239,12 @@ sub active_symbols {
     }
 
     my $appconfig_revision = BOM::Platform::Runtime->instance->app_config->current_revision;
-    my $key =
-        join('::', ('legal_allowed_markets', $params->{args}->{active_symbols}, $language, $landing_company_name, $appconfig_revision));
+    my ($namespace, $key) =
+        ('legal_allowed_markets', join('::', ($params->{args}->{active_symbols}, $language, $landing_company_name, $appconfig_revision)));
 
     my $active_symbols;
-    if (my $cached_symbols = BOM::System::RedisReplicated::redis_read()->get($key)
-        and BOM::System::RedisReplicated::redis_read->ttl($key) > 0)
+    if (my $cached_symbols = Cache::RedisDB->get($namespace, $key)
+        and Cache::RedisDB->ttl($namespace, $key) > 0)
     {
         $active_symbols = Sereal::Decoder->new->decode($cached_symbols);
     } else {
@@ -262,9 +262,7 @@ sub active_symbols {
             push @{$active_symbols}, $desc;
         }
 
-        BOM::System::RedisReplicated::redis_write()->set($key, Sereal::Encoder->new->encode($active_symbols));
-        #expire in nearest 5 minute interval
-        BOM::System::RedisReplicated::redis_write()->expire($key, 300 - time % 300);
+        Cache::RedisDB->set($namespace, $key, Sereal::Encoder->new->encode($active_symbols), 300 - time % 300);
     }
 
     return $active_symbols;
