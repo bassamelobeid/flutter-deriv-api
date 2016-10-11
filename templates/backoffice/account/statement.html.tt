@@ -38,7 +38,7 @@
         <div class="grd-grid-1">[% transaction.staff_loginid %]</div>
         [% IF transaction.financial_market_bet_id.defined %]
                 <div class="grd-grid-1">
-                        <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, shortcode => transaction.short_code , purchase_time => transaction.purchase_time}) %]">[% transaction.id %]</a>
+                        <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, shortcode => transaction.short_code , purchase_time => transaction.purchase_time, loginid => loginid}) %]">[% transaction.id %]</a>
                 </div>
                 <div class="grd-grid-1">
                     [% transaction.payout_price %]

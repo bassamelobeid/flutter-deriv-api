@@ -4,7 +4,7 @@ package main;
 #official globals
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
-use BOM::Market::Registry;
+use Finance::Asset::Market::Registry;
 
 use f_brokerincludeall;
 use BOM::System::Config;
@@ -13,7 +13,6 @@ use Format::Util::Strings qw( set_selected_item );
 use BOM::Backoffice::Auth0;
 use BOM::StaffPages;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Market::Registry;
 use BOM::Platform::LandingCompany;
 
 use BOM::Backoffice::Sysinit ();
@@ -49,7 +48,7 @@ if (request()->param('only')) {
     $brokerselection = "Broker code : <select name=broker><option>" . request()->param('only') . "</select>";
 }
 
-my @all_markets = BOM::Market::Registry->instance->all_market_names;
+my @all_markets = Finance::Asset::Market::Registry->instance->all_market_names;
 
 # TRANSaction REPORTS
 if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
@@ -281,12 +280,10 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
 					<form action="~ . request()->url_for('backoffice/f_dynamic_settings.cgi') . qq~" method="get"><font size=2>
                         <b>Group: </b><select name=group>
                             <option value=shutdown_suspend>Shutdown/Suspend</option>
-                            <option value=cs>CS</option>
                             <option value=quant>Quant</option>
                             <option value=it>IT</option>
                             <option value=others>Others</option>
                             <option value=payments>Payments</option>
-                            <option value=marketing>Marketing</option>
                         </select>
 						<input type=hidden name=broker value=FOG>
 						<input type=hidden name=page value=global>

@@ -176,7 +176,6 @@ sub get_settings_by_group {
         quant => [qw(
                 quants.commission.adjustment.global_scaling
                 quants.markets.disabled
-                quants.markets.disable_iv
                 quants.features.suspend_claim_types
                 quants.underlyings.disable_autoupdate_vol
                 quants.underlyings.disabled_due_to_corporate_actions
@@ -194,19 +193,7 @@ sub get_settings_by_group {
                 payments.payment_limits
                 payments.doughflow.location
                 payments.doughflow.passcode
-                payments.email
-                )
-        ],
-        marketing => [qw(
-                marketing.email
-                marketing.myaffiliates_email
-                )
-        ],
-        cs => [qw(
-                cs.email
-                )
-        ],
-    };
+                )]};
 
     my $settings;
 

@@ -7,9 +7,8 @@ use open qw[ :encoding(UTF-8) ];
 use HTML::Entities;
 use f_brokerincludeall;
 use BOM::Market::UnderlyingDB;
-use BOM::Market::Registry;
+use Finance::Asset::Market::Registry;
 use Proc::Killall;
-use BOM::Market::Registry;
 use Try::Tiny;
 use Path::Tiny;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -19,6 +18,7 @@ use Date::Utility;
 use List::Util qw/reduce/;
 
 BOM::Backoffice::Sysinit::init();
+$BOM::Market::Underlying::FORCE_REALTIME_FEED = 1;
 
 my $fullfeed_re = qr/^\d\d?-\w{3}-\d\d.fullfeed(?!\.zip)/;
 
@@ -58,14 +58,14 @@ BrokerPresentation('REALTIME QUOTES');
 my $broker = request()->broker_code;
 BOM::Backoffice::Auth0::can_access(['Quants']);
 
-my @all_markets = BOM::Market::Registry->instance->all_market_names;
+my @all_markets = Finance::Asset::Market::Registry->instance->all_market_names;
 push @all_markets, 'futures';    # this is added to check for futures feed
 my $feedloc = BOM::Platform::Runtime->instance->app_config->system->directory->feed;
 my $dbloc   = BOM::Platform::Runtime->instance->app_config->system->directory->db;
 my $tmp_dir = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
 
 my $now          = Date::Utility->new;
-my @providerlist = qw(idata random telekurs sd tenfore bloomberg olsen synthetic combined panda);
+my @providerlist = qw(idata random telekurs sd bloomberg olsen synthetic combined panda);
 
 Bar("Compare providers");
 
