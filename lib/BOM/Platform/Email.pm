@@ -114,6 +114,8 @@ sub send_email {
         if ($use_email_template) {
             my $vars = {
                 email_template_loginid => $template_loginid,
+                # Allows inline HTML, default is off - be very, very careful when setting this
+                email_content_is_html  => $args_ref->{'email_content_is_html'},
                 content                => $message,
             };
             if ($language eq 'JA') {

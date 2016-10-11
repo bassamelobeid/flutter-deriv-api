@@ -621,7 +621,7 @@
                                                 </p>
                                             [% END %]
                                             <br>
-                                            [% content %]
+                                            [% IF email_content_is_html; content | none; ELSE; content; FI %]
                                         </td>
                                     </tr>
                                 </table>
