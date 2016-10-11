@@ -131,26 +131,28 @@ sub verify_email {
             );
 
         send_email({
-                from               => BOM::System::Config::email_address('support'),
-                to                 => $email,
-                subject            => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
-                message            => [$message],
-                use_email_template => 1
+                from                  => BOM::System::Config::email_address('support'),
+                to                    => $email,
+                subject               => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
+                message               => [$message],
+                use_email_template    => 1,
+                email_content_is_html => 1,
             }) unless $skip_email;
     };
 
     if (BOM::Platform::User->new({email => $email}) && $type eq 'reset_password') {
         send_email({
-                from    => BOM::System::Config::email_address('support'),
-                to      => $email,
-                subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
-                message => [
+                from                  => BOM::System::Config::email_address('support'),
+                to                    => $email,
+                subject               => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
+                message               => [
                     BOM::Platform::Context::localize(
                         '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your password, please help us to verify your identity by entering the following verification token into the password reset form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>Binary.com</p>',
                         $code
                     )
                 ],
-                use_email_template => 1
+                use_email_template    => 1,
+                email_content_is_html => 1,
             });
     } elsif ($type eq 'account_opening') {
         unless (BOM::Platform::User->new({email => $email})) {
@@ -164,7 +166,8 @@ sub verify_email {
                             $code
                         )
                     ],
-                    use_email_template => 1
+                    use_email_template    => 1,
+                    email_content_is_html => 1,
                 });
         } else {
             send_email({
@@ -178,7 +181,8 @@ sub verify_email {
                             )
                             . '</div>'
                     ],
-                    use_email_template => 1
+                    use_email_template    => 1
+                    email_content_is_html => 1,
                 });
         }
     } elsif ($type eq 'paymentagent_withdraw') {
