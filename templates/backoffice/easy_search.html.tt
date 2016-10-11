@@ -43,7 +43,7 @@
 
 [% ELSIF client %]
 
-    <h2><a href=[%client_href%]>[%client%]</a></h2>
+    <h2><a href=[%client_href | none %]>[%client%]</a></h2>
 
     <table class="easy_search">
     <tr>
