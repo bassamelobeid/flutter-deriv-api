@@ -315,7 +315,7 @@ sub process_ask_event {
             };
         }
 
-        #$err->{echo_req} = $stash_data->{args} if $stash_data->{args};
+        #Add echo_req to err message.
         if (not $results->{echo_req}) {
             $results->{echo_req} = $stash_data->{args} if $stash_data->{args};
         }
@@ -486,7 +486,7 @@ sub _create_error_message {
     }
     my $err = $c->new_error($type, $err_code, $err_message);
     $err->{error}->{details} = $err_details if $err_details;
-    #$err->{echo_req} = $stash_data->{args} if $stash_data->{args};
+
     return $err;
 }
 
