@@ -146,7 +146,7 @@ sub run {
         # arbitrary perl code
         if ($line =~ s/^\[%(.*?)%\]//) {
             eval $1;         ## no critic
-            die $EVAL_ERROR if $EVAL_ERROR;
+            die $@ if $@;
         }
 
         if ($line =~ s/^\[(\w+)\]//) {
