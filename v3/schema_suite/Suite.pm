@@ -130,6 +130,7 @@ sub run {
 
     # 30s ahead of test start, minus 10 seconds for the initial ticks
     my $reset_time = time + 20;
+    my $counter    = 0;
     foreach my $line (@lines) {
         # we are setting the time one second ahead 12:00:00 for every
         # test to ensure time sensitive tests (pricing tests) always start at a consistent time.
@@ -139,13 +140,13 @@ sub run {
         system(qw(sudo date -s), '@' . $reset_time) and die "Failed to set date, do we have sudo access? $!";
         ++$reset_time;
 
-        my $counter = $.;    # slightly more informative name, for use in log messages at the end of the loop
+        ++$counter;    # slightly more informative name, for use in log messages at the end of the loop
         chomp $line;
         next if ($line =~ /^(#.*|)$/);
 
         # arbitrary perl code
         if ($line =~ s/^\[%(.*?)%\]//) {
-            eval $1;         ## no critic
+            eval $1;    ## no critic
             die $@ if $@;
         }
 
