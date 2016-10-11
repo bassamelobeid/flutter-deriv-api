@@ -31,7 +31,6 @@ my ($pricing_parameters, @contract_details, $start);
 
 my $broker = $params{broker} // request()->broker_code;
 my $id = $params{id} ? $params{id} : '';
-my $JPY_precision = Price::RoundPrecision::JPY->payout_precision;
 
 if ($broker and $id) {
     my $details = BOM::Database::DataMapper::Transaction->new({
@@ -68,9 +67,9 @@ if ($broker and $id) {
 
     @contract_details = (
         login_id       => $details->{loginid},
-        slippage_price => $slippage_price ? roundnear($JPY_precision, $slippage_price) : 'NA.',
+        slippage_price => $slippage_price // 'NA.',
         order_type     => $action_type,
-        order_price     => roundnear($JPY_precision, $order_price),
+        order_price     => $order_price,
         trans_id        => $id,
         short_code      => $contract->shortcode,
         payout          => $contract->payout,
@@ -130,7 +129,7 @@ sub _get_pricing_parameter_from_IH_pricer {
 
     if ($action_type eq 'sell') {
         $pricing_parameters->{bid_probability} = {
-            discounted_probability            => $c > discounted_probability->amount,
+            discounted_probability            => $c->discounted_probability->amount,
             opposite_contract_ask_probability => $contract->ask_probability->amount
          };
 
@@ -204,7 +203,7 @@ sub _get_pricing_parameter_from_slope_pricer {
 
  if ($action_type eq 'sell') {
         $pricing_parameters->{bid_probability} = {
-            discounted_probability            => $c > discounted_probability->amount,
+            discounted_probability            => $c->discounted_probability->amount,
             opposite_contract_ask_probability => $contract->ask_probability->amount
              };
 
