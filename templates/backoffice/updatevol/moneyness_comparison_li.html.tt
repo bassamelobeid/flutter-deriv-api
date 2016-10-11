@@ -10,7 +10,7 @@
     </div>
 
     [% IF item.SD_surface.table %]
-        <form class="update" action="[% update_url %]">
+        <form class="update" action="[% update_url | none %]">
             <input type="hidden" name="symbol" value="[% item.symbol %]"/>
         Use:
         [% IF item.BB_surface.table %]

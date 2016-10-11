@@ -1,6 +1,6 @@
 <p><b>Update economic event manually with the tool below: </b></p>
 
-<FORM NAME="currency" ACTION="[% ee_upload_url %]" METHOD="POST" ENCTYPE="multipart/form-data">
+<FORM NAME="currency" ACTION="[% ee_upload_url | none %]" METHOD="POST" ENCTYPE="multipart/form-data">
     <table>
         <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol"></td><td>(e.g. USD GBP EUR)</td></tr>
         <tr><td>Announcement DateTime</td><td> : <INPUT type="text" name="release_date"></td><td>(e.g. 2012-11-14T01:15:00Z  The time given on forexfactory is GMT-4)</td></tr>
