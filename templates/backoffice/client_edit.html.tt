@@ -94,9 +94,9 @@ table#client_edit td{
     <tr>
         <td class="label">Date of Birth</td>
         <td>: 
-            <select name="dob_day">[% dob_day_options %]</select>
-            <select name="dob_month">[% dob_month_options %]</select>
-            <select name="dob_year">[% dob_year_options %]</select>
+            <select name="dob_day">[% dob_day_options | none %]</select>
+            <select name="dob_month">[% dob_month_options | none %]</select>
+            <select name="dob_year">[% dob_year_options | none %]</select>
         </td>
     </tr>
     <tr>
@@ -146,7 +146,7 @@ table#client_edit td{
     </tr>
     <tr>
         <td class="label">State/Province</td>
-        <td>: <select name="state">[% state_options %]</select> [% client.state %]</td>
+        <td>: <select name="state">[% state_options | none %]</select> [% client.state %]</td>
     </tr>
     <tr>
         <td class="label">Postcode</td>
