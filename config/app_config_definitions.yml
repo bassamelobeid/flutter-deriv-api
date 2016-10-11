@@ -43,7 +43,6 @@ cgi:
         - PL
         - DE
         - JA
-        - AR
         - ZH_CN
         - VI
         - ZH_TW
@@ -66,38 +65,10 @@ cgi:
       isa: Str
       default: ""
       global: 1
-cs:
-  description: "CS Settings"
-  isa: section
-  contains:
-    email:
-      description: "Email address for cs"
-      isa: Str
-      default: "support@binary.com"
-      global: 1
-marketing:
-  description: "Marketing Settings"
-  isa: section
-  contains:
-    email:
-      description: "Email address for marketing group"
-      isa: Str
-      default: "x-marketing@binary.com"
-      global: 1
-    myaffiliates_email:
-      description: "Email address for myaffiliates group"
-      isa: Str
-      default: "affiliates@binary.com"
-      global: 1
 payments:
   description: "Control parameters for cashier and other payment systems"
   isa: section
   contains:
-    email:
-      description: "Payment management email."
-      isa: Str
-      default: "payments@binary.com"
-      global: 1
     payment_limits:
       description: 'Staff limit for payment'
       isa: json_string
@@ -251,11 +222,6 @@ quants:
           isa: ArrayRef
           default: []
           global: 1
-        disable_iv:
-          description: "Disable buying of IV contracts on a particular underlying. Allow selling off these contracts."
-          isa: ArrayRef
-          default: []
-          global: 1
     underlyings:
       description: "Underlying-specific variables"
       isa: section
@@ -299,10 +265,6 @@ system:
   description: "Various parameters determining core application functionality"
   isa: section
   contains:
-    email:
-      description: "Dummy email address to indicate email sent from our system"
-      isa: Str
-      default: "system@binary.com"
     suspend:
       description: "Suspend one or more of our services"
       isa: section
@@ -379,52 +341,3 @@ system:
           description: "Password for Desk.com account"
           isa: Str
           default: R3kU3rsM5WH7
-    alerts:
-      description: |
-        Email addresses to which alerts should be sent. The string _DEVELOPER_
-        will be replaced with developer@regentmarkets.com if the machine name
-        looks like developerdev.regentmarkets.com, e.g. nickdev.regentmarkets.com
-      isa: section
-      contains:
-        default_recipient:
-          description: "The default recipient for all system alerts not otherwise described in this section"
-          isa: Str
-          default: x-sysadmin-alert@binary.com
-        email_subject_prefix:
-          description: |
-            Prefix that should be added to all e-mail messages sent from server.
-            _HOST_ in the value will be replaced with hostname.
-          isa: Str
-          default: ""
-        quants:
-          description: "The recipient for system alerts related to pricing and other quantitative analysis problems"
-          isa: Str
-          default: x-quants-alert@binary.com
-        sysadmins:
-          description: "The recipient for system alerts related to hardware, operating system, and other configuration problems"
-          isa: Str
-          default: x-sysadmin-alert@binary.com
-compliance:
-  description: "Compliance related configuration"
-  isa: section
-  contains:
-    email:
-      description: "Email for compliance team"
-      isa: Str
-      default: "compliance@binary.com"
-accounting:
-  description: "Account team related configuration"
-  isa: section
-  contains:
-    email:
-      description: "Email for account team"
-      isa: Str
-      default: "x-acc@binary.com"
-tech:
-  description: "Technical team related configuration"
-  isa: section
-  contains:
-    email:
-      description: "Email for technical team"
-      isa: Str
-      default: "x-tech@binary.com"

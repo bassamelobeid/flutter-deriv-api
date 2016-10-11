@@ -158,6 +158,15 @@ has legal_allowed_contract_categories => (
     default => sub { [] },
 );
 
+=head2 legal_allowed_offerings
+The reference key to landing company specific offerings.
+=cut
+
+has legal_allowed_offerings => (
+    is      => 'ro',
+    default => 'common',
+);
+
 =head2 allows_payment_agents
 
 True if clients allowed to use payment agents

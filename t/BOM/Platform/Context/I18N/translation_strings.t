@@ -1,5 +1,4 @@
-use Test::Most 0.22 (tests => 15);
-use Test::NoWarnings;
+use Test::Most 0.22 (tests => 14);
 use Test::Warn;
 use Test::MockModule;
 use File::Spec;

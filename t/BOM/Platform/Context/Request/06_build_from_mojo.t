@@ -1,6 +1,5 @@
-use Test::More (tests => 5);
+use Test::More (tests => 4);
 use Test::Exception;
-use Test::NoWarnings;
 use Test::MockObject;
 use Test::MockModule;
 use Mojo::URL;
