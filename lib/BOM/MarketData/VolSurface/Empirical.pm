@@ -316,8 +316,8 @@ sub _build_long_term_vol {
 sub _get_coefficients {
     my ($self, $which, $underlying) = @_;
     $underlying = $self->underlying if not $underlying;
-    my $coef    = $coefficients->{$which};
-    my $result  = $underlying->submarket->name eq 'minor_pairs' ? $coef->{frxUSDJPY} : $coef->{$underlying->symbol};
+    my $coef = $coefficients->{$which};
+    my $result = $underlying->submarket->name eq 'minor_pairs' ? $coef->{frxUSDJPY} : $coef->{$underlying->symbol};
 
     die "No $which coefficients for this underlying [" . $underlying->symbol . "]"
         unless ref $result eq 'HASH';
