@@ -277,8 +277,7 @@ sub _build_per_second_seasonality_curve {
         $per_second = Cache::RedisDB->get($key_space, $symbol);
 
         if (not $per_second) {
-            my $coefficients = $self->_get_coefficients('volatility_seasonality_coef')->{data}
-                || die 'No volatility seasonality coefficients for this underlying [' . $symbol . ']';
+            my $coefficients = $self->_get_coefficients('volatility_seasonality_coef')->{data};
             my $interpolator = Math::Function::Interpolator->new(points => $coefficients);
             # The coefficients from the YAML are stored as hours. We want to do per-second.
             $per_second = [map { $interpolator->cubic($_ / 3600) } (0 .. 86399)];
@@ -317,8 +316,13 @@ sub _build_long_term_vol {
 sub _get_coefficients {
     my ($self, $which, $underlying) = @_;
     $underlying = $self->underlying if not $underlying;
-    my $coef = $coefficients->{$which};
-    return $underlying->submarket->name eq 'minor_pairs' ? $coef->{frxUSDJPY} : $coef->{$underlying->symbol};
+    my $coef    = $coefficients->{$which};
+    my $result  = $underlying->submarket->name eq 'minor_pairs' ? $coef->{frxUSDJPY} : $coef->{$underlying->symbol};
+
+    die "No $which coefficients for this underlying [" . $underlying->symbol . "]"
+        unless ref $result eq 'HASH';
+
+    return $result;
 }
 
 has [qw(long_term_prediction error)] => (
