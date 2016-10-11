@@ -21,7 +21,7 @@
     <div class="grd-parent grd-grid-12 table-body table-body-lines grd-row-padding">
         <div class="grd-grid-1">[% contract.purchase_date.datetime %]</div>
         <div class="grd-grid-1">
-            <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, shortcode => contract.short_code, purchase_time => contract.purchase_date.datetime, loginid => loginid}) %]">[% ident %]</a>
+            <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, shortcode => contract.short_code, purchase_time => contract.purchase_date.datetime, loginid => loginid}) | none %]">[% ident %]</a>
             <br/><label class="investigate"><input type="checkbox" name="investigate_list" value='[% ident %]:::[% contract.info.description FILTER truncate(70) %]:::[% contract.purchase_date.datetime %]'>QQ</label>
         </div>
         <div class="grd-grid-1">[% contract.payout_price %]</div>
@@ -57,7 +57,7 @@
         </FORM>
     </div>
     <div class="grd-grid-6 right-aligned">
-        <FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') %]" METHOD="POST">
+        <FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') | none %]" METHOD="POST">
                 <INPUT name=startdate type=hidden value="[% enddate %]" />
                 <INPUT type=hidden name="loginID" value="[% loginid %]" />
                 <INPUT type=hidden name="broker" value="[% request.broker_code %]" />
@@ -75,7 +75,7 @@
 #limit_entry caption { caption-side: bottom; font-size: small;  }
 .investigate { background-color: #ffa; font-weight: bold; }
 </style>
-<FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') %]" METHOD="POST">
+<FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') | none %]" METHOD="POST">
         Sold Contracts Between <INPUT name=startdate type=text size=20 value="[% startdate %]" />
         and <INPUT name=enddate type=text size=20 value="[% enddate %]" />
         <INPUT type=hidden name="loginID" value="[% loginid %]" />
@@ -116,7 +116,7 @@
         <div class="grd-grid-1 right-aligned"></div>
     </div>
 
-    <form action="[% request.url_for('backoffice/f_quant_query.cgi') %]" method="post">
+    <form action="[% request.url_for('backoffice/f_quant_query.cgi') | none %]" method="post">
         [% FOREACH contract IN sold_contracts %]
             [%
                     display_contract(contract);
@@ -149,7 +149,7 @@ END %]
         <div class="grd-grid-1 right-aligned">Profit/Loss</div>
         <div class="grd-grid-1 right-aligned"></div>
     </div>
-    <form action="[% request.url_for('backoffice/f_quant_query.cgi') %]" method="post">
+    <form action="[% request.url_for('backoffice/f_quant_query.cgi') | none %]" method="post">
         [% FOREACH contract IN open_contracts %]
             [%
                 display_contract(contract);

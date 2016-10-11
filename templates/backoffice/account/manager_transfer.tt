@@ -1,6 +1,6 @@
 <h3>Confirm a TRANSFER BETWEEN ACCOUNTS</h3>
 
-<form action="[%request.url_for('backoffice/f_manager_confodeposit.cgi')%]" method="POST" class="bo_form_with_files">
+<form action="[%request.url_for('backoffice/f_manager_confodeposit.cgi') | none %]" method="POST" class="bo_form_with_files">
 
 <table>
 <tr>
