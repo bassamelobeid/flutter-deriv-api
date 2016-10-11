@@ -132,7 +132,7 @@ sub _get_pricing_parameter_from_IH_pricer {
         $pricing_parameters->{bid_probability} = {
             discounted_probability            => $c > discounted_probability->amount,
             opposite_contract_ask_probability => $contract->ask_probability->amount
-                .};
+         };
 
         $pricing_parameters->{opposite_contract_ask_probability} = {
             bs_probability    => $bs_probability,
@@ -206,7 +206,7 @@ sub _get_pricing_parameter_from_slope_pricer {
         $pricing_parameters->{bid_probability} = {
             discounted_probability            => $c > discounted_probability->amount,
             opposite_contract_ask_probability => $contract->ask_probability->amount
-                .};
+             };
 
         $pricing_parameters->{opposite_contract_ask_probability} = {
          theoretical_probability => $pe->base_probability,
