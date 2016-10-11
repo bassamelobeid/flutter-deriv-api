@@ -11,7 +11,7 @@ use sigtrap qw/handler signal_handler normal-signals/;
 use Data::Dumper;
 use LWP::Simple;
 use BOM::Platform::Runtime;
-use BOM::Database qw(txn);
+use DBIx::TransactionManager::Distributed qw(txn);
 
 my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 my $workers = 4;
