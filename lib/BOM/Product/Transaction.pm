@@ -66,6 +66,7 @@ has trading_period_start => (
     is     => 'rw',
     isa    => 'bom_date_object',
     coerce => 1,
+);
 
 # This is the requested buy or sell price
 has requested_price => (
@@ -1243,13 +1244,8 @@ BEGIN { _create_validator '_validate_currency' }
 sub _build_pricing_comment {
     my $args = shift;
 
-<<<<<<< HEAD
-    my ($contract, $price, $action, $price_slippage, $trading_period_start) =
-        @{$args}{'contract', 'price', 'action', 'price_slippage', 'trading_period_start'};
-=======
-    my ($contract, $price, $action, $price_slippage, $requested_price, $recomputed_price) =
-        @{$args}{'contract', 'price', 'action', 'price_slippage', 'requested_price', 'recomputed_price'};
->>>>>>> origin/master
+    my ($contract, $price, $action, $price_slippage, $requested_price, $recomputed_price, $trading_period_start) =
+        @{$args}{'contract', 'price', 'action', 'price_slippage', 'requested_price', 'recomputed_price', 'trading_period_start'};
 
     my @comment_fields;
     if ($contract->is_spread) {
