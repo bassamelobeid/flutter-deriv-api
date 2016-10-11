@@ -9,7 +9,7 @@
         <tr><td colspan=2><input type="submit" id="draw_quant_graph" value="Graph it!"/></td></tr>
 </table>
 </form>
-[% debug_link %]
+[% debug_link | none %]
 <div id="quant_graph"></div>
 <script>
 PricingDetails.register();

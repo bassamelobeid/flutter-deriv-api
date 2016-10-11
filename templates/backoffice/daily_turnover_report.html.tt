@@ -1,6 +1,6 @@
 <div>
     <p>View Daily Turnover Report</p>
-    <form action="[% request.url_for('backoffice/f_dailyturnoverreport.cgi') %]" method="post">
+    <form action="[% request.url_for('backoffice/f_dailyturnoverreport.cgi') | none %]" method="post">
         Month: <input type="text" size="12" name="month" value="[% this_month %]"></input>
         <br/><br/>
         <input type="submit" value="View Daily Turnover Report"></input>
@@ -10,7 +10,7 @@
 <br/>
 
 [% IF dtr.risk_report %]
-<p>See, also: <a href="[% dtr.risk_report %]">the lastest risk dashboard</a></p>
+<p>See, also: <a href="[% dtr.risk_report | none %]">the lastest risk dashboard</a></p>
 [% END %]
 [% IF dtr.mtm_calc_time %]
     <p id='mtm_last_calculated_time'>Latest marked to market calculation prices at [% dtr.mtm_calc_time %]</p>

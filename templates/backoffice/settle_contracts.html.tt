@@ -20,7 +20,7 @@
     </tr>
     [% FOREACH contract IN unsettled %]
     <tr>
-    <td><a href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => contract.loginid, currency => contract.currency }) %]">[% contract.ref %]</a></td>
+    <td><a href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => contract.loginid, currency => contract.currency }) | none %]">[% contract.ref %]</a></td>
         <td>[% contract.loginid %]</td>
         <td>[% contract.shortcode %]</td>
         <td>[% contract.reason %]</td>

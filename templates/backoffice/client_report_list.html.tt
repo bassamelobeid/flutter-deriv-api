@@ -1,4 +1,4 @@
-<form method="post" action="[% request.url_for('backoffice/monthly_client_report.cgi') %]">
+<form method="post" action="[% request.url_for('backoffice/monthly_client_report.cgi') | none %]">
     <b>Month :</b>
     <select name="filename">
         [% FOREACH file IN report_list %]

@@ -19,7 +19,7 @@
     }
 </style>
 
-<a href="[% url_to_client %]">&laquo; return to client details</a>
+<a href="[% url_to_client | none %]">&laquo; return to client details</a>
 <br>
 [% INCLUDE pager %]
 <table id="show_log_list_table">
@@ -51,13 +51,13 @@
     [% IF pages > 1 %]
         [% pages_less1 = pages - 1 %]
         [% page_url = url_to_myself _ "&pagesize=$pagesize" %]
-        <a href="[% page_url _ "&page=0" %]">|<</a>
-        <a href="[% page_url _ "&page=$prev" %]"><</a>
+        <a href="[% page_url _ "&page=0" | none %]">|<</a>
+        <a href="[% page_url _ "&page=$prev" | none %]"><</a>
         [% FOREACH page IN [ 0..pages_less1 ] %]
-           <a href="[% page_url _ "&page=$page" %]">[% page + 1 %]</a>
+           <a href="[% page_url _ "&page=$page" | none %]">[% page + 1 %]</a>
         [% END %]
-        <a href="[% page_url _ "&page=$next" %]">></a>
-        <a href="[% page_url _ "&page=$pages_less1" %]">>|</a>
+        <a href="[% page_url _ "&page=$next" | none %]">></a>
+        <a href="[% page_url _ "&page=$pages_less1" | none %]">>|</a>
     [% END %]
 [% END %]
 

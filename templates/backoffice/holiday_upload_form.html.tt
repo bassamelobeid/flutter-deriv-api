@@ -1,5 +1,5 @@
 <p><b> Upload Excel file contains exchange or currencies holiday from Bloomberg </b></p> 
-<form  name="upload_file" action="[% upload_url %]" method="POST" enctype="multipart/form-data">
+<form  name="upload_file" action="[% upload_url | none %]" method="POST" enctype="multipart/form-data">
     <table>
         <tr><input type="hidden" name="upload_excel" value="1"></input></tr>
         <tr>
@@ -15,7 +15,7 @@
 </form>
 <p><b>Manual holiday calendar update tool: </b></p>
 
-<form name="manual_update" action="[% upload_url %]" METHOD="POST" ENCTYPE="multipart/form-data">
+<form name="manual_update" action="[% upload_url | none %]" METHOD="POST" ENCTYPE="multipart/form-data">
     <table>
         <tr><input type="hidden" name="manual_holiday_upload" value="1"></input></tr>
         <tr>
@@ -34,7 +34,7 @@
 
 <p><b>Manual partial trading calendar update tool: </b></p>
 
-<form name="manual_update" action="[% upload_url %]" METHOD="POST" ENCTYPE="multipart/form-data">
+<form name="manual_update" action="[% upload_url | none %]" METHOD="POST" ENCTYPE="multipart/form-data">
     <table>
         <tr><input type="hidden" name="manual_partial_trading_upload" value="1"></input></tr>
         <tr>
