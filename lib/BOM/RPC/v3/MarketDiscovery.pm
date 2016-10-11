@@ -6,7 +6,6 @@ use warnings;
 use Try::Tiny;
 use Date::Utility;
 use Cache::RedisDB;
-use Sereal::Encoder;
 use Time::Duration::Concise::Localize;
 
 use BOM::RPC::v3::Utility;
@@ -246,7 +245,7 @@ sub active_symbols {
     if (my $cached_symbols = Cache::RedisDB->get($namespace, $key)
         and Cache::RedisDB->ttl($namespace, $key) > 0)
     {
-        $active_symbols = Sereal::Decoder->new->decode($cached_symbols);
+        $active_symbols = $cached_symbols;
     } else {
         my @all_active = get_offerings_with_filter('underlying_symbol', {landing_company => $landing_company_name});
         # symbols would be active if we allow forward starting contracts on them.
@@ -262,7 +261,7 @@ sub active_symbols {
             push @{$active_symbols}, $desc;
         }
 
-        Cache::RedisDB->set($namespace, $key, Sereal::Encoder->new->encode($active_symbols), 300 - time % 300);
+        Cache::RedisDB->set($namespace, $key, $active_symbols, 300 - time % 300);
     }
 
     return $active_symbols;
