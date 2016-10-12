@@ -58,17 +58,20 @@ if ($broker and $id) {
     my $action_type    = $details->{action_type};
     my $order_price    = $details->{order_price};
 
+    my $traded_contract = $action_type eq 'buy' ? $contract : $contract->opposite_contract;
+    my $discounted_probability = $contract->discounted_probability;
+
     $pricing_parameters =
         $contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex'
-        ? _get_pricing_parameter_from_IH_pricer($contract, $action_type)
+        ? _get_pricing_parameter_from_IH_pricer($traded_contract, $action_type, $discounted_probability)
         : $contract->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'
-        ? _get_pricing_parameter_from_slope_pricer($contract, $action_type)
+        ? _get_pricing_parameter_from_slope_pricer($traded_contract, $action_type, $discounted_probability)
         : die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
 
     @contract_details = (
-        login_id       => $details->{loginid},
-        slippage_price => $slippage_price // 'NA.',
-        order_type     => $action_type,
+        login_id        => $details->{loginid},
+        slippage_price  => $slippage_price // 'NA.',
+        order_type      => $action_type,
         order_price     => $order_price,
         trans_id        => $id,
         short_code      => $contract->shortcode,
@@ -118,10 +121,9 @@ sub output_as_csv {
 }
 
 sub _get_pricing_parameter_from_IH_pricer {
-    my ($c, $action_type) = @_;
+    my ($contract, $action_type, $discounted_probability) = @_;
     my $pricing_parameters;
 
-    my $contract          = $action_type eq 'buy' ? $c : $c->opposite_contract;
     my $opposite_contract = $contract->opposite_contract;
     my $pe                = $contract->pricing_engine;
     my $bs_probability    = $pe->base_probability->base_amount;
@@ -129,9 +131,9 @@ sub _get_pricing_parameter_from_IH_pricer {
 
     if ($action_type eq 'sell') {
         $pricing_parameters->{bid_probability} = {
-            discounted_probability            => $c->discounted_probability->amount,
+            discounted_probability            => $discounted_probability->amount,
             opposite_contract_ask_probability => $contract->ask_probability->amount
-         };
+        };
 
         $pricing_parameters->{opposite_contract_ask_probability} = {
             bs_probability    => $bs_probability,
@@ -190,9 +192,7 @@ sub _get_pricing_parameter_from_IH_pricer {
 }
 
 sub _get_pricing_parameter_from_slope_pricer {
-    my ($c, $action_type)         = @_;
-
-    my $contract          = $action_type eq 'buy' ? $c : $c->opposite_contract;
+    my ($contract, $action_type, $discounted_probability) = @_;
 
     my $pe                = $contract->pricing_engine;
     my $debug_information = $pe->debug_information;
@@ -201,29 +201,27 @@ sub _get_pricing_parameter_from_slope_pricer {
     my $risk_markup       = $contract->risk_markup->amount;
     my $commission_markup = $contract->commission_markup->amount;
 
- if ($action_type eq 'sell') {
+    if ($action_type eq 'sell') {
         $pricing_parameters->{bid_probability} = {
-            discounted_probability            => $c->discounted_probability->amount,
+            discounted_probability            => $discounted_probability->amount,
             opposite_contract_ask_probability => $contract->ask_probability->amount
-             };
+        };
 
         $pricing_parameters->{opposite_contract_ask_probability} = {
-         theoretical_probability => $pe->base_probability,
-        risk_markup             => $risk_markup,
-        commission_markup       => $commission_markup,
+            theoretical_probability => $pe->base_probability,
+            risk_markup             => $risk_markup,
+            commission_markup       => $commission_markup,
 
         };
 
     } else {
 
-    $pricing_parameters->{ask_probability} = {
-        theoretical_probability => $pe->base_probability,
-        risk_markup             => $risk_markup,
-        commission_markup       => $commission_markup,
-    };
+        $pricing_parameters->{ask_probability} = {
+            theoretical_probability => $pe->base_probability,
+            risk_markup             => $risk_markup,
+            commission_markup       => $commission_markup,
+        };
     }
-                         
-
 
     my $theo_param = $debug_information->{$contract_type}{base_probability}{parameters};
 
