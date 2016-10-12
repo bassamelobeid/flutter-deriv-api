@@ -62,6 +62,13 @@ has price_slippage => (
     default => 0,
 );
 
+# trading period of a contract
+has trading_period_start => (
+    is     => 'rw',
+    isa    => 'bom_date_object',
+    coerce => 1,
+);
+
 # This is the requested buy or sell price
 has requested_price => (
     is  => 'rw',
@@ -502,6 +509,7 @@ sub prepare_buy {    ## no critic (RequireArgUnpacking)
                     requested_price  => $self->requested_price,
                     recomputed_price => $self->recomputed_price,
                     ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
+                    ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
                     action => 'buy'
                 })) unless @{$self->comment};
     }
@@ -780,6 +788,7 @@ sub sell {    ## no critic (RequireArgUnpacking)
                     requested_price  => $self->requested_price,
                     recomputed_price => $self->recomputed_price,
                     ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
+                    ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
                     action => 'sell'
                 })) unless @{$self->comment};
     }
@@ -1237,8 +1246,8 @@ BEGIN { _create_validator '_validate_currency' }
 sub _build_pricing_comment {
     my $args = shift;
 
-    my ($contract, $price, $action, $price_slippage, $requested_price, $recomputed_price) =
-        @{$args}{'contract', 'price', 'action', 'price_slippage', 'requested_price', 'recomputed_price'};
+    my ($contract, $price, $action, $price_slippage, $requested_price, $recomputed_price, $trading_period_start) =
+        @{$args}{'contract', 'price', 'action', 'price_slippage', 'requested_price', 'recomputed_price', 'trading_period_start'};
 
     my @comment_fields;
     if ($contract->is_spread) {
@@ -1326,6 +1335,11 @@ sub _build_pricing_comment {
     }
 
     my $comment_str = sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
+
+    if (defined $trading_period_start) {
+        push @comment_fields, (trading_period_start => $trading_period_start);
+    }
+
     my %comment_hash = map { $_ } @comment_fields;
 
     return [$comment_str, \%comment_hash];
