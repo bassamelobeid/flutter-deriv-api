@@ -7,7 +7,7 @@ with 'BOM::API::Payment::Role::Plack';
 
 use BOM::Platform::Client;
 use BOM::Database::DataMapper::Account;
-use BOM::Platform::CurrencyConverter qw(amount_from_to_currency);
+use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 use Try::Tiny;
 
 sub account_GET {
