@@ -276,7 +276,7 @@ RDBEAR: &random_daily_nightly
         euro_atm:
           max: 10
           min: 5
-        euro_non_atm: 
+        euro_non_atm:
           max: 10
           min: 5
   digits:
@@ -371,6 +371,7 @@ R_100: &random_index
         american:
           max: 1d
           min: 2m
+R_10: *random_index
 R_25: *random_index
 R_50: *random_index
 R_75: *random_index
