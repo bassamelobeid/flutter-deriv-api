@@ -130,7 +130,15 @@ SELECT (v_fmb).*, (v_trans).*
         @{$self->transaction_data || {}}{qw/transaction_time staff_loginid remark source app_markup/},
 
         # data_collection.quants_bet_variables
-        $qv ? JSON::XS::encode_json(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,
+        $qv
+        ? JSON::XS::encode_json(
+            +{
+                map {
+                    my $v = $qv->$_;
+                    $_ => eval { $v->can('db_timestamp') } ? $v->db_timestamp : defined $v ? "$v" : undef;
+                } @qv_col
+            })
+        : undef,
 
         # limits
         $limits ? JSON::XS::encode_json($limits) : undef,
