@@ -18,6 +18,7 @@ use open qw[ :encoding(UTF-8) ];
 use CGI;
 use JSON qw( from_json to_json );
 use URL::Encode qw( url_decode );
+use BOM::MarketData qw(create_underlying);
 
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType_JSON );

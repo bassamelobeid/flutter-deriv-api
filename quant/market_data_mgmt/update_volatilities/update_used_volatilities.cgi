@@ -56,6 +56,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::MarketData::Display::VolatilitySurface;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
 use Finance::Asset::Market::Registry;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();

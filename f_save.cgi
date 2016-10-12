@@ -20,6 +20,7 @@ use BOM::MarketData::Display::VolatilitySurface;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::MarketData qw(create_underlying);
 use BOM::Backoffice::Sysinit ();
 use BOM::System::AuditLog;
 BOM::Backoffice::Sysinit::init();

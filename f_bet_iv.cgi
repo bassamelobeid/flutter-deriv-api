@@ -8,6 +8,9 @@ use f_brokerincludeall;
 use BOM::System::Config;
 use subs::subs_dividend_from_excel_file;
 use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 use BOM::MarketData::Fetcher::CorporateAction;
 use Bloomberg::FileDownloader;
 use Bloomberg::RequestFiles;

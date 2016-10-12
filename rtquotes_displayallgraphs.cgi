@@ -8,6 +8,7 @@ use BOM::Backoffice::GNUPlot;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use subs::subs_graphs;
+use BOM::MarketData qw(create_underlying);
 
 use String::UTF8::MD5;
 

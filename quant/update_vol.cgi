@@ -7,6 +7,7 @@ use open qw[ :encoding(UTF-8) ];
 
 use CGI;
 use JSON qw( from_json to_json );
+use BOM::MarketData qw(create_underlying);
 use URL::Encode qw( url_decode );
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType_JSON );

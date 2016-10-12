@@ -7,6 +7,8 @@ use open qw[ :encoding(UTF-8) ];
 use HTML::Entities;
 use f_brokerincludeall;
 use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use Finance::Asset::Market::Registry;
 use Proc::Killall;
 use Try::Tiny;
