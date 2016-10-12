@@ -6,6 +6,7 @@ use Moose;
 use YAML::XS qw(LoadFile);
 use Quant::Framework::Utils::Types;
 extends 'Quant::Framework::VolSurface';
+use BOM::MarketData qw(create_underlying);
 
 =head1 NAME
 
