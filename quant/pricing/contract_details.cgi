@@ -124,7 +124,6 @@ sub _get_pricing_parameter_from_IH_pricer {
     my ($contract, $action_type, $discounted_probability) = @_;
     my $pricing_parameters;
 
-    my $opposite_contract = $contract->opposite_contract;
     my $pe                = $contract->pricing_engine;
     my $bs_probability    = $pe->base_probability->base_amount;
     my $commission_markup = $contract->commission_markup->amount;
