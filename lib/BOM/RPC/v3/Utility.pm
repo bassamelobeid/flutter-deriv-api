@@ -52,8 +52,8 @@ sub create_error {
             code              => $args->{code},
             message_to_client => $args->{message_to_client},
             $args->{continue_price_stream} ? (continue_price_stream => $args->{continue_price_stream}) : (),
-            $args->{message} ? (message => $args->{message}) : (),
-            $args->{details} ? (details => $args->{details}) : ()}};
+            $args->{message}               ? (message               => $args->{message})               : (),
+            $args->{details}               ? (details               => $args->{details})               : ()}};
 }
 
 sub invalid_token_error {
