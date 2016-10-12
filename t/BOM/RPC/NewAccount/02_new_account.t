@@ -15,6 +15,7 @@ use Test::BOM::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Token;
+use BOM::Platform::Client;
 
 use utf8;
 
@@ -323,6 +324,9 @@ subtest $method => sub {
 
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^MF\d+/, 'new MF loginid';
+
+        ok(BOM::Platform::Client->new({loginid => $new_loginid})->get_status('financial_risk_approval'),
+            'For mf accounts we will set financial risk approval status');
 
         my ($resp_loginid, $t, $uaf) = BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token});
         is $resp_loginid, $new_loginid, 'correct oauth token';
