@@ -2,6 +2,7 @@ package BOM::Database::Rose::DB::Cache;
 
 use strict;
 use warnings;
+use Try::Tiny;
 
 use parent 'Rose::DB::Cache';
 
@@ -10,6 +11,8 @@ sub finish_request_cycle {
 
     foreach my $entry ($self->db_cache_entries) {
         my $db  = $entry->db;
+        next unless $db->has_dbh;
+
         my $dbh = $db->dbh;
 
         # This closes connections to writable databases
@@ -18,8 +21,13 @@ sub finish_request_cycle {
         # work in transaction mode and can hence kept open.
         # See /etc/init.d/binary_pgbouncer
         if ($dbh and not $db->database =~ /replica/) {
-            $dbh->disconnect;
             $db->dbh(undef);
+            try {
+                $dbh->disconnect;
+            }
+            catch {
+                warn __PACKAGE__ . ": while disconnecting from database: $_";
+            };
         }
     }
 
