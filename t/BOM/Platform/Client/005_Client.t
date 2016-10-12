@@ -10,7 +10,11 @@ use BOM::Platform::Client;
 my $login_id = 'CR0011';
 my $client;
 
-is(scalar(keys %{BOM::Platform::Client::client_status_types()}), 10, "correct number of client status");
+is_deeply [sort { $a cmp $b } keys %{BOM::Platform::Client::client_status_types()}],
+    [sort { $a cmp $b }
+        qw/age_verification cashier_locked disabled unwelcome withdrawal_locked ukgc_funds_protection tnc_approval financial_risk_approval jp_knowledge_test_pending jp_knowledge_test_fail jp_activation_pending/
+    ],
+    "correct number of client status";
 
 Test::Exception::lives_ok { $client = BOM::Platform::Client::get_instance({loginid => $login_id}) } "Can create client $login_id";
 

@@ -28,7 +28,7 @@ use BOM::Database::Rose::DB::StringifyRules;
 use BOM::Database::Rose::DB::Relationships;
 use BOM::Platform::Client::PaymentAgent;
 use BOM::Platform::Client::Payments;
-use BOM::Platform::CurrencyConverter qw(in_USD);
+use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use BOM::Platform::LandingCompany::Registry;
 use BOM::System::Config;
 
@@ -45,6 +45,7 @@ my $CLIENT_STATUS_TYPES = {
     withdrawal_locked         => 1,
     ukgc_funds_protection     => 1,    # UKGC License condition 4.2.1 for UK clients only
     tnc_approval              => 1,    # MGA License condition 2.7.1.10 for MLT clients only
+    financial_risk_approval   => 1,    # warned the client of any potential risks (compliance)
     jp_knowledge_test_pending => 1,
     jp_knowledge_test_fail    => 1,
     jp_activation_pending     => 1,
