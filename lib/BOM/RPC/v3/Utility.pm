@@ -51,6 +51,7 @@ sub create_error {
         error => {
             code              => $args->{code},
             message_to_client => $args->{message_to_client},
+            $args->{continue_price_stream} ? (continue_price_stream => $args->{continue_price_stream}) : (),
             $args->{message} ? (message => $args->{message}) : (),
             $args->{details} ? (details => $args->{details}) : ()}};
 }
