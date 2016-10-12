@@ -263,10 +263,10 @@ CALL_R_100_100_1465693200_1465693320_S16P_0: Pricing::Engine::EuropeanDigitalSlo
 CALL_R_100_100_1465693200_1465862399_10000_0: Pricing::Engine::EuropeanDigitalSlope
 CALL_R_100_100_1465693200_1465862399_104650000_0: Pricing::Engine::EuropeanDigitalSlope
 CALL_R_100_100_1465693200_5T_10000_0: Pricing::Engine::EuropeanDigitalSlope
-CALL_R_10_100_1465693200_1465693215_10000_0: Pricing::Engine::EuropeanDigitalSlope
-CALL_R_10_100_1465693200_1465693260_10000_0: Pricing::Engine::EuropeanDigitalSlope
+CALL_R_10_100_1465693200_1465693215_1000_0: Pricing::Engine::EuropeanDigitalSlope
+CALL_R_10_100_1465693200_1465693260_1000_0: Pricing::Engine::EuropeanDigitalSlope
 CALL_R_10_100_1465693200_1465693260_S16P_0: Pricing::Engine::EuropeanDigitalSlope
-CALL_R_10_100_1465693200_1465693320_10000_0: Pricing::Engine::EuropeanDigitalSlope
+CALL_R_10_100_1465693200_1465693320_1000_0: Pricing::Engine::EuropeanDigitalSlope
 CALL_R_10_100_1465693200_1465693320_S16P_0: Pricing::Engine::EuropeanDigitalSlope
 CALL_R_10_100_1465693200_1465862399_10000_0: Pricing::Engine::EuropeanDigitalSlope
 CALL_R_10_100_1465693200_1465862399_104650000_0: Pricing::Engine::EuropeanDigitalSlope
@@ -846,7 +846,7 @@ PUT_R_100_100_1465693200_5T_10000_0: Pricing::Engine::EuropeanDigitalSlope
 PUT_R_10_100_1465693200_1465693215_10000_0: Pricing::Engine::EuropeanDigitalSlope
 PUT_R_10_100_1465693200_1465693260_10000_0: Pricing::Engine::EuropeanDigitalSlope
 PUT_R_10_100_1465693200_1465693260_S16P_0: Pricing::Engine::EuropeanDigitalSlope
-PUT_R_10_100_1465693200_1465693320_10000_0: Pricing::Engine::EuropeanDigitalSlope
+PUT_R_10_100_1465693200_1465693320_1000_0: Pricing::Engine::EuropeanDigitalSlope
 PUT_R_10_100_1465693200_1465693320_S16P_0: Pricing::Engine::EuropeanDigitalSlope
 PUT_R_10_100_1465693200_1465862399_10000_0: Pricing::Engine::EuropeanDigitalSlope
 PUT_R_10_100_1465693200_1465862399_104650000_0: Pricing::Engine::EuropeanDigitalSlope
