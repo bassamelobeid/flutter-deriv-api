@@ -9,7 +9,7 @@ use Try::Tiny;
 use DateTime;
 use List::Util qw(min);
 
-use BOM::Platform::CurrencyConverter qw(amount_from_to_currency);
+use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 use BOM::Platform::Client::IDAuthentication;
 use BOM::Platform::Context qw(localize);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_count);
