@@ -443,12 +443,12 @@ sub process_transaction_updates {
     return;
 }
 
+my %skip_duration_list = map { $_ => 1 } qw(s m h);
+my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 R_10 RDBULL RDBEAR);
+my %skip_type_list     = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
+
 sub _skip_streaming {
     my $args = shift;
-
-    my %skip_duration_list = map { $_ => 1 } qw(s m h);
-    my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR);
-    my %skip_type_list     = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
 
     my $skip_symbols = ($skip_symbol_list{$args->{symbol}}) ? 1 : 0;
     my $atm_contract = ($args->{contract_type} =~ /^(CALL|PUT)$/ and not $args->{barrier}) ? 1 : 0;
