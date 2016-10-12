@@ -8,6 +8,7 @@ use Getopt::Long;
 use DataDog::DogStatsd::Helper;
 use BOM::RPC::v3::Contract;
 use sigtrap qw/handler signal_handler normal-signals/;
+use BOM::MarketData qw(create_underlying);
 use Data::Dumper;
 use LWP::Simple;
 use BOM::Platform::Runtime;
