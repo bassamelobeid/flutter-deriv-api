@@ -75,7 +75,6 @@ sub run {
                 push @{$report->{error}}, "Unregconized bloomberg symbol[$bb_symbol]";
                 next;
             }
-
             my $underlying = BOM::Market::Underlying->new($bom_underlying_symbol);
             my $now        = Date::Utility->new;
 
@@ -95,7 +94,6 @@ sub run {
                 my $high  = $data->{PX_HIGH}     ? $data->{PX_HIGH}     : $data->{PX_YEST_HIGH};
                 my $low   = $data->{PX_LOW}      ? $data->{PX_LOW}      : $data->{PX_YEST_LOW};
                 my $close = $data->{PX_LAST_EOD} ? $data->{PX_LAST_EOD} : $data->{PX_YEST_CLOSE};
-
                 my $market_db_file_path = $self->directory_to_save . '/' . $symbol . '.db';
                 my $line_to_append      = "$date $open $high $low $close\n";
                 if (-e $market_db_file_path) {
@@ -136,10 +134,16 @@ sub _passes_sanity_check {
     }
     my $skip_close_check = (grep { $_ eq $bom_underlying_symbol } @symbols_to_update) ? 0 : 1;
 
+    $data->{PX_OPEN}     ? $data->{PX_OPEN}     : $data->{PX_YEST_OPEN} +=0;
+    $data->{PX_HIGH}     ? $data->{PX_HIGH}     : $data->{PX_YEST_HIGH} +=0;
+    $data->{PX_LOW}      ? $data->{PX_LOW}      : $data->{PX_YEST_LOW} +=0;
+    $data->{PX_LAST_EOD} ? $data->{PX_LAST_EOD} : $data->{PX_YEST_CLOSE} +=0;
+
     my $open  = $data->{PX_OPEN}     ? $data->{PX_OPEN}     : $data->{PX_YEST_OPEN};
     my $high  = $data->{PX_HIGH}     ? $data->{PX_HIGH}     : $data->{PX_YEST_HIGH};
     my $low   = $data->{PX_LOW}      ? $data->{PX_LOW}      : $data->{PX_YEST_LOW};
     my $close = $data->{PX_LAST_EOD} ? $data->{PX_LAST_EOD} : $data->{PX_YEST_CLOSE};
+
 
     my $suspicious_move   = $underlying->market->suspicious_move;
     my $p_suspicious_move = $suspicious_move * 100;
