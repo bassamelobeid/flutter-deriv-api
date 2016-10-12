@@ -242,9 +242,7 @@ sub active_symbols {
         ('legal_allowed_markets', join('::', ($params->{args}->{active_symbols}, $language, $landing_company_name, $appconfig_revision)));
 
     my $active_symbols;
-    if (my $cached_symbols = Cache::RedisDB->get($namespace, $key)
-        and Cache::RedisDB->ttl($namespace, $key) > 0)
-    {
+    if (my $cached_symbols = Cache::RedisDB->get($namespace, $key)) {
         $active_symbols = $cached_symbols;
     } else {
         my @all_active = get_offerings_with_filter('underlying_symbol', {landing_company => $landing_company_name});
