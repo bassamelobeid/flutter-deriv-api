@@ -119,7 +119,7 @@ sub _get_ask {
         my $contract = produce_contract($p2);
 
         if (!$contract->is_valid_to_buy) {
-            my ($message, $message_to_client, $code);
+            my ($message_to_client, $code);
 
             if (my $pve = $contract->primary_validation_error) {
 
