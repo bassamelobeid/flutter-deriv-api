@@ -5,7 +5,7 @@ matrix:
     fast_finish: true
 cache: apt
 before_install:
-    - git clone https://d34c443afcc0c115c07590c76f7e3886190b3a76@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - git clone https://aeb2d033edae71197c4f3258e6361f2bcc73fd18@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
     - /tmp/travis-scripts/setup_ssh.sh
     - git clone git://github.com/binary-com/helpers ~/travis-perl-helpers
     - AUTHOR_TESTING=0 source ~/travis-perl-helpers/init
