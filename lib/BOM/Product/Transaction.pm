@@ -7,7 +7,7 @@ use Path::Tiny;
 use Scalar::Util qw(blessed);
 use Time::HiRes qw(tv_interval gettimeofday time);
 use List::Util qw(min max first);
-use JSON qw( from_json );
+use JSON qw( from_json to_json );
 use Date::Utility;
 use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
 use Format::Util::Numbers qw(commas roundnear to_monetary_number_format);
@@ -31,6 +31,7 @@ use BOM::Database::Model::Account;
 use BOM::Database::Model::DataCollection::QuantsBetVariables;
 use BOM::Database::Model::Constants;
 use BOM::Database::Helper::FinancialMarketBet;
+use BOM::Database::Helper::RejectedTrade;
 use BOM::Platform::Offerings qw/get_offerings_with_filter/;
 use BOM::Platform::LandingCompany::Registry;
 use BOM::Database::ClientDB;
@@ -292,7 +293,8 @@ sub stats_stop {
 
     if ($what eq 'batch_buy') {
         my @tags = grep { !/^(?:broker|virtual):/ } @{$tags->{tags}};
-        while (my ($broker, $xd) = each %$extra) {
+        for my $broker (keys %$extra) {
+            my $xd = $extra->{$broker};
             my $tags = {tags => ["broker:" . lc($broker), "virtual:" . ($broker =~ /^VR/ ? "yes" : "no"), @tags]};
             stats_count("transaction.buy.attempt", $xd->{attempt}, $tags);
             stats_count("transaction.buy.success", $xd->{success}, $tags);
@@ -1377,6 +1379,22 @@ sub _validate_sell_pricing_adjustment {
                 'sell price'
             );
 
+            #Record failed transaction here.
+            my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
+                    login_id                => $self->client->loginid,
+                    financial_market_bet_id => $self->contract_id,
+                    shortcode               => $self->contract->shortcode,
+                    action_type             => 'sell',
+                    reason                  => 'SLIPPAGE',
+                    details                 => JSON::to_json({
+                            order_price      => $self->price,
+                            recomputed_price => $contract->bid_price,
+                            slippage         => roundnear(0.01, $move * $self->payout)}
+                    ),
+                    db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
+                });
+            $rejected_trade->record_fail_txn();
+
             return Error::Base->cuss(
                 -type => 'PriceMoved',
                 -mesg =>
@@ -1449,6 +1467,21 @@ sub _validate_trade_pricing_adjustment {
                 to_monetary_number_format($recomputed_amount),
                 $what_changed
             );
+
+            #Record failed transaction here.
+            my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
+                    login_id    => $self->client->loginid,
+                    shortcode   => $self->contract->shortcode,
+                    action_type => 'buy',
+                    reason      => 'SLIPPAGE',
+                    details     => JSON::to_json({
+                            order_price      => $self->price,
+                            recomputed_price => $contract->ask_price,
+                            slippage         => roundnear(0.01, $move * $self->payout)}
+                    ),
+                    db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
+                });
+            $rejected_trade->record_fail_txn();
 
             return Error::Base->cuss(
                 -type => 'PriceMoved',
