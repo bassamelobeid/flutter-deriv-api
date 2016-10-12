@@ -135,10 +135,8 @@ sub _passes_sanity_check {
     }
     my $skip_close_check = (grep { $_ eq $bom_underlying_symbol } @symbols_to_update) ? 0 : 1;
 
-    $data->{PX_OPEN}     ? $data->{PX_OPEN}     : $data->{PX_YEST_OPEN}  += 0;
-    $data->{PX_HIGH}     ? $data->{PX_HIGH}     : $data->{PX_YEST_HIGH}  += 0;
-    $data->{PX_LOW}      ? $data->{PX_LOW}      : $data->{PX_YEST_LOW}   += 0;
-    $data->{PX_LAST_EOD} ? $data->{PX_LAST_EOD} : $data->{PX_YEST_CLOSE} += 0;
+    # convert string to number
+    $data->{$_} += 0 for qw(PX_OPEN PX_HIGH PX_LOW PX_LAST_EOD PX_YEST_OPEN PX_YEST_HIGH PX_YEST_LOW PX_YEST_CLOSE);
 
     my $open  = $data->{PX_OPEN}     ? $data->{PX_OPEN}     : $data->{PX_YEST_OPEN};
     my $high  = $data->{PX_HIGH}     ? $data->{PX_HIGH}     : $data->{PX_YEST_HIGH};
