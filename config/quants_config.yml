@@ -13,6 +13,12 @@ commission:
 bet_limits:
   holiday_blackout_start: 345
   holiday_blackout_end: 5
+  inefficient_period_payout_max:
+    USD: 200
+    EUR: 200
+    AUD: 200
+    GBP: 200
+    JPY: 20000
   maximum_payout:
     USD: 50000
     EUR: 50000
