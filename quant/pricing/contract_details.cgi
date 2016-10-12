@@ -51,6 +51,7 @@ if ($broker and $id) {
     my $traded_ask     = $details->{ask_price};
     my $slippage_price = $details->{price_slippage};
     my $action_type    = $details->{action_type};
+    my $order_price    = $details->{order_price};
 
     $pricing_parameters =
           $contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex' ? _get_pricing_parameter_from_IH_pricer($contract)
@@ -60,8 +61,8 @@ if ($broker and $id) {
     @contract_details = (
         login_id       => $details->{loginid},
         slippage_price => $slippage_price ? roundnear($JPY_precision, $slippage_price) : 'NA.',
-        order_type     => $action_type,
-        order_price => ($action_type eq 'buy') ? $traded_ask : $traded_bid,
+        order_type => $action_type,
+        order_price => roundnear($JPY_precision, $order_price),
         trans_id    => $id,
         short_code  => $contract->shortcode,
         payout      => $contract->payout,
