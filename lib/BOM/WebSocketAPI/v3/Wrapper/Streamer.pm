@@ -190,7 +190,6 @@ sub process_realtime_events {
                 return;
             }
 
-            warn "Undefined display_decimals - ${symbol}" unless defined $c->stash("${symbol}_display_decimals");
             my $display_decimals = $c->stash("${symbol}_display_decimals") // create_underlying($symbol)->display_decimals;
             my $tick = {
                 id     => $feed_channels_type->{$channel}->{uuid},
@@ -217,7 +216,6 @@ sub process_realtime_events {
                 return;
             }
 
-            warn "Undefined display_decimals - ${symbol}" unless defined $c->stash("${symbol}_display_decimals");
             my $display_decimals = $c->stash("${symbol}_display_decimals") // create_underlying($symbol)->display_decimals;
             my $quote_format = '%.' . $display_decimals . 'f';
             $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;

@@ -71,7 +71,7 @@ my %contractParameters = (
 
 $t = $t->send_ok({
         json => {
-            "proposal"  => 1,
+            "proposal" => 1,
             %contractParameters
         }});
 $t->message_ok;
@@ -84,7 +84,7 @@ my $id1 = $proposal->{proposal}->{id};
 
 $t = $t->send_ok({
         json => {
-            "proposal"  => 1,
+            "proposal" => 1,
             %contractParameters
         }});
 $t->message_ok;
@@ -95,7 +95,7 @@ cmp_ok $id1, 'eq', $proposal->{proposal}->{id}, 'ids are the same for same param
 $contractParameters{amount}++;
 $t = $t->send_ok({
         json => {
-            "proposal"  => 1,
+            "proposal" => 1,
             %contractParameters
         }});
 $t->message_ok;
@@ -123,8 +123,8 @@ $t = $t->send_ok({
             %contractParameters
         }})->message_ok;
 my $err_proposal = decode_json($t->message->[1]);
-cmp_ok $err_proposal->{msg_type}, ,'eq', 'proposal';
-cmp_ok $err_proposal->{error}->{code}, ,'eq', 'AlreadySubscribed', 'AlreadySubscribed error expected';
+cmp_ok $err_proposal->{msg_type},, 'eq', 'proposal';
+cmp_ok $err_proposal->{error}->{code},, 'eq', 'AlreadySubscribed', 'AlreadySubscribed error expected';
 
 sleep 1;
 $t = $t->send_ok({
