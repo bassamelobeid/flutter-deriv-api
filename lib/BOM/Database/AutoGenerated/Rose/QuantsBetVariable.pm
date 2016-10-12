@@ -39,6 +39,7 @@ __PACKAGE__->meta->setup(
         price_slippage          => { type => 'numeric' },
         requested_price         => { type => 'numeric'},
         recomputed_price        => { type => 'numeric'},
+        trading_period_start    => { type => 'timestamp' },
     ],
 
     primary_key_columns => [ 'transaction_id' ],
