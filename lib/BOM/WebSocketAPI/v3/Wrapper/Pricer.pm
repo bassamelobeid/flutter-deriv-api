@@ -501,8 +501,8 @@ sub _invalid_response_or_stash_data {
         || !$stash_data->{cache};
 
     if (ref $additional_params_to_check eq 'HASH') {
-        while (my ($key, $value) = each %$additional_params_to_check) {
-            $err ||= !$stash_data->{$key}->{$value};
+        for my $key (sort keys %$additional_params_to_check) {
+            $err ||= !$stash_data->{$key}->{$additional_params_to_check->{$key}};
         }
     }
 
