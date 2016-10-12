@@ -520,6 +520,7 @@ sub _build_config {
 
     $default_dividend_rate = 0 if $self->symbol eq 'R_100' or $self->symbol eq 'R_75';
     $default_dividend_rate = 0 if $self->symbol eq 'R_50'  or $self->symbol eq 'R_25';
+    $default_dividend_rate = 0 if $self->symbol eq 'R_10';
 
     my $spot = undef;
     $spot = $self->spot_tick->quote if defined $self->spot_tick;
