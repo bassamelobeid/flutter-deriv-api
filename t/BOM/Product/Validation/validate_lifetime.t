@@ -8,11 +8,14 @@ use Test::MockModule;
 use Test::FailWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Market::AggTicks;
 use Date::Utility;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use Cache::RedisDB;
+Cache::RedisDB->flushall;
 initialize_realtime_ticks_db();
 
 my $now = Date::Utility->new('2016-09-19 19:59:59');
@@ -60,12 +63,8 @@ subtest 'inefficient period' => sub {
     $bet_params->{date_start} = $bet_params->{date_pricing} = $now->plus_time_interval('1s');
     note('price at 2016-09-19 20:00:00');
     $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'valid to buy';
-    like(
-        $c->primary_validation_error->message_to_client,
-        qr/Contracts of less than 24h in duration are not available between 2(0|1):00-23:59:59 GMT/,
-        'throws error'
-    );
+    ok $c->is_valid_to_buy,       'valid to buy';
+    ok $c->market_is_inefficient, 'market inefficient flag triggered';
     $bet_params->{underlying} = 'R_100';
     note('set underlying to R_100. Makes sure only forex is affected.');
     $c = produce_contract($bet_params);
@@ -78,13 +77,16 @@ subtest 'inefficient period' => sub {
 
     note('set duration to five ticks.');
     $bet_params->{duration} = '5t';
-    $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'not valid';
-    like(
-        $c->primary_validation_error->message_to_client,
-        qr/Contracts of less than 24h in duration are not available between 2(0|1):00-23:59:59 GMT/,
-        'throws error'
-    );
+    my $mock = Test::MockModule->new('BOM::Market::AggTicks');
+    $mock->mock(
+        'retrieve',
+        sub {
+            my $dp = $bet_params->{date_pricing}->epoch;
+            [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp+19)];
+        });
+    $c          = produce_contract($bet_params);
+    ok $c->is_valid_to_buy,       'valid to buy';
+    ok $c->market_is_inefficient, 'market inefficient flag triggered for tick expiry';
 };
 
 subtest 'non dst' => sub {
@@ -107,12 +109,8 @@ subtest 'non dst' => sub {
     ok $c->is_valid_to_buy, 'valid to buy';
     $bet_params->{date_start} = $bet_params->{date_pricing} = $non_dst->plus_time_interval('1s');
     $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'valid to buy';
-    like(
-        $c->primary_validation_error->message_to_client,
-        qr/Contracts of less than 24h in duration are not available between 21:00-23:59:59 GMT/,
-        'throws error'
-    );
+    ok $c->is_valid_to_buy,       'valid to buy';
+    ok $c->market_is_inefficient, 'correctly triggered for non dst';
 };
 
 done_testing();
