@@ -9,6 +9,7 @@ use Text::CSV::Slurp;
 
 use Bloomberg::FileDownloader;
 use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
 use Bloomberg::CurrencyConfig;
