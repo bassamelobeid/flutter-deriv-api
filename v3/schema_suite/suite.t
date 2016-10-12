@@ -9,3 +9,4 @@ use Suite;
 
 Suite->run('suite.conf');
 done_testing();
+
