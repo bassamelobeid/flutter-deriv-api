@@ -1,17 +1,17 @@
 v3_1:
-	bash -c 'PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib -I/tmp/perl-websocket-tests/lib -r /tmp/perl-websocket-tests/v3/{0,1,2,4}*'
+	bash -c 'PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib -I/home/git/regentmarkets/perl-websocket-tests/lib -r /home/git/regentmarkets/perl-websocket-tests/v3/{0,1,2,4}*'
 
 v3_2:
-	bash -c 'PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib -I/tmp/perl-websocket-tests/lib -r /tmp/perl-websocket-tests/v3/{5,6,7}*'
+	bash -c 'PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib -I/home/git/regentmarkets/perl-websocket-tests/lib -r /home/git/regentmarkets/perl-websocket-tests/v3/{5,6,7}*'
 
 v3_3:
-	bash -c 'PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib -I/tmp/perl-websocket-tests/lib -r /tmp/perl-websocket-tests/v3/{8,9}*'
+	bash -c 'PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib -I/home/git/regentmarkets/perl-websocket-tests/lib -r /home/git/regentmarkets/perl-websocket-tests/v3/{8,9}*'
 
 json_schema:
-	PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib -I/tmp/perl-websocket-tests/lib /tmp/perl-websocket-tests/v3/schema_suite/suite.t
+	PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib -I/home/git/regentmarkets/perl-websocket-tests/lib /home/git/regentmarkets/perl-websocket-tests/v3/schema_suite/suite.t
 
 loadtest:
-	bash -c 'prove --timer -I./lib -I/tmp/perl-websocket-tests/lib /tmp/perl-websocket-tests/v3/schema_suite/loadtest.t'
+	bash -c 'prove --timer -I./lib -I/home/git/regentmarkets/perl-websocket-tests/lib /home/git/regentmarkets/perl-websocket-tests/v3/schema_suite/loadtest.t'
 
 structure:
 	PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib t/*.t
