@@ -2284,9 +2284,6 @@ sub validate_price {
             stake_same_as_payout => sub {
                 my ($details) = @_;
 
-                #WARNING:
-                #Please change the code in lib/BOM/WebsocketAPI/v3/Wrapper/Pricer.pm if you are changing the message here.
-                #Otherwise the logic in Pricer.pm will break. Changing message_to_client is fine.
                 $self->continue_price_stream(1);
 
                 return {
