@@ -21,17 +21,8 @@
         <p><b>ORDER_PRICE = [% contract_details.order_price  %]</b></p>
         <p><b>ORDER_TYPE = [% contract_details.order_type  %]</b></p>
         <p><b>PAYOUT = [% contract_details.payout  %]</b></p>
-        <table id="dtr" border="1" cellpadding="1" cellspacing="0">
-                <tr><b> Contract's ask probability </br></tr>
-                [% FOREACH ask_key =pricing_parameters.ask_probability.keys.sort%]
-                <tr><td>[% ask_key %]</td>
-                    <td> [% pricing_parameters.ask_probability.$ask_key %]</td>
-                </tr>
-                [% END %]
-        </table>
           [% FOREACH key =pricing_parameters.keys.sort %]
                <p><table id="dtr" border="1" cellpadding="1" cellspacing="0">
-               [% IF key != 'ask_probability' AND key != 'ask_price' %]
                 <tr><td><b> [% key %] </b></td></tr>
                     [% FOREACH sub_keys = pricing_parameters.$key.keys.sort %]
                          <tr><td>[% sub_keys %]</td>
@@ -45,7 +36,6 @@
                              </tr>
                               [% END %]  
                      [% END %] 
-             [% END %]
            [% END %] 
          </table></p>
 [% END %]
