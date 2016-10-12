@@ -315,8 +315,12 @@ sub _build_long_term_vol {
 
 sub _get_coefficients {
     my ($self, $which, $underlying) = @_;
-    $underlying = $self->underlying if not $underlying;
+    $underlying ||= $self->underlying;
     my $coef = $coefficients->{$which};
+
+    die "Volatility calibration coefficients of $which is empty"
+        unless ref $coef eq 'HASH';
+
     my $result = $underlying->submarket->name eq 'minor_pairs' ? $coef->{frxUSDJPY} : $coef->{$underlying->symbol};
 
     die "No $which coefficients for this underlying [" . $underlying->symbol . "]"
