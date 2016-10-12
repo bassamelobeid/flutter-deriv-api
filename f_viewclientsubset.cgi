@@ -8,7 +8,7 @@ use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
 use BOM::System::Config;
 use BOM::Platform::Runtime;
-use BOM::Platform::CurrencyConverter qw(in_USD);
+use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use BOM::Platform::Email qw(send_email);
 use open qw[ :encoding(UTF-8) ];
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);

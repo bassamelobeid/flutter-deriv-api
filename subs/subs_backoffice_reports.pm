@@ -8,7 +8,7 @@ use List::Util qw( min max );
 use Cache::RedisDB;
 use Format::Util::Numbers qw(commas roundnear);
 use BOM::Platform::Runtime;
-use BOM::Platform::CurrencyConverter qw(in_USD);
+use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use BOM::Platform::LandingCompany::Registry;
 
 sub DailyTurnOverReport {
