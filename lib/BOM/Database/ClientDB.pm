@@ -57,8 +57,8 @@ my $environment;
 
 BEGIN {
     my $loaded_landing_companies = LoadFile('/home/git/regentmarkets/bom-platform/config/landing_companies.yml');
-    while (my ($k, $v) = each %$loaded_landing_companies) {
-        map {$environment->{$_} = $v->{short}} @{$v->{broker_codes}};
+    for my $v (values %$loaded_landing_companies) {
+        $environment->{$_} = $v->{short} for @{$v->{broker_codes}};
     }
 }
 
