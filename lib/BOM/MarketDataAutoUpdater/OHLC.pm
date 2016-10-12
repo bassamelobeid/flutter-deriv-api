@@ -75,7 +75,6 @@ sub run {
                 push @{$report->{error}}, "Unregconized bloomberg symbol[$bb_symbol]";
                 next;
             }
-
             my $underlying = BOM::Market::Underlying->new($bom_underlying_symbol);
             my $now        = Date::Utility->new;
 
@@ -95,9 +94,9 @@ sub run {
                 my $high  = $data->{PX_HIGH}     ? $data->{PX_HIGH}     : $data->{PX_YEST_HIGH};
                 my $low   = $data->{PX_LOW}      ? $data->{PX_LOW}      : $data->{PX_YEST_LOW};
                 my $close = $data->{PX_LAST_EOD} ? $data->{PX_LAST_EOD} : $data->{PX_YEST_CLOSE};
-
                 my $market_db_file_path = $self->directory_to_save . '/' . $symbol . '.db';
                 my $line_to_append      = "$date $open $high $low $close\n";
+
                 if (-e $market_db_file_path) {
                     my $last_line = `tail -1 $market_db_file_path`;
                     if ($last_line =~ /(\d\d?\-\w{3}\-\d{2})\s([\d\.]+)\s([\d\.]+)\s([\d\.]+)\s([\d\.]+)/) {
@@ -135,6 +134,9 @@ sub _passes_sanity_check {
         return 'OHLC for ' . $symbol . ' is not updated. Incorrect date [' . $date . ']';
     }
     my $skip_close_check = (grep { $_ eq $bom_underlying_symbol } @symbols_to_update) ? 0 : 1;
+
+    # convert string to number
+    $data->{$_} += 0 for qw(PX_OPEN PX_HIGH PX_LOW PX_LAST_EOD PX_YEST_OPEN PX_YEST_HIGH PX_YEST_LOW PX_YEST_CLOSE);
 
     my $open  = $data->{PX_OPEN}     ? $data->{PX_OPEN}     : $data->{PX_YEST_OPEN};
     my $high  = $data->{PX_HIGH}     ? $data->{PX_HIGH}     : $data->{PX_YEST_HIGH};
