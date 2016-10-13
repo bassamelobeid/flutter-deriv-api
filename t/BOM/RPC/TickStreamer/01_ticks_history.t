@@ -161,15 +161,15 @@ subtest '_validate_start_end' => sub {
     $params->{args}->{end}   = $now->epoch;
     delete $params->{args}->{count};
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is @{$rpc_ct->result->{data}->{history}->{times}}, 500, 'It should return 500 ticks by default';
+    is @{$rpc_ct->result->{data}->{history}->{times}}, 5000, 'It should return 500 ticks by default';
 
     $params->{args}->{count} = 'invalid';
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is @{$rpc_ct->result->{data}->{history}->{times}}, 500, 'It should return 500 ticks if sent invalid count';
+    is @{$rpc_ct->result->{data}->{history}->{times}}, 5000, 'It should return 500 ticks if sent invalid count';
 
-    $params->{args}->{count} = 10000;
+    $params->{args}->{count} = 5001;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is @{$rpc_ct->result->{data}->{history}->{times}}, 500, 'It should return 500 ticks if sent very big count';
+    is @{$rpc_ct->result->{data}->{history}->{times}}, 5000, 'It should return 500 ticks if sent very big count';
 
     delete $params->{args}->{start};
     $params->{args}->{count} = 10;
