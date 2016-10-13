@@ -113,7 +113,7 @@ subtest 'buy' => sub {
 
     #Try setting trading period start in parameters.
     $params->{contract_parameters}{trading_period_start} = time - 3600;
-    $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;    
+    $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
 
     $contract = BOM::Test::Data::Utility::Product::create_contract(is_spread => 1);
     $params->{contract_parameters} = {
