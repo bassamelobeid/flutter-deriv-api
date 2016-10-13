@@ -10,8 +10,8 @@ use Parallel::ForkManager;
 use Time::HiRes qw(time sleep);
 
 use BOM::Market::AggTicks;
-use BOM::Market::Underlying;
-use BOM::Market::UnderlyingDB;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData qw(create_underlying_db);
 
 sub documentation {
     return qq/This daemon aggregates ticks into redis for short-term pricing./;
@@ -21,7 +21,7 @@ sub daemon_run {
     my $self = shift;
 
     my $at = BOM::Market::AggTicks->new;
-    my @uls = map { BOM::Market::Underlying->new($_) } BOM::Market::UnderlyingDB->instance->symbols_for_intraday_fx;
+    my @uls = map { create_underlying($_) } create_underlying_db->symbols_for_intraday_fx;
 
     my $pm = Parallel::ForkManager->new(scalar @uls);    # We'll run one process for each underlying, unless that proves fatal in some way.
     $pm->run_on_finish(

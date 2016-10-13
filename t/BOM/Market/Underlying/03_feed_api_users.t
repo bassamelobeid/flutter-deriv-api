@@ -13,7 +13,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 
 use Date::Utility;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
 use Cache::RedisDB;
 use Postgres::FeedDB;
 use Postgres::FeedDB::Spot::OHLC;
@@ -36,7 +36,7 @@ subtest 'get_combined_realtime' => sub {
         ok !$cache, 'QUOTE is now empty';
     };
 
-    my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxUSDJPY'}]);
+    my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxUSDJPY'}]);
     subtest 'Fetch from empty cache' => sub {
         my $cache = Cache::RedisDB->get('QUOTE', 'frxUSDJPY');
         ok !$cache, 'Nothing is available on cache';
@@ -93,7 +93,7 @@ subtest 'get_combined_realtime' => sub {
 
     subtest 'call with data at t and now at t + 86400' => sub {
         subtest 'Direct' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxUSDJPY'}]);
+            my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxUSDJPY'}]);
 
             my $realtime;
             lives_ok {
@@ -107,7 +107,7 @@ subtest 'get_combined_realtime' => sub {
         };
 
         subtest 'Inverted' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxJPYUSD'}]);
+            my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxJPYUSD'}]);
 
             my $realtime;
             lives_ok {
@@ -126,7 +126,7 @@ subtest 'get_combined_realtime' => sub {
         };
 
         subtest 'Relatives' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxUSDJPY'}]);
+            my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxUSDJPY'}]);
             cmp_ok($underlying->spot, '==', 79.873, 'spot is correct');
             is $underlying->spot_time, $test_time->epoch, 'spot time is correct';
         };
@@ -147,7 +147,7 @@ subtest 'get_combined_realtime' => sub {
 
     subtest 'call with data at t + 1 and now at t + 86400' => sub {
         subtest 'Direct' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxUSDJPY'}]);
+            my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxUSDJPY'}]);
 
             my $realtime;
             lives_ok {
@@ -161,7 +161,7 @@ subtest 'get_combined_realtime' => sub {
         };
 
         subtest 'Inverted' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxJPYUSD'}]);
+            my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxJPYUSD'}]);
 
             my $realtime;
             lives_ok {
@@ -184,14 +184,14 @@ subtest 'next_tick_after' => sub {
     my $test_time = Date::Utility->new('2012-01-12 03:23:05');
     subtest 'call with no data' => sub {
         subtest 'Direct' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxGBPAUD'}]);
+            my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxGBPAUD'}]);
 
             my $tick = $underlying->next_tick_after($test_time->epoch);
             ok !$tick, 'No tick';
         };
 
         subtest 'Inverted' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxAUDGBP'}]);
+            my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxAUDGBP'}]);
 
             my $tick = $underlying->next_tick_after($test_time->epoch);
             ok !$tick, 'No tick';
@@ -213,14 +213,14 @@ subtest 'next_tick_after' => sub {
 
     subtest 'call with data at t - 1 second' => sub {
         subtest 'Direct' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxGBPAUD'}]);
+            my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxGBPAUD'}]);
 
             my $tick = $underlying->next_tick_after($test_time->epoch);
             ok !$tick, 'No tick';
         };
 
         subtest 'Inverted' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxAUDGBP'}]);
+            my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxAUDGBP'}]);
 
             my $tick = $underlying->next_tick_after($test_time->epoch);
             ok !$tick, 'No tick';
@@ -242,14 +242,14 @@ subtest 'next_tick_after' => sub {
 
     subtest 'call with data at t' => sub {
         subtest 'Direct' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxGBPAUD'}]);
+            my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxGBPAUD'}]);
 
             my $tick = $underlying->next_tick_after($test_time->epoch);
             ok !$tick, 'No tick';
         };
 
         subtest 'Inverted' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxAUDGBP'}]);
+            my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxAUDGBP'}]);
 
             my $tick = $underlying->next_tick_after($test_time->epoch);
             ok !$tick, 'No tick';
@@ -271,7 +271,7 @@ subtest 'next_tick_after' => sub {
 
     subtest 'call with data at t + 1 seconds' => sub {
         subtest 'Direct' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxGBPAUD'}]);
+            my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxGBPAUD'}]);
 
             my $tick = $underlying->next_tick_after($test_time->epoch);
             ok $tick, 'There are ticks';
@@ -282,7 +282,7 @@ subtest 'next_tick_after' => sub {
         };
 
         subtest 'Inverted' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxAUDGBP'}]);
+            my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxAUDGBP'}]);
 
             my $tick = $underlying->next_tick_after($test_time->epoch);
             ok $tick, 'There are ticks';
@@ -294,7 +294,7 @@ subtest 'next_tick_after' => sub {
     };
 
     subtest 'Direct date query' => sub {
-        my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxGBPAUD'}]);
+        my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxGBPAUD'}]);
 
         my $tick = $underlying->next_tick_after('12-Jan-12 03:23:05');
         ok $tick, 'There are ticks';
@@ -308,8 +308,8 @@ subtest 'next_tick_after' => sub {
 subtest 'tick_at' => sub {
 
     my $test_time           = Date::Utility->new('2012-09-28 20:59:59');
-    my $underlying          = new_ok('BOM::Market::Underlying' => [{symbol => 'frxAUDJPY'}]);
-    my $inverted_underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxJPYAUD'}]);
+    my $underlying          = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxAUDJPY'}]);
+    my $inverted_underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxJPYAUD'}]);
 
     subtest 'call with no data' => sub {
         ok !$underlying->spot_source->tick_at($test_time),          'Standard got nothing';
@@ -378,7 +378,7 @@ subtest 'tick_at' => sub {
 };
 
 subtest 'tick_at scenarios' => sub {
-    my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxEURGBP'}]);
+    my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxEURGBP'}]);
     my $first_tick_date = Date::Utility->new('2012-09-28 07:55:00');
     subtest 'one more tick to succeed' => sub {
         lives_ok {
@@ -398,7 +398,8 @@ subtest 'tick_at scenarios' => sub {
             my $test_time = $first_tick_date->plus_time_interval('2m');
 
             ok !$underlying->spot_source->tick_at($test_time), 'No price as we are not sure if there is another tick coming';
-            is $underlying->spot_source->tick_at($test_time, {allow_inconsistent => 1})->quote, 6080.73, 'If we are ok with inconsistent price then get our tick';
+            is $underlying->spot_source->tick_at($test_time, {allow_inconsistent => 1})->quote, 6080.73,
+                'If we are ok with inconsistent price then get our tick';
         };
 
         subtest 'tick at exact time' => sub {
@@ -418,7 +419,8 @@ subtest 'tick_at scenarios' => sub {
             my $test_time = $first_tick_date->plus_time_interval('2m');
 
             is $underlying->spot_source->tick_at($test_time)->quote, 6080.73, 'Get our first added tick';
-            is $underlying->spot_source->tick_at($test_time->epoch, {allow_inconsistent => 1})->quote, 6080.73, '... and possibly inconsistent is the same';
+            is $underlying->spot_source->tick_at($test_time->epoch, {allow_inconsistent => 1})->quote, 6080.73,
+                '... and possibly inconsistent is the same';
         };
     };
 
@@ -445,7 +447,7 @@ subtest 'tick_at scenarios' => sub {
 
 subtest 'get_ohlc_data_for_period' => sub {
     subtest 'Invalid dates' => sub {
-        my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'DJI'}]);
+        my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'DJI'}]);
 
         throws_ok {
             $underlying->get_ohlc_data_for_period({
@@ -457,7 +459,7 @@ subtest 'get_ohlc_data_for_period' => sub {
     };
 
     subtest 'no data' => sub {
-        my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'DJI'}]);
+        my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'DJI'}]);
         my @ohlc = $underlying->get_ohlc_data_for_period({
             start => '2012-10-22',
             end   => '2012-10-24'
@@ -500,7 +502,7 @@ subtest 'get_ohlc_data_for_period' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily($ohlc);
 
     subtest 'high, low calculation' => sub {
-        my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'DJI'}]);
+        my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'DJI'}]);
         my $ohlc = $underlying->get_high_low_for_period({
             start => '2012-10-22',
             end   => '2012-10-24'
@@ -521,7 +523,7 @@ subtest 'get_ohlc_data_for_period' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick($tick);
 
     subtest 'high, low calculation from ticks' => sub {
-        my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'DJI'}]);
+        my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'DJI'}]);
         my $ohlc = $underlying->get_high_low_for_period({
             start => '2012-10-22',
             end   => '2012-10-23 22:00:00'
@@ -532,5 +534,13 @@ subtest 'get_ohlc_data_for_period' => sub {
         is $ohlc->{close}, 13_220.73, 'Correct Close';
     };
 };
+
+sub check_new_ok {
+    my $module  = shift;
+    my $ul_args = shift;
+
+    return create_underlying($ul_args->[0]);
+
+}
 
 done_testing;

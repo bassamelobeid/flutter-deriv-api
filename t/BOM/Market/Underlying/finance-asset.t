@@ -6,11 +6,11 @@ use warnings;
 # formerly defined in Finance::Asset
 
 use Test::More;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
 
 my $forex_symbol = 'frxAUDUSD';
-my $forex        = new_ok('BOM::Market::Underlying' => [$forex_symbol]);
-my $forex_2      = new_ok('BOM::Market::Underlying' => ['frxUSDJPY']);
+my $forex        = new_ok('Quant::Framework::Underlying' => [$forex_symbol]);
+my $forex_2      = new_ok('Quant::Framework::Underlying' => ['frxUSDJPY']);
 
 subtest pip_size => sub {
     cmp_ok $forex->pip_size, '==', 0.00001, 'pip_size';

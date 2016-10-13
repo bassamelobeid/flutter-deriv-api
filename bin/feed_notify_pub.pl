@@ -9,7 +9,8 @@ use IO::Select;
 use Try::Tiny;
 use Postgres::FeedDB;
 
-use BOM::Market::UnderlyingDB;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
 use Finance::Asset::Market::Registry;
 use BOM::System::RedisReplicated;
 
@@ -45,13 +46,13 @@ sub _publish {
 }
 
 sub update_crossing_underlyings {
-    my @all_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my @all_symbols = create_underlying_db->get_symbols_for(
         market            => [Finance::Asset::Market::Registry->instance->all_market_names],
         contract_category => 'ANY'
     );
     my $update = '';
     foreach my $s (@all_symbols) {
-        my $u = BOM::Market::Underlying->new($s);
+        my $u = create_underlying($s);
         if ($u->calendar->market_times()->{standard}->{daily_open}->seconds < 0) {
             $update .=
                   "INSERT INTO feed.underlying_open_close VALUES ('$s', "

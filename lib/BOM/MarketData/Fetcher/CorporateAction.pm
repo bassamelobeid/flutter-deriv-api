@@ -13,7 +13,8 @@ An interface to fetch corporate action data from Chronicle
 use Moose;
 use Quant::Framework::CorporateAction;
 use Quant::Framework::StorageAccessor;
-use BOM::Market::UnderlyingDB;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
 
 =head2 get_underlyings_with_corporate_action
 
@@ -24,7 +25,7 @@ Returns a hash reference of underlyings which has corporate actions (in bloomber
 sub get_underlyings_with_corporate_action {
     my $self = shift;
 
-    my @stocks_list = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my @stocks_list = create_underlying_db->get_symbols_for(
         market            => ['stocks'],
         contract_category => 'callput'
     );

@@ -9,7 +9,7 @@ use JSON qw(decode_json);
 
 use BOM::Test::Data::Utility::UnitTestRedis;
 
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
 use BOM::Platform::Runtime;
 
@@ -24,9 +24,9 @@ my $ersatz_symbol = 'other_fake_testing_symbol';
 my $real_symbol   = 'frxUSDJPY';
 my $namespace     = 'unit_test_agg' . $$;
 
-my $fake_underlying   = BOM::Market::Underlying->new($fake_symbol);
-my $ersatz_underlying = BOM::Market::Underlying->new($ersatz_symbol);
-my $real_underlying   = BOM::Market::Underlying->new($real_symbol);
+my $fake_underlying   = create_underlying($fake_symbol);
+my $ersatz_underlying = create_underlying($ersatz_symbol);
+my $real_underlying   = create_underlying($real_symbol);
 
 my $at = BOM::Market::AggTicks->new({
     namespace              => $namespace,

@@ -11,7 +11,7 @@ use Date::Utility;
 
 has date => (
     is      => 'ro',
-    isa     => 'bom_date_object',
+    isa     => 'date_object',
     coerce  => 1,
     default => sub { Date::Utility->new },
 );
@@ -24,7 +24,7 @@ package main;
 use Test::More (tests => 2);
 use Test::Exception;
 
-use BOM::Market::Types;
+use Finance::Asset::Market::Types;
 
 lives_ok { TypeTester->new(date => time) } 'Can coerce epoch into Date::Utility.';
 throws_ok { TypeTester->new(date => 'yabadabado') } qr/Invalid datetime format/, 'Cannot coerce junk string into Date::Utility.';

@@ -6,8 +6,8 @@ use Test::FailWarnings;
 use Data::Chronicle::Mock;
 
 use BOM::System::Chronicle;
-use BOM::Market::UnderlyingDB;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
 use BOM::Test::Data::Utility::UnitTestMarketData;
 use Quant::Framework::TradingCalendar;
 
@@ -74,19 +74,20 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => 
 
 my $chronicle_r = BOM::System::Chronicle::get_chronicle_reader($date);
 
-my $ul_LSE = BOM::Market::Underlying->new('FTSE');
-my $LSE = Quant::Framework::TradingCalendar->new({
-        symbol => 'LSE', 
-        underlying_config => $ul_LSE->config,
-        chronicle_reader => $chronicle_r, 
-        for_date => $date});
+my $ul_LSE = create_underlying('FTSE');
+my $LSE    = Quant::Framework::TradingCalendar->new({
+    symbol            => 'LSE',
+    underlying_config => $ul_LSE->config,
+    chronicle_reader  => $chronicle_r,
+    for_date          => $date
+});
 
 is $ul_LSE->exchange->symbol, $LSE->symbol, "This underlying's exchange is what we expect";
 
 # Gold has the same exchange as FOREX.
 # Yng Shan is planning to create a commodities exchange in the near future.
 # This test will fail when that happens.
-my $gold = BOM::Market::Underlying->new('frxXAUUSD');
+my $gold = create_underlying('frxXAUUSD');
 is $gold->calendar->standard_closing_on($friday)->epoch, $friday->plus_time_interval('21h')->epoch, 'standard close for friday is 21:00 GMT';
 is $gold->calendar->standard_closing_on($normal_thursday)->epoch, $normal_thursday->plus_time_interval('23h59m59s')->epoch,
     'normal standard closing is 23:59:59 GMT';
