@@ -423,12 +423,13 @@ sub startup {
                 my $rl = RateLimitations::Pluggable->new(
                     limits => \%rates_config,
                     getter => sub {
-                        my ($service, $consumer) = @_;
+                        my ($service) = @_;
                         my $hits = $stash->{rate_limitations_hits};
                         if (!$hits) {
-                            $hits = $stash->{rate_limitations_hits} = [];
+                            $hits = $stash->{rate_limitations_hits} = {};
                         }
-                        return $hits;
+                        $hits->{$service} //= [];
+                        return $hits->{$service};
                     },
                     # we do not need setter, as getter always returns
                     # service hits array from stash.
