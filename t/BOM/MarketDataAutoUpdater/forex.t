@@ -15,8 +15,9 @@ use JSON qw(decode_json);
 
 use Postgres::FeedDB::Spot;
 my $module = Test::MockModule->new('Postgres::FeedDB::Spot');
-$module->mock('spot_tick', 
-    sub { 
+$module->mock(
+    'spot_tick',
+    sub {
         my $self = shift;
         return Postgres::FeedDB::Spot::Tick->new({
             epoch => time,
@@ -24,16 +25,17 @@ $module->mock('spot_tick',
         });
     });
 
-
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::MarketDataAutoUpdater::Forex;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 
 # Prep:
 my $fake_date = Date::Utility->new('2012-08-13 15:55:55');
 set_absolute_time($fake_date->epoch);
-
-
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -42,7 +44,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         date   => Date::Utility->new,
     }) for (qw/JPY USD GBP INR AUD/);
 
-BOM::Market::Underlying->new({symbol => 'frxGBPINR'})->set_combined_realtime({
+create_underlying({symbol => 'frxGBPINR'})->set_combined_realtime({
     epoch => $fake_date->epoch,
     quote => 100,
 });
@@ -60,7 +62,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 Quant::Framework::Utils::Test::create_doc(
     'volsurface_delta',
     {
-        underlying_config => BOM::Market::Underlying->new($_)->config,
+        underlying_config => create_underlying($_)->config,
         chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader,
         chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer,
         recorded_date     => Date::Utility->new,
@@ -94,7 +96,7 @@ my $data = {
     },
 };
 
-my $usdjpy_config = BOM::Market::Underlying->new('frxUSDJPY')->config;
+my $usdjpy_config = create_underlying('frxUSDJPY')->config;
 
 my $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',

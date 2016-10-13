@@ -13,9 +13,10 @@ Updates Index vols from a given .file file.
 use Moose;
 extends 'BOM::MarketDataAutoUpdater';
 
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use BOM::Platform::Runtime;
-use BOM::Market::UnderlyingDB;
+use BOM::MarketData qw(create_underlying_db);
 use SuperDerivatives::VolSurface;
 use Try::Tiny;
 use File::Temp;
@@ -70,7 +71,7 @@ sub _build_symbols_to_update {
 
     my @symbols_to_update;
     if ($market eq 'indices') {
-        @symbols_to_update = grep { not $skip_list{$_} and $_ !~ /^OTC_/ } BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        @symbols_to_update = grep { not $skip_list{$_} and $_ !~ /^OTC_/ } create_underlying_db->get_symbols_for(
             market            => 'indices',
             contract_category => 'ANY',
         );
@@ -78,7 +79,7 @@ sub _build_symbols_to_update {
         push @symbols_to_update, qw(FTSE IXIC BIST100);
 
     } else {
-        @symbols_to_update = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        @symbols_to_update = create_underlying_db->get_symbols_for(
             market            => 'stocks',
             contract_category => 'ANY',
             exclude_disabled  => 1,
@@ -102,7 +103,7 @@ sub _build_surfaces_from_file {
 sub run {
     my $self               = shift;
     my $surfaces_from_file = $self->surfaces_from_file;
-    my %otc_list           = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my %otc_list           = map { $_ => 1 } create_underlying_db->get_symbols_for(
         market            => 'indices',
         submarket         => 'otc_index',
         contract_category => 'ANY',
@@ -117,13 +118,13 @@ sub run {
             next;
         }
         try {
-            my $underlying     = BOM::Market::Underlying->new($symbol);
+            my $underlying     = create_underlying($symbol);
             my $raw_volsurface = $surfaces_from_file->{$symbol};
             if ($self->uses_binary_spot->{$symbol}) {
                 # We do not have feed of BIST100 cash index, hence it need to use the spot of OTC_BIST100
                 $raw_volsurface->{spot_reference} =
                     $symbol eq 'BIST100'
-                    ? BOM::Market::Underlying->new('OTC_BIST100')->tick_at($raw_volsurface->{recorded_date}->epoch, {allow_inconsistent => 1})->quote
+                    ? create_underlying('OTC_BIST100')->tick_at($raw_volsurface->{recorded_date}->epoch, {allow_inconsistent => 1})->quote
                     : $underlying->tick_at($raw_volsurface->{recorded_date}->epoch, {allow_inconsistent => 1})->quote;
 
             }
@@ -137,7 +138,7 @@ sub run {
             });
             if ($volsurface->is_valid) {
                 if (exists $otc_list{'OTC_' . $symbol}) {
-                    my $otc         = BOM::Market::Underlying->new('OTC_' . $symbol);
+                    my $otc         = create_underlying('OTC_' . $symbol);
                     my $otc_surface = $volsurface->clone({
                         underlying_config => $otc->config,
                     });

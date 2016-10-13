@@ -8,7 +8,8 @@ use File::Slurp;
 
 use Date::Utility;
 use Finance::Asset::Market::Registry;
-use BOM::Market::UnderlyingDB;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData qw(create_underlying_db);
 use BOM::Platform::Runtime;
 use Bloomberg::FileDownloader;
 use Bloomberg::RequestFiles;
@@ -47,7 +48,7 @@ sub run {
         return;
     }
 
-    my @symbols_to_update = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my @symbols_to_update = create_underlying_db->get_symbols_for(
         market            => ['stocks', 'indices'],
         contract_category => 'ANY',
         exclude_disabled  => 1,
@@ -75,7 +76,7 @@ sub run {
                 push @{$report->{error}}, "Unregconized bloomberg symbol[$bb_symbol]";
                 next;
             }
-            my $underlying = BOM::Market::Underlying->new($bom_underlying_symbol);
+            my $underlying = create_underlying($bom_underlying_symbol);
             my $now        = Date::Utility->new;
 
             next if (not $underlying->trades_on($now));
@@ -122,7 +123,7 @@ sub _passes_sanity_check {
     if ($data->{'ERROR CODE'} != 0 or grep { $_ eq 'N.A.' } values %$data) {
         return 'Invalid data received from bloomberg';
     }
-    my $underlying = BOM::Market::Underlying->new($bom_underlying_symbol);
+    my $underlying = create_underlying($bom_underlying_symbol);
     my $spot_eod   = $underlying->spot;
     my $symbol     = $underlying->symbol;
     my $date       = $data->{LAST_UPDATE_DATE_EOD} ? $data->{LAST_UPDATE_DATE_EOD} : $data->{PX_YEST_DT};
@@ -192,7 +193,7 @@ sub verify_ohlc_update {
 
     my @all_markets = map { $_->name } Finance::Asset::Market::Registry->instance->display_markets;
 
-    my @underlying_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my @underlying_symbols = create_underlying_db->get_symbols_for(
         market            => \@all_markets,
         contract_category => 'ANY',
     );
@@ -209,7 +210,7 @@ sub verify_ohlc_update {
         next if (-M $db_file and -M $db_file >= 20);    # do only those that were modified in last 20 days (others are junk/tests)
 
         # we are checking back past 10 day OHLC, so start to look back calendar from that day
-        my $underlying = BOM::Market::Underlying->new({
+        my $underlying = create_underlying({
                 symbol   => $underlying_symbol,
                 for_date => $now->minus_time_interval('10d')});
 

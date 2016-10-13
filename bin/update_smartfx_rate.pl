@@ -15,7 +15,8 @@ Update interest rate of smart fx based on the interest rate of the forex pairs o
 use Moose;
 with 'App::Base::Script';
 
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types; 
 use Quant::Framework::InterestRate;
 use Date::Utility;
 
@@ -52,7 +53,7 @@ sub script_run {
         my %neg = map {$_ => 1} @{$world->{$symbol}->{negative}};
         my $date = Date::Utility->new();
         next if $date->is_a_weekend;
-        my @source = map {BOM::Market::Underlying->new($_)} @{$self->world_symbols->{$symbol}->{source}};
+        my @source = map {create_underlying($_)} @{$self->world_symbols->{$symbol}->{source}};
         my %world_rate;
         for my $term (sort {$a <=> $b} keys %{Quant::Framework::InterestRate->new({
             symbol => 'USD',

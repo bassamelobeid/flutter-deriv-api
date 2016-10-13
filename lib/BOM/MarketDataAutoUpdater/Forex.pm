@@ -16,11 +16,12 @@ extends 'BOM::MarketDataAutoUpdater';
 use Bloomberg::FileDownloader;
 use Bloomberg::VolSurfaces;
 use BOM::Platform::Runtime;
-use BOM::Market::UnderlyingDB;
+use BOM::MarketData qw(create_underlying_db);
 use Date::Utility;
 use Try::Tiny;
 use File::Find::Rule;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Utils;
@@ -84,19 +85,19 @@ has symbols_to_update => (
 
 sub _build_symbols_to_update {
     my $self  = shift;
-    my @forex = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my @forex = create_underlying_db->get_symbols_for(
         market            => ['forex'],
         submarket         => ['major_pairs', 'minor_pairs'],
         contract_category => 'ANY',
         broker            => 'VRT',
     );
-    my @commodities = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my @commodities = create_underlying_db->get_symbols_for(
         market            => 'commodities',
         contract_category => 'ANY',
         broker            => 'VRT',
     );
 
-    my @quanto_currencies = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my @quanto_currencies = create_underlying_db->get_symbols_for(
         market      => ['forex', 'commodities',],
         quanto_only => 1,
     );
@@ -149,7 +150,7 @@ sub run {
     my $self = shift;
 
     Bloomberg::FileDownloader->new->grab_files({file_type => 'vols'}) if $self->_connect_ftp;
-    my @quanto_currencies = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my @quanto_currencies = create_underlying_db->get_symbols_for(
         market      => ['forex', 'commodities',],
         quanto_only => 1,
     );
@@ -169,7 +170,7 @@ sub run {
             };
             next;
         }
-        my $underlying = BOM::Market::Underlying->new($symbol);
+        my $underlying = create_underlying($symbol);
         next if $underlying->volatility_surface_type eq 'flat';
         my $raw_volsurface = $surfaces_from_file->{$symbol};
         next
@@ -201,7 +202,7 @@ sub run {
 
 sub _append_to_existing_surface {
     my ($new_surface, $underlying_symbol) = @_;
-    my $underlying = BOM::Market::Underlying->new($underlying_symbol);
+    my $underlying = create_underlying($underlying_symbol);
     my $existing_surface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying})->surface;
 
     foreach my $term (keys %{$existing_surface}) {
@@ -228,7 +229,7 @@ sub passes_additional_check {
     # More generally, we don't want to update if we won't trade on the effective date,
     # for the same reasons. This is likely mostly partially covered by some of the above,
     # but I am sitting here fixing this on Christmas, so I might be missing something.
-    my $underlying         = BOM::Market::Underlying->new($volsurface->underlying_config->symbol);
+    my $underlying         = create_underlying($volsurface->underlying_config->symbol);
     my $recorded_date      = $volsurface->recorded_date;
     my $friday_after_close = ($recorded_date->day_of_week == 5 and not $underlying->calendar->is_open_at($recorded_date));
     my $wont_open          = not $underlying->calendar->trades_on($volsurface->effective_date);
