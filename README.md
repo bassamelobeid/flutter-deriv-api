@@ -110,7 +110,7 @@ Package dependency: BOM::MarketDataAutoUpdater::ImpliedInterestRates
 
 Frequency of this script being called: 00GMT on daily basic
 
-Input: 'interest_rates' at Chronicle
+Input: forward_feed 
 
 Output: 'interest_rates' at Chronicle
 
