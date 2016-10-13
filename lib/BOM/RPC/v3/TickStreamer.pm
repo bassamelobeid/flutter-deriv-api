@@ -250,9 +250,9 @@ sub _validate_start_end {
     unless ($count
         and $count =~ /^[0-9]+$/
         and $count > 0
-        and $count < 5000)
+        and $count < 5001)
     {
-        $count = 500;
+        $count = 5000;
     }
     if ($ul->feed_license ne 'realtime') {
         # if feed doesn't have realtime license, we should adjust end_time in such a way
