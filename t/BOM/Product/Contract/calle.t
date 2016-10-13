@@ -8,6 +8,10 @@ use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -35,7 +39,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        underlying_config => BOM::Market::Underlying->new('frxUSDJPY')->config,
+        underlying_config => create_underlying('frxUSDJPY')->config,
         recorded_date     => $now
     });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({

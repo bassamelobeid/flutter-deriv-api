@@ -9,9 +9,10 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use Format::Util::Numbers qw(roundnear);
 use BOM::Market::AggTicks;
 use Date::Utility;
-use BOM::Market::UnderlyingDB;
+use BOM::MarketData qw(create_underlying_db);
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use Text::CSV::Slurp;
 
 use BOM::Test::Data::Utility::UnitTestRedis;
@@ -20,7 +21,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 BOM::Market::AggTicks->new->flush;
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed');
 
-my @symbols = map { BOM::Market::Underlying->new($_) } BOM::Market::UnderlyingDB->instance->symbols_for_intraday_index;
+my @symbols = map { create_underlying($_) } create_underlying_db->symbols_for_intraday_index;
 
 my $corr = {
     'FCHI' => {
@@ -930,6 +931,6 @@ foreach my $d (@$data) {
         });
 
     my $c = produce_contract($params);
-    is roundnear(0.01, $c->theo_probability->amount),  0.52,  'theo prob checked';
+    is roundnear(0.01, $c->theo_probability->amount),  0.52, 'theo prob checked';
     is roundnear(0.01, $c->commission_markup->amount), 0.03, 'commission markup checked';
 }

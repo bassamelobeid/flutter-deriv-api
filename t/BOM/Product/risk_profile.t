@@ -9,11 +9,15 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Product::RiskProfile;
 use BOM::Platform::Runtime;
 
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 subtest 'init' => sub {
     throws_ok { BOM::Product::RiskProfile->new } qr/required/, 'throws if required args not provided';
     lives_ok {
         BOM::Product::RiskProfile->new(
-            underlying        => BOM::Market::Underlying->new('frxUSDJPY'),
+            underlying        => create_underlying('frxUSDJPY'),
             contract_category => 'callput',
             start_type        => 'spot',
             expiry_type       => 'tick',
@@ -26,7 +30,7 @@ subtest 'init' => sub {
 };
 
 my %args = (
-    underlying        => BOM::Market::Underlying->new('frxUSDJPY'),
+    underlying        => create_underlying('frxUSDJPY'),
     contract_category => 'callput',
     start_type        => 'spot',
     expiry_type       => 'tick',
@@ -74,7 +78,7 @@ subtest 'get_risk_profile' => sub {
     is scalar(@$limit), 1, 'only one profile from custom';
     is scalar(@cp),     1, 'one from client';
 
-    $args{underlying} = BOM::Market::Underlying->new('R_100');
+    $args{underlying} = create_underlying('R_100');
     $rp = BOM::Product::RiskProfile->new(%args);
     is $rp->get_risk_profile, 'low_risk', 'low risk is default for volatility index';
     $limit = $rp->custom_profiles;
@@ -206,7 +210,7 @@ subtest 'check for risk_profile consistency' => sub {
     for (0 .. 4) {
         for my $bc ('touchnotouch', 'callput') {
             my $rp = BOM::Product::RiskProfile->new(
-                underlying        => BOM::Market::Underlying->new('frxUSDJPY'),
+                underlying        => create_underlying('frxUSDJPY'),
                 contract_category => $bc,
                 start_type        => 'spot',
                 expiry_type       => 'tick',

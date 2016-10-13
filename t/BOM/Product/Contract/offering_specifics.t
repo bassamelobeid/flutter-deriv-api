@@ -43,7 +43,7 @@ my $bet_params = {
     currency     => 'USD',
     payout       => 10,
 };
-Cache::RedisDB->set('FINDER_PREDEFINED_SET','frxUSDJPY==2016-09-22==00', []);
+Cache::RedisDB->set('FINDER_PREDEFINED_SET', 'frxUSDJPY==2016-09-22==00', []);
 subtest '2-minute non ATM callput' => sub {
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';

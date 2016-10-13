@@ -44,7 +44,7 @@ use MooseX::Types -declare => [
         ),
     'PositiveNum'
 ];
-extends 'BOM::Market::Types';
+extends 'BOM::MarketData::Types';
 use Moose::Util::TypeConstraints;
 
 subtype 'bom_contract_category', as 'BOM::Product::Contract::Category';
