@@ -27,7 +27,7 @@ my $pg = Test::PostgreSQL->new or plan skip_all => $Test::PostgreSQL::errstr;
     # Note that this would not be valid on win32 where all refaddrs
     # change after a "fork" anyway.
     my $addr = refaddr($dbh);
-    if(my $pid = fork // die "fork failed - $!") {
+    if (my $pid = fork // die "fork failed - $!") {
         # Parent
         is(refaddr(BOM::System::Chronicle::_dbh()), $addr, 'refaddr still the same in parent after fork');
         ok(BOM::Database::dbh_is_registered(chronicle => $dbh), 'and handle is still registered with BOM::Database');
@@ -40,7 +40,7 @@ my $pg = Test::PostgreSQL->new or plan skip_all => $Test::PostgreSQL::errstr;
         isa_ok($child_dbh, 'DBI::db');
         is(refaddr(BOM::System::Chronicle::_dbh()), refaddr($child_dbh), 'but subsequent calls get the same object');
         ok(BOM::Database::dbh_is_registered(chronicle => $child_dbh), 'new handle is registered with BOM::Database');
-        ok($child_dbh->ping, 'can ping the first handle');
+        ok($child_dbh->ping,                     'can ping the first handle');
         ok(BOM::System::Chronicle::_dbh()->ping, 'can ping the second handle');
         exit 0;
     }
