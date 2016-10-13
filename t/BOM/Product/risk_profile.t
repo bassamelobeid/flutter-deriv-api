@@ -116,7 +116,7 @@ subtest 'turnover limit parameters' => sub {
     is $param->[0]->{name},  'test custom', 'correct name';
     is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
     ok $param->[0]->{tick_expiry}, 'tick_expiry set to 1';
-    is scalar(@{$param->[0]->{symbols}}), 6, '6 symbols selected';
+    is scalar(@{$param->[0]->{symbols}}), 7, '7 symbols selected';
     BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"xxx": {"market": "volidx", "expiry_type": "intraday", "risk_profile": "no_business", "name": "test custom"}}');
     $rp = BOM::Product::RiskProfile->new(%args, expiry_type => 'intraday');
@@ -125,7 +125,7 @@ subtest 'turnover limit parameters' => sub {
     is $param->[0]->{name},  'test custom', 'correct name';
     is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
     ok !$param->[0]->{daily}, 'daily set to 0';
-    is scalar(@{$param->[0]->{symbols}}), 6, '6 symbols selected';
+    is scalar(@{$param->[0]->{symbols}}), 7, '7 symbols selected';
     BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"xxx": {"market": "volidx", "expiry_type": "daily", "risk_profile": "no_business", "name": "test custom"}}');
     $rp = BOM::Product::RiskProfile->new(%args, expiry_type => 'daily');
@@ -134,7 +134,7 @@ subtest 'turnover limit parameters' => sub {
     is $param->[0]->{name},  'test custom', 'correct name';
     is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
     ok $param->[0]->{daily}, 'daily set to 1';
-    is scalar(@{$param->[0]->{symbols}}), 6, '6 symbols selected';
+    is scalar(@{$param->[0]->{symbols}}), 7, '7 symbols selected';
 };
 
 subtest 'empty limit condition' => sub {
