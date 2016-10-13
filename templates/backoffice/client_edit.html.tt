@@ -455,6 +455,12 @@ table#client_edit td{
             <td>Client acknowledges T&C [% client_tnc_version %]</td>
         </tr>
     [% END %]
+    [% IF show_risk_approval %]
+        <tr>
+            <td class="label"><input type="checkbox" [% IF financial_risk_status %]checked[% END %] disabled="disabled"/></td>
+            <td>Client acknowledges financial risk?</td>
+        </tr>
+    [% END %]
     <tr>
         <td class="small_header" colspan="2">#Omnibus</td>
     </tr>

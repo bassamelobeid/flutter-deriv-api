@@ -114,9 +114,11 @@ sub print_client_details {
         show_funds_message      => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
         ukgc_funds_status       => $client->get_status('ukgc_funds_protection'),
         show_tnc_status => ($client->is_virtual) ? 0 : 1,
-        tnc_approval_status => $tnc_status,
-        client_tnc_version  => $tnc_status ? $tnc_status->reason : '',
-        show_allow_omnibus  => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of) ? 1 : 0
+        tnc_approval_status   => $tnc_status,
+        show_risk_approval    => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,
+        financial_risk_status => $client->get_status('financial_risk_approval'),
+        client_tnc_version    => $tnc_status ? $tnc_status->reason : '',
+        show_allow_omnibus    => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of) ? 1 : 0
     };
 
     BOM::Platform::Context::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
