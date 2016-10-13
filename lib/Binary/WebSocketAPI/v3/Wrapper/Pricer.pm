@@ -465,7 +465,7 @@ sub _create_error_message {
 
     my $error = $response->{error} || {};
     if (not($error->{continue_price_stream}) and $stash_data->{uuid}) {
-        Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid})
+        Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid});
     }
 
     if ($response->{error}) {
