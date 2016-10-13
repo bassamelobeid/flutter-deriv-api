@@ -16,6 +16,10 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Database::Model::AccessToken;
 use BOM::RPC::v3::Utility;
 
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 package MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use Test::Most;
@@ -129,7 +133,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     }) for qw(JPY USD JPY-USD);
 
 my $now        = Date::Utility->new('2005-09-21 06:46:00');
-my $underlying = BOM::Market::Underlying->new('R_50');
+my $underlying = create_underlying('R_50');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
