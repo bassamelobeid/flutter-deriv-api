@@ -2079,7 +2079,7 @@ sub sell_expired_contracts {
         foreach my $bet (@bets_to_sell) {
             next if $sold_fmbs{$bet->{id}};    # Was not missed.
             $missed{$bet->{bet_class}}++;
-            push $result->{failures},
+            push @{$result->{failures}},
                 {
                 fmb_id => $bet->{id},
                 reason => _normalize_error("TransactionFailure")};
