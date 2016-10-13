@@ -354,7 +354,7 @@ sub set_jp_settings {
         $client->financial_assessment({data => encode_json($new_fin)});
     }
 
-    $client->latest_environment(Date::Utility::new->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
+    $client->latest_environment(Date::Utility->new->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
     if (not $client->save()) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InternalServerError',
