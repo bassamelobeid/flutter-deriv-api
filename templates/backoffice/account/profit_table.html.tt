@@ -119,7 +119,7 @@
     <form action="[% request.url_for('backoffice/f_quant_query.cgi') | none %]" method="post">
         [% FOREACH contract IN sold_contracts %]
             [%
-                    display_contract(contract);
+                    display_contract(contract) | none;
             %]
         [% END %]
         <input type="hidden" name="loginID" value="[% loginid %]"/>
@@ -152,7 +152,7 @@ END %]
     <form action="[% request.url_for('backoffice/f_quant_query.cgi') | none %]" method="post">
         [% FOREACH contract IN open_contracts %]
             [%
-                display_contract(contract);
+                display_contract(contract) | none;
             %]
         [% END %]
         <input type="hidden" name="loginID" value="[% loginid %]"/>
