@@ -9,7 +9,8 @@ use File::Spec;
 use JSON qw(decode_json);
 
 use Date::Utility;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -62,8 +63,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date  => Date::Utility->new('2013-03-27'),
     });
 
-my $opening    = BOM::Market::Underlying->new('USAAPL')->calendar->opening_on($date);
-my $underlying = BOM::Market::Underlying->new('USAAPL');
+my $opening    = create_underlying('USAAPL')->calendar->opening_on($date);
+my $underlying = create_underlying('USAAPL');
 my $starting   = $underlying->calendar->opening_on(Date::Utility->new('2013-03-27'))->plus_time_interval('50m');
 my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'USAAPL',
@@ -176,7 +177,7 @@ subtest 'not valid to buy due to outdated dividend' => sub {
     $corp_google->update($action, $starting->plus_time_interval('24h'))->save;
 
     my $bet_params = {
-        underlying   => BOM::Market::Underlying->new('USGOOG'),
+        underlying   => create_underlying('USGOOG'),
         bet_type     => 'PUT',
         currency     => 'USD',
         payout       => 100,
@@ -413,7 +414,7 @@ subtest 'order check' => sub {
 
         $corp_2->update($two_actions, $date->plus_time_interval('1h'))->save;
 
-        $underlying = BOM::Market::Underlying->new('USPM');
+        $underlying = create_underlying('USPM');
         throws_ok { $underlying->corporate_actions } qr/Could not determine order of corporate actions/,
             'throws exception if we have two corporate actions with action_code before';
     }
@@ -426,7 +427,7 @@ subtest 'order check' => sub {
 
         $corp_2->update($two_actions, $date->plus_time_interval('2h'))->save;
 
-        $underlying = BOM::Market::Underlying->new('USPM');
+        $underlying = create_underlying('USPM');
         throws_ok { $underlying->corporate_actions } qr/Could not determine order of corporate actions/,
             'throws exception if we have two corporate actions with action_code after';
     }
@@ -452,7 +453,7 @@ subtest 'order check' => sub {
 
         $corp_2->update($actions, $date->plus_time_interval('3h'))->save;
 
-        $underlying = BOM::Market::Underlying->new('USPM');
+        $underlying = create_underlying('USPM');
         my $ordered_act;
         lives_ok { $ordered_act = $underlying->corporate_actions } 're-arranged actions';
         is ref $ordered_act, 'ARRAY', 'is an array ref';

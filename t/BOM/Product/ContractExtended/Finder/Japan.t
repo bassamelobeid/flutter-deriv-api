@@ -10,7 +10,8 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use Date::Utility;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD JPY AUD CAD EUR);
@@ -93,7 +94,7 @@ subtest "predefined trading_period" => sub {
 
     my @offerings = BOM::Product::Contract::Finder::Japan::get_offerings('frxUSDJPY');
     is(scalar(@offerings), $expected_count{'offering'}, 'Expected total contract before included predefined trading period');
-    my $calendar = BOM::Market::Underlying->new('frxUSDJPY')->calendar;
+    my $calendar = create_underlying('frxUSDJPY')->calendar;
     my $now      = Date::Utility->new('2015-09-04 17:00:00');
     @offerings = BOM::Product::Contract::Finder::Japan::_predefined_trading_period({
         offerings => \@offerings,
@@ -188,7 +189,7 @@ subtest "check_intraday trading_period_JPY" => sub {
     );
 
     my @i_offerings = grep { $_->{expiry_type} eq 'intraday' } BOM::Product::Contract::Finder::Japan::get_offerings('frxUSDJPY');
-    my $ex = BOM::Market::Underlying->new('frxUSDJPY')->calendar;
+    my $ex = create_underlying('frxUSDJPY')->calendar;
     foreach my $date (keys %expected_intraday_trading_period) {
         my $now                = Date::Utility->new($date);
         my @intraday_offerings = BOM::Product::Contract::Finder::Japan::_predefined_trading_period({
@@ -240,7 +241,7 @@ subtest "check_intraday trading_period_non_JPY" => sub {
     );
 
     my @e_offerings = grep { $_->{expiry_type} eq 'intraday' } BOM::Product::Contract::Finder::Japan::get_offerings('frxEURUSD');
-    my $ex = BOM::Market::Underlying->new('frxEURUSD')->calendar;
+    my $ex = create_underlying('frxEURUSD')->calendar;
     foreach my $date (keys %expected_eur_intraday_trading_period) {
         my $now              = Date::Utility->new($date);
         my @eurusd_offerings = BOM::Product::Contract::Finder::Japan::_predefined_trading_period({
@@ -317,7 +318,7 @@ subtest "predefined barriers" => sub {
         barriers         => 1,
         barrier_category => 'euro_non_atm',
     };
-    my $underlying = BOM::Market::Underlying->new('frxEURUSD');
+    my $underlying = create_underlying('frxEURUSD');
     my $now        = Date::Utility->new('2015-08-24 00:10:00');
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'frxEURUSD',

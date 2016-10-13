@@ -16,6 +16,10 @@ use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Math::Util::CalculatedValue::Validatable;
 
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 use Test::MockTime qw(set_absolute_time);
 use Test::MockModule;
 
@@ -58,7 +62,7 @@ my $client     = BOM::Platform::Client->new({loginid => 'MX1001'});
 my $currency   = 'GBP';
 my $account    = $client->default_account;
 my $loginid    = $client->loginid;
-my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
+my $underlying = create_underlying('frxUSDJPY');
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
@@ -231,7 +235,7 @@ subtest 'contract date pricing Validation' => sub {
         }) for (qw/USD JPY GBP JPY-USD/);
 
     my $contract = produce_contract({
-        underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+        underlying   => create_underlying('frxUSDJPY'),
         bet_type     => 'FLASHU',
         currency     => 'GBP',
         payout       => 100,
@@ -270,7 +274,7 @@ subtest 'valid currency test' => sub {
             }) for (qw/USD JPY GBP JPY-USD/);
 
         my $contract = produce_contract({
-            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+            underlying   => create_underlying('frxUSDJPY'),
             bet_type     => 'FLASHU',
             currency     => 'ABC',
             payout       => 100,
@@ -302,7 +306,7 @@ subtest 'valid currency test' => sub {
             }) for (qw/USD JPY GBP JPY-USD/);
 
         my $contract = produce_contract({
-            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+            underlying   => create_underlying('frxUSDJPY'),
             bet_type     => 'FLASHU',
             currency     => 'AUD',
             payout       => 100,
@@ -339,7 +343,7 @@ subtest 'valid currency test' => sub {
             }) for (qw/USD JPY GBP JPY-USD/);
 
         my $contract = produce_contract({
-            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+            underlying   => create_underlying('frxUSDJPY'),
             bet_type     => 'FLASHU',
             currency     => 'AUD',
             payout       => 100,
@@ -406,7 +410,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
             }) for (qw/USD JPY GBP JPY-USD/);
 
         my $contract = produce_contract({
-            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+            underlying   => create_underlying('frxUSDJPY'),
             bet_type     => 'FLASHU',
             currency     => 'GBP',
             payout       => 100,
@@ -462,7 +466,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
         my $allowed_move = 0.01 * 0.50;
 
         my $contract = produce_contract({
-            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+            underlying   => create_underlying('frxUSDJPY'),
             bet_type     => 'FLASHU',
             currency     => 'GBP',
             payout       => 100,
@@ -556,7 +560,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
         $mock_contract->mock('payout',          sub { 10 / $ask_cv->amount });
 
         my $contract = produce_contract({
-            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+            underlying   => create_underlying('frxUSDJPY'),
             bet_type     => 'FLASHU',
             currency     => 'GBP',
             payout       => 100,
@@ -699,7 +703,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
         my $allowed_move = 0.01 * 0.80;
 
         my $contract = produce_contract({
-            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+            underlying   => create_underlying('frxUSDJPY'),
             bet_type     => 'CALL',
             currency     => 'GBP',
             payout       => 100,
@@ -755,7 +759,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
         my $allowed_move = 0.01 * 0.80;
 
         my $contract = produce_contract({
-            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+            underlying   => create_underlying('frxUSDJPY'),
             bet_type     => 'FLASHU',
             currency     => 'GBP',
             payout       => 100,
@@ -821,7 +825,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
         my $mocked = Test::MockModule->new('BOM::Product::Contract');
         $mocked->mock('bid_price', sub { return 50 });
         my $contract = produce_contract({
-            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+            underlying   => create_underlying('frxUSDJPY'),
             bet_type     => 'CALL',
             currency     => 'GBP',
             payout       => 100,
@@ -927,7 +931,7 @@ subtest 'Purchase Sell Contract' => sub {
 
 subtest 'validate stake limit' => sub {
     my $contract = produce_contract({
-        underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+        underlying   => create_underlying('frxUSDJPY'),
         bet_type     => 'CALL',
         currency     => 'GBP',
         payout       => 100,

@@ -4,7 +4,8 @@ use warnings;
 use Date::Utility;
 use Time::Duration::Concise;
 use BOM::Platform::Offerings qw(get_offerings_flyby);
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use BOM::Product::Contract::Category;
 use Format::Util::Numbers qw(roundnear);
 use List::Util qw(reduce);
@@ -21,7 +22,7 @@ Returns a set of available contracts for a particular contract which included pr
 sub available_contracts_for_symbol {
     my $args         = shift;
     my $symbol       = $args->{symbol} || die 'no symbol';
-    my $underlying   = BOM::Market::Underlying->new($symbol);
+    my $underlying   = create_underlying($symbol);
     my $now          = $args->{date} || Date::Utility->new;
     my $current_tick = $args->{current_tick} // $underlying->spot_tick // $underlying->tick_at($now->epoch, {allow_inconsistent => 1});
 
