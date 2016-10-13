@@ -142,10 +142,10 @@ sub verify_email {
 
     if (BOM::Platform::User->new({email => $email}) && $type eq 'reset_password') {
         send_email({
-                from                  => BOM::System::Config::email_address('support'),
-                to                    => $email,
-                subject               => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
-                message               => [
+                from    => BOM::System::Config::email_address('support'),
+                to      => $email,
+                subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
+                message => [
                     BOM::Platform::Context::localize(
                         '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your password, please help us to verify your identity by entering the following verification token into the password reset form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>Binary.com</p>',
                         $code
@@ -157,10 +157,10 @@ sub verify_email {
     } elsif ($type eq 'account_opening') {
         unless (BOM::Platform::User->new({email => $email})) {
             send_email({
-                    from                  => BOM::System::Config::email_address('support'),
-                    to                    => $email,
-                    subject               => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
-                    message               => [
+                    from    => BOM::System::Config::email_address('support'),
+                    to      => $email,
+                    subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
+                    message => [
                         BOM::Platform::Context::localize(
                             '<p style="font-weight: bold;">Thanks for signing up for a virtual account!</p><p>Enter the following verification token into the form to create an account: <p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p>Enjoy trading with us on Binary.com.</p><p style="color:#333333;font-size:15px;">With regards,<br/>Binary.com</p>',
                             $code
@@ -171,10 +171,10 @@ sub verify_email {
                 });
         } else {
             send_email({
-                    from                  => BOM::System::Config::email_address('support'),
-                    to                    => $email,
-                    subject               => BOM::Platform::Context::localize('A Duplicate Email Address Has Been Submitted - [_1]', $params->{website_name}),
-                    message               => [
+                    from    => BOM::System::Config::email_address('support'),
+                    to      => $email,
+                    subject => BOM::Platform::Context::localize('A Duplicate Email Address Has Been Submitted - [_1]', $params->{website_name}),
+                    message => [
                         '<div style="line-height:200%;color:#333333;font-size:15px;">'
                             . BOM::Platform::Context::localize(
                             '<p>Dear Valued Customer,</p><p>It appears that you have tried to register an email address that is already included in our system. If it was not you, simply ignore this email, or contact our customer support if you have any concerns.</p><p style="color:#333333;font-size:15px;">With regards,<br/>Binary.com</p>'
