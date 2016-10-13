@@ -19,6 +19,10 @@ use JSON::Schema;
 use Try::Tiny;
 use Format::Util::Strings qw( defang_lite );
 use Digest::MD5 qw(md5_hex);
+use Config::Onion;
+use RateLimitations::Pluggable;
+use Time::Duration::Concise;
+use Scalar::Util qw(weaken);
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -392,6 +396,47 @@ sub startup {
 
         push @{$action_options->{stash_params}}, 'token' if $action_options->{require_auth};
     }
+
+    # configuration-compatibility with RateLimitations
+    my $rates_config_file = Config::Onion->new;
+    $rates_config_file->load('/etc/rmg/perl_rate_limitations');
+    my $rates_file_content = $rates_config_file->rates_config_file;
+
+    my %rates_config;
+    # convert configuration to RateLimitations::Pluggable format
+    # (i.e. unify human-readable time intervals like '1m' to seconds (60))
+    for my $service (keys %$rates_file_content) {
+        for my $interval (keys %{$rates_file_content->{$service}}) {
+            my $seconds = Time::Duration::Concise->new(interval => $interval)->seconds;
+            my $count = $rates_file_content->{$service}->{$interval};
+            $rates_config{$service}->{$seconds} = $count;
+        }
+    }
+
+    $app->helper(
+        'rate_limitations' => sub {
+            my $c     = shift;
+            my $stash = $c->stash;
+            return $stash->{rate_limitations} // do {
+                # do not hold reference to stash in stash
+                weaken $stash;
+                my $rl = RateLimitations::Pluggable->new(
+                    limits => \%rates_config,
+                    getter => sub {
+                        my ($service, $consumer) = @_;
+                        my $hits = $stash->{rate_limitations_hits};
+                        if (!$hits) {
+                            $hits = $stash->{rate_limitations_hits} = [];
+                        }
+                        return $hits;
+                    },
+                    # we do not need setter, as getter always returns
+                    # service hits array from stash.
+                );
+                $stash->{rate_limitations} = $rl;
+                $rl;
+            };
+        });
 
     $app->plugin(
         'web_socket_proxy' => {
