@@ -643,11 +643,12 @@ sub set_settings {
         $client->add_note('Update Address Notification', $cil_message);
     }
 
-    my $message =
-        localize(
-            'Dear [_1] [_2] [_3],',
-            map encode_entities($_), BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name
-        ) . "\n\n";
+    my $message = localize(
+        'Dear [_1] [_2] [_3],',
+        map encode_entities($_),
+        BOM::Platform::Locale::translate_salutation($client->salutation),
+        $client->first_name, $client->last_name
+    ) . "\n\n";
 
     $message .= localize('Please note that your settings have been updated as follows:') . "\n\n";
 
@@ -656,14 +657,8 @@ sub set_settings {
     my @updated_fields = (
         [localize('Email address'),        $client->email],
         [localize('Country of Residence'), $residence_country],
-        [
-            localize('Address'),
-            join ', ', (
-                (map $client->$_, qw(address_1 address_2 city state postcode)),
-                $residence_country
-            )
-        ],
-        [localize('Telephone'), $client->phone]);
+        [localize('Address'),              join ', ', ((map $client->$_, qw(address_1 address_2 city state postcode)), $residence_country)],
+        [localize('Telephone'),            $client->phone]);
     push @updated_fields,
         [
         localize('Receive news and special offers'),
@@ -683,13 +678,13 @@ sub set_settings {
     $message .= "\n" . localize('The [_1] team.', $website_name);
 
     send_email({
-        from               => BOM::System::Config::email_address('support'),
-        to                 => $client->email,
-        subject            => $client->loginid . ' ' . localize('Change in account settings'),
-        message            => [$message],
-        use_email_template => 1,
+        from                  => BOM::System::Config::email_address('support'),
+        to                    => $client->email,
+        subject               => $client->loginid . ' ' . localize('Change in account settings'),
+        message               => [$message],
+        use_email_template    => 1,
         email_content_is_html => 1,
-        template_loginid   => $client->loginid,
+        template_loginid      => $client->loginid,
     });
     BOM::System::AuditLog::log('Your settings have been updated successfully', $client->loginid);
 
