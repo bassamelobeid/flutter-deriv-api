@@ -14,6 +14,9 @@ use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
 use BOM::Product::ContractFactory qw(produce_contract);
 use YAML::XS;
 
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+initialize_realtime_ticks_db;
+
 my $mocked_delta = Test::MockModule->new('Quant::Framework::VolSurface::Delta');
 $mocked_delta->mock('get_volatility', sub { 0.1 });
 my $mocked_money = Test::MockModule->new('Quant::Framework::VolSurface::Moneyness');
