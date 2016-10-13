@@ -122,6 +122,7 @@ sub _get_ask {
             my ($message_to_client, $code);
 
             if (my $pve = $contract->primary_validation_error) {
+
                 $message_to_client = $pve->message_to_client;
                 $code              = "ContractBuyValidationError";
             } else {
@@ -129,9 +130,10 @@ sub _get_ask {
                 $code              = "ContractValidationError";
             }
             $response = BOM::RPC::v3::Utility::create_error({
-                    message_to_client => $message_to_client,
-                    code              => $code,
-                    details           => {
+                    continue_price_stream => $contract->continue_price_stream,
+                    message_to_client     => $message_to_client,
+                    code                  => $code,
+                    details               => {
                         longcode      => $contract->longcode,
                         display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price)),
                         payout => sprintf('%.2f', $contract->payout),
