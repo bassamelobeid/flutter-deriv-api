@@ -20,6 +20,10 @@ use BOM::Database::Model::AccessToken;
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Database::Model::OAuth;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 
 use utf8;
 
@@ -201,7 +205,7 @@ sub create_contract {
         epoch      => $now->epoch,
         underlying => 'R_50',
     });
-    my $underlying    = BOM::Market::Underlying->new('R_50');
+    my $underlying    = create_underlying('R_50');
     my $contract_data = {
         underlying   => $underlying,
         bet_type     => 'FLASHU',
