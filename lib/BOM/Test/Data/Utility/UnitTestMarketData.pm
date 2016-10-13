@@ -24,6 +24,10 @@ use BOM::Platform::Runtime;
 use Carp qw( croak );
 use YAML::XS;
 
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Moneyness;
 use BOM::System::Chronicle;
@@ -150,7 +154,7 @@ sub create_doc {
 
         if ($yaml_db eq 'volsurface_delta' or $yaml_db eq 'volsurface_moneyness') {
             if (exists($data_mod->{symbol}) and not exists($data_mod->{underlying_config})) {
-                $data_mod->{underlying_config} = BOM::Market::Underlying->new($data_mod->{symbol})->config;
+                $data_mod->{underlying_config} = create_underlying($data_mod->{symbol})->config;
                 delete $data_mod->{symbol};
             } elsif (exists($data_mod->{underlying}) and not exists($data_mod->{underlying_config})) {
                 $data_mod->{underlying_config} = $data_mod->{underlying}->config;

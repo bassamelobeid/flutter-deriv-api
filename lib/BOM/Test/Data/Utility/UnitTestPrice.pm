@@ -7,7 +7,7 @@ use warnings;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 use Date::Utility;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
 use List::MoreUtils qw(uniq);
 use YAML::XS qw(LoadFile);
 
@@ -21,7 +21,7 @@ sub create_pricing_data {
     my ($underlying_symbol, $payout_currency, $for_date) = @_;
 
     $for_date = Date::Utility->new unless $for_date;
-    my $underlying = BOM::Market::Underlying->new($underlying_symbol);
+    my $underlying = create_underlying($underlying_symbol);
 
     my @dividend_symbols;
     my @currencies = ($payout_currency);
@@ -43,7 +43,7 @@ sub create_pricing_data {
     }
 
     my @underlying_list =
-        map { BOM::Market::Underlying->new($_) } @quanto_list;
+        map { create_underlying($_) } @quanto_list;
     push @underlying_list, $underlying;
 
     foreach my $underlying (@underlying_list) {

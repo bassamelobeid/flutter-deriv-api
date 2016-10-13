@@ -6,7 +6,7 @@ use feature 'state';
 use Scalar::Util qw(blessed);
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
 use Date::Utility;
 use Postgres::FeedDB;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -15,7 +15,7 @@ sub client_buy_bet {
     my ($client, $currency, $amount) = @_;
 
     my $now        = Date::Utility->new;
-    my $underlying = BOM::Market::Underlying->new('R_50');
+    my $underlying = create_underlying('R_50');
 
     my $account     = $client->default_account;
     my $pre_balance = $account->load->balance;
@@ -122,7 +122,7 @@ sub create_contract {
         push @ticks, $tick;
     }
 
-    my $underlying = BOM::Market::Underlying->new($underlying_symbol);
+    my $underlying = create_underlying($underlying_symbol);
 
     my $contract_data = {
         underlying            => $underlying,
