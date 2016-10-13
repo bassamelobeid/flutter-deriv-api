@@ -400,7 +400,7 @@ sub startup {
     # configuration-compatibility with RateLimitations
     my $rates_config_file = Config::Onion->new;
     $rates_config_file->load('/etc/rmg/perl_rate_limitations');
-    my $rates_file_content = $rates_config_file->rates_config_file;
+    my $rates_file_content = $rates_config_file->get;
 
     my %rates_config;
     # convert configuration to RateLimitations::Pluggable format
