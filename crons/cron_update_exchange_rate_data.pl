@@ -11,8 +11,9 @@ use warnings;
 use BOM::Backoffice::Sysinit ();
 use BOM::Database::Model::ExchangeRate;
 use BOM::Database::ClientDB;
-use BOM::Market::Underlying;
-use BOM::Market::UnderlyingDB;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+use BOM::MarketData qw(create_underlying_db);
 use Date::Utility;
 
 BOM::Backoffice::Sysinit::init();
@@ -37,7 +38,7 @@ foreach my $currency (@all_currencies) {
 
     my $symbol = 'frx' . $currency . 'USD';
 
-    my $underlying = BOM::Market::Underlying->new($symbol);
+    my $underlying = create_underlying($symbol);
     my $price      = $underlying->spot;
 
     next unless $price;

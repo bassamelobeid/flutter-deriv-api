@@ -81,7 +81,11 @@ if (my $self_exclusion = $client->get_self_exclusion) {
         $page .= '<li>' . localize('Website exclusion is currently set to <strong>[_1].</strong>', $self_exclusion->exclude_until) . '</li>';
     }
     if ($self_exclusion->timeout_until) {
-        $page .= '<li>' . localize('Website Timeout until is currently set to <strong>[_1].</strong>', Date::Utility->new($self_exclusion->timeout_until)->datetime_yyyymmdd_hhmmss) . '</li>';
+        $page .= '<li>'
+            . localize(
+            'Website Timeout until is currently set to <strong>[_1].</strong>',
+            Date::Utility->new($self_exclusion->timeout_until)->datetime_yyyymmdd_hhmmss
+            ) . '</li>';
     }
     $page .= '</ul>';
 }

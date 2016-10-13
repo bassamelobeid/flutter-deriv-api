@@ -16,9 +16,9 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
-my $cgi       = CGI->new;
-my $filename  = $cgi->param('filename');
-my $content   = $cgi->param('bbdl_file_content');
+my $cgi      = CGI->new;
+my $filename = $cgi->param('filename');
+my $content  = $cgi->param('bbdl_file_content');
 
 Bar("Upload a file to BBDL");
 

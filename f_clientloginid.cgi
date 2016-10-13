@@ -51,11 +51,7 @@ print '<input type=text size=15 name="loginID" value="">'
     . ' <a href="javascript:WinPopupSearchClients();"><font class=smallfont>[Search]</font></a>'
     . '</td></tr>';
 
-print '<tr><td>&nbsp;</td><td>'
-    . '&nbsp;&nbsp;<input type="submit" value="EDIT CLIENT DETAILS"></td>' . '</tr>'
-    . '</table>'
-    . '</font>'
-    . '</form>';
+print '<tr><td>&nbsp;</td><td>' . '&nbsp;&nbsp;<input type="submit" value="EDIT CLIENT DETAILS"></td>' . '</tr>' . '</table>' . '</font>' . '</form>';
 
 # issued new password
 print '<hr><form class="bo_ajax_form" action="'

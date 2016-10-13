@@ -32,7 +32,7 @@ Bar("Bet Parameters");
 
 my $bet = do {
     my $contract_object = '';
-    my ($loginid, $shortcode, $currency) = map {request()->param($_)} qw(loginid shortcode currency);
+    my ($loginid, $shortcode, $currency) = map { request()->param($_) } qw(loginid shortcode currency);
     if ($loginid and $shortcode and $currency) {
         my $client = BOM::Platform::Client::get_instance({'loginid' => $loginid});
         my $contract_parameters = shortcode_to_parameters($shortcode, $currency);

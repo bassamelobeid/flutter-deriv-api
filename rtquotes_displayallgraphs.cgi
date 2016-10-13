@@ -3,11 +3,12 @@ package main;
 
 use strict;
 use f_brokerincludeall;
-use BOM::Market::UnderlyingDB;
+use BOM::MarketData qw(create_underlying_db);
 use BOM::Backoffice::GNUPlot;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use subs::subs_graphs;
+use BOM::MarketData qw(create_underlying);
 
 use String::UTF8::MD5;
 
@@ -67,7 +68,7 @@ my $use_y2_checked       = $use_y2          ? 'checked' : '';
 print
     '<span style="align=center"><TABLE BORDER=1 CELLPADDING=1 CELLSPACING=0><TR><TD>MARKET</TD><TD><b>PROVIDER</TD><TD><b>BACKUP</TD><TD><b>2NDBACKUP</TD><TD><b>3RDBACKUP</TD></TR>';
 foreach my $underlying_symbol ('frxUSDJPY', 'FTSE', 'UKBARC', 'USINTC') {
-    my $underlying = BOM::Market::Underlying->new($underlying_symbol);
+    my $underlying = create_underlying($underlying_symbol);
     my $providers = join "</TD><TD>", @{$underlying->providers};
     print '<TR><TD><b>' . $underlying->market->name . '</TD><TD>' . $providers . "</TD></TR>";
 }
@@ -272,7 +273,7 @@ elsif (scalar @overlay and not $merge) {
             my $instrument = $overlay[$j];
             my $provider = $source[$j] || 'combined';
             next if (not $instrument);
-            my $underlying = BOM::Market::Underlying->new($instrument);
+            my $underlying = create_underlying($instrument);
 
             my @providerlist;
             if ($all_provider) {
@@ -400,7 +401,7 @@ elsif (scalar @overlay and $merge) {
         my $provider = $source[$i] || 'combined';
 
         next if (not $market);
-        my $underlying = BOM::Market::Underlying->new($market);
+        my $underlying = create_underlying($market);
 
         my @providerlist;
         if ($all_provider) {
@@ -510,12 +511,12 @@ else {
     my $yesterday = Date::Utility->new($now->epoch - 86400)->date_ddmmmyy;
 
     foreach my $forexitem (
-        BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        create_underlying_db->get_symbols_for(
             market            => $market,
             contract_category => 'ANY',
         ))
     {
-        my $underlying = BOM::Market::Underlying->new($forexitem);
+        my $underlying = create_underlying($forexitem);
         print "<table cellpadding=0 cellspacing=0 border=1 width=100%><tr><td><font size=1>";
         my $daytochart   = $yesterday;
         my $graph_xtitle = "$forexitem $daytochart (YESTERDAY)";
