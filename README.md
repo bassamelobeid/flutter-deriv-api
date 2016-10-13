@@ -71,9 +71,9 @@ Package dependency: BOM::MarketDataAutoUpdater::InterestRates
 
 Frequency of this script being called: 16:50GMT on daily basic. (Libor updates rate at 11:45 London time and Bloomberg updated it at 4 hours after that, hence we scheduled the run time at 17GMT to make sure we have updated rate from Bloomberg)
 
-Input: interest rates file type from Bloomberg::FileDownloaderBloomberg e.g. interest_rate.csv 
+Input: 'interest_rates' at Chronicle
 
-Output: category='interest_rates' at Chronicle
+Output: 'interest_rates' at Chronicle
 
 (5) bin/update_implied_interest_rates.pl
 
@@ -90,9 +90,7 @@ Package dependency: BOM::MarketDataAutoUpdater::ImpliedInterestRates
 
 Frequency of this script being called: 17GMT on daily basic. (This script must be run after bin/update_interest_rates.pl as it depends on the market interest rate of the corresponding currency of the pair).
 
-Input: 
-interest rates file type from Bloomberg::FileDownloaderBloomberg e.g. interest_rate.csv 
-forward rates file type from Bloomberg::FileDownloaderBloomberg forward_rates.csv 
+Input: 'interest_rates' at Chronicle
 
 Output: 'interest_rates' at Chronicle
 
@@ -130,8 +128,8 @@ Frequency of this script being called: Hourly basic (Indices and stocks), 10min 
 
 Input:
 - volatility file type from Bloomberg::FileDownloaderBloomberg e.g. 
-weekday vols : fxvol%02d45_points.csv, quantovol.csv, fxvol%02d45_tenors.csv 
-weekend vols : fxvol_wknd.csv, quantovol_wknd.csv, fxvol_wknd_tenors.csv 
+weekday vols : fxvol%02d45_points.csv, quantovol.csv
+weekend vols : fxvol_wknd.csv, quantovol_wknd.csv
 - volatility file type from SuperDerivatives e.g. auto_upload.xls, auto_upload_stocks.xls
 
-Output: Chronicle
+Output: category='volatility_surfaces' 
