@@ -71,9 +71,9 @@ Package dependency: BOM::MarketDataAutoUpdater::InterestRates
 
 Frequency of this script being called: 16:50GMT on daily basic. (Libor updates rate at 11:45 London time and Bloomberg updated it at 4 hours after that, hence we scheduled the run time at 17GMT to make sure we have updated rate from Bloomberg)
 
-Input: 'interest_rates' at Chronicle
+Input: interest rates file type from Bloomberg::FileDownloader e.g. interest_rate.csv 
 
-Output: 'interest_rates' at Chronicle
+Output: category='interest_rates' at Chronicle
 
 (5) bin/update_implied_interest_rates.pl
 
