@@ -362,7 +362,7 @@ sub set_jp_settings {
     }
 
     my $message =
-        localize('Dear [_1] [_2] [_3],', BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name)
+        localize('Dear [_1] [_2] [_3],', map encode_entities($_), BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name)
         . "\n\n";
 
     $message .= localize('Please note that your settings have been updated as follows:') . "\n\n";
