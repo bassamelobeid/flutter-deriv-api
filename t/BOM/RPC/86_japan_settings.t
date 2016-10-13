@@ -10,6 +10,10 @@ use BOM::Platform::Account::Virtual;
 use BOM::RPC::v3::NewAccount;
 use BOM::RPC::v3::Japan::NewAccount;
 use BOM::RPC::v3::Accounts;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 
 ## do not send email
 my $client_mocked = Test::MockModule->new('BOM::Platform::Client');

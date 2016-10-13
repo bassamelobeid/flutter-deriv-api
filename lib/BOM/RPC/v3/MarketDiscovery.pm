@@ -9,7 +9,8 @@ use Cache::RedisDB;
 use Time::Duration::Concise::Localize;
 
 use BOM::RPC::v3::Utility;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use BOM::Platform::Client;
 use BOM::Platform::Context qw (localize request);
 use BOM::Product::Contract::Offerings;
@@ -58,7 +59,7 @@ sub get_corporate_actions {
 
     try {
         my @actions;
-        my $underlying = BOM::Market::Underlying->new($symbol);
+        my $underlying = create_underlying($symbol);
 
         if ($underlying->market->affected_by_corporate_actions) {
             @actions = $underlying->get_applicable_corporate_actions_for_period({
@@ -268,7 +269,7 @@ sub active_symbols {
 sub _description {
     my $symbol = shift;
     my $by     = shift || 'brief';
-    my $ul     = BOM::Market::Underlying->new($symbol) || return;
+    my $ul     = create_underlying($symbol) || return;
     my $iim    = $ul->intraday_interval ? $ul->intraday_interval->minutes : '';
     # sometimes the ul's exchange definition or spot-pricing is not availble yet.  Make that not fatal.
     my $exchange_is_open = eval { $ul->calendar } ? $ul->calendar->is_open_at(time) : '';
