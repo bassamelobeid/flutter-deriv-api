@@ -35,6 +35,7 @@ use BOM::Database::Helper::RejectedTrade;
 use BOM::Platform::Offerings qw/get_offerings_with_filter/;
 use BOM::Platform::LandingCompany::Registry;
 use BOM::Database::ClientDB;
+use Finance::Asset::Market::Types;
 
 has client => (
     is  => 'ro',
@@ -65,7 +66,7 @@ has price_slippage => (
 # trading period of a contract
 has trading_period_start => (
     is     => 'rw',
-    isa    => 'bom_date_object',
+    isa    => 'date_object',
     coerce => 1,
 );
 
