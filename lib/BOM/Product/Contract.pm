@@ -67,6 +67,11 @@ has is_settleable => (
     lazy_build => 1,
 );
 
+has continue_price_stream => (
+    is      => 'rw',
+    default => 0
+);
+
 has missing_market_data => (
     is      => 'rw',
     isa     => 'Bool',
@@ -2279,6 +2284,9 @@ sub validate_price {
             },
             stake_same_as_payout => sub {
                 my ($details) = @_;
+
+                $self->continue_price_stream(1);
+
                 return {
                     message           => 'stake same as payout',
                     message_to_client => localize('This contract offers no return.'),
