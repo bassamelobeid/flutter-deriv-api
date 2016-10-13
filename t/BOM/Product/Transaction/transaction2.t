@@ -20,6 +20,11 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
+
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
@@ -111,10 +116,10 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
 });
 
-my $underlying        = BOM::Market::Underlying->new('frxUSDJPY');
-my $underlying_GDAXI  = BOM::Market::Underlying->new('GDAXI');
-my $underlying_WLDUSD = BOM::Market::Underlying->new('WLDUSD');
-my $underlying_R50    = BOM::Market::Underlying->new('R_50');
+my $underlying        = create_underlying('frxUSDJPY');
+my $underlying_GDAXI  = create_underlying('GDAXI');
+my $underlying_WLDUSD = create_underlying('WLDUSD');
+my $underlying_R50    = create_underlying('R_50');
 
 sub db {
     return BOM::Database::ClientDB->new({

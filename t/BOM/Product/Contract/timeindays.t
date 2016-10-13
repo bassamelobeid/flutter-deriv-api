@@ -18,20 +18,24 @@ use File::Spec;
 use JSON qw(decode_json);
 
 use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestRedis;
 
-my $FRW_frxUSDJPY_ON = BOM::Market::Underlying->new('FRW_frxUSDJPY_ON');
-my $FRW_frxUSDJPY_TN = BOM::Market::Underlying->new('FRW_frxUSDJPY_TN');
-my $FRW_frxUSDJPY_1W = BOM::Market::Underlying->new('FRW_frxUSDJPY_1W');
-my $FRW_frxUSDJPY_1M = BOM::Market::Underlying->new('FRW_frxUSDJPY_1M');
-my $FRW_frxUSDJPY_2M = BOM::Market::Underlying->new('FRW_frxUSDJPY_2M');
-my $FRW_frxUSDJPY_3M = BOM::Market::Underlying->new('FRW_frxUSDJPY_3M');
-my $FRW_frxUSDJPY_6M = BOM::Market::Underlying->new('FRW_frxUSDJPY_6M');
-my $FRW_frxUSDJPY_1Y = BOM::Market::Underlying->new('FRW_frxUSDJPY_1Y');
+my $FRW_frxUSDJPY_ON = create_underlying('FRW_frxUSDJPY_ON');
+my $FRW_frxUSDJPY_TN = create_underlying('FRW_frxUSDJPY_TN');
+my $FRW_frxUSDJPY_1W = create_underlying('FRW_frxUSDJPY_1W');
+my $FRW_frxUSDJPY_1M = create_underlying('FRW_frxUSDJPY_1M');
+my $FRW_frxUSDJPY_2M = create_underlying('FRW_frxUSDJPY_2M');
+my $FRW_frxUSDJPY_3M = create_underlying('FRW_frxUSDJPY_3M');
+my $FRW_frxUSDJPY_6M = create_underlying('FRW_frxUSDJPY_6M');
+my $FRW_frxUSDJPY_1Y = create_underlying('FRW_frxUSDJPY_1Y');
 
 my $fake_data = {
     epoch => Date::Utility->new('2012-01-11 10:00:00')->epoch,
@@ -243,7 +247,7 @@ subtest Equity => sub {
     plan tests => 1;
 
     # normal one day bet
-    my $underlying = BOM::Market::Underlying->new('FTSE');
+    my $underlying = create_underlying('FTSE');
     my $bet        = _sample_bet(
         underlying  => $underlying,
         date_start  => Date::Utility->new('2012-01-11 10:30:00'),
@@ -256,7 +260,7 @@ sub _sample_bet {
     my %overrides = @_;
 
     my $symbol = $overrides{underlying} || 'frxUSDJPY';
-    my $underlying = (ref $symbol eq 'BOM::Market::Underlying') ? $symbol : BOM::Market::Underlying->new($symbol);
+    my $underlying = (ref $symbol eq 'Quant::Framework::Underlying') ? $symbol : create_underlying($symbol);
 
     $overrides{date_pricing} ||= $overrides{date_start};
 

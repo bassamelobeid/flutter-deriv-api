@@ -6,7 +6,8 @@ use warnings;
 use Test::More tests => 4;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use Date::Utility;
 
 use BOM::Platform::Runtime;
@@ -210,7 +211,7 @@ subtest 'intraday must be same day' => sub {
 subtest 'too many holiday for multiday indices contracts' => sub {
     my $mock = Test::MockModule->new('Quant::Framework::TradingCalendar');
     $mock->mock('_object_expired', sub { return 1 });
-    my $hsi         = BOM::Market::Underlying->new('HSI');
+    my $hsi         = create_underlying('HSI');
     my $monday_open = $hsi->calendar->opening_on(Date::Utility->new('2016-04-04'))->plus_time_interval('15m');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',

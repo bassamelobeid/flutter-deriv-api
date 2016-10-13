@@ -9,7 +9,8 @@ use Test::Exception;
 use Format::Util::Numbers qw(roundnear);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Platform::Offerings qw(get_offerings_with_filter);
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
 use Date::Utility;
 use YAML::XS qw(LoadFile DumpFile);
@@ -31,7 +32,7 @@ my @underlying_symbols = ('frxBROUSD', 'AEX', 'frxXAUUSD', 'RDBEAR', 'RDBULL', '
 my $payout_currency    = 'USD';
 my $spot               = 100;
 
-foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
+foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
     BOM::Test::Data::Utility::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => $ul->symbol,

@@ -4,11 +4,12 @@ use JSON qw(decode_json);
 
 use BOM::MarketData::Fetcher::VolSurface;
 
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 
-my $ul = BOM::Market::Underlying->new('R_50');
+my $ul = create_underlying('R_50');
 
 subtest "looks flat" => sub {
     plan tests => 630;

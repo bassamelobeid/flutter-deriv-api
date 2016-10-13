@@ -9,7 +9,8 @@ use Time::Duration::Concise;
 use List::Util qw(first);
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Platform::Offerings qw(get_offerings_flyby);
 use BOM::Product::Contract::Category;
@@ -24,7 +25,7 @@ sub available_contracts_for_symbol {
     my $landing_company = $args->{landing_company};
 
     my $now        = Date::Utility->new;
-    my $underlying = BOM::Market::Underlying->new($symbol);
+    my $underlying = create_underlying($symbol);
     my $calendar   = $underlying->calendar;
     my ($open, $close);
     if ($calendar->trades_on($now)) {

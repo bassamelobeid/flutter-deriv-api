@@ -21,6 +21,10 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine
@@ -98,11 +102,11 @@ my $tick_r100 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 
 # Spread is calculated base on spot of the underlying.
 # In this case, we mocked the spot to 100.
-my $mocked_underlying = Test::MockModule->new('BOM::Market::Underlying');
+my $mocked_underlying = Test::MockModule->new('Quant::Framework::Underlying');
 $mocked_underlying->mock('spot', sub { 100 });
 
-my $underlying      = BOM::Market::Underlying->new('R_50');
-my $underlying_r100 = BOM::Market::Underlying->new('R_100');
+my $underlying      = create_underlying('R_50');
+my $underlying_r100 = create_underlying('R_100');
 
 sub db {
     return BOM::Database::ClientDB->new({

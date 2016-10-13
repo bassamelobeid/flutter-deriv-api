@@ -6,7 +6,7 @@ use JSON qw(decode_json);
 
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Pricing::Engine::Intraday::Forex;
-use BOM::Market::UnderlyingDB;
+use BOM::MarketData qw(create_underlying_db);
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);

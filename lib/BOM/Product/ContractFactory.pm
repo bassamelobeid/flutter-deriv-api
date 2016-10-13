@@ -20,6 +20,10 @@ use BOM::Product::ContractFactory::Parser qw(
 
 require UNIVERSAL::require;
 
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 use base qw( Exporter );
 our @EXPORT_OK = qw( produce_contract make_similar_contract simple_contract_info );
 
@@ -122,13 +126,13 @@ my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/co
         my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $input_params{bet_type};
 
         # We might need this for build so, pre-coerce;
-        if ((ref $input_params{underlying}) !~ /BOM::Market::Underlying/) {
-            $input_params{underlying} = BOM::Market::Underlying->new($input_params{underlying});
+        if ((ref $input_params{underlying}) !~ /Quant::Framework::Underlying/) {
+            $input_params{underlying} = create_underlying($input_params{underlying});
         }
         # If they gave us a date for start and pricing, then we need to do some magic.
         if (defined $input_params{date_pricing}) {
             my $pricing = Date::Utility->new($input_params{date_pricing});
-            $input_params{underlying} = BOM::Market::Underlying->new($input_params{underlying}->symbol, $pricing)
+            $input_params{underlying} = create_underlying($input_params{underlying}->symbol, $pricing)
                 if (not($input_params{underlying}->for_date and $input_params{underlying}->for_date->is_same_as($pricing)));
         }
 
