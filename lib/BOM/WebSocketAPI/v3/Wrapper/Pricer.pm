@@ -314,6 +314,12 @@ sub process_ask_event {
                 method => $type,
             };
         }
+
+        #Add echo_req to err message.
+        if (not $results->{echo_req}) {
+            $results->{echo_req} = $stash_data->{args} if $stash_data->{args};
+        }
+
         delete @{$results->{$type}}{qw(contract_parameters rpc_time)};
         $c->send({json => $results});
     }
@@ -457,7 +463,10 @@ sub _create_error_message {
     my ($c, $type, $response, $stash_data) = @_;
     my ($err_code, $err_message, $err_details);
 
-    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid}) if $stash_data->{uuid};
+    my $error = $response->{error} || {};
+    if (not($error->{continue_price_stream}) and $stash_data->{uuid}) {
+        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid});
+    }
 
     if ($response->{error}) {
         $err_code    = $response->{error}->{code};
@@ -478,6 +487,7 @@ sub _create_error_message {
     }
     my $err = $c->new_error($type, $err_code, $err_message);
     $err->{error}->{details} = $err_details if $err_details;
+
     return $err;
 }
 
