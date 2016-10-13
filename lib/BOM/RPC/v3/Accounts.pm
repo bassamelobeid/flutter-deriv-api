@@ -8,7 +8,7 @@ use JSON;
 use Try::Tiny;
 use Date::Utility;
 use Data::Password::Meter;
-use HTML::Entities;
+use HTML::Entities qw(encode_entities);
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
