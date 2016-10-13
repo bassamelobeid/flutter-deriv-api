@@ -12,6 +12,10 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => 'USD'});
@@ -59,7 +63,7 @@ subtest 'entry tick' => sub {
 };
 
 subtest 'current tick' => sub {
-    my $u = Test::MockModule->new('BOM::Market::Underlying');
+    my $u = Test::MockModule->new('Quant::Framework::Underlying');
     $u->mock('spot_tick', sub { undef });
     my $c = produce_contract($params);
     is $c->current_tick->quote, 0.01, 'current tick is pip size value if current tick is undefined';

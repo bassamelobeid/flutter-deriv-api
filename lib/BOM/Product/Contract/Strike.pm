@@ -8,7 +8,8 @@ use Scalar::Util qw(looks_like_number);
 use Readonly;
 
 use Date::Utility;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use BOM::Platform::Context qw(localize);
 use Format::Util::Numbers qw(roundnear);
 use feature "state";
@@ -28,7 +29,7 @@ has custom_pipsize => (
 
 has underlying => (
     is         => 'ro',
-    isa        => 'bom_underlying_object',
+    isa        => 'underlying_object',
     lazy_build => 1,
     coerce     => 1,
 );
@@ -36,7 +37,7 @@ has underlying => (
 sub _build_underlying {
     my $self = shift;
 
-    return BOM::Market::Underlying->new($self->basis_tick->symbol);
+    return create_underlying($self->basis_tick->symbol);
 }
 
 has basis_tick => (

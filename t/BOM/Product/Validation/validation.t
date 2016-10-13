@@ -12,7 +12,8 @@ use JSON qw(decode_json);
 use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
 use Postgres::FeedDB::Spot::Tick;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use BOM::Product::ContractFactory qw( produce_contract );
 
 use BOM::Platform::Runtime;
@@ -22,7 +23,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
 my $mocked = Test::MockModule->new('BOM::Product::Contract');
-$mocked->mock('market_is_inefficient', sub{0});
+$mocked->mock('market_is_inefficient', sub { 0 });
 my $oft_used_date   = Date::Utility->new('2013-03-29 15:00:34');
 my $an_hour_earlier = Date::Utility->new($oft_used_date->epoch - 3600);
 my $that_morning    = Date::Utility->new('2013-03-29 08:43:00');
@@ -151,7 +152,7 @@ ok(BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim
 
 subtest 'valid bet passing and stuff' => sub {
 
-    my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
+    my $underlying = create_underlying('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
 
     my $bet_params = {
@@ -199,7 +200,7 @@ subtest 'invalid underlying is a weak foundation' => sub {
 
     plan tests => 5;
 
-    my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
+    my $underlying = create_underlying('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
 
     my $bet_params = {
@@ -245,7 +246,7 @@ subtest 'invalid underlying is a weak foundation' => sub {
 subtest 'invalid bet payout hobbling around' => sub {
     plan tests => 5;
 
-    my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
+    my $underlying = create_underlying('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
 
     my $bet_params = {
@@ -286,7 +287,7 @@ subtest 'invalid bet payout hobbling around' => sub {
 subtest 'invalid bet types are dull' => sub {
     plan tests => 1;
 
-    my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
+    my $underlying = create_underlying('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
 
     my $bet_params = {
@@ -310,7 +311,7 @@ subtest 'invalid bet types are dull' => sub {
 subtest 'invalid contract stake evokes sympathy' => sub {
     plan tests => 5;
 
-    my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
+    my $underlying = create_underlying('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
 
     my $bet_params = {
@@ -369,7 +370,7 @@ subtest 'invalid contract stake evokes sympathy' => sub {
 subtest 'invalid barriers knocked down for great justice' => sub {
     plan tests => 7;
 
-    my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
+    my $underlying = create_underlying('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
 
     my $bet_params = {
@@ -425,7 +426,7 @@ subtest 'invalid barriers knocked down for great justice' => sub {
 subtest 'volsurfaces become old and invalid' => sub {
     plan tests => 8;
 
-    my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
+    my $underlying = create_underlying('frxAUDUSD');
     my $starting   = $oft_used_date->epoch + 10 * 86400;
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -506,7 +507,7 @@ subtest 'volsurfaces become old and invalid' => sub {
             recorded_date  => Date::Utility->new('2013-03-27 06:00:34'),
             spot_reference => $tick->quote,
         });
-    my $gdaxi                = BOM::Market::Underlying->new('GDAXI');
+    my $gdaxi                = create_underlying('GDAXI');
     my $surface_too_old_date = $gdaxi->calendar->opening_on(Date::Utility->new('2013-03-28'));
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
@@ -548,7 +549,7 @@ subtest 'volsurfaces become old and invalid' => sub {
 subtest 'invalid start times' => sub {
     plan tests => 9;
 
-    my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
+    my $underlying = create_underlying('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
 
     my $bet_params = {
@@ -595,7 +596,7 @@ subtest 'invalid start times' => sub {
     $bet = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but when back to the future, validates just fine.');
 
-    $bet_params->{underlying}   = BOM::Market::Underlying->new('frxEURUSD');
+    $bet_params->{underlying}   = create_underlying('frxEURUSD');
     $bet_params->{duration}     = '10m';
     $bet_params->{bet_type}     = 'CALL';
     $bet_params->{date_pricing} = $starting - 30;
@@ -617,7 +618,7 @@ subtest 'invalid start times' => sub {
     $expected_reasons = [qr/starts in the past/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $underlying = BOM::Market::Underlying->new('GDAXI');
+    $underlying = create_underlying('GDAXI');
 
     $bet_params->{underlying}   = $underlying;
     $bet_params->{bet_type}     = 'DOUBLEDOWN';
@@ -692,7 +693,7 @@ subtest 'invalid start times' => sub {
 subtest 'invalid expiry times' => sub {
     plan tests => 5;
 
-    my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
+    my $underlying = create_underlying('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
 
     my $bet_params = {
@@ -718,7 +719,7 @@ subtest 'invalid expiry times' => sub {
     ok($bet->is_valid_to_buy, '..but when we are open at the end, validates just fine.');
 
     # Need a quotdian here.
-    $underlying                 = BOM::Market::Underlying->new('RDBULL');
+    $underlying                 = create_underlying('RDBULL');
     $bet_params->{underlying}   = $underlying;
     $bet_params->{bet_type}     = 'CALL';
     $bet_params->{duration}     = '10h';
@@ -731,7 +732,7 @@ subtest 'invalid expiry times' => sub {
     $expected_reasons = [qr/must expire on same day/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $underlying = BOM::Market::Underlying->new('GDAXI');
+    $underlying = create_underlying('GDAXI');
 
     my $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
@@ -762,7 +763,7 @@ subtest 'invalid expiry times' => sub {
 };
 
 subtest 'invalid lifetimes.. how rude' => sub {
-    my $underlying = BOM::Market::Underlying->new('frxEURUSD');
+    my $underlying = create_underlying('frxEURUSD');
     my $starting   = $oft_used_date->epoch - 3600;
 
     my $bet_params = {
@@ -813,7 +814,7 @@ subtest 'invalid lifetimes.. how rude' => sub {
     ok($bet->is_valid_to_buy, '..but when we pick a shorter duration, validates just fine.');
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_start})});
-    $underlying                 = BOM::Market::Underlying->new('GDAXI');
+    $underlying                 = create_underlying('GDAXI');
     $bet_params->{underlying}   = $underlying;
     $bet_params->{date_start}   = $underlying->calendar->opening_on(Date::Utility->new('6-Dec-12'))->plus_time_interval('15m');
     $bet_params->{date_pricing} = $bet_params->{date_start};
@@ -897,7 +898,7 @@ subtest 'underlying with critical corporate actions' => sub {
 
     my $orig = BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions;
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions([]);
-    my $underlying = BOM::Market::Underlying->new('USAAPL');
+    my $underlying = create_underlying('USAAPL');
     my $starting   = $underlying->calendar->opening_on(Date::Utility->new('2013-03-28'))->plus_time_interval('1h');
 
     my $bet_params = {

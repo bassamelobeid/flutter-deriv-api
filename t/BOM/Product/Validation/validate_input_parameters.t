@@ -4,7 +4,8 @@ use Test::More;
 use Test::FailWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use Date::Utility;
 
 use BOM::Platform::Runtime;
@@ -121,7 +122,7 @@ subtest 'absolute barrier for a non-intraday contract' => sub {
             },
         }) for qw(USD JPY USD-JPY);
 
-    my $forex = BOM::Market::Underlying->new('frxUSDJPY');
+    my $forex = create_underlying('frxUSDJPY');
 
     my $delta_surface = Quant::Framework::VolSurface::Delta->new({
             deltas            => [75, 50, 25],

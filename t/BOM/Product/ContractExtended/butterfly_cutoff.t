@@ -20,8 +20,12 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 
-my $underlying       = BOM::Market::Underlying->new('frxUSDJPY');
+
+my $underlying       = create_underlying('frxUSDJPY');
 my $bet_start        = Date::Utility->new('2012-02-01 01:00:00');
 my $longterm_expiry  = Date::Utility->new($bet_start->epoch + 7 * 86400);
 my $shortterm_expiry = Date::Utility->new($bet_start->epoch + 23 * 3540);
@@ -59,7 +63,7 @@ subtest 'ON 25D BF > 1.' => sub {
     plan tests => 15;
 
     my $mocked = Test::MockModule->new('BOM::Product::Contract');
-    $mocked->mock('uses_empirical_volatility', sub {0});
+    $mocked->mock('uses_empirical_volatility', sub { 0 });
 
     my $surface = _sample_surface(
         25 => 0.10,
