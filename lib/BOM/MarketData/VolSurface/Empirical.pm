@@ -321,9 +321,10 @@ sub _get_coefficients {
     die "Volatility calibration coefficients of $which is empty"
         unless ref $coef eq 'HASH';
 
-    my $result = $underlying->submarket->name eq 'minor_pairs' ? $coef->{frxUSDJPY} : $coef->{$underlying->symbol};
+    my $reference_symbol = $underlying->submarket->name eq 'minor_pairs' ? 'frxUSDJPY' : $underlying->symbol;
+    my $result = $coef->{$reference_symbol};
 
-    die "No $which coefficients for this underlying [" . $underlying->symbol . "]"
+    die "No $which coefficients for this underlying [$reference_symbol]"
         unless ref $result eq 'HASH';
 
     return $result;
