@@ -19,8 +19,7 @@ use BOM::Platform::Countries;
 use BOM::System::Config;
 
 sub __oauth_model {
-    state $oauth_model = BOM::Database::Model::OAuth->new;
-    return $oauth_model;
+    return BOM::Database::Model::OAuth->new;
 }
 
 sub authorize {

@@ -51,6 +51,11 @@ sub startup {
             $c->stash(request => $request);
         });
 
+    $app->hook(
+        after_dispatch => sub {
+            BOM::Database::Rose::DB->db_cache->finish_request_cycle;
+        });
+
     my $r = $app->routes;
     $r->any('/authorize')->to('O#authorize');
     # $r->any('/access_token')->to('O#access_token');
