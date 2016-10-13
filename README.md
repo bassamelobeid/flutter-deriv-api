@@ -110,11 +110,9 @@ Package dependency: BOM::MarketDataAutoUpdater::ImpliedInterestRates
 
 Frequency of this script being called: 00GMT on daily basic
 
-Input: 
-interest rates file type from Bloomberg::FileDownloaderBloomberg e.g. interest_rate.csv 
-forward rates file type from Bloomberg::FileDownloaderBloomberg forward_rates.csv 
+Input: 'interest_rates' at Chronicle
 
-Output: Chronicle
+Output: 'interest_rates' at Chronicle
 
 (7) bin/updatevol.pl
 
