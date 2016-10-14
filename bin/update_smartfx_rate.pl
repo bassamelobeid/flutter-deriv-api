@@ -28,14 +28,14 @@ has world_symbols => (
             negative => [qw(frxGBPUSD frxEURUSD frxAUDUSD)]},
         WLDAUD => {
             source => [qw(frxAUDCAD frxAUDJPY frxAUDUSD frxEURAUD frxGBPAUD)],
-            negative => [qw(frxEURAUD frxGBPAUD)],},
+            negative => [qw(frxEURAUD frxGBPAUD)]},
         WLDEUR => {
             source => [qw(frxEURAUD frxEURCAD frxEURGBP frxEURJPY frxEURUSD)],
-            negative => [qw()],
+            negative => [qw()]
             },
         WLDGBP => {
             source => [qw(frxEURGBP frxGBPAUD frxGBPCAD frxGBPJPY frxGBPUSD)],
-            negative => [qw(EURGBP)],
+            negative => [qw(EURGBP)]
         },
     }},
 );
