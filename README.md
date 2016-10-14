@@ -19,7 +19,7 @@ Frequency of this script being called: Hourly basic
 
 Input: ohlc file type from Bloomberg::FileDownloader e.g. ohlc_NIFTY_i.csv.enc 
 
-Output: feed.ohlc_daily at cloud-feeddb
+Output: feed/market/[underlying].db file   
 
 (2) bin/bom_update_economic_events.pl 
 
