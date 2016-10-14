@@ -264,7 +264,8 @@ sub set_jp_settings {
     my ($client, $website_name, $client_ip, $user_agent, $language, $args) =
         @{$params}{qw/client website_name client_ip user_agent language args/};
 
-    return BOM::RPC::v3::Utility::permission_error() unless ($client->residence eq 'jp' and ($args->{jp_settings} or $args->{email_consent}));
+    return BOM::RPC::v3::Utility::permission_error() unless ($client->residence eq 'jp'
+        and ($args->{jp_settings} or $args->{email_consent}));
     $args = $args->{jp_settings};
 
     my $text = {
