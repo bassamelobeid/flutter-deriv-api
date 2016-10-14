@@ -238,6 +238,7 @@ sub _build_bet {
         date_pricing => $self->date_pricing,
         q_rate       => $self->q,
         r_rate       => $self->r,
+        uses_empirical_volatility => 0,
     };
     if ($self->_get_bet_type_bloomberg eq 'DNT' or $self->_get_bet_type_bloomberg eq 'DOT') {
         $bet_args->{high_barrier} = $self->high_barrier;

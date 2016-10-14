@@ -150,6 +150,7 @@ sub _get_bet_args {
         payout       => $record->{payout},
         currency     => $record->{currency},
         date_pricing => $record->{date_start},
+        uses_empirical_volatility => 0,
     };
 
     if ($record->{barrier}) {

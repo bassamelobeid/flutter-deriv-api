@@ -202,6 +202,7 @@ sub _convert_sd_mid_to_numeraire {
         payout       => $args->{payout},
         currency     => $args->{currency},
         date_pricing => $args->{date_start},
+        uses_empirical_volatility => 0,
     );
 
     my $sd_mid;
