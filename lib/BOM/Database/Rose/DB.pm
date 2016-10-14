@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Carp;
 
-use BOM::Database;
+use DBIx::TransactionManager::Distributed qw(release_dbh dbh_is_registered register_dbh);
 
 use Mojo::Exception;
 
@@ -151,7 +151,7 @@ Overrides L<Rose::DB/disconnect> to remove previous registration.
 sub disconnect {
     my $self = shift;
     if(my $category = $self->_category_from_domain) {
-        BOM::Database::release_dbh($category => $self->{dbh}) if $self->_category_requires_registration($category) && $self->{dbh};
+        release_dbh($category => $self->{dbh}) if $self->_category_requires_registration($category) && $self->{dbh};
     }
     $self->SUPER::disconnect(@_);
 }
@@ -174,9 +174,9 @@ sub init_dbh {
     my $category = $self->_category_from_domain or return $dbh;
 
     return $dbh unless $self->_category_requires_registration($category);
-    return $dbh if BOM::Database::dbh_is_registered($category => $dbh);
+    return $dbh if dbh_is_registered($category => $dbh);
 
-    BOM::Database::register_dbh($category => $dbh);
+    register_dbh($category => $dbh);
     return $dbh;
 }
 
