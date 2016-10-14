@@ -1579,7 +1579,6 @@ sub _validate_date_pricing {
     return;
 }
 
-
 =head2 $self->_validate_iom_withdrawal_limit
 
 Validate the withdrawal limit for IOM region
