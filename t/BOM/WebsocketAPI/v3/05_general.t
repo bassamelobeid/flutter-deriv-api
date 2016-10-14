@@ -10,7 +10,7 @@ use Test::MockObject;
 use Test::MockModule;
 
 my $system = Test::MockModule->new('BOM::WebSocketAPI::v3::Wrapper::System');
-$system->mock('server_time', sub { +{msg_type => 'time', time => ('1' x 328000)} });
+$system->mock('server_time', sub { +{msg_type => 'time', time => ('1' x 500000)} });
 
 my $t = build_mojo_test();
 
