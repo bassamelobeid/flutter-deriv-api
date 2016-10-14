@@ -91,7 +91,7 @@ Package dependency: BOM::MarketDataAutoUpdater::ImpliedInterestRates
 Frequency of this script being called: 17GMT on daily basic. (This script must be run after bin/update_interest_rates.pl as it depends on the market interest rate of the corresponding currency of the pair).
 
 Input: 
-interest rates file type from Bloomberg::FileDownloader e.g. interest_rate.csv <br/>
+category='interest_rates' at Chronicle
 forward rates file type from Bloomberg::FileDownloader e.g. forward_rates.csv 
 
 Output: category='interest_rates' at Chronicle
@@ -110,8 +110,7 @@ Package dependency: BOM::MarketDataAutoUpdater::ImpliedInterestRates
 
 Frequency of this script being called: 00GMT on daily basic
 
-Input: forward_feed 
-
+Input: 'interest_rates' at Chronicle
 Output: 'interest_rates' at Chronicle
 
 (7) bin/updatevol.pl
