@@ -89,8 +89,8 @@ sub site_limits {
         'hourly'     => $rates_file_content->{websocket_call_expensive}->{'1h'}};
     $limits->{'max_requests_pricing'} = {
         'applies_to' => 'proposal and proposal_open_contract',
-        'minutely'   => $rates_file_content->{max_requests_pricing}->{'1m'},
-        'hourly'     => $rates_file_content->{max_requests_pricing}->{'1h'}};
+        'minutely'   => $rates_file_content->{websocket_call_pricing}->{'1m'},
+        'hourly'     => $rates_file_content->{websocket_call_pricing}->{'1h'}};
     return $limits;
 }
 
