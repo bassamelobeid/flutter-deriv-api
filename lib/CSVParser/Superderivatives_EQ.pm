@@ -6,7 +6,7 @@ use List::Util qw(max min);
 
 use Math::Function::Interpolator;
 use Quant::Framework::CorrelationMatrix;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
 use Quant::Framework::VolSurface::Moneyness;
 use SetupDatasetTestFixture;
 use Date::Utility;
@@ -42,7 +42,7 @@ sub _build_records {
     return if not $hour or not $minute;
 
     my $start_offset = ($hour - 8) * 3600 + $minute * 60;                   # in seconds
-    my $underlying   = BOM::Market::Underlying->new($data->{underlying});
+    my $underlying   = create_underlying($data->{underlying});
     my $rates        = $self->get_rates($data, $underlying);
     my $date_start   = Date::Utility->new($data->{date});
     my $spot         = $data->{spot};
@@ -148,7 +148,7 @@ sub _setup_quanto_rate {
 sub _setup_quanto_volsurface {
     my ($self, $args, $date) = @_;
 
-    my $underlying = BOM::Market::Underlying->new($args->{symbol});
+    my $underlying = create_underlying($args->{symbol});
     my $data       = $args->{data};
     my %surface_data;
     foreach my $term (keys %$data) {

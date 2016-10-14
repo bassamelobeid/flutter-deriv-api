@@ -30,7 +30,7 @@ sub documentation {
 
 sub _benchmark_testing_setup {
 
-    $BOM::Market::Underlying::interest_rates_source = 'market';
+    $Quant::Framework::Underlying::interest_rates_source = 'market';
 
     my $file_path = '/home/git/regentmarkets/bom-quant-benchmark/t/csv/interest_rates.csv';
     my $csv = Text::CSV->new({ sep_char => ',' });

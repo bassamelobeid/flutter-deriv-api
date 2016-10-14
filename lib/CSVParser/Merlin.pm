@@ -15,6 +15,7 @@ use Moose;
 use Text::CSV::Slurp;
 
 use Quant::Framework::VolSurface::Delta;
+use BOM::MarketData qw(create_underlying);
 
 =head1 ATTRIBUTES
 
@@ -162,7 +163,7 @@ sub _build_records {
 
         next if $record{date_expiry}->days_between($record{date_start}) > 365;
 
-        $record{underlying} = BOM::Market::Underlying->new({
+        $record{underlying} = create_underlying({
             symbol        => 'frx' . $line->{Underlying},
             closed_weight => 0.05,
         });

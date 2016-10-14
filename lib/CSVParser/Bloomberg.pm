@@ -29,7 +29,7 @@ use SetupDatasetTestFixture;
 use Date::Utility;
 use BOM::MarketData::Fetcher::VolSurface;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
 use Try::Tiny;
 use Postgres::FeedDB::Spot::Tick;
 use YAML::CacheLoader qw(LoadFile);
@@ -105,7 +105,7 @@ has 'underlying_symbol' => (
 
 has 'underlying' => (
     is         => 'rw',
-    isa        => 'BOM::Market::Underlying',
+    isa        => 'Quant::Framework::Underlying',
     lazy_build => 1,
 );
 
@@ -298,7 +298,7 @@ sub _build_theo_prob {
 
 sub _build_underlying {
     my $self = shift;
-    return BOM::Market::Underlying->new($self->underlying_symbol);
+    return create_underlying($self->underlying_symbol);
 }
 
 # this field is for European Digitals and specifies whether it is a FOR/DOM digital CALL/PUT
@@ -707,7 +707,7 @@ sub get_volsurface {
     my $recorded_date = $data->{recorded_date};
     my $cutoff        = $data->{cutoff};
     my $surface       = Quant::Framework::VolSurface::Delta->new(
-        underlying_config      => BOM::Market::Underlying->new($underlying_symbol)->config,
+        underlying_config      => create_underlying($underlying_symbol)->config,
         recorded_date   => Date::Utility->new($recorded_date),
         surface         => $surface_data,
         print_precision => undef,
@@ -788,7 +788,7 @@ sub price_list {
         }
         my $fixture = SetupDatasetTestFixture->new;
         $fixture->setup_test_fixture({
-                underlying => BOM::Market::Underlying->new($underlying_symbol),
+                underlying => create_underlying($underlying_symbol),
                 spot       => $contract_args->{current_spot}});
         $contract_args->{volsurface} = $self->get_volsurface($underlying_symbol);
         try {

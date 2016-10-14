@@ -4,7 +4,6 @@ use Moose;
 use lib qw(/home/git/regentmarkets/bom/t/BOM/Product);
 use Date::Utility;
 use Postgres::FeedDB::Spot::Tick;
-use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw( produce_contract );
 use CSVParser::Merlin;
 

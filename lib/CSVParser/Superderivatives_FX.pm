@@ -9,7 +9,7 @@ use Carp;
 use Math::Business::BlackScholes::Binaries;
 
 use VolSurface::Utils qw(get_2vol_butterfly);
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
 use BOM::Product::ContractFactory qw( produce_contract );
 use SetupDatasetTestFixture;
 use Date::Utility;
@@ -53,7 +53,7 @@ sub _build_records {
     }
     my $date_start        = Date::Utility->new(_get_start_datetime([@lines]));
     my $underlying_symbol = _get_symbol(\@lines);
-    my $underlying        = BOM::Market::Underlying->new($underlying_symbol);
+    my $underlying        = create_underlying($underlying_symbol);
     my $spot              = _get_spot(\@lines);
     my $payout            = 100;
 
