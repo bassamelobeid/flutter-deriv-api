@@ -40,7 +40,7 @@
         },
         "landing_company_fullname": {
           "type": "string",
-          "pattern": "^Binary Investments (Europe) Ltd$",
+          "pattern": "^Binary Investments \(Europe\) Ltd$",
           "required": "1"
         },
         "country": {

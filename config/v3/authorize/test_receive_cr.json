@@ -40,7 +40,7 @@
         },
         "landing_company_fullname": {
           "type": "string",
-          "pattern": "^Binary (C.R.) S.A.$",
+          "pattern": "^Binary \(C\.R\.\) S\.A\.$",
           "required": "1"
         },
         "country": {
