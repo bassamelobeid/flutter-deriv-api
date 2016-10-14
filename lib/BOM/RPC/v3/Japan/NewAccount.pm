@@ -267,7 +267,11 @@ sub set_jp_settings {
     return BOM::RPC::v3::Utility::permission_error() unless ($client->residence eq 'jp'
         and ($args->{jp_settings} or $args->{email_consent}));
 
-    my $email_consent = $args->{email_consent} || undef;
+    # translation added in bom-backoffice: bin/extra_translations.pl
+    my @updated;
+
+    push @updated, [localize('Receive news and special offers'), $args->{email_consent} ? localize("Yes") : localize("No")]
+        if exists $args->{email_consent};
 
     $args = $args->{jp_settings};
 
@@ -285,12 +289,6 @@ sub set_jp_settings {
         'hedge_asset'                                 => localize('{JAPAN ONLY}Classification of assets requiring hedge'),
         'hedge_asset_amount'                          => localize('{JAPAN ONLY}Amount of hedging assets'),
     };
-
-    # translation added in bom-backoffice: bin/extra_translations.pl
-    my @updated;
-
-    push @updated, [localize('Receive news and special offers'), $email_consent ? localize("Yes") : localize("No")]
-        if defined $email_consent;
 
     my $fin_change = 0;
 
