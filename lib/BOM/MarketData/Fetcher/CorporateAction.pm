@@ -11,10 +11,11 @@ An interface to fetch corporate action data from Chronicle
 =cut
 
 use Moose;
+
 use Quant::Framework::CorporateAction;
 use Quant::Framework::StorageAccessor;
+
 use BOM::MarketData qw(create_underlying_db);
-use BOM::MarketData qw(create_underlying);
 
 =head2 get_underlyings_with_corporate_action
 
