@@ -4,7 +4,6 @@ use Moose;
 use lib qw(/home/git/regentmarkets/bom/t/BOM/Product);
 use Date::Utility;
 use Postgres::FeedDB::Spot::Tick;
-use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw( produce_contract );
 use CSVParser::Merlin;
 
@@ -151,6 +150,7 @@ sub _get_bet_args {
         payout       => $record->{payout},
         currency     => $record->{currency},
         date_pricing => $record->{date_start},
+        uses_empirical_volatility => 0,
     };
 
     if ($record->{barrier}) {

@@ -6,7 +6,7 @@ use Carp;
 
 use Date::Utility;
 use Cache::RedisDB;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
 use Quant::Framework;
 use BOM::System::Chronicle;
 
@@ -51,9 +51,9 @@ sub setup_test_fixture {
 
     croak "Underlying is not specified" if not $args->{underlying};
     my $underlying =
-        (ref $args->{underlying} eq 'BOM::Market::Underlying')
+        (ref $args->{underlying} eq 'Quant::Framework::Underlying')
         ? $args->{underlying}
-        : BOM::Market::Underlying->new($args->{underlying});
+        : create_underlying($args->{underlying});
     if ($args->{rates}) {
         $self->_setup_rates($underlying, $args->{rates}, $args->{date});
     }

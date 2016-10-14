@@ -96,6 +96,7 @@ sub price_superderivatives_bets_locally {
             payout       => $record->{payout},
             currency     => $record->{currency},
             date_pricing => $record->{date_start}->epoch + 9 * 3600,
+            uses_empirical_volatility => 0,
         };
 
         if ($record->{barrier2}) {

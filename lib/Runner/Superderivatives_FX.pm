@@ -138,6 +138,7 @@ sub get_bet_results {
             currency     => $currency,
             date_pricing => $date_start,
             current_spot => $spot,
+            uses_empirical_volatility => 0,
         };
 
         if ($record->{barrier2}) {
