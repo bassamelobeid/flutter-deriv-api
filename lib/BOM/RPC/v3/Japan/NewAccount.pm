@@ -292,6 +292,8 @@ sub set_jp_settings {
 
     my $fin_change = 0;
 
+    my $ori_fin = JSON::from_json($client->financial_assessment->data);
+
     if ($args) {
 
         if ($client->occupation && $client->occupation ne $args->{occupation}) {
@@ -301,8 +303,6 @@ sub set_jp_settings {
             push @updated, [localize('{JAPAN ONLY}Occupation'), $translate_old, $translate_new];
             $client->occupation($args->{occupation});
         }
-
-        my $ori_fin = JSON::from_json($client->financial_assessment->data);
 
         foreach my $key (qw(
             trading_purpose
