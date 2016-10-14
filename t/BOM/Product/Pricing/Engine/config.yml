@@ -1294,7 +1294,7 @@ expected_result:
     CALL:
       ask_prob: 0.4455
       barrier: 1.383
-      commission_markup: 0.025
+      commission_markup: 0.035
       duration: 8d
       price_engine: Pricing::Engine::EuropeanDigitalSlope
       risk_markup: 0.0071
@@ -1305,7 +1305,7 @@ expected_result:
       ask_prob: 0.8056
       barrier: 1.445
       barrier2: 1.3210
-      commission_markup: 0.025
+      commission_markup: 0.035
       duration: 120d
       price_engine: Pricing::Engine::EuropeanDigitalSlope
       risk_markup: 0.0109185863437566
@@ -1315,7 +1315,7 @@ expected_result:
     NOTOUCH:
       ask_prob: 0.8633
       barrier: 1.388
-      commission_markup: 0.025
+      commission_markup: 0.035
       duration: 4d
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0814
@@ -1326,7 +1326,7 @@ expected_result:
       ask_prob: 0.2778
       barrier: 1.45
       barrier2: 1.335
-      commission_markup: 0.025
+      commission_markup: 0.035
       duration: 222d
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0132
@@ -1337,7 +1337,7 @@ expected_result:
     CALL:
       ask_prob: 0.5281
       barrier: 102.454
-      commission_markup: 0.025
+      commission_markup: 0.035
       duration: 6d
       price_engine: Pricing::Engine::EuropeanDigitalSlope
       risk_markup: 0.0060816898639056
@@ -1348,7 +1348,7 @@ expected_result:
       ask_prob: 0.577
       barrier: 103
       barrier2: 101.338
-      commission_markup: 0.025
+      commission_markup: 0.035
       duration: 8d
       price_engine: Pricing::Engine::EuropeanDigitalSlope
       risk_markup: 0.0295
@@ -1358,7 +1358,7 @@ expected_result:
     NOTOUCH:
       ask_prob: 0.3544
       barrier: 103
-      commission_markup: 0.025
+      commission_markup: 0.035
       duration: 12d
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0196
@@ -1369,7 +1369,7 @@ expected_result:
       ask_prob: 0.2724
       barrier: 103
       barrier2: 101.338
-      commission_markup: 0.025
+      commission_markup: 0.035
       duration: 7d
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0574
