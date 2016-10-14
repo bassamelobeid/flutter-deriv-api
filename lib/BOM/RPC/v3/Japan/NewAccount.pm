@@ -264,7 +264,7 @@ sub set_jp_settings {
     my ($client, $website_name, $client_ip, $user_agent, $language, $args) =
         @{$params}{qw/client website_name client_ip user_agent language args/};
 
-    return BOM::RPC::v3::Utility::permission_error() unless ($client->residence eq 'jp' and $args->{jp_settings});
+    return BOM::RPC::v3::Utility::permission_error() unless ($client->residence eq 'jp' and ($args->{jp_settings} or $args->{email_consent}));
     $args = $args->{jp_settings};
 
     my $text = {
@@ -291,6 +291,9 @@ sub set_jp_settings {
         push @updated, [localize('{JAPAN ONLY}Occupation'), $translate_old, $translate_new];
         $client->occupation($args->{occupation});
     }
+
+    push @updated, [localize('Receive news and special offers'), $args->{email_consent} ? localize("Yes") : localize("No")]
+        if exists $args->{email_consent};
 
     my $ori_fin    = JSON::from_json($client->financial_assessment->data);
     my $fin_change = 0;
