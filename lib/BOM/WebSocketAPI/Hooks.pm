@@ -41,8 +41,9 @@ sub add_req_data {
     my ($c, $req_storage, $api_response) = @_;
     if ($req_storage) {
         my $args = $req_storage->{origin_args} || $req_storage->{args};
-        $api_response->{echo_req} = $args;
-        $api_response->{req_id} = $args->{req_id} if $args->{req_id};
+        $api_response->{echo_req}    = $args;
+        $api_response->{req_id}      = $args->{req_id} if $args->{req_id};
+        $api_response->{passthrough} = $args->{passthrough} if $args->{passthrough};
     }
     return;
 }
@@ -80,6 +81,8 @@ my %rate_limit_map = (
     verify_email_real              => 'websocket_call_email',
     buy_real                       => 'websocket_real_pricing',
     sell_real                      => 'websocket_real_pricing',
+    buy_virtual                    => 'virtual_buy_transaction',
+    sell_virtual                   => 'virtual_sell_transaction',
     reality_check_real             => 'websocket_call_expensive',
     ping_virtual                   => '',
     time_virtual                   => '',
