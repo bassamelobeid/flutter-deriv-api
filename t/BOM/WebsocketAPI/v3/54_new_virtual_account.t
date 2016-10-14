@@ -8,9 +8,11 @@ use TestHelper qw/test_schema build_mojo_test call_mocked_client reconnect/;
 use BOM::Platform::Token;
 use BOM::System::RedisReplicated;
 use List::Util qw(first);
-use RateLimitations qw (flush_all_service_consumers);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+
+# We don't want to fail due to hiting limits
+$ENV{BOM_TEST_RATE_LIMITATIONS} = 't/BOM/WebsocketAPI/v3/schema_suite/rate_limitations';
 
 ## do not send email
 use Test::MockObject;
@@ -84,9 +86,6 @@ subtest 'create Virtual account' => sub {
     $t = $t->send_ok({json => $create_vr})->message_ok;
     my $res = decode_json($t->message->[1]);
     is($res->{error}->{code}, 'InvalidToken', 'wrong token');
-
-    # as verify_email has rate limit, so clearing for testing other cases also
-    flush_all_service_consumers();
 
     $t = $t->send_ok({
             json => {
