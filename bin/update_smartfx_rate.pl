@@ -20,6 +20,9 @@ use BOM::MarketData::Types;
 use Quant::Framework::InterestRate;
 use Date::Utility;
 
+# World FX is an index that measure value of a currency against a basket of major Forex pairs.
+# The interest rate of a World FX is the aggregrate interest rate of the basket of Forex pairs.
+# For those Forex pair that we long will have positive interest rate and for those that we short will have negative interest rate
 has world_symbols => (
     is => 'ro',
     default => sub {{
