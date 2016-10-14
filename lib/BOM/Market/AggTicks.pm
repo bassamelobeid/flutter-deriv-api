@@ -17,7 +17,6 @@ A wrapper to let us use Redis SortedSets to get aggregated tick data.
 use 5.010;
 use Moose;
 
-use DataDog::DogStatsd::Helper qw(stats_timing);
 use Cache::RedisDB;
 use Date::Utility;
 use List::Util qw( first min max );
@@ -25,7 +24,9 @@ use Time::Duration::Concise;
 use Scalar::Util qw( blessed );
 use Sereal::Encoder;
 use Sereal::Decoder;
-use BOM::MarketData qw(create_underlying);
+use DataDog::DogStatsd::Helper qw(stats_timing);
+
+use Quant::Framework::Underlying;
 
 my $encoder = Sereal::Encoder->new({
     canonical => 1,
@@ -191,7 +192,6 @@ Return the aggregated tick data for an underlying over the last BOM:TimeInterval
 sub retrieve {
     my ($self, $args) = @_;
 
-    $args->{underlying} = create_underlying($args->{underlying}) if ref $args->{underlying} ne 'Quant::Framework::Underlying';
     return $self->_retrieve_from_database($args) if $args->{underlying}->for_date;
     return $self->_retrieve_from_cache($args);
 }

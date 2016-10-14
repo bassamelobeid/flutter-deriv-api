@@ -1,10 +1,12 @@
 package BOM::MarketData::Fetcher::VolSurface;
 
 use Moose;
+
 use Quant::Framework::VolSurface::Delta;
+use Quant::Framework::VolSurface::Moneyness;
+
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::VolSurface::Flat;
-use Quant::Framework::VolSurface::Moneyness;
 
 =head1 fetch_surface
 

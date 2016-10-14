@@ -7,10 +7,15 @@ use Test::FailWarnings;
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Market::AggTicks;
 
+
+use BOM::MarketData qw(create_underlying);
+
 new_ok('BOM::Market::AggTicks');
 
 my $test_symbol = 'XYZ';
 my $through     = 900;
+
+my $test_ul = create_underlying($test_symbol);
 
 my $dense_ticks = [map { +{epoch => $_, quote => $_, symbol => $test_symbol} } (0 .. $through)];
 
@@ -34,7 +39,7 @@ subtest 'Dense ticks' => sub {
             my $back_aways = $through - 15;
             eq_or_diff(
                 $at->retrieve({
-                        underlying   => $test_symbol,
+                        underlying   => $test_ul,
                         ending_epoch => $back_aways,
                         tick_count   => 2,
                         fill_cache   => 0,
@@ -56,14 +61,14 @@ subtest 'Dense ticks' => sub {
                 'Got proper latest ticks'
             );
             my $stuff = $at->retrieve({
-                underlying   => $test_symbol,
+                underlying   => $test_ul,
                 ending_epoch => $through,
                 fill_cache   => 0
             });
             is(
                 scalar @{
                     $at->retrieve({
-                            underlying   => $test_symbol,
+                            underlying   => $test_ul,
                             ending_epoch => $through,
                             fill_cache   => 0
                         })
@@ -84,7 +89,7 @@ subtest 'Sparse ticks' => sub {
         my $test_name = ($run) ? 'Sparse reload' : 'Sparse load';
         subtest $test_name => sub {
             my ($count, $first, $last) = $at->fill_from_historical_feed({
-                underlying   => $test_symbol,
+                underlying   => $test_ul,
                 ticks        => $sparse_ticks,
                 ending_epoch => $through,
                 fast_insert  => $run,
@@ -95,7 +100,7 @@ subtest 'Sparse ticks' => sub {
             is $last->epoch, $through, 'Ending at our final epoch';
             eq_or_diff(
                 $at->retrieve({
-                        underlying   => $test_symbol,
+                        underlying   => $test_ul,
                         ending_epoch => $through,
                         tick_count   => 2,
                         fill_cache   => 0,
@@ -117,7 +122,7 @@ subtest 'Sparse ticks' => sub {
                 'Got proper latest ticks'
             );
             my $stuff = $at->retrieve({
-                underlying   => $test_symbol,
+                underlying   => $test_ul,
                 ending_epoch => $through,
                 fill_cache   => 0
             });
@@ -145,7 +150,7 @@ subtest 'Sparse ticks' => sub {
             );
             is(scalar @$stuff, 12, 'Got our 12 aggregations...');
             $stuff = $at->retrieve({
-                underlying   => $test_symbol,
+                underlying   => $test_ul,
                 ending_epoch => $through + 2,
                 fill_cache   => 0
             });
