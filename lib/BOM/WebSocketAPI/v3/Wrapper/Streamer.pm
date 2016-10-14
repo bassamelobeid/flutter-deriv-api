@@ -9,7 +9,8 @@ use List::MoreUtils qw(last_index);
 
 use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 use BOM::WebSocketAPI::v3::Wrapper::System;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use Time::HiRes qw(gettimeofday);
@@ -189,7 +190,7 @@ sub process_realtime_events {
                 return;
             }
 
-            my $display_decimals = $c->stash("${symbol}_display_decimals") // BOM::Market::Underlying->new($symbol)->display_decimals;
+            my $display_decimals = $c->stash("${symbol}_display_decimals") // create_underlying($symbol)->display_decimals;
             my $tick = {
                 id     => $feed_channels_type->{$channel}->{uuid},
                 symbol => $symbol,
@@ -215,7 +216,7 @@ sub process_realtime_events {
                 return;
             }
 
-            my $display_decimals = $c->stash("${symbol}_display_decimals") // BOM::Market::Underlying->new($symbol)->display_decimals;
+            my $display_decimals = $c->stash("${symbol}_display_decimals") // create_underlying($symbol)->display_decimals;
             my $quote_format = '%.' . $display_decimals . 'f';
             $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
             my $ohlc = {
@@ -442,12 +443,12 @@ sub process_transaction_updates {
     return;
 }
 
+my %skip_duration_list = map { $_ => 1 } qw(s m h);
+my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 R_10 RDBULL RDBEAR);
+my %skip_type_list     = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
+
 sub _skip_streaming {
     my $args = shift;
-
-    my %skip_duration_list = map { $_ => 1 } qw(s m h);
-    my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR);
-    my %skip_type_list     = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
 
     my $skip_symbols = ($skip_symbol_list{$args->{symbol}}) ? 1 : 0;
     my $atm_contract = ($args->{contract_type} =~ /^(CALL|PUT)$/ and not $args->{barrier}) ? 1 : 0;

@@ -31,7 +31,8 @@ sub proposal {
             msg_type    => 'proposal',
             call_params => {
                 language              => $c->stash('language'),
-                app_markup_percentage => $c->stash('app_markup_percentage')
+                app_markup_percentage => $c->stash('app_markup_percentage'),
+                landing_company       => $c->stash('landing_company_name'),
             },
             success => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
@@ -152,8 +153,9 @@ sub _pricing_channel_for_ask {
 
     delete $args_hash{passthrough};
 
-    $args_hash{language} = $c->stash('language') || 'EN';
+    $args_hash{language}         = $c->stash('language') || 'EN';
     $args_hash{price_daemon_cmd} = $price_daemon_cmd;
+    $args_hash{landing_company}  = $c->stash('landing_company_name');
     my $redis_channel = _serialized_args(\%args_hash);
     my $subchannel = $args->{amount_per_point} // $args->{amount};
 
@@ -170,9 +172,9 @@ sub _pricing_channel_for_bid {
     my %hash;
     @hash{qw(short_code contract_id currency sell_time)} = delete @{$cache}{qw(short_code contract_id currency sell_time)};
     $hash{is_sold} = $cache->{is_sold} + 0;
-    $hash{language} = $c->stash('language') || 'EN';
+    $hash{language}         = $c->stash('language') || 'EN';
     $hash{price_daemon_cmd} = $price_daemon_cmd;
-
+    $hash{landing_company}  = $c->stash('landing_company_name');
     my $redis_channel = _serialized_args(\%hash);
 
     %hash = map { $_ =~ /passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
@@ -259,7 +261,6 @@ sub process_bid_event {
                 msg_type => $type,
                 $type    => $response
             };
-            _prepare_results($results, $pricing_channel, $redis_channel, $stash_data);
         }
         if ($c->stash('debug')) {
             $results->{debug} = {
@@ -273,7 +274,7 @@ sub process_bid_event {
         # pass it as a second argument for 'send'.
         # not storing req_storage in channel cache because it contains validation code
         # same is for process_ask_event.
-        $c->send({json => $results});
+        $c->send({json => $results}, {args => $stash_data->{args}});
     }
     return;
 }
@@ -304,7 +305,6 @@ sub process_ask_event {
                     },
                 };
             }
-            _prepare_results($results, $pricing_channel, $redis_channel, $stash_data);
         }
         if ($c->stash('debug')) {
             $results->{debug} = {
@@ -313,19 +313,7 @@ sub process_ask_event {
             };
         }
         delete @{$results->{$type}}{qw(contract_parameters rpc_time)};
-        $c->send({json => $results});
-    }
-    return;
-}
-
-sub _prepare_results {
-    my ($results, $pricing_channel, $redis_channel, $stash_data) = @_;
-    $results->{echo_req} = $stash_data->{args};
-    if (my $passthrough = $stash_data->{args}->{passthrough}) {
-        $results->{passthrough} = $passthrough;
-    }
-    if (my $req_id = $stash_data->{args}->{req_id}) {
-        $results->{req_id} = $req_id;
+        $c->send({json => $results}, {args => $stash_data->{args}});
     }
     return;
 }
@@ -455,7 +443,10 @@ sub _create_error_message {
     my ($c, $type, $response, $stash_data) = @_;
     my ($err_code, $err_message, $err_details);
 
-    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid}) if $stash_data->{uuid};
+    my $error = $response->{error} || {};
+    if (not($error->{continue_price_stream}) and $stash_data->{uuid}) {
+        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid});
+    }
 
     if ($response->{error}) {
         $err_code    = $response->{error}->{code};
@@ -476,6 +467,7 @@ sub _create_error_message {
     }
     my $err = $c->new_error($type, $err_code, $err_message);
     $err->{error}->{details} = $err_details if $err_details;
+
     return $err;
 }
 
@@ -490,8 +482,8 @@ sub _invalid_response_or_stash_data {
         || !$stash_data->{cache};
 
     if (ref $additional_params_to_check eq 'HASH') {
-        while (my ($key, $value) = each %$additional_params_to_check) {
-            $err ||= !$stash_data->{$key}->{$value};
+        for my $key (sort keys %$additional_params_to_check) {
+            $err ||= !$stash_data->{$key}->{$additional_params_to_check->{$key}};
         }
     }
 
