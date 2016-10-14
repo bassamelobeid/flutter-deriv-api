@@ -1376,7 +1376,7 @@ sub _validate_sell_pricing_adjustment {
     if (not $contract->is_expired) {
         $commission_markup = $contract->opposite_contract->commission_markup->amount || 0;
     }
-    my $allowed_move = $commission_markup * 0.8;
+    my $allowed_move = $commission_markup * 0.5;
     $allowed_move = 0 if $recomputed == 1;
     my ($amount, $recomputed_amount) = ($self->price, $contract->bid_price);
 
