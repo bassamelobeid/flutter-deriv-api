@@ -2,8 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More (tests => 9);
-use Test::NoWarnings;
+use Test::More (tests => 8);
 use Test::Exception;
 use BOM::Database::Model::Account;
 use BOM::Database::Model::FinancialMarketBet::RangeBet;

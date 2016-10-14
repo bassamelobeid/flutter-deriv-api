@@ -1,11 +1,10 @@
 use strict;
 use warnings;
-use Test::More (tests => 14);
-use Test::NoWarnings;
-use Test::Warn;
+use Test::More (tests => 13);
 use DBI;
 use DBD::SQLite;
 use Test::Exception;
+use Test::Warn;
 use BOM::Database::Model::Account;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 

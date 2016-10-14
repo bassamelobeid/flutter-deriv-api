@@ -1,6 +1,5 @@
-use Test::More tests => 8;
+use Test::More tests => 7;
 use Test::Exception;
-use Test::NoWarnings;
 
 use BOM::Database::DataMapper::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -27,4 +26,4 @@ ok($client_data_mapper->unfreeze, 'Client was unlocked successfully');
 
 cmp_ok(scalar keys %{$client_data_mapper->locked_client_list()}, '==', 0, 'There is no locked client');
 
-done_testing(8);
+done_testing(7);
