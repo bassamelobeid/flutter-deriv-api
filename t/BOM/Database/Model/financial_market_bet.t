@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use Test::More tests=>16;
 use Test::Exception;
-use Test::Warn;
+use Test::FailWarnings -allow_from => [ qw/BOM::Database::Rose::DB/ ];
 use BOM::Database::Model::Account;
 use BOM::Database::Model::FinancialMarketBet;
 use BOM::Database::Model::FinancialMarketBetOpen;
@@ -238,7 +238,7 @@ lives_ok {
 }
 'expect to instansiate the model without params';
 
-warning_like {
+throws_ok {
     my $financial_market_bet_helper = BOM::Database::Helper::FinancialMarketBet->new({});
     $financial_market_bet_helper->sell_bet() // die "Bet not sold";
 }
