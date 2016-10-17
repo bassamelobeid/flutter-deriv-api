@@ -6,13 +6,12 @@ use DBI;
 use File::Slurp;
 use Try::Tiny;
 use DBIx::Migration;
+use BOM::Test;
 
 requires '_db_name', '_post_import_operations', '_build__connection_parameters', '_db_migrations_dir';
 
-use BOM::System::Config;
-
 BEGIN {
-    die "wrong env. Can't run test" if (BOM::System::Config::env !~ /^(qa\d+|development)$/);
+    die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
 }
 
 sub prepare_unit_test_database {
@@ -228,7 +227,7 @@ sub BUILD {
     my $self = shift;
 
     Carp::croak "Test DB trying to run to non development box"
-        unless (File::Slurp::read_file('/etc/rmg/environment') eq 'development');
+        unless (BOM::Test::env() eq 'development');
 
     return;
 }

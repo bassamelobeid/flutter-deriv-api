@@ -13,14 +13,18 @@ use BOM::MarketData qw(create_underlying_db);
 use base qw( Exporter );
 our @EXPORT_OK = qw(initialize_realtime_ticks_db update_combined_realtime);
 
-use BOM::System::Config;
+use BOM::Test;
 
 BEGIN {
-    die "wrong env. Can't run test" if (BOM::System::Config::env !~ /^(qa\d+|development)$/);
+    die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
 }
 
 sub initialize_realtime_ticks_db {
-    my %ticks = %{get_test_realtime_ticks()};
+    my (undef, $file_path, undef) = File::Spec->splitpath(__FILE__);
+    my $test_data_dir = abs_path("$file_path../../../../../data");
+
+    my %ticks = %{YAML::XS::LoadFile($test_data_dir . '/test_realtime_ticks.yml')};
+
     for my $symbol (keys %ticks) {
         my $ul = create_underlying($symbol);
         $ticks{$symbol}->{epoch} = time + 600;
@@ -28,13 +32,6 @@ sub initialize_realtime_ticks_db {
     }
 
     return;
-}
-
-sub get_test_realtime_ticks {
-    my (undef, $file_path, undef) = File::Spec->splitpath(__FILE__);
-    my $test_data_dir = abs_path("$file_path../../../../../data");
-
-    return YAML::XS::LoadFile($test_data_dir . '/test_realtime_ticks.yml');
 }
 
 ##################################################################################################
