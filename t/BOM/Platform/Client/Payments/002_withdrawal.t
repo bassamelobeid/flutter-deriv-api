@@ -330,7 +330,7 @@ subtest 'Total EUR2300 MLT limitation.' => sub {
 };
 
 subtest 'Frozen bonus.' => sub {
-    plan tests => 16;
+    plan tests => 14;
 
     set_fixed_time('2009-09-01T15:00:00Z');    # for the purpose of creating a bet on frxUSDJPY
 
