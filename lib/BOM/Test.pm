@@ -49,7 +49,7 @@ will use test redis instance instead of development.
     chomp $env;
 
     sub env {
-        return $env;
+        return $env // "";
     }
 }
 
