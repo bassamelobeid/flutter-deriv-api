@@ -68,6 +68,7 @@ $authorize = decode_json($t->message->[1]);
 is $authorize->{msg_type}, 'authorize';
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $loginid;
+is $authorize->{authorize}->{country}, 'id', 'return correct country';
 test_schema('authorize', $authorize);
 is $stash->{loginid}, $loginid, 'Test stash data';
 is $stash->{email},   $email,   'Should store email to stash';
@@ -80,7 +81,6 @@ ok $stash->{currency},             'Should store currency to stash';
 ok $stash->{landing_company_name}, 'Should store landing_company_name to stash';
 ok exists $stash->{is_virtual}, 'Should store is_virtual to stash';
 ok !$authorize->{authorize}->{account_id}, 'Shouldnt return account_id';
-ok !$authorize->{authorize}->{country},    'Shouldnt return country';
 
 ## it's ok after authorize
 $t = $t->send_ok({json => {balance => 1}})->message_ok;
