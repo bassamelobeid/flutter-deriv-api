@@ -76,3 +76,21 @@ sub create_contract {
     }
     return produce_contract($contract_data);
 }
+
+sub prepare_contract_db {
+    my $underlying_symbol = shift || 'R_50';
+    state $already_prepared = 0;
+    return 1 if $already_prepared;
+    initialize_realtime_ticks_db();
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD);
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'randomindex',
+        {
+            symbol => $underlying_symbol,
+            date   => Date::Utility->new
+        });
+    $already_prepared = 1;
+    return 1;
+}
+
+1;
