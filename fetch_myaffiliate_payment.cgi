@@ -51,8 +51,7 @@ if (not defined $pid) {
     if ($?) {
         print "An error has occurred -- child comes back with $?";
     } else {
-        print "Fetch Myaffiliates payment triggered, info will be emailed soon to "
-            . BOM::System::Config::email_address('affiliates');
+        print "Fetch Myaffiliates payment triggered, info will be emailed soon to " . BOM::System::Config::email_address('affiliates');
     }
 } else {
     # 1st, break parent/child relationship

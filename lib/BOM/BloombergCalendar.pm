@@ -169,7 +169,7 @@ sub _save_early_closes_calendar {
 
         foreach my $date (keys %{$data->{$exchange_name}}) {
 
-            my $epoch    = Date::Utility->new($date)->epoch;
+            my $epoch = Date::Utility->new($date)->epoch;
 
             my $description =
                   $calendar->is_in_dst_at($epoch)

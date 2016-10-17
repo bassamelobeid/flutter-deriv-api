@@ -45,8 +45,8 @@ if ($enddate) {
 }
 
 my $clientdb = BOM::Database::ClientDB->new({
-        client_loginid => $client->loginid,
-    });
+    client_loginid => $client->loginid,
+});
 
 Bar($loginID . " - Contracts");
 my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({

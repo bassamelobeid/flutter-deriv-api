@@ -18,7 +18,6 @@ use BOM::Platform::LandingCompany;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-
 if (not BOM::Backoffice::Auth0::from_cookie()) {
     PrintContentType();
     BOM::StaffPages->instance->login();

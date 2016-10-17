@@ -7,6 +7,7 @@ use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Display::VolatilitySurface;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -20,7 +21,7 @@ BrokerPresentation("", "");
 
 foreach my $symbol (@markets) {
     local $/ = "\n";
-    my $underlying = BOM::Market::Underlying->new($symbol);
+    my $underlying = create_underlying($symbol);
     # when we are updating surface, fetch New York 10 for FX
     my $args = {
         underlying => $underlying,

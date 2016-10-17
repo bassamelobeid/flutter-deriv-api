@@ -5,7 +5,8 @@ use Try::Tiny;
 use Spreadsheet::ParseExcel;
 use Format::Util::Numbers qw(roundnear);
 use Date::Utility;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use SuperDerivatives::UnderlyingConfig;
 use Quant::Framework::Asset;
 use BOM::System::Chronicle;
@@ -28,7 +29,7 @@ sub process_dividend {
 sub save_dividends {
     my ($data) = @_;
 
-    my %otc_indices = map { $_ => 1 } BOM::Market::UnderlyingDB->get_symbols_for(
+    my %otc_indices = map { $_ => 1 } Quant::Framework::UnderlyingDB->get_symbols_for(
         market            => 'indices',
         submarket         => 'otc_index',
         contract_category => 'ANY'
@@ -121,7 +122,7 @@ sub read_discrete_forecasted_dividend_from_excel_files {
             }
         }
 
-        my $underlying = BOM::Market::Underlying->new($symbol);
+        my $underlying = create_underlying($symbol);
         my $spot       = $underlying->spot;
         unless ($spot) {
             push @skipped, $underlying->symbol;

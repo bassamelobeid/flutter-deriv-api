@@ -13,6 +13,7 @@ use Date::Utility;
 use BOM::Backoffice::Auth0;
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Client;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 
 1;

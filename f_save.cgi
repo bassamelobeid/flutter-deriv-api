@@ -20,6 +20,7 @@ use BOM::MarketData::Display::VolatilitySurface;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::MarketData qw(create_underlying);
 use BOM::Backoffice::Sysinit ();
 use BOM::System::AuditLog;
 BOM::Backoffice::Sysinit::init();
@@ -63,7 +64,7 @@ $text =~ s/\n\r/\n/g;
 my @lines = split(/\n/, $text);
 
 if ($filen eq 'editvol') {
-    my $underlying = BOM::Market::Underlying->new($vol_update_symbol);
+    my $underlying = create_underlying($vol_update_symbol);
     my $market     = $underlying->market->name;
     my $model =
         ($underlying->volatility_surface_type eq 'moneyness')
@@ -100,11 +101,11 @@ if ($filen eq 'editvol') {
         };
     }
     my %surface_args = (
-        underlying_config    => $underlying->config,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-        surface       => $surface_data,
-        recorded_date => Date::Utility->new,
+        underlying_config => $underlying->config,
+        chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
+        surface           => $surface_data,
+        recorded_date     => Date::Utility->new,
         (request()->param('spot_reference') ? (spot_reference => request()->param('spot_reference')) : ()),
     );
     my $existing_surface_args = {

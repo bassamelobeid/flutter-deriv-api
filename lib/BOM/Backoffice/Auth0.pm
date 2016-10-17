@@ -71,8 +71,8 @@ sub can_access {
 }
 
 sub has_authorisation {
-    my $groups = shift;
-    my $staff = BOM::Backoffice::Cookie::get_staff();
+    my $groups     = shift;
+    my $staff      = BOM::Backoffice::Cookie::get_staff();
     my $auth_token = BOM::Backoffice::Cookie::get_auth_token();
     return unless ($staff and $auth_token);
 
