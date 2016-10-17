@@ -27,7 +27,7 @@ my $pg = Test::PostgreSQL->new or plan skip_all => $Test::PostgreSQL::errstr;
     # Note that this would not be valid on win32 where all refaddrs
     # change after a "fork" anyway.
     my $addr = refaddr($dbh);
-    if(my $pid = fork // die "fork failed - $!") {
+    if (my $pid = fork // die "fork failed - $!") {
         # Parent
         is(refaddr(BOM::System::Chronicle::_dbh()), $addr, 'refaddr still the same in parent after fork');
         ok(DBIx::TransactionManager::Distributed::dbh_is_registered(chronicle => $dbh), 'and handle is still registered with BOM::Database');
