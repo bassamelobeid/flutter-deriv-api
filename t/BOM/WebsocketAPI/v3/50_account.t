@@ -18,7 +18,6 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
-
 my $t = build_mojo_test({language => 'EN'});
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({

@@ -9,7 +9,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types; 
+use BOM::MarketData::Types;
 
 my $time      = Date::Utility->new;
 my $test_date = Date::Utility->new('2012-03-14 07:00:00');
