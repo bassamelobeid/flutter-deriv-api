@@ -13,7 +13,6 @@ use BOM::Platform::Token;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use YAML::XS qw(LoadFile);
 
-
 sub get_token_details {
     my $token = shift;
 
