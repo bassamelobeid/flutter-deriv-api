@@ -41,26 +41,6 @@ will use test redis instance instead of development.
 
 =cut
 
-BEGIN {
-    my (undef, $file_path, undef) = File::Spec->splitpath(__FILE__);
-    my $test_data_dir = abs_path("$file_path../../data");
-    my $config_dir    = $test_data_dir . '/config';
-
-    if (on_qa) {
-        ## no critic (Variables::RequireLocalizedPunctuationVars)
-
-        # Redis rand and replicated servers config
-        $ENV{BOM_TEST_REDIS_REPLICATED} = $config_dir . '/redis-replicated.yml';
-        $ENV{BOM_TEST_REDIS_RAND}       = $config_dir . '/redis.yml';
-
-        # Cache redis server
-        $ENV{REDIS_CACHE_SERVER} = $ENV{BOM_CACHE_SERVER} = '127.0.1.3:6385';
-
-        $ENV{DB_POSTFIX} = '_test';
-        $ENV{RPC_URL}    = 'http://127.0.0.1:5006/';
-    }
-}
-
 {
     my $env = do {
         local @ARGV = ('/etc/rmg/environment');
@@ -76,5 +56,26 @@ BEGIN {
 sub on_qa {
     return env() =~ /^qa/;
 }
+
+BEGIN {
+    my (undef, $file_path, undef) = File::Spec->splitpath(__FILE__);
+    my $test_data_dir = abs_path("$file_path../../data");
+    my $config_dir    = $test_data_dir . '/config';
+
+    if (on_qa()) {
+        ## no critic (Variables::RequireLocalizedPunctuationVars)
+
+        # Redis rand and replicated servers config
+        $ENV{BOM_TEST_REDIS_REPLICATED} = $config_dir . '/redis-replicated.yml';
+        $ENV{BOM_TEST_REDIS_RAND}       = $config_dir . '/redis.yml';
+
+        # Cache redis server
+        $ENV{REDIS_CACHE_SERVER} = $ENV{BOM_CACHE_SERVER} = '127.0.1.3:6385';
+
+        $ENV{DB_POSTFIX} = '_test';
+        $ENV{RPC_URL}    = 'http://127.0.0.1:5006/';
+    }
+}
+
 1;
 
