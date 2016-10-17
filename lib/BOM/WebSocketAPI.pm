@@ -412,12 +412,12 @@ sub startup {
             base_path         => '/websockets/v3',
             stream_timeout    => 120,
             max_connections   => 100000,
-            max_response_size => 328000,
+            max_response_size => 500000,                                               # change and test this if we ever increase ticks history count
             opened_connection => \&BOM::WebSocketAPI::Hooks::init_redis_connections,
             finish_connection => \&BOM::WebSocketAPI::Hooks::forget_all,
 
             # helper config
-            url => \&BOM::WebSocketAPI::Hooks::get_rpc_url,    # make url for manually called actions
+            url => \&BOM::WebSocketAPI::Hooks::get_rpc_url,                            # make url for manually called actions
 
             # Skip check sanity to password fields
             skip_check_sanity => qr/password/,
