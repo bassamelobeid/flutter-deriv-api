@@ -41,7 +41,8 @@
           "required": "1"
         },
         "country": {
-          "type": ["string", "null"],
+          "type": "string",
+          "pattern": "^[a-z]{0,2}$",
           "required": "1"
         },
         "fullname": {
