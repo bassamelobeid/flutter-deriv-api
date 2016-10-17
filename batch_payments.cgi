@@ -24,7 +24,7 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('Batch Credit/Debit to Clients Accounts');
 
-my $cgi               = new CGI;
+my $cgi               = CGI->new;
 my $broker            = request()->broker_code;
 my $clerk             = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $confirm           = $cgi->param('confirm');
@@ -35,10 +35,12 @@ my $skip_validation   = $cgi->param('skip_validation') || 0;
 my $format            = $confirm || $preview || die "either preview or confirm";
 my $now               = Date::Utility->new;
 
+binmode $payments_csv_fh, ':encoding(UTF-8)';
+
 Bar('Batch Credit/Debit to Clients Accounts');
 
 if ($preview) {
-    open my $fh, ">$payments_csv_file" or die "writing upload: $!";
+    open my $fh, '>:encoding(UTF-8)', $payments_csv_file or die "writing upload: $!";
     while (<$payments_csv_fh>) {
         s/\s*$//;    # remove various combos of unix/windows rec-separators
         printf $fh "$_\n";
@@ -46,7 +48,7 @@ if ($preview) {
     close $fh;
 }
 
-my @payment_lines = Path::Tiny::path($payments_csv_file)->lines;
+my @payment_lines = Path::Tiny::path($payments_csv_file)->lines_utf8;
 
 my ($transtype, $control_code);
 if ($confirm) {
