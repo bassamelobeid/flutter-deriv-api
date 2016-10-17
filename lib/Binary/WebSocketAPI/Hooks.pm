@@ -42,8 +42,9 @@ sub add_req_data {
     my ($c, $req_storage, $api_response) = @_;
     if ($req_storage) {
         my $args = $req_storage->{origin_args} || $req_storage->{args};
-        $api_response->{echo_req} = $args;
-        $api_response->{req_id} = $args->{req_id} if $args->{req_id};
+        $api_response->{echo_req}    = $args;
+        $api_response->{req_id}      = $args->{req_id} if $args->{req_id};
+        $api_response->{passthrough} = $args->{passthrough} if $args->{passthrough};
     }
     return;
 }

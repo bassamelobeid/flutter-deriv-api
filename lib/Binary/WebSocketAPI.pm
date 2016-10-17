@@ -412,7 +412,7 @@ sub startup {
             base_path         => '/websockets/v3',
             stream_timeout    => 120,
             max_connections   => 100000,
-            max_response_size => 328000,
+            max_response_size => 500000,    # change and test this if we ever increase ticks history count
             opened_connection => \&Binary::WebSocketAPI::Hooks::init_redis_connections,
             finish_connection => \&Binary::WebSocketAPI::Hooks::forget_all,
 

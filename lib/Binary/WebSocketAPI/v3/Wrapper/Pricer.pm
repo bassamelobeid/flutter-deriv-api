@@ -261,7 +261,6 @@ sub process_bid_event {
                 msg_type => $type,
                 $type    => $response
             };
-            _prepare_results($results, $pricing_channel, $redis_channel, $stash_data);
         }
         if ($c->stash('debug')) {
             $results->{debug} = {
@@ -275,7 +274,7 @@ sub process_bid_event {
         # pass it as a second argument for 'send'.
         # not storing req_storage in channel cache because it contains validation code
         # same is for process_ask_event.
-        $c->send({json => $results});
+        $c->send({json => $results}, {args => $stash_data->{args}});
     }
     return;
 }
@@ -306,7 +305,6 @@ sub process_ask_event {
                     },
                 };
             }
-            _prepare_results($results, $pricing_channel, $redis_channel, $stash_data);
         }
         if ($c->stash('debug')) {
             $results->{debug} = {
@@ -314,26 +312,8 @@ sub process_ask_event {
                 method => $type,
             };
         }
-
-        #Add echo_req to err message.
-        if (not $results->{echo_req}) {
-            $results->{echo_req} = $stash_data->{args} if $stash_data->{args};
-        }
-
         delete @{$results->{$type}}{qw(contract_parameters rpc_time)};
-        $c->send({json => $results});
-    }
-    return;
-}
-
-sub _prepare_results {
-    my ($results, $pricing_channel, $redis_channel, $stash_data) = @_;
-    $results->{echo_req} = $stash_data->{args};
-    if (my $passthrough = $stash_data->{args}->{passthrough}) {
-        $results->{passthrough} = $passthrough;
-    }
-    if (my $req_id = $stash_data->{args}->{req_id}) {
-        $results->{req_id} = $req_id;
+        $c->send({json => $results}, {args => $stash_data->{args}});
     }
     return;
 }
