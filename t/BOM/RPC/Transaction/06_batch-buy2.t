@@ -11,7 +11,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::Product;
+use Test::BOM::RPC::Contract;
 use BOM::Database::Model::OAuth;
 
 my $email  = 'test@binary.com';
@@ -38,7 +38,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             }]});
 
 subtest 'buy' => sub {
-    my $contract = BOM::Test::Data::Utility::Product::create_contract();
+    my $contract = Test::BPM::RPC::Contract::create_contract();
 
     my $result = $c->call_ok(
         'buy_contract_for_multiple_accounts',
