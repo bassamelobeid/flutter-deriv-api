@@ -183,7 +183,7 @@ sub process_realtime_events {
                 return;
             }
 
-            my $tick             = {
+            my $tick = {
                 id     => $feed_channels_type->{$channel}->{uuid},
                 symbol => $symbol,
                 epoch  => $m[1],
@@ -220,7 +220,8 @@ sub process_realtime_events {
                 open        => $1,
                 high        => $2,
                 low         => $3,
-                close       => $4};
+                close       => $4
+            };
 
             if ($cache) {
                 $feed_channel_cache->{$channel}->{$m[1]} = $ohlc;
