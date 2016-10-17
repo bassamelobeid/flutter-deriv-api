@@ -18,7 +18,6 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
-
 use BOM::RPC::v3::Contract;
 use BOM::Platform::Context qw (request);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -579,8 +578,8 @@ subtest $method => sub {
         'barrier'         => '0.99350',
         'contract_id'     => 10,
         'currency'        => 'USD',
-        'bid_price'       => '158.95',
-        'payout'          => '158.95',
+        'bid_price'       => '156.47',
+        'payout'          => '156.47',
         'date_expiry'     => 1127287660,
         'date_settlement' => 1127287660,
         'date_start'      => 1127287260,
@@ -590,7 +589,7 @@ subtest $method => sub {
         'exit_tick'       => '0.99380',
         'exit_tick_time'  => 1127287659,
         'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
-        'shortcode'       => 'CALL_FRXAUDCAD_158.95_1127287260_1127287660_S0P_0',
+        'shortcode'       => 'CALL_FRXAUDCAD_156.47_1127287260_1127287660_S0P_0',
         'underlying'      => 'frxAUDCAD',
         is_valid_to_sell  => 1,
     };
@@ -633,14 +632,14 @@ subtest $method => sub {
         'date_expiry'     => 1127288662,
         'date_settlement' => 1127288662,
         'date_start'      => 1127288260,
-        'payout'          => '200.67',
+        'payout'          => '196.72',
         'entry_spot'      => '0.99360',
         'entry_tick'      => '0.99360',
         'entry_tick_time' => 1127288261,
         'exit_tick'       => '0.99340',
         'exit_tick_time'  => 1127288661,
         'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 42 seconds after contract start time.',
-        'shortcode'       => 'CALL_FRXAUDCAD_200.67_1127288260_1127288662_S0P_0',
+        'shortcode'       => 'CALL_FRXAUDCAD_196.72_1127288260_1127288662_S0P_0',
         'underlying'      => 'frxAUDCAD',
         is_valid_to_sell  => 1,
     };
@@ -662,7 +661,7 @@ subtest $method => sub {
         'is_expired'      => 1,
         'contract_id'     => 10,
         'currency'        => 'USD',
-        'payout'          => '200.67',
+        'payout'          => '196.72',
         'date_expiry'     => 1127288662,
         'date_settlement' => 1127288662,
         'date_start'      => 1127288260,
@@ -672,7 +671,7 @@ subtest $method => sub {
         'exit_tick'       => '0.99340',
         'exit_tick_time'  => 1127288661,
         'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 42 seconds after contract start time.',
-        'shortcode'       => 'CALL_FRXAUDCAD_200.67_1127288260_1127288662_S0P_0',
+        'shortcode'       => 'CALL_FRXAUDCAD_196.72_1127288260_1127288662_S0P_0',
         'underlying'      => 'frxAUDCAD',
         is_valid_to_sell  => 0,
         validation_error  => 'This contract has been sold.'
