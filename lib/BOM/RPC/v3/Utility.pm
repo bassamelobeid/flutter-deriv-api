@@ -10,8 +10,9 @@ use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
 use BOM::Platform::Token;
-use Config::Onion;
 use DataDog::DogStatsd::Helper qw(stats_inc);
+use YAML::XS qw(LoadFile);
+
 
 sub get_token_details {
     my $token = shift;
@@ -70,9 +71,7 @@ sub permission_error {
 
 sub site_limits {
 
-    my $rates_config_file = Config::Onion->new;
-    $rates_config_file->load($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations');
-    my $rates_file_content = $rates_config_file->get;
+    my $rates_file_content = LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml');
 
     my $limits;
     $limits->{max_proposal_subscription} = {
