@@ -132,7 +132,7 @@ sub _get_ask {
             }
 
             # When the date_expriry is smaller than date_start, we can not price, display the payout|stake on error message
-            if ($contract->date_expiry->epoch < $contract->date_start->epoch) {
+            if ($contract->date_expiry->epoch <= $contract->date_start->epoch) {
 
                 my $display_value = $contract->has_payout ? $contract->payout : $contract->ask_price;
                 $response = BOM::RPC::v3::Utility::create_error({
