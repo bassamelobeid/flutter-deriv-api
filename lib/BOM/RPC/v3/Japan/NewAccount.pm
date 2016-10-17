@@ -266,7 +266,15 @@ sub set_jp_settings {
     my ($client, $website_name, $client_ip, $user_agent, $language, $args) =
         @{$params}{qw/client website_name client_ip user_agent language args/};
 
-    return BOM::RPC::v3::Utility::permission_error() unless ($client->residence eq 'jp' and $args->{jp_settings});
+    return BOM::RPC::v3::Utility::permission_error() unless ($client->residence eq 'jp'
+        and ($args->{jp_settings} or $args->{email_consent}));
+
+    # translation added in bom-backoffice: bin/extra_translations.pl
+    my @updated;
+
+    push @updated, [localize('Receive news and special offers'), $args->{email_consent} ? localize("Yes") : localize("No")]
+        if exists $args->{email_consent};
+
     $args = $args->{jp_settings};
 
     my $text = {
@@ -284,58 +292,61 @@ sub set_jp_settings {
         'hedge_asset_amount'                          => localize('{JAPAN ONLY}Amount of hedging assets'),
     };
 
-    # translation added in bom-backoffice: bin/extra_translations.pl
-    my @updated;
-    if ($client->occupation && $client->occupation ne $args->{occupation}) {
-        my $translate_old = localize('{JAPAN ONLY}' . $client->occupation);
-        my $translate_new = localize('{JAPAN ONLY}' . $args->{occupation});
-
-        push @updated, [localize('{JAPAN ONLY}Occupation'), $translate_old, $translate_new];
-        $client->occupation($args->{occupation});
-    }
-
-    my $ori_fin    = JSON::from_json($client->financial_assessment->data);
     my $fin_change = 0;
 
-    foreach my $key (qw(
-        trading_purpose
-        hedge_asset
-        hedge_asset_amount
-        annual_income
-        financial_asset
-        trading_experience_equities
-        trading_experience_commodities
-        trading_experience_foreign_currency_deposit
-        trading_experience_margin_fx
-        trading_experience_investment_trust
-        trading_experience_public_bond
-        trading_experience_option_trading
-        ))
-    {
-        my $ori = $ori_fin->{$key};
+    my $ori_fin = JSON::from_json($client->financial_assessment->data);
 
-        if (not grep { $key eq $_ } qw(trading_purpose hedge_asset hedge_asset_amount)) {
-            $ori = $ori->{answer};
+    if ($args) {
+
+        if ($client->occupation && $client->occupation ne $args->{occupation}) {
+            my $translate_old = localize('{JAPAN ONLY}' . $client->occupation);
+            my $translate_new = localize('{JAPAN ONLY}' . $args->{occupation});
+
+            push @updated, [localize('{JAPAN ONLY}Occupation'), $translate_old, $translate_new];
+            $client->occupation($args->{occupation});
         }
-        $ori //= '';
 
-        my $new = $args->{$key} // '';
+        foreach my $key (qw(
+            trading_purpose
+            hedge_asset
+            hedge_asset_amount
+            annual_income
+            financial_asset
+            trading_experience_equities
+            trading_experience_commodities
+            trading_experience_foreign_currency_deposit
+            trading_experience_margin_fx
+            trading_experience_investment_trust
+            trading_experience_public_bond
+            trading_experience_option_trading
+            ))
+        {
+            my $ori = $ori_fin->{$key};
 
-        if ($ori ne $new) {
-            my ($translate_ori, $translate_new);
-
-            if ($key eq 'hedge_asset_amount') {
-                # pure number, no need translation
-                $translate_ori = $ori;
-                $translate_new = $new;
-            } else {
-                $translate_ori = localize('{JAPAN ONLY}' . $ori);
-                $translate_new = localize('{JAPAN ONLY}' . $new);
+            if (not grep { $key eq $_ } qw(trading_purpose hedge_asset hedge_asset_amount)) {
+                $ori = $ori->{answer};
             }
+            $ori //= '';
 
-            push @updated, [$text->{$key}, $translate_ori, $translate_new];
-            $fin_change = 1;
+            my $new = $args->{$key} // '';
+
+            if ($ori ne $new) {
+                my ($translate_ori, $translate_new);
+
+                if ($key eq 'hedge_asset_amount') {
+                    # pure number, no need translation
+                    $translate_ori = $ori;
+                    $translate_new = $new;
+                } else {
+                    $translate_ori = localize('{JAPAN ONLY}' . $ori);
+                    $translate_new = localize('{JAPAN ONLY}' . $new);
+                }
+
+                push @updated, [$text->{$key}, $translate_ori, $translate_new];
+                $fin_change = 1;
+            }
         }
+
     }
 
     # no settings change

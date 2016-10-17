@@ -4,7 +4,8 @@ use strict;
 use warnings;
 
 use BOM::RPC::v3::Utility;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use BOM::Platform::Context qw (localize request);
 use BOM::Product::Contract::Finder;
 use BOM::Product::Contract::Finder::Japan;
@@ -36,7 +37,7 @@ sub contracts_for {
                 code              => 'InvalidSymbol',
                 message_to_client => BOM::Platform::Context::localize('The symbol is invalid.')});
     } else {
-        $contracts_for->{'spot'} = BOM::Market::Underlying->new($symbol)->spot();
+        $contracts_for->{'spot'} = create_underlying($symbol)->spot();
         return $contracts_for;
     }
 
