@@ -367,31 +367,6 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
             }}};
 
     is_deeply($result, $expected, 'errors response is correct when date_expiry < date_start with payout_type is stake');
-    $params = {
-        'proposal'         => 1,
-        'fixed_expiry'     => 1,
-        'date_expiry'      => '1476670200',
-        'contract_type'    => 'PUT',
-        'basis'            => 'stake',
-        'currency'         => 'USD',
-        'symbol'           => 'R_50',
-        'amount'           => '11',
-        'duration_unit'    => 'm',
-        'date_start'       => '1476670200',
-        "streaming_params" => {add_theo_probability => 1},
-    };
-    $result   = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
-    $expected = {
-        error => {
-            'code'              => 'ContractBuyValidationError',
-            'message_to_client' => 'Expiry time cannot be equal to start time.',
-
-            'details' => {
-                'display_value' => '11.00',
-                'payout'        => '11.00',
-            }}};
-
-    is_deeply($result, $expected, 'errors response is correct when date_expiry = date_start with payout_type is stake');
 
 };
 
