@@ -36,10 +36,10 @@ use Quant::Framework::Utils::Test;
 use Quant::Framework::Asset;
 use JSON;
 
-use BOM::System::Config;
+use BOM::Test;
 
 BEGIN {
-    die "wrong env. Can't run test" if (BOM::System::Config::env !~ /^(qa\d+|development)$/);
+    die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
 }
 
 sub initialize_symbol_dividend {

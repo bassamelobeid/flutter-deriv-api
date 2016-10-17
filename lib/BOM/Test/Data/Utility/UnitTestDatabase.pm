@@ -12,10 +12,10 @@ use Postgres::FeedDB;
 
 use Date::Utility;
 
-use BOM::System::Config;
+use BOM::Test;
 
 BEGIN {
-    die "wrong env. Can't run test" if (BOM::System::Config::env !~ /^(qa\d+|development)$/);
+    die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
 }
 
 sub _db_name {

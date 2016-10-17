@@ -8,14 +8,13 @@ use Postgres::FeedDB;
 use Postgres::FeedDB::Spot::Tick;
 use Postgres::FeedDB::Spot::OHLC;
 use Try::Tiny;
+use BOM::Test;
 
 use base qw( Exporter );
 our @EXPORT_OK = qw( setup_ticks );
 
-use BOM::System::Config;
-
 BEGIN {
-    die "wrong env. Can't run test" if (BOM::System::Config::env !~ /^(qa\d+|development)$/);
+    die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
 }
 
 sub _db_name {

@@ -6,13 +6,12 @@ use DBI;
 use File::Slurp;
 use Try::Tiny;
 use DBIx::Migration;
+use BOM::Test;
 
 requires '_db_name', '_post_import_operations', '_build__connection_parameters', '_db_migrations_dir';
 
-use BOM::System::Config;
-
 BEGIN {
-    die "wrong env. Can't run test" if (BOM::System::Config::env !~ /^(qa\d+|development)$/);
+    die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
 }
 
 sub prepare_unit_test_database {

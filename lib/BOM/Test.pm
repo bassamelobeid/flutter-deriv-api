@@ -6,8 +6,6 @@ use warnings;
 use File::Spec;
 use Cwd qw/abs_path/;
 
-use BOM::System::Config;
-
 =head1 NAME
 
 BOM::Test - Do things before test
@@ -48,7 +46,7 @@ BEGIN {
     my $test_data_dir = abs_path("$file_path../../data");
     my $config_dir    = $test_data_dir . '/config';
 
-    if (BOM::System::Config::on_qa) {
+    if (on_qa) {
         ## no critic (Variables::RequireLocalizedPunctuationVars)
 
         # Redis rand and replicated servers config
@@ -63,5 +61,21 @@ BEGIN {
     }
 }
 
+{
+    my $env = do {
+        local @ARGV = ('/etc/rmg/environment');
+        readline;
+    };
+    chomp $env;
+
+    sub env {
+        return $env;
+    }
+}
+
+
+sub on_qa {
+    return env() =~ /^qa/;
+}
 1;
 

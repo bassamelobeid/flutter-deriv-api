@@ -11,10 +11,10 @@ use BOM::MarketData qw(create_underlying);
 use List::MoreUtils qw(uniq);
 use YAML::XS qw(LoadFile);
 
-use BOM::System::Config;
+use BOM::Test;
 
 BEGIN {
-    die "wrong env. Can't run test" if (BOM::System::Config::env !~ /^(qa\d+|development)$/);
+    die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
 }
 
 sub create_pricing_data {

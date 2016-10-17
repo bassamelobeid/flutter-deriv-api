@@ -13,10 +13,10 @@ use BOM::MarketData qw(create_underlying_db);
 use base qw( Exporter );
 our @EXPORT_OK = qw(initialize_realtime_ticks_db update_combined_realtime);
 
-use BOM::System::Config;
+use BOM::Test;
 
 BEGIN {
-    die "wrong env. Can't run test" if (BOM::System::Config::env !~ /^(qa\d+|development)$/);
+    die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
 }
 
 sub initialize_realtime_ticks_db {
