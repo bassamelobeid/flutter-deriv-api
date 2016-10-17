@@ -84,7 +84,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                 to    => $volsurface->recorded_date->plus_time_interval($duration),
             });
             my @barriers = @{
-                BOM::Test::Data::Utility::UnitTestPrice::get_barrier_range({
+            Test::BOM::UnitTestPrice::get_barrier_range({
                         type => ($category_obj->two_barriers ? 'double' : 'single'),
                         underlying => $ul,
                         duration   => $duration,
