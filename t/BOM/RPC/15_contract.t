@@ -1,5 +1,4 @@
 #!perl
-
 use strict;
 use warnings;
 use Test::BOM::RPC::Client;
@@ -316,6 +315,86 @@ subtest 'get_ask' => sub {
 
 };
 
+subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
+    my $params = {
+        'proposal'         => 1,
+        'fixed_expiry'     => 1,
+        'date_expiry'      => '1476670200',
+        'contract_type'    => 'PUT',
+        'basis'            => 'payout',
+        'currency'         => 'USD',
+        'symbol'           => 'R_50',
+        'amount'           => '100',
+        'duration_unit'    => 'm',
+        'date_start'       => '1476676000',
+        "streaming_params" => {add_theo_probability => 1},
+    };
+    my $result   = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
+    my $expected = {
+        error => {
+            'code'              => 'ContractBuyValidationError',
+            'message_to_client' => 'Expiry time cannot be in the past.',
+
+            'details' => {
+                'display_value' => '100.00',
+                'payout'        => '100.00',
+            }}};
+
+    is_deeply($result, $expected, 'errors response is correct when date_expiry < date_start with payout_type is payout');
+
+    $params = {
+        'proposal'         => 1,
+        'fixed_expiry'     => 1,
+        'date_expiry'      => '1476670200',
+        'contract_type'    => 'PUT',
+        'basis'            => 'stake',
+        'currency'         => 'USD',
+        'symbol'           => 'R_50',
+        'amount'           => '10',
+        'duration_unit'    => 'm',
+        'date_start'       => '1476676000',
+        "streaming_params" => {add_theo_probability => 1},
+    };
+    $result   = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
+    $expected = {
+        error => {
+            'code'              => 'ContractBuyValidationError',
+            'message_to_client' => 'Expiry time cannot be in the past.',
+
+            'details' => {
+                'display_value' => '10.00',
+                'payout'        => '10.00',
+            }}};
+
+    is_deeply($result, $expected, 'errors response is correct when date_expiry < date_start with payout_type is stake');
+    $params = {
+        'proposal'         => 1,
+        'fixed_expiry'     => 1,
+        'date_expiry'      => '1476670200',
+        'contract_type'    => 'PUT',
+        'basis'            => 'stake',
+        'currency'         => 'USD',
+        'symbol'           => 'R_50',
+        'amount'           => '11',
+        'duration_unit'    => 'm',
+        'date_start'       => '1476670200',
+        "streaming_params" => {add_theo_probability => 1},
+    };
+    $result   = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
+    $expected = {
+        error => {
+            'code'              => 'ContractBuyValidationError',
+            'message_to_client' => 'Expiry time cannot be equal to start time.',
+
+            'details' => {
+                'display_value' => '11.00',
+                'payout'        => '11.00',
+            }}};
+
+    is_deeply($result, $expected, 'errors response is correct when date_expiry = date_start with payout_type is stake');
+
+};
+
 subtest 'send_ask' => sub {
     my $params = {
         client_ip => '127.0.0.1',
@@ -365,6 +444,27 @@ subtest 'send_ask' => sub {
     }
 };
 
+subtest 'send_ask_when_date_expiry_smaller_than_date_start' => sub {
+    my $params = {
+        client_ip => '127.0.0.1',
+        args      => {
+            'proposal'      => 1,
+            'fixed_expiry'  => 1,
+            'date_expiry'   => '1476670200',
+            'contract_type' => 'PUT',
+            'basis'         => 'payout',
+            'currency'      => 'USD',
+            'symbol'        => 'R_50',
+            'amount'        => '100',
+            'duration_unit' => 'm',
+            'date_start'    => '1476676000',
+
+            "streaming_params" => {add_theo_probability => 1},
+        }};
+    $c->call_ok('send_ask', $params)->has_error->error_code_is('ContractBuyValidationError')->error_message_is('Expiry time cannot be in the past.');
+
+};
+
 subtest 'get_bid' => sub {
     # just one tick for missing market data
     create_ticks([100, $now->epoch - 899, 'R_50']);
@@ -403,6 +503,7 @@ subtest 'get_bid' => sub {
         currency    => $client->currency,
         is_sold     => 0,
     };
+
     my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     my @expected_keys = (
         qw(bid_price
