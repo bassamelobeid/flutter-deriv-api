@@ -16,7 +16,7 @@ use Date::Utility;
 use YAML::XS qw(LoadFile DumpFile);
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestPrice qw(:init);
+use Test::BOM::UnitTestPrice;
 
 my $now = Date::Utility->new('2016-02-01');
 note('Pricing on ' . $now->datetime);
@@ -33,7 +33,7 @@ my $payout_currency    = 'USD';
 my $spot               = 100;
 
 foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
-    BOM::Test::Data::Utility::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);
+    Test::BOM::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => $ul->symbol,
         quote      => $spot,
@@ -50,7 +50,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
         my @duration = map { $_ * 86400 } (7, 14);
         foreach my $duration (@duration) {
             my @barriers = @{
-                BOM::Test::Data::Utility::UnitTestPrice::get_barrier_range({
+            Test::BOM::UnitTestPrice::get_barrier_range({
                         type => ($category_obj->two_barriers ? 'double' : 'single'),
                         underlying => $ul,
                         duration   => $duration,

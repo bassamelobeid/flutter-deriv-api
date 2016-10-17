@@ -16,7 +16,7 @@ use Date::Utility;
 use YAML::XS qw(LoadFile DumpFile);
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestPrice qw(:init);
+use Test::BOM::UnitTestPrice qw(:init);
 
 my $expectation = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/sellback_config.yml');
 my $start_time  = Date::Utility->new(1474860428);
@@ -73,7 +73,7 @@ sub price_contract_at {
         date_pricing => $date_pricing,
     };
 
-    BOM::Test::Data::Utility::UnitTestPrice::create_pricing_data($underlying, 'USD', $date_pricing);
+    Test::BOM::UnitTestPrice::create_pricing_data($underlying, 'USD', $date_pricing);
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
