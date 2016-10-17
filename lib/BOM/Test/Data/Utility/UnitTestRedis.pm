@@ -20,7 +20,11 @@ BEGIN {
 }
 
 sub initialize_realtime_ticks_db {
-    my %ticks = %{get_test_realtime_ticks()};
+    my (undef, $file_path, undef) = File::Spec->splitpath(__FILE__);
+    my $test_data_dir = abs_path("$file_path../../../../../data");
+
+    my %ticks = %{YAML::XS::LoadFile($test_data_dir . '/test_realtime_ticks.yml')};
+
     for my $symbol (keys %ticks) {
         my $ul = create_underlying($symbol);
         $ticks{$symbol}->{epoch} = time + 600;
@@ -28,13 +32,6 @@ sub initialize_realtime_ticks_db {
     }
 
     return;
-}
-
-sub get_test_realtime_ticks {
-    my (undef, $file_path, undef) = File::Spec->splitpath(__FILE__);
-    my $test_data_dir = abs_path("$file_path../../../../../data");
-
-    return YAML::XS::LoadFile($test_data_dir . '/test_realtime_ticks.yml');
 }
 
 ##################################################################################################
