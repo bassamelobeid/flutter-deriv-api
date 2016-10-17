@@ -1,6 +1,6 @@
 use Test::MockTime qw( restore_time set_absolute_time );
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db update_combined_realtime);
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Test::Most;
 use Test::FailWarnings;
 use File::Spec::Functions qw(rel2abs splitpath);
@@ -124,5 +124,37 @@ subtest 'valid close' => sub {
     }
     'close for HSI updated successfully';
 };
+
+
+# update_combined_realtime(
+#   datetime => $bom_date,            # tick time
+#   underlying => $model_underlying,  # underlying
+#   tick => {                         # tick data
+#       open  => $open,
+#       quote => $last_price,         # latest price
+#       ticks => $numticks,           # number of ticks
+#   },
+#)
+##################################################################################################
+sub update_combined_realtime {
+    my %args = @_;
+    $args{underlying} = create_underlying($args{underlying_symbol});
+    my $underlying_symbol = $args{underlying}->symbol;
+    my $unixtime          = $args{datetime}->epoch;
+    my $marketitem        = $args{underlying}->market->name;
+    my $tick              = $args{tick};
+
+    $tick->{epoch} = $unixtime;
+    my $res = $args{underlying}->set_combined_realtime($tick);
+
+    if (scalar grep { $args{underlying}->symbol eq $_ } (create_underlying_db->symbols_for_intraday_fx)) {
+        BOM::Market::AggTicks->new->add({
+            symbol => $args{underlying}->symbol,
+            epoch  => $tick->{epoch},
+            quote  => $tick->{quote},
+        });
+    }
+    return 1;
+}
 
 done_testing
