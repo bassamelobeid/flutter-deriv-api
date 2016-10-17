@@ -8,7 +8,6 @@ use Test::More tests => 1;
 use BOM::Product::ContractFactory qw( produce_contract );
 use Date::Utility;
 
-use BOM::Test::Data::Utility::UnitTestPrice qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
