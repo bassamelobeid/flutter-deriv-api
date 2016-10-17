@@ -19,7 +19,6 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
-
 use utf8;
 
 my ($t, $rpc_ct, $result);

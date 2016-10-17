@@ -10,7 +10,8 @@ use BOM::RPC::v3::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::Product;
+
+use Test::BOM::RPC::Contract;
 
 {
     use BOM::Database::Model::AccessToken;
@@ -104,7 +105,7 @@ is 0 + @token, 4, 'got 4 tokens';
 
 subtest 'normal contract', sub {
     my @balances = balances @cl;
-    my $contract = BOM::Test::Data::Utility::Product::create_contract();
+    my $contract = Test::BOM::RPC::Contract::create_contract();
 
     my $result = BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts {
         token_details       => $clm_token_details,
@@ -161,7 +162,7 @@ subtest 'normal contract', sub {
 
 subtest 'spread bet', sub {
     my @balances = balances @cl;
-    my $contract = BOM::Test::Data::Utility::Product::create_contract(is_spread => 1);
+    my $contract = Test::BOM::RPC::Contract::create_contract(is_spread => 1);
 
     my $result = BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts {
         token_details       => $clm_token_details,

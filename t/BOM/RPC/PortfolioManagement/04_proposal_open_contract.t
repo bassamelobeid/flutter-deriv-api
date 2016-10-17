@@ -24,7 +24,6 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
-
 use utf8;
 
 my ($client, $client_token, $oauth_token);
@@ -126,7 +125,7 @@ subtest $method => sub {
     my @expected_contract_fields;
 
     lives_ok {
-        ($contract_id, $contract) = create_contract(client => $client);
+        ($contract_id, $contract) = _create_contract(client => $client);
     }
     'Initial contract';
 
@@ -181,7 +180,7 @@ subtest $method => sub {
 
 done_testing();
 
-sub create_contract {
+sub _create_contract {
     my %args = @_;
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD);
