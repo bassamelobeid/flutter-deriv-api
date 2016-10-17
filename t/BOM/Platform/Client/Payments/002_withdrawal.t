@@ -353,22 +353,6 @@ subtest 'Frozen bonus.' => sub {
     throws_ok { $client->validate_payment(%withdrawal, amount => -320) } qr/includes frozen/,
         'client not allowed to withdraw funds including frozen bonus.';
 
-    # test turnover requirement:
-    set_fixed_time('2009-09-01T15:05:00Z');
-    BOM::Test::Data::Utility::Product::client_buy_bet($client, 'USD', 100);
-
-    throws_ok { $client->validate_payment(%withdrawal, amount => -$account->load->balance) } qr/includes frozen/,
-        'client not allowed to withdraw frozen bonus while turnover insufficient';
-
-    set_fixed_time('2009-09-01T15:10:00Z');
-
-    $client->smart_payment(%deposit, amount => 300);
-
-    BOM::Test::Data::Utility::Product::client_buy_bet($client, 'USD', 401);    # pushes client over turnover threshold
-
-    ok $client->validate_payment(%withdrawal, amount => -$account->load->balance),
-        'client is allowed to withdraw full amount after turnover requirements are met.';
-
     # gift was given:
     ($client = new_client('USD'))->promo_code('BOM2009');
     _apply_promo_amount($client, 1);
@@ -416,6 +400,34 @@ sub _apply_promo_amount {
 }
 
 sub _GBP_equiv { sprintf '%.2f', amount_from_to_currency($_[0], 'EUR', 'GBP') }
+
+sub client_buy_bet {
+    my ($client, $currency, $amount) = @_;
+
+    my $now        = Date::Utility->new;
+    my $underlying = create_underlying('R_50');
+
+    my $account     = $client->default_account;
+    my $pre_balance = $account->load->balance;
+
+    my $contract = produce_contract({
+        underlying  => $underlying,
+        bet_type    => 'FLASHU',
+        currency    => $currency,
+        payout      => 2 * $amount,
+        date_start  => $now,
+        date_expiry => $now->epoch + 300,
+    });
+
+    local $ENV{REQUEST_STARTTIME} = $now->epoch;
+    my $txn = BOM::Product::Transaction->new({
+        client   => $client,
+        contract => $contract,
+        price    => $amount,
+        staff    => 'system'
+    });
+    return $txn->buy(skip_validation => 1);
+}
 
 done_testing();
 
