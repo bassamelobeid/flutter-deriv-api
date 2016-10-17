@@ -55,7 +55,8 @@ sub startup {
 
     $app->hook(
         after_dispatch => sub {
-            try { BOM::Database::Rose::DB->db_cache->finish_request_cycle; };
+            try { BOM::Database::Rose::DB->db_cache->finish_request_cycle; }
+            catch { warn "->finish_request_cycle: $_\n" };
         });
 
     my $r = $app->routes;
