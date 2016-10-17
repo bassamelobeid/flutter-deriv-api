@@ -18,31 +18,28 @@ use 5.010;
 use strict;
 use warnings;
 
-use Quant::Framework::CorrelationMatrix;
-use Quant::Framework::EconomicEventCalendar;
-use BOM::Platform::Runtime;
+use JSON;
 use Carp qw( croak );
 use YAML::XS;
 
-use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
+use BOM::System::Chronicle;
+use BOM::System::RedisReplicated;
+use BOM::Test;
 
 use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Moneyness;
-use BOM::System::Chronicle;
-use BOM::System::RedisReplicated;
+use Quant::Framework::CorrelationMatrix;
+use Quant::Framework::EconomicEventCalendar;
 use Quant::Framework::Utils::Test;
 use Quant::Framework::Asset;
-use JSON;
-
-use BOM::Test;
 
 BEGIN {
     die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
 }
 
-sub initialize_symbol_dividend {
+sub _initialize_symbol_dividend {
     my $symbol = shift;
     my $rate   = shift;
 
@@ -113,14 +110,14 @@ sub _init {
             },
             '_rev' => time
         });
-    BOM::Platform::Runtime->instance(undef);
+    # BOM::Platform::Runtime->instance(undef);
 
-    initialize_symbol_dividend "R_25",   0;
-    initialize_symbol_dividend "R_50",   0;
-    initialize_symbol_dividend "R_75",   0;
-    initialize_symbol_dividend "R_100",  0;
-    initialize_symbol_dividend "RDBULL", -35;
-    initialize_symbol_dividend "RDBEAR", 20;
+    _initialize_symbol_dividend "R_25",   0;
+    _initialize_symbol_dividend "R_50",   0;
+    _initialize_symbol_dividend "R_75",   0;
+    _initialize_symbol_dividend "R_100",  0;
+    _initialize_symbol_dividend "RDBULL", -35;
+    _initialize_symbol_dividend "RDBEAR", 20;
 
     BOM::System::Chronicle::set(
         'interest_rates',
