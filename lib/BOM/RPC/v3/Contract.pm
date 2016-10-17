@@ -130,16 +130,32 @@ sub _get_ask {
                 $message_to_client = localize("Cannot validate contract");
                 $code              = "ContractValidationError";
             }
-            $response = BOM::RPC::v3::Utility::create_error({
-                    continue_price_stream => $contract->continue_price_stream,
-                    message_to_client     => $message_to_client,
-                    code                  => $code,
-                    details               => {
-                        longcode      => $contract->longcode,
-                        display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price)),
-                        payout => sprintf('%.2f', $contract->payout),
-                    },
-                });
+
+            # When the date_expriry is smaller than date_start, we can not price, display the payout|stake on error message
+            if ($contract->date_expiry->epoch <= $contract->date_start->epoch) {
+
+                my $display_value = $contract->has_payout ? $contract->payout : $contract->ask_price;
+                $response = BOM::RPC::v3::Utility::create_error({
+                        continue_price_stream => $contract->continue_price_stream,
+                        message_to_client     => $message_to_client,
+                        code                  => $code,
+                        details               => {
+                            display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $display_value)),
+                            payout => sprintf('%.2f', $display_value),
+                        },
+                    });
+
+            } else {
+                $response = BOM::RPC::v3::Utility::create_error({
+                        continue_price_stream => $contract->continue_price_stream,
+                        message_to_client     => $message_to_client,
+                        code                  => $code,
+                        details               => {
+                            display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price)),
+                            payout => sprintf('%.2f', $contract->payout),
+                        },
+                    });
+            }
         } else {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
