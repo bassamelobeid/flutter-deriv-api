@@ -16,7 +16,6 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Platform::Client;
 use Date::Utility;
 use BOM::Platform::Client::Utility;
-use BOM::Test::Data::Utility::Product;
 
 initialize_realtime_ticks_db();
 
