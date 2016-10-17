@@ -7,6 +7,7 @@ use Scalar::Util qw(blessed);
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::MarketData qw(create_underlying);
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Date::Utility;
 use Postgres::FeedDB;
 
