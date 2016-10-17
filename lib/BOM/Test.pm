@@ -73,7 +73,6 @@ BEGIN {
     }
 }
 
-
 sub on_qa {
     return env() =~ /^qa/;
 }
