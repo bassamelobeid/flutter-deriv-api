@@ -61,14 +61,16 @@ subtest $method => sub {
             'landing_company_name' => 'costarica',
             'is_virtual'           => '0'
         },
-        'currency'             => '',
-        'email'                => 'dummy@binary.com',
-        'scopes'               => ['read', 'admin', 'trade', 'payments'],
-        'balance'              => '0.00',
-        'landing_company_name' => 'costarica',
-        'fullname'             => $test_client->full_name,
-        'loginid'              => $test_client->loginid,
-        'is_virtual'           => '0'
+        'currency'                 => '',
+        'email'                    => 'dummy@binary.com',
+        'scopes'                   => ['read', 'admin', 'trade', 'payments'],
+        'balance'                  => '0.00',
+        'landing_company_name'     => 'costarica',
+        'fullname'                 => $test_client->full_name,
+        'loginid'                  => $test_client->loginid,
+        'is_virtual'               => '0',
+        'country'                  => 'id',
+        'landing_company_fullname' => 'Binary (C.R.) S.A.',
     };
     $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is correct');
 
