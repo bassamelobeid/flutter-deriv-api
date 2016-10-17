@@ -401,33 +401,5 @@ sub _apply_promo_amount {
 
 sub _GBP_equiv { sprintf '%.2f', amount_from_to_currency($_[0], 'EUR', 'GBP') }
 
-sub client_buy_bet {
-    my ($client, $currency, $amount) = @_;
-
-    my $now        = Date::Utility->new;
-    my $underlying = create_underlying('R_50');
-
-    my $account     = $client->default_account;
-    my $pre_balance = $account->load->balance;
-
-    my $contract = produce_contract({
-        underlying  => $underlying,
-        bet_type    => 'FLASHU',
-        currency    => $currency,
-        payout      => 2 * $amount,
-        date_start  => $now,
-        date_expiry => $now->epoch + 300,
-    });
-
-    local $ENV{REQUEST_STARTTIME} = $now->epoch;
-    my $txn = BOM::Product::Transaction->new({
-        client   => $client,
-        contract => $contract,
-        price    => $amount,
-        staff    => 'system'
-    });
-    return $txn->buy(skip_validation => 1);
-}
-
 done_testing();
 
