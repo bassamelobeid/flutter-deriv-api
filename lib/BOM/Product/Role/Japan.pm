@@ -9,6 +9,13 @@ use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 
 my $landing_company = 'japan';
 
+# Japan contracts are always non ATM.
+# Our contract 'is_atm_bet' checks for difference between barrier and spot but we don't
+# want contract validation triggers randomly when spot price hits the barrier.
+override is_atm_bet => sub {
+    return 0;
+};
+
 =head2 predefined_contracts
 
 Some landing company requires script contract offerings in which we will have pre-set
