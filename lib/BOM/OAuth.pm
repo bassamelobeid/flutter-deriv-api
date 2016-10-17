@@ -5,6 +5,8 @@ use Mojo::Base 'Mojolicious';
 use BOM::System::Config;
 use BOM::Platform::Context;
 use BOM::Platform::Context::Request;
+use BOM::Database::Rose::DB;
+use Try::Tiny;
 
 sub startup {
     my $app = shift;
@@ -53,7 +55,7 @@ sub startup {
 
     $app->hook(
         after_dispatch => sub {
-            BOM::Database::Rose::DB->db_cache->finish_request_cycle;
+            try { BOM::Database::Rose::DB->db_cache->finish_request_cycle; };
         });
 
     my $r = $app->routes;
