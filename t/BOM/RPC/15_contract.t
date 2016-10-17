@@ -473,7 +473,7 @@ subtest 'get_bid' => sub {
         underlying => 'R_50',
     });
 
-    my $contract = create_contract(
+    my $contract = _create_contract(
         client        => $client,
         spread        => 0,
         current_tick  => $tick,
@@ -492,7 +492,7 @@ subtest 'get_bid' => sub {
         'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
         );
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client => $client,
         spread => 1
     );
@@ -534,7 +534,7 @@ subtest 'get_bid' => sub {
             ));
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client => $client,
         spread => 0
     );
@@ -589,7 +589,7 @@ subtest 'get_bid_skip_barrier_validation' => sub {
 
     set_fixed_time($now->epoch);
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client       => $client,
         spread       => 0,
         date_expiry  => $now->epoch + 900,
@@ -637,7 +637,7 @@ subtest $method => sub {
         '... and had warning about missing currency'
     );
 
-    my $contract = create_contract(
+    my $contract = _create_contract(
         client => $client,
         spread => 0
     );
@@ -659,7 +659,7 @@ subtest $method => sub {
         underlying => 'frxAUDCAD',
     });
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client        => $client,
         spread        => 0,
         underlying    => 'frxAUDCAD',
@@ -707,7 +707,7 @@ subtest $method => sub {
         underlying => 'frxAUDCAD',
     });
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client        => $client,
         spread        => 0,
         current_tick  => $tick,
@@ -832,7 +832,7 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
 
     Quant::Framework::CorporateAction::create($storage_accessor, 'USAAPL', $opening)->update($action, $opening)->save;
 
-    my $contract = create_contract(
+    my $contract = _create_contract(
         client        => $client,
         bet_type      => 'PUT',
         underlying    => 'USAAPL',
@@ -930,7 +930,7 @@ subtest 'app_markup_percentage' => sub {
     $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params), 2);
     cmp_ok $val - $result->{payout}, ">", 2 / 100 * $val, "as app markup is added so client will get less payout as compared when there is no markup";
 
-    my $contract = create_contract(
+    my $contract = _create_contract(
         client                => $client,
         spread                => 0,
         app_markup_percentage => 1
@@ -946,14 +946,14 @@ subtest 'app_markup_percentage' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client => $client,
         spread => 0
     );
 
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client                => $client,
         spread                => 0,
         app_markup_percentage => 1
@@ -969,17 +969,17 @@ subtest 'app_markup_percentage' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client => $client,
         spread => 0
     );
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client => $client,
         spread => 1
     );
-    $contract = create_contract(
+    $contract = _create_contract(
         client                => $client,
         spread                => 0,
         app_markup_percentage => 1
@@ -995,17 +995,17 @@ subtest 'app_markup_percentage' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client => $client,
         spread => 0
     );
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client => $client,
         spread => 1
     );
-    $contract = create_contract(
+    $contract = _create_contract(
         client                => $client,
         spread                => 0,
         app_markup_percentage => 1
@@ -1021,7 +1021,7 @@ subtest 'app_markup_percentage' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client => $client,
         spread => 0
     );
@@ -1044,7 +1044,7 @@ sub create_ticks {
     return;
 }
 
-sub create_contract {
+sub _create_contract {
     my %args = @_;
 
     my $client = $args{client};
