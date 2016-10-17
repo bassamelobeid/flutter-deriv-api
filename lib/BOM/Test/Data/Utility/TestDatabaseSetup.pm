@@ -227,7 +227,7 @@ sub BUILD {
     my $self = shift;
 
     Carp::croak "Test DB trying to run to non development box"
-        unless (File::Slurp::read_file('/etc/rmg/environment') eq 'development');
+        unless (BOM::Test::env() eq 'development');
 
     return;
 }
