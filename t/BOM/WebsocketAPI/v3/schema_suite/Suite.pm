@@ -31,7 +31,7 @@ my $response;
 my $global_test_iteration = 0;
 
 # We don't want to fail due to hiting limits
-$ENV{BOM_TEST_RATE_LIMITATIONS} = 't/BOM/WebsocketAPI/v3/schema_suite/rate_limitations';
+$ENV{BOM_TEST_RATE_LIMITATIONS} = 't/BOM/WebsocketAPI/v3/schema_suite/rate_limitations.yml';
 
 # Return entire contents of file as string
 sub read_file {

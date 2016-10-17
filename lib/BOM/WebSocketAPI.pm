@@ -19,10 +19,10 @@ use JSON::Schema;
 use Try::Tiny;
 use Format::Util::Strings qw( defang_lite );
 use Digest::MD5 qw(md5_hex);
-use Config::Onion;
 use RateLimitations::Pluggable;
 use Time::Duration::Concise;
 use Scalar::Util qw(weaken);
+use YAML::XS qw(LoadFile);
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -398,9 +398,7 @@ sub startup {
     }
 
     # configuration-compatibility with RateLimitations
-    my $rates_config_file = Config::Onion->new;
-    $rates_config_file->load($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations');
-    my $rates_file_content = $rates_config_file->get;
+    my $rates_file_content = LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml');
 
     my %rates_config;
     # convert configuration to RateLimitations::Pluggable format

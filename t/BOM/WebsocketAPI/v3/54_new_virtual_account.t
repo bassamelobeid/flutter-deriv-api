@@ -12,7 +12,7 @@ use List::Util qw(first);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 # We don't want to fail due to hiting limits
-$ENV{BOM_TEST_RATE_LIMITATIONS} = 't/BOM/WebsocketAPI/v3/schema_suite/rate_limitations';
+$ENV{BOM_TEST_RATE_LIMITATIONS} = 't/BOM/WebsocketAPI/v3/schema_suite/rate_limitations.yml';
 
 ## do not send email
 use Test::MockObject;
