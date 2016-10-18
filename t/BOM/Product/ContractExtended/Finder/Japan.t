@@ -41,9 +41,9 @@ subtest "predefined contracts for symbol" => sub {
                 callput      => 14,
                 touchnotouch => 6,
                 staysinout   => 6,
-                endsinout    => 8,
+                endsinout    => 6,
             },
-            hit_count => 34,
+            hit_count => 32,
         },
         frxAUDCAD => {hit_count => 0},
     );
@@ -72,7 +72,7 @@ subtest "predefined contracts for symbol" => sub {
 subtest "predefined trading_period" => sub {
     my %expected_count = (
         offering                                => 10,
-        offering_with_predefined_trading_period => 32,
+        offering_with_predefined_trading_period => 30,
         trading_period                          => {
             call_intraday => 2,
             call_daily    => 4,
