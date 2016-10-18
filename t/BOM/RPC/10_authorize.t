@@ -117,7 +117,7 @@ subtest $method => sub {
 
     $c->call_ok($method, $params)->has_no_error;
 
-    my $history_records = $c->call_ok(
+    $history_records = $c->call_ok(
         'login_history',
         {
             token => $params->{token},
