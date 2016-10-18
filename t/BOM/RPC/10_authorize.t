@@ -87,6 +87,20 @@ subtest $method => sub {
     $expected_result->{balance} = '1000.00';
     $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is correct');
 
+    $params->{args}->{add_to_login_history} = 1;
+
+    $c->call_ok($method, $params)->has_no_error;
+
+    my $history_records = $c->call_ok(
+        'login_history',
+        {
+            token => $token,
+            args  => {limit => 1}})->has_no_error->result->{records};
+
+    is(scalar(@{$history_records}), 0, 'no login history record is created when we authorize using oauth token');
+
+    delete $params->{args};
+
     $params->{token} = $token_vr;
     is($c->call_ok($method, $params)->has_no_error->result->{is_virtual}, 1, "is_virtual is true if client is virtual");
 
@@ -106,7 +120,7 @@ subtest $method => sub {
     my $history_records = $c->call_ok(
         'login_history',
         {
-            token => $token,
+            token => $params->{token},
             args  => {limit => 1}})->has_no_error->result->{records};
 
     is($history_records->[0]{action}, 'login', 'the last history is logout');
