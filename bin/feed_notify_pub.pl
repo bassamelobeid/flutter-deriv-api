@@ -43,7 +43,7 @@ sub _publish {
     my ($symbol, $epoch, @ohlcs) = split(';', $payload);
 
     BOM::System::RedisReplicated::redis_write->publish('FEED::' . $symbol,
-        join(';', $symbol, $epoch, pip_size($symbol, @ohlcs[2 .. $#ohlcs]))
+        join(';', $symbol, $epoch, pip_size($symbol, @ohlcs))
     );
 }
 
