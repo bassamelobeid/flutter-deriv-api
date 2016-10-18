@@ -107,7 +107,7 @@ sub startup {
     $app->plugin('BOM::WebSocketAPI::Plugins::Helpers');
 
     my $actions = [
-        ['authorize', {stash_params => [qw/ ua_fingerprint /]}],
+        ['authorize', {stash_params => [qw/ ua_fingerprint client_ip user_agent /]}],
         [
             'logout',
             {
