@@ -94,7 +94,7 @@ has starts_atm => (
 sub _build_starts_atm {
     my $self = shift;
 
-    return 1 if $self->supplied_barrier =~ /^S0P$/;
+    return 1 if defined $self->supplied_barrier and $self->supplied_barrier =~ /^S0P$/;
     return 0;
 }
 
