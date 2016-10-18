@@ -205,8 +205,8 @@ has [
 sub _build_is_atm_bet {
     my $self = shift;
 
-    # If more euro_atm options are added, use something like Offerings to replace static 'callput'
-    return ($self->category->code eq 'callput' and defined $self->barrier and $self->barrier->pip_difference == 0) ? 1 : 0;
+    return 0 unless $self->starts_atm;
+    return 1;
 }
 
 sub _build_expiry_daily {
@@ -719,7 +719,10 @@ sub _build_opposite_contract {
     if (not $self->is_forward_starting) {
         if ($self->entry_tick) {
             foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-                $opp_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
+                if (defined $self->$barrier) {
+                    $opp_parameters{$barrier} = $self->$barrier->as_absolute;
+                    $opp_parameters{'supplied_' . $barrier} = $self->$barrier->as_absolute;
+                }
             }
         }
         # We should be looking to move forward in time to a bet starting now.
@@ -728,7 +731,6 @@ sub _build_opposite_contract {
         # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
         # Currently, 'sell at market' button will appear when current spot == barrier when the duration
         # of the contract is less than the minimum duration of non ATM contract.
-        $opp_parameters{is_atm_bet} = 0 if ($self->category_code eq 'callput');
     }
 
     # Always switch out the bet type for the other side.
