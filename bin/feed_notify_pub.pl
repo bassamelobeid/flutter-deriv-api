@@ -42,7 +42,21 @@ sub _publish {
     my $payload = shift;
     my @data    = split(';', $payload);
 
-    BOM::System::RedisReplicated::redis_write->publish('FEED::' . $data[0], $payload);
+    BOM::System::RedisReplicated::redis_write->publish('FEED::' . $data[0],
+        join(';', $data[0], $data[1], pip_size($data[0], @data[2 .. $#data]))
+    );
+}
+
+sub pip_size {
+    my ($symbol, @data) = @_;
+
+    my @pip_sized_data;
+    my $quote_format = '%.' . create_underlying($symbol)->display_decimals . 'f';
+    for (@data) {
+        my ($duration, $ticks) = (/(\d+:)?(.+)/);
+        push @pip_sized_data, $duration . join(',', map {sprintf($quote_format, $_)} split(',', $ticks));
+    }
+    return @pip_sized_data;
 }
 
 sub update_crossing_underlyings {
