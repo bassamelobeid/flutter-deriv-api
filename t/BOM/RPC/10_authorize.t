@@ -7,6 +7,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
+use BOM::RPC::v3::Accounts;
 use BOM::Database::Model::OAuth;
 use utf8;
 use Data::Dumper;
@@ -88,6 +89,30 @@ subtest $method => sub {
 
     $params->{token} = $token_vr;
     is($c->call_ok($method, $params)->has_no_error->result->{is_virtual}, 1, "is_virtual is true if client is virtual");
+
+    my $res = BOM::RPC::v3::Accounts::api_token({
+            client => $test_client,
+            args   => {
+                new_token => 'Test Token',
+            },
+        });
+    ok $res->{new_token};
+
+    $params->{token} = $res->{tokens}->[0]->{token};
+    $params->{args}->{add_to_login_history} = 1;
+
+    $c->call_ok($method, $params)->has_no_error;
+
+    my $history_records = $c->call_ok(
+        'login_history',
+        {
+            token => $token,
+            args  => {limit => 1}})->has_no_error->result->{records};
+
+    is($history_records->[0]{action}, 'login', 'the last history is logout');
+    ok($history_records->[0]{environment}, 'environment is present');
+
+    delete $params->{args};
 };
 
 my $new_token;
