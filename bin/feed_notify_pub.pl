@@ -40,23 +40,23 @@ exit;
 
 sub _publish {
     my $payload = shift;
-    my @data    = split(';', $payload);
+    my ($symbol, $epoch, @ohlcs) = split(';', $payload);
 
-    BOM::System::RedisReplicated::redis_write->publish('FEED::' . $data[0],
-        join(';', $data[0], $data[1], pip_size($data[0], @data[2 .. $#data]))
+    BOM::System::RedisReplicated::redis_write->publish('FEED::' . $symbol,
+        join(';', $symbol, $epoch, pip_size($symbol, @ohlcs[2 .. $#ohlcs]))
     );
 }
 
 sub pip_size {
-    my ($symbol, @data) = @_;
+    my ($symbol, @ohlcs) = @_;
 
-    my @pip_sized_data;
-    my $quote_format = '%.' . create_underlying($symbol)->display_decimals . 'f';
-    for (@data) {
+    my @pip_sized_ohlcs;
+    my $underlying = create_underlying($symbol);
+    for (@ohlcs) {
         my ($duration, $ticks) = (/(\d+:)?(.+)/);
-        push @pip_sized_data, $duration . join(',', map {sprintf($quote_format, $_)} split(',', $ticks));
+        push @pip_sized_ohlcs, $duration . join(',', map {$underlying->pipsized_value($_)} split(',', $ticks));
     }
-    return @pip_sized_data;
+    return @pip_sized_ohlcs;
 }
 
 sub update_crossing_underlyings {
