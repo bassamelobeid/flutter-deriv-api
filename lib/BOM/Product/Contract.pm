@@ -202,10 +202,15 @@ has [
     lazy_build => 1,
     );
 
+# Is this contract meant to be ATM or non ATM at start.
+# The status will not change throughout the lifetime of the contract due to differences in offerings for ATM and non ATM contracts.
 sub _build_is_atm_bet {
     my $self = shift;
 
-    return 0 unless $self->starts_atm;
+    return 0 if $self->two_barriers;
+    # if not defined, it is non ATM
+    return 0 if not defined $self->supplied_barrier;
+    return 0 if $self->supplied_barrier !~ /^S0P$/;
     return 1;
 }
 

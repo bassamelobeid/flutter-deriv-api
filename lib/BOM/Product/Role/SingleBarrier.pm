@@ -86,16 +86,4 @@ sub _validate_barrier {
     return;
 }
 
-has starts_atm => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_starts_atm {
-    my $self = shift;
-
-    return 1 if defined $self->supplied_barrier and $self->supplied_barrier =~ /^S0P$/;
-    return 0;
-}
-
 1;

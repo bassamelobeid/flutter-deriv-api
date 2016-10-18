@@ -171,10 +171,4 @@ sub _validate_barrier {
 
     return;
 }
-
-has starts_atm => (
-    is      => 'ro',
-    default => 0,
-);
-
 1;
