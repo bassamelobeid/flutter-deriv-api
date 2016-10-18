@@ -578,6 +578,7 @@ sub _build_pricing_engine {
             bet                     => $self,
             apply_bounceback_safety => !$self->for_sale,
             inefficient_period      => $self->market_is_inefficient,
+            $self->priced_with_intraday_model ? (economic_events => $self->economic_events_for_volatility_calculation) : (),
         });
     }
 
@@ -1461,7 +1462,7 @@ sub _build_economic_events_for_volatility_calculation {
     # If news occurs 5 minutes before/after the contract expiration time, we shift the news triangle to 5 minutes before the contract expiry.
     my $end = $current_epoch + $seconds_to_expiry + 300;
 
-    return [grep { $_->{release_date} >= $start and $_->{release_date} <= $end } @$all_events];
+    return [grep { $_->{release_date} >= $start and $_->{release_date} <= $end and $_->{impact} > 1 } @$all_events];
 }
 
 has applicable_economic_events => (
