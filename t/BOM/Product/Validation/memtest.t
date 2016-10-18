@@ -8,6 +8,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Test::More tests => 1;
 use Test::Exception;
 use Test::Memory::Cycle;
+use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
@@ -17,6 +18,16 @@ use Date::Utility;
 use Finance::Asset;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
+use BOM::Market::AggTicks;
+
+
+note('mocking ticks to prevent warnings.');
+my $mocked = Test::MockModule->new('BOM::Market::AggTicks');
+$mocked->mock(
+    'retrieve',
+    sub {
+        [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_} } (0 .. 10)];
+    });
 
 my $now            = Date::Utility->new;
 my @contract_types = get_offerings_with_filter('contract_type');
