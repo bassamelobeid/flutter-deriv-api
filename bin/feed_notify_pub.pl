@@ -53,8 +53,11 @@ sub pip_size {
     my @pip_sized_ohlcs;
     my $underlying = create_underlying($symbol);
     for (@ohlcs) {
-        my ($duration, $ticks) = (/(\d+:)?(.+)/);
-        push @pip_sized_ohlcs, $duration . join(',', map {$underlying->pipsized_value($_)} split(',', $ticks));
+        my ($type, @quotes) = (/ (\d+:)? ([.0-9+-]+) (?:,([.0-9+-]+),([.0-9+-]+),([.0-9+-]+))? /x);
+        @quotes = grep{defined} @quotes;
+
+        warn("OHLC data should has 4 quotes type: $type") if (defined $type && @quotes != 4);
+        push @pip_sized_ohlcs, $type . join(',', map {$underlying->pipsized_value($_)} @quotes);
     }
     return @pip_sized_ohlcs;
 }
