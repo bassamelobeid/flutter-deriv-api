@@ -8,7 +8,6 @@ use Test::FailWarnings;
 use Date::Utility;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Test::Data::Utility::UnitTestPrice qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
