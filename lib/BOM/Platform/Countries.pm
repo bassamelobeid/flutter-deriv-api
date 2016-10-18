@@ -3,10 +3,8 @@ package BOM::Platform::Countries;
 use Moose;
 use feature 'state';
 
-use BOM::Platform::LandingCompany::Registry;
 use YAML::XS;
 use Locale::Country::Extra;
-use Locale::Country;
 
 has 'countries' => (
     is         => 'ro',

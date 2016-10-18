@@ -10,7 +10,6 @@ use Cache::RedisDB;
 use FlyBy;
 use List::MoreUtils qw( uniq all );
 use Time::Duration::Concise;
-use BOM::Platform::Context qw(localize);
 
 use Finance::Asset;
 use BOM::Platform::Runtime;
