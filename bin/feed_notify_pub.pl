@@ -40,26 +40,38 @@ exit;
 
 sub _publish {
     my $payload = shift;
-    my ($symbol, $epoch, @ohlcs) = split(';', $payload);
+    my ($symbol, $epoch, @quotes) = split(';', $payload);
 
     BOM::System::RedisReplicated::redis_write->publish('FEED::' . $symbol,
-        join(';', $symbol, $epoch, pip_size($symbol, @ohlcs))
+        join(';', $symbol, $epoch, pip_size($symbol, @quotes))
     );
 }
 
 sub pip_size {
-    my ($symbol, @ohlcs) = @_;
+    my ($symbol, @quotes) = @_;
 
-    my @pip_sized_ohlcs;
+    my @pip_sized_quotes;
     my $underlying = create_underlying($symbol);
-    for (@ohlcs) {
-        my ($type, @quotes) = (/ (\d+:)? ([.0-9+-]+) (?:,([.0-9+-]+),([.0-9+-]+),([.0-9+-]+))? /x);
-        @quotes = grep{defined} @quotes;
+    push @pip_sized_quotes, $underlying->pipsized_value(shift @quotes);
+    push @pip_sized_quotes, pip_size_ohlc($underlying, @quotes);
 
-        warn("OHLC data should has 4 quotes type: $type") if (defined $type && @quotes != 4);
-        push @pip_sized_ohlcs, $type . join(',', map {$underlying->pipsized_value($_)} @quotes);
+    return @pip_sized_quotes;
+}
+
+sub pip_size_ohlc {
+    my ($underlying, @ohlc) = @_;
+    
+    my @pip_sized_quotes;
+    for (@ohlc) {
+        my ($type, @ohlc) = grep{defined} (/(\d+:)([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+)/);
+        if (@ohlc != 4) {
+            warn("OHLC data should has 4 quotes: $_");
+        }
+        else {
+            push @pip_sized_quotes, $type. join(',', map {$underlying->pipsized_value($_)} @ohlc);
+        }
     }
-    return @pip_sized_ohlcs;
+    return @pip_sized_quotes;
 }
 
 sub update_crossing_underlyings {
