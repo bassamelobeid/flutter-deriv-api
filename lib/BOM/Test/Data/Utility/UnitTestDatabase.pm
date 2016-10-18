@@ -3,6 +3,10 @@ package BOM::Test::Data::Utility::UnitTestDatabase;
 use MooseX::Singleton;
 use BOM::Database::ClientDB;
 use BOM::Platform::Client;
+use BOM::Database::Model::FinancialMarketBet::HigherLowerBet;      
+use BOM::Database::Model::FinancialMarketBet::SpreadBet;      
+use BOM::Database::Model::FinancialMarketBet::TouchBet;      
+use BOM::Database::Model::FinancialMarketBet::RangeBet;
 use BOM::Database::Helper::FinancialMarketBet;
 use Postgres::FeedDB;
 
@@ -41,24 +45,24 @@ sub _post_import_operations {
     my $self = shift;
 
     $self->_update_sequence_of({
-        table    => 'transaction.account',
-        sequence => 'account_serial',
-    });
+            table    => 'transaction.account',
+            sequence => 'account_serial',
+        });
 
     $self->_update_sequence_of({
-        table    => 'transaction.transaction',
-        sequence => 'transaction_serial',
-    });
+            table    => 'transaction.transaction',
+            sequence => 'transaction_serial',
+        });
 
     $self->_update_sequence_of({
-        table    => 'payment.payment',
-        sequence => 'payment_serial',
-    });
+            table    => 'payment.payment',
+            sequence => 'payment_serial',
+        });
 
     $self->_update_sequence_of({
-        table    => 'bet.financial_market_bet',
-        sequence => 'bet_serial',
-    });
+            table    => 'bet.financial_market_bet',
+            sequence => 'bet_serial',
+        });
 
     return;
 }
@@ -85,9 +89,9 @@ sub create_client {
 
     # get next seq for loginid
     my $connection_builder = BOM::Database::ClientDB->new({
-        broker_code => $broker_code,
-        operation   => 'write',
-    });
+            broker_code => $broker_code,
+            operation   => 'write',
+        });
 
     my $db  = $connection_builder->db;
     my $dbh = $db->dbh;
