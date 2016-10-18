@@ -27,6 +27,11 @@ has inefficient_period => (
     default => 0,
 );
 
+has economic_events => (
+    is      => 'ro',
+    default => sub { [] },
+);
+
 has coefficients => (
     is      => 'ro',
     default => sub { $coefficient },
@@ -749,22 +754,14 @@ my $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/
 sub _get_economic_events {
     my ($self, $start, $end) = @_;
 
-    my $underlying = $self->bet->underlying;
-
-    my $raw_events = Quant::Framework::EconomicEventCalendar->new({
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($underlying->for_date),
-        }
-        )->get_latest_events_for_period({
-            from => Date::Utility->new($start),
-            to   => Date::Utility->new($end)});
-
+    my $underlying         = $self->bet->underlying;
     my $default_underlying = 'frxUSDJPY';
     my @events;
     # Sometimes new economic events pops up.
     # We will need some time to figure out what to do with them.
     # But at the mean time, they can be ignored.
     my %known_skips = ('OPEC Meetings' => 1);
-    foreach my $event (@$raw_events) {
+    foreach my $event (@{$self->economic_events}) {
         my $event_name = $event->{event_name};
         next if ($known_skips{$event_name});
         $event_name =~ s/\s/_/g;
