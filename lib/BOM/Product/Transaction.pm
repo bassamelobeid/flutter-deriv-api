@@ -11,7 +11,6 @@ use JSON qw( from_json to_json );
 use Date::Utility;
 use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
 use Format::Util::Numbers qw(commas roundnear to_monetary_number_format);
-use RateLimitations qw(within_rate_limits);
 use Try::Tiny;
 
 use BOM::Platform::Context qw(request localize);
@@ -478,7 +477,6 @@ sub prepare_buy {    ## no critic (RequireArgUnpacking)
         $error_status = $self->$_ and return $error_status
             for (
             qw/
-            _validate_buy_transaction_rate
             _validate_iom_withdrawal_limit
             _validate_available_currency
             _validate_currency
@@ -773,7 +771,6 @@ sub sell {    ## no critic (RequireArgUnpacking)
         $error_status = $self->$_ and return $self->stats_stop($stats_data, $error_status)
             for (
             qw/
-            _validate_sell_transaction_rate
             _validate_iom_withdrawal_limit
             _is_valid_to_sell
             _validate_available_currency
@@ -1586,55 +1583,6 @@ sub _validate_date_pricing {
     return;
 }
 
-=head2 $self->_validate_buy_transaction_rate
-
-Validate the client's buy transaction rate does not exceed our limits
-
-=cut
-
-sub _validate_buy_transaction_rate {
-    my $self = shift;
-
-    return $self->__validate_transaction_rate_limit('buy');
-}
-
-=head2 $self->_validate_sell_transaction_rate
-
-Validate the client's sell transaction rate does not exceed our limits
-
-=cut
-
-sub _validate_sell_transaction_rate {
-    my $self = shift;
-
-    return $self->__validate_transaction_rate_limit('sell');
-}
-
-sub __validate_transaction_rate_limit {
-    my ($self, $what) = @_;
-    my $client = $self->client;
-    $what = lc $what;
-
-    return unless $client->is_virtual;    # We only limit virtual accounts at this point
-
-    my $service = 'virtual_' . $what . '_transaction';
-    my $loginid = $client->loginid;
-
-    if (
-        not within_rate_limits({
-                service  => $service,
-                consumer => $loginid,
-            }))
-    {
-        return Error::Base->cuss(
-            -type              => ucfirst($what) . 'RateExceeded',
-            -mesg              => $loginid . ' request exceeds rate limits for ' . $service,
-            -message_to_client => BOM::Platform::Context::localize('Too many recent attempts. Try again later.'));
-    }
-
-    return;
-}
-
 =head2 $self->_validate_iom_withdrawal_limit
 
 Validate the withdrawal limit for IOM region
@@ -1929,15 +1877,6 @@ sub sell_expired_contracts {
         number_of_sold_bets => 0,
         failures            => [],
     };
-    # Apply rate limits before doing the full lookup
-    return $result
-        if (
-        $client->is_virtual              # Only virtuals
-        and not defined $contract_ids    # who are just selling "whatever"
-        and not within_rate_limits({
-                service  => 'virtual_batch_sell',
-                consumer => $loginid
-            }));
 
     my $mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
         client_loginid => $loginid,
