@@ -108,7 +108,6 @@ sub logout {
             }
 
             unless ($skip_login_history) {
-                $params->{country} = $params->{country_code} if $params->{country_code};
                 $user->add_login_history({
                     environment => BOM::RPC::v3::Utility::login_env($params),
                     successful  => 't',
