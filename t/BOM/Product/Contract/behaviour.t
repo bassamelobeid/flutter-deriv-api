@@ -199,7 +199,7 @@ subtest 'intraday duration contract settlement' => sub {
     ok !$c->entry_tick,       'no entry tick';
     ok !$c->is_valid_to_sell, 'not valid to sell';
     ok $c->missing_market_data, 'missing market data if entry tick is undef after expiry';
-    like($c->primary_validation_error->message, qr/Waiting for entry tick/, 'throws error');
+    like($c->primary_validation_error->message, qr/entry tick is undefined/, 'throws error');
 
     create_ticks([101, $now->epoch + 1, 'R_100']);
     $c = produce_contract($bet_params);
