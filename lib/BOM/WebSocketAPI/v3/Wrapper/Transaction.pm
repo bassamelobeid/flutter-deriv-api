@@ -1,5 +1,5 @@
 
-package Binary::WebSocketAPI::v3::Wrapper::Transaction;
+package BOM::WebSocketAPI::v3::Wrapper::Transaction;
 
 use strict;
 use warnings;
@@ -7,8 +7,8 @@ use warnings;
 use JSON;
 use List::Util qw(first);
 
-use Binary::WebSocketAPI::v3::Wrapper::System;
-use Binary::WebSocketAPI::v3::Wrapper::Streamer;
+use BOM::WebSocketAPI::v3::Wrapper::System;
+use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub buy_get_contract_params {
     my ($c, $req_storage) = @_;
@@ -22,7 +22,7 @@ sub buy_get_contract_params {
         return;
     }
     if (my $proposal_id = $args->{buy} // $args->{buy_contract_for_multiple_accounts}) {
-        if (my $p = Binary::WebSocketAPI::v3::Wrapper::System::forget_buy_proposal($c, $proposal_id)) {
+        if (my $p = BOM::WebSocketAPI::v3::Wrapper::System::forget_buy_proposal($c, $proposal_id)) {
             $req_storage->{call_params}->{contract_parameters} = $p;
             $req_storage->{call_params}->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
             return;
@@ -31,7 +31,7 @@ sub buy_get_contract_params {
         if ($ch and $ch = $ch->{uuid} and $ch = $ch->{$proposal_id}) {
             $req_storage->{call_params}->{contract_parameters} = $ch->{args};
             $req_storage->{call_params}->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
-            Binary::WebSocketAPI::v3::Wrapper::System::_forget_pricing_subscription($c, $proposal_id);
+            BOM::WebSocketAPI::v3::Wrapper::System::_forget_pricing_subscription($c, $proposal_id);
             return;
         }
     }
@@ -48,7 +48,7 @@ sub transaction {
     if ($account_id) {
         if (    exists $args->{subscribe}
             and $args->{subscribe} eq '1'
-            and (not $id = Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $account_id, 'transaction', $args)))
+            and (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $account_id, 'transaction', $args)))
         {
             return $c->new_error('transaction', 'AlreadySubscribed', $c->l('You are already subscribed to transaction updates.'));
         }

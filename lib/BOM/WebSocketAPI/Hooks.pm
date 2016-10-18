@@ -1,10 +1,10 @@
-package Binary::WebSocketAPI::Hooks;
+package BOM::WebSocketAPI::Hooks;
 
 use strict;
 use warnings;
 use Try::Tiny;
 use RateLimitations qw(within_rate_limits);
-use Binary::WebSocketAPI::v3::Wrapper::Streamer;
+use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub start_timing {
     my ($c, $req_storage) = @_;
@@ -135,7 +135,7 @@ sub before_forward {
     $req_storage->{origin_args} = {%{$req_storage->{args}}};
     my $args = $req_storage->{args};
     if (not $c->stash('connection_id')) {
-        $c->stash('connection_id' => &Binary::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string());
+        $c->stash('connection_id' => &BOM::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string());
     }
 
     # For authorized calls that are heavier we will limit based on loginid
@@ -238,7 +238,7 @@ sub init_redis_connections {
 sub forget_all {
     my $c = shift;
     # stop all recurring
-    Binary::WebSocketAPI::v3::Wrapper::System::forget_all($c, {args => {forget_all => 1}});
+    BOM::WebSocketAPI::v3::Wrapper::System::forget_all($c, {args => {forget_all => 1}});
     delete $c->stash->{redis};
     delete $c->stash->{redis_pricer};
     return;

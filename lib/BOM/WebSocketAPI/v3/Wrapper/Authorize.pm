@@ -1,4 +1,4 @@
-package Binary::WebSocketAPI::v3::Wrapper::Authorize;
+package BOM::WebSocketAPI::v3::Wrapper::Authorize;
 
 use strict;
 use warnings;

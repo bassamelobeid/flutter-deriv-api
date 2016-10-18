@@ -1,18 +1,18 @@
-package Binary::WebSocketAPI;
+package BOM::WebSocketAPI;
 
 use Mojo::Base 'Mojolicious';
 use Mojo::Redis2;
 use Mojo::IOLoop;
 
-use Binary::WebSocketAPI::Hooks;
-use Binary::WebSocketAPI::v3::Wrapper::Streamer;
-use Binary::WebSocketAPI::v3::Wrapper::Transaction;
-use Binary::WebSocketAPI::v3::Wrapper::Authorize;
-use Binary::WebSocketAPI::v3::Wrapper::System;
-use Binary::WebSocketAPI::v3::Wrapper::Accounts;
-use Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery;
-use Binary::WebSocketAPI::v3::Wrapper::Cashier;
-use Binary::WebSocketAPI::v3::Wrapper::Pricer;
+use BOM::WebSocketAPI::Hooks;
+use BOM::WebSocketAPI::v3::Wrapper::Streamer;
+use BOM::WebSocketAPI::v3::Wrapper::Transaction;
+use BOM::WebSocketAPI::v3::Wrapper::Authorize;
+use BOM::WebSocketAPI::v3::Wrapper::System;
+use BOM::WebSocketAPI::v3::Wrapper::Accounts;
+use BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery;
+use BOM::WebSocketAPI::v3::Wrapper::Cashier;
+use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 
 use File::Slurp;
 use JSON::Schema;
@@ -104,7 +104,7 @@ sub startup {
         });
 
     $app->plugin('ClientIP');
-    $app->plugin('Binary::WebSocketAPI::Plugins::Helpers');
+    $app->plugin('BOM::WebSocketAPI::Plugins::Helpers');
 
     my $actions = [
         ['authorize', {stash_params => [qw/ ua_fingerprint /]}],
@@ -112,26 +112,26 @@ sub startup {
             'logout',
             {
                 stash_params => [qw/ token token_type email client_ip user_agent /],
-                success      => \&Binary::WebSocketAPI::v3::Wrapper::Authorize::logout_success,
+                success      => \&BOM::WebSocketAPI::v3::Wrapper::Authorize::logout_success,
             },
         ],
         ['trading_times'],
         [
             'asset_index',
             {
-                before_forward => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index_cached,
-                success        => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::cache_asset_index,
+                before_forward => \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index_cached,
+                success        => \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::cache_asset_index,
             }
         ],
         ['active_symbols', {stash_params => [qw/ token /]}],
 
-        ['ticks',         {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::ticks}],
-        ['ticks_history', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::ticks_history}],
-        ['proposal',      {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Pricer::proposal}],
-        ['forget',        {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::forget}],
-        ['forget_all',    {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::forget_all}],
-        ['ping',          {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::ping}],
-        ['time',          {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::server_time}],
+        ['ticks',         {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks}],
+        ['ticks_history', {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks_history}],
+        ['proposal',      {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Pricer::proposal}],
+        ['forget',        {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget}],
+        ['forget_all',    {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all}],
+        ['ping',          {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::ping}],
+        ['time',          {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::server_time}],
 
         ['website_status'],
         ['contracts_for'],
@@ -146,9 +146,9 @@ sub startup {
             'balance',
             {
                 require_auth   => 'read',
-                before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::subscribe_transaction_channel,
-                error          => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::balance_error_handler,
-                success        => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::balance_success_handler,
+                before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::subscribe_transaction_channel,
+                error          => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance_error_handler,
+                success        => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance_success_handler,
             }
         ],
 
@@ -192,7 +192,7 @@ sub startup {
             'set_self_exclusion',
             {
                 require_auth => 'admin',
-                response     => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::set_self_exclusion_response_handler
+                response     => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_self_exclusion_response_handler
             }
         ],
         [
@@ -213,14 +213,14 @@ sub startup {
             'login_history',
             {
                 require_auth => 'read',
-                response     => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::login_history_response_handler
+                response     => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::login_history_response_handler
             }
         ],
         [
             'set_account_currency',
             {
                 require_auth   => 'admin',
-                before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency_params_handler
+                before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency_params_handler
             }
         ],
         ['set_financial_assessment', {require_auth => 'admin'}],
@@ -236,21 +236,21 @@ sub startup {
             'buy',
             {
                 require_auth   => 'trade',
-                before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
+                before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
             }
         ],
         [
             'buy_contract_for_multiple_accounts',
             {
                 require_auth   => 'trade',
-                before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
+                before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
             }
         ],
         [
             'transaction',
             {
                 require_auth   => 'read',
-                before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::transaction
+                before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction
             }
         ],
         [
@@ -263,7 +263,7 @@ sub startup {
             'proposal_open_contract',
             {
                 require_auth    => 'read',
-                rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::Pricer::proposal_open_contract,
+                rpc_response_cb => \&BOM::WebSocketAPI::v3::Wrapper::Pricer::proposal_open_contract,
             }
         ],
         [
@@ -291,8 +291,8 @@ sub startup {
             'paymentagent_withdraw',
             {
                 require_auth => 'payments',
-                error        => \&Binary::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
-                response     => Binary::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('paymentagent_withdraw'),
+                error        => \&BOM::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
+                response     => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('paymentagent_withdraw'),
                 stash_params => [qw/ server_name /],
             }
         ],
@@ -300,8 +300,8 @@ sub startup {
             'paymentagent_transfer',
             {
                 require_auth => 'payments',
-                error        => \&Binary::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
-                response     => Binary::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('paymentagent_transfer'),
+                error        => \&BOM::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
+                response     => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('paymentagent_transfer'),
                 stash_params => [qw/ server_name /],
             }
         ],
@@ -309,8 +309,8 @@ sub startup {
             'transfer_between_accounts',
             {
                 require_auth => 'payments',
-                error        => \&Binary::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
-                response     => Binary::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('transfer_between_accounts'),
+                error        => \&BOM::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
+                response     => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('transfer_between_accounts'),
             }
         ],
         [
@@ -360,14 +360,14 @@ sub startup {
             'mt5_deposit',
             {
                 require_auth => 'admin',
-                response     => Binary::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('mt5_deposit'),
+                response     => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('mt5_deposit'),
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
         [
             'mt5_withdrawal',
             {
                 require_auth => 'admin',
-                response     => Binary::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('mt5_withdrawal'),
+                response     => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('mt5_withdrawal'),
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
         [
@@ -398,26 +398,26 @@ sub startup {
             actions => $actions,
 
             # action hooks
-            before_forward           => [\&Binary::WebSocketAPI::Hooks::before_forward,             \&Binary::WebSocketAPI::Hooks::get_rpc_url],
-            before_call              => [\&Binary::WebSocketAPI::Hooks::add_app_id,                 \&Binary::WebSocketAPI::Hooks::start_timing],
-            before_get_rpc_response  => [\&Binary::WebSocketAPI::Hooks::log_call_timing],
-            after_got_rpc_response   => [\&Binary::WebSocketAPI::Hooks::log_call_timing_connection, \&Binary::WebSocketAPI::Hooks::error_check],
+            before_forward           => [\&BOM::WebSocketAPI::Hooks::before_forward,             \&BOM::WebSocketAPI::Hooks::get_rpc_url],
+            before_call              => [\&BOM::WebSocketAPI::Hooks::add_app_id,                 \&BOM::WebSocketAPI::Hooks::start_timing],
+            before_get_rpc_response  => [\&BOM::WebSocketAPI::Hooks::log_call_timing],
+            after_got_rpc_response   => [\&BOM::WebSocketAPI::Hooks::log_call_timing_connection, \&BOM::WebSocketAPI::Hooks::error_check],
             before_send_api_response => [
-                \&Binary::WebSocketAPI::Hooks::add_req_data,      \&Binary::WebSocketAPI::Hooks::start_timing,
-                \&Binary::WebSocketAPI::Hooks::output_validation, \&Binary::WebSocketAPI::Hooks::add_call_debug
+                \&BOM::WebSocketAPI::Hooks::add_req_data,      \&BOM::WebSocketAPI::Hooks::start_timing,
+                \&BOM::WebSocketAPI::Hooks::output_validation, \&BOM::WebSocketAPI::Hooks::add_call_debug
             ],
-            after_sent_api_response => [\&Binary::WebSocketAPI::Hooks::log_call_timing_sent, \&Binary::WebSocketAPI::Hooks::close_bad_connection],
+            after_sent_api_response => [\&BOM::WebSocketAPI::Hooks::log_call_timing_sent, \&BOM::WebSocketAPI::Hooks::close_bad_connection],
 
             # main config
             base_path         => '/websockets/v3',
             stream_timeout    => 120,
             max_connections   => 100000,
             max_response_size => 500000,                                                # change and test this if we ever increase ticks history count
-            opened_connection => \&Binary::WebSocketAPI::Hooks::init_redis_connections,
-            finish_connection => \&Binary::WebSocketAPI::Hooks::forget_all,
+            opened_connection => \&BOM::WebSocketAPI::Hooks::init_redis_connections,
+            finish_connection => \&BOM::WebSocketAPI::Hooks::forget_all,
 
             # helper config
-            url => \&Binary::WebSocketAPI::Hooks::get_rpc_url,                          # make url for manually called actions
+            url => \&BOM::WebSocketAPI::Hooks::get_rpc_url,                          # make url for manually called actions
 
             # Skip check sanity to password fields
             skip_check_sanity => qr/password/,

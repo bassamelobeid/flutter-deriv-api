@@ -1,4 +1,4 @@
-package Binary::WebSocketAPI::v3::Wrapper::Accounts;
+package BOM::WebSocketAPI::v3::Wrapper::Accounts;
 
 use 5.014;
 use strict;
@@ -7,7 +7,7 @@ use warnings;
 use JSON;
 use List::Util qw(first);
 
-use Binary::WebSocketAPI::v3::Wrapper::Streamer;
+use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub set_self_exclusion_response_handler {
     my ($rpc_response, $api_response) = @_;
@@ -26,7 +26,7 @@ sub subscribe_transaction_channel {
     if (    $account_id
         and exists $args->{subscribe}
         and $args->{subscribe} eq '1'
-        and (not $id = Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $account_id, 'balance', $args)))
+        and (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $account_id, 'balance', $args)))
     {
         return $c->new_error('balance', 'AlreadySubscribed', $c->l('You are already subscribed to balance updates.'));
     }
@@ -37,7 +37,7 @@ sub subscribe_transaction_channel {
 
 sub balance_error_handler {
     my ($c, $rpc_response, $req_storage) = @_;
-    Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $req_storage->{transaction_channel_id}) if $req_storage->{transaction_channel_id};
+    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $req_storage->{transaction_channel_id}) if $req_storage->{transaction_channel_id};
     return;
 }
 

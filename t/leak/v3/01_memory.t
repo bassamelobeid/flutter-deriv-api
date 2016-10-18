@@ -9,7 +9,7 @@ use Test::NoLeaks;
 use Mojo::UserAgent;
 use Mojo::IOLoop;
 use Mojo::IOLoop::Delay;
-use Binary::WebSocketAPI;
+use BOM::WebSocketAPI;
 use Mojo::Server::Daemon;
 use Net::EmptyPort qw/empty_port/;
 
@@ -19,7 +19,7 @@ SKIP: {
     my $port = empty_port;
 
     my $daemon = Mojo::Server::Daemon->new(
-        app    => Binary::WebSocketAPI->new,
+        app    => BOM::WebSocketAPI->new,
         listen => ["http://127.0.0.1:$port"],
     );
     $daemon->start;

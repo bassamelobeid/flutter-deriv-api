@@ -1,4 +1,4 @@
-package Binary::WebSocketAPI::v3::Wrapper::Cashier;
+package BOM::WebSocketAPI::v3::Wrapper::Cashier;
 
 use strict;
 use warnings;
