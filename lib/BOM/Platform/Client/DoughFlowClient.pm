@@ -23,12 +23,12 @@ It is now a Rose::DB::Object derived class so all Client table columns are avail
 use strict;
 use warnings;
 
-use BOM::Platform::Runtime;
-use BOM::Platform::Context;
 use base qw(BOM::Platform::Client);
 
 use Locale::Country;
 use Lingua::EN::AddressParse;
+use Date::Utility;
+
 # The currently suppoted country names and codes are:
 #     AU or Australia
 #     CA or Canada
