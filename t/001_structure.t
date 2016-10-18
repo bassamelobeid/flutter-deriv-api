@@ -2,7 +2,7 @@ use Test::More tests => 1;
 use strict;
 use warnings;
 
-if (my $r = `git grep BOM:: | grep -v -e this_line`) {
+if (my $r = `git grep BOM:: | grep -v -e BOM::WebSocket -e this_line`) {
     print $r;
     ok 0, "Wrong structure dependency $r";
 } else {
