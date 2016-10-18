@@ -21,6 +21,7 @@
         <p><b>ORDER_PRICE = [% contract_details.order_price  %]</b></p>
         <p><b>ORDER_TYPE = [% contract_details.order_type  %]</b></p>
         <p><b>PAYOUT = [% contract_details.payout  %]</b></p>
+        <p><b>TICK_BEFORE_TRADE_TIME = [% contract_details.tick_before_trade_time %]</b></p>
           [% FOREACH key =pricing_parameters.keys.sort %]
                <p><table id="dtr" border="1" cellpadding="1" cellspacing="0">
                 <tr><td><b> [% key %] </b></td></tr>
