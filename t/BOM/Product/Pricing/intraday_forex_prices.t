@@ -13,7 +13,7 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
-use BOM::Test::Data::Utility::UnitTestPrice qw( :init );
+use Test::BOM::UnitTestPrice;
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -42,7 +42,7 @@ $at->fill_from_historical_feed({
     interval     => Time::Duration::Concise->new('interval' => '1h'),
 });
 my $recorded_date = $date_start->truncate_to_day;
-BOM::Test::Data::Utility::UnitTestPrice::create_pricing_data($underlying->symbol, $payout_currency, $recorded_date);
+Test::BOM::UnitTestPrice::create_pricing_data($underlying->symbol, $payout_currency, $recorded_date);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -67,7 +67,7 @@ subtest 'prices without economic events' => sub {
 
     foreach my $contract_type (@ct) {
         my @barriers = @{
-            BOM::Test::Data::Utility::UnitTestPrice::get_barrier_range({
+        Test::BOM::UnitTestPrice::get_barrier_range({
                     type       => 'single',
                     underlying => $underlying,
                     duration   => $duration,
@@ -130,7 +130,7 @@ subtest 'prices with economic events' => sub {
                 }]});
     foreach my $contract_type (@ct) {
         my @barriers = @{
-            BOM::Test::Data::Utility::UnitTestPrice::get_barrier_range({
+        Test::BOM::UnitTestPrice::get_barrier_range({
                     type       => 'single',
                     underlying => $underlying,
                     duration   => $duration,
