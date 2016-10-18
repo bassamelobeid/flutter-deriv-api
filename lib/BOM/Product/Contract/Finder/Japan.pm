@@ -222,10 +222,7 @@ sub _predefined_trading_period {
         # we do not want to offer intraday contract on other contracts
         # we offer 0day contract on call/put
         my $minimum_contract_duration =
-            (
-                   $o->{contract_category} eq 'callput'
-                or $o->{contract_category} eq 'endsinout'
-            )
+              ($o->{contract_category} eq 'callput')
             ? $o->{expiry_type} eq 'intraday'
                 ? Time::Duration::Concise->new({interval => $o->{min_contract_duration}})->seconds
                 : ($today_close_epoch - $today->epoch)
