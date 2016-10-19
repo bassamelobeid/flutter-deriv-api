@@ -6,6 +6,7 @@ use Spreadsheet::ParseExcel;
 use Format::Util::Numbers qw(roundnear);
 use Date::Utility;
 use BOM::MarketData qw(create_underlying);
+use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData::Types;
 use SuperDerivatives::UnderlyingConfig;
 use Quant::Framework::Asset;
@@ -29,7 +30,7 @@ sub process_dividend {
 sub save_dividends {
     my ($data) = @_;
 
-    my %otc_indices = map { $_ => 1 } Quant::Framework::UnderlyingDB->get_symbols_for(
+    my %otc_indices = map { $_ => 1 } create_underlying_db()->get_symbols_for(
         market            => 'indices',
         submarket         => 'otc_index',
         contract_category => 'ANY'
