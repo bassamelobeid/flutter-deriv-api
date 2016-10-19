@@ -107,7 +107,7 @@ sub startup {
     $app->plugin('BOM::WebSocketAPI::Plugins::Helpers');
 
     my $actions = [
-        ['authorize', {stash_params => [qw/ ua_fingerprint /]}],
+        ['authorize', {stash_params => [qw/ ua_fingerprint client_ip user_agent /]}],
         [
             'logout',
             {
@@ -412,7 +412,7 @@ sub startup {
             base_path         => '/websockets/v3',
             stream_timeout    => 120,
             max_connections   => 100000,
-            max_response_size => 500000,                                               # change and test this if we ever increase ticks history count
+            max_response_size => 600000,                                               # change and test this if we ever increase ticks history count
             opened_connection => \&BOM::WebSocketAPI::Hooks::init_redis_connections,
             finish_connection => \&BOM::WebSocketAPI::Hooks::forget_all,
 
