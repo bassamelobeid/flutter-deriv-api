@@ -14,7 +14,7 @@ use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
-use BOM::Platform::LandingCompany::Registry;
+use LandingCompany::Registry;
 use BOM::Platform::Countries;
 use BOM::System::Config;
 
@@ -382,7 +382,7 @@ sub __set_reality_check_cookie {
     # set this cookie only once
     return if $r->cookie('reality_check');
 
-    return unless any { BOM::Platform::LandingCompany::Registry::get_by_broker($_->broker_code)->has_reality_check } $user->clients;
+    return unless any { LandingCompany::Registry::get_by_broker($_->broker_code)->has_reality_check } $user->clients;
 
     my $default_reality_check_interval_in_minutes = 60;
     $c->cookie(
