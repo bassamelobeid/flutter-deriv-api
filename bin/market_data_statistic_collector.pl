@@ -189,7 +189,7 @@ sub _collect_correlation_ages {
 }
 
 sub _collect_pipsize_stats {
-    my @underlyings = map { create_underlying($_) } Quant::Framework::UnderlyingDB->get_symbols_for(market => ['volidx']);
+    my @underlyings = map { create_underlying($_) } create_underlying_db->get_symbols_for(market => ['volidx']);
     foreach my $underlying (@underlyings) {
         my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
         my $vol        = $volsurface->get_volatility();
