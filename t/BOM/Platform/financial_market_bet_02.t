@@ -1406,7 +1406,7 @@ SKIP: {
         }
         'setup new client';
 
-        my $today         = Date::Utility::today;
+        my $today = Date::Utility::today;
 
         note "today = " . $today->db_timestamp;
 
@@ -1465,7 +1465,7 @@ SKIP: {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 payout_price => 60,
-                limits => {
+                limits       => {
                     max_daily_profit => 100 - 0.01,
                 },
                 };
@@ -1477,12 +1477,11 @@ SKIP: {
             ],
             'maximum daily profit limit exceeded';
 
-
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 payout_price => 60,
-                limits => {
+                limits       => {
                     max_daily_profit => 100,
                 },
                 };
@@ -1508,9 +1507,9 @@ SKIP: {
         dies_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
-                buy_price => 30,
+                buy_price    => 30,
                 payout_price => 60,
-                limits => {
+                limits       => {
                     max_daily_profit => 130 - 0.01,
                 },
                 };
@@ -1522,13 +1521,12 @@ SKIP: {
             ],
             'maximum daily profit limit exceeded (with open bet)';
 
-
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
-                buy_price => 30,
+                buy_price    => 30,
                 payout_price => 60,
-                limits => {
+                limits       => {
                     max_daily_profit => 130,
                 },
                 };
@@ -1552,9 +1550,9 @@ SKIP: {
         dies_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
-                buy_price => 30,
+                buy_price    => 30,
                 payout_price => 60,
-                limits => {
+                limits       => {
                     max_daily_profit => 160 - 0.01,
                 },
                 };
@@ -1566,13 +1564,12 @@ SKIP: {
             ],
             'maximum daily profit limit exceeded (with 2 open bets)';
 
-
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
-                buy_price => 30,
+                buy_price    => 30,
                 payout_price => 60,
-                limits => {
+                limits       => {
                     max_daily_profit => 160,
                 },
                 };

@@ -9,19 +9,19 @@ use Test::FailWarnings;
 use BOM::Platform::LandingCompany::Registry;
 
 subtest 'legal_allowed_offerings' => sub {
-    my @lc = BOM::Platform::LandingCompany::Registry::all();
+    my @lc       = BOM::Platform::LandingCompany::Registry::all();
     my %expected = (
-        iom => 'common',
-        malta => 'common',
-        maltainvest => 'common',
-        costarica => 'common',
-        virtual => 'common',
-        japan => 'japan',
+        iom             => 'common',
+        malta           => 'common',
+        maltainvest     => 'common',
+        costarica       => 'common',
+        virtual         => 'common',
+        japan           => 'japan',
         'japan-virtual' => 'japan',
-        vanuatu => 'common',
+        vanuatu         => 'common',
     );
     for (@lc) {
-        is $_->legal_allowed_offerings, $expected{$_->short}, 'correct offerings reference for landing company['.$_->short.'].';
+        is $_->legal_allowed_offerings, $expected{$_->short}, 'correct offerings reference for landing company[' . $_->short . '].';
 
     }
 };
