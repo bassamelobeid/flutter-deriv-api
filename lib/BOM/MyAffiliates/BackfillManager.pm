@@ -26,13 +26,13 @@ use BOM::Platform::Client;
 use BOM::MyAffiliates;
 use Try::Tiny;
 use BOM::Database::DataMapper::CollectorReporting;
-use BOM::Platform::LandingCompany;
+use LandingCompany;
 
 has '_available_broker_codes' => (
     is      => 'ro',
     isa     => 'ArrayRef',
     default => sub {
-        my @codes = BOM::Platform::LandingCompany::Registry::all_broker_codes;
+        my @codes = LandingCompany::Registry::all_broker_codes;
         # do not process FOG or any virtual broker code
         @codes = grep { $_ !~ /^(?:FOG|VRT)/ } @codes;
 

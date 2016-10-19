@@ -26,7 +26,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Client;
 use BOM::MyAffiliates;
 use BOM::Platform::Context qw(request);
-use BOM::Platform::LandingCompany::Registry;
+use LandingCompany::Registry;
 
 has ['from', 'to'] => (
     is       => 'ro',
@@ -65,7 +65,7 @@ sub _split_txn_by_landing_company {
         # doesn't quite fit the underlying concept, but works.
         my $company = 'LOGIN_EXTRACTION_ERRORS';
         $loginid =~ /^([A-Z]+)\d+$/;
-        $company = BOM::Platform::LandingCompany::Registry::get_by_broker($1)->short;
+        $company = LandingCompany::Registry::get_by_broker($1)->short;
 
         if (not ref $txn_for->{$company}) {
             $txn_for->{$company} = [];
