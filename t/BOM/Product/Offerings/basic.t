@@ -78,44 +78,51 @@ subtest 'get_offerings_with_filter' => sub {
 
 subtest 'get_permitted_expiries' => sub {
 
-    my $r100 = get_permitted_expiries({underlying_symbol => 'R_100'});
+    my $offerings_config = BOM::Platform::Runtime->instance->get_offerings_config;
 
-    eq_or_diff(get_permitted_expiries(), {}, 'Get an empty result when no guidance is provided.');
-    eq_or_diff($r100, get_permitted_expiries({market => 'volidx'}), 'R_100 has the broadest offering, so it matches with the random market');
+    my $r100 = get_permitted_expiries($offerings_config, {underlying_symbol => 'R_100'});
+
+    eq_or_diff(get_permitted_expiries($offerings_config), {}, 'Get an empty result when no guidance is provided.');
+    eq_or_diff($r100, get_permitted_expiries($offerings_config, {market => 'volidx'}), 'R_100 has the broadest offering, so it matches with the random market');
     is $r100->{tick}->{min}, 5, "R_100 has something with 5 tick expiries";
     is $r100->{daily}->{max}->days, 365, "... all the way out to a year.";
 
-    my $fx_tnt = get_permitted_expiries({
-        market            => 'forex',
-        contract_category => 'touchnotouch'
-    });
-    my $mp_tnt = get_permitted_expiries({
-        submarket         => 'minor_pairs',
-        contract_category => 'touchnotouch'
-    });
+    my $fx_tnt = get_permitted_expiries($offerings_config,
+        {
+            market            => 'forex',
+            contract_category => 'touchnotouch'
+        });
+    my $mp_tnt = get_permitted_expiries($offerings_config,
+        {
+            submarket         => 'minor_pairs',
+            contract_category => 'touchnotouch'
+        });
 
     ok !exists $fx_tnt->{intraday}, 'no touchnotouch intraday on fx';
     ok !exists $mp_tnt->{intraday}, '... but not on minor_pairs';
     ok !exists $fx_tnt->{tick},     '... nor does forex have tick touches';
     ok !exists $mp_tnt->{tick},     '... especially not on minor_pairs.';
 
-    my $r100_tnt = get_permitted_expiries({
-        underlying_symbol => 'R_100',
-        contract_category => 'touchnotouch'
-    });
+    my $r100_tnt = get_permitted_expiries($offerings_config,
+        {
+            underlying_symbol => 'R_100',
+            contract_category => 'touchnotouch'
+        });
     ok !exists $r100_tnt->{tick},    'None of which is surprising, since they are not on R_100, either';
     ok exists $r100_tnt->{intraday}, '... but you can play them intraday';
 
-    my $r100_digits_tick = get_permitted_expiries({
-        underlying_symbol => 'R_100',
-        contract_category => 'digits',
-        expiry_type       => 'tick',
-    });
-    my $r100_tnt_tick = get_permitted_expiries({
-        underlying_symbol => 'R_100',
-        contract_category => 'touchnotouch',
-        expiry_type       => 'tick',
-    });
+    my $r100_digits_tick = get_permitted_expiries($offerings_config,
+        {
+            underlying_symbol => 'R_100',
+            contract_category => 'digits',
+            expiry_type       => 'tick',
+        });
+    my $r100_tnt_tick = get_permitted_expiries($offerings_config,
+        {
+            underlying_symbol => 'R_100',
+            contract_category => 'touchnotouch',
+            expiry_type       => 'tick',
+        });
 
     ok exists $r100_digits_tick->{min} && exists $r100_digits_tick->{max}, 'Asking for a relevant tick expiry, gives just that min and max';
     eq_or_diff($r100_tnt_tick, {}, '... but get an empty reference if they are not there.');
@@ -134,7 +141,9 @@ subtest 'get_contract_specifics' => sub {
 
     $params->{barrier_category}  = 'american';
     $params->{underlying_symbol} = 'R_100';
-    my $result = get_contract_specifics($params);
+    my $result = get_contract_specifics(
+        BOM::Platform::Runtime->instance->get_offerings_config,
+        $params);
 
     ok exists $result->{permitted}, 'and permitted durations';
     ok exists $result->{permitted}->{min}, '... including minimum';

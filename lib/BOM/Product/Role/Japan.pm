@@ -45,14 +45,16 @@ sub _build_predefined_contracts {
 override offering_specifics => sub {
     my $self = shift;
 
-    return get_contract_specifics({
-        underlying_symbol => $self->underlying->symbol,
-        barrier_category  => $self->barrier_category,
-        expiry_type       => $self->expiry_type,
-        start_type        => $self->start_type,
-        landing_company   => $landing_company,
-        contract_category => $self->category->code,
-    });
+    return get_contract_specifics(
+        BOM::Platform::Runtime->instance->get_offerings_config,
+        {
+            underlying_symbol => $self->underlying->symbol,
+            barrier_category  => $self->barrier_category,
+            expiry_type       => $self->expiry_type,
+            start_type        => $self->start_type,
+            landing_company   => $landing_company,
+            contract_category => $self->category->code,
+        });
 };
 
 override risk_profile => sub {
@@ -118,13 +120,13 @@ sub _subvalidate_single_barrier {
         unless ($matched_barrier) {
             return {
                 message => 'Invalid barrier['
-                    . $self->barrier->as_absolute
-                    . '] for expiry ['
-                    . $self->date_expiry->datetime
-                    . '] and contract type['
-                    . $self->code
-                    . '] for japan at '
-                    . $self->date_pricing->datetime . '.',
+                . $self->barrier->as_absolute
+                . '] for expiry ['
+                . $self->date_expiry->datetime
+                . '] and contract type['
+                . $self->code
+                . '] for japan at '
+                . $self->date_pricing->datetime . '.',
                 message_to_client => localize('Invalid barrier.'),
             };
         }

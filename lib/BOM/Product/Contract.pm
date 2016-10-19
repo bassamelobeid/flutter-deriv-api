@@ -1582,13 +1582,15 @@ has [qw(offering_specifics barrier_category)] => (
 sub _build_offering_specifics {
     my $self = shift;
 
-    return get_contract_specifics({
-        underlying_symbol => $self->underlying->symbol,
-        barrier_category  => $self->barrier_category,
-        expiry_type       => $self->expiry_type,
-        start_type        => $self->start_type,
-        contract_category => $self->category->code,
-    });
+    return get_contract_specifics(
+        BOM::Platform::Runtime->instance->get_offerings_config,
+        ,{
+            underlying_symbol => $self->underlying->symbol,
+            barrier_category  => $self->barrier_category,
+            expiry_type       => $self->expiry_type,
+            start_type        => $self->start_type,
+            contract_category => $self->category->code,
+        });
 }
 
 sub _build_barrier_category {
@@ -1637,9 +1639,9 @@ sub _build_staking_limits {
 
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
     my $payout_min =
-        ($self->underlying->market->name eq 'volidx')
-        ? $bet_limits->{min_payout}->{volidx}->{$curr}
-        : $bet_limits->{min_payout}->{default}->{$curr};
+    ($self->underlying->market->name eq 'volidx')
+    ? $bet_limits->{min_payout}->{volidx}->{$curr}
+    : $bet_limits->{min_payout}->{default}->{$curr};
     my $stake_min = ($self->for_sale) ? $payout_min / 20 : $payout_min / 2;
 
     my $message_to_client_array;
@@ -1652,7 +1654,7 @@ sub _build_staking_limits {
             to_monetary_number_format($stake_min),
             to_monetary_number_format($payout_max));
         $message_to_client_array =
-            ['Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($stake_min), to_monetary_number_format($payout_max)];
+        ['Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($stake_min), to_monetary_number_format($payout_max)];
     }
 
     return {
