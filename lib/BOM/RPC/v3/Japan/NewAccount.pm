@@ -272,7 +272,11 @@ sub set_jp_settings {
     # translation added in bom-backoffice: bin/extra_translations.pl
     my @updated;
 
-    push @updated, [localize('Receive news and special offers'), $args->{email_consent} ? localize("Yes") : localize("No")]
+    push @updated,
+        [
+        localize('Receive news and special offers'),
+        BOM::Platform::User->new({email => $client->email})->email_consent ? localize("Yes") : localize("No"),
+        $args->{email_consent} ? localize("Yes") : localize("No")]
         if exists $args->{email_consent};
 
     $args = $args->{jp_settings};
