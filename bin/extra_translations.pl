@@ -140,7 +140,7 @@ sub add_japan_settings {
 sub add_underlyings {
     my $self = shift;
 
-    my @underlyings = map { create_underlying($_) } Quant::Framework::UnderlyingDB->get_symbols_for(
+    my @underlyings = map { create_underlying($_) } create_underlying_db()->get_symbols_for(
         market           => [Finance::Asset::Market::Registry->all_market_names],
         exclude_disabled => 1
     );
