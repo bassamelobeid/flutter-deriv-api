@@ -6,10 +6,10 @@ use warnings;
 
 use BOM::System::Chronicle;
 use BOM::Platform::Runtime;
-use BOM::Platform::Offerings qw(get_offerings_flyby);
+use LandingCompany::Offerings qw(get_offerings_flyby);
 
 use Quant::Framework::Underlying;
-use Quant::Framework::UnderlyingDB;
+use LandingCompany::UnderlyingDB;
 
 use base qw( Exporter );
 our @EXPORT_OK = qw( create_underlying create_underlying_db );
@@ -36,7 +36,7 @@ sub create_underlying {
 
 sub create_underlying_db {
     my $quant_config = BOM::Platform::Runtime->instance->app_config->quants->underlyings;
-    my $result       = Quant::Framework::UnderlyingDB->instance;
+    my $result       = LandingCompany::UnderlyingDB->instance;
 
     $result->chronicle_reader(BOM::System::Chronicle::get_chronicle_reader);
     $result->chronicle_writer(BOM::System::Chronicle::get_chronicle_writer);
