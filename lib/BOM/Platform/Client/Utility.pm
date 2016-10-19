@@ -7,9 +7,7 @@ use Crypt::CBC;
 use Encode::Detect::Detector;
 use Encode;
 use Crypt::NamedKeys;
-use BOM::Database::DAO::Client;
 use BOM::System::Config;
-use BOM::Platform::Context qw(request);
 
 sub encrypt_secret_answer {
     my $secret_answer = shift;
