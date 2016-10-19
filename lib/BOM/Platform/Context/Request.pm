@@ -3,12 +3,7 @@ package BOM::Platform::Context::Request;
 use Moose;
 use Moose::Util::TypeConstraints;
 
-use JSON;
-use CGI;
 use URL::Encode;
-use Data::Dumper;
-use Try::Tiny;
-use Format::Util::Strings qw( defang_lite );
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Countries;

@@ -5,7 +5,6 @@ use warnings;
 
 use JSON qw(encode_json);
 use BOM::Platform::Account::Real::default;
-use BOM::Platform::Context qw(request);
 use BOM::Platform::Email qw(send_email);
 use BOM::System::Config;
 
