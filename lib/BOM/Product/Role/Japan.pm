@@ -9,6 +9,11 @@ use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 
 my $landing_company = 'japan';
 
+# we do not want to apply this for Japan.
+override apply_market_inefficient_limit => sub {
+    return 0;
+};
+
 =head2 predefined_contracts
 
 Some landing company requires script contract offerings in which we will have pre-set
