@@ -10,6 +10,7 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::Platform::Offerings qw( get_offerings_with_filter );
 
 my $udb = Quant::Framework::UnderlyingDB->new;
+my $offerings_cfg      = BOM::Platform::Runtime->instance->get_offerings_config;
 
 subtest 'Sets match' => sub {
     my %po_to_udb_method = (
@@ -21,7 +22,7 @@ subtest 'Sets match' => sub {
     );
 
     while (my ($po, $udb_method) = each(%po_to_udb_method)) {
-        eq_or_diff([sort(get_offerings_with_filter($po))], [sort $udb->$udb_method], $po . ' list match with UnderlyingDB->' . $udb_method);
+        eq_or_diff([sort(get_offerings_with_filter($offerings_cfg, $po))], [sort $udb->$udb_method], $po . ' list match with UnderlyingDB->' . $udb_method);
 
     }
 };

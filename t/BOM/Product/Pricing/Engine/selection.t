@@ -32,10 +32,11 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 my $mocked_underlying = Test::MockModule->new('Quant::Framework::Underlying');
 $mocked_underlying->mock('spot_tick', sub { return $tick });
+my $offerings_cfg      = BOM::Platform::Runtime->instance->get_offerings_config;
 
 subtest 'test everything' => sub {
     my $expected = YAML::XS::LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/Engine/selection_config.yml');
-    foreach my $symbol (get_offerings_with_filter('underlying_symbol')) {
+    foreach my $symbol (get_offerings_with_filter($offerings_cfg, 'underlying_symbol')) {
         foreach my $ref (@{available_contracts_for_symbol({symbol => $symbol})->{available}}) {
             next if $ref->{contract_category} eq 'spreads';
             my %barriers;

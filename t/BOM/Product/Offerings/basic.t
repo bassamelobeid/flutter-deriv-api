@@ -48,7 +48,9 @@ subtest 'get_offerings_flyby' => sub {
 subtest 'get_offerings_with_filter' => sub {
     throws_ok { get_offerings_with_filter() } qr/output key/, 'output key is required';
 
-    eq_or_diff [sort(get_offerings_with_filter('expiry_type'))], [sort qw(daily intraday tick)], 'Expiry types are set correctly here, too.';
+    my $config = BOM::Platform::Runtime->instance->get_offerings_config;
+
+    eq_or_diff [sort(get_offerings_with_filter($config, 'expiry_type'))], [sort qw(daily intraday tick)], 'Expiry types are set correctly here, too.';
 
     my $filtration = {
         underlying_symbol => 'R_100',
@@ -58,18 +60,18 @@ subtest 'get_offerings_with_filter' => sub {
     };
     my $to = 'contract_type';
 
-    eq_or_diff([sort(get_offerings_with_filter($to, $filtration))], [sort qw(CALL PUT)], 'Full filter match');
+    eq_or_diff([sort(get_offerings_with_filter($config, $to, $filtration))], [sort qw(CALL PUT)], 'Full filter match');
     delete $filtration->{start_type};
-    eq_or_diff([sort(get_offerings_with_filter($to, $filtration))], [sort qw(CALL PUT)], '... same without start_type');
+    eq_or_diff([sort(get_offerings_with_filter($config, $to, $filtration))], [sort qw(CALL PUT)], '... same without start_type');
     delete $filtration->{contract_category};
     eq_or_diff(
-        [sort(get_offerings_with_filter($to, $filtration))],
+        [sort(get_offerings_with_filter($config, $to, $filtration))],
         [sort qw(CALL PUT EXPIRYRANGE EXPIRYMISS ONETOUCH NOTOUCH RANGE SPREADD SPREADU UPORDOWN)],
         '... explodes without a contract category'
     );
     $filtration->{expiry_type} = 'tick';
     eq_or_diff(
-        [sort(get_offerings_with_filter($to, $filtration))],
+        [sort(get_offerings_with_filter($config, $to, $filtration))],
         [sort qw(CALL PUT ASIAND ASIANU DIGITMATCH DIGITDIFF DIGITODD DIGITEVEN DIGITOVER DIGITUNDER)],
         '... and switches up for tick expiries.'
     );

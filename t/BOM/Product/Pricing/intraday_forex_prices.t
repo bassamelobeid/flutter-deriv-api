@@ -36,6 +36,8 @@ my $payout          = 100;
 my $payout_currency = 'GBP';
 my $duration        = 3600;
 
+my $offerings_cfg      = BOM::Platform::Runtime->instance->get_offerings_config;
+
 $at->fill_from_historical_feed({
     underlying   => $underlying,
     ending_epoch => $date_start->epoch,
@@ -56,6 +58,7 @@ my %equal = (
     PUTE  => 1,
 );
 my @ct = grep { !$equal{$_} } get_offerings_with_filter(
+    $offerings_cfg,
     'contract_type',
     {
         underlying_symbol => $underlying->symbol,

@@ -119,17 +119,19 @@ sub get_turnover_limit_parameters {
                 $params->{non_atm} = 1;
             }
 
+            my $config = BOM::Platform::Runtime->instance->get_offerings_config;
+
             if ($_->{market}) {
-                $params->{symbols} = [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {market => $_->{market}})];
+                $params->{symbols} = [map { {n => $_} } get_offerings_with_filter($config, 'underlying_symbol', {market => $_->{market}})];
             } elsif ($_->{submarket}) {
-                $params->{symbols} = [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {submarket => $_->{submarket}})];
+                $params->{symbols} = [map { {n => $_} } get_offerings_with_filter($config, 'underlying_symbol', {submarket => $_->{submarket}})];
             } elsif ($_->{underlying_symbol}) {
                 $params->{symbols} = [{n => $_->{underlying_symbol}}];
             }
 
             if ($_->{contract_category}) {
                 $params->{bet_type} =
-                    [map { {n => $_} } get_offerings_with_filter('contract_type', {contract_category => $_->{contract_category}})];
+                    [map { {n => $_} } get_offerings_with_filter($config, 'contract_type', {contract_category => $_->{contract_category}})];
             }
 
             $params;
@@ -237,14 +239,15 @@ sub get_current_profile_definitions {
         ($currency, $landing_company) = ('USD', 'costarica');
     }
 
-    my @markets = map { Finance::Asset::Market::Registry->get($_) } get_offerings_with_filter('market', {landing_company => $landing_company});
+    my $config = BOM::Platform::Runtime->instance->get_offerings_config;
+    my @markets = map { Finance::Asset::Market::Registry->get($_) } get_offerings_with_filter($config, 'market', {landing_company => $landing_company});
     my $limit_ref = BOM::System::Config::quants->{risk_profile};
 
     my %limits;
     foreach my $market (@markets) {
         my @submarket_list =
             grep { $_->risk_profile }
-            map { Finance::Asset::SubMarket::Registry->get($_) } get_offerings_with_filter('submarket', {market => $market->name});
+            map { Finance::Asset::SubMarket::Registry->get($_) } get_offerings_with_filter($config, 'submarket', {market => $market->name});
         if (@submarket_list) {
             my @list = map { {
                     name           => $_->display_name,

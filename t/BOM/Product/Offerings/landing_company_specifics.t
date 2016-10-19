@@ -260,7 +260,7 @@ subtest 'legal allowed underlyings' => sub {
     );
 
     foreach my $lc (keys %expected_list) {
-        my @got = get_offerings_with_filter('underlying_symbol', {landing_company => $lc});
+        my @got = get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'underlying_symbol', {landing_company => $lc});
         cmp_bag(\@got, $expected_list{$lc}, 'underlying list for ' . $lc);
     }
 };

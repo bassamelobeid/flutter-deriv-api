@@ -31,6 +31,7 @@ my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pri
 my @underlying_symbols = ('frxBROUSD', 'AEX', 'frxXAUUSD', 'RDBEAR', 'RDBULL', 'R_100', 'R_25', 'WLDEUR', 'frxEURSEK', 'frxUSDJPY');
 my $payout_currency    = 'USD';
 my $spot               = 100;
+my $offerings_cfg      = BOM::Platform::Runtime->instance->get_offerings_config;
 
 foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
     Test::BOM::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);
@@ -43,7 +44,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
         underlying => $ul,
         for_date   => $now
     });
-    foreach my $contract_category (grep { not $skip_category{$_} } get_offerings_with_filter('contract_category', {underlying_symbol => $ul->symbol}))
+    foreach my $contract_category (grep { not $skip_category{$_} } get_offerings_with_filter($offerings_cfg, 'contract_category', {underlying_symbol => $ul->symbol}))
     {
         my $category_obj = BOM::Product::Contract::Category->new($contract_category);
         next if not $category_obj->is_path_dependent;
@@ -63,7 +64,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         ),
                     })};
             foreach my $barrier (@barriers) {
-                foreach my $contract_type (get_offerings_with_filter('contract_type', {contract_category => $contract_category})) {
+                foreach my $contract_type (get_offerings_with_filter($offerings_cfg, 'contract_type', {contract_category => $contract_category})) {
                     my $args = {
                         bet_type     => $contract_type,
                         underlying   => $ul,
