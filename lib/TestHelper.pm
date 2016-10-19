@@ -67,6 +67,7 @@ sub reconnect {
     $t->reset_session;
     my $url = "/websockets/$version";
     $t->websocket_ok($url => {});
+    return;
 }
 
 sub test_schema {
