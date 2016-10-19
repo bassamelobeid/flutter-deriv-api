@@ -199,7 +199,7 @@ subtest 'intraday duration contract settlement' => sub {
     ok !$c->entry_tick,       'no entry tick';
     ok !$c->is_valid_to_sell, 'not valid to sell';
     ok $c->missing_market_data, 'missing market data if entry tick is undef after expiry';
-    like($c->primary_validation_error->message, qr/Waiting for entry tick/, 'throws error');
+    like($c->primary_validation_error->message, qr/entry tick is undefined/, 'throws error');
 
     create_ticks([101, $now->epoch + 1, 'R_100']);
     $c = produce_contract($bet_params);
@@ -300,7 +300,7 @@ subtest 'longcode of intraday contracts' => sub {
 
 subtest 'ATM and non ATM switches on sellback' => sub {
     my $now = Date::Utility->new;
-    create_ticks([101, $now->epoch, 'R_100'], [100, $now->epoch + 1, 'R_100'], [100.1, $now->epoch + 2, 'R_100']);
+    create_ticks([101, $now->epoch, 'R_100'], [100, $now->epoch + 1, 'R_100'], [100.1, $now->epoch + 2, 'R_100'], [100, $now->epoch + 3, 'R_100']);
     $bet_params->{duration}     = '15m';
     $bet_params->{date_start}   = $now;
     $bet_params->{date_pricing} = $now->epoch + 2;
@@ -309,6 +309,14 @@ subtest 'ATM and non ATM switches on sellback' => sub {
     is $c->current_spot + 0, 100.1, 'current tick is 100.1';
     is $c->barrier->as_absolute + 0, 100.1, 'barrier is 100.1';
     ok !$c->is_atm_bet, 'not atm bet';
+    #starts atm
+    $bet_params->{barrier} = 'S0P';
+    $bet_params->{date_pricing} = $now->epoch + 3;
+    $c = produce_contract($bet_params);
+    ok $c->is_atm_bet, 'atm contract';
+    ok $c->opposite_contract->supplied_barrier == $c->entry_spot, 'opposite barrier correctly set';
+    ok $c->opposite_contract->barrier->as_absolute == $c->opposite_contract->current_spot, 'barrier identical to spot';
+    ok !$c->opposite_contract->is_atm_bet, 'non atm bet';
 };
 
 sub create_ticks {
