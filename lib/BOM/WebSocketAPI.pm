@@ -422,12 +422,7 @@ sub startup {
                     limits => \%rates_config,
                     getter => sub {
                         my ($service) = @_;
-                        my $hits = $stash->{rate_limitations_hits};
-                        if (!$hits) {
-                            $hits = $stash->{rate_limitations_hits} = {};
-                        }
-                        $hits->{$service} //= [];
-                        return $hits->{$service};
+                        return $stash->{rate_limitations_hits}{$service} //= [];
                     },
                     # we do not need setter, as getter always returns
                     # service hits array from stash.
