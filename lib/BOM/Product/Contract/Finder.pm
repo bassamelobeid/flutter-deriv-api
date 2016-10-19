@@ -33,7 +33,7 @@ sub available_contracts_for_symbol {
         $close = $calendar->closing_on($now)->epoch;
     }
 
-    my $flyby = get_offerings_flyby($landing_company);
+    my $flyby = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $landing_company);
     my @offerings = $flyby->query({underlying_symbol => $symbol});
 
     for my $o (@offerings) {
