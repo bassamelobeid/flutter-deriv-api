@@ -24,15 +24,17 @@ subtest 'test offerings' => sub {
 
 sub test_offerings {
     my ($seek, $symbol, $type, $path, $name) = @_;
+    my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
+
     note("testing $name");
     my $orig = $path->$type();
     $path->$type([$symbol]);
     BOM::Platform::Offerings::_flush_offerings();
-    my %s = map { $_ => 1 } get_offerings_with_filter($seek);
+    my %s = map { $_ => 1 } get_offerings_with_filter($offerings_cfg, $seek);
     ok !$s{$symbol}, "$symbol is not offered";
     $path->$type($orig);
     BOM::Platform::Offerings::_flush_offerings();
-    %s = map { $_ => 1 } get_offerings_with_filter($seek);
+    %s = map { $_ => 1 } get_offerings_with_filter($offerings_cfg, $seek);
     ok $s{$symbol}, "$symbol is offered";
     $path->$type($orig);
 }
