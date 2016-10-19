@@ -7,7 +7,7 @@ use Test::FailWarnings;
 use BOM::Test::Data::Utility::UnitTestRedis;
 
 use BOM::MarketData qw(create_underlying_db);
-use BOM::Platform::Offerings qw( get_offerings_with_filter );
+use LandingCompany::Offerings qw( get_offerings_with_filter );
 
 my $udb = Quant::Framework::UnderlyingDB->new;
 my $offerings_cfg      = BOM::Platform::Runtime->instance->get_offerings_config;

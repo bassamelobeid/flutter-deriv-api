@@ -7,7 +7,7 @@ use Test::More tests => 30;
 use Test::Exception;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Platform::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Offerings qw(get_offerings_with_filter);
 use BOM::Platform::Runtime;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;

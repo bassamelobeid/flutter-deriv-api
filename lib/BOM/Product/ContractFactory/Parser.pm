@@ -22,7 +22,7 @@ Some general utility subroutines related to bet parameters.
 =cut
 
 use Date::Utility;
-use BOM::Platform::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Offerings qw(get_offerings_with_filter);
 use BOM::Platform::Runtime;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;

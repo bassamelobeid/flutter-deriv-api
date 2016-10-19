@@ -2,7 +2,7 @@
 
 use Test::More tests => 1;
 
-use BOM::Platform::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Offerings qw(get_offerings_with_filter);
 use LandingCompany::Registry;
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;

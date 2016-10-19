@@ -4,7 +4,7 @@ use warnings;
 use Test::Most tests => 4;
 use File::Spec;
 use YAML::XS qw(LoadFile);
-use BOM::Platform::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Offerings qw(get_offerings_with_filter);
 use BOM::Market::AggTicks;
 use Date::Utility;
 use BOM::Product::ContractFactory qw( produce_contract );
