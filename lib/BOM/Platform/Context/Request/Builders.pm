@@ -4,47 +4,6 @@ use Moose::Role;
 use CGI::Cookie;
 use Data::Validate::IP;
 
-sub from_cgi {
-    my $args = shift;
-
-    __SetEnvironment();
-
-    if ($args->{http_cookie}) {
-        my %read_cookies = CGI::Cookie->parse($args->{http_cookie});
-        $args->{cookies} //= {};
-        foreach my $cookie (keys %read_cookies) {
-            $args->{cookies}->{$cookie} = $read_cookies{$cookie}->value;
-        }
-
-        delete $args->{http_cookie};
-    }
-
-    my $client_country = lc($main::ENV{'HTTP_CF_IPCOUNTRY'} || 'aq');
-    $client_country = 'aq' if ($client_country eq 'xx');
-    $args->{country_code} = $client_country;
-
-    if (my $client_ip = $main::ENV{'REMOTE_ADDR'}) {
-        $args->{_ip} = $client_ip;
-    }
-
-    if (my $host = $main::ENV{'HTTP_HOST'}) {
-        $host =~ s/:\d+$//;
-        $args->{domain_name} = $host;
-    }
-
-    if (my $start_time = $main::ENV{'REQUEST_STARTTIME'}) {
-        $args->{start_time} = $start_time;
-    }
-
-    if ($0 =~ /bom-backoffice/) {
-        $args->{backoffice} = 1;
-    }
-
-    $args->{from_ui} = 1;
-
-    return BOM::Platform::Context::Request->new($args);
-}
-
 sub from_mojo {
     my $args    = shift;
     my $request = $args->{mojo_request};
@@ -102,9 +61,3 @@ sub __SetEnvironment {
 }
 
 1;
-
-=head1 COPYRIGHT
-
-(c) 2013-, RMG Tech (Malaysia) Sdn Bhd
-
-=cut
