@@ -6,6 +6,7 @@ use warnings;
 use JSON;
 use Scalar::Util qw (looks_like_number);
 use List::MoreUtils qw(last_index);
+use Date::Utility;
 
 use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 use BOM::WebSocketAPI::v3::Wrapper::System;
