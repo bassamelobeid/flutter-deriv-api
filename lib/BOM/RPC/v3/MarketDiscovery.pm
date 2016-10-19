@@ -248,9 +248,12 @@ sub active_symbols {
     if (my $cached_symbols = Cache::RedisDB->get($namespace, $key)) {
         $active_symbols = $cached_symbols;
     } else {
-        my @all_active = get_offerings_with_filter('underlying_symbol', {landing_company => $landing_company_name});
+        my $offerings_config = BOM::Platform::Runtime->instance->get_offerings_config;
+
+        my @all_active = get_offerings_with_filter($offerings_config, 'underlying_symbol', {landing_company => $landing_company_name});
         # symbols would be active if we allow forward starting contracts on them.
         my %forward_starting = map { $_ => 1 } get_offerings_with_filter(
+            $offerings_config,
             'underlying_symbol',
             {
                 landing_company => $landing_company_name,
