@@ -2706,9 +2706,11 @@ sub confirm_validity {
     # This is the default list of validations.
     my @validation_methods = qw(_validate_input_parameters _validate_offerings);
     push @validation_methods, qw(_validate_trading_times _validate_start_and_expiry_date) unless $self->underlying->always_available;
-    push @validation_methods, ('_validate_lifetime', $args->{skip_barrier_validation} ? () : ('_validate_barrier'), '_validate_feed');
-    push @validation_methods, 'validate_price'       unless $self->skips_price_validation;
-    push @validation_methods, '_validate_volsurface' unless $self->volsurface->type eq 'flat';
+    push @validation_methods, '_validate_lifetime';
+    push @validation_methods, '_validate_barrier'                                         unless $args->{skip_barrier_validation};
+    push @validation_methods, '_validate_feed';
+    push @validation_methods, 'validate_price'                                            unless $self->skips_price_validation;
+    push @validation_methods, '_validate_volsurface'                                      unless $self->volsurface->type eq 'flat';
 
     foreach my $method (@validation_methods) {
         if (my $err = $self->$method) {
