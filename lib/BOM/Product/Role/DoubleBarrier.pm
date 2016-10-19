@@ -171,5 +171,4 @@ sub _validate_barrier {
 
     return;
 }
-
 1;
