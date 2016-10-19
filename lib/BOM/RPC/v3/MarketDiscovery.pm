@@ -175,7 +175,9 @@ sub asset_index {
             expiries => sub {
                 my $underlying = shift;
                 my %offered    = %{
-                    get_permitted_expiries({
+                    get_permitted_expiries(
+                        BOM::Platform::Runtime->instance->get_offerings_config,
+                        {
                             underlying_symbol => $underlying->symbol,
                             contract_category => $_->code,
                         })};
