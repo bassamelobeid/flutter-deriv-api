@@ -153,9 +153,10 @@ sub _pricing_channel_for_ask {
 
     delete $args_hash{passthrough};
 
-    $args_hash{language}         = $c->stash('language') || 'EN';
-    $args_hash{price_daemon_cmd} = $price_daemon_cmd;
-    $args_hash{landing_company}  = $c->stash('landing_company_name');
+    $args_hash{language}               = $c->stash('language') || 'EN';
+    $args_hash{price_daemon_cmd}       = $price_daemon_cmd;
+    $args_hash{landing_company}        = $c->stash('landing_company_name');
+    $args_hash{skips_price_validation} = 1;
     my $redis_channel = _serialized_args(\%args_hash);
     my $subchannel = $args->{amount_per_point} // $args->{amount};
 
