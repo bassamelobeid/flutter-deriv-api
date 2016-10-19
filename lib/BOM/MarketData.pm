@@ -41,7 +41,7 @@ sub create_underlying_db {
     $result->chronicle_reader(BOM::System::Chronicle::get_chronicle_reader);
     $result->chronicle_writer(BOM::System::Chronicle::get_chronicle_writer);
     $result->quant_config($quant_config);
-    $result->offerings_flyby(get_offerings_flyby());
+    $result->offerings_flyby(get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config));
 
     return $result;
 
