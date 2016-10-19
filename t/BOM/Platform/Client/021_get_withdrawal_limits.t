@@ -10,17 +10,8 @@ use Math::Round qw( round );
 
 use BOM::Platform::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(update_combined_realtime);
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Account;
-
-# Ensure the GBP/USD exchange rate is what we expect later.
-my $now = Date::Utility->new;
-update_combined_realtime(
-    datetime          => $now,
-    underlying_symbol => 'frxGBPUSD',
-    tick              => {quote => 2},
-);
 
 # create client object
 my $client;

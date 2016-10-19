@@ -4,7 +4,6 @@ use 5.010;
 use strict;
 use warnings;
 
-use Sys::Hostname qw( );
 use URL::Encode;
 use Mail::Sender;
 use HTML::FromText;

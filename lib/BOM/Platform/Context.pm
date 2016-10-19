@@ -14,7 +14,6 @@ use strict;
 use warnings;
 
 use feature 'state';
-use Scalar::Util qw(weaken);
 use Template;
 use Template::Stash;
 use Template::AutoFilter;

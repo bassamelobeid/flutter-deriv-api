@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use List::MoreUtils qw(any);
-use BOM::Platform::Runtime;
 
 sub get_real_acc_opening_type {
     my $args        = shift;
