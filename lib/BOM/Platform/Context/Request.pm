@@ -12,7 +12,7 @@ use Plack::App::CGIBin::Streaming::Request;
 use BOM::Platform::LandingCompany::Registry;
 use Sys::Hostname;
 
-with 'BOM::Platform::Context::Request::Urls', 'BOM::Platform::Context::Request::Builders';
+with 'BOM::Platform::Context::Request::Builders';
 
 has 'cookies' => (
     is => 'ro',
