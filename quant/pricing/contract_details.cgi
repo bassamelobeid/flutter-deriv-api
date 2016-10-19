@@ -57,6 +57,7 @@ if ($broker and $id) {
     my $slippage_price = $details->{price_slippage};
     my $action_type    = $details->{action_type};
     my $order_price    = $details->{order_price};
+    my $prev_tick      = $contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
 
     my $traded_contract = $action_type eq 'buy' ? $contract : $contract->opposite_contract;
     my $discounted_probability = $contract->discounted_probability;
@@ -69,17 +70,18 @@ if ($broker and $id) {
         : die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
 
     @contract_details = (
-        login_id        => $details->{loginid},
-        slippage_price  => $slippage_price // 'NA.',
-        order_type      => $action_type,
-        order_price     => $order_price,
-        trans_id        => $id,
-        short_code      => $contract->shortcode,
-        payout          => $contract->payout,
-        description     => $contract->longcode,
-        ccy             => $details->{currency_code},
-        trade_ask_price => $traded_ask,
-        trade_bid_price => $traded_bid // 'NA. (unsold)',
+        login_id               => $details->{loginid},
+        trans_id               => $id,
+        short_code             => $contract->shortcode,
+        description            => $contract->longcode,
+        ccy                    => $details->{currency_code},
+        order_type             => $action_type,
+        order_price            => $order_price,
+        slippage_price         => $slippage_price // 'NA.',
+        trade_ask_price        => $traded_ask,
+        trade_bid_price        => $traded_bid // 'NA. (unsold)',
+        payout                 => $contract->payout,
+        tick_before_trade_time => $prev_tick,
     );
 }
 my $display = $params{download} ? 'download' : 'display';
