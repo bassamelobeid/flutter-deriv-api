@@ -41,7 +41,7 @@ sub create_account {
         my $company_name = BOM::Platform::Countries->instance->virtual_company_for_country($residence);
 
         $client = BOM::Platform::Client->register_and_return_new_client({
-            broker_code                   => BOM::Platform::LandingCompany::Registry::get($company_name)->broker_codes->[0],
+            broker_code                   => LandingCompany::Registry::get($company_name)->broker_codes->[0],
             client_password               => $password,
             salutation                    => '',
             last_name                     => '',

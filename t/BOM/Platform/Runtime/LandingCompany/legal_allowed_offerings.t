@@ -6,10 +6,10 @@ use warnings;
 use Test::More;
 use Test::FailWarnings;
 
-use BOM::Platform::LandingCompany::Registry;
+use LandingCompany::Registry;
 
 subtest 'legal_allowed_offerings' => sub {
-    my @lc = BOM::Platform::LandingCompany::Registry::all();
+    my @lc = LandingCompany::Registry::all();
     my %expected = (
         iom => 'common',
         malta => 'common',

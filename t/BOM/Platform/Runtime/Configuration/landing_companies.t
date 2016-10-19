@@ -1,11 +1,11 @@
 use Test::Most 0.22 (tests => 5);
 use BOM::Platform::Runtime;
-use BOM::Platform::LandingCompany::Registry;
+use LandingCompany::Registry;
 
-my $lc_registry = BOM::Platform::LandingCompany::Registry->new();
+my $lc_registry = LandingCompany::Registry->new();
 my $cr          = $lc_registry->get('costarica');
 my $cr2         = $lc_registry->get('Binary (C.R.) S.A.');
-isa_ok $cr, 'BOM::Platform::LandingCompany';
+isa_ok $cr, 'LandingCompany';
 is $cr, $cr2, 'Got the same object by short and by name';
 is $cr->name, 'Binary (C.R.) S.A.', "Correct name for landing company";
 
