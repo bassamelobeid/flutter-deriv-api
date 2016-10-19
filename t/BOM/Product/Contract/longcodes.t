@@ -3,12 +3,12 @@
 use strict;
 use warnings;
 
-use Test::Most (tests => 1);
+use Test::Most;
 use Test::FailWarnings;
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
-use BOM::Product::ContractFactory qw( simple_contract_info );
+use BOM::Product::ContractFactory qw( simple_contract_info produce_contract);
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
 subtest 'Proper form' => sub {
@@ -59,5 +59,25 @@ subtest 'Proper form' => sub {
         }
     }
 };
+
+subtest 'longcode from params for forward starting' => sub {
+    my $now = Date::Utility->new('2016-10-19 10:00:00');
+
+    my $c = produce_contract({
+        bet_type => 'CALL',
+        underlying => 'R_100',
+        date_start => $now->plus_time_interval('10m'),
+        date_pricing => $now,
+        duration => '10m',
+        currency => 'USD',
+        barrier => 'S0P',
+        payout => 10,
+    });
+
+    ok $c->is_forward_starting, 'is a forward starting contract';
+    is $c->longcode, 'Win payout if Volatility 100 Index is strictly higher than entry spot at 10 minutes after 2016-10-19 10:10:00 GMT.', 'correct longcode';
+};
+
+done_testing();
 
 1;
