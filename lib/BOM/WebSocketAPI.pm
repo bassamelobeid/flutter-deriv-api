@@ -428,7 +428,6 @@ sub startup {
                     # service hits array from stash.
                 );
                 $stash->{rate_limitations} = $rl;
-                $rl;
             };
         });
 
