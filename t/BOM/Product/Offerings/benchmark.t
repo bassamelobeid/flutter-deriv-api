@@ -3,14 +3,14 @@
 use Test::More tests => 1;
 
 use BOM::Platform::Offerings qw(get_offerings_with_filter);
-use BOM::Platform::LandingCompany::Registry;
+use LandingCompany::Registry;
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
 
 use Time::HiRes;
 
 subtest 'benchmark offerings' => sub {
-    foreach my $lc (map { $_->short } BOM::Platform::LandingCompany::Registry->new->all) {
+    foreach my $lc (map { $_->short } LandingCompany::Registry->new->all) {
         my $before = Time::HiRes::time;
         get_offerings_with_filter('market', {landing_company => $lc});
         my $diff = Time::HiRes::time - $before;

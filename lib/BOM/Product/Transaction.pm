@@ -32,7 +32,7 @@ use BOM::Database::Model::Constants;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::Helper::RejectedTrade;
 use BOM::Platform::Offerings qw/get_offerings_with_filter/;
-use BOM::Platform::LandingCompany::Registry;
+use LandingCompany::Registry;
 use BOM::Database::ClientDB;
 use Finance::Asset::Market::Types;
 
@@ -1230,7 +1230,7 @@ sub __validate_currency {
         );
     }
 
-    if (not BOM::Platform::LandingCompany::Registry::get_by_broker($broker)->is_currency_legal($currency)) {
+    if (not LandingCompany::Registry::get_by_broker($broker)->is_currency_legal($currency)) {
         return Error::Base->cuss(
             -type              => 'IllegalCurrency',
             -mesg              => "Illegal $currency for $broker",
@@ -1595,7 +1595,7 @@ sub __validate_iom_withdrawal_limit {
 
     return if $client->is_virtual;
 
-    my $landing_company = BOM::Platform::LandingCompany::Registry::get_by_broker($client->broker_code);
+    my $landing_company = LandingCompany::Registry::get_by_broker($client->broker_code);
     return if ($landing_company->country ne 'Isle of Man');
 
     my $landing_company_short = $landing_company->short;
@@ -1746,7 +1746,7 @@ sub __validate_jurisdictional_restrictions {
         );
     }
 
-    my $lc = BOM::Platform::LandingCompany::Registry::get_by_broker($loginid);
+    my $lc = LandingCompany::Registry::get_by_broker($loginid);
 
     my %legal_allowed_ct = map { $_ => 1 } @{$lc->legal_allowed_contract_types};
     if (not $legal_allowed_ct{$contract->code}) {
