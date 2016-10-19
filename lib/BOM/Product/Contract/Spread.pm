@@ -44,6 +44,12 @@ has continue_price_stream => (
     default => 0
 );
 
+has _for_sale => (
+    is      => 'rw',
+    isa     => 'Bool',
+    default => 0,
+);
+
 sub BUILD {
     my $self = shift;
 
@@ -297,6 +303,8 @@ sub _build_is_valid_to_buy {
 sub _build_is_valid_to_sell {
     my $self = shift;
 
+    $self->_for_sale(1);
+
     if ($self->is_sold) {
         $self->add_errors({
             message           => 'Contract already sold',
@@ -514,7 +522,7 @@ sub _validate_stop_loss {
         min => 1.5 * $self->spread,
         max => $self->current_spot
     };
-    if ($self->stop_loss < $limits->{min} or $self->stop_loss > $limits->{max}) {
+    if (!$self->_for_sale and ($self->stop_loss < $limits->{min} or $self->stop_loss > $limits->{max})) {
         my ($min, $max, $unit) = $self->_get_min_max_unit(@{$limits}{'min', 'max'});
         my $message_to_client = localize('Stop Loss must be between [_1] and [_2] [_3]', $min, $max, $unit);
         my $message_to_client_array = ['Stop Loss must be between [_1] and [_2] [_3]', $min, $max, $unit];
@@ -543,7 +551,7 @@ sub _validate_stop_profit {
     my $limits = {
         min => 1,
         max => min($self->stop_loss * 5, 1000 / $self->amount_per_point)};
-    if ($self->stop_profit < $limits->{min} or $self->stop_profit > $limits->{max}) {
+    if (!$self->_for_sale and ($self->stop_profit < $limits->{min} or $self->stop_profit > $limits->{max})) {
         my ($min, $max, $unit) = $self->_get_min_max_unit(@{$limits}{'min', 'max'});
         my $message_to_client       = localize('Stop Profit must be between [_1] and [_2] [_3]', $min, $max, $unit);
         my $message_to_client_array = localize('Stop Profit must be between [_1] and [_2] [_3]', $min, $max, $unit);
