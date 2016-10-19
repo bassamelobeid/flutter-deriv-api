@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use BOM::Platform::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Offerings qw(get_offerings_with_filter);
 use BOM::Platform::Runtime;
 
 subtest 'test offerings' => sub {
@@ -29,11 +29,11 @@ sub test_offerings {
     note("testing $name");
     my $orig = $path->$type();
     $path->$type([$symbol]);
-    BOM::Platform::Offerings::_flush_offerings();
+    LandingCompany::Offerings::_flush_offerings();
     my %s = map { $_ => 1 } get_offerings_with_filter($offerings_cfg, $seek);
     ok !$s{$symbol}, "$symbol is not offered";
     $path->$type($orig);
-    BOM::Platform::Offerings::_flush_offerings();
+    LandingCompany::Offerings::_flush_offerings();
     %s = map { $_ => 1 } get_offerings_with_filter($offerings_cfg, $seek);
     ok $s{$symbol}, "$symbol is offered";
     $path->$type($orig);
