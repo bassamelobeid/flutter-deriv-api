@@ -10,13 +10,12 @@ use List::MoreUtils qw(any);
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use Data::Validate::Sanctions qw(is_sanctioned);
 
-use BOM::Platform::Desk;
 use BOM::System::Config;
+use BOM::Platform::Desk;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Client;
-use BOM::Platform::User;
 use BOM::Platform::Account;
 
 sub validate {

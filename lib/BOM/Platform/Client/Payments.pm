@@ -7,7 +7,7 @@ use warnings;
 
 use Try::Tiny;
 use DateTime;
-use List::Util qw(min);
+use List::Util;
 
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 use BOM::Platform::Client::IDAuthentication;
@@ -142,7 +142,7 @@ sub validate_payment {
             my $wd_eur_since_left = $wd_eur_since_limit - $wd_eur_since;
             my $wd_eur_epoch_left = $wd_eur_epoch_limit - $wd_eur_epoch;
 
-            my $wd_eur_left = min($wd_eur_since_left, $wd_eur_epoch_left);
+            my $wd_eur_left = List::Util::min($wd_eur_since_left, $wd_eur_epoch_left);
             my $wd_left = amount_from_to_currency($wd_eur_left, 'EUR', $currency);
 
             # avoids obscure rounding errors after currency conversion
