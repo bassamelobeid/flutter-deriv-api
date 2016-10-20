@@ -27,7 +27,7 @@ use MojoX::JSON::RPC::Client;
 
 use base 'Exporter';
 use vars qw/@EXPORT_OK/;
-@EXPORT_OK = qw/test_schema build_mojo_test build_test_R_50_data create_test_user call_mocked_client/;
+@EXPORT_OK = qw/test_schema build_mojo_test build_test_R_50_data create_test_user call_mocked_client reconnect/;
 
 my ($version) = (__FILE__ =~ m{/(v\d+)/});
 die 'unknown version' unless $version;
@@ -60,6 +60,14 @@ sub build_mojo_test {
     $t->tx->on(json => $callback) if $callback;
 
     return $t;
+}
+
+sub reconnect {
+    my ($t) = @_;
+    $t->reset_session;
+    my $url = "/websockets/$version";
+    $t->websocket_ok($url => {});
+    return;
 }
 
 sub test_schema {
