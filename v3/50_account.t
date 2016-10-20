@@ -14,6 +14,9 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Transaction;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 
 my $t = build_mojo_test({language => 'EN'});
 
@@ -48,7 +51,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     }) for qw(JPY USD JPY-USD);
 
 my $now        = Date::Utility->new('2005-09-21 06:46:00');
-my $underlying = BOM::Market::Underlying->new('R_50');
+my $underlying = create_underlying('R_50');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {

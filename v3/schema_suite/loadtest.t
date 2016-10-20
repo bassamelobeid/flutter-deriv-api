@@ -87,7 +87,7 @@ if (defined $ENV{TRAVIS_DATADOG_API_KEY}) {
     }
 }
 
-cmp_ok($stats{avg}, '>=', 12, 'average time was above the lower limit, i.e. tests are not suspiciously fast');
+cmp_ok($stats{avg}, '>=', 11, 'average time was above the lower limit, i.e. tests are not suspiciously fast');
 cmp_ok($stats{avg}, '<=', 21,
     'average time was below our upper limit, i.e. we think overall test time has not increased to a dangerously high level');
 

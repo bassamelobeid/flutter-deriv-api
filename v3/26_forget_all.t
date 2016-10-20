@@ -55,11 +55,6 @@ for (my $i = 0; $i < 2; $i++) {
     $t->message_ok;
     $res = decode_json($t->message->[1]);
     push @ids, $res->{tick}->{id};
-    ok(
-        ($res->{tick}->{symbol} eq 'R_50' && $res->{tick}->{quote} =~ /\d+\.\d{4,}/)
-            || ($res->{tick}->{symbol} eq 'R_100' && $res->{tick}->{quote} =~ /\d+\.\d{2,}/),
-        'Tick should be pipsized value'
-    );
     $ticks->{$res->{tick}->{symbol}}++;
 }
 

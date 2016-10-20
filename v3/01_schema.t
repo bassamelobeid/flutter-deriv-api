@@ -33,7 +33,7 @@ sub _create_tick {    #creates R_50 tick in redis channel FEED::R_50
 }
 
 my $svr = $ENV{BOM_WEBSOCKETS_SVR} || '';
-my $t = $svr ? Test::Mojo->new : Test::Mojo->new('Binary::WebSocketAPI');
+my $t = $svr ? Test::Mojo->new : Test::Mojo->new('BOM::WebSocketAPI');
 
 $t->websocket_ok("$svr/websockets/v3");
 

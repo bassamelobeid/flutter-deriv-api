@@ -5,7 +5,7 @@ use Test::More;
 use Test::Mojo;
 
 use BOM::Test::Data::Utility::UnitTestRedis;
-use Binary::WebSocketAPI::Hooks;
+use BOM::WebSocketAPI::Hooks;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -17,37 +17,37 @@ my $t = build_mojo_test();
 my $c = $t->app->build_controller;
 # no limit for ping or time
 for (1 .. 500) {
-    ok(not Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'ping', 0));
-    ok(not Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'time', 0));
+    ok(not BOM::WebSocketAPI::Hooks::reached_limit_check($c, 'ping', 0));
+    ok(not BOM::WebSocketAPI::Hooks::reached_limit_check($c, 'time', 0));
 }
 
 # high real account buy sell pricing limit
 for (1 .. 1320) {
-    ok(not Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'buy',                    1));
-    ok(not Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'sell',                   1));
-    ok(not Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal',               1));
-    ok(not Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal_open_contract', 1));
+    ok(not BOM::WebSocketAPI::Hooks::reached_limit_check($c, 'buy',                    1));
+    ok(not BOM::WebSocketAPI::Hooks::reached_limit_check($c, 'sell',                   1));
+    ok(not BOM::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal',               1));
+    ok(not BOM::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal_open_contract', 1));
 }
 
 # proposal for the rest if limited
 for (1 .. 1320) {
-    ok(not Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal', 0));
+    ok(not BOM::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal', 0));
 }
-ok(Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal', 0)) or die "here";
+ok(BOM::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal', 0)) or die "here";
 
 # porfolio is even more limited for the rest if limited
 {
     my $i = 0;
     my $failed;
     while ($i < 5000) {
-        $failed = $_ for grep Binary::WebSocketAPI::Hooks::reached_limit_check(1, $_, 0), qw(portfolio profit_table);
+        $failed = $_ for grep BOM::WebSocketAPI::Hooks::reached_limit_check(1, $_, 0), qw(portfolio profit_table);
         last if $failed;
         ++$i;
     }
     is($i, 660, 'rate limiting for portfolio happened after expected number of iterations');
 }
-ok(Binary::WebSocketAPI::Hooks::reached_limit_check(1, 'portfolio',    0));
-ok(Binary::WebSocketAPI::Hooks::reached_limit_check(1, 'profit_table', 0));
+ok(BOM::WebSocketAPI::Hooks::reached_limit_check(1, 'portfolio',    0));
+ok(BOM::WebSocketAPI::Hooks::reached_limit_check(1, 'profit_table', 0));
 
 # portfolio for connection number 1 is limited but then if it is another connections (number 2), it goes OK.
 # for new controller/user we'll have new stash, hence check should pass
