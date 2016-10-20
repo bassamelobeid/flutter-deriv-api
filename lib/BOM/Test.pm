@@ -62,11 +62,10 @@ BEGIN {
     my $test_data_dir = abs_path("$file_path../../data");
     my $config_dir    = $test_data_dir . '/config';
 
+    ## no critic (Variables::RequireLocalizedPunctuationVars)
     $ENV{WEBSOCKET_API_REPO_PATH} = '/home/git/regentmarkets/binary-websocket-api';
-    
-    if (on_qa()) {
-        ## no critic (Variables::RequireLocalizedPunctuationVars)
 
+    if (on_qa()) {
         # Redis rand and replicated servers config
         $ENV{BOM_TEST_REDIS_REPLICATED} = $config_dir . '/redis-replicated.yml';
         $ENV{BOM_TEST_REDIS_RAND}       = $config_dir . '/redis.yml';
