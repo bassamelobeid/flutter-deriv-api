@@ -13,8 +13,6 @@ use BOM::WebSocketAPI;
 use Mojo::Server::Daemon;
 use Net::EmptyPort qw/empty_port/;
 
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-
 SKIP: {
     skip "need further investigation, why sometimes it reports memory leaks";
 

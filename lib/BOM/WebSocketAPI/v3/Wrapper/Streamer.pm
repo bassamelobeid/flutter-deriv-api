@@ -6,11 +6,10 @@ use warnings;
 use JSON;
 use Scalar::Util qw (looks_like_number);
 use List::MoreUtils qw(last_index);
+use Date::Utility;
 
 use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 use BOM::WebSocketAPI::v3::Wrapper::System;
-use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use Time::HiRes qw(gettimeofday);
@@ -96,11 +95,6 @@ sub ticks_history {
                     my $channel = $args->{ticks_history} . ';' . $publish;
                     $channel .= ";" . $args->{req_id} if exists $args->{req_id};
                     my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
-
-                    # stash display_decimals
-                    if (my $to_stash = delete $rpc_response->{stash}) {
-                        $c->stash(%$to_stash);
-                    }
 
                     # check for cached data
                     if (exists $feed_channel_cache->{$channel} and scalar(keys %{$feed_channel_cache->{$channel}})) {
@@ -190,12 +184,11 @@ sub process_realtime_events {
                 return;
             }
 
-            my $display_decimals = $c->stash("${symbol}_display_decimals") // create_underlying($symbol)->display_decimals;
             my $tick = {
                 id     => $feed_channels_type->{$channel}->{uuid},
                 symbol => $symbol,
                 epoch  => $m[1],
-                quote  => sprintf('%.' . $display_decimals . 'f', $m[2])};
+                quote  => $m[2]};
 
             if ($cache) {
                 $feed_channel_cache->{$channel}->{$m[1]} = $tick;
@@ -216,8 +209,6 @@ sub process_realtime_events {
                 return;
             }
 
-            my $display_decimals = $c->stash("${symbol}_display_decimals") // create_underlying($symbol)->display_decimals;
-            my $quote_format = '%.' . $display_decimals . 'f';
             $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
             my $ohlc = {
                 id        => $feed_channels_type->{$channel}->{uuid},
@@ -227,10 +218,11 @@ sub process_realtime_events {
                 : $m[1] - $m[1] % 60,    #defining default granularity
                 symbol      => $symbol,
                 granularity => $type,
-                open        => sprintf($quote_format, $1),
-                high        => sprintf($quote_format, $2),
-                low         => sprintf($quote_format, $3),
-                close       => sprintf($quote_format, $4)};
+                open        => $1,
+                high        => $2,
+                low         => $3,
+                close       => $4
+            };
 
             if ($cache) {
                 $feed_channel_cache->{$channel}->{$m[1]} = $ohlc;
