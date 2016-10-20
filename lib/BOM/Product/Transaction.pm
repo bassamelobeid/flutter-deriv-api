@@ -1402,7 +1402,11 @@ sub _validate_sell_pricing_adjustment {
                     details                 => JSON::to_json({
                             order_price      => $self->price,
                             recomputed_price => $contract->bid_price,
-                            slippage         => $slippage
+                            slippage         => $slippage,
+                            option_type      => $contract->code,
+                            currency_pair    => $contract->underlying->symbol,
+                            expiry           => $contract->barrier->as_absolute,
+                            payout           => $contract->payout
                         }
                     ),
                     db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
@@ -1492,7 +1496,12 @@ sub _validate_trade_pricing_adjustment {
                     details     => JSON::to_json({
                             order_price      => $self->price,
                             recomputed_price => $contract->ask_price,
-                            slippage         => $slippage
+                            slippage         => $slippage,
+                            option_type      => $contract->code,
+                            currency_pair    => $contract->underlying->symbol,
+                            ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
+                            expiry => $contract->barrier->as_absolute,
+                            payout => $contract->payout
                         }
                     ),
                     db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
