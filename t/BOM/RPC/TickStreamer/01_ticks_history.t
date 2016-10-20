@@ -184,6 +184,7 @@ subtest '_validate_start_end' => sub {
     $params->{args}->{count}       = 4000;
     $params->{args}->{granularity} = 5;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    is substr($result->{data}->{candles}->[-3]->{low}, -1), '0', 'Quote with zero at end should be pipsized';
     is @{$result->{data}->{candles}}, 3941, 'It should return 3941 candle (due to misisng ticks)';
     is $result->{data}->{candles}->[0]->{epoch}, $now->epoch - (4000 * 5), 'It should start at ' . (4000 * 5) . 's from end';
 
@@ -192,6 +193,7 @@ subtest '_validate_start_end' => sub {
     $params->{args}->{start}         = $now->minus_time_interval('1h30m')->epoch;
     $params->{args}->{end}           = $now->plus_time_interval('1d')->epoch;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    is substr($rpc_ct->result->{data}->{history}->{prices}->[-5], -1), '0', 'Quote with zero at end should be pipsized';
     is $rpc_ct->result->{data}->{history}->{times}->[-1], $now->epoch - create_underlying('HSI')->delay_amount * 60,
         'It should return last licensed tick for delayed symbol';
     my $ticks_count_without_adjust_time = @{$rpc_ct->result->{data}->{history}->{times}};
