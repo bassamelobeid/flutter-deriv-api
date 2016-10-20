@@ -11,7 +11,7 @@ use File::Slurp;
 use Data::Dumper;
 use Date::Utility;
 
-use Binary::WebSocketAPI;
+use BOM::WebSocketAPI;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -49,7 +49,7 @@ sub build_mojo_test {
     $url .= '?' . join('&', @query_params) if @query_params;
 
     my $port   = empty_port;
-    my $app    = Binary::WebSocketAPI->new;
+    my $app    = BOM::WebSocketAPI->new;
     my $daemon = Mojo::Server::Daemon->new(
         app    => $app,
         listen => ["http://127.0.0.1:$port"],

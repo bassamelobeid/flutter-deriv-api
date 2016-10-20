@@ -49,21 +49,6 @@ unless ($pid) {
     exit;
 }
 
-for (my $i = 0; $i < 4; $i++) {
-    $t->message_ok;
-    $res = decode_json($t->message->[1]);
-    ok(
-        ($res->{tick}->{symbol} eq 'R_50' && $res->{tick}->{quote} =~ /\d+\.\d{4,}/)
-            || ($res->{tick}->{symbol} eq 'R_100' && $res->{tick}->{quote} =~ /\d+\.\d{2,}/),
-        'Tick should be pipsized value'
-    );
-    $ticks->{$res->{tick}->{symbol}}++;
-}
-
-my $count;
-$count += $_ for values %$ticks;
-is $count, 4, 'Should recieved 4 ticks';
-
 $t->send_ok({json => {ticks => 'R_50'}})->message_ok;
 $res = decode_json($t->message->[1]);
 is $res->{error}->{code}, 'AlreadySubscribed', 'Should return already subscribed error';
