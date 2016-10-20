@@ -3,7 +3,6 @@ package BOM::WebSocketAPI::Hooks;
 use strict;
 use warnings;
 use Try::Tiny;
-use RateLimitations qw(within_rate_limits);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub start_timing {
@@ -96,7 +95,7 @@ my %rate_limit_map = (
 );
 
 sub reached_limit_check {
-    my ($consumer, $category, $is_real) = @_;
+    my ($c, $category, $is_real) = @_;
 
     my $limiting_service = $rate_limit_map{
         $category . '_'
@@ -105,12 +104,8 @@ sub reached_limit_check {
             ? 'real'
             : 'virtual'
             )} // 'websocket_call';
-    if (
-        $limiting_service
-        and not within_rate_limits({
-                service  => $limiting_service,
-                consumer => $consumer,
-            }))
+    if ($limiting_service
+        and not $c->rate_limitations->within_rate_limits($limiting_service, 'does-not-matter'))
     {
         return 1;
     }
@@ -141,10 +136,9 @@ sub before_forward {
     # For authorized calls that are heavier we will limit based on loginid
     # For unauthorized calls that are less heavy we will use connection id.
     # None are much helpful in a well prepared DDoS.
-    my $consumer = $c->stash('loginid') || $c->stash('connection_id');
     my $is_real = $c->stash('loginid') && !$c->stash('is_virtual');
     my $category = $req_storage->{name};
-    if (reached_limit_check($consumer, $category, $is_real)) {
+    if (reached_limit_check($c, $category, $is_real)) {
         return $c->new_error($category, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $category));
     }
 
