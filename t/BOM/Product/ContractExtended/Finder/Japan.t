@@ -156,7 +156,13 @@ subtest "check_intraday trading_period_JPY" => sub {
             date_start  => [Date::Utility->new('2015-11-23 21:45:00')->epoch],
             date_expiry => [Date::Utility->new('2015-11-23 23:59:59')->epoch],
         },
-        # tues
+        '2015-11-23 23:45:00' => {
+            combination => 4,
+            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-11-23 21:45:00', '2015-11-23 23:45:00',)],
+            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-11-23 23:59:59', '2015-11-24 02:00:00',)],
+        },
+
+       # tues
         '2015-11-24 00:00:00' => {
             combination => 2,
             date_start  => [Date::Utility->new('2015-11-23 23:45:00')->epoch],
@@ -174,12 +180,6 @@ subtest "check_intraday trading_period_JPY" => sub {
             date_start  => [Date::Utility->new('2015-11-24 21:45:00')->epoch],
             date_expiry => [Date::Utility->new('2015-11-24 23:59:59')->epoch],
         },
-        '2015-11-24 23:45:00' => {
-            combination => 4,
-            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-11-24 21:45:00', '2015-11-24 23:45:00',)],
-            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-11-24 23:59:59', '2015-11-25 02:00:00',)],
-        },
-
         # Friday
         '2015-11-27 00:00:00' => {
             combination => 2,
