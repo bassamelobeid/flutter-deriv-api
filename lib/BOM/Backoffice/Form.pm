@@ -755,7 +755,7 @@ sub get_payment_agent_registration_form {
             },
         ],
         comment => {
-            'text' => '** Comma-separated list (no spaces) of: ' . (join ' ', keys %{BOM::Platform::Locale::get_payment_agent_banks()}),
+            'text' => '** Comma-separated list (no spaces) of: ' . (join ' ', _get_payment_agent_banks()),
         }};
 
     # Input field for pa_auth
@@ -877,6 +877,12 @@ sub _select_yes_no {
 
 sub _email_check_regexp {
     return '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$';
+}
+
+# better to maintain the sort order else use sort before returning
+sub _get_payment_agent_banks {
+    return
+        qw(AlertPay Alipay BNI BankBRI CIMBNIAGA DiamondBank EGold FirstBank GTBank GrupBCA ICBC LibertyReserve Mandiri MandiriSyariah MasterCard MoneyGram PayPal PerfectMoney PermataBank SolidTrustPay VISA Verve WeChatPay ZenithBank);
 }
 
 1;
