@@ -1,15 +1,15 @@
-package BOM::WebSocketAPI::v3::Wrapper::Pricer;
+package Binary::WebSocketAPI::v3::Wrapper::Pricer;
 
 use strict;
 use warnings;
 use JSON;
 use Data::Dumper;
 use Format::Util::Numbers qw(roundnear);
-use BOM::WebSocketAPI::v3::Wrapper::System;
+use Binary::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use Time::HiRes qw(gettimeofday tv_interval);
-use BOM::WebSocketAPI::v3::Wrapper::Streamer;
+use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Format::Util::Numbers qw(to_monetary_number_format);
@@ -118,7 +118,7 @@ sub proposal_open_contract {
                     next;
                 } else {
                     # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $account_id,
+                    Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $account_id,
                         $uuid, {contract_id => $contract_id});
                 }
             }
@@ -168,7 +168,7 @@ sub _pricing_channel_for_ask {
     my $redis_channel = _serialized_args(\%args_hash);
     my $subchannel = $args->{amount_per_point} // $args->{amount};
 
-    my $skip = BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args);
+    my $skip = Binary::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args);
 
     # uuid is needed regardless of whether its subscription or not
     return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip);
@@ -207,7 +207,7 @@ sub _create_pricer_channel {
         return;
     }
 
-    my $uuid = &BOM::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string();
+    my $uuid = &Binary::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string();
 
     # subscribe if it is not already subscribed
     if (    exists $args->{subscribe}
@@ -413,7 +413,7 @@ sub send_proposal_open_contract_last_time {
     my $forget_subscr_sub = sub {
         my ($c, $rpc_response) = @_;
         # cancel proposal open contract streaming which will cancel transaction subscription also
-        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $uuid);
+        Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $uuid);
     };
 
     $c->call_rpc({
@@ -454,7 +454,7 @@ sub _create_error_message {
 
     my $error = $response->{error} || {};
     if (not($error->{continue_price_stream}) and $stash_data->{uuid}) {
-        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid});
+        Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid});
     }
 
     if ($response->{error}) {

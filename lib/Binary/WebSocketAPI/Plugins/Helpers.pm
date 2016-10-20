@@ -1,4 +1,4 @@
-package BOM::WebSocketAPI::Plugins::Helpers;
+package Binary::WebSocketAPI::Plugins::Helpers;
 
 use base 'Mojolicious::Plugin';
 
@@ -7,8 +7,8 @@ use warnings;
 use feature "state";
 use Sys::Hostname;
 use YAML::XS;
-use BOM::WebSocketAPI::v3::Wrapper::Streamer;
-use BOM::WebSocketAPI::v3::Wrapper::Pricer;
+use Binary::WebSocketAPI::v3::Wrapper::Streamer;
+use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Locale::Maketext::ManyPluralForms {
     'EN'      => ['Gettext' => '/home/git/binary-com/translations-websockets-api/src/en.po'],
     '*'       => ['Gettext' => '/home/git/binary-com/translations-websockets-api/src/locales/*.po'],
@@ -87,9 +87,9 @@ sub register {
                     message => sub {
                         my ($self, $msg, $channel) = @_;
 
-                        BOM::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($c, $msg, $channel)
+                        Binary::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($c, $msg, $channel)
                             if $channel =~ /^(?:FEED|PricingTable)::/;
-                        BOM::WebSocketAPI::v3::Wrapper::Streamer::process_transaction_updates($c, $msg)
+                        Binary::WebSocketAPI::v3::Wrapper::Streamer::process_transaction_updates($c, $msg)
                             if $channel =~ /^TXNUPDATE::transaction_/;
                     });
                 $c->stash->{redis} = $redis;
@@ -119,7 +119,7 @@ sub register {
                     message => sub {
                         my ($self, $msg, $channel) = @_;
 
-                        BOM::WebSocketAPI::v3::Wrapper::Pricer::process_pricing_events($c, $msg, $channel);
+                        Binary::WebSocketAPI::v3::Wrapper::Pricer::process_pricing_events($c, $msg, $channel);
                     });
                 $c->stash->{redis_pricer} = $redis_pricer;
             }

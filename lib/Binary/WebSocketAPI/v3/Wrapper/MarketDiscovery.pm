@@ -1,4 +1,4 @@
-package BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery;
+package Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery;
 
 use strict;
 use warnings;
