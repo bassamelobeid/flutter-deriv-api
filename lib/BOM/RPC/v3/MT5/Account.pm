@@ -256,9 +256,29 @@ sub mt5_password_change {
                 message_to_client => $status->{error}});
     }
 
-    $status = BOM::MT5::User::password_change({
-            login        => $args->{login},
-            new_password => $args->{new_password}});
+    return _mt5_set_password($args->{login}, $args->{new_password});
+}
+
+sub mt5_password_reset {
+    my $params = shift;
+    my $client = $params->{client};
+    my $args   = $params->{args};
+    my $login  = $args->{login};
+
+    # MT5 login not belongs to user
+    return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $login]);
+
+    return _mt5_set_password($args->{login}, $args->{new_password});
+}
+
+sub _mt5_set_password {
+    my $login        = shift;
+    my $new_password = shift;
+
+    my $status = BOM::MT5::User::password_change({
+        login        => $login,
+        new_password => $new_password
+    });
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5PasswordChangeError',
