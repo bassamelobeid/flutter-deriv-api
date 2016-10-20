@@ -179,7 +179,7 @@ sub run {
             ($receive_file, @template_func) = split(',', $line);
             diag("\nRunning line $counter [$receive_file]\n");
             diag("\nTesting stream [$test_stream_id]\n");
-            my $content = read_file('/home/git/regentmarkets/bom-websocket-api/config/v3/' . $receive_file);
+            my $content = read_file($ENV{WEBSOCKET_API_REPO_PATH} . '/config/v3/' . $receive_file);
             $content = _get_values($content, @template_func);
             die 'wrong stream_id' unless $streams->{$test_stream_id};
             my $result = {};
@@ -192,7 +192,7 @@ sub run {
             $send_file =~ /^(.*)\//;
             my $call = $1;
 
-            my $content = read_file('/home/git/regentmarkets/bom-websocket-api/config/v3/' . $send_file);
+            my $content = read_file($ENV{WEBSOCKET_API_REPO_PATH} . '/config/v3/' . $send_file);
             $content = _get_values($content, @template_func);
             my $req_params = JSON::from_json($content);
 
@@ -234,7 +234,7 @@ sub run {
                 $streams->{$start_stream_id}->{call_name} = $call;
             }
 
-            $content = read_file('/home/git/regentmarkets/bom-websocket-api/config/v3/' . $receive_file);
+            $content = read_file($ENV{WEBSOCKET_API_REPO_PATH} . '/config/v3/' . $receive_file);
 
             $content = _get_values($content, @template_func);
             _test_schema($receive_file, $content, $result, $fail);
