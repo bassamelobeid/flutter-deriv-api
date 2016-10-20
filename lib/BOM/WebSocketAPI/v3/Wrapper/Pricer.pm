@@ -72,7 +72,13 @@ sub proposal_open_contract {
     };
 
     foreach my $contract_id (@contract_ids) {
-        if (exists $response->{$contract_id}->{error}) {
+        if (exists $response->{$contract_id} and not exists $response->{$contract_id}->{shortcode}) {
+            my $error = $c->new_error(
+                'proposal_open_contract',
+                'InvalidProposalOpenContractResponse',
+                $c->l('Sorry, an error occurred while processing your request.'));
+            $c->send({json => $error}, $req_storage);
+        } elsif (exists $response->{$contract_id}->{error}) {
             my $error =
                 $c->new_error('proposal_open_contract', 'ContractValidationError', $c->l($response->{$contract_id}->{error}->{message_to_client}));
             $c->send({json => $error}, $req_storage);
