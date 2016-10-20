@@ -522,7 +522,7 @@ sub _validate_stop_loss {
         min => 1.5 * $self->spread,
         max => $self->current_spot
     };
-    if (!$self->_for_sale and ($self->stop_loss < $limits->{min} or $self->stop_loss > $limits->{max})) {
+    if (not $self->_for_sale and ($self->stop_loss < $limits->{min} or $self->stop_loss > $limits->{max})) {
         my ($min, $max, $unit) = $self->_get_min_max_unit(@{$limits}{'min', 'max'});
         my $message_to_client = localize('Stop Loss must be between [_1] and [_2] [_3]', $min, $max, $unit);
         my $message_to_client_array = ['Stop Loss must be between [_1] and [_2] [_3]', $min, $max, $unit];
@@ -551,7 +551,7 @@ sub _validate_stop_profit {
     my $limits = {
         min => 1,
         max => min($self->stop_loss * 5, 1000 / $self->amount_per_point)};
-    if (!$self->_for_sale and ($self->stop_profit < $limits->{min} or $self->stop_profit > $limits->{max})) {
+    if (not $self->_for_sale and ($self->stop_profit < $limits->{min} or $self->stop_profit > $limits->{max})) {
         my ($min, $max, $unit) = $self->_get_min_max_unit(@{$limits}{'min', 'max'});
         my $message_to_client       = localize('Stop Profit must be between [_1] and [_2] [_3]', $min, $max, $unit);
         my $message_to_client_array = localize('Stop Profit must be between [_1] and [_2] [_3]', $min, $max, $unit);
