@@ -73,6 +73,9 @@ sub proposal_open_contract {
 
     foreach my $contract_id (@contract_ids) {
         if (exists $response->{$contract_id} and not exists $response->{$contract_id}->{shortcode}) {
+            my %copy_req = %$req_storage;
+            delete $copy_req{$_} for qw(in_validator out_validator);
+            warn "undef shortcode req_storage " . Data::Dumper->Dumper(\%copy_req);
             my $error = $c->new_error(
                 'proposal_open_contract',
                 'InvalidProposalOpenContractResponse',
