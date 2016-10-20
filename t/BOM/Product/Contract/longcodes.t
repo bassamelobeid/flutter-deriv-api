@@ -72,6 +72,7 @@ subtest 'longcode from params for forward starting' => sub {
         currency => 'USD',
         barrier => 'S0P',
         payout => 10,
+        fixed_expiry => 1,
     });
 
     ok $c->is_forward_starting, 'is a forward starting contract';
