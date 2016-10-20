@@ -104,7 +104,7 @@ Intraday contract:
    00:00-02:00, 01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00 <break>23:45-02:00, 01:45-04:00, 
 
    For AUDJPY,USDJPY,AUDUSD, it will be 
-    00:00-02:00,01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00<break> 21:45:00, 23:45-02:00,01:45-04:00, 03:45-06:00
+    00:00-02:00,01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00<break> 21:45:00 -23:59:59, 23:45-02:00,01:45-04:00, 03:45-06:00
 
 
 3) Start at 00:45 and expires with durarion of 5 hours and 15 min and spaces the next available trading window by 4 hours.
@@ -153,8 +153,8 @@ sub _predefined_trading_period {
             });
 
             # Previous 2 hours contract should be always available in the first 15 minutes of the next one
-            # (except start of the trading day)
-            if (($now->epoch - $window_2h->{date_start}->{epoch}) / 60 < 15 && $even_hour - 2 >= 0) {
+            # (except start of the trading day and also the first window after the break)
+            if (($now->epoch - $window_2h->{date_start}->{epoch}) / 60 < 15 && $even_hour - 2 >= 0 && $even_hour != 22) {
                 push @$trading_periods,
                     _get_intraday_trading_window({
                         now        => $now,
