@@ -278,7 +278,7 @@ sub startup {
         ['app_get',      {require_auth => 'admin'}],
         ['app_update',   {require_auth => 'admin'}],
         ['app_delete',   {require_auth => 'admin'}],
-        ['oauth_apps',   {require_auth => 'admin'}],
+        ['oauth_apps',   {require_auth => 'read'}],
 
         ['connect_add',  {require_auth => 'admin'}],
         ['connect_del',  {require_auth => 'admin'}],
