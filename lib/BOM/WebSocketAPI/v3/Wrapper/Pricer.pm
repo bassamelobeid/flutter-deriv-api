@@ -77,10 +77,8 @@ sub proposal_open_contract {
             delete $copy_req{$_} for qw(in_validator out_validator);
             $copy_req{loginid} = $c->stash('loginid') if $c->stash('loginid');
             warn "undef shortcode req_storage " . Data::Dumper->Dumper(\%copy_req);
-            my $error = $c->new_error(
-                'proposal_open_contract',
-                'InvalidProposalOpenContractResponse',
-                $c->l('Sorry, an error occurred while processing your request.'));
+            my $error =
+                $c->new_error('proposal_open_contract', 'GetProposalFailure', $c->l('Sorry, an error occurred while processing your request.'));
             $c->send({json => $error}, $req_storage);
         } elsif (exists $response->{$contract_id}->{error}) {
             my $error =
