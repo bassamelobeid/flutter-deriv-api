@@ -62,6 +62,8 @@ BEGIN {
     my $test_data_dir = abs_path("$file_path../../data");
     my $config_dir    = $test_data_dir . '/config';
 
+    $ENV{WEBSOCKET_API_REPO_PATH} = '/home/git/regentmarkets/binary-websocket-api';
+    
     if (on_qa()) {
         ## no critic (Variables::RequireLocalizedPunctuationVars)
 
