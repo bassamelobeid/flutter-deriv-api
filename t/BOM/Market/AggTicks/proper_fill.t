@@ -7,7 +7,6 @@ use Test::FailWarnings;
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Market::AggTicks;
 
-
 use BOM::MarketData qw(create_underlying);
 
 new_ok('BOM::Market::AggTicks');
