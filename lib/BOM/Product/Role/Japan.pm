@@ -125,13 +125,13 @@ sub _subvalidate_single_barrier {
         unless ($matched_barrier) {
             return {
                 message => 'Invalid barrier['
-                . $self->barrier->as_absolute
-                . '] for expiry ['
-                . $self->date_expiry->datetime
-                . '] and contract type['
-                . $self->code
-                . '] for japan at '
-                . $self->date_pricing->datetime . '.',
+                    . $self->barrier->as_absolute
+                    . '] for expiry ['
+                    . $self->date_expiry->datetime
+                    . '] and contract type['
+                    . $self->code
+                    . '] for japan at '
+                    . $self->date_pricing->datetime . '.',
                 message_to_client => localize('Invalid barrier.'),
             };
         }

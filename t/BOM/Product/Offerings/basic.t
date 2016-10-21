@@ -35,8 +35,12 @@ subtest 'get_offerings_flyby' => sub {
     subtest 'example queries' => sub {
         is(scalar $fb->query('"start_type" IS "forward" -> "market"'),          5,  'Forward-starting is offered on 6 markets.');
         is(scalar $fb->query('"expiry_type" IS "tick" -> "underlying_symbol"'), 25, 'Tick expiries are offered on 24 underlyings.');
-        is(scalar get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, 'iom')->query('"contract_category" IS "callput" AND "underlying_symbol" IS "frxUSDJPY"'),
-            12, '12 callput options on frxUSDJPY');
+        is(
+            scalar get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, 'iom')
+                ->query('"contract_category" IS "callput" AND "underlying_symbol" IS "frxUSDJPY"'),
+            12,
+            '12 callput options on frxUSDJPY'
+        );
         is(scalar $fb->query('"exchange_name" IS "RANDOM" -> "underlying_symbol"'), 7, 'Six underlyings trade on the RANDOM exchange');
         is(scalar $fb->query('"market" IS "volidx" -> "underlying_symbol"'),        7, '...out of 6 total random market symbols.');
     };
@@ -85,16 +89,22 @@ subtest 'get_permitted_expiries' => sub {
     my $r100 = get_permitted_expiries($offerings_config, {underlying_symbol => 'R_100'});
 
     eq_or_diff(get_permitted_expiries($offerings_config), {}, 'Get an empty result when no guidance is provided.');
-    eq_or_diff($r100, get_permitted_expiries($offerings_config, {market => 'volidx'}), 'R_100 has the broadest offering, so it matches with the random market');
+    eq_or_diff(
+        $r100,
+        get_permitted_expiries($offerings_config, {market => 'volidx'}),
+        'R_100 has the broadest offering, so it matches with the random market'
+    );
     is $r100->{tick}->{min}, 5, "R_100 has something with 5 tick expiries";
     is $r100->{daily}->{max}->days, 365, "... all the way out to a year.";
 
-    my $fx_tnt = get_permitted_expiries($offerings_config,
+    my $fx_tnt = get_permitted_expiries(
+        $offerings_config,
         {
             market            => 'forex',
             contract_category => 'touchnotouch'
         });
-    my $mp_tnt = get_permitted_expiries($offerings_config,
+    my $mp_tnt = get_permitted_expiries(
+        $offerings_config,
         {
             submarket         => 'minor_pairs',
             contract_category => 'touchnotouch'
@@ -105,7 +115,8 @@ subtest 'get_permitted_expiries' => sub {
     ok !exists $fx_tnt->{tick},     '... nor does forex have tick touches';
     ok !exists $mp_tnt->{tick},     '... especially not on minor_pairs.';
 
-    my $r100_tnt = get_permitted_expiries($offerings_config,
+    my $r100_tnt = get_permitted_expiries(
+        $offerings_config,
         {
             underlying_symbol => 'R_100',
             contract_category => 'touchnotouch'
@@ -113,13 +124,15 @@ subtest 'get_permitted_expiries' => sub {
     ok !exists $r100_tnt->{tick},    'None of which is surprising, since they are not on R_100, either';
     ok exists $r100_tnt->{intraday}, '... but you can play them intraday';
 
-    my $r100_digits_tick = get_permitted_expiries($offerings_config,
+    my $r100_digits_tick = get_permitted_expiries(
+        $offerings_config,
         {
             underlying_symbol => 'R_100',
             contract_category => 'digits',
             expiry_type       => 'tick',
         });
-    my $r100_tnt_tick = get_permitted_expiries($offerings_config,
+    my $r100_tnt_tick = get_permitted_expiries(
+        $offerings_config,
         {
             underlying_symbol => 'R_100',
             contract_category => 'touchnotouch',
@@ -143,9 +156,7 @@ subtest 'get_contract_specifics' => sub {
 
     $params->{barrier_category}  = 'american';
     $params->{underlying_symbol} = 'R_100';
-    my $result = get_contract_specifics(
-        BOM::Platform::Runtime->instance->get_offerings_config,
-        $params);
+    my $result = get_contract_specifics(BOM::Platform::Runtime->instance->get_offerings_config, $params);
 
     ok exists $result->{permitted}, 'and permitted durations';
     ok exists $result->{permitted}->{min}, '... including minimum';

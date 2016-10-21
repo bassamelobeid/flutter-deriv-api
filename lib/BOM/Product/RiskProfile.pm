@@ -240,7 +240,8 @@ sub get_current_profile_definitions {
     }
 
     my $config = BOM::Platform::Runtime->instance->get_offerings_config;
-    my @markets = map { Finance::Asset::Market::Registry->get($_) } get_offerings_with_filter($config, 'market', {landing_company => $landing_company});
+    my @markets =
+        map { Finance::Asset::Market::Registry->get($_) } get_offerings_with_filter($config, 'market', {landing_company => $landing_company});
     my $limit_ref = BOM::System::Config::quants->{risk_profile};
 
     my %limits;

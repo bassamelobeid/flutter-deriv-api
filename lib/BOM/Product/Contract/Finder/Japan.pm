@@ -68,7 +68,7 @@ sub available_contracts_for_symbol {
 sub get_offerings {
     my $symbol = shift;
 
-    my $flyby = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config,'japan');
+    my $flyby = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, 'japan');
 
     my %similar_args = (
         underlying_symbol => $symbol,

@@ -24,7 +24,6 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
-
 my $underlying       = create_underlying('frxUSDJPY');
 my $bet_start        = Date::Utility->new('2012-02-01 01:00:00');
 my $longterm_expiry  = Date::Utility->new($bet_start->epoch + 7 * 86400);

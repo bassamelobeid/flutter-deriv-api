@@ -44,14 +44,15 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
         underlying => $ul,
         for_date   => $now
     });
-    foreach my $contract_category (grep { not $skip_category{$_} } get_offerings_with_filter($offerings_cfg, 'contract_category', {underlying_symbol => $ul->symbol}))
+    foreach my $contract_category (grep { not $skip_category{$_} }
+        get_offerings_with_filter($offerings_cfg, 'contract_category', {underlying_symbol => $ul->symbol}))
     {
         my $category_obj = BOM::Product::Contract::Category->new($contract_category);
         next if not $category_obj->is_path_dependent;
         my @duration = map { $_ * 86400 } (7, 14);
         foreach my $duration (@duration) {
             my @barriers = @{
-            Test::BOM::UnitTestPrice::get_barrier_range({
+                Test::BOM::UnitTestPrice::get_barrier_range({
                         type => ($category_obj->two_barriers ? 'double' : 'single'),
                         underlying => $ul,
                         duration   => $duration,

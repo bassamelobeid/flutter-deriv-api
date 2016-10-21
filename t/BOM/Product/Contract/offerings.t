@@ -57,8 +57,8 @@ subtest 'underlying symbols' => sub {
             if (not $expected{$market}) {
                 fail("market [$market] not found");
             } else {
-                my @underlying_symbols = get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config,
-                    'underlying_symbol', {market => $market});
+                my @underlying_symbols =
+                    get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'underlying_symbol', {market => $market});
                 cmp_bag(\@underlying_symbols, $expected{$market}, 'correct underlying symbol list for [' . $market . ']');
             }
         }

@@ -94,7 +94,7 @@ my %OVERRIDE_LIST = (
     },
 );
 
-my $contract_type_config = LoadFile(File::ShareDir::dist_file('LandingCompany','contract_types.yml'));
+my $contract_type_config = LoadFile(File::ShareDir::dist_file('LandingCompany', 'contract_types.yml'));
 {
     my %loaded = ();
 

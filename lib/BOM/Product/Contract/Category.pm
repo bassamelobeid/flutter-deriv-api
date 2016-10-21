@@ -22,7 +22,7 @@ use YAML::XS qw(LoadFile);
 use namespace::autoclean;
 use BOM::Platform::Context qw(localize);
 
-my $category_config = LoadFile(File::ShareDir::dist_file('LandingCompany','contract_categories.yml'));
+my $category_config = LoadFile(File::ShareDir::dist_file('LandingCompany', 'contract_categories.yml'));
 
 has code => (
     is       => 'ro',

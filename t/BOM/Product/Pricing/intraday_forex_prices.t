@@ -36,7 +36,7 @@ my $payout          = 100;
 my $payout_currency = 'GBP';
 my $duration        = 3600;
 
-my $offerings_cfg      = BOM::Platform::Runtime->instance->get_offerings_config;
+my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
 
 $at->fill_from_historical_feed({
     underlying   => $underlying,
@@ -70,7 +70,7 @@ subtest 'prices without economic events' => sub {
 
     foreach my $contract_type (@ct) {
         my @barriers = @{
-        Test::BOM::UnitTestPrice::get_barrier_range({
+            Test::BOM::UnitTestPrice::get_barrier_range({
                     type       => 'single',
                     underlying => $underlying,
                     duration   => $duration,
@@ -133,7 +133,7 @@ subtest 'prices with economic events' => sub {
                 }]});
     foreach my $contract_type (@ct) {
         my @barriers = @{
-        Test::BOM::UnitTestPrice::get_barrier_range({
+            Test::BOM::UnitTestPrice::get_barrier_range({
                     type       => 'single',
                     underlying => $underlying,
                     duration   => $duration,

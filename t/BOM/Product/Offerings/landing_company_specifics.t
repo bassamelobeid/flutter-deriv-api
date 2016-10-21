@@ -51,7 +51,7 @@ my %expected_market = (
 subtest 'landing_company specifics' => sub {
     lives_ok {
         foreach my $lc (@expected_lc) {
-            my $fb        = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $lc);
+            my $fb = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $lc);
             my @market_lc = $fb->values_for_key('market');
             cmp_bag(\@market_lc, $expected_market{$lc}, 'market list for ' . $lc);
         }
@@ -60,7 +60,7 @@ subtest 'landing_company specifics' => sub {
 
     lives_ok {
         foreach my $lc (@expected_lc) {
-            my $fb      = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $lc);
+            my $fb = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $lc);
             my @type_lc = $fb->values_for_key('contract_type');
             cmp_bag(\@type_lc, $expected_type{$lc}, 'contract type list for ' . $lc);
         }
@@ -124,7 +124,7 @@ subtest 'offerings check' => sub {
         },
     );
     foreach my $testname (keys %test) {
-        my $fb     = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $testname);
+        my $fb = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $testname);
         my $result = $test{$testname};
         foreach my $market (keys %$result) {
             if ($result->{$market}) {

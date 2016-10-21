@@ -20,7 +20,7 @@ use Test::BOM::UnitTestPrice qw(:init);
 my $now = Date::Utility->new('2016-02-01');
 note('Pricing on ' . $now->datetime);
 
-my $offerings_cfg      = BOM::Platform::Runtime->instance->get_offerings_config;
+my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
 my %skip_category = (
     asian   => 1,
     digits  => 1,
@@ -57,7 +57,9 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                 CALLE => 1,
                 PUTE  => 1,
             );
-            foreach my $contract_type (grep { !$equal{$_} } get_offerings_with_filter($offerings_cfg, 'contract_type', {contract_category => $contract_category})) {
+            foreach my $contract_type (grep { !$equal{$_} }
+                get_offerings_with_filter($offerings_cfg, 'contract_type', {contract_category => $contract_category}))
+            {
                 my $args = {
                     bet_type     => $contract_type,
                     underlying   => $ul,

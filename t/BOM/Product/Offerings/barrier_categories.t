@@ -15,7 +15,7 @@ my $udb = Quant::Framework::UnderlyingDB->new;
 subtest 'Sets match' => sub {
 
     my %expected = %{$LandingCompany::Offerings::BARRIER_CATEGORIES};
-    my $config = BOM::Platform::Runtime->instance->get_offerings_config;
+    my $config   = BOM::Platform::Runtime->instance->get_offerings_config;
 
     eq_or_diff(
         [sort(get_offerings_with_filter($config, 'contract_category'))],
@@ -24,7 +24,8 @@ subtest 'Sets match' => sub {
     );
 
     while (my ($cc, $hoped) = each(%expected)) {
-        eq_or_diff([sort(get_offerings_with_filter($config, 'barrier_category', {contract_category => $cc}))], $hoped, '... ' . $cc . ' meets expectations');
+        eq_or_diff([sort(get_offerings_with_filter($config, 'barrier_category', {contract_category => $cc}))],
+            $hoped, '... ' . $cc . ' meets expectations');
 
     }
 };
