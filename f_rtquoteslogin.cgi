@@ -18,6 +18,7 @@ use BOM::Backoffice::Sysinit ();
 use File::ReadBackwards;
 use Date::Utility;
 use List::Util qw/reduce/;
+use Memoize;
 
 BOM::Backoffice::Sysinit::init();
 $Quant::Framework::Underlying::FORCE_REALTIME_FEED = 1;
@@ -32,6 +33,8 @@ sub last_quote {
         or die "can't read $recent: $!";
     return ($recent, $bw->readline);
 }
+
+memoize('last_quote');
 
 sub parse_quote {
     my ($file, $line) = @_;
@@ -78,7 +81,9 @@ print "<LI><font color=F09999>Shadow tick file over 180 seconds</font>";
 print "<LI><font color=FF0000>More than 0.2\% away from combined quote (0.4\% for stocks)</font>";
 print "</UL>";
 
-my @instrumentlist = sort create_underlying_db->get_symbols_for(
+my $ul_db = create_underlying_db();
+
+my @instrumentlist = sort $ul_db->get_symbols_for(
     market => [@all_markets],
 );
 
