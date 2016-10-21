@@ -16,8 +16,12 @@ use BOM::Platform::Runtime;
 use DBIx::TransactionManager::Distributed qw(txn);
 use List::Util qw(first);
 
-my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4");
-my $workers     = 4;
+my $internal_ip     = get("http://169.254.169.254/latest/meta-data/local-ipv4");
+my $workers         = 4;
+my %required_params = (
+    price => [qw(bet_type currency underlying)],
+    bid   => [qw(contract_id short_code currency landing_company)],
+);
 
 GetOptions(
     "workers=i" => \$workers,
@@ -119,7 +123,7 @@ while (1) {
         # If incomplete or invalid keys somehow got into pricer,
         # delete them here.
         unless (_validate_params($params)) {
-            warn "Invalid parameters: " . Data::Dumper->Dumper($params);;
+            warn "Invalid parameters: " . Data::Dumper->Dumper($params);
             $redis->del($key->[1], $next);
             next;
         }
@@ -193,11 +197,6 @@ sub _get_underlying {
 
     return;
 }
-
-my %required_params = (
-    price => [qw(bet_type currency underlying)],
-    bid   => [qw(contract_id short_code currency landing_company)],
-);
 
 sub _validate_params {
     my $params = shift;
