@@ -1,4 +1,4 @@
-# perl-websocket-tests
+# bom-websocket-tests
 
 Websocket API tests
 
