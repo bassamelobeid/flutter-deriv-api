@@ -91,7 +91,7 @@ sub _init {
                         'disabled' => ['sectors'],
                     },
                     'features' => {
-                        'suspend_claim_types' => [],
+                        'suspend_contract_types' => [],
                     },
                     'client_limits' => {
                         'asian_turnover_limit'       => '50000',
