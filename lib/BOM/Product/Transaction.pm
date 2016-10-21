@@ -1405,9 +1405,11 @@ sub _validate_sell_pricing_adjustment {
                             slippage         => $slippage,
                             option_type      => $contract->code,
                             currency_pair    => $contract->underlying->symbol,
-                            barrier          => $contract->barrier->as_absolute,
-                            expiry           => $contract->date_expiry->db_timestamp,
-                            payout           => $contract->payout
+                            ($contract->two_barriers)
+                            ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
+                            : (barriers => $contract->barrier->as_absolute),
+                            expiry => $contract->date_expiry->db_timestamp,
+                            payout => $contract->payout
                         }
                     ),
                     db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
@@ -1501,9 +1503,11 @@ sub _validate_trade_pricing_adjustment {
                             option_type      => $contract->code,
                             currency_pair    => $contract->underlying->symbol,
                             ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
-                            barrier => $contract->barrier->as_absolute,
-                            expiry  => $contract->date_expiry->db_timestamp,
-                            payout  => $contract->payout
+                            ($contract->two_barriers)
+                            ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
+                            : (barriers => $contract->barrier->as_absolute),
+                            expiry => $contract->date_expiry->db_timestamp,
+                            payout => $contract->payout
                         }
                     ),
                     db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
