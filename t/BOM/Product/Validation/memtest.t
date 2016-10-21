@@ -31,7 +31,7 @@ $mocked->mock(
 my $now            = Date::Utility->new;
 my $offerings_cfg  = BOM::Platform::Runtime->instance->get_offerings_config;
 my @contract_types = get_offerings_with_filter($offerings_cfg, 'contract_type');
-my @submarkets     = get_offerings_with_filter('submarket');
+my @submarkets     = get_offerings_with_filter($offerings_cfg, 'submarket');
 my @underlyings =
     map { create_underlying($_) } map { (get_offerings_with_filter($offerings_cfg, 'underlying_symbol', {submarket => $_}))[0] } @submarkets;
 
