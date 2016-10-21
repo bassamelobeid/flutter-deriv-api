@@ -39,7 +39,6 @@ sub get_offerings_config {
 
     my $config_args = {};
 
-    $config_args->{current_revision} = $runtime->app_config->current_revision;
     $config_args->{suspend_trading} = $runtime->app_config->system->suspend->trading;
     $config_args->{suspend_trades} = $runtime->app_config->quants->underlyings->suspend_trades;
     $config_args->{suspend_buy} = $runtime->app_config->quants->underlyings->suspend_buy;
