@@ -123,7 +123,7 @@ sub _ticks {
         limit      => $count,
     });
 
-    return [map { {time => $_->epoch, price => $_->quote} } reverse @$ticks];
+    return [map { {time => $_->epoch, price => $ul->pipsized_value($_->quote)} } reverse @$ticks];
 }
 
 sub _candles {
@@ -194,7 +194,18 @@ sub _candles {
         @all_ohlc = @all_ohlc[-$count .. -1];
     }
 
-    return [map { {epoch => $_->epoch + 0, open => $_->open, high => $_->high, low => $_->low, close => $_->close} } grep { defined $_ } @all_ohlc];
+    return [
+        map { {
+                epoch => $_->epoch + 0,
+                open  => $ul->pipsized_value($_->open),
+                high  => $ul->pipsized_value($_->high),
+                low   => $ul->pipsized_value($_->low),
+                close => $ul->pipsized_value($_->close)}
+            }
+            grep {
+            defined $_
+            } @all_ohlc
+    ];
 }
 
 sub _validate_start_end {
