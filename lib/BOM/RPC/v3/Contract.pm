@@ -23,7 +23,7 @@ use Time::HiRes;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
 sub validate_symbol {
-    my $symbol    = shift;
+    my $symbol = shift;
     my @offerings = get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'underlying_symbol');
     if (!$symbol || none { $symbol eq $_ } @offerings) {
         return {

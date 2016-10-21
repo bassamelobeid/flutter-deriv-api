@@ -31,7 +31,7 @@ use BOM::Database::Model::OAuth;
 my $countries_list;
 
 BEGIN {
-    $countries_list = YAML::XS::LoadFile(File::ShareDir::dist_file('LandingCompany','countries.yml'));
+    $countries_list = YAML::XS::LoadFile(File::ShareDir::dist_file('LandingCompany', 'countries.yml'));
 }
 
 sub _create_oauth_token {

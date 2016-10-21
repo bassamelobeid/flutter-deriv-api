@@ -18,7 +18,7 @@ use BOM::Database::DataMapper::Client;
 my $countries_list;
 
 BEGIN {
-    $countries_list = YAML::XS::LoadFile(File::ShareDir::dist_file('LandingCompany','countries.yml'));
+    $countries_list = YAML::XS::LoadFile(File::ShareDir::dist_file('LandingCompany', 'countries.yml'));
 }
 
 sub mt5_login_list {
