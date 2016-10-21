@@ -34,14 +34,6 @@ sub from_cgi {
         $args->{domain_name} = $host;
     }
 
-    if (my $start_time = $main::ENV{'REQUEST_STARTTIME'}) {
-        $args->{start_time} = $start_time;
-    }
-
-    if ($0 =~ /bom-backoffice/) {
-        $args->{backoffice} = 1;
-    }
-
     $args->{from_ui} = 1;
 
     return BOM::Backoffice::Request::Base->new($args);
