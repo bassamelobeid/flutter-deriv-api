@@ -2195,8 +2195,8 @@ sub _validate_offerings {
     my $underlying    = $self->underlying;
     my $contract_code = $self->code;
     # check if trades are suspended on that claimtype
-    my $suspend_claim_types = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types;
-    if (@$suspend_claim_types and first { $contract_code eq $_ } @{$suspend_claim_types}) {
+    my $suspend_contract_types = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_contract_types;
+    if (@$suspend_contract_types and first { $contract_code eq $_ } @{$suspend_contract_types}) {
         return {
             message           => "Trading suspended for contract type [code: " . $contract_code . "]",
             message_to_client => $message_to_client,
