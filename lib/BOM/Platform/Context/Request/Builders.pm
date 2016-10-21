@@ -29,7 +29,6 @@ sub from_mojo {
     my $client_country = lc($request->headers->header('CF-IPCOUNTRY') || 'aq');
     $client_country = 'aq' if ($client_country eq 'xx');
     $args->{country_code} = $client_country;
-    $args->{from_ui}      = 1;
 
     return BOM::Platform::Context::Request->new($args);
 }

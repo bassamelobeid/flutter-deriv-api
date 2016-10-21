@@ -18,7 +18,7 @@ use Template;
 use Template::Stash;
 use base qw( Exporter );
 
-our @EXPORT_OK = qw( request localize template);
+our @EXPORT_OK = qw(request localize template);
 
 use BOM::Platform::Context::Request;
 use Format::Util::Numbers;

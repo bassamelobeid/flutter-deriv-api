@@ -18,15 +18,6 @@ has 'cookies' => (
     is => 'ro',
 );
 
-has 'params' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-has 'cgi' => (
-    is => 'ro',
-);
-
 has 'mojo_request' => (
     is => 'ro',
 );
@@ -50,12 +41,6 @@ has 'domain_name' => (
 has 'client_ip' => (
     is         => 'ro',
     lazy_build => 1,
-);
-
-# Is the user accessing back office page, Boolean
-has 'backoffice' => (
-    is  => 'ro',
-    isa => 'Bool',
 );
 
 # Country of the user determined by what ever mechanism. Ex. Australia
@@ -104,15 +89,7 @@ has 'default_currency' => (
     lazy_build => 1,
 );
 
-has 'from_ui' => (
-    is => 'ro',
-);
-
 has '_ip' => (
-    is => 'ro',
-);
-
-has 'start_time' => (
     is => 'ro',
 );
 
@@ -134,65 +111,11 @@ sub cookie {
     return;
 }
 
-sub param {
-    my $self = shift;
-    my $name = shift;
-    return $self->params->{$name};
-}
-
-sub _build_params {
-    my $self = shift;
-
-    my $params = {};
-    if (my $request = $self->mojo_request) {
-        $params = $request->params->to_hash;
-    } elsif ($request = $self->cgi) {
-        foreach my $param ($request->param) {
-            my @p = $request->param($param);
-            if (scalar @p > 1) {
-                $params->{$param} = \@p;
-            } else {
-                $params->{$param} = shift @p;
-            }
-        }
-        #Sometimes we also have params on post apart from the post values. Collect them as well.
-        if ($self->http_method eq 'POST') {
-            foreach my $param ($request->url_param) {
-                my @p = $request->url_param($param);
-                if (scalar @p > 1) {
-                    $params->{$param} = \@p;
-                } else {
-                    $params->{$param} = shift @p;
-                }
-            }
-        }
-    }
-
-    #decode all input params to utf-8
-    foreach my $param (keys %{$params}) {
-        if (ref $params->{$param} eq 'ARRAY') {
-            my @values = @{$params->{$param}};
-            $params->{$param} = [];
-            foreach my $value (@values) {
-                $value = Encode::decode('UTF-8', $value) unless Encode::is_utf8($value);
-                push @{$params->{$param}}, $value;
-            }
-        } else {
-            $params->{$param} = Encode::decode('UTF-8', $params->{$param}) unless Encode::is_utf8($params->{$param});
-            $params->{$param} = $params->{$param};
-        }
-    }
-
-    return $params;
-}
-
 sub _build_http_method {
     my $self = shift;
 
     if (my $request = $self->mojo_request) {
         return $request->method;
-    } elsif ($request = $self->cgi) {
-        return $request->request_method;
     }
 
     return "";
