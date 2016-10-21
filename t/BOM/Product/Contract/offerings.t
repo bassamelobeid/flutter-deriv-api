@@ -20,7 +20,7 @@ note('Underlying-Contract offerings on 22-Feb-2016');
 subtest 'markets' => sub {
     my @expected = (qw(forex commodities stocks indices volidx));
     lives_ok {
-        my @markets = get_offerings_with_filter('market');
+        my @markets = get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'market');
         cmp_bag(\@markets, \@expected, 'correct market list');
     }
     'lives through market test';

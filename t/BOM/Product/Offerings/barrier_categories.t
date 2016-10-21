@@ -10,7 +10,7 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::Platform::Runtime;
 use LandingCompany::Offerings qw( get_offerings_with_filter );
 
-my $udb = Quant::Framework::UnderlyingDB->new;
+my $udb = create_underlying_db();
 
 subtest 'Sets match' => sub {
 
