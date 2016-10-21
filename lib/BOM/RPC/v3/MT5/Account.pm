@@ -6,6 +6,7 @@ use warnings;
 use YAML::XS;
 use List::Util qw(any);
 use Try::Tiny;
+use File::ShareDir;
 use Locale::Country::Extra;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Cashier;
@@ -17,7 +18,7 @@ use BOM::Database::DataMapper::Client;
 my $countries_list;
 
 BEGIN {
-    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+    $countries_list = YAML::XS::LoadFile(File::ShareDir::dist_file('LandingCompany','countries.yml'));
 }
 
 sub mt5_login_list {

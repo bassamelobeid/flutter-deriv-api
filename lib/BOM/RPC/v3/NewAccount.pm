@@ -8,6 +8,7 @@ use Try::Tiny;
 use List::MoreUtils qw(any);
 use Data::Password::Meter;
 use Crypt::NamedKeys;
+use File::ShareDir;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 use BOM::RPC::v3::Utility;
@@ -30,7 +31,7 @@ use BOM::Database::Model::OAuth;
 my $countries_list;
 
 BEGIN {
-    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+    $countries_list = YAML::XS::LoadFile(File::ShareDir::dist_file('LandingCompany','countries.yml'));
 }
 
 sub _create_oauth_token {

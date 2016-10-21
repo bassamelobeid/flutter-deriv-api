@@ -14,7 +14,7 @@ use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::Japan::NewAccount;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
-use BOM::Platform::Countries;
+use LandingCompany::Countries;
 use BOM::Platform::Email qw(send_email);
 use LandingCompany::Registry;
 use BOM::Platform::Locale;
@@ -58,7 +58,7 @@ sub landing_company {
     my $params = shift;
 
     my $country  = $params->{args}->{landing_company};
-    my $configs  = BOM::Platform::Countries->instance->countries_list;
+    my $configs  = LandingCompany::Countries->instance->countries_list;
     my $c_config = $configs->{$country};
     unless ($c_config) {
         ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
@@ -506,7 +506,7 @@ sub get_settings {
     $dob_epoch = Date::Utility->new($client->date_of_birth)->epoch if ($client->date_of_birth);
     if ($client->residence) {
         $country_code = $client->residence;
-        $country = BOM::Platform::Countries->instance->countries->localized_code2country($client->residence, $params->{language});
+        $country = LandingCompany::Countries->instance->countries->localized_code2country($client->residence, $params->{language});
     }
 
     my $client_tnc_status = $client->get_status('tnc_approval');
