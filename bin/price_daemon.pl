@@ -19,7 +19,7 @@ use List::Util qw(first);
 my $internal_ip     = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 my $workers         = 4;
 my %required_params = (
-    price => [qw(bet_type currency underlying)],
+    price => [qw(bet_type currency symbol)],
     bid   => [qw(contract_id short_code currency landing_company)],
 );
 
