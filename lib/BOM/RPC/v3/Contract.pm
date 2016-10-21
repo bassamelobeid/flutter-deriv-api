@@ -451,7 +451,7 @@ sub get_contract_details {
         $bet_params = shortcode_to_parameters($params->{short_code}, $params->{currency});
     }
     catch {
-        warn __PACKAGE__ . " get_contract_details shortcode_to_parameters failed: $short_code, currency: $currency";
+        warn __PACKAGE__ . " get_contract_details shortcode_to_parameters failed: $params->{short_code}, currency: $params->{currency}";
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
