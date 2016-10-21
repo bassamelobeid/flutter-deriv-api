@@ -1,11 +1,11 @@
-package BOM::WebSocketAPI::v3::Wrapper::System;
+package Binary::WebSocketAPI::v3::Wrapper::System;
 
 use strict;
 use warnings;
 
 use Scalar::Util qw(looks_like_number);
 
-use BOM::WebSocketAPI::v3::Wrapper::Streamer;
+use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub forget {
     my ($c, $req_storage) = @_;
@@ -73,7 +73,7 @@ sub _forget_transaction_subscription {
         foreach my $type (keys %{$channel}) {
             if ($typeoruuid eq $type or $typeoruuid eq $channel->{$type}->{uuid}) {
                 push @$removed_ids, $channel->{$type}->{uuid};
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
+                Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
             }
         }
     }
@@ -143,17 +143,17 @@ sub _forget_feed_subscription {
             # forget all call sends strings like forget_all: candles|tick|proposal_open_contract
             if ($typeoruuid eq 'candles' and looks_like_number($ftype)) {
                 push @$removed_ids, $subscription->{$channel}->{uuid};
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel_unsubscribe($c, $fsymbol, $ftype, $req_id);
+                Binary::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel_unsubscribe($c, $fsymbol, $ftype, $req_id);
             }
             # . 's' while we are still using ticks in this calls. backward compatibility that must be removed
             elsif (($ftype . 's') =~ /^$typeoruuid/) {
                 push @$removed_ids, $subscription->{$channel}->{uuid};
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel_unsubscribe($c, $fsymbol, $ftype, $req_id);
+                Binary::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel_unsubscribe($c, $fsymbol, $ftype, $req_id);
             }
             # this is condition for forget call where we send unique id forget: id
             elsif ($typeoruuid eq $subscription->{$channel}->{uuid}) {
                 push @$removed_ids, $subscription->{$channel}->{uuid};
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel_unsubscribe($c, $fsymbol, $ftype, $req_id);
+                Binary::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel_unsubscribe($c, $fsymbol, $ftype, $req_id);
             }
         }
     }
@@ -170,7 +170,7 @@ sub forget_buy_proposal {
             my ($symbol, $type, $req_id) = split(";", $channel);
             if ($subscription->{$channel}->{uuid} eq $uuid) {
                 my $args = $subscription->{$channel}->{args};
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel_unsubscribe($c, $symbol, $type, $req_id);
+                Binary::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel_unsubscribe($c, $symbol, $type, $req_id);
                 return $args;
             }
         }

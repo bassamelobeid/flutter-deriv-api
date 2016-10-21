@@ -1,4 +1,4 @@
-package BOM::WebSocketAPI::v3::Wrapper::Streamer;
+package Binary::WebSocketAPI::v3::Wrapper::Streamer;
 
 use strict;
 use warnings;
@@ -8,8 +8,8 @@ use Scalar::Util qw (looks_like_number);
 use List::MoreUtils qw(last_index);
 use Date::Utility;
 
-use BOM::WebSocketAPI::v3::Wrapper::Pricer;
-use BOM::WebSocketAPI::v3::Wrapper::System;
+use Binary::WebSocketAPI::v3::Wrapper::Pricer;
+use Binary::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use Time::HiRes qw(gettimeofday);
@@ -393,7 +393,7 @@ sub process_transaction_updates {
                                         my ($c, $rpc_response, $req_storage) = @_;
 
                                         if (exists $rpc_response->{error}) {
-                                            BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
+                                            Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
                                             return $c->new_error(
                                                 'transaction',
                                                 $rpc_response->{error}->{code},
@@ -424,7 +424,7 @@ sub process_transaction_updates {
                         $payload->{uuid}      = $type;
 
                         # send proposal details last time
-                        BOM::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time($c, $payload);
+                        Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time($c, $payload);
                     }
                 } elsif ($channel and exists $channel->{$type}->{account_id}) {
                     _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
