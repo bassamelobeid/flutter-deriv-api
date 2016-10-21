@@ -68,9 +68,9 @@ subtest 'landing_company specifics' => sub {
     'contract list by landing company';
 
     lives_ok {
-        my $revision = BOM::Platform::Runtime->instance->app_config->current_revision;
+        my $cache_key = LandingCompany::Offerings::_get_config_key(BOM::Platform::Runtime->instance->get_offerings_config);
         foreach my $lc (@expected_lc) {
-            my $fb = Cache::RedisDB->get('OFFERINGS_' . $lc, $revision);
+            my $fb = Cache::RedisDB->get('OFFERINGS_' . $lc, $cache_key);
             my @market_lc = $fb->values_for_key('market');
             cmp_bag(\@market_lc, $expected_market{$lc}, 'market list for ' . $lc);
         }

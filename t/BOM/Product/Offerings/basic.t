@@ -45,7 +45,9 @@ subtest 'get_offerings_flyby' => sub {
         is(scalar $fb->query('"market" IS "volidx" -> "underlying_symbol"'),        7, '...out of 6 total random market symbols.');
     };
 
-    my $cache_obj = Cache::RedisDB->get('OFFERINGS_costarica', BOM::Platform::Runtime->instance->app_config->current_revision);
+    my $cache_key = LandingCompany::Offerings::_get_config_key(BOM::Platform::Runtime->instance->get_offerings_config);
+
+    my $cache_obj = Cache::RedisDB->get('OFFERINGS_costarica', $cache_key);
     isa_ok $cache_obj, 'FlyBy', 'got flyby object for costarica as its default';
 };
 
