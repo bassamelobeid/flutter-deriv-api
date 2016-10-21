@@ -9,7 +9,7 @@ use Test::FailWarnings;
 use LandingCompany::Registry;
 
 subtest 'legal_allowed_offerings' => sub {
-    my @lc = LandingCompany::Registry::all();
+    my @lc       = LandingCompany::Registry::all();
     my %expected = (
         iom             => 'common',
         malta           => 'common',

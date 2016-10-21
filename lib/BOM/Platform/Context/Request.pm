@@ -227,7 +227,7 @@ sub _build_domain_name {
 my $countries_list;
 
 BEGIN {
-    $countries_list = YAML::XS::LoadFile(File::ShareDir::dist_file('LandingCompany','countries.yml'));
+    $countries_list = YAML::XS::LoadFile(File::ShareDir::dist_file('LandingCompany', 'countries.yml'));
 }
 
 sub _build_broker_code {
