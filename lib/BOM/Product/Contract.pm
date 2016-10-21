@@ -189,6 +189,8 @@ sub _build_basis_tick {
     return $basis_tick;
 }
 
+# This attribute tells us if this contract was initially bought as a forward starting contract.
+# This should not be mistaken for is_forwarding_start attribute as that could change over time.
 has starts_as_forward_starting => (
     is      => 'ro',
     default => 0,
@@ -809,8 +811,9 @@ sub _build_longcode {
 
     # When we are building the longcode, we should always take the date_start to date_expiry as duration.
     # Don't use $self->expiry_type because that's use to price a contract at effective_start time.
+    my $forward_starting_contract = ($self->starts_as_forward_starting or $self->is_forward_starting);
     my $expiry_type = $self->tick_expiry ? 'tick' : $self->_check_is_intraday($self->date_start) == 0 ? 'daily' : 'intraday';
-    $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $self->starts_as_forward_starting and $self->fixed_expiry;
+    $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $forward_starting_contract and $self->fixed_expiry;
     my $localizable_description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
 
     my ($when_end, $when_start);
@@ -819,7 +822,7 @@ sub _build_longcode {
         $when_start = '';
     } elsif ($expiry_type eq 'intraday') {
         $when_end = $self->get_time_to_expiry({from => $self->date_start})->as_string;
-        $when_start = $self->starts_as_forward_starting ? $self->date_start->db_timestamp . ' GMT' : localize('contract start time');
+        $when_start = ($forward_starting_contract) ? $self->date_start->db_timestamp . ' GMT' : localize('contract start time');
     } elsif ($expiry_type eq 'daily') {
         my $close = $self->underlying->calendar->closing_on($self->date_expiry);
         if ($close and $close->epoch != $self->date_expiry->epoch) {
