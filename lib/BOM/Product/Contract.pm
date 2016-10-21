@@ -202,11 +202,16 @@ has [
     lazy_build => 1,
     );
 
+# Is this contract meant to be ATM or non ATM at start.
+# The status will not change throughout the lifetime of the contract due to differences in offerings for ATM and non ATM contracts.
 sub _build_is_atm_bet {
     my $self = shift;
 
-    # If more euro_atm options are added, use something like Offerings to replace static 'callput'
-    return ($self->category->code eq 'callput' and defined $self->barrier and $self->barrier->pip_difference == 0) ? 1 : 0;
+    return 0 if $self->two_barriers;
+    # if not defined, it is non ATM
+    return 0 if not defined $self->supplied_barrier;
+    return 0 if $self->supplied_barrier !~ /^S0P$/;
+    return 1;
 }
 
 sub _build_expiry_daily {
@@ -720,7 +725,10 @@ sub _build_opposite_contract {
     if (not $self->is_forward_starting) {
         if ($self->entry_tick) {
             foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-                $opp_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
+                if (defined $self->$barrier) {
+                    $opp_parameters{$barrier} = $self->$barrier->as_absolute;
+                    $opp_parameters{'supplied_' . $barrier} = $self->$barrier->as_absolute;
+                }
             }
         }
         # We should be looking to move forward in time to a bet starting now.
@@ -729,7 +737,6 @@ sub _build_opposite_contract {
         # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
         # Currently, 'sell at market' button will appear when current spot == barrier when the duration
         # of the contract is less than the minimum duration of non ATM contract.
-        $opp_parameters{is_atm_bet} = 0 if ($self->category_code eq 'callput');
     }
 
     # Always switch out the bet type for the other side.
@@ -2708,9 +2715,11 @@ sub confirm_validity {
     # This is the default list of validations.
     my @validation_methods = qw(_validate_input_parameters _validate_offerings);
     push @validation_methods, qw(_validate_trading_times _validate_start_and_expiry_date) unless $self->underlying->always_available;
-    push @validation_methods,
-        ('_validate_lifetime', $args->{skip_barrier_validation} ? () : ('_validate_barrier'), '_validate_feed', 'validate_price');
-    push @validation_methods, '_validate_volsurface' unless $self->volsurface->type eq 'flat';
+    push @validation_methods, '_validate_lifetime';
+    push @validation_methods, '_validate_barrier'                                         unless $args->{skip_barrier_validation};
+    push @validation_methods, '_validate_feed';
+    push @validation_methods, 'validate_price'                                            unless $self->skips_price_validation;
+    push @validation_methods, '_validate_volsurface'                                      unless $self->volsurface->type eq 'flat';
 
     foreach my $method (@validation_methods) {
         if (my $err = $self->$method) {
@@ -2771,6 +2780,11 @@ sub _build_market_is_inefficient {
     return 0 if $hour < $disable_hour;
     return 1;
 }
+
+has skips_price_validation => (
+    is      => 'ro',
+    default => 0,
+);
 
 # Don't mind me, I just need to make sure my attibutes are available.
 with 'BOM::Product::Role::Reportable';
