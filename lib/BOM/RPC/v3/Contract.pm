@@ -112,13 +112,22 @@ sub _get_ask {
     my $p2                    = {%{+shift}};
     my $app_markup_percentage = shift;
     my $streaming_params      = delete $p2->{streaming_params};
+    my ($contract, $response);
 
-    my $response;
+    my $tv = [Time::HiRes::gettimeofday];
+    $p2->{app_markup_percentage} = $app_markup_percentage // 0;
     try {
-        my $tv = [Time::HiRes::gettimeofday];
-        $p2->{app_markup_percentage} = $app_markup_percentage // 0;
-        my $contract = produce_contract($p2);
+        $contract = produce_contract($p2)
+    }
+    catch {
+        warn __PACKAGE__ . " _get_ask produce_contract failed, parameters: " . Dumper($p2);
+        $response = BOM::RPC::v3::Utility::create_error({
+                code              => 'ContractCreationFailure',
+                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+    };
+    return $response if $response;
 
+    try {
         if (!$contract->is_valid_to_buy) {
             my ($message_to_client, $code);
 
@@ -146,13 +155,15 @@ sub _get_ask {
                     });
 
             } else {
+                my $payout = 0;
+                try { $payout = $contract->payout };
                 $response = BOM::RPC::v3::Utility::create_error({
                         continue_price_stream => $contract->continue_price_stream,
                         message_to_client     => $message_to_client,
                         code                  => $code,
                         details               => {
                             display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price)),
-                            payout => sprintf('%.2f', $contract->payout),
+                            payout => sprintf('%.2f', $payout),
                         },
                     });
             }
@@ -210,23 +221,38 @@ sub get_bid {
     my ($short_code, $contract_id, $currency, $is_sold, $sell_time, $buy_price, $sell_price, $app_markup_percentage, $landing_company) =
         @{$params}{qw/short_code contract_id currency is_sold sell_time buy_price sell_price app_markup_percentage landing_company/};
 
-    my $response;
+    my ($response, $contract, $bet_params);
+    my $tv = [Time::HiRes::gettimeofday];
     try {
-        my $tv = [Time::HiRes::gettimeofday];
-        my $bet_params = shortcode_to_parameters($short_code, $currency);
+        $bet_params = shortcode_to_parameters($short_code, $currency);
+    }
+    catch {
+        warn __PACKAGE__ . " get_bid shortcode_to_parameters failed: $short_code, currency: $currency";
+        $response = BOM::RPC::v3::Utility::create_error({
+                code              => 'ContractCreationFailure',
+                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+    };
+    try {
         $bet_params->{is_sold}               = $is_sold;
         $bet_params->{app_markup_percentage} = $app_markup_percentage // 0;
         $bet_params->{landing_company}       = $landing_company;
-        my $contract = produce_contract($bet_params);
+        $contract                            = produce_contract($bet_params);
+    }
+    catch {
+        warn __PACKAGE__ . " get_bid produce_contract failed, parameters: " . Dumper($bet_params);
+        $response = BOM::RPC::v3::Utility::create_error({
+                code              => 'ContractCreationFailure',
+                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+    };
 
-        if ($contract->is_legacy) {
-            $response = BOM::RPC::v3::Utility::create_error({
-                message_to_client => $contract->longcode,
-                code              => "GetProposalFailure"
-            });
-            return;
-        }
+    if ($contract->is_legacy) {
+        return BOM::RPC::v3::Utility::create_error({
+            message_to_client => $contract->longcode,
+            code              => "GetProposalFailure"
+        });
+    }
 
+    try {
         my $is_valid_to_sell = $contract->is_spread ? $contract->is_valid_to_sell : $contract->is_valid_to_sell($params->{validation_params});
 
         $response = {
@@ -420,27 +446,34 @@ sub get_contract_details {
 
     my $client = $params->{client};
 
-    my $response;
+    my ($response, $contract, $bet_params);
     try {
-        my $bet_params = shortcode_to_parameters($params->{short_code}, $params->{currency});
+        $bet_params = shortcode_to_parameters($params->{short_code}, $params->{currency});
+    }
+    catch {
+        warn __PACKAGE__ . " get_contract_details shortcode_to_parameters failed: $short_code, currency: $currency";
+        $response = BOM::RPC::v3::Utility::create_error({
+                code              => 'ContractCreationFailure',
+                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+    };
+    try {
         $bet_params->{app_markup_percentage} = $params->{app_markup_percentage} // 0;
         $bet_params->{landing_company} = $client->landing_company->short;
 
-        my $contract = produce_contract($bet_params);
-
-        $response = {
-            longcode     => $contract->longcode,
-            symbol       => $contract->underlying->symbol,
-            display_name => $contract->underlying->display_name,
-            date_expiry  => $contract->date_expiry->epoch
-        };
+        $contract = produce_contract($bet_params);
     }
     catch {
-        _log_exception(get_contract_details => $_);
+        warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . Dumper($bet_params);
         $response = BOM::RPC::v3::Utility::create_error({
-            message_to_client => localize('Sorry, an error occurred while processing your request.'),
-            code              => "GetContractDetails"
-        });
+                code              => 'ContractCreationFailure',
+                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+    };
+
+    $response = {
+        longcode     => $contract->longcode,
+        symbol       => $contract->underlying->symbol,
+        display_name => $contract->underlying->display_name,
+        date_expiry  => $contract->date_expiry->epoch
     };
     return $response;
 }
