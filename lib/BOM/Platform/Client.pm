@@ -13,7 +13,7 @@ use BOM::System::Config;
 
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Runtime;
-use BOM::Platform::Countries;
+use LandingCompany::Countries;
 use BOM::Platform::User;
 use BOM::Platform::Client::PaymentAgent;
 use BOM::Platform::Client::Payments;
@@ -146,7 +146,7 @@ sub save {
 
 sub check_country_restricted {
     my $country_code = shift;
-    return (BOM::System::Config::on_production() and BOM::Platform::Countries->instance->restricted_country($country_code));
+    return (BOM::System::Config::on_production() and LandingCompany::Countries->instance->restricted_country($country_code));
 }
 
 sub register_and_return_new_client {

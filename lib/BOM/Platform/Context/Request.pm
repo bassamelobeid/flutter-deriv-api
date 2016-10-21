@@ -6,10 +6,11 @@ use Moose::Util::TypeConstraints;
 use URL::Encode;
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Countries;
+use LandingCompany::Countries;
 
 use Plack::App::CGIBin::Streaming::Request;
 use LandingCompany::Registry;
+use File::ShareDir;
 use Sys::Hostname;
 
 with 'BOM::Platform::Context::Request::Urls', 'BOM::Platform::Context::Request::Builders';
@@ -200,7 +201,7 @@ sub _build_http_method {
 
 sub _build_country {
     my $self = shift;
-    return BOM::Platform::Countries->instance->countries->country_from_code($self->country_code);
+    return LandingCompany::Countries->instance->countries->country_from_code($self->country_code);
 }
 
 sub _build_cookie_domain {
@@ -226,7 +227,7 @@ sub _build_domain_name {
 my $countries_list;
 
 BEGIN {
-    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+    $countries_list = YAML::XS::LoadFile(File::ShareDir::dist_file('LandingCompany','countries.yml'));
 }
 
 sub _build_broker_code {
