@@ -3,6 +3,7 @@ package BOM::Database::ClientDB;
 use Moose;
 use feature "state";
 use BOM::Database::Rose::DB;
+use File::ShareDir;
 use YAML::XS qw(LoadFile);
 use JSON::XS;
 
@@ -56,7 +57,8 @@ sub BUILDARGS {
 my $environment;
 
 BEGIN {
-    my $loaded_landing_companies = LoadFile('/home/git/regentmarkets/bom-platform/config/landing_companies.yml');
+
+    my $loaded_landing_companies = LoadFile(File::ShareDir::dist_file('LandingCompany','landing_companies.yml'));
     for my $v (values %$loaded_landing_companies) {
         $environment->{$_} = $v->{short} for @{$v->{broker_codes}};
     }
