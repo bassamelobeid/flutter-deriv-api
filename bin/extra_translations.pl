@@ -7,6 +7,7 @@ with 'App::Base::Script';
 
 use Try::Tiny;
 use IO::File;
+use File::ShareDir;
 use Module::Load::Conditional qw( can_load );
 use Locale::Maketext::Extract;
 
@@ -19,7 +20,6 @@ use BOM::MarketData::Types;
 use BOM::MarketData qw(create_underlying_db);
 use YAML::XS qw(LoadFile);
 
-my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_types.yml');
 
 has file_container => (
     is         => 'ro',
@@ -168,7 +168,7 @@ sub add_contract_types {
 
     my $fh = $self->pot_append_fh;
 
-    my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_types.yml');
+    my $contract_type_config = LoadFile(File::ShareDir::dist_file('LandingCompany','contract_types.yml'));
 
     foreach my $contract_type (keys %{$contract_type_config}) {
         next if ($contract_type eq 'INVALID');
