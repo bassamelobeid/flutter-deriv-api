@@ -15,7 +15,7 @@ subtest 'test offerings' => sub {
     test_offerings('underlying_symbol', 'frxUSDJPY', 'disabled_due_to_corporate_actions', $rt, 'disable due to corporate action');
     test_offerings('market', 'forex', 'disabled', BOM::Platform::Runtime->instance->app_config->quants->markets, 'disable market');
     test_offerings(
-        'contract_type', 'CALL', 'suspend_claim_types',
+        'contract_type', 'CALL', 'suspend_contract_types',
         BOM::Platform::Runtime->instance->app_config->quants->features,
         'disable contract type'
     );
