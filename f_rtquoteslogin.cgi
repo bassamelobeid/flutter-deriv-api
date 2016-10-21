@@ -18,23 +18,30 @@ use BOM::Backoffice::Sysinit ();
 use File::ReadBackwards;
 use Date::Utility;
 use List::Util qw/reduce/;
-use Memoize;
 
 BOM::Backoffice::Sysinit::init();
 $Quant::Framework::Underlying::FORCE_REALTIME_FEED = 1;
 
 my $fullfeed_re = qr/^\d\d?-\w{3}-\d\d.fullfeed(?!\.zip)/;
 
+my $_quotes_cache;
+
 sub last_quote {
     my $dir = shift;
+
+    # check in cache
+    return @{$_quotes_cache->{$dir}} if $_quotes_cache->{$dir};
+
     my $recent = reduce { $a->[1] < $b->[1] ? $a : $b } map { [$_, -M $_] } $dir->children($fullfeed_re);
     $recent = $recent->[0] // die("Cannot find last quote file in $dir");
     my $bw = File::ReadBackwards->new($recent)
         or die "can't read $recent: $!";
-    return ($recent, $bw->readline);
-}
 
-memoize('last_quote');
+    my $line = $bw->readline;
+    # fill cache
+    $_quotes_cache->{$dir} = [$recent, $line];
+    return ($recent, $line);
+}
 
 sub parse_quote {
     my ($file, $line) = @_;
