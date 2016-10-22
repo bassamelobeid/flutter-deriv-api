@@ -38,8 +38,9 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $minus16secs
     }) for qw (frxEURCHF frxUSDJPY frxEURUSD frxAUDJPY);
 
+my $test_symbol = ($now->day_of_week > 0 and $now->day_of_week < 6) ? 'frxUSDJPY' : 'R_100';
 my %date_string = (
-    frxUSDJPY => [$minus5mins->datetime, $minus16secs->datetime],
+    $test_symbol => [$minus5mins->datetime, $minus16secs->datetime],
 );
 
 initialize_realtime_ticks_db();
@@ -94,7 +95,7 @@ subtest 'realtime report generation' => sub {
         my %bet_hash = (
             bet_type          => 'FLASHU',
             relative_barrier  => 'S0P',
-            underlying_symbol => 'frxUSDJPY',
+            underlying_symbol => $test_symbol,
             payout_price      => 100,
             buy_price         => 53,
             purchase_time     => $start_time->datetime_yyyymmdd_hhmmss,
