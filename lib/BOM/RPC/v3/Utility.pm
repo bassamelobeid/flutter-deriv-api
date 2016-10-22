@@ -3,7 +3,6 @@ package BOM::RPC::v3::Utility;
 use strict;
 use warnings;
 
-use RateLimitations;
 use Date::Utility;
 
 use BOM::Database::Model::AccessToken;
@@ -12,6 +11,7 @@ use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
 use BOM::Platform::Token;
 use DataDog::DogStatsd::Helper qw(stats_inc);
+use YAML::XS qw(LoadFile);
 
 sub get_token_details {
     my $token = shift;
@@ -69,27 +69,26 @@ sub permission_error {
 }
 
 sub site_limits {
-    my @services = RateLimitations::rate_limited_services;
+
+    my $rates_file_content = LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml');
+
     my $limits;
     $limits->{max_proposal_subscription} = {
         'applies_to' => 'subscribing to proposal concurrently',
         'max'        => 5
     };
-    my @l = RateLimitations::rate_limits_for_service('websocket_call');
     $limits->{'max_requestes_general'} = {
         'applies_to' => 'rest of calls',
-        'minutely'   => $l[0]->[1],
-        'hourly'     => $l[1]->[1]};
-    @l = RateLimitations::rate_limits_for_service('websocket_call_expensive');
+        'minutely'   => $rates_file_content->{websocket_call}->{'1m'},
+        'hourly'     => $rates_file_content->{websocket_call}->{'1h'}};
     $limits->{'max_requests_outcome'} = {
         'applies_to' => 'portfolio, statement and proposal',
-        'minutely'   => $l[0]->[1],
-        'hourly'     => $l[1]->[1]};
-    @l = RateLimitations::rate_limits_for_service('websocket_call_pricing');
+        'minutely'   => $rates_file_content->{websocket_call_expensive}->{'1m'},
+        'hourly'     => $rates_file_content->{websocket_call_expensive}->{'1h'}};
     $limits->{'max_requests_pricing'} = {
         'applies_to' => 'proposal and proposal_open_contract',
-        'minutely'   => $l[0]->[1],
-        'hourly'     => $l[1]->[1]};
+        'minutely'   => $rates_file_content->{websocket_call_pricing}->{'1m'},
+        'hourly'     => $rates_file_content->{websocket_call_pricing}->{'1h'}};
     return $limits;
 }
 
