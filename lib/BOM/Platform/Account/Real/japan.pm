@@ -187,7 +187,11 @@ sub get_financial_assessment_score {
                 score  => $score,
             };
             # categorize scores into: income_asset_score, trading_experience_score
-            $data->{$input_to_category->{$key}} += $score;
+            if ($input_to_category->{$key} =~ 'income_asset_score') {
+                $data->{$input_to_category->{$key}} += $score;
+            } else {
+                $data->{'trading_experience_score'} += $score;
+            }
             $data->{total_score} += $score;
         }
     }
