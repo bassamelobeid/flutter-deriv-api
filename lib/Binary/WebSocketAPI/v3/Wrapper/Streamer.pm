@@ -148,7 +148,7 @@ sub ticks_history {
                     my $shared_info   = $c->redis_connections($channel_name);
                     my $per_user_info = $shared_info->{per_user}->{$c->stash} //= {};
 
-                    my $feed_channel_type = $per_user_info->{'feed_channel_type'} //= {};
+                    my $feed_channel_type = $c->stash('feed_channel_type') // {};
                     # remove the cache flag which was set during subscription
                     delete $feed_channel_type->{$channel}->{cache} if exists $feed_channel_type->{$channel};
 
@@ -183,8 +183,8 @@ sub process_realtime_events {
         # related users only
         my $c = $per_user_info->{'c'};
 
+        my $feed_channels_type = $c->stash('feed_channel_type') // {};
         my $feed_channel       = $per_user_info->{'feed_channel'}       //= {};
-        my $feed_channels_type = $per_user_info->{'feed_channel_type'}  //= {};
         my $feed_channel_cache = $per_user_info->{'feed_channel_cache'} //= {};
 
         foreach my $channel (keys %{$feed_channels_type}) {
@@ -298,8 +298,8 @@ sub _feed_channel_subscribe {
 
     # keep the controller to send back redis notifications
     $per_user_info->{'c'} = $c;
-    my $feed_channel       = $per_user_info->{'feed_channel'}       //= {};
-    my $feed_channel_type  = $per_user_info->{'feed_channel_type'}  //= {};
+    my $feed_channel = $per_user_info->{'feed_channel'} //= {};
+    my $feed_channel_type = $c->stash('feed_channel_type') // {};
     my $feed_channel_cache = $per_user_info->{'feed_channel_cache'} //= {};
 
     my $key = "$symbol;$type";
@@ -317,6 +317,8 @@ sub _feed_channel_subscribe {
     $feed_channel_type->{$key}->{uuid}  = $uuid;
     $feed_channel_type->{$key}->{cache} = $cache || 0;
 
+    $c->stash('feed_channel_type', $feed_channel_type);
+
     $callback->() if ($invoke_cb);
 
     return $uuid;
@@ -332,8 +334,8 @@ sub _feed_channel_unsubscribe {
     my $user_id       = $c->stash;
     my $per_user_info = $shared_info->{per_user}->{$user_id} //= {};
 
-    my $feed_channel       = $per_user_info->{'feed_channel'}       //= {};
-    my $feed_channel_type  = $per_user_info->{'feed_channel_type'}  //= {};
+    my $feed_channel = $per_user_info->{'feed_channel'} //= {};
+    my $feed_channel_type = $c->stash('feed_channel_type') // {};
     my $feed_channel_cache = $per_user_info->{'feed_channel_cache'} //= {};
 
     $feed_channel->{$symbol} -= 1;
