@@ -857,11 +857,11 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
     my $result;
     warning { $result = $c->call_ok('get_bid', $params) };
 
-    my $wd = (gmtime time)[6];
+    my $wd           = (gmtime time)[6];
     my $skip_weekend = 1
         if ($result->result->{error}
-            and $result->result->{error}->{code} eq 'GetProposalFailure'
-            and ($wd == 0 or $wd == 6));
+        and $result->result->{error}->{code} eq 'GetProposalFailure'
+        and ($wd == 0 or $wd == 6));
 
     SKIP: {
         my $expected_result = {
