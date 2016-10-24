@@ -327,10 +327,7 @@ sub _feed_channel_subscribe {
 sub _feed_channel_unsubscribe {
     my ($c, $symbol, $type, $req_id) = @_;
 
-    my $key = "$symbol;$type";
-    $key .= ";$req_id" if $req_id;
-
-    my $shared_info   = $c->redis_connections($key);
+    my $shared_info   = $c->redis_connections("FEED::$symbol");
     my $user_id       = $c->stash;
     my $per_user_info = $shared_info->{per_user}->{$user_id} //= {};
 
@@ -339,6 +336,9 @@ sub _feed_channel_unsubscribe {
     my $feed_channel_cache = $per_user_info->{'feed_channel_cache'} //= {};
 
     $feed_channel->{$symbol} -= 1;
+
+    my $key = "$symbol;$type";
+    $key .= ";$req_id" if $req_id;
 
     my $args = $feed_channel_type->{$key}->{args};
     my $uuid = $feed_channel_type->{$key}->{uuid};
@@ -354,14 +354,8 @@ sub _feed_channel_unsubscribe {
         delete $shared_info->{per_user}->{$user_id};
     }
     if (!keys %{$shared_info->{per_user} // {}}) {
-        $c->shared_redis->unsubscribe(
-            ["FEED::$symbol"],
-            sub {
-                # may be some dude decided to subscribe to $symbol in the middle
-                if (!keys %{$shared_info->{per_user} // {}}) {
-                    $shared_info->{symbols}->{$symbol} = 0;
-                }
-            });
+        $shared_info->{symbols}->{$symbol} = 0;
+        $c->shared_redis->unsubscribe(["FEED::$symbol"], sub { });
     }
 
     return $uuid;
