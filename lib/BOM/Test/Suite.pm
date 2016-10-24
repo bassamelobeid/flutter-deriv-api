@@ -48,7 +48,7 @@ sub read_file {
 my $ticks_inserted;
 
 sub run {
-    my ($class, $input) = @_;
+    my ($class, $path) = @_;
 
     # When using remapped email addresses, ensure that each call to ->run increments the counter
     ++$global_test_iteration;
@@ -108,9 +108,8 @@ sub run {
             Mojo::Util::_stash(stash => @_);
         });
 
-    my (undef, $file_path, undef) = File::Spec->splitpath(__FILE__);
     my @lines = do {
-        my $path = $file_path . $input;
+        my $path = $path;
         open my $fh, '<:encoding(UTF-8)', $path or die "Could not open $path - $!";
         my @lines = <$fh>;
         close $fh;
@@ -243,6 +242,7 @@ sub run {
         $cumulative_elapsed += $elapsed;
 
         # Stream ID and/or send_file may be undef
+        my ($test_conf_file) = ($path =~ /\/(.+?)$/);
         diag(sprintf "%s:%d [%s] - %.3fs", $input, $counter, join(',', grep { defined } ($test_stream_id, $send_file, $receive_file)), $elapsed);
     }
     diag "Cumulative elapsed time for all steps was ${cumulative_elapsed}s";
