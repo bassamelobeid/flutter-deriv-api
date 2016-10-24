@@ -1594,7 +1594,6 @@ sub _build_offering_specifics {
 
     return get_contract_specifics(
         BOM::Platform::Runtime->instance->get_offerings_config,
-        ,
         {
             underlying_symbol => $self->underlying->symbol,
             barrier_category  => $self->barrier_category,
