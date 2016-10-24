@@ -70,7 +70,7 @@
     },
     "phonePassword": {
       "type": "string",
-      "pattern": "^[ -~]{6,25}$",
+      "pattern": "^[ -~]{0,32}$",
       "description": "the user's phone password."
     },
     "passthrough": {
