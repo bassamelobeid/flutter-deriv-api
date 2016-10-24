@@ -6,7 +6,7 @@ use Data::Dumper;
 use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test call_mocked_client/;
+use BOM::Test::Helper qw/test_schema build_mojo_test call_mocked_client/;
 use Test::MockModule;
 
 use BOM::Database::Model::OAuth;

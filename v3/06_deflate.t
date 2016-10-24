@@ -4,7 +4,7 @@ use Test::More;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/build_mojo_test/;
+use BOM::Test::Helper qw/build_mojo_test/;
 
 ## test without deflate
 my $t = build_mojo_test();

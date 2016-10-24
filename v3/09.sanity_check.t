@@ -8,7 +8,7 @@ use JSON;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test/;
+use BOM::Test::Helper qw/test_schema build_mojo_test/;
 
 use utf8;
 

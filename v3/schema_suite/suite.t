@@ -5,8 +5,8 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../../lib";
 use lib "$Bin";
 
-use Suite;
+use BOM::Test::Suite;
 
-Suite->run('suite.conf');
+BOM::Test::Suite->run('suite.conf');
 done_testing();
 

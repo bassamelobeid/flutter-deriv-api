@@ -12,7 +12,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use Test::MockModule;
 
-use TestHelper qw/test_schema build_mojo_test call_mocked_client/;
+use BOM::Test::Helper qw/test_schema build_mojo_test call_mocked_client/;
 
 initialize_realtime_ticks_db();
 use Finance::Asset;

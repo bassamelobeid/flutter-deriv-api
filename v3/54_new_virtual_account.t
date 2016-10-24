@@ -4,7 +4,7 @@ use Test::More tests => 7;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test call_mocked_client reconnect/;
+use BOM::Test::Helper qw/test_schema build_mojo_test call_mocked_client reconnect/;
 use BOM::Platform::Token;
 use BOM::System::RedisReplicated;
 use List::Util qw(first);
