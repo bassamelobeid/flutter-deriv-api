@@ -65,19 +65,20 @@ sub register {
             };
         });
 
+    # read it once, and share between workers
+    my $chronicle_redis_config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/chronicle.yml')->{read};
+    my $chronicle_redis_url =
+        defined($chronicle_redis_config->{password})
+        ? "redis://dummy:$chronicle_redis_config->{password}\@$chronicle_redis_config->{host}:$chronicle_redis_config->{port}"
+        : "redis://$chronicle_redis_config->{host}:$chronicle_redis_config->{port}";
+
+    # one redis connection per worker, i.e. shared among multiple clients, connected to
+    # the same worker
     $app->helper(
-        redis => sub {
-            my $c = shift;
-
-            if (not $c->stash->{redis}) {
-                state $url = do {
-                    my $cf = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/chronicle.yml')->{read};
-                    defined($cf->{password})
-                        ? "redis://dummy:$cf->{password}\@$cf->{host}:$cf->{port}"
-                        : "redis://$cf->{host}:$cf->{port}";
-                };
-
-                my $redis = Mojo::Redis2->new(url => $url);
+        shared_redis => sub {
+            my ($c) = @_;
+            state $redis = do {
+                my $redis = Mojo::Redis2->new(url => $chronicle_redis_url);
                 $redis->on(
                     error => sub {
                         my ($self, $err) = @_;
@@ -88,7 +89,39 @@ sub register {
                         my ($self, $msg, $channel) = @_;
 
                         Binary::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($c, $msg, $channel)
-                            if $channel =~ /^(?:FEED|PricingTable)::/;
+                            if $channel =~ /^FEED::/;
+                        Binary::WebSocketAPI::v3::Wrapper::Streamer::process_transaction_updates($c, $msg)
+                            if $channel =~ /^TXNUPDATE::transaction_/;
+                    });
+                $redis;
+            };
+            return $redis;
+        });
+
+    my $redis_connections = {};
+    $app->helper(
+        redis_connections => sub {
+            my ($c, $key) = @_;
+            return $redis_connections->{$key} //= {};
+        });
+
+    $app->helper(
+        redis => sub {
+            my $c = shift;
+
+            if (not $c->stash->{redis}) {
+                my $redis = Mojo::Redis2->new(url => $chronicle_redis_url);
+                $redis->on(
+                    error => sub {
+                        my ($self, $err) = @_;
+                        warn("error: $err");
+                    });
+                $redis->on(
+                    message => sub {
+                        my ($self, $msg, $channel) = @_;
+
+                        Binary::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($c, $msg, $channel)
+                            if $channel =~ /^FEED::/;
                         Binary::WebSocketAPI::v3::Wrapper::Streamer::process_transaction_updates($c, $msg)
                             if $channel =~ /^TXNUPDATE::transaction_/;
                     });

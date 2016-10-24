@@ -14,6 +14,7 @@ use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use Time::HiRes qw(gettimeofday);
 use utf8;
+use Try::Tiny;
 
 sub ticks {
     my ($c, $req_storage) = @_;
@@ -143,7 +144,11 @@ sub ticks_history {
                         delete $feed_channel_cache->{$channel};
                     }
 
-                    my $feed_channel_type = $c->stash('feed_channel_type') || {};
+                    my $channel_name  = "FEED::" . $args->{ticks_history};
+                    my $shared_info   = $c->redis_connections($channel_name);
+                    my $per_user_info = $shared_info->{per_user}->{$c->stash} //= {};
+
+                    my $feed_channel_type = $per_user_info->{'feed_channel_type'} //= {};
                     # remove the cache flag which was set during subscription
                     delete $feed_channel_type->{$channel}->{cache} if exists $feed_channel_type->{$channel};
 
@@ -169,77 +174,86 @@ sub ticks_history {
 sub process_realtime_events {
     my ($c, $message, $chan) = @_;
 
-    my @m                  = split(';', $message);
-    my $feed_channels_type = $c->stash('feed_channel_type');
-    my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
+    my @m = split(';', $message);
+    my $shared_info = $c->redis_connections($chan);
 
-    foreach my $channel (keys %{$feed_channels_type}) {
-        my ($symbol, $type, $req_id) = split(";", $channel);
-        my $arguments = $feed_channels_type->{$channel}->{args};
-        my $cache     = $feed_channels_type->{$channel}->{cache};
+    for my $user_id (keys @{$shared_info->{per_user}}) {
+        my $per_user_info = $shared_info->{per_user}->{$user_id};
+        # pick the per-user controller to send-back notifications to
+        # related users only
+        my $c = $per_user_info->{'c'};
 
-        if ($type eq 'tick' and $m[0] eq $symbol) {
-            unless ($c->tx) {
-                _feed_channel_unsubscribe($c, $symbol, $type, $req_id);
-                return;
-            }
+        my $feed_channel       = $per_user_info->{'feed_channel'}       //= {};
+        my $feed_channels_type = $per_user_info->{'feed_channel_type'}  //= {};
+        my $feed_channel_cache = $per_user_info->{'feed_channel_cache'} //= {};
 
-            my $tick = {
-                id     => $feed_channels_type->{$channel}->{uuid},
-                symbol => $symbol,
-                epoch  => $m[1],
-                quote  => $m[2]};
+        foreach my $channel (keys %{$feed_channels_type}) {
+            my ($symbol, $type, $req_id) = split(";", $channel);
+            my $arguments = $feed_channels_type->{$channel}->{args};
+            my $cache     = $feed_channels_type->{$channel}->{cache};
 
-            if ($cache) {
-                $feed_channel_cache->{$channel}->{$m[1]} = $tick;
-            } else {
-                $c->send({
-                        json => {
-                            msg_type => 'tick',
-                            echo_req => $arguments,
-                            (exists $arguments->{req_id})
-                            ? (req_id => $arguments->{req_id})
-                            : (),
-                            tick => $tick
-                        }}) if $c->tx;
-            }
-        } elsif ($m[0] eq $symbol) {
-            unless ($c->tx) {
-                _feed_channel_unsubscribe($c, $symbol, $type, $req_id);
-                return;
-            }
+            if ($type eq 'tick' and $m[0] eq $symbol) {
+                unless ($c->tx) {
+                    _feed_channel_unsubscribe($c, $symbol, $type, $req_id);
+                    next;
+                }
 
-            $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
-            my $ohlc = {
-                id        => $feed_channels_type->{$channel}->{uuid},
-                epoch     => $m[1],
-                open_time => ($type and looks_like_number($type))
-                ? $m[1] - $m[1] % $type
-                : $m[1] - $m[1] % 60,    #defining default granularity
-                symbol      => $symbol,
-                granularity => $type,
-                open        => $1,
-                high        => $2,
-                low         => $3,
-                close       => $4
-            };
+                my $tick = {
+                    id     => $feed_channels_type->{$channel}->{uuid},
+                    symbol => $symbol,
+                    epoch  => $m[1],
+                    quote  => $m[2]};
 
-            if ($cache) {
-                $feed_channel_cache->{$channel}->{$m[1]} = $ohlc;
-            } else {
-                $c->send({
-                        json => {
-                            msg_type => 'ohlc',
-                            echo_req => $arguments,
-                            (exists $arguments->{req_id})
-                            ? (req_id => $arguments->{req_id})
-                            : (),
-                            ohlc => $ohlc
-                        }}) if $c->tx;
+                if ($cache) {
+                    $feed_channel_cache->{$channel}->{$m[1]} = $tick;
+                } else {
+                    $c->send({
+                            json => {
+                                msg_type => 'tick',
+                                echo_req => $arguments,
+                                (exists $arguments->{req_id})
+                                ? (req_id => $arguments->{req_id})
+                                : (),
+                                tick => $tick
+                            }}) if $c->tx;
+                }
+            } elsif ($m[0] eq $symbol) {
+                unless ($c->tx) {
+                    _feed_channel_unsubscribe($c, $symbol, $type, $req_id);
+                    next;
+                }
+
+                $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
+                my $ohlc = {
+                    id        => $feed_channels_type->{$channel}->{uuid},
+                    epoch     => $m[1],
+                    open_time => ($type and looks_like_number($type))
+                    ? $m[1] - $m[1] % $type
+                    : $m[1] - $m[1] % 60,    #defining default granularity
+                    symbol      => $symbol,
+                    granularity => $type,
+                    open        => $1,
+                    high        => $2,
+                    low         => $3,
+                    close       => $4
+                };
+
+                if ($cache) {
+                    $feed_channel_cache->{$channel}->{$m[1]} = $ohlc;
+                } else {
+                    $c->send({
+                            json => {
+                                msg_type => 'ohlc',
+                                echo_req => $arguments,
+                                (exists $arguments->{req_id})
+                                ? (req_id => $arguments->{req_id})
+                                : (),
+                                ohlc => $ohlc
+                            }}) if $c->tx;
+                }
             }
         }
     }
-    $c->stash('feed_channel_cache', $feed_channel_cache);
 
     return;
 }
@@ -247,17 +261,51 @@ sub process_realtime_events {
 sub _feed_channel_subscribe {
     my ($c, $symbol, $type, $args, $callback, $cache) = @_;
 
-    my $feed_channel       = $c->stash('feed_channel')       || {};
-    my $feed_channel_type  = $c->stash('feed_channel_type')  || {};
-    my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
+    my $channel_name = "FEED::$symbol";
+    my $invoke_cb;
+    my $shared_info = $c->redis_connections($channel_name);
 
-    my $key   = "$symbol;$type";
-    my $redis = $c->stash('redis');
+    # we use stash hash ( = stash hash address) as user id,
+    # as we don't want to deal with user_login, user_id, user_email
+    # unauthorized users etc.
+    my $user_id = $c->stash;
+    my $per_user_info = $shared_info->{per_user}->{$user_id} //= {};
 
+    # check that the current worker is already (globally) subscribed
+    if (!$shared_info->{symbols}->{$symbol}) {
+        $c->shared_redis->subscribe(
+            [$channel_name],
+            sub {
+                $shared_info->{symbols}->{$symbol} = 1;
+                while (my $cb = shift($shared_info->{callbacks})) {
+                    # might be an case where client already disconnected before
+                    # successfull redis subscription
+                    try {
+                        $cb->();
+                    }
+                    catch {
+                        warn("callback invocation error during redis subscription to $symbol: $_");
+                    };
+                }
+            });
+        push $shared_info->{callbacks}, $callback if ($callback);
+        warn("To much callbacks in queue ($symbol), possible redis connection issue")
+            if (@{$shared_info->{callbacks}} > 1000);
+    } elsif ($callback) {
+        $invoke_cb = 1;
+    }
+
+    # keep the controller to send back redis notifications
+    $per_user_info->{'c'} = $c;
+    my $feed_channel       = $per_user_info->{'feed_channel'}       //= {};
+    my $feed_channel_type  = $per_user_info->{'feed_channel_type'}  //= {};
+    my $feed_channel_cache = $per_user_info->{'feed_channel_cache'} //= {};
+
+    my $key = "$symbol;$type";
     my $req_id = ($args and exists $args->{req_id}) ? $args->{req_id} : undef;
     $key .= ";$req_id" if $req_id;
 
-    # already subscribe
+    # already subscribed
     if (exists $feed_channel_type->{$key}) {
         return;
     }
@@ -268,10 +316,7 @@ sub _feed_channel_subscribe {
     $feed_channel_type->{$key}->{uuid}  = $uuid;
     $feed_channel_type->{$key}->{cache} = $cache || 0;
 
-    $redis->subscribe(["FEED::$symbol"], $callback // sub { });
-
-    $c->stash('feed_channel'      => $feed_channel);
-    $c->stash('feed_channel_type' => $feed_channel_type);
+    $callback->() if ($invoke_cb);
 
     return $uuid;
 }
@@ -279,14 +324,18 @@ sub _feed_channel_subscribe {
 sub _feed_channel_unsubscribe {
     my ($c, $symbol, $type, $req_id) = @_;
 
-    my $feed_channel       = $c->stash('feed_channel')       || {};
-    my $feed_channel_type  = $c->stash('feed_channel_type')  || {};
-    my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
-
-    $feed_channel->{$symbol} -= 1;
-
     my $key = "$symbol;$type";
     $key .= ";$req_id" if $req_id;
+
+    my $shared_info   = $c->redis_connections($key);
+    my $user_id       = $c->stash;
+    my $per_user_info = $shared_info->{per_user}->{$user_id} //= {};
+
+    my $feed_channel       = $per_user_info->{'feed_channel'}       //= {};
+    my $feed_channel_type  = $per_user_info->{'feed_channel_type'}  //= {};
+    my $feed_channel_cache = $per_user_info->{'feed_channel_cache'} //= {};
+
+    $feed_channel->{$symbol} -= 1;
 
     my $args = $feed_channel_type->{$key}->{args};
     my $uuid = $feed_channel_type->{$key}->{uuid};
@@ -298,8 +347,8 @@ sub _feed_channel_unsubscribe {
     _transaction_channel($c, 'unsubscribe', $args->{account_id}, $uuid) if $type =~ /^proposal_open_contract:/;
 
     if ($feed_channel->{$symbol} <= 0) {
-        $c->stash('redis')->unsubscribe(["FEED::$symbol"], sub { });
         delete $feed_channel->{$symbol};
+        delete $shared_info->{per_user}->{$user_id};
     }
 
     return $uuid;
