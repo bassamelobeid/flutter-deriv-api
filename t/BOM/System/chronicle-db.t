@@ -35,12 +35,15 @@ my $pg = Test::PostgreSQL->new or plan skip_all => $Test::PostgreSQL::errstr;
         waitpid $pid, 0;
     } else {
         # Child
-        ok(!DBIx::TransactionManager::Distributed::dbh_is_registered(chronicle => $dbh), 'original handle reports as no longer registered with BOM::Database');
+        ok(
+            !DBIx::TransactionManager::Distributed::dbh_is_registered(chronicle => $dbh),
+            'original handle reports as no longer registered with BOM::Database'
+        );
         isnt(refaddr(my $child_dbh = BOM::System::Chronicle::_dbh()), $addr, 'refaddr changes in a fork');
         isa_ok($child_dbh, 'DBI::db');
         is(refaddr(BOM::System::Chronicle::_dbh()), refaddr($child_dbh), 'but subsequent calls get the same object');
         ok(DBIx::TransactionManager::Distributed::dbh_is_registered(chronicle => $child_dbh), 'new handle is registered with BOM::Database');
-        ok($child_dbh->ping, 'can ping the first handle');
+        ok($child_dbh->ping,                     'can ping the first handle');
         ok(BOM::System::Chronicle::_dbh()->ping, 'can ping the second handle');
         exit 0;
     }
