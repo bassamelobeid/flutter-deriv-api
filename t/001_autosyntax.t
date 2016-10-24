@@ -9,15 +9,13 @@ use Cwd;
 
 my $pattern = $ARGV[0];    # confines test to just files matching this pattern.
 
-subtest "Check modules in lib" => sub {
-    for (
-        sort File::Find::Rule->file->name(qr/\.p[lm]$/)->in(Cwd::abs_path . '/lib'),
-        sort File::Find::Rule->file->name(qr/\.(p[lm])$/)->in(Cwd::abs_path . '/v3'))
-    {
-        /$pattern/ || next if $pattern;
-        syntax_ok($_) if $_ =~ /\.pl$/;
-        critic_ok($_);
-    }
-};
+for (
+    sort File::Find::Rule->file->name(qr/\.p[lm]$/)->in(Cwd::abs_path . '/lib'),
+    sort File::Find::Rule->file->name(qr/\.(p[lm])$/)->in(Cwd::abs_path . '/v3'))
+{
+    /$pattern/ || next if $pattern;
+    syntax_ok($_) if $_ =~ /\.pl$/;
+    critic_ok($_);
+}
 
 done_testing;
