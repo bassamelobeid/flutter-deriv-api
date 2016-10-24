@@ -77,7 +77,7 @@ FROM
     LEFT JOIN bet.range_bet r
         ON b.id = r.financial_market_bet_id
     LEFT JOIN data_collection.quants_bet_variables qv
-        ON b.id = qv.financial_market_bet_id
+        ON t.id = qv.transaction_id
 WHERE
     t.action_type = 'buy'
     AND (t.transaction_time AT TIME ZONE 'UTC' AT TIME ZONE 'JST') < ?
