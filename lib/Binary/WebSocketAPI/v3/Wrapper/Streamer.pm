@@ -79,14 +79,14 @@ sub ticks_history {
         #
         #Explicitly closing the Redis connection wouldn't do anything to help a race between websocket close and Redis response during normal operation, of course,
         #but until we have a failing test case which demonstrates that, I don't think it's worth spending too much time on.
-        return if(!$c || !$c->tx);
+        return if (!$c || !$c->tx);
         $c->call_rpc({
                 args            => $args,
                 origin_args     => $req_storage->{origin_args},
                 method          => 'ticks_history',
                 rpc_response_cb => sub {
                     my ($c, $rpc_response, $req_storage) = @_;
-                    return if(!$c || !$c->tx);
+                    return if (!$c || !$c->tx);
                     my $args = $req_storage->{args};
                     if (exists $rpc_response->{error}) {
                         # cancel subscription if response has error
