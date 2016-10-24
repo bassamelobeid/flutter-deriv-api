@@ -6,6 +6,7 @@ use BOM::Database::Rose::DB;
 use File::ShareDir;
 use YAML::XS qw(LoadFile);
 use JSON::XS;
+use LandingCompany::Registry;
 
 use Carp;
 
@@ -57,8 +58,7 @@ sub BUILDARGS {
 my $environment;
 
 BEGIN {
-
-    my $loaded_landing_companies = LoadFile(File::ShareDir::dist_file('LandingCompany','landing_companies.yml'));
+    my $loaded_landing_companies = LandingCompany::Registry::loaded_landing_companies();
     for my $v (values %$loaded_landing_companies) {
         $environment->{$_} = $v->{short} for @{$v->{broker_codes}};
     }
