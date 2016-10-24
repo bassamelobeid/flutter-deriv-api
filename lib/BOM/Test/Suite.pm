@@ -48,7 +48,10 @@ sub read_file {
 my $ticks_inserted;
 
 sub run {
-    my ($class, $path) = @_;
+    my ($class, $args) = @_;
+
+    my $path = $args->{test_conf_path};
+    my $suite_schema_path => $args->{suite_schema_path};
 
     # When using remapped email addresses, ensure that each call to ->run increments the counter
     ++$global_test_iteration;
@@ -178,7 +181,7 @@ sub run {
             ($receive_file, @template_func) = split(',', $line);
             diag("\nRunning line $counter [$receive_file]\n");
             diag("\nTesting stream [$test_stream_id]\n");
-            my $content = read_file($ENV{WEBSOCKET_API_REPO_PATH} . '/config/v3/' . $receive_file);
+            my $content = read_file($suite_schema_path . $receive_file);
             $content = _get_values($content, @template_func);
             die 'wrong stream_id' unless $streams->{$test_stream_id};
             my $result = {};
@@ -191,7 +194,7 @@ sub run {
             $send_file =~ /^(.*)\//;
             my $call = $1;
 
-            my $content = read_file($ENV{WEBSOCKET_API_REPO_PATH} . '/config/v3/' . $send_file);
+            my $content = read_file($suite_schema_path . $send_file);
             $content = _get_values($content, @template_func);
             my $req_params = JSON::from_json($content);
 
@@ -233,7 +236,7 @@ sub run {
                 $streams->{$start_stream_id}->{call_name} = $call;
             }
 
-            $content = read_file($ENV{WEBSOCKET_API_REPO_PATH} . '/config/v3/' . $receive_file);
+            $content = read_file($suite_schema_path . $receive_file);
 
             $content = _get_values($content, @template_func);
             _test_schema($receive_file, $content, $result, $fail);
