@@ -380,18 +380,22 @@ sub send_bid {
 sub send_ask {
     my $params = shift;
 
+    my $tv = [Time::HiRes::gettimeofday];
+
     # provide landing_company information when it is available.
     $params->{args}->{landing_company} = $params->{landing_company} if $params->{landing_company};
 
     my $symbol   = $params->{args}->{symbol};
     my $response = validate_symbol($symbol);
     if ($response and exists $response->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
+        $response = BOM::RPC::v3::Utility::create_error({
                 code              => $response->{error}->{code},
                 message_to_client => BOM::Platform::Context::localize($response->{error}->{message}, $symbol)});
-    }
 
-    my $tv = [Time::HiRes::gettimeofday];
+        $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
+
+        return $response;
+    }
 
     try {
 
