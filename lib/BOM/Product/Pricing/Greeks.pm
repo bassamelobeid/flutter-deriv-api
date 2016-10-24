@@ -12,8 +12,6 @@ The base Moose class for all Greeks calcuations.
 
 use Moose;
 
-use Try::Tiny;
-
 # Use list of static routines in the same package scope to price greeks:
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Gamma;

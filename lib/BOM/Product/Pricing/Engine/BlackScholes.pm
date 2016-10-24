@@ -12,8 +12,6 @@ Prices options using the GBM (Geometric Brownian Motion) model.
 
 use Moose;
 
-use List::Util qw(min max);
-
 extends 'BOM::Product::Pricing::Engine';
 with 'BOM::Product::Pricing::Engine::Role::StandardMarkup';
 

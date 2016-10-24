@@ -17,14 +17,9 @@ requires 'bet';
 use Math::Cephes::Matrix qw(mat);
 use Math::Business::BlackScholes::Binaries;
 
-use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Pricing::Engine::BlackScholes;
 use BOM::Product::Pricing::Greeks::BlackScholes;
 use VolSurface::Utils qw(get_strike_for_spot_delta get_ATM_strike_for_spot_delta);
-
-=head1 ATTRIBUTES
-
-=cut
 
 has [qw(priced_portfolios hedge_cost_matrix on_equities vol_spread vvv_matrix greek_market_prices bet_greeks hedge_tiy hedge_tid)] => (
     is         => 'ro',
