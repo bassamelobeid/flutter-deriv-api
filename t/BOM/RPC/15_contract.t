@@ -4,7 +4,7 @@ use warnings;
 use Test::BOM::RPC::Client;
 use Test::Most;
 use Test::Mojo;
-use Test::Warnings qw(warnings);
+use Test::Warnings qw(warning warnings);
 use Test::MockModule;
 use Test::MockTime::HiRes;
 use Date::Utility;
@@ -851,7 +851,24 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
         is_sold     => 0,
     };
 
-    my $result = $c->call_ok('get_bid', $params);
+
+    my $result;
+
+    # get_bid calls are supposed to throw a warning during weekend
+    # we will capture this warning instead of letting it fail the
+    # has_no_warning test which will be called by done_testing().
+    my $warn_message = warning { $result = $c->call_ok('get_bid', $params) };
+
+    my $wd = (gmtime time)[6];
+    my $skip_weekend = 1
+        if ($result->result->{error}
+            and $result->result->{error}->{code} eq 'GetProposalFailure'
+            and ($wd == 0 or $wd == 6));
+
+    # if it's not weekend and we have a warning message from the get_bid call,
+    # then throw it out
+    warn $warn_message if !$skip_weekend && $warn_message;
+
     SKIP: {
         my $expected_result = {
             'barrier'               => '55.50',
@@ -882,11 +899,7 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
             'payout'                => '1000'
         };
 
-        my $wd = (gmtime time)[6];
-        skip 'This test fails on weekends', 2 + keys %$expected_result
-            if ($result->result->{error}
-            and $result->result->{error}->{code} eq 'GetProposalFailure'
-            and ($wd == 0 or $wd == 6));
+        skip 'This test fails on weekends', 2 + keys %$expected_result if $skip_weekend;
 
         $result = $result->has_no_system_error->has_no_error->result;
 

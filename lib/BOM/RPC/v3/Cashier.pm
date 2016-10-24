@@ -16,7 +16,6 @@ use Format::Util::Numbers qw(roundnear);
 
 use BOM::Product::RiskProfile;
 use BOM::RPC::v3::Utility;
-use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
 use BOM::Platform::Countries;
 use BOM::Platform::Context qw (localize request);
@@ -376,8 +375,6 @@ sub paymentagent_list {
 
     my $authenticated_paymentagent_agents =
         $payment_agent_mapper->get_authenticated_payment_agents({target_country => $args->{paymentagent_list}});
-
-    my %payment_agent_banks = %{BOM::Platform::Locale::get_payment_agent_banks()};
 
     my $payment_agent_table_row = [];
     foreach my $loginid (keys %{$authenticated_paymentagent_agents}) {
