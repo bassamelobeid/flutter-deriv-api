@@ -27,11 +27,6 @@ has 'http_method' => (
     lazy_build => 1,
 );
 
-has 'http_handler' => (
-    is  => 'rw',
-    isa => 'Maybe[Plack::App::CGIBin::Streaming::Request]',
-);
-
 has 'domain_name' => (
     is         => 'ro',
     isa        => 'Str',
