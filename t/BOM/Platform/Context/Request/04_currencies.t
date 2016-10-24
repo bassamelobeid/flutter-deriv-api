@@ -17,7 +17,6 @@ subtest 'CR' => sub {
         my $request = BOM::Platform::Context::Request->new();
         is $request->broker_code, 'CR', 'CR broker';
         is_deeply([sort @{$request->available_currencies}], [qw(AUD EUR GBP USD)], 'available_currencies');
-        is $request->country, 'Antarctica', 'We assume Antarctica as a default';
     };
 
     subtest 'EUR countries' => sub {

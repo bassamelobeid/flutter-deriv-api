@@ -43,12 +43,6 @@ has 'client_ip' => (
     lazy_build => 1,
 );
 
-# Country of the user determined by what ever mechanism. Ex. Australia
-has 'country' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 has 'country_code' => (
     is      => 'ro',
     default => 'aq',
@@ -114,11 +108,6 @@ sub _build_http_method {
     }
 
     return "";
-}
-
-sub _build_country {
-    my $self = shift;
-    return BOM::Platform::Countries->instance->countries->country_from_code($self->country_code);
 }
 
 sub _build_cookie_domain {
