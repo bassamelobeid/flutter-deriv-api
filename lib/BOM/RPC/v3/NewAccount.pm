@@ -27,11 +27,12 @@ use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (localize request);
 use BOM::Database::Model::OAuth;
+use LandingCompany::Countries;
 
 my $countries_list;
 
 BEGIN {
-    $countries_list = YAML::XS::LoadFile(File::ShareDir::dist_file('LandingCompany', 'countries.yml'));
+    $countries_list = LandingCompany::Countries->countries_list;
 }
 
 sub _create_oauth_token {
