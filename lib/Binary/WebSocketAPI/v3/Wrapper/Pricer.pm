@@ -91,9 +91,8 @@ sub proposal_open_contract {
                 # are used to to identify redis channel and as arguments to get_bid rpc call
                 # transaction_ids purchase_time buy_price should be stored and will be added to
                 # every get_bid results and sent to client while streaming
-                my $cache = map { $_ => $contract->{$_} }
-                    qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode);
-                my $account_id = delete $contract->{account_id};    # should not go to client
+                my $cache = {map { $_ => $contract->{$_} }
+                        qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode)};
 
                 if (not $uuid = _pricing_channel_for_bid($c, $args, $cache)) {
                     my $error =
@@ -102,7 +101,8 @@ sub proposal_open_contract {
                     next;
                 } else {
                     # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                    Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $account_id,
+                    Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel(
+                        $c, 'subscribe', delete $contract->{account_id},    # should not go to client
                         $uuid, {contract_id => $contract->{contract_id}});
                 }
             }
