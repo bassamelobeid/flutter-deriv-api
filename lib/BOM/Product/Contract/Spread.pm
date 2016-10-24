@@ -44,6 +44,9 @@ has continue_price_stream => (
     default => 0
 );
 
+# This is to indicate whether this is a sale transaction. 
+# For a sale transaction, we no need to do validation on stop loss and stop profit level as they are something that is validated and set when a contract is placed.
+
 has _for_sale => (
     is      => 'rw',
     isa     => 'Bool',
