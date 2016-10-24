@@ -161,6 +161,7 @@ sub _pricing_channel_for_bid {
     my $price_daemon_cmd = 'bid';
 
     my %hash;
+    # get_bid RPC call requires 'short_code' param, not 'shortcode'
     @hash{qw(short_code contract_id currency sell_time)} = delete @{$cache}{qw(shortcode contract_id currency sell_time)};
     $hash{is_sold} = $cache->{is_sold} + 0;
     $hash{language}         = $c->stash('language') || 'EN';
