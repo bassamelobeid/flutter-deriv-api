@@ -362,8 +362,7 @@ sub store_stream_data {
 }
 
 sub _setup_market_data {
-    my (undef, $file_path, undef) = File::Spec->splitpath(__FILE__);
-    my $data = LoadFile($file_path . 'test_data.yml');
+    my $data = LoadFile('/home/git/regentmarkets/bom-test/data/suite_market_data.yml');
 
     foreach my $d (@$data) {
         my $key = delete $d->{name};
@@ -404,7 +403,7 @@ sub _setup_market_data {
                 }]});
 
     # only populating aggregated ticks for frxUSDJPY
-    my $tick_data = LoadFile($file_path . 'ticks.yml');
+    my $tick_data = LoadFile('/home/git/regentmarkets/bom-test/data/suite_ticks.yml');
     my $encoder   = Sereal::Encoder->new({
         canonical => 1,
     });
