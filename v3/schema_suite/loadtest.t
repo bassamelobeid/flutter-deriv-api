@@ -16,12 +16,14 @@ use Test::FailWarnings;
 
 use Mojo::UserAgent;
 
+my (undef, $file_path, undef) = File::Spec->splitpath(__FILE__);
+my $test_conf_path = $file_path . 'loadtest.conf';
 my @times;
 for my $iteration (1 .. 10) {
     # Suite->run is likely to set the system date. Rely on the HW clock to give us times, if possible.
     system(qw(sudo hwclock --systohc)) and die "Failed to sync HW clock to system - $!";
     my $t0      = [gettimeofday];
-    my $elapsed = BOM::Test::Suite->run('loadtest.conf');
+    my $elapsed = BOM::Test::Suite->run($test_conf_path);
     system(qw(sudo hwclock --hctosys)) and die "Failed to sync system clock to HW - $!";
     my $wallclock = tv_interval($t0, [gettimeofday]);
     diag "Took $wallclock seconds wallclock time for loadtest including setup, $elapsed seconds cumulative step time";
