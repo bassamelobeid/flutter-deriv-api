@@ -17,8 +17,7 @@ subtest 'CR' => sub {
         my $request = BOM::Platform::Context::Request->new();
         is $request->broker_code, 'CR', 'CR broker';
         is_deeply([sort @{$request->available_currencies}], [qw(AUD EUR GBP USD)], 'available_currencies');
-        is $request->country,          'Antarctica', 'We assume Antarctica as a default';
-        is $request->default_currency, 'USD',        'Default currency is USD';
+        is $request->country, 'Antarctica', 'We assume Antarctica as a default';
     };
 
     subtest 'EUR countries' => sub {
@@ -27,7 +26,6 @@ subtest 'CR' => sub {
             note $country_code;
             is $request->broker_code, 'MLT', 'broker for ' . $country_code;
             is_deeply([sort @{$request->available_currencies}], [qw(EUR GBP USD)], 'available_currencies');
-            is $request->default_currency, 'EUR', 'default_currency';
         }
     };
 
@@ -37,7 +35,6 @@ subtest 'CR' => sub {
             note $country_code;
             is $request->broker_code, 'MF', 'broker for ' . $country_code;
             is_deeply([sort @{$request->available_currencies}], [qw(EUR GBP USD)], 'available_currencies');
-            is $request->default_currency, 'EUR', 'default_currency';
         }
     };
 
@@ -47,7 +44,6 @@ subtest 'CR' => sub {
             note $country_code;
             is $request->broker_code, 'CR', 'broker';
             is_deeply([sort @{$request->available_currencies}], [qw(AUD EUR GBP USD)], 'available_currencies');
-            is $request->default_currency, 'AUD', 'default_currency';
         }
     };
 
@@ -56,7 +52,6 @@ subtest 'CR' => sub {
         note 'gb';
         is $request->broker_code, 'MX', 'broker';
         is_deeply([sort @{$request->available_currencies}], [qw(GBP USD)], 'available_currencies');
-        is $request->default_currency, 'GBP', 'default_currency';
     };
 };
 
@@ -64,7 +59,6 @@ subtest 'MX' => sub {
     subtest 'Default Country' => sub {
         my $request = BOM::Platform::Context::Request->new(broker_code => 'MX');
         is_deeply([sort @{$request->available_currencies}], [qw(GBP USD)], 'available_currencies');
-        is $request->default_currency, 'GBP', 'default_currency';
     };
 
     subtest 'Country Specific' => sub {
@@ -75,7 +69,6 @@ subtest 'MX' => sub {
             );
             note $country_code;
             is_deeply([sort @{$request->available_currencies}], [qw(GBP USD)], 'available_currencies');
-            is $request->default_currency, 'GBP', 'default_currency';
         }
     };
 };
@@ -84,7 +77,6 @@ subtest 'MLT' => sub {
     subtest 'Default Country' => sub {
         my $request = BOM::Platform::Context::Request->new(broker_code => 'MLT');
         is_deeply([sort @{$request->available_currencies}], [qw(EUR GBP USD)], 'available_currencies');
-        is $request->default_currency, 'EUR', 'default_currency';
     };
 
     subtest 'EUR countries' => sub {
@@ -95,7 +87,6 @@ subtest 'MLT' => sub {
             );
             note $country_code;
             is_deeply([sort @{$request->available_currencies}], [qw(EUR GBP USD)], 'available_currencies');
-            is $request->default_currency, 'EUR', 'default_currency';
         }
     };
 
@@ -107,7 +98,6 @@ subtest 'MLT' => sub {
             );
             note $country_code;
             is_deeply([sort @{$request->available_currencies}], [qw(EUR GBP USD)], 'available_currencies');
-            is $request->default_currency, 'EUR', 'default_currency';
         }
     };
 
@@ -119,7 +109,6 @@ subtest 'MLT' => sub {
             );
             note $country_code;
             is_deeply([sort @{$request->available_currencies}], [qw(EUR GBP USD)], 'available_currencies');
-            is $request->default_currency, 'GBP', 'default_currency';
         }
     };
 };
@@ -128,7 +117,6 @@ subtest 'VRTC' => sub {
     subtest 'Default Country' => sub {
         my $request = BOM::Platform::Context::Request->new(broker_code => 'VRTC');
         is_deeply([sort @{$request->available_currencies}], [qw(USD)], 'available_currencies');
-        is $request->default_currency, 'USD', 'default_currency';
     };
 
     subtest 'Country Specific' => sub {
@@ -140,7 +128,6 @@ subtest 'VRTC' => sub {
             );
             note $country_code;
             is_deeply([sort @{$request->available_currencies}], [qw(USD)], 'available_currencies');
-            is $request->default_currency, 'USD', 'default_currency';
         }
     };
 };

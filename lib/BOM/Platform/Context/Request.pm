@@ -84,11 +84,6 @@ has 'available_currencies' => (
     lazy_build => 1,
 );
 
-has 'default_currency' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 has '_ip' => (
     is => 'ro',
 );
@@ -201,44 +196,9 @@ sub _build_available_currencies {
     return BOM::Platform::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_allowed_currencies;
 }
 
-sub _build_default_currency {
-    my $self = shift;
-
-    #First try to get a country specific currency.
-    my $currency = $self->_country_specific_currency($self->country_code);
-    if ($currency and BOM::Platform::LandingCompany::Registry::get_by_broker($self->broker_code)->is_currency_legal($currency)) {
-        if (grep { $_ eq $currency } @{$self->available_currencies}) {
-            return $currency;
-        }
-    }
-
-    #Next see if the default in landing company is available.
-    $currency = BOM::Platform::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_default_currency;
-    if (grep { $_ eq $currency } @{$self->available_currencies}) {
-        return $currency;
-    }
-
-    #Give the first available.
-    return $self->available_currencies->[0];
-}
-
 sub _build_client_ip {
     my $self = shift;
     return ($self->_ip || '127.0.0.1');
-}
-
-sub _country_specific_currency {
-    my $self    = shift;
-    my $country = shift;
-    $country = lc $country;
-
-    return unless ($country);
-
-    if    (' fr dk de at be cz fi gr ie it lu li mc nl no pl se sk  ' =~ / $country /i) { return 'EUR'; }
-    elsif (' au nz cx cc nf ki nr tv ' =~ / $country /i)                                { return 'AUD'; }
-    elsif (' gb uk ' =~ / $country /i)                                                  { return 'GBP'; }
-
-    return;
 }
 
 sub BUILD {
