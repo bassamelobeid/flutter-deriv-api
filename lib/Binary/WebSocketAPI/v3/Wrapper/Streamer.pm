@@ -353,6 +353,16 @@ sub _feed_channel_unsubscribe {
         delete $feed_channel->{$symbol};
         delete $shared_info->{per_user}->{$user_id};
     }
+    if (!keys %{$shared_info->{per_user} // {}}) {
+        $c->shared_redis->unsubscribe(
+            ["FEED::$symbol"],
+            sub {
+                # may be some dude decided to subscribe to $symbol in the middle
+                if (!keys %{$shared_info->{per_user} // {}}) {
+                    $shared_info->{symbols}->{$symbol} = 0;
+                }
+            });
+    }
 
     return $uuid;
 }
