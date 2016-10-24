@@ -29,7 +29,7 @@ use base 'Exporter';
 use vars qw/@EXPORT_OK/;
 @EXPORT_OK = qw/test_schema build_mojo_test build_test_R_50_data create_test_user call_mocked_client reconnect/;
 
-my ($version) = (__FILE__ =~ m{/(v\d+)/});
+my $version = 'v3';
 die 'unknown version' unless $version;
 
 sub build_mojo_test {
