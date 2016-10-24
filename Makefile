@@ -1,23 +1,30 @@
+M=[ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
+export PERL5OPT=-MTest::FailWarnings=-allow_deps,1
+D=$(CURDIR)
+I=-I$D/lib -I$D -I$D/t -I/home/git/regentmarkets/bom-websocket-tests/lib
+P=/etc/rmg/bin/prove --timer -r $I
+PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
+
 v3_1:
-	bash -c 'PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib -I./t -r t/BOM/WebsocketAPI/v3/{0,1,2,4}*'
+	@$(PROVE) $$(ls -1d /home/git/regentmarkets/bom-websocket-tests/v3/* | grep 'v3/\(0\|1\|2\|4\)')
 
 v3_2:
-	bash -c 'PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib -I./t -r t/BOM/WebsocketAPI/v3/{5,6,7}*'
+	@$(PROVE) $$(ls -1d /home/git/regentmarkets/bom-websocket-tests/v3/* | grep 'v3/\(5\|6\|7\)')
 
 v3_3:
-	bash -c 'PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib -I./t -r t/BOM/WebsocketAPI/v3/{8,9}*'
+	@$(PROVE) $$(ls -1d /home/git/regentmarkets/bom-websocket-tests/v3/* | grep 'v3/\(8\|9\)')
 
 json_schema:
-	PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib -I./t t/BOM/WebsocketAPI/v3/schema_suite/suite.t
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t
 
 loadtest:
-	bash -c 'prove --timer -I./lib -I./t t/BOM/WebsocketAPI/v3/schema_suite/loadtest.t'
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/loadtest.t
 
 structure:
-	PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib  -I./t t/BOM/*.t
+	@$(PROVE) t/*.t
 
 leaktest:
-	PERL5OPT="-MTest::FailWarnings=-allow_deps,1" /etc/rmg/bin/prove --timer -I./lib -I./t -r t/BOM/WebsocketAPI/leak/v3
+	@$(PROVE) t/leak/v3
 
 tidy:
 	find . -name '*.p?.bak' -delete
