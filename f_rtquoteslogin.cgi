@@ -24,13 +24,23 @@ $Quant::Framework::Underlying::FORCE_REALTIME_FEED = 1;
 
 my $fullfeed_re = qr/^\d\d?-\w{3}-\d\d.fullfeed(?!\.zip)/;
 
+my $_quotes_cache;
+
 sub last_quote {
     my $dir = shift;
+
+    # check in cache
+    return @{$_quotes_cache->{$dir}} if $_quotes_cache->{$dir};
+
     my $recent = reduce { $a->[1] < $b->[1] ? $a : $b } map { [$_, -M $_] } $dir->children($fullfeed_re);
     $recent = $recent->[0] // die("Cannot find last quote file in $dir");
     my $bw = File::ReadBackwards->new($recent)
         or die "can't read $recent: $!";
-    return ($recent, $bw->readline);
+
+    my $line = $bw->readline;
+    # fill cache
+    $_quotes_cache->{$dir} = [$recent, $line];
+    return ($recent, $line);
 }
 
 sub parse_quote {
@@ -78,7 +88,9 @@ print "<LI><font color=F09999>Shadow tick file over 180 seconds</font>";
 print "<LI><font color=FF0000>More than 0.2\% away from combined quote (0.4\% for stocks)</font>";
 print "</UL>";
 
-my @instrumentlist = sort create_underlying_db->get_symbols_for(
+my $ul_db = create_underlying_db();
+
+my @instrumentlist = sort $ul_db->get_symbols_for(
     market => [@all_markets],
 );
 
