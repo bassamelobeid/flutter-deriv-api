@@ -178,11 +178,11 @@ sub _get_pricing_parameter_from_IH_pricer {
 
     my $risk_markup = $pe->risk_markup;
     $pricing_parameters->{risk_markup} = {
-        economic_events_markup          => $pe->economic_events_markup->amount,
+        economic_events_markup          => $risk_markup->peek_amount('economic_events_markup') // 0,
         intraday_historical_iv_risk     => $risk_markup->peek_amount('intraday_historical_iv_risk') // 0,
         quiet_period_markup             => $risk_markup->peek_amount('quiet_period_markup') // 0,
         vol_spread_markup               => $risk_markup->peek_amount('vol_spread_markup') // 0,
-        eod_market_risk_markup          => $pe->eod_market_risk_markup->amount // 0,
+        eod_market_risk_markup          => $risk_markup->peek_amount('intraday_eod_markup') // 0,
         spot_jump_markup                => $risk_markup->peek_amount('spot_jump_markup') // 0,
         short_term_kurtosis_risk_markup => $risk_markup->peek_amount('short_term_kurtosis_risk_markup') // 0,
 
