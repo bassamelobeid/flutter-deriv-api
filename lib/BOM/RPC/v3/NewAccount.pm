@@ -32,7 +32,7 @@ use LandingCompany::Countries;
 my $countries_list;
 
 BEGIN {
-    $countries_list = LandingCompany::Countries->countries_list;
+    $countries_list = LandingCompany::Countries->instance->countries_list;
 }
 
 sub _create_oauth_token {
