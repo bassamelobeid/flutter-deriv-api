@@ -851,7 +851,6 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
         is_sold     => 0,
     };
 
-
     my $result;
 
     # get_bid calls are supposed to throw a warning during weekend
@@ -859,11 +858,11 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
     # has_no_warning test which will be called by done_testing().
     my $warn_message = warning { $result = $c->call_ok('get_bid', $params) };
 
-    my $wd = (gmtime time)[6];
+    my $wd           = (gmtime time)[6];
     my $skip_weekend = 1
         if ($result->result->{error}
-            and $result->result->{error}->{code} eq 'GetProposalFailure'
-            and ($wd == 0 or $wd == 6));
+        and $result->result->{error}->{code} eq 'GetProposalFailure'
+        and ($wd == 0 or $wd == 6));
 
     # if it's not weekend and we have a warning message from the get_bid call,
     # then throw it out
