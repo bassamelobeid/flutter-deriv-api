@@ -177,7 +177,7 @@ sub process_realtime_events {
     my @m = split(';', $message);
     my $shared_info = $c->redis_connections($chan);
 
-    for my $user_id (keys @{$shared_info->{per_user}}) {
+    for my $user_id (keys %{$shared_info->{per_user}}) {
         my $per_user_info = $shared_info->{per_user}->{$user_id};
         # pick the per-user controller to send-back notifications to
         # related users only
@@ -277,7 +277,8 @@ sub _feed_channel_subscribe {
             [$channel_name],
             sub {
                 $shared_info->{symbols}->{$symbol} = 1;
-                while (my $cb = shift($shared_info->{callbacks})) {
+                my $callbacks = $shared_info->{callbacks} // [];
+                while (my $cb = shift(@$callbacks)) {
                     # might be an case where client already disconnected before
                     # successfull redis subscription
                     try {
@@ -288,9 +289,9 @@ sub _feed_channel_subscribe {
                     };
                 }
             });
-        push $shared_info->{callbacks}, $callback if ($callback);
+        push @{$shared_info->{callbacks}}, $callback if ($callback);
         warn("To much callbacks in queue ($symbol), possible redis connection issue")
-            if (@{$shared_info->{callbacks}} > 1000);
+            if (@{$shared_info->{callbacks} // []} > 1000);
     } elsif ($callback) {
         $invoke_cb = 1;
     }
