@@ -14,7 +14,7 @@ use Locale::Maketext::Extract;
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
 use BOM::Platform::Runtime;
-use LandingCompany::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Offerings qw(get_offerings_with_filter get_all_contract_types);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::MarketData qw(create_underlying_db);
@@ -168,7 +168,7 @@ sub add_contract_types {
 
     my $fh = $self->pot_append_fh;
 
-    my $contract_type_config = LoadFile(File::ShareDir::dist_file('LandingCompany','contract_types.yml'));
+    my $contract_type_config = get_all_contract_types();
 
     foreach my $contract_type (keys %{$contract_type_config}) {
         next if ($contract_type eq 'INVALID');
