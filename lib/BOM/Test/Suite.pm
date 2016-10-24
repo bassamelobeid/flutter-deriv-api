@@ -51,7 +51,7 @@ sub run {
     my ($class, $args) = @_;
 
     my $path = $args->{test_conf_path};
-    my $suite_schema_path => $args->{suite_schema_path};
+    my $suite_schema_path = $args->{suite_schema_path};
 
     # When using remapped email addresses, ensure that each call to ->run increments the counter
     ++$global_test_iteration;
