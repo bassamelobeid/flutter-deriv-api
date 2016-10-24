@@ -91,20 +91,9 @@ sub proposal_open_contract {
                 # are used to to identify redis channel and as arguments to get_bid rpc call
                 # transaction_ids purchase_time buy_price should be stored and will be added to
                 # every get_bid results and sent to client while streaming
+                my $cache = map { $_ => $contract->{$_} }
+                    qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode);
                 my $account_id = delete $contract->{account_id};    # should not go to client
-                my $cache      = {
-                    account_id      => $account_id,
-                    short_code      => $contract->{shortcode},
-                    contract_id     => $contract->{contract_id},
-                    currency        => $contract->{currency},
-                    buy_price       => $contract->{buy_price},
-                    sell_price      => $contract->{sell_price},
-                    sell_time       => $contract->{sell_time},
-                    purchase_time   => $contract->{purchase_time},
-                    is_sold         => $contract->{is_sold},
-                    transaction_ids => $contract->{transaction_ids},
-                    longcode        => $contract->{longcode},
-                };
 
                 if (not $uuid = _pricing_channel_for_bid($c, $args, $cache)) {
                     my $error =
@@ -172,7 +161,7 @@ sub _pricing_channel_for_bid {
     my $price_daemon_cmd = 'bid';
 
     my %hash;
-    @hash{qw(short_code contract_id currency sell_time)} = delete @{$cache}{qw(short_code contract_id currency sell_time)};
+    @hash{qw(short_code contract_id currency sell_time)} = delete @{$cache}{qw(shortcode contract_id currency sell_time)};
     $hash{is_sold} = $cache->{is_sold} + 0;
     $hash{language}         = $c->stash('language') || 'EN';
     $hash{price_daemon_cmd} = $price_daemon_cmd;
