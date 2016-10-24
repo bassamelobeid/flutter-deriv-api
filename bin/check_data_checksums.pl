@@ -64,7 +64,7 @@ SELECT $2::text, i, page_header(get_raw_page($1::oid::regclass::text, $2, ser.i)
  WHERE sz.sz > 0
 EOF
 
-$dh->selectall_arrayref($sql_extension);
+$dh->do($sql_extension);
 my $datadir = $dh->selectall_arrayref($sql_datadir)->[0]->[0];
 
 for (my ($oid, $tname, $path) = @{$dh->selectall_arrayref($sql_first_oid, undef, $table_pattern)->[0] // []};
