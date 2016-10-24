@@ -243,7 +243,7 @@ sub run {
 
         # Stream ID and/or send_file may be undef
         my ($test_conf_file) = ($path =~ /\/(.+?)$/);
-        diag(sprintf "%s:%d [%s] - %.3fs", $input, $counter, join(',', grep { defined } ($test_stream_id, $send_file, $receive_file)), $elapsed);
+        diag(sprintf "%s:%d [%s] - %.3fs", $test_conf_file, $counter, join(',', grep { defined } ($test_stream_id, $send_file, $receive_file)), $elapsed);
     }
     diag "Cumulative elapsed time for all steps was ${cumulative_elapsed}s";
     return $cumulative_elapsed;
