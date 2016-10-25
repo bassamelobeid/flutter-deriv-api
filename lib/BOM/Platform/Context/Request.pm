@@ -43,19 +43,6 @@ has 'country_code' => (
     default => 'aq',
 );
 
-has 'broker_code' => (
-    is  => 'ro',
-    isa => subtype(
-        Str => where {
-            my $test = $_;
-            exists {map { $_ => 1 } qw(CR MLT MF MX VRTC FOG JP VRTJ)}->{$test}
-        } => message {
-            "Unknown broker code [$_]"
-        }
-    ),
-    lazy_build => 1,
-);
-
 has 'language' => (
     is         => 'ro',
     isa        => 'Str',
@@ -123,33 +110,6 @@ sub _build_domain_name {
         return 'binary' . $name . '.com';
     }
     return 'binary.com';
-}
-
-my $countries_list;
-
-BEGIN {
-    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
-}
-
-sub _build_broker_code {
-    my $self = shift;
-
-    if ($self->backoffice) {
-        return $self->param('broker') if $self->param('broker');
-
-        my $loginid = $self->param('LOGINID') || $self->param('loginID');
-        if ($loginid and $loginid =~ /^([A-Z]+)\d+$/) {
-            return $1;
-        }
-
-        return 'CR';
-    }
-
-    my $company = $countries_list->{$self->country_code}->{gaming_company};
-    $company = $countries_list->{$self->country_code}->{financial_company} if (not $company or $company eq 'none');
-
-    return BOM::Platform::LandingCompany::Registry::get($company)->broker_codes->[0];
-
 }
 
 sub _build_language {
