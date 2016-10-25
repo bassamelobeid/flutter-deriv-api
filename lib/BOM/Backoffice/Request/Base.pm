@@ -44,6 +44,32 @@ has 'params' => (
     lazy_build => 1,
 );
 
+has 'broker_code' => (
+    is  => 'ro',
+    isa => subtype(
+        Str => where {
+            my $test = $_;
+            exists {map { $_ => 1 } qw(CR MLT MF MX VRTC FOG JP VRTJ)}->{$test}
+        } => message {
+            "Unknown broker code [$_]"
+        }
+    ),
+    lazy_build => 1,
+);
+
+sub _build_broker_code {
+    my $self = shift;
+
+    return $self->param('broker') if $self->param('broker');
+
+    my $loginid = $self->param('LOGINID') || $self->param('loginID');
+    if ($loginid and $loginid =~ /^([A-Z]+)\d+$/) {
+        return $1;
+    }
+
+    return 'CR';
+}
+
 sub _build_http_method {
     my $self = shift;
 
