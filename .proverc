@@ -1,3 +1,4 @@
 -Ilib
--I/home/git/regentmarkets/bom-websocket-api/lib
--MTest::FailWarnings=-allow_deps,1
+-I/home/git/regentmarkets/binary-websocket-api/lib
+-MBOM::Test
+-MBOM::Test::Rpc

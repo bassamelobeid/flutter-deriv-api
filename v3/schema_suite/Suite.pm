@@ -22,7 +22,6 @@ use BOM::Test::Data::Utility::UnitTestMarketData;    # we :init later for unit/a
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use RateLimitations qw (flush_all_service_consumers);
 use Time::HiRes qw(tv_interval gettimeofday);
 
 # Needs to be at top-level scope since _set_allow_omnibus and _get_stashed need access,
@@ -31,6 +30,10 @@ my $response;
 
 # Used to allow ->run to happen more than once
 my $global_test_iteration = 0;
+
+# We don't want to fail due to hiting limits
+## no critic (Variables::RequireLocalizedPunctuationVars)
+$ENV{BOM_TEST_RATE_LIMITATIONS} = '/home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/rate_limitations.yml';
 
 # Return entire contents of file as string
 sub read_file {
@@ -64,9 +67,6 @@ sub run {
         initialize_realtime_ticks_db();
         build_test_R_50_data();
         _setup_market_data();
-
-        # Clear existing state for rate limits: verify email in particular
-        flush_all_service_consumers();
 
         unless ($ticks_inserted) {
             # Pre-populate with a few ticks - they need to be 1s apart. Note that we insert ticks
@@ -179,7 +179,7 @@ sub run {
             ($receive_file, @template_func) = split(',', $line);
             diag("\nRunning line $counter [$receive_file]\n");
             diag("\nTesting stream [$test_stream_id]\n");
-            my $content = read_file('/home/git/regentmarkets/bom-websocket-api/config/v3/' . $receive_file);
+            my $content = read_file($ENV{WEBSOCKET_API_REPO_PATH} . '/config/v3/' . $receive_file);
             $content = _get_values($content, @template_func);
             die 'wrong stream_id' unless $streams->{$test_stream_id};
             my $result = {};
@@ -192,7 +192,7 @@ sub run {
             $send_file =~ /^(.*)\//;
             my $call = $1;
 
-            my $content = read_file('/home/git/regentmarkets/bom-websocket-api/config/v3/' . $send_file);
+            my $content = read_file($ENV{WEBSOCKET_API_REPO_PATH} . '/config/v3/' . $send_file);
             $content = _get_values($content, @template_func);
             my $req_params = JSON::from_json($content);
 
@@ -234,7 +234,7 @@ sub run {
                 $streams->{$start_stream_id}->{call_name} = $call;
             }
 
-            $content = read_file('/home/git/regentmarkets/bom-websocket-api/config/v3/' . $receive_file);
+            $content = read_file($ENV{WEBSOCKET_API_REPO_PATH} . '/config/v3/' . $receive_file);
 
             $content = _get_values($content, @template_func);
             _test_schema($receive_file, $content, $result, $fail);

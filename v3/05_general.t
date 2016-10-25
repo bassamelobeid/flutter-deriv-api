@@ -9,7 +9,7 @@ use TestHelper qw/test_schema build_mojo_test/;
 use Test::MockObject;
 use Test::MockModule;
 
-my $system = Test::MockModule->new('BOM::WebSocketAPI::v3::Wrapper::System');
+my $system = Test::MockModule->new('Binary::WebSocketAPI::v3::Wrapper::System');
 $system->mock('server_time', sub { +{msg_type => 'time', time => ('1' x 600000)} });
 
 my $t = build_mojo_test();

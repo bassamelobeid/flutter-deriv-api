@@ -4,13 +4,15 @@ use Test::More tests => 7;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test call_mocked_client/;
+use TestHelper qw/test_schema build_mojo_test call_mocked_client reconnect/;
 use BOM::Platform::Token;
 use BOM::System::RedisReplicated;
 use List::Util qw(first);
-use RateLimitations qw (flush_all_service_consumers);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+
+# We don't want to fail due to hitting limits
+$ENV{BOM_TEST_RATE_LIMITATIONS} = '/home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/rate_limitations.yml';
 
 ## do not send email
 use Test::MockObject;
@@ -57,8 +59,8 @@ subtest 'verify_email' => sub {
     ok $call_params->{args}->{type};
     ok $call_params->{server_name};
 
-    # send this again to check if invalidates old one
-    Cache::RedisDB->redis->flushall;
+    # close session to invalidate hit limit
+    reconnect($t);
     $t = $t->send_ok({
             json => {
                 verify_email => $email,
@@ -84,9 +86,6 @@ subtest 'create Virtual account' => sub {
     $t = $t->send_ok({json => $create_vr})->message_ok;
     my $res = decode_json($t->message->[1]);
     is($res->{error}->{code}, 'InvalidToken', 'wrong token');
-
-    # as verify_email has rate limit, so clearing for testing other cases also
-    flush_all_service_consumers();
 
     $t = $t->send_ok({
             json => {
