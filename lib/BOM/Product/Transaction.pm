@@ -1177,7 +1177,8 @@ sub _validate_available_currency {
     my $self     = shift;
     my $currency = $self->contract->currency;
 
-    if (not grep { $currency eq $_ } @{request()->available_currencies}) {
+    if (not grep { $currency eq $_ } @{BOM::Platform::LandingCompany::Registry::get_by_broker($self->client->broker_code)->legal_allowed_currencies})
+    {
         return Error::Base->cuss(
             -type              => 'InvalidCurrency',
             -mesg              => "Invalid $currency",
