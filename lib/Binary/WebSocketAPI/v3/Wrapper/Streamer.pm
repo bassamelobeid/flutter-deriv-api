@@ -188,7 +188,7 @@ sub process_realtime_events {
             next;
         }
 
-        my $feed_channels_type = $c->stash('feed_channel_type') // {};
+        my $feed_channels_type = $c->stash('feed_channel_type')  // {};
         my $feed_channel_cache = $c->stash('feed_channel_cache') // {};
 
         foreach my $channel (keys %{$feed_channels_type}) {
@@ -305,7 +305,7 @@ sub _feed_channel_subscribe {
     $per_user_info->{'c'} = $c;
     # let's avoid cycles, which lead to memory leaks
     weaken $c;
-    my $feed_channel_type = $c->stash('feed_channel_type') // {};
+    my $feed_channel_type  = $c->stash('feed_channel_type')  // {};
     my $feed_channel_cache = $c->stash('feed_channel_cache') // {};
 
     my $key    = "$symbol;$type";
@@ -337,7 +337,7 @@ sub _feed_channel_unsubscribe {
     my $user_id       = refaddr $c->stash;
     my $per_user_info = $shared_info->{per_user}->{$user_id} //= {};
 
-    my $feed_channel_type = $c->stash('feed_channel_type') // {};
+    my $feed_channel_type  = $c->stash('feed_channel_type')  // {};
     my $feed_channel_cache = $c->stash('feed_channel_cache') // {};
 
     my $key = "$symbol;$type";
