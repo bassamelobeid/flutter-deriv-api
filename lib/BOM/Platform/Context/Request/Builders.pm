@@ -56,13 +56,20 @@ sub from_mojo {
     __SetEnvironment();
 
     $args->{_ip} = '';
-    if ($main::ENV{'REMOTE_ADDR'}) {
-        $args->{_ip} = $main::ENV{'REMOTE_ADDR'};
+    if ($ENV{'REMOTE_ADDR'}) {
+        $args->{_ip} = $ENV{'REMOTE_ADDR'};
     }
 
     if (not $args->{_ip} and $request->headers->header('x-forwarded-for')) {
+        # We expect:
+        # client internal IP,maybe client external IP,any upstream proxies,cloudflare
+        # We're interested in the IP address of whoever hit CloudFlare, so we drop the last one
+        # then take the next one after that.
+        # Ideally we'd use CF-Connecting-IP as per https://support.cloudflare.com/hc/en-us/articles/200170986-How-does-CloudFlare-handle-HTTP-Request-headers-
+        # but as of Oct2016 that's not set reliably.
         my @ips = split(/,\s*/, $request->headers->header('x-forwarded-for'));
-        $args->{_ip} = $ips[0] if Data::Validate::IP::is_ipv4($ips[0]);
+        pop @ips;
+        $args->{_ip} = $ips[-1] if Data::Validate::IP::is_ipv4($ips[-1]);
     }
 
     $args->{domain_name} = $request->url->to_abs->host;
