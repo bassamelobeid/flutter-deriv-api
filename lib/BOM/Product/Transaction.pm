@@ -13,7 +13,7 @@ use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
 use Format::Util::Numbers qw(commas roundnear to_monetary_number_format);
 use Try::Tiny;
 
-use BOM::Platform::Context qw(request localize);
+use BOM::Platform::Context qw(localize);
 use BOM::Platform::Runtime;
 use BOM::Platform::Countries;
 use BOM::Platform::Client;
