@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use JSON;
-use Scalar::Util qw (looks_like_number);
+use Scalar::Util qw (looks_like_number refaddr weaken);
 use List::MoreUtils qw(last_index);
 use Date::Utility;
 
@@ -147,7 +147,7 @@ sub ticks_history {
 
                     my $channel_name  = "FEED::" . $args->{ticks_history};
                     my $shared_info   = $c->redis_connections($channel_name);
-                    my $per_user_info = $shared_info->{per_user}->{$c->stash} //= {};
+                    my $per_user_info = $shared_info->{per_user}->{refaddr($c->stash)} //= {};
 
                     my $feed_channel_type = $c->stash('feed_channel_type') // {};
                     # remove the cache flag which was set during subscription
@@ -269,11 +269,15 @@ sub _feed_channel_subscribe {
     # we use stash hash ( = stash hash address) as user id,
     # as we don't want to deal with user_login, user_id, user_email
     # unauthorized users etc.
-    my $user_id = $c->stash;
+    my $user_id = refaddr $c->stash;
     my $per_user_info = $shared_info->{per_user}->{$user_id} //= {};
 
     # check that the current worker is already (globally) subscribed
     if (!$shared_info->{symbols}->{$symbol}) {
+        push @{$shared_info->{callbacks}}, $callback if ($callback);
+        warn("To many callbacks in queue ($symbol), possible redis connection issue")
+            if (@{$shared_info->{callbacks} // []} > 1000);
+
         $c->shared_redis->subscribe(
             [$channel_name],
             sub {
@@ -290,21 +294,20 @@ sub _feed_channel_subscribe {
                     };
                 }
             });
-        push @{$shared_info->{callbacks}}, $callback if ($callback);
-        warn("To much callbacks in queue ($symbol), possible redis connection issue")
-            if (@{$shared_info->{callbacks} // []} > 1000);
     } elsif ($callback) {
         $invoke_cb = 1;
     }
 
     # keep the controller to send back redis notifications
     $per_user_info->{'c'} = $c;
+    # let's avoid cycles, which lead to memory leaks
+    weaken $c;
     my $feed_channel = $per_user_info->{'feed_channel'} //= {};
     my $feed_channel_type = $c->stash('feed_channel_type') // {};
     my $feed_channel_cache = $per_user_info->{'feed_channel_cache'} //= {};
 
-    my $key = "$symbol;$type";
-    my $req_id = ($args and exists $args->{req_id}) ? $args->{req_id} : undef;
+    my $key    = "$symbol;$type";
+    my $req_id = $args->{req_id};
     $key .= ";$req_id" if $req_id;
 
     # already subscribed
@@ -329,7 +332,7 @@ sub _feed_channel_unsubscribe {
     my ($c, $symbol, $type, $req_id) = @_;
 
     my $shared_info   = $c->redis_connections("FEED::$symbol");
-    my $user_id       = $c->stash;
+    my $user_id       = refaddr $c->stash;
     my $per_user_info = $shared_info->{per_user}->{$user_id} //= {};
 
     my $feed_channel = $per_user_info->{'feed_channel'} //= {};

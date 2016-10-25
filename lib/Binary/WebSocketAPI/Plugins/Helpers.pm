@@ -72,7 +72,7 @@ sub register {
         ? "redis://dummy:$chronicle_redis_config->{password}\@$chronicle_redis_config->{host}:$chronicle_redis_config->{port}"
         : "redis://$chronicle_redis_config->{host}:$chronicle_redis_config->{port}";
 
-    # one redis connection per worker, i.e. shared among multiple clients, connected to
+    # one redis connection (Mojo::Redis2 instance) per worker, i.e. shared among multiple clients, connected to
     # the same worker
     $app->helper(
         shared_redis => sub {
@@ -82,7 +82,7 @@ sub register {
                 $redis->on(
                     error => sub {
                         my ($self, $err) = @_;
-                        warn("error: $err");
+                        $c->app->log->warn("redis error: $err");
                     });
                 $redis->on(
                     message => sub {
