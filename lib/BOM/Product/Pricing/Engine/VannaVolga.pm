@@ -58,10 +58,7 @@ extends 'BOM::Product::Pricing::Engine';
 with 'BOM::Product::Pricing::Engine::Role::StandardMarkup';
 with 'BOM::Product::Pricing::Engine::Role::MarketPricedPortfolios';
 
-use List::Util qw(min max reduce);
-use Storable qw(dclone);
-
-use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Product::ContractFactory qw( make_similar_contract );
 use BOM::Product::Pricing::Engine::BlackScholes;
 
 =head1 ATTRIBUTES
@@ -238,10 +235,6 @@ sub _build_vega_correction {
     });
     return $vega;
 }
-
-=head1 THEORY
-
-=cut
 
 __PACKAGE__->meta->make_immutable;
 1;
