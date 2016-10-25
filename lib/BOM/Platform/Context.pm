@@ -23,7 +23,6 @@ our @EXPORT_OK = qw(request localize template);
 use BOM::Platform::Context::Request;
 use Format::Util::Numbers;
 use BOM::Platform::Context::I18N;
-use Path::Tiny;
 
 state $current_request;
 state $template_config = {};
@@ -71,6 +70,8 @@ usage,
 
 =cut
 
+# we need to find a way to get rid of this as we just
+# use it for common_email template
 sub template {
     my $what = shift || 'template';
     if (not $template_config->{template}) {
@@ -114,12 +115,7 @@ sub _configure_template_for {
     my $request = shift;
     my $stash   = shift;
 
-    my @include_path;
-    if ($request->backoffice) {
-        push @include_path, '/home/git/regentmarkets/bom-backoffice/templates/';
-    }
-
-    push @include_path, '/home/git/regentmarkets/bom-platform/templates/';
+    my @include_path = ('/home/git/regentmarkets/bom-platform/templates/');
 
     my $template_toolkit = Template->new({
             ENCODING     => 'utf8',
