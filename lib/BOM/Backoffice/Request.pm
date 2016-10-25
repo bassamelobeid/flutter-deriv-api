@@ -40,9 +40,7 @@ sub request_completed {
 
 sub _configure_for_request {
     my $request = shift;
-
     BOM::Platform::Runtime->instance->app_config->check_for_update();
-
     return $request;
 }
 

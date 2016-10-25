@@ -44,6 +44,16 @@ has 'params' => (
     lazy_build => 1,
 );
 
+has 'cookies' => (
+    is => 'ro',
+);
+
+has cookie_domain => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_cookie_domain'
+);
+
 has 'broker_code' => (
     is  => 'ro',
     isa => subtype(
@@ -54,6 +64,11 @@ has 'broker_code' => (
             "Unknown broker code [$_]"
         }
     ),
+    lazy_build => 1,
+);
+
+has 'available_currencies' => (
+    is         => 'ro',
     lazy_build => 1,
 );
 
@@ -70,6 +85,12 @@ sub _build_broker_code {
     return 'CR';
 }
 
+sub _build_available_currencies {
+    my $self = shift;
+
+    return BOM::Platform::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_allowed_currencies;
+}
+
 sub _build_http_method {
     my $self = shift;
 
@@ -78,12 +99,6 @@ sub _build_http_method {
     }
 
     return "";
-}
-
-sub param {
-    my $self = shift;
-    my $name = shift;
-    return $self->params->{$name};
 }
 
 sub _build_params {
@@ -128,6 +143,31 @@ sub _build_params {
     }
 
     return $params;
+}
+
+sub _build_cookie_domain {
+    my $self   = shift;
+    my $domain = $self->domain_name;
+    return $domain if $domain eq '127.0.0.1';
+    $domain =~ s/^[^.]+\.([^.]+\..+)/$1/;
+    return "." . $domain;
+}
+
+sub param {
+    my $self = shift;
+    my $name = shift;
+    return $self->params->{$name};
+}
+
+sub cookie {
+    my $self = shift;
+    my $name = shift;
+
+    if ($self->cookies) {
+        return $self->cookies->{$name};
+    }
+
+    return;
 }
 
 sub BUILD {
