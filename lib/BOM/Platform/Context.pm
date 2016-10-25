@@ -27,7 +27,6 @@ use Path::Tiny;
 
 state $current_request;
 state $template_config = {};
-state $timer;
 
 =head2 request
 
@@ -141,7 +140,6 @@ sub _configure_for_request {
     BOM::Platform::Runtime->instance->app_config->check_for_update();
     #Lazy initialization of few params
     $template_config = {};
-    $timer           = undef;
 
     return $request;
 }

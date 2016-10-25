@@ -55,11 +55,6 @@ has cookie_domain => (
     builder => '_build_cookie_domain'
 );
 
-has 'available_currencies' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 has '_ip' => (
     is => 'ro',
 );
@@ -134,12 +129,6 @@ sub _build_language {
     return 'EN';
 }
 
-sub _build_available_currencies {
-    my $self = shift;
-
-    return BOM::Platform::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_allowed_currencies;
-}
-
 sub _build_client_ip {
     my $self = shift;
     return ($self->_ip || '127.0.0.1');
@@ -156,13 +145,3 @@ sub BUILD {
 __PACKAGE__->meta->make_immutable;
 
 1;
-
-=head1 AUTHOR
-
-Arun Murali, C<< < arun at regentmarkets.com> >>
-
-=head1 COPYRIGHT
-
-(c) 2013-, RMG Tech (Malaysia) Sdn Bhd
-
-=cut
