@@ -7,6 +7,7 @@ use List::MoreUtils qw(any);
 use DateTime;
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::Backoffice::Request qw(request);
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -110,8 +111,8 @@ Bar("Monthly Client Reports");
     my $yyyymm = DateTime->now->subtract(months => 1)->ymd('-');
     $yyyymm =~ s/-..$//;
 
-    BOM::Platform::Context::template->process('backoffice/account/monthly_client_report.tt', {yyyymm => $yyyymm})
-        || die BOM::Platform::Context::template->error();
+    BOM::Backoffice::Request::template->process('backoffice/account/monthly_client_report.tt', {yyyymm => $yyyymm})
+        || die BOM::Backoffice::Request::template->error();
 }
 
 # RESCIND FREE GIFT

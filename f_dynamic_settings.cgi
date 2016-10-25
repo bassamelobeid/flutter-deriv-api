@@ -11,6 +11,7 @@ use BOM::System::Config;
 use BOM::Platform::Runtime;
 use HTML::Entities;
 use Data::Compare;
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -81,7 +82,7 @@ push @send_to_template,
         submitted         => request()->param('page'),
     });
 
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/dynamic_settings.html.tt',
     {
         'settings' => \@send_to_template,
