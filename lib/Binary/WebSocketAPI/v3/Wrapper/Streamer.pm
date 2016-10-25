@@ -189,7 +189,6 @@ sub process_realtime_events {
         }
 
         my $feed_channels_type = $c->stash('feed_channel_type') // {};
-        my $feed_channel       = $per_user_info->{'feed_channel'}       //= {};
         my $feed_channel_cache = $per_user_info->{'feed_channel_cache'} //= {};
 
         foreach my $channel (keys %{$feed_channels_type}) {
