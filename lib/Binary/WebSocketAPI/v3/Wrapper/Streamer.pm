@@ -183,6 +183,10 @@ sub process_realtime_events {
         # pick the per-user controller to send-back notifications to
         # related users only
         my $c = $per_user_info->{'c'};
+        if (!$c) {
+            delete $shared_info->{per_user}->{$user_id};
+            next;
+        }
 
         my $feed_channels_type = $c->stash('feed_channel_type') // {};
         my $feed_channel       = $per_user_info->{'feed_channel'}       //= {};
