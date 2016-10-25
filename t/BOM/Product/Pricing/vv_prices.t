@@ -50,7 +50,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
         my @duration = map { $_ * 86400 } (7, 14);
         foreach my $duration (@duration) {
             my @barriers = @{
-            Test::BOM::UnitTestPrice::get_barrier_range({
+                Test::BOM::UnitTestPrice::get_barrier_range({
                         type => ($category_obj->two_barriers ? 'double' : 'single'),
                         underlying => $ul,
                         duration   => $duration,

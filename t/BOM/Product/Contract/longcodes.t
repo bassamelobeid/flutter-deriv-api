@@ -64,19 +64,20 @@ subtest 'longcode from params for forward starting' => sub {
     my $now = Date::Utility->new('2016-10-19 10:00:00');
 
     my $c = produce_contract({
-        bet_type => 'CALL',
-        underlying => 'R_100',
-        date_start => $now->plus_time_interval('10m'),
+        bet_type     => 'CALL',
+        underlying   => 'R_100',
+        date_start   => $now->plus_time_interval('10m'),
         date_pricing => $now,
-        duration => '10m',
-        currency => 'USD',
-        barrier => 'S0P',
-        payout => 10,
+        duration     => '10m',
+        currency     => 'USD',
+        barrier      => 'S0P',
+        payout       => 10,
         fixed_expiry => 1,
     });
 
     ok $c->is_forward_starting, 'is a forward starting contract';
-    is $c->longcode, 'Win payout if Volatility 100 Index is strictly higher than entry spot at 10 minutes after 2016-10-19 10:10:00 GMT.', 'correct longcode';
+    is $c->longcode,            'Win payout if Volatility 100 Index is strictly higher than entry spot at 10 minutes after 2016-10-19 10:10:00 GMT.',
+        'correct longcode';
 };
 
 done_testing();

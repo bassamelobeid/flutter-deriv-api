@@ -82,9 +82,9 @@ subtest 'inefficient period' => sub {
         'retrieve',
         sub {
             my $dp = $bet_params->{date_pricing}->epoch;
-            [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp+19)];
+            [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp + 19)];
         });
-    $c          = produce_contract($bet_params);
+    $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy,       'valid to buy';
     ok $c->market_is_inefficient, 'market inefficient flag triggered for tick expiry';
 };

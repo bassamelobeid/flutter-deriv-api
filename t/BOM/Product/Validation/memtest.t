@@ -20,7 +20,6 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Market::AggTicks;
 
-
 note('mocking ticks to prevent warnings.');
 my $mocked = Test::MockModule->new('BOM::Market::AggTicks');
 $mocked->mock(

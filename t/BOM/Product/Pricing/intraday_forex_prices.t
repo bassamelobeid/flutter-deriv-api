@@ -67,7 +67,7 @@ subtest 'prices without economic events' => sub {
 
     foreach my $contract_type (@ct) {
         my @barriers = @{
-        Test::BOM::UnitTestPrice::get_barrier_range({
+            Test::BOM::UnitTestPrice::get_barrier_range({
                     type       => 'single',
                     underlying => $underlying,
                     duration   => $duration,
@@ -130,7 +130,7 @@ subtest 'prices with economic events' => sub {
                 }]});
     foreach my $contract_type (@ct) {
         my @barriers = @{
-        Test::BOM::UnitTestPrice::get_barrier_range({
+            Test::BOM::UnitTestPrice::get_barrier_range({
                     type       => 'single',
                     underlying => $underlying,
                     duration   => $duration,
