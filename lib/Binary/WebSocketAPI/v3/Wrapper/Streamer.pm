@@ -306,7 +306,6 @@ sub _feed_channel_subscribe {
     $per_user_info->{'c'} = $c;
     # let's avoid cycles, which lead to memory leaks
     weaken $c;
-    my $feed_channel = $per_user_info->{'feed_channel'} //= {};
     my $feed_channel_type = $c->stash('feed_channel_type') // {};
     my $feed_channel_cache = $per_user_info->{'feed_channel_cache'} //= {};
 
@@ -320,7 +319,6 @@ sub _feed_channel_subscribe {
     }
 
     my $uuid = _generate_uuid_string();
-    $feed_channel->{$symbol} += 1;
     $feed_channel_type->{$key}->{args}  = $args if $args;
     $feed_channel_type->{$key}->{uuid}  = $uuid;
     $feed_channel_type->{$key}->{cache} = $cache || 0;
@@ -339,11 +337,8 @@ sub _feed_channel_unsubscribe {
     my $user_id       = refaddr $c->stash;
     my $per_user_info = $shared_info->{per_user}->{$user_id} //= {};
 
-    my $feed_channel = $per_user_info->{'feed_channel'} //= {};
     my $feed_channel_type = $c->stash('feed_channel_type') // {};
     my $feed_channel_cache = $per_user_info->{'feed_channel_cache'} //= {};
-
-    $feed_channel->{$symbol} -= 1;
 
     my $key = "$symbol;$type";
     $key .= ";$req_id" if $req_id;
@@ -357,10 +352,7 @@ sub _feed_channel_unsubscribe {
     # as we subscribe to transaction channel for proposal_open_contract so need to forget that also
     _transaction_channel($c, 'unsubscribe', $args->{account_id}, $uuid) if $type =~ /^proposal_open_contract:/;
 
-    if ($feed_channel->{$symbol} <= 0) {
-        delete $feed_channel->{$symbol};
-        delete $shared_info->{per_user}->{$user_id};
-    }
+    delete $shared_info->{per_user}->{$user_id};
     if (!keys %{$shared_info->{per_user} // {}}) {
         $shared_info->{symbols}->{$symbol} = 0;
         $c->shared_redis->unsubscribe(["FEED::$symbol"], sub { });
