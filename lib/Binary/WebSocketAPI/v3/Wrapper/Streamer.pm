@@ -338,7 +338,7 @@ sub _feed_channel_unsubscribe {
     my $per_user_info = $shared_info->{per_user}->{$user_id} //= {};
 
     my $feed_channel_type = $c->stash('feed_channel_type') // {};
-    my $feed_channel_cache = $c->stash('feed_channel_cache') //= {};
+    my $feed_channel_cache = $c->stash('feed_channel_cache') // {};
 
     my $key = "$symbol;$type";
     $key .= ";$req_id" if $req_id;
