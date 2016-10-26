@@ -3,7 +3,6 @@ use warnings;
 use strict;
 use Mojo::UserAgent;
 use JSON;
-use BOM::Platform::Context;
 use BOM::Platform::Runtime;
 use BOM::System::Config;
 use BOM::System::AuditLog;

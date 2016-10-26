@@ -8,7 +8,7 @@ use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
 use BOM::Platform::Client::Utility ();
 use BOM::Database::DAO::Client;
-use BOM::Platform::Context qw(request);
+use BOM::Backoffice::Request qw(request);
 use BOM::Platform::Locale;
 use BOM::Backoffice::FormAccounts;
 
@@ -121,8 +121,8 @@ sub print_client_details {
         show_allow_omnibus    => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of) ? 1 : 0
     };
 
-    BOM::Platform::Context::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
-        || die BOM::Platform::Context::template->error();
+    BOM::Backoffice::Request::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
+        || die BOM::Backoffice::Request::template->error();
 }
 
 ## build_client_statement_form #######################################

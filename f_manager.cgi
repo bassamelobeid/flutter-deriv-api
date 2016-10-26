@@ -4,6 +4,7 @@ use strict 'vars';
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -79,7 +80,7 @@ print "<form id=\"paymentDCC\" action=\""
     . "<br><input type=\"submit\" value='Make Dual Control Code (by $clerk)'>"
     . "</form>";
 
-my $tt = BOM::Platform::Context::template;
+my $tt = BOM::Backoffice::Request::template;
 
 Bar("MANUAL PAYMENTS");
 

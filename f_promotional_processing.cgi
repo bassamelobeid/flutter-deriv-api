@@ -2,7 +2,6 @@
 package main;
 use strict 'vars';
 
-use BOM::Platform::Context;
 use JSON;
 
 use f_brokerincludeall;
@@ -10,6 +9,7 @@ use BOM::Database::DataMapper::Payment;
 use BOM::System::Config;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale;
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -62,7 +62,7 @@ foreach my $loginid (@approved, @rejected) {
             );
         }
 
-        BOM::Platform::Context::template->process(
+        BOM::Backoffice::Request::template->process(
             'email/bonus_approve.html.tt',
             {
                 name          => $client_name,
@@ -75,7 +75,7 @@ foreach my $loginid (@approved, @rejected) {
             \$email_content
             )
             || die "approving promocode for $client: "
-            . BOM::Platform::Context::template->error
+            . BOM::Backoffice::Request::template->error
 
     } else {
         # reject client
@@ -85,7 +85,7 @@ foreach my $loginid (@approved, @rejected) {
             $client->save();
         }
 
-        BOM::Platform::Context::template->process(
+        BOM::Backoffice::Request::template->process(
             'email/bonus_reject.html.tt',
             {
                 name         => $client_name,
@@ -93,7 +93,7 @@ foreach my $loginid (@approved, @rejected) {
                 website_name => 'Binary.com',
             },
             \$email_content
-        ) || die "rejecting promocode for $client: " . BOM::Platform::Context::template->error;
+        ) || die "rejecting promocode for $client: " . BOM::Backoffice::Request::template->error;
     }
 
     if ($input{"${loginid}_notify"}) {

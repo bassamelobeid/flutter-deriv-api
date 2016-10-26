@@ -14,6 +14,8 @@ This is a Japanese regulatory requirements.
 package main;
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
+use Format::Util::Numbers qw(roundnear);
+use Price::RoundPrecision::JPY;
 use f_brokerincludeall;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -21,9 +23,8 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Client;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
-use Price::RoundPrecision::JPY;
-use Format::Util::Numbers qw(roundnear);
 BOM::Backoffice::Sysinit::init();
 BOM::Backoffice::Auth0::can_access(['Quants']);
 my %params = %{request()->params};
@@ -265,7 +266,7 @@ sub _get_bs_probability_parameters {
     };
     return $bs_parameter;
 }
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/contract_details.html.tt',
     {
         broker             => $broker,
@@ -273,6 +274,6 @@ BOM::Platform::Context::template->process(
         contract_details   => {@contract_details},
         start              => $start ? $start->datetime : '',
         pricing_parameters => $pricing_parameters,
-    }) || die BOM::Platform::Context::template->error;
+    }) || die BOM::Backoffice::Request::template->error;
 code_exit_BO();
 
