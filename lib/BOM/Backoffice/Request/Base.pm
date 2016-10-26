@@ -97,7 +97,7 @@ sub _build_available_currencies {
 sub _build_http_method {
     my $self = shift;
 
-    if ($request = $self->cgi) {
+    if (my $request = $self->cgi) {
         return $request->request_method;
     }
 
