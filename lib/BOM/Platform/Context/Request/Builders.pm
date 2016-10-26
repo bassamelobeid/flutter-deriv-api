@@ -91,8 +91,11 @@ sub from_mojo {
 
     return unless ($request);
 
-    ## put back some ENV b/c we use it in our other modules like BOM::System::AuditLog
-    %ENV = (%ENV, %{$request->env});    ## no critic (Variables::RequireLocalizedPunctuationVars)
+    # put back some ENV b/c we use it in our other modules like BOM::System::AuditLog
+
+    ## no critic (Variables::RequireLocalizedPunctuationVars)
+    %ENV = (%ENV, %{$request->env});
+    ## no critic (Variables::RequireLocalizedPunctuationVars)
     $ENV{REMOTE_ADDR} = $args->{_ip} = _remote_ip($request);
 
     $args->{domain_name} = $request->url->to_abs->host;
