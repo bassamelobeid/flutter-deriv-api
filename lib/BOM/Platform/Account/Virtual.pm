@@ -9,7 +9,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 use BOM::System::Password;
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Countries;
+use LandingCompany::Countries;
 use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Token;
@@ -37,10 +37,10 @@ sub create_account {
     my ($client, $error);
     try {
         die 'residence is empty' if (not $residence);
-        my $company_name = BOM::Platform::Countries->instance->virtual_company_for_country($residence);
+        my $company_name = LandingCompany::Countries->instance->virtual_company_for_country($residence);
 
         $client = BOM::Platform::Client->register_and_return_new_client({
-            broker_code                   => BOM::Platform::LandingCompany::Registry::get($company_name)->broker_codes->[0],
+            broker_code                   => LandingCompany::Registry::get($company_name)->broker_codes->[0],
             client_password               => $password,
             salutation                    => '',
             last_name                     => '',

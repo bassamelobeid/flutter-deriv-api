@@ -208,7 +208,7 @@ quants:
       description: "Toggles for various platform features"
       isa: section
       contains:
-        suspend_claim_types:
+        suspend_contract_types:
           description: "Suspend trades only on these bet types (Flash, DoubleDown, DoubleUp, ..)"
           isa: ArrayRef
           default: []
