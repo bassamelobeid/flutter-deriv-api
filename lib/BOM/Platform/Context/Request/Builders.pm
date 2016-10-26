@@ -73,7 +73,7 @@ sub _remote_ip {
         # then take the next one after that.
         my @ips = split /\s*,\s*/, $headers->header('x-forwarded-for');
         pop @ips;
-        $ips[-1]
+        $ips[-1];
     };
 
     # Fall back to what our upstream (nginx) detected
