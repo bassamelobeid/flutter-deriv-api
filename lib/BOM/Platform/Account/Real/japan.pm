@@ -100,20 +100,20 @@ sub _get_input_to_category_mapping {
     return {
         annual_income                               => 'income_asset_score',
         financial_asset                             => 'income_asset_score',
-        trading_experience_equities                 => 'trading_experience_score',
-        trading_experience_commodities              => 'trading_experience_score',
+        trading_experience_equities                 => 'equities_score',
+        trading_experience_commodities              => 'commodities_score',
         trading_experience_foreign_currency_deposit => 'trading_experience_score',
-        trading_experience_margin_fx                => 'trading_experience_score',
+        trading_experience_margin_fx                => 'margin_fx_score',
         trading_experience_investment_trust         => 'trading_experience_score',
         trading_experience_public_bond              => 'trading_experience_score',
-        trading_experience_option_trading           => 'trading_experience_score',
+        trading_experience_option_trading           => 'binary_options_score',
     };
 }
 
 sub get_financial_input_mapping {
     my $scores = {
         income_asset_score => {
-            'Less than 1 million JPY' => 1,
+            'Less than 1 million JPY' => 0,
             '1-3 million JPY'         => 2,
             '3-5 million JPY'         => 3,
             '5-10 million JPY'        => 4,
@@ -123,12 +123,44 @@ sub get_financial_input_mapping {
             'Over 100 million JPY'    => 8,
         },
         trading_experience_score => {
-            'No experience'      => 1,
+            'No experience'      => 0,
+            'Less than 6 months' => 0,
+            '6 months to 1 year' => 0,
+            '1-3 years'          => 0,
+            '3-5 years'          => 1,
+            'Over 5 years'       => 2,
+        },
+        equities_score => {
+            'No experience'      => 0,
+            'Less than 6 months' => 0,
+            '6 months to 1 year' => 0,
+            '1-3 years'          => 1,
+            '3-5 years'          => 3,
+            'Over 5 years'       => 5,
+        },
+        commodities_score => {
+            'No experience'      => 0,
+            'Less than 6 months' => 0,
+            '6 months to 1 year' => 1,
+            '1-3 years'          => 2,
+            '3-5 years'          => 5,
+            'Over 5 years'       => 7,
+        },
+        margin_fx_score => {
+            'No experience'      => 0,
             'Less than 6 months' => 2,
             '6 months to 1 year' => 3,
-            '1-3 years'          => 4,
-            '3-5 years'          => 5,
-            'Over 5 years'       => 6,
+            '1-3 years'          => 7,
+            '3-5 years'          => 10,
+            'Over 5 years'       => 10,
+        },
+        binary_options_score => {
+            'No experience'      => 0,
+            'Less than 6 months' => 5,
+            '6 months to 1 year' => 10,
+            '1-3 years'          => 10,
+            '3-5 years'          => 10,
+            'Over 5 years'       => 10,
         },
     };
     my $input_to_category = _get_input_to_category_mapping();
@@ -155,7 +187,11 @@ sub get_financial_assessment_score {
                 score  => $score,
             };
             # categorize scores into: income_asset_score, trading_experience_score
-            $data->{$input_to_category->{$key}} += $score;
+            if ($input_to_category->{$key} =~ 'income_asset_score') {
+                $data->{$input_to_category->{$key}} += $score;
+            } else {
+                $data->{'trading_experience_score'} += $score;
+            }
             $data->{total_score} += $score;
         }
     }
