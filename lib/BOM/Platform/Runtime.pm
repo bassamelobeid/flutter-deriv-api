@@ -34,5 +34,21 @@ sub _build_app_config {
     );
 }
 
+sub get_offerings_config {
+    my $runtime = shift;
+
+    my $config_args = {};
+
+    $config_args->{suspend_trading}        = $runtime->app_config->system->suspend->trading;
+    $config_args->{suspend_trades}         = $runtime->app_config->quants->underlyings->suspend_trades;
+    $config_args->{suspend_buy}            = $runtime->app_config->quants->underlyings->suspend_buy;
+    $config_args->{suspend_contract_types} = $runtime->app_config->quants->features->suspend_contract_types;
+
+    $config_args->{disabled_due_to_corporate_actions} = $runtime->app_config->quants->underlyings->disabled_due_to_corporate_actions;
+    $config_args->{disabled_markets}                  = $runtime->app_config->quants->markets->disabled;
+
+    return $config_args;
+}
+
 __PACKAGE__->meta->make_immutable;
 1;

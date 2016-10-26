@@ -7,7 +7,7 @@ use utf8;    # to support source-embedded country name strings in this module
 use Locale::SubCountry;
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Countries;
+use LandingCompany::Countries;
 
 use BOM::Platform::Context qw(request localize);
 
@@ -31,8 +31,8 @@ sub generate_residence_countries_list {
 
     foreach my $country_selection (
         sort { $a->{translated_name} cmp $b->{translated_name} }
-        map { +{code => $_, translated_name => BOM::Platform::Countries->instance->countries->localized_code2country($_, request()->language)} }
-        BOM::Platform::Countries->instance->countries->all_country_codes
+        map { +{code => $_, translated_name => LandingCompany::Countries->instance->countries->localized_code2country($_, request()->language)} }
+        LandingCompany::Countries->instance->countries->all_country_codes
         )
     {
         my $country_code = $country_selection->{code};
@@ -47,7 +47,7 @@ sub generate_residence_countries_list {
         };
 
         # to be removed later - JP
-        if (BOM::Platform::Countries->instance->restricted_country($country_code) or $country_code eq 'jp') {
+        if (LandingCompany::Countries->instance->restricted_country($country_code) or $country_code eq 'jp') {
             $option->{disabled} = 'DISABLED';
         } elsif (request()->country_code eq $country_code) {
             $option->{selected} = 'selected';
