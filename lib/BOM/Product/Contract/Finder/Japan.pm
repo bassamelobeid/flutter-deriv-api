@@ -3,9 +3,10 @@ use strict;
 use warnings;
 use Date::Utility;
 use Time::Duration::Concise;
-use BOM::Platform::Offerings qw(get_offerings_flyby);
+use LandingCompany::Offerings qw(get_offerings_flyby);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
+use BOM::Platform::Runtime;
 use BOM::Product::Contract::Category;
 use Format::Util::Numbers qw(roundnear);
 use List::Util qw(reduce);
@@ -67,7 +68,7 @@ sub available_contracts_for_symbol {
 sub get_offerings {
     my $symbol = shift;
 
-    my $flyby = get_offerings_flyby('japan');
+    my $flyby = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, 'japan');
 
     my %similar_args = (
         underlying_symbol => $symbol,

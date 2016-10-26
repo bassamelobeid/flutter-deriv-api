@@ -39,7 +39,7 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Contract::Category;
 use BOM::Product::RiskProfile;
 use BOM::Product::Types;
-use BOM::Platform::Offerings qw(get_contract_specifics);
+use LandingCompany::Offerings qw(get_contract_specifics);
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -1678,13 +1678,15 @@ has [qw(offering_specifics barrier_category)] => (
 sub _build_offering_specifics {
     my $self = shift;
 
-    return get_contract_specifics({
-        underlying_symbol => $self->underlying->symbol,
-        barrier_category  => $self->barrier_category,
-        expiry_type       => $self->expiry_type,
-        start_type        => $self->start_type,
-        contract_category => $self->category->code,
-    });
+    return get_contract_specifics(
+        BOM::Platform::Runtime->instance->get_offerings_config,
+        {
+            underlying_symbol => $self->underlying->symbol,
+            barrier_category  => $self->barrier_category,
+            expiry_type       => $self->expiry_type,
+            start_type        => $self->start_type,
+            contract_category => $self->category->code,
+        });
 }
 
 sub _build_barrier_category {
@@ -1694,7 +1696,7 @@ sub _build_barrier_category {
     if ($self->category->code eq 'callput') {
         $barrier_category = ($self->is_atm_bet) ? 'euro_atm' : 'euro_non_atm';
     } else {
-        $barrier_category = $BOM::Platform::Offerings::BARRIER_CATEGORIES->{$self->category->code}->[0];
+        $barrier_category = $LandingCompany::Offerings::BARRIER_CATEGORIES->{$self->category->code}->[0];
     }
 
     return $barrier_category;
@@ -2236,8 +2238,8 @@ sub _validate_offerings {
     my $underlying    = $self->underlying;
     my $contract_code = $self->code;
     # check if trades are suspended on that claimtype
-    my $suspend_claim_types = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types;
-    if (@$suspend_claim_types and first { $contract_code eq $_ } @{$suspend_claim_types}) {
+    my $suspend_contract_types = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_contract_types;
+    if (@$suspend_contract_types and first { $contract_code eq $_ } @{$suspend_contract_types}) {
         return {
             message           => "Trading suspended for contract type [code: " . $contract_code . "]",
             message_to_client => $message_to_client,

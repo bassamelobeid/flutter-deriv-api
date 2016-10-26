@@ -10,7 +10,7 @@ use Test::Exception;
 use Cache::RedisDB;
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Offerings qw(get_offerings_flyby get_offerings_with_filter);
+use LandingCompany::Offerings qw(get_offerings_flyby get_offerings_with_filter);
 
 my @expected_lc   = qw(japan-virtual virtual costarica maltainvest japan malta iom);
 my %expected_type = (
@@ -51,7 +51,7 @@ my %expected_market = (
 subtest 'landing_company specifics' => sub {
     lives_ok {
         foreach my $lc (@expected_lc) {
-            my $fb        = get_offerings_flyby($lc);
+            my $fb = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $lc);
             my @market_lc = $fb->values_for_key('market');
             cmp_bag(\@market_lc, $expected_market{$lc}, 'market list for ' . $lc);
         }
@@ -60,7 +60,7 @@ subtest 'landing_company specifics' => sub {
 
     lives_ok {
         foreach my $lc (@expected_lc) {
-            my $fb      = get_offerings_flyby($lc);
+            my $fb = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $lc);
             my @type_lc = $fb->values_for_key('contract_type');
             cmp_bag(\@type_lc, $expected_type{$lc}, 'contract type list for ' . $lc);
         }
@@ -68,9 +68,9 @@ subtest 'landing_company specifics' => sub {
     'contract list by landing company';
 
     lives_ok {
-        my $revision = BOM::Platform::Runtime->instance->app_config->current_revision;
+        my $cache_key = LandingCompany::Offerings::_get_config_key(BOM::Platform::Runtime->instance->get_offerings_config);
         foreach my $lc (@expected_lc) {
-            my $fb = Cache::RedisDB->get('OFFERINGS_' . $lc, $revision);
+            my $fb = Cache::RedisDB->get('OFFERINGS_' . $lc, $cache_key);
             my @market_lc = $fb->values_for_key('market');
             cmp_bag(\@market_lc, $expected_market{$lc}, 'market list for ' . $lc);
         }
@@ -124,7 +124,7 @@ subtest 'offerings check' => sub {
         },
     );
     foreach my $testname (keys %test) {
-        my $fb     = get_offerings_flyby($testname);
+        my $fb = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $testname);
         my $result = $test{$testname};
         foreach my $market (keys %$result) {
             if ($result->{$market}) {
@@ -260,7 +260,7 @@ subtest 'legal allowed underlyings' => sub {
     );
 
     foreach my $lc (keys %expected_list) {
-        my @got = get_offerings_with_filter('underlying_symbol', {landing_company => $lc});
+        my @got = get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'underlying_symbol', {landing_company => $lc});
         cmp_bag(\@got, $expected_list{$lc}, 'underlying list for ' . $lc);
     }
 };

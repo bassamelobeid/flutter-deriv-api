@@ -8,6 +8,7 @@ use List::Util qw( first );
 use Time::Duration::Concise;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 use YAML::XS qw(LoadFile);
+use File::ShareDir;
 use Try::Tiny;
 
 use Postgres::FeedDB::Spot::Tick;
@@ -93,7 +94,7 @@ my %OVERRIDE_LIST = (
     },
 );
 
-my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_types.yml');
+my $contract_type_config = LoadFile(File::ShareDir::dist_file('LandingCompany', 'contract_types.yml'));
 {
     my %loaded = ();
 

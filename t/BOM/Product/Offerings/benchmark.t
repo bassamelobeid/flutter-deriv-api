@@ -2,17 +2,20 @@
 
 use Test::More tests => 1;
 
-use BOM::Platform::Offerings qw(get_offerings_with_filter);
-use BOM::Platform::LandingCompany::Registry;
+use LandingCompany::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Registry;
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
+use BOM::Platform::Runtime;
 
 use Time::HiRes;
 
 subtest 'benchmark offerings' => sub {
-    foreach my $lc (map { $_->short } BOM::Platform::LandingCompany::Registry->new->all) {
+    foreach my $lc (map { $_->short } LandingCompany::Registry->new->all) {
         my $before = Time::HiRes::time;
-        get_offerings_with_filter('market', {landing_company => $lc});
+        my $config = BOM::Platform::Runtime->instance->get_offerings_config;
+
+        get_offerings_with_filter($config, 'market', {landing_company => $lc});
         my $diff = Time::HiRes::time - $before;
         cmp_ok($diff, "<", 1, "construction of $lc offerings objectis less that 1 seconds");
         foreach my $market (map { $_->name } Finance::Asset::Market::Registry->all) {
@@ -40,7 +43,7 @@ subtest 'benchmark offerings' => sub {
                         landing_company => $lc
                     }];
                 my $before = Time::HiRes::time;
-                get_offerings_with_filter(@{$_}) for @common_call;
+                get_offerings_with_filter($config, @{$_}) for @common_call;
                 my $diff = Time::HiRes::time - $before;
                 my $avg  = $diff / @common_calls;
                 cmp_ok($avg, "<", 0.002, 'average is less than 2ms');
