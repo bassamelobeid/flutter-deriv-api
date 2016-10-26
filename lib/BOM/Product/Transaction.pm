@@ -15,7 +15,7 @@ use Try::Tiny;
 
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Runtime;
-use BOM::Platform::Countries;
+use LandingCompany::Countries;
 use BOM::Platform::Client;
 use BOM::System::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
@@ -31,8 +31,7 @@ use BOM::Database::Model::DataCollection::QuantsBetVariables;
 use BOM::Database::Model::Constants;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::Helper::RejectedTrade;
-use BOM::Platform::Offerings qw/get_offerings_with_filter/;
-use BOM::Platform::LandingCompany::Registry;
+use LandingCompany::Registry;
 use BOM::Database::ClientDB;
 use Finance::Asset::Market::Types;
 
@@ -1231,7 +1230,7 @@ sub __validate_currency {
         );
     }
 
-    if (not BOM::Platform::LandingCompany::Registry::get_by_broker($broker)->is_currency_legal($currency)) {
+    if (not LandingCompany::Registry::get_by_broker($broker)->is_currency_legal($currency)) {
         return Error::Base->cuss(
             -type              => 'IllegalCurrency',
             -mesg              => "Illegal $currency for $broker",
@@ -1611,7 +1610,7 @@ sub __validate_iom_withdrawal_limit {
 
     return if $client->is_virtual;
 
-    my $landing_company = BOM::Platform::LandingCompany::Registry::get_by_broker($client->broker_code);
+    my $landing_company = LandingCompany::Registry::get_by_broker($client->broker_code);
     return if ($landing_company->country ne 'Isle of Man');
 
     my $landing_company_short = $landing_company->short;
@@ -1762,7 +1761,7 @@ sub __validate_jurisdictional_restrictions {
         );
     }
 
-    my $lc = BOM::Platform::LandingCompany::Registry::get_by_broker($loginid);
+    my $lc = LandingCompany::Registry::get_by_broker($loginid);
 
     my %legal_allowed_ct = map { $_ => 1 } @{$lc->legal_allowed_contract_types};
     if (not $legal_allowed_ct{$contract->code}) {
@@ -1781,7 +1780,7 @@ sub __validate_jurisdictional_restrictions {
         );
     }
 
-    if ($residence && $market_name eq 'volidx' && BOM::Platform::Countries->instance->volidx_restricted_country($residence)) {
+    if ($residence && $market_name eq 'volidx' && LandingCompany::Countries->instance->volidx_restricted_country($residence)) {
         return Error::Base->cuss(
             -type => 'RandomRestrictedCountry',
             -mesg => 'Clients are not allowed to place Volatility Index contracts as their country is restricted.',
@@ -1791,7 +1790,7 @@ sub __validate_jurisdictional_restrictions {
     }
 
     # For certain countries such as Belgium, we are not allow to sell financial product to them.
-    if ($residence && $market_name ne 'volidx' && BOM::Platform::Countries->instance->financial_binaries_restricted_country($residence)) {
+    if ($residence && $market_name ne 'volidx' && LandingCompany::Countries->instance->financial_binaries_restricted_country($residence)) {
         return Error::Base->cuss(
             -type => 'FinancialBinariesRestrictedCountry',
             -mesg => 'Clients are not allowed to place financial products contracts as their country is restricted.',

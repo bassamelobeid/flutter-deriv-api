@@ -8,7 +8,6 @@ use Test::Exception;
 
 use Format::Util::Numbers qw(roundnear);
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Platform::Offerings qw(get_offerings_with_filter);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;

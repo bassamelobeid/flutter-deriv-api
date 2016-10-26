@@ -17,11 +17,13 @@ This class represents available contract categories.
 =cut
 
 use Moose;
+use File::ShareDir;
 use YAML::XS qw(LoadFile);
 use namespace::autoclean;
 use BOM::Platform::Context qw(localize);
+use LandingCompany::Offerings qw(get_all_contract_categories);
 
-my $category_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_categories.yml');
+my $category_config = get_all_contract_categories();
 
 has code => (
     is       => 'ro',

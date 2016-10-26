@@ -7,7 +7,8 @@ use Test::More tests => 30;
 use Test::Exception;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Platform::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Offerings qw(get_offerings_with_filter);
+use BOM::Platform::Runtime;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Date::Utility;
@@ -19,6 +20,7 @@ use Test::BOM::UnitTestPrice qw(:init);
 my $now = Date::Utility->new('2016-02-01');
 note('Pricing on ' . $now->datetime);
 
+my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
 my %skip_category = (
     asian   => 1,
     digits  => 1,
@@ -39,6 +41,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
     });
     foreach my $contract_category (
         grep { not $skip_category{$_} } get_offerings_with_filter(
+            $offerings_cfg,
             'contract_category',
             {
                 underlying_symbol => $ul->symbol,
@@ -54,7 +57,9 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                 CALLE => 1,
                 PUTE  => 1,
             );
-            foreach my $contract_type (grep { !$equal{$_} } get_offerings_with_filter('contract_type', {contract_category => $contract_category})) {
+            foreach my $contract_type (grep { !$equal{$_} }
+                get_offerings_with_filter($offerings_cfg, 'contract_type', {contract_category => $contract_category}))
+            {
                 my $args = {
                     bet_type     => $contract_type,
                     underlying   => $ul,

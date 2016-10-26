@@ -8,7 +8,7 @@ BOM::Product::Contract::Offerings
 
 Help for getting insight into what is offered.
 
-To be deprecated in favor of BOM::Platform::Offerings
+To be deprecated in favor of LandingCompany::Offerings
 
 my $offerings = BOM::Product::Contract::Offerings->new;
 
@@ -23,7 +23,7 @@ use Finance::Asset::Market::Registry;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Product::Contract::Category;
-use BOM::Platform::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Offerings qw(get_offerings_with_filter);
 use BOM::Platform::Context qw(localize);
 use Finance::Asset::SubMarket;
 use Finance::Asset::SubMarket::Registry;
@@ -209,7 +209,8 @@ sub _build_tree {
 
     foreach my $market (
         sort { $a->display_order <=> $b->display_order }
-        map { Finance::Asset::Market::Registry->instance->get($_) } get_offerings_with_filter('market', {landing_company => $self->landing_company}))
+        map  { Finance::Asset::Market::Registry->instance->get($_) }
+        get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'market', {landing_company => $self->landing_company}))
     {
         my $children    = [];
         my $market_info = {
@@ -220,6 +221,7 @@ sub _build_tree {
         foreach my $submarket (
             sort { $a->display_order <=> $b->display_order }
             map  { Finance::Asset::SubMarket::Registry->instance->get($_) } get_offerings_with_filter(
+                BOM::Platform::Runtime->instance->get_offerings_config,
                 'submarket',
                 {
                     market          => $market->name,
@@ -237,6 +239,7 @@ sub _build_tree {
             foreach my $ul (
                 sort { localize($a->display_name) cmp localize($b->display_name) }
                 map  { create_underlying($_) } get_offerings_with_filter(
+                    BOM::Platform::Runtime->instance->get_offerings_config,
                     'underlying_symbol',
                     {
                         submarket       => $submarket->name,
@@ -254,6 +257,7 @@ sub _build_tree {
                 foreach my $bc (
                     sort { $a->display_order <=> $b->display_order }
                     map  { BOM::Product::Contract::Category->new($_) } get_offerings_with_filter(
+                        BOM::Platform::Runtime->instance->get_offerings_config,
                         'contract_category',
                         {
                             underlying_symbol => $ul->symbol,
