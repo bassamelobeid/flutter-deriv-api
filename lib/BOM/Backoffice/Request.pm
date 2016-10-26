@@ -11,6 +11,7 @@ our @EXPORT_OK = qw(request localize template);
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context::I18N;
+use BOM::Backoffice::Request::Base;
 
 state $current_request;
 
