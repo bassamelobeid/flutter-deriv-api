@@ -86,7 +86,7 @@ sub _configure_template_for {
     my $request = shift;
     my $stash   = shift;
 
-    my @include_path = ('/home/git/regentmarkets/bom-backoffice/templates/', '/home/git/regentmarkets/bom-platform/templates/');
+    my @include_path = ('/home/git/regentmarkets/bom-backoffice/templates/');
 
     my $template_toolkit = Template->new({
             ENCODING     => 'utf8',
