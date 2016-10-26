@@ -6,10 +6,10 @@ use Moose::Util::TypeConstraints;
 use URL::Encode;
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Countries;
+use LandingCompany::Countries;
 
 use Plack::App::CGIBin::Streaming::Request;
-use BOM::Platform::LandingCompany::Registry;
+use LandingCompany::Registry;
 use Sys::Hostname;
 
 with 'BOM::Platform::Context::Request::Urls', 'BOM::Platform::Context::Request::Builders';
@@ -200,7 +200,7 @@ sub _build_http_method {
 
 sub _build_country {
     my $self = shift;
-    return BOM::Platform::Countries->instance->countries->country_from_code($self->country_code);
+    return LandingCompany::Countries->instance->countries->country_from_code($self->country_code);
 }
 
 sub _build_cookie_domain {
@@ -226,7 +226,7 @@ sub _build_domain_name {
 my $countries_list;
 
 BEGIN {
-    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+    $countries_list = LandingCompany::Countries->instance->countries_list;
 }
 
 sub _build_broker_code {
@@ -246,7 +246,7 @@ sub _build_broker_code {
     my $company = $countries_list->{$self->country_code}->{gaming_company};
     $company = $countries_list->{$self->country_code}->{financial_company} if (not $company or $company eq 'none');
 
-    return BOM::Platform::LandingCompany::Registry::get($company)->broker_codes->[0];
+    return LandingCompany::Registry::get($company)->broker_codes->[0];
 
 }
 
@@ -275,7 +275,7 @@ sub _build_language {
 sub _build_available_currencies {
     my $self = shift;
 
-    return BOM::Platform::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_allowed_currencies;
+    return LandingCompany::Registry::get_by_broker($self->broker_code)->legal_allowed_currencies;
 }
 
 sub _build_default_currency {
@@ -283,14 +283,14 @@ sub _build_default_currency {
 
     #First try to get a country specific currency.
     my $currency = $self->_country_specific_currency($self->country_code);
-    if ($currency and BOM::Platform::LandingCompany::Registry::get_by_broker($self->broker_code)->is_currency_legal($currency)) {
+    if ($currency and LandingCompany::Registry::get_by_broker($self->broker_code)->is_currency_legal($currency)) {
         if (grep { $_ eq $currency } @{$self->available_currencies}) {
             return $currency;
         }
     }
 
     #Next see if the default in landing company is available.
-    $currency = BOM::Platform::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_default_currency;
+    $currency = LandingCompany::Registry::get_by_broker($self->broker_code)->legal_default_currency;
     if (grep { $_ eq $currency } @{$self->available_currencies}) {
         return $currency;
     }
