@@ -1,15 +1,11 @@
 package BOM::Platform::Context::Request;
 
 use Moose;
-use Moose::Util::TypeConstraints;
 use Encode;
 use URL::Encode;
 use Sys::Hostname;
-use Plack::App::CGIBin::Streaming::Request;
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Countries;
-use BOM::Platform::LandingCompany::Registry;
 
 with 'BOM::Platform::Context::Request::Builders';
 
