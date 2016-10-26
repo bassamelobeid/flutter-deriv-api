@@ -47,8 +47,7 @@ subtest 'inefficient craziness' => sub {
         payout => 10,
     };
     my $c = produce_contract($bet_params);
-    is $c->ask_probability->amount, 0.7, 'ask probability is 0.7 for USDJPY';
-    ok !$c->pricing_engine->risk_markup->peek_amount('intraday_eod_markup'), '10% eod markup not added for ATM';
+    is $c->pricing_engine->risk_markup->peek_amount('intraday_eod_markup'),0.05, 'eod markup added for ATM';
     $bet_params->{duration}   = '15m';
     $bet_params->{underlying} = 'R_100';
     $c = produce_contract($bet_params);
@@ -57,7 +56,6 @@ subtest 'inefficient craziness' => sub {
     $bet_params->{barrier} = 'S5P';
     $c = produce_contract($bet_params);
     ok $c->ask_probability->amount < 0.7, 'ask probability is less than 0.7 for USDJPY non ATM';
-    $DB::single=1;
     is $c->pricing_engine->risk_markup->peek_amount('intraday_eod_markup'), 0.1, '10% eod markup added for non ATM';
     $bet_params->{barrier} = 'S0P';
     $bet_params->{date_start} = $bet_params->{date_pricing} = $efficient_time;
