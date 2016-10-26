@@ -8,7 +8,7 @@ with 'BOM::API::Payment::Role::Plack';
 use BOM::Database::ClientDB;
 use BOM::Database::Model::HandoffToken;
 use BOM::Platform::Runtime;
-use BOM::Platform::LandingCompany::Registry;
+use LandingCompany::Registry;
 
 sub session_GET {
     my $c       = shift;
@@ -84,7 +84,7 @@ sub session_validate_GET {
         return $c->status_bad_request('Invalid or missing token in request');
     }
     # we have a token, so lets make a db
-    my $landing_company    = BOM::Platform::LandingCompany::Registry::get_by_broker($c->user->loginid);
+    my $landing_company    = LandingCompany::Registry::get_by_broker($c->user->loginid);
     my $connection_builder = BOM::Database::ClientDB->new({
         client_loginid => $c->user->loginid,
     });
