@@ -57,6 +57,39 @@ subtest 'accepted http_methods' => sub {
     };
 };
 
+subtest 'client IP address' => sub {
+    my $class = Test::MockModule('FakeRequest');
+    ok(my $code = BOM::Platform::Context::Request::Builders->can('_remote_ip'), 'have our _remote_ip sub');
+    my %headers;
+    $class->mock(headers => sub {
+        my ($self, $hdr) = @_;
+        $headers{$hdr}
+    });
+    $class->mock(env => sub {
+        my ($self) = @_;
+        \%headers
+    });
+    for my $ip (qw(4.2.2.1 1.2.3.4 8.8.8.8 199.199.199.199)) {
+        {
+            local $headers{'cf-connecting-ip'} = $ip;
+            is($code->($class), $ip, "set $ip via CF-Connecting-IP"); 
+        }
+        {
+            local $headers{'x-forwarded-for'} = "$ip,1.2.3.4";
+            is($code->($class), $ip, "set $ip via X-Forwarded-For");
+            local $headers{'x-forwarded-for'} = "1.2.3.4,$ip";
+            is($code->($class), '', "no result when $ip is last in X-Forwarded-For");
+            local $headers{'x-forwarded-for'} = "$ip";
+            is($code->($class), '', "no result when $ip is the only entry in X-Forwarded-For");
+        }
+        {
+            local $headers{'REMOTE_ADDR'} = $ip;
+            is($code->($class), $ip, "set $ip via REMOTE_ADDR");
+        }
+    }
+    done_testing;
+};
+
 sub mock_request_for {
     my $for_url = shift;
     my $param   = shift || {};
