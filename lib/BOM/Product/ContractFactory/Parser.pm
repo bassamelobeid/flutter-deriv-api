@@ -22,11 +22,12 @@ Some general utility subroutines related to bet parameters.
 =cut
 
 use Date::Utility;
-use BOM::Platform::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Offerings qw(get_offerings_with_filter);
+use BOM::Platform::Runtime;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Database::Model::Constants;
-use BOM::Platform::LandingCompany::Registry;
+use LandingCompany::Registry;
 use List::MoreUtils qw(uniq);
 
 =head2 financial_market_bet_to_parameters
@@ -36,7 +37,9 @@ Convert an FMB into parameters suitable for creating a BOM::Product::Contract
 =cut
 
 my @available_contracts =
-    map { get_offerings_with_filter('contract_type', {landing_company => $_->short}) } BOM::Platform::LandingCompany::Registry->new->all;
+    map { get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'contract_type', {landing_company => $_->short}) }
+    LandingCompany::Registry->new->all;
+
 my %AVAILABLE_CONTRACTS = map { $_ => 1 } uniq(@available_contracts);
 
 sub financial_market_bet_to_parameters {
