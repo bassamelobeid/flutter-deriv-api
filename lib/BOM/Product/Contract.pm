@@ -573,7 +573,93 @@ sub _build_pricing_engine {
 
     my $pricing_engine;
     if ($self->new_interface_engine) {
-        my %pricing_parameters = map { $_ => $self->_pricing_parameters->{$_} } @{$self->pricing_engine_name->required_args};
+        if($self->pricing_engine_name eq 'Pricing::Engine::Digits') {
+            %pricing_parameters = (
+                strikes           => $self->barrier ? $self->barrier->as_absolute : undef,
+                contract_type     => $self->pricing_code,
+            );
+        } elsif($self->pricing_engine_name eq 'Pricing::Engine::Asian') {
+            %pricing_parameters = (
+                spot              => $self->pricing_spot,
+                strikes           => [grep { $_ } values %{$self->barriers_for_pricing}],
+                date_start        => $self->effective_start,
+                date_expiry       => $self->date_expiry,
+                date_pricing      => $self->date_pricing,
+                discount_rate     => $self->discount_rate,
+                q_rate            => $self->q_rate,
+                r_rate            => $self->r_rate,
+                vol               => $self->pricing_vol,
+                payouttime_code   => $self->payouttime_code,
+                contract_type     => $self->pricing_code,
+                underlying_symbol => $self->underlying->symbol,
+            );
+        } elsif($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
+            %pricing_parameters = (
+                contract_type     => $self->pricing_code,
+                underlying_symbol => $self->underlying->symbol,
+                date_start        => $self->effective_start,
+                date_pricing      => $self->date_pricing,
+                ticks             => BOM::Market::AggTicks->new->retrieve({
+                    underlying        => $self->underlying,
+                    ending_epoch      => $self->date_start->epoch,
+                    tick_count        => 20
+                }),
+                economic_events   => $self->_generate_market_data->{economic_events},
+            );
+        } elsif($self->pricing_engine_name eq 'Pricing::Engine::European::Digital::Slope') {
+            my $surface = $self->volsurface->surface;
+            my $first_term       = (sort { $a <=> $b } keys %$surface)[0];
+            %pricing_parameters = (
+                contract_type        => $self->pricing_code,
+                spot                 => $self->pricing_spot,
+                strikes              => [grep { $_ } values %{$self->barriers_for_pricing}],
+                date_start           => $self->effective_start,
+                date_pricing         => $self->date_pricing,
+                date_expiry          => $self->date_expiry,
+                discount_rate        => $self->discount_rate,
+                mu                   => $self->mu,
+                vol                  => $self->pricing_vol,
+                payouttime_code      => $self->payouttime_code,
+                q_rate               => $self->q_rate,
+                r_rate               => $self->r_rate,
+                priced_with          => $self->priced_with,
+                underlying_symbol    => $self->underlying->symbol,
+                ny1700_rollover_date => Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($self->date_start),
+                volsurface_data => $surface,
+                overnight_tenor => $self->volsurface->_ON_day,
+                market_rr_bf => $self->volsurface->get_market_rr_bf($first_term),
+                atm_volatility => $self->volsurface->get_volatility({
+                    delta => 50,
+                    from => $self->date_start,
+                    to => $self->date_expiry,
+                }),
+                vol_spread => $self->volsurface->get_spread({
+                    sought_point => $self->is_atm_bet ? 'atm' : 'max',
+                    day          => $self->timeindays
+
+                }),
+                volatility => sub {
+                    my ($args, $surface_data) = @_;
+                    # if there's new surface data, calculate vol from that.
+                    my $vol;
+                    if ($surface_data) {
+                        my $new_volsurface_obj = $volsurface->clone({surface_data => $surface_data});
+                        $vol = $new_volsurface_obj->get_volatility($args);
+                    } else {
+                        $vol = $volsurface->get_volatility($args);
+                    }
+
+                    return $vol;
+                },
+            );
+        } else {
+            warn "Unknown pricing engine: " . $self->pricing_engine_name;
+        }
+
+        if(my @missing_parameters = grep !exists $pricing_parameters{$_}, @{$self->pricing_engine_name->required_args}) {
+            warn "Missing pricing parameters for engine " . $self->pricing_engine_name . " - " . join ',', @missing_parameters;
+        }
+
         $pricing_engine = $self->pricing_engine_name->new(%pricing_parameters);
     } else {
         $pricing_engine = $self->pricing_engine_name->new({
@@ -1719,38 +1805,6 @@ sub _build_new_interface_engine {
     return $engines{$self->pricing_engine_name} // 0;
 }
 
-sub _pricing_parameters {
-    my $self = shift;
-
-    my $result = {
-        priced_with => $self->priced_with,
-        spot        => $self->pricing_spot,
-        strikes     => $self->pricing_engine_name eq 'Pricing::Engine::Digits'
-        ? ($self->barrier ? $self->barrier->as_absolute : undef)
-        : [grep { $_ } values %{$self->barriers_for_pricing}],
-        date_start        => $self->effective_start,
-        date_expiry       => $self->date_expiry,
-        date_pricing      => $self->date_pricing,
-        discount_rate     => $self->discount_rate,
-        q_rate            => $self->q_rate,
-        r_rate            => $self->r_rate,
-        mu                => $self->mu,
-        vol               => $self->pricing_vol,
-        payouttime_code   => $self->payouttime_code,
-        contract_type     => $self->pricing_code,
-        underlying_symbol => $self->underlying->symbol,
-        market_data       => $self->_market_data,
-        market_convention => $self->_market_convention,
-    };
-
-    #Only send qf-market-data if the engine really needs it.
-    #because the calculation is expensive and also it may not be compatible with
-    #Engine's configuration (e.g. fetching economic events for a long-term contract)
-    $result->{qf_market_data} = _generate_market_data($self->underlying, $self->date_start)
-        if first { $_ eq 'qf_market_data' } @{$self->pricing_engine_name->required_args};
-
-    return $result;
-}
 
 sub _generate_market_data {
     my ($underlying, $date_start) = @_;
@@ -1787,16 +1841,6 @@ sub _generate_market_data {
     return $result;
 }
 
-sub _market_convention {
-    my $self = shift;
-
-    return {
-        get_rollover_time => sub {
-            my $when = shift;
-            return Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($when);
-        },
-    };
-}
 
 sub _market_data {
     my $self = shift;
