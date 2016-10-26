@@ -4,6 +4,7 @@ use Moose;
 use Moose::Util::TypeConstraints;
 use Mojo::URL;
 use Encode;
+use Sys::Hostname;
 use Plack::App::CGIBin::Streaming::Request;
 
 use BOM::Platform::LandingCompany::Registry;
@@ -55,6 +56,12 @@ has cookie_domain => (
     is      => 'ro',
     lazy    => 1,
     builder => '_build_cookie_domain'
+);
+
+has 'domain_name' => (
+    is         => 'ro',
+    isa        => 'Str',
+    lazy_build => 1,
 );
 
 has 'broker_code' => (
@@ -148,18 +155,30 @@ sub _build_params {
     return $params;
 }
 
-sub param {
-    my $self = shift;
-    my $name = shift;
-    return $self->params->{$name};
-}
-
 sub _build_cookie_domain {
     my $self   = shift;
     my $domain = $self->domain_name;
     return $domain if $domain eq '127.0.0.1';
     $domain =~ s/^[^.]+\.([^.]+\..+)/$1/;
     return "." . $domain;
+}
+
+sub _build_domain_name {
+    my $self = shift;
+
+    my @host_name = split(/\./, Sys::Hostname::hostname);
+    my $name = $host_name[0];
+
+    if ($name =~ /^qa\d+$/) {
+        return 'binary' . $name . '.com';
+    }
+    return 'binary.com';
+}
+
+sub param {
+    my $self = shift;
+    my $name = shift;
+    return $self->params->{$name};
 }
 
 sub cookie {

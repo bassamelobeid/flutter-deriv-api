@@ -2,6 +2,7 @@ package BOM::Backoffice::Request;
 
 use feature 'state';
 
+use base qw( Exporter );
 use Template;
 use Template::Stash;
 use Format::Util::Numbers;
