@@ -171,8 +171,8 @@ sub _get_ask {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
 
             # need this warning to be logged for Japan as a regulatory requirement
-            warn $contract->shortcode . ":" . $ask_price . ":" . $p2->{trading_period_start} . "\n"
-                if ($p2->{currency} && $p2->{currency} eq 'JPY' && $p2->{trading_period_start});
+            warn $contract->shortcode . ":" . $ask_price . ":" . $p2->{trading_period_start} // '' . "\n"
+                if ($p2->{currency} && $p2->{currency} eq 'JPY');
 
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
 
@@ -234,9 +234,11 @@ sub get_bid {
     catch {
         warn __PACKAGE__ . " get_bid shortcode_to_parameters failed: $short_code, currency: $currency";
         $response = BOM::RPC::v3::Utility::create_error({
-                code              => 'ContractCreationFailure',
+                code              => 'GetProposalFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
     };
+    return $response if $response;
+
     try {
         $bet_params->{is_sold}               = $is_sold;
         $bet_params->{app_markup_percentage} = $app_markup_percentage // 0;
@@ -246,9 +248,10 @@ sub get_bid {
     catch {
         warn __PACKAGE__ . " get_bid produce_contract failed, parameters: " . Dumper($bet_params);
         $response = BOM::RPC::v3::Utility::create_error({
-                code              => 'ContractCreationFailure',
+                code              => 'GetProposalFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
     };
+    return $response if $response;
 
     if ($contract->is_legacy) {
         return BOM::RPC::v3::Utility::create_error({
@@ -462,7 +465,7 @@ sub get_contract_details {
     catch {
         warn __PACKAGE__ . " get_contract_details shortcode_to_parameters failed: $params->{short_code}, currency: $params->{currency}";
         $response = BOM::RPC::v3::Utility::create_error({
-                code              => 'ContractCreationFailure',
+                code              => 'GetContractDetails',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
     };
     try {
@@ -474,7 +477,7 @@ sub get_contract_details {
     catch {
         warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . Dumper($bet_params);
         $response = BOM::RPC::v3::Utility::create_error({
-                code              => 'ContractCreationFailure',
+                code              => 'GetContractDetails',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
     };
 
