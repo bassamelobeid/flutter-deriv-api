@@ -580,6 +580,7 @@ sub _build_pricing_engine {
             bet                     => $self,
             apply_bounceback_safety => !$self->for_sale,
             inefficient_period      => $self->market_is_inefficient,
+            inactive_period         => $self->market_is_inactive,
             $self->priced_with_intraday_model ? (economic_events => $self->economic_events_for_volatility_calculation) : (),
         });
     }
@@ -949,8 +950,6 @@ sub _build_price_calculator {
             ($self->has_ask_probability)        ? (ask_probability        => $self->ask_probability)        : (),
             ($self->has_bs_probability)         ? (bs_probability         => $self->bs_probability)         : (),
             ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
-            # apply flooring on ask_probability in inefficient period for ATMs.
-            (($self->apply_market_inefficient_limit and $self->is_atm_bet) ? (minimum_ask_probability => 0.7) : ()),
         });
 }
 
@@ -2781,6 +2780,27 @@ sub _build_market_is_inefficient {
     # only 20:00/21:00 GMT to end of day
     my $disable_hour = $self->date_pricing->is_dst_in_zone('America/New_York') ? 20 : 21;
     return 0 if $hour < $disable_hour;
+    return 1;
+}
+
+has market_is_inactive => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_market_is_inactive {
+    my $self = shift;
+
+    # market inefficiency only applies to forex and commodities.
+    return 0 unless ($self->market->name eq 'forex' or $self->market->name eq 'commodities');
+    return 0 if $self->expiry_daily;
+
+    #this is not supposed to depend on DST changing so anything between (21,23)
+    #is considered inactive
+    my $hour = $self->date_pricing->hour + 0;
+    return 0 if $hour >= 23;
+    return 0 if $hour <= 20;
+
     return 1;
 }
 
