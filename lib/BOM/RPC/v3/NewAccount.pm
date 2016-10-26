@@ -26,11 +26,12 @@ use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (localize request);
 use BOM::Database::Model::OAuth;
+use LandingCompany::Countries;
 
 my $countries_list;
 
 BEGIN {
-    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+    $countries_list = LandingCompany::Countries->instance->countries_list;
 }
 
 sub _create_oauth_token {
@@ -220,7 +221,7 @@ sub new_account_real {
                 code              => 'NoLandingCompany',
                 message_to_client => $error_map->{'No landing company for this country'}});
     }
-    my $broker = BOM::Platform::LandingCompany::Registry->new->get($company)->broker_codes->[0];
+    my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
 
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
     if (my $err = $details_ref->{error}) {
@@ -337,7 +338,7 @@ sub new_account_japan {
                 code              => 'NoLandingCompany',
                 message_to_client => $error_map->{'No landing company for this country'}});
     }
-    my $broker = BOM::Platform::LandingCompany::Registry->new->get($company)->broker_codes->[0];
+    my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
 
     my $args = $params->{args};
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});

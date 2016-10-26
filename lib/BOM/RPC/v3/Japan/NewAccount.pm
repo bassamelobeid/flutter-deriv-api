@@ -16,7 +16,7 @@ use BOM::Platform::User;
 use BOM::System::Config;
 use BOM::Platform::Context qw (localize);
 use BOM::System::AuditLog;
-use BOM::Platform::LandingCompany::Registry;
+use LandingCompany::Registry;
 
 sub get_jp_account_status {
     my $client = shift;
@@ -28,8 +28,8 @@ sub get_jp_account_status {
     my $jp_account_status;
 
     if (    @siblings > 1
-        and BOM::Platform::LandingCompany::Registry::get_by_broker($client->broker)->short eq 'japan-virtual'
-        and BOM::Platform::LandingCompany::Registry::get_by_broker($jp_client->broker)->short eq 'japan')
+        and LandingCompany::Registry::get_by_broker($client->broker)->short eq 'japan-virtual'
+        and LandingCompany::Registry::get_by_broker($jp_client->broker)->short eq 'japan')
     {
         if ($jp_client->get_status('disabled')) {
             $jp_account_status->{status} = 'disabled';
@@ -116,8 +116,8 @@ sub jp_knowledge_test {
 
     # only allowed for VRTJ client, upgrading to JP
     unless (@siblings > 1
-        and BOM::Platform::LandingCompany::Registry::get_by_broker($client->broker)->short eq 'japan-virtual'
-        and BOM::Platform::LandingCompany::Registry::get_by_broker($jp_client->broker)->short eq 'japan')
+        and LandingCompany::Registry::get_by_broker($client->broker)->short eq 'japan-virtual'
+        and LandingCompany::Registry::get_by_broker($jp_client->broker)->short eq 'japan')
     {
         return BOM::RPC::v3::Utility::permission_error();
     }
