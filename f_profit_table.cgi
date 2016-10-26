@@ -6,7 +6,7 @@ use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
 use Machine::Epsilon;
 
-use BOM::Platform::Countries;
+use LandingCompany::Countries;
 use BOM::Platform::Client;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::FinancialMarketBet;
@@ -128,7 +128,7 @@ BOM::Platform::Context::template->process(
         posted_startdate            => $startdate,
         posted_enddate              => $enddate,
         currency                    => $client->currency,
-        residence                   => BOM::Platform::Countries->instance->countries->country_from_code($client->residence),
+        residence                   => LandingCompany::Countries->instance->countries->country_from_code($client->residence),
         contract_details            => \&BOM::ContractInfo::get_info,
         performance_probability     => $performance_probability,
         inv_performance_probability => $inv_performance_probability,
