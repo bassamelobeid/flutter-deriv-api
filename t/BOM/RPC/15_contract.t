@@ -628,12 +628,12 @@ subtest $method => sub {
 
     cmp_deeply([
             warnings {
-                $c->call_ok($method, $params)->has_error->error_message_is('Sorry, an error occurred while processing your request.',
+                $c->call_ok($method, $params)->has_error->error_message_is('Cannot create contract',
                     'will report error if no short_code and currency');
             }
         ],
         # We get several undef warnings too, but we'll ignore them for this test
-        supersetof(re('currency is required')),
+        supersetof(re('get_contract_details produce_contract failed')),
         '... and had warning about missing currency'
     );
 
