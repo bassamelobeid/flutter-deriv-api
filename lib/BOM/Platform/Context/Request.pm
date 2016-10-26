@@ -2,15 +2,14 @@ package BOM::Platform::Context::Request;
 
 use Moose;
 use Moose::Util::TypeConstraints;
-
+use Encode;
 use URL::Encode;
+use Sys::Hostname;
+use Plack::App::CGIBin::Streaming::Request;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Countries;
-
-use Plack::App::CGIBin::Streaming::Request;
 use BOM::Platform::LandingCompany::Registry;
-use Sys::Hostname;
 
 with 'BOM::Platform::Context::Request::Builders';
 
@@ -55,6 +54,11 @@ has cookie_domain => (
     builder => '_build_cookie_domain'
 );
 
+has 'params' => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
 has '_ip' => (
     is => 'ro',
 );
@@ -75,6 +79,38 @@ sub cookie {
     }
 
     return;
+}
+
+sub param {
+    my $self = shift;
+    my $name = shift;
+    return $self->params->{$name};
+}
+
+sub _build_params {
+    my $self = shift;
+
+    my $params = {};
+    if (my $request = $self->mojo_request) {
+        $params = $request->params->to_hash;
+    }
+
+    #decode all input params to utf-8
+    foreach my $param (keys %{$params}) {
+        if (ref $params->{$param} eq 'ARRAY') {
+            my @values = @{$params->{$param}};
+            $params->{$param} = [];
+            foreach my $value (@values) {
+                $value = Encode::decode('UTF-8', $value) unless Encode::is_utf8($value);
+                push @{$params->{$param}}, $value;
+            }
+        } else {
+            $params->{$param} = Encode::decode('UTF-8', $params->{$param}) unless Encode::is_utf8($params->{$param});
+            $params->{$param} = $params->{$param};
+        }
+    }
+
+    return $params;
 }
 
 sub _build_http_method {
