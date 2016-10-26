@@ -22,7 +22,7 @@ use Postgres::FeedDB::Spot::Tick;
 use Quant::Framework::CorrelationMatrix;
 
 use Price::Calculator;
-use Pricing::Engine::EuropeanDigitalSlope;
+use BOM::Product::Pricing::Engine::EuropeanDigitalSlope;
 use Pricing::Engine::TickExpiry;
 
 use BOM::System::Chronicle;
@@ -530,7 +530,7 @@ sub _build_greek_engine {
 sub _build_pricing_engine_name {
     my $self = shift;
 
-    my $engine_name = $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'Pricing::Engine::EuropeanDigitalSlope';
+    my $engine_name = $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'BOM::Product::Pricing::Engine::EuropeanDigitalSlope';
 
     if ($self->tick_expiry) {
         my @symbols = create_underlying_db->get_symbols_for(
@@ -1801,7 +1801,7 @@ sub _build_new_interface_engine {
         'Pricing::Engine::Asian'                => 1,
         'Pricing::Engine::Digits'               => 1,
         'Pricing::Engine::TickExpiry'           => 1,
-        'Pricing::Engine::EuropeanDigitalSlope' => 1,
+        'BOM::Product::Pricing::Engine::EuropeanDigitalSlope' => 1,
     );
 
     return $engines{$self->pricing_engine_name} // 0;
