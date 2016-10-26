@@ -17,7 +17,7 @@ use Format::Util::Numbers qw(roundnear);
 use BOM::Product::RiskProfile;
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Runtime;
-use BOM::Platform::Countries;
+use LandingCompany::Countries;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Client;
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency in_USD);
@@ -38,8 +38,7 @@ use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 
 use JSON qw(from_json);
-use BOM::Platform::Offerings qw(get_offerings_with_filter);
-use BOM::Platform::LandingCompany::Registry;
+use LandingCompany::Registry;
 
 sub cashier {
     my $params = shift;
@@ -293,7 +292,7 @@ sub get_limits {
                 message_to_client => localize('Sorry, this feature is not available.')});
     }
 
-    my $landing_company = BOM::Platform::LandingCompany::Registry::get_by_broker($client->broker)->short;
+    my $landing_company = LandingCompany::Registry::get_by_broker($client->broker)->short;
     my $wl_config       = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->$landing_company;
 
     my $limit = +{
@@ -370,7 +369,7 @@ sub paymentagent_list {
 
     # add country name plus code
     foreach (@{$countries}) {
-        $_->[1] = BOM::Platform::Countries->instance->countries->localized_code2country($_->[0], $language);
+        $_->[1] = LandingCompany::Countries->instance->countries->localized_code2country($_->[0], $language);
     }
 
     my $authenticated_paymentagent_agents =
