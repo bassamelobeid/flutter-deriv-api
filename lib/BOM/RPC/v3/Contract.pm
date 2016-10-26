@@ -158,6 +158,11 @@ sub _get_ask {
             }
         } else {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
+
+            # need this warning to be logged for Japan as a regulatory requirement
+            warn $contract->shortcode . ":" . $ask_price . ":" . $p2->{trading_period_start} . "\n"
+                if ($p2->{currency} && $p2->{currency} eq 'JPY' && $p2->{trading_period_start});
+
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
 
             $response = {
