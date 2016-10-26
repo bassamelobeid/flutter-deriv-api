@@ -1,4 +1,4 @@
-use Test::More (tests => 4);
+use Test::More (tests => 3);
 use Test::Exception;
 use Test::MockObject;
 use Test::MockModule;
@@ -12,13 +12,6 @@ subtest 'base build' => sub {
 
     $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com")});
     ok $request, "Able to build request";
-};
-
-subtest 'from_ui' => sub {
-    my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com")});
-    ok $request, "Able to build request";
-
-    ok $request->from_ui, 'The Request is from UI';
 };
 
 subtest 'headers vs builds' => sub {
