@@ -7,19 +7,20 @@ with 'App::Base::Script';
 
 use Try::Tiny;
 use IO::File;
+use File::ShareDir;
 use Module::Load::Conditional qw( can_load );
 use Locale::Maketext::Extract;
 use YAML::XS qw(LoadFile);
 
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
-use BOM::Platform::Offerings qw(get_offerings_with_filter);
+use BOM::Platform::Runtime;
+use LandingCompany::Offerings qw(get_offerings_with_filter get_all_contract_types);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::Product::Contract::Category;
 
-my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_types.yml');
 
 has file_container => (
     is         => 'ro',
@@ -168,7 +169,7 @@ sub add_contract_types {
 
     my $fh = $self->pot_append_fh;
 
-    my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_types.yml');
+    my $contract_type_config = get_all_contract_types();
 
     foreach my $contract_type (keys %{$contract_type_config}) {
         next if ($contract_type eq 'INVALID');
@@ -217,7 +218,7 @@ sub add_contract_categories {
     my $self = shift;
 
     my $fh = $self->pot_append_fh;
-    my @all_categories = map { BOM::Product::Contract::Category->new($_) } get_offerings_with_filter('contract_category');
+    my @all_categories = map { BOM::Product::Contract::Category->new($_) } get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'contract_category');
     foreach my $contract_category (@all_categories) {
         if ($contract_category->display_name) {
             my $msgid = $self->msg_id($contract_category->display_name);

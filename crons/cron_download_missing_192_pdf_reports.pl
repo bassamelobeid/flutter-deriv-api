@@ -9,11 +9,11 @@ use File::Slurp;
 use BOM::Platform::ProveID;
 use BOM::Platform::Runtime;
 use BOM::Platform::Client;
-use BOM::Platform::LandingCompany;
+use LandingCompany;
 
 my $accounts_dir = BOM::Platform::Runtime->instance->app_config->system->directory->db . "/f_accounts";
 
-for my $broker (BOM::Platform::LandingCompany::Registry::all_broker_codes) {
+for my $broker (LandingCompany::Registry::all_broker_codes) {
     next unless $broker =~ /^(CR|MX|MLT)$/;
     my $dir     = "$accounts_dir/$broker/192com_authentication";
     my $xml_dir = "$dir/xml";

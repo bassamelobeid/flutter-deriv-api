@@ -12,7 +12,7 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
-use BOM::Platform::LandingCompany::Registry;
+use LandingCompany::Registry;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -87,7 +87,7 @@ print "<form action=\""
     . "<input type=\"submit\" value=\"View Dailysummary File in Table format\">"
     . "</form>";
 
-my $landing_company = BOM::Platform::LandingCompany::Registry::get_by_broker($broker)->short;
+my $landing_company = LandingCompany::Registry::get_by_broker($broker)->short;
 if (any { $landing_company eq $_ } qw(iom malta maltainvest)) {
     Bar("HMCE/IOMCE bet numbering records");
 

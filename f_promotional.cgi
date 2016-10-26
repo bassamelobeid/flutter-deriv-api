@@ -138,7 +138,7 @@ if (@$pcs) {
         my $amount = $pc_currency . $pc->{_json}->{amount};
 
         my @countries =
-            map { /ALL/ ? 'ALL' : BOM::Platform::Countries->instance->countries->country_from_code($_) } split(/,/, $pc->{_json}->{country});
+            map { /ALL/ ? 'ALL' : LandingCompany::Countries->instance->countries->country_from_code($_) } split(/,/, $pc->{_json}->{country});
 
         my $href = request()->url_for(
             'backoffice/promocode_edit.cgi',

@@ -13,7 +13,7 @@ use Format::Util::Strings qw( set_selected_item );
 use BOM::Backoffice::Auth0;
 use BOM::StaffPages;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::LandingCompany;
+use LandingCompany;
 
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -39,7 +39,7 @@ if ((grep { $_ eq 'binary_role_master_server' } @{BOM::System::Config::node()->{
 
 print "<center>";
 
-my $allbrokercodes = '<option>' . join("<option>", BOM::Platform::LandingCompany::Registry::all_broker_codes);
+my $allbrokercodes = '<option>' . join("<option>", LandingCompany::Registry::all_broker_codes);
 
 my $brokerselection = "Broker code : <select name=broker>" . set_selected_item($broker, $allbrokercodes) . "</select>";
 
