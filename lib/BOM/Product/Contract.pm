@@ -606,7 +606,7 @@ sub _build_pricing_engine {
                 }),
                 economic_events   => $self->_generate_market_data->{economic_events},
             );
-        } elsif($self->pricing_engine_name eq 'Pricing::Engine::European::Digital::Slope') {
+        } elsif($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
             my $surface = $self->volsurface->surface;
             my $first_term       = (sort { $a <=> $b } keys %$surface)[0];
             %pricing_parameters = (
