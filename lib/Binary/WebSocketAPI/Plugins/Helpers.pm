@@ -76,22 +76,22 @@ sub register {
     # the same worker
     $app->helper(
         shared_redis => sub {
-            my ($c) = @_;
             state $redis = do {
                 my $redis = Mojo::Redis2->new(url => $chronicle_redis_url);
                 $redis->on(
                     error => sub {
                         my ($self, $err) = @_;
-                        $c->app->log->warn("redis error: $err");
+                        $app->log->warn("redis error: $err");
                     });
                 $redis->on(
                     message => sub {
                         my ($self, $msg, $channel) = @_;
 
-                        Binary::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($c, $msg, $channel)
-                            if $channel =~ /^FEED::/;
-                        Binary::WebSocketAPI::v3::Wrapper::Streamer::process_transaction_updates($c, $msg)
-                            if $channel =~ /^TXNUPDATE::transaction_/;
+                        return warn "Misuse shared_redis: the message on channel '$channel' is not expected"
+                            if $channel !~ /^FEED::/;
+
+                        my $shared_info = $app->redis_connections($channel);
+                        Binary::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($shared_info);
                     });
                 $redis;
             };

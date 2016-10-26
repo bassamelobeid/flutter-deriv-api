@@ -173,10 +173,9 @@ sub ticks_history {
 }
 
 sub process_realtime_events {
-    my ($c, $message, $chan) = @_;
+    my ($shared_info, $message, $chan) = @_;
 
     my @m = split(';', $message);
-    my $shared_info = $c->redis_connections($chan);
 
     for my $user_id (keys %{$shared_info->{per_user}}) {
         my $per_user_info = $shared_info->{per_user}->{$user_id};
