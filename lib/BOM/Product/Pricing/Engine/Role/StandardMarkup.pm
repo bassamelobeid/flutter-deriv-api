@@ -14,21 +14,15 @@ use 5.010;
 use Moose::Role;
 requires 'bet';
 
-use List::Util qw(max min sum first);
-use YAML::CacheLoader qw(LoadFile);
+use List::Util qw(first);
 use Math::Function::Interpolator;
 
-use BOM::Platform::Context qw(request localize);
 use BOM::Product::Pricing::Greeks::BlackScholes;
 use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
 
-=head1 ATTRIBUTES
-
-=cut
-
 has [
-    qw(smile_uncertainty_markup butterfly_markup vol_spread_markup spot_spread_markup risk_markup  forward_starting_markup economic_events_markup eod_market_risk_markup)
+    qw(smile_uncertainty_markup butterfly_markup vol_spread_markup spot_spread_markup risk_markup forward_starting_markup economic_events_markup eod_market_risk_markup)
     ] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
@@ -67,7 +61,6 @@ sub _build_eod_market_risk_markup {
         $eod_base = 0.05;
     }
     my $eod_market_risk_markup = Math::Util::CalculatedValue::Validatable->new({
-        language    => request()->language,
         name        => 'eod_market_risk_markup',
         description => 'Markup factor for EOD market uncertainty',
         set_by      => __PACKAGE__,

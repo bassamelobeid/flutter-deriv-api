@@ -12,7 +12,6 @@ Ref: Bloomberg 2007 paper : Variations on the Vanna Volga Adjustment, Travis Fis
 
 =cut
 
-use List::Util qw(min max);
 use Moose;
 use namespace::autoclean;
 
