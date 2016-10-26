@@ -10,7 +10,7 @@ use LWP::Simple;
 my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 my $redis = BOM::System::RedisReplicated::redis_pricer;
 
-sub sleep_to_next_second {
+sub _sleep_to_next_second {
     my $t = Time::HiRes::time();
 
     my $sleep = 1 - ($t - int($t));
@@ -18,14 +18,14 @@ sub sleep_to_next_second {
 }
 
 while (1) {
-    sleep_to_next_second();
+    _sleep_to_next_second();
     my $overflow = $redis->llen('pricer_jobs');
     DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.overflow', $overflow, {tags => ['tag:' . $internal_ip]});
 
     # If we didn't manage to process everything within 1s, we'll allow 1s extra - this will cause price update rates to
     # be halved on the UI.
     if($overflow) {
-        sleep_to_next_second();
+        _sleep_to_next_second();
     }
 
     my $keys = $redis->scan_all(
