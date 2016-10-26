@@ -120,8 +120,6 @@ sub register {
                     message => sub {
                         my ($self, $msg, $channel) = @_;
 
-                        Binary::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($c, $msg, $channel)
-                            if $channel =~ /^FEED::/;
                         Binary::WebSocketAPI::v3::Wrapper::Streamer::process_transaction_updates($c, $msg)
                             if $channel =~ /^TXNUPDATE::transaction_/;
                     });

@@ -303,7 +303,7 @@ sub _feed_channel_subscribe {
     # keep the controller to send back redis notifications
     $per_user_info->{'c'} = $c;
     # let's avoid cycles, which lead to memory leaks
-    weaken $c;
+    weaken $per_user_info->{'c'};
     my $feed_channel_type  = $c->stash('feed_channel_type')  // {};
     my $feed_channel_cache = $c->stash('feed_channel_cache') // {};
 
