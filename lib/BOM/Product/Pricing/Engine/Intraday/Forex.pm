@@ -27,6 +27,11 @@ has inefficient_period => (
     default => 0,
 );
 
+has inactive_period => (
+    is      => 'ro',
+    default => 0,
+);
+
 has economic_events => (
     is      => 'ro',
     default => sub { [] },
@@ -568,6 +573,26 @@ sub _build_risk_markup {
             base_amount => 0.1,
         });
         $risk_markup->include_adjustment('add', $end_of_day_markup);
+    }
+
+    if ($self->bet->is_atm_bet and $self->inefficient_period) {
+        my $end_of_day_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'intraday_eod_markup',
+            description => '5% markup for inefficient period',
+            set_by      => __PACKAGE__,
+            base_amount => 0.05,
+        });
+        $risk_markup->include_adjustment('add', $end_of_day_markup);
+    }
+
+    if ($self->bet->is_atm_bet and $self->inactive_period) {
+        my $inactive_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'intraday_inactive_markup',
+            description => '5% markup for inactive period',
+            set_by      => __PACKAGE__,
+            base_amount => 0.05,
+        });
+        $risk_markup->include_adjustment('add', $inactive_markup);
     }
 
     if (not $self->bet->is_atm_bet and $bet->remaining_time->minutes <= 15) {
