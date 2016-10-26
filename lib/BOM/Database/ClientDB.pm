@@ -58,7 +58,7 @@ sub BUILDARGS {
 my $environment;
 
 BEGIN {
-    my $loaded_landing_companies = LandingCompany::Registry::loaded_landing_companies();
+    my $loaded_landing_companies = LandingCompany::Registry::get_loaded_landing_companies();
     for my $v (values %$loaded_landing_companies) {
         $environment->{$_} = $v->{short} for @{$v->{broker_codes}};
     }
