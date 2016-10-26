@@ -799,7 +799,7 @@ sub set_self_exclusion {
         my $six_month = Date::Utility->new(DateTime->now()->add(months => 6)->ymd);
         my ($exclusion_end, $exclusion_end_error);
         try {
-            my $exclusion_end = Date::Utility->new($exclude_until);
+            $exclusion_end = Date::Utility->new($exclude_until);
         }
         catch {
             $exclusion_end_error = 1;
