@@ -67,10 +67,10 @@ sub register {
 
     # read it once, and share between workers
     my $chronicle_redis_config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/chronicle.yml')->{read};
-    my $chronicle_redis_url =
-        defined($chronicle_redis_config->{password})
-        ? "redis://dummy:$chronicle_redis_config->{password}\@$chronicle_redis_config->{host}:$chronicle_redis_config->{port}"
-        : "redis://$chronicle_redis_config->{host}:$chronicle_redis_config->{port}";
+    my $chronicle_redis_url = do {
+        my ($host, $port, $password) = @{$chronicle_redis_config}{qw/host port password/};
+        "redis://" . (defined $password ? "dummy:$password\@" : "") . "$host:$port";
+    };
 
     # one redis connection (Mojo::Redis2 instance) per worker, i.e. shared among multiple clients, connected to
     # the same worker
