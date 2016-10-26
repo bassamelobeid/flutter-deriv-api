@@ -8,7 +8,6 @@ use Try::Tiny;
 use List::MoreUtils qw(any);
 use Data::Password::Meter;
 use Crypt::NamedKeys;
-use File::ShareDir;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 use BOM::RPC::v3::Utility;
