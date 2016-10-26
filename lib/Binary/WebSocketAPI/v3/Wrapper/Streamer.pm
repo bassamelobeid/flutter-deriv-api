@@ -145,9 +145,8 @@ sub ticks_history {
                         delete $feed_channel_cache->{$channel};
                     }
 
-                    my $channel_name  = "FEED::" . $args->{ticks_history};
-                    my $shared_info   = $c->redis_connections($channel_name);
-                    my $per_user_info = $shared_info->{per_user}->{refaddr($c->stash)} //= {};
+                    my $channel_name = "FEED::" . $args->{ticks_history};
+                    my $shared_info  = $c->redis_connections($channel_name);
 
                     my $feed_channel_type = $c->stash('feed_channel_type') // {};
                     # remove the cache flag which was set during subscription
