@@ -47,40 +47,34 @@ subtest 'inactive check' => sub {
         payout => 10,
     };
     my $c = produce_contract($bet_params);
-    is $c->ask_probability->amount, 0.7, 'ask probability is 0.7 for USDJPY';
     ok $c->pricing_engine->risk_markup->peek_amount('intraday_eod_markup'), 'eod markup added for ATM';
     is $c->pricing_engine->risk_markup->peek_amount('intraday_inactive_markup'), 0.05, '5% inactive markup added for ATM';
 
-    $bet_params->{duration}   = '15m';
-    $bet_params->{underlying} = 'R_100';
-    $c = produce_contract($bet_params);
-    ok !$c->pricing_engine->risk_markup->peek_amount('intraday_inactive_markup'), 'inactive markup not added for Randoms';
-    
-    $bet_params->{underlying} = 'frxUSDJPY';
-    $bet_params->{barrier} = 'S5P';
+    $bet_params->{barrier}  = 'S5P';
+    $bet_params->{duration} = '15m';
     $c = produce_contract($bet_params);
     ok !$c->pricing_engine->risk_markup->peek_amount('intraday_inactive_markup'), 'inactive markup not added for non ATM';
 
     $bet_params->{date_start} = $bet_params->{date_pricing} = $active_time;
     $bet_params->{barrier} = 'S0P';
     $c = produce_contract($bet_params);
-    ok !$c->pricing_engine->risk_markup->peek_amount('intraday_inactive_markup') 'inactive markup not added for active time ATM';
+    ok !$c->pricing_engine->risk_markup->peek_amount('intraday_inactive_markup'), 'inactive markup not added for active time ATM';
 
     $bet_params->{barrier} = 'S5P';
     $c = produce_contract($bet_params);
-    ok !$c->pricing_engine->risk_markup->peek_amount('intraday_eod_markup'), 'eod markup not added 1 second before inefficient period';
-    ok !$c->pricing_engine->risk_markup->peek_amount('intraday_inactive_markup') 'inactive markup not added for efficient time non-ATM';
+    is $c->pricing_engine->risk_markup->peek_amount('intraday_eod_markup'),0.1, 'for non-ATM, inefficient markup is still added in active period';
+    ok !$c->pricing_engine->risk_markup->peek_amount('intraday_inactive_markup'), 'inactive markup not added for efficient time non-ATM';
 
-    $bet_params->{date_start} = $bet_params->{date_pricing} = $inactive_efficient_time;
+    $bet_params->{date_start} = $bet_params->{date_pricing} = $inefficient_inactive_time;
     $bet_params->{barrier} = 'S0P';
     $c = produce_contract($bet_params);
-    is $c->pricing_engine->risk_markup->peek_amount('intraday_eod_markup'),0.1 'eod markup in inactive-and-inefficient period';
-    is $c->pricing_engine->risk_markup->peek_amount('intraday_inactive_markup'), 0.05 'inactive markup added in inactive-and-inefficient period';
+    is $c->pricing_engine->risk_markup->peek_amount('intraday_eod_markup'),0.05, 'eod markup in inactive-and-inefficient period - ATM';
+    is $c->pricing_engine->risk_markup->peek_amount('intraday_inactive_markup'), 0.05, 'inactive markup added in inactive-and-inefficient period - ATM';
 
     $bet_params->{barrier} = 'S5P';
     $c = produce_contract($bet_params);
-    is $c->pricing_engine->risk_markup->peek_amount('intraday_eod_markup'),0.1 'eod markup in inactive-and-inefficient period for non-ATM';
-    ok !$c->pricing_engine->risk_markup->peek_amount('intraday_inactive_markup') 'inactive markup not added for non-ATM';
+    is $c->pricing_engine->risk_markup->peek_amount('intraday_eod_markup'),0.1, 'eod markup in inactive-and-inefficient period for non-ATM';
+    ok !$c->pricing_engine->risk_markup->peek_amount('intraday_inactive_markup'), 'inactive markup not added for non-ATM';
 };
 
 done_testing();

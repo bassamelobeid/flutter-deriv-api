@@ -2793,7 +2793,7 @@ sub _build_market_is_inactive {
     return 0 unless ($self->market->name eq 'forex' or $self->market->name eq 'commodities');
     return 0 if $self->expiry_daily;
 
-    #this is not supposed to depend on DST changing so anything between (21,23) 
+    #this is not supposed to depend on DST changing so anything between (21,23)
     #is considered inactive
     my $hour = $self->date_pricing->hour + 0;
     return 0 if $hour >= 23;
