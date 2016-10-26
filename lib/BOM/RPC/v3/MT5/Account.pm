@@ -6,6 +6,7 @@ use warnings;
 use YAML::XS;
 use List::Util qw(any);
 use Try::Tiny;
+use File::ShareDir;
 use Locale::Country::Extra;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Cashier;
@@ -17,7 +18,7 @@ use BOM::Database::DataMapper::Client;
 my $countries_list;
 
 BEGIN {
-    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+    $countries_list = YAML::XS::LoadFile(File::ShareDir::dist_file('LandingCompany', 'countries.yml'));
 }
 
 sub mt5_login_list {
@@ -35,7 +36,7 @@ sub mt5_login_list {
         $setting = mt5_get_settings({
                 client => $client,
                 args   => {login => $login}});
-        if ($setting && $setting->{group}) {
+        if (ref $setting eq 'HASH' && $setting->{group}) {
             $acc->{group} = $setting->{group};
         }
 
@@ -89,15 +90,15 @@ sub mt5_new_account {
     # client can have only 1 MT demo & 1 MT real a/c
     my $user = BOM::Platform::User->new({email => $client->email});
 
-    foreach ($user->mt5_logins) {
-        $_ =~ /^MT(\d+)$/;
+    foreach my $loginid ($user->mt5_logins) {
+        $loginid =~ /^MT(\d+)$/;
         my $login = $1;
 
         my $setting = mt5_get_settings({
                 client => $client,
                 args   => {login => $login}});
 
-        if ($setting->{group} eq $group) {
+        if (ref $setting eq 'HASH' and ($setting->{group} // '') eq $group) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'MT5CreateUserError',
                     message_to_client => localize('You already have a [_1] account [_2]', $account_type, $login)});
@@ -167,7 +168,7 @@ sub mt5_get_settings {
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $login]);
 
     my $settings = BOM::MT5::User::get_user($login);
-    if ($settings->{error}) {
+    if (ref $settings eq 'HASH' and $settings->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5GetUserError',
                 message_to_client => $settings->{error}});
@@ -210,7 +211,7 @@ sub mt5_set_settings {
     $args->{country} = $country_name if ($country_name);
 
     my $settings = BOM::MT5::User::update_user($args);
-    if ($settings->{error}) {
+    if (ref $settings eq 'HASH' and $settings->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5UpdateUserError',
                 message_to_client => $settings->{error}});
