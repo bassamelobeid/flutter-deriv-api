@@ -27,6 +27,11 @@ has inefficient_period => (
     default => 0,
 );
 
+has inactive_period => (
+    is      => 'ro',
+    default => 0,
+);
+
 has economic_events => (
     is      => 'ro',
     default => sub { [] },
@@ -560,16 +565,6 @@ sub _build_risk_markup {
 
     $risk_markup->include_adjustment('add', $self->vol_spread_markup);
 
-    if ($self->apply_spot_jump_markup) {
-        my $spot_jump_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'spot_jump_markup',
-            description => '10% markup for spot jump',
-            set_by      => __PACKAGE__,
-            base_amount => 0.1,
-        });
-        $risk_markup->include_adjustment('add', $spot_jump_markup);
-    }
-
     if (not $self->bet->is_atm_bet and $self->inefficient_period) {
         my $end_of_day_markup = Math::Util::CalculatedValue::Validatable->new({
             name        => 'intraday_eod_markup',
@@ -578,6 +573,26 @@ sub _build_risk_markup {
             base_amount => 0.1,
         });
         $risk_markup->include_adjustment('add', $end_of_day_markup);
+    }
+
+    if ($self->bet->is_atm_bet and $self->inefficient_period) {
+        my $end_of_day_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'intraday_eod_markup',
+            description => '5% markup for inefficient period',
+            set_by      => __PACKAGE__,
+            base_amount => 0.05,
+        });
+        $risk_markup->include_adjustment('add', $end_of_day_markup);
+    }
+
+    if ($self->bet->is_atm_bet and $self->inactive_period) {
+        my $inactive_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'intraday_inactive_markup',
+            description => '5% markup for inactive period',
+            set_by      => __PACKAGE__,
+            base_amount => 0.05,
+        });
+        $risk_markup->include_adjustment('add', $inactive_markup);
     }
 
     if (not $self->bet->is_atm_bet and $bet->remaining_time->minutes <= 15) {
@@ -592,26 +607,6 @@ sub _build_risk_markup {
     }
 
     return $risk_markup;
-}
-
-has apply_spot_jump_markup => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_apply_spot_jump_markup {
-    my $self = shift;
-    my $hour = $self->bet->date_pricing->hour + 0;
-    # we only want to charge this markup during market inefficient period 20:00 GMT to end of day
-    return 0 if $hour < 20;
-    # 3 is 3 times standard deviation.
-    # 0.03 is the base volatility observed for one minute during inefficient period.
-    my $metric_benchmark = 3 * 0.03 * sqrt(60 / (86400 * 365));
-    my $jump_metric = $self->jump_metric;
-    return 0 if abs($jump_metric) < $metric_benchmark;
-    return 1 if ($jump_metric > 0 and $self->bet->code eq 'CALL');
-    return 1 if ($jump_metric < 0 and $self->bet->code eq 'PUT');
-    return 0;
 }
 
 has jump_metric => (
