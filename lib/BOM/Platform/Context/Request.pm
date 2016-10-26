@@ -10,7 +10,6 @@ use LandingCompany::Countries;
 
 use Plack::App::CGIBin::Streaming::Request;
 use LandingCompany::Registry;
-use File::ShareDir;
 use Sys::Hostname;
 
 with 'BOM::Platform::Context::Request::Urls', 'BOM::Platform::Context::Request::Builders';
@@ -227,7 +226,7 @@ sub _build_domain_name {
 my $countries_list;
 
 BEGIN {
-    $countries_list = YAML::XS::LoadFile(File::ShareDir::dist_file('LandingCompany', 'countries.yml'));
+    $countries_list = LandingCompany::Countries->instance->countries_list;
 }
 
 sub _build_broker_code {
