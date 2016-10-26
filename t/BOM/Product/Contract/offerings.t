@@ -8,10 +8,8 @@ use Test::Deep;
 use Test::Exception;
 use YAML::XS qw(LoadFile);
 
-use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types;
-use BOM::Platform::Offerings qw(get_offerings_with_filter);
-use BOM::System::Chronicle;
+use BOM::Platform::Runtime;
+use LandingCompany::Offerings qw(get_offerings_with_filter);
 
 # test wriiten date.
 note('Underlying-Contract offerings on 22-Feb-2016');
@@ -19,7 +17,7 @@ note('Underlying-Contract offerings on 22-Feb-2016');
 subtest 'markets' => sub {
     my @expected = (qw(forex commodities stocks indices volidx));
     lives_ok {
-        my @markets = get_offerings_with_filter('market');
+        my @markets = get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'market');
         cmp_bag(\@markets, \@expected, 'correct market list');
     }
     'lives through market test';
@@ -30,7 +28,7 @@ subtest 'submarkets' => sub {
         qw(india_otc_stock americas asia_oceania  energy europe_africa otc_index us_otc_stock uk_otc_stock ge_otc_stock major_pairs metals middle_east minor_pairs random_daily random_index smart_fx)
     );
     lives_ok {
-        my @submarkets = get_offerings_with_filter('submarket');
+        my @submarkets = get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'submarket');
         cmp_bag(\@submarkets, \@expected, 'correct submarket list');
     }
     'lives_through submarket test';
@@ -52,11 +50,12 @@ subtest 'underlying symbols' => sub {
     );
 
     lives_ok {
-        foreach my $market (get_offerings_with_filter('market')) {
+        foreach my $market (get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'market')) {
             if (not $expected{$market}) {
                 fail("market [$market] not found");
             } else {
-                my @underlying_symbols = get_offerings_with_filter('underlying_symbol', {market => $market});
+                my @underlying_symbols =
+                    get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'underlying_symbol', {market => $market});
                 cmp_bag(\@underlying_symbols, $expected{$market}, 'correct underlying symbol list for [' . $market . ']');
             }
         }

@@ -310,9 +310,9 @@ subtest 'ATM and non ATM switches on sellback' => sub {
     is $c->barrier->as_absolute + 0, 100.1, 'barrier is 100.1';
     ok !$c->is_atm_bet, 'not atm bet';
     #starts atm
-    $bet_params->{barrier} = 'S0P';
+    $bet_params->{barrier}      = 'S0P';
     $bet_params->{date_pricing} = $now->epoch + 3;
-    $c = produce_contract($bet_params);
+    $c                          = produce_contract($bet_params);
     ok $c->is_atm_bet, 'atm contract';
     ok $c->opposite_contract->supplied_barrier == $c->entry_spot, 'opposite barrier correctly set';
     ok $c->opposite_contract->barrier->as_absolute == $c->opposite_contract->current_spot, 'barrier identical to spot';

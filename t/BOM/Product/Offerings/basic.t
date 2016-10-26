@@ -8,11 +8,11 @@ use Cache::RedisDB;
 
 use BOM::Platform::Runtime;
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Platform::Offerings qw( get_offerings_flyby get_offerings_with_filter get_permitted_expiries get_contract_specifics );
+use LandingCompany::Offerings qw( get_offerings_flyby get_offerings_with_filter get_permitted_expiries get_contract_specifics );
 
 subtest 'get_offerings_flyby' => sub {
     my $fb;
-    lives_ok { $fb = get_offerings_flyby() } 'get_offerings flyby() does not die';
+    lives_ok { $fb = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config) } 'get_offerings flyby() does not die';
     isa_ok $fb, 'FlyBy', '...and resulting object';
     cmp_ok(scalar @{$fb->records}, '>=', 600, '...with over 600 varieties.');
     eq_or_diff(
@@ -35,20 +35,28 @@ subtest 'get_offerings_flyby' => sub {
     subtest 'example queries' => sub {
         is(scalar $fb->query('"start_type" IS "forward" -> "market"'),          5,  'Forward-starting is offered on 6 markets.');
         is(scalar $fb->query('"expiry_type" IS "tick" -> "underlying_symbol"'), 25, 'Tick expiries are offered on 24 underlyings.');
-        is(scalar get_offerings_flyby('iom')->query('"contract_category" IS "callput" AND "underlying_symbol" IS "frxUSDJPY"'),
-            12, '12 callput options on frxUSDJPY');
+        is(
+            scalar get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, 'iom')
+                ->query('"contract_category" IS "callput" AND "underlying_symbol" IS "frxUSDJPY"'),
+            12,
+            '12 callput options on frxUSDJPY'
+        );
         is(scalar $fb->query('"exchange_name" IS "RANDOM" -> "underlying_symbol"'), 7, 'Six underlyings trade on the RANDOM exchange');
         is(scalar $fb->query('"market" IS "volidx" -> "underlying_symbol"'),        7, '...out of 6 total random market symbols.');
     };
 
-    my $cache_obj = Cache::RedisDB->get('OFFERINGS_costarica', BOM::Platform::Runtime->instance->app_config->current_revision);
+    my $cache_key = LandingCompany::Offerings::_get_config_key(BOM::Platform::Runtime->instance->get_offerings_config);
+
+    my $cache_obj = Cache::RedisDB->get('OFFERINGS_costarica', $cache_key);
     isa_ok $cache_obj, 'FlyBy', 'got flyby object for costarica as its default';
 };
 
 subtest 'get_offerings_with_filter' => sub {
     throws_ok { get_offerings_with_filter() } qr/output key/, 'output key is required';
 
-    eq_or_diff [sort(get_offerings_with_filter('expiry_type'))], [sort qw(daily intraday tick)], 'Expiry types are set correctly here, too.';
+    my $config = BOM::Platform::Runtime->instance->get_offerings_config;
+
+    eq_or_diff [sort(get_offerings_with_filter($config, 'expiry_type'))], [sort qw(daily intraday tick)], 'Expiry types are set correctly here, too.';
 
     my $filtration = {
         underlying_symbol => 'R_100',
@@ -58,18 +66,18 @@ subtest 'get_offerings_with_filter' => sub {
     };
     my $to = 'contract_type';
 
-    eq_or_diff([sort(get_offerings_with_filter($to, $filtration))], [sort qw(CALL PUT)], 'Full filter match');
+    eq_or_diff([sort(get_offerings_with_filter($config, $to, $filtration))], [sort qw(CALL PUT)], 'Full filter match');
     delete $filtration->{start_type};
-    eq_or_diff([sort(get_offerings_with_filter($to, $filtration))], [sort qw(CALL PUT)], '... same without start_type');
+    eq_or_diff([sort(get_offerings_with_filter($config, $to, $filtration))], [sort qw(CALL PUT)], '... same without start_type');
     delete $filtration->{contract_category};
     eq_or_diff(
-        [sort(get_offerings_with_filter($to, $filtration))],
+        [sort(get_offerings_with_filter($config, $to, $filtration))],
         [sort qw(CALL PUT EXPIRYRANGE EXPIRYMISS ONETOUCH NOTOUCH RANGE SPREADD SPREADU UPORDOWN)],
         '... explodes without a contract category'
     );
     $filtration->{expiry_type} = 'tick';
     eq_or_diff(
-        [sort(get_offerings_with_filter($to, $filtration))],
+        [sort(get_offerings_with_filter($config, $to, $filtration))],
         [sort qw(CALL PUT ASIAND ASIANU DIGITMATCH DIGITDIFF DIGITODD DIGITEVEN DIGITOVER DIGITUNDER)],
         '... and switches up for tick expiries.'
     );
@@ -78,44 +86,60 @@ subtest 'get_offerings_with_filter' => sub {
 
 subtest 'get_permitted_expiries' => sub {
 
-    my $r100 = get_permitted_expiries({underlying_symbol => 'R_100'});
+    my $offerings_config = BOM::Platform::Runtime->instance->get_offerings_config;
 
-    eq_or_diff(get_permitted_expiries(), {}, 'Get an empty result when no guidance is provided.');
-    eq_or_diff($r100, get_permitted_expiries({market => 'volidx'}), 'R_100 has the broadest offering, so it matches with the random market');
+    my $r100 = get_permitted_expiries($offerings_config, {underlying_symbol => 'R_100'});
+
+    eq_or_diff(get_permitted_expiries($offerings_config), {}, 'Get an empty result when no guidance is provided.');
+    eq_or_diff(
+        $r100,
+        get_permitted_expiries($offerings_config, {market => 'volidx'}),
+        'R_100 has the broadest offering, so it matches with the random market'
+    );
     is $r100->{tick}->{min}, 5, "R_100 has something with 5 tick expiries";
     is $r100->{daily}->{max}->days, 365, "... all the way out to a year.";
 
-    my $fx_tnt = get_permitted_expiries({
-        market            => 'forex',
-        contract_category => 'touchnotouch'
-    });
-    my $mp_tnt = get_permitted_expiries({
-        submarket         => 'minor_pairs',
-        contract_category => 'touchnotouch'
-    });
+    my $fx_tnt = get_permitted_expiries(
+        $offerings_config,
+        {
+            market            => 'forex',
+            contract_category => 'touchnotouch'
+        });
+    my $mp_tnt = get_permitted_expiries(
+        $offerings_config,
+        {
+            submarket         => 'minor_pairs',
+            contract_category => 'touchnotouch'
+        });
 
     ok !exists $fx_tnt->{intraday}, 'no touchnotouch intraday on fx';
     ok !exists $mp_tnt->{intraday}, '... but not on minor_pairs';
     ok !exists $fx_tnt->{tick},     '... nor does forex have tick touches';
     ok !exists $mp_tnt->{tick},     '... especially not on minor_pairs.';
 
-    my $r100_tnt = get_permitted_expiries({
-        underlying_symbol => 'R_100',
-        contract_category => 'touchnotouch'
-    });
+    my $r100_tnt = get_permitted_expiries(
+        $offerings_config,
+        {
+            underlying_symbol => 'R_100',
+            contract_category => 'touchnotouch'
+        });
     ok !exists $r100_tnt->{tick},    'None of which is surprising, since they are not on R_100, either';
     ok exists $r100_tnt->{intraday}, '... but you can play them intraday';
 
-    my $r100_digits_tick = get_permitted_expiries({
-        underlying_symbol => 'R_100',
-        contract_category => 'digits',
-        expiry_type       => 'tick',
-    });
-    my $r100_tnt_tick = get_permitted_expiries({
-        underlying_symbol => 'R_100',
-        contract_category => 'touchnotouch',
-        expiry_type       => 'tick',
-    });
+    my $r100_digits_tick = get_permitted_expiries(
+        $offerings_config,
+        {
+            underlying_symbol => 'R_100',
+            contract_category => 'digits',
+            expiry_type       => 'tick',
+        });
+    my $r100_tnt_tick = get_permitted_expiries(
+        $offerings_config,
+        {
+            underlying_symbol => 'R_100',
+            contract_category => 'touchnotouch',
+            expiry_type       => 'tick',
+        });
 
     ok exists $r100_digits_tick->{min} && exists $r100_digits_tick->{max}, 'Asking for a relevant tick expiry, gives just that min and max';
     eq_or_diff($r100_tnt_tick, {}, '... but get an empty reference if they are not there.');
@@ -134,7 +158,7 @@ subtest 'get_contract_specifics' => sub {
 
     $params->{barrier_category}  = 'american';
     $params->{underlying_symbol} = 'R_100';
-    my $result = get_contract_specifics($params);
+    my $result = get_contract_specifics(BOM::Platform::Runtime->instance->get_offerings_config, $params);
 
     ok exists $result->{permitted}, 'and permitted durations';
     ok exists $result->{permitted}->{min}, '... including minimum';

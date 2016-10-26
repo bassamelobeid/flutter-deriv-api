@@ -658,7 +658,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
         });
         $mock_contract->mock('ask_probability', sub { $ask_cv });
         $mock_contract->mock('payout',          sub { 10 / $ask_cv->amount });
-        $mock_contract->mock('ask_price', sub { $ask_cv->amount * 100 });
+        $mock_contract->mock('ask_price',       sub { $ask_cv->amount * 100 });
         # amount_type = stake, payout decrease within range of allowed move
         $transaction = BOM::Product::Transaction->new({
             client      => $client,
@@ -682,7 +682,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
             base_amount => 0.1 - $allowed_move + 0.001,
         });
         $mock_contract->mock('ask_probability', sub { $ask_cv });
-        $mock_contract->mock('ask_price', sub { $ask_cv->amount * 100 });
+        $mock_contract->mock('ask_price',       sub { $ask_cv->amount * 100 });
         $mock_contract->mock('payout',          sub { 10 / $ask_cv->amount });
 
         $transaction = BOM::Product::Transaction->new({
@@ -707,8 +707,8 @@ subtest 'BUY - trade pricing adjustment' => sub {
             base_amount => 0.1 - $allowed_move - 0.001,
         });
         $mock_contract->mock('ask_probability', sub { $ask_cv });
-        $mock_contract->mock('ask_price', sub { $ask_cv->amount * 100 });
-        $mock_contract->mock('payout', sub { roundnear(0.001, 10 / $ask_cv->amount) });
+        $mock_contract->mock('ask_price',       sub { $ask_cv->amount * 100 });
+        $mock_contract->mock('payout',          sub { roundnear(0.001, 10 / $ask_cv->amount) });
 
         $transaction = BOM::Product::Transaction->new({
             client      => $client,
@@ -722,7 +722,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
         is($error, undef, 'payout increase, better execution price');
         cmp_ok($transaction->payout, '>',  100,     'BUY with higher payout');
         cmp_ok($transaction->payout, '==', 106.383, 'payout');
-        is $transaction->price_slippage, 0.6, 'correct probability slippage set';
+        is $transaction->price_slippage,  0.6, 'correct probability slippage set';
         is $transaction->requested_price, 10,  'correct requested price 10';
         is $transaction->recomputed_price, $contract->ask_price, 'correct recomputed price ' . $contract->ask_price;
         $mock_contract->unmock_all;
