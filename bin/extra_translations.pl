@@ -21,7 +21,6 @@ use BOM::MarketData::Types;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::Product::Contract::Category;
 
-
 has file_container => (
     is         => 'ro',
     isa        => 'ArrayRef[Str]',
@@ -218,7 +217,8 @@ sub add_contract_categories {
     my $self = shift;
 
     my $fh = $self->pot_append_fh;
-    my @all_categories = map { BOM::Product::Contract::Category->new($_) } get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'contract_category');
+    my @all_categories = map { BOM::Product::Contract::Category->new($_) }
+        get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'contract_category');
     foreach my $contract_category (@all_categories) {
         if ($contract_category->display_name) {
             my $msgid = $self->msg_id($contract_category->display_name);

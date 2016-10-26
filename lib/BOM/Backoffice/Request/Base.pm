@@ -7,7 +7,7 @@ use Encode;
 use Sys::Hostname;
 use Plack::App::CGIBin::Streaming::Request;
 
-use BOM::Platform::LandingCompany::Registry;
+use LandingCompany::Registry;
 
 with 'BOM::Backoffice::Request::Role';
 
@@ -98,7 +98,7 @@ sub _build_broker_code {
 sub _build_available_currencies {
     my $self = shift;
 
-    return BOM::Platform::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_allowed_currencies;
+    return LandingCompany::Registry::get_by_broker($self->broker_code)->legal_allowed_currencies;
 }
 
 sub _build_http_method {
