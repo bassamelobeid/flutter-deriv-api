@@ -309,8 +309,8 @@ subtest 'get_ask' => sub {
                 );
             }
         ],
-        bag(re('bet_type is required')),
-        'bet_type is required warning'
+        bag(re('_get_ask produce_contract failed')),
+        'empty params for _get_ask required warning'
     );
 
 };
@@ -426,8 +426,8 @@ subtest 'send_ask' => sub {
                         ->error_message_is('Cannot create contract');
                 }
             ],
-            bag(re('Use of uninitialized value in pattern match'), re('bet_type is required'),),
-            'missing bet_type and undef warnings when checking contract_type'
+            bag(re('Use of uninitialized value in pattern match'), re('_get_ask produce_contract failed')),
+            'missing bet_type when checking contract_type'
         );
 
         my $mock_contract = Test::MockModule->new('BOM::RPC::v3::Contract');
