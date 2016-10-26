@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Countries;
+use LandingCompany::Countries;
 use BOM::Platform::Locale;
 use BOM::Platform::Context qw (request);
 use BOM::RPC::v3::Utility;
@@ -16,7 +16,7 @@ sub residence_list {
     $residence_list = [grep { $_->{value} ne '' } @$residence_list];
 
     # plus phone_idd
-    my $countries = BOM::Platform::Countries->instance->countries;
+    my $countries = LandingCompany::Countries->instance->countries;
     foreach (@$residence_list) {
         my $phone_idd = $countries->idd_from_code($_->{value});
         $_->{phone_idd} = $phone_idd if $phone_idd;
