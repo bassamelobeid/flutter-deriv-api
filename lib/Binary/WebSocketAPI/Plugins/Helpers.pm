@@ -91,7 +91,7 @@ sub register {
                             if $channel !~ /^FEED::/;
 
                         my $shared_info = $app->redis_connections($channel);
-                        Binary::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($shared_info);
+                        Binary::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($shared_info, $msg, $channel);
                     });
                 $redis;
             };
