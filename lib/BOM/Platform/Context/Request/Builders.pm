@@ -65,7 +65,7 @@ sub _remote_ip {
     my $headers = $request->headers;
     # CF-Connecting-IP is mentioned here: https://support.cloudflare.com/hc/en-us/articles/200170986-How-does-CloudFlare-handle-HTTP-Request-headers-
     # Note that we will need to change this if switching to a different provider.
-    my @candidates = ($headers->header('cf-connecting-ip'));
+    my @candidates = ($headers->header('cf-connecting-ip') // ());
     push @candidates, do {
         # In this header, we expect:
         # client internal IP,maybe client external IP,any upstream proxies,cloudflare
@@ -74,10 +74,10 @@ sub _remote_ip {
         my @ips = split /\s*,\s*/, $headers->header('x-forwarded-for');
         pop @ips;
         $ips[-1];
-    };
+    } if $headers->header('x-forwarded-for');
 
     # Fall back to what our upstream (nginx) detected
-    push @candidates, $request->env->{REMOTE_ADDR};
+    push @candidates, $request->env->{REMOTE_ADDR} // ();
     for my $ip (@candidates) {
         # Eventually we'll want ::is_ip instead, but that requires IPv6 support in the database
         return $ip if Data::Validate::IP::is_ipv4($ip);
