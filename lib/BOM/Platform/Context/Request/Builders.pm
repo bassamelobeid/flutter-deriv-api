@@ -4,6 +4,15 @@ use Moose::Role;
 use CGI::Cookie;
 use Data::Validate::IP;
 
+=head2 from_cgi
+
+Populate fields from a CGI request - note that this is only used in the backoffice code currently.
+
+Eventually this and C<__SetEnvironment> should be removed entirely, so please consider that before
+attempting to refactor this module.
+
+=cut
+
 sub from_cgi {
     my $args = shift;
 
