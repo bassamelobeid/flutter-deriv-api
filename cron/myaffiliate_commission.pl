@@ -18,7 +18,6 @@ use DateTime;
 use DateTime::Format::HTTP;
 use Date::Utility;
 use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(request);
 
 with 'App::Base::Script';
 
