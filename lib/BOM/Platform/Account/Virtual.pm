@@ -32,7 +32,7 @@ sub create_account {
         return {error => 'invalid'};
     } elsif (BOM::Platform::User->new({email => $email})) {
         return {error => 'duplicate email'};
-    } elsif (LandingCompany::Countries->instance->restricted_country($residence)) {
+    } elsif ($residence && LandingCompany::Countries->instance->restricted_country($residence)) {
         return {error => 'invalid residence'};
     }
 
