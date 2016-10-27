@@ -1,4 +1,3 @@
-sudo: true
 language: perl
 perl:
     - "5.14.2-thr"
@@ -19,11 +18,9 @@ addons:
     postgresql: "9.3"
 cache: apt
 before_install:
-    - git clone https://1994c85ce4f602fb682076e9a102261644fb3d19@github.com/chylli/travis-scripts /tmp/travis-scripts
-    - (cd /tmp/travis-scripts && git checkout chylli/setup_perl.sh)
+    - git clone https://1994c85ce4f602fb682076e9a102261644fb3d19@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
-
     - . /tmp/travis-scripts/setup_perl.sh
     - /tmp/travis-scripts/setup_ssh.sh
     - /tmp/travis-scripts/fixHostName.sh
@@ -31,8 +28,8 @@ before_install:
     - pg_lsclusters
     - /tmp/travis-scripts/postgres.sh
 
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
     - /tmp/travis-scripts/setup_cpan.sh
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
