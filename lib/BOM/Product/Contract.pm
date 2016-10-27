@@ -607,8 +607,6 @@ sub _build_pricing_engine {
                 economic_events   => $self->_generate_market_data->{economic_events},
             );
         } elsif($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
-            my $surface = $self->volsurface->surface;
-            my $first_term       = (sort { $a <=> $b } keys %$surface)[0];
             %pricing_parameters = (
                 contract_type        => $self->pricing_code,
                 spot                 => $self->pricing_spot,
@@ -624,33 +622,7 @@ sub _build_pricing_engine {
                 r_rate               => $self->r_rate,
                 priced_with          => $self->priced_with,
                 underlying_symbol    => $self->underlying->symbol,
-                ny1700_rollover_date => Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($self->date_start),
-                volsurface_data => $surface,
-                overnight_tenor => $self->volsurface->_ON_day,
-                market_rr_bf => $self->volsurface->get_market_rr_bf($first_term),
-                atm_volatility => $self->volsurface->get_volatility({
-                    delta => 50,
-                    from => $self->date_start,
-                    to => $self->date_expiry,
-                }),
-                vol_spread => $self->volsurface->get_spread({
-                    sought_point => $self->is_atm_bet ? 'atm' : 'max',
-                    day          => $self->timeindays
-
-                }),
-                volatility => sub {
-                    my ($args, $surface_data) = @_;
-                    # if there's new surface data, calculate vol from that.
-                    my $vol;
-                    if ($surface_data) {
-                        my $new_volsurface_obj = $volsurface->clone({surface_data => $surface_data});
-                        $vol = $new_volsurface_obj->get_volatility($args);
-                    } else {
-                        $vol = $volsurface->get_volatility($args);
-                    }
-
-                    return $vol;
-                },
+                volsurface           => $self->volsurface->surface,
             );
         } else {
             warn "Unknown pricing engine: " . $self->pricing_engine_name;
