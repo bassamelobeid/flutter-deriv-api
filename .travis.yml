@@ -52,7 +52,7 @@ install:
     - . /tmp/travis-scripts/setup_perl5lib.sh
 
 script:
-    - perl -e 'print $^V\n;' ; which perl ; ls -l /etc/rmg/bin
+    - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
     - make $TEST_SUITE; RC=$?; sudo service binary_pgbouncer status; exit $RC
 
 after_script:
