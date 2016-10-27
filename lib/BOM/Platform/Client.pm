@@ -16,8 +16,6 @@ use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
 
 use LandingCompany::Registry;
 
-use BOM::System::Config;
-
 use BOM::Platform::Client::PaymentAgent;
 use BOM::Platform::Client::Payments;
 
@@ -703,7 +701,7 @@ working going forward with any input, it should die.
 sub add_note {
     my ($self, $subject, $content) = @_;
     return if -e '/etc/rmg/travis';
-    my $to = BOM::System::Config::email_address('support');
+    my $to = 'support@binary.com';
     local $\ = undef;
     my $from    = $to;
     my $replyto = $to;
