@@ -35,6 +35,8 @@ use BOM::Database::Rose::DB::Relationships;
 
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
+state $CLIENT_LIMITS_CONFIG = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/client_limits.yml');
+
 my $CLIENT_STATUS_TYPES = {
     age_verification          => 1,
     cashier_locked            => 1,
@@ -452,7 +454,7 @@ sub get_limit_for_account_balance {
     my $self = shift;
 
     my @maxbalances = ();
-    my $max_bal     = BOM::System::Config::quants->{client_limits}->{max_balance};
+    my $max_bal     = $CLIENT_LIMITS_CONFIG->{max_balance};
     my $curr        = $self->currency;
     push @maxbalances, $self->is_virtual ? $max_bal->{virtual}->{$curr} : $max_bal->{real}->{$curr};
 
@@ -471,7 +473,7 @@ sub get_limit_for_daily_turnover {
     my $self = shift;
 
     # turnover maxed at 500K of any currency.
-    my @limits = (BOM::System::Config::quants->{client_limits}->{maximum_daily_turnover}{$self->currency});
+    my @limits = ($CLIENT_LIMITS_CONFIG->{maximum_daily_turnover}{$self->currency});
     if ($self->get_self_exclusion && $self->get_self_exclusion->max_turnover) {
         push @limits, $self->get_self_exclusion->max_turnover;
     }
@@ -578,7 +580,7 @@ sub get_limit_for_payout {
     my $val = $self->custom_max_payout;
     return $val if defined $val;
 
-    my $max_payout = BOM::System::Config::quants->{client_limits}->{max_payout_open_positions};
+    my $max_payout = $CLIENT_LIMITS_CONFIG->{max_payout_open_positions};
 
     return $max_payout->{$self->currency};
 }
