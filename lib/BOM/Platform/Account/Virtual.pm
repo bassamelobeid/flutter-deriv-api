@@ -15,6 +15,7 @@ use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Token;
 use BOM::Platform::Account;
+use BOM::Platform::Context qw(localize);
 
 sub create_account {
     my $args    = shift;
@@ -89,7 +90,7 @@ sub create_account {
         $utm_campaign  ? (utm_campaign  => $utm_campaign)  : ());
     $user->add_loginid({loginid => $client->loginid});
     $user->save;
-    $client->deposit_virtual_funds($source);
+    $client->deposit_virtual_funds($source, localize('Virtual money credit to account'));
 
     stats_inc("business.new_account.virtual");
 
