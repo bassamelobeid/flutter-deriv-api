@@ -20,43 +20,43 @@ cache: apt
 before_install:
     - git clone https://1994c85ce4f602fb682076e9a102261644fb3d19@github.com/chylli/travis-scripts /tmp/travis-scripts
     - (cd /tmp/travis-scripts && git checkout chylli/setup_perl.sh)
-    - . /tmp/travis-scripts/setup_perl.sh
-    - /tmp/travis-scripts/setup_ssh.sh
-    - /tmp/travis-scripts/fixHostName.sh
-    - dpkg -l | grep postgres
-    - pg_lsclusters
-    - /tmp/travis-scripts/postgres.sh
-    - sudo mkdir -p /home/git/binary-com
-    - sudo mkdir -p /home/git/regentmarkets
-
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
-    - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
-
-    - /tmp/travis-scripts/postgres_restart.sh
-    - /tmp/travis-scripts/redis.sh
-
+#    - . /tmp/travis-scripts/setup_perl.sh
+#    - /tmp/travis-scripts/setup_ssh.sh
+#    - /tmp/travis-scripts/fixHostName.sh
+#    - dpkg -l | grep postgres
+#    - pg_lsclusters
+#    - /tmp/travis-scripts/postgres.sh
+#    - sudo mkdir -p /home/git/binary-com
+#    - sudo mkdir -p /home/git/regentmarkets
+#
+#    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
+#    - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
+#    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
+#    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
+#    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
+#    - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
+#
+#    - /tmp/travis-scripts/postgres_restart.sh
+#    - /tmp/travis-scripts/redis.sh
+#
 install:
-    - source /tmp/travis-scripts/devbox_path.sh
-    - sudo ln -s $PWD /home/git/regentmarkets/bom
-    - /tmp/travis-scripts/devbox.sh *.yml
-
-    - /tmp/travis-scripts/remove_postgresdb_config.sh
-    - /tmp/travis-scripts/setup_clientdb.sh
-    - /tmp/travis-scripts/setup_feeddb.sh
-    - /tmp/travis-scripts/setup_authdb.sh
-    - /tmp/travis-scripts/setup_usersdb.sh
-    - /tmp/travis-scripts/setup_chronicledb.sh
-
-    - /tmp/travis-scripts/setup_logs.sh
-    - . /tmp/travis-scripts/setup_perl5lib.sh
-
+#    - source /tmp/travis-scripts/devbox_path.sh
+#    - sudo ln -s $PWD /home/git/regentmarkets/bom
+#    - /tmp/travis-scripts/devbox.sh *.yml
+#
+#    - /tmp/travis-scripts/remove_postgresdb_config.sh
+#    - /tmp/travis-scripts/setup_clientdb.sh
+#    - /tmp/travis-scripts/setup_feeddb.sh
+#    - /tmp/travis-scripts/setup_authdb.sh
+#    - /tmp/travis-scripts/setup_usersdb.sh
+#    - /tmp/travis-scripts/setup_chronicledb.sh
+#
+#    - /tmp/travis-scripts/setup_logs.sh
+#    - . /tmp/travis-scripts/setup_perl5lib.sh
+#
 script:
     #- make $TEST_SUITE
     - perl -v
 
-after_script:
-    - /tmp/travis-scripts/wait_for_ssh.sh
+#after_script:
+#    - /tmp/travis-scripts/wait_for_ssh.sh
