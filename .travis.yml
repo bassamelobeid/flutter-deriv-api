@@ -40,6 +40,7 @@ before_install:
 #    - /tmp/travis-scripts/redis.sh
 #
 install:
+     - true
 #    - source /tmp/travis-scripts/devbox_path.sh
 #    - sudo ln -s $PWD /home/git/regentmarkets/bom
 #    - /tmp/travis-scripts/devbox.sh *.yml
