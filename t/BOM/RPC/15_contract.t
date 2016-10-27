@@ -634,7 +634,7 @@ subtest $method => sub {
         ],
         # We get several undef warnings too, but we'll ignore them for this test
         supersetof(re('get_contract_details produce_contract failed')),
-        '... and had warning about missing currency'
+        '... and had warning about failed produce_contract'
     );
 
     my $contract = _create_contract(

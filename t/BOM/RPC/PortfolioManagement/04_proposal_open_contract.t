@@ -4,6 +4,7 @@ use warnings;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
+use Test::Warnings qw(warning warnings);
 
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
@@ -166,16 +167,23 @@ subtest $method => sub {
     my $contract_factory = Test::MockModule->new('BOM::RPC::v3::Contract');
     $contract_factory->mock('produce_contract', sub { die });
 
-    $rpc_ct->call_ok(@params)->has_no_system_error->result_is_deeply({
-            $contract_id => {
-                error => {
-                    message_to_client => 'Sorry, an error occurred while processing your request.',
-                    code              => 'GetProposalFailure',
-                },
-            },
-        },
-        'Should return error instead contract data',
-    );
+    cmp_deeply([
+            warnings {
+                $rpc_ct->call_ok(@params)->has_no_system_error->result_is_deeply({
+                        $contract_id => {
+                            error => {
+                                message_to_client => 'Cannot create contract',
+                                code              => 'GetProposalFailure',
+                            },
+                        },
+                    },
+                    'Should return error instead contract data',
+                );
+            }
+        ],
+        bag(re('get_bid produce_contract failed')),
+        'had warning when produce_contract fails'
+        );
 };
 
 done_testing();
