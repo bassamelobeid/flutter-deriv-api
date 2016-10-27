@@ -16,7 +16,6 @@ use LandingCompany::Countries;
 use LandingCompany::Registry;
 
 use BOM::System::Config;
-use BOM::Platform::Context qw(localize);
 use BOM::Platform::Runtime;
 use BOM::Platform::User;
 
