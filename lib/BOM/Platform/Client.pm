@@ -836,14 +836,5 @@ sub allow_paymentagent_withdrawal {
     return;
 }
 
-# Get my siblings, in loginid order but with reals up first.  Use the replica db for speed.
-# Can be called as a class method, by passing email.
-sub siblings {
-    my $self  = shift;
-    my $email = shift || $self->email;
-    my $user  = BOM::Platform::User->new({email => $email}) || return;
-    return $user->clients;
-}
-
 1;
 
