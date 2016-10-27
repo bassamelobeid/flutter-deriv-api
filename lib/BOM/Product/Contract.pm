@@ -39,7 +39,7 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Contract::Category;
 use BOM::Product::RiskProfile;
 use BOM::Product::Types;
-use BOM::Platform::Offerings qw(get_contract_specifics);
+use LandingCompany::Offerings qw(get_contract_specifics);
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -580,6 +580,7 @@ sub _build_pricing_engine {
             bet                     => $self,
             apply_bounceback_safety => !$self->for_sale,
             inefficient_period      => $self->market_is_inefficient,
+            inactive_period         => $self->market_is_inactive,
             $self->priced_with_intraday_model ? (economic_events => $self->economic_events_for_volatility_calculation) : (),
         });
     }
@@ -949,8 +950,6 @@ sub _build_price_calculator {
             ($self->has_ask_probability)        ? (ask_probability        => $self->ask_probability)        : (),
             ($self->has_bs_probability)         ? (bs_probability         => $self->bs_probability)         : (),
             ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
-            # apply flooring on ask_probability in inefficient period for ATMs.
-            (($self->apply_market_inefficient_limit and $self->is_atm_bet) ? (minimum_ask_probability => 0.7) : ()),
         });
 }
 
@@ -1592,13 +1591,15 @@ has [qw(offering_specifics barrier_category)] => (
 sub _build_offering_specifics {
     my $self = shift;
 
-    return get_contract_specifics({
-        underlying_symbol => $self->underlying->symbol,
-        barrier_category  => $self->barrier_category,
-        expiry_type       => $self->expiry_type,
-        start_type        => $self->start_type,
-        contract_category => $self->category->code,
-    });
+    return get_contract_specifics(
+        BOM::Platform::Runtime->instance->get_offerings_config,
+        {
+            underlying_symbol => $self->underlying->symbol,
+            barrier_category  => $self->barrier_category,
+            expiry_type       => $self->expiry_type,
+            start_type        => $self->start_type,
+            contract_category => $self->category->code,
+        });
 }
 
 sub _build_barrier_category {
@@ -1608,7 +1609,7 @@ sub _build_barrier_category {
     if ($self->category->code eq 'callput') {
         $barrier_category = ($self->is_atm_bet) ? 'euro_atm' : 'euro_non_atm';
     } else {
-        $barrier_category = $BOM::Platform::Offerings::BARRIER_CATEGORIES->{$self->category->code}->[0];
+        $barrier_category = $LandingCompany::Offerings::BARRIER_CATEGORIES->{$self->category->code}->[0];
     }
 
     return $barrier_category;
@@ -2192,8 +2193,8 @@ sub _validate_offerings {
     my $underlying    = $self->underlying;
     my $contract_code = $self->code;
     # check if trades are suspended on that claimtype
-    my $suspend_claim_types = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types;
-    if (@$suspend_claim_types and first { $contract_code eq $_ } @{$suspend_claim_types}) {
+    my $suspend_contract_types = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_contract_types;
+    if (@$suspend_contract_types and first { $contract_code eq $_ } @{$suspend_contract_types}) {
         return {
             message           => "Trading suspended for contract type [code: " . $contract_code . "]",
             message_to_client => $message_to_client,
@@ -2779,6 +2780,27 @@ sub _build_market_is_inefficient {
     # only 20:00/21:00 GMT to end of day
     my $disable_hour = $self->date_pricing->is_dst_in_zone('America/New_York') ? 20 : 21;
     return 0 if $hour < $disable_hour;
+    return 1;
+}
+
+has market_is_inactive => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_market_is_inactive {
+    my $self = shift;
+
+    # market inefficiency only applies to forex and commodities.
+    return 0 unless ($self->market->name eq 'forex' or $self->market->name eq 'commodities');
+    return 0 if $self->expiry_daily;
+
+    #this is not supposed to depend on DST changing so anything between (21,23)
+    #is considered inactive
+    my $hour = $self->date_pricing->hour + 0;
+    return 0 if $hour >= 23;
+    return 0 if $hour <= 20;
+
     return 1;
 }
 

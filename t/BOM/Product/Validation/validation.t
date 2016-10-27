@@ -147,8 +147,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         spot_reference => $tick->quote,
     });
 
-my $orig_suspended = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types;
-ok(BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types(['RANGE']), 'Suspended RANGE bet purchases!');
+my $orig_suspended = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_contract_types;
+ok(BOM::Platform::Runtime->instance->app_config->quants->features->suspend_contract_types(['RANGE']), 'Suspended RANGE bet purchases!');
 
 subtest 'valid bet passing and stuff' => sub {
 
@@ -1421,7 +1421,7 @@ subtest 'invalid digits barrier' => sub {
 };
 
 # Let's not surprise anyone else
-ok(BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types($orig_suspended),
+ok(BOM::Platform::Runtime->instance->app_config->quants->features->suspend_contract_types($orig_suspended),
     'Switched RANGE bets back on, if they were.');
 
 my $counter = 0;

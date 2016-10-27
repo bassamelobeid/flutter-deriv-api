@@ -12,7 +12,7 @@ use VolSurface::Utils qw(get_strike_for_spot_delta);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::Platform::Offerings qw(get_offerings_flyby);
+use LandingCompany::Offerings qw(get_offerings_flyby);
 use BOM::Product::Contract::Category;
 use BOM::Product::Contract::Strike;
 
@@ -33,7 +33,7 @@ sub available_contracts_for_symbol {
         $close = $calendar->closing_on($now)->epoch;
     }
 
-    my $flyby = get_offerings_flyby($landing_company);
+    my $flyby = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $landing_company);
     my @offerings = $flyby->query({underlying_symbol => $symbol});
 
     for my $o (@offerings) {

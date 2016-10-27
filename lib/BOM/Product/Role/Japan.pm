@@ -4,7 +4,7 @@ use Moose::Role;
 
 use List::Util qw(first);
 use BOM::Platform::Context qw(localize);
-use BOM::Platform::Offerings qw(get_contract_specifics);
+use LandingCompany::Offerings qw(get_contract_specifics);
 use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 
 my $landing_company = 'japan';
@@ -50,14 +50,16 @@ sub _build_predefined_contracts {
 override offering_specifics => sub {
     my $self = shift;
 
-    return get_contract_specifics({
-        underlying_symbol => $self->underlying->symbol,
-        barrier_category  => $self->barrier_category,
-        expiry_type       => $self->expiry_type,
-        start_type        => $self->start_type,
-        landing_company   => $landing_company,
-        contract_category => $self->category->code,
-    });
+    return get_contract_specifics(
+        BOM::Platform::Runtime->instance->get_offerings_config,
+        {
+            underlying_symbol => $self->underlying->symbol,
+            barrier_category  => $self->barrier_category,
+            expiry_type       => $self->expiry_type,
+            start_type        => $self->start_type,
+            landing_company   => $landing_company,
+            contract_category => $self->category->code,
+        });
 };
 
 override risk_profile => sub {
