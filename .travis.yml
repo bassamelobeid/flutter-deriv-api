@@ -58,6 +58,6 @@ install:
 script:
     #- make $TEST_SUITE
     - perl -v
-
+    - which perl
 #after_script:
 #    - /tmp/travis-scripts/wait_for_ssh.sh
