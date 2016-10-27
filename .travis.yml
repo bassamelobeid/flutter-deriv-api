@@ -1,15 +1,16 @@
 language: perl
 perl:
     - "5.14.2-thr"
+    - "5.24"
 matrix:
     fast_finish: true
-env:
-    - TEST_SUITE=unit_test_product_contract
-    - TEST_SUITE=unit_test_product_contract_extended
-    - TEST_SUITE=unit_test_product_all
-    - TEST_SUITE=unit_test_validation
-    - TEST_SUITE=unit_test_pricing
-    - TEST_SUITE=unit_test_intraday
+#env:
+#    - TEST_SUITE=unit_test_product_contract
+#    - TEST_SUITE=unit_test_product_contract_extended
+#    - TEST_SUITE=unit_test_product_all
+#    - TEST_SUITE=unit_test_validation
+#    - TEST_SUITE=unit_test_pricing
+#    - TEST_SUITE=unit_test_intraday
 
 services:
     - redis-server
@@ -17,12 +18,10 @@ addons:
     postgresql: "9.3"
 cache: apt
 before_install:
-    - git clone https://1994c85ce4f602fb682076e9a102261644fb3d19@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - git clone https://1994c85ce4f602fb682076e9a102261644fb3d19@github.com/chylli/travis-scripts /tmp/travis-scripts
+    - (cd /tmp/travis-scripts && git checkout chylli/setup_perl.sh)
+    - . /tmp/travis-scripts/setup_perl.sh
     - /tmp/travis-scripts/setup_ssh.sh
-    - git clone git://github.com/binary-com/helpers ~/travis-perl-helpers
-    - AUTHOR_TESTING=0 source ~/travis-perl-helpers/init
-    - PREBUILT_REPO="git@github.com:binary-com/test-perl.git" build-perl
-    - sudo mkdir -p /etc/rmg; sudo ln -s $(dirname $(which perl)) /etc/rmg/bin
     - /tmp/travis-scripts/fixHostName.sh
     - dpkg -l | grep postgres
     - pg_lsclusters
@@ -56,7 +55,8 @@ install:
     - . /tmp/travis-scripts/setup_perl5lib.sh
 
 script:
-    - make $TEST_SUITE
+    #- make $TEST_SUITE
+    - perl -v
 
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
