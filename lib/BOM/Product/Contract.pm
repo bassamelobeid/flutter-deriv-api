@@ -625,11 +625,11 @@ sub _build_pricing_engine {
                 volsurface           => $self->volsurface->surface,
             );
         } else {
-            warn "Unknown pricing engine: " . $self->pricing_engine_name;
+            die "Unknown pricing engine: " . $self->pricing_engine_name;
         }
 
         if(my @missing_parameters = grep !exists $pricing_parameters{$_}, @{$self->pricing_engine_name->required_args}) {
-            warn "Missing pricing parameters for engine " . $self->pricing_engine_name . " - " . join ',', @missing_parameters;
+            die "Missing pricing parameters for engine " . $self->pricing_engine_name . " - " . join ',', @missing_parameters;
         }
 
         $pricing_engine = $self->pricing_engine_name->new(%pricing_parameters);
