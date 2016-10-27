@@ -65,7 +65,7 @@ sub cashier {
     # still no currency?  Try the first financial sibling with same landing co.
     $currency ||= do {
         my @siblings = grep { $_->default_account }
-            grep { $_->landing_company->short eq $client->landing_company->short } BOM::Platform::User->new({email=>$client->email})->clients;
+            grep { $_->landing_company->short eq $client->landing_company->short } BOM::Platform::User->new({email => $client->email})->clients;
         @siblings && $siblings[0]->default_account->currency_code;
     };
 
@@ -1013,7 +1013,7 @@ sub transfer_between_accounts {
     my $currency     = $args->{currency};
     my $amount       = $args->{amount};
 
-    my %siblings = map { $_->loginid => $_ } BOM::Platform::User->new({email=>$client->email})->clients;
+    my %siblings = map { $_->loginid => $_ } BOM::Platform::User->new({email => $client->email})->clients;
 
     my @accounts;
     foreach my $account (values %siblings) {
