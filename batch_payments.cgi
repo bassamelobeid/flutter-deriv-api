@@ -29,17 +29,16 @@ my $broker            = request()->broker_code;
 my $clerk             = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $confirm           = $cgi->param('confirm');
 my $preview           = $cgi->param('preview');
-my $payments_csv_fh   = $cgi->upload('payments_csv');
 my $payments_csv_file = $cgi->param('payments_csv_file') || sprintf '/tmp/batch_payments_%d.csv', rand(1_000_000);
 my $skip_validation   = $cgi->param('skip_validation') || 0;
 my $format            = $confirm || $preview || die "either preview or confirm";
 my $now               = Date::Utility->new;
 
-binmode $payments_csv_fh, ':encoding(UTF-8)';
-
 Bar('Batch Credit/Debit to Clients Accounts');
 
 if ($preview) {
+    my $payments_csv_fh = $cgi->upload('payments_csv');
+    binmode $payments_csv_fh, ':encoding(UTF-8)';
     open my $fh, '>:encoding(UTF-8)', $payments_csv_file or die "writing upload: $!";
     while (<$payments_csv_fh>) {
         s/\s*$//;    # remove various combos of unix/windows rec-separators
