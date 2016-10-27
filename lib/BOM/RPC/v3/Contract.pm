@@ -468,6 +468,8 @@ sub get_contract_details {
                 code              => 'GetContractDetails',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
     };
+    return $response if $response;
+
     try {
         $bet_params->{app_markup_percentage} = $params->{app_markup_percentage} // 0;
         $bet_params->{landing_company} = $client->landing_company->short;
@@ -480,6 +482,7 @@ sub get_contract_details {
                 code              => 'GetContractDetails',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
     };
+    return $response if $response;
 
     $response = {
         longcode     => $contract->longcode,
