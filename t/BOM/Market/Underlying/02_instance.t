@@ -511,7 +511,7 @@ subtest 'all methods on a selection of underlyings' => sub {
 
     my $eod = Quant::Framework::TradingCalendar->new({
             symbol            => 'NYSE',
-            underlying_config => create_underlying('DJI')->config,
+            underlying        => create_underlying('DJI'),
             chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader()})->closing_on(Date::Utility->new('2016-04-05'));
     foreach my $pair (qw(frxUSDJPY frxEURUSD frxAUDUSD)) {
         my $worm = create_underlying($pair, $eod->minus_time_interval('1s'));
@@ -523,7 +523,7 @@ subtest 'all methods on a selection of underlyings' => sub {
     Quant::Framework::Utils::Test::create_doc(
         'volsurface_delta',
         {
-            underlying_config => create_underlying('frxEURUSD')->config,
+            underlying        => create_underlying('frxEURUSD'),
             chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
             recorded_date     => Date::Utility->new,
@@ -536,7 +536,7 @@ subtest 'all methods on a selection of underlyings' => sub {
         my $builder     = Quant::Framework::Utils::Builder->new({
             chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
-            underlying_config => $ul->config,
+            underlying        => $ul,
         });
         foreach my $days_hence (1 .. 7) {
             my $test_day      = $today->plus_time_interval($days_hence . 'd');

@@ -33,7 +33,7 @@ subtest 'Saving delta then moneyness.' => sub {
 
     my $delta_surface = Quant::Framework::VolSurface::Delta->new({
             deltas            => [75, 50, 25],
-            underlying_config => $forex->config,
+            underlying         => $forex,
             chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader,
             chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer,
             recorded_date     => $now,
@@ -61,7 +61,7 @@ subtest 'Saving delta then moneyness.' => sub {
     my $indices           = create_underlying('GDAXI');
     my $moneyness_surface = Quant::Framework::VolSurface::Moneyness->new({
             moneynesses       => [99, 100, 101],
-            underlying_config => $indices->config,
+            underlying        => $indices,
             chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader,
             chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer,
             recorded_date     => $now,
@@ -113,7 +113,7 @@ subtest 'Consecutive saves.' => sub {
         'volsurface_delta',
         {
             recorded_date     => $now->minus_time_interval('3h'),
-            underlying_config => $underlying->config,
+            underlying        => $underlying,
             chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader,
             chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer,
         });
@@ -125,7 +125,7 @@ subtest 'Consecutive saves.' => sub {
             'volsurface_delta',
             {
                 recorded_date     => $recorded_date,
-                underlying_config => $underlying->config,
+                underlying        => $underlying,
                 chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader,
                 chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer,
             });

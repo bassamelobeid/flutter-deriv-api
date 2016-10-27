@@ -77,7 +77,7 @@ my $chronicle_r = BOM::System::Chronicle::get_chronicle_reader($date);
 my $ul_LSE = create_underlying('FTSE');
 my $LSE    = Quant::Framework::TradingCalendar->new({
     symbol            => 'LSE',
-    underlying_config => $ul_LSE->config,
+    underlying        => $ul_LSE,
     chronicle_reader  => $chronicle_r,
     for_date          => $date
 });

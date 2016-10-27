@@ -29,7 +29,7 @@ sub fetch_surface {
         die "Could not load volsurface for " . $underlying->symbol;
     }
     my $surface_args = {
-        underlying_config => $args->{underlying}->config,
+        underlying        => $args->{underlying},
         chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader($args->{for_date} // $underlying->for_date),
         chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
         $args->{for_date} ? (for_date => $args->{for_date}) : ($underlying->for_date) ? (for_date => $underlying->for_date) : (),

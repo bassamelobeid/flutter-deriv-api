@@ -13,14 +13,14 @@ subtest 'everything' => sub {
     lives_ok {
         my $flat = BOM::MarketData::VolSurface::Flat->new(
             underlying        => create_underlying('XYZ'),
-            underlying_config => create_underlying('XYZ')->config,
+            underlying        => create_underlying('XYZ'),
             chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
         );
         ok !$flat->get_volatility, 'undef for unrecognized underlyings';
         $flat = BOM::MarketData::VolSurface::Flat->new(
             underlying        => create_underlying('R_100'),
-            underlying_config => create_underlying('R_100')->config,
+            underlying        => create_underlying('R_100'),
             chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
         );
@@ -29,7 +29,7 @@ subtest 'everything' => sub {
             underlying        => create_underlying('R_25'),
             chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
-            underlying_config => create_underlying('R_25')->config,
+            underlying        => create_underlying('R_25'),
         );
         is $flat->get_volatility, 0.25, '25% volatility for R_25';
     }
