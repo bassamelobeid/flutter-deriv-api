@@ -129,7 +129,7 @@ sub run {
 
             }
             my $volsurface = Quant::Framework::VolSurface::Moneyness->new({
-                underlying_config => $underlying->config,
+                underlying        => $underlying,
                 recorded_date     => $raw_volsurface->{recorded_date},
                 spot_reference    => $raw_volsurface->{spot_reference},
                 chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
@@ -140,7 +140,7 @@ sub run {
                 if (exists $otc_list{'OTC_' . $symbol}) {
                     my $otc         = create_underlying('OTC_' . $symbol);
                     my $otc_surface = $volsurface->clone({
-                        underlying_config => $otc->config,
+                        underlying => $otc,
                     });
                     $otc_surface->save;
                 }
