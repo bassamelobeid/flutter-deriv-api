@@ -171,7 +171,7 @@ sub _get_ask {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
 
             # need this warning to be logged for Japan as a regulatory requirement
-            warn $contract->shortcode . ":" . $ask_price . ":" . ($p2->{trading_period_start} // '') . "\n"
+            warn "[JPLOG]" . $contract->shortcode . ":" . $ask_price . ":" . ($p2->{trading_period_start} // '') . "\n"
                 if ($p2->{currency} && $p2->{currency} eq 'JPY');
 
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
