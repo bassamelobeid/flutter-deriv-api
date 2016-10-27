@@ -4,25 +4,51 @@ use Moose::Role;
 use CGI::Cookie;
 use Data::Validate::IP;
 
+use BOM::Platform::Context::Request;
+
+=head2 _remote_ip
+
+Attempt to extract the client's public-facing IP address from the environment or request.
+
+=cut
+
+sub _remote_ip {
+    my ($request) = @_;
+    my $headers = $request->headers;
+    # CF-Connecting-IP is mentioned here: https://support.cloudflare.com/hc/en-us/articles/200170986-How-does-CloudFlare-handle-HTTP-Request-headers-
+    # Note that we will need to change this if switching to a different provider.
+    my @candidates = ($headers->header('cf-connecting-ip') // ());
+    push @candidates, do {
+        # In this header, we expect:
+        # client internal IP,maybe client external IP,any upstream proxies,cloudflare
+        # We're interested in the IP address of whoever hit CloudFlare, so we drop the last one
+        # then take the next one after that.
+        my @ips = split /\s*,\s*/, $headers->header('x-forwarded-for');
+        pop @ips;
+        $ips[-1];
+    } if $headers->header('x-forwarded-for');
+
+    # Fall back to what our upstream (nginx) detected
+    push @candidates, $request->env->{REMOTE_ADDR} // ();
+    for my $ip (@candidates) {
+        # Eventually we'll want ::is_ip instead, but that requires IPv6 support in the database
+        return $ip if Data::Validate::IP::is_ipv4($ip);
+    }
+    return '';
+}
+
 sub from_mojo {
     my $args    = shift;
     my $request = $args->{mojo_request};
 
     return unless ($request);
 
-    ## put back some ENV b/c we use it in our other modules like BOM::System::AuditLog
-    %ENV = (%ENV, %{$request->env});    ## no critic (Variables::RequireLocalizedPunctuationVars)
-    __SetEnvironment();
+    # put back some ENV b/c we use it in our other modules like BOM::System::AuditLog
 
-    $args->{_ip} = '';
-    if ($main::ENV{'REMOTE_ADDR'}) {
-        $args->{_ip} = $main::ENV{'REMOTE_ADDR'};
-    }
-
-    if (not $args->{_ip} and $request->headers->header('x-forwarded-for')) {
-        my @ips = split(/,\s*/, $request->headers->header('x-forwarded-for'));
-        $args->{_ip} = $ips[0] if Data::Validate::IP::is_ipv4($ips[0]);
-    }
+    ## no critic (Variables::RequireLocalizedPunctuationVars)
+    %ENV = (%ENV, %{$request->env});
+    ## no critic (Variables::RequireLocalizedPunctuationVars)
+    $ENV{REMOTE_ADDR} = $args->{_ip} = _remote_ip($request);
 
     $args->{domain_name} = $request->url->to_abs->host;
 
@@ -31,32 +57,6 @@ sub from_mojo {
     $args->{country_code} = $client_country;
 
     return BOM::Platform::Context::Request->new($args);
-}
-
-sub __SetEnvironment {
-    if (
-        not $ENV{'REMOTE_ADDR'}
-
-        # REMOTE_ADDR not set for whatever reason
-        or $ENV{'REMOTE_ADDR'} =~ /\Q127.0.0.1\E/
-
-        # client IP showing up as same as server IP
-        or ($ENV{'SERVER_ADDR'} and $ENV{'REMOTE_ADDR'} eq $ENV{'SERVER_ADDR'}))
-    {
-        # extract client IP from X-Forwarded-For
-        if (defined $ENV{'HTTP_X_FORWARDED_FOR'}) {
-            $ENV{'HTTP_X_FORWARDED_FOR'} =~ s/\s//g;    ## no critic
-            my @ips = split(/,\s*/, $ENV{'HTTP_X_FORWARDED_FOR'});
-            shift @ips while ($ips[0] and $ips[0] =~ /^(192|10|172|127)\./);
-            my $real_client_ip = $ips[0];
-            if (defined $real_client_ip
-                and $real_client_ip =~ /^(\d+\.\d+\.\d+\.\d+)$/)
-            {
-                $ENV{'REMOTE_ADDR'} = $1;               ## no critic
-            }
-        }
-    }
-    return;
 }
 
 1;
