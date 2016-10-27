@@ -53,6 +53,7 @@ install:
 
 script:
     - perl -v
+    - ls -l $(which perl)
     - make $TEST_SUITE; RC=$?; sudo service binary_pgbouncer status; exit $RC
 
 after_script:
