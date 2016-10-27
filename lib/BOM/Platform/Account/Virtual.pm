@@ -10,6 +10,7 @@ use BOM::System::Password;
 
 use BOM::Platform::Runtime;
 use LandingCompany::Countries;
+use LandingCompany::Registry;
 use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Token;
@@ -30,7 +31,7 @@ sub create_account {
         return {error => 'invalid'};
     } elsif (BOM::Platform::User->new({email => $email})) {
         return {error => 'duplicate email'};
-    } elsif (BOM::Platform::Client::check_country_restricted($residence)) {
+    } elsif (LandingCompany::Countries->instance->restricted_country($residence)) {
         return {error => 'invalid residence'};
     }
 
