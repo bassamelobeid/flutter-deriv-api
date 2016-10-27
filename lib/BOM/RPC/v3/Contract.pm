@@ -15,7 +15,7 @@ use BOM::MarketData::Types;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
-use BOM::Platform::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Offerings qw(get_offerings_with_filter);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Format::Util::Numbers qw(roundnear);
@@ -23,8 +23,8 @@ use Time::HiRes;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
 sub validate_symbol {
-    my $symbol    = shift;
-    my @offerings = get_offerings_with_filter('underlying_symbol');
+    my $symbol = shift;
+    my @offerings = get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'underlying_symbol');
     if (!$symbol || none { $symbol eq $_ } @offerings) {
         return {
             error => {
@@ -158,6 +158,11 @@ sub _get_ask {
             }
         } else {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
+
+            # need this warning to be logged for Japan as a regulatory requirement
+            warn "[JPLOG]" . $contract->shortcode . ":" . $ask_price . ":" . ($p2->{trading_period_start} // '') . "\n"
+                if ($p2->{currency} && $p2->{currency} eq 'JPY');
+
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
 
             $response = {
@@ -380,18 +385,22 @@ sub send_bid {
 sub send_ask {
     my $params = shift;
 
+    my $tv = [Time::HiRes::gettimeofday];
+
     # provide landing_company information when it is available.
     $params->{args}->{landing_company} = $params->{landing_company} if $params->{landing_company};
 
     my $symbol   = $params->{args}->{symbol};
     my $response = validate_symbol($symbol);
     if ($response and exists $response->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
+        $response = BOM::RPC::v3::Utility::create_error({
                 code              => $response->{error}->{code},
                 message_to_client => BOM::Platform::Context::localize($response->{error}->{message}, $symbol)});
-    }
 
-    my $tv = [Time::HiRes::gettimeofday];
+        $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
+
+        return $response;
+    }
 
     try {
 

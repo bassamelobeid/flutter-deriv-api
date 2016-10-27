@@ -14,9 +14,14 @@ use Data::Dumper;
 use LWP::Simple;
 use BOM::Platform::Runtime;
 use DBIx::TransactionManager::Distributed qw(txn);
+use List::Util qw(first);
 
-my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4");
-my $workers     = 4;
+my $internal_ip     = get("http://169.254.169.254/latest/meta-data/local-ipv4");
+my $workers         = 4;
+my %required_params = (
+    price => [qw(contract_type currency symbol)],
+    bid   => [qw(contract_id short_code currency landing_company)],
+);
 
 GetOptions(
     "workers=i" => \$workers,
@@ -115,6 +120,14 @@ while (1) {
         my $payload = JSON::XS::decode_json($next);
         my $params  = {@{$payload}};
 
+        # If incomplete or invalid keys somehow got into pricer,
+        # delete them here.
+        unless (_validate_params($params)) {
+            warn "Invalid parameters: " . Data::Dumper->Dumper($params);
+            $redis->del($key->[1], $next);
+            next;
+        }
+
         my $response = txn {
             process_job($redis, $next, $params);
         }
@@ -183,4 +196,14 @@ sub _get_underlying {
     }
 
     return;
+}
+
+sub _validate_params {
+    my $params = shift;
+
+    my $cmd = $params->{price_daemon_cmd};
+    return 0 unless $cmd;
+    return 0 unless $cmd eq 'price' or $cmd eq 'bid';
+    return 0 if first { not defined $params->{$_} } @{$required_params{$cmd}};
+    return 1;
 }

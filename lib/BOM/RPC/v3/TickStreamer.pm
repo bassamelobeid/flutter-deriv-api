@@ -12,7 +12,6 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Platform::Context qw (localize request);
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
-use BOM::Platform::Offerings qw(get_offerings_with_filter);
 
 sub ticks {
     my $params = shift;

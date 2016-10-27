@@ -168,6 +168,61 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',
 });
 
+my $SPGSWT_start = Date::Utility->new('1413892500');
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'index',
+    {
+        symbol        => 'SPGSWT',
+        recorded_date => $SPGSWT_start,
+        rates         => {
+            1   => 0.2,
+            2   => 0.15,
+            7   => 0.18,
+            32  => 0.25,
+            62  => 0.2,
+            92  => 0.18,
+            186 => 0.1,
+            365 => 0.13,
+        },
+
+    });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'correlation_matrix',
+    {
+        recorded_date => $SPGSWT_start,
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_moneyness',
+    {
+        symbol         => 'SPGSWT',
+        spot_reference => 100,
+        recorded_date  => $SPGSWT_start,
+    });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol        => 'USD',
+        recorded_date => $SPGSWT_start,
+    });
+
+my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'SPGSWT',
+    epoch      => $SPGSWT_start->epoch,
+    quote      => 100
+});
+
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'SPGSWT',
+    epoch      => $SPGSWT_start->epoch + 30,
+    quote      => 111
+});
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'SPGSWT',
+    epoch      => $SPGSWT_start->epoch + 14400,
+    quote      => 80
+});
+
 # test begin
 my $t = Test::Mojo->new('BOM::RPC');
 my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
@@ -288,7 +343,6 @@ subtest $method => sub {
     });
 
     $txn->buy(skip_validation => 1);
-
     my $result = $c->tcall($method, {token => $token_with_txn});
     is($result->{transactions}[0]{action_type}, 'sell', 'the transaction is sold, so _sell_expired_contracts is called');
     is($result->{count},                        3,      "have 3 statements");
@@ -307,6 +361,52 @@ subtest $method => sub {
 
     # here the expired contract is sold, so we can get the txns as test value
     my $txns = BOM::Database::DataMapper::Transaction->new({db => $test_client2->default_account->db})
+        ->get_transactions_ws({}, $test_client2->default_account);
+    $result = $c->tcall($method, {token => $token_with_txn});
+    is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[0]{sell_time})->epoch,     'transaction time correct for sell');
+    is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{purchase_time})->epoch, 'transaction time correct for buy ');
+    is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
+
+    $contract_expired = produce_contract({
+        underlying   => create_underlying('SPGSWT'),
+        bet_type     => 'INTRADU',
+        currency     => 'USD',
+        stake        => 100,
+        date_start   => $SPGSWT_start->epoch,
+        date_pricing => $SPGSWT_start->epoch,
+        date_expiry  => 1413906900,
+        current_tick => $entry_tick,
+        entry_tick   => $entry_tick,
+        barrier      => 'S0P',
+    });
+    $contract_expired->{shortcode} = 'INTRADU_SPGSWT_20_1413892500_1413906900_S0P_0';
+    $txn = BOM::Product::Transaction->new({
+            client        => $test_client2,
+            contract      => $contract_expired,
+            price         => 100,
+            payout        => 200,
+            app_markup    => 0,
+            amount_type   => 'stake',
+            purchase_date => $SPGSWT_start->epoch - 101,
+
+    });
+    $txn->buy(skip_validation => 1);
+    $result = $c->tcall($method, {token => $token_with_txn});
+    is($result->{transactions}[0]{action_type}, 'sell', 'the transaction is sold, so _sell_expired_contracts is called');
+    is($result->{count},                        5,      "have 5 statements");
+    $result = $c->tcall(
+        $method,
+        {
+            token => $token_with_txn,
+            args  => {description => 1}});
+    is(
+        $result->{transactions}[0]{longcode},
+        'Win payout if SPGSWT is strictly higher than entry spot at 4 hours after 2014-10-21 11:55:00 GMT.',
+        "if have short code, then simple_contract_info is called"
+    );
+
+    # here the expired contract is sold, so we can get the txns as test value
+    $txns = BOM::Database::DataMapper::Transaction->new({db => $test_client2->default_account->db})
         ->get_transactions_ws({}, $test_client2->default_account);
     $result = $c->tcall($method, {token => $token_with_txn});
     is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[0]{sell_time})->epoch,     'transaction time correct for sell');
@@ -377,7 +477,7 @@ subtest $method => sub {
     $txn->buy(skip_validation => 1);
 
     my $result = $c->tcall($method, {token => $token_with_txn});
-    is($result->{count}, 2, 'the new transaction is sold so _sell_expired_contracts is called');
+    is($result->{count}, 3, 'the new transaction is sold so _sell_expired_contracts is called');
 
     my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
             client_loginid => $test_client2->loginid,
@@ -394,22 +494,22 @@ subtest $method => sub {
         'sell_price'     => '100',
         'contract_id'    => $txn->contract_id,
         'transaction_id' => $txn->transaction_id,
-        'sell_time'      => Date::Utility->new($data->[0]{sell_time})->epoch,
+        'sell_time'      => Date::Utility->new($data->[1]{sell_time})->epoch,
         'buy_price'      => '100',
-        'purchase_time'  => Date::Utility->new($data->[0]{purchase_time})->epoch,
+        'purchase_time'  => Date::Utility->new($data->[1]{purchase_time})->epoch,
         'payout'         => $contract_expired->payout,
         'app_id'         => undef
     };
-
-    is_deeply($result->{transactions}[0], $expect0, 'result is correct');
+    is_deeply($result->{transactions}[1], $expect0, 'result is correct');
     $expect0->{longcode}  = 'Win payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.';
-    $expect0->{shortcode} = $data->[0]{short_code};
+    $expect0->{shortcode} = $data->[1]{short_code};
     $result               = $c->tcall(
         $method,
         {
             token => $token_with_txn,
             args  => {description => 1}});
-    is_deeply($result->{transactions}[0], $expect0, 'the result with description ok');
+
+    is_deeply($result->{transactions}[1], $expect0, 'the result with description ok');
     is(
         $c->tcall(
             $method,
@@ -417,7 +517,7 @@ subtest $method => sub {
                 token => $token_with_txn,
                 args  => {after => '2006-01-01 01:01:01'}}
             )->{count},
-        0,
+        1,
         'result is correct for arg after'
     );
     is(
