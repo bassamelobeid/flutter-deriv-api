@@ -13,32 +13,33 @@ use Date::Utility;
 use Try::Tiny;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_count);
 use Format::Util::Numbers qw(roundnear);
-
-use BOM::Product::RiskProfile;
-use BOM::RPC::v3::Utility;
-use BOM::Platform::Runtime;
-use LandingCompany::Countries;
-use BOM::Platform::Context qw (localize request);
-use BOM::Platform::Client;
-use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency in_USD);
-use BOM::Database::DataMapper::Payment;
-use BOM::Database::DataMapper::PaymentAgent;
-use BOM::Database::DataMapper::Client;
-use BOM::Database::ClientDB;
-use BOM::Platform::Email qw(send_email);
-use BOM::System::Config;
-use BOM::System::AuditLog;
-
-use BOM::Database::Model::HandoffToken;
-use BOM::Platform::Client::DoughFlowClient;
-use BOM::Database::DataMapper::Payment::DoughFlow;
-use BOM::Platform::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
 use String::UTF8::MD5;
 use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 
-use JSON qw(from_json);
 use LandingCompany::Registry;
+use LandingCompany::Countries;
+
+use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency in_USD);
+
+use BOM::Platform::User;
+use BOM::Platform::Client::DoughFlowClient;
+use BOM::Platform::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
+use BOM::Platform::Runtime;
+use BOM::Platform::Context qw (localize request);
+use BOM::Platform::Client;
+use BOM::Platform::Email qw(send_email);
+use BOM::System::Config;
+use BOM::System::AuditLog;
+use BOM::Product::RiskProfile;
+use BOM::RPC::v3::Utility;
+
+use BOM::Database::Model::HandoffToken;
+use BOM::Database::DataMapper::Payment::DoughFlow;
+use BOM::Database::DataMapper::Payment;
+use BOM::Database::DataMapper::PaymentAgent;
+use BOM::Database::DataMapper::Client;
+use BOM::Database::ClientDB;
 
 sub cashier {
     my $params = shift;
@@ -64,7 +65,7 @@ sub cashier {
     # still no currency?  Try the first financial sibling with same landing co.
     $currency ||= do {
         my @siblings = grep { $_->default_account }
-            grep { $_->landing_company->short eq $client->landing_company->short } $client->siblings;
+            grep { $_->landing_company->short eq $client->landing_company->short } BOM::Platform::User->new({email=>$client->email})->clients;
         @siblings && $siblings[0]->default_account->currency_code;
     };
 
@@ -1012,7 +1013,7 @@ sub transfer_between_accounts {
     my $currency     = $args->{currency};
     my $amount       = $args->{amount};
 
-    my %siblings = map { $_->loginid => $_ } $client->siblings;
+    my %siblings = map { $_->loginid => $_ } BOM::Platform::User->new({email=>$client->email})->clients;
 
     my @accounts;
     foreach my $account (values %siblings) {
