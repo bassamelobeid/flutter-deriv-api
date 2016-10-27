@@ -1015,7 +1015,7 @@ my $pc_params_setters = {
     timeinyears            => sub { my $self = shift; $self->price_calculator->timeinyears($self->timeinyears) },
     discount_rate          => sub { my $self = shift; $self->price_calculator->discount_rate($self->discount_rate) },
     staking_limits         => sub { my $self = shift; $self->price_calculator->staking_limits($self->staking_limits) },
-    theo_prabability       => sub { my $self = shift; $self->price_calculator->theo_probability($self->theo_probability) },
+    theo_probability       => sub { my $self = shift; $self->price_calculator->theo_probability($self->theo_probability) },
     commission_markup      => sub { my $self = shift; $self->price_calculator->commission_markup($self->commission_markup) },
     commission_from_stake  => sub { my $self = shift; $self->price_calculator->commission_from_stake($self->commission_from_stake) },
     discounted_probability => sub { my $self = shift; $self->price_calculator->discounted_probability($self->discounted_probability) },
@@ -1059,12 +1059,12 @@ my $pc_params_setters = {
 my $pc_needed_params_map = {
     theo_probability       => [qw/ probability /],
     bs_probability         => [qw/ bs_probability /],
-    ask_probability        => [qw/ theo_prabability /],
-    bid_probability        => [qw/ theo_prabability discounted_probability opposite_ask_probability /],
-    payout                 => [qw/ theo_prabability commission_from_stake /],
-    commission_markup      => [qw/ theo_prabability /],
-    commission_from_stake  => [qw/ theo_prabability commission_markup /],
-    validate_price         => [qw/ theo_prabability commission_markup commission_from_stake staking_limits /],
+    ask_probability        => [qw/ theo_probability /],
+    bid_probability        => [qw/ theo_probability discounted_probability opposite_ask_probability /],
+    payout                 => [qw/ theo_probability commission_from_stake /],
+    commission_markup      => [qw/ theo_probability /],
+    commission_from_stake  => [qw/ theo_probability commission_markup /],
+    validate_price         => [qw/ theo_probability commission_markup commission_from_stake staking_limits /],
     discounted_probability => [qw/ timeinyears discount_rate /],
 };
 
