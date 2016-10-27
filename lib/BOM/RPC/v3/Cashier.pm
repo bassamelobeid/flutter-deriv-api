@@ -1257,7 +1257,7 @@ sub topup_virtual {
     }
 
     # CREDIT HIM WITH THE MONEY
-    my ($curr, $amount, $trx) = $client->deposit_virtual_funds($source);
+    my ($curr, $amount, $trx) = $client->deposit_virtual_funds($source, localize('Virtual money credit to account'));
 
     return {
         amount   => $amount,
