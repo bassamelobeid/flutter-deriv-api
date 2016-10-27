@@ -40,7 +40,7 @@ use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::DataMapper::Client;
 use BOM::Database::ClientDB;
-use Data::Dumper;
+
 sub cashier {
     my $params = shift;
 
