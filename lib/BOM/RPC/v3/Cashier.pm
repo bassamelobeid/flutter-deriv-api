@@ -1015,7 +1015,7 @@ sub transfer_between_accounts {
     my $currency     = $args->{currency};
     my $amount       = $args->{amount};
 
-    my %siblings = {};
+    my %siblings = ();
     if (my $user = BOM::Platform::User->new({email => $client->email})) {
         %siblings = map { $_->loginid => $_ } $user->clients;
     }
