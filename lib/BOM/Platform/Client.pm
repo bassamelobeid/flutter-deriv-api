@@ -33,7 +33,7 @@ use BOM::Database::Rose::DB::Relationships;
 
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
-state $CLIENT_LIMITS_CONFIG = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/client_limits.yml');
+my $CLIENT_LIMITS_CONFIG = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/client_limits.yml');
 
 my $CLIENT_STATUS_TYPES = {
     age_verification          => 1,
