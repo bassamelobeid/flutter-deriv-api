@@ -33,10 +33,8 @@ my $date_pricing = $date_start;
 my $recorded_date = Date::Utility->new($date_start);
 # This test are benchmarked againsts market rates.
 # The intermittent failure of the test is due to the switching between implied and market rates in app settings.
-my $u_c = Test::MockModule->new('Quant::Framework::Utils::UnderlyingConfig');
+my $u_c = Test::MockModule->new('Quant::Framework::Underlying');
 $u_c->mock('uses_implied_rate',                     sub { return 0 });
-$u_c->mock('uses_implied_rate_for_asset',           sub { return 0 });
-$u_c->mock('uses_implied_rate_for_quoted_currency', sub { return 0 });
 
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine
 #Because the code to prepare market data is called for all pricings in Contract
@@ -201,8 +199,8 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
             quote      => $expectations->{spot},
         });
 
-        my $mock = Test::MockModule->new('Quant::Framework::Utils::UnderlyingConfig');
-        $mock->mock('spot', sub { return $expectations->{spot} });
+        my $mock = Test::MockModule->new('Quant::Framework::Underlying');
+        $mock->mock('spot_tick', sub { return $expectations->{spot} });
 
         my %barriers =
             $expectations->{barrier2}
