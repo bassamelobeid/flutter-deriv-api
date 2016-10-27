@@ -40,7 +40,7 @@ use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::DataMapper::Client;
 use BOM::Database::ClientDB;
-
+use Data::Dumper;
 sub cashier {
     my $params = shift;
 
@@ -63,11 +63,13 @@ sub cashier {
     }
 
     # still no currency?  Try the first financial sibling with same landing co.
-    $currency ||= do {
-        my @siblings = grep { $_->default_account }
-            grep { $_->landing_company->short eq $client->landing_company->short } BOM::Platform::User->new({email => $client->email})->clients;
-        @siblings && $siblings[0]->default_account->currency_code;
-    };
+    if (my $user = BOM::Platform::User->new({email => $client->email})) {
+        $currency ||= do {
+            my @siblings = grep { $_->default_account }
+                grep { $_->landing_company->short eq $client->landing_company->short } $user->clients;
+            @siblings && $siblings[0]->default_account->currency_code;
+        };
+    }
 
     my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
     my $client_tnc_status   = $client->get_status('tnc_approval');
@@ -1013,7 +1015,10 @@ sub transfer_between_accounts {
     my $currency     = $args->{currency};
     my $amount       = $args->{amount};
 
-    my %siblings = map { $_->loginid => $_ } BOM::Platform::User->new({email => $client->email})->clients;
+    my %siblings = {};
+    if (my $user = BOM::Platform::User->new({email => $client->email})) {
+        %siblings = map { $_->loginid => $_ } $user->clients;
+    }
 
     my @accounts;
     foreach my $account (values %siblings) {
