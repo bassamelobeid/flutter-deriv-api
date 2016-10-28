@@ -8,6 +8,7 @@ use Text::Trim;
 use File::Copy;
 use Locale::Country 'code2country';
 use Data::Dumper;
+use HTML::Entities;
 
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
@@ -553,7 +554,7 @@ if ($payment_agent) {
 
     foreach my $column ($payment_agent->meta->columns) {
         my $value = $payment_agent->$column;
-        print "<tr><td>$column</td><td>=</td><td>$value</td></tr>";
+        print "<tr><td>$column</td><td>=</td><td>" . encode_entities($value) . "</td></tr>";
     }
 
     print '</table>';
