@@ -102,6 +102,14 @@ subtest 'client IP address' => sub {
             local $headers{'REMOTE_ADDR'} = $ip;
             is($code->($obj), $ip, "set $ip via REMOTE_ADDR");
         }
+        {
+            local $headers{'cf-connecting-ip'} = $ip;
+            # Must be two addresses that aren't in the tests
+            my @addr = qw(1.2.3.4 5.6.7.8);
+            fail('update @addr list and pick something other than ' . $_) for grep { $_ eq $ip } @addr;
+            local $headers{'x-forwarded-for'} = join ',', @addr;
+            is($code->($obj), $ip, "set $ip via CF-Connecting-IP, it overrides X-Forwarded-For");
+        }
     }
     done_testing;
 };
