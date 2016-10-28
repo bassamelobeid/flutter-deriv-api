@@ -18,6 +18,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Path::Tiny;
 use YAML::XS qw(LoadFile);
+use Postgres::FeedDB::Spot::Tick;
 use Test::MockModule;
 
 my $data_file       = path(__FILE__)->parent->child('config.yml');
@@ -200,7 +201,7 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
         });
 
         my $mock = Test::MockModule->new('Quant::Framework::Underlying');
-        $mock->mock('spot_tick', sub { return $expectations->{spot} });
+        $mock->mock('spot_tick',sub { Postgres::FeedDB::Spot::Tick->new({ epoch => $date_pricing, quote => $expectations->{spot} }); });
 
         my %barriers =
             $expectations->{barrier2}
