@@ -195,4 +195,29 @@ sub mask_app_id {
     return $id;
 }
 
+sub error_map {
+    return {
+        'email unverified'    => localize('Your email address is unverified.'),
+        'pricing error'       => localize('Unable to price the contract.'),
+        'no residence'        => localize('Your account has no country of residence.'),
+        'invalid'             => localize('Sorry, account opening is unavailable.'),
+        'invalid residence'   => localize('Sorry, our service is not available for your country of residence.'),
+        'invalid UK postcode' => localize('Postcode is required for UK residents.'),
+        'invalid PO Box'      => localize('P.O. Box is not accepted in address.'),
+        'invalid DOB'         => localize('Your date of birth is invalid.'),
+        'duplicate email'     => localize(
+            'Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.'
+        ),
+        'duplicate name DOB' => localize(
+            'Sorry, you seem to already have a real money account with us. Perhaps you have used a different email address when you registered it. For legal reasons we are not allowed to open multiple real money accounts per person.'
+        ),
+        'too young'            => localize('Sorry, you are too young to open an account.'),
+        'show risk disclaimer' => localize('Please agree to the risk disclaimer before proceeding.'),
+        'insufficient score'   => localize(
+            'Unfortunately your answers to the questions above indicate that you do not have sufficient financial resources or trading experience to be eligible to open a trading account at this time.'
+        ),
+        'InvalidDateOfBirth'         => localize('Date of birth is invalid'),
+        'InsufficientAccountDetails' => localize('Please provide complete details for account opening.')};
+}
+
 1;

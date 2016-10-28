@@ -73,7 +73,7 @@ sub new_account_virtual {
 
     return BOM::RPC::v3::Utility::create_error({
             code              => $acc->{error},
-            message_to_client => BOM::Platform::Locale::error_map()->{$acc->{error}}}) if $acc->{error};
+            message_to_client => BOM::RPC::v3::Utility::error_map()->{$acc->{error}}}) if $acc->{error};
 
     my $client  = $acc->{client};
     my $account = $client->default_account->load;
