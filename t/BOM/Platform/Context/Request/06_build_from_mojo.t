@@ -96,12 +96,12 @@ subtest 'client IP address' => sub {
         {
             local $headers{'x-forwarded-for'} = "$ip,1.2.3.4";
             is($code->($obj), $ip, "set $ip via X-Forwarded-For");
-    }
-    {
+        }
+        {
             local $headers{'x-forwarded-for'} = "1.2.3.4,$ip";
             is($code->($obj), '1.2.3.4', "have first result when $ip is last in X-Forwarded-For");
-    }
-    {
+        }
+        {
             local $headers{'x-forwarded-for'} = "$ip";
             is($code->($obj), '', "no result when $ip is the only entry in X-Forwarded-For");
         }
