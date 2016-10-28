@@ -10,6 +10,8 @@ use List::MoreUtils qw(any);
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use Data::Validate::Sanctions qw(is_sanctioned);
 
+use LandingCompany::Countries;
+
 use BOM::System::Config;
 use BOM::Platform::Desk;
 use BOM::Platform::Runtime;
@@ -35,7 +37,7 @@ sub validate {
         warn($msg . 'new account opening suspended');
         return {error => 'invalid'};
     }
-    if ($country and BOM::Platform::Client::check_country_restricted($country)) {
+    if ($country and LandingCompany::Countries->instance->restricted_country($country)) {
         warn($msg . "restricted IP country [$country]");
         return {error => 'invalid'};
     }
@@ -48,7 +50,8 @@ sub validate {
 
     if ($details) {
         # sub account can have different residence then omnibus master account
-        if (BOM::Platform::Client::check_country_restricted($residence) or (not $details->{sub_account_of} and $from_client->residence ne $residence))
+        if (LandingCompany::Countries->instance->restricted_country($residence)
+            or (not $details->{sub_account_of} and $from_client->residence ne $residence))
         {
             warn($msg . "restricted residence [$residence], or mismatch with from_client residence: " . $from_client->residence);
             return {error => 'invalid residence'};
