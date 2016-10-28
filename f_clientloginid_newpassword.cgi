@@ -68,12 +68,13 @@ Bar('emailing change password link to ' . $loginID);
 print '<p class="success_message">Emailing change password link to ' . $client_name . ' at ' . $email . ' ...</p>';
 
 my $result = send_email({
-    from               => BOM::System::Config::email_address('support'),
-    to                 => $email,
-    subject            => localize('New Password Request'),
-    message            => [$lost_pass_email,],
-    template_loginid   => $loginID,
-    use_email_template => 1,
+    from                  => BOM::System::Config::email_address('support'),
+    to                    => $email,
+    subject               => localize('New Password Request'),
+    message               => [$lost_pass_email,],
+    template_loginid      => $loginID,
+    email_content_is_html => 1,
+    use_email_template    => 1,
 });
 
 print '<p>New password issuance RESULT: ' . ($result) ? 'success' : 'fail' . '</p>';

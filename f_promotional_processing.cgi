@@ -98,12 +98,13 @@ foreach my $loginid (@approved, @rejected) {
 
     if ($input{"${loginid}_notify"}) {
         send_email({
-            from               => BOM::System::Config::email_address('support'),
-            to                 => $client->email,
-            subject            => $email_subject,
-            message            => [$email_content],
-            template_loginid   => $loginid,
-            use_email_template => 1,
+            from                  => BOM::System::Config::email_address('support'),
+            to                    => $client->email,
+            subject               => $email_subject,
+            message               => [$email_content],
+            template_loginid      => $loginid,
+            email_content_is_html => 1,
+            use_email_template    => 1,
         });
         $client->add_note($email_subject, $email_content);
     }
