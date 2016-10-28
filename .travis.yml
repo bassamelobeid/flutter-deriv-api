@@ -53,7 +53,7 @@ install:
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
-    - if [ "$TEST_SUITE" == "" ]  ; then true; else TRAVIS_DATADOG_API_KEY=378b0f4047537f8e7ced5de5f6d5fec2 make $TEST_SUITE; fi
+    - if [ "$TEST_SUITE" == "" ]  ; then true; else make $TEST_SUITE; fi
 
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
