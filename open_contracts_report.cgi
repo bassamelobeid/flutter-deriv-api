@@ -147,5 +147,5 @@ foreach my $ref (@$open_contracts) {
 close $fh;
 
 PrintContentType_XSendfile($filename, 'application/octet-stream');
-BOM::Backoffice::Sysinit::code_exit();
+code_exit_BO();
 
