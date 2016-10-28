@@ -10,7 +10,6 @@ use Date::Utility;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(request);
 use BOM::MyAffiliates::BackfillManager;
 use LandingCompany;
 

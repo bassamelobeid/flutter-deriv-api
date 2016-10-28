@@ -25,7 +25,6 @@ use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 use BOM::Platform::Runtime;
 use BOM::Platform::Client;
 use BOM::MyAffiliates;
-use BOM::Platform::Context qw(request);
 use LandingCompany::Registry;
 
 has ['from', 'to'] => (
