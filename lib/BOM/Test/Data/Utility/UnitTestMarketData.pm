@@ -154,9 +154,9 @@ sub create_doc {
                 $data_mod->{underlying} = create_underlying($data_mod->{symbol});
                 delete $data_mod->{symbol};
             }
-
-            return Quant::Framework::Utils::Test::create_doc($yaml_db, $data_mod);
         }
+
+        return Quant::Framework::Utils::Test::create_doc($yaml_db, $data_mod);
     }
 
     my $save = 1;
