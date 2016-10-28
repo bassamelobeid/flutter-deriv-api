@@ -13,15 +13,14 @@ use BOM::Platform::Context;
 
 subtest 'request' => sub {
     ok(BOM::Platform::Context::request(), 'default');
-    is(BOM::Platform::Context::request()->broker_code, 'CR', 'default request');
+    is(BOM::Platform::Context::request()->country_code, 'aq', 'default request');
 
     my $request = BOM::Platform::Context::Request->new(country_code => 'nl');
-    is(BOM::Platform::Context::request()->broker_code, 'CR', 'default request');
 
     ok(BOM::Platform::Context::request($request), 'new request');
-    is(BOM::Platform::Context::request()->broker_code, 'MLT', 'now its MLT request');
+    is(BOM::Platform::Context::request()->country_code, 'nl', 'new request');
     BOM::Platform::Context::request_completed();
 
-    is(BOM::Platform::Context::request()->broker_code, 'CR', 'back to default request');
+    is(BOM::Platform::Context::request()->country_code, 'aq', 'back to default request');
 };
 
