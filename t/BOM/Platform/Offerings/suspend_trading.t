@@ -7,7 +7,6 @@ use Test::More;
 use LandingCompany::Offerings qw(get_offerings_with_filter);
 use BOM::Platform::Runtime;
 
-
 my $offerings_config = BOM::Platform::Runtime->instance->get_offerings_config;
 
 subtest 'test offerings' => sub {
