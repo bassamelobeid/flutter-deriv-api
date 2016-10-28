@@ -3,6 +3,7 @@ package main;
 use strict 'vars';
 
 use URL::Encode qw( url_encode );
+use HTML::Entities;
 
 use f_brokerincludeall;
 use BOM::Backoffice::Request qw(request localize);
@@ -65,7 +66,7 @@ BOM::Backoffice::Request::template->process(
 # email link to client
 Bar('emailing change password link to ' . $loginID);
 
-print '<p class="success_message">Emailing change password link to ' . $client_name . ' at ' . $email . ' ...</p>';
+print '<p class="success_message">Emailing change password link to ' . encode_entities($client_name) . ' at ' . encode_entities($email) . ' ...</p>';
 
 my $result = send_email({
     from                  => BOM::System::Config::email_address('support'),
