@@ -24,40 +24,6 @@ sub translate_salutation {
     return $translated_titles{uc $provided} || $provided;
 }
 
-sub generate_residence_countries_list {
-    my $residence_countries_list = [{
-            value => '',
-            text  => localize('Select Country')}];
-
-    foreach my $country_selection (
-        sort { $a->{translated_name} cmp $b->{translated_name} }
-        map { +{code => $_, translated_name => LandingCompany::Countries->instance->countries->localized_code2country($_, request()->language)} }
-        LandingCompany::Countries->instance->countries->all_country_codes
-        )
-    {
-        my $country_code = $country_selection->{code};
-        my $country_name = $country_selection->{translated_name};
-        if (length $country_name > 26) {
-            $country_name = substr($country_name, 0, 26) . '...';
-        }
-
-        my $option = {
-            value => $country_code,
-            text  => $country_name
-        };
-
-        # to be removed later - JP
-        if (LandingCompany::Countries->instance->restricted_country($country_code) or $country_code eq 'jp') {
-            $option->{disabled} = 'DISABLED';
-        } elsif (request()->country_code eq $country_code) {
-            $option->{selected} = 'selected';
-        }
-        push @$residence_countries_list, $option;
-    }
-
-    return $residence_countries_list;
-}
-
 sub get_state_option {
     my $country_code = shift or return;
 
