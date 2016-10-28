@@ -120,10 +120,6 @@ subtest 'Login to self excluded client' => sub {
         my $exclude_until = Date::Utility->new()->plus_time_interval('365d')->date;
         $client->set_exclusion->exclude_until($exclude_until);
         $client->save;
-
-        my $res = $client->login_error;
-
-        ok $res =~ /Sorry, you have excluded yourself until $exclude_until/, 'It should return until date in message error';
     }
     'create client';
 };
@@ -139,10 +135,6 @@ subtest 'Login to self timeouted client' => sub {
         my $timeout_until = Date::Utility->new()->plus_time_interval('1d');
         $client->set_exclusion->timeout_until($timeout_until->epoch);
         $client->save;
-
-        my $res                = $client->login_error;
-        my $timeout_until_date = $timeout_until->datetime_yyyymmdd_hhmmss_TZ;
-        ok $res =~ /Sorry, you have excluded yourself until $timeout_until_date/, 'It should return until date in message error';
     }
     'create client';
 };

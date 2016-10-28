@@ -8,11 +8,11 @@ use warnings;
 use Try::Tiny;
 use DateTime;
 use List::Util;
+use DataDog::DogStatsd::Helper qw(stats_inc stats_count);
 
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
+
 use BOM::Platform::Client::IDAuthentication;
-use BOM::Platform::Context qw(localize);
-use DataDog::DogStatsd::Helper qw(stats_inc stats_count);
 use BOM::Database::ClientDB;
 
 # NOTE.. this is a 'mix-in' of extra subs for BOM::Platform::Client.  It is not a distinct Class.
@@ -164,7 +164,7 @@ sub validate_payment {
 }
 
 sub deposit_virtual_funds {
-    my ($self, $source) = @_;
+    my ($self, $source, $remark) = @_;
     $self->is_virtual || die "not a virtual client";
 
     my $currency = (($self->default_account and $self->default_account->currency_code eq 'JPY') or $self->residence eq 'jp') ? 'JPY' : 'USD';
@@ -174,7 +174,7 @@ sub deposit_virtual_funds {
         currency     => $currency,
         amount       => $amount,
         payment_type => 'virtual_credit',
-        remark       => localize('Virtual money credit to account'),
+        remark       => $remark // 'Virtual money credit to account',
         source       => $source,
     );
     return ($currency, $amount, $trx);
