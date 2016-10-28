@@ -10,6 +10,7 @@ use JSON qw(decode_json);
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
+use Data::Dumper;
 
 subtest 'request' => sub {
     ok(BOM::Platform::Context::request(), 'default');
@@ -19,8 +20,5 @@ subtest 'request' => sub {
 
     ok(BOM::Platform::Context::request($request), 'new request');
     is(BOM::Platform::Context::request()->country_code, 'nl', 'new request');
-    BOM::Platform::Context::request_completed();
-
-    is(BOM::Platform::Context::request()->country_code, 'aq', 'back to default request');
 };
 
