@@ -59,16 +59,25 @@ sub cashier {
 
     my $currency;
     if (my $account = $client->default_account) {
-        $currency ||= $account->currency_code;
+        $currency = $account->currency_code;
     }
 
     # still no currency?  Try the first financial sibling with same landing co.
-    if (my $user = BOM::Platform::User->new({email => $client->email})) {
-        $currency ||= do {
-            my @siblings = grep { $_->default_account }
-                grep { $_->landing_company->short eq $client->landing_company->short } $user->clients;
-            @siblings && $siblings[0]->default_account->currency_code;
-        };
+    unless ($currency) {
+        my $user = BOM::Platform::User->new({email => $client->email});
+        unless ($user) {
+            warn __PACKAGE__ . "::cashier Error:  Unable to get user data for ".$client->loginid."\n"; 
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'CashierForwardError',
+                message_to_client => localize('Internal server error'),
+            });
+        }
+        for (grep { $_->landing_company->short eq $client->landing_company->short } $user->clients) {
+            if (my $default_account = $_->default_account) {
+                $currency = $default_account->currency_code;
+                last;
+            }
+        }
     }
 
     my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
@@ -995,6 +1004,7 @@ sub transfer_between_accounts {
 
     my $client = $params->{client};
     my $source = $params->{source};
+    my $user;
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
@@ -1005,6 +1015,10 @@ sub transfer_between_accounts {
         });
     };
 
+    unless ($user = BOM::Platform::User->new({email => $client->email})) {
+        warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for ".$client->loginid."\n"; 
+        return $error_sub->(localize('Internal server error'));
+    }
     if ($client->get_status('disabled') or $client->get_status('cashier_locked') or $client->get_status('withdrawal_locked')) {
         return $error_sub->(localize('The account transfer is unavailable for your account: [_1].', $client->loginid));
     }
@@ -1015,10 +1029,7 @@ sub transfer_between_accounts {
     my $currency     = $args->{currency};
     my $amount       = $args->{amount};
 
-    my %siblings = ();
-    if (my $user = BOM::Platform::User->new({email => $client->email})) {
-        %siblings = map { $_->loginid => $_ } $user->clients;
-    }
+    my %siblings = map { $_->loginid => $_ } $user->clients;
 
     my @accounts;
     foreach my $account (values %siblings) {
