@@ -16,14 +16,13 @@ sub residence_list {
     my $countries = LandingCompany::Countries->instance->countries;
     foreach my $country_selection (
         sort { $a->{translated_name} cmp $b->{translated_name} }
-        map { +{code => $_, translated_name => $countries->localized_code2country($_, request()->language)} }
-        $countries->all_country_codes
+        map { +{code => $_, translated_name => $countries->localized_code2country($_, request()->language)} } $countries->all_country_codes
         )
     {
         my $country_code = $country_selection->{code};
         next if $country_code eq '';
         my $country_name = $country_selection->{translated_name};
-        my $phone_idd = $countries->idd_from_code($country_code);
+        my $phone_idd    = $countries->idd_from_code($country_code);
         if (length $country_name > 26) {
             $country_name = substr($country_name, 0, 26) . '...';
         }
@@ -31,8 +30,7 @@ sub residence_list {
         my $option = {
             value => $country_code,
             text  => $country_name,
-            $phone_idd ? (phone_idd => $phone_idd) : ()
-        };
+            $phone_idd ? (phone_idd => $phone_idd) : ()};
 
         # to be removed later - JP
         if (LandingCompany::Countries->instance->restricted_country($country_code) or $country_code eq 'jp') {

@@ -12,7 +12,6 @@ use Test::MockModule;
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Account::Virtual;
 
-
 subtest 'get_real_acc_opening_type' => sub {
     my $type_map = {
         'real'        => ['id', 'gb', 'nl'],
@@ -37,8 +36,7 @@ subtest 'get_real_acc_opening_type' => sub {
 
             my $type_result;
             $type_result = $acc_type if ($acc_type ne 'restricted');
-            is(BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $vr_client}), $type_result,
-                "$c: acc type - " . ($type_result // ''));
+            is(BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $vr_client}), $type_result, "$c: acc type - " . ($type_result // ''));
         }
     }
 };

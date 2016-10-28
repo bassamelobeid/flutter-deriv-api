@@ -388,7 +388,7 @@ sub new_account_japan {
 sub new_sub_account {
     my $params = shift;
 
-    my $error_map = BOM::Platform::Locale::error_map();
+    my $error_map = BOM::RPC::v3::Utility::error_map();
 
     my $client = $params->{client};
     if ($client->is_virtual or not $client->allow_omnibus) {
