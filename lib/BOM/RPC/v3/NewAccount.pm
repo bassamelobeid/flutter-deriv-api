@@ -11,7 +11,6 @@ use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 use BOM::RPC::v3::Utility;
-use BOM::Platform::Account;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
@@ -198,7 +197,7 @@ sub new_account_real {
 
     my $error_map = BOM::Platform::Locale::error_map();
 
-    unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'real') {
+    unless ($client->is_virtual and (BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $client}) || '') eq 'real') {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccount',
                 message_to_client => $error_map->{'invalid'}});
@@ -266,7 +265,7 @@ sub new_account_maltainvest {
     my $args      = $params->{args};
     my $error_map = BOM::Platform::Locale::error_map();
 
-    unless ($client and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'maltainvest') {
+    unless ($client and (BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $client}) || '') eq 'maltainvest') {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccount',
                 message_to_client => $error_map->{'invalid'}});
@@ -321,7 +320,7 @@ sub new_account_japan {
     my $client    = $params->{client};
     my $error_map = BOM::Platform::Locale::error_map();
 
-    unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'japan') {
+    unless ($client->is_virtual and (BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $client}) || '') eq 'japan') {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccount',
                 message_to_client => $error_map->{'invalid'}});
