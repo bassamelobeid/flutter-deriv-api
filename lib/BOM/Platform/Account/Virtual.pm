@@ -10,10 +10,12 @@ use BOM::System::Password;
 
 use BOM::Platform::Runtime;
 use LandingCompany::Countries;
+use LandingCompany::Registry;
 use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Token;
 use BOM::Platform::Account;
+use BOM::Platform::Context qw(localize);
 
 sub create_account {
     my $args    = shift;
@@ -30,7 +32,7 @@ sub create_account {
         return {error => 'invalid'};
     } elsif (BOM::Platform::User->new({email => $email})) {
         return {error => 'duplicate email'};
-    } elsif (BOM::Platform::Client::check_country_restricted($residence)) {
+    } elsif ($residence && LandingCompany::Countries->instance->restricted_country($residence)) {
         return {error => 'invalid residence'};
     }
 
@@ -88,7 +90,7 @@ sub create_account {
         $utm_campaign  ? (utm_campaign  => $utm_campaign)  : ());
     $user->add_loginid({loginid => $client->loginid});
     $user->save;
-    $client->deposit_virtual_funds($source);
+    $client->deposit_virtual_funds($source, localize('Virtual money credit to account'));
 
     stats_inc("business.new_account.virtual");
 
