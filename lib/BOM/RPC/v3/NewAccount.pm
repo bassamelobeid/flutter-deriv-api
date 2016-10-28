@@ -17,7 +17,6 @@ use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Account::Real::subaccount;
-use BOM::Platform::Locale;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
 use BOM::System::Config;
@@ -195,7 +194,7 @@ sub new_account_real {
 
     my $client = $params->{client};
 
-    my $error_map = BOM::Platform::Locale::error_map();
+    my $error_map = BOM::RPC::v3::Utility::error_map();
 
     unless ($client->is_virtual and (BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $client}) || '') eq 'real') {
         return BOM::RPC::v3::Utility::create_error({
@@ -263,7 +262,7 @@ sub new_account_maltainvest {
     my $client = $params->{client};
 
     my $args      = $params->{args};
-    my $error_map = BOM::Platform::Locale::error_map();
+    my $error_map = BOM::RPC::v3::Utility::error_map();
 
     unless ($client and (BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $client}) || '') eq 'maltainvest') {
         return BOM::RPC::v3::Utility::create_error({
@@ -318,7 +317,7 @@ sub new_account_japan {
     my $params = shift;
 
     my $client    = $params->{client};
-    my $error_map = BOM::Platform::Locale::error_map();
+    my $error_map = BOM::RPC::v3::Utility::error_map();
 
     unless ($client->is_virtual and (BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $client}) || '') eq 'japan') {
         return BOM::RPC::v3::Utility::create_error({
