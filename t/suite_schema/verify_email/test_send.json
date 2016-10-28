@@ -1,0 +1,9 @@
+{
+    "email": "[_1]",
+    "password": "123",
+    "type": "[_2]",
+    "language": "EN",
+    "country": "ru",
+    "server_name": "binary.com",
+    "link": "binary.com/some_url"
+}
