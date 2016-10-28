@@ -344,7 +344,7 @@ sub calculate_limits {
         $limits{max_open_bets}        = $client->get_limit_for_open_positions;
         $limits{max_payout_open_bets} = $client->get_limit_for_payout;
         $limits{max_payout_per_symbol_and_bet_type} =
-            $static_config->{client_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency};
+            $static_config->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency};
     }
 
     my $lim;
