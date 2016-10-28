@@ -126,7 +126,7 @@
         <input type=hidden name="broker" value="[% request.broker_code %]" />
         <input type="submit" name="QQ" value="Quant Query" class="investigate">
     </form>
-    [% navigator %]
+    [% navigator | none %]
 [% END %]
 
 [% cumulative_pl = 0;
