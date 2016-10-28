@@ -50,7 +50,7 @@ my $ticks_inserted;
 sub run {
     my ($class, $args) = @_;
 
-    my $path = $args->{test_conf_path};
+    my $path              = $args->{test_conf_path};
     my $suite_schema_path = $args->{suite_schema_path};
 
     # When using remapped email addresses, ensure that each call to ->run increments the counter
@@ -246,7 +246,8 @@ sub run {
 
         # Stream ID and/or send_file may be undef
         my ($test_conf_file) = ($path =~ /\/(.+?)$/);
-        diag(sprintf "%s:%d [%s] - %.3fs", $test_conf_file, $counter, join(',', grep { defined } ($test_stream_id, $send_file, $receive_file)), $elapsed);
+        diag(sprintf "%s:%d [%s] - %.3fs",
+            $test_conf_file, $counter, join(',', grep { defined } ($test_stream_id, $send_file, $receive_file)), $elapsed);
     }
     diag "Cumulative elapsed time for all steps was ${cumulative_elapsed}s";
     return $cumulative_elapsed;
