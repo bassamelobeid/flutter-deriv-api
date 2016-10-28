@@ -9,6 +9,7 @@ use Email::Valid;
 use Mojo::Util qw(url_escape);
 use List::MoreUtils qw(any firstval);
 
+use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Client;
 use BOM::Platform::User;
@@ -283,8 +284,12 @@ sub __login {
             $client = firstval { !exists $result->{self_excluded}->{$_->loginid} } (@clients);
         }
 
-        if ($result = $client->login_error()) {
-            $err = $result;
+        if (grep { $client->loginid =~ /^$_/ } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins}) {
+            $err = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
+        } elsif ($client->get_status('disabled')) {
+            $err = localize('This account is unavailable. For any questions please contact Customer Support.');
+        } elsif (my $self_exclusion_dt = $client->get_self_exclusion_until_dt) {
+            $err = localize('Sorry, you have excluded yourself until [_1].', $self_exclusion_dt);
         }
     }
 
