@@ -7,6 +7,7 @@ use BOM::Platform::Client;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::Backoffice::Request qw(request);
 
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
@@ -52,12 +53,12 @@ my $balance = $txn_dm->get_profit_for_days({
     before => $enddate->datetime
 });
 
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/account/profit_check.html.tt',
     {
         currency => $client->currency,
         balance  => $balance,
     },
-) || die BOM::Platform::Context::template->error();
+) || die BOM::Backoffice::Request::template->error();
 
 code_exit_BO();

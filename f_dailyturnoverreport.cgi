@@ -4,6 +4,7 @@ use strict;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -19,7 +20,7 @@ $args->{whattodo} ||= 'TURNOVER';
 Bar("DAILY TURNOVER REPORT for " . $args->{month});
 
 my %template = DailyTurnOverReport($args);
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/daily_turnover_report.html.tt',
     {
         dtr        => \%template,

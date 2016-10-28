@@ -5,7 +5,7 @@ use warnings;
 
 use Try::Tiny;
 use BOM::Product::ContractFactory qw( simple_contract_info produce_contract );
-use BOM::Platform::Context;
+use BOM::Backoffice::Request;
 
 # Get:
 #    description - typical description printed on statement/profit_table.
@@ -44,8 +44,8 @@ sub get_info {
     }
 
     my $description;
-    BOM::Platform::Context::template()->process('backoffice/contract_desc.html.tt', $info, \$description)
-        || die BOM::Platform::Context::template()->error(), "\n";
+    BOM::Backoffice::Request::template()->process('backoffice/contract_desc.html.tt', $info, \$description)
+        || die BOM::Backoffice::Request::template()->error(), "\n";
 
     $info->{description} = $description;
     return $info;

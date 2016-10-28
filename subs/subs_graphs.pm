@@ -6,7 +6,7 @@ use BOM::Backoffice::GNUPlot;
 use Date::Utility;
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(request);
+use BOM::Backoffice::Request qw(request);
 use Postgres::FeedDB::Spot::DatabaseAPI;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;

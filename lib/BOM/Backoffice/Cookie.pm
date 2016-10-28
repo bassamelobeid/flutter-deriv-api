@@ -5,7 +5,7 @@ use strict;
 
 use CGI::Cookie;
 use CGI::Util;
-use BOM::Platform::Context qw(request);
+use BOM::Backoffice::Request qw(request);
 
 sub build_cookies {
     my $args = shift;

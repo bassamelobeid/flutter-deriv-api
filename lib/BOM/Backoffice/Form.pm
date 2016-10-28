@@ -10,7 +10,7 @@ use HTML::FormBuilder::Select;
 use JSON qw(to_json);
 use Locale::SubCountry;
 
-use BOM::Platform::Context qw(request localize template);
+use BOM::Backoffice::Request qw(request localize template);
 use BOM::Platform::Locale;
 use BOM::Platform::Client;
 

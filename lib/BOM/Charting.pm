@@ -6,7 +6,6 @@ use warnings;
 use Crypt::NamedKeys;
 use Date::Utility;
 use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(request);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Try::Tiny;

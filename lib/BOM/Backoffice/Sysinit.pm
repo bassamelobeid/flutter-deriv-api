@@ -8,8 +8,8 @@ use Guard;
 use File::Copy;
 use Plack::App::CGIBin::Streaming;
 use BOM::Backoffice::Cookie;
-use BOM::Platform::Context::Request;
-use BOM::Platform::Context qw(request localize);
+use BOM::Backoffice::Request::Base;
+use BOM::Backoffice::Request qw(request localize);
 use Try::Tiny::Except ();    # should be preloaded as early as possible
                              # this statement here is merely a comment.
 
@@ -51,7 +51,7 @@ sub init {
                 . ' <a href="http://'
                 . localize('homepage') . '</p>'
                 . '</div>';
-            BOM::Platform::Context::request_completed();
+            BOM::Backoffice::Request::request_completed();
             exit;
         };
         alarm($timeout);
@@ -83,7 +83,7 @@ sub build_request {
         $CGI::POST_MAX        = 8000 * 1024;         # max 8MB posts
         $CGI::DISABLE_UPLOADS = 0;
         return request(
-            BOM::Platform::Context::Request::from_cgi({
+            BOM::Backoffice::Request::Base::from_cgi({
                     cgi         => CGI->new,
                     http_cookie => $ENV{'HTTP_COOKIE'},
                 }));
@@ -125,7 +125,7 @@ sub log_bo_access {
 }
 
 sub code_exit {
-    BOM::Platform::Context::request_completed();
+    BOM::Backoffice::Request::request_completed();
     exit 0;
 }
 

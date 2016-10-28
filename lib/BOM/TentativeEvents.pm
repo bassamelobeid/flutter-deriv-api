@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use BOM::System::Chronicle;
+use BOM::Backoffice::Request;
 use Quant::Framework::EconomicEventCalendar;
 
 sub _get_tentative_events {
@@ -32,14 +33,14 @@ sub generate_tentative_events_form {
         $event;
         } keys %$events;
     my $form = '';
-    BOM::Platform::Context::template->process(
+    BOM::Backoffice::Request::template->process(
         'backoffice/economic_tentative_event_forms.html.tt',
         {
             ee_upload_url => $args->{upload_url},
             events        => \@events
         },
         $form
-    ) || die BOM::Platform::Context::template->error;
+    ) || die BOM::Backoffice::Request::template->error;
 
     return $form;
 }
