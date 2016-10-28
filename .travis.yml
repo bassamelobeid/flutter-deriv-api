@@ -1,6 +1,7 @@
 language: perl
 perl:
     - "5.14.2-thr"
+    - "5.24"
 matrix:
     fast_finish: true
 addons:
@@ -11,10 +12,9 @@ cache: apt
 before_install:
     - git clone https://1994c85ce4f602fb682076e9a102261644fb3d19@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
     - /tmp/travis-scripts/setup_ssh.sh
-    - git clone git://github.com/binary-com/helpers ~/travis-perl-helpers
-    - AUTHOR_TESTING=0 source ~/travis-perl-helpers/init
-    - PREBUILT_REPO="git@github.com:binary-com/test-perl.git" build-perl
-    - sudo mkdir -p /etc/rmg; sudo ln -s $(dirname $(which perl)) /etc/rmg/bin
+    - sudo mkdir -p /home/git/binary-com
+    - sudo mkdir -p /home/git/regentmarkets
+    - . /tmp/travis-scripts/setup_perl.sh
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
     - sudo ifconfig lo:1 172.28.128.3
     - /tmp/travis-scripts/postgres.sh
@@ -22,7 +22,7 @@ before_install:
     - sudo mkdir -p /home/git
     - sudo rm -f /tmp/unittest_*
 
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
+    - /tmp/travis-scripts/setup_cpan.sh
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
@@ -44,6 +44,7 @@ install:
     - . /tmp/travis-scripts/setup_perl5lib.sh
 
 script:
+    - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
     - make test && cover -test -report coveralls
 
 after_script:
