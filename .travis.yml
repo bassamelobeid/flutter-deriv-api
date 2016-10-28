@@ -3,6 +3,7 @@ matrix:
     fast_finish: true
 perl:
     - "5.14.2-thr"
+    - "5.24"
 env:
     - TEST_SUITE=merlin_benchmark
     - TEST_SUITE=SDFX_benchmark_major
@@ -22,10 +23,9 @@ cache: apt
 before_install:
     - git clone https://aeb2d033edae71197c4f3258e6361f2bcc73fd18@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
     - /tmp/travis-scripts/setup_ssh.sh
-    - git clone git://github.com/binary-com/helpers ~/travis-perl-helpers
-    - AUTHOR_TESTING=0 source ~/travis-perl-helpers/init
-    - PREBUILT_REPO="git@github.com:binary-com/test-perl.git" build-perl
-    - sudo mkdir -p /etc/rmg; sudo ln -s $(dirname $(which perl)) /etc/rmg/bin
+    - sudo mkdir -p /home/git/binary-com
+    - sudo mkdir -p /home/git/regentmarkets
+    - . /tmp/travis-scripts/setup_perl.sh
     - /tmp/travis-scripts/fixHostName.sh
     - dpkg -l | grep postgres
     - pg_lsclusters
@@ -33,7 +33,7 @@ before_install:
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
 
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
+    - /tmp/travis-scripts/setup_cpan.sh
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
@@ -52,4 +52,5 @@ install:
     - /tmp/travis-scripts/setup_chronicledb.sh
     - . /tmp/travis-scripts/setup_perl5lib.sh
 script:
+    - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
     - make $TEST_SUITE
