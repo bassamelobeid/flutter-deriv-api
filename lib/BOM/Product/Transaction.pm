@@ -13,7 +13,7 @@ use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
 use Format::Util::Numbers qw(commas roundnear to_monetary_number_format);
 use Try::Tiny;
 
-use BOM::Platform::Context qw(request localize);
+use BOM::Platform::Context qw(localize);
 use BOM::Platform::Runtime;
 use LandingCompany::Countries;
 use BOM::Platform::Client;
@@ -1176,7 +1176,7 @@ sub _validate_available_currency {
     my $self     = shift;
     my $currency = $self->contract->currency;
 
-    if (not grep { $currency eq $_ } @{request()->available_currencies}) {
+    if (not grep { $currency eq $_ } @{LandingCompany::Registry::get_by_broker($self->client->broker_code)->legal_allowed_currencies}) {
         return Error::Base->cuss(
             -type              => 'InvalidCurrency',
             -mesg              => "Invalid $currency",
