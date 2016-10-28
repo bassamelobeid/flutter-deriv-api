@@ -510,9 +510,9 @@ subtest 'all methods on a selection of underlyings' => sub {
     };
 
     my $eod = Quant::Framework::TradingCalendar->new({
-            symbol            => 'NYSE',
-            underlying        => create_underlying('DJI'),
-            chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader()})->closing_on(Date::Utility->new('2016-04-05'));
+            symbol           => 'NYSE',
+            underlying       => create_underlying('DJI'),
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader()})->closing_on(Date::Utility->new('2016-04-05'));
     foreach my $pair (qw(frxUSDJPY frxEURUSD frxAUDUSD)) {
         my $worm = create_underlying($pair, $eod->minus_time_interval('1s'));
         is($worm->is_in_quiet_period, 0, $worm->symbol . ' not in a quiet period before New York closes');
@@ -523,10 +523,10 @@ subtest 'all methods on a selection of underlyings' => sub {
     Quant::Framework::Utils::Test::create_doc(
         'volsurface_delta',
         {
-            underlying        => create_underlying('frxEURUSD'),
-            chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
-            recorded_date     => Date::Utility->new,
+            underlying       => create_underlying('frxEURUSD'),
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            recorded_date    => Date::Utility->new,
         });
 
     my $today  = Date::Utility->today;
@@ -534,9 +534,9 @@ subtest 'all methods on a selection of underlyings' => sub {
     foreach my $ul ($AS51, $audusd) {
         my $prev_weight = 0;
         my $builder     = Quant::Framework::Utils::Builder->new({
-            chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
-            underlying        => $ul,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            underlying       => $ul,
         });
         foreach my $days_hence (1 .. 7) {
             my $test_day      = $today->plus_time_interval($days_hence . 'd');
