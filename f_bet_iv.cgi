@@ -17,6 +17,7 @@ use Bloomberg::RequestFiles;
 use BOM::BloombergCalendar;
 use BOM::TentativeEvents;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -126,12 +127,12 @@ print generate_correlations_upload_form({
 
 Bar("Update the news events database");
 
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/economic_event_forms.html.tt',
     {
         ee_upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
     },
-) || die BOM::Platform::Context::template->error;
+) || die BOM::Backoffice::Request::template->error;
 
 Bar("Update the tentative events");
 print BOM::TentativeEvents::generate_tentative_events_form({
@@ -165,14 +166,14 @@ foreach my $underlying_symbol (keys %$list) {
     }
 }
 my $corp_table;
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/corporate_action.html.tt',
     {
         disabled => $disabled,
         monitor  => $monitor
     },
     \$corp_table
-) || die BOM::Platform::Context::template->error;
+) || die BOM::Backoffice::Request::template->error;
 print $corp_table;
 
 code_exit_BO();

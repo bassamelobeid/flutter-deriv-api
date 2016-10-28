@@ -11,6 +11,7 @@ use BOM::MarketData::Types;
 use SuperDerivatives::UnderlyingConfig;
 use Quant::Framework::Asset;
 use BOM::System::Chronicle;
+use BOM::Backoffice::Request;
 
 sub process_dividend {
     my ($fh, $vendor) = @_;
@@ -210,14 +211,14 @@ sub generate_dividend_upload_form {
     my $args = shift;
 
     my $form;
-    BOM::Platform::Context::template->process(
+    BOM::Backoffice::Request::template->process(
         'backoffice/dividend_upload_form.html.tt',
         {
             broker     => $args->{broker},
             upload_url => $args->{upload_url},
         },
         \$form
-    ) || die BOM::Platform::Context::template->error;
+    ) || die BOM::Backoffice::Request::template->error;
 
     return $form;
 }
