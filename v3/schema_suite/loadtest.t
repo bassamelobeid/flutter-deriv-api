@@ -23,10 +23,10 @@ for my $iteration (1 .. 10) {
     # Suite->run is likely to set the system date. Rely on the HW clock to give us times, if possible.
     system(qw(sudo hwclock --systohc)) and die "Failed to sync HW clock to system - $!";
     my $t0      = [gettimeofday];
-    my $elapsed = BOM::Test::Suite->run(
+    my $elapsed = BOM::Test::Suite->run({
         test_conf_path => $test_conf_path,
         suite_schema_path => $ENV{WEBSOCKET_API_REPO_PATH} . '/config/v3/',
-    );
+    });
     system(qw(sudo hwclock --hctosys)) and die "Failed to sync system clock to HW - $!";
     my $wallclock = tv_interval($t0, [gettimeofday]);
     diag "Took $wallclock seconds wallclock time for loadtest including setup, $elapsed seconds cumulative step time";
