@@ -8,7 +8,7 @@ use IO::File;
 use BOM::MyAffiliates::PaymentToAccountManager;
 use BOM::System::Config;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Context qw(request);
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;

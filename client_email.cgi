@@ -13,7 +13,7 @@ use Date::Utility;
 use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(request);
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::Database::ClientDB;
@@ -52,14 +52,14 @@ if (not $user) {
 
 if (not $input{email_edit}) {
     # list loginids with email
-    BOM::Platform::Context::template->process(
+    BOM::Backoffice::Request::template->process(
         'backoffice/client_email.html.tt',
         {
             list     => 1,
             email    => $email,
             loginids => [$user->loginid],
         },
-    ) || die BOM::Platform::Context::template->error();
+    ) || die BOM::Backoffice::Request::template->error();
 
     code_exit_BO();
 }
@@ -104,7 +104,7 @@ if ($email ne $new_email) {
         . ") $ENV{REMOTE_ADDR}";
     BOM::System::AuditLog::log($msg, $new_email, $clerk);
 
-    BOM::Platform::Context::template->process(
+    BOM::Backoffice::Request::template->process(
         'backoffice/client_email.html.tt',
         {
             updated   => 1,
@@ -112,7 +112,7 @@ if ($email ne $new_email) {
             new_email => $new_email,
             loginids  => [$user->loginid],
         },
-    ) || die BOM::Platform::Context::template->error();
+    ) || die BOM::Backoffice::Request::template->error();
 } else {
     print "Same email [$new_email] provided, no update required";
 }

@@ -7,7 +7,7 @@
 ###############################################################################################
 use strict 'vars';
 use BOM::Platform::Runtime;
-use BOM::Platform::Context;
+use BOM::Backoffice::Request qw(request);
 use Mojo::URL;
 use BOM::JavascriptConfig;
 use BOM::Backoffice::Sysinit ();

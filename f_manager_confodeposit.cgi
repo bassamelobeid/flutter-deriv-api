@@ -15,7 +15,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::System::Config;
-use BOM::Platform::Context;
+use BOM::Backoffice::Request qw(request);
 use BOM::System::AuditLog;
 use BOM::ContractInfo;
 use BOM::Backoffice::Sysinit ();
@@ -248,7 +248,7 @@ my $statement = client_statement_for_backoffice({
     after  => $after
 });
 
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/account/statement.html.tt',
     {
         transactions            => $statement->{transactions},
@@ -258,7 +258,7 @@ BOM::Platform::Context::template->process(
         depositswithdrawalsonly => request()->param('depositswithdrawalsonly'),
         contract_details        => \&BOM::ContractInfo::get_info,
     },
-) || die BOM::Platform::Context::template->error();
+) || die BOM::Backoffice::Request::template->error();
 
 #View updated statement
 print "<form action=\"" . request()->url_for("backoffice/f_manager_history.cgi") . "\" method=\"post\">";

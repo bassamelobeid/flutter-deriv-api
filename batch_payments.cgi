@@ -13,7 +13,7 @@ use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Client;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Context;
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::DualControl;
 use BOM::System::AuditLog;
