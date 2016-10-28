@@ -22,10 +22,6 @@ my $sleep = 100;                # in millisec
 
 my $dh = DBI->connect('dbi:Pg:', undef, undef, {RaiseError=>1, PrintError=>0});
 
-my $sql_extension = <<'EOF';
-CREATE EXTENSION IF NOT EXISTS pageinspect
-EOF
-
 my $sql_datadir = <<'EOF';
 SELECT setting
   FROM pg_settings
@@ -64,7 +60,8 @@ SELECT $2::text, i, page_header(get_raw_page($1::oid::regclass::text, $2, ser.i)
  WHERE sz.sz > 0
 EOF
 
-$dh->do($sql_extension);
+$| = 1;
+
 my $datadir = $dh->selectall_arrayref($sql_datadir)->[0]->[0];
 
 for (my ($oid, $tname, $path) = @{$dh->selectall_arrayref($sql_first_oid, undef, $table_pattern)->[0] // []};
@@ -72,12 +69,20 @@ for (my ($oid, $tname, $path) = @{$dh->selectall_arrayref($sql_first_oid, undef,
      ($oid, $tname, $path) = @{$dh->selectall_arrayref($sql_next_oid, undef, $oid, $table_pattern)->[0] // []}) {
     print "$oid: $tname ($datadir/$path)\n";
     for my $fork (qw/main fsm vm/) { # skipping init fork
+        my $n = 0;
         for (my $curr_block = 0; ; $curr_block += $chunk) {
             my $l = $dh->selectall_arrayref($sql_pages, undef, $oid, $fork,
                                             $curr_block, $chunk);
-            print "  @$_\n" for (@$l);
-            select undef, undef, undef, $sleep/1000 if @$l;
-            last if @$l < $chunk;
+            if (@$l < $chunk) {
+                print "."  unless @$l == 0;
+                print "\n" unless $n == 0 and @$l == 0;
+                last;
+            } else {
+                $n = ($n + 1) % 80;
+                print "*";
+                print "\n" if $n == 0;
+                select undef, undef, undef, $sleep/1000 if @$l;
+            }
         }
     }
 }
