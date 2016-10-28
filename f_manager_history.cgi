@@ -6,7 +6,7 @@ use Locale::Country;
 use f_brokerincludeall;
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Context;
+use BOM::Backoffice::Request qw(request);
 use BOM::ContractInfo;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -102,7 +102,7 @@ my $statement = client_statement_for_backoffice({
     currency => $currency,
 });
 
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/account/statement.html.tt',
     {
         transactions            => $statement->{transactions},
@@ -112,7 +112,7 @@ BOM::Platform::Context::template->process(
         depositswithdrawalsonly => request()->param('depositswithdrawalsonly'),
         contract_details        => \&BOM::ContractInfo::get_info,
     },
-) || die BOM::Platform::Context::template->error();
+) || die BOM::Backoffice::Request::template->error();
 
 code_exit_BO();
 

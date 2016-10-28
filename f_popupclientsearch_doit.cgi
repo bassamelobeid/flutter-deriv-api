@@ -6,6 +6,7 @@ use Try::Tiny;
 use f_brokerincludeall;
 use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -55,8 +56,8 @@ if (not scalar @{$results}) {
     code_exit_BO();
 }
 
-BOM::Platform::Context::template->process('backoffice/client_search_result.html.tt', {results => $results})
-    || die BOM::Platform::Context::template->error(), "\n";
+BOM::Backoffice::Request::template->process('backoffice/client_search_result.html.tt', {results => $results})
+    || die BOM::Backoffice::Request::template->error(), "\n";
 
 print "<P><center><A HREF='javascript:history.go(-1);'>Back</a>";
 

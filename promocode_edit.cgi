@@ -78,8 +78,8 @@ my $stash = {
     messages           => \@messages,
     countries_instance => $countries_instance
 };
-BOM::Platform::Context::template->process('backoffice/promocode_edit.html.tt', $stash)
-    || die("in promocode_edit: " . BOM::Platform::Context::template->error());
+BOM::Backoffice::Request::template->process('backoffice/promocode_edit.html.tt', $stash)
+    || die("in promocode_edit: " . BOM::Backoffice::Request::template->error());
 
 code_exit_BO();
 

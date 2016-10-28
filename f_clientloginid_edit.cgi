@@ -11,7 +11,7 @@ use Data::Dumper;
 
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
-use BOM::Platform::Context;
+use BOM::Backoffice::Request qw(request);
 use BOM::Platform::User;
 use BOM::Platform::Client::IDAuthentication;
 use BOM::Platform::Client::Utility;
@@ -67,14 +67,14 @@ if ($input{whattodo} eq 'sync_to_DF') {
     my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $loginid});
     my $currency = $df_client->doughflow_currency;
     if (not $currency) {
-        BOM::Platform::Context::template->process(
+        BOM::Backoffice::Request::template->process(
             'backoffice/client_edit_msg.tt',
             {
                 message  => 'ERROR: Client never deposited before, no sync to Doughflow is allowed !!',
                 error    => 1,
                 self_url => $self_href,
             },
-        ) || die BOM::Platform::Context::template->error();
+        ) || die BOM::Backoffice::Request::template->error();
         code_exit_BO();
     }
 
@@ -113,14 +113,14 @@ if ($input{whattodo} eq 'sync_to_DF') {
                 Password       => $handoff_token->key,
             }));
     if ($result->{'_content'} ne 'OK') {
-        BOM::Platform::Context::template->process(
+        BOM::Backoffice::Request::template->process(
             'backoffice/client_edit_msg.tt',
             {
                 message  => "FAILED syncing client authentication status to Doughflow, ERROR: $result->{_content}",
                 error    => 1,
                 self_url => $self_href,
             },
-        ) || die BOM::Platform::Context::template->error();
+        ) || die BOM::Backoffice::Request::template->error();
         code_exit_BO();
     }
 
@@ -137,13 +137,13 @@ if ($input{whattodo} eq 'sync_to_DF') {
         . $df_client->Profile;
     BOM::System::AuditLog::log($msg, $loginid, $clerk);
 
-    BOM::Platform::Context::template->process(
+    BOM::Backoffice::Request::template->process(
         'backoffice/client_edit_msg.tt',
         {
             message  => "Successfully syncing client authentication status to Doughflow",
             self_url => $self_href,
         },
-    ) || die BOM::Platform::Context::template->error();
+    ) || die BOM::Backoffice::Request::template->error();
     code_exit_BO();
 }
 

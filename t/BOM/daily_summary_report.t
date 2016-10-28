@@ -14,6 +14,7 @@ use BOM::Platform::Runtime;
 use Date::Utility;
 use BOM::Database::Helper::FinancialMarketBet;
 
+use BOM::System::Password;
 use BOM::Platform::Client::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);

@@ -14,6 +14,8 @@ This is a Japanese regulatory requirements.
 package main;
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
+use Format::Util::Numbers qw(roundnear);
+use Price::RoundPrecision::JPY;
 use f_brokerincludeall;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -21,9 +23,8 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Client;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
-use Price::RoundPrecision::JPY;
-use Format::Util::Numbers qw(roundnear);
 BOM::Backoffice::Sysinit::init();
 BOM::Backoffice::Auth0::can_access(['Quants']);
 my %params = %{request()->params};
@@ -178,12 +179,12 @@ sub _get_pricing_parameter_from_IH_pricer {
 
     my $risk_markup = $pe->risk_markup;
     $pricing_parameters->{risk_markup} = {
-        economic_events_markup          => $risk_markup->peek_amount('economic_events_markup') // 0,
-        intraday_historical_iv_risk     => $risk_markup->peek_amount('intraday_historical_iv_risk') // 0,
-        quiet_period_markup             => $risk_markup->peek_amount('quiet_period_markup') // 0,
-        vol_spread_markup               => $risk_markup->peek_amount('vol_spread_markup') // 0,
-        eod_market_risk_markup          => $risk_markup->peek_amount('intraday_eod_markup') // 0,
-        spot_jump_markup                => $risk_markup->peek_amount('spot_jump_markup') // 0,
+        economic_events_markup          => $risk_markup->peek_amount('economic_events_markup')          // 0,
+        intraday_historical_iv_risk     => $risk_markup->peek_amount('intraday_historical_iv_risk')     // 0,
+        quiet_period_markup             => $risk_markup->peek_amount('quiet_period_markup')             // 0,
+        vol_spread_markup               => $risk_markup->peek_amount('vol_spread_markup')               // 0,
+        eod_market_risk_markup          => $risk_markup->peek_amount('intraday_eod_markup')             // 0,
+        spot_jump_markup                => $risk_markup->peek_amount('spot_jump_markup')                // 0,
         short_term_kurtosis_risk_markup => $risk_markup->peek_amount('short_term_kurtosis_risk_markup') // 0,
 
     };
@@ -265,7 +266,7 @@ sub _get_bs_probability_parameters {
     };
     return $bs_parameter;
 }
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/contract_details.html.tt',
     {
         broker             => $broker,
@@ -273,6 +274,6 @@ BOM::Platform::Context::template->process(
         contract_details   => {@contract_details},
         start              => $start ? $start->datetime : '',
         pricing_parameters => $pricing_parameters,
-    }) || die BOM::Platform::Context::template->error;
+    }) || die BOM::Backoffice::Request::template->error;
 code_exit_BO();
 
