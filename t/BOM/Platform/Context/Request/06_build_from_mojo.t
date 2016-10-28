@@ -19,14 +19,6 @@ subtest 'base build' => sub {
     done_testing;
 };
 
-subtest 'from_ui' => sub {
-    my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com")});
-    ok $request, "Able to build request";
-
-    ok $request->from_ui, 'The Request is from UI';
-    done_testing;
-};
-
 subtest 'headers vs builds' => sub {
     subtest 'domain_name' => sub {
         {
@@ -54,7 +46,7 @@ subtest 'accepted http_methods' => sub {
             my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", undef, $method)});
             is $request->http_method, $method, "Method $method ok";
         }
-    done_testing;
+        done_testing;
     };
 
     subtest 'PUT' => sub {
@@ -62,7 +54,7 @@ subtest 'accepted http_methods' => sub {
             BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", undef, 'PUT')});
         }
         qr/PUT is not an accepted request method/;
-    done_testing;
+        done_testing;
     };
 
     subtest 'GETR' => sub {
@@ -81,11 +73,12 @@ subtest 'client IP address' => sub {
     my %headers;
     my $obj = Test::MockObject->new;
     my $hdr = Test::MockObject->new;
-    $hdr->mock(header => sub {
-        my ($self, $hdr) = @_;
-        $headers{$hdr}
-    });
-    $obj->set_always(env => \%headers);
+    $hdr->mock(
+        header => sub {
+            my ($self, $hdr) = @_;
+            $headers{$hdr};
+        });
+    $obj->set_always(env     => \%headers);
     $obj->set_always(headers => $hdr);
 
     for my $ip (qw(4.2.2.1 9.2.3.4 8.8.8.8 199.199.199.199)) {
