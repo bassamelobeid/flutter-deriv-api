@@ -5,7 +5,7 @@ use strict 'vars';
 use URL::Encode qw( url_encode );
 
 use f_brokerincludeall;
-use BOM::Platform::Context;
+use BOM::Backoffice::Request qw(request localize);
 use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
@@ -52,7 +52,7 @@ if (BOM::System::Config::on_production) {
 }
 
 my $lost_pass_email;
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     "email/lost_password.html.tt",
     {
         'link'     => $link,

@@ -20,6 +20,7 @@ use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::PricingDetails;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -64,7 +65,7 @@ if ($bet) {
     $debug_link = BOM::PricingDetails->new({bet => $start_bet})->debug_link;
 }
 
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/bpot.html.tt',
     {
         bet        => $bet,
@@ -72,6 +73,6 @@ BOM::Platform::Context::template->process(
         end        => $end ? $end->datetime : '',
         timestep   => $timestep ? $timestep->as_concise_string : '',
         debug_link => $debug_link,
-    }) || die BOM::Platform::Context::template->error;
+    }) || die BOM::Backoffice::Request::template->error;
 
 code_exit_BO();

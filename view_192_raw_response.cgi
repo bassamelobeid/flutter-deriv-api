@@ -10,6 +10,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_XML );
 use BOM::JavascriptConfig;
 
 use f_brokerincludeall;
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -50,7 +51,7 @@ if (request()->param('raw')) {
       </head>
        <body>
       ~;
-    BOM::Platform::Context::template->process('backoffice/view-192-response-yaml.html.tt', {yamlized => $yamlized});
+    BOM::Backoffice::Request::template->process('backoffice/view-192-response-yaml.html.tt', {yamlized => $yamlized});
     print qq~
        </body>
       </html>

@@ -9,6 +9,7 @@ use CGI;
 use BOM::Platform::Runtime;
 use BOM::Database::DataMapper::Client;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::Backoffice::Request qw(request);
 
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -42,7 +43,7 @@ my $client_data_mapper = BOM::Database::DataMapper::Client->new({
 
 my $clients_list = $client_data_mapper->locked_client_list();
 
-BOM::Platform::Context::template->process('backoffice/transaction_locked_client.html.tt', {locked_client_list => $clients_list})
-    || die BOM::Platform::Context::template->error();
+BOM::Backoffice::Request::template->process('backoffice/transaction_locked_client.html.tt', {locked_client_list => $clients_list})
+    || die BOM::Backoffice::Request::template->error();
 
 code_exit_BO();

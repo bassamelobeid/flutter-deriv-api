@@ -16,11 +16,11 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Platform::Runtime;
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Cookie;
 BOM::Backoffice::Sysinit::init();
-use BOM::Platform::Context qw(request);
 
 PrintContentType();
 BrokerPresentation('Manually Settle Contracts');
@@ -90,7 +90,7 @@ if (request()->param('perform_actions')) {
 my $cancel_info = {};
 $cancel_info->{unsettled}   = current_unsaleable($broker_db);
 $cancel_info->{broker_code} = request()->param('broker');
-BOM::Platform::Context::template->process('backoffice/settle_contracts.html.tt', $cancel_info);
+BOM::Backoffice::Request::template->process('backoffice/settle_contracts.html.tt', $cancel_info);
 
 code_exit_BO();
 
