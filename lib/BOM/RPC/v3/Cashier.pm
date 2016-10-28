@@ -66,7 +66,7 @@ sub cashier {
     unless ($currency) {
         my $user = BOM::Platform::User->new({email => $client->email});
         unless ($user) {
-            warn __PACKAGE__ . "::cashier Error:  Unable to get user data for ".$client->loginid."\n"; 
+            warn __PACKAGE__ . "::cashier Error:  Unable to get user data for " . $client->loginid . "\n";
             return BOM::RPC::v3::Utility::create_error({
                 code              => 'CashierForwardError',
                 message_to_client => localize('Internal server error'),
@@ -1016,7 +1016,7 @@ sub transfer_between_accounts {
     };
 
     unless ($user = BOM::Platform::User->new({email => $client->email})) {
-        warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for ".$client->loginid."\n"; 
+        warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for " . $client->loginid . "\n";
         return $error_sub->(localize('Internal server error'));
     }
     if ($client->get_status('disabled') or $client->get_status('cashier_locked') or $client->get_status('withdrawal_locked')) {
