@@ -484,7 +484,7 @@ if ($prev_client) {
         <div class="flat">
             <form action="$self_post" method="post">
                 <input type="hidden" name="loginID" value="$prev_loginid">
-                <input type="submit" value="Previous Client ($prev_client)">
+                <input type="submit" value="Previous Client (} . encode_entities($prev_client) . qq{)">
             </form>
         </div>
     }
@@ -497,7 +497,7 @@ if ($next_client) {
         <div class="flat">
             <form action="$self_post" method="post">
                 <input type="hidden" name="loginID" value="$next_loginid">
-                <input type="submit" value="Next client ($next_client)">
+                <input type="submit" value="Next client (} . encode_entities($next_client) . qq{)">
             </form>
         </div>
     }
@@ -573,7 +573,7 @@ if ($client->landing_company->allows_payment_agents) {
     print '<p>Payment Agents are not available for this account.</p>';
 }
 
-Bar("CLIENT $client");
+Bar("CLIENT " . encode_entities($client));
 
 my ($link_acc, $link_loginid);
 if ($client->comment =~ /move UK clients to \w+ \(from (\w+)\)/) {
@@ -686,9 +686,9 @@ print qq{
     <option>TXT</option>
   </select>
   <input type="FILE" name="FILE">
-  <input type=hidden name=whattodo value=uploadID>
-  <input type=hidden name=broker value=$broker>
-  <input type=hidden name=loginID value=$loginid>
+  <input type="hidden" name="whattodo" value="uploadID">
+  <input type="hidden" name="broker" value="$broker">
+  <input type="hidden" name="loginID" value="$loginid">
   <br/>
   <br/>
   <label for="docnationalityselect">Nationality (as per identity document, it can be different from residence)</label>
@@ -735,15 +735,15 @@ if (@$login_history == 0) {
     print qq{<p>There is no login history</p>};
 } else {
     print qq{<p color="red">Showing last $limit logins only</p>} if @$login_history > $limit;
-    print qq{<table class="collapsed">};
+    print qq{<table class="collapsed">\n};
     foreach my $login (reverse @$login_history) {
         my $date        = $login->history_date->strftime('%F %T');
         my $action      = $login->action;
         my $status      = $login->successful ? 'ok' : 'failed';
         my $environment = $login->environment;
-        print qq{<tr><td width='150'>$date UTC</td><td>$action</td><td>$status</td><td>$environment</td></tr>};
+        print qq{<tr><td width='150'>} . encode_entities("$date UTC") . qq{</td><td>} . encode_entities($action) . qq{</td><td>} . encode_entities($status) . qq{</td><td>} . encode_entities($environment) . qq{</td></tr>\n};
     }
-    print qq{</table>};
+    print qq{</table>\n};
 }
 print '</div>';
 
@@ -768,7 +768,8 @@ if (@$logins == 0) {
         if (length($environment) > 100) {
             substr($environment, 100) = '..';
         }
-        print qq{<tr><td>$date UTC</td><td>$status</td><td>$environment</td></tr>};
+        # yes this is mostly a copy+paste version from ~20 lines above, but with one fewer field
+        print qq{<tr><td>} . encode_entities("$date UTC") . qq{</td><td>} . encode_entities($status) . qq{</td><td>} . encode_entities($environment) . qq{</td></tr>\n};
     }
     print qq{</table>};
 }
