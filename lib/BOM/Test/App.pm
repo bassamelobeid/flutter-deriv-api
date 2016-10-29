@@ -28,8 +28,8 @@ sub BUILD {
 sub _test_schema {
     my ($self, $result, $expected_json_schema, $descr, $should_be_failed) = @_;
 
-    my $validator = JSON::Schema->new(JSON::from_json($expected_json_schema));
-    my $valid     = $validator->validate($result);
+    my $validator  = JSON::Schema->new(JSON::from_json($expected_json_schema));
+    my $valid      = $validator->validate($result);
     my $test_level = $Test::Builder::Level;
     local $Test::Builder::Level = $test_level + 3;
     if ($should_be_failed) {

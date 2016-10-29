@@ -34,7 +34,7 @@ sub build_mojo_test {
     my $app_class = shift;
 
     die 'Wrong app' if !$app_class || ref $app_class;
-    eval "require $app_class"; ## no critic
+    eval "require $app_class";    ## no critic
 
     my $port   = empty_port;
     my $app    = $app_class->new;
@@ -54,11 +54,11 @@ sub build_wsapi_test {
 
     my $t = build_mojo_test($app_class, $args);
 
-    my @query_params;
+    my ($url, @query_params);
     push @query_params, 'l=' . $args->{language}    if $args->{language};
     push @query_params, 'debug=' . $args->{debug}   if $args->{debug};
     push @query_params, 'app_id=' . $args->{app_id} if $args->{app_id};
-    my $url = "/websockets/$version?" . join('&', @query_params) if @query_params;
+    $url = "/websockets/$version?" . join('&', @query_params) if @query_params;
 
     if ($args->{deflate}) {
         $headers = {'Sec-WebSocket-Extensions' => 'permessage-deflate'};
