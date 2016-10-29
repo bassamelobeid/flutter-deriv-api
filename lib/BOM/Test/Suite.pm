@@ -187,7 +187,9 @@ sub run {
                 my $new_lang = $lang || $last_lang;
                 ok(defined($new_lang), 'have a defined language') or diag "missing [LANG] tag in config before tests?";
                 ok(length($new_lang),  'have a valid language')   or diag "invalid [LANG] tag in config or broken test?";
-                $test_app  = BOM::Test::App->new({language => $new_lang, app => $args->{test_app}});
+                $test_app = BOM::Test::App->new({
+                        language => $new_lang,
+                        app      => $args->{test_app}});
                 $last_lang = $new_lang;
                 $lang      = '';
                 $reset     = '';

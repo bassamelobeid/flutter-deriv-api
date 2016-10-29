@@ -31,7 +31,7 @@ my $version = 'v3';
 die 'unknown version' unless $version;
 
 sub build_mojo_test {
-    my $app_class     = shift;
+    my $app_class = shift;
 
     die 'Wrong app' if !$app_class || ref $app_class;
     eval "require $app_class";
@@ -47,10 +47,10 @@ sub build_mojo_test {
 }
 
 sub build_wsapi_test {
-    my $app_class     = shift;
-    my $args    = shift || {};
-    my $headers = shift || {};
-    my $callback = shift;
+    my $app_class = shift;
+    my $args      = shift || {};
+    my $headers   = shift || {};
+    my $callback  = shift;
 
     my $t = build_mojo_test($app_class, $args);
 

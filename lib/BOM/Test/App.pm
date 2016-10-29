@@ -13,8 +13,10 @@ use Test::More;
 sub BUILD {
     my ($self, $args) = @_;
 
-    my $role_name = $args->{app} =~ /RPC/        ? 'HTTP'
-                  : $args->{app} =~ /websocket/i ? 'WebSocket' : '';
+    my $role_name =
+          $args->{app} =~ /RPC/        ? 'HTTP'
+        : $args->{app} =~ /websocket/i ? 'WebSocket'
+        :                                '';
 
     Role::Tiny->apply_roles_to_object($self, 'BOM::Test::App::' . $role_name);
 
