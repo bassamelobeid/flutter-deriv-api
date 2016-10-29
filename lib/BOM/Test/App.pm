@@ -30,12 +30,8 @@ sub _test_schema {
 
     my $validator = JSON::Schema->new(JSON::from_json($expected_json_schema));
     my $valid     = $validator->validate($result);
-    local $Test::Builder::Level += 3;
-    # ok $valid, $descr;
-    # if (not $valid) {
-    #     diag Dumper({'Got response' => $result});
-    #     diag " - $_" foreach $valid->errors;
-    # }
+    my $test_level = $Test::Builder::Level;
+    local $Test::Builder::Level = $test_level + 3;
     if ($should_be_failed) {
         ok(!$valid, "$descr response is valid while it must fail.");
         if ($valid) {

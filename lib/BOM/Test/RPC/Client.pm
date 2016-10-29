@@ -133,6 +133,7 @@ sub _test {
 
     local $Test::Builder::Level += 3;
     Test::More->can($name)->(@args);
+    return;
 }
 
 __PACKAGE__->meta->make_immutable;

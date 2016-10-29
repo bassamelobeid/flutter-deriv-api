@@ -34,7 +34,7 @@ sub build_mojo_test {
     my $app_class = shift;
 
     die 'Wrong app' if !$app_class || ref $app_class;
-    eval "require $app_class";
+    eval "require $app_class"; ## no critic
 
     my $port   = empty_port;
     my $app    = $app_class->new;
