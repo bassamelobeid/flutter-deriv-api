@@ -12,7 +12,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use Test::MockModule;
 
-use BOM::Test::Helper qw/test_schema build_mojo_test call_mocked_client/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
 
 initialize_realtime_ticks_db();
 use Finance::Asset;
@@ -30,7 +30,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => 100,
 });
 
-my $t = build_mojo_test({language => 'EN'});
+my $t = build_wsapi_test({language => 'EN'});
 
 # test payout_currencies
 $t = $t->send_ok({json => {payout_currencies => 1}})->message_ok;

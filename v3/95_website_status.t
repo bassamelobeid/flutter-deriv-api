@@ -5,11 +5,11 @@ use JSON;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/build_mojo_test/;
+use BOM::Test::Helper qw/build_wsapi_test/;
 use Test::MockModule;
 use Clone;
 
-my $t = build_mojo_test();
+my $t = build_wsapi_test();
 $t = $t->send_ok({json => {website_status => 1}})->message_ok;
 my $res = decode_json($t->message->[1]);
 

@@ -4,7 +4,7 @@ use Test::More tests => 7;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_mojo_test call_mocked_client reconnect/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client reconnect/;
 use BOM::Platform::Token;
 use BOM::System::RedisReplicated;
 use List::Util qw(first);
@@ -23,7 +23,7 @@ $client_mocked->mock('add_note', sub { return 1 });
 my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
 $email_mocked->mock('send_email', sub { return 1 });
 
-my $t     = build_mojo_test();
+my $t     = build_wsapi_test();
 my $email = 'test@binary.com';
 
 subtest 'verify_email' => sub {

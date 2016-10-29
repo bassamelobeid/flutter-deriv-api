@@ -6,7 +6,7 @@ use Test::MockTime qw/:all/;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_mojo_test/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use File::Temp;
 use Date::Utility;
 
@@ -32,7 +32,7 @@ sub _create_tick {    #creates R_50 tick in redis channel FEED::R_50
     );
 }
 
-my $t = build_mojo_test();
+my $t = build_wsapi_test();
 
 # both these subscribtion should work as req_id is different
 $t->send_ok({json => {ticks => 'R_50'}});

@@ -9,11 +9,11 @@ use Binary::WebSocketAPI::Hooks;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/build_mojo_test/;
+use BOM::Test::Helper qw/build_wsapi_test/;
 
 use JSON;
 
-my $t = build_mojo_test();
+my $t = build_wsapi_test();
 my $c = $t->app->build_controller;
 # no limit for ping or time
 for (1 .. 500) {

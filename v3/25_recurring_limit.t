@@ -7,10 +7,10 @@ use Data::Dumper;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_mojo_test/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use BOM::System::RedisReplicated;
 
-my $t = build_mojo_test();
+my $t = build_wsapi_test();
 
 $t->send_ok({json => {ticks => 'R_50'}});
 BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');

@@ -24,6 +24,7 @@ for my $iteration (1 .. 10) {
     system(qw(sudo hwclock --systohc)) and die "Failed to sync HW clock to system - $!";
     my $t0      = [gettimeofday];
     my $elapsed = BOM::Test::Suite->run({
+        test_app => 'Binary::WebSocketAPI',
         test_conf_path => $test_conf_path,
         suite_schema_path => $ENV{WEBSOCKET_API_REPO_PATH} . '/config/v3/',
     });

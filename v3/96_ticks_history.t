@@ -7,7 +7,7 @@ use JSON;
 use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_mojo_test/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
@@ -15,7 +15,7 @@ my $time      = Date::Utility->new;
 my $test_date = Date::Utility->new('2012-03-14 07:00:00');
 set_fixed_time($test_date->epoch);
 
-my $t = build_mojo_test();
+my $t = build_wsapi_test();
 my ($req_storage, $res, $start, $end);
 
 # as these validations are in websocket so test it

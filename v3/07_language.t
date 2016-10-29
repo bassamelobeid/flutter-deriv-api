@@ -4,10 +4,10 @@ use Test::More;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/build_mojo_test/;
+use BOM::Test::Helper qw/build_wsapi_test/;
 use Encode;
 
-my $t = build_mojo_test();
+my $t = build_wsapi_test();
 $t = $t->send_ok({json => {residence_list => 1}})->message_ok;
 my $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'residence_list';
@@ -22,7 +22,7 @@ is_deeply $res->{residence_list}->[0],
     };
 
 # test RU
-$t = build_mojo_test({language => 'RU'});
+$t = build_wsapi_test({language => 'RU'});
 $t = $t->send_ok({json => {residence_list => 1}})->message_ok;
 $res = decode_json($t->message->[1]);
 ok $res->{residence_list};
@@ -34,7 +34,7 @@ is_deeply $res->{residence_list}->[0],
     };
 
 # back to EN
-$t   = build_mojo_test();
+$t   = build_wsapi_test();
 $t   = $t->send_ok({json => {residence_list => 1}})->message_ok;
 $res = decode_json($t->message->[1]);
 ok $res->{residence_list};

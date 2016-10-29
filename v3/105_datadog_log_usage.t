@@ -6,11 +6,11 @@ use JSON;
 use Test::Most;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_mojo_test/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use Test::MockModule;
 use BOM::Database::Model::AccessToken;
 
-my $t = build_mojo_test({
+my $t = build_wsapi_test({
         debug    => 1,
         language => 'RU'
     },

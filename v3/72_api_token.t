@@ -6,7 +6,7 @@ use Data::Dumper;
 use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_mojo_test/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -18,7 +18,7 @@ BOM::Database::Model::AccessToken->new->dbh->do("
     DELETE FROM $_
 ") foreach ('auth.access_token');
 
-my $t = build_mojo_test();
+my $t = build_wsapi_test();
 
 # prepare client
 my $email  = 'test-binary@binary.com';
@@ -106,7 +106,7 @@ test_schema('api_token', $res);
 $t->finish_ok;
 
 # try with the new token
-$t   = build_mojo_test();
+$t   = build_wsapi_test();
 $t   = $t->send_ok({json => {authorize => $test_token->{token}}})->message_ok;
 $res = decode_json($t->message->[1]);
 is $res->{authorize}->{email}, $email;
