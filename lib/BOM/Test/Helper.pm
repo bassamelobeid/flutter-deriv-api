@@ -11,8 +11,6 @@ use File::Slurp;
 use Data::Dumper;
 use Date::Utility;
 
-use Binary::WebSocketAPI;
-
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -27,38 +25,47 @@ use MojoX::JSON::RPC::Client;
 
 use base 'Exporter';
 use vars qw/@EXPORT_OK/;
-@EXPORT_OK = qw/test_schema build_mojo_test build_test_R_50_data create_test_user call_mocked_client reconnect/;
+@EXPORT_OK = qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_client reconnect/;
 
 my $version = 'v3';
 die 'unknown version' unless $version;
 
 sub build_mojo_test {
-    my $args    = shift || {};
-    my $headers = shift || {};
-    my $callback = shift;
+    my $app_class     = shift;
 
-    if ($args->{deflate}) {
-        $headers = {'Sec-WebSocket-Extensions' => 'permessage-deflate'};
-    }
-    my $url = "/websockets/$version";
-
-    my @query_params;
-    push @query_params, 'l=' . $args->{language}    if $args->{language};
-    push @query_params, 'debug=' . $args->{debug}   if $args->{debug};
-    push @query_params, 'app_id=' . $args->{app_id} if $args->{app_id};
-    $url .= '?' . join('&', @query_params) if @query_params;
+    die 'Wrong app' if !$app_class || ref $app_class;
+    eval "require $app_class";
 
     my $port   = empty_port;
-    my $app    = Binary::WebSocketAPI->new;
+    my $app    = $app_class->new;
     my $daemon = Mojo::Server::Daemon->new(
         app    => $app,
         listen => ["http://127.0.0.1:$port"],
     );
     $daemon->start;
-    my $t = Test::Mojo->new($app);
+    return Test::Mojo->new($app);
+}
+
+sub build_wsapi_test {
+    my $app_class     = shift;
+    my $args    = shift || {};
+    my $headers = shift || {};
+    my $callback = shift;
+
+    my $t = build_mojo_test($app_class, $args);
+
+    my @query_params;
+    push @query_params, 'l=' . $args->{language}    if $args->{language};
+    push @query_params, 'debug=' . $args->{debug}   if $args->{debug};
+    push @query_params, 'app_id=' . $args->{app_id} if $args->{app_id};
+    my $url = "/websockets/$version?" . join('&', @query_params) if @query_params;
+
+    if ($args->{deflate}) {
+        $headers = {'Sec-WebSocket-Extensions' => 'permessage-deflate'};
+    }
+
     $t->websocket_ok($url => $headers);
     $t->tx->on(json => $callback) if $callback;
-
     return $t;
 }
 

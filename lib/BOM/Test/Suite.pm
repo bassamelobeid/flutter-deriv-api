@@ -5,7 +5,7 @@ use Test::Most;
 use JSON;
 use Data::Dumper;
 
-use BOM::Test::Helper qw/test_schema build_mojo_test build_test_R_50_data/;
+use BOM::Test::Helper qw/build_test_R_50_data/;
 use Test::MockModule;
 use YAML::XS qw(LoadFile);
 use Scalar::Util;
@@ -22,6 +22,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData;    # we :init later for unit/a
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::App;
 use Time::HiRes qw(tv_interval gettimeofday);
 
 # Needs to be at top-level scope since _set_allow_omnibus and _get_stashed need access,
@@ -98,19 +99,6 @@ sub run {
         BAIL_OUT($@);
     };
 
-    my $stash  = {};
-    my $module = Test::MockModule->new('Mojolicious::Controller');
-    $module->mock(
-        'stash',
-        sub {
-            my (undef, @params) = @_;
-            if (@params > 1 || ref $params[0]) {
-                my $values = ref $params[0] ? $params[0] : {@params};
-                @$stash{keys %$values} = values %$values;
-            }
-            Mojo::Util::_stash(stash => @_);
-        });
-
     my @lines = do {
         my $path = $path;
         open my $fh, '<:encoding(UTF-8)', $path or die "Could not open $path - $!";
@@ -119,10 +107,7 @@ sub run {
         @lines;
     };
 
-    # Track the streaming responses
-    my $streams = {};
-
-    my $t;
+    my $test_app;
     my $lang = '';
     my ($last_lang, $reset);
 
@@ -179,15 +164,14 @@ sub run {
         my ($send_file, $receive_file, @template_func);
         if ($test_stream_id) {
             ($receive_file, @template_func) = split(',', $line);
+
             diag("\nRunning line $counter [$receive_file]\n");
             diag("\nTesting stream [$test_stream_id]\n");
+
             my $content = read_file($suite_schema_path . $receive_file);
             $content = _get_values($content, @template_func);
-            die 'wrong stream_id' unless $streams->{$test_stream_id};
-            my $result = {};
-            my @stream_data = @{$streams->{$test_stream_id}->{stream_data} || []};
-            $result = $stream_data[-1] if @stream_data;
-            _test_schema($receive_file, $content, $result, $fail);
+
+            $test_app->test_schema_last_stream_message($test_stream_id, $content, $receive_file, $fail);
         } else {
             ($send_file, $receive_file, @template_func) = split(',', $line);
 
@@ -199,47 +183,25 @@ sub run {
             my $req_params = JSON::from_json($content);
 
             die 'wrong stream parameters' if $start_stream_id && !$req_params->{subscribe};
-            if ($lang || !$t || $reset) {
+            if ($lang || !$test_app || $reset) {
                 my $new_lang = $lang || $last_lang;
                 ok(defined($new_lang), 'have a defined language') or diag "missing [LANG] tag in config before tests?";
                 ok(length($new_lang),  'have a valid language')   or diag "invalid [LANG] tag in config or broken test?";
-                $t         = build_mojo_test({language => $new_lang}, {}, sub { store_stream_data($streams, @_) });
+                $test_app  = BOM::Test::App->new({language => $new_lang, app => $args->{test_app}});
                 $last_lang = $new_lang;
                 $lang      = '';
                 $reset     = '';
             }
 
-            $t = $t->send_ok({json => $req_params});
-            my $i = 0;
-            my $result;
-            my @subscribed_streams_ids = map { $_->{id} } values %$streams;
-            while ($i++ < 5 && !$result) {
-                $t->message_ok;
-                my $message = decode_json($t->message->[1]);
-                # skip subscribed stream's messages
-                next
-                    if ref $message->{$message->{msg_type}} eq 'HASH'
-                    && grep { $message->{$message->{msg_type}}->{id} && $message->{$message->{msg_type}}->{id} eq $_ } @subscribed_streams_ids;
-                $result = $message;
-            }
-            if ($i >= 5) {
-                diag("There isn't testing message in last 5 stream messages");
-                next;
-            }
+            $content = read_file($suite_schema_path . $receive_file);
+            $content = _get_values($content, @template_func);
+
+            my $result = $test_app->test_schema($req_params, $content, $receive_file, $fail);
             $response->{$call} = $result->{$call};
 
             if ($start_stream_id) {
-                my $id = $result->{$call}->{id};
-                die 'wrong stream response' unless $id;
-                die 'already exists same stream_id' if $streams->{$start_stream_id};
-                $streams->{$start_stream_id}->{id}        = $id;
-                $streams->{$start_stream_id}->{call_name} = $call;
+                $test_app->start_stream($start_stream_id, $result->{$call}->{id}, $call);
             }
-
-            $content = read_file($suite_schema_path . $receive_file);
-
-            $content = _get_values($content, @template_func);
-            _test_schema($receive_file, $content, $result, $fail);
         }
         my $elapsed = tv_interval($t0, [gettimeofday]);
         $cumulative_elapsed += $elapsed;
