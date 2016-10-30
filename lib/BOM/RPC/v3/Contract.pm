@@ -268,11 +268,11 @@ sub get_bid {
             if ($contract->is_sold and defined $sell_price and defined $buy_price) {
                 $response->{is_expired} = 1;
                 my $pnl              = $sell_price - $buy_price;
-                my $point_from_entry = $pnl / $amount_per_point;
+                my $point_from_entry = $pnl / $contract->amount_per_point;
                 my $multiplier       = $contract->sentiment eq 'up' ? 1 : -1;
                 $response->{exit_level} = $contract->underlying->pipsized_value($response->{entry_level} + $point_from_entry * $multiplier);
                 $response->{current_value_in_dollar} = $pnl;
-                $response->{current_value_in_point}  = $pnl / $amount_per_point;
+                $response->{current_value_in_point}  = $point_from_entry;
             } else {
                 if ($contract->is_expired) {
                     $response->{is_expired}              = 1;
