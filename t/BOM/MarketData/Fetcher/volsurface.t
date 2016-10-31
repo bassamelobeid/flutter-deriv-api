@@ -32,12 +32,12 @@ subtest 'Saving delta then moneyness.' => sub {
     my $forex = create_underlying('frxUSDJPY');
 
     my $delta_surface = Quant::Framework::VolSurface::Delta->new({
-            deltas            => [75, 50, 25],
-            underlying_config => $forex->config,
-            chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader,
-            chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer,
-            recorded_date     => $now,
-            surface           => {
+            deltas           => [75, 50, 25],
+            underlying       => $forex,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
+            recorded_date    => $now,
+            surface          => {
                 1 => {
                     smile => {
                         25 => 0.19,
@@ -60,12 +60,12 @@ subtest 'Saving delta then moneyness.' => sub {
 
     my $indices           = create_underlying('GDAXI');
     my $moneyness_surface = Quant::Framework::VolSurface::Moneyness->new({
-            moneynesses       => [99, 100, 101],
-            underlying_config => $indices->config,
-            chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader,
-            chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer,
-            recorded_date     => $now,
-            surface           => {
+            moneynesses      => [99, 100, 101],
+            underlying       => $indices,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
+            recorded_date    => $now,
+            surface          => {
                 7 => {
                     smile => {
                         99  => 0.3,
@@ -112,10 +112,10 @@ subtest 'Consecutive saves.' => sub {
     my $surface = Quant::Framework::Utils::Test::create_doc(
         'volsurface_delta',
         {
-            recorded_date     => $now->minus_time_interval('3h'),
-            underlying_config => $underlying->config,
-            chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader,
-            chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer,
+            recorded_date    => $now->minus_time_interval('3h'),
+            underlying       => $underlying,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
         });
     my @recorded_dates = ($surface->recorded_date);    # keep track of all saved surface recorded_dates
 
@@ -124,10 +124,10 @@ subtest 'Consecutive saves.' => sub {
         Quant::Framework::Utils::Test::create_doc(
             'volsurface_delta',
             {
-                recorded_date     => $recorded_date,
-                underlying_config => $underlying->config,
-                chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader,
-                chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer,
+                recorded_date    => $recorded_date,
+                underlying       => $underlying,
+                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
+                chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
             });
         unshift @recorded_dates, $recorded_date;
     }
