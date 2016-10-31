@@ -125,7 +125,7 @@ subtest 'absolute barrier for a non-intraday contract' => sub {
 
     my $delta_surface = Quant::Framework::VolSurface::Delta->new({
             deltas            => [75, 50, 25],
-            underlying_config => $forex->config,
+            underlying        => $forex,
             chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader,
             chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer,
             recorded_date     => $now,
