@@ -13,6 +13,8 @@ use BOM::Platform::Client;
 use BOM::System::Password;
 use BOM::Platform::Client::Utility;
 
+use BOM::Platform::Client::IDAuthentication;
+
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
