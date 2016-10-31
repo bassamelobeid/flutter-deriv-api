@@ -9,7 +9,7 @@ test:
 	@$(PROVE) $$(ls -1d t/BOM)
 
 suite_schema:
-	@$(PROVE) $$(ls -1d t/suite_schema)
+	@$(PROVE) $$(ls -1d t/schema_suite)
 
 tidy:
 	find . -name '*.p?.bak' -delete
