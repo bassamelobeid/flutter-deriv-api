@@ -12,7 +12,7 @@ my (undef, $file_path, undef) = File::Spec->splitpath(__FILE__);
 BOM::Test::Suite->run({
     test_app => 'BOM::RPC',
     test_conf_path => $file_path . 'suite.conf',
-    suite_schema_path => $file_path,
+    suite_schema_path => $file_path . '/config/',
 });
 done_testing();
 
