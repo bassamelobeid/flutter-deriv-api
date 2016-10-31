@@ -10,7 +10,7 @@ use BOM::Test::Helper qw/build_wsapi_test/;
 
 sub build_test_app {
     my ($self, $args) = @_;
-    return build_wsapi_test($args->{app}, $args, {}, sub { _store_stream_data($self->{streams}, @_) });
+    return build_wsapi_test($args, {}, sub { _store_stream_data($self->{streams}, @_) });
 }
 
 sub test_schema {

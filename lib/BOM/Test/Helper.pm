@@ -47,18 +47,18 @@ sub build_mojo_test {
 }
 
 sub build_wsapi_test {
-    my $app_class = shift;
     my $args      = shift || {};
     my $headers   = shift || {};
     my $callback  = shift;
 
-    my $t = build_mojo_test($app_class, $args);
+    my $t = build_mojo_test('Binary::WebSocketAPI', $args);
 
-    my ($url, @query_params);
+    my @query_params;
+    my $url = "/websockets/$version";
     push @query_params, 'l=' . $args->{language}    if $args->{language};
     push @query_params, 'debug=' . $args->{debug}   if $args->{debug};
     push @query_params, 'app_id=' . $args->{app_id} if $args->{app_id};
-    $url = "/websockets/$version?" . join('&', @query_params) if @query_params;
+    $url = "?" . join('&', @query_params)           if @query_params;
 
     if ($args->{deflate}) {
         $headers = {'Sec-WebSocket-Extensions' => 'permessage-deflate'};
