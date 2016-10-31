@@ -1,17 +1,19 @@
 use strict;
 use warnings;
+use utf8;
 
-use Test::BOM::RPC::Client;
-use BOM::RPC::v3::Cashier;
 use Test::Most;
 use Test::Mojo;
+use Test::BOM::RPC::Client;
+use Test::MockModule;
+use Format::Util::Numbers qw(roundnear);
+use YAML::XS qw(LoadFile);
+
+use BOM::RPC::v3::Cashier;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
-use Test::MockModule;
-use Format::Util::Numbers qw(roundnear);
 use BOM::Product::RiskProfile;
-use utf8;
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
