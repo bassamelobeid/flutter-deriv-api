@@ -8,7 +8,7 @@ use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
 use BOM::Platform::Client::Utility ();
 use BOM::Database::DAO::Client;
-use BOM::Platform::Context qw(request);
+use BOM::Backoffice::Request qw(request);
 use BOM::Platform::Locale;
 use BOM::Backoffice::FormAccounts;
 
@@ -52,9 +52,9 @@ sub print_client_details {
 
     my @countries;
     my $country_codes = {};
-    foreach my $country_name (sort BOM::Platform::Countries->instance->countries->all_country_names) {
+    foreach my $country_name (sort LandingCompany::Countries->instance->countries->all_country_names) {
         push @countries, $country_name;
-        $country_codes->{$country_name} = BOM::Platform::Countries->instance->countries->code_from_country($country_name);
+        $country_codes->{$country_name} = LandingCompany::Countries->instance->countries->code_from_country($country_name);
     }
 
     my ($proveID, $show_uploaded_documents);
@@ -68,7 +68,7 @@ sub print_client_details {
     }
 
     # COMMUNICATION ADDRESSES
-    my $client_phone_country = BOM::Platform::Countries->instance->countries->code_from_phone($client->phone);
+    my $client_phone_country = LandingCompany::Countries->instance->countries->code_from_phone($client->phone);
     if (not $client_phone_country) {
         $client_phone_country = 'Unknown';
     }
@@ -114,13 +114,15 @@ sub print_client_details {
         show_funds_message      => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
         ukgc_funds_status       => $client->get_status('ukgc_funds_protection'),
         show_tnc_status => ($client->is_virtual) ? 0 : 1,
-        tnc_approval_status => $tnc_status,
-        client_tnc_version  => $tnc_status ? $tnc_status->reason : '',
-        show_allow_omnibus  => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of) ? 1 : 0
+        tnc_approval_status   => $tnc_status,
+        show_risk_approval    => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,
+        financial_risk_status => $client->get_status('financial_risk_approval'),
+        client_tnc_version    => $tnc_status ? $tnc_status->reason : '',
+        show_allow_omnibus    => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of) ? 1 : 0
     };
 
-    BOM::Platform::Context::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
-        || die BOM::Platform::Context::template->error();
+    BOM::Backoffice::Request::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
+        || die BOM::Backoffice::Request::template->error();
 }
 
 ## build_client_statement_form #######################################

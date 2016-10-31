@@ -7,7 +7,7 @@
 ###############################################################################################
 use strict 'vars';
 use BOM::Platform::Runtime;
-use BOM::Platform::Context;
+use BOM::Backoffice::Request qw(request);
 use Mojo::URL;
 use BOM::JavascriptConfig;
 use BOM::Backoffice::Sysinit ();
@@ -297,6 +297,7 @@ sub code_exit_BO {
     if ($vk_didBOtopPRES)  { vk_BObottomPRES(); }    #backoffice closing presentation
     undef ${"main::vk_BarIsDoneOnce"};
     undef ${"main::vk_didBOtopPRES"};
-    BOM::Backoffice::Sysinit::code_exit();
+    BOM::Backoffice::Request::request_completed();
+    exit 0;
 }
 1;

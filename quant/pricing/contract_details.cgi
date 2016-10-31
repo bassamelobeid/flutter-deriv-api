@@ -14,12 +14,16 @@ This is a Japanese regulatory requirements.
 package main;
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
+use Format::Util::Numbers qw(roundnear);
+use Price::RoundPrecision::JPY;
 use f_brokerincludeall;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Database::ClientDB;
+use BOM::Platform::Client;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 BOM::Backoffice::Auth0::can_access(['Quants']);
@@ -36,26 +40,49 @@ if ($broker and $id) {
         })->get_details_by_transaction_ref($id);
 
     my $original_contract = produce_contract($details->{shortcode}, $details->{currency_code});
+    my $client        = BOM::Platform::Client::get_instance({'loginid' => $details->{loginid}});
+    my $action_type   = $details->{action_type};                                                   # buy or sell
+    my $sell_time     = $details->{sell_time};
+    my $purchase_time = $details->{purchase_time};
 
-    $start = $params{start} ? Date::Utility->new($params{start}) : $original_contract->date_start;
+    $start =
+          $params{start}          ? Date::Utility->new($params{start})
+        : ($action_type eq 'buy') ? Date::Utility->new($purchase_time)
+        :                           Date::Utility->new($sell_time);
     my $pricing_args = $original_contract->build_parameters;
-    $pricing_args->{date_pricing} = $start;
-    my $contract = produce_contract($pricing_args);
+    $pricing_args->{date_pricing}    = $start;
+    $pricing_args->{landing_company} = $client->landing_company->short;
+    my $contract       = produce_contract($pricing_args);
+    my $traded_bid     = $details->{bid_price};
+    my $traded_ask     = $details->{ask_price};
+    my $slippage_price = $details->{price_slippage};
+    my $action_type    = $details->{action_type};
+    my $order_price    = $details->{order_price};
+    my $prev_tick      = $contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
+
+    my $traded_contract = $action_type eq 'buy' ? $contract : $contract->opposite_contract;
+    my $discounted_probability = $contract->discounted_probability;
 
     $pricing_parameters =
-          $contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex' ? _get_pricing_parameter_from_IH_pricer($contract)
-        : $contract->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'          ? _get_pricing_parameter_from_slope_pricer($contract)
-        :   die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
+        $contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex'
+        ? _get_pricing_parameter_from_IH_pricer($traded_contract, $action_type, $discounted_probability)
+        : $contract->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'
+        ? _get_pricing_parameter_from_slope_pricer($traded_contract, $action_type, $discounted_probability)
+        : die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
 
     @contract_details = (
-        login_id    => $details->{loginid},
-        trans_id    => $id,
-        short_code  => $contract->shortcode,
-        payout      => $contract->payout,
-        description => $contract->longcode,
-        ccy         => $details->{currency_code},
-        ask_price   => $details->{ask_price},
-        bid_price   => $details->{bid_price} // 'NA. (unsold)',
+        login_id               => $details->{loginid},
+        trans_id               => $id,
+        short_code             => $contract->shortcode,
+        description            => $contract->longcode,
+        ccy                    => $details->{currency_code},
+        order_type             => $action_type,
+        order_price            => $order_price,
+        slippage_price         => $slippage_price // 'NA.',
+        trade_ask_price        => $traded_ask,
+        trade_bid_price        => $traded_bid // 'NA. (unsold)',
+        payout                 => $contract->payout,
+        tick_before_trade_time => $prev_tick,
     );
 }
 my $display = $params{download} ? 'download' : 'display';
@@ -97,18 +124,32 @@ sub output_as_csv {
 }
 
 sub _get_pricing_parameter_from_IH_pricer {
-    my $contract = shift;
+    my ($contract, $action_type, $discounted_probability) = @_;
     my $pricing_parameters;
+
     my $pe                = $contract->pricing_engine;
-    my $bs_probability    = $pe->formula->($pe->_formula_args);
+    my $bs_probability    = $pe->base_probability->base_amount;
     my $commission_markup = $contract->commission_markup->amount;
 
-    $pricing_parameters->{ask_probability} = {
-        bs_probability    => $bs_probability,
-        commission_markup => $commission_markup,
-        map { $_ => $pe->$_->amount } qw(intraday_delta_correction intraday_vega_correction risk_markup),
-    };
+    if ($action_type eq 'sell') {
+        $pricing_parameters->{bid_probability} = {
+            discounted_probability            => $discounted_probability->amount,
+            opposite_contract_ask_probability => $contract->ask_probability->amount
+        };
 
+        $pricing_parameters->{opposite_contract_ask_probability} = {
+            bs_probability    => $bs_probability,
+            commission_markup => $commission_markup,
+            map { $_ => $pe->$_->amount } qw(intraday_delta_correction intraday_vega_correction risk_markup),
+        };
+
+    } else {
+        $pricing_parameters->{ask_probability} = {
+            bs_probability    => $bs_probability,
+            commission_markup => $commission_markup,
+            map { $_ => $pe->$_->amount } qw(intraday_delta_correction intraday_vega_correction risk_markup),
+        };
+    }
     my @bs_keys = ('S', 'K', 't', 'discount_rate', 'mu', 'vol');
     my @formula_args = $pe->_formula_args;
     $pricing_parameters->{bs_probability} = {
@@ -138,10 +179,14 @@ sub _get_pricing_parameter_from_IH_pricer {
 
     my $risk_markup = $pe->risk_markup;
     $pricing_parameters->{risk_markup} = {
-        intraday_historical_iv_risk => $risk_markup->peek_amount('intraday_historical_iv_risk') // 0,
-        quiet_period_markup         => $risk_markup->peek_amount('quiet_period_markup')         // 0,
-        eod_market_risk_markup      => $pe->eod_market_risk_markup->amount                      // 0,
-        economic_events_markup      => $pe->economic_events_markup->amount,
+        economic_events_markup          => $risk_markup->peek_amount('economic_events_markup')          // 0,
+        intraday_historical_iv_risk     => $risk_markup->peek_amount('intraday_historical_iv_risk')     // 0,
+        quiet_period_markup             => $risk_markup->peek_amount('quiet_period_markup')             // 0,
+        vol_spread_markup               => $risk_markup->peek_amount('vol_spread_markup')               // 0,
+        eod_market_risk_markup          => $risk_markup->peek_amount('intraday_eod_markup')             // 0,
+        spot_jump_markup                => $risk_markup->peek_amount('spot_jump_markup')                // 0,
+        short_term_kurtosis_risk_markup => $risk_markup->peek_amount('short_term_kurtosis_risk_markup') // 0,
+
     };
 
     return $pricing_parameters;
@@ -149,8 +194,8 @@ sub _get_pricing_parameter_from_IH_pricer {
 }
 
 sub _get_pricing_parameter_from_slope_pricer {
-    my $contract          = shift;
-    my $ask_probability   = $contract->ask_probability;
+    my ($contract, $action_type, $discounted_probability) = @_;
+
     my $pe                = $contract->pricing_engine;
     my $debug_information = $pe->debug_information;
     my $pricing_parameters;
@@ -158,11 +203,27 @@ sub _get_pricing_parameter_from_slope_pricer {
     my $risk_markup       = $contract->risk_markup->amount;
     my $commission_markup = $contract->commission_markup->amount;
 
-    $pricing_parameters->{ask_probability} = {
-        theoretical_probability => $pe->base_probability,
-        risk_markup             => $risk_markup,
-        commission_markup       => $commission_markup,
-    };
+    if ($action_type eq 'sell') {
+        $pricing_parameters->{bid_probability} = {
+            discounted_probability            => $discounted_probability->amount,
+            opposite_contract_ask_probability => $contract->ask_probability->amount
+        };
+
+        $pricing_parameters->{opposite_contract_ask_probability} = {
+            theoretical_probability => $pe->base_probability,
+            risk_markup             => $risk_markup,
+            commission_markup       => $commission_markup,
+
+        };
+
+    } else {
+
+        $pricing_parameters->{ask_probability} = {
+            theoretical_probability => $pe->base_probability,
+            risk_markup             => $risk_markup,
+            commission_markup       => $commission_markup,
+        };
+    }
 
     my $theo_param = $debug_information->{$contract_type}{base_probability}{parameters};
 
@@ -205,7 +266,7 @@ sub _get_bs_probability_parameters {
     };
     return $bs_parameter;
 }
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/contract_details.html.tt',
     {
         broker             => $broker,
@@ -213,6 +274,6 @@ BOM::Platform::Context::template->process(
         contract_details   => {@contract_details},
         start              => $start ? $start->datetime : '',
         pricing_parameters => $pricing_parameters,
-    }) || die BOM::Platform::Context::template->error;
+    }) || die BOM::Backoffice::Request::template->error;
 code_exit_BO();
 

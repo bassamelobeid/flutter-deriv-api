@@ -4,7 +4,7 @@ package main;
 #official globals
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
-use BOM::Market::Registry;
+use Finance::Asset::Market::Registry;
 
 use f_brokerincludeall;
 use BOM::System::Config;
@@ -13,12 +13,10 @@ use Format::Util::Strings qw( set_selected_item );
 use BOM::Backoffice::Auth0;
 use BOM::StaffPages;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Market::Registry;
-use BOM::Platform::LandingCompany;
+use LandingCompany;
 
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
-
 
 if (not BOM::Backoffice::Auth0::from_cookie()) {
     PrintContentType();
@@ -41,7 +39,7 @@ if ((grep { $_ eq 'binary_role_master_server' } @{BOM::System::Config::node()->{
 
 print "<center>";
 
-my $allbrokercodes = '<option>' . join("<option>", BOM::Platform::LandingCompany::Registry::all_broker_codes);
+my $allbrokercodes = '<option>' . join("<option>", LandingCompany::Registry::all_broker_codes);
 
 my $brokerselection = "Broker code : <select name=broker>" . set_selected_item($broker, $allbrokercodes) . "</select>";
 
@@ -49,7 +47,7 @@ if (request()->param('only')) {
     $brokerselection = "Broker code : <select name=broker><option>" . request()->param('only') . "</select>";
 }
 
-my @all_markets = BOM::Market::Registry->instance->all_market_names;
+my @all_markets = Finance::Asset::Market::Registry->instance->all_market_names;
 
 # TRANSaction REPORTS
 if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {

@@ -6,8 +6,8 @@ use warnings;
 use Crypt::NamedKeys;
 use Date::Utility;
 use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(request);
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use Try::Tiny;
 
 # for Light chart / chart director
@@ -111,7 +111,7 @@ sub processHistoricalFeed {
         return \@error;
     }
 
-    my $underlying = BOM::Market::Underlying->new($underlying_symbol);
+    my $underlying = create_underlying($underlying_symbol);
     my $now        = Date::Utility->new;
 
     # Check license for requested historical summary of symbol
@@ -243,7 +243,7 @@ sub getHistoricalFeedFromDB {
     my $licenseTime  = $arg_ref->{'licenseTime'};
 
     my @return_data;
-    my $underlying = BOM::Market::Underlying->new($symbol);
+    my $underlying = create_underlying($symbol);
 
     # Data to be returned when requested.
     my $ticks_data = getDataFromDB({

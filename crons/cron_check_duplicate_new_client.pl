@@ -5,7 +5,6 @@ BEGIN {
     push @INC, "/home/git/regentmarkets/bom-backoffice/lib";
 }
 
-
 use strict;
 
 use BOM::Backoffice::Sysinit ();

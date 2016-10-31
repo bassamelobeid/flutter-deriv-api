@@ -6,13 +6,14 @@ use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
 use Machine::Epsilon;
 
-use BOM::Platform::Countries;
+use LandingCompany::Countries;
 use BOM::Platform::Client;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Market::Registry;
+use Finance::Asset::Market::Registry;
 use BOM::ContractInfo;
 
 use Performance::Probability qw(get_performance_probability);
@@ -45,8 +46,8 @@ if ($enddate) {
 }
 
 my $clientdb = BOM::Database::ClientDB->new({
-        client_loginid => $client->loginid,
-    });
+    client_loginid => $client->loginid,
+});
 
 Bar($loginID . " - Contracts");
 my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
@@ -116,22 +117,22 @@ foreach my $contract (@{$open_contracts}) {
     $contract->{purchase_date} = Date::Utility->new($contract->{purchase_time});
 }
 
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/account/profit_table.html.tt',
     {
         sold_contracts              => $sold_contracts,
         open_contracts              => $open_contracts,
-        markets                     => [BOM::Market::Registry->instance->display_markets],
+        markets                     => [Finance::Asset::Market::Registry->instance->display_markets],
         email                       => $client->email,
         full_name                   => $client->full_name,
         loginid                     => $client->loginid,
         posted_startdate            => $startdate,
         posted_enddate              => $enddate,
         currency                    => $client->currency,
-        residence                   => BOM::Platform::Countries->instance->countries->country_from_code($client->residence),
+        residence                   => LandingCompany::Countries->instance->countries->country_from_code($client->residence),
         contract_details            => \&BOM::ContractInfo::get_info,
         performance_probability     => $performance_probability,
         inv_performance_probability => $inv_performance_probability,
-    }) || die BOM::Platform::Context::template->error();
+    }) || die BOM::Backoffice::Request::template->error();
 
 code_exit_BO();

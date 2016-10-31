@@ -37,7 +37,8 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Model::Constants;
 use DataDog::DogStatsd::Helper qw (stats_inc stats_timing stats_count);
 use BOM::Platform::Client;
-use BOM::Platform::CurrencyConverter qw (in_USD);
+use BOM::Backoffice::Request;
+use Postgres::FeedDB::CurrencyConverter qw (in_USD);
 use BOM::Product::Transaction;
 
 # This report will only be run on the MLS.
@@ -99,12 +100,11 @@ sub generate {
                 my $bet = produce_contract($bet_params);
                 $cached_underlyings{$symbol} ||= $bet->underlying;
 
-                my $is_expired    = $bet->is_expired;
                 my $current_value = $bet->is_spread ? $bet->bid_price : $bet->theo_price;
-                my $value         = $self->amount_in_usd($current_value, $open_fmb->{currency_code});
+                my $value = $self->amount_in_usd($current_value, $open_fmb->{currency_code});
                 $totals{value} += $value;
 
-                if ($is_expired) {
+                if ($bet->is_settleable) {
                     $total_expired++;
                     $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
                         undef, $open_fmb_id, $value);
@@ -137,7 +137,7 @@ sub generate {
 
         my $howlong = Time::Duration::Concise::Localize->new(
             interval => time - $start,
-            locale   => BOM::Platform::Context::request()->language
+            locale   => BOM::Backoffice::Request::request()->language
         );
 
         my $status =

@@ -9,7 +9,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use JSON;
 
 use f_brokerincludeall;
-use BOM::Platform::Countries;
+use LandingCompany::Countries;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -32,7 +32,7 @@ if (my $code = $input{promocode}) {
 Bar($pc ? "EDIT PROMOTIONAL CODE" : "ADD PROMOTIONAL CODE");
 
 my @messages;
-my $countries_instance = BOM::Platform::Countries->instance;
+my $countries_instance = LandingCompany::Countries->instance;
 
 if ($input{save}) {
     @messages = _validation_errors(%input);
@@ -78,8 +78,8 @@ my $stash = {
     messages           => \@messages,
     countries_instance => $countries_instance
 };
-BOM::Platform::Context::template->process('backoffice/promocode_edit.html.tt', $stash)
-    || die("in promocode_edit: " . BOM::Platform::Context::template->error());
+BOM::Backoffice::Request::template->process('backoffice/promocode_edit.html.tt', $stash)
+    || die("in promocode_edit: " . BOM::Backoffice::Request::template->error());
 
 code_exit_BO();
 

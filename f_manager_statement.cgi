@@ -9,6 +9,7 @@ use BOM::Product::Transaction;
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Backoffice::Request qw(request);
 
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -68,9 +69,9 @@ BOM::Product::Transaction::sell_expired_contracts({
 });
 
 my $clientdb = BOM::Database::ClientDB->new({
-        client_loginid => $client->loginid,
-        operation      => 'replica',
-    });
+    client_loginid => $client->loginid,
+    operation      => 'replica',
+});
 
 my $open_bets = $clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false']);
 foreach my $open_bet (@{$open_bets}) {
@@ -87,13 +88,14 @@ my $acnt_dm = BOM::Database::DataMapper::Account->new({
     db             => $clientdb->db,
 });
 
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/account/portfolio.html.tt',
     {
         open_bets => $open_bets,
         balance   => $acnt_dm->get_balance(),
         currency  => $client->currency,
+        loginid   => $client->loginid,
     },
-) || die BOM::Platform::Context::template->error();
+) || die BOM::Backoffice::Request::template->error();
 
 code_exit_BO();

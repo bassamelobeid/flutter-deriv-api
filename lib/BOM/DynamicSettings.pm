@@ -176,8 +176,7 @@ sub get_settings_by_group {
         quant => [qw(
                 quants.commission.adjustment.global_scaling
                 quants.markets.disabled
-                quants.markets.disable_iv
-                quants.features.suspend_claim_types
+                quants.features.suspend_contract_types
                 quants.underlyings.disable_autoupdate_vol
                 quants.underlyings.disabled_due_to_corporate_actions
                 quants.underlyings.suspend_buy

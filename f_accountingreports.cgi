@@ -7,8 +7,12 @@ use List::MoreUtils qw(any);
 use DateTime;
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Market::UnderlyingDB;
-use BOM::Platform::LandingCompany::Registry;
+use BOM::Backoffice::Request qw(request);
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
+use LandingCompany::Registry;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -83,7 +87,7 @@ print "<form action=\""
     . "<input type=\"submit\" value=\"View Dailysummary File in Table format\">"
     . "</form>";
 
-my $landing_company = BOM::Platform::LandingCompany::Registry::get_by_broker($broker)->short;
+my $landing_company = LandingCompany::Registry::get_by_broker($broker)->short;
 if (any { $landing_company eq $_ } qw(iom malta maltainvest)) {
     Bar("HMCE/IOMCE bet numbering records");
 
@@ -107,8 +111,8 @@ Bar("Monthly Client Reports");
     my $yyyymm = DateTime->now->subtract(months => 1)->ymd('-');
     $yyyymm =~ s/-..$//;
 
-    BOM::Platform::Context::template->process('backoffice/account/monthly_client_report.tt', {yyyymm => $yyyymm})
-        || die BOM::Platform::Context::template->error();
+    BOM::Backoffice::Request::template->process('backoffice/account/monthly_client_report.tt', {yyyymm => $yyyymm})
+        || die BOM::Backoffice::Request::template->error();
 }
 
 # RESCIND FREE GIFT
@@ -146,7 +150,7 @@ Bar("USEFUL EXCHANGE RATES");
 print "The following exchange rates are from our live data feed. They are live rates as of right now (" . Date::Utility->new->datetime . "<ul>";
 
 foreach my $curr (qw(GBPUSD EURUSD USDHKD USDCNY AUDUSD GBPHKD AUDHKD EURHKD)) {
-    my $underlying = BOM::Market::Underlying->new('frx' . $curr);
+    my $underlying = create_underlying('frx' . $curr);
     print "<li>$curr: " . $underlying->spot . "</li>";
 }
 print "</ul>";

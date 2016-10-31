@@ -9,6 +9,7 @@ use f_brokerincludeall;
 
 use BOM::System::Config;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::Backoffice::Request qw(request);
 use Bloomberg::FileDownloader;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -16,8 +17,8 @@ use BOM::Platform::Runtime;
 PrintContentType();
 BrokerPresentation('BBDL LIST DIRECTORY');
 
-my $cgi       = CGI->new;
-my $broker    = $cgi->param('broker');
+my $cgi    = CGI->new;
+my $broker = $cgi->param('broker');
 
 my $bbdl = Bloomberg::FileDownloader->new();
 
@@ -39,14 +40,14 @@ my @response_list = map { _retrieve_table_data($_, $broker) } @response_files;
 
 if (@request_list) {
     my $request_f;
-    BOM::Platform::Context::template->process(
+    BOM::Backoffice::Request::template->process(
         'backoffice/bbdl/list_directory.html.tt',
         {
             file_type => 'REQUEST FILES',
             args      => \@request_list
         },
         \$request_f
-    ) || die BOM::Platform::Context::template->error();
+    ) || die BOM::Backoffice::Request::template->error();
 
     print $request_f;
     print "</br></br>";
@@ -55,14 +56,14 @@ if (@request_list) {
 if (@response_list) {
     my $response_f;
 
-    BOM::Platform::Context::template->process(
+    BOM::Backoffice::Request::template->process(
         'backoffice/bbdl/list_directory.html.tt',
         {
             file_type => 'RESPONSE FILES',
             args      => \@response_list
         },
         $response_f
-    ) || die BOM::Platform::Context::template->error();
+    ) || die BOM::Backoffice::Request::template->error();
 
     print $response_f;
 }

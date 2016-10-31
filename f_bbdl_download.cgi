@@ -17,8 +17,8 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
-my $cgi       = CGI->new;
-my $filename  = $cgi->param('filename');
+my $cgi      = CGI->new;
+my $filename = $cgi->param('filename');
 
 Bar("Download a file from BBDL");
 

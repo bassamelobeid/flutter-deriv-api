@@ -11,7 +11,7 @@ use Data::Dumper;
 
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
-use BOM::Platform::Context;
+use BOM::Backoffice::Request qw(request);
 use BOM::Platform::User;
 use BOM::Platform::Client::IDAuthentication;
 use BOM::Platform::Client::Utility;
@@ -24,7 +24,7 @@ use BOM::Database::Model::HandoffToken;
 use BOM::Database::ClientDB;
 use BOM::System::Config;
 use BOM::Backoffice::FormAccounts;
-use BOM::Platform::Countries;
+use LandingCompany::Countries;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -67,14 +67,14 @@ if ($input{whattodo} eq 'sync_to_DF') {
     my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $loginid});
     my $currency = $df_client->doughflow_currency;
     if (not $currency) {
-        BOM::Platform::Context::template->process(
+        BOM::Backoffice::Request::template->process(
             'backoffice/client_edit_msg.tt',
             {
                 message  => 'ERROR: Client never deposited before, no sync to Doughflow is allowed !!',
                 error    => 1,
                 self_url => $self_href,
             },
-        ) || die BOM::Platform::Context::template->error();
+        ) || die BOM::Backoffice::Request::template->error();
         code_exit_BO();
     }
 
@@ -113,14 +113,14 @@ if ($input{whattodo} eq 'sync_to_DF') {
                 Password       => $handoff_token->key,
             }));
     if ($result->{'_content'} ne 'OK') {
-        BOM::Platform::Context::template->process(
+        BOM::Backoffice::Request::template->process(
             'backoffice/client_edit_msg.tt',
             {
                 message  => "FAILED syncing client authentication status to Doughflow, ERROR: $result->{_content}",
                 error    => 1,
                 self_url => $self_href,
             },
-        ) || die BOM::Platform::Context::template->error();
+        ) || die BOM::Backoffice::Request::template->error();
         code_exit_BO();
     }
 
@@ -137,13 +137,13 @@ if ($input{whattodo} eq 'sync_to_DF') {
         . $df_client->Profile;
     BOM::System::AuditLog::log($msg, $loginid, $clerk);
 
-    BOM::Platform::Context::template->process(
+    BOM::Backoffice::Request::template->process(
         'backoffice/client_edit_msg.tt',
         {
             message  => "Successfully syncing client authentication status to Doughflow",
             self_url => $self_href,
         },
-    ) || die BOM::Platform::Context::template->error();
+    ) || die BOM::Backoffice::Request::template->error();
     code_exit_BO();
 }
 
@@ -652,6 +652,11 @@ if (not $client->is_virtual) {
     };
 }
 
+Bar("Email Consent");
+print '<br/>';
+print 'Email consent for marketing: ' . ($user->email_consent ? 'Yes' : 'No');
+print '<br/><br/>';
+
 #upload new ID doc
 Bar("Upload new ID document");
 print qq{
@@ -690,8 +695,8 @@ print qq{
     <option value="">Please select</option>
 };
 
-foreach my $country_name (sort BOM::Platform::Countries->instance->countries->all_country_names) {
-    my $code = BOM::Platform::Countries->instance->countries->code_from_country($country_name);
+foreach my $country_name (sort LandingCompany::Countries->instance->countries->all_country_names) {
+    my $code = LandingCompany::Countries->instance->countries->code_from_country($country_name);
     print "<option value='$code'>$country_name</option>";
 }
 

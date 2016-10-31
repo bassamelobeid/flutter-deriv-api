@@ -24,17 +24,18 @@ use IO::Handle;
 use File::Path qw(make_path);
 use File::Temp;
 use List::Util qw(min sum);
-
 use Mail::Sender;
+use Text::CSV_XS;
+use Time::Duration::Concise::Localize;
+
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
-use Text::CSV_XS;
-use BOM::Market::Types;
-use Time::Duration::Concise::Localize;
+use BOM::MarketData::Types;
+use BOM::Backoffice::Request;
 
 has 'min_contract_length' => (
-    isa     => 'bom_time_interval',
+    isa     => 'time_interval',
     is      => 'ro',
     coerce  => 1,
     default => '1h',
@@ -155,7 +156,7 @@ sub generate {
     $scenario_fh->flush;
     my $howlong = Time::Duration::Concise::Localize->new(
         interval => time - $start,
-        locale   => BOM::Platform::Context::request()->language
+        locale   => BOM::Backoffice::Request::request()->language
     );
     my $status =
           'Total run time ['

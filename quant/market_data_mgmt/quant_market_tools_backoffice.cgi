@@ -22,7 +22,7 @@ use ForexFactory;
 use BOM::System::Config;
 use BOM::Platform::Runtime;
 use Date::Utility;
-use BOM::Platform::Context;
+use BOM::Backoffice::Request qw(request);
 use Quant::Framework::CorrelationMatrix;
 my $broker = request()->broker_code;
 BOM::Backoffice::Auth0::can_access(['Quants']);

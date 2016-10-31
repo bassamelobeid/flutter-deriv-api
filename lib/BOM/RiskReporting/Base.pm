@@ -17,9 +17,8 @@ use strict;
 use warnings;
 
 use BOM::System::Config;
-use BOM::Platform::CurrencyConverter qw(in_USD);
-use BOM::Platform::LandingCompany::Registry;
-
+use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+use LandingCompany::Registry;
 
 local $\ = undef;    # Sigh.
 
@@ -47,7 +46,7 @@ has _usd_rates => (
 );
 
 sub _build__usd_rates {
-    return {map { $_ => in_USD(1, $_) } BOM::Platform::LandingCompany::Registry->new()->all_currencies};
+    return {map { $_ => in_USD(1, $_) } LandingCompany::Registry->new()->all_currencies};
 }
 
 sub amount_in_usd {

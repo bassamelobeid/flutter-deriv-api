@@ -8,7 +8,7 @@ use IO::File;
 use BOM::MyAffiliates::PaymentToAccountManager;
 use BOM::System::Config;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Context qw(request);
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
@@ -51,8 +51,7 @@ if (not defined $pid) {
     if ($?) {
         print "An error has occurred -- child comes back with $?";
     } else {
-        print "Fetch Myaffiliates payment triggered, info will be emailed soon to "
-            . BOM::System::Config::email_address('affiliates');
+        print "Fetch Myaffiliates payment triggered, info will be emailed soon to " . BOM::System::Config::email_address('affiliates');
     }
 } else {
     # 1st, break parent/child relationship

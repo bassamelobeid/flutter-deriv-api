@@ -7,17 +7,19 @@ with 'App::Base::Script';
 
 use Try::Tiny;
 use IO::File;
+use File::ShareDir;
 use Module::Load::Conditional qw( can_load );
 use Locale::Maketext::Extract;
-
-use BOM::Market::Registry;
-use BOM::Market::SubMarket::Registry;
-use BOM::Product::Offerings qw(get_offerings_with_filter);
-use BOM::Market::Underlying;
-use BOM::Market::UnderlyingDB;
 use YAML::XS qw(LoadFile);
 
-my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_types.yml');
+use Finance::Asset::Market::Registry;
+use Finance::Asset::SubMarket::Registry;
+use BOM::Platform::Runtime;
+use LandingCompany::Offerings qw(get_offerings_with_filter get_all_contract_types);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::Product::Contract::Category;
 
 has file_container => (
     is         => 'ro',
@@ -73,7 +75,6 @@ sub script_run {
 
     return 0;
 }
-
 
 sub add_japan_settings {
     my $self = shift;
@@ -139,8 +140,8 @@ sub add_japan_settings {
 sub add_underlyings {
     my $self = shift;
 
-    my @underlyings = map { BOM::Market::Underlying->new($_) } BOM::Market::UnderlyingDB->get_symbols_for(
-        market           => [BOM::Market::Registry->all_market_names],
+    my @underlyings = map { create_underlying($_) } create_underlying_db()->get_symbols_for(
+        market           => [Finance::Asset::Market::Registry->all_market_names],
         exclude_disabled => 1
     );
 
@@ -167,7 +168,7 @@ sub add_contract_types {
 
     my $fh = $self->pot_append_fh;
 
-    my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_types.yml');
+    my $contract_type_config = get_all_contract_types();
 
     foreach my $contract_type (keys %{$contract_type_config}) {
         next if ($contract_type eq 'INVALID');
@@ -216,7 +217,8 @@ sub add_contract_categories {
     my $self = shift;
 
     my $fh = $self->pot_append_fh;
-    my @all_categories = map { BOM::Product::Contract::Category->new($_) } get_offerings_with_filter('contract_category');
+    my @all_categories = map { BOM::Product::Contract::Category->new($_) }
+        get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'contract_category');
     foreach my $contract_category (@all_categories) {
         if ($contract_category->display_name) {
             my $msgid = $self->msg_id($contract_category->display_name);
@@ -244,7 +246,7 @@ sub add_markets {
 
     my $fh = $self->pot_append_fh;
 
-    foreach my $market (BOM::Market::Registry->all) {
+    foreach my $market (Finance::Asset::Market::Registry->all) {
         if ($market->display_name) {
             my $msgid = $self->msg_id($market->display_name);
             if ($self->is_id_unique($msgid)) {
@@ -271,7 +273,7 @@ sub add_submarkets {
 
     my $fh = $self->pot_append_fh;
 
-    foreach my $submarket (BOM::Market::SubMarket::Registry->all) {
+    foreach my $submarket (Finance::Asset::SubMarket::Registry->all) {
         if ($submarket->display_name) {
             my $msgid = $self->msg_id($submarket->display_name);
             if ($self->is_id_unique($msgid)) {

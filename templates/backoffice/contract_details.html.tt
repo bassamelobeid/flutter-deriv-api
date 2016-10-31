@@ -8,26 +8,22 @@
         <tr><td colspan=2><input type="submit" name="download" value="Download as CSV file"/></td></tr>
     </table>
 </form>
-[% IF pricing_parameters.size > 0 %]
+
+[% IF pricing_parameters.size AND pricing_parameters.size > 0 %]
         <p><b>LOGIN_ID =  [% contract_details.login_id  %]</b></p>
         <p><b>TRANS_ID = [% contract_details.trans_id  %]</b></p>
         <p><b>SHORT_CODE = [% contract_details.short_code  %]</b></p>
         <p><b>DESCRIPTION = [% contract_details.description  %]</b></p>
         <p><b>CCY = [% contract_details.ccy  %]</b></p>
-        <p><b>ASK_PRICE = [% contract_details.ask_price  %]</b></p>
-        <p><b>BID_PRICE = [% contract_details.bid_price  %]</b></p>
+        <p><b>TRADE_ASK_PRICE = [% contract_details.trade_ask_price  %]</b></p>
+        <p><b>TRADE_BID_PRICE = [% contract_details.trade_bid_price  %]</b></p>
+        <p><b>SLIPPAGE_PRICE = [% contract_details.slippage_price  %]</b></p>
+        <p><b>ORDER_PRICE = [% contract_details.order_price  %]</b></p>
+        <p><b>ORDER_TYPE = [% contract_details.order_type  %]</b></p>
         <p><b>PAYOUT = [% contract_details.payout  %]</b></p>
-        <table id="dtr" border="1" cellpadding="1" cellspacing="0">
-                <tr><b> Contract's ask probability </br></tr>
-                [% FOREACH ask_key =pricing_parameters.ask_probability.keys.sort%]
-                <tr><td>[% ask_key %]</td>
-                    <td> [% pricing_parameters.ask_probability.$ask_key %]</td>
-                </tr>
-                [% END %]
-        </table>
+        <p><b>TICK_BEFORE_TRADE_TIME = [% contract_details.tick_before_trade_time %]</b></p>
           [% FOREACH key =pricing_parameters.keys.sort %]
                <p><table id="dtr" border="1" cellpadding="1" cellspacing="0">
-               [% IF key != 'ask_probability' AND key != 'ask_price' %]
                 <tr><td><b> [% key %] </b></td></tr>
                     [% FOREACH sub_keys = pricing_parameters.$key.keys.sort %]
                          <tr><td>[% sub_keys %]</td>
@@ -41,7 +37,6 @@
                              </tr>
                               [% END %]  
                      [% END %] 
-             [% END %]
            [% END %] 
          </table></p>
 [% END %]

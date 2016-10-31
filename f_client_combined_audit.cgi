@@ -10,7 +10,7 @@ use Date::Utility;
 use Try::Tiny;
 
 use f_brokerincludeall;
-use BOM::Platform::Context;
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Runtime;

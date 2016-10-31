@@ -7,13 +7,17 @@ use open qw[ :encoding(UTF-8) ];
 use f_brokerincludeall;
 use BOM::System::Config;
 use subs::subs_dividend_from_excel_file;
-use BOM::Market::UnderlyingDB;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 use BOM::MarketData::Fetcher::CorporateAction;
 use Bloomberg::FileDownloader;
 use Bloomberg::RequestFiles;
 use BOM::BloombergCalendar;
 use BOM::TentativeEvents;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -23,7 +27,7 @@ my $broker = request()->broker_code;
 my $staff  = BOM::Backoffice::Auth0::can_access(['Quants']);
 
 Bar("Update volatilities");
-my @all_markets = BOM::Market::Registry->instance->all_market_names;
+my @all_markets = Finance::Asset::Market::Registry->instance->all_market_names;
 print get_update_volatilities_form({'all_markets' => \@all_markets});
 
 # Manually update interest rates
@@ -40,7 +44,7 @@ unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::System::Config::node(
         "<font color=red><b>WARNING! You are not on the Master Live Server. Suggest you use these tools on the Master Live Server instead.</b></font><P>";
 }
 
-my $bbdl             = Bloomberg::FileDownloader->new();
+my $bbdl                  = Bloomberg::FileDownloader->new();
 my $directory_listing_url = request()->url_for('backoffice/f_bbdl_list_directory.cgi');
 print '<LI><b>BBDL FTP directory listing<b> - click this button to list the contents of the BBDL servers.';
 print qq~
@@ -123,12 +127,12 @@ print generate_correlations_upload_form({
 
 Bar("Update the news events database");
 
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/economic_event_forms.html.tt',
     {
         ee_upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
     },
-) || die BOM::Platform::Context::template->error;
+) || die BOM::Backoffice::Request::template->error;
 
 Bar("Update the tentative events");
 print BOM::TentativeEvents::generate_tentative_events_form({
@@ -162,14 +166,14 @@ foreach my $underlying_symbol (keys %$list) {
     }
 }
 my $corp_table;
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/corporate_action.html.tt',
     {
         disabled => $disabled,
         monitor  => $monitor
     },
     \$corp_table
-) || die BOM::Platform::Context::template->error;
+) || die BOM::Backoffice::Request::template->error;
 print $corp_table;
 
 code_exit_BO();

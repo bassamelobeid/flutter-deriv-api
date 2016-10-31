@@ -8,8 +8,8 @@ use List::Util qw( min max );
 use Cache::RedisDB;
 use Format::Util::Numbers qw(commas roundnear);
 use BOM::Platform::Runtime;
-use BOM::Platform::CurrencyConverter qw(in_USD);
-use BOM::Platform::LandingCompany::Registry;
+use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+use LandingCompany::Registry;
 
 sub DailyTurnOverReport {
     my ($args, $options) = @_;
@@ -20,7 +20,7 @@ sub DailyTurnOverReport {
     }
 
     my $initial_note   = '(BUY-SELL represents the company profit)';
-    my @all_currencies = BOM::Platform::LandingCompany::Registry->new()->all_currencies;
+    my @all_currencies = LandingCompany::Registry->new()->all_currencies;
     my %rates          = map { $_ => in_USD(1, $_) } @all_currencies;
 
     my %template = (

@@ -5,13 +5,12 @@ use strict;
 
 use CGI::Cookie;
 use CGI::Util;
-use BOM::Platform::Context qw(request);
-
+use BOM::Backoffice::Request qw(request);
 
 sub build_cookies {
     my $args = shift;
 
-    my $staff = $args->{staff};
+    my $staff      = $args->{staff};
     my $auth_token = $args->{auth_token};
 
     my $staff_cookie = CGI::cookie(

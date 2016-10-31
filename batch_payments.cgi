@@ -13,7 +13,7 @@ use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Client;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Context;
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::DualControl;
 use BOM::System::AuditLog;
@@ -24,12 +24,11 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('Batch Credit/Debit to Clients Accounts');
 
-my $cgi               = new CGI;
+my $cgi               = CGI->new;
 my $broker            = request()->broker_code;
 my $clerk             = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $confirm           = $cgi->param('confirm');
 my $preview           = $cgi->param('preview');
-my $payments_csv_fh   = $cgi->upload('payments_csv');
 my $payments_csv_file = $cgi->param('payments_csv_file') || sprintf '/tmp/batch_payments_%d.csv', rand(1_000_000);
 my $skip_validation   = $cgi->param('skip_validation') || 0;
 my $format            = $confirm || $preview || die "either preview or confirm";
@@ -38,7 +37,9 @@ my $now               = Date::Utility->new;
 Bar('Batch Credit/Debit to Clients Accounts');
 
 if ($preview) {
-    open my $fh, ">$payments_csv_file" or die "writing upload: $!";
+    my $payments_csv_fh = $cgi->upload('payments_csv');
+    binmode $payments_csv_fh, ':encoding(UTF-8)';
+    open my $fh, '>:encoding(UTF-8)', $payments_csv_file or die "writing upload: $!";
     while (<$payments_csv_fh>) {
         s/\s*$//;    # remove various combos of unix/windows rec-separators
         printf $fh "$_\n";
@@ -46,7 +47,7 @@ if ($preview) {
     close $fh;
 }
 
-my @payment_lines = Path::Tiny::path($payments_csv_file)->lines;
+my @payment_lines = Path::Tiny::path($payments_csv_file)->lines_utf8;
 
 my ($transtype, $control_code);
 if ($confirm) {

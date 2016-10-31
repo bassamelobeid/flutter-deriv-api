@@ -72,7 +72,7 @@ if (my ($type) = $path =~ /\.(tif|txt|csv|xls|doc|gif|png|bmp|jpg|jpeg|pdf|zip)$
     if (-f -r $full_path) {
         PrintContentType_XSendfile($full_path, (lc($type) eq 'pdf' ? 'application/pdf' : 'application/octet-stream'));
 
-        BOM::Backoffice::Sysinit::code_exit();
+        code_exit_BO();
     } else {
         PrintContentType();
         print "ERROR: cannot open file ($full_path) $!";

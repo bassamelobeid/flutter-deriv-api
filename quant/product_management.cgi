@@ -10,12 +10,14 @@ use JSON qw(from_json to_json);
 use f_brokerincludeall;
 
 use BOM::Platform::Runtime;
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Product::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Offerings qw(get_offerings_with_filter);
 use List::Util qw(first);
 use Digest::MD5 qw(md5_hex);
 use Date::Utility;
 
+use LandingCompany::Registry;
 use BOM::System::Config;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -30,8 +32,10 @@ my $limit_profile  = BOM::System::Config::quants->{risk_profile};
 my %known_profiles = map { $_ => 1 } keys %$limit_profile;
 
 if ($r->param('update_limit')) {
-    my @known_keys = qw(contract_category market submarket underlying_symbol start_type expiry_type barrier_category);
+    my @known_keys = qw(contract_category market submarket underlying_symbol start_type expiry_type barrier_category landing_company);
     my %known_values = map { $_ => [get_offerings_with_filter($_)] } @known_keys;
+    # landing company is not part of offerings object.
+    $known_values{landing_company} = [map { $_->short } LandingCompany::Registry::all()];
     my %ref;
 
     foreach my $key (@known_keys) {
@@ -113,16 +117,15 @@ if ($r->param('delete_client')) {
 
 Bar("Limit Definitions");
 
-my $limit_defs = BOM::System::Config::quants->{risk_profile};
+my $limit_defs          = BOM::System::Config::quants->{risk_profile};
 my $current_definitions = BOM::Product::RiskProfile::get_current_profile_definitions();
 
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/profile_definitions.html.tt',
     {
         definitions => $limit_defs,
         current     => $current_definitions,
-    }) || die BOM::Platform::Context::template->error;
-
+    }) || die BOM::Backoffice::Request::template->error;
 
 Bar("Existing limits");
 
@@ -145,11 +148,11 @@ foreach my $id (keys %$custom_limits) {
     push @output, $output_ref;
 }
 
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/existing_limit.html.tt',
     {
         output => \@output,
-    }) || die BOM::Platform::Context::template->error;
+    }) || die BOM::Backoffice::Request::template->error;
 
 Bar("Custom Client Limits");
 
@@ -185,18 +188,18 @@ foreach my $client_loginid (keys %$custom_client_limits) {
         if @output;
 }
 
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/custom_client_limit.html.tt',
     {
         output => \@client_output,
-    }) || die BOM::Platform::Context::template->error;
+    }) || die BOM::Backoffice::Request::template->error;
 
 Bar("Update Limit");
 
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/update_limit.html.tt',
     {
         url => request()->url_for('backoffice/quant/product_management.cgi'),
-    }) || die BOM::Platform::Context::template->error;
+    }) || die BOM::Backoffice::Request::template->error;
 
 code_exit_BO();
