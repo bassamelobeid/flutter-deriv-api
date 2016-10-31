@@ -51,6 +51,7 @@ sub init {
                 . ' <a href="http://'
                 . localize('homepage') . '</p>'
                 . '</div>';
+            BOM::Backoffice::Request::request_completed();
             exit;
         };
         alarm($timeout);
