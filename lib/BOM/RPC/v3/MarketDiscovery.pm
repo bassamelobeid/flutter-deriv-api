@@ -265,7 +265,7 @@ sub active_symbols {
             push @{$active_symbols}, $desc;
         }
 
-        Cache::RedisDB->set($namespace, $key, $active_symbols, 300 - time % 300);
+        Cache::RedisDB->set($namespace, $key, $active_symbols, 30 - time % 30);
     }
 
     return $active_symbols;
