@@ -374,7 +374,7 @@ sub send_bid {
         _log_exception(send_bid => "$_ (and it should be impossible for this to happen)");
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'pricing error',
-                message_to_client => BOM::Platform::Locale::error_map()->{'pricing error'}});
+                message_to_client => BOM::RPC::v3::Utility::error_map()->{'pricing error'}});
     };
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
@@ -416,7 +416,7 @@ sub send_ask {
         _log_exception(send_ask => $_);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'pricing error',
-                message_to_client => BOM::Platform::Locale::error_map()->{'pricing error'}});
+                message_to_client => BOM::RPC::v3::Utility::error_map()->{'pricing error'}});
     };
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);

@@ -3,26 +3,45 @@ package BOM::RPC::v3::Static;
 use strict;
 use warnings;
 
-use BOM::Platform::Runtime;
 use LandingCompany::Countries;
+
+use BOM::Platform::Runtime;
 use BOM::Platform::Locale;
 use BOM::Platform::Context qw (request);
 use BOM::RPC::v3::Utility;
 
 sub residence_list {
-    my $params = shift;
+    my $residence_countries_list;
 
-    my $residence_list = BOM::Platform::Locale::generate_residence_countries_list();
-    $residence_list = [grep { $_->{value} ne '' } @$residence_list];
-
-    # plus phone_idd
     my $countries = LandingCompany::Countries->instance->countries;
-    foreach (@$residence_list) {
-        my $phone_idd = $countries->idd_from_code($_->{value});
-        $_->{phone_idd} = $phone_idd if $phone_idd;
+    foreach my $country_selection (
+        sort { $a->{translated_name} cmp $b->{translated_name} }
+        map { +{code => $_, translated_name => $countries->localized_code2country($_, request()->language)} } $countries->all_country_codes
+        )
+    {
+        my $country_code = $country_selection->{code};
+        next if $country_code eq '';
+        my $country_name = $country_selection->{translated_name};
+        my $phone_idd    = $countries->idd_from_code($country_code);
+        if (length $country_name > 26) {
+            $country_name = substr($country_name, 0, 26) . '...';
+        }
+
+        my $option = {
+            value => $country_code,
+            text  => $country_name,
+            $phone_idd ? (phone_idd => $phone_idd) : ()};
+
+        # to be removed later - JP
+        if (LandingCompany::Countries->instance->restricted_country($country_code) or $country_code eq 'jp') {
+            $option->{disabled} = 'DISABLED';
+        } elsif (request()->country_code eq $country_code) {
+            $option->{selected} = 'selected';
+        }
+        push @$residence_countries_list, $option;
     }
 
-    return $residence_list;
+    return $residence_countries_list;
 }
 
 sub states_list {
