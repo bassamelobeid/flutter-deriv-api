@@ -74,35 +74,6 @@ payments:
       isa: json_string
       default: '{"jy":"99999"}'
       global: 1
-    virtual:
-      description: "Control parameters for virtual"
-      isa: section
-      contains:
-        minimum_topup_balance:
-          description: 'Minimum balance after which virtual clients can topup'
-          isa: section
-          contains:
-            USD:
-              description: 'for accounts in USD'
-              isa: Int
-              default: 1000
-            JPY:
-              description: 'for Japan accounts in JPY'
-              isa: Int
-              default: 100000
-        topup_amount:
-          description: 'The amount by which we want to topup the virtual account'
-          isa: section
-          contains:
-            USD:
-              description: 'for accounts in USD'
-              isa: Int
-              default: 10000
-            JPY:
-              description: 'for Japan accounts in JPY'
-              isa: Int
-              default: 1000000
-
 quants:
   description: "Various quants' parameters"
   isa: section
