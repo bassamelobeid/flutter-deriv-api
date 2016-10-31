@@ -96,7 +96,6 @@ my $tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $amount = 10000;
 
-
 # start test topup_virtual
 my $method = 'topup_virtual';
 my $params = {

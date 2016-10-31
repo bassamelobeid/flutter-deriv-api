@@ -306,7 +306,7 @@ sub get_limits {
     }
 
     my $landing_company = LandingCompany::Registry::get_by_broker($client->broker)->short;
-    my $wl_config       = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->withdrawal_limits->$landing_company;
+    my $wl_config = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->{withdrawal_limits}->{$landing_company};
 
     my $limit = +{
         account_balance => $client->get_limit_for_account_balance,
