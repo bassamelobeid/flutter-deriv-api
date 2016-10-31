@@ -237,7 +237,7 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
         $date_pricing++;
         $date_start++;
 
-        $mock->unmock('spot');
+        $mock->unmock('spot_tick');
     }
 }
 
