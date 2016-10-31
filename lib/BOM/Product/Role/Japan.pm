@@ -126,11 +126,12 @@ sub _subvalidate_single_barrier {
 
         unless ($matched_barrier) {
 
-            print "####### \n";
-            print ">>>> Available barrier: " . Dumper(\@available_barriers) . "\n";
-            print ">>>> Expired barrier: " . Dumper(\%expired_barriers) . "\n";
-            print ">>>> Abs barrier: " . $self->barrier->as_absolute . "\n";
-            print "<<<< \n";
+            print STDERR "####### AvailableBarrier: "
+                . Dumper(\@available_barriers)
+                . "  ExpiredBarrier: "
+                . Dumper(\%expired_barriers)
+                . " AbsBarrier: "
+                . $self->barrier->as_absolute . "\n";
 
             return {
                 message => 'Invalid barrier['
@@ -170,12 +171,14 @@ sub _subvalidate_double_barrier {
         @filtered;
         unless ($matched_barrier) {
 
-            print "####### \n";
-            print ">>>> Available barrier: " . Dumper(\@available_barriers) . "\n";
-            print ">>>> Expired barrier: " . Dumper(\@expired_barriers) . "\n";
-            print ">>>> Abs low barrier: " . $self->low_barrier->as_absolute . "\n";
-            print ">>>> Abs high barrier: " . $self->high_barrier->as_absolute . "\n";
-            print "<<<< \n ";
+            print "####### AvailableBarrier: "
+                . Dumper(\@available_barriers)
+                . " ExpiredBarrier: "
+                . Dumper(\@expired_barriers)
+                . " LowBarrier: "
+                . $self->low_barrier->as_absolute
+                . " HighBarrier: "
+                . $self->high_barrier->as_absolute . "\n";
 
             return {
                 message => 'Invalid barriers['
