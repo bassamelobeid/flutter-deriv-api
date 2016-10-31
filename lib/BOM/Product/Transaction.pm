@@ -12,6 +12,7 @@ use Date::Utility;
 use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
 use Format::Util::Numbers qw(commas roundnear to_monetary_number_format);
 use Try::Tiny;
+use YAML::XS qw(LoadFile);
 
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Runtime;
@@ -1613,9 +1614,10 @@ sub __validate_iom_withdrawal_limit {
     return if ($landing_company->country ne 'Isle of Man');
 
     my $landing_company_short = $landing_company->short;
-    my $numdays               = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->$landing_company_short->for_days;
-    my $numdayslimit          = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->$landing_company_short->limit_for_days;
-    my $lifetimelimit         = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->$landing_company_short->lifetime_limit;
+    my $withdrawal_limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->withdrawal_limits;
+    my $numdays               = $withdrawal_limits->$landing_company_short->for_days;
+    my $numdayslimit          = $withdrawal_limits->$landing_company_short->limit_for_days;
+    my $lifetimelimit         = $withdrawal_limits->$landing_company_short->lifetime_limit;
 
     if ($client->client_fully_authenticated) {
         $numdayslimit  = 99999999;
