@@ -48,4 +48,9 @@ sub _test_schema {
     return;
 }
 
+sub is_websocket {
+    my ($self) = @_;
+    return ref($self) =~ /websocket/i;
+}
+
 1;

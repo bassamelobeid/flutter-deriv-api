@@ -145,6 +145,17 @@ sub run {
             $reset = $1;
             next;
         }
+        if ($lang || !$test_app || $reset) {
+            my $new_lang = $lang || $last_lang;
+            ok(defined($new_lang), 'have a defined language') or diag "missing [LANG] tag in config before tests?";
+            ok(length($new_lang),  'have a valid language')   or diag "invalid [LANG] tag in config or broken test?";
+            $test_app = BOM::Test::App->new({
+                    language => $new_lang,
+                    app      => $args->{test_app}});
+            $last_lang = $new_lang;
+            $lang      = '';
+            $reset     = '';
+        }
 
         my $fail;
         if ($line =~ s/^!//) {
@@ -152,11 +163,11 @@ sub run {
         }
 
         my $start_stream_id;
-        if ($line =~ s/^\{start_stream:(.+?)\}//) {
+        if ($test_app->is_websocket && $line =~ s/^\{start_stream:(.+?)\}//) {
             $start_stream_id = $1;
         }
         my $test_stream_id;
-        if ($line =~ s/^\{test_last_stream_message:(.+?)\}//) {
+        if ($test_app->is_websocket && $line =~ s/^\{test_last_stream_message:(.+?)\}//) {
             $test_stream_id = $1;
         }
 
@@ -183,17 +194,6 @@ sub run {
             my $req_params = JSON::from_json($content);
 
             die 'wrong stream parameters' if $start_stream_id && !$req_params->{subscribe};
-            if ($lang || !$test_app || $reset) {
-                my $new_lang = $lang || $last_lang;
-                ok(defined($new_lang), 'have a defined language') or diag "missing [LANG] tag in config before tests?";
-                ok(length($new_lang),  'have a valid language')   or diag "invalid [LANG] tag in config or broken test?";
-                $test_app = BOM::Test::App->new({
-                        language => $new_lang,
-                        app      => $args->{test_app}});
-                $last_lang = $new_lang;
-                $lang      = '';
-                $reset     = '';
-            }
 
             $content = read_file($suite_schema_path . $receive_file);
             $content = _get_values($content, @template_func);
@@ -245,27 +245,6 @@ sub _get_values {
     return $content;
 }
 
-sub _test_schema {
-    my ($schema_file, $content, $data, $fail) = @_;
-
-    my $validator = JSON::Schema->new(JSON::from_json($content));
-    my $result    = $validator->validate($data);
-    if ($fail) {
-        ok(!$result, "$schema_file response is valid while it must fail.");
-        if ($result) {
-            diag Dumper(\$data);
-            diag " - $_" foreach $result->errors;
-        }
-    } else {
-        ok $result, "$schema_file response is valid";
-        if (not $result) {
-            diag Dumper(\$data);
-            diag " - $_" foreach $result->errors;
-        }
-    }
-    return;
-}
-
 # fetch the token related to a specific email
 # e.g. _get_token('test@binary.com')
 sub _get_token {
@@ -312,21 +291,6 @@ sub _set_allow_omnibus {
     $client->save();
 
     return $r;
-}
-
-sub store_stream_data {
-    my ($streams, $tx, $result) = @_;
-    my $call_name;
-    for my $stream_id (keys %$streams) {
-        my $stream = $streams->{$stream_id};
-        $call_name = $stream->{call_name} if exists $result->{$stream->{call_name}};
-    }
-    return unless $call_name;
-    for my $stream_id (keys %$streams) {
-        push @{$streams->{$stream_id}->{stream_data}}, $result
-            if $result->{$call_name}->{id} && $result->{$call_name}->{id} eq $streams->{$stream_id}->{id};
-    }
-    return;
 }
 
 sub _setup_market_data {
