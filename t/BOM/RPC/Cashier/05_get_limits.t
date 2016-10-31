@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::BOM::RPC::Client;
+use BOM::Test::RPC::Client;
 use BOM::RPC::v3::Cashier;
 use Test::Most;
 use Test::Mojo;
@@ -13,7 +13,7 @@ use Format::Util::Numbers qw(roundnear);
 use BOM::Product::RiskProfile;
 use utf8;
 
-my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 my $method = 'get_limits';
 my $params = {token => '12345'};

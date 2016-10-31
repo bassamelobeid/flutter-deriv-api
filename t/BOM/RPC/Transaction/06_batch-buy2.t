@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use utf8;
-use Test::BOM::RPC::Client;
+use BOM::Test::RPC::Client;
 use Test::More;
 use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -24,7 +24,7 @@ my $loginid = $client->loginid;
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 $client->deposit_virtual_funds;
-my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',

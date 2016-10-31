@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::BOM::RPC::Client;
+use BOM::Test::RPC::Client;
 use Test::Most;
 use Test::Mojo;
 use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
@@ -44,7 +44,7 @@ subtest 'check_login_vrtc' => sub {
 
 my $new_password = 'jskjD8292923';
 
-my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 # reset password vrtc
 my $method = 'reset_password';

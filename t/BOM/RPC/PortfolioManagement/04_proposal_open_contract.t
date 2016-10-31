@@ -9,7 +9,7 @@ use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use DateTime;
 
-use Test::BOM::RPC::Client;
+use BOM::Test::RPC::Client;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -39,7 +39,7 @@ my @params = (
     });
 
 $t = Test::Mojo->new('BOM::RPC');
-$rpc_ct = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+$rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
