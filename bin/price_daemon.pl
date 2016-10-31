@@ -115,7 +115,6 @@ while (1) {
             my $rev = BOM::Platform::Runtime->instance->app_config->check_for_update;
             my $age = Time::HiRes::time - $rev;
             warn "Config age is >90s - $age\n" if $age > 90;
-            die "Config age is >300s - $age - is bin/update_appconfig_rev.pl running?\n" if $age > 300;
             $tv_appconfig = $tv_now;
         }
 
