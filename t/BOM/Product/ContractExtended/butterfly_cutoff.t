@@ -134,7 +134,7 @@ sub _sample_surface {
     my %override_smile = @_;
 
     my $surface = Quant::Framework::VolSurface::Delta->new(
-        underlying_config => $underlying->config,
+        underlying        => $underlying,
         chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader,
         chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer,
         recorded_date     => $bet_start,
