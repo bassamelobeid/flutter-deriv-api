@@ -110,7 +110,7 @@ while (1) {
             {tags => ['tag:' . $internal_ip]});
         $tv = $tv_now;
 
-        if (Time::HiRes::tv_interval($tv_appconfig, $tv_now) >= 180) {
+        if (Time::HiRes::tv_interval($tv_appconfig, $tv_now) >= 15) {
             BOM::Platform::Runtime->instance->app_config->check_for_update;
             $tv_appconfig = $tv_now;
         }
