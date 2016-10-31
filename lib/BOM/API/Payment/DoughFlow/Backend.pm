@@ -5,13 +5,15 @@ package BOM::API::Payment::DoughFlow::Backend;
 use Moo;
 with 'BOM::API::Payment::Role::Plack';
 
-use BOM::Platform::Runtime;
-use BOM::Database::DataMapper::Client;
 use Date::Utility;
 use Guard;
+use Try::Tiny;
+
+use BOM::Platform::Runtime;
+use BOM::Database::DataMapper::Client;
 use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Platform::Client::Utility;
-use Try::Tiny;
+use BOM::Platform::Client::IDAuthentication;
 
 # one of deposit, withdrawal
 has 'type' => (
@@ -219,6 +221,9 @@ sub write_transaction_line {
         }
         $trx = $client->payment_doughflow(%payment_args);
     }
+
+    my $fdp = $client->is_first_deposit_pending;
+    BOM::Platform::Client::IDAuthentication->new(client => $client)->run_authentication if $fdp;
 
     if ($fee) {
         my $fee_trx = $client->payment_payment_fee(
