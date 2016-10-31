@@ -171,7 +171,7 @@ sub _subvalidate_double_barrier {
         @filtered;
         unless ($matched_barrier) {
 
-            print "####### AvailableBarrier: "
+            print STDERR "####### AvailableBarrier: "
                 . Dumper(\@available_barriers)
                 . " ExpiredBarrier: "
                 . Dumper(\@expired_barriers)
