@@ -177,11 +177,11 @@ sub run {
             if $raw_volsurface->{recorded_date}->epoch >= $rollover_date->epoch
             and $raw_volsurface->{recorded_date}->epoch <= $one_hour_after_rollover->epoch;
         my $volsurface = Quant::Framework::VolSurface::Delta->new({
-            underlying_config => $underlying->config,
-            recorded_date     => $raw_volsurface->{recorded_date},
-            surface           => $raw_volsurface->{surface},
-            chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
+            underlying       => $underlying,
+            recorded_date    => $raw_volsurface->{recorded_date},
+            surface          => $raw_volsurface->{surface},
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         });
 
         if (defined $volsurface and $volsurface->is_valid and $self->passes_additional_check($volsurface)) {
@@ -229,7 +229,7 @@ sub passes_additional_check {
     # More generally, we don't want to update if we won't trade on the effective date,
     # for the same reasons. This is likely mostly partially covered by some of the above,
     # but I am sitting here fixing this on Christmas, so I might be missing something.
-    my $underlying         = create_underlying($volsurface->underlying_config->symbol);
+    my $underlying         = create_underlying($volsurface->underlying->symbol);
     my $recorded_date      = $volsurface->recorded_date;
     my $friday_after_close = ($recorded_date->day_of_week == 5 and not $underlying->calendar->is_open_at($recorded_date));
     my $wont_open          = not $underlying->calendar->trades_on($volsurface->effective_date);

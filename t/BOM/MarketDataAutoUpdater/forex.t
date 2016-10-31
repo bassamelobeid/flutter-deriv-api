@@ -62,7 +62,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 Quant::Framework::Utils::Test::create_doc(
     'volsurface_delta',
     {
-        underlying_config => create_underlying($_)->config,
+        underlying        => create_underlying($_),
         chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader,
         chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer,
         recorded_date     => Date::Utility->new,
@@ -96,12 +96,12 @@ my $data = {
     },
 };
 
-my $usdjpy_config = create_underlying('frxUSDJPY')->config;
+my $usdjpy = create_underlying('frxUSDJPY');
 
 my $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        underlying_config => $usdjpy_config,
+        underlying        => $usdjpy,
         surface           => $data,
         recorded_date     => Date::Utility->new(time - (4 * 3600 + 1)),
     });
@@ -150,7 +150,7 @@ $data = {
 $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        underlying_config => $usdjpy_config,
+        underlying        => $usdjpy,
         recorded_date     => Date::Utility->new(time - 7199),
         surface           => $data
     });
@@ -171,7 +171,7 @@ $clone->{14}->{smile}->{25} = 1.3;
 $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        underlying_config => $usdjpy_config,
+        underlying        => $usdjpy,
         recorded_date     => Date::Utility->new(time - 7199),
         surface           => $clone,
         save              => 0,
@@ -195,7 +195,7 @@ subtest 'big difference' => sub {
 $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        underlying_config => $usdjpy_config,
+        underlying        => $usdjpy,
         recorded_date     => Date::Utility->new(time - 7199),
     });
 
@@ -245,7 +245,7 @@ subtest "Friday after close, weekend, won't open check." => sub {
         my $surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'volsurface_delta',
             {
-                underlying_config => $usdjpy_config,
+                underlying        => $usdjpy,
                 recorded_date     => Date::Utility->new($details->{datetime}),
             });
 
