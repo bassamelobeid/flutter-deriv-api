@@ -77,21 +77,9 @@ sub validate_payment {
 
         my $lc = $self->landing_company->short;
         my $lc_limits;
-        my $withdrawal_limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->withdrawal_limits;
-        #Kaveh said we should refacoted ....withdrawal_limits->$lc to this
-        if ($lc eq 'costarica') {
-            $lc_limits = $withdrawal_limits->costarica;
-        } elsif ($lc eq 'iom') {
-            $lc_limits = $withdrawal_limits->iom;
-        } elsif ($lc eq 'malta') {
-            $lc_limits = $withdrawal_limits->malta;
-        } elsif ($lc eq 'maltainvest') {
-            $lc_limits = $withdrawal_limits->maltainvest;
-        } elsif ($lc eq 'japan') {
-            $lc_limits = $withdrawal_limits->japan;
-        } else {
-            die "Invalid landing company - $lc\n";
-        }
+        my $withdrawal_limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->{withdrawal_limits};
+        $lc_limits = $withdrawal_limits->{$lc};
+        die "Invalid landing company - $lc\n" unless $lc_limits;
 
         # for CR & JP, only check for lifetime limits (in client's currency)
         if ($lc eq 'costarica' or $lc eq 'japan') {
@@ -104,18 +92,18 @@ sub validate_payment {
                 )->[0]->amount
                 || 0;
 
-            my $wd_left = $lc_limits->lifetime_limit - $wd_epoch;
+            my $wd_left = $lc_limits->{lifetime_limit} - $wd_epoch;
 
             # avoids obscure rounding errors after currency conversion
             if ($absamt > $wd_left + 0.001) {
                 die sprintf "Withdrawal amount [%s %.2f] exceeds withdrawal limit [%s %.2f].\n", $currency, $absamt, $currency, $wd_left;
             }
         } else {
-            my $for_days = $lc_limits->for_days;
+            my $for_days = $lc_limits->{for_days};
             my $since = DateTime->now->subtract(days => $for_days);
 
-            my $wd_eur_since_limit = $lc_limits->limit_for_days;
-            my $wd_eur_epoch_limit = $lc_limits->lifetime_limit;
+            my $wd_eur_since_limit = $lc_limits->{limit_for_days};
+            my $wd_eur_epoch_limit = $lc_limits->{lifetime_limit};
 
             my %wd_query = (
                 amount               => {lt => 0},
