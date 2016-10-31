@@ -18,7 +18,7 @@ sub test_schema {
     my $c = BOM::Test::RPC::Client->new(ua => $self->{t}->app->ua);
     my $result = $c->call_ok(@$req_params)->result;
 
-    $self->_test_schema($result, $expected_json_schema, $descr);
+    $self->_test_schema($result, $expected_json_schema, $descr, $should_be_failed);
     return;
 }
 

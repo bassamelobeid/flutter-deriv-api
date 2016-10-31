@@ -35,7 +35,7 @@ sub test_schema {
         next;
     }
 
-    $self->_test_schema($result, $expected_json_schema, $descr);
+    $self->_test_schema($result, $expected_json_schema, $descr, $should_be_failed);
 
     return $result;
 }
@@ -49,7 +49,7 @@ sub test_schema_last_stream_message {
     my @stream_data = @{$self->{streams}->{$stream_id}->{stream_data} || []};
     $result = $stream_data[-1] if @stream_data;
 
-    $self->_test_schema($result, $expected_json_schema, $descr);
+    $self->_test_schema($result, $expected_json_schema, $descr, $should_be_failed);
     return;
 }
 
