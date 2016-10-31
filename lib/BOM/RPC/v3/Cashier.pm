@@ -16,6 +16,7 @@ use Format::Util::Numbers qw(roundnear);
 use String::UTF8::MD5;
 use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
+use YAML::XS qw(LoadFile);
 
 use LandingCompany::Registry;
 use LandingCompany::Countries;
@@ -305,7 +306,7 @@ sub get_limits {
     }
 
     my $landing_company = LandingCompany::Registry::get_by_broker($client->broker)->short;
-    my $wl_config       = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->$landing_company;
+    my $wl_config       = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->withdrawal_limits->$landing_company;
 
     my $limit = +{
         account_balance => $client->get_limit_for_account_balance,
