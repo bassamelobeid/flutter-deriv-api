@@ -15,6 +15,7 @@ use LWP::Simple;
 use BOM::Platform::Runtime;
 use DBIx::TransactionManager::Distributed qw(txn);
 use List::Util qw(first);
+use Time::HiRes ();
 
 my $internal_ip     = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 my $workers         = 4;
@@ -111,7 +112,9 @@ while (1) {
         $tv = $tv_now;
 
         if (Time::HiRes::tv_interval($tv_appconfig, $tv_now) >= 15) {
-            BOM::Platform::Runtime->instance->app_config->check_for_update;
+            my $rev = BOM::Platform::Runtime->instance->app_config->check_for_update;
+            my $age = Time::HiRes::time - $rev;
+            warn "Config age is >90s - $age\n" if $age > 90;
             $tv_appconfig = $tv_now;
         }
 
