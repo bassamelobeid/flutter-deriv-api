@@ -1265,7 +1265,8 @@ sub topup_virtual {
     }
 
     my $currency = $client->default_account->currency_code;
-    if ($client->default_account->balance > BOM::Platform::Runtime->instance->app_config->payments->virtual->minimum_topup_balance->$currency) {
+    my $minimum_topup_balance = $currency eq 'JPY' ? 100000 : 1000;
+    if ($client->default_account->balance > $minimum_topup_balance) {
         return $error_sub->(localize('Your balance is higher than the permitted amount.'));
     }
 
