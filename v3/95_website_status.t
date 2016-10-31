@@ -23,6 +23,9 @@ BOM::System::Chronicle::set('app_settings', 'binary', {global => {cgi => {terms_
 
 is BOM::System::Chronicle::get('app_settings', 'binary')->{global}->{cgi}->{terms_conditions_version}, $updated_tcv, 'Chronickle should be updated';
 
+# let's force App-config refresh
+my $time_mock =  Test::MockModule->new('App::Config::Chronicle');
+$time_mock->mock('refresh_interval', sub { 0});
 $t = $t->send_ok({json => {website_status => 1}})->message_ok;
 $res = decode_json($t->message->[1]);
 
