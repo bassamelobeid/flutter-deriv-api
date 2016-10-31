@@ -392,11 +392,6 @@ sub payment_doughflow {
     $account->save(cascade => 1);
     $trx->load;    # to re-read 'now' timestamps
 
-    if ($action_type eq 'deposit') {
-        stats_count('business.usd_deposit.cashier', int(in_USD($amount, $currency) * 100));
-        stats_inc('business.cashier');
-    }
-
     return $trx;
 }
 
