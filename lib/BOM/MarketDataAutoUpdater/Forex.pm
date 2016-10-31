@@ -177,11 +177,11 @@ sub run {
             if $raw_volsurface->{recorded_date}->epoch >= $rollover_date->epoch
             and $raw_volsurface->{recorded_date}->epoch <= $one_hour_after_rollover->epoch;
         my $volsurface = Quant::Framework::VolSurface::Delta->new({
-            underlyin         => $underlying,
-            recorded_date     => $raw_volsurface->{recorded_date},
-            surface           => $raw_volsurface->{surface},
-            chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
+            underlying       => $underlying,
+            recorded_date    => $raw_volsurface->{recorded_date},
+            surface          => $raw_volsurface->{surface},
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         });
 
         if (defined $volsurface and $volsurface->is_valid and $self->passes_additional_check($volsurface)) {
