@@ -53,4 +53,9 @@ sub is_websocket {
     return ref($self) =~ /websocket/i;
 }
 
+sub adjust_req_params {
+    my ($self, $req_params, $args) = @_;
+    return $req_params;
+}
+
 1;

@@ -193,6 +193,8 @@ sub run {
             $content = _get_values($content, @template_func);
             my $req_params = JSON::from_json($content);
 
+            $req_params = $test_app->adjust_req_params($req_params, {language => $last_lang});
+
             die 'wrong stream parameters' if $start_stream_id && !$req_params->{subscribe};
 
             $content = read_file($suite_schema_path . $receive_file);

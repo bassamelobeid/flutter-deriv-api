@@ -22,4 +22,10 @@ sub test_schema {
     return;
 }
 
+sub adjust_req_params {
+    my ($self, $params, $args) = @_;
+    $params->[1]->{language} = $args->{language};
+    return $params;
+}
+
 1;
