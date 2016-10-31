@@ -4,6 +4,7 @@ use warnings;
 use Test::Most tests => 9;
 use File::Spec;
 use JSON qw(decode_json);
+use YAML::XS qw(LoadFile);
 
 use Test::MockObject::Extends;
 use Format::Util::Numbers qw(roundnear);

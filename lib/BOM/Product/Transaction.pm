@@ -1614,7 +1614,7 @@ sub __validate_iom_withdrawal_limit {
     return if ($landing_company->country ne 'Isle of Man');
 
     my $landing_company_short = $landing_company->short;
-    my $withdrawal_limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->{withdrawal_limits};
+    my $withdrawal_limits     = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->{withdrawal_limits};
     my $numdays               = $withdrawal_limits->{$landing_company_short}->{for_days};
     my $numdayslimit          = $withdrawal_limits->{$landing_company_short}->{limit_for_days};
     my $lifetimelimit         = $withdrawal_limits->{$landing_company_short}->{lifetime_limit};
