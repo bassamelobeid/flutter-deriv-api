@@ -51,7 +51,7 @@ subtest 'suspend on Japan' => sub {
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy(['frxUSDJPY']);
     LandingCompany::Offerings::_flush_offerings();
     $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
-    @u = get_offerings_with_filter(
+    @u             = get_offerings_with_filter(
         $offerings_cfg,
         'underlying_symbol',
         {
