@@ -51,7 +51,6 @@ sub init {
                 . ' <a href="http://'
                 . localize('homepage') . '</p>'
                 . '</div>';
-            BOM::Backoffice::Request::request_completed();
             exit;
         };
         alarm($timeout);
@@ -122,11 +121,6 @@ sub log_bo_access {
     Path::Tiny::path("/var/log/fixedodds/staff-$staffname.log")->append_utf8(Date::Utility->new->datetime . " $s $l\n");
 
     return;
-}
-
-sub code_exit {
-    BOM::Backoffice::Request::request_completed();
-    exit 0;
 }
 
 1;
