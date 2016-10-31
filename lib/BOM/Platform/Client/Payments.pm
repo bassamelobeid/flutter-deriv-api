@@ -9,6 +9,7 @@ use Try::Tiny;
 use DateTime;
 use List::Util;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_count);
+use YAML::XS qw(LoadFile);
 
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 
@@ -76,7 +77,7 @@ sub validate_payment {
 
         my $lc = $self->landing_company->short;
         my $lc_limits;
-        my $withdrawal_limits = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits;
+        my $withdrawal_limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->withdrawal_limits;
         #Kaveh said we should refacoted ....withdrawal_limits->$lc to this
         if ($lc eq 'costarica') {
             $lc_limits = $withdrawal_limits->costarica;
