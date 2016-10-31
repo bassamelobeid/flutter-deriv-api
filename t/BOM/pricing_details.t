@@ -20,7 +20,7 @@ foreach my $rd ($now - 5 .. $now) {
         'volsurface_delta',
         {
             recorded_date     => Date::Utility->new($rd),
-            underlying_config => $u->config
+            underlying        => $u
         });
 }
 
