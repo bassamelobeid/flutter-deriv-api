@@ -94,7 +94,7 @@ my $contract = produce_contract({
 subtest 'IOM withdrawal limit' => sub {
     plan tests => 5;
 
-    my $withdraw_limit = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->withdrawal_limits->iom->limit_for_days;
+    my $withdraw_limit = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->{withdrawal_limits}->{iom}->{limit_for_days};
 
     $client->payment_free_gift(
         currency     => 'GBP',
