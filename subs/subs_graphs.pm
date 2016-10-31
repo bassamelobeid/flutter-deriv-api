@@ -1,4 +1,6 @@
-use strict 'vars';
+use strict;
+use warnings;
+
 use open qw[ :encoding(UTF-8) ];
 use POSIX;
 use Path::Tiny;
