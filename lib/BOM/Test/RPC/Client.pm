@@ -30,8 +30,7 @@ sub _build_client {
 }
 
 sub call_ok {
-    my $self = shift;
-    my ($method, $req_params, $description) = @_;
+    my ($self, $method, $req_params, $description) = @_;
 
     $description ||= "called /$method";
 
@@ -131,7 +130,8 @@ sub _tcall {
 sub _test {
     my ($self, $name, @args) = @_;
 
-    local $Test::Builder::Level += 3;
+    my $test_level = $Test::Builder::Level;
+    local $Test::Builder::Level = $test_level + 3;
     Test::More->can($name)->(@args);
     return;
 }
