@@ -105,8 +105,13 @@ sub _init {
                     },
                     'commission' => {
                         'adjustment' => {
-                            'global_scaling' => '100',
-                        }}}
+                            'global_scaling' => {
+                                'forex'       => '100',
+                                'indices'     => '100',
+                                'commodities' => '100',
+                                'stocks'      => '100',
+                                'volidx'      => '100',
+                            }}}}
             },
             '_rev' => time
         });
