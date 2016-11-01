@@ -219,7 +219,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
 				</td>
 				<td align="center" width="50%">
 					<p><b>BET PRICE OVER TIME</b></p>
-					<form action="~ . request()->url_for('backoffice/quant/pricing/bpot.cgi') . qq~" method="post"><font size=2>
+					<form action="~ . request()->url_for('backoffice/quant/pricing/bpot.cgi', {broker => $broker}) . qq~" method="post"><font size=2>
 						<input type="submit" value="BET PRICE OVER TIME">
 					</font></form>
 				</td>
