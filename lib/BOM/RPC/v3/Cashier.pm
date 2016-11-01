@@ -16,6 +16,7 @@ use Format::Util::Numbers qw(roundnear);
 use String::UTF8::MD5;
 use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
+use YAML::XS qw(LoadFile);
 
 use LandingCompany::Registry;
 use LandingCompany::Countries;
@@ -40,6 +41,8 @@ use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::DataMapper::Client;
 use BOM::Database::ClientDB;
+
+my $payment_limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'));
 
 sub cashier {
     my $params = shift;
@@ -305,7 +308,7 @@ sub get_limits {
     }
 
     my $landing_company = LandingCompany::Registry::get_by_broker($client->broker)->short;
-    my $wl_config       = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->$landing_company;
+    my $wl_config       = $payment_limits->{withdrawal_limits}->{$landing_company};
 
     my $limit = +{
         account_balance => $client->get_limit_for_account_balance,
@@ -315,9 +318,9 @@ sub get_limits {
 
     $limit->{market_specific} = BOM::Product::RiskProfile::get_current_profile_definitions($client);
 
-    my $numdays       = $wl_config->for_days;
-    my $numdayslimit  = $wl_config->limit_for_days;
-    my $lifetimelimit = $wl_config->lifetime_limit;
+    my $numdays       = $wl_config->{for_days};
+    my $numdayslimit  = $wl_config->{limit_for_days};
+    my $lifetimelimit = $wl_config->{lifetime_limit};
 
     if ($client->client_fully_authenticated) {
         $numdayslimit  = 99999999;
@@ -1263,7 +1266,8 @@ sub topup_virtual {
     }
 
     my $currency = $client->default_account->currency_code;
-    if ($client->default_account->balance > BOM::Platform::Runtime->instance->app_config->payments->virtual->minimum_topup_balance->$currency) {
+    my $minimum_topup_balance = $currency eq 'JPY' ? 100000 : 1000;
+    if ($client->default_account->balance > $minimum_topup_balance) {
         return $error_sub->(localize('Your balance is higher than the permitted amount.'));
     }
 
