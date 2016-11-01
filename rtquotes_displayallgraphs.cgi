@@ -289,7 +289,8 @@ elsif (scalar @overlay and not $merge) {
                     $override_findfullfeed = $p;
                 }
 
-                my $fffile = $underlying->fullfeed_file($daytochart, $override_findfullfeed);
+                my $ul_info = BOM::Market::Info->new(underlying => $underlying);
+                my $fffile = $ul_info->fullfeed_file($daytochart, $override_findfullfeed);
 
                 if (-e $fffile) {
                     $msg .= `wc -l $fffile` . '<br>';
