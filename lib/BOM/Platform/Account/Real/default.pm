@@ -19,7 +19,6 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Client;
 use BOM::Platform::Account;
-use BOM::Database::Rose::DB::StringifyRules;
 
 sub validate {
     my $args = shift;
