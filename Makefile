@@ -1,8 +1,7 @@
 M=[ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
 export PERL5OPT=-MTest::FailWarnings=-allow_deps,1
 D=$(CURDIR)
-I=-I$D/lib -I$D -I$D/t -I/home/git/regentmarkets/bom-websocket-tests/lib
-P=/etc/rmg/bin/prove --timer -r $I
+P=/etc/rmg/bin/prove --timer -rv
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 test:
