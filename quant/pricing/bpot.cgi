@@ -25,6 +25,8 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 use BOM::Platform::Client;
+use LandingCompany::Registry;
+
 PrintContentType();
 BrokerPresentation('Bet Price Over Time');
 BOM::Backoffice::Auth0::can_access(['Quants']);
@@ -33,11 +35,21 @@ Bar("Bet Parameters");
 
 my $bet = do {
     my $contract_object = '';
-    my ($loginid, $shortcode, $currency) = map { request()->param($_) } qw(loginid shortcode currency);
-    if ($loginid and $shortcode and $currency) {
+    my ($loginid, $shortcode, $currency, $broker) = map { request()->param($_) } qw(loginid shortcode currency broker);
+
+    my $landing_company;
+
+    if ($broker) {
+        $landing_company = LandingCompany::Registry::get_by_broker($broker)->short;
+    } elsif ($loginid) {
         my $client = BOM::Platform::Client::get_instance({'loginid' => $loginid});
+        $landing_company = $client->landing_company->short;
+    }
+
+    if ($landing_company and $shortcode and $currency) {
+
         my $contract_parameters = shortcode_to_parameters($shortcode, $currency);
-        $contract_parameters->{landing_company} = $client->landing_company->short;
+        $contract_parameters->{landing_company} = $landing_company;
         $contract_object = produce_contract($contract_parameters);
     }
     $contract_object;
