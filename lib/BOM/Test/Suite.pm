@@ -152,7 +152,7 @@ sub run {
             $test_app = BOM::Test::App->new({
                     language => $new_lang,
                     app      => $args->{test_app}});
-            $last_lang = $new_lang;
+            $test_app->{language} = $last_lang = $new_lang;
             $lang      = '';
             $reset     = '';
         }
@@ -187,7 +187,7 @@ sub run {
             ($send_file, $receive_file, @template_func) = split(',', $line);
 
             $send_file =~ /^(.*)\//;
-            my $call = $1;
+            my $call = $test_app->{call} = $1;
 
             my $content = read_file($suite_schema_path . $send_file);
             $content = _get_values($content, @template_func);
@@ -201,7 +201,7 @@ sub run {
             $content = _get_values($content, @template_func);
 
             my $result = $test_app->test_schema($req_params, $content, $receive_file, $fail);
-            $response->{$call} = $result->{$call};
+            $response->{$call} = $result;
 
             if ($start_stream_id) {
                 $test_app->start_stream($start_stream_id, $result->{$call}->{id}, $call);

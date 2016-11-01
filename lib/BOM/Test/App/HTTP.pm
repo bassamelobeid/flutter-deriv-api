@@ -18,14 +18,14 @@ sub test_schema {
     my $c = BOM::Test::RPC::Client->new(ua => $self->{t}->app->ua);
     my $result = $c->call_ok(@$req_params)->result;
 
-    $self->_test_schema($result, $expected_json_schema, $descr, $should_be_failed);
-    return;
+    return $self->_test_schema($result, $expected_json_schema, $descr, $should_be_failed);
 }
 
 sub adjust_req_params {
-    my ($self, $params, $args) = @_;
-    $params->[1]->{language} = $args->{language};
-    return $params;
+    my ($self, $params) = @_;
+    my $adjusted_params = [$self->{call}, $params];
+    $adjusted_params->[1]->{language} = $self->{language} if $self->{language};
+    return $adjusted_params;
 }
 
 1;

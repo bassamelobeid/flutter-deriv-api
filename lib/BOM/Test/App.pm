@@ -45,7 +45,7 @@ sub _test_schema {
             diag " - $_" foreach $valid->errors;
         }
     }
-    return;
+    return $result;
 }
 
 sub is_websocket {
@@ -54,7 +54,7 @@ sub is_websocket {
 }
 
 sub adjust_req_params {
-    my ($self, $req_params, $args) = @_;
+    my ($self, $req_params) = @_;
     return $req_params;
 }
 
