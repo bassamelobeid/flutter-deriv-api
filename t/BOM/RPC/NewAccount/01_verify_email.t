@@ -7,12 +7,14 @@ use Test::MockModule;
 
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
+use BOM::System::Password;
 
 use Test::BOM::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::RPC::v3::Utility;
 use BOM::Database::Model::AccessToken;
 use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
+use BOM::Platform::User;
 
 use utf8;
 

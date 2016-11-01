@@ -15,6 +15,8 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Database::Model::AccessToken;
 use BOM::RPC::v3::Utility;
+use BOM::System::Password;
+use BOM::Platform::User;
 
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
@@ -409,9 +411,9 @@ subtest $method => sub {
     $txns = BOM::Database::DataMapper::Transaction->new({db => $test_client2->default_account->db})
         ->get_transactions_ws({}, $test_client2->default_account);
     $result = $c->tcall($method, {token => $token_with_txn});
-    is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[0]{sell_time})->epoch,     'transaction time correct for sell');
-    is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{purchase_time})->epoch, 'transaction time correct for buy ');
-    is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
+    cmp_ok(abs($result->{transactions}[0]{transaction_time} - Date::Utility->new($txns->[0]{sell_time})->epoch), '<=', 2,     'transaction time correct for sell');
+    cmp_ok(abs($result->{transactions}[1]{transaction_time} - Date::Utility->new($txns->[1]{purchase_time})->epoch), '<=', 2, 'transaction time correct for buy ');
+    cmp_ok(abs($result->{transactions}[2]{transaction_time} - Date::Utility->new($txns->[2]{payment_time})->epoch), '<=', 2,  'transaction time correct for payment');
 
 };
 

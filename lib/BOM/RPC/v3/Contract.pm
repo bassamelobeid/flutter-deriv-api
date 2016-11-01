@@ -297,11 +297,11 @@ sub get_bid {
             if ($contract->is_sold and defined $sell_price and defined $buy_price) {
                 $response->{is_expired} = 1;
                 my $pnl              = $sell_price - $buy_price;
-                my $point_from_entry = $pnl / $amount_per_point;
+                my $point_from_entry = $pnl / $contract->amount_per_point;
                 my $multiplier       = $contract->sentiment eq 'up' ? 1 : -1;
                 $response->{exit_level} = $contract->underlying->pipsized_value($response->{entry_level} + $point_from_entry * $multiplier);
                 $response->{current_value_in_dollar} = $pnl;
-                $response->{current_value_in_point}  = $pnl / $amount_per_point;
+                $response->{current_value_in_point}  = $point_from_entry;
             } else {
                 if ($contract->is_expired) {
                     $response->{is_expired}              = 1;
@@ -403,7 +403,7 @@ sub send_bid {
         _log_exception(send_bid => "$_ (and it should be impossible for this to happen)");
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'pricing error',
-                message_to_client => BOM::Platform::Locale::error_map()->{'pricing error'}});
+                message_to_client => BOM::RPC::v3::Utility::error_map()->{'pricing error'}});
     };
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
@@ -445,7 +445,7 @@ sub send_ask {
         _log_exception(send_ask => $_);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'pricing error',
-                message_to_client => BOM::Platform::Locale::error_map()->{'pricing error'}});
+                message_to_client => BOM::RPC::v3::Utility::error_map()->{'pricing error'}});
     };
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);

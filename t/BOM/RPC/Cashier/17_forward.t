@@ -66,6 +66,9 @@ subtest 'common' => sub {
         ->error_message_is('This is a virtual-money account. Please switch to a real-money account to deposit funds.',
         'Correct error message for virtual account');
 
+    my $user_mocked = Test::MockModule->new('BOM::Platform::User');
+    $user_mocked->mock('new', sub { bless {}, 'BOM::Platform::User' });
+
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token');
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_TNC_APPROVAL', 'Client needs to approve tnc before')
         ->error_message_is('Terms and conditions approval is required.', 'Correct error message for terms and conditions');
