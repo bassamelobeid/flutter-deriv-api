@@ -42,6 +42,8 @@ use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::DataMapper::Client;
 use BOM::Database::ClientDB;
 
+my $payment_limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'));
+
 sub cashier {
     my $params = shift;
 
@@ -306,7 +308,7 @@ sub get_limits {
     }
 
     my $landing_company = LandingCompany::Registry::get_by_broker($client->broker)->short;
-    my $wl_config = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->{withdrawal_limits}->{$landing_company};
+    my $wl_config = $payment_limits->{withdrawal_limits}->{$landing_company};
 
     my $limit = +{
         account_balance => $client->get_limit_for_account_balance,
