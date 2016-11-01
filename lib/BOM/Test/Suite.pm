@@ -153,8 +153,8 @@ sub run {
                     language => $new_lang,
                     app      => $args->{test_app}});
             $test_app->{language} = $last_lang = $new_lang;
-            $lang      = '';
-            $reset     = '';
+            $lang                 = '';
+            $reset                = '';
         }
 
         my $fail;
