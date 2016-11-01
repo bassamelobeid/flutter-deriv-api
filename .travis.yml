@@ -1,6 +1,7 @@
 language: perl
 perl:
     - "5.14.2-thr"
+    - "5.24"
 matrix:
     fast_finish: true
 go:
@@ -23,10 +24,9 @@ env:
     - secure: "PVLFC2gYVgnJT45GYcg1fvaCuij9P85sr0h+NZ/CCO9eCqpscBx1NQIGnUa5LgeFIKTr2xJGQ8f/Q4ydkrq1bNkGWvvhtNXBZiK15R7qX3XnyCSOrhmpHsNC/zYmRvl/7tpkR0LAscDGCckUjXjVy6rl1ihgI6QvQTMigS+fNWJaW8zkW10ZV7KAYodOLRRlrFYURZ6FNwNzI3kSXacUhNITs/WsYTMYsOVmagXfRExdUaL8PWMfqXssHGEvsT2IHwk2tWhHujDNdqBPIoyUEQZSIRhq39qJKERukpc1UQEmhCx+P1biYl1ShOY5KHWoFluPdwlAfN1WqeeYQF4jxKpVh5d71paE6K5oBKMsjkcLG3gusJs8y827Iyn3XVaG4WF/3yX63HnpwyIqmUeZvtU28n996zkMYMRSMYLqWnO+5LMIBRxLTDZrNwFHoUZnrRY0GOgba4ERLTk8iblcrW3dYqKkPzFAwMFJfrst12+sLSwa3TvO7IFjnqaCoEuP4l21SrWgzUlf55x+lPsT1JsCV1u1ufZu6uuIBahgiBQrk/c1xKlM019Bc3+TBTP90wEafHr6pKNb4rOQpdyTddFubNFnpQV2WhHxoeuG/Hv32Aiwz/PlsOlr2t9B4a3g1a8UexF8gnHGLCSxVJdiFvbR1RdlkJtbdo3Pf/3Ud+8="
 before_install:
     - git clone https://1994c85ce4f602fb682076e9a102261644fb3d19@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
-    - git clone git://github.com/binary-com/helpers ~/travis-perl-helpers
-    - AUTHOR_TESTING=0 source ~/travis-perl-helpers/init
-    - PREBUILT_REPO="git@github.com:binary-com/test-perl.git" build-perl
-    - sudo mkdir -p /etc/rmg; sudo ln -s $(dirname $(which perl)) /etc/rmg/bin
+    - sudo mkdir -p /home/git/binary-com
+    - sudo mkdir -p /home/git/regentmarkets
+    - . /tmp/travis-scripts/setup_perl.sh
     - /tmp/travis-scripts/setup_ssh.sh
     - /tmp/travis-scripts/websocket_schema_update.sh
 
@@ -35,7 +35,7 @@ before_install:
     - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
 
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
+    - /tmp/travis-scripts/setup_cpan.sh
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-websocket-tests
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
@@ -72,6 +72,7 @@ before_script:
     - /tmp/travis-scripts/wait_for_rpc.sh
 
 script:
+    - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
     - if [ "$TEST_SUITE" == "" ]  ; then true; else TRAVIS_DATADOG_API_KEY=378b0f4047537f8e7ced5de5f6d5fec2 make $TEST_SUITE; fi
 
 after_script:
