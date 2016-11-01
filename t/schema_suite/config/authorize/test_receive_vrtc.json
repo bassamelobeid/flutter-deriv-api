@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "country": {
+      "type": "string",
+      "pattern": "^[_2]$",
+      "required": "1"
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^USD$",
+      "required": "1"
+    },
+    "email": {
+      "type": "string",
+      "pattern": "^[_3]$",
+      "required": "1"
+    },
+    "landing_company_fullname": {
+      "type": "string",
+      "pattern": "^Binary Ltd$",
+      "required": "1"
+    },
+    "landing_company_name": {
+      "type": "string",
+      "pattern": "^virtual$",
+      "required": "1"
+    },
+    "loginid": {
+      "type": "string",
+      "pattern": "^VRTC",
+      "required": "1"
+    },
+    "fullname": {
+      "type": "string",
+      "pattern": "  ",
+      "required": "1"
+    },
+    "balance": {
+      "type": "number",
+      "pattern": "^10000.00$",
+      "required": "1"
+    },
+    "is_virtual": {
+      "type": "integer",
+      "pattern": "^1$",
+      "required": "1"
+    }
+  }
+}

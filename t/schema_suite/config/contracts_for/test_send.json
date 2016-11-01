@@ -1,8 +1,5 @@
-[
-    "contracts_for",
-    {
-        "args": {
-            "contracts_for": "[_1]"
-        }
+{
+    "args": {
+        "contracts_for": "[_1]"
     }
-]
+}
