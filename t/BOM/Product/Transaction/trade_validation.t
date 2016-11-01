@@ -4,6 +4,7 @@ use warnings;
 use Test::Most tests => 9;
 use File::Spec;
 use JSON qw(decode_json);
+use YAML::XS qw(LoadFile);
 
 use Test::MockObject::Extends;
 use Format::Util::Numbers qw(roundnear);
@@ -94,7 +95,7 @@ my $contract = produce_contract({
 subtest 'IOM withdrawal limit' => sub {
     plan tests => 5;
 
-    my $withdraw_limit = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->iom->limit_for_days;
+    my $withdraw_limit = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->{withdrawal_limits}->{iom}->{limit_for_days};
 
     $client->payment_free_gift(
         currency     => 'GBP',

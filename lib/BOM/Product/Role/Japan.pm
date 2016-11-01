@@ -7,6 +7,8 @@ use BOM::Platform::Context qw(localize);
 use LandingCompany::Offerings qw(get_contract_specifics);
 use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 
+use Data::Dumper;
+
 my $landing_company = 'japan';
 
 # we do not want to apply this for Japan.
@@ -123,6 +125,14 @@ sub _subvalidate_single_barrier {
         my $matched_barrier = first { abs($self->barrier->as_absolute - $_) < $epsilon } grep { not $expired_barriers{$_} } @available_barriers;
 
         unless ($matched_barrier) {
+
+            print STDERR "####### AvailableBarrier: "
+                . Dumper(\@available_barriers)
+                . "  ExpiredBarrier: "
+                . Dumper(\%expired_barriers)
+                . " AbsBarrier: "
+                . $self->barrier->as_absolute . "\n";
+
             return {
                 message => 'Invalid barrier['
                     . $self->barrier->as_absolute
@@ -160,6 +170,16 @@ sub _subvalidate_double_barrier {
             first { abs($self->low_barrier->as_absolute - $_->[0]) < $epsilon and abs($self->high_barrier->as_absolute - $_->[1]) < $epsilon }
         @filtered;
         unless ($matched_barrier) {
+
+            print STDERR "####### AvailableBarrier: "
+                . Dumper(\@available_barriers)
+                . " ExpiredBarrier: "
+                . Dumper(\@expired_barriers)
+                . " LowBarrier: "
+                . $self->low_barrier->as_absolute
+                . " HighBarrier: "
+                . $self->high_barrier->as_absolute . "\n";
+
             return {
                 message => 'Invalid barriers['
                     . $self->low_barrier->as_absolute . ','
