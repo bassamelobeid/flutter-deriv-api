@@ -94,7 +94,7 @@ my $tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
-my $amount = BOM::Platform::Runtime->instance->app_config->payments->virtual->topup_amount->USD;
+my $amount = 10000;
 
 # start test topup_virtual
 my $method = 'topup_virtual';
@@ -129,7 +129,7 @@ $old_balance = $balance;
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')
     ->error_message_is('Your balance is higher than the permitted amount.', 'blance is higher');
 #withdraw some money to test critical limit value
-my $limit            = BOM::Platform::Runtime->instance->app_config->payments->virtual->minimum_topup_balance->USD;
+my $limit            = 1000;
 my $withdrawal_money = $balance - $limit - 1;
 $test_client_vr->payment_legacy_payment(
     currency     => 'USD',
