@@ -9,3 +9,4 @@ It manages parameters between RPC requests using connection stash.
 It manages request rate limits using [RateLimitations::Pluggable](https://github.com/binary-com/perl-RateLimitations-Pluggable).
 
 To run tests you need get [bom-websocket-tests](https://github.com/regentmarkets/bom-websocket-tests).
+
