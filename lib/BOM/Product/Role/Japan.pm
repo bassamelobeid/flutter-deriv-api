@@ -126,13 +126,6 @@ sub _subvalidate_single_barrier {
 
         unless ($matched_barrier) {
 
-            print STDERR "####### AvailableBarrier: "
-                . Dumper(\@available_barriers)
-                . "  ExpiredBarrier: "
-                . Dumper(\%expired_barriers)
-                . " AbsBarrier: "
-                . $self->barrier->as_absolute . "\n";
-
             return {
                 message => 'Invalid barrier['
                     . $self->barrier->as_absolute
@@ -170,15 +163,6 @@ sub _subvalidate_double_barrier {
             first { abs($self->low_barrier->as_absolute - $_->[0]) < $epsilon and abs($self->high_barrier->as_absolute - $_->[1]) < $epsilon }
         @filtered;
         unless ($matched_barrier) {
-
-            print STDERR "####### AvailableBarrier: "
-                . Dumper(\@available_barriers)
-                . " ExpiredBarrier: "
-                . Dumper(\@expired_barriers)
-                . " LowBarrier: "
-                . $self->low_barrier->as_absolute
-                . " HighBarrier: "
-                . $self->high_barrier->as_absolute . "\n";
 
             return {
                 message => 'Invalid barriers['
