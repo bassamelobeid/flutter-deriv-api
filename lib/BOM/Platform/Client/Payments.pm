@@ -18,6 +18,8 @@ use BOM::Platform::Runtime;
 
 # NOTE.. this is a 'mix-in' of extra subs for BOM::Platform::Client.  It is not a distinct Class.
 
+my $payment_limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'));
+
 sub validate_payment {
     my ($self, %args) = @_;
     my $currency = $args{currency} || die "no currency";
@@ -77,7 +79,7 @@ sub validate_payment {
 
         my $lc = $self->landing_company->short;
         my $lc_limits;
-        my $withdrawal_limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->{withdrawal_limits};
+        my $withdrawal_limits = $payment_limits->{withdrawal_limits};
         $lc_limits = $withdrawal_limits->{$lc};
         die "Invalid landing company - $lc\n" unless $lc_limits;
 
