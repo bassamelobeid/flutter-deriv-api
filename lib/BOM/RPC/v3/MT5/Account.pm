@@ -323,6 +323,8 @@ sub mt5_deposit {
             "Account stuck in previous transaction $fm_loginid");
     }
 
+    # From the point of view of our system, we're withdrawing
+    # money to deposit into MT5
     my $withdraw_error;
     try {
         $fm_client->validate_payment(
