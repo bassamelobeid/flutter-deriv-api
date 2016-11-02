@@ -18,7 +18,7 @@ use Test::FailWarnings;
 use Mojo::UserAgent;
 
 my $dir_path = __DIR__;
-my $test_conf_path = $dir_path . 'loadtest.conf';
+my $test_conf_path = $dir_path . '/loadtest.conf';
 my @times;
 for my $iteration (1 .. 10) {
     # Suite->run is likely to set the system date. Rely on the HW clock to give us times, if possible.
