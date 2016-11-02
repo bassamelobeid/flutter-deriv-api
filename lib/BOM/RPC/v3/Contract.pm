@@ -185,8 +185,8 @@ sub _get_ask {
                     maximum_total_markup       => BOM::System::Config::quants->{commission}->{maximum_total_markup},
                     base_commission_min        => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
                     base_commission_max        => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
-                    base_commission_scaling    => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment-se_commission_scaling >
-                        global_scaling->$contract->market->name,
+                    base_commission_scaling =>
+                        BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling->$contract->market->name,
                 },
             };
 
@@ -412,11 +412,6 @@ sub send_ask {
 
         $response = _get_ask(prepare_ask($params->{args}), $params->{app_markup_percentage});
 
-        $response->{contract_parameters}->{maximum_total_markup} = BOM::System::Config::quants->{commission}->{maximum_total_markup};
-        $response->{contract_parameters}->{base_commission_min}  = BOM::System::Config::quants->{commission}->{adjustment}->{minimum};
-        $response->{contract_parameters}->{base_commission_max}  = BOM::System::Config::quants->{commission}->{adjustment}->{maximum};
-        $response->{contract_parameters}->{base_commission_scaling} =
-            BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment-se_commission_scaling > global_scaling;
     }
     catch {
         _log_exception(send_ask => $_);
