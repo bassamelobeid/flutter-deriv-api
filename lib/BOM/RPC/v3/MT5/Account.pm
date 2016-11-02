@@ -257,7 +257,7 @@ sub mt5_password_change {
                 message_to_client => $status->{error}});
     }
 
-    return _mt5_set_password($args->{login}, $args->{new_password}, $args->{type});
+    return _mt5_set_password($args->{login}, $args->{new_password}, $args->{password_type});
 }
 
 sub mt5_password_reset {
@@ -269,7 +269,7 @@ sub mt5_password_reset {
     # MT5 login not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $login]);
 
-    return _mt5_set_password($args->{login}, $args->{new_password}, $args->{type});
+    return _mt5_set_password($args->{login}, $args->{new_password}, $args->{password_type});
 }
 
 sub _mt5_set_password {
@@ -278,9 +278,9 @@ sub _mt5_set_password {
     my $pwd_type     = shift;
 
     my $status = BOM::MT5::User::password_change({
-        login        => $login,
-        new_password => $new_password,
-        type         => $pwd_type,
+        login         => $login,
+        new_password  => $new_password,
+        password_type => $pwd_type,
     });
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
