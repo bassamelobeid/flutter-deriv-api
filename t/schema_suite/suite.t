@@ -1,18 +1,18 @@
 use strict;
 use warnings;
 use Test::Most;
-use File::Spec;
+use Dir::Self;
 use FindBin qw/$Bin/;
 use lib "$Bin/../../lib";
 use lib "$Bin";
 
 use BOM::Test::Suite;
 
-my (undef, $file_path, undef) = File::Spec->splitpath(__FILE__);
+my $dir_path = __DIR__;
 BOM::Test::Suite->run({
     test_app => 'BOM::RPC',
-    test_conf_path => $file_path . 'suite.conf',
-    suite_schema_path => $file_path . '/config/',
+    test_conf_path => $dir_path . 'suite.conf',
+    suite_schema_path => $dir_path . '/config/',
 });
 done_testing();
 
