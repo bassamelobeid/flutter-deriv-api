@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test::Most;
+use Dir::Self;
 use FindBin qw/$Bin/;
 use lib "$Bin/../../lib";
 use lib "$Bin";
@@ -16,8 +17,8 @@ use Test::FailWarnings;
 
 use Mojo::UserAgent;
 
-my (undef, $file_path, undef) = File::Spec->splitpath(__FILE__);
-my $test_conf_path = $file_path . 'loadtest.conf';
+my $dir_path = __DIR__;
+my $test_conf_path = $dir_path . 'loadtest.conf';
 my @times;
 for my $iteration (1 .. 10) {
     # Suite->run is likely to set the system date. Rely on the HW clock to give us times, if possible.
@@ -26,7 +27,7 @@ for my $iteration (1 .. 10) {
     my $elapsed = BOM::Test::Suite->run({
         test_app          => 'Binary::WebSocketAPI',
         test_conf_path    => $test_conf_path,
-        suite_schema_path => $file_path . '/config/',
+        suite_schema_path => $dir_path . '/config/',
     });
     system(qw(sudo hwclock --hctosys)) and die "Failed to sync system clock to HW - $!";
     my $wallclock = tv_interval($t0, [gettimeofday]);
