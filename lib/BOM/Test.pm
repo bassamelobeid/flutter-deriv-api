@@ -58,7 +58,7 @@ sub on_qa {
 }
 
 BEGIN {
-    my $dir_path = __DIR__;
+    my $dir_path      = __DIR__;
     my $test_data_dir = abs_path("$dir_path../../data");
     my $config_dir    = $test_data_dir . '/config';
 
