@@ -414,7 +414,7 @@ sub _set_predefined_barriers {
     });
 
     if ($contract->{barriers} == 1) {
-        my @barriers = sort values %$available_barriers;
+        my @barriers = sort { $a <=> $b } values %$available_barriers;
 
         $contract->{expired_barriers}   = $contract->{barrier_category} ne 'american' ? [] : $expired_barriers;
         $contract->{available_barriers} = \@barriers;
@@ -461,7 +461,7 @@ sub _get_expired_barriers {
 
     my $high                      = $high_low->{high};
     my $low                       = $high_low->{low};
-    my @barriers                  = sort values %$available_barriers;
+    my @barriers                  = sort { $a <=> $b } values %$available_barriers;
     my %skip_list                 = map { $_ => 1 } (@$expired_barriers);
     my @unexpired_barriers        = grep { !$skip_list{$_} } @barriers;
     my $new_added_expired_barrier = 0;
