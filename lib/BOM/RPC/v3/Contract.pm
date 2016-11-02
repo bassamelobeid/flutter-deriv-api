@@ -182,6 +182,11 @@ sub _get_ask {
                     : (),
                     deep_otm_threshold         => $contract->market->deep_otm_threshold,
                     underlying_base_commission => $contract->underlying->base_commission,
+                    maximum_total_markup       => BOM::System::Config::quants->{commission}->{maximum_total_markup},
+                    base_commission_min        => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
+                    base_commission_max        => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
+                    base_commission_scaling    => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment-se_commission_scaling >
+                        global_scaling->$contract->market->name,
                 },
             };
 
@@ -194,6 +199,7 @@ sub _get_ask {
                 $response->{spot} = $contract->current_spot;
             }
             $response->{spread} = $contract->spread if $contract->is_spread;
+
         }
         my $pen = $contract->pricing_engine_name;
         $pen =~ s/::/_/g;
@@ -410,7 +416,7 @@ sub send_ask {
         $response->{contract_parameters}->{base_commission_min}  = BOM::System::Config::quants->{commission}->{adjustment}->{minimum};
         $response->{contract_parameters}->{base_commission_max}  = BOM::System::Config::quants->{commission}->{adjustment}->{maximum};
         $response->{contract_parameters}->{base_commission_scaling} =
-            BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling;
+            BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment-se_commission_scaling > global_scaling;
     }
     catch {
         _log_exception(send_ask => $_);
