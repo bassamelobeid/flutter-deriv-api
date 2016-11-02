@@ -277,8 +277,8 @@ sub walk_hierarchy {
 }
 
 # responses are stashed in a hash-ref. For example for a sucessful new_account_virtual there will be an new_account_virtual item and there {new_account_virtual}->{oauth_token}
-# you can access the stashed values as a template in your test_receive ([_1]) like _get_stashed('new_account_virtual/oauth_token')
-# you can also use array index like _get_stashed('api_token/tokens/0/token')
+# you can access the stashed values as a template in your test_receive ([_1]) like _get_stashed('new_account_virtual/new_account_virtual/oauth_token')
+# you can also use array index like _get_stashed('api_token/api_token/tokens/0/token')
 # look at suite.conf for examples
 sub _get_stashed {
     return walk_hierarchy(shift, $response);
