@@ -990,7 +990,8 @@ sub __client_withdrawal_notes {
 
     if ($withdrawal_limits->{'frozen_free_gift'} > 0) {
         # Insert turnover limit as a parameter depends on the promocode type
-        $error_message .= ' ' . localize(
+        $error_message .= ' '
+            . localize(
             'Note: You will be able to withdraw your bonus of [_1][_2] only once your aggregate volume of trades exceeds [_1][_3]. This restriction applies only to the bonus and profits derived therefrom.  All other deposits and profits derived therefrom can be withdrawn at any time.',
             $currency,
             $withdrawal_limits->{'frozen_free_gift'},
