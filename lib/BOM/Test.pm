@@ -3,7 +3,7 @@ package BOM::Test;
 use strict;
 use warnings;
 
-use File::Spec;
+use Dir::Self;
 use Cwd qw/abs_path/;
 
 =head1 NAME
@@ -58,8 +58,8 @@ sub on_qa {
 }
 
 BEGIN {
-    my (undef, $file_path, undef) = File::Spec->splitpath(__FILE__);
-    my $test_data_dir = abs_path("$file_path../../data");
+    my $dir_path = __DIR__;
+    my $test_data_dir = abs_path("$dir_path../../data");
     my $config_dir    = $test_data_dir . '/config';
 
     ## no critic (Variables::RequireLocalizedPunctuationVars)
