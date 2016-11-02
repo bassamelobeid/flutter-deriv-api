@@ -23,9 +23,8 @@ use Test::MockModule;
 use Test::MockObject;
 use MojoX::JSON::RPC::Client;
 
-use base 'Exporter';
-use vars qw/@EXPORT_OK/;
-@EXPORT_OK = qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_client reconnect/;
+use Exporter qw(import export_to_level);
+our @EXPORT_OK = qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_client reconnect/;
 
 my $version = 'v3';
 die 'unknown version' unless $version;
