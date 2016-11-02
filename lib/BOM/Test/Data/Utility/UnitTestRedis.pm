@@ -18,7 +18,7 @@ BEGIN {
 
 sub initialize_realtime_ticks_db {
     my $dir_path      = __DIR__;
-    my $test_data_dir = abs_path("$dir_path../../../../../data");
+    my $test_data_dir = abs_path("$dir_path/../../../../../data");
 
     my %ticks = %{YAML::XS::LoadFile($test_data_dir . '/test_realtime_ticks.yml')};
 
