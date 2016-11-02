@@ -931,6 +931,7 @@ has price_calculator => (
 sub _build_price_calculator {
     my $self = shift;
 
+
     return Price::Calculator->new({
             currency                => $self->currency,
             deep_otm_threshold      => $self->market->deep_otm_threshold,

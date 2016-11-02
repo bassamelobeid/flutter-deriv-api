@@ -8,7 +8,7 @@ use Test::More tests => 4;
 use BOM::Product::ContractFactory qw(produce_contract);
 use Math::Util::CalculatedValue::Validatable;
 
-BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling(100);
+BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling->volidx(100);
 my $fake_theo = Math::Util::CalculatedValue::Validatable->new({
     name        => 'theo_probability',
     description => 'fake theo',
