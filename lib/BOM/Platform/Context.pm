@@ -46,18 +46,6 @@ sub request {
     return $current_request // $default_request;
 }
 
-=head2 request_completed
-
-Marks completion of the request.
-
-=cut
-
-sub request_completed {
-    $current_request = undef;
-    _configure_for_request(request());
-    return;
-}
-
 =head2 template
 
 Correct instance of template_toolkit object for current request.
