@@ -30,14 +30,30 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $now
-    }) for qw(USD JPY EUR EUR-USD USD-JPY XAU);
+    }) for qw(USD JPY EUR EUR-USD USD-JPY XAU GBP);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => $_,
         recorded_date => $now
-    }) for qw(frxEURUSD frxUSDJPY frxXAUUSD);
+    }) for qw(frxEURUSD frxUSDJPY frxXAUUSD frxGBPUSD);
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_moneyness',
+    {
+        symbol        => $_,
+        recorded_date => $now,
+    }) for qw(FCHI FTSE);
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'index',
+    {
+        symbol        => $_,
+        recorded_date => $now,
+    }) for qw(FCHI FTSE);
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix');
 
 subtest 'payout' => sub {
     my $payout                = 10;
@@ -281,10 +297,14 @@ subtest 'flexible commission check for different markets' => sub {
     test_flexible_commission 'frxEURUSD', 'forex', 30;
     test_flexible_commission 'frxUSDJPY', 'forex', 70;
     test_flexible_commission 'frxXAUUSD', 'commodities', 70;
+    test_flexible_commission 'FCHI', 'indices', 170;
+    test_flexible_commission 'FTSE', 'indices', 25;
 
     test_flexible_commission 'R_100', 'volidx', 10000;
     test_flexible_commission 'frxEURUSD', 'forex', 10000;
     test_flexible_commission 'frxUSDJPY', 'forex', 10000;
     test_flexible_commission 'frxXAUUSD', 'commodities', 10000;
+    test_flexible_commission 'FCHI', 'indices', 10000;
+    test_flexible_commission 'FTSE', 'indices', 10000;
 };
 
