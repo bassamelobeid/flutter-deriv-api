@@ -1,19 +1,21 @@
 use strict;
 use warnings;
-
-use Test::BOM::RPC::Client;
-use BOM::RPC::v3::Cashier;
-use Test::Most;
-use Test::Mojo;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Database::Model::OAuth;
-use Test::MockModule;
-use Format::Util::Numbers qw(roundnear);
-use BOM::Product::RiskProfile;
 use utf8;
 
-my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+use Test::Most;
+use Test::Mojo;
+use Test::MockModule;
+use Format::Util::Numbers qw(roundnear);
+use YAML::XS qw(LoadFile);
+
+use BOM::RPC::v3::Cashier;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::RPC::Client;
+use BOM::Database::Model::OAuth;
+use BOM::Product::RiskProfile;
+
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 my $method = 'get_limits';
 my $params = {token => '12345'};
@@ -45,7 +47,7 @@ subtest 'CR' => sub {
 
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
-    my $limits = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->costarica;
+    my $limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->{withdrawal_limits}->{costarica};
 
     subtest 'expected errors' => sub {
         $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'invalid token');
@@ -68,12 +70,12 @@ subtest 'CR' => sub {
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => $client->get_limit_for_payout,
             'market_specific'                     => BOM::Product::RiskProfile::get_current_profile_definitions($client),
-            'num_of_days'                         => $limits->for_days,
-            'num_of_days_limit'                   => $limits->limit_for_days,
-            'lifetime_limit'                      => $limits->lifetime_limit,
+            'num_of_days'                         => $limits->{for_days},
+            'num_of_days_limit'                   => $limits->{limit_for_days},
+            'lifetime_limit'                      => $limits->{lifetime_limit},
             'withdrawal_for_x_days_monetary'      => '0',
             'withdrawal_since_inception_monetary' => '0',
-            'remainder'                           => roundnear(0.01, $limits->lifetime_limit),
+            'remainder'                           => roundnear(0.01, $limits->{lifetime_limit}),
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -84,7 +86,7 @@ subtest 'CR' => sub {
 
         $expected_result->{withdrawal_for_x_days_monetary}      = roundnear(0.01, $withdraw_amount);
         $expected_result->{withdrawal_since_inception_monetary} = roundnear(0.01, $withdraw_amount);
-        $expected_result->{remainder}                           = roundnear(0.01, $limits->lifetime_limit - $withdraw_amount);
+        $expected_result->{remainder}                           = roundnear(0.01, $limits->{lifetime_limit} - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
@@ -97,7 +99,7 @@ subtest 'CR' => sub {
             'open_positions'    => $client->get_limit_for_open_positions,
             'payout'            => $client->get_limit_for_payout,
             'market_specific'   => BOM::Product::RiskProfile::get_current_profile_definitions($client),
-            'num_of_days'       => $limits->for_days,
+            'num_of_days'       => $limits->{for_days},
             'num_of_days_limit' => '99999999',
             'lifetime_limit'    => '99999999',
         };
@@ -135,7 +137,7 @@ subtest 'JP' => sub {
 
     $params->{token} = $token;
 
-    my $limits = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->japan;
+    my $limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->{withdrawal_limits}->{japan};
 
     subtest 'unauthenticated' => sub {
         my $expected_result = {
@@ -143,12 +145,12 @@ subtest 'JP' => sub {
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => $client->get_limit_for_payout,
             'market_specific'                     => BOM::Product::RiskProfile::get_current_profile_definitions($client),
-            'num_of_days'                         => $limits->for_days,
-            'num_of_days_limit'                   => $limits->limit_for_days,
-            'lifetime_limit'                      => $limits->lifetime_limit,
+            'num_of_days'                         => $limits->{for_days},
+            'num_of_days_limit'                   => $limits->{limit_for_days},
+            'lifetime_limit'                      => $limits->{lifetime_limit},
             'withdrawal_for_x_days_monetary'      => '0',
             'withdrawal_since_inception_monetary' => '0',
-            'remainder'                           => roundnear(0.01, $limits->lifetime_limit),
+            'remainder'                           => roundnear(0.01, $limits->{lifetime_limit}),
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -162,7 +164,7 @@ subtest 'JP' => sub {
 
         $expected_result->{'withdrawal_for_x_days_monetary'}      = roundnear(0.01, $withdraw_amount);
         $expected_result->{'withdrawal_since_inception_monetary'} = roundnear(0.01, $withdraw_amount);
-        $expected_result->{'remainder'}                           = roundnear(0.01, $limits->lifetime_limit - $withdraw_amount);
+        $expected_result->{'remainder'}                           = roundnear(0.01, $limits->{lifetime_limit} - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
@@ -175,7 +177,7 @@ subtest 'JP' => sub {
             'open_positions'    => $client->get_limit_for_open_positions,
             'payout'            => $client->get_limit_for_payout,
             'market_specific'   => BOM::Product::RiskProfile::get_current_profile_definitions($client),
-            'num_of_days'       => $limits->for_days,
+            'num_of_days'       => $limits->{for_days},
             'num_of_days_limit' => '99999999',
             'lifetime_limit'    => '99999999',
         };
@@ -198,7 +200,7 @@ subtest 'MLT' => sub {
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
     $params->{token} = $token;
 
-    my $limits = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->malta;
+    my $limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->{withdrawal_limits}->{malta};
 
     subtest 'unauthenticated' => sub {
         my $expected_result = {
@@ -206,12 +208,12 @@ subtest 'MLT' => sub {
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => $client->get_limit_for_payout,
             'market_specific'                     => BOM::Product::RiskProfile::get_current_profile_definitions($client),
-            'num_of_days'                         => $limits->for_days,
-            'num_of_days_limit'                   => $limits->limit_for_days,
-            'lifetime_limit'                      => $limits->lifetime_limit,
+            'num_of_days'                         => $limits->{for_days},
+            'num_of_days_limit'                   => $limits->{limit_for_days},
+            'lifetime_limit'                      => $limits->{lifetime_limit},
             'withdrawal_for_x_days_monetary'      => '0',
             'withdrawal_since_inception_monetary' => '0',
-            'remainder'                           => roundnear(0.01, $limits->lifetime_limit),
+            'remainder'                           => roundnear(0.01, $limits->{lifetime_limit}),
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -225,7 +227,7 @@ subtest 'MLT' => sub {
 
         $expected_result->{'withdrawal_for_x_days_monetary'}      = roundnear(0.01, $withdraw_amount);
         $expected_result->{'withdrawal_since_inception_monetary'} = roundnear(0.01, $withdraw_amount);
-        $expected_result->{'remainder'}                           = roundnear(0.01, $limits->lifetime_limit - $withdraw_amount);
+        $expected_result->{'remainder'}                           = roundnear(0.01, $limits->{lifetime_limit} - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
@@ -238,7 +240,7 @@ subtest 'MLT' => sub {
             'open_positions'    => $client->get_limit_for_open_positions,
             'payout'            => $client->get_limit_for_payout,
             'market_specific'   => BOM::Product::RiskProfile::get_current_profile_definitions($client),
-            'num_of_days'       => $limits->for_days,
+            'num_of_days'       => $limits->{for_days},
             'num_of_days_limit' => '99999999',
             'lifetime_limit'    => '99999999',
         };
@@ -261,7 +263,7 @@ subtest 'MX' => sub {
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
     $params->{token} = $token;
 
-    my $limits = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->iom;
+    my $limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->{withdrawal_limits}->{iom};
 
     subtest 'unauthenticated' => sub {
         my $expected_result = {
@@ -269,12 +271,12 @@ subtest 'MX' => sub {
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => $client->get_limit_for_payout,
             'market_specific'                     => BOM::Product::RiskProfile::get_current_profile_definitions($client),
-            'num_of_days'                         => $limits->for_days,
-            'num_of_days_limit'                   => $limits->limit_for_days,
-            'lifetime_limit'                      => $limits->lifetime_limit,
+            'num_of_days'                         => $limits->{for_days},
+            'num_of_days_limit'                   => $limits->{limit_for_days},
+            'lifetime_limit'                      => $limits->{lifetime_limit},
             'withdrawal_for_x_days_monetary'      => '0',
             'withdrawal_since_inception_monetary' => '0',
-            'remainder'                           => roundnear(0.01, $limits->limit_for_days),
+            'remainder'                           => roundnear(0.01, $limits->{limit_for_days}),
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -288,7 +290,7 @@ subtest 'MX' => sub {
 
         $expected_result->{'withdrawal_for_x_days_monetary'}      = roundnear(0.01, $withdraw_amount);
         $expected_result->{'withdrawal_since_inception_monetary'} = roundnear(0.01, $withdraw_amount);
-        $expected_result->{'remainder'}                           = roundnear(0.01, $limits->limit_for_days - $withdraw_amount);
+        $expected_result->{'remainder'}                           = roundnear(0.01, $limits->{limit_for_days} - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
@@ -301,7 +303,7 @@ subtest 'MX' => sub {
             'open_positions'    => $client->get_limit_for_open_positions,
             'payout'            => $client->get_limit_for_payout,
             'market_specific'   => BOM::Product::RiskProfile::get_current_profile_definitions($client),
-            'num_of_days'       => $limits->for_days,
+            'num_of_days'       => $limits->{for_days},
             'num_of_days_limit' => '99999999',
             'lifetime_limit'    => '99999999',
         };

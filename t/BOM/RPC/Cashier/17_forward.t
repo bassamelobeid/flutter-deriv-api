@@ -5,7 +5,7 @@ use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
 use Test::FailWarnings;
-use Test::BOM::RPC::Client;
+use BOM::Test::RPC::Client;
 
 use MojoX::JSON::RPC::Client;
 
@@ -23,7 +23,7 @@ my ($t, $rpc_ct);
 subtest 'Initialization' => sub {
     lives_ok {
         $t = Test::Mojo->new('BOM::RPC');
-        $rpc_ct = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+        $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
     }
     'Initial RPC server and client connection';
 };
@@ -65,6 +65,9 @@ subtest 'common' => sub {
         ->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier forward error as client is virtual')
         ->error_message_is('This is a virtual-money account. Please switch to a real-money account to deposit funds.',
         'Correct error message for virtual account');
+
+    my $user_mocked = Test::MockModule->new('BOM::Platform::User');
+    $user_mocked->mock('new', sub { bless {}, 'BOM::Platform::User' });
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token');
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_TNC_APPROVAL', 'Client needs to approve tnc before')

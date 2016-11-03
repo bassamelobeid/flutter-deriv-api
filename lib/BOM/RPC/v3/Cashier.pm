@@ -16,6 +16,7 @@ use Format::Util::Numbers qw(roundnear);
 use String::UTF8::MD5;
 use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
+use YAML::XS qw(LoadFile);
 
 use LandingCompany::Registry;
 use LandingCompany::Countries;
@@ -41,6 +42,8 @@ use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::DataMapper::Client;
 use BOM::Database::ClientDB;
 
+my $payment_limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'));
+
 sub cashier {
     my $params = shift;
 
@@ -59,16 +62,25 @@ sub cashier {
 
     my $currency;
     if (my $account = $client->default_account) {
-        $currency ||= $account->currency_code;
+        $currency = $account->currency_code;
     }
 
     # still no currency?  Try the first financial sibling with same landing co.
-    if (my $user = BOM::Platform::User->new({email => $client->email})) {
-        $currency ||= do {
-            my @siblings = grep { $_->default_account }
-                grep { $_->landing_company->short eq $client->landing_company->short } $user->clients;
-            @siblings && $siblings[0]->default_account->currency_code;
-        };
+    unless ($currency) {
+        my $user = BOM::Platform::User->new({email => $client->email});
+        unless ($user) {
+            warn __PACKAGE__ . "::cashier Error:  Unable to get user data for " . $client->loginid . "\n";
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'CashierForwardError',
+                message_to_client => localize('Internal server error'),
+            });
+        }
+        for (grep { $_->landing_company->short eq $client->landing_company->short } $user->clients) {
+            if (my $default_account = $_->default_account) {
+                $currency = $default_account->currency_code;
+                last;
+            }
+        }
     }
 
     my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
@@ -296,7 +308,7 @@ sub get_limits {
     }
 
     my $landing_company = LandingCompany::Registry::get_by_broker($client->broker)->short;
-    my $wl_config       = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->$landing_company;
+    my $wl_config       = $payment_limits->{withdrawal_limits}->{$landing_company};
 
     my $limit = +{
         account_balance => $client->get_limit_for_account_balance,
@@ -306,9 +318,9 @@ sub get_limits {
 
     $limit->{market_specific} = BOM::Product::RiskProfile::get_current_profile_definitions($client);
 
-    my $numdays       = $wl_config->for_days;
-    my $numdayslimit  = $wl_config->limit_for_days;
-    my $lifetimelimit = $wl_config->lifetime_limit;
+    my $numdays       = $wl_config->{for_days};
+    my $numdayslimit  = $wl_config->{limit_for_days};
+    my $lifetimelimit = $wl_config->{lifetime_limit};
 
     if ($client->client_fully_authenticated) {
         $numdayslimit  = 99999999;
@@ -974,12 +986,12 @@ sub __client_withdrawal_notes {
     my $withdrawal_limits = $client->get_withdrawal_limits();
 
     # At this point, the Client is not allowed to withdraw. Return error message.
-    my $error_message = localize('Your account balance is [_1] [_2]. Maximum withdrawal by all other means is [_1] [_3].',
-        $currency, $balance, $withdrawal_limits->{'max_withdrawal'});
+    my $error_message = $error;
 
     if ($withdrawal_limits->{'frozen_free_gift'} > 0) {
         # Insert turnover limit as a parameter depends on the promocode type
-        $error_message .= localize(
+        $error_message .= ' '
+            . localize(
             'Note: You will be able to withdraw your bonus of [_1][_2] only once your aggregate volume of trades exceeds [_1][_3]. This restriction applies only to the bonus and profits derived therefrom.  All other deposits and profits derived therefrom can be withdrawn at any time.',
             $currency,
             $withdrawal_limits->{'frozen_free_gift'},
@@ -995,6 +1007,7 @@ sub transfer_between_accounts {
 
     my $client = $params->{client};
     my $source = $params->{source};
+    my $user;
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
@@ -1005,6 +1018,10 @@ sub transfer_between_accounts {
         });
     };
 
+    unless ($user = BOM::Platform::User->new({email => $client->email})) {
+        warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for " . $client->loginid . "\n";
+        return $error_sub->(localize('Internal server error'));
+    }
     if ($client->get_status('disabled') or $client->get_status('cashier_locked') or $client->get_status('withdrawal_locked')) {
         return $error_sub->(localize('The account transfer is unavailable for your account: [_1].', $client->loginid));
     }
@@ -1015,10 +1032,7 @@ sub transfer_between_accounts {
     my $currency     = $args->{currency};
     my $amount       = $args->{amount};
 
-    my %siblings = ();
-    if (my $user = BOM::Platform::User->new({email => $client->email})) {
-        %siblings = map { $_->loginid => $_ } $user->clients;
-    }
+    my %siblings = map { $_->loginid => $_ } $user->clients;
 
     my @accounts;
     foreach my $account (values %siblings) {
@@ -1253,7 +1267,8 @@ sub topup_virtual {
     }
 
     my $currency = $client->default_account->currency_code;
-    if ($client->default_account->balance > BOM::Platform::Runtime->instance->app_config->payments->virtual->minimum_topup_balance->$currency) {
+    my $minimum_topup_balance = $currency eq 'JPY' ? 100000 : 1000;
+    if ($client->default_account->balance > $minimum_topup_balance) {
         return $error_sub->(localize('Your balance is higher than the permitted amount.'));
     }
 
