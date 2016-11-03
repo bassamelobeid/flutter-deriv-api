@@ -4,7 +4,7 @@ use Test::More tests => 5;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test call_mocked_client/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -19,7 +19,7 @@ $client_mocked->mock('add_note', sub { return 1 });
 my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
 $email_mocked->mock('send_email', sub { return 1 });
 
-my $t = build_mojo_test();
+my $t = build_wsapi_test();
 
 my %client_details = (
     new_account_real => 1,

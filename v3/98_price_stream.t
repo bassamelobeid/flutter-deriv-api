@@ -8,7 +8,7 @@ use Data::Dumper;
 use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data/;
 use BOM::Database::Model::AccessToken;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -24,7 +24,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 build_test_R_50_data();
 
-my $t = build_mojo_test();
+my $t = build_wsapi_test();
 my $token = BOM::Database::Model::AccessToken->new->create_token("CR2002", 'Test', ['price', 'trade']);
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;

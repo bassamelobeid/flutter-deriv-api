@@ -5,7 +5,7 @@ use JSON;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -16,7 +16,7 @@ use BOM::Platform::User;
 use BOM::Platform::Client;
 use BOM::Database::Model::OAuth;
 
-my $t = build_mojo_test();
+my $t = build_wsapi_test();
 
 # cleanup
 my $oauth = BOM::Database::Model::OAuth->new;
@@ -170,7 +170,7 @@ $oauth = BOM::Database::Model::OAuth->new;
 ok $oauth->confirm_scope($test_appid, $cr_1), 'confirm scope';
 my ($access_token) = $oauth->store_access_token_only($test_appid, $cr_1);
 
-$t = build_mojo_test();
+$t = build_wsapi_test();
 $t = $t->send_ok({json => {authorize => $access_token}})->message_ok;
 $t = $t->send_ok({
         json => {
@@ -209,7 +209,7 @@ is $res->{error}->{code}, 'InvalidToken', 'not valid after revoke';
 
 $t->finish_ok;
 
-$t = build_mojo_test({app_id => $app1->{app_id}});
+$t = build_wsapi_test({app_id => $app1->{app_id}});
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 $t = $t->send_ok({
         json => {
@@ -222,7 +222,7 @@ is_deeply($res->{app_get}, $app1, 'app_get ok');
 
 $t->finish_ok;
 
-$t = build_mojo_test({app_id => 333});
+$t = build_wsapi_test({app_id => 333});
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'authorize';

@@ -5,11 +5,11 @@ use JSON;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test call_mocked_client/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
 use Test::MockModule;
 use BOM::Platform::Runtime;
 
-my $t = build_mojo_test();
+my $t = build_wsapi_test();
 
 # landing_company_details
 $t = $t->send_ok({json => {landing_company_details => 'costarica'}})->message_ok;

@@ -5,7 +5,7 @@ use JSON;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data/;
 use Net::EmptyPort qw(empty_port);
 use Test::MockModule;
 
@@ -15,7 +15,7 @@ use BOM::Database::Model::OAuth;
 use BOM::System::RedisReplicated;
 
 build_test_R_50_data();
-my $t = build_mojo_test();
+my $t = build_wsapi_test();
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',

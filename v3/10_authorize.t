@@ -5,7 +5,7 @@ use JSON;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use Test::MockModule;
 
 use BOM::Database::Model::OAuth;
@@ -26,7 +26,7 @@ $module->mock(
         Mojo::Util::_stash(stash => @_);
     });
 
-my $t = build_mojo_test();
+my $t = build_wsapi_test();
 
 ## test those requires auth
 $t = $t->send_ok({json => {balance => 1}})->message_ok;

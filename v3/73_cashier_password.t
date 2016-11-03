@@ -5,7 +5,7 @@ use JSON;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test call_mocked_client/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
 use Test::MockModule;
 
 use BOM::Database::Model::OAuth;
@@ -23,7 +23,7 @@ $client_mocked->mock('add_note', sub { return 1 });
 my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
 $email_mocked->mock('send_email', sub { return 1 });
 
-my $t = build_mojo_test({language => 'EN'});
+my $t = build_wsapi_test({language => 'EN'});
 
 my $email     = 'abc@binary.com';
 my $password  = 'jSkjd8292922';

@@ -5,14 +5,14 @@ use JSON;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use Test::MockObject;
 use Test::MockModule;
 
 my $system = Test::MockModule->new('Binary::WebSocketAPI::v3::Wrapper::System');
 $system->mock('server_time', sub { +{msg_type => 'time', time => ('1' x 600000)} });
 
-my $t = build_mojo_test();
+my $t = build_wsapi_test();
 
 $t = $t->send_ok({json => 'notjson'})->message_ok;
 my $res = decode_json($t->message->[1]);

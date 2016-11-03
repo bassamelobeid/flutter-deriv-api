@@ -1,11 +1,12 @@
 use strict;
 use warnings;
 use Test::Most;
+use Dir::Self;
 use FindBin qw/$Bin/;
 use lib "$Bin/../../lib";
 use lib "$Bin";
 
-use Suite;
+use BOM::Test::Suite;
 
 use Time::HiRes qw(tv_interval gettimeofday);
 use List::Util qw(min max sum);
@@ -16,12 +17,18 @@ use Test::FailWarnings;
 
 use Mojo::UserAgent;
 
+my $dir_path = __DIR__;
+my $test_conf_path = $dir_path . '/loadtest.conf';
 my @times;
 for my $iteration (1 .. 10) {
     # Suite->run is likely to set the system date. Rely on the HW clock to give us times, if possible.
     system(qw(sudo hwclock --systohc)) and die "Failed to sync HW clock to system - $!";
     my $t0      = [gettimeofday];
-    my $elapsed = Suite->run('loadtest.conf');
+    my $elapsed = BOM::Test::Suite->run({
+        test_app          => 'Binary::WebSocketAPI',
+        test_conf_path    => $test_conf_path,
+        suite_schema_path => $dir_path . '/config/',
+    });
     system(qw(sudo hwclock --hctosys)) and die "Failed to sync system clock to HW - $!";
     my $wallclock = tv_interval($t0, [gettimeofday]);
     diag "Took $wallclock seconds wallclock time for loadtest including setup, $elapsed seconds cumulative step time";
