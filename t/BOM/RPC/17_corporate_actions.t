@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use utf8;
-use Test::BOM::RPC::Client;
+use BOM::Test::RPC::Client;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
@@ -80,7 +80,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => 80
 });
 
-my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 request(BOM::Platform::Context::Request->new(params => {}));
 
 subtest 'get_corporate_actions' => sub {
