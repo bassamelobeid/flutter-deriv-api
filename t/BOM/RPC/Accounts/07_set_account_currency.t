@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::BOM::RPC::Client;
+use BOM::Test::RPC::Client;
 use Test::Most;
 use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -22,7 +22,7 @@ is $test_client->default_account, undef, 'new client has no default account';
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
 
-my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 my $method = 'set_account_currency';
 my $params = {
