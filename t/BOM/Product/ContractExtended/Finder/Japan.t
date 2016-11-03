@@ -72,9 +72,9 @@ subtest "predefined contracts for symbol" => sub {
 subtest "predefined trading_period" => sub {
     my %expected_count = (
         offering                                => 10,
-        offering_with_predefined_trading_period => 30,
+        offering_with_predefined_trading_period => 28,
         trading_period                          => {
-            call_intraday => 2,
+            call_intraday => 1,
             call_daily    => 4,
             range_daily   => 3,
         });
