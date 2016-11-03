@@ -3,7 +3,7 @@ package BOM::Test::Data::Utility::UnitTestRedis;
 use strict;
 use warnings;
 
-use File::Spec;
+use Dir::Self;
 use Cwd qw/abs_path/;
 
 use base qw( Exporter );
@@ -17,8 +17,8 @@ BEGIN {
 }
 
 sub initialize_realtime_ticks_db {
-    my (undef, $file_path, undef) = File::Spec->splitpath(__FILE__);
-    my $test_data_dir = abs_path("$file_path../../../../../data");
+    my $dir_path      = __DIR__;
+    my $test_data_dir = abs_path("$dir_path/../../../../../data");
 
     my %ticks = %{YAML::XS::LoadFile($test_data_dir . '/test_realtime_ticks.yml')};
 
