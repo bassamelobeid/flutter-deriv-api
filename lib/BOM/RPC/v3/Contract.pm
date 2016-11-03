@@ -163,11 +163,10 @@ sub _get_ask {
             warn "[JPLOG]" . $contract->shortcode . ":" . $ask_price . ":" . ($p2->{trading_period_start} // '') . "\n"
                 if ($p2->{currency} && $p2->{currency} eq 'JPY');
 
-            my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
-            my $market_name = $contract->market->name;
-            my $global_scaling = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling;
+            my $display_value           = $contract->is_spread ? $contract->buy_level : $ask_price;
+            my $market_name             = $contract->market->name;
+            my $global_scaling          = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling;
             my $base_commission_scaling = $global_scaling->can($market_name) ? $global_scaling->$market_name : 100;
-
 
             $response = {
                 longcode            => $contract->longcode,
@@ -189,7 +188,7 @@ sub _get_ask {
                     maximum_total_markup       => BOM::System::Config::quants->{commission}->{maximum_total_markup},
                     base_commission_min        => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
                     base_commission_max        => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
-                    base_commission_scaling => $base_commission_scaling,
+                    base_commission_scaling    => $base_commission_scaling,
                 },
             };
 
