@@ -17,12 +17,18 @@
     },
     "old_password": {
       "type": "string",
-      "description": "Existing master password of the account.",
+      "description": "Existing password of the account.",
       "required": "1"
     },
     "new_password": {
       "type": "string",
-      "description": "New master password of the account.",
+      "description": "New password of the account.",
+      "required": "1"
+    },
+    "password_type": {
+      "type": "string",
+      "description": "Password type main/investor",
+      "pattern": "^(main|investor)$",
       "required": "1"
     },
     "passthrough": {

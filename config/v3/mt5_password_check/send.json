@@ -18,7 +18,13 @@
     },
     "password": {
       "type": "string",
-      "description": "the master password of the account.",
+      "description": "the password of the account.",
+      "required": "1"
+    },
+    "password_type": {
+      "type": "string",
+      "description": "the password type main/investor",
+      "pattern": "^(main|investor)$",
       "required": "1"
     },
     "passthrough": {
