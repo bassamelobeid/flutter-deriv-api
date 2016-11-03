@@ -933,7 +933,7 @@ sub _build_price_calculator {
 
     my $market_name             = $self->market->name;
     my $global_scaling = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling;
-    my $base_commission_scaling = $global_scaling->can($market_name) ? $global_scaling->$market_name : 100,
+    my $base_commission_scaling = $global_scaling->can($market_name) ? $global_scaling->$market_name : 100;
 
         return Price::Calculator->new({
             currency                => $self->currency,
