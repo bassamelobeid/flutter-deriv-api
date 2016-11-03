@@ -80,10 +80,15 @@ subtest "predefined trading_period" => sub {
         });
 
     my %expected_trading_period = (
+        #call_intraday => {
+        #    duration => ['2h15m', '5h15m'],
+        #    date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-09-04 18:00:00', '2015-09-04 18:00:00',)],
+        #    date_start  => [map { Date::Utility->new($_)->epoch } ('2015-09-04 15:45:00', '2015-09-04 12:45:00',)],
+        #},
         call_intraday => {
-            duration => ['2h15m', '5h15m'],
-            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-09-04 18:00:00', '2015-09-04 18:00:00',)],
-            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-09-04 15:45:00', '2015-09-04 12:45:00',)],
+            duration => ['2h15m'],
+            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-09-04 18:00:00',)],
+            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-09-04 15:45:00',)],
         },
         range_daily => {
             duration => ['1W', '1M', '3M'],
