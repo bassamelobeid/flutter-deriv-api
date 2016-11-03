@@ -9,7 +9,7 @@ use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use BOM::System::Password;
 
-use Test::BOM::RPC::Client;
+use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::RPC::v3::Utility;
 use BOM::Database::Model::AccessToken;
@@ -58,7 +58,7 @@ subtest 'Initialization' => sub {
 
     lives_ok {
         $t = Test::Mojo->new('BOM::RPC');
-        $rpc_ct = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+        $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
     }
     'Initial RPC server and client connection';
 };

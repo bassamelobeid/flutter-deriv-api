@@ -9,7 +9,7 @@ use Test::MockModule;
 use MojoX::JSON::RPC::Client;
 use Date::Utility;
 
-use Test::BOM::RPC::Client;
+use BOM::Test::RPC::Client;
 
 use utf8;
 
@@ -19,7 +19,7 @@ my $method = 'ticks';
 my $params = {language => 'EN'};
 
 $t = Test::Mojo->new('BOM::RPC');
-$rpc_ct = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+$rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
 
 subtest 'validate_ticks' => sub {
     $rpc_ct->call_ok($method, $params)

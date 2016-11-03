@@ -9,6 +9,9 @@ addons:
 services:
     - redis-server
 cache: apt
+env:
+    - TEST_SUITE=test SH=bash
+    - TEST_SUITE=suite_schema SH=bash
 before_install:
     - git clone https://1994c85ce4f602fb682076e9a102261644fb3d19@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
     - /tmp/travis-scripts/setup_ssh.sh
@@ -50,7 +53,7 @@ install:
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
-    - /etc/rmg/bin/prove --timer -lr --exec 'perl -It/lib -MTest::FailWarnings=-allow_deps,1 -MBOM::Test'  t/
+    - if [ "$TEST_SUITE" == "" ]  ; then true; else make $TEST_SUITE; fi
 
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh

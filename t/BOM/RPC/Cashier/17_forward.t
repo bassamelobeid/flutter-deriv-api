@@ -5,7 +5,7 @@ use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
 use Test::FailWarnings;
-use Test::BOM::RPC::Client;
+use BOM::Test::RPC::Client;
 
 use MojoX::JSON::RPC::Client;
 
@@ -23,7 +23,7 @@ my ($t, $rpc_ct);
 subtest 'Initialization' => sub {
     lives_ok {
         $t = Test::Mojo->new('BOM::RPC');
-        $rpc_ct = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+        $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
     }
     'Initial RPC server and client connection';
 };

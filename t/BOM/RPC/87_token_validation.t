@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::BOM::RPC::Client;
+use BOM::Test::RPC::Client;
 use Test::Most;
 use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -45,7 +45,7 @@ my ($t, $c);
 subtest 'Initialization' => sub {
     lives_ok {
         $t = Test::Mojo->new('BOM::RPC');
-        $c = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+        $c = BOM::Test::RPC::Client->new(ua => $t->app->ua);
     }
     'Initial RPC server and client connection';
 };

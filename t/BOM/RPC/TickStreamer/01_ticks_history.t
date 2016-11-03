@@ -11,7 +11,7 @@ use Data::Dumper;
 use Date::Utility;
 use File::Temp;
 
-use Test::BOM::RPC::Client;
+use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::FeedTestDatabase qw/:init/;
 use BOM::Populator::TickFile;
 use BOM::Populator::InsertTicks;
@@ -33,7 +33,7 @@ my $now = Date::Utility->new('2012-03-14 07:00:00');
 set_fixed_time($now->epoch);
 
 $t = Test::Mojo->new('BOM::RPC');
-$rpc_ct = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+$rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
 
 my $feed_dir = File::Temp->newdir;
 $ENV{BOM_POPULATOR_ROOT} = "$feed_dir";

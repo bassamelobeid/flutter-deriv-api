@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::BOM::RPC::Client;
+use BOM::Test::RPC::Client;
 use Test::Most;
 use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -38,7 +38,7 @@ my ($token_vr) = $oauth->store_access_token_only(1, $test_client_vr->loginid);
 
 is $test_client->default_account, undef, 'new client has no default account';
 
-my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 my $method = 'authorize';
 subtest $method => sub {
