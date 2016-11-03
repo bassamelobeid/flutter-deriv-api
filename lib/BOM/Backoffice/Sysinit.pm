@@ -124,10 +124,5 @@ sub log_bo_access {
     return;
 }
 
-sub code_exit {
-    BOM::Backoffice::Request::request_completed();
-    exit 0;
-}
-
 1;
 

@@ -1,4 +1,6 @@
-use strict 'vars';
+use strict;
+use warnings;
+
 use open qw[ :encoding(UTF-8) ];
 use POSIX;
 use Path::Tiny;
@@ -36,13 +38,13 @@ sub graph_setup {
     my $gif_dir = BOM::Platform::Runtime->instance->app_config->system->directory->tmp_gif;
     if (not $gif_dir) {
         print "[graph_setup] Error - system.directory.tmp_gif is undefined ";
-        BOM::Backoffice::Sysinit::code_exit();
+        code_exit_BO();
     }
     if (not -d $gif_dir) {
         Path::Tiny::path($gif_dir)->mkpath;
         if (not -d $gif_dir) {
             print "[graph_setup] Error - $gif_dir could not be created";
-            BOM::Backoffice::Sysinit::code_exit();
+            code_exit_BO();
         }
     }
 
