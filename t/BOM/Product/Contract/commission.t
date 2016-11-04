@@ -278,12 +278,12 @@ sub test_flexible_commission {
         currency         => 'USD',
     };
 
-    BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling->$market(100);
+    BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market(100);
     my $c = produce_contract($args);
     is $c->commission_markup->amount, $c->base_commission, "correct commission markup without scaling for $symbol" . $c->commission_markup->amount;
     my $original_commission = $c->commission_markup->amount;
 
-    BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling->$market($scaling);
+    BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market($scaling);
     $c = produce_contract($args);
     if ( $scaling == 10000 ) {
         is $c->ask_price, 1000, "max ask price when commissoin scaling is max for $symbol";
