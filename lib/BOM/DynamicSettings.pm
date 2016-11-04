@@ -175,6 +175,11 @@ sub get_settings_by_group {
         ],
         quant => [qw(
                 quants.commission.adjustment.global_scaling
+                quants.commission.adjustment.per_market_scaling.forex
+                quants.commission.adjustment.per_market_scaling.indices
+                quants.commission.adjustment.per_market_scaling.commodities
+                quants.commission.adjustment.per_market_scaling.stocks
+                quants.commission.adjustment.per_market_scaling.volidx
                 quants.markets.disabled
                 quants.features.suspend_contract_types
                 quants.underlyings.disable_autoupdate_vol
