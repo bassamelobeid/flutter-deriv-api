@@ -2714,7 +2714,7 @@ We also want to guard against old appconfig.
 sub _validate_appconfig_age {
     my $rev = BOM::Platform::Runtime->instance->app_config->current_revision;
     my $age = Time::HiRes::time - $rev;
-    if($age > 300) {
+    if ($age > 300) {
         warn "Config age is >300s - $age - is bin/update_appconfig_rev.pl running?\n";
         return {
             message           => "appconfig is out of date - age is now $age seconds",
