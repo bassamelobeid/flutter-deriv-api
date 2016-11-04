@@ -411,9 +411,12 @@ subtest $method => sub {
     $txns = BOM::Database::DataMapper::Transaction->new({db => $test_client2->default_account->db})
         ->get_transactions_ws({}, $test_client2->default_account);
     $result = $c->tcall($method, {token => $token_with_txn});
-    cmp_ok(abs($result->{transactions}[0]{transaction_time} - Date::Utility->new($txns->[0]{sell_time})->epoch), '<=', 2,     'transaction time correct for sell');
-    cmp_ok(abs($result->{transactions}[1]{transaction_time} - Date::Utility->new($txns->[1]{purchase_time})->epoch), '<=', 2, 'transaction time correct for buy ');
-    cmp_ok(abs($result->{transactions}[2]{transaction_time} - Date::Utility->new($txns->[2]{payment_time})->epoch), '<=', 2,  'transaction time correct for payment');
+    cmp_ok(abs($result->{transactions}[0]{transaction_time} - Date::Utility->new($txns->[0]{sell_time})->epoch),
+        '<=', 2, 'transaction time correct for sell');
+    cmp_ok(abs($result->{transactions}[1]{transaction_time} - Date::Utility->new($txns->[1]{purchase_time})->epoch),
+        '<=', 2, 'transaction time correct for buy ');
+    cmp_ok(abs($result->{transactions}[2]{transaction_time} - Date::Utility->new($txns->[2]{payment_time})->epoch),
+        '<=', 2, 'transaction time correct for payment');
 
 };
 
