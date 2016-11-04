@@ -12,8 +12,14 @@ v3_2:
 v3_3:
 	@$(PROVE) $$(ls -1d /home/git/regentmarkets/bom-websocket-tests/v3/* | grep 'v3/\(8\|9\)')
 
-json_schema:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t
+json_schema_1:
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: proposal.conf
+
+json_schema_2:
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: assets.conf
+
+json_schema_3:
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: accounts.conf
 
 loadtest:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/loadtest.t
