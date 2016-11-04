@@ -216,12 +216,11 @@ sub run {
 sub print_test_diag {
     my ($path, $counter, $elapsed, $stream_id, $send_file, $receive_file) = @_;
 
-    $stream_id = "stream:". $stream_id if $stream_id;
+    $stream_id = "stream:" . $stream_id if $stream_id;
 
     # Stream ID and/or send_file may be undef
     my ($test_conf_file) = ($path =~ /\/(.+?)$/);
-    diag(sprintf "%s:%d [%s] - %.3fs",
-            $test_conf_file, $counter, join(',', grep { defined } ($stream_id, $send_file, $receive_file)), $elapsed);
+    diag(sprintf "%s:%d [%s] - %.3fs", $test_conf_file, $counter, join(',', grep { defined } ($stream_id, $send_file, $receive_file)), $elapsed);
 }
 
 sub _get_values {
