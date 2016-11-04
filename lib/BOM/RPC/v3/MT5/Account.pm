@@ -14,6 +14,7 @@ use BOM::Platform::Context qw (localize);
 use BOM::Platform::User;
 use BOM::MT5::User;
 use BOM::Database::DataMapper::Client;
+use BOM::Platform::Runtime;
 
 my $countries_list;
 
@@ -286,6 +287,13 @@ sub mt5_deposit {
             ($msg) ? (message => $msg) : (),
         });
     };
+
+    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    if (   $app_config->system->suspend->payments
+        or $app_config->system->suspend->system)
+    {
+        return $error_sub->(localize('Payments are suspended.'));
+    }
 
     if ($amount <= 0) {
         return $error_sub->(localize("Deposit amount must be greater than zero."));
