@@ -221,6 +221,7 @@ sub print_test_diag {
     # Stream ID and/or send_file may be undef
     my ($test_conf_file) = ($path =~ /\/(.+?)$/);
     diag(sprintf "%s:%d [%s] - %.3fs", $test_conf_file, $counter, join(',', grep { defined } ($stream_id, $send_file, $receive_file)), $elapsed);
+    return;
 }
 
 sub _get_values {
