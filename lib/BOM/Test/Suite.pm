@@ -176,9 +176,6 @@ sub run {
         if ($test_stream_id) {
             ($receive_file, @template_func) = split(',', $line);
 
-            diag("\nRunning line $counter [$receive_file]\n");
-            diag("\nTesting stream [$test_stream_id]\n");
-
             my $content = read_file($suite_schema_path . $receive_file);
             $content = _get_values($content, @template_func);
 
@@ -210,13 +207,21 @@ sub run {
         my $elapsed = tv_interval($t0, [gettimeofday]);
         $cumulative_elapsed += $elapsed;
 
-        # Stream ID and/or send_file may be undef
-        my ($test_conf_file) = ($path =~ /\/(.+?)$/);
-        diag(sprintf "%s:%d [%s] - %.3fs",
-            $test_conf_file, $counter, join(',', grep { defined } ($test_stream_id, $send_file, $receive_file)), $elapsed);
+        print_test_diag($path, $counter, $elapsed, ($test_stream_id || $start_stream_id), $send_file, $receive_file);
     }
     diag "Cumulative elapsed time for all steps was ${cumulative_elapsed}s";
     return $cumulative_elapsed;
+}
+
+sub print_test_diag {
+    my ($path, $counter, $elapsed, $stream_id, $send_file, $receive_file) = @_;
+
+    $stream_id = "stream:". $stream_id if $stream_id;
+
+    # Stream ID and/or send_file may be undef
+    my ($test_conf_file) = ($path =~ /\/(.+?)$/);
+    diag(sprintf "%s:%d [%s] - %.3fs",
+            $test_conf_file, $counter, join(',', grep { defined } ($stream_id, $send_file, $receive_file)), $elapsed);
 }
 
 sub _get_values {
