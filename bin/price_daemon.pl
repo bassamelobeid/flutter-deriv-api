@@ -61,6 +61,12 @@ sub process_job {
 
     my $underlying = _get_underlying($params) or return undef;
 
+    if(!ref($underlying)) {
+        warn "Have legacy underlying - $underlying with params " . Dumper($params) . "\n";
+        DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => ['tag:' . $internal_ip]});
+        return undef;
+    }
+
     unless (defined $underlying->spot_tick and defined $underlying->spot_tick->epoch) {
         warn "$params->{symbol} has invalid spot tick";
         DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => ['tag:' . $internal_ip]});
