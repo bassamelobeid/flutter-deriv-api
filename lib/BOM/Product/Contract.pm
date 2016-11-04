@@ -846,7 +846,7 @@ sub _build_longcode {
 
 =item is_after_settlement
 
-This check if the contract already passes the settlement time 
+This check if the contract already passes the settlement time
 
 For tick expiry contract, it can expires when a certain number of ticks is received or it already passes the max_tick_expiry_duration.
 For other contracts, it can expires when current time has past a pre-determined settelement time.
@@ -932,8 +932,8 @@ sub _build_price_calculator {
     my $self = shift;
 
     my $market_name             = $self->market->name;
-    my $global_scaling          = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling;
-    my $base_commission_scaling = $global_scaling->can($market_name) ? $global_scaling->$market_name : 100;
+    my $per_market_scaling      = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling;
+    my $base_commission_scaling = $per_market_scaling->$market_name;
 
     return Price::Calculator->new({
             currency                => $self->currency,
