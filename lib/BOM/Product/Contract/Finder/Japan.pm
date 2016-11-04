@@ -165,9 +165,12 @@ sub _predefined_trading_period {
             }
 
             push @$trading_periods, $window_2h;
-            if ($now_hour > 0 and $now_hour < 18) {
-                my $odd_hour = ($now_hour % 2) ? $now_hour : $now_hour - 1;
-                $odd_hour = $odd_hour % 4 == 1 ? $odd_hour : $odd_hour - 2;
+
+            my $odd_hour = ($now_hour % 2) ? $now_hour : $now_hour - 1;
+            $odd_hour = $odd_hour % 4 == 1 ? $odd_hour : $odd_hour - 2;
+
+            if ($now_hour > 0 and $now_hour < 18 and $odd_hour != 21) {
+
                 push @$trading_periods, map { _get_intraday_trading_window({now => $now, date_start => $_, duration => '5h'}) }
                     grep { $_->is_after($today) }
                     map { $today->plus_time_interval($_ . 'h') } ($odd_hour, $odd_hour - 4);
