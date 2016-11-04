@@ -165,8 +165,7 @@ sub _get_ask {
 
             my $display_value           = $contract->is_spread ? $contract->buy_level : $ask_price;
             my $market_name             = $contract->market->name;
-            my $global_scaling          = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling;
-            my $base_commission_scaling = $global_scaling->can($market_name) ? $global_scaling->$market_name : 100;
+            my $base_commission_scaling = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market_name;
 
             $response = {
                 longcode            => $contract->longcode,
