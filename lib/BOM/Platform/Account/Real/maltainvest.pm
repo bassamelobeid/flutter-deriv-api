@@ -5,9 +5,8 @@ use warnings;
 
 use JSON qw(encode_json);
 use BOM::Platform::Account::Real::default;
-use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(request);
 use BOM::Platform::Email qw(send_email);
+use BOM::System::Config;
 
 sub _validate {
     my $args = shift;
@@ -17,7 +16,7 @@ sub _validate {
 
     # also allow MLT UK client to open MF account
     my $from_client = $args->{from_client};
-    my $company = BOM::Platform::Countries->instance->financial_company_for_country($from_client->residence) // '';
+    my $company = LandingCompany::Countries->instance->financial_company_for_country($from_client->residence) // '';
     return if ($company eq 'maltainvest' or ($from_client->residence eq 'gb' and $from_client->landing_company->short eq 'malta'));
 
     warn("maltainvest acc opening err: loginid:" . $from_client->loginid . " residence:" . $from_client->residence . " financial_company:$company");
@@ -47,6 +46,9 @@ sub create_account {
         is_professional => $financial_assessment->{total_score} < 60 ? 0 : 1,
     });
     $client->set_status('unwelcome', 'SYSTEM', 'Trading disabled for investment Europe ltd');
+    # this will be always true as max score client can get is less than 60
+    # but to be on safer side for future added if condition
+    $client->set_status('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure') if $accept_risk;
     $client->save;
 
     my $status = BOM::Platform::Account::Real::default::after_register_client({
@@ -59,8 +61,8 @@ sub create_account {
 
     if ($financial_assessment->{total_score} > 59) {
         send_email({
-            from    => BOM::Platform::Runtime->instance->app_config->cs->email,
-            to      => BOM::Platform::Runtime->instance->app_config->compliance->email,
+            from    => BOM::System::Config::email_address('support'),
+            to      => BOM::System::Config::email_address('compliance'),
             subject => $client->loginid . ' considered as professional trader',
             message =>
                 [$client->loginid . ' scored ' . $financial_assessment->{total_score} . ' and is therefore considered a professional trader.'],

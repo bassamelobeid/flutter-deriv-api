@@ -14,21 +14,18 @@ use strict;
 use warnings;
 
 use feature 'state';
-use Scalar::Util qw(weaken);
 use Template;
 use Template::Stash;
 use base qw( Exporter );
 
-our @EXPORT_OK = qw( request localize template);
+our @EXPORT_OK = qw(request localize template);
 
 use BOM::Platform::Context::Request;
 use Format::Util::Numbers;
 use BOM::Platform::Context::I18N;
-use Path::Tiny;
 
 state $current_request;
 state $template_config = {};
-state $timer;
 
 =head2 request
 
@@ -48,18 +45,6 @@ sub request {
     return $current_request // $default_request;
 }
 
-=head2 request_completed
-
-Marks completion of the request.
-
-=cut
-
-sub request_completed {
-    $current_request = undef;
-    _configure_for_request(request());
-    return;
-}
-
 =head2 template
 
 Correct instance of template_toolkit object for current request.
@@ -73,6 +58,8 @@ usage,
 
 =cut
 
+# we need to find a way to get rid of this as we just
+# use it for common_email template
 sub template {
     my $what = shift || 'template';
     if (not $template_config->{template}) {
@@ -116,12 +103,7 @@ sub _configure_template_for {
     my $request = shift;
     my $stash   = shift;
 
-    my @include_path;
-    if ($request->backoffice) {
-        push @include_path, '/home/git/regentmarkets/bom-backoffice/templates/';
-    }
-
-    push @include_path, '/home/git/regentmarkets/bom-platform/templates/';
+    my @include_path = ('/home/git/regentmarkets/bom-platform/templates/');
 
     my $template_toolkit = Template->new({
             ENCODING     => 'utf8',
@@ -142,7 +124,6 @@ sub _configure_for_request {
     BOM::Platform::Runtime->instance->app_config->check_for_update();
     #Lazy initialization of few params
     $template_config = {};
-    $timer           = undef;
 
     return $request;
 }

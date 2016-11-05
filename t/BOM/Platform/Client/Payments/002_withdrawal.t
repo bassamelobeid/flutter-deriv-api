@@ -12,11 +12,10 @@ use JSON qw(decode_json);
 
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
-use BOM::Platform::CurrencyConverter qw(amount_from_to_currency);
+use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Data::Utility::Product;
 
 initialize_realtime_ticks_db;
 my $recorded_date = Date::Utility->new;
@@ -60,16 +59,11 @@ my %deposit_eur    = (%deposit,    currency => 'EUR');
 my %withdrawal_eur = (%withdrawal, currency => 'EUR');
 
 subtest 'General' => sub {
-    plan tests => 2;
+    plan tests => 1;
     my $client = new_client('USD');
 
     $client->smart_payment(%deposit);
     ok($client->validate_payment(%withdrawal), 'Withdrawals available under normal conditions.');
-
-    BOM::Platform::Runtime->instance->app_config->system->suspend->payments(1);
-    throws_ok { $client->validate_payment(%withdrawal) } qr/suspended/, 'Withdrawals unavailable when payments suspended.';
-
-    BOM::Platform::Runtime->instance->app_config->system->suspend->payments(0);
 };
 
 subtest 'Client-specific' => sub {
@@ -148,8 +142,8 @@ subtest 'CR withdrawal' => sub {
         lives_ok { $client->validate_payment(%withdrawal, amount => -10001) } 'Authed CR withdrawal more than USD10K';
 
         subtest 'perform withdraw' => sub {
-            lives_ok { $client->smart_payment(%withdrawal, amount => -5000) }, 'first 5k withdrawal';
-            lives_ok { $client->smart_payment(%withdrawal, amount => -6000) }, 'subsequent 6k withdrawal';
+            lives_ok { $client->smart_payment(%withdrawal, amount => -5000) } 'first 5k withdrawal';
+            lives_ok { $client->smart_payment(%withdrawal, amount => -6000) } 'subsequent 6k withdrawal';
         };
     };
 };
@@ -331,7 +325,7 @@ subtest 'Total EUR2300 MLT limitation.' => sub {
 };
 
 subtest 'Frozen bonus.' => sub {
-    plan tests => 16;
+    plan tests => 14;
 
     set_fixed_time('2009-09-01T15:00:00Z');    # for the purpose of creating a bet on frxUSDJPY
 
@@ -352,22 +346,6 @@ subtest 'Frozen bonus.' => sub {
 
     throws_ok { $client->validate_payment(%withdrawal, amount => -320) } qr/includes frozen/,
         'client not allowed to withdraw funds including frozen bonus.';
-
-    # test turnover requirement:
-    set_fixed_time('2009-09-01T15:05:00Z');
-    BOM::Test::Data::Utility::Product::client_buy_bet($client, 'USD', 100);
-
-    throws_ok { $client->validate_payment(%withdrawal, amount => -$account->load->balance) } qr/includes frozen/,
-        'client not allowed to withdraw frozen bonus while turnover insufficient';
-
-    set_fixed_time('2009-09-01T15:10:00Z');
-
-    $client->smart_payment(%deposit, amount => 300);
-
-    BOM::Test::Data::Utility::Product::client_buy_bet($client, 'USD', 401);    # pushes client over turnover threshold
-
-    ok $client->validate_payment(%withdrawal, amount => -$account->load->balance),
-        'client is allowed to withdraw full amount after turnover requirements are met.';
 
     # gift was given:
     ($client = new_client('USD'))->promo_code('BOM2009');

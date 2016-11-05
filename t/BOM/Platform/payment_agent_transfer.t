@@ -2,8 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 3;
-use Test::NoWarnings;
+use Test::More tests => 2;
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::ClientDB;
@@ -14,8 +13,8 @@ use DateTime;
 my ($client,         $pa_client);
 my ($client_account, $pa_account);
 
-my ($clientdb, $amount_data);
-my ($total_withdrawal,  $withdrawal_count);
+my ($clientdb,         $amount_data);
+my ($total_withdrawal, $withdrawal_count);
 
 my $transfer_amount = 2000.2525;
 my $transfer_amount_2dp = sprintf('%.2f', $transfer_amount);
@@ -69,10 +68,10 @@ subtest 'Client withdraw money via payment agent' => sub {
     'Client withdrawal: client transfer money to payment agent';
 
     lives_ok {
-            $clientdb = BOM::Database::ClientDB->new({
-                client_loginid => $pa_client->loginid,
-                operation      => 'replica',
-            });
+        $clientdb = BOM::Database::ClientDB->new({
+            client_loginid => $pa_client->loginid,
+            operation      => 'replica',
+        });
         $amount_data = $clientdb->getall_arrayref('select * from payment_v1.get_today_payment_agent_withdrawal_sum_count(?)', [$pa_client->loginid]);
         ($total_withdrawal, $withdrawal_count) = ($amount_data->[0]->{amount}, $amount_data->[0]->{count});
     }
@@ -82,10 +81,10 @@ subtest 'Client withdraw money via payment agent' => sub {
     cmp_ok($withdrawal_count, '==', '0', 'PA withdrawal count');
 
     lives_ok {
-            $clientdb = BOM::Database::ClientDB->new({
-                client_loginid => $client->loginid,
-                operation      => 'replica',
-            });
+        $clientdb = BOM::Database::ClientDB->new({
+            client_loginid => $client->loginid,
+            operation      => 'replica',
+        });
         $amount_data = $clientdb->getall_arrayref('select * from payment_v1.get_today_payment_agent_withdrawal_sum_count(?)', [$client->loginid]);
         ($total_withdrawal, $withdrawal_count) = ($amount_data->[0]->{amount}, $amount_data->[0]->{count});
     }
@@ -98,9 +97,9 @@ subtest 'Client withdraw money via payment agent' => sub {
         transfer_from_client_to_pa();
     }
     qr/BI102\b.*?\blast transfer happened less than 2 seconds ago, this probably is a duplicate transfer/,
-    'Client withdrawal: do it again -- should fail due to duplicated transfer';
+        'Client withdrawal: do it again -- should fail due to duplicated transfer';
 
-    select undef, undef, undef, 2.1; # sleep over the BI102 period
+    select undef, undef, undef, 2.1;    # sleep over the BI102 period
     lives_ok {
         transfer_from_client_to_pa();
     }

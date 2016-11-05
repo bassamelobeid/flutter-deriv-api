@@ -16,7 +16,7 @@ use warnings;
 
 use BOM::Platform::Runtime;
 use BOM::System::Config;
-use BOM::Platform::LandingCompany::Registry;
+use LandingCompany::Registry;
 
 use base qw( Exporter );
 our @EXPORT_OK = qw(
@@ -32,7 +32,7 @@ sub get_sportsbook {
         return 'test';
     }
 
-    my $landing_company = BOM::Platform::LandingCompany::Registry::get_by_broker($broker)->name;
+    my $landing_company = LandingCompany::Registry::get_by_broker($broker)->name;
 
     # remove full-stops, to make sportsbook name short enough for DF (30 chars Max)
     $landing_company =~ s/\.//g;

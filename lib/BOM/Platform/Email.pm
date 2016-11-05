@@ -3,16 +3,14 @@ package BOM::Platform::Email;
 use strict;
 use warnings;
 
-use Sys::Hostname qw( );
 use URL::Encode;
 use Email::Stuffer;
 use HTML::FromText;
 use Try::Tiny;
 use Encode;
 
-use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(request);
 use BOM::System::Config;
+use BOM::Platform::Context qw(request);
 
 use parent 'Exporter';
 our @EXPORT_OK = qw(send_email);
@@ -57,20 +55,10 @@ sub send_email {
 
     # replace all whitespace - including vertical such as CR/LF - with a single space
     $subject =~ s/\s+/ /g;
-    my $prefix = BOM::Platform::Runtime->instance->app_config->system->alerts->email_subject_prefix;
-
-    my @name = split(/\./, Sys::Hostname::hostname);
-    my $server = $name[0];
-
-    $prefix =~ s/_HOST_/$server/g;
-    $prefix =~ s/\[//;
-    $prefix =~ s/\]//;
-    $subject = $prefix . $subject;
 
     # DON'T send email on devbox except to RMG emails
-    return 1
-        if (not BOM::System::Config::on_production()
-        and $email !~ /(?:binary|regentmarkets|betonmarkets)\.com$/);
+    return 1 if !BOM::System::Config::on_production() && $email !~ /(?:binary|regentmarkets|betonmarkets)\.com$/;
+    return 1 if $ENV{SKIP_EMAIL};
 
     my @toemails = split(/\s*\,\s*/, $email);
     foreach my $toemail (@toemails) {
@@ -80,7 +68,7 @@ sub send_email {
         }
     }
 
-    if ($fromemail eq BOM::Platform::Runtime->instance->app_config->cs->email) {
+    if ($fromemail eq BOM::System::Config::email_address('support')) {
         $fromemail = "\"Binary.com\" <$fromemail>";
     }
 

@@ -7,14 +7,15 @@ use Try::Tiny;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
 use BOM::System::Password;
-use BOM::Platform::Runtime;
-use BOM::Platform::Countries;
 
-use BOM::Platform::Context::Request;
+use BOM::Platform::Runtime;
+use LandingCompany::Countries;
+use LandingCompany::Registry;
 use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Token;
 use BOM::Platform::Account;
+use BOM::Platform::Context qw(localize);
 
 sub create_account {
     my $args    = shift;
@@ -23,11 +24,6 @@ sub create_account {
     my $email     = lc $details->{email};
     my $password  = BOM::System::Password::hashpw($details->{client_password});
     my $residence = $details->{residence};
-    my $source    = $details->{source};
-
-    my $utm_source   = $details->{utm_source};
-    my $utm_medium   = $details->{utm_medium};
-    my $utm_campaign = $details->{utm_campaign};
 
     # TODO: to be removed later
     BOM::Platform::Account::invalid_japan_access_check($residence, $email);
@@ -36,17 +32,17 @@ sub create_account {
         return {error => 'invalid'};
     } elsif (BOM::Platform::User->new({email => $email})) {
         return {error => 'duplicate email'};
-    } elsif (BOM::Platform::Client::check_country_restricted($residence)) {
+    } elsif ($residence && LandingCompany::Countries->instance->restricted_country($residence)) {
         return {error => 'invalid residence'};
     }
 
     my ($client, $error);
     try {
         die 'residence is empty' if (not $residence);
-        my $company_name = BOM::Platform::Countries->instance->virtual_company_for_country($residence);
+        my $company_name = LandingCompany::Countries->instance->virtual_company_for_country($residence);
 
         $client = BOM::Platform::Client->register_and_return_new_client({
-            broker_code                   => BOM::Platform::LandingCompany::Registry::get($company_name)->broker_codes->[0],
+            broker_code                   => LandingCompany::Registry::get($company_name)->broker_codes->[0],
             client_password               => $password,
             salutation                    => '',
             last_name                     => '',
@@ -77,17 +73,24 @@ sub create_account {
         return {error => 'invalid'};
     }
 
+    my $source        = $details->{source};
+    my $utm_source    = $details->{utm_source};
+    my $utm_medium    = $details->{utm_medium};
+    my $utm_campaign  = $details->{utm_campaign};
+    my $email_consent = $details->{email_consent};
+
     my $user = BOM::Platform::User->create(
         email          => $email,
         password       => $password,
         email_verified => 1,
-        $source       ? (app_id       => $source)       : (),
-        $utm_source   ? (utm_source   => $utm_source)   : (),
-        $utm_medium   ? (utm_medium   => $utm_medium)   : (),
-        $utm_campaign ? (utm_campaign => $utm_campaign) : ());
+        $email_consent ? (email_consent => $email_consent) : (),
+        $source        ? (app_id        => $source)        : (),
+        $utm_source    ? (utm_source    => $utm_source)    : (),
+        $utm_medium    ? (utm_medium    => $utm_medium)    : (),
+        $utm_campaign  ? (utm_campaign  => $utm_campaign)  : ());
     $user->add_loginid({loginid => $client->loginid});
     $user->save;
-    $client->deposit_virtual_funds($source);
+    $client->deposit_virtual_funds($source, localize('Virtual money credit to account'));
 
     stats_inc("business.new_account.virtual");
 

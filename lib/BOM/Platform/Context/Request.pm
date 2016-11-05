@@ -1,34 +1,15 @@
 package BOM::Platform::Context::Request;
 
 use Moose;
-use Moose::Util::TypeConstraints;
-
-use JSON;
-use CGI;
+use Encode;
 use URL::Encode;
-use Data::Dumper;
-use Try::Tiny;
-use Format::Util::Strings qw( defang_lite );
-
-use BOM::Platform::Runtime;
-use BOM::Platform::Countries;
-
-use Plack::App::CGIBin::Streaming::Request;
-use BOM::Platform::LandingCompany::Registry;
 use Sys::Hostname;
 
-with 'BOM::Platform::Context::Request::Urls', 'BOM::Platform::Context::Request::Builders';
+use BOM::Platform::Runtime;
+
+with 'BOM::Platform::Context::Request::Builders';
 
 has 'cookies' => (
-    is => 'ro',
-);
-
-has 'params' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-has 'cgi' => (
     is => 'ro',
 );
 
@@ -39,11 +20,6 @@ has 'mojo_request' => (
 has 'http_method' => (
     is         => 'ro',
     lazy_build => 1,
-);
-
-has 'http_handler' => (
-    is  => 'rw',
-    isa => 'Maybe[Plack::App::CGIBin::Streaming::Request]',
 );
 
 has 'domain_name' => (
@@ -57,34 +33,9 @@ has 'client_ip' => (
     lazy_build => 1,
 );
 
-# Is the user accessing back office page, Boolean
-has 'backoffice' => (
-    is  => 'ro',
-    isa => 'Bool',
-);
-
-# Country of the user determined by what ever mechanism. Ex. Australia
-has 'country' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 has 'country_code' => (
     is      => 'ro',
     default => 'aq',
-);
-
-has 'broker_code' => (
-    is  => 'ro',
-    isa => subtype(
-        Str => where {
-            my $test = $_;
-            exists {map { $_ => 1 } qw(CR MLT MF MX VRTC FOG JP VRTJ)}->{$test}
-        } => message {
-            "Unknown broker code [$_]"
-        }
-    ),
-    lazy_build => 1,
 );
 
 has 'language' => (
@@ -99,25 +50,12 @@ has cookie_domain => (
     builder => '_build_cookie_domain'
 );
 
-has 'available_currencies' => (
+has 'params' => (
     is         => 'ro',
     lazy_build => 1,
-);
-
-has 'default_currency' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-has 'from_ui' => (
-    is => 'ro',
 );
 
 has '_ip' => (
-    is => 'ro',
-);
-
-has 'start_time' => (
     is => 'ro',
 );
 
@@ -151,26 +89,6 @@ sub _build_params {
     my $params = {};
     if (my $request = $self->mojo_request) {
         $params = $request->params->to_hash;
-    } elsif ($request = $self->cgi) {
-        foreach my $param ($request->param) {
-            my @p = $request->param($param);
-            if (scalar @p > 1) {
-                $params->{$param} = \@p;
-            } else {
-                $params->{$param} = shift @p;
-            }
-        }
-        #Sometimes we also have params on post apart from the post values. Collect them as well.
-        if ($self->http_method eq 'POST') {
-            foreach my $param ($request->url_param) {
-                my @p = $request->url_param($param);
-                if (scalar @p > 1) {
-                    $params->{$param} = \@p;
-                } else {
-                    $params->{$param} = shift @p;
-                }
-            }
-        }
     }
 
     #decode all input params to utf-8
@@ -196,16 +114,9 @@ sub _build_http_method {
 
     if (my $request = $self->mojo_request) {
         return $request->method;
-    } elsif ($request = $self->cgi) {
-        return $request->request_method;
     }
 
     return "";
-}
-
-sub _build_country {
-    my $self = shift;
-    return BOM::Platform::Countries->instance->countries->country_from_code($self->country_code);
 }
 
 sub _build_cookie_domain {
@@ -228,37 +139,8 @@ sub _build_domain_name {
     return 'binary.com';
 }
 
-my $countries_list;
-
-BEGIN {
-    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
-}
-
-sub _build_broker_code {
-    my $self = shift;
-
-    if ($self->backoffice) {
-        return $self->param('broker') if $self->param('broker');
-
-        my $loginid = $self->param('LOGINID') || $self->param('loginID');
-        if ($loginid and $loginid =~ /^([A-Z]+)\d+$/) {
-            return $1;
-        }
-
-        return 'CR';
-    }
-
-    my $company = $countries_list->{$self->country_code}->{gaming_company};
-    $company = $countries_list->{$self->country_code}->{financial_company} if (not $company or $company eq 'none');
-
-    return BOM::Platform::LandingCompany::Registry::get($company)->broker_codes->[0];
-
-}
-
 sub _build_language {
     my $self = shift;
-
-    return 'EN' if $self->backoffice;
 
     my $language;
     if ($self->param('l')) {
@@ -277,50 +159,9 @@ sub _build_language {
     return 'EN';
 }
 
-sub _build_available_currencies {
-    my $self = shift;
-
-    return BOM::Platform::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_allowed_currencies;
-}
-
-sub _build_default_currency {
-    my $self = shift;
-
-    #First try to get a country specific currency.
-    my $currency = $self->_country_specific_currency($self->country_code);
-    if ($currency and BOM::Platform::LandingCompany::Registry::get_by_broker($self->broker_code)->is_currency_legal($currency)) {
-        if (grep { $_ eq $currency } @{$self->available_currencies}) {
-            return $currency;
-        }
-    }
-
-    #Next see if the default in landing company is available.
-    $currency = BOM::Platform::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_default_currency;
-    if (grep { $_ eq $currency } @{$self->available_currencies}) {
-        return $currency;
-    }
-
-    #Give the first available.
-    return $self->available_currencies->[0];
-}
-
 sub _build_client_ip {
     my $self = shift;
     return ($self->_ip || '127.0.0.1');
-}
-
-sub _country_specific_currency {
-    my $self    = shift;
-    my $country = shift;
-    $country = lc $country;
-
-    return unless ($country);
-
-    if    (' fr dk de at be cz fi gr ie it lu li mc nl no pl se sk  ' =~ / $country /i) { return 'EUR'; }
-    elsif (' au nz cx cc nf ki nr tv ' =~ / $country /i)                                { return 'AUD'; }
-    elsif (' gb uk ' =~ / $country /i)                                                  { return 'GBP'; }
-
-    return;
 }
 
 sub BUILD {
@@ -334,13 +175,3 @@ sub BUILD {
 __PACKAGE__->meta->make_immutable;
 
 1;
-
-=head1 AUTHOR
-
-Arun Murali, C<< < arun at regentmarkets.com> >>
-
-=head1 COPYRIGHT
-
-(c) 2013-, RMG Tech (Malaysia) Sdn Bhd
-
-=cut

@@ -9,6 +9,7 @@ use Test::Exception;
 
 use BOM::Platform::Client;
 use BOM::Platform::Client::Payments;
+use BOM::Platform::Client::IDAuthentication;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
@@ -87,6 +88,7 @@ $mlt_client->set_default_account('EUR');
 
 ok(!$mlt_client->get_status('cashier_locked'), 'MLT client not cashier_locked prior to first-deposit');
 $mlt_client->payment_free_gift(%deposit, currency => 'EUR');
+BOM::Platform::Client::IDAuthentication->new(client => $mlt_client)->run_authentication;
 ok($mlt_client->get_status('cashier_locked'), 'MLT client now cashier_locked after first-deposit');
 
 my $mx_client = BOM::Platform::Client->register_and_return_new_client({
@@ -98,6 +100,7 @@ $mx_client->set_default_account('USD');
 
 ok(!$mx_client->get_status('cashier_locked'), 'MX client not cashier_locked prior to first-deposit');
 $mx_client->payment_free_gift(%deposit, currency => 'USD');
+BOM::Platform::Client::IDAuthentication->new(client => $mx_client)->run_authentication;
 ok($mx_client->get_status('cashier_locked'), 'MX client now cashier_locked after first-deposit');
 
 done_testing();

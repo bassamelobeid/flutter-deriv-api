@@ -77,41 +77,44 @@ As we continue migrating new data types to this model, there will probably be mo
 use strict;
 use warnings;
 
-#we cache connection to Postgres, so we use state feature.
+# we cache connection to Redis, so we use state feature.
 use feature "state";
 
-#used for loading chronicle config file which contains connection information
+# used for loading chronicle config file which contains connection information
 use YAML::XS;
 use JSON;
 use DBI;
 use DateTime;
 use Date::Utility;
 use BOM::System::RedisReplicated;
+use DBIx::TransactionManager::Distributed;
 
 use Data::Chronicle::Reader;
 use Data::Chronicle::Writer;
 
+# Used for any writes to the Chronicle DB
+my $writer_instance;
+# Historical instance will be used for fetching historical chronicle data (e.g. back-testing)
+my $historical_instance;
+# Live instance will be used for live pricing (normal website operations)
+my $live_instance;
+# NOTE - if you add other instances, see L</_dbh_changed>
+
 sub get_chronicle_writer {
     state $redis = BOM::System::RedisReplicated::redis_write();
 
-    state $instance;
-    $instance //= Data::Chronicle::Writer->new(
+    $writer_instance //= Data::Chronicle::Writer->new(
         cache_writer => $redis,
         db_handle    => _dbh(),
     );
 
-    return $instance;
+    return $writer_instance;
 }
 
 sub get_chronicle_reader {
     #if for_date is specified, then this chronicle_reader will be used for historical data fetching, so it needs a database connection
     my $for_date = shift;
     state $redis = BOM::System::RedisReplicated::redis_read();
-
-    #historical instance will be used for fetching historical chronicle data (e.g. back-testing)
-    state $historical_instance;
-    #live_instance will be used for live pricing (normal website operations)
-    state $live_instance;
 
     if ($for_date) {
         $historical_instance //= Data::Chronicle::Reader->new(
@@ -170,6 +173,8 @@ sub get {
     my $cached_data = BOM::System::RedisReplicated::redis_read()->get($key);
 
     return JSON::from_json($cached_data) if defined $cached_data;
+    # FIXME assuming scalar context here, very dangerous - audit all callers
+    # and replace with return undef;
     return;
 }
 
@@ -247,27 +252,63 @@ SELECT $4, $1, $2, $3
 SQL
 }
 
-#According to discussions made, we are supposed to support "Redis only" installation where there is not Pg.
-#The assumption is that we have Redis for all data which is important for continutation of our services
-#We also have Pg for an archive of data used later for non-live services (e.g back-testing, auditing, ...)
-#And in case for any reason, Redis has problems, we will need to re-populate its information not from Pg
-#But by re-running population scripts
-my ($dbh, $pid);
+# According to discussions made, we are supposed to support "Redis only" installation where there is not Pg.
+# The assumption is that we have Redis for all data which is important for continutation of our services
+# We also have Pg for an archive of data used later for non-live services (e.g back-testing, auditing, ...)
+# And in case for any reason, Redis has problems, we will need to re-populate its information not from Pg
+# But by re-running population scripts
+my $dbh;
+
+my $pid = $$;
 
 sub _dbh {
-    #silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
-    return if not defined _config()->{chronicle};
-    my $db_postfix = $ENV{DB_POSTFIX} // '';
+    # Silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
+    return undef if not defined _config()->{chronicle};
+
+    # Our reconnection logic here is quite simple: assume that a PID change means we need to
+    # reconnect to the database. This also assumes that DBI will reconnect as necessary when
+    # the remote server is restarted or the network drops for any other reason.
+    # There is a more advanced Perl module for handling this - https://metacpan.org/pod/DBIx::Connector
+    # - but the code there is more complicated, including features such as threads support and
+    # Apache::DBI, and so far there hasn't been a compelling reason to consider switching.
+    # Note that switching DBIx::Connector's ->ping behaviour would not be much help for Data::Chronicle::*
+    # handles, we'd need to update Data::Chronicle itself to use DBIx::Connector to get that benefit.
     return $dbh if $dbh and $$ == $pid;
+    DBIx::TransactionManager::Distributed::release_dbh(chronicle => $dbh) if $dbh;
     $pid = $$;
     $dbh = DBI->connect(
-        "dbi:Pg:dbname=chronicle$db_postfix;port=6432;host=/var/run/postgresql",
-        "write", '',
+        '' . _dbh_dsn(),
+        # User and password are part of the DSN
+        '', '',
         {
             RaiseError        => 1,
             pg_server_prepare => 0,
         });
+    DBIx::TransactionManager::Distributed::register_dbh(chronicle => $dbh);
+    _dbh_changed();
     return $dbh;
+}
+
+sub _dbh_dsn {
+    my $db_postfix = $ENV{DB_POSTFIX} // '';
+    return "dbi:Pg:dbname=chronicle$db_postfix;port=6432;host=/var/run/postgresql;user=write";
+}
+
+=head2 _dbh_changed
+
+Used to ensure we will refresh anything that uses a chronicle database handle
+the next time an instance is requested.
+
+Note that any new Chronicle instances we add to this code must also be listed here
+if you want reconnection to work as expected.
+
+=cut
+
+sub _dbh_changed {
+    undef $writer_instance;
+    undef $historical_instance;
+    undef $live_instance;
+    return;
 }
 
 my $config;
