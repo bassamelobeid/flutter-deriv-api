@@ -2709,6 +2709,25 @@ has primary_validation_error => (
     init_arg => undef,
 );
 
+=head2 _validate_appconfig_age
+ 
+We also want to guard against old appconfig.
+
+=cut
+
+sub _validate_appconfig_age {
+    my $rev = BOM::Platform::Runtime->instance->app_config->current_revision;
+    my $age = Time::HiRes::time - $rev;
+    if ($age > 300) {
+        warn "Config age is >300s - $age - is bin/update_appconfig_rev.pl running?\n";
+        return {
+            message           => "appconfig is out of date - age is now $age seconds",
+            message_to_client => localize('Trading is currently suspended due to configuration update'),
+        };
+    }
+    return;
+}
+
 sub confirm_validity {
     my $self = shift;
     my $args = shift;
@@ -2726,6 +2745,7 @@ sub confirm_validity {
     push @validation_methods, '_validate_feed';
     push @validation_methods, 'validate_price'                                            unless $self->skips_price_validation;
     push @validation_methods, '_validate_volsurface'                                      unless $self->volsurface->type eq 'flat';
+    push @validation_methods, '_validate_appconfig_age';
 
     foreach my $method (@validation_methods) {
         if (my $err = $self->$method) {
