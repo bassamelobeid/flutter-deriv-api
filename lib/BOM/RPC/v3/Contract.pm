@@ -436,6 +436,31 @@ sub send_ask {
     return $response;
 }
 
+sub send_multiple_ask {
+    my $params = {%{+shift}};
+    my $barriers = delete $params->{args}->{barrier};
+    my $response;
+    my %error;
+
+    for my $barrier (@$barriers) {
+        $params->{args}->{barrier} = $barrier;
+        my $res = send_ask($params);
+        if (not exists $res->{error}) {
+            $response = $res unless $response;
+            push @{$response->{ask_price}}, $res->{ask_price};
+            push @{$response->{display_price}}, $res->{display_price};
+        } else {
+            push @{$response->{errors}}, {$barrier => $res->{error}};
+        }
+
+        $response->{rpc_time} += $res->{rpc_time} // 0;
+    }
+
+
+    return $response;
+}
+
+
 sub get_contract_details {
     my $params = shift;
 
