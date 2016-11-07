@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Request list of active symbols",
+  "description": "Retrieve a list of all active symbols (underlying markets upon which contracts are available for trading).",
+  "properties": {
+    "trader_statistics": {
+      "type": "integer",
+      "pattern": "^1$",
+      "required": "1"
+    },
+    "passthrough": {
+      "type": "object",
+      "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
+    },
+    "trader_id": {
+      "type": "string",
+      "required": "1"
+    },
+    "req_id": {
+      "type": "integer",
+      "description": "Optional field to map request to response"
+    }
+  },
+  "additionalProperties": false
+}
