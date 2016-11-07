@@ -6,6 +6,7 @@ use strict;
 use Time::HiRes ();
 use Guard;
 use File::Copy;
+use Path::Tiny;
 use Plack::App::CGIBin::Streaming;
 use BOM::Backoffice::Cookie;
 use BOM::Backoffice::Request::Base;
