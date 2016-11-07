@@ -951,10 +951,10 @@ sub _build_price_calculator {
             ($self->has_bs_probability)         ? (bs_probability         => $self->bs_probability)         : (),
             ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
             # Used temporarily by Price::Calculator for the US election commission markup 2016-11-08
-            market_name             => $self->market->name,
-            date_start              => $self->date_start,
-            date_expiry             => $self->date_expiry,
-            is_atm_bet              => $self->is_atm_bet,
+            market_name => $self->market->name,
+            date_start  => $self->date_start,
+            date_expiry => $self->date_expiry,
+            is_atm_bet  => $self->is_atm_bet,
         });
 }
 
