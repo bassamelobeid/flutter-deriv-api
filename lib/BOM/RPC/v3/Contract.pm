@@ -26,7 +26,9 @@ sub validate_symbol {
     my $symbol = shift;
     my @offerings = get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'underlying_symbol');
     if (!$symbol || none { $symbol eq $_ } @offerings) {
-        warn "Symbol " . ($symbol // 'undef') . " not found, our offerings are: " . join(',', @offerings);
+        # There's going to be a few symbols that are disabled or otherwise not provided for valid reasons, but if we have nothing,
+        # or it's a symbol that's very unlikely to be disabled, it'd be nice to know.
+        warn "Symbol " . ($symbol // 'undef') . " not found, our offerings are: " . join(',', @offerings) if $symbol =~ /R_\d+/ or !@offerings;
         return {
             error => {
                 code    => 'InvalidSymbol',
