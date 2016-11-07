@@ -111,6 +111,7 @@ sub _init {
                                 'commodities' => '100',
                                 'stocks'      => '100',
                                 'volidx'      => '100',
+                                'config'      => '100',
                             }}}}
             },
             '_rev' => time
