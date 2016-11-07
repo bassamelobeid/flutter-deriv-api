@@ -33,7 +33,8 @@ my %known_profiles = map { $_ => 1 } keys %$limit_profile;
 
 if ($r->param('update_limit')) {
     my @known_keys = qw(contract_category market submarket underlying_symbol start_type expiry_type barrier_category landing_company);
-    my %known_values = map { $_ => [get_offerings_with_filter($_)] } @known_keys;
+
+    my %known_values = map { $_ => [get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, $_)] } @known_keys;
     # landing company is not part of offerings object.
     $known_values{landing_company} = [map { $_->short } LandingCompany::Registry::all()];
     my %ref;
