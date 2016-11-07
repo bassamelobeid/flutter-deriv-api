@@ -123,9 +123,13 @@ sub proposal_open_contract {
 
 sub _serialized_args {
     my $h = shift;
+    my $copy =  { %$h };
     my @a = ();
-    foreach my $k (sort keys %$h) {
-        push @a, ($k, $h->{$k});
+    # We want to handle similar contracts together, so we do this and sort by
+    # key in the price_queue.pl daemon
+    push @a, ('short_code', delete $copy->{short_code}) if exists $copy->{short_code};
+    foreach my $k (sort keys %$copy) {
+        push @a, ($k, $copy->{$k});
     }
     return 'PRICER_KEYS::' . encode_json(\@a);
 }
