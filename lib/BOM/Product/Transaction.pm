@@ -12,8 +12,9 @@ use Date::Utility;
 use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
 use Format::Util::Numbers qw(commas roundnear to_monetary_number_format);
 use Try::Tiny;
+use YAML::XS qw(LoadFile);
 
-use BOM::Platform::Context qw(request localize);
+use BOM::Platform::Context qw(localize);
 use BOM::Platform::Runtime;
 use LandingCompany::Countries;
 use BOM::Platform::Client;
@@ -202,6 +203,8 @@ sub BUILDARGS {
     return $args;
 }
 
+my $payment_limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'));
+
 my %known_errors;              # forward declaration
 sub sell_expired_contracts;    # forward declaration
 
@@ -344,7 +347,7 @@ sub calculate_limits {
         $limits{max_open_bets}        = $client->get_limit_for_open_positions;
         $limits{max_payout_open_bets} = $client->get_limit_for_payout;
         $limits{max_payout_per_symbol_and_bet_type} =
-            $static_config->{client_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency};
+            $static_config->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency};
     }
 
     my $lim;
@@ -1176,7 +1179,7 @@ sub _validate_available_currency {
     my $self     = shift;
     my $currency = $self->contract->currency;
 
-    if (not grep { $currency eq $_ } @{request()->available_currencies}) {
+    if (not grep { $currency eq $_ } @{LandingCompany::Registry::get_by_broker($self->client->broker_code)->legal_allowed_currencies}) {
         return Error::Base->cuss(
             -type              => 'InvalidCurrency',
             -mesg              => "Invalid $currency",
@@ -1613,9 +1616,10 @@ sub __validate_iom_withdrawal_limit {
     return if ($landing_company->country ne 'Isle of Man');
 
     my $landing_company_short = $landing_company->short;
-    my $numdays               = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->$landing_company_short->for_days;
-    my $numdayslimit          = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->$landing_company_short->limit_for_days;
-    my $lifetimelimit         = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->$landing_company_short->lifetime_limit;
+    my $withdrawal_limits     = $payment_limits->{withdrawal_limits};
+    my $numdays               = $withdrawal_limits->{$landing_company_short}->{for_days};
+    my $numdayslimit          = $withdrawal_limits->{$landing_company_short}->{limit_for_days};
+    my $lifetimelimit         = $withdrawal_limits->{$landing_company_short}->{lifetime_limit};
 
     if ($client->client_fully_authenticated) {
         $numdayslimit  = 99999999;

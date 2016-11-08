@@ -20,6 +20,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Platform::Client::IDAuthentication;
 
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
@@ -514,6 +515,59 @@ subtest 'buy a spread bet' => sub {
         is $chld->{stop_loss},   10, 'stop_loss is 10';
         is $chld->{stop_profit}, 20, 'stop_profit is 20';
     };
+# should have stop loss validaiton when buy
+    local $ENV{REQUEST_STARTTIME} = time;
+    $c = produce_contract({
+        date_pricing     => time,
+        underlying       => 'R_100',
+        bet_type         => 'SPREADU',
+        currency         => 'USD',
+        amount_per_point => 2,
+        stop_loss        => 1000000000,
+        stop_profit      => 200,
+        entry_tick       => $tick_r100,
+        current_tick     => $tick_r100,
+        stop_type        => 'point',
+    });
+    $txn = BOM::Product::Transaction->new({
+        client   => $new_client,
+        contract => $c,
+        price    => 10,
+        source   => 22,
+    });
+
+    my $error = $txn->buy;
+    is $error->get_type, 'InvalidtoBuy', 'error is InvalidtoBuy';
+
+    like $error->{-message_to_client}, qr/Stop Loss must be between /, 'message_to_client contains stop loss must be between';
+
+# should have stop profit validaiton when buy
+
+    local $ENV{REQUEST_STARTTIME} = time;
+    $c = produce_contract({
+        date_pricing     => time,
+        underlying       => 'R_100',
+        bet_type         => 'SPREADU',
+        currency         => 'USD',
+        amount_per_point => 2,
+        stop_loss        => 10,
+        stop_profit      => 200000,
+        entry_tick       => $tick_r100,
+        current_tick     => $tick_r100,
+        stop_type        => 'point',
+    });
+    $txn = BOM::Product::Transaction->new({
+        client   => $new_client,
+        contract => $c,
+        price    => 10,
+        source   => 22,
+    });
+
+    $error = $txn->buy;
+    is $error->get_type, 'InvalidtoBuy', 'error is InvalidtoBuy';
+
+    like $error->{-message_to_client}, qr/Stop Profit must be between /, 'message_to_client contains stop profit must be between';
+
 };
 
 subtest 'sell a spread bet' => sub {
@@ -595,6 +649,100 @@ subtest 'sell a spread bet' => sub {
             is $fmb->{tick_count},        undef,   'tick_count';
             is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
         };
+
+# should skip stop loss validaiton when sell
+        local $ENV{REQUEST_STARTTIME} = time;
+        $contract = produce_contract({
+            underlying       => 'R_100',
+            bet_type         => 'SPREADU',
+            currency         => 'USD',
+            amount_per_point => 2,
+            stop_loss        => 10,
+            stop_profit      => 20,
+            entry_tick       => $tick_r100,
+            current_tick     => $current_tick,
+            stop_type        => 'point',
+        });
+
+        $txn = BOM::Product::Transaction->new({
+            client   => $new_client,
+            contract => $contract,
+            price    => 19.00,
+            source   => 21,
+        });
+        $txn->buy;
+        my ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db spread_bet => $txn->transaction_id;
+        sleep(1);
+        $sell_spread_id = $fmb->{id};
+        $contract       = produce_contract({
+            underlying       => 'R_100',
+            bet_type         => 'SPREADU',
+            currency         => 'USD',
+            amount_per_point => 2,
+            stop_loss        => 1000,
+            stop_profit      => 200,
+            entry_tick       => $tick_r100,
+            current_tick     => $current_tick,
+            stop_type        => 'point',
+        });
+
+        $txn = BOM::Product::Transaction->new({
+            client      => $new_client,
+            contract    => $contract,
+            contract_id => $sell_spread_id,
+            price       => 0,
+            source      => 23,
+        });
+        $error = $txn->sell;
+        is $error, undef, 'no error';
+
+# should skip stop profit validaiton when sell
+        sleep(1);
+        $contract = produce_contract({
+            underlying       => 'R_100',
+            bet_type         => 'SPREADU',
+            currency         => 'USD',
+            amount_per_point => 2,
+            stop_loss        => 10,
+            stop_profit      => 20,
+            entry_tick       => $tick_r100,
+            current_tick     => $current_tick,
+            stop_type        => 'point',
+        });
+
+        $txn = BOM::Product::Transaction->new({
+            client   => $new_client,
+            contract => $contract,
+            price    => 10,
+            source   => 21,
+        });
+        $txn->buy;
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db spread_bet => $txn->transaction_id;
+        $sell_spread_id = $fmb->{id};
+
+        sleep(1);
+        $contract = produce_contract({
+            underlying       => 'R_100',
+            bet_type         => 'SPREADU',
+            currency         => 'USD',
+            amount_per_point => 2,
+            stop_loss        => 10,
+            stop_profit      => 2000,
+            entry_tick       => $tick_r100,
+            current_tick     => $current_tick,
+            stop_type        => 'point',
+        });
+
+        $txn = BOM::Product::Transaction->new({
+            client      => $new_client,
+            contract    => $contract,
+            contract_id => $sell_spread_id,
+            price       => 0,
+            source      => 23,
+        });
+        $error = $txn->sell;
+        is $error, undef, 'no error';
+
     }
     'sell spread bet';
 };
@@ -1380,8 +1528,8 @@ subtest 'max_payout_open_bets validation', sub {
         });
 
         my $error = do {
-            note "Set max_payout_open_positions for MF Client => 29.99";
-            BOM::System::Config::quants->{client_limits}->{max_payout_open_positions}->{USD} = 29.99;
+            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 29.99"; 29.99 });
             my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
 
             if ($now->is_a_weekend or ($now->day_of_week == 5 and $contract->date_expiry->is_after($now->truncate_to_day->plus_time_interval('21h'))))
@@ -1572,10 +1720,10 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
 
         my $error = do {
             # need to do this because these limits are not by landing company anymore
-            note "change quants->{client_limits}->{max_payout_open_positions}->{USD} to 1000.00";
-            BOM::System::Config::quants->{client_limits}->{max_payout_open_positions}->{USD} = 1000.00;
-            note "change quants->{client_limits}->{open_positions_payout_per_symbol_and_bet_type_limit->{USD}} to 29.99";
-            BOM::System::Config::quants->{client_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
+            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 1000.00"; 1000.00});
+            note "change quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit->{USD}} to 29.99";
+            local BOM::System::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
 
             is +BOM::Product::Transaction->new({
                     client      => $cl,
@@ -1608,8 +1756,8 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
 
         # retry with a slightly higher limit should succeed
         $error = do {
-            note "change quants->{client_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} to 30";
-            BOM::System::Config::quants->{client_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 30;
+            note "change quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} to 30";
+            local BOM::System::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 30;
 
             my $contract_r100 = produce_contract({
                 underlying   => $underlying_r100,
@@ -1670,8 +1818,8 @@ subtest 'max_payout_per_symbol_and_bet_type validation: selling bets on the way'
 
         my $txn_id_buy_expired_contract;
         my $error = do {
-            note "change quants->{client_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} to 29.99";
-            BOM::System::Config::quants->{client_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
+            note "change quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} to 29.99";
+            local BOM::System::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
 
             is +BOM::Product::Transaction->new({
                     client      => $cl,
