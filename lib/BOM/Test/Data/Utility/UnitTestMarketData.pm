@@ -6,7 +6,7 @@ BOM::Test::Data::Utility::UnitTestMarketData
 
 =head1 DESCRIPTION
 
-To be used by an RMG unit test. 
+To be used by an RMG unit test.
 
 =head1 SYNOPSIS
 
@@ -105,8 +105,14 @@ sub _init {
                     },
                     'commission' => {
                         'adjustment' => {
-                            'global_scaling' => '100',
-                        }}}
+                            'per_market_scaling' => {
+                                'forex'       => '100',
+                                'indices'     => '100',
+                                'commodities' => '100',
+                                'stocks'      => '100',
+                                'volidx'      => '100',
+                                'config'      => '100',
+                            }}}}
             },
             '_rev' => time
         });
