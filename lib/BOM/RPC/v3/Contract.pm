@@ -185,6 +185,11 @@ sub _get_ask {
                     : (),
                     deep_otm_threshold         => $contract->market->deep_otm_threshold,
                     underlying_base_commission => $contract->underlying->base_commission,
+                    # Used temporarily by Price::Calculator for the US election commission markup 2016-11-08
+                    market_name => $contract->market->name,
+                    date_start  => $contract->date_start,
+                    date_expiry => $contract->date_expiry,
+                    is_atm_bet  => $contract->is_atm_bet,
                 },
             };
 

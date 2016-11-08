@@ -81,7 +81,7 @@ request(BOM::Platform::Context::Request->new(params => {}));
 
 subtest 'validate_symbol' => sub {
     is(BOM::RPC::v3::Contract::validate_symbol('R_50'), undef, "return undef if symbol is valid");
-    is_deeply(
+    cmp_deeply(
         BOM::RPC::v3::Contract::validate_symbol('invalid_symbol'),
         {
             'error' => {
@@ -97,7 +97,7 @@ subtest 'validate_symbol' => sub {
 subtest 'validate_license' => sub {
     is(BOM::RPC::v3::Contract::validate_license('R_50'), undef, "return undef if symbol is realtime");
 
-    is_deeply(
+    cmp_deeply(
         BOM::RPC::v3::Contract::validate_license('JCI'),
         {
             error => {
@@ -116,7 +116,7 @@ subtest 'validate_is_open' => sub {
 
     is(BOM::RPC::v3::Contract::validate_is_open('R_50'), undef, "Random is always open");
 
-    is_deeply(
+    cmp_deeply(
         BOM::RPC::v3::Contract::validate_is_open('frxUSDJPY'),
         {
             error => {
@@ -131,7 +131,7 @@ subtest 'validate_is_open' => sub {
 };
 
 subtest 'validate_underlying' => sub {
-    is_deeply(
+    cmp_deeply(
         BOM::RPC::v3::Contract::validate_underlying('invalid_symbol'),
         {
             'error' => {
@@ -143,7 +143,7 @@ subtest 'validate_underlying' => sub {
         'return error if symbol is invalid'
     );
 
-    is_deeply(
+    cmp_deeply(
         BOM::RPC::v3::Contract::validate_underlying('JCI'),
         {
             error => {
@@ -156,7 +156,7 @@ subtest 'validate_underlying' => sub {
     );
 
     set_fixed_time(Date::Utility->new('2016-07-24')->epoch);
-    is_deeply(
+    cmp_deeply(
         BOM::RPC::v3::Contract::validate_is_open('frxUSDJPY'),
         {
             error => {
@@ -169,7 +169,7 @@ subtest 'validate_underlying' => sub {
     );
     set_fixed_time(Date::Utility->new()->epoch);
 
-    is_deeply(BOM::RPC::v3::Contract::validate_underlying('R_50'), {status => 1}, 'status 1 if everything ok');
+    cmp_deeply(BOM::RPC::v3::Contract::validate_underlying('R_50'), {status => 1}, 'status 1 if everything ok');
 };
 
 subtest 'prepare_ask' => sub {
@@ -196,7 +196,7 @@ subtest 'prepare_ask' => sub {
         'proposal'    => 1,
         'date_start'  => 0
     };
-    is_deeply(BOM::RPC::v3::Contract::prepare_ask($params), $expected, 'prepare_ask result ok');
+    cmp_deeply(BOM::RPC::v3::Contract::prepare_ask($params), $expected, 'prepare_ask result ok');
     $params = {
         %$params,
         date_expiry => '2015-01-01',
@@ -214,13 +214,13 @@ subtest 'prepare_ask' => sub {
     };
     delete $expected->{barrier};
     delete $expected->{barrier2};
-    is_deeply(BOM::RPC::v3::Contract::prepare_ask($params), $expected, 'result is ok after added date_expiry and barrier and barrier2');
+    cmp_deeply(BOM::RPC::v3::Contract::prepare_ask($params), $expected, 'result is ok after added date_expiry and barrier and barrier2');
 
     delete $params->{barrier};
     $expected->{barrier} = 'S0P';
     delete $expected->{high_barrier};
     delete $expected->{low_barrier};
-    is_deeply(BOM::RPC::v3::Contract::prepare_ask($params),
+    cmp_deeply(BOM::RPC::v3::Contract::prepare_ask($params),
         $expected, 'will set barrier default value and delete barrier2 if contract type is not like SPREAD and ASIAN');
 
     delete $expected->{barrier};
@@ -228,7 +228,7 @@ subtest 'prepare_ask' => sub {
     for my $t (qw(SPREAD ASIAN)) {
         $params->{contract_type} = $t;
         $expected->{bet_type}    = $t;
-        is_deeply(BOM::RPC::v3::Contract::prepare_ask($params), $expected, 'will not set barrier if contract type is like SPREAD and ASIAN ');
+        cmp_deeply(BOM::RPC::v3::Contract::prepare_ask($params), $expected, 'will not set barrier if contract type is like SPREAD and ASIAN ');
 
     }
 
@@ -268,18 +268,21 @@ subtest 'get_ask' => sub {
             'amount'                     => '100',
             'app_markup_percentage'      => 0,
             'proposal'                   => 1,
-            'date_start'                 => 0,
+            market_name                  => ignore(),
+            date_start                   => ignore(),
+            date_expiry                  => ignore(),
+            is_atm_bet                   => ignore(),
             'staking_limits'             => {
                 'message_to_client'       => 'Minimum stake of 0.35 and maximum payout of 50,000.00',
                 'min'                     => '0.35',
                 'max'                     => 50000,
                 'message_to_client_array' => ['Minimum stake of [_1] and maximum payout of [_2]', '0.35', '50,000.00']}}};
-    is_deeply($result, $expected, 'the left values are all right');
+    cmp_deeply($result, $expected, 'the left values are all right');
 
     $params->{symbol} = "invalid symbol";
     cmp_deeply([
             warnings {
-                is_deeply(
+                cmp_deeply(
                     BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),
                     {
                         error => {
@@ -297,7 +300,7 @@ subtest 'get_ask' => sub {
 
     cmp_deeply([
             warnings {
-                is_deeply(
+                cmp_deeply(
                     BOM::RPC::v3::Contract::_get_ask({}),
                     {
                         error => {
@@ -340,7 +343,7 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
                 'payout'        => '100.00',
             }}};
 
-    is_deeply($result, $expected, 'errors response is correct when date_expiry < date_start with payout_type is payout');
+    cmp_deeply($result, $expected, 'errors response is correct when date_expiry < date_start with payout_type is payout');
 
     $params = {
         'proposal'         => 1,
@@ -366,7 +369,7 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
                 'payout'        => '10.00',
             }}};
 
-    is_deeply($result, $expected, 'errors response is correct when date_expiry < date_start with payout_type is stake');
+    cmp_deeply($result, $expected, 'errors response is correct when date_expiry < date_start with payout_type is stake');
     $params = {
         'proposal'         => 1,
         'fixed_expiry'     => 1,
@@ -391,7 +394,7 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
                 'payout'        => '11.00',
             }}};
 
-    is_deeply($result, $expected, 'errors response is correct when date_expiry = date_start with payout_type is stake');
+    cmp_deeply($result, $expected, 'errors response is correct when date_expiry = date_start with payout_type is stake');
 
 };
 
@@ -413,7 +416,7 @@ subtest 'send_ask' => sub {
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
     my $expected_keys =
         [sort { $a cmp $b } (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout theo_probability contract_parameters))];
-    is_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
+    cmp_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
         'Win payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
