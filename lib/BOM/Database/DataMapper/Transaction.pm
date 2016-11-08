@@ -415,7 +415,7 @@ sub get_month_payments_sum {
     }
 
     my $start_date_in_current_month = Date::Utility->new($date->year . $date->month . '01000000')->datetime_yyyymmdd_hhmmss;
-    my $last_date_in_current_month = Date::Utility->new($date->year . $date->month . $date->days_in_month . '235959')->datetime_yyyymmdd_hhmmss;
+    my $last_date_in_current_month  = Date::Utility->new($date->year . $date->month . $date->days_in_month . '235959')->datetime_yyyymmdd_hhmmss;
 
     my $sql = q{
             SELECT

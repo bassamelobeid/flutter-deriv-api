@@ -21,6 +21,7 @@ sub __parse_array {
 
 my @token_scopes = ('read', 'trade', 'payments', 'admin');
 my %available_scopes = map { $_ => 1 } @token_scopes;
+
 sub __filter_valid_scopes {
     my (@s) = @_;
     return grep { $available_scopes{$_} } @s;
@@ -78,33 +79,26 @@ sub get_tokens_by_loginid {
 sub get_token_count_by_loginid {
     my ($self, $loginid) = @_;
 
-    return $self->dbh->selectrow_array(
-        "SELECT COUNT(*) FROM auth.access_token WHERE client_loginid = ?", undef, $loginid
-    );
+    return $self->dbh->selectrow_array("SELECT COUNT(*) FROM auth.access_token WHERE client_loginid = ?", undef, $loginid);
 }
 
 sub is_name_taken {
     my ($self, $loginid, $display_name) = @_;
 
-    return $self->dbh->selectrow_array(
-        "SELECT 1 FROM auth.access_token WHERE client_loginid = ? AND display_name = ?", undef, $loginid, $display_name
-    );
+    return $self->dbh->selectrow_array("SELECT 1 FROM auth.access_token WHERE client_loginid = ? AND display_name = ?", undef, $loginid,
+        $display_name);
 }
 
 sub remove_by_loginid {
     my ($self, $client_loginid) = @_;
 
-    return $self->dbh->do(
-        "DELETE FROM auth.access_token WHERE client_loginid = ?", undef, $client_loginid
-    );
+    return $self->dbh->do("DELETE FROM auth.access_token WHERE client_loginid = ?", undef, $client_loginid);
 }
 
 sub remove_by_token {
     my ($self, $token, $loginid) = @_;
 
-    return $self->dbh->do(
-        "DELETE FROM auth.access_token WHERE token = ? and client_loginid = ?", undef, $token, $loginid
-    );
+    return $self->dbh->do("DELETE FROM auth.access_token WHERE token = ? and client_loginid = ?", undef, $token, $loginid);
 }
 
 no Moose;

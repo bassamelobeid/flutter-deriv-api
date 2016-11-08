@@ -34,10 +34,8 @@ qr/At least one of broker_code, or client_loginid must be specified/,
 
 foreach my $client_loginid (qw( VRTC1234 CR1234 MLT1234 MX1234 )) {
     $init_info->{client_loginid} = $client_loginid;
-    Test::More::ok(
-        $connection_builder = BOM::Database::ClientDB->new($init_info),
-        'Create new ConnectionBuilder object using client_loginid(' . $client_loginid . ')'
-    );
+    Test::More::ok($connection_builder = BOM::Database::ClientDB->new($init_info),
+        'Create new ConnectionBuilder object using client_loginid(' . $client_loginid . ')');
     Test::More::ok($db = $connection_builder->db, 'Get db object');
 }
 
@@ -52,13 +50,13 @@ foreach my $broker_code (qw( VRTC CR MX MLT )) {
 }
 
 $init_info->{broker_code} = 'VRTT';    # There is no such broker
-throws_ok { $connection_builder = BOM::Database::ClientDB->new($init_info); $db = $connection_builder->db; }
-qr/Missing required 'domain' argument/, 'Dies when invalid broker code is passed to ConnectionBuilder constructor';
+throws_ok { $connection_builder = BOM::Database::ClientDB->new($init_info); $db = $connection_builder->db; } qr/Missing required 'domain' argument/,
+    'Dies when invalid broker code is passed to ConnectionBuilder constructor';
 
 delete $init_info->{broker_code};
 $init_info->{client_loginid} = 'VRTT1234';    # No such broker or loginid
-throws_ok { $connection_builder = BOM::Database::ClientDB->new($init_info); $db = $connection_builder->db; }
-qr/Missing required 'domain' argument/, 'Dies when invalid client loginid is passed to ConnectionBuilder constructor';
+throws_ok { $connection_builder = BOM::Database::ClientDB->new($init_info); $db = $connection_builder->db; } qr/Missing required 'domain' argument/,
+    'Dies when invalid client loginid is passed to ConnectionBuilder constructor';
 
 $init_info = {
     company_name => 'Binary Ltd',
@@ -93,8 +91,7 @@ foreach my $serv_op (qw( write )) {
         broker_code => 'FOG',
         operation   => $serv_op,
     };
-    ok($connection_builder = BOM::Database::ClientDB->new($init_info),
-        "Create connection with explicit server for $serv_op operation");
+    ok($connection_builder = BOM::Database::ClientDB->new($init_info), "Create connection with explicit server for $serv_op operation");
     $db = $connection_builder->db;
     isa_ok($db, 'BOM::Database::Rose::DB');
 }

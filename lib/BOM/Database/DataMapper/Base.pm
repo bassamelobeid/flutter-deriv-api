@@ -25,7 +25,7 @@ has 'broker_code' => (
 
 sub _build_broker_code {
     my $self = shift;
-    return ($self->client_loginid =~ /^([A-Z]+)/) ? $1 : die 'no valid client_loginid ['.$self->client_loginid.']';
+    return ($self->client_loginid =~ /^([A-Z]+)/) ? $1 : die 'no valid client_loginid [' . $self->client_loginid . ']';
 }
 
 has 'currency_code' => (

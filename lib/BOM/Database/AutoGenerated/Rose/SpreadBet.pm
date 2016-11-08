@@ -5,20 +5,23 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table   => 'spread_bet',
-    schema   => 'bet',
+    table  => 'spread_bet',
+    schema => 'bet',
 
     columns => [
-        financial_market_bet_id => { type => 'bigint', not_null => 1 },
-        amount_per_point        => { type => 'numeric' },
-        stop_profit             => { type => 'numeric' },
-        stop_loss               => { type => 'numeric' },
-        stop_type               => { type => 'text' },
-        spread                  => { type => 'numeric' },
-        spread_divisor          => { type => 'numeric' },
+        financial_market_bet_id => {
+            type     => 'bigint',
+            not_null => 1
+        },
+        amount_per_point => {type => 'numeric'},
+        stop_profit      => {type => 'numeric'},
+        stop_loss        => {type => 'numeric'},
+        stop_type        => {type => 'text'},
+        spread           => {type => 'numeric'},
+        spread_divisor   => {type => 'numeric'},
     ],
 
-    primary_key_columns => [ 'financial_market_bet_id' ],
+    primary_key_columns => ['financial_market_bet_id'],
 );
 
 1;

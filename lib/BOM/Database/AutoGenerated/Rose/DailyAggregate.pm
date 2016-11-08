@@ -5,17 +5,23 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table   => 'daily_aggregates',
-    schema   => 'bet',
+    table  => 'daily_aggregates',
+    schema => 'bet',
 
     columns => [
-        day        => { type => 'date', not_null => 1 },
-        account_id => { type => 'bigint', not_null => 1 },
-        turnover   => { type => 'numeric' },
-        loss       => { type => 'numeric' },
+        day => {
+            type     => 'date',
+            not_null => 1
+        },
+        account_id => {
+            type     => 'bigint',
+            not_null => 1
+        },
+        turnover => {type => 'numeric'},
+        loss     => {type => 'numeric'},
     ],
 
-    primary_key_columns => [ 'day', 'account_id' ],
+    primary_key_columns => ['day', 'account_id'],
 );
 
 1;

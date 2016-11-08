@@ -5,18 +5,30 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table   => 'underlying_symbol_currency_mapper',
-    schema   => 'data_collection',
+    table  => 'underlying_symbol_currency_mapper',
+    schema => 'data_collection',
 
     columns => [
-        id              => { type => 'bigserial', not_null => 1 },
-        symbol          => { type => 'text', not_null => 1 },
-        market          => { type => 'text', not_null => 1 },
-        submarket       => { type => 'text', not_null => 1 },
-        quoted_currency => { type => 'text' },
+        id => {
+            type     => 'bigserial',
+            not_null => 1
+        },
+        symbol => {
+            type     => 'text',
+            not_null => 1
+        },
+        market => {
+            type     => 'text',
+            not_null => 1
+        },
+        submarket => {
+            type     => 'text',
+            not_null => 1
+        },
+        quoted_currency => {type => 'text'},
     ],
 
-    primary_key_columns => [ 'id' ],
+    primary_key_columns => ['id'],
 );
 
 1;

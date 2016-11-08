@@ -7,9 +7,9 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $res;
 my $details = {
-	first_name => 'Bond',
-	last_name => 'Lim',
-	date_of_birth => '1932-09-07',
+    first_name    => 'Bond',
+    last_name     => 'Lim',
+    date_of_birth => '1932-09-07',
 };
 
 $res = BOM::Database::DataMapper::Client->new({broker_code => 'CR'})->get_duplicate_client($details);
