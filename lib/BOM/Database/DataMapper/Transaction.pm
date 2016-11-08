@@ -447,9 +447,6 @@ sub get_transactions {
     $sth->bind_param(3, $after);
     $sth->bind_param(4, $limit);
 
-use Data::Dumper;
-print Dumper ['here', $self->account->id, $before, $after, $limit];
-
     my $transactions = [];
     if ($sth->execute()) {
         while (my $row = $sth->fetchrow_hashref()) {
