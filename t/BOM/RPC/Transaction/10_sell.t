@@ -2,17 +2,18 @@ use strict;
 use warnings;
 
 use utf8;
-use Test::BOM::RPC::Client;
 use Test::Most;
 use Test::Mojo;
-use Data::Dumper;
+
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::Product;
 use BOM::Database::Model::OAuth;
+
+use BOM::Test::RPC::Client;
+use Test::BOM::RPC::Contract;
 
 my $email  = 'test@binary.com';
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -24,7 +25,7 @@ my $loginid = $client->loginid;
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 $client->deposit_virtual_funds;
-my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
@@ -57,7 +58,7 @@ subtest 'sell' => sub {
 
     #sold  contract should be hold 2 minutes and interval should more than 15
     my $now      = time;
-    my $contract = BOM::Test::Data::Utility::Product::create_contract(
+    my $contract = Test::BOM::RPC::Contract::create_contract(
         start_time   => $now - 60 * 2,
         interval     => '20m',
         tick_epoches => [$now - 1, $now, $now + 1, $now + 2]);

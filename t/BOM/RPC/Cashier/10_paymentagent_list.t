@@ -1,12 +1,13 @@
 use strict;
 use warnings;
 
-use Test::BOM::RPC::Client;
+use BOM::Test::RPC::Client;
 use Test::Most;
 use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
+use BOM::System::Password;
 
 use utf8;
 
@@ -45,7 +46,7 @@ $pa_client->payment_agent({
 });
 $pa_client->save;
 
-my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 # start test
 my $method = 'paymentagent_list';

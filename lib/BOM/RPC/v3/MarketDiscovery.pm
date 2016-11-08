@@ -9,11 +9,12 @@ use Cache::RedisDB;
 use Time::Duration::Concise::Localize;
 
 use BOM::RPC::v3::Utility;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use BOM::Platform::Client;
 use BOM::Platform::Context qw (localize request);
 use BOM::Product::Contract::Offerings;
-use BOM::Platform::Offerings qw(get_offerings_with_filter get_permitted_expiries);
+use LandingCompany::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::Platform::Runtime;
 
 my %name_mapper = (
@@ -58,7 +59,7 @@ sub get_corporate_actions {
 
     try {
         my @actions;
-        my $underlying = BOM::Market::Underlying->new($symbol);
+        my $underlying = create_underlying($symbol);
 
         if ($underlying->market->affected_by_corporate_actions) {
             @actions = $underlying->get_applicable_corporate_actions_for_period({
@@ -174,7 +175,9 @@ sub asset_index {
             expiries => sub {
                 my $underlying = shift;
                 my %offered    = %{
-                    get_permitted_expiries({
+                    get_permitted_expiries(
+                        BOM::Platform::Runtime->instance->get_offerings_config,
+                        {
                             underlying_symbol => $underlying->symbol,
                             contract_category => $_->code,
                         })};
@@ -245,9 +248,12 @@ sub active_symbols {
     if (my $cached_symbols = Cache::RedisDB->get($namespace, $key)) {
         $active_symbols = $cached_symbols;
     } else {
-        my @all_active = get_offerings_with_filter('underlying_symbol', {landing_company => $landing_company_name});
+        my $offerings_config = BOM::Platform::Runtime->instance->get_offerings_config;
+
+        my @all_active = get_offerings_with_filter($offerings_config, 'underlying_symbol', {landing_company => $landing_company_name});
         # symbols would be active if we allow forward starting contracts on them.
         my %forward_starting = map { $_ => 1 } get_offerings_with_filter(
+            $offerings_config,
             'underlying_symbol',
             {
                 landing_company => $landing_company_name,
@@ -259,7 +265,7 @@ sub active_symbols {
             push @{$active_symbols}, $desc;
         }
 
-        Cache::RedisDB->set($namespace, $key, $active_symbols, 300 - time % 300);
+        Cache::RedisDB->set($namespace, $key, $active_symbols, 30 - time % 30);
     }
 
     return $active_symbols;
@@ -268,7 +274,7 @@ sub active_symbols {
 sub _description {
     my $symbol = shift;
     my $by     = shift || 'brief';
-    my $ul     = BOM::Market::Underlying->new($symbol) || return;
+    my $ul     = create_underlying($symbol) || return;
     my $iim    = $ul->intraday_interval ? $ul->intraday_interval->minutes : '';
     # sometimes the ul's exchange definition or spot-pricing is not availble yet.  Make that not fatal.
     my $exchange_is_open = eval { $ul->calendar } ? $ul->calendar->is_open_at(time) : '';

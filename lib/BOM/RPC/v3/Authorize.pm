@@ -44,6 +44,16 @@ sub authorize {
     my $token_type;
     if (length $token == 15) {
         $token_type = 'api_token';
+        # add to login history for api token only as oauth login already creates an entry
+        my $user;
+        if ($params->{args}->{add_to_login_history} && ($user = BOM::Platform::User->new({email => $client->email}))) {
+            $user->add_login_history({
+                environment => BOM::RPC::v3::Utility::login_env($params),
+                successful  => 't',
+                action      => 'login',
+            });
+            $user->save;
+        }
     } elsif (length $token == 32 && $token =~ /^a1-/) {
         $token_type = 'oauth_token';
     }
@@ -53,11 +63,13 @@ sub authorize {
         loginid  => $client->loginid,
         balance  => ($account ? sprintf('%.2f', $account->balance) : "0.00"),
         currency => ($account ? $account->currency_code : ''),
-        email => $client->email,
-        landing_company_name => $client->landing_company->short,
-        scopes               => $scopes,
-        is_virtual           => ($client->is_virtual ? 1 : 0),
-        stash                => {
+        email    => $client->email,
+        country  => $client->residence,
+        landing_company_name     => $client->landing_company->short,
+        landing_company_fullname => $client->landing_company->name,
+        scopes                   => $scopes,
+        is_virtual               => ($client->is_virtual ? 1 : 0),
+        stash                    => {
             loginid              => $client->loginid,
             email                => $client->email,
             token                => $token,
@@ -96,7 +108,6 @@ sub logout {
             }
 
             unless ($skip_login_history) {
-                $params->{country} = $params->{country_code} if $params->{country_code};
                 $user->add_login_history({
                     environment => BOM::RPC::v3::Utility::login_env($params),
                     successful  => 't',

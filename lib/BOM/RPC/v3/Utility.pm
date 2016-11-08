@@ -3,15 +3,18 @@ package BOM::RPC::v3::Utility;
 use strict;
 use warnings;
 
-use RateLimitations;
 use Date::Utility;
+use YAML::XS qw(LoadFile);
+use DataDog::DogStatsd::Helper qw(stats_inc);
+use List::MoreUtils qw(any);
+
+use LandingCompany::Countries;
 
 use BOM::Database::Model::AccessToken;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
 use BOM::Platform::Token;
-use DataDog::DogStatsd::Helper qw(stats_inc);
 
 sub get_token_details {
     my $token = shift;
@@ -51,8 +54,9 @@ sub create_error {
         error => {
             code              => $args->{code},
             message_to_client => $args->{message_to_client},
-            $args->{message} ? (message => $args->{message}) : (),
-            $args->{details} ? (details => $args->{details}) : ()}};
+            $args->{continue_price_stream} ? (continue_price_stream => $args->{continue_price_stream}) : (),
+            $args->{message}               ? (message               => $args->{message})               : (),
+            $args->{details}               ? (details               => $args->{details})               : ()}};
 }
 
 sub invalid_token_error {
@@ -68,27 +72,26 @@ sub permission_error {
 }
 
 sub site_limits {
-    my @services = RateLimitations::rate_limited_services;
+
+    my $rates_file_content = LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml');
+
     my $limits;
     $limits->{max_proposal_subscription} = {
         'applies_to' => 'subscribing to proposal concurrently',
         'max'        => 5
     };
-    my @l = RateLimitations::rate_limits_for_service('websocket_call');
     $limits->{'max_requestes_general'} = {
         'applies_to' => 'rest of calls',
-        'minutely'   => $l[0]->[1],
-        'hourly'     => $l[1]->[1]};
-    @l = RateLimitations::rate_limits_for_service('websocket_call_expensive');
+        'minutely'   => $rates_file_content->{websocket_call}->{'1m'},
+        'hourly'     => $rates_file_content->{websocket_call}->{'1h'}};
     $limits->{'max_requests_outcome'} = {
         'applies_to' => 'portfolio, statement and proposal',
-        'minutely'   => $l[0]->[1],
-        'hourly'     => $l[1]->[1]};
-    @l = RateLimitations::rate_limits_for_service('websocket_call_pricing');
+        'minutely'   => $rates_file_content->{websocket_call_expensive}->{'1m'},
+        'hourly'     => $rates_file_content->{websocket_call_expensive}->{'1h'}};
     $limits->{'max_requests_pricing'} = {
         'applies_to' => 'proposal and proposal_open_contract',
-        'minutely'   => $l[0]->[1],
-        'hourly'     => $l[1]->[1]};
+        'minutely'   => $rates_file_content->{websocket_call_pricing}->{'1m'},
+        'hourly'     => $rates_file_content->{websocket_call_pricing}->{'1h'}};
     return $limits;
 }
 
@@ -178,7 +181,7 @@ sub login_env {
 
     my $now                = Date::Utility->new->datetime_ddmmmyy_hhmmss_TZ;
     my $ip_address         = $params->{client_ip} || '';
-    my $ip_address_country = $params->{country} ? uc $params->{country} : '';
+    my $ip_address_country = $params->{country_code} ? uc $params->{country_code} : '';
     my $lang               = $params->{language} ? uc $params->{language} : '';
     my $ua                 = $params->{user_agent} || '';
     my $environment        = "$now IP=$ip_address IP_COUNTRY=$ip_address_country User_AGENT=$ua LANG=$lang";
@@ -193,6 +196,56 @@ sub mask_app_id {
     $id = undef if ($time and Date::Utility->new($time)->is_before(Date::Utility->new("2016-03-01")));
 
     return $id;
+}
+
+sub error_map {
+    return {
+        'email unverified'    => localize('Your email address is unverified.'),
+        'pricing error'       => localize('Unable to price the contract.'),
+        'no residence'        => localize('Your account has no country of residence.'),
+        'invalid'             => localize('Sorry, account opening is unavailable.'),
+        'invalid residence'   => localize('Sorry, our service is not available for your country of residence.'),
+        'invalid UK postcode' => localize('Postcode is required for UK residents.'),
+        'invalid PO Box'      => localize('P.O. Box is not accepted in address.'),
+        'invalid DOB'         => localize('Your date of birth is invalid.'),
+        'duplicate email'     => localize(
+            'Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.'
+        ),
+        'duplicate name DOB' => localize(
+            'Sorry, you seem to already have a real money account with us. Perhaps you have used a different email address when you registered it. For legal reasons we are not allowed to open multiple real money accounts per person.'
+        ),
+        'too young'            => localize('Sorry, you are too young to open an account.'),
+        'show risk disclaimer' => localize('Please agree to the risk disclaimer before proceeding.'),
+        'insufficient score'   => localize(
+            'Unfortunately your answers to the questions above indicate that you do not have sufficient financial resources or trading experience to be eligible to open a trading account at this time.'
+        ),
+        'InvalidDateOfBirth'         => localize('Date of birth is invalid'),
+        'InsufficientAccountDetails' => localize('Please provide complete details for account opening.')};
+}
+
+sub get_real_acc_opening_type {
+    my $args        = shift;
+    my $from_client = $args->{from_client};
+
+    return unless ($from_client->residence);
+    my $gaming_company    = LandingCompany::Countries->instance->gaming_company_for_country($from_client->residence);
+    my $financial_company = LandingCompany::Countries->instance->financial_company_for_country($from_client->residence);
+
+    if ($from_client->is_virtual) {
+        return 'real' if ($gaming_company);
+
+        if ($financial_company) {
+            # Eg: Germany, Japan
+            return $financial_company if (any { $_ eq $financial_company } qw(maltainvest japan));
+
+            # Eg: Singapore has no gaming_company
+            return 'real';
+        }
+    } else {
+        # MLT upgrade to MF
+        return $financial_company if ($financial_company eq 'maltainvest');
+    }
+    return;
 }
 
 1;

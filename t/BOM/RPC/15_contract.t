@@ -1,11 +1,10 @@
 #!perl
-
 use strict;
 use warnings;
-use Test::BOM::RPC::Client;
+use BOM::Test::RPC::Client;
 use Test::Most;
 use Test::Mojo;
-use Test::Warnings qw(warnings);
+use Test::Warnings qw(warning warnings);
 use Test::MockModule;
 use Test::MockTime::HiRes;
 use Date::Utility;
@@ -14,6 +13,9 @@ use Data::Dumper;
 use Quant::Framework::Utils::Test;
 use Quant::Framework::CorporateAction;
 use Quant::Framework::StorageAccessor;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 
 use BOM::RPC::v3::Contract;
 use BOM::Platform::Context qw (request);
@@ -74,7 +76,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now
     }) for qw (frxAUDCAD frxUSDCAD frxAUDUSD);
 
-my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 request(BOM::Platform::Context::Request->new(params => {}));
 
 subtest 'validate_symbol' => sub {
@@ -313,6 +315,86 @@ subtest 'get_ask' => sub {
 
 };
 
+subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
+    my $params = {
+        'proposal'         => 1,
+        'fixed_expiry'     => 1,
+        'date_expiry'      => '1476670200',
+        'contract_type'    => 'PUT',
+        'basis'            => 'payout',
+        'currency'         => 'USD',
+        'symbol'           => 'R_50',
+        'amount'           => '100',
+        'duration_unit'    => 'm',
+        'date_start'       => '1476676000',
+        "streaming_params" => {add_theo_probability => 1},
+    };
+    my $result   = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
+    my $expected = {
+        error => {
+            'code'              => 'ContractBuyValidationError',
+            'message_to_client' => 'Expiry time cannot be in the past.',
+
+            'details' => {
+                'display_value' => '100.00',
+                'payout'        => '100.00',
+            }}};
+
+    is_deeply($result, $expected, 'errors response is correct when date_expiry < date_start with payout_type is payout');
+
+    $params = {
+        'proposal'         => 1,
+        'fixed_expiry'     => 1,
+        'date_expiry'      => '1476670200',
+        'contract_type'    => 'PUT',
+        'basis'            => 'stake',
+        'currency'         => 'USD',
+        'symbol'           => 'R_50',
+        'amount'           => '10',
+        'duration_unit'    => 'm',
+        'date_start'       => '1476676000',
+        "streaming_params" => {add_theo_probability => 1},
+    };
+    $result   = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
+    $expected = {
+        error => {
+            'code'              => 'ContractBuyValidationError',
+            'message_to_client' => 'Expiry time cannot be in the past.',
+
+            'details' => {
+                'display_value' => '10.00',
+                'payout'        => '10.00',
+            }}};
+
+    is_deeply($result, $expected, 'errors response is correct when date_expiry < date_start with payout_type is stake');
+    $params = {
+        'proposal'         => 1,
+        'fixed_expiry'     => 1,
+        'date_expiry'      => '1476670200',
+        'contract_type'    => 'PUT',
+        'basis'            => 'stake',
+        'currency'         => 'USD',
+        'symbol'           => 'R_50',
+        'amount'           => '11',
+        'duration_unit'    => 'm',
+        'date_start'       => '1476670200',
+        "streaming_params" => {add_theo_probability => 1},
+    };
+    $result   = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
+    $expected = {
+        error => {
+            'code'              => 'ContractBuyValidationError',
+            'message_to_client' => 'Expiry time cannot be equal to start time.',
+
+            'details' => {
+                'display_value' => '11.00',
+                'payout'        => '11.00',
+            }}};
+
+    is_deeply($result, $expected, 'errors response is correct when date_expiry = date_start with payout_type is stake');
+
+};
+
 subtest 'send_ask' => sub {
     my $params = {
         client_ip => '127.0.0.1',
@@ -362,6 +444,27 @@ subtest 'send_ask' => sub {
     }
 };
 
+subtest 'send_ask_when_date_expiry_smaller_than_date_start' => sub {
+    my $params = {
+        client_ip => '127.0.0.1',
+        args      => {
+            'proposal'      => 1,
+            'fixed_expiry'  => 1,
+            'date_expiry'   => '1476670200',
+            'contract_type' => 'PUT',
+            'basis'         => 'payout',
+            'currency'      => 'USD',
+            'symbol'        => 'R_50',
+            'amount'        => '100',
+            'duration_unit' => 'm',
+            'date_start'    => '1476676000',
+
+            "streaming_params" => {add_theo_probability => 1},
+        }};
+    $c->call_ok('send_ask', $params)->has_error->error_code_is('ContractBuyValidationError')->error_message_is('Expiry time cannot be in the past.');
+
+};
+
 subtest 'get_bid' => sub {
     # just one tick for missing market data
     create_ticks([100, $now->epoch - 899, 'R_50']);
@@ -370,7 +473,7 @@ subtest 'get_bid' => sub {
         underlying => 'R_50',
     });
 
-    my $contract = create_contract(
+    my $contract = _create_contract(
         client        => $client,
         spread        => 0,
         current_tick  => $tick,
@@ -389,7 +492,7 @@ subtest 'get_bid' => sub {
         'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
         );
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client => $client,
         spread => 1
     );
@@ -400,6 +503,7 @@ subtest 'get_bid' => sub {
         currency    => $client->currency,
         is_sold     => 0,
     };
+
     my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     my @expected_keys = (
         qw(bid_price
@@ -430,7 +534,7 @@ subtest 'get_bid' => sub {
             ));
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client => $client,
         spread => 0
     );
@@ -485,7 +589,7 @@ subtest 'get_bid_skip_barrier_validation' => sub {
 
     set_fixed_time($now->epoch);
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client       => $client,
         spread       => 0,
         date_expiry  => $now->epoch + 900,
@@ -533,7 +637,7 @@ subtest $method => sub {
         '... and had warning about missing currency'
     );
 
-    my $contract = create_contract(
+    my $contract = _create_contract(
         client => $client,
         spread => 0
     );
@@ -555,7 +659,7 @@ subtest $method => sub {
         underlying => 'frxAUDCAD',
     });
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client        => $client,
         spread        => 0,
         underlying    => 'frxAUDCAD',
@@ -575,8 +679,8 @@ subtest $method => sub {
         'barrier'         => '0.99350',
         'contract_id'     => 10,
         'currency'        => 'USD',
-        'bid_price'       => '158.95',
-        'payout'          => '158.95',
+        'bid_price'       => '156.47',
+        'payout'          => '156.47',
         'date_expiry'     => 1127287660,
         'date_settlement' => 1127287660,
         'date_start'      => 1127287260,
@@ -586,7 +690,7 @@ subtest $method => sub {
         'exit_tick'       => '0.99380',
         'exit_tick_time'  => 1127287659,
         'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
-        'shortcode'       => 'CALL_FRXAUDCAD_158.95_1127287260_1127287660_S0P_0',
+        'shortcode'       => 'CALL_FRXAUDCAD_156.47_1127287260_1127287660_S0P_0',
         'underlying'      => 'frxAUDCAD',
         is_valid_to_sell  => 1,
     };
@@ -603,7 +707,7 @@ subtest $method => sub {
         underlying => 'frxAUDCAD',
     });
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client        => $client,
         spread        => 0,
         current_tick  => $tick,
@@ -629,14 +733,14 @@ subtest $method => sub {
         'date_expiry'     => 1127288662,
         'date_settlement' => 1127288662,
         'date_start'      => 1127288260,
-        'payout'          => '200.67',
+        'payout'          => '196.72',
         'entry_spot'      => '0.99360',
         'entry_tick'      => '0.99360',
         'entry_tick_time' => 1127288261,
         'exit_tick'       => '0.99340',
         'exit_tick_time'  => 1127288661,
         'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 42 seconds after contract start time.',
-        'shortcode'       => 'CALL_FRXAUDCAD_200.67_1127288260_1127288662_S0P_0',
+        'shortcode'       => 'CALL_FRXAUDCAD_196.72_1127288260_1127288662_S0P_0',
         'underlying'      => 'frxAUDCAD',
         is_valid_to_sell  => 1,
     };
@@ -658,7 +762,7 @@ subtest $method => sub {
         'is_expired'      => 1,
         'contract_id'     => 10,
         'currency'        => 'USD',
-        'payout'          => '200.67',
+        'payout'          => '196.72',
         'date_expiry'     => 1127288662,
         'date_settlement' => 1127288662,
         'date_start'      => 1127288260,
@@ -668,7 +772,7 @@ subtest $method => sub {
         'exit_tick'       => '0.99340',
         'exit_tick_time'  => 1127288661,
         'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 42 seconds after contract start time.',
-        'shortcode'       => 'CALL_FRXAUDCAD_200.67_1127288260_1127288662_S0P_0',
+        'shortcode'       => 'CALL_FRXAUDCAD_196.72_1127288260_1127288662_S0P_0',
         'underlying'      => 'frxAUDCAD',
         is_valid_to_sell  => 0,
         validation_error  => 'This contract has been sold.'
@@ -680,9 +784,9 @@ subtest $method => sub {
 };
 
 subtest 'get_bid_affected_by_corporate_action' => sub {
-    my $opening    = BOM::Market::Underlying->new('USAAPL')->calendar->opening_on($now);
-    my $closing    = BOM::Market::Underlying->new('USAAPL')->calendar->closing_on($now);
-    my $underlying = BOM::Market::Underlying->new('USAAPL');
+    my $opening    = create_underlying('USAAPL')->calendar->opening_on($now);
+    my $closing    = create_underlying('USAAPL')->calendar->closing_on($now);
+    my $underlying = create_underlying('USAAPL');
     my $starting   = $opening->plus_time_interval('50m');
     my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'USAAPL',
@@ -728,7 +832,7 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
 
     Quant::Framework::CorporateAction::create($storage_accessor, 'USAAPL', $opening)->update($action, $opening)->save;
 
-    my $contract = create_contract(
+    my $contract = _create_contract(
         client        => $client,
         bet_type      => 'PUT',
         underlying    => 'USAAPL',
@@ -747,7 +851,18 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
         is_sold     => 0,
     };
 
-    my $result = $c->call_ok('get_bid', $params);
+    # get_bid calls are supposed to throw a warning during weekend
+    # we will capture this warning instead of letting it fail the
+    # has_no_warning test which will be called by done_testing().
+    my $result;
+    warning { $result = $c->call_ok('get_bid', $params) };
+
+    my $wd           = (gmtime time)[6];
+    my $skip_weekend = 1
+        if ($result->result->{error}
+        and $result->result->{error}->{code} eq 'GetProposalFailure'
+        and ($wd == 0 or $wd == 6));
+
     SKIP: {
         my $expected_result = {
             'barrier'               => '55.50',
@@ -778,11 +893,7 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
             'payout'                => '1000'
         };
 
-        my $wd = (gmtime time)[6];
-        skip 'This test fails on weekends', 2 + keys %$expected_result
-            if ($result->result->{error}
-            and $result->result->{error}->{code} eq 'GetProposalFailure'
-            and ($wd == 0 or $wd == 6));
+        skip 'This test fails on weekends', 2 + keys %$expected_result if $skip_weekend;
 
         $result = $result->has_no_system_error->has_no_error->result;
 
@@ -826,7 +937,7 @@ subtest 'app_markup_percentage' => sub {
     $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params), 2);
     cmp_ok $val - $result->{payout}, ">", 2 / 100 * $val, "as app markup is added so client will get less payout as compared when there is no markup";
 
-    my $contract = create_contract(
+    my $contract = _create_contract(
         client                => $client,
         spread                => 0,
         app_markup_percentage => 1
@@ -842,14 +953,14 @@ subtest 'app_markup_percentage' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client => $client,
         spread => 0
     );
 
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client                => $client,
         spread                => 0,
         app_markup_percentage => 1
@@ -865,17 +976,17 @@ subtest 'app_markup_percentage' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client => $client,
         spread => 0
     );
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client => $client,
         spread => 1
     );
-    $contract = create_contract(
+    $contract = _create_contract(
         client                => $client,
         spread                => 0,
         app_markup_percentage => 1
@@ -891,17 +1002,17 @@ subtest 'app_markup_percentage' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client => $client,
         spread => 0
     );
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client => $client,
         spread => 1
     );
-    $contract = create_contract(
+    $contract = _create_contract(
         client                => $client,
         spread                => 0,
         app_markup_percentage => 1
@@ -917,7 +1028,7 @@ subtest 'app_markup_percentage' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
-    $contract = create_contract(
+    $contract = _create_contract(
         client => $client,
         spread => 0
     );
@@ -940,7 +1051,7 @@ sub create_ticks {
     return;
 }
 
-sub create_contract {
+sub _create_contract {
     my %args = @_;
 
     my $client = $args{client};
@@ -964,7 +1075,7 @@ sub create_contract {
     my $symbol        = $args{underlying} ? $args{underlying} : 'R_50';
     my $date_start    = $now->epoch - 100;
     my $date_expiry   = $now->epoch - 50;
-    my $underlying    = BOM::Market::Underlying->new($symbol);
+    my $underlying    = create_underlying($symbol);
     my $purchase_date = $now->epoch - 101;
     my $contract_data = {
         underlying            => $underlying,

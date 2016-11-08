@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::BOM::RPC::Client;
+use BOM::Test::RPC::Client;
 use Test::Most;
 use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -12,6 +12,10 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
 use utf8;
 
 # init test data
@@ -56,7 +60,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     }) for qw(JPY USD JPY-USD);
 
 my $now        = Date::Utility->new('2005-09-21 06:46:00');
-my $underlying = BOM::Market::Underlying->new('R_50');
+my $underlying = create_underlying('R_50');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
@@ -89,8 +93,8 @@ my $tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     ask        => 76.3030,
 });
 
-my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
-my $amount = BOM::Platform::Runtime->instance->app_config->payments->virtual->topup_amount->USD;
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $amount = 10000;
 
 # start test topup_virtual
 my $method = 'topup_virtual';
@@ -125,7 +129,7 @@ $old_balance = $balance;
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')
     ->error_message_is('Your balance is higher than the permitted amount.', 'blance is higher');
 #withdraw some money to test critical limit value
-my $limit            = BOM::Platform::Runtime->instance->app_config->payments->virtual->minimum_topup_balance->USD;
+my $limit            = 1000;
 my $withdrawal_money = $balance - $limit - 1;
 $test_client_vr->payment_legacy_payment(
     currency     => 'USD',

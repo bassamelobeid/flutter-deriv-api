@@ -11,10 +11,13 @@ use Data::Dumper;
 use Date::Utility;
 use File::Temp;
 
-use Test::BOM::RPC::Client;
+use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::FeedTestDatabase qw/:init/;
 use BOM::Populator::TickFile;
 use BOM::Populator::InsertTicks;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 
 use utf8;
 
@@ -30,7 +33,7 @@ my $now = Date::Utility->new('2012-03-14 07:00:00');
 set_fixed_time($now->epoch);
 
 $t = Test::Mojo->new('BOM::RPC');
-$rpc_ct = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+$rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
 
 my $feed_dir = File::Temp->newdir;
 $ENV{BOM_POPULATOR_ROOT} = "$feed_dir";
@@ -161,15 +164,15 @@ subtest '_validate_start_end' => sub {
     $params->{args}->{end}   = $now->epoch;
     delete $params->{args}->{count};
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is @{$rpc_ct->result->{data}->{history}->{times}}, 500, 'It should return 500 ticks by default';
+    is @{$rpc_ct->result->{data}->{history}->{times}}, 5000, 'It should return 500 ticks by default';
 
     $params->{args}->{count} = 'invalid';
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is @{$rpc_ct->result->{data}->{history}->{times}}, 500, 'It should return 500 ticks if sent invalid count';
+    is @{$rpc_ct->result->{data}->{history}->{times}}, 5000, 'It should return 500 ticks if sent invalid count';
 
-    $params->{args}->{count} = 10000;
+    $params->{args}->{count} = 5001;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is @{$rpc_ct->result->{data}->{history}->{times}}, 500, 'It should return 500 ticks if sent very big count';
+    is @{$rpc_ct->result->{data}->{history}->{times}}, 5000, 'It should return 500 ticks if sent very big count';
 
     delete $params->{args}->{start};
     $params->{args}->{count} = 10;
@@ -181,6 +184,7 @@ subtest '_validate_start_end' => sub {
     $params->{args}->{count}       = 4000;
     $params->{args}->{granularity} = 5;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    is substr($result->{data}->{candles}->[-3]->{low}, -1), '0', 'Quote with zero at end should be pipsized';
     is @{$result->{data}->{candles}}, 3941, 'It should return 3941 candle (due to misisng ticks)';
     is $result->{data}->{candles}->[0]->{epoch}, $now->epoch - (4000 * 5), 'It should start at ' . (4000 * 5) . 's from end';
 
@@ -189,7 +193,8 @@ subtest '_validate_start_end' => sub {
     $params->{args}->{start}         = $now->minus_time_interval('1h30m')->epoch;
     $params->{args}->{end}           = $now->plus_time_interval('1d')->epoch;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is $rpc_ct->result->{data}->{history}->{times}->[-1], $now->epoch - BOM::Market::Underlying->new('HSI')->delay_amount * 60,
+    is substr($rpc_ct->result->{data}->{history}->{prices}->[-5], -1), '0', 'Quote with zero at end should be pipsized';
+    is $rpc_ct->result->{data}->{history}->{times}->[-1], $now->epoch - create_underlying('HSI')->delay_amount * 60,
         'It should return last licensed tick for delayed symbol';
     my $ticks_count_without_adjust_time = @{$rpc_ct->result->{data}->{history}->{times}};
 
@@ -199,7 +204,7 @@ subtest '_validate_start_end' => sub {
         'If sent adjust_start_time param then it should return ticks with shifted start time';
 
     set_fixed_time($now->plus_time_interval('5h')->epoch);
-    my $ul = BOM::Market::Underlying->new('HSI');
+    my $ul = create_underlying('HSI');
     $params->{args}->{end}   = $ul->calendar->closing_on($now)->plus_time_interval('1m')->epoch;
     $params->{args}->{start} = $ul->calendar->closing_on($now)->minus_time_interval('39m')->epoch;
     delete $params->{args}->{count};

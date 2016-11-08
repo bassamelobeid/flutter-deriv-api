@@ -10,11 +10,12 @@ use Data::Dumper;
 
 use BOM::System::Config;
 use BOM::RPC::v3::Utility;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
-use BOM::Platform::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Offerings qw(get_offerings_with_filter);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Format::Util::Numbers qw(roundnear);
@@ -22,9 +23,12 @@ use Time::HiRes;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
 sub validate_symbol {
-    my $symbol    = shift;
-    my @offerings = get_offerings_with_filter('underlying_symbol');
+    my $symbol = shift;
+    my @offerings = get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'underlying_symbol');
     if (!$symbol || none { $symbol eq $_ } @offerings) {
+        # There's going to be a few symbols that are disabled or otherwise not provided for valid reasons, but if we have nothing,
+        # or it's a symbol that's very unlikely to be disabled, it'd be nice to know.
+        warn "Symbol $symbol not found, our offerings are: " . join(',', @offerings) if $symbol and ($symbol =~ /R_\d+/ or not @offerings);
         return {
             error => {
                 code    => 'InvalidSymbol',
@@ -37,7 +41,7 @@ sub validate_symbol {
 
 sub validate_license {
     my $symbol = shift;
-    my $u      = BOM::Market::Underlying->new($symbol);
+    my $u      = create_underlying($symbol);
 
     if ($u->feed_license ne 'realtime') {
         return {
@@ -52,7 +56,7 @@ sub validate_license {
 
 sub validate_is_open {
     my $symbol = shift;
-    my $u      = BOM::Market::Underlying->new($symbol);
+    my $u      = create_underlying($symbol);
 
     unless ($u->calendar->is_open) {
         return {
@@ -122,23 +126,46 @@ sub _get_ask {
             my ($message_to_client, $code);
 
             if (my $pve = $contract->primary_validation_error) {
+
                 $message_to_client = $pve->message_to_client;
                 $code              = "ContractBuyValidationError";
             } else {
                 $message_to_client = localize("Cannot validate contract");
                 $code              = "ContractValidationError";
             }
-            $response = BOM::RPC::v3::Utility::create_error({
-                    message_to_client => $message_to_client,
-                    code              => $code,
-                    details           => {
-                        longcode      => $contract->longcode,
-                        display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price)),
-                        payout => sprintf('%.2f', $contract->payout),
-                    },
-                });
+
+            # When the date_expriry is smaller than date_start, we can not price, display the payout|stake on error message
+            if ($contract->date_expiry->epoch <= $contract->date_start->epoch) {
+
+                my $display_value = $contract->has_payout ? $contract->payout : $contract->ask_price;
+                $response = BOM::RPC::v3::Utility::create_error({
+                        continue_price_stream => $contract->continue_price_stream,
+                        message_to_client     => $message_to_client,
+                        code                  => $code,
+                        details               => {
+                            display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $display_value)),
+                            payout => sprintf('%.2f', $display_value),
+                        },
+                    });
+
+            } else {
+                $response = BOM::RPC::v3::Utility::create_error({
+                        continue_price_stream => $contract->continue_price_stream,
+                        message_to_client     => $message_to_client,
+                        code                  => $code,
+                        details               => {
+                            display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price)),
+                            payout => sprintf('%.2f', $contract->payout),
+                        },
+                    });
+            }
         } else {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
+
+            # need this warning to be logged for Japan as a regulatory requirement
+            warn "[JPLOG]" . $contract->shortcode . ":" . $ask_price . ":" . ($p2->{trading_period_start} // '') . "\n"
+                if ($p2->{currency} && $p2->{currency} eq 'JPY');
+
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
 
             $response = {
@@ -244,11 +271,11 @@ sub get_bid {
             if ($contract->is_sold and defined $sell_price and defined $buy_price) {
                 $response->{is_expired} = 1;
                 my $pnl              = $sell_price - $buy_price;
-                my $point_from_entry = $pnl / $amount_per_point;
+                my $point_from_entry = $pnl / $contract->amount_per_point;
                 my $multiplier       = $contract->sentiment eq 'up' ? 1 : -1;
                 $response->{exit_level} = $contract->underlying->pipsized_value($response->{entry_level} + $point_from_entry * $multiplier);
                 $response->{current_value_in_dollar} = $pnl;
-                $response->{current_value_in_point}  = $pnl / $amount_per_point;
+                $response->{current_value_in_point}  = $point_from_entry;
             } else {
                 if ($contract->is_expired) {
                     $response->{is_expired}              = 1;
@@ -350,7 +377,7 @@ sub send_bid {
         _log_exception(send_bid => "$_ (and it should be impossible for this to happen)");
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'pricing error',
-                message_to_client => BOM::Platform::Locale::error_map()->{'pricing error'}});
+                message_to_client => BOM::RPC::v3::Utility::error_map()->{'pricing error'}});
     };
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
@@ -361,18 +388,22 @@ sub send_bid {
 sub send_ask {
     my $params = shift;
 
+    my $tv = [Time::HiRes::gettimeofday];
+
     # provide landing_company information when it is available.
     $params->{args}->{landing_company} = $params->{landing_company} if $params->{landing_company};
 
     my $symbol   = $params->{args}->{symbol};
     my $response = validate_symbol($symbol);
     if ($response and exists $response->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
+        $response = BOM::RPC::v3::Utility::create_error({
                 code              => $response->{error}->{code},
                 message_to_client => BOM::Platform::Context::localize($response->{error}->{message}, $symbol)});
-    }
 
-    my $tv = [Time::HiRes::gettimeofday];
+        $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
+
+        return $response;
+    }
 
     try {
 
@@ -388,7 +419,7 @@ sub send_ask {
         _log_exception(send_ask => $_);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'pricing error',
-                message_to_client => BOM::Platform::Locale::error_map()->{'pricing error'}});
+                message_to_client => BOM::RPC::v3::Utility::error_map()->{'pricing error'}});
     };
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);

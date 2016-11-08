@@ -4,17 +4,18 @@ use strict;
 use warnings;
 
 use utf8;
-use Test::BOM::RPC::Client;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
-use Data::Dumper;
+
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::Product;
 use BOM::Database::Model::OAuth;
+
+use BOM::Test::RPC::Client;
+use Test::BOM::RPC::Contract;
 
 my $email  = 'test@binary.com';
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -37,7 +38,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             }]});
 
 $client->deposit_virtual_funds;
-my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 subtest 'buy' => sub {
     my $params = {
         language => 'EN',
@@ -69,7 +70,7 @@ subtest 'buy' => sub {
 
     }
 
-    my $contract = BOM::Test::Data::Utility::Product::create_contract();
+    my $contract = Test::BOM::RPC::Contract::create_contract();
 
     $params->{source}              = 1;
     $params->{contract_parameters} = {
@@ -113,9 +114,9 @@ subtest 'buy' => sub {
 
     #Try setting trading period start in parameters.
     $params->{contract_parameters}{trading_period_start} = time - 3600;
-    $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;    
+    $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
 
-    $contract = BOM::Test::Data::Utility::Product::create_contract(is_spread => 1);
+    $contract = Test::BOM::RPC::Contract::create_contract(is_spread => 1);
     $params->{contract_parameters} = {
         "proposal"         => 1,
         "amount"           => "100",
@@ -138,7 +139,7 @@ subtest 'buy' => sub {
 };
 
 subtest 'app_markup' => sub {
-    my $contract = BOM::Test::Data::Utility::Product::create_contract();
+    my $contract = Test::BOM::RPC::Contract::create_contract();
 
     my $params = {
         language            => 'EN',
@@ -177,7 +178,7 @@ subtest 'app_markup' => sub {
 
     delete $params->{args}->{price};
 
-    $contract = BOM::Test::Data::Utility::Product::create_contract(app_markup_percentage => 1);
+    $contract = Test::BOM::RPC::Contract::create_contract(app_markup_percentage => 1);
     $params->{contract_parameters}->{app_markup_percentage} = 1;
 
     $params->{args}->{price} = $contract->ask_price;
@@ -185,10 +186,10 @@ subtest 'app_markup' => sub {
     is $result->{buy_price}, $ask_price + 1, "buy_price is ask_price plus + app_markup same for payout";
 
     # check for stake contracts
-    $contract = BOM::Test::Data::Utility::Product::create_contract(basis => 'stake');
+    $contract = Test::BOM::RPC::Contract::create_contract(basis => 'stake');
     $payout = $contract->payout;
 
-    $contract = BOM::Test::Data::Utility::Product::create_contract(
+    $contract = Test::BOM::RPC::Contract::create_contract(
         basis                 => 'stake',
         app_markup_percentage => 1
     );
@@ -201,7 +202,7 @@ subtest 'app_markup' => sub {
 };
 
 subtest 'app_markup_transaction' => sub {
-    my $contract = BOM::Test::Data::Utility::Product::create_contract();
+    my $contract = Test::BOM::RPC::Contract::create_contract();
 
     my $now = time - 180;
     my $txn = BOM::Product::Transaction->new({
@@ -214,7 +215,7 @@ subtest 'app_markup_transaction' => sub {
     is $txn->app_markup, 0, "no app markup";
 
     my $app_markup_percentage = 1;
-    $contract = BOM::Test::Data::Utility::Product::create_contract(app_markup_percentage => $app_markup_percentage);
+    $contract = Test::BOM::RPC::Contract::create_contract(app_markup_percentage => $app_markup_percentage);
     $now      = time - 120;
     $txn      = BOM::Product::Transaction->new({
         client        => $client,
@@ -226,7 +227,7 @@ subtest 'app_markup_transaction' => sub {
     is $txn->app_markup, $app_markup_percentage / 100 * $contract->payout,
         "transaction app_markup is app_markup_percentage of contract payout for payout amount_type";
 
-    $contract = BOM::Test::Data::Utility::Product::create_contract(basis => 'stake');
+    $contract = Test::BOM::RPC::Contract::create_contract(basis => 'stake');
     my $payout = $contract->payout;
     $now = time - 60;
     $txn = BOM::Product::Transaction->new({
@@ -239,7 +240,7 @@ subtest 'app_markup_transaction' => sub {
     is $txn->app_markup, 0, "no app markup for stake";
 
     $app_markup_percentage = 2;
-    $contract              = BOM::Test::Data::Utility::Product::create_contract(
+    $contract              = Test::BOM::RPC::Contract::create_contract(
         basis                 => 'stake',
         app_markup_percentage => $app_markup_percentage
     );
@@ -255,7 +256,7 @@ subtest 'app_markup_transaction' => sub {
         "in case of stake contract, app_markup is app_markup_percentage of final payout i.e transaction payout";
     cmp_ok $txn->payout, "<", $payout, "payout after app_markup_percentage is less than actual payout";
 
-    $contract = BOM::Test::Data::Utility::Product::create_contract(
+    $contract = Test::BOM::RPC::Contract::create_contract(
         is_spread             => 1,
         app_markup_percentage => $app_markup_percentage
     );

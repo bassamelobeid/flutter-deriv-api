@@ -11,14 +11,12 @@ use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 use BOM::RPC::v3::Utility;
-use BOM::Platform::Account;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Account::Real::subaccount;
-use BOM::Platform::Locale;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
 use BOM::System::Config;
@@ -26,11 +24,12 @@ use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (localize request);
 use BOM::Database::Model::OAuth;
+use LandingCompany::Countries;
 
 my $countries_list;
 
 BEGIN {
-    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+    $countries_list = LandingCompany::Countries->instance->countries_list;
 }
 
 sub _create_oauth_token {
@@ -72,7 +71,7 @@ sub new_account_virtual {
 
     return BOM::RPC::v3::Utility::create_error({
             code              => $acc->{error},
-            message_to_client => BOM::Platform::Locale::error_map()->{$acc->{error}}}) if $acc->{error};
+            message_to_client => BOM::RPC::v3::Utility::error_map()->{$acc->{error}}}) if $acc->{error};
 
     my $client  = $acc->{client};
     my $account = $client->default_account->load;
@@ -195,9 +194,9 @@ sub new_account_real {
 
     my $client = $params->{client};
 
-    my $error_map = BOM::Platform::Locale::error_map();
+    my $error_map = BOM::RPC::v3::Utility::error_map();
 
-    unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'real') {
+    unless ($client->is_virtual and (BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $client}) || '') eq 'real') {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccount',
                 message_to_client => $error_map->{'invalid'}});
@@ -216,7 +215,7 @@ sub new_account_real {
                 code              => 'NoLandingCompany',
                 message_to_client => $error_map->{'No landing company for this country'}});
     }
-    my $broker = BOM::Platform::LandingCompany::Registry->new->get($company)->broker_codes->[0];
+    my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
 
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
     if (my $err = $details_ref->{error}) {
@@ -263,9 +262,9 @@ sub new_account_maltainvest {
     my $client = $params->{client};
 
     my $args      = $params->{args};
-    my $error_map = BOM::Platform::Locale::error_map();
+    my $error_map = BOM::RPC::v3::Utility::error_map();
 
-    unless ($client and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'maltainvest') {
+    unless ($client and (BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $client}) || '') eq 'maltainvest') {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccount',
                 message_to_client => $error_map->{'invalid'}});
@@ -318,9 +317,9 @@ sub new_account_japan {
     my $params = shift;
 
     my $client    = $params->{client};
-    my $error_map = BOM::Platform::Locale::error_map();
+    my $error_map = BOM::RPC::v3::Utility::error_map();
 
-    unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'japan') {
+    unless ($client->is_virtual and (BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $client}) || '') eq 'japan') {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccount',
                 message_to_client => $error_map->{'invalid'}});
@@ -333,7 +332,7 @@ sub new_account_japan {
                 code              => 'NoLandingCompany',
                 message_to_client => $error_map->{'No landing company for this country'}});
     }
-    my $broker = BOM::Platform::LandingCompany::Registry->new->get($company)->broker_codes->[0];
+    my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
 
     my $args = $params->{args};
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
@@ -388,7 +387,7 @@ sub new_account_japan {
 sub new_sub_account {
     my $params = shift;
 
-    my $error_map = BOM::Platform::Locale::error_map();
+    my $error_map = BOM::RPC::v3::Utility::error_map();
 
     my $client = $params->{client};
     if ($client->is_virtual or not $client->allow_omnibus) {

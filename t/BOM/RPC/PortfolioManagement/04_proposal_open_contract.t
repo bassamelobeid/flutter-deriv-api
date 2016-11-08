@@ -4,12 +4,13 @@ use warnings;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
+use Test::Warn;
 
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use DateTime;
 
-use Test::BOM::RPC::Client;
+use BOM::Test::RPC::Client;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -20,6 +21,9 @@ use BOM::Database::Model::AccessToken;
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Database::Model::OAuth;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 
 use utf8;
 
@@ -36,7 +40,7 @@ my @params = (
     });
 
 $t = Test::Mojo->new('BOM::RPC');
-$rpc_ct = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+$rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
@@ -122,7 +126,7 @@ subtest $method => sub {
     my @expected_contract_fields;
 
     lives_ok {
-        ($contract_id, $contract) = create_contract(client => $client);
+        ($contract_id, $contract) = _create_contract(client => $client);
     }
     'Initial contract';
 
@@ -163,21 +167,24 @@ subtest $method => sub {
     my $contract_factory = Test::MockModule->new('BOM::RPC::v3::Contract');
     $contract_factory->mock('produce_contract', sub { die });
 
-    $rpc_ct->call_ok(@params)->has_no_system_error->result_is_deeply({
-            $contract_id => {
-                error => {
-                    message_to_client => 'Sorry, an error occurred while processing your request.',
-                    code              => 'GetProposalFailure',
+    warnings_like {
+        $rpc_ct->call_ok(@params)->has_no_system_error->result_is_deeply({
+                $contract_id => {
+                    error => {
+                        message_to_client => 'Sorry, an error occurred while processing your request.',
+                        code              => 'GetProposalFailure',
+                    },
                 },
             },
-        },
-        'Should return error instead contract data',
-    );
+            'Should return error instead contract data',
+        );
+    }
+    [qr/^Unhandled exception in get_bid/], "Expected warn about error contract producinng";
 };
 
 done_testing();
 
-sub create_contract {
+sub _create_contract {
     my %args = @_;
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD);
@@ -201,7 +208,7 @@ sub create_contract {
         epoch      => $now->epoch,
         underlying => 'R_50',
     });
-    my $underlying    = BOM::Market::Underlying->new('R_50');
+    my $underlying    = create_underlying('R_50');
     my $contract_data = {
         underlying   => $underlying,
         bet_type     => 'FLASHU',

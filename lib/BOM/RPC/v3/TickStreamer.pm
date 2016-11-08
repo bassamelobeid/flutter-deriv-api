@@ -8,10 +8,10 @@ use Date::Utility;
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Contract;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use BOM::Platform::Context qw (localize request);
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
-use BOM::Platform::Offerings qw(get_offerings_with_filter);
 
 sub ticks {
     my $params = shift;
@@ -24,7 +24,7 @@ sub ticks {
                 message_to_client => BOM::Platform::Context::localize($response->{error}->{message}, $symbol)});
     }
 
-    my $display_decimals = BOM::Market::Underlying->new($symbol)->display_decimals;
+    my $display_decimals = create_underlying($symbol)->display_decimals;
 
     return {stash => {"${symbol}_display_decimals" => $display_decimals}};
 }
@@ -42,7 +42,7 @@ sub ticks_history {
                 message_to_client => BOM::Platform::Context::localize($response->{error}->{message}, $symbol)});
     }
 
-    my $ul = BOM::Market::Underlying->new($symbol);
+    my $ul = create_underlying($symbol);
 
     unless ($ul->feed_license =~ /^(realtime|delayed|daily)$/) {
         return BOM::RPC::v3::Utility::create_error({
@@ -123,7 +123,7 @@ sub _ticks {
         limit      => $count,
     });
 
-    return [map { {time => $_->epoch, price => $_->quote} } reverse @$ticks];
+    return [map { {time => $_->epoch, price => $ul->pipsized_value($_->quote)} } reverse @$ticks];
 }
 
 sub _candles {
@@ -194,7 +194,18 @@ sub _candles {
         @all_ohlc = @all_ohlc[-$count .. -1];
     }
 
-    return [map { {epoch => $_->epoch + 0, open => $_->open, high => $_->high, low => $_->low, close => $_->close} } grep { defined $_ } @all_ohlc];
+    return [
+        map { {
+                epoch => $_->epoch + 0,
+                open  => $ul->pipsized_value($_->open),
+                high  => $ul->pipsized_value($_->high),
+                low   => $ul->pipsized_value($_->low),
+                close => $ul->pipsized_value($_->close)}
+            }
+            grep {
+            defined $_
+            } @all_ohlc
+    ];
 }
 
 sub _validate_start_end {
@@ -249,9 +260,9 @@ sub _validate_start_end {
     unless ($count
         and $count =~ /^[0-9]+$/
         and $count > 0
-        and $count < 5000)
+        and $count < 5001)
     {
-        $count = 500;
+        $count = 5000;
     }
     if ($ul->feed_license ne 'realtime') {
         # if feed doesn't have realtime license, we should adjust end_time in such a way
