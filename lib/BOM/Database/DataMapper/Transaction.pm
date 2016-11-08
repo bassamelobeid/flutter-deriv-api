@@ -383,6 +383,7 @@ sub get_equity_beginning_of_month {
         WHERE
             account_id = ?
             AND transaction_time < ?
+        ORDER BY transaction_time DESC
         LIMIT 1
     };
 
@@ -400,6 +401,7 @@ sub get_equity_end_of_month {
         WHERE
             account_id = ?
             AND transaction_time < ?
+        ORDER BY transaction_time DESC
         LIMIT 1
     };
 
