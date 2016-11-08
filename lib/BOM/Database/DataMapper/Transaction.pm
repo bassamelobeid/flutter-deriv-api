@@ -357,6 +357,22 @@ sub get_transactions_ws {
     return $self->db->dbh->selectall_arrayref($sql, {Slice => {}}, @binds);
 }
 
+sub get_transactions_cnt {
+    my ($self, $args, $acc) = @_;
+
+    my $sql = q{
+        SELECT count(*) FROM transaction.transaction
+        WHERE
+            account_id = ?
+            AND action_type = ?
+    };
+
+    my $action_type = $args->{action_type};
+
+    my @binds = ($acc->id, $action_type);
+    return $self->db->dbh->selectcol_arrayref($sql, undef, @binds);
+}
+
 =head2 $self->get_transactions($parameters)
 
 Return list of transactions satisfying given parameters. Acceptable parameters are follows:
@@ -430,6 +446,9 @@ sub get_transactions {
     $sth->bind_param(2, $before);
     $sth->bind_param(3, $after);
     $sth->bind_param(4, $limit);
+
+use Data::Dumper;
+print Dumper ['here', $self->account->id, $before, $after, $limit];
 
     my $transactions = [];
     if ($sth->execute()) {
