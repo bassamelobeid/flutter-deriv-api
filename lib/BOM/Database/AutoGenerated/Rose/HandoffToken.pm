@@ -5,30 +5,19 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table  => 'handoff_token',
-    schema => 'betonmarkets',
+    table   => 'handoff_token',
+    schema   => 'betonmarkets',
 
     columns => [
-        key => {
-            type     => 'varchar',
-            length   => 40,
-            not_null => 1
-        },
-        client_loginid => {
-            type   => 'varchar',
-            length => 12
-        },
-        expires => {type => 'timestamp'},
-        id      => {
-            type     => 'bigint',
-            not_null => 1,
-            sequence => 'sequences.global_serial'
-        },
+        key            => { type => 'varchar', length => 40, not_null => 1 },
+        client_loginid => { type => 'varchar', length => 12 },
+        expires        => { type => 'timestamp' },
+        id             => { type => 'bigint', not_null => 1, sequence => 'sequences.global_serial' },
     ],
 
-    primary_key_columns => ['id'],
+    primary_key_columns => [ 'id' ],
 
-    unique_key => ['key'],
+    unique_key => [ 'key' ],
 );
 
 1;

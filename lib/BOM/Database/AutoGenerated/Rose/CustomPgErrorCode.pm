@@ -5,18 +5,15 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table  => 'custom_pg_error_codes',
-    schema => 'betonmarkets',
+    table   => 'custom_pg_error_codes',
+    schema   => 'betonmarkets',
 
     columns => [
-        code => {
-            type     => 'text',
-            not_null => 1
-        },
-        explanation => {type => 'text'},
+        code        => { type => 'text', not_null => 1 },
+        explanation => { type => 'text' },
     ],
 
-    primary_key_columns => ['code'],
+    primary_key_columns => [ 'code' ],
 );
 
 1;

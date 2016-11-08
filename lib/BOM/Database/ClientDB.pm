@@ -113,7 +113,7 @@ sub getall_arrayref {
     my $sth = $self->db->dbh->prepare($query);
     $sth->execute(@{$params});
 
-    my @result = map { JSON::XS::decode_json($_->[0]) } @{$sth->fetchall_arrayref([0])};
+    my @result = map {JSON::XS::decode_json($_->[0])} @{$sth->fetchall_arrayref([0])};
     return \@result;
 }
 

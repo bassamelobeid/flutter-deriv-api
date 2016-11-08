@@ -5,26 +5,16 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table  => 'digit_bet',
-    schema => 'bet',
+    table   => 'digit_bet',
+    schema   => 'bet',
 
     columns => [
-        financial_market_bet_id => {
-            type     => 'bigint',
-            not_null => 1
-        },
-        last_digit => {
-            type     => 'integer',
-            not_null => 1
-        },
-        prediction => {
-            type     => 'varchar',
-            length   => 20,
-            not_null => 1
-        },
+        financial_market_bet_id => { type => 'bigint', not_null => 1 },
+        last_digit              => { type => 'integer', not_null => 1 },
+        prediction              => { type => 'varchar', length => 20, not_null => 1 },
     ],
 
-    primary_key_columns => ['financial_market_bet_id'],
+    primary_key_columns => [ 'financial_market_bet_id' ],
 );
 
 1;

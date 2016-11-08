@@ -5,23 +5,15 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table  => 'email_password_map',
-    schema => 'users',
+    table   => 'email_password_map',
+    schema   => 'users',
 
     columns => [
-        email => {
-            type     => 'varchar',
-            length   => 100,
-            not_null => 1
-        },
-        password_from => {
-            type     => 'varchar',
-            length   => 12,
-            not_null => 1
-        },
+        email         => { type => 'varchar', length => 100, not_null => 1 },
+        password_from => { type => 'varchar', length => 12, not_null => 1 },
     ],
 
-    primary_key_columns => ['email'],
+    primary_key_columns => [ 'email' ],
 );
 
 1;

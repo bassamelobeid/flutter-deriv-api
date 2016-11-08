@@ -26,10 +26,11 @@ Readonly our $BET_CLASS_SPREAD_BET       => 'spread_bet';
 
 # Constant reference to volatile hash
 Readonly our $BET_CLASS_TO_TYPE_MAP => {
-    'spread_bet'       => ['SPREADU', 'SPREADD'],
+    'spread_bet' => ['SPREADU', 'SPREADD'],
     'higher_lower_bet' => [
-        'FLASHU', 'INTRADU', 'DOUBLEUP',    'FLASHD',       'INTRADD',       'DOUBLEDOWN',     'CALL',   'PUT',
-        'CALLE',  'PUTE',    'TWOFORONEUP', 'TWOFORWARDUP', 'TWOFORONEDOWN', 'TWOFORWARDDOWN', 'ASIANU', 'ASIAND'
+        'FLASHU',      'INTRADU',      'DOUBLEUP',      'FLASHD',         'INTRADD', 'DOUBLEDOWN', 'CALL', 'PUT',
+        'CALLE', 'PUTE',
+        'TWOFORONEUP', 'TWOFORWARDUP', 'TWOFORONEDOWN', 'TWOFORWARDDOWN', 'ASIANU',  'ASIAND'
     ],
 
     'legacy_bet' => [

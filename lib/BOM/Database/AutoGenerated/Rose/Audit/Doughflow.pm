@@ -5,58 +5,25 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table  => 'doughflow',
-    schema => 'audit',
+    table   => 'doughflow',
+    schema   => 'audit',
 
     columns => [
-        operation => {
-            type     => 'varchar',
-            length   => 10,
-            not_null => 1
-        },
-        stamp => {
-            type     => 'timestamp',
-            not_null => 1
-        },
-        pg_userid => {
-            type     => 'text',
-            not_null => 1
-        },
-        client_addr => {type => 'scalar'},
-        client_port => {type => 'integer'},
-        payment_id  => {
-            type     => 'bigint',
-            not_null => 1
-        },
-        transaction_type => {
-            type     => 'varchar',
-            length   => 15,
-            not_null => 1
-        },
-        trace_id => {
-            type     => 'bigint',
-            not_null => 1
-        },
-        created_by => {
-            type   => 'varchar',
-            length => 50
-        },
-        payment_processor => {
-            type     => 'varchar',
-            length   => 50,
-            not_null => 1
-        },
-        ip_address => {
-            type   => 'varchar',
-            length => 15
-        },
-        transaction_id => {
-            type   => 'varchar',
-            length => 100
-        },
+        operation         => { type => 'varchar', length => 10, not_null => 1 },
+        stamp             => { type => 'timestamp', not_null => 1 },
+        pg_userid         => { type => 'text', not_null => 1 },
+        client_addr       => { type => 'scalar' },
+        client_port       => { type => 'integer' },
+        payment_id        => { type => 'bigint', not_null => 1 },
+        transaction_type  => { type => 'varchar', length => 15, not_null => 1 },
+        trace_id          => { type => 'bigint', not_null => 1 },
+        created_by        => { type => 'varchar', length => 50 },
+        payment_processor => { type => 'varchar', length => 50, not_null => 1 },
+        ip_address        => { type => 'varchar', length => 15 },
+        transaction_id    => { type => 'varchar', length => 100 },
     ],
 
-    primary_key_columns => ['client_addr'],
+    primary_key_columns => [ 'client_addr' ],
 );
 
 1;
