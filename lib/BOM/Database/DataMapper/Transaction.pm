@@ -370,7 +370,67 @@ sub get_transactions_cnt {
     my $action_type = $args->{action_type};
 
     my @binds = ($acc->id, $action_type);
-    return $self->db->dbh->selectcol_arrayref($sql, undef, @binds);
+    return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
+}
+
+sub get_equity_beginning_of_month {
+    my ($self, $date, $acc) = @_;
+
+    my $start_date_in_current_month = Date::Utility->new($date->year . $date->month . '01000000')->datetime_yyyymmdd_hhmmss;
+
+    my $sql = q{
+        SELECT balance_after FROM transaction.transaction
+        WHERE
+            account_id = ?
+            AND transaction_time < ?
+        LIMIT 1
+    };
+
+    my @binds = ($acc->id, $start_date_in_current_month);
+    return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
+}
+
+sub get_equity_end_of_month {
+    my ($self, $date, $acc) = @_;
+
+    my $last_date_in_current_month = Date::Utility->new($date->year . $date->month . $date->days_in_month . '235959')->datetime_yyyymmdd_hhmmss;
+
+    my $sql = q{
+        SELECT balance_after FROM transaction.transaction
+        WHERE
+            account_id = ?
+            AND transaction_time < ?
+        LIMIT 1
+    };
+
+    my @binds = ($acc->id, $last_date_in_current_month);
+    return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
+}
+
+sub get_month_payments_sum {
+    my ($self, $date, $acc, $action_type) = @_;
+
+    if ($action_type ne $BOM::Database::Model::Constants::WITHDRAWAL and $action_type ne $BOM::Database::Model::Constants::DEPOSIT) {
+        Carp::croak("[get_month_payment_sum] wrong action type [$action_type]");
+    }
+
+    my $start_date_in_current_month = Date::Utility->new($date->year . $date->month . '01000000')->datetime_yyyymmdd_hhmmss;
+    my $last_date_in_current_month = Date::Utility->new($date->year . $date->month . $date->days_in_month . '235959')->datetime_yyyymmdd_hhmmss;
+
+    my $sql = q{
+            SELECT
+                sum(amount)
+            FROM
+                TRANSACTION.TRANSACTION
+            WHERE
+                account_id = $1
+                AND transaction_time > $2
+                AND transaction_time <= $3
+                AND action_type = $4
+        };
+
+    my @binds = ($acc->id, $start_date_in_current_month, $last_date_in_current_month, $action_type);
+    return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
 }
 
 =head2 $self->get_transactions($parameters)
@@ -542,7 +602,7 @@ sub get_details_by_transaction_ref {
     my $self           = shift;
     my $transaction_id = shift;
     my $sql            = q{
-    SELECT 
+    SELECT
         a.client_loginid AS loginid,
         b.short_code AS shortcode,
         b.buy_price as ask_price,
