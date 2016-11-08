@@ -64,18 +64,20 @@ has 'domain_name' => (
     lazy_build => 1,
 );
 
-has 'broker_code' => (
-    is  => 'ro',
-    isa => subtype(
-        Str => where {
-            my $test = $_;
-            exists {map { $_ => 1 } qw(CR MLT MF MX VRTC FOG JP VRTJ)}->{$test}
-        } => message {
-            "Unknown broker code [$_]"
-        }
-    ),
-    lazy_build => 1,
-);
+{
+    my $known_codes = map {; $_ => 1 } qw(CR MLT MF MX VRTC FOG JP VRTJ);
+    has 'broker_code' => (
+        is  => 'ro',
+        isa => subtype(
+            Str => where {
+                exists $known_codes->{$_}
+            } => message {
+                "Unknown broker code [$_]"
+            }
+        ),
+        lazy_build => 1,
+    );
+}
 
 has 'available_currencies' => (
     is         => 'ro',
