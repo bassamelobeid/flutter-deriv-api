@@ -6,13 +6,13 @@ use namespace::autoclean;
 
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(localize);
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Platform::ProveID;
 use BOM::System::Config;
 
 has client => (
     is  => 'ro',
-    isa => 'BOM::Platform::Client'
+    isa => 'Client::Account'
 );
 
 has force_recheck => (
