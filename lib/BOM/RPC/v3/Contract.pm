@@ -192,6 +192,11 @@ sub _get_ask {
                     base_commission_min        => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
                     base_commission_max        => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
                     base_commission_scaling    => $base_commission_scaling,
+                    # Used temporarily by Price::Calculator for the US election commission markup 2016-11-08
+                    market_name => $contract->market->name,
+                    date_start  => $contract->date_start,
+                    date_expiry => $contract->date_expiry,
+                    is_atm_bet  => $contract->is_atm_bet,
                 },
             };
 
