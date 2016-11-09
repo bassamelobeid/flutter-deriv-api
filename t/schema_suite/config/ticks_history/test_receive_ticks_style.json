@@ -44,7 +44,7 @@
                    "minItems": "[_2]",
                    "items": {
                        "type": "string",
-                       "pattern": "^\\d+\.\\d+$",
+                       "pattern": "^\\d+\\.\\d+$",
                        "required": "1"
                    }
                }
