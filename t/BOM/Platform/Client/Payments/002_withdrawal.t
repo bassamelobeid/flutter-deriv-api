@@ -59,16 +59,11 @@ my %deposit_eur    = (%deposit,    currency => 'EUR');
 my %withdrawal_eur = (%withdrawal, currency => 'EUR');
 
 subtest 'General' => sub {
-    plan tests => 2;
+    plan tests => 1;
     my $client = new_client('USD');
 
     $client->smart_payment(%deposit);
     ok($client->validate_payment(%withdrawal), 'Withdrawals available under normal conditions.');
-
-    BOM::Platform::Runtime->instance->app_config->system->suspend->payments(1);
-    throws_ok { $client->validate_payment(%withdrawal) } qr/suspended/, 'Withdrawals unavailable when payments suspended.';
-
-    BOM::Platform::Runtime->instance->app_config->system->suspend->payments(0);
 };
 
 subtest 'Client-specific' => sub {
