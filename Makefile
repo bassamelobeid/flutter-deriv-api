@@ -1,8 +1,6 @@
 M=[ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
 export PERL5OPT=-MTest::FailWarnings=-allow_deps,1
-D=$(CURDIR)
-I=-I$D/lib -I$D -I$D/t -I/home/git/regentmarkets/bom-websocket-tests/lib
-P=/etc/rmg/bin/prove --timer -r $I
+P=/etc/rmg/bin/prove --timer -rl
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 v3_1:
@@ -14,8 +12,14 @@ v3_2:
 v3_3:
 	@$(PROVE) $$(ls -1d /home/git/regentmarkets/bom-websocket-tests/v3/* | grep 'v3/\(8\|9\)')
 
-json_schema:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t
+json_schema_1:
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: proposal.conf
+
+json_schema_2:
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: assets.conf
+
+json_schema_3:
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: accounts.conf
 
 loadtest:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/loadtest.t
