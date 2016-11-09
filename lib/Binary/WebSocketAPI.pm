@@ -112,10 +112,7 @@ sub startup {
 
     my $actions = [
         ['trader_statistics', {require_auth => 'read'}],
-        
-        
-        
-        ['authorize', {stash_params => [qw/ ua_fingerprint client_ip user_agent /]}],
+        ['authorize',         {stash_params => [qw/ ua_fingerprint client_ip user_agent /]}],
         [
             'logout',
             {
