@@ -1,8 +1,5 @@
 {
     "args": {
-        "ticks_history": "[_1]",
-        "count": "[_2]",
-        "start": "[_3]",
-        "end": "[_4]"
+        "ticks_history": "[_1]"
     }
 }
