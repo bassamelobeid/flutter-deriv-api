@@ -161,6 +161,30 @@ sub _apply_barrier_adjustment {
         $barrier += $barrier_adj_future_value;
     }
 
+    if ( $self->is_intraday and $self->market->name eq 'forex' ) {
+        #get a list of applicable tentative economic events
+        my $tentative_events = $self->tentative_events;
+
+        my $expected_return = 0;
+
+        foreach my $event (values %{$tentative_events}) {
+            #if event is for to asset_symbol minus the return
+            #if event is for quoted_currency_symbol add the return
+            #For example for EURUSD, asset symbol is EUR and quoted currency is USD
+            if ( $event->{symbol} eq $self->underlying->asset_symbol ) {
+                $expected_return -= $event->{expected_return};
+            } elsif ( $event->{symbol} eq $self->underlying->quoted_currency_symbol ) {
+                $expected_return += $event->{expected_return};
+            }
+        }
+
+        my $below_factor = 1 + ($expected_return/100);
+        my $above_factor = 1 - ($expected_return/100);
+
+        $barrier *= $below_factor if ( $barrier < $self->pricing_spot );
+        $barrier *= $above_factor if ( $barrier > $self->pricing_spot );
+    }
+
     return $barrier;
 }
 
