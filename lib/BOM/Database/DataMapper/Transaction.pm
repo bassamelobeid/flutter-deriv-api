@@ -389,15 +389,15 @@ sub get_balance_before_date {
     return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
 }
 
-sub get_month_payments_sum {
+sub get_monthly_payments_sum {
     my ($self, $date, $acc, $action_type) = @_;
 
     if ($action_type ne $BOM::Database::Model::Constants::WITHDRAWAL and $action_type ne $BOM::Database::Model::Constants::DEPOSIT) {
         Carp::croak("[get_month_payment_sum] wrong action type [$action_type]");
     }
 
-    my $start_date_in_current_month = Date::Utility->new($date->year . $date->month . '01000000')->datetime_yyyymmdd_hhmmss;
-    my $last_date_in_current_month = Date::Utility->new($date->year . $date->month . $date->days_in_month . '235959')->datetime_yyyymmdd_hhmmss;
+    my $first_day_in_current_month = Date::Utility->new($date->year . $date->month . '01000000')->datetime_yyyymmdd_hhmmss;
+    my $last_day_in_current_month = Date::Utility->new($date->year . $date->month . $date->days_in_month . '235959')->datetime_yyyymmdd_hhmmss;
 
     my $sql = q{
             SELECT
@@ -411,11 +411,11 @@ sub get_month_payments_sum {
                 AND action_type = $4
         };
 
-    my @binds = ($acc->id, $start_date_in_current_month, $last_date_in_current_month, $action_type);
+    my @binds = ($acc->id, $first_day_in_current_month, $last_day_in_current_month, $action_type);
     return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
 }
 
-sub get_avg_duration {
+sub get_trades_avg_duration {
     my ($self, $acc) = @_;
 
     my $sql = q{
