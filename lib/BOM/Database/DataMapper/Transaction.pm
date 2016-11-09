@@ -373,10 +373,8 @@ sub get_transactions_cnt {
     return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
 }
 
-sub get_equity_beginning_of_month {
-    my ($self, $date, $acc) = @_;
-
-    my $start_date_in_current_month = Date::Utility->new($date->year . $date->month . '01000000')->datetime_yyyymmdd_hhmmss;
+sub get_balance_before_date {
+    my ($self, $before_date, $acc) = @_;
 
     my $sql = q{
         SELECT balance_after FROM transaction.transaction
@@ -387,25 +385,7 @@ sub get_equity_beginning_of_month {
         LIMIT 1
     };
 
-    my @binds = ($acc->id, $start_date_in_current_month);
-    return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
-}
-
-sub get_equity_end_of_month {
-    my ($self, $date, $acc) = @_;
-
-    my $last_date_in_current_month = Date::Utility->new($date->year . $date->month . $date->days_in_month . '235959')->datetime_yyyymmdd_hhmmss;
-
-    my $sql = q{
-        SELECT balance_after FROM transaction.transaction
-        WHERE
-            account_id = ?
-            AND transaction_time < ?
-        ORDER BY transaction_time DESC
-        LIMIT 1
-    };
-
-    my @binds = ($acc->id, $last_date_in_current_month);
+    my @binds = ($acc->id, $before_date);
     return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
 }
 
