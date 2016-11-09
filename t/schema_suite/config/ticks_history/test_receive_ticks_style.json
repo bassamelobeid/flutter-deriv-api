@@ -6,7 +6,7 @@
             "type": "object",
             "required": "1",
             "properties":{
-                "[_2]_display_decimals": {
+                "[_1]_display_decimals": {
                     "type": "integer",
                     "required": "1"
                 }
