@@ -435,6 +435,49 @@ sub get_month_payments_sum {
     return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
 }
 
+sub get_avg_duration {
+    my ($self, $acc) = @_;
+
+    my $sql = q{
+            SELECT
+                (avg(sell_time - start_time)) as avg_duration
+            FROM
+                bet.financial_market_bet
+            WHERE
+                account_id = $1
+        };
+
+    my @binds = ($acc->id);
+    return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
+}
+
+sub get_trades_profitable {
+    my ($self, $acc) = @_;
+
+    my $sql = q{
+            SELECT profitable, count(*), avg(profit)
+            FROM
+            (
+                SELECT
+                    buy_price, sell_price, ((sell_price-buy_price)/buy_price) as profit,
+                    CASE
+                        WHEN (sell_price - buy_price) > 0 THEN 'win'
+                        ELSE 'loss'
+                    END
+                    AS profitable
+                FROM
+                    bet.financial_market_bet
+                WHERE
+                    sell_price IS NOT NUll
+                    AND account_id = $1
+            ) t
+            GROUP BY profitable
+        };
+
+    my @binds = ($acc->id);
+    return $self->db->dbh->selectall_hashref($sql, 'profitable', undef, @binds);
+}
+
 =head2 $self->get_transactions($parameters)
 
 Return list of transactions satisfying given parameters. Acceptable parameters are follows:
