@@ -11,7 +11,7 @@
                     "required": "1",
                     "pattern": "^InvalidSymbol$"
                 },
-                "message": {
+                "message_to_client": {
                     "type": "string",
                     "required": "1"
                 }
