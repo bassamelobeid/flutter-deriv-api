@@ -478,6 +478,20 @@ sub get_trades_profitable {
     return $self->db->dbh->selectall_hashref($sql, 'profitable', undef, @binds);
 }
 
+sub get_symbols_breakdown {
+    my ($self, $acc) = @_;
+
+    my $sql = q{
+            SELECT underlying_symbol, count(*)
+            FROM bet.financial_market_bet
+            WHERE account_id = $1
+            GROUP BY underlying_symbol
+        };
+
+    my @binds = ($acc->id);
+    return $self->db->dbh->selectall_arrayref($sql, undef, @binds);
+}
+
 =head2 $self->get_transactions($parameters)
 
 Return list of transactions satisfying given parameters. Acceptable parameters are follows:
