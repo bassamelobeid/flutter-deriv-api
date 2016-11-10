@@ -85,7 +85,7 @@ sub trader_statistics {
     }
 
     return {
-        active_sience => $trader->date_joined,
+        active_since => $trader->date_joined,
         # performance
         monthly_profitable => $monthly_profitable,
         yearly_profitable  => $yearly_profitable,
