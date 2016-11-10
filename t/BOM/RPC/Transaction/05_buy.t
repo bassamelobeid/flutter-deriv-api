@@ -14,7 +14,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Database::Model::OAuth;
 
-use Test::BOM::RPC::Client;
+use BOM::Test::RPC::Client;
 use Test::BOM::RPC::Contract;
 
 my $email  = 'test@binary.com';
@@ -38,7 +38,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             }]});
 
 $client->deposit_virtual_funds;
-my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 subtest 'buy' => sub {
     my $params = {
         language => 'EN',

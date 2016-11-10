@@ -146,7 +146,7 @@ sub cashier {
         BOM::System::AuditLog::log('redirecting to epg');
         return 'https://www.' . lc($params->{website_name}) . '/epg/?currency=' . $currency
             if ($params->{website_name} // '') =~ /qa/;    # for QA server
-        return 'https://epg.binary.com/?currency=' . $currency;
+        return 'https://epg.binary.com/epg/?currency=' . $currency;
     }
 
     my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client_loginid});
@@ -455,7 +455,8 @@ sub paymentagent_transfer {
     my $error_msg;
     my $app_config = BOM::Platform::Runtime->instance->app_config;
     if (   $app_config->system->suspend->payments
-        or $app_config->system->suspend->payment_agents)
+        or $app_config->system->suspend->payment_agents
+        or $app_config->system->suspend->system)
     {
         $error_msg = localize('Sorry, Payment Agent Transfer is temporarily disabled due to system maintenance. Please try again in 30 minutes.');
     } elsif (not $client_fm->landing_company->allows_payment_agents) {
@@ -703,7 +704,8 @@ sub paymentagent_withdraw {
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
     if (   $app_config->system->suspend->payments
-        or $app_config->system->suspend->payment_agents)
+        or $app_config->system->suspend->payment_agents
+        or $app_config->system->suspend->system)
     {
         return $error_sub->(
             localize('Sorry, the Payment Agent Withdrawal is temporarily disabled due to system maintenance. Please try again in 30 minutes.'));
@@ -986,12 +988,12 @@ sub __client_withdrawal_notes {
     my $withdrawal_limits = $client->get_withdrawal_limits();
 
     # At this point, the Client is not allowed to withdraw. Return error message.
-    my $error_message = localize('Your account balance is [_1] [_2]. Maximum withdrawal by all other means is [_1] [_3].',
-        $currency, $balance, $withdrawal_limits->{'max_withdrawal'});
+    my $error_message = $error;
 
     if ($withdrawal_limits->{'frozen_free_gift'} > 0) {
         # Insert turnover limit as a parameter depends on the promocode type
-        $error_message .= localize(
+        $error_message .= ' '
+            . localize(
             'Note: You will be able to withdraw your bonus of [_1][_2] only once your aggregate volume of trades exceeds [_1][_3]. This restriction applies only to the bonus and profits derived therefrom.  All other deposits and profits derived therefrom can be withdrawn at any time.',
             $currency,
             $withdrawal_limits->{'frozen_free_gift'},
@@ -1018,6 +1020,12 @@ sub transfer_between_accounts {
         });
     };
 
+    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    if (   $app_config->system->suspend->payments
+        or $app_config->system->suspend->system)
+    {
+        return $error_sub->(localize('Payments are suspended.'));
+    }
     unless ($user = BOM::Platform::User->new({email => $client->email})) {
         warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for " . $client->loginid . "\n";
         return $error_sub->(localize('Internal server error'));
