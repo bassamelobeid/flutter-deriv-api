@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
+  "title": "Response with statistics of the trader",
   "properties": {
     "echo_req": {
       "title": "Echo request",
@@ -9,10 +10,75 @@
     },
     "trader_statistics": {
       "type":"object",
+      "description": "Statistics of the trader",
       "properties": {
         "active_since": {
           "type": "string",
+          "description": "This is the date the investor started trading with binary.com",
           "required": 1
+        },
+        "monthly_profitable": {
+          "type": "object",
+          "description": "Represents the net change in equity by the months.",
+          "patternProperties": {
+            "^[0-9]{4}\\-[0-9]{2}$": {
+              "type": "number",
+              "description": "Monthly profitable in percentage.",
+              "required": 1
+            }
+          }
+        },
+        "yearly_profitable": {
+          "type": "object",
+          "description": "Represents the net change in equity by the years.",
+          "patternProperties": {
+            "^[0-9]{4}$": {
+              "type": "number",
+              "description": "Yearly profitable in percentage.",
+              "required": 1
+            }
+          }
+        },
+        "last_12months_profitable": {
+          "type": "number",
+          "description": "Represents the net change in last 12 months.",
+          "requred": 1
+        },
+        "total_trades": {
+          "type": "integer",
+          "description": "Total trades for all time.",
+          "requred": 1
+        },
+        "trades_profitable": {
+          "type": "number",
+          "description": "Number of profit trades in percentage.",
+          "requred": 1
+        },
+        "avg_duration": {
+          "type": "string",
+          "description": "Average duration of holding positions open.",
+          "requred": 1
+        },
+        "avg_profit": {
+          "type": "number",
+          "description": "Average profit of trades in percentage.",
+          "requred": 1
+        },
+        "avg_loss": {
+          "type": "number",
+          "description": "Average loss of trades in percentage.",
+          "requred": 1
+        },
+        "trades_breakdown": {
+          "type": "object",
+          "description": "Represents the portfolio distribution by the markets.",
+          "patternProperties": {
+            "^\\w+$": {
+              "type": "number",
+              "description": "Number of trades in percentage.",
+              "required": 1
+            }
+          }
         }
       }
     },

@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Request list of active symbols",
-  "description": "Retrieve a list of all active symbols (underlying markets upon which contracts are available for trading).",
+  "title": "Request statistics of trader",
+  "description": "Retrieve performance, trading, risk and copiers statistics of trader.",
   "properties": {
     "trader_statistics": {
       "type": "integer",
@@ -15,6 +15,7 @@
     },
     "trader_id": {
       "type": "string",
+      "pattern": "\\w+$",
       "required": "1"
     },
     "req_id": {
