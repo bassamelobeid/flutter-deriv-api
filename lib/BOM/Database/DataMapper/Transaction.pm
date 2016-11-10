@@ -358,23 +358,23 @@ sub get_transactions_ws {
 }
 
 sub get_transactions_cnt {
-    my ($self, $args, $acc) = @_;
+    my ($self, $accounts, $args) = @_;
 
     my $sql = q{
         SELECT count(*) FROM transaction.transaction
         WHERE
-            account_id = ?
+            account_id IN (?)
             AND action_type = ?
     };
 
     my $action_type = $args->{action_type};
 
-    my @binds = ($acc->id, $action_type);
+    my @binds = (join(',', (map {$_->id} @$accounts)), $action_type);
     return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
 }
 
 sub get_balance_before_date {
-    my ($self, $before_date, $acc) = @_;
+    my ($self, $before_date) = @_;
 
     my $sql = q{
         SELECT balance_after FROM transaction.transaction
@@ -385,12 +385,12 @@ sub get_balance_before_date {
         LIMIT 1
     };
 
-    my @binds = ($acc->id, $before_date);
+    my @binds = ($self->account->id, $before_date);
     return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
 }
 
 sub get_monthly_payments_sum {
-    my ($self, $date, $acc, $action_type) = @_;
+    my ($self, $date, $action_type) = @_;
 
     if ($action_type ne $BOM::Database::Model::Constants::WITHDRAWAL and $action_type ne $BOM::Database::Model::Constants::DEPOSIT) {
         Carp::croak("[get_month_payment_sum] wrong action type [$action_type]");
@@ -411,12 +411,12 @@ sub get_monthly_payments_sum {
                 AND action_type = $4
         };
 
-    my @binds = ($acc->id, $first_day_in_current_month, $last_day_in_current_month, $action_type);
+    my @binds = ($self->account->id, $first_day_in_current_month, $last_day_in_current_month, $action_type);
     return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
 }
 
 sub get_trades_avg_duration {
-    my ($self, $acc) = @_;
+    my ($self, $accounts) = @_;
 
     my $sql = q{
             SELECT
@@ -427,12 +427,12 @@ sub get_trades_avg_duration {
                 account_id = $1
         };
 
-    my @binds = ($acc->id);
+    my @binds = (join(',', (map {$_->id} @$accounts)));
     return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
 }
 
 sub get_trades_profitable {
-    my ($self, $acc) = @_;
+    my ($self, $accounts) = @_;
 
     my $sql = q{
             SELECT profitable, count(*), avg(profit)
@@ -454,12 +454,12 @@ sub get_trades_profitable {
             GROUP BY profitable
         };
 
-    my @binds = ($acc->id);
+    my @binds = (join(',', (map {$_->id} @$accounts)));
     return $self->db->dbh->selectall_hashref($sql, 'profitable', undef, @binds);
 }
 
 sub get_symbols_breakdown {
-    my ($self, $acc) = @_;
+    my ($self, $accounts) = @_;
 
     my $sql = q{
             SELECT underlying_symbol, count(*)
@@ -468,7 +468,7 @@ sub get_symbols_breakdown {
             GROUP BY underlying_symbol
         };
 
-    my @binds = ($acc->id);
+    my @binds = (join(',', (map {$_->id} @$accounts)));
     return $self->db->dbh->selectall_arrayref($sql, undef, @binds);
 }
 
