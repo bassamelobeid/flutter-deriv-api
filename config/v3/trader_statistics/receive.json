@@ -10,9 +10,9 @@
     "trader_statistics": {
       "type":"object",
       "properties": {
-        "active_sience": {
+        "active_since": {
           "type": "string",
-          "required": 1    
+          "required": 1
         }
       }
     },
