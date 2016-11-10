@@ -17,7 +17,7 @@
           "description": "This is the date the investor started trading with binary.com",
           "required": 1
         },
-        "monthly_profitable": {
+        "monthly_profitable_trades": {
           "type": "object",
           "description": "Represents the net change in equity by the months.",
           "patternProperties": {
@@ -28,7 +28,7 @@
             }
           }
         },
-        "yearly_profitable": {
+        "yearly_profitable_trades": {
           "type": "object",
           "description": "Represents the net change in equity by the years.",
           "patternProperties": {
@@ -39,7 +39,7 @@
             }
           }
         },
-        "last_12months_profitable": {
+        "last_12months_profitable_trades": {
           "type": "number",
           "description": "Represents the net change in last 12 months.",
           "requred": 1
