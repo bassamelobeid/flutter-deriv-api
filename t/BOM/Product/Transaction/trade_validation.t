@@ -915,7 +915,7 @@ subtest 'Purchase Sell Contract' => sub {
     plan tests => 4;
 
     my $client = Client::Account->new({loginid => 'CR2002'});
-    $client = BOM::Platform::Client::get_instance({'loginid' => $client->loginid});
+    $client = Client::Account::get_instance({'loginid' => $client->loginid});
     my $mocked_client = Test::MockModule->new('Client::Account');
     $mocked_client->mock('residence', sub { return 'al' });
     my $currency = 'USD';
