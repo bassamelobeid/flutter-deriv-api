@@ -10,7 +10,7 @@ use BOM::Platform::Runtime;
 use BOM::Product::Contract::Category;
 use Format::Util::Numbers qw(roundnear);
 use List::Util qw(reduce);
-use base qw( Exporter );
+use Exporter qw( import );
 our @EXPORT_OK = qw(available_contracts_for_symbol);
 use Math::CDF qw(qnorm);
 
