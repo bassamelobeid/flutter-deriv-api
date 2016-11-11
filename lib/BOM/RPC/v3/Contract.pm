@@ -7,6 +7,7 @@ no indirect;
 use Try::Tiny;
 use List::MoreUtils qw(none);
 use Data::Dumper;
+use Date::Utility;
 
 use BOM::System::Config;
 use BOM::RPC::v3::Utility;
@@ -120,6 +121,16 @@ sub _get_ask {
     my $tv = [Time::HiRes::gettimeofday];
     $p2->{app_markup_percentage} = $app_markup_percentage // 0;
     try {
+        die unless pre_validate_start_expire_dates($p2);
+    }
+    catch {
+        warn __PACKAGE__ . " _get_ask pre_validate_start_expire_dates failed, parameters: " . Dumper($p2);
+        $response = BOM::RPC::v3::Utility::create_error({
+                code              => 'ContractCreationFailure',
+                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+    };
+    return $response if $response;
+    try {
         $contract = produce_contract($p2)
     }
     catch {
@@ -143,7 +154,7 @@ sub _get_ask {
                 $code              = "ContractValidationError";
             }
 
-            # When the date_expriry is smaller than date_start, we can not price, display the payout|stake on error message
+            # When the date_expiry is smaller than date_start, we can not price, display the payout|stake on error message
             if ($contract->date_expiry->epoch <= $contract->date_start->epoch) {
 
                 my $display_value = $contract->has_payout ? $contract->payout : $contract->ask_price;
@@ -478,9 +489,8 @@ sub get_contract_details {
 
     try {
         $bet_params->{app_markup_percentage} = $params->{app_markup_percentage} // 0;
-        $bet_params->{landing_company} = $client->landing_company->short;
-
-        $contract = produce_contract($bet_params);
+        $bet_params->{landing_company}       = $client->landing_company->short;
+        $contract                            = produce_contract($bet_params);
     }
     catch {
         warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . Dumper($bet_params);
@@ -508,4 +518,34 @@ sub _log_exception {
     stats_inc('contract.exception.' . $component);
     return;
 }
+
+# pre-check
+# this sub indicates error on RPC level if date_start or date_expiry of a new ask/contract are too far from now
+sub pre_validate_start_expire_dates {
+    my $params = shift;
+    my ($start_epoch, $expiry_epoch, $duration);
+
+    my $now_epoch = Date::Utility->new->epoch;
+    # no try/catch here, expecting higher level try/catch
+    $start_epoch = $params->{date_start} ? Date::Utility->new($params->{date_start})->epoch : $now_epoch;
+    if ($params->{duration}) {
+        if ($params->{duration} =~ /^(\d+)t$/) {    # ticks
+            $duration = $1 * 2;
+        } else {
+            $duration = Time::Duration::Concise->new(interval => $params->{duration})->seconds;
+        }
+        $expiry_epoch = $start_epoch + $duration;
+    } else {
+        $expiry_epoch = Date::Utility->new($params->{date_expiry})->epoch;
+        $duration     = $expiry_epoch - $start_epoch;
+    }
+
+    my $max_duration = 365 * 24 * 60 * 60;
+    my $max_forward  = 7 * 24 * 60 * 60;
+
+    return if $start_epoch + 5 < $now_epoch or $start_epoch - $now_epoch > $max_forward or $duration > $max_duration;
+
+    return 1;    # seems like ok, but everything will be fully checked later.
+}
+
 1;

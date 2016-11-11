@@ -333,17 +333,19 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         'date_start'       => '1476676000',
         "streaming_params" => {add_theo_probability => 1},
     };
-    my $result   = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
+    my $result;
+    like(
+        warning {
+            $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
+        },
+        qr/_get_ask pre_validate_start_expire_dates failed/,
+        "Expected warning"
+    );
     my $expected = {
         error => {
-            'code'              => 'ContractBuyValidationError',
-            'message_to_client' => 'Expiry time cannot be in the past.',
-
-            'details' => {
-                'display_value' => '100.00',
-                'payout'        => '100.00',
-            }}};
-
+            'code'              => 'ContractCreationFailure',
+            'message_to_client' => 'Cannot create contract',
+        }};
     cmp_deeply($result, $expected, 'errors response is correct when date_expiry < date_start with payout_type is payout');
 
     $params = {
@@ -359,16 +361,18 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         'date_start'       => '1476676000',
         "streaming_params" => {add_theo_probability => 1},
     };
-    $result   = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
+    like(
+        warning {
+            $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
+        },
+        qr/_get_ask pre_validate_start_expire_dates failed/,
+        "Expected warning"
+    );
     $expected = {
         error => {
-            'code'              => 'ContractBuyValidationError',
-            'message_to_client' => 'Expiry time cannot be in the past.',
-
-            'details' => {
-                'display_value' => '10.00',
-                'payout'        => '10.00',
-            }}};
+            'code'              => 'ContractCreationFailure',
+            'message_to_client' => 'Cannot create contract',
+        }};
 
     cmp_deeply($result, $expected, 'errors response is correct when date_expiry < date_start with payout_type is stake');
     $params = {
@@ -384,16 +388,18 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         'date_start'       => '1476670200',
         "streaming_params" => {add_theo_probability => 1},
     };
-    $result   = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
+    like(
+        warning {
+            $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
+        },
+        qr/_get_ask pre_validate_start_expire_dates failed/,
+        "Expected warning"
+    );
     $expected = {
         error => {
-            'code'              => 'ContractBuyValidationError',
-            'message_to_client' => 'Expiry time cannot be equal to start time.',
-
-            'details' => {
-                'display_value' => '11.00',
-                'payout'        => '11.00',
-            }}};
+            'code'              => 'ContractCreationFailure',
+            'message_to_client' => 'Cannot create contract',
+        }};
 
     cmp_deeply($result, $expected, 'errors response is correct when date_expiry = date_start with payout_type is stake');
 
@@ -465,7 +471,13 @@ subtest 'send_ask_when_date_expiry_smaller_than_date_start' => sub {
 
             "streaming_params" => {add_theo_probability => 1},
         }};
-    $c->call_ok('send_ask', $params)->has_error->error_code_is('ContractBuyValidationError')->error_message_is('Expiry time cannot be in the past.');
+    like(
+        warning {
+            $c->call_ok('send_ask', $params)->has_error->error_code_is('ContractCreationFailure')->error_message_is('Cannot create contract');
+        },
+        qr/_get_ask pre_validate_start_expire_dates failed/,
+        "Expected warning"
+    );
 
 };
 
@@ -632,8 +644,8 @@ subtest $method => sub {
 
     cmp_deeply([
             warnings {
-                $c->call_ok($method, $params)->has_error->error_message_is('Cannot create contract',
-                    'will report error if no short_code and currency');
+                $c->call_ok($method, $params)
+                    ->has_error->error_message_is('Cannot create contract', 'will report error if no short_code and currency');
             }
         ],
         # We get several undef warnings too, but we'll ignore them for this test
