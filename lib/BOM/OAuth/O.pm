@@ -11,7 +11,7 @@ use List::MoreUtils qw(any firstval);
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize);
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Platform::User;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
@@ -414,7 +414,7 @@ sub __login_env {
 sub __get_client {
     my $c = shift;
 
-    my $client = BOM::Platform::Client->new({loginid => $c->session('__loginid')});
+    my $client = Client::Account->new({loginid => $c->session('__loginid')});
     return if $client->get_status('disabled');
     return if $client->get_self_exclusion_until_dt;    # Excluded
 
