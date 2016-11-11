@@ -262,7 +262,7 @@ subtest 'contract date pricing Validation' => sub {
 subtest 'valid currency test' => sub {
     plan tests => 3;
 
-    my $mock_contract = Test::MockModule->new('BOM::Platform::Client');
+    my $mock_contract = Test::MockModule->new('Client::Account');
 
     subtest 'invalid currency' => sub {
         $mock_contract->mock('currency', sub { 'ABC' });
@@ -916,7 +916,7 @@ subtest 'Purchase Sell Contract' => sub {
 
     my $client = Client::Account->new({loginid => 'CR2002'});
     $client = BOM::Platform::Client::get_instance({'loginid' => $client->loginid});
-    my $mocked_client = Test::MockModule->new('BOM::Platform::Client');
+    my $mocked_client = Test::MockModule->new('Client::Account');
     $mocked_client->mock('residence', sub { return 'al' });
     my $currency = 'USD';
     $client->set_default_account($currency);

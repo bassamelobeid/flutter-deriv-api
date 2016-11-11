@@ -38,7 +38,7 @@ use Finance::Asset::Market::Types;
 
 has client => (
     is  => 'ro',
-    isa => 'BOM::Platform::Client',
+    isa => 'Client::Account',
 );
 
 has multiple => (
