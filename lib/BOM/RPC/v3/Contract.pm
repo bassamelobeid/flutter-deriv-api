@@ -540,8 +540,8 @@ sub pre_validate_start_expire_dates {
         $duration     = $expiry_epoch - $start_epoch;
     }
 
-    my $max_duration = 365 * 24 * 60 * 60;
-    my $max_forward  = 7 * 24 * 60 * 60;
+    my $max_duration = BOM::Platform::Runtime->instance->app_config->contract_pre_limits->max_duration;
+    my $max_forward  = BOM::Platform::Runtime->instance->app_config->contract_pre_limits->max_forward;
 
     return if $start_epoch + 5 < $now_epoch or $start_epoch - $now_epoch > $max_forward or $duration > $max_duration;
 
