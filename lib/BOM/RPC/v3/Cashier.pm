@@ -20,6 +20,7 @@ use YAML::XS qw(LoadFile);
 
 use LandingCompany::Registry;
 use LandingCompany::Countries;
+use Client::Account::PaymentAgent;
 
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency in_USD);
 
@@ -733,7 +734,7 @@ sub paymentagent_withdraw {
         return $error_sub->(localize('Invalid amount. minimum is 10, maximum is 2000.'));
     }
 
-    my $paymentagent = BOM::Platform::Client::PaymentAgent->new({'loginid' => $paymentagent_loginid})
+    my $paymentagent = Client::Account::PaymentAgent->new({'loginid' => $paymentagent_loginid})
         or return $error_sub->(localize('Sorry, the Payment Agent does not exist.'));
 
     if ($client->broker ne $paymentagent->broker) {
