@@ -846,7 +846,7 @@ sub _build_longcode {
 
 =item is_after_settlement
 
-This check if the contract already passes the settlement time 
+This check if the contract already passes the settlement time
 
 For tick expiry contract, it can expires when a certain number of ticks is received or it already passes the max_tick_expiry_duration.
 For other contracts, it can expires when current time has past a pre-determined settelement time.
@@ -931,13 +931,17 @@ has price_calculator => (
 sub _build_price_calculator {
     my $self = shift;
 
+    my $market_name             = $self->market->name;
+    my $per_market_scaling      = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling;
+    my $base_commission_scaling = $per_market_scaling->$market_name;
+
     return Price::Calculator->new({
             currency                => $self->currency,
             deep_otm_threshold      => $self->market->deep_otm_threshold,
             maximum_total_markup    => BOM::System::Config::quants->{commission}->{maximum_total_markup},
             base_commission_min     => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
             base_commission_max     => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
-            base_commission_scaling => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
+            base_commission_scaling => $base_commission_scaling,
             app_markup_percentage   => $self->app_markup_percentage,
             ($self->has_base_commission)
             ? (base_commission => $self->base_commission)
@@ -950,11 +954,6 @@ sub _build_price_calculator {
             ($self->has_ask_probability)        ? (ask_probability        => $self->ask_probability)        : (),
             ($self->has_bs_probability)         ? (bs_probability         => $self->bs_probability)         : (),
             ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
-            # Used temporarily by Price::Calculator for the US election commission markup 2016-11-08
-            market_name => $self->market->name,
-            date_start  => $self->date_start->epoch,
-            date_expiry => $self->date_expiry->epoch,
-            is_atm_bet  => $self->is_atm_bet,
         });
 }
 
