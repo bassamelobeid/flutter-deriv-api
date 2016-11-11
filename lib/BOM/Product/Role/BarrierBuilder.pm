@@ -167,7 +167,7 @@ sub _apply_barrier_adjustment {
 
         my $expected_return = 0;
 
-        foreach my $event (values %{$tentative_events}) {
+        foreach my $event (@{$tentative_events}) {
             #if event is for to asset_symbol minus the return
             #if event is for quoted_currency_symbol add the return
             #For example for EURUSD, asset symbol is EUR and quoted currency is USD
