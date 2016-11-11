@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Response with statistics of the trader",
+  "title": "Get trader statistics",
   "properties": {
     "echo_req": {
       "title": "Echo request",
@@ -19,7 +19,7 @@
         },
         "monthly_profitable_trades": {
           "type": "object",
-          "description": "Represents the net change in equity in the months.",
+          "description": "Represents the net change in equity per month.",
           "patternProperties": {
             "^[0-9]{4}\\-[0-9]{2}$": {
               "type": "number",
@@ -30,7 +30,7 @@
         },
         "yearly_profitable_trades": {
           "type": "object",
-          "description": "Represents the net change in equity in the years.",
+          "description": "Represents the net change in equity per year.",
           "patternProperties": {
             "^[0-9]{4}$": {
               "type": "number",
@@ -71,7 +71,7 @@
         },
         "trades_breakdown": {
           "type": "object",
-          "description": "Represents the portfolio distribution by the markets.",
+          "description": "Represents the portfolio distribution by markets.",
           "patternProperties": {
             "^\\w+$": {
               "type": "number",
