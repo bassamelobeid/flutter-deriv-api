@@ -6,7 +6,10 @@ use warnings;
 use BOM::Platform::Client;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
+use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::MarketData qw(create_underlying);
+
+use Performance::Probability qw(get_performance_probability);
 
 use List::Util qw/sum0/;
 use Data::Dumper;
@@ -26,7 +29,7 @@ sub trader_statistics {
     my $now                       = Date::Utility->new();
     my $monthly_profitable_trades = {};
     my $yearly_profitable_trades  = {};
-    my $last_12months_profitable_trades;
+    my ($last_12months_profitable_trades, $performance_probability);
     for my $account (@{$trader_accounts}) {
         my $txn_dm = BOM::Database::DataMapper::Transaction->new({
             client_loginid => $trader->loginid,
@@ -65,12 +68,54 @@ sub trader_statistics {
         # last 12 months profitable
         my $last_month_idx = scalar(@sorted_monthly_profits) < 12 ? scalar(@sorted_monthly_profits) : 12;
         push @$last_12months_profitable_trades, _year_performance(@sorted_monthly_profits[-$last_month_idx .. -1]);
+
+        # Performance Probability
+        my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
+            client_loginid => $trader->loginid,
+            currency_code  => $account->currency_code,
+            db             => $db,
+        });
+
+        my $sold_contracts = $fmb_dm->get_sold({
+            limit => 9e5,
+        });
+
+        my $cumulative_pnl      = 0;
+        my $contract_parameters = {};
+        foreach my $contract (@{$sold_contracts}) {
+            my $start_epoch = Date::Utility->new($contract->{start_time})->epoch;
+            my $sell_epoch  = Date::Utility->new($contract->{sell_time})->epoch;
+
+            if ($contract->{bet_type} eq 'CALL' or $contract->{bet_type} eq 'PUT') {
+                push @{$contract_parameters->{start_time}},        $start_epoch;
+                push @{$contract_parameters->{sell_time}},         $sell_epoch;
+                push @{$contract_parameters->{buy_price}},         $contract->{buy_price};
+                push @{$contract_parameters->{payout_price}},      $contract->{payout_price};
+                push @{$contract_parameters->{bet_type}},          $contract->{bet_type};
+                push @{$contract_parameters->{underlying_symbol}}, $contract->{underlying_symbol};
+
+                $cumulative_pnl = $cumulative_pnl + ($contract->{sell_price} - $contract->{buy_price});
+            }
+        }
+
+        push @$performance_probability, sprintf(
+            "%.4f",
+            1 - Performance::Probability::get_performance_probability({
+                    pnl          => $cumulative_pnl,
+                    payout       => $contract_parameters->{payout_price},
+                    bought_price => $contract_parameters->{buy_price},
+                    types        => $contract_parameters->{bet_type},
+                    underlying   => $contract_parameters->{underlying_symbol},
+                    start_time   => $contract_parameters->{start_time},
+                    sell_time    => $contract_parameters->{sell_time},
+                }));
     }
 
     # Average for multiply accounts
     $monthly_profitable_trades->{$_} = _mean(@{$monthly_profitable_trades->{$_}}) for keys %{$monthly_profitable_trades};
     $yearly_profitable_trades->{$_}  = _mean(@{$yearly_profitable_trades->{$_}})  for keys %{$yearly_profitable_trades};
     $last_12months_profitable_trades = _mean(@$last_12months_profitable_trades);
+    $performance_probability         = _mean(@$performance_probability);
 
     # Calculate common trading statistics for multiple accounts
     my $trades_breakdown = {};
@@ -110,6 +155,7 @@ sub trader_statistics {
         monthly_profitable_trades       => $monthly_profitable_trades,
         yearly_profitable_trades        => $yearly_profitable_trades,
         last_12months_profitable_trades => $last_12months_profitable_trades,
+        performance_probability         => $performance_probability,
         # trading
         total_trades      => $total_trades,
         trades_profitable => sprintf("%.4f", $trades_profitable),
