@@ -220,7 +220,7 @@ sub _predefined_trading_period {
 # hh:00 => ttl = 45 min
 
         BOM::System::RedisReplicated->redis_write->set($cache_keyspace . '::' . $trading_key,
-            $trading_periods, ($now_minute < 45 ? 2700 : 3600) - $now_minute * 60 - $now->second);
+            $trading_periods, 'PX', ($now_minute < 45 ? 2700 : 3600) - $now_minute * 60 - $now->second);
     }
 
     my @new_offerings;
@@ -407,7 +407,7 @@ sub _set_predefined_barriers {
 
         # Expires at the end of the available period.
         # The shortest duration is 2h15m. So make refresh the barriers cache at this time
-        BOM::System::RedisReplicated::redis_write->set($cache_keyspace . '::' . $barrier_key, $available_barriers, 8100);
+        BOM::System::RedisReplicated::redis_write->set($cache_keyspace . '::' . $barrier_key, $available_barriers, 'PX', 8100);
     }
 
     my $expired_barriers = _get_expired_barriers({
@@ -461,7 +461,7 @@ sub _get_expired_barriers {
             end   => $now,
         });
 
-        BOM::System::RedisReplicated::redis_write->set($cache_keyspace . '::' . $high_low_key, $high_low, 10);
+        BOM::System::RedisReplicated::redis_write->set($cache_keyspace . '::' . $high_low_key, $high_low, 'PX', 10);
     }
 
     my $high                      = $high_low->{high};
@@ -480,7 +480,7 @@ sub _get_expired_barriers {
         }
     }
     if ($new_added_expired_barrier > 0) {
-        BOM::System::RedisReplicated::redis_write->set($cache_keyspace . '::' . $expired_barriers_key, $expired_barriers, 8100);
+        BOM::System::RedisReplicated::redis_write->set($cache_keyspace . '::' . $expired_barriers_key, $expired_barriers, 'PX', 8100);
     }
 
     return $expired_barriers;
