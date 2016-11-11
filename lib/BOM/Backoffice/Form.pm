@@ -12,7 +12,7 @@ use Locale::SubCountry;
 
 use BOM::Backoffice::Request qw(request localize template);
 use BOM::Platform::Locale;
-use BOM::Platform::Client;
+use Client::Account;
 
 sub get_self_exclusion_form {
     my $arg_ref   = shift;

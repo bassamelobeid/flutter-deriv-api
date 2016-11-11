@@ -306,7 +306,7 @@ sub top_up {
 
 sub create_client {
     my $broker = shift;
-    return BOM::Platform::Client->register_and_return_new_client({
+    return Client::Account->register_and_return_new_client({
         broker_code      => $broker,
         client_password  => BOM::System::Password::hashpw('12345678'),
         salutation       => 'Ms',

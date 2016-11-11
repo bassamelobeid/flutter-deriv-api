@@ -5,7 +5,7 @@ use warnings;
 
 use Date::Utility;
 
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );

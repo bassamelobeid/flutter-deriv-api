@@ -7,7 +7,7 @@ use warnings;
 use f_brokerincludeall;
 use BOM::Backoffice::Auth0;
 use BOM::Database::Model::OAuth;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();

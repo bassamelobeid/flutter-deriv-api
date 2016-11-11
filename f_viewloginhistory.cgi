@@ -4,7 +4,7 @@ use strict 'vars';
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -51,7 +51,7 @@ if ($email_list = request()->param('email')) {
         if ($loginID =~ /^\D+\d+$/) {
             Bar("$loginID Login History");
 
-            my $client = BOM::Platform::Client->new({loginid => $loginID});
+            my $client = Client::Account->new({loginid => $loginID});
             my $login_history_result = $client->find_login_history(
                 sort_by => 'login_date desc',
                 limit   => 100

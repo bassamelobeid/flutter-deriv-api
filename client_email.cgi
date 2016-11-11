@@ -10,7 +10,7 @@ use f_brokerincludeall;
 use Format::Util::Strings qw( defang );
 use Text::Trim;
 use Date::Utility;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Platform::User;
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Request qw(request);

@@ -14,7 +14,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Runtime;
-use BOM::Platform::Client;
+use Client::Account;
 use feature "state";
 
 BOM::Backoffice::Sysinit::init();

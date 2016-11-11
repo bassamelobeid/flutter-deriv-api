@@ -9,7 +9,7 @@ use strict;
 
 use BOM::Backoffice::Sysinit ();
 use BOM::Database::DataMapper::CollectorReporting;
-use BOM::Platform::Client;
+use Client::Account;
 
 BOM::Backoffice::Sysinit::init();
 

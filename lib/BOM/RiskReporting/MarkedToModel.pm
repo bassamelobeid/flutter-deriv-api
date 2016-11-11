@@ -36,7 +36,7 @@ use Text::CSV;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Model::Constants;
 use DataDog::DogStatsd::Helper qw (stats_inc stats_timing stats_count);
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Backoffice::Request;
 use Postgres::FeedDB::CurrencyConverter qw (in_USD);
 use BOM::Product::Transaction;

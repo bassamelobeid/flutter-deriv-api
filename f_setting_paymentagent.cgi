@@ -24,7 +24,7 @@ my $whattodo = request()->param('whattodo');
 Bar('Payment Agent Setting');
 
 if ($whattodo eq 'create') {
-    my $client = BOM::Platform::Client->new({loginid => $loginid});
+    my $client = Client::Account->new({loginid => $loginid});
 
     if ($client->client_fully_authenticated) {
         my ($pa, $error);
@@ -83,7 +83,7 @@ if ($whattodo eq 'show') {
 } elsif ($whattodo eq 'apply') {
     my $pa = Client::Account::PaymentAgent->new({loginid => $loginid});
     unless ($pa) {
-        my $client = BOM::Platform::Client->new({loginid => $loginid});
+        my $client = Client::Account->new({loginid => $loginid});
         # if its new so we need to set it
         $pa = $client->set_payment_agent unless $pa;
     }

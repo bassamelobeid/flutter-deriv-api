@@ -3,7 +3,7 @@ package main;
 use strict 'vars';
 
 use Date::Utility;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
