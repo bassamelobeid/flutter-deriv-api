@@ -8,6 +8,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Platform::Runtime;
 use BOM::Product::Contract::Category;
+use BOM::System::RedisReplicated;
 use Format::Util::Numbers qw(roundnear);
 use List::Util qw(reduce);
 use Exporter qw( import );
@@ -135,8 +136,8 @@ sub _predefined_trading_period {
     my $trading_key       = join($cache_sep, $symbol, $now_date, $now_hour);
     my $today_close       = $calendar->closing_on($now);
     my $today_close_epoch = $today_close->epoch;
-    my $today             = $now->truncate_to_day;                                # Start of the day object.
-    my $trading_periods   = Cache::RedisDB->get($cache_keyspace, $trading_key);
+    my $today             = $now->truncate_to_day;                                                                    # Start of the day object.
+    my $trading_periods   = BOM::System::RedisReplicated::redis_read()->get($cache_keyspace . '::' . $trading_key);
 
     if (not $trading_periods) {
         $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
@@ -218,7 +219,8 @@ sub _predefined_trading_period {
 # hh:59 => ttl = 1 min
 # hh:00 => ttl = 45 min
 
-        Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, ($now_minute < 45 ? 2700 : 3600) - $now_minute * 60 - $now->second);
+        BOM::System::RedisReplicated->redis_write->set($cache_keyspace . '::' . $trading_key,
+            $trading_periods, ($now_minute < 45 ? 2700 : 3600) - $now_minute * 60 - $now->second);
     }
 
     my @new_offerings;
@@ -385,7 +387,7 @@ sub _set_predefined_barriers {
     my $date_expiry        = $trading_period->{date_expiry}->{epoch};
     my $duration           = $trading_period->{duration};
     my $barrier_key        = join($cache_sep, $underlying->symbol, $date_start, $date_expiry);
-    my $available_barriers = Cache::RedisDB->get($cache_keyspace, $barrier_key);
+    my $available_barriers = BOM::System::RedisReplicated::redis_read->get($cache_keyspace . '::' . $barrier_key);
     my $current_tick_quote = $current_tick->quote;
     if (not $available_barriers) {
         my $start_tick = $underlying->tick_at($date_start) // $current_tick;
@@ -405,7 +407,7 @@ sub _set_predefined_barriers {
 
         # Expires at the end of the available period.
         # The shortest duration is 2h15m. So make refresh the barriers cache at this time
-        Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, 8100);
+        BOM::System::RedisReplicated::redis_write->set($cache_keyspace . '::' . $barrier_key, $available_barriers, 8100);
     }
 
     my $expired_barriers = _get_expired_barriers({
@@ -450,16 +452,16 @@ sub _get_expired_barriers {
     my $now                  = $args->{now};
     my $underlying           = $args->{underlying};
     my $expired_barriers_key = join($cache_sep, $underlying->symbol, 'expired_barrier', $date_start, $date_expiry);
-    my $expired_barriers     = Cache::RedisDB->get($cache_keyspace, $expired_barriers_key);
+    my $expired_barriers     = BOM::System::RedisReplicated::redis_read->get($cache_keyspace . '::' . $expired_barriers_key);
     my $high_low_key         = join($cache_sep, $underlying->symbol, 'high_low', $date_start, $now);
-    my $high_low             = Cache::RedisDB->get($cache_keyspace, $high_low_key);
+    my $high_low             = BOM::System::RedisReplicated::redis_read->get($cache_keyspace . '::' . $high_low_key);
     if (not $high_low) {
         $high_low = $underlying->get_high_low_for_period({
             start => $date_start,
             end   => $now,
         });
 
-        Cache::RedisDB->set($cache_keyspace, $high_low_key, $high_low, 10);
+        BOM::System::RedisReplicated::redis_write->set($cache_keyspace . '::' . $high_low_key, $high_low, 10);
     }
 
     my $high                      = $high_low->{high};
@@ -478,7 +480,7 @@ sub _get_expired_barriers {
         }
     }
     if ($new_added_expired_barrier > 0) {
-        Cache::RedisDB->set($cache_keyspace, $expired_barriers_key, $expired_barriers, 8100);
+        BOM::System::RedisReplicated::redis_write->set($cache_keyspace . '::' . $expired_barriers_key, $expired_barriers, 8100);
     }
 
     return $expired_barriers;
