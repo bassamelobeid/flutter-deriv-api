@@ -23,6 +23,8 @@ use Format::Util::Numbers qw(roundnear);
 use Time::HiRes;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
+use feature "state";
+
 sub validate_symbol {
     my $symbol = shift;
     my @offerings = get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'underlying_symbol');
@@ -525,6 +527,9 @@ sub pre_validate_start_expire_dates {
     my $params = shift;
     my ($start_epoch, $expiry_epoch, $duration);
 
+    state $pre_limits_max_duration = BOM::Platform::Runtime->instance->app_config->contract_pre_limits->max_duration;
+    state $pre_limits_max_forward  = BOM::Platform::Runtime->instance->app_config->contract_pre_limits->max_forward;
+
     my $now_epoch = Date::Utility->new->epoch;
     # no try/catch here, expecting higher level try/catch
     $start_epoch = $params->{date_start} ? Date::Utility->new($params->{date_start})->epoch : $now_epoch;
@@ -540,10 +545,7 @@ sub pre_validate_start_expire_dates {
         $duration     = $expiry_epoch - $start_epoch;
     }
 
-    my $max_duration = BOM::Platform::Runtime->instance->app_config->contract_pre_limits->max_duration;
-    my $max_forward  = BOM::Platform::Runtime->instance->app_config->contract_pre_limits->max_forward;
-
-    return if $start_epoch + 5 < $now_epoch or $start_epoch - $now_epoch > $max_forward or $duration > $max_duration;
+    return if $start_epoch + 5 < $now_epoch or $start_epoch - $now_epoch > $pre_limits_max_forward or $duration > $pre_limits_max_duration;
 
     return 1;    # seems like ok, but everything will be fully checked later.
 }
