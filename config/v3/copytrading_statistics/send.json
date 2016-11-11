@@ -4,7 +4,7 @@
   "title": "Request statistics of trader",
   "description": "Retrieve performance, trading, risk and copiers statistics of trader.",
   "properties": {
-    "trader_statistics": {
+    "copytrading_statistics": {
       "type": "integer",
       "pattern": "^1$",
       "required": "1"

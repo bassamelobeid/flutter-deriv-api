@@ -111,8 +111,7 @@ sub startup {
     $app->plugin('Binary::WebSocketAPI::Plugins::Helpers');
 
     my $actions = [
-        ['trader_statistics', {require_auth => 'read'}],
-        ['authorize',         {stash_params => [qw/ ua_fingerprint client_ip user_agent /]}],
+        ['authorize', {stash_params => [qw/ ua_fingerprint client_ip user_agent /]}],
         [
             'logout',
             {
@@ -381,6 +380,8 @@ sub startup {
                 require_auth => 'admin',
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
+
+        ['copytrading_statistics'],
     ];
 
     for my $action (@$actions) {
