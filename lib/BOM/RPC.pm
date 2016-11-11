@@ -228,7 +228,7 @@ sub startup {
         ['mt5_deposit',         \&BOM::RPC::v3::MT5::Account::mt5_deposit,         1],
         ['mt5_withdrawal',      \&BOM::RPC::v3::MT5::Account::mt5_withdrawal,      1],
 
-        ['trader_statistics', \&BOM::RPC::v3::CopyTrading::Statistics::trader_statistics, 1],
+        ['copytrading_statistics', \&BOM::RPC::v3::CopyTrading::Statistics::trader_statistics],
     );
     my $services = {};
     foreach my $srv (@services) {
