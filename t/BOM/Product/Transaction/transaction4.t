@@ -17,7 +17,7 @@ use BOM::Market::AggTicks;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Platform::Runtime;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
@@ -50,7 +50,7 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
 });
 
-my $client = BOM::Platform::Client->new({loginid => 'CR2002'});
+my $client = Client::Account->new({loginid => 'CR2002'});
 
 my $loginid  = $client->loginid;
 my $currency = 'USD';
@@ -69,7 +69,7 @@ my $contract   = produce_contract({
 });
 
 subtest 'validate legal allowed contract categories' => sub {
-    my $cr = BOM::Platform::Client->new({loginid => 'CR2002'});
+    my $cr = Client::Account->new({loginid => 'CR2002'});
     my $mocked_client = Test::MockModule->new('BOM::Platform::Client');
     $mocked_client->mock('residence', sub { return 'al' });
 

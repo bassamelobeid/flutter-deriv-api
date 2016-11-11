@@ -11,7 +11,7 @@ use Format::Util::Numbers qw(roundnear);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -59,7 +59,7 @@ my $random_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',
 });
 
-my $client     = BOM::Platform::Client->new({loginid => 'MX1001'});
+my $client     = Client::Account->new({loginid => 'MX1001'});
 my $currency   = 'GBP';
 my $account    = $client->default_account;
 my $loginid    = $client->loginid;
@@ -914,7 +914,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
 subtest 'Purchase Sell Contract' => sub {
     plan tests => 4;
 
-    my $client = BOM::Platform::Client->new({loginid => 'CR2002'});
+    my $client = Client::Account->new({loginid => 'CR2002'});
     $client = BOM::Platform::Client::get_instance({'loginid' => $client->loginid});
     my $mocked_client = Test::MockModule->new('BOM::Platform::Client');
     $mocked_client->mock('residence', sub { return 'al' });

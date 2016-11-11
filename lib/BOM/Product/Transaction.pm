@@ -17,7 +17,7 @@ use YAML::XS qw(LoadFile);
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Runtime;
 use LandingCompany::Countries;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::System::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
@@ -627,7 +627,7 @@ sub batch_buy {    ## no critic (RequireArgUnpacking)
 
     for my $m (@{$self->multiple}) {
         next if $m->{code};
-        my $c = try { BOM::Platform::Client->new({loginid => $m->{loginid}}) };
+        my $c = try { Client::Account->new({loginid => $m->{loginid}}) };
         unless ($c) {
             $m->{code}  = 'InvalidLoginid';
             $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
