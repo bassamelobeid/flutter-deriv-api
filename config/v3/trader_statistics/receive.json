@@ -13,40 +13,40 @@
       "description": "Statistics of the trader",
       "properties": {
         "active_since": {
-          "type": "string",
-          "description": "This is the date the investor started trading with binary.com",
+          "type": "integer",
+          "description": "This is the epoch the investor started trading with binary.com",
           "required": 1
         },
         "monthly_profitable_trades": {
           "type": "object",
-          "description": "Represents the net change in equity by the months.",
+          "description": "Represents the net change in equity in the months.",
           "patternProperties": {
             "^[0-9]{4}\\-[0-9]{2}$": {
               "type": "number",
-              "description": "Monthly profitable in percentage.",
+              "description": "Monthly profitable trades in percentage.",
               "required": 1
             }
           }
         },
         "yearly_profitable_trades": {
           "type": "object",
-          "description": "Represents the net change in equity by the years.",
+          "description": "Represents the net change in equity in the years.",
           "patternProperties": {
             "^[0-9]{4}$": {
               "type": "number",
-              "description": "Yearly profitable in percentage.",
+              "description": "Yearly profitable trades in percentage.",
               "required": 1
             }
           }
         },
         "last_12months_profitable_trades": {
           "type": "number",
-          "description": "Represents the net change in last 12 months.",
+          "description": "Represents the net change in equity for a 12-month period.",
           "requred": 1
         },
         "total_trades": {
           "type": "integer",
-          "description": "Total trades for all time.",
+          "description": "Total number of trades for all time.",
           "requred": 1
         },
         "trades_profitable": {
@@ -55,8 +55,8 @@
           "requred": 1
         },
         "avg_duration": {
-          "type": "string",
-          "description": "Average duration of holding positions open.",
+          "type": "integer",
+          "description": "Average seconds of keeping positions open.",
           "requred": 1
         },
         "avg_profit": {
