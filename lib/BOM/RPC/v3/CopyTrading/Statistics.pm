@@ -98,7 +98,8 @@ sub trader_statistics {
             }
         }
 
-        push @$performance_probability, sprintf(
+        push @$performance_probability,
+            sprintf(
             "%.4f",
             1 - Performance::Probability::get_performance_probability({
                     pnl          => $cumulative_pnl,
