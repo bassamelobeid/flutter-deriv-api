@@ -133,6 +133,7 @@ sub trader_statistics {
 
     # trades average duration
     $avg_duration = $txn_dm->get_trades_avg_duration($trader_accounts);
+    ($avg_duration) = ($avg_duration =~ /(.+)\./);
 
     # trades profitable
     $trades_statistic = $txn_dm->get_trades_profitable($trader_accounts);
@@ -150,7 +151,7 @@ sub trader_statistics {
     }
 
     return {
-        active_since => $trader_date_joined->date,
+        active_since => $trader_date_joined->epoch,
         # performance
         monthly_profitable_trades       => $monthly_profitable_trades,
         yearly_profitable_trades        => $yearly_profitable_trades,
@@ -159,7 +160,7 @@ sub trader_statistics {
         # trading
         total_trades      => $total_trades,
         trades_profitable => sprintf("%.4f", $trades_profitable),
-        avg_duration      => $avg_duration,
+        avg_duration      => Date::Utility->new('2000-01-01 ' . $avg_duration)->seconds_after_midnight,
         avg_profit        => sprintf("%.4f", $trades_statistic->{'win'}->{avg}),
         avg_loss          => sprintf("%.4f", $trades_statistic->{'loss'}->{avg}),
         trades_breakdown  => $trades_breakdown,
