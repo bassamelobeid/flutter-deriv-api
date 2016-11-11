@@ -178,11 +178,26 @@ sub _apply_barrier_adjustment {
             }
         }
 
-        my $below_factor = 1 + ($expected_return/100);
-        my $above_factor = 1 - ($expected_return/100);
+        my $er_factor = 1 + ($expected_return/100);
+        my $barrier_u = $barrier > $self->pricing_spot;
+        my $barrier_d = $barrier < $self->pricing_spot;
+        my $type = $self->code;
 
-        $barrier *= $below_factor if ( $barrier < $self->pricing_spot );
-        $barrier *= $above_factor if ( $barrier > $self->pricing_spot );
+        #final barrier is either "Barrier * (1+ER)" or "Barrier / (1+ER)"
+        if ( ($type eq 'CALL' or $type eq 'CALLE') or 
+            ($type eq 'ONETOUCH' && $barrier_u) or 
+            ($type eq 'NOTOUCH' && $barrier_d) or 
+            ($type eq 'EXPIRYRANGE' && $barrier_u) or
+            ($type eq 'EXPIRYRANGEE' && $barrier_u) or
+            ($type eq 'EXPIRYMISS' && $barrier_d) or 
+            ($type eq 'EXPIRYMISSE' && $barrier_d) or 
+            ($type eq 'RANGE' && $barrier_d) or
+            ($type eq 'UPORDOWN' && $barrier_u ) ) {
+
+                $er_factor = 1 / $er_factor;
+        }
+
+        $barrier *= $er_factor;
     }
 
     return $barrier;
