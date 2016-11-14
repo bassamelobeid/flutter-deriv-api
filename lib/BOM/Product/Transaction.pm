@@ -585,7 +585,7 @@ sub buy {    ## no critic (RequireArgUnpacking)
 #   thought to be already erroneous. Otherwise the element should contain
 #   a "loginid" key.
 #   The following keys are added:
-#   * client: the BOM::Platform::Client object corresponding to the loginid
+#   * client: the Client::Account object corresponding to the loginid
 #   * limits: a hash representing the betting limits of this client
 #   * fmb and txn: the FMB and transaction records that have been written
 #     to the database in case of success
