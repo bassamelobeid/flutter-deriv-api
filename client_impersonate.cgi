@@ -27,7 +27,7 @@ if ($login !~ /^$broker\d+$/) {
     code_exit_BO();
 }
 
-my $client = BOM::Platform::Client::get_instance({'loginid' => $login});
+my $client = Client::Account::get_instance({'loginid' => $login});
 if (not $client) {
     print "Error: wrong loginid ($login) could not get client instance";
     code_exit_BO();

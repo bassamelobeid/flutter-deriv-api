@@ -204,7 +204,7 @@ sub sell_expired_contracts {
     my $rmgenv = BOM::System::Config::env;
     for my $client_id (@client_loginids) {
         my $fmb_infos = $open_bets_ref->{$client_id};
-        my $client = BOM::Platform::Client::get_instance({'loginid' => $client_id});
+        my $client = Client::Account::get_instance({'loginid' => $client_id});
         my (@fmb_ids_to_be_sold, %bet_infos);
         for my $id (keys %$fmb_infos) {
             my $fmb_id         = $fmb_infos->{$id}->{id};

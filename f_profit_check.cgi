@@ -24,7 +24,7 @@ if ($loginID !~ /^(\D+)(\d+)$/) {
     code_exit_BO();
 }
 
-my $client = BOM::Platform::Client::get_instance({'loginid' => $loginID});
+my $client = Client::Account::get_instance({'loginid' => $loginID});
 if (not $client) {
     print "Error : wrong loginID ($loginID) could not get client instance";
     code_exit_BO();

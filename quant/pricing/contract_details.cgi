@@ -40,7 +40,7 @@ if ($broker and $id) {
         })->get_details_by_transaction_ref($id);
 
     my $original_contract = produce_contract($details->{shortcode}, $details->{currency_code});
-    my $client        = BOM::Platform::Client::get_instance({'loginid' => $details->{loginid}});
+    my $client        = Client::Account::get_instance({'loginid' => $details->{loginid}});
     my $action_type   = $details->{action_type};                                                   # buy or sell
     my $sell_time     = $details->{sell_time};
     my $purchase_time = $details->{purchase_time};

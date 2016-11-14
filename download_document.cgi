@@ -6,6 +6,8 @@ use open qw[ :encoding(UTF-8) ];
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_XSendfile/;
 use BOM::Backoffice::Sysinit ();
 
+use Client::Account;
+
 use f_brokerincludeall;
 BOM::Backoffice::Sysinit::init();
 
@@ -44,7 +46,7 @@ if (request()->param('deleteit') eq 'yes') {
     if (-s $full_path) {
         my $loginid = request()->param('loginid');
         my $doc_id  = request()->param('doc_id');
-        my $client  = BOM::Platform::Client::get_instance({loginid => $loginid});
+        my $client  = Client::Account::get_instance({loginid => $loginid});
         if ($client) {
             $client->set_db('write');
             my ($doc) = $client->find_client_authentication_document(query => [id => $doc_id]);    # Rose
