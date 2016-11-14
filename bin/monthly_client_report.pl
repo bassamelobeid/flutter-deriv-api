@@ -131,7 +131,7 @@ HERE
     return $sth->rows;
 }
 
-for my $broker (qw/ MLT MX MF CR /) {
+for my $broker (qw/ MLT MX MF CR JP /) {
     for my $crdr ('debit', 'credit') {
         printf "%5s / %6s: %s.. ", $broker, $crdr, scalar(localtime);
         my $rows = go broker => $broker, crdr => $crdr;
