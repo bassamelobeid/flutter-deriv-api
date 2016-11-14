@@ -3,24 +3,24 @@
     "type": "object",
     "properties": {
         "client_id": {
-                "type": "string",
-                "pattern": "^MF\\d+$",
-                "required": "1"
-            },
-            "landing_company": {
-                "type": "string",
-                "pattern": "^Binary Investments \\(Europe\\) Ltd$",
-                "required": "1"
-            },
-            "landing_company_shortcode": {
-                "type": "string",
-                "pattern": "^maltainvest$",
-                "required": "1"
-            },
-            "oauth_token": {
-                "type": "string",
-                "pattern": "^.{32}$",
-                "required": "1"
-            }
+            "type": "string",
+            "pattern": "^MF\\d+$",
+            "required": "1"
+        },
+        "landing_company": {
+            "type": "string",
+            "pattern": "^Binary Investments \\(Europe\\) Ltd$",
+            "required": "1"
+        },
+        "landing_company_shortcode": {
+            "type": "string",
+            "pattern": "^maltainvest$",
+            "required": "1"
+        },
+        "oauth_token": {
+            "type": "string",
+            "pattern": "^.{32}$",
+            "required": "1"
+        }
     }
 }
