@@ -29,7 +29,7 @@ use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw (localize request);
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Platform::Email qw(send_email);
 use BOM::System::Config;
 use BOM::System::AuditLog;
@@ -375,7 +375,7 @@ sub paymentagent_list {
     my $token_details = $params->{token_details};
     my $client;
     if ($token_details and exists $token_details->{loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
+        $client = Client::Account->new({loginid => $token_details->{loginid}});
     }
 
     my $broker_code = $client ? $client->broker_code : 'CR';
@@ -479,7 +479,7 @@ sub paymentagent_transfer {
         return $error_sub->(localize('Invalid amount. minimum is 10, maximum is 2000.'));
     }
 
-    my $client_to = try { BOM::Platform::Client->new({loginid => $loginid_to}) };
+    my $client_to = try { Client::Account->new({loginid => $loginid_to}) };
     unless ($client_to) {
         return $reject_error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to));
     }

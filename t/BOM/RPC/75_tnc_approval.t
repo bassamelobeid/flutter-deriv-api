@@ -5,7 +5,7 @@ use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Email qw(clear_mailbox);
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Platform::Runtime;
 use BOM::Database::Model::AccessToken;
 use BOM::RPC::v3::Accounts;
