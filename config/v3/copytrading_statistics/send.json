@@ -15,7 +15,7 @@
     },
     "trader_id": {
       "type": "string",
-      "pattern": "\\w+$",
+      "pattern": "^\\w+$",
       "required": "1"
     },
     "req_id": {
