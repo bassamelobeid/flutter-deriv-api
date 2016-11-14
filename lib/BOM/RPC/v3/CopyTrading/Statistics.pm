@@ -28,16 +28,16 @@ sub trader_statistics {
     # TODO check that client allows copy trading
 
     my $trader_date_joined = Date::Utility->new($trader->date_joined);
-
-    my $db = BOM::Database::ClientDB->new({
-            client_loginid => $trader->loginid,
-        })->db;
     my $trader_accounts = [$trader->account];
 
     # Check that client has accounts
     unless (@$trader_accounts) {
         return (localize('Trader ([_1]) has no accounts.', $trader_id));
     }
+
+    my $db = BOM::Database::ClientDB->new({
+            client_loginid => $trader->loginid,
+        })->db;
 
     # Calculate average performance for multiple accounts
     my $now                       = Date::Utility->new();
