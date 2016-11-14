@@ -100,7 +100,7 @@ my $expected = {
 
 my $underlying = create_underlying('frxEURUSD');
 
-foreach my $key (sort { $a cmp $b } keys $expected) {
+foreach my $key (sort { $a cmp $b } keys %{$expected}) {
     my @exp = @{$expected->{$key}};
     my ($bet_type, $pip_diff) = split '_', $key;
 

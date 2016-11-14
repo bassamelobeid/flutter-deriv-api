@@ -161,7 +161,7 @@ sub _apply_barrier_adjustment {
         $barrier += $barrier_adj_future_value;
     }
 
-    if ( $self->is_intraday and $self->market->name eq 'forex' ) {
+    if ($self->is_intraday and $self->market->name eq 'forex') {
         #get a list of applicable tentative economic events
         my $tentative_events = $self->tentative_events;
 
@@ -171,30 +171,34 @@ sub _apply_barrier_adjustment {
             #if event is for to asset_symbol minus the return
             #if event is for quoted_currency_symbol add the return
             #For example for EURUSD, asset symbol is EUR and quoted currency is USD
-            if ( $event->{symbol} eq $self->underlying->asset_symbol ) {
+            if ($event->{symbol} eq $self->underlying->asset_symbol) {
                 $expected_return -= $event->{expected_return};
-            } elsif ( $event->{symbol} eq $self->underlying->quoted_currency_symbol ) {
+            } elsif ($event->{symbol} eq $self->underlying->quoted_currency_symbol) {
                 $expected_return += $event->{expected_return};
             }
         }
 
-        my $er_factor = 1 + ($expected_return/100);
+        my $er_factor = 1 + ($expected_return / 100);
         my $barrier_u = $barrier > $self->pricing_spot;
         my $barrier_d = $barrier < $self->pricing_spot;
-        my $type = $self->code;
+        my $type      = $self->code;
 
         #final barrier is either "Barrier * (1+ER)" or "Barrier / (1+ER)"
-        if ( ($type eq 'CALL' or $type eq 'CALLE') or 
-            ($type eq 'ONETOUCH' && $barrier_u) or 
-            ($type eq 'NOTOUCH' && $barrier_d) or 
-            ($type eq 'EXPIRYRANGE' && $barrier_u) or
-            ($type eq 'EXPIRYRANGEE' && $barrier_u) or
-            ($type eq 'EXPIRYMISS' && $barrier_d) or 
-            ($type eq 'EXPIRYMISSE' && $barrier_d) or 
-            ($type eq 'RANGE' && $barrier_d) or
-            ($type eq 'UPORDOWN' && $barrier_u ) ) {
+        if ((
+                   $type eq 'CALL'
+                or $type eq 'CALLE'
+            )
+            or ($type eq 'ONETOUCH'     && $barrier_u)
+            or ($type eq 'NOTOUCH'      && $barrier_d)
+            or ($type eq 'EXPIRYRANGE'  && $barrier_u)
+            or ($type eq 'EXPIRYRANGEE' && $barrier_u)
+            or ($type eq 'EXPIRYMISS'   && $barrier_d)
+            or ($type eq 'EXPIRYMISSE'  && $barrier_d)
+            or ($type eq 'RANGE'        && $barrier_d)
+            or ($type eq 'UPORDOWN'     && $barrier_u))
+        {
 
-                $er_factor = 1 / $er_factor;
+            $er_factor = 1 / $er_factor;
         }
 
         $barrier *= $er_factor;
