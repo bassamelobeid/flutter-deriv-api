@@ -1027,7 +1027,7 @@ my $pc_params_setters = {
 
     probability => sub {
         my $self        = shift;
-        my $probability = $self->pricing_engine->theo_probability + $self->pricing_engine->risk_markup;
+        my $probability = $self->pricing_engine->theo_probability + $self->risk_markup;
         if ($self->new_interface_engine) {
             $probability = Math::Util::CalculatedValue::Validatable->new({
                 name        => 'theo_probability',
