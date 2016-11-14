@@ -5,6 +5,8 @@ use Sub::Override;
 use Test::Exception;
 use DateTime;
 
+use Client::Account;
+
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::MyAffiliates::GenerateRegistrationDaily;
 use BOM::MyAffiliates::BackfillManager;
@@ -366,7 +368,7 @@ subtest 'registering a client with both an affiliate token and a promocode' => s
     "create new client success";
 
     #Then reload the client from the DB to be sure
-    $client = BOM::Platform::Client::get_instance({'loginid' => $client->loginid});
+    $client = Client::Account::get_instance({'loginid' => $client->loginid});
 
     is $client->promo_code,                    'BOM2009',                          "promocode set";
     is $client->myaffiliates_token,            'aaaaaaaaaaaaaa_bbbbbbbbbbbbbbbbb', "MyAffiliate token empty";
