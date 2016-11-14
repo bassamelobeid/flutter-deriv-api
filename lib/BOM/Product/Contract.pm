@@ -846,7 +846,7 @@ sub _build_longcode {
 
 =item is_after_settlement
 
-This check if the contract already passes the settlement time 
+This check if the contract already passes the settlement time
 
 For tick expiry contract, it can expires when a certain number of ticks is received or it already passes the max_tick_expiry_duration.
 For other contracts, it can expires when current time has past a pre-determined settelement time.
@@ -931,13 +931,17 @@ has price_calculator => (
 sub _build_price_calculator {
     my $self = shift;
 
+    my $market_name             = $self->market->name;
+    my $per_market_scaling      = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling;
+    my $base_commission_scaling = $per_market_scaling->$market_name;
+
     return Price::Calculator->new({
             currency                => $self->currency,
             deep_otm_threshold      => $self->market->deep_otm_threshold,
             maximum_total_markup    => BOM::System::Config::quants->{commission}->{maximum_total_markup},
             base_commission_min     => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
             base_commission_max     => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
-            base_commission_scaling => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
+            base_commission_scaling => $base_commission_scaling,
             app_markup_percentage   => $self->app_markup_percentage,
             ($self->has_base_commission)
             ? (base_commission => $self->base_commission)
@@ -2705,6 +2709,25 @@ has primary_validation_error => (
     init_arg => undef,
 );
 
+=head2 _validate_appconfig_age
+ 
+We also want to guard against old appconfig.
+
+=cut
+
+sub _validate_appconfig_age {
+    my $rev = BOM::Platform::Runtime->instance->app_config->current_revision;
+    my $age = Time::HiRes::time - $rev;
+    if ($age > 300) {
+        warn "Config age is >300s - $age - is bin/update_appconfig_rev.pl running?\n";
+        return {
+            message           => "appconfig is out of date - age is now $age seconds",
+            message_to_client => localize('Trading is currently suspended due to configuration update'),
+        };
+    }
+    return;
+}
+
 sub confirm_validity {
     my $self = shift;
     my $args = shift;
@@ -2722,6 +2745,7 @@ sub confirm_validity {
     push @validation_methods, '_validate_feed';
     push @validation_methods, 'validate_price'                                            unless $self->skips_price_validation;
     push @validation_methods, '_validate_volsurface'                                      unless $self->volsurface->type eq 'flat';
+    push @validation_methods, '_validate_appconfig_age';
 
     foreach my $method (@validation_methods) {
         if (my $err = $self->$method) {
