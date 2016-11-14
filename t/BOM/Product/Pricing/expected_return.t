@@ -48,7 +48,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 blankout     => $blackout_start->epoch,
                 blankout_end => $blackout_end->epoch,
                 is_tentative => 1,
-                expected_return => 3,
+                expected_return => 20,
                 event_name   => 'Test tentative',
                 impact       => 5,
             }
@@ -59,7 +59,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 blankout     => $blackout_start->epoch,
                 blankout_end => $blackout_end->epoch,
                 is_tentative => 1,
-                expected_return => 1,
+                expected_return => 5,
                 event_name   => 'Test tentative',
                 impact       => 5,
             }
@@ -85,13 +85,17 @@ my $contract_args = {
 #key is "contract type_pip diff" and value is ask_price, expected high and low barriers.
 #for single barrier contracts, value is ask_price, expected barrier.
 my $expected = {
-    'CALL_1000'       => [100, 98.05],
-    'CALL_0'          => [100, 98.04],
-    # 'PUT_1000'        => [100, 102.01],
-    # 'PUT_0'           => [100, 102],
-    # 'NOTOUCH_0'       => [110, 110, 59.9],
-    # 'NOTOUCH_0'       => [110, 110, 59.9],
-    # 'ONETOUCH_200'    => [110, 110, 59.9],
+    'CALL_0'          => [86.95652],
+    'CALL_1000'       => [86.96522],
+    'EXPIRYMISS_2000' => [115.023],
+    'EXPIRYRANGE_2000'=> [86.97391],
+    'NOTOUCH_0'       => [115],
+    'NOTOUCH_1000'    => [115.0115],
+    'ONETOUCH_2000'   => [86.97391],
+    'PUT_1000'        => [115.0115],
+    'PUT_0'           => [115],
+    'RANGE_2500'      => [115.02875],
+    'UPORDOWN_2500'   => [86.97826],
 };
 
 my $underlying = create_underlying('frxEURUSD');
@@ -105,22 +109,26 @@ foreach my $key (sort { $a cmp $b } keys $expected) {
     if ( grep { $bet_type eq $_ } qw(CALL CALLE PUT PUTE ONETOUCH NOTOUCH)  ) {
         $contract_args->{barrier} = 'S' . $pip_diff . 'P';
     } else {
-        $contract_args->{high_barrier} = 'S' . $pip_diff . 'P' if $pip_diff ne '0';
-        $contract_args->{low_barrier} = 'S-' . $pip_diff . 'P' if $pip_diff ne '0';
+        $contract_args->{high_barrier} = 'S' . $pip_diff . 'P';
+        $contract_args->{low_barrier} = 'S-' . $pip_diff . 'P';
     }
 
     my $c = produce_contract($contract_args);
-    is roundnear(0.01, $c->ask_price), $exp[0], "correct ask price for $key";
     $DB::single=1;
 
-    is roundnear(0.01, $c->barriers_for_pricing->{barrier1}), $exp[1], "correct first barrier for $key";
-    is roundnear(0.01, $c->barriers_for_pricing->{barrier2}), $exp[2], "correct second barrier for $key" if defined $exp[2];
+    is roundnear(0.00001, $c->barriers_for_pricing->{barrier1}), $exp[0], "correct first barrier for $key";
+    is roundnear(0.00001, $c->barriers_for_pricing->{barrier2}), $exp[1], "correct second barrier for $key" if defined $exp[1];
 
     $DB::single=1;
+    #force pricing similar contract without any tentative events
     $contract_args->{tentative_events} = [];
     $c = produce_contract($contract_args);
-    is abs(roundnear(0.01, 100 - $c->barriers_for_pricing->{barrier1})), $underlying->pip_size * $pip_diff, "without events - correct first barrier for $key";
-    is abs(roundnear(0.01, 100 - $c->barriers_for_pricing->{barrier2})), $underlying->pip_size * $pip_diff, "without events - correct second barrier for $key" if defined $exp[2];
+    is abs(roundnear(0.00001, 100 - $c->barriers_for_pricing->{barrier1})), $underlying->pip_size * $pip_diff, 
+        "without events - correct first barrier for $key: ". $c->barriers_for_pricing->{barrier1};
+
+    is abs(roundnear(0.00001, 100 - $c->barriers_for_pricing->{barrier2})), $underlying->pip_size * $pip_diff, 
+        "without events - correct second barrier for $key: " . $c->barriers_for_pricing->{barrier2} if defined $exp[1];
+
     delete $contract_args->{tentative_events};
 }
 
