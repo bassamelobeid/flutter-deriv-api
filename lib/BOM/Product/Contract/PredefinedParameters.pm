@@ -247,7 +247,7 @@ sub _is_historical_request {
     my $date = shift;
 
     return 0 if not defined $date;
-    return 1 if $for_date->is_before(Date::Utility->new);
+    return 1 if $date->is_before(Date::Utility->new);
     return 0;
 }
 
