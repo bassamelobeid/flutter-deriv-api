@@ -203,7 +203,7 @@ sub BUILDARGS {
     return $args;
 }
 
-my $payment_limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'));
+my $payment_limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'));
 
 my %known_errors;              # forward declaration
 sub sell_expired_contracts;    # forward declaration
