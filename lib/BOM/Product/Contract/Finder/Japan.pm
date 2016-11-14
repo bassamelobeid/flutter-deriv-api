@@ -124,7 +124,7 @@ sub _apply_trading_periods_to_offerings {
 
     my $trading_periods = get_trading_periods($symbol, $now);
 
-    return @$offerings unless @$trading_periods;
+    return () unless @$trading_periods;
 
     my $underlying  = create_underlying($symbol);
     my $close_epoch = $underlying->calendar->closing_on($now)->epoch;
