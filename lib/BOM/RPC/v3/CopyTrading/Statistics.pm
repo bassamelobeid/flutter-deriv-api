@@ -8,22 +8,40 @@ use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::MarketData qw(create_underlying);
+use BOM::Platform::Context qw (localize);
 
 use Performance::Probability qw(get_performance_probability);
 
 use List::Util qw/sum0/;
+use Try::Tiny;
 use Data::Dumper;
 
 sub trader_statistics {
     my $params = shift->{args};
 
-    my $trader = BOM::Platform::Client->new({loginid => $params->{trader_id}});
+    my $trader_id = uc $params->{trader_id};
+    my $trader = try { BOM::Platform::Client->new({loginid => $trader_id}) };
+    unless ($trader) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'WrongLoginID',
+                message_to_client => localize('Login ID ([_1]) does not exist.', $trader_id)});
+    }
+
+    # TODO check that client allows copy trading
+
     my $trader_date_joined = Date::Utility->new($trader->date_joined);
+    my $trader_accounts    = [$trader->account];
+
+    # Check that client has accounts
+    unless (@$trader_accounts) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'TraderHasNoTrades',
+                message_to_client => localize('Trader ([_1]) has no trades.', $trader_id)});
+    }
 
     my $db = BOM::Database::ClientDB->new({
             client_loginid => $trader->loginid,
         })->db;
-    my $trader_accounts = [$trader->account];
 
     # Calculate average performance for multiple accounts
     my $now                       = Date::Utility->new();
@@ -97,19 +115,20 @@ sub trader_statistics {
                 $cumulative_pnl = $cumulative_pnl + ($contract->{sell_price} - $contract->{buy_price});
             }
         }
-
-        push @$performance_probability,
-            sprintf(
-            "%.4f",
-            1 - Performance::Probability::get_performance_probability({
-                    pnl          => $cumulative_pnl,
-                    payout       => $contract_parameters->{payout_price},
-                    bought_price => $contract_parameters->{buy_price},
-                    types        => $contract_parameters->{bet_type},
-                    underlying   => $contract_parameters->{underlying_symbol},
-                    start_time   => $contract_parameters->{start_time},
-                    sell_time    => $contract_parameters->{sell_time},
-                }));
+        if (@{$sold_contracts}) {
+            push @$performance_probability,
+                sprintf(
+                "%.4f",
+                1 - Performance::Probability::get_performance_probability({
+                        pnl          => $cumulative_pnl,
+                        payout       => $contract_parameters->{payout_price},
+                        bought_price => $contract_parameters->{buy_price},
+                        types        => $contract_parameters->{bet_type},
+                        underlying   => $contract_parameters->{underlying_symbol},
+                        start_time   => $contract_parameters->{start_time},
+                        sell_time    => $contract_parameters->{sell_time},
+                    }));
+        }
     }
 
     # Average for multiply accounts
@@ -125,20 +144,15 @@ sub trader_statistics {
 
     my $txn_dm = BOM::Database::DataMapper::Transaction->new({db => $db});
 
-    # trades_cnt
-    $total_trades = $txn_dm->get_transactions_cnt(
-        $trader_accounts,
-        {
-            action_type => 'buy',
-        });
-
     # trades average duration
     $avg_duration = $txn_dm->get_trades_avg_duration($trader_accounts);
     ($avg_duration) = ($avg_duration =~ /(.+)\./);
+    $avg_duration = Date::Utility->new('2000-01-01 ' . $avg_duration)->seconds_after_midnight if $avg_duration;
 
-    # trades profitable
-    $trades_statistic = $txn_dm->get_trades_profitable($trader_accounts);
-    $trades_profitable = $trades_statistic->{'win'}->{count} / ($trades_statistic->{'win'}->{count} + $trades_statistic->{'loss'}->{count});
+    # trades profitable && total trades count
+    $trades_statistic  = $txn_dm->get_trades_profitable($trader_accounts);
+    $total_trades      = $trades_statistic->{'win'}->{count} + $trades_statistic->{'loss'}->{count};
+    $trades_profitable = $trades_statistic->{'win'}->{count} / ($total_trades || 1);
 
     # trades_breakdown
     my $symbols_breakdown = $txn_dm->get_symbols_breakdown($trader_accounts);
@@ -161,7 +175,7 @@ sub trader_statistics {
         # trading
         total_trades      => $total_trades,
         trades_profitable => sprintf("%.4f", $trades_profitable),
-        avg_duration      => Date::Utility->new('2000-01-01 ' . $avg_duration)->seconds_after_midnight,
+        avg_duration      => $avg_duration,
         avg_profit        => sprintf("%.4f", $trades_statistic->{'win'}->{avg}),
         avg_loss          => sprintf("%.4f", $trades_statistic->{'loss'}->{avg}),
         trades_breakdown  => $trades_breakdown,
