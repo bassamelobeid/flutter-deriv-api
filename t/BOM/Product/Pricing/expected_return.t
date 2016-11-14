@@ -82,20 +82,19 @@ my $contract_args = {
     })
 };
 
-#key is "contract type_pip diff" and value is ask_price, expected high and low barriers.
-#for single barrier contracts, value is ask_price, expected barrier.
+#key is "contract type_pip diff" and value is expected barrier(s)
 my $expected = {
     'CALL_0'          => [86.95652],
     'CALL_1000'       => [86.96522],
-    'EXPIRYMISS_2000' => [115.023],
-    'EXPIRYRANGE_2000'=> [86.97391],
+    'EXPIRYMISS_2000' => [115.023, 86.93913],
+    'EXPIRYRANGE_2000'=> [86.97391, 114.977],
     'NOTOUCH_0'       => [115],
     'NOTOUCH_1000'    => [115.0115],
     'ONETOUCH_2000'   => [86.97391],
     'PUT_1000'        => [115.0115],
     'PUT_0'           => [115],
-    'RANGE_2500'      => [115.02875],
-    'UPORDOWN_2500'   => [86.97826],
+    'RANGE_2500'      => [115.02875, 86.93478],
+    'UPORDOWN_2500'   => [86.97826, 114.97125],
 };
 
 my $underlying = create_underlying('frxEURUSD');
@@ -117,7 +116,7 @@ foreach my $key (sort { $a cmp $b } keys %{$expected}) {
     $DB::single=1;
 
     is roundnear(0.00001, $c->barriers_for_pricing->{barrier1}), $exp[0], "correct first barrier for $key";
-    is roundnear(0.00001, $c->barriers_for_pricing->{barrier2}), $exp[1], "correct second barrier for $key" if defined $exp[1];
+    is roundnear(0.00001, $c->barriers_for_pricing->{barrier2}), $exp[1], "correct second barrier for $key" if $c->two_barriers;
 
     $DB::single=1;
     #force pricing similar contract without any tentative events
@@ -127,7 +126,7 @@ foreach my $key (sort { $a cmp $b } keys %{$expected}) {
         "without events - correct first barrier for $key: ". $c->barriers_for_pricing->{barrier1};
 
     is abs(roundnear(0.00001, 100 - $c->barriers_for_pricing->{barrier2})), $underlying->pip_size * $pip_diff, 
-        "without events - correct second barrier for $key: " . $c->barriers_for_pricing->{barrier2} if defined $exp[1];
+        "without events - correct second barrier for $key: " . $c->barriers_for_pricing->{barrier2} if $c->two_barriers;
 
     delete $contract_args->{tentative_events};
 }
