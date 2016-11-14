@@ -161,6 +161,13 @@ sub _apply_barrier_adjustment {
         $barrier += $barrier_adj_future_value;
     }
 
+    #When pricing options during the news event period, the expected return shifts the strikes/barriers so that prices are marked up. Here are examples for each contract type:
+    #A binary call strike = 105 and an expected return of 2% will be priced as a binary call strike = 105/(1+2%)
+    #A binary put strike = 105 and an expected return of 2% will be priced as a binary call strike = 105*(1+2%)
+    #A touch (upper) barrier = 105 and an expected return of 2% will be priced as a touch barrier = 105/(1+2%)
+    #A touch (lower) barrier = 105 and an expected return of 2% will be priced as a touch barrier = 105*(1+2%)
+    #A no-touch (upper) barrier = 105 and an expected return of 2% will be priced as a no-touch barrier = 105*(1+2%)
+    #A no-touch (lower) barrier = 105 and an expected return of 2% will be priced as a no-touch barrier = 105/(1+2%)
     if ($self->is_intraday and $self->market->name eq 'forex') {
         #get a list of applicable tentative economic events
         my $tentative_events = $self->tentative_events;
