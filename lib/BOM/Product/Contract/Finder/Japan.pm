@@ -156,7 +156,7 @@ sub _apply_trading_periods_to_offerings {
                 next;
             } elsif ($now->day_of_week == 5
                 and $trading_duration < 86400
-                and ($date_expiry > $today_close_epoch or $date_start > $today_close_epoch))
+                and ($date_expiry > $close_epoch or $date_start > $close_epoch))
             {
                 next;
             } else {
