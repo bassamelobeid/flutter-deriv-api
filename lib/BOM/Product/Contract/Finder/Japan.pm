@@ -15,6 +15,8 @@ use Exporter qw( import );
 our @EXPORT_OK = qw(available_contracts_for_symbol);
 use Math::CDF qw(qnorm);
 
+use BOM::Product::Contract::PredefinedParameters qw(get_trading_periods);
+
 =head1 available_contracts_for_symbol
 
 Returns a set of available contracts for a particular contract which included predefined trading period and 20 predefined barriers associated with the trading period
@@ -34,20 +36,8 @@ sub available_contracts_for_symbol {
         $open      = $calendar->opening_on($now)->epoch;
         $close     = $calendar->closing_on($now)->epoch;
         @offerings = get_offerings($symbol);
-        @offerings = _predefined_trading_period({
-            offerings => \@offerings,
-            calendar  => $calendar,
-            symbol    => $symbol,
-            date      => $now,
-        });
+        @offerings = _apply_trading_periods_to_offerings($symbol, $now, \@offerings);
         for my $o (@offerings) {
-            my $cc = $o->{contract_category};
-
-            my $cat = BOM::Product::Contract::Category->new($cc);
-            $o->{contract_category_display} = $cat->display_name;
-
-            $o->{barriers} = $cat->two_barriers ? 2 : 1;
-
             _set_predefined_barriers({
                 underlying   => $underlying,
                 current_tick => $current_tick,
@@ -75,29 +65,34 @@ sub get_offerings {
         underlying_symbol => $symbol,
         start_type        => 'spot',
     );
-    my @endsinout = $flyby->query({
+
+    my @offerings = $flyby->query({
         expiry_type       => 'daily',
         barrier_category  => 'euro_non_atm',
         contract_category => 'endsinout',
         %similar_args,
     });
-    my @callput = $flyby->query({
-        expiry_type       => ['daily', 'intraday'],
-        barrier_category  => 'euro_non_atm',
-        contract_category => 'callput',
-        %similar_args,
-    });
-    my @american = $flyby->query({
-        expiry_type       => 'daily',
-        barrier_category  => 'american',
-        contract_category => ['touchnotouch', 'staysinout'],
-        %similar_args,
-    });
 
-    return (@endsinout, @callput, @american);
+    push @offerings,
+        $flyby->query({
+            expiry_type       => ['daily', 'intraday'],
+            barrier_category  => 'euro_non_atm',
+            contract_category => 'callput',
+            %similar_args,
+        });
+
+    push @offerings,
+        $flyby->query({
+            expiry_type       => 'daily',
+            barrier_category  => 'american',
+            contract_category => ['touchnotouch', 'staysinout'],
+            %similar_args,
+        });
+
+    return map { $_->{barriers} = BOM::Product::Contract::Category->new($_->{contract_category})->two_barriers ? 2 : 1; $_ } @offerings;
 }
 
-=head2 _predefined_trading_period
+=head2 _apply_trading_periods_to_offerings
 
 We set the predefined trading periods based on Japan requirement:
 Intraday contract:
@@ -124,121 +119,35 @@ Daily contract:
 my $cache_keyspace = 'FINDER_PREDEFINED_SET';
 my $cache_sep      = '==';
 
-sub _predefined_trading_period {
-    my $args              = shift;
-    my @offerings         = @{$args->{offerings}};
-    my $calendar          = $args->{calendar};
-    my $now               = $args->{date};
-    my $symbol            = $args->{symbol};
-    my $now_hour          = $now->hour;
-    my $now_minute        = $now->minute;
-    my $now_date          = $now->date;
-    my $trading_key       = join($cache_sep, $symbol, $now_date, $now_hour);
-    my $today_close       = $calendar->closing_on($now);
-    my $today_close_epoch = $today_close->epoch;
-    my $today             = $now->truncate_to_day;                                                                    # Start of the day object.
-    my $trading_periods   = BOM::System::RedisReplicated::redis_read()->get($cache_keyspace . '::' . $trading_key);
+sub _apply_trading_periods_to_offerings {
+    my ($symbol, $now, $offerings) = @_;
 
-    if (not $trading_periods) {
-        $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
-        my $even_hour = $now_hour - ($now_hour % 2);
-        # We did not offer intraday contract after NY16. However, we turn on these three pairs on Japan
-        my @skip_even_hour = (grep { $_ eq $symbol } qw(frxUSDJPY frxAUDJPY frxAUDUSD)) ? (18, 20) : (18, 20, 22);
+    my $trading_periods = get_trading_periods($symbol, $now);
 
-        if (not grep { $even_hour == $_ } @skip_even_hour) {
-            $trading_periods = [];
+    return $offerings unless @$trading_periods;
 
-            my $window_2h = _get_intraday_trading_window({
-                now        => $now,
-                date_start => $today->plus_time_interval($even_hour . 'h'),
-                duration   => '2h'
-            });
-
-            # Previous 2 hours contract should be always available in the first 15 minutes of the next one
-            # (except start of the trading day and also the first window after the break)
-            if (($now->epoch - $window_2h->{date_start}->{epoch}) / 60 < 15 && $even_hour - 2 >= 0 && $even_hour != 22) {
-                push @$trading_periods,
-                    _get_intraday_trading_window({
-                        now        => $now,
-                        date_start => $today->plus_time_interval(($even_hour - 2) . 'h'),
-                        duration   => '2h'
-                    });
-            }
-
-            push @$trading_periods, $window_2h;
-
-            my $odd_hour = ($now_hour % 2) ? $now_hour : $now_hour - 1;
-            $odd_hour = $odd_hour % 4 == 1 ? $odd_hour : $odd_hour - 2;
-
-            if ($now_hour > 0 and $now_hour < 18 and $odd_hour != 21) {
-
-                push @$trading_periods, map { _get_intraday_trading_window({now => $now, date_start => $_, duration => '5h'}) }
-                    grep { $_->is_after($today) }
-                    map { $today->plus_time_interval($_ . 'h') } ($odd_hour, $odd_hour - 4);
-            }
-        }
-        # This is for 0 day contract
-        push @$trading_periods,
-            {
-            date_start => {
-                date  => $today->datetime,
-                epoch => $today->epoch
-            },
-            date_expiry => {
-                date  => $today_close->datetime,
-                epoch => $today_close_epoch
-            },
-            duration => '0d'
-            };
-
-        push @$trading_periods,
-            _get_daily_trading_window({
-                now      => $now,
-                duration => $_,
-                calendar => $calendar
-            });
-
-# Japan's intraday predefined trading window are as follow:
-# 2 hours and 15 min duration:
-# 00:00-02:00,01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00 21:45:00, 23:45-02:00,01:45-04:00, 03:45-06:00
-#
-# 5 hours and 15 min duration:
-# 00:45-06:00 ; 04:45-10:00 ; 08:45-14:00 ; 12:45-18:00
-#
-# Hence, we will generate the window at HH::45 (HH is the predefined trading hour) to include any new trading window and will also generate the trading window again at the next HH:00 to remove any expired trading window.
-#
-# TTL is the remaining seconds until the forthcoming HH:45 (if current minute is < 45) or the forthcoming HH:)) (if the current time is >= 45)
-
-# So cache TTL is (in mins for comfort) :
-# hh:00 => ttl = 45 min
-# hh:03 => ttl = 42 min
-# hh:29 => ttl = 16 min
-# hh:44 => ttl = 1 min
-# hh:45 => ttl = 15 min
-# hh:54 => ttl = 6 min
-# hh:59 => ttl = 1 min
-# hh:00 => ttl = 45 min
-
-        BOM::System::RedisReplicated->redis_write->set($cache_keyspace . '::' . $trading_key,
-            $trading_periods, 'PX', ($now_minute < 45 ? 2700 : 3600) - $now_minute * 60 - $now->second);
-    }
+    my $underlying  = create_underlying($symbol);
+    my $close_epoch = $underlying->calendar->closing_on($now)->epoch;
+    # full trading seconds
+    my $trading_seconds = $close_epoch - $now->truncate_to_day->epoch;
 
     my @new_offerings;
-    foreach my $o (@offerings) {
-        # we do not want to offer intraday contract on other contracts
-        # we offer 0day contract on call/put
-        my $minimum_contract_duration =
-              ($o->{contract_category} eq 'callput')
-            ? $o->{expiry_type} eq 'intraday'
-                ? Time::Duration::Concise->new({interval => $o->{min_contract_duration}})->seconds
-                : ($today_close_epoch - $today->epoch)
-            : 86400;
+    foreach my $o (@$offerings) {
+        # we offer 0 day (end of day) and intraday durations to callput only
+        my $minimum_contract_duration;
+        if ($o->{contract_category} ne 'callput') {
+            $minimum_contract_duration = 86400;
+        } else {
+            $minimum_contract_duration =
+                $o->{expiry_type} eq 'intraday' ? Time::Duration::Concise->new({interval => $o->{min_contract_duration}})->seconds : $trading_seconds;
+        }
 
         my $maximum_contract_duration =
             ($o->{contract_category} eq 'callput' and $o->{expiry_type} eq 'intraday')
             ? 21600
             : Time::Duration::Concise->new({interval => $o->{max_contract_duration}})->seconds;
 
+        my @relevant_periods;
         foreach my $trading_period (grep { defined } @$trading_periods) {
             my $date_expiry      = $trading_period->{date_expiry}->{epoch};
             my $date_start       = $trading_period->{date_start}->{epoch};
@@ -251,123 +160,14 @@ sub _predefined_trading_period {
             {
                 next;
             } else {
-                push @new_offerings, {%{$o}, trading_period => $trading_period};
+                push @relevant_periods, $trading_period;
             }
         }
+
+        push @new_offerings, +{%{$o}, trading_period => \@relevant_periods};
     }
 
     return @new_offerings;
-}
-
-=head2 _get_intraday_trading_window
-
-To get the intraday trading window of a trading duration. Start at 15 minute before the date_start
-
-=cut
-
-sub _get_intraday_trading_window {
-    my $args             = shift;
-    my $date_start       = $args->{date_start};
-    my $duration         = $args->{duration};
-    my $now              = $args->{now};
-    my $is_monday_start  = $now->day_of_week == 1 && $date_start->hour == 0;
-    my $early_date_start = $is_monday_start ? $date_start : $date_start->minus_time_interval('15m');
-    my $date_expiry      = $date_start->hour == 22 ? $date_start->plus_time_interval('1h59m59s') : $date_start->plus_time_interval($duration);
-    if ($now->is_before($date_expiry)) {
-        return {
-            date_start => {
-                date  => $early_date_start->datetime,
-                epoch => $early_date_start->epoch
-            },
-            date_expiry => {
-                date  => $date_expiry->datetime,
-                epoch => $date_expiry->epoch,
-            },
-            duration => $duration . (!$is_monday_start ? '15m' : ''),
-        };
-    }
-}
-
-=head2 _get_trade_date_of_daily_window
-
-To get the trade date of supplied start and end of the window
-
-=cut
-
-sub _get_trade_date_of_daily_window {
-    my $args                    = shift;
-    my $start_of_current_window = $args->{current_date_start};
-    my $start_of_next_window    = $args->{next_date_start};
-    my $duration                = $args->{duration};
-    my $calendar                = $args->{calendar};
-    my $date_start =
-        $calendar->trades_on($start_of_current_window) ? $start_of_current_window : $calendar->trade_date_after($start_of_current_window);
-    my $date_expiry = $calendar->closing_on($calendar->trade_date_before($start_of_next_window));
-
-    return {
-        date_start => {
-            date  => $date_start->datetime,
-            epoch => $date_start->epoch
-        },
-        date_expiry => {
-            date  => $date_expiry->datetime,
-            epoch => $date_expiry->epoch,
-        },
-        duration => $duration,
-    };
-}
-
-=head2 _get_daily_trading_window
-
-To get the weekly, monthly , quarterly, and yearly trading window 
-
-=cut
-
-sub _get_daily_trading_window {
-    my $args     = shift;
-    my $duration = $args->{duration};
-    my $now      = $args->{now};
-    my $calendar = $args->{calendar};
-    my $now_dow  = $now->day_of_week;
-    my $now_year = $now->year;
-    my @daily_duration;
-
-    # weekly contract
-    my $first_day_of_week      = $now->truncate_to_day->minus_time_interval($now_dow - 1 . 'd');
-    my $first_day_of_next_week = $first_day_of_week->plus_time_interval('7d');
-    push @daily_duration,
-        _get_trade_date_of_daily_window({
-            current_date_start => $first_day_of_week,
-            next_date_start    => $first_day_of_next_week,
-            duration           => '1W',
-            calendar           => $calendar
-        });
-
-    # monthly contract
-    my $first_day_of_month      = Date::Utility->new('1-' . $now->month_as_string . '-' . $now_year);
-    my $first_day_of_next_month = Date::Utility->new('1-' . $now->months_ahead(1));
-    push @daily_duration,
-        _get_trade_date_of_daily_window({
-            current_date_start => $first_day_of_month,
-            next_date_start    => $first_day_of_next_month,
-            duration           => '1M',
-            calendar           => $calendar
-        });
-
-    # quarterly contract
-    my $current_quarter_month     = $now->quarter_of_year * 3 - 2;
-    my $first_day_of_quarter      = Date::Utility->new($now_year . "-$current_quarter_month-01");
-    my $first_day_of_next_quarter = Date::Utility->new('1-' . $first_day_of_quarter->months_ahead(3));
-    push @daily_duration,
-        _get_trade_date_of_daily_window({
-            current_date_start => $first_day_of_quarter,
-            next_date_start    => $first_day_of_next_quarter,
-            duration           => '3M',
-            calendar           => $calendar
-        });
-
-    return @daily_duration;
-
 }
 
 =head2 _set_predefined_barriers
