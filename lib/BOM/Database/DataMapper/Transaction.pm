@@ -357,22 +357,6 @@ sub get_transactions_ws {
     return $self->db->dbh->selectall_arrayref($sql, {Slice => {}}, @binds);
 }
 
-sub get_transactions_cnt {
-    my ($self, $accounts, $args) = @_;
-
-    my $sql = q{
-        SELECT count(*) FROM transaction.transaction
-        WHERE
-            account_id IN (?)
-            AND action_type = ?
-    };
-
-    my $action_type = $args->{action_type};
-
-    my @binds = (join(',', (map {$_->id} @$accounts)), $action_type);
-    return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
-}
-
 sub get_balance_before_date {
     my ($self, $before_date) = @_;
 
