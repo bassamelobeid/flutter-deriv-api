@@ -8,22 +8,36 @@ use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::MarketData qw(create_underlying);
+use BOM::Platform::Context qw (localize);
 
 use Performance::Probability qw(get_performance_probability);
 
 use List::Util qw/sum0/;
+use Try::Tiny;
 use Data::Dumper;
 
 sub trader_statistics {
     my $params = shift->{args};
 
-    my $trader = BOM::Platform::Client->new({loginid => $params->{trader_id}});
+    my $trader_id = uc $params->{trader_id};
+    my $trader = try { BOM::Platform::Client->new({loginid => $trader_id}) };
+    unless ($trader) {
+        return (localize('Login ID ([_1]) does not exist.', $trader_id));
+    }
+
+    # TODO check that client allows copy trading
+
     my $trader_date_joined = Date::Utility->new($trader->date_joined);
 
     my $db = BOM::Database::ClientDB->new({
             client_loginid => $trader->loginid,
         })->db;
     my $trader_accounts = [$trader->account];
+
+    # Check that client has accounts
+    unless (@$trader_accounts) {
+        return (localize('Trader ([_1]) has no accounts.', $trader_id));
+    }
 
     # Calculate average performance for multiple accounts
     my $now                       = Date::Utility->new();
