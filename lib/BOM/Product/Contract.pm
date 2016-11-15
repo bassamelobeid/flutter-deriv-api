@@ -2313,6 +2313,33 @@ sub validate_price {
     return $res;
 }
 
+sub _validate_barrier_type {
+    my $self = shift;
+
+    my $epoch_expiry = $self->date_expiry->epoch;
+    my $epoch_start  = $self->date_start->epoch;
+    my $intraday     = ($epoch_expiry - $epoch_start) < 86400 ? 1 : 0;
+    my $barrier_type = $intraday ? 'relative' : 'absolute';
+    my $error_message =
+        $intraday
+        ? 'Contracts less than 24 hours in duration would need a relative barrier. (barriers which need +/-)'
+        : 'Contracts more than 24 hours in duration would need an absolute barrier';
+
+    return if ($self->tick_expiry or $self->is_spread);
+
+    if ($self->barrier->supplied_type ne $barrier_type
+        or ($self->two_barriers and ($self->high_barrier->supplied_type ne $barrier_type or $self->low_barrier->supplied_type ne $barrier_type)))
+    {
+
+        return {
+            message           => 'barrier should be ' . $barrier_type,
+            message_to_client => localize($error_message),
+        };
+    }
+    return;
+
+}
+
 sub _validate_input_parameters {
     my $self = shift;
 
@@ -2741,6 +2768,7 @@ sub confirm_validity {
     my @validation_methods = qw(_validate_input_parameters _validate_offerings);
     push @validation_methods, qw(_validate_trading_times _validate_start_and_expiry_date) unless $self->underlying->always_available;
     push @validation_methods, '_validate_lifetime';
+    push @validation_methods, '_validate_barrier_type'                                    unless $self->for_sale;
     push @validation_methods, '_validate_barrier'                                         unless $args->{skip_barrier_validation};
     push @validation_methods, '_validate_feed';
     push @validation_methods, 'validate_price'                                            unless $self->skips_price_validation;
