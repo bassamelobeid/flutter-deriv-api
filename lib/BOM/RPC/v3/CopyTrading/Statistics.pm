@@ -146,7 +146,7 @@ sub trader_statistics {
 
     # trades average duration
     $avg_duration = $txn_dm->get_trades_avg_duration($trader_accounts);
-    ($avg_duration) = ($avg_duration =~ /(.+)\./);
+    ($avg_duration) = ($avg_duration =~ /^(\d{2}:\d{2}:\d{2})(\.)?/);
     $avg_duration = Date::Utility->new('2000-01-01 ' . $avg_duration)->seconds_after_midnight if $avg_duration;
 
     # trades profitable && total trades count
