@@ -32,6 +32,7 @@ sub generate_trading_periods {
 
     my $chronicle_writer   = BOM::System::Chronicle::get_chronicle_writer();
     my $historical_request = _is_historical_request($for_date);
+    $for_date = Date::Utility->new unless defined $for_date;
 
     # underlying needs a proper for_date to fetch the correct market data.
     my $underlying = $historical_request ? create_underlying($symbol, $for_date) : create_underlying($symbol);
@@ -55,9 +56,10 @@ sub generate_trading_periods {
     # hh:59 => ttl = 1 min
     # hh:00 => ttl = 45 min
 
+    my $trading_key = _get_key($symbol, $for_date);
     my $minute = $for_date->minute;
     my $ttl = ($minute < 45 ? 2700 : 3600) - $minute * 60 - $for_date->second;
-    $chronicle_writer->set($cache_namespace, $trading_key, $ttl);
+    $chronicle_writer->set($cache_namespace, $trading_key, \@trading_periods, $for_date, $ttl);
 
     return \@trading_periods;
 }

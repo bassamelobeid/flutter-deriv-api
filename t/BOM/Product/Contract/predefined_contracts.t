@@ -12,10 +12,12 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods);
 use Cache::RedisDB;
 Cache::RedisDB->flushall;
 initialize_realtime_ticks_db;
 my $now = Date::Utility->new('2016-09-28 10:00:00');
+generate_trading_periods('frxUSDJPY',$now);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
