@@ -53,7 +53,7 @@ sub backfill_promo_codes {
     my @report;
 
     foreach my $broker (@{$self->_available_broker_codes}) {
-        my @clients = Client:Account->by_promo_code(
+        my @clients = Client::Account->by_promo_code(
             broker_code             => $broker,
             checked_in_myaffiliates => 'f'
         );
