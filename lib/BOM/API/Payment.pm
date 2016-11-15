@@ -16,7 +16,7 @@ use Log::Dispatch::Screen;
 use Data::Dumper;
 
 # BOM
-use Client:Account;
+use Client::Account;
 use Digest::SHA ();
 use XML::Simple;
 
