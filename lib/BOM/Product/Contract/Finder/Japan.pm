@@ -147,7 +147,6 @@ sub _apply_trading_periods_to_offerings {
             ? 21600
             : Time::Duration::Concise->new({interval => $o->{max_contract_duration}})->seconds;
 
-        my @relevant_periods;
         foreach my $trading_period (grep { defined } @$trading_periods) {
             my $date_expiry      = $trading_period->{date_expiry}->{epoch};
             my $date_start       = $trading_period->{date_start}->{epoch};
@@ -160,11 +159,10 @@ sub _apply_trading_periods_to_offerings {
             {
                 next;
             } else {
-                push @relevant_periods, $trading_period;
+                push @new_offerings, +{%{$o}, trading_period => $trading_period};
             }
         }
 
-        push @new_offerings, +{%{$o}, trading_period => \@relevant_periods};
     }
 
     return @new_offerings;
