@@ -65,14 +65,13 @@ sub trader_statistics {
                 next if $date->month < $trader_date_joined->month and $date->year == $trader_date_joined->year;
                 next if $date->month > $now->month and $date->year == $now->year;
 
-                my $first_day_in_current_month = Date::Utility->new($date->year . $date->month . '01000000')->datetime_yyyymmdd_hhmmss;
-                my $last_day_in_current_month =
-                    Date::Utility->new($date->year . $date->month . $date->days_in_month . '235959')->datetime_yyyymmdd_hhmmss;
+                my $current_month = $date->datetime_yyyymmdd_hhmmss;
+                my $next_month    = $date->plus_time_interval('31d')->datetime_yyyymmdd_hhmmss;
 
                 my $W = $txn_dm->get_monthly_payments_sum($date, 'withdrawal');
                 my $D = $txn_dm->get_monthly_payments_sum($date, 'deposit');
-                my $E1 = $txn_dm->get_balance_before_date($last_day_in_current_month);     # is the equity at the end of the month
-                my $E0 = $txn_dm->get_balance_before_date($first_day_in_current_month);    # is the equity at the beginning of the month
+                my $E1 = $txn_dm->get_balance_before_date($next_month);       # it's the equity at the end of the month
+                my $E0 = $txn_dm->get_balance_before_date($current_month);    # it's the equity at the beginning of the month
 
                 my $current_month_profit = sprintf("%.4f", ((($E1 + $W) - ($E0 + $D)) / ($E0 + $D)));
                 push @{$monthly_profitable_trades->{$year . '-' . $month}}, $current_month_profit;
