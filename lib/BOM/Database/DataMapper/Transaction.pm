@@ -365,7 +365,7 @@ sub get_balance_before_date {
         WHERE
             account_id = ?
             AND transaction_time < ?
-        ORDER BY transaction_time DESC
+        ORDER BY transaction_time DESC, id DESC
         LIMIT 1
     };
 
