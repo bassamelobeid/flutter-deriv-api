@@ -6,7 +6,7 @@ use warnings;
 use Format::Util::Numbers qw(roundnear);
 use Test::MockModule;
 use BOM::Product::ContractFactory qw(produce_contract);
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Date::Utility;
@@ -30,7 +30,30 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $now
-    }) for qw(USD JPY);
+    }) for qw(USD JPY EUR EUR-USD USD-JPY XAU GBP);
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => $_,
+        recorded_date => $now
+    }) for qw(frxEURUSD frxUSDJPY frxXAUUSD frxGBPUSD);
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_moneyness',
+    {
+        symbol        => $_,
+        recorded_date => $now,
+    }) for qw(FCHI FTSE);
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'index',
+    {
+        symbol        => $_,
+        recorded_date => $now,
+    }) for qw(FCHI FTSE);
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix');
 
 subtest 'payout' => sub {
     my $payout                = 10;
@@ -241,3 +264,47 @@ subtest 'commission for japan' => sub {
     $c = produce_contract($args);
     ok $c->commission_markup->amount > $c->base_commission, 'at 100,000 yen commission markup is more than base commission';
 };
+
+sub test_flexible_commission {
+    my ($symbol, $market, $scaling) = @_;
+
+    my $args = {
+        bet_type         => 'CALL',
+        underlying       => $symbol,
+        barrier          => 'S0P',
+        duration         => '1d',
+        amount           => 1000,
+        amount_type      => 'payout',
+        currency         => 'USD',
+    };
+
+    BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market(100);
+    my $c = produce_contract($args);
+    is $c->commission_markup->amount, $c->base_commission, "correct commission markup without scaling for $symbol" . $c->commission_markup->amount;
+    my $original_commission = $c->commission_markup->amount;
+
+    BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market($scaling);
+    $c = produce_contract($args);
+    if ( $scaling == 10000 ) {
+        is $c->ask_price, 1000, "max ask price when commissoin scaling is max for $symbol";
+    } else {
+        is $c->commission_markup->amount, $original_commission * ($scaling / 100), "correct commission markup with $scaling scaling for $symbol";
+    }
+}
+
+subtest 'flexible commission check for different markets' => sub {
+    test_flexible_commission 'R_100', 'volidx', 50;
+    test_flexible_commission 'frxEURUSD', 'forex', 30;
+    test_flexible_commission 'frxUSDJPY', 'forex', 70;
+    test_flexible_commission 'frxXAUUSD', 'commodities', 70;
+    test_flexible_commission 'FCHI', 'indices', 170;
+    test_flexible_commission 'FTSE', 'indices', 25;
+
+    test_flexible_commission 'R_100', 'volidx', 10000;
+    test_flexible_commission 'frxEURUSD', 'forex', 10000;
+    test_flexible_commission 'frxUSDJPY', 'forex', 10000;
+    test_flexible_commission 'frxXAUUSD', 'commodities', 10000;
+    test_flexible_commission 'FCHI', 'indices', 10000;
+    test_flexible_commission 'FTSE', 'indices', 10000;
+};
+

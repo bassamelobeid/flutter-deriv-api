@@ -1992,6 +1992,9 @@ sub sell_expired_contracts {
                 $failure->{reason} = $contract->primary_validation_error->message;
                 push @{$result->{failures}}, $failure;
             }
+        }
+        catch {
+            warn 'SellExpiredContract Exception: ' . __PACKAGE__ . ':(' . __LINE__ . '): ' . $_;    # log it
         };
     }
 
