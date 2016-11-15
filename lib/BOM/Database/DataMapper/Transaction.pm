@@ -363,8 +363,8 @@ sub get_balance_before_date {
     my $sql = q{
         SELECT balance_after FROM transaction.transaction
         WHERE
-            account_id = ?
-            AND transaction_time < ?
+            account_id = $1
+            AND transaction_time < date_trunc('month', $2::TIMESTAMP)
         ORDER BY transaction_time DESC, id DESC
         LIMIT 1
     };
@@ -380,22 +380,19 @@ sub get_monthly_payments_sum {
         Carp::croak("[get_month_payment_sum] wrong action type [$action_type]");
     }
 
-    my $first_day_in_current_month = Date::Utility->new($date->year . $date->month . '01000000')->datetime_yyyymmdd_hhmmss;
-    my $last_day_in_current_month = Date::Utility->new($date->year . $date->month . $date->days_in_month . '235959')->datetime_yyyymmdd_hhmmss;
+    my $where_amount = 'AND amount' . ($action_type eq 'withdrawal' ? '<' : '>') . '0';
 
     my $sql = q{
-            SELECT
-                sum(amount)
-            FROM
-                TRANSACTION.TRANSACTION
-            WHERE
-                account_id = $1
-                AND transaction_time > $2
-                AND transaction_time <= $3
-                AND action_type = $4
-        };
+        SELECT sum(amount)
+          FROM payment.payment
+          WHERE account_id = $1
+            ##WHERE_AMOUNT##
+            AND date_trunc('month', $2::TIMESTAMP) <= payment_time
+            AND payment_time < date_trunc('month', $2::TIMESTAMP) + '1 month'::INTERVAL
+    };
+    $sql =~ s/##WHERE_AMOUNT##/$where_amount/g;
 
-    my @binds = ($self->account->id, $first_day_in_current_month, $last_day_in_current_month, $action_type);
+    my @binds = ($self->account->id, $date->datetime_yyyymmdd_hhmmss);
     return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
 }
 
