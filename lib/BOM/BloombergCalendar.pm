@@ -103,7 +103,7 @@ sub _include_metal_holidays_and_early_closes {
         $christmas => 'Christmas Day',
         $new_year  => "New Year\'s Day",
         map { $_ => 'Good Friday' } grep { $us_holidays->{$_} =~ /Good Friday/ } keys %{$us_holidays}};
-    $early_closes_data->{METAL} = $us_holidays;
+    $early_closes_data->{METAL} = map { $_ => $us_holidays->{$_} } grep { $us_holidays->{$_} !~ /Good Friday/ } keys %{$us_holidays};
     return;
 }
 
