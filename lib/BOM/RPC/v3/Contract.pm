@@ -26,6 +26,9 @@ sub validate_symbol {
     my $symbol = shift;
     my @offerings = get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'underlying_symbol');
     if (!$symbol || none { $symbol eq $_ } @offerings) {
+        # There's going to be a few symbols that are disabled or otherwise not provided for valid reasons, but if we have nothing,
+        # or it's a symbol that's very unlikely to be disabled, it'd be nice to know.
+        warn "Symbol $symbol not found, our offerings are: " . join(',', @offerings) if $symbol and ($symbol =~ /R_\d+/ or not @offerings);
         return {
             error => {
                 code    => 'InvalidSymbol',
@@ -164,6 +167,9 @@ sub _get_ask {
                 if ($p2->{currency} && $p2->{currency} eq 'JPY');
 
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
+            my $market_name = $contract->market->name;
+            my $base_commission_scaling =
+                BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market_name;
 
             $response = {
                 longcode            => $contract->longcode,
@@ -182,6 +188,10 @@ sub _get_ask {
                     : (),
                     deep_otm_threshold         => $contract->market->deep_otm_threshold,
                     underlying_base_commission => $contract->underlying->base_commission,
+                    maximum_total_markup       => BOM::System::Config::quants->{commission}->{maximum_total_markup},
+                    base_commission_min        => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
+                    base_commission_max        => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
+                    base_commission_scaling    => $base_commission_scaling,
                 },
             };
 
@@ -194,6 +204,7 @@ sub _get_ask {
                 $response->{spot} = $contract->current_spot;
             }
             $response->{spread} = $contract->spread if $contract->is_spread;
+
         }
         my $pen = $contract->pricing_engine_name;
         $pen =~ s/::/_/g;
@@ -406,11 +417,6 @@ sub send_ask {
 
         $response = _get_ask(prepare_ask($params->{args}), $params->{app_markup_percentage});
 
-        $response->{contract_parameters}->{maximum_total_markup} = BOM::System::Config::quants->{commission}->{maximum_total_markup};
-        $response->{contract_parameters}->{base_commission_min}  = BOM::System::Config::quants->{commission}->{adjustment}->{minimum};
-        $response->{contract_parameters}->{base_commission_max}  = BOM::System::Config::quants->{commission}->{adjustment}->{maximum};
-        $response->{contract_parameters}->{base_commission_scaling} =
-            BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling;
     }
     catch {
         _log_exception(send_ask => $_);
