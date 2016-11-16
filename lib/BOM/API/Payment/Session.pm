@@ -22,7 +22,9 @@ sub session_GET {
     return $c->throw(401, 'Authorization required')
         if $c->env->{'X-DoughFlow-Authorization-Passed'};
 
-    my $cb = BOM::Database::ClientDB->new({client_loginid => $loginid,});
+    my $cb = BOM::Database::ClientDB->new({
+        client_loginid => $loginid,
+    });
 
     my $handoff_token_key;
     my $handoff_token;
@@ -83,12 +85,14 @@ sub session_validate_GET {
     }
     # we have a token, so lets make a db
     my $landing_company    = LandingCompany::Registry::get_by_broker($c->user->loginid);
-    my $connection_builder = BOM::Database::ClientDB->new({client_loginid => $c->user->loginid,});
-    my $token_key          = $c->request_parameters->{token};
+    my $connection_builder = BOM::Database::ClientDB->new({
+        client_loginid => $c->user->loginid,
+    });
+    my $token_key = $c->request_parameters->{token};
     # Get the existing handoff token
     my $handoff_token = BOM::Database::Model::HandoffToken->new({
-            data_object_params => {'key' => $token_key},
-            db                 => $connection_builder->db
+        data_object_params => {'key' => $token_key},
+        db                 => $connection_builder->db
     });
     # ->exists is important because it does a SPECULATIVE LOAD
     # this allows us to check if the object exists in the DB without

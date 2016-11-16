@@ -16,7 +16,12 @@ my @expected_fields =
 isnt($cli_data->{$_}, undef, "property $_ is defined") foreach @expected_fields;
 
 ## try with bad client_loginid or currency_code
-$r = request('GET', '/client', {client_loginid => 'CR0999000',});
+$r = request(
+    'GET',
+    '/client',
+    {
+        client_loginid => 'CR0999000',
+    });
 is($r->code, 401);    # Authorization required
 
 done_testing();
