@@ -2332,7 +2332,7 @@ sub _validate_barrier_type {
 
     foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
 
-        if (defined $self->$barrier and $self->$barrier->supplied_type ne $barrier_type) {
+        if (defined $self->$barrier and $self->$barrier->barrier_type ne $barrier_type) {
 
             return {
                 message           => 'barrier should be ' . $barrier_type,
@@ -2772,8 +2772,8 @@ sub confirm_validity {
     my @validation_methods = qw(_validate_input_parameters _validate_offerings);
     push @validation_methods, qw(_validate_trading_times _validate_start_and_expiry_date) unless $self->underlying->always_available;
     push @validation_methods, '_validate_lifetime';
-    push @validation_methods, '_validate_barrier_type'                                    unless $self->for_sale;
     push @validation_methods, '_validate_barrier'                                         unless $args->{skip_barrier_validation};
+    push @validation_methods, '_validate_barrier_type'                                    unless $self->for_sale;
     push @validation_methods, '_validate_feed';
     push @validation_methods, 'validate_price'                                            unless $self->skips_price_validation;
     push @validation_methods, '_validate_volsurface'                                      unless $self->volsurface->type eq 'flat';
