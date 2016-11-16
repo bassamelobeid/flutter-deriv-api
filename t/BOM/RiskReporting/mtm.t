@@ -161,8 +161,8 @@ subtest 'realtime report generation' => sub {
     );
     ok(@msgs, "find the email");
     $short_code =~ s/FLASHU/CALL/;
-    ok($msg{body} =~ /Shortcode:   $short_code/, "contract $short_code has error");
-    my @errors = $msg{body} =~ /Shortcode:/g;
+    ok($msgs[0]{body} =~ /Shortcode:   $short_code/, "contract $short_code has error");
+    my @errors = $msgs[0]{body} =~ /Shortcode:/g;
     is(scalar @errors, 1, "number of contracts that have errors ");
 
     my @is_sold = (1, 1, 0, 0, 0);
