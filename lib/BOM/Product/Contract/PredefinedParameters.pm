@@ -1,47 +1,59 @@
 package BOM::Product::Contract::PredefinedParameters;
 
 use Exporter qw(import);
-our @EXPORT_OK = qw(get_trading_periods generate_trading_periods);
+our @EXPORT_OK = qw(generate_predefined_offerings get_predefined_offerings);
 
 use Date::Utility;
 use List::Util qw(first);
+use Math::CDF qw(qnorm);
+use Format::Util::Numbers qw(roundnear);
+use LandingCompany::Offerings qw(get_offerings_flyby);
 
+use BOM::Product::Contract::Category;
 use BOM::MarketData qw(create_underlying);
 use BOM::System::Chronicle;
 
-my $cache_namespace = 'trading_periods';
+my $cache_namespace = 'predefined_offerings';
+my $separator       = '==';
 
-sub get_trading_periods {
+sub generate_predefined_offerings {
     my ($symbol, $for_date) = @_;
 
-    my $historical_request = _is_historical_request($for_date);
-    my $chronicle_reader   = BOM::System::Chronicle::get_chronicle_reader($historical_request);
-    $for_date = Date::Utility->new unless defined $for_date;
-    my $trading_key = _get_key($symbol, $for_date);
+    my @offerings = _get_offerings($symbol);
+    my $underlying = create_underlying($symbol, $for_date);
 
-    my $trading_periods =
-          $historical_request
-        ? $chronicle_reader->get_for($cache_namespace, $trading_key, $for_date)
-        : $chronicle_reader->get($cache_namespace, $trading_key);
+    $for_date = Date::Utility->new unless $for_date;
 
-    return $trading_periods // [];
+    return [] if $underlying->calendar->trades_on($for_date);
+
+    # we split offerings into applicable trading period here.
+    my @new_offerings = _add_trading_periods($for_date, $underlying, \@offerings);
+    # calculate barriers for each offering.
+    _add_barriers($for_date, $underlying, \@new_offerings);
+
+    my $key = join '_', ($underlying->symbol, $for_date->date, $for_date->hour);
+    my $chronicle_writer = BOM::System::Chronicle::get_chronicle_writer();
+    $chronicle_writer->set($cache_namespace, $key, \@new_offerings);
+
+    return \@new_offerings;
 }
 
-sub generate_trading_periods {
-    my ($symbol, $for_date) = @_;
+sub get_predefined_offerings {
+    my $underlying = shift;
 
-    my $chronicle_writer   = BOM::System::Chronicle::get_chronicle_writer();
-    my $historical_request = _is_historical_request($for_date);
-    $for_date = Date::Utility->new unless defined $for_date;
+    my $for_date = $underlying->for_date // Date::Utility->new;
+    my $key       = join '_', ($underlying, $for_date->date, $for_date->hour);
+    my $reader    = BOM::System::Chronicle::get_chronicle_reader;
+    my $offerings = $underlying->for_date ? $reader->get_for($cache_namespace, $key, $for_date) : $reader->get($cache_namespace, $key);
 
-    # underlying needs a proper for_date to fetch the correct market data.
-    my $underlying = $historical_request ? create_underlying($symbol, $for_date) : create_underlying($symbol);
+    return $offerings // [];
+}
 
-    return [] unless $underlying->calendar->trades_on($for_date);
+sub _get_trading_periods {
+    my ($for_date, $underlying) = @_;
 
     my @trading_periods = _get_daily_trading_window($underlying, $for_date);
-
-    my @intraday_periods = _get_intraday_trading_window($for_date);
+    my @intraday_periods = _get_intraday_trading_window($underlying, $for_date);
     push @trading_periods, @intraday_periods if @intraday_periods;
 
     # TTL is the remaining seconds until the forthcoming HH:45 (if current minute is < 45) or the forthcoming HH:)) (if the current time is >= 45)
@@ -56,12 +68,131 @@ sub generate_trading_periods {
     # hh:59 => ttl = 1 min
     # hh:00 => ttl = 45 min
 
-    my $trading_key = _get_key($symbol, $for_date);
-    my $minute = $for_date->minute;
-    my $ttl = ($minute < 45 ? 2700 : 3600) - $minute * 60 - $for_date->second;
+    my $trading_key = join $separator, ($symbol, $for_date->date, $for_date->hour);
+    my $minute      = $for_date->minute;
+    my $ttl         = ($minute < 45 ? 2700 : 3600) - $minute * 60 - $for_date->second;
     $chronicle_writer->set($cache_namespace, $trading_key, \@trading_periods, $for_date, $ttl);
 
     return \@trading_periods;
+}
+
+sub _add_trading_periods {
+    my ($for_date, $underlying, $offerings) = @_;
+
+    my $trading_periods = _get_trading_periods($for_date, $underlying);
+
+    return () unless @$trading_periods;
+
+    my $close_epoch = $underlying->calendar->closing_on($for_date)->epoch;
+    # full trading seconds
+    my $trading_seconds = $close_epoch - $for_date->truncate_to_day->epoch;
+
+    my @new_offerings;
+    foreach my $offering (@$offerings) {
+        # we offer 0 day (end of day) and intraday durations to callput only
+        my $minimum_contract_duration;
+        if ($offering->{contract_category} ne 'callput') {
+            $minimum_contract_duration = 86400;
+        } else {
+            $minimum_contract_duration =
+                $offering->{expiry_type} eq 'intraday'
+                ? Time::Duration::Concise->new({interval => $offering->{min_contract_duration}})->seconds
+                : $trading_seconds;
+        }
+
+        my $maximum_contract_duration =
+            ($offering->{contract_category} eq 'callput' and $offering->{expiry_type} eq 'intraday')
+            ? 21600
+            : Time::Duration::Concise->new({interval => $offering->{max_contract_duration}})->seconds;
+
+        foreach my $trading_period (grep { defined } @$trading_periods) {
+            my $date_expiry      = $trading_period->{date_expiry}->{epoch};
+            my $date_start       = $trading_period->{date_start}->{epoch};
+            my $trading_duration = $date_expiry - $date_start;
+            if ($trading_duration < $minimum_contract_duration or $trading_duration > $maximum_contract_duration) {
+                next;
+            } elsif ($for_date->day_of_week == 5
+                and $trading_duration < 86400
+                and ($date_expiry > $close_epoch or $date_start > $close_epoch))
+            {
+                next;
+            } else {
+                my $start_tick = $underlying->tick_at($date_start)
+                    or die 'Could not get spot for ' . $symbol . ' at ' . Date::Utility->new($date_start)->datetime;
+
+                my $barriers = _calculate_barriers({
+                    underlying      => $underlying,
+                    call_prices     => [0.02, 0.98],
+                    trading_periods => $trading_period,
+                });
+
+                my $available_barriers;
+                if ($offering->{barriers} == 1) {
+                    $available_barriers = [sort { $a <=> $b } values %$barriers];
+                } elsif ($offering->{barriers} == 2) {
+                    # For staysinout contract, we need to pair the barriers symmetry, ie (42, 58), (34,66), (26,74), (18,82)
+                    # For endsinout contract, we need to pair barriers as follow: (42,58), (34,50), (50,66), (26,42), (58,74), (18,34), (66,82), (2, 26), (74, 98)
+                    # Note: 42 is -8d from the spot at start and 58 is +8d from spot at start
+                    # where d is the minimum increment that determine by divided the distance of boundaries by 96 (48 each side)
+                    my @barrier_pairs =
+                        $offering->{contract_category} eq 'staysinout'
+                        ? ([42, 58], [34, 66], [26, 74], [18, 82])
+                        : ([42, 58], [34, 50], [50, 66], [26, 42], [58, 74], [18, 34], [66, 82], [2, 26], [74, 98]);
+
+                    $available_barriers = [map { [$barriers->{$_->[0]}, $barriers->{$_->[1]}] } @barrier_pairs];
+                }
+
+                push @new_offerings,
+                    +{
+                    %{$o},
+                    trading_period     => $trading_period,
+                    available_barriers => $available_barriers
+                    };
+            }
+        }
+    }
+
+    return @new_offerings;
+}
+
+sub _calculate_barriers {
+    my $args = shift;
+
+    my ($underlying, $call_prices, $trading_period) = @{$args}{qw(underlying call_prices trading_periods)};
+    my $spot_at_start = $underlying->tick_at($trading_period->{date_start}->{epoch})
+        or die 'Could not retrieve tick for ' . $underlying->symbol . ' at ' . Date::Utility->new($trading_period->{date_start}->{epoch});
+    my $tiy = ($trading_period->{date_expiry}->{epoch} - $trading_period->{date_start}->{epoch}) / (365 * 86400);
+
+    my @initial_barriers = map { _get_strike_from_call_bs_price($_, $tiy, $spot, 0.1) } (0.02, 0.98);
+
+    # Split the boundaries barriers into 10 barriers by divided the distance of boundaries by 96 (48 each side) - to be used as increment.
+    # The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
+    # Included entry spot as well
+    my $distance_between_boundaries = abs($initial_barriers[0] - $initial_barriers[1]);
+    my @steps                       = (8, 16, 24, 32, 48);
+    my $minimum_step                = roundnear($underlying->pip_size, $distance_between_boundaries / ($steps[-1] * 2));
+    my %barriers                    = map { (50 - $_ => $spot_at_start - $_ * $minimum_step, 50 + $_ => $spot_at_start + $_ * $minimum_step) } @steps;
+    $barriers{50} = $spot_at_start;
+
+    return \%barriers;
+}
+
+=head2 _get_strike_from_call_bs_price
+
+To get the strike that associated with a given call bs price.
+
+=cut
+
+sub _get_strike_from_call_bs_price {
+    my ($call_price, $T, $spot, $vol) = @_;
+
+    my $q  = 0;
+    my $r  = 0;
+    my $d2 = qnorm($call_price * exp($r * $T));
+    my $d1 = $d2 + $vol * sqrt($T);
+
+    my $strike = $spot / exp($d1 * $vol * sqrt($T) - ($r - $q + ($vol * $vol) / 2) * $T);
+    return $strike;
 }
 
 # Japan's intraday predefined trading window are as follow:
@@ -82,7 +213,7 @@ sub _get_intraday_trading_window {
     $hour = $minute < 45 ? $hour : $hour + 1;
     my $even_hour = $hour - ($hour % 2);
     # We did not offer intraday contract after NY16. However, we turn on these three pairs on Japan
-    my @skips_hour = (first { $_ eq $symbol } qw(frxUSDJPY frxAUDJPY frxAUDUSD)) ? (18, 20) : (18, 20, 22);
+    my @skips_hour = (first { $_ eq $underlying->symbol } qw(frxUSDJPY frxAUDJPY frxAUDUSD)) ? (18, 20) : (18, 20, 22);
     my $skips_intraday = first { $even_hour == $_ } @skips_hour;
 
     return () if $skips_intraday;
@@ -245,20 +376,39 @@ sub _get_trade_date_of_daily_window {
     };
 }
 
-sub _is_historical_request {
-    my $date = shift;
+sub _get_offerings {
+    my $symbol = shift;
 
-    return 0 if not defined $date;
-    return 1 if $date->is_before(Date::Utility->new);
-    return 0;
+    my $flyby = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, 'japan');
+
+    my %similar_args = (
+        underlying_symbol => $symbol,
+        start_type        => 'spot',
+    );
+
+    my @offerings = $flyby->query({
+        expiry_type       => 'daily',
+        barrier_category  => 'euro_non_atm',
+        contract_category => 'endsinout',
+        %similar_args,
+    });
+
+    push @offerings,
+        $flyby->query({
+            expiry_type       => ['daily', 'intraday'],
+            barrier_category  => 'euro_non_atm',
+            contract_category => 'callput',
+            %similar_args,
+        });
+
+    push @offerings,
+        $flyby->query({
+            expiry_type       => 'daily',
+            barrier_category  => 'american',
+            contract_category => ['touchnotouch', 'staysinout'],
+            %similar_args,
+        });
+
+    return map { $_->{barriers} = BOM::Product::Contract::Category->new($_->{contract_category})->two_barriers ? 2 : 1; $_ } @offerings;
 }
-
-sub _get_key {
-    my ($symbol, $date) = @_;
-
-    my $key = join('==', $symbol, $date->date, $date->hour);
-
-    return $key;
-}
-
 1;

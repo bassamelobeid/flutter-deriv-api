@@ -15,7 +15,7 @@ use Exporter qw( import );
 our @EXPORT_OK = qw(available_contracts_for_symbol);
 use Math::CDF qw(qnorm);
 
-use BOM::Product::Contract::PredefinedParameters qw(get_trading_periods);
+use BOM::Product::Contract::PredefinedParameters qw(get_predefined_offerings);
 
 =head1 available_contracts_for_symbol
 
@@ -35,17 +35,9 @@ sub available_contracts_for_symbol {
     if ($calendar->trades_on($now)) {
         $open      = $calendar->opening_on($now)->epoch;
         $close     = $calendar->closing_on($now)->epoch;
-        @offerings = get_offerings($symbol);
-        @offerings = _apply_trading_periods_to_offerings($symbol, $now, \@offerings);
-        for my $o (@offerings) {
-            _set_predefined_barriers({
-                underlying   => $underlying,
-                current_tick => $current_tick,
-                contract     => $o,
-                date         => $now,
-            });
-        }
+        @offerings = get_predefined_offerings($underlying);
     }
+
     return {
         available    => \@offerings,
         hit_count    => scalar(@offerings),
