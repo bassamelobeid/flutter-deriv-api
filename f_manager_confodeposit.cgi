@@ -19,6 +19,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::System::AuditLog;
 use BOM::ContractInfo;
 use BOM::Backoffice::Sysinit ();
+use BOM::Platform::Runtime;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -31,6 +32,11 @@ my %params = $cgi->Vars;
 for (qw/account amount currency ttype range/) {
     next if $params{$_};
     print "ERROR: $_ cannot be empty. Please try again";
+    code_exit_BO();
+}
+
+if (BOM::Platform::Runtime->instance->app_config->system->suspend->system) {
+    print "ERROR: Sytem is suspended";
     code_exit_BO();
 }
 
