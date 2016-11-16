@@ -39,12 +39,7 @@ $r = request(
     });
 is $r->code, 401, 'Authorization required for unexpected loginid';
 
-$r = request(
-    'GET',
-    '/account',
-    {
-        client_loginid => $loginid,
-    });
+$r = request('GET', '/account', {client_loginid => $loginid,});
 is $r->code, 400, 'missing currency_code';
 
 $r = request(

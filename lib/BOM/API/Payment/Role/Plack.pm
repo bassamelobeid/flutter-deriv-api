@@ -27,9 +27,7 @@ sub _build_user {
     return (shift)->env->{BOM_USER};
 }
 
-has 'request_parameters' => (
-    is => 'lazy',
-);
+has 'request_parameters' => (is => 'lazy',);
 
 sub _build_request_parameters {
     my $c = shift;

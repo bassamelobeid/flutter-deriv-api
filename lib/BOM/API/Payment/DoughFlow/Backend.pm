@@ -250,8 +250,8 @@ sub check_predicates {
     # any transaction with an identical type (deposit/withdrawal)
     # and trace id
     my $doughflow_datamapper = BOM::Database::DataMapper::Payment::DoughFlow->new({
-            client_loginid => $c->user->loginid,
-            currency_code  => $currency_code,
+        client_loginid => $c->user->loginid,
+        currency_code  => $currency_code
     });
 
     my $rejection;

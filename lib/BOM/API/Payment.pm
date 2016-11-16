@@ -106,7 +106,7 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
         enable "Plack::Middleware::ContentLength";
 
         enable_if {
-            $_[0]->{PATH_INFO} ne '/ping'
+            $_[0]->{PATH_INFO} ne '/ping';
         }
         sub {
             my $app = shift;
