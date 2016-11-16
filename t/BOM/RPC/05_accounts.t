@@ -7,7 +7,7 @@ use utf8;
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use Encode qw(encode);
-use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
+use Email::Folder::Search;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -91,7 +91,8 @@ $user->save;
 $user->add_loginid({loginid => $test_loginid});
 $user->add_loginid({loginid => $test_client_vr->loginid});
 $user->save;
-clear_mailbox();
+my $mailbox = Email::Folder::Search->new;
+$mailbox->init;
 
 my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -107,7 +108,6 @@ my $user_cr = BOM::Platform::User->create(
 $user_cr->save;
 $user_cr->add_loginid({loginid => $test_client_cr->loginid});
 $user_cr->save;
-clear_mailbox();
 
 my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
@@ -785,15 +785,14 @@ subtest $method => sub {
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.');
     my $new_password = 'Fsfjxljfwkls3@fs9';
     $params->{args}{new_password} = $new_password;
-    clear_mailbox();
+    $mailbox->clear;
     is($c->tcall($method, $params)->{status}, 1, 'update password correctly');
     my $subject = 'Your password has been changed.';
-    my %msg     = get_email_by_address_subject(
+    my @msgs    = $mailbox->search(
         email   => $email,
         subject => qr/\Q$subject\E/
     );
-    ok(%msg, "email received");
-    clear_mailbox();
+    ok(@msgs, "email received");
     $user->load;
     isnt($user->password, $hash_pwd, 'user password updated');
     $test_client->load;
@@ -861,7 +860,7 @@ subtest $method => sub {
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.', 'check strong');
     $params->{args}{lock_password} = $tmp_new_password;
 
-    clear_mailbox();
+    $mailbox->clear;
     # here I mocked function 'save' to simulate the db failure.
     my $mocked_client = Test::MockModule->new(ref($test_client));
     $mocked_client->mock('save', sub { return undef });
@@ -874,12 +873,11 @@ subtest $method => sub {
 
     is($c->tcall($method, $params)->{status}, 1, 'set password success');
     my $subject = 'Cashier password updated';
-    my %msg     = get_email_by_address_subject(
+    my @msgs    = $mailbox->search(
         email   => $email,
         subject => qr/\Q$subject\E/
     );
-    ok(%msg, "email received");
-    clear_mailbox();
+    ok(@msgs, "email received");
 
     # test unlock
     $test_client->cashier_setting_password('');
@@ -888,7 +886,7 @@ subtest $method => sub {
     $params->{args}{unlock_password} = '123456';
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was not locked.', 'return error if not locked');
 
-    clear_mailbox();
+    $mailbox->clear;
     $test_client->cashier_setting_password(BOM::System::Password::hashpw($tmp_password));
     $test_client->save;
     is(
@@ -897,12 +895,11 @@ subtest $method => sub {
         'return error if not correct'
     );
     $subject = 'Failed attempt to unlock cashier section';
-    %msg     = get_email_by_address_subject(
+    @msgs    = $mailbox->search(
         email   => $email,
         subject => qr/\Q$subject\E/
     );
-    ok(%msg, "email received");
-    clear_mailbox();
+    ok(@msgs, "email received");
 
     # here I mocked function 'save' to simulate the db failure.
     $mocked_client->mock('save', sub { return undef });
@@ -914,17 +911,16 @@ subtest $method => sub {
     );
     $mocked_client->unmock_all;
 
-    clear_mailbox();
+    $mailbox->clear;
     is($c->tcall($method, $params)->{status}, 0, 'unlock password ok');
     $test_client->load;
     ok(!$test_client->cashier_setting_password, 'Cashier password unset');
     $subject = 'Cashier password updated';
-    %msg     = get_email_by_address_subject(
+    @msgs     = $mailbox->search(
         email   => $email,
         subject => qr/\Q$subject\E/
     );
-    ok(%msg, "email received");
-    clear_mailbox();
+    ok(@msgs, "email received");
 };
 
 $method = 'get_settings';
@@ -1173,20 +1169,19 @@ subtest $method => sub {
     my $add_note_called;
     $mocked_client->mock('add_note', sub { $add_note_called = 1 });
     my $old_latest_environment = $test_client->latest_environment;
-    clear_mailbox();
+    $mailbox->clear;
     $params->{args}->{email_consent} = 1;
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
     ok($add_note_called, 'add_note is called, so the email should be sent to support address');
     $test_client->load();
     isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
     my $subject = 'Change in account settings';
-    my %msg     = get_email_by_address_subject(
+    my @msgs    = $mailbox->search(
         email   => $test_client->email,
         subject => qr/\Q$subject\E/
     );
-    ok(%msg, 'send a email to client');
-    like($msg{body}, qr/>address line 1, address line 2, address city, address state, 12345, Indonesia/s, 'email content correct');
-    clear_mailbox();
+    ok(@msgs, 'send a email to client');
+    like($msgs[0]{body}, qr/>address line 1, address line 2, address city, address state, 12345, Indonesia/s, 'email content correct');
 
     is($c->tcall('get_settings', {token => $token1})->{email_consent}, 1, "Was able to set email consent correctly");
 };
@@ -1231,7 +1226,7 @@ subtest 'get and set self_exclusion' => sub {
         max_turnover       => undef,    # null should be OK to pass
         max_7day_losses    => 0,        # 0 is ok to pass but not saved
     };
-    clear_mailbox();
+    $mailbox->clear;
     is($c->tcall($method, $params)->{status}, 1, "update self_exclusion ok");
     delete $params->{args};
     is_deeply(
@@ -1242,12 +1237,12 @@ subtest 'get and set self_exclusion' => sub {
         },
         'get self_exclusion ok'
     );
-    my %msg = get_email_by_address_subject(
+    my @msgs = $mailbox->search(
         email   => 'compliance@binary.com,support@binary.com',
         subject => qr/Client set self-exclusion limits/
     );
-    ok(%msg, "msg sent to support email");
-    like($msg{body}, qr/Maximum number of open positions: 100.*Maximum account balance: 10000/s, 'email content is ok');
+    ok(@msgs, "msg sent to support email");
+    like($msgs[0]{body}, qr/Maximum number of open positions: 100.*Maximum account balance: 10000/s, 'email content is ok');
     $params->{args} = {
         set_self_exclusion => 1,
         max_balance        => 10001,
