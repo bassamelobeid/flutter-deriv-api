@@ -39,7 +39,7 @@ my $bet_params = {
     date_start   => $now,
     date_pricing => $now,
     duration     => '2m',
-    barrier      => '101.1',
+    barrier      => 'S11P',
     currency     => 'USD',
     payout       => 10,
 };
@@ -89,8 +89,8 @@ subtest '2-minute touch' => sub {
 
 subtest '2-minute upordown' => sub {
     $bet_params->{bet_type}     = 'UPORDOWN';
-    $bet_params->{high_barrier} = 110;
-    $bet_params->{low_barrier}  = 90;
+    $bet_params->{high_barrier} = 'S1000P';
+    $bet_params->{low_barrier}  = 'S-1000P';
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like $c->primary_validation_error->message, qr/trying unauthorised combination/, 'throws error duration not accepted.';
@@ -108,8 +108,8 @@ subtest '2-minute upordown' => sub {
 
 subtest '2-minute expirymiss' => sub {
     $bet_params->{bet_type}     = 'EXPIRYMISS';
-    $bet_params->{high_barrier} = 110;
-    $bet_params->{low_barrier}  = 90;
+    $bet_params->{high_barrier} = 'S1000P';
+    $bet_params->{low_barrier}  = 'S-1000P';
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like $c->primary_validation_error->message, qr/trying unauthorised combination/, 'throws error duration not accepted.';

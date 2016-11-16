@@ -2326,15 +2326,15 @@ sub _validate_barrier_type {
         : 'Contracts more than 24 hours in duration would need an absolute barrier';
 
     return if ($self->tick_expiry or $self->is_spread);
+    foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
 
-    if ($self->barrier->supplied_type ne $barrier_type
-        or ($self->two_barriers and ($self->high_barrier->supplied_type ne $barrier_type or $self->low_barrier->supplied_type ne $barrier_type)))
-    {
+        if (defined $self->$barrier and $self->$barrier->supplied_type ne $barrier_type) {
 
-        return {
-            message           => 'barrier should be ' . $barrier_type,
-            message_to_client => localize($error_message),
-        };
+            return {
+                message           => 'barrier should be ' . $barrier_type,
+                message_to_client => localize($error_message),
+            };
+        }
     }
     return;
 
