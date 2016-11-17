@@ -135,7 +135,6 @@ my %known_decorations = (
         my ($parent_obj, $self) = @_;
         my $calendar = $_->calendar;
         my @events;
-
         if (my $cached = $self->holidays_cache->{$calendar->symbol}) {
             @events = @$cached;
         } else {
@@ -152,15 +151,20 @@ my %known_decorations = (
                 # Put a note here when you discover the exception.
                 my ($rule, $message);
                 my $change_rules = $calendar->regularly_adjusts_trading_hours_on($when);
-                if ($calendar->closes_early_on($when)) {
+                my $early_closes = $calendar->closes_early_on($when);
+                if ($early_closes) {
                     #Q::F::TradingCalendar does not have access to out localization methods, so we localiza its result here
-                    $rule = localize($change_rules->{daily_close}->{rule}) if defined $change_rules->{daily_close}->{rule};
+                    # Only set the rule as Friday if it is early close due to Friday.
+                    $rule = localize($change_rules->{daily_close}->{rule})
+                        if (defined $change_rules->{daily_close}->{rule} and $early_closes->hour . 'h' eq $change_rules->{daily_close}->{to});
                     $message =
                           $self->c
                         ? $self->c->l('Closes early (at [_1])', $calendar->closing_on($when)->time_hhmm)
                         : 'Closes early (at ' . $calendar->closing_on($when)->time_hhmm . ')';
                 } elsif ($calendar->opens_late_on($when)) {
-                    $rule = localize($change_rules->{daily_open}->{rule}) if defined $change_rules->{daily_open}->{rule};
+                    $rule = localize($change_rules->{daily_open}->{rule})
+                        if (defined $change_rules->{daily_open}->{rule}
+                        and $calendar->opens_late_on($when)->hour . 'h' eq $change_rules->{daily_open}->{to});
                     $message =
                           $self->c
                         ? $self->c->l('Opens late (at [_1])', $calendar->opening_on($when)->time_hhmm)
@@ -174,7 +178,7 @@ my %known_decorations = (
 
                     my $where = first_index { $_->{descrip} eq $message } @events;
                     # first_index returns -1 for not found.  Idiots.
-                    my $explain = $when->$date_display_method // $rule;
+                    my $explain = $rule // $when->$date_display_method;
                     if ($where != -1) {
                         $events[$where]->{dates} .= ', ' . $explain unless ($rule && $explain eq $rule && $seen_rules{$rule});
                     } else {
