@@ -51,4 +51,3 @@ exit BOM::Product::PredefinedOfferings->new({
         user  => 'nobody',
         group => 'nogroup',
     })->run;
-## Please see file perltidy.ERR
