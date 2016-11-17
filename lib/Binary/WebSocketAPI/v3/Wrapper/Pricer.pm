@@ -338,7 +338,7 @@ sub _price_stream_results_adjustment {
         maximum     => 1,
     });
 
-    $contract_parameters->{theo_probability}      = $theo_probability;
+    $contract_parameters->{theo_probability} = $theo_probability;
 
     my $price_calculator = Price::Calculator->new(%$contract_parameters);
 
