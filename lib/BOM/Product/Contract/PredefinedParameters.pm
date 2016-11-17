@@ -24,7 +24,7 @@ sub generate_predefined_offerings {
 
     $for_date = Date::Utility->new unless $for_date;
 
-    return [] if $underlying->calendar->trades_on($for_date);
+    return [] unless $underlying->calendar->trades_on($for_date);
 
     # we split offerings into applicable trading period here.
     my @new_offerings = _add_trading_periods($for_date, $underlying, \@offerings);
