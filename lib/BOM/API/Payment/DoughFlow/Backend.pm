@@ -13,7 +13,6 @@ use BOM::Platform::Runtime;
 use BOM::Database::DataMapper::Client;
 use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Platform::Client::Utility;
-use BOM::Platform::Client::IDAuthentication;
 
 # one of deposit, withdrawal
 has 'type' => (
@@ -226,9 +225,6 @@ sub write_transaction_line {
         $trx = $client->payment_doughflow(%payment_args);
     }
 
-    my $fdp = $client->is_first_deposit_pending;
-    BOM::Platform::Client::IDAuthentication->new(client => $client)->run_authentication if $fdp;
-
     if ($fee) {
         my $fee_trx = $client->payment_payment_fee(
             %payment_args,
@@ -255,7 +251,7 @@ sub check_predicates {
     # and trace id
     my $doughflow_datamapper = BOM::Database::DataMapper::Payment::DoughFlow->new({
         client_loginid => $c->user->loginid,
-        currency_code  => $currency_code,
+        currency_code  => $currency_code
     });
 
     my $rejection;
