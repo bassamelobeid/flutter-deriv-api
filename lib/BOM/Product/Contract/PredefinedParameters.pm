@@ -27,9 +27,7 @@ sub generate_predefined_offerings {
     return [] unless $underlying->calendar->trades_on($for_date);
 
     # we split offerings into applicable trading period here.
-    my @new_offerings = _add_trading_periods($for_date, $underlying, \@offerings);
-    # calculate barriers for each offering.
-    _add_barriers($for_date, $underlying, \@new_offerings);
+    my @new_offerings = _apply_predefined_parameters($for_date, $underlying, \@offerings);
 
     my $key = join '_', ($underlying->symbol, $for_date->date, $for_date->hour);
     my $chronicle_writer = BOM::System::Chronicle::get_chronicle_writer();
@@ -68,15 +66,15 @@ sub _get_trading_periods {
     # hh:59 => ttl = 1 min
     # hh:00 => ttl = 45 min
 
-    my $trading_key = join $separator, ($symbol, $for_date->date, $for_date->hour);
-    my $minute      = $for_date->minute;
-    my $ttl         = ($minute < 45 ? 2700 : 3600) - $minute * 60 - $for_date->second;
-    $chronicle_writer->set($cache_namespace, $trading_key, \@trading_periods, $for_date, $ttl);
+    #my $trading_key = join $separator, ($symbol, $for_date->date, $for_date->hour);
+    #my $minute      = $for_date->minute;
+    #my $ttl         = ($minute < 45 ? 2700 : 3600) - $minute * 60 - $for_date->second;
+    #$chronicle_writer->set($cache_namespace, $trading_key, \@trading_periods, $for_date, $ttl);
 
     return \@trading_periods;
 }
 
-sub _add_trading_periods {
+sub _apply_predefined_parameters {
     my ($for_date, $underlying, $offerings) = @_;
 
     my $trading_periods = _get_trading_periods($for_date, $underlying);
@@ -144,7 +142,7 @@ sub _add_trading_periods {
 
                 push @new_offerings,
                     +{
-                    %{$o},
+                    %{$offering},
                     trading_period     => $trading_period,
                     available_barriers => $available_barriers
                     };
@@ -159,11 +157,12 @@ sub _calculate_barriers {
     my $args = shift;
 
     my ($underlying, $call_prices, $trading_period) = @{$args}{qw(underlying call_prices trading_periods)};
-    my $spot_at_start = $underlying->tick_at($trading_period->{date_start}->{epoch})
+    my $tick = $underlying->tick_at($trading_period->{date_start}->{epoch})
         or die 'Could not retrieve tick for ' . $underlying->symbol . ' at ' . Date::Utility->new($trading_period->{date_start}->{epoch});
+    my $spot_at_start = $tick->quote;
     my $tiy = ($trading_period->{date_expiry}->{epoch} - $trading_period->{date_start}->{epoch}) / (365 * 86400);
 
-    my @initial_barriers = map { _get_strike_from_call_bs_price($_, $tiy, $spot, 0.1) } (0.02, 0.98);
+    my @initial_barriers = map { _get_strike_from_call_bs_price($_, $tiy, $spot_at_start, 0.1) } (0.02, 0.98);
 
     # Split the boundaries barriers into 10 barriers by divided the distance of boundaries by 96 (48 each side) - to be used as increment.
     # The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
@@ -205,7 +204,7 @@ sub _get_strike_from_call_bs_price {
 # Hence, we will generate the window at HH::45 (HH is the predefined trading hour) to include any new trading window and will also generate the trading window again at the next HH:00 to remove any expired trading window.
 
 sub _get_intraday_trading_window {
-    my $for_date = shift;
+    my ($underlying, $for_date) = @_;
 
     my $start_of_day = $for_date->truncate_to_day;
     my ($hour, $minute, $date_str) = ($for_date->hour, $for_date->minute, $for_date->date);
