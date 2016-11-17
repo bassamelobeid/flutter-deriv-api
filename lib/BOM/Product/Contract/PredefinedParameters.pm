@@ -40,7 +40,7 @@ sub get_predefined_offerings {
     my $underlying = shift;
 
     my $for_date = $underlying->for_date // Date::Utility->new;
-    my $key       = join '_', ($underlying, $for_date->date, $for_date->hour);
+    my $key       = join '_', ($underlying->symbol, $for_date->date, $for_date->hour);
     my $reader    = BOM::System::Chronicle::get_chronicle_reader;
     my $offerings = $underlying->for_date ? $reader->get_for($cache_namespace, $key, $for_date) : $reader->get($cache_namespace, $key);
 
