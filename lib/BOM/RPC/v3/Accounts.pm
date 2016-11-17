@@ -555,7 +555,7 @@ sub set_settings {
     my ($website_name, $client_ip, $user_agent, $language, $args) =
         @{$params}{qw/website_name client_ip user_agent language args/};
 
-    my ($residence, $err) = ($args->{residence});
+    my ($residence, $allow_copiers, $err) = ($args->{residence}, $args->{allow_copiers});
     if ($client->is_virtual) {
         # Virtual client can update
         # - residence, if residence not set. But not for Japan
@@ -595,6 +595,10 @@ sub set_settings {
         my $user = BOM::Platform::User->new({email => $client->email});
         $user->email_consent($args->{email_consent});
         $user->save;
+    }
+
+    if (defined $allow_copiers) {
+        $client->allow_copiers($allow_copiers);
     }
 
     # need to handle for $err->{status} as that come from japan settings
