@@ -2318,7 +2318,7 @@ sub _validate_barrier_type {
 
     my $epoch_expiry = $self->date_expiry->epoch;
     my $epoch_start  = $self->date_start->epoch;
-    my $intraday     = ($epoch_expiry - $epoch_start) < 86400 ? 1 : 0;
+    my $intraday     = $self->is_intraday;
     my $barrier_type = $intraday ? 'relative' : 'absolute';
     my $error_message =
         $intraday
@@ -2328,7 +2328,7 @@ sub _validate_barrier_type {
     return if ($self->tick_expiry or $self->is_spread);
 
     # The barrier for atm bet is always SOP which is relative
-    return if ($self->is_atm_bet and $self->barrier->supplied_type eq 'relative');
+    return if ($self->is_atm_bet and $self->barrier->barrier_type eq 'relative');
 
     foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
 
