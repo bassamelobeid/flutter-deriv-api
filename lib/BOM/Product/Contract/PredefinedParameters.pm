@@ -12,6 +12,7 @@ use LandingCompany::Offerings qw(get_offerings_flyby);
 use BOM::Product::Contract::Category;
 use BOM::MarketData qw(create_underlying);
 use BOM::System::Chronicle;
+use BOM::Platform::Runtime;
 
 my $cache_namespace = 'predefined_parameters';
 
@@ -51,6 +52,33 @@ sub update_predefined_highlow {
 
     return 1;
 }
+
+=head2 generate_predefined_offerings
+
+We set the predefined trading periods based on Japan requirement:
+Intraday contract:
+1) Start at 15 min before closest even hour and expires with duration of 2 hours and 15 min.
+   Mon-Friday
+   00:00-02:00, 01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00 <break>23:45-02:00, 01:45-04:00, 
+
+   For AUDJPY,USDJPY,AUDUSD, it will be 
+    00:00-02:00,01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00<break> 21:45:00 -23:59:59, 23:45-02:00,01:45-04:00, 03:45-06:00
+
+
+3) Start at 00:45 and expires with durarion of 5 hours and 15 min and spaces the next available trading window by 4 hours.
+   Example: 00:45-06:00 ; 04:45-10:00 ; 08:45-14:00 ; 12:45-18:00
+
+
+Daily contract:
+1) Daily contract: Start at 00:00GMT and end at 23:59:59GMT of the day
+2) Weekly contract: Start at 00:00GMT first trading day of the week and end at the close of last trading day of the week
+3) Monthly contract: Start at 00:00GMT of the first trading day of the calendar month and end at the close of the last trading day of the month
+4) Quarterly contract: Start at 00:00GMT of the first trading day of the quarter and end at the close of the last trading day of the quarter.
+
+To set the predefined barriers on each trading period.
+We do a binary search to find out the boundaries barriers associated with theo_prob [0.02,0.98] of a digital call,
+then split into 20 barriers that within this boundaries. The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
+=cut
 
 sub generate_predefined_offerings {
     my ($symbol, $for_date) = @_;
