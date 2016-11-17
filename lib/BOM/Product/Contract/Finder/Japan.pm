@@ -11,7 +11,7 @@ use BOM::System::Chronicle;
 use Exporter qw( import );
 our @EXPORT_OK = qw(available_contracts_for_symbol);
 
-use BOM::Product::Contract::PredefinedParameters qw(get_predefined_offerings);
+use BOM::Product::Contract::PredefinedParameters qw(get_predefined_offerings get_predefined_highlow);
 
 =head1 available_contracts_for_symbol
 
@@ -33,23 +33,10 @@ sub available_contracts_for_symbol {
         $close     = $calendar->closing_on($now)->epoch;
         @offerings = get_predefined_offerings($underlying);
         foreach my $offering (@offerings) {
+            my $period = $offering->{trading_period};
             my @expired_barriers = ();
             if ($offering->{barrier_category} eq 'american') {
-                my ($high, $low);
-                if ($underlying->for_date) {
-                    # for historical access, we fetch ohlc directly from the database
-                    ($high, $low) = @{
-                        $underlying->get_high_low_for_period({
-                                start => $date_start,
-                                end   => $for_date
-                            })}{'high', 'low'};
-                } else {
-                    my $highlow_key = join '_', ('highlow', $underlying->symbol, $date_start, $date_expiry);
-                    my $cache = BOM::System::Chronicle::get_chronicle_reader->get($cache_namespace, $highlow_key);
-                    if ($cache) {
-                        ($high, $low) = ($cache->[0], $cache->[1]);
-                    }
-                }
+                my ($high, $low) = get_predefined_highlow($underlying, $period);
 
                 foreach my $barrier (@{$offering->{available_barriers}}) {
                     # for double barrier contracts, $barrier is [high, low]

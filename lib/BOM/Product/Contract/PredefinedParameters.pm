@@ -1,7 +1,7 @@
 package BOM::Product::Contract::PredefinedParameters;
 
 use Exporter qw(import);
-our @EXPORT_OK = qw(generate_predefined_offerings get_predefined_offerings update_predefined_highlow);
+our @EXPORT_OK = qw(generate_predefined_offerings get_predefined_offerings update_predefined_highlow get_predefined_highlow);
 
 use Date::Utility;
 use List::Util qw(first min max);
@@ -51,6 +51,25 @@ sub update_predefined_highlow {
     }
 
     return 1;
+}
+
+sub get_predefined_highlow {
+    my ($underlying, $period) = @_;
+
+    if ($underlying->for_date) {
+        # for historical access, we fetch ohlc directly from the database
+        return @{
+            $underlying->get_high_low_for_period({
+                    start => $period->{date_start}->{epoch},
+                    end   => $now
+                })}{'high', 'low'};
+    }
+
+    my $highlow_key = join '_', ('highlow', $underlying->symbol, $period->{date_start}->{epoch}, $period->{date_expiry}->{epoch});
+    my $cache = BOM::System::Chronicle::get_chronicle_reader->get($cache_namespace, $highlow_key);
+
+    return @$cache if ($cache);
+    return ();
 }
 
 =head2 generate_predefined_offerings
