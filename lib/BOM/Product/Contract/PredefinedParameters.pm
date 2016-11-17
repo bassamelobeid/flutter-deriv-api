@@ -4,7 +4,7 @@ use Exporter qw(import);
 our @EXPORT_OK = qw(generate_predefined_offerings get_predefined_offerings);
 
 use Date::Utility;
-use List::Util qw(first);
+use List::Util qw(first min max);
 use Math::CDF qw(qnorm);
 use Format::Util::Numbers qw(roundnear);
 use LandingCompany::Offerings qw(get_offerings_flyby);
@@ -13,8 +13,44 @@ use BOM::Product::Contract::Category;
 use BOM::MarketData qw(create_underlying);
 use BOM::System::Chronicle;
 
-my $cache_namespace = 'predefined_offerings';
-my $separator       = '==';
+my $cache_namespace = 'predefined_parameters';
+
+sub update_predefined_highlow {
+    my $tick_data = shift;
+
+    my $underlying = create_underlying($tick_data->{symbol});
+    my $now        = $tick_data->{epoch};
+    my $offerings  = get_predefined_offerings($underlying);
+    my $new_quote  = $tick_data->{price};
+
+    return unless @$offerings;
+
+    foreach my $offering (@$offerings) {
+        next if ($offering->{barrier_category} ne 'american');
+        my $period          = $offering->{trading_period};
+        my $key             = join '_', ('highlow', $underlying->symbol, $period->{date_start}->{epoch}, $period->{date_expiry}->{epoch});
+        my $current_highlow = BOM::System::Chronicle::get_chronicle_reader()->get($cache_namespace, $key);
+        my ($new_high, $new_low);
+
+        if ($current_highlow) {
+            my ($high, $low) = map { $current_highlow->[$_] } (0, 1);
+            $new_high = max($tick_data->{price}, $high);
+            $new_low = min($tick_data->{price}, $low);
+        } else {
+            my $db_highlow = $underlying->get_high_low_for_period({
+                start => $period->{date_start}->{epoch},
+                end   => $now,
+            });
+            $new_high = max($tick_data->{price}, $db_highlow->{high});
+            $new_low = min($tick_data->{price}, $db_highlow->{low});
+        }
+
+        my $ttl = max(0, $period->{date_expiry}->{epoch} - $now);
+        BOM::System::Chronicle::get_chronicle_writer()->set($cache_namespace, $key, [$new_high, $new_low], Date::Utility->new, $ttl);
+    }
+
+    return 1;
+}
 
 sub generate_predefined_offerings {
     my ($symbol, $for_date) = @_;
@@ -29,9 +65,8 @@ sub generate_predefined_offerings {
     # we split offerings into applicable trading period here.
     my @new_offerings = _apply_predefined_parameters($for_date, $underlying, \@offerings);
 
-    my $key = join '_', ($underlying->symbol, $for_date->date, $for_date->hour);
-    my $chronicle_writer = BOM::System::Chronicle::get_chronicle_writer();
-    $chronicle_writer->set($cache_namespace, $key, \@new_offerings);
+    my $key = join '_', ('offerings', $underlying->symbol, $for_date->date, $for_date->hour);
+    BOM::System::Chronicle::get_chronicle_writer()->set($cache_namespace, $key, \@new_offerings);
 
     return \@new_offerings;
 }
@@ -40,7 +75,7 @@ sub get_predefined_offerings {
     my $underlying = shift;
 
     my $for_date = $underlying->for_date // Date::Utility->new;
-    my $key       = join '_', ($underlying->symbol, $for_date->date, $for_date->hour);
+    my $key       = join '_', ('offerings', $underlying->symbol, $for_date->date, $for_date->hour);
     my $reader    = BOM::System::Chronicle::get_chronicle_reader;
     my $offerings = $underlying->for_date ? $reader->get_for($cache_namespace, $key, $for_date) : $reader->get($cache_namespace, $key);
 
@@ -53,23 +88,6 @@ sub _get_trading_periods {
     my @trading_periods = _get_daily_trading_window($underlying, $for_date);
     my @intraday_periods = _get_intraday_trading_window($underlying, $for_date);
     push @trading_periods, @intraday_periods if @intraday_periods;
-
-    # TTL is the remaining seconds until the forthcoming HH:45 (if current minute is < 45) or the forthcoming HH:)) (if the current time is >= 45)
-
-    # So cache TTL is (in mins for comfort) :
-    # hh:00 => ttl = 45 min
-    # hh:03 => ttl = 42 min
-    # hh:29 => ttl = 16 min
-    # hh:44 => ttl = 1 min
-    # hh:45 => ttl = 15 min
-    # hh:54 => ttl = 6 min
-    # hh:59 => ttl = 1 min
-    # hh:00 => ttl = 45 min
-
-    #my $trading_key = join $separator, ($symbol, $for_date->date, $for_date->hour);
-    #my $minute      = $for_date->minute;
-    #my $ttl         = ($minute < 45 ? 2700 : 3600) - $minute * 60 - $for_date->second;
-    #$chronicle_writer->set($cache_namespace, $trading_key, \@trading_periods, $for_date, $ttl);
 
     return \@trading_periods;
 }
