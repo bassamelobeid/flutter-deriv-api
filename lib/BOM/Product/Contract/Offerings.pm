@@ -174,7 +174,7 @@ my %known_decorations = (
 
                     my $where = first_index { $_->{descrip} eq $message } @events;
                     # first_index returns -1 for not found.  Idiots.
-                    my $explain = $rule // $when->$date_display_method;
+                    my $explain = $when->$date_display_method // $rule;
                     if ($where != -1) {
                         $events[$where]->{dates} .= ', ' . $explain unless ($rule && $explain eq $rule && $seen_rules{$rule});
                     } else {
