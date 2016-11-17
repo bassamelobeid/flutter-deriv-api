@@ -339,7 +339,6 @@ sub _price_stream_results_adjustment {
     });
 
     $contract_parameters->{theo_probability}      = $theo_probability;
-    $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
 
     my $price_calculator = Price::Calculator->new(%$contract_parameters);
 
