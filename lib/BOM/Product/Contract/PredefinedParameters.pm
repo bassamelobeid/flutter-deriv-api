@@ -1,7 +1,7 @@
 package BOM::Product::Contract::PredefinedParameters;
 
 use Exporter qw(import);
-our @EXPORT_OK = qw(generate_predefined_offerings get_predefined_offerings);
+our @EXPORT_OK = qw(generate_predefined_offerings get_predefined_offerings update_predefined_highlow);
 
 use Date::Utility;
 use List::Util qw(first min max);
@@ -62,7 +62,9 @@ sub generate_predefined_offerings {
 
     return [] unless $underlying->calendar->trades_on($for_date);
 
-    # we split offerings into applicable trading period here.
+    # we perform two things here:
+    # - split offerings into applicable trading periods.
+    # - calculate barriers.
     my @new_offerings = _apply_predefined_parameters($for_date, $underlying, \@offerings);
 
     my $key = join '_', ('offerings', $underlying->symbol, $for_date->date, $for_date->hour);

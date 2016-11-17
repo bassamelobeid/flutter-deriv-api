@@ -8,7 +8,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Platform::Runtime;
 use BOM::Product::Contract::Category;
-use BOM::System::RedisReplicated;
+use BOM::System::Chronicle;
 use Format::Util::Numbers qw(roundnear);
 use List::Util qw(reduce);
 use Exporter qw( import );
@@ -36,6 +36,36 @@ sub available_contracts_for_symbol {
         $open      = $calendar->opening_on($now)->epoch;
         $close     = $calendar->closing_on($now)->epoch;
         @offerings = get_predefined_offerings($underlying);
+        foreach my $offering (@offerings) {
+            my @expired_barriers = ();
+            if ($offering->{barrier_category} eq 'american') {
+                my ($high, $low);
+                if ($underlying->for_date) {
+                    # for historical access, we fetch ohlc directly from the database
+                    ($high, $low) = @{
+                        $underlying->get_high_low_for_period({
+                                start => $date_start,
+                                end   => $for_date
+                            })}{'high', 'low'};
+                } else {
+                    my $highlow_key = join '_', ('highlow', $underlying->symbol, $date_start, $date_expiry);
+                    my $cache = BOM::System::Chronicle::get_chronicle_reader->get($cache_namespace, $highlow_key);
+                    if ($cache) {
+                        ($high, $low) = ($cache->[0], $cache->[1]);
+                    }
+                }
+
+                foreach my $barrier (@{$offering->{available_barriers}}) {
+                    # for double barrier contracts, $barrier is [high, low]
+                    if (ref $barrier eq 'ARRAY' and ($high > $barrier->[0] or $low < $barrier->[1])) {
+                        push @expired_barriers, $barrier;
+                    } elsif ($high > $barrier or $low < $barrier) {
+                        push @expired_barriers, $barrier;
+                    }
+                }
+            }
+            $offering->{expired_barriers} = \@expired_barriers;
+        }
     }
 
     return {
