@@ -396,6 +396,29 @@ sub get_monthly_payments_sum {
     return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
 }
 
+sub unprocessed_bets {
+    my ($self, $last_processed_id, $accounts) = @_;
+
+    my $sql = q{
+            SELECT
+                underlying_symbol,
+                (sell_time - start_time) as duration,
+                ((sell_price - buy_price) / buy_price) as profit,
+                CASE
+                    WHEN (sell_price - buy_price) > 0 THEN 'win'
+                    ELSE 'loss'
+                END
+                AS profitable
+            FROM
+                bet.financial_market_bet
+            WHERE
+                account_id IN ($1)
+        };
+
+    my @binds = (join(',', (map {$_->id} @$accounts)));
+    return $self->db->dbh->selectall_arrayref($sql, undef, @binds);
+}
+
 sub get_trades_avg_duration {
     my ($self, $accounts) = @_;
 
@@ -405,7 +428,7 @@ sub get_trades_avg_duration {
             FROM
                 bet.financial_market_bet
             WHERE
-                account_id = $1
+                account_id IN ($1)
         };
 
     my @binds = (join(',', (map {$_->id} @$accounts)));
@@ -430,7 +453,7 @@ sub get_trades_profitable {
                     bet.financial_market_bet
                 WHERE
                     sell_price IS NOT NUll
-                    AND account_id = $1
+                    AND account_id IN ($1)
             ) t
             GROUP BY profitable
         };
@@ -443,10 +466,14 @@ sub get_symbols_breakdown {
     my ($self, $accounts) = @_;
 
     my $sql = q{
-            SELECT underlying_symbol, count(*)
-            FROM bet.financial_market_bet
-            WHERE account_id = $1
-            GROUP BY underlying_symbol
+            SELECT
+                underlying_symbol, count(*)
+            FROM
+                bet.financial_market_bet
+            WHERE
+                account_id IN ($1)
+            GROUP BY
+                underlying_symbol
         };
 
     my @binds = (join(',', (map {$_->id} @$accounts)));
