@@ -5,9 +5,9 @@ use Moose;
 with 'App::Base::Daemon';
 
 use BOM::Product::Contract::PredefinedParameters qw(update_predefined_highlow);
+use BOM::System::RedisReplicated;
 
 use JSON;
-use RedisDB;
 
 sub documentation {
     return qq/Update high and low of symbols for predefined periods./;
@@ -18,10 +18,7 @@ sub daemon_run {
 
     my @symbols = ('frxUSDJPY');
 
-    my $redis = RedisDB->new(
-        host => '127.0.0.1',
-        port => 6379
-    );
+    my $redis = BOM::System::RedisReplicated::redis_read();
 
     $redis->subscription_loop(
         subscribe        => [map { 'FEED::' . $_ } @symbols],
