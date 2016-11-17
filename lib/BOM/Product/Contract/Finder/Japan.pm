@@ -31,9 +31,9 @@ sub available_contracts_for_symbol {
     if ($calendar->trades_on($now)) {
         $open      = $calendar->opening_on($now)->epoch;
         $close     = $calendar->closing_on($now)->epoch;
-        @offerings = get_predefined_offerings($underlying);
+        @offerings = @{get_predefined_offerings($underlying)};
         foreach my $offering (@offerings) {
-            my $period = $offering->{trading_period};
+            my $period           = $offering->{trading_period};
             my @expired_barriers = ();
             if ($offering->{barrier_category} eq 'american') {
                 my ($high, $low) = get_predefined_highlow($underlying, $period);
