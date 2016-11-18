@@ -2,6 +2,8 @@
 
 package BOM::Platform::Client;
 
+# NOTE.. this is a 'mix-in' of extra subs for BOM::Platform::Client.  It is not a distinct Class.
+
 use strict;
 use warnings;
 
@@ -14,8 +16,7 @@ use YAML::XS qw(LoadFile);
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 
 use BOM::Database::ClientDB;
-
-# NOTE.. this is a 'mix-in' of extra subs for BOM::Platform::Client.  It is not a distinct Class.
+use BOM::Platform::Client::IDAuthentication;
 
 my $payment_limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'));
 
@@ -346,6 +347,8 @@ sub payment_doughflow {
     my $payment_type = $args{payment_type} || 'external_cashier';
     my $staff        = $args{staff}        || 'system';
     my $source       = $args{source};
+    # need to be before actual payment to check if its first deposit
+    my $fdp = $self->is_first_deposit_pending;
 
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
     my $account = $self->set_default_account($currency);
@@ -379,6 +382,8 @@ sub payment_doughflow {
     $account->save(cascade => 1);
     $trx->load;    # to re-read 'now' timestamps
 
+    BOM::Platform::Client::IDAuthentication->new(client => $self)->run_authentication if $fdp;
+
     return $trx;
 }
 
@@ -391,6 +396,8 @@ sub payment_epg {
     my $payment_type = $args{payment_type} || 'external_cashier';
     my $staff        = $args{staff}        || 'system';
     my $source       = $args{source};
+    # need to be before actual payment to check if its first deposit
+    my $fdp = $self->is_first_deposit_pending;
 
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
     my $account = $self->set_default_account($currency);
@@ -423,6 +430,8 @@ sub payment_epg {
     });
     $account->save(cascade => 1);
     $trx->load;    # to re-read 'now' timestamps
+
+    BOM::Platform::Client::IDAuthentication->new(client => $self)->run_authentication if $fdp;
 
     if ($action_type eq 'deposit') {
         stats_count('business.usd_deposit.cashier', int(in_USD($amount, $currency) * 100));
