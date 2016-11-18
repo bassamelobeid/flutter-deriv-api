@@ -1,5 +1,8 @@
 package BOM::Product::Contract::PredefinedParameters;
 
+use strict;
+use warnings;
+
 use Exporter qw(import);
 our @EXPORT_OK = qw(generate_predefined_offerings get_predefined_offerings update_predefined_highlow get_predefined_highlow);
 
