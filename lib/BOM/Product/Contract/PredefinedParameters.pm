@@ -182,30 +182,7 @@ sub _apply_predefined_parameters {
             {
                 next;
             } else {
-                my $start_tick = $underlying->tick_at($date_start)
-                    or die 'Could not get spot for ' . $symbol . ' at ' . Date::Utility->new($date_start)->datetime;
-
-                my $barriers = _calculate_barriers({
-                    underlying      => $underlying,
-                    call_prices     => [0.02, 0.98],
-                    trading_periods => $trading_period,
-                });
-
-                my $available_barriers;
-                if ($offering->{barriers} == 1) {
-                    $available_barriers = [sort { $a <=> $b } values %$barriers];
-                } elsif ($offering->{barriers} == 2) {
-                    # For staysinout contract, we need to pair the barriers symmetry, ie (42, 58), (34,66), (26,74), (18,82)
-                    # For endsinout contract, we need to pair barriers as follow: (42,58), (34,50), (50,66), (26,42), (58,74), (18,34), (66,82), (2, 26), (74, 98)
-                    # Note: 42 is -8d from the spot at start and 58 is +8d from spot at start
-                    # where d is the minimum increment that determine by divided the distance of boundaries by 96 (48 each side)
-                    my @barrier_pairs =
-                        $offering->{contract_category} eq 'staysinout'
-                        ? ([42, 58], [34, 66], [26, 74], [18, 82])
-                        : ([42, 58], [34, 50], [50, 66], [26, 42], [58, 74], [18, 34], [66, 82], [2, 26], [74, 98]);
-
-                    $available_barriers = [map { [$barriers->{$_->[0]}, $barriers->{$_->[1]}] } @barrier_pairs];
-                }
+                my $available_barriers = _calculate_available_barriers($underlying, $offering, $trading_period);
 
                 push @new_offerings,
                     +{
@@ -218,6 +195,37 @@ sub _apply_predefined_parameters {
     }
 
     return @new_offerings;
+}
+
+sub _calculate_available_barriers {
+    my ($underlying, $offering, $trading_period) = @_;
+
+    my $start_tick = $underlying->tick_at($trading_period->{date_start}->{epoch})
+        or die 'Could not get spot for ' . $underlying->symbol . ' at ' . $trading_period->{date_start}->{date};
+
+    my $barriers = _calculate_barriers({
+        underlying      => $underlying,
+        call_prices     => [0.02, 0.98],
+        trading_periods => $trading_period,
+    });
+
+    my $available_barriers;
+    if ($offering->{barriers} == 1) {
+        $available_barriers = [sort { $a <=> $b } values %$barriers];
+    } elsif ($offering->{barriers} == 2) {
+        # For staysinout contract, we need to pair the barriers symmetry, ie (42, 58), (34,66), (26,74), (18,82)
+        # For endsinout contract, we need to pair barriers as follow: (42,58), (34,50), (50,66), (26,42), (58,74), (18,34), (66,82), (2, 26), (74, 98)
+        # Note: 42 is -8d from the spot at start and 58 is +8d from spot at start
+        # where d is the minimum increment that determine by divided the distance of boundaries by 96 (48 each side)
+        my @barrier_pairs =
+            $offering->{contract_category} eq 'staysinout'
+            ? ([42, 58], [34, 66], [26, 74], [18, 82])
+            : ([42, 58], [34, 50], [50, 66], [26, 42], [58, 74], [18, 34], [66, 82], [2, 26], [74, 98]);
+
+        $available_barriers = [map { [$barriers->{$_->[0]}, $barriers->{$_->[1]}] } @barrier_pairs];
+    }
+
+    return $available_barriers;
 }
 
 sub _calculate_barriers {
