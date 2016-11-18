@@ -20,11 +20,10 @@ Returns a set of available contracts for a particular contract which included pr
 =cut
 
 sub available_contracts_for_symbol {
-    my $args         = shift;
-    my $symbol       = $args->{symbol} || die 'no symbol';
-    my $underlying   = create_underlying($symbol);
-    my $now          = $args->{date} || Date::Utility->new;
-    my $current_tick = $args->{current_tick} // $underlying->spot_tick // $underlying->tick_at($now->epoch, {allow_inconsistent => 1});
+    my $args       = shift;
+    my $symbol     = $args->{symbol} || die 'no symbol';
+    my $underlying = create_underlying($symbol, $args->{date});
+    my $now        = $args->{date} || Date::Utility->new;
 
     my $calendar = $underlying->calendar;
     my ($open, $close, @offerings);
@@ -40,9 +39,9 @@ sub available_contracts_for_symbol {
 
                 foreach my $barrier (@{$offering->{available_barriers}}) {
                     # for double barrier contracts, $barrier is [high, low]
-                    if (ref $barrier eq 'ARRAY' and ($high > $barrier->[0] or $low < $barrier->[1])) {
+                    if (ref $barrier eq 'ARRAY' and not($high < $barrier->[0] and $low > $barrier->[1])) {
                         push @expired_barriers, $barrier;
-                    } elsif ($high > $barrier or $low < $barrier) {
+                    } elsif ($high >= $barrier or $low <= $barrier) {
                         push @expired_barriers, $barrier;
                     }
                 }

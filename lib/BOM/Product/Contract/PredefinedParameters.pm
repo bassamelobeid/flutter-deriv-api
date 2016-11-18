@@ -115,7 +115,7 @@ sub generate_predefined_offerings {
     my @new_offerings = _apply_predefined_parameters($for_date, $underlying, \@offerings);
 
     my $key = join '_', ('offerings', $underlying->symbol, $for_date->date, $for_date->hour);
-    BOM::System::Chronicle::get_chronicle_writer()->set($cache_namespace, $key, \@new_offerings);
+    BOM::System::Chronicle::get_chronicle_writer()->set($cache_namespace, $key, \@new_offerings, $for_date);
 
     return \@new_offerings;
 }
@@ -125,7 +125,7 @@ sub get_predefined_offerings {
 
     my $for_date = $underlying->for_date // Date::Utility->new;
     my $key       = join '_', ('offerings', $underlying->symbol, $for_date->date, $for_date->hour);
-    my $reader    = BOM::System::Chronicle::get_chronicle_reader;
+    my $reader    = BOM::System::Chronicle::get_chronicle_reader($underlying->for_date);
     my $offerings = $underlying->for_date ? $reader->get_for($cache_namespace, $key, $for_date) : $reader->get($cache_namespace, $key);
 
     return $offerings // [];
