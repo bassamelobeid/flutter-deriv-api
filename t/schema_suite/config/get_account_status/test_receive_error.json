@@ -1,0 +1,20 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "error": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "required": "1"
+                },
+                "code": {
+                    "type": "string",
+                    "pattern": "^AuthorizationRequired$",
+                    "required": "1"
+                }
+            }
+        }
+    }
+}
