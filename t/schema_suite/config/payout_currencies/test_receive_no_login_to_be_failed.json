@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "minItems": 5,
+  "required": "1",
+  "items": {
+    "type": "string",
+    "pattern": "^(AUX|EUR|GBP|AUD)$",
+    "required": "1"
+  }
+}

@@ -1,0 +1,20 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "error": {
+            "type": "object",
+            "properties": {
+                "message_to_client": {
+                    "type": "string",
+                    "required": "1"
+                },
+                "code": {
+                    "type": "string",
+                    "pattern": "^TopupVirtualError$",
+                    "required": "1"
+                }
+            }
+        }
+    }
+}
