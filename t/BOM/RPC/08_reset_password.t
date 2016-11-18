@@ -32,7 +32,7 @@ my $user_vr = BOM::Platform::User->create(
 $user_vr->save;
 $user_vr->add_loginid({loginid => $test_loginid_vr});
 $user_vr->save;
-my $mailbox = Email::Folder::Search->new;
+my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
 $mailbox->init;
 
 my ($status, $code);

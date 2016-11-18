@@ -91,7 +91,7 @@ $user->save;
 $user->add_loginid({loginid => $test_loginid});
 $user->add_loginid({loginid => $test_client_vr->loginid});
 $user->save;
-my $mailbox = Email::Folder::Search->new;
+my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
 $mailbox->init;
 
 my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
