@@ -153,7 +153,7 @@ subtest 'realtime report generation' => sub {
     note 'This may not be checking what you think.  It can not tell when things sold.';
     is($dm->get_last_generated_historical_marked_to_market_time, $now->db_timestamp, 'It ran and updated our timestamp.');
     note "Includes a lot of unit test transactions about which we don't care.";
-    my $mailbox = Email::Folder::Search->new;
+    my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
     is($called_count, 1, 'BOM::Product::Transaction::sell_expired_contracts called only once');
     my @msgs = $mailbox->search(
         email   => 'quants-market-data@regentmarkets.com',
