@@ -286,7 +286,7 @@ subtest 'date start blackouts' => sub {
         }) for qw(frxAUDUSD frxUSDHKD);
     $bet_params->{underlying}   = 'frxAUDUSD';
     $bet_params->{duration}     = '1d';
-    $bet_params->{barrier}      = 'S10P';
+    $bet_params->{barrier}      = '110';
     $bet_params->{bet_type}     = 'CALL';
     $bet_params->{date_start}   = $bet_params->{date_pricing} = $date_start;
     $bet_params->{current_tick} = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -381,7 +381,7 @@ subtest 'date expiry blackout - year end holidays for equity' => sub {
         underlying   => 'HSI',
         date_start   => $date_start,
         date_pricing => $date_start,
-        barrier      => 'S10P',
+        barrier      => 7205,
         currency     => 'USD',
         payout       => 10,
         duration     => '5d',
@@ -394,7 +394,7 @@ subtest 'date expiry blackout - year end holidays for equity' => sub {
     $bet_params->{barrier} = 'S0P';
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy for ATM';
-    $bet_params->{barrier}  = 'S10P';
+    $bet_params->{barrier}  = 7205;
     $bet_params->{duration} = '7d';
     $c                      = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy for non ATM past holiday blackout period';
@@ -406,6 +406,7 @@ subtest 'date expiry blackout - year end holidays for equity' => sub {
         }) for qw(frxAUDUSD frxUSDHKD);
     $bet_params->{underlying} = 'frxAUDUSD';
     $bet_params->{duration}   = '5d';
+    $bet_params->{barrier} = 'S0P';
     $c                        = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy for Forex during holiday blackout period';
 };
