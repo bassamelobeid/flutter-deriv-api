@@ -45,6 +45,7 @@ my $sql = <<HERE;
     select
         cli.broker_code,
         acc.client_loginid,
+        cli.residence,
         p.payment_time,
         p.payment_gateway_code,
         p.payment_type_code,
@@ -75,7 +76,7 @@ my @binds = (
 );
 $sth->execute(@binds);
 
-my @headers = qw/Broker Loginid Timestamp PaymentGateway PaymentType Currency Amount Remark/;
+my @headers = qw/Broker Loginid Residence Timestamp PaymentGateway PaymentType Currency Amount Remark/;
 {
     my $csv = Text::CSV->new({eol => "\n"});
     $csv->print(\*STDOUT, \@headers);
