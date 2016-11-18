@@ -102,7 +102,7 @@ ok(!$mlt_client->get_status('cashier_locked'), 'MLT client not cashier_locked pr
 $mlt_client->payment_doughflow(%deposit, currency => 'EUR');
 ok($mlt_client->get_status('cashier_locked'), 'MLT client now cashier_locked after first-deposit');
 
-my $mx_client = BOM::Platform::Client->register_and_return_new_client({
+$mx_client = BOM::Platform::Client->register_and_return_new_client({
     %$client_details,
     broker_code => 'MX',
     residence   => 'gb'
