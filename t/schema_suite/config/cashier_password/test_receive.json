@@ -4,8 +4,8 @@
   "properties": {
     "status": {
       "type": "integer",
-      "required": "1",
-      "pattern": "^1$"
+      "pattern": "^[_2]$",
+      "required": "1"
     }
   }
 }
