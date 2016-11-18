@@ -25,25 +25,40 @@ use BOM::Database::DataMapper::Transaction;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
+use LandingCompany::Registry;
 BOM::Backoffice::Sysinit::init();
 BOM::Backoffice::Auth0::can_access(['Quants']);
 my %params = %{request()->params};
 my ($pricing_parameters, @contract_details, $start);
 
-my $broker = $params{broker} // request()->broker_code;
-my $id = $params{id} ? $params{id} : '';
+my $broker        = $params{broker}     // request()->broker_code;
+my $id            = $params{id}         // '';
+my $short_code    = $params{short_code} // '';
+my $currency_code = $params{currency}   // '';
 
-if ($broker and $id) {
-    my $details = BOM::Database::DataMapper::Transaction->new({
-            broker_code => $broker,
-            operation   => 'backoffice_replica',
-        })->get_details_by_transaction_ref($id);
+if ($broker and ($id or $short_code)) {
 
-    my $original_contract = produce_contract($details->{shortcode}, $details->{currency_code});
-    my $client        = BOM::Platform::Client::get_instance({'loginid' => $details->{loginid}});
-    my $action_type   = $details->{action_type};                                                   # buy or sell
+    my ($details, $client);
+
+    if ($id) {
+        $details = BOM::Database::DataMapper::Transaction->new({
+                broker_code => $broker,
+                operation   => 'backoffice_replica',
+            })->get_details_by_transaction_ref($id);
+
+        $client = BOM::Platform::Client::get_instance({'loginid' => $details->{loginid}});
+
+    }
+
+    my $short_code_param = $details->{shortcode} // $short_code;
+    my $currency_param = $details->{currency_code} // $currency_code;
+
+    my $original_contract = produce_contract($short_code_param, $currency_param);
+
+    my $action_type   = $details->{action_type} // 'buy';    #If it is with shortcode as input, we just want to verify the ask price
     my $sell_time     = $details->{sell_time};
     my $purchase_time = $details->{purchase_time};
+    my $landing_company = $landing_company = LandingCompany::Registry::get_by_broker($broker)->short;
 
     $start =
           $params{start}          ? Date::Utility->new($params{start})
@@ -51,13 +66,13 @@ if ($broker and $id) {
         :                           Date::Utility->new($sell_time);
     my $pricing_args = $original_contract->build_parameters;
     $pricing_args->{date_pricing}    = $start;
-    $pricing_args->{landing_company} = $client->landing_company->short;
+    $pricing_args->{landing_company} = $landing_company;
     my $contract       = produce_contract($pricing_args);
     my $traded_bid     = $details->{bid_price};
     my $traded_ask     = $details->{ask_price};
     my $slippage_price = $details->{price_slippage};
     my $action_type    = $details->{action_type};
-    my $order_price    = $details->{order_price};
+    my $order_price    = $details->{order_price} // $contract->ask_price;
     my $prev_tick      = $contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
 
     my $traded_contract = $action_type eq 'buy' ? $contract : $contract->opposite_contract;
@@ -71,11 +86,11 @@ if ($broker and $id) {
         : die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
 
     @contract_details = (
-        login_id               => $details->{loginid},
-        trans_id               => $id,
+        login_id               => $details->{loginid} // 'NA.',
+        trans_id               => $id // 'NA.',
         short_code             => $contract->shortcode,
         description            => $contract->longcode,
-        ccy                    => $details->{currency_code},
+        ccy                    => $contract->currency,
         order_type             => $action_type,
         order_price            => $order_price,
         slippage_price         => $slippage_price // 'NA.',
@@ -271,6 +286,8 @@ BOM::Backoffice::Request::template->process(
     {
         broker             => $broker,
         id                 => $id,
+        short_code         => $short_code,
+        currency           => $currency,
         contract_details   => {@contract_details},
         start              => $start ? $start->datetime : '',
         pricing_parameters => $pricing_parameters,
