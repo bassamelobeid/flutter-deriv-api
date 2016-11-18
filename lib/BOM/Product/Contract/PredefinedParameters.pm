@@ -64,7 +64,7 @@ sub get_predefined_highlow {
         return @{
             $underlying->get_high_low_for_period({
                     start => $period->{date_start}->{epoch},
-                    end   => $now
+                    end   => time,
                 })}{'high', 'low'};
     }
 
