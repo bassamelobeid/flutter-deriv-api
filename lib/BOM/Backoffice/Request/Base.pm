@@ -65,12 +65,12 @@ has 'domain_name' => (
 );
 
 {
-    my $known_codes = map {; $_ => 1 } qw(CR MLT MF MX VRTC FOG JP VRTJ);
+    my %known_codes = map {; $_ => 1 } qw(CR MLT MF MX VRTC FOG JP VRTJ);
     has 'broker_code' => (
         is  => 'ro',
         isa => subtype(
             Str => where {
-                exists $known_codes->{$_}
+                exists $known_codes{$_}
             } => message {
                 "Unknown broker code [$_]"
             }
