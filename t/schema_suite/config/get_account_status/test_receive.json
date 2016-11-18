@@ -1,0 +1,15 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "status": {
+            "type": "array",
+            "required": "1"
+        },
+        "risk_classification": {
+            "type": ["string", "null"],
+            "pattern": "^(low|standard|high)?$",
+            "required": "1"
+        }
+    }
+}
