@@ -19,7 +19,7 @@
     },
     "loginid": {
       "type": "string",
-      "pattern": "^CR\\d+$",
+      "pattern": "^MX\\d+$",
       "required": "1"
     },
     "is_virtual": {
@@ -29,12 +29,12 @@
     },
     "landing_company_name": {
       "type": "string",
-      "pattern": "^costarica$",
+      "pattern": "^iom$",
       "required": "1"
     },
     "landing_company_fullname": {
       "type": "string",
-      "pattern": "^Binary \\(C\\.R\\.\\) S\\.A\\.$",
+      "pattern": "^Binary \\(IOM\\) Ltd$",
       "required": "1"
     },
     "country": {
@@ -44,7 +44,7 @@
     },
     "fullname": {
       "type": "string",
-      "pattern": "^Mrs Example First Name Example Last Name$",
+      "pattern": "^Mrs Example First Name MX Example Last Name$",
       "required": "1"
     },
     "scopes": {
