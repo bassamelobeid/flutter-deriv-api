@@ -131,6 +131,24 @@ sub get_predefined_offerings {
     my $reader    = BOM::System::Chronicle::get_chronicle_reader($underlying->for_date);
     my $offerings = $underlying->for_date ? $reader->get_for($cache_namespace, $key, $for_date) : $reader->get($cache_namespace, $key);
 
+    foreach my $offering (@$offerings) {
+        my $period           = $offering->{trading_period};
+        my @expired_barriers = ();
+        if ($offering->{barrier_category} eq 'american') {
+            my ($high, $low) = get_predefined_highlow($underlying, $period);
+
+            foreach my $barrier (@{$offering->{available_barriers}}) {
+                # for double barrier contracts, $barrier is [high, low]
+                if (ref $barrier eq 'ARRAY' and not($high < $barrier->[0] and $low > $barrier->[1])) {
+                    push @expired_barriers, $barrier;
+                } elsif ($high >= $barrier or $low <= $barrier) {
+                    push @expired_barriers, $barrier;
+                }
+            }
+        }
+        $offering->{expired_barriers} = \@expired_barriers;
+    }
+
     return $offerings // [];
 }
 
