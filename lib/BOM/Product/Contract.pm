@@ -933,7 +933,7 @@ has otm_threshold => (
     lazy_build => 1,
 );
 
-sub _build_deep_otm_threshold {
+sub _build_otm_threshold {
     my $self = shift;
 
     return $self->market->deep_otm_threshold;
