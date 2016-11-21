@@ -50,20 +50,21 @@ if ($broker and ($id or $short_code)) {
 
     }
 
-    my $short_code_param = $details->{shortcode} // $short_code;
-    my $currency_param = $details->{currency_code} // $currency_code;
+    my $short_code_param = $details->{shortcode}     // $short_code;
+    my $currency_param   = $details->{currency_code} // $currency_code;
 
     my $original_contract = produce_contract($short_code_param, $currency_param);
 
-    my $action_type   = $details->{action_type} // 'buy';    #If it is with shortcode as input, we just want to verify the ask price
-    my $sell_time     = $details->{sell_time};
-    my $purchase_time = $details->{purchase_time};
+    my $action_type = $details->{action_type} // 'buy';    #If it is with shortcode as input, we just want to verify the ask price
+    my $sell_time = $details->{sell_time};
+    my $purchase_time = $details->{purchase_time} // $original_contract->date_start;
     my $landing_company = $landing_company = LandingCompany::Registry::get_by_broker($broker)->short;
 
     $start =
           $params{start}          ? Date::Utility->new($params{start})
         : ($action_type eq 'buy') ? Date::Utility->new($purchase_time)
         :                           Date::Utility->new($sell_time);
+
     my $pricing_args = $original_contract->build_parameters;
     $pricing_args->{date_pricing}    = $start;
     $pricing_args->{landing_company} = $landing_company;
@@ -86,8 +87,8 @@ if ($broker and ($id or $short_code)) {
         : die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
 
     @contract_details = (
-        login_id               => $details->{loginid} // 'NA.',
-        trans_id               => $id // 'NA.',
+        login_id => $details->{loginid} // 'NA.',
+        trans_id => $id // 'NA.',
         short_code             => $contract->shortcode,
         description            => $contract->longcode,
         ccy                    => $contract->currency,
