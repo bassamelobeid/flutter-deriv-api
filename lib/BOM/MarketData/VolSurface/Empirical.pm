@@ -52,7 +52,7 @@ sub get_volatility {
     #    fill_cache   => $fill_cache,
     #});
     my $resample_cache = Data::Resample::ResampleCache->new({
-        redis => Cache::RedisDB,
+        redis => Cache::RedisDB->redis,
     });
     my $ticks = $resample_cache->resample_cache_get({
         symbol      => $underlying->symbol,
