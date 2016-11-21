@@ -12,7 +12,8 @@ use BOM::MarketData;
 use BOM::MarketData::Types;
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData qw(create_underlying);
-use BOM::Market::AggTicks;
+#use BOM::Market::AggTicks;
+use Data::Resample::ResampleCache;
 use Date::Utility;
 
 # last tick time
@@ -568,14 +569,17 @@ subtest 'general' => sub {
     qr/is required/, 'throws error if underlying is not specified';
 };
 
-my $mock_at = Test::MockModule->new('BOM::Market::AggTicks');
+#my $mock_at = Test::MockModule->new('BOM::Market::AggTicks');
+my $mock_at = Test::MockModule->new('Data::Resample::ResampleCache');
 
 my $mock_emp = Test::MockModule->new('BOM::MarketData::VolSurface::Empirical');
 $mock_emp->mock('long_term_vol', sub { 0.11 });
 
 subtest 'error check' => sub {
     lives_ok {
-        $mock_at->mock('retrieve', sub { [] });
+        #$mock_at->mock('retrieve', sub { [] });
+        $mock_at->mock('resample_cache_get', sub { [] });
+
         my $vs = BOM::MarketData::VolSurface::Empirical->new(underlying => 'frxUSDJPY');
         is $vs->get_volatility({
                 current_epoch         => $now->epoch,
@@ -584,13 +588,23 @@ subtest 'error check' => sub {
             ),
             $vs->long_term_prediction, 'vol is long term prediction';
         ok !$vs->error, 'no error even if there\'s no ticks';
+        #$mock_at->mock(
+        #    'retrieve',
+        #    sub {
+        #        [map { $ticks->[$_] } (0 .. 3)];
+        #    });
+        #$mock_at->mock(
+        #    'retrieve',
+        #    sub {
+        #        [map { $ticks->[$_] } (0 .. 46)];
+        #    });
         $mock_at->mock(
-            'retrieve',
+            'resample_cache_get',
             sub {
                 [map { $ticks->[$_] } (0 .. 3)];
             });
         $mock_at->mock(
-            'retrieve',
+            'resample_cache_get',
             sub {
                 [map { $ticks->[$_] } (0 .. 46)];
             });
@@ -603,8 +617,15 @@ subtest 'error check' => sub {
             0.0944859248028258, 'vol isnt long term vol';
         ok !$vs->error, 'no error is set when we have less than 80% ticks to calculate volatility';
         $vs->error('');
+        #$mock_at->mock(
+        #    'retrieve',
+        #    sub {
+        #        my @stale_ticks = map { $ticks->[0] } (0 .. 21);
+        #        my @normal_ticks = map { $ticks->[$_] } (22 .. 38);
+        #        return [@stale_ticks, @normal_ticks];
+        #    });
         $mock_at->mock(
-            'retrieve',
+            'resample_cache_get',
             sub {
                 my @stale_ticks = map { $ticks->[0] } (0 .. 21);
                 my @normal_ticks = map { $ticks->[$_] } (22 .. 38);
@@ -618,13 +639,21 @@ subtest 'error check' => sub {
             0.0829267162762738, 'calculate vols with remaining ticks.';
         ok !$vs->error, 'no error if we have stale ticks in cache';
         $vs->error('');
+        #$mock_at->mock(
+        #    'retrieve',
+        #    sub {
+        #        my @stale_ticks = map { $ticks->[0] } (10 .. 21);
+        #        my @normal_ticks = map { $ticks->[$_] } (22 .. 38);
+        #        return [(map { $ticks->[$_] } (0 .. 9)), @stale_ticks, @normal_ticks];
+        #    });
         $mock_at->mock(
-            'retrieve',
+            'resample_cache_get',
             sub {
                 my @stale_ticks = map { $ticks->[0] } (10 .. 21);
                 my @normal_ticks = map { $ticks->[$_] } (22 .. 38);
                 return [(map { $ticks->[$_] } (0 .. 9)), @stale_ticks, @normal_ticks];
             });
+
         is $vs->get_volatility({
                 current_epoch         => $now->epoch,
                 seconds_to_expiration => 900
@@ -633,8 +662,13 @@ subtest 'error check' => sub {
             0.0829267162762738, 'calculate vols with remaining ticks if there\'s stale ticks in between good ticks.';
         ok !$vs->error, 'no error if we have stale ticks in between cache.';
         $vs->error('');
+        #$mock_at->mock(
+        #    'retrieve',
+        #    sub {
+        #        return [(map { $ticks->[0] } (0 .. 9))];
+        #    });
         $mock_at->mock(
-            'retrieve',
+            'resample_cache_get',
             sub {
                 return [(map { $ticks->[0] } (0 .. 9))];
             });
@@ -646,14 +680,23 @@ subtest 'error check' => sub {
             $vs->long_term_prediction, 'use long term vol when there is less than 5 good ticks';
         ok !$vs->error, 'no error if we have no good ticks';
         $vs->error('');
+        #$mock_at->mock(
+        #    'retrieve',
+        #    sub {
+        #        return [(
+        #                map {
+        #                    { %{$ticks->[$_]}, quote => $ticks->[0]->{quote} }
+        #                } (0 .. 9))];
+        #    });
         $mock_at->mock(
-            'retrieve',
+            'resample_cache_get',
             sub {
                 return [(
                         map {
                             { %{$ticks->[$_]}, quote => $ticks->[0]->{quote} }
                         } (0 .. 9))];
             });
+
         is $vs->get_volatility({
                 current_epoch         => $now->epoch,
                 seconds_to_expiration => 900
@@ -672,7 +715,9 @@ subtest 'error check' => sub {
 };
 
 subtest 'seasonalized volatility' => sub {
-    $mock_at->mock('retrieve', sub { $ticks });
+    #$mock_at->mock('retrieve', sub { $ticks });
+    $mock_at->mock('resample_cache_get', sub { $ticks });
+
     lives_ok {
         my $vs = BOM::MarketData::VolSurface::Empirical->new(underlying => 'frxUSDJPY');
         is $vs->get_volatility({
