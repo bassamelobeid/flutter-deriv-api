@@ -229,8 +229,8 @@ sub _build_ticks_for_trend {
 
     my $remaining_interval = Time::Duration::Concise::Localize->new(interval => $lookback_secs);
 
-    return $self->tick_source->resample_cache_get({
-        underlying => $bet->underlying,
+    return $self->tick_source->tick_cache_get({
+        symbol => $bet->underlying,
         #interval     => $remaining_interval,
         start_epoch  => $bet->date_pricing->epoch - $remaining_interval->seconds,
         ending_epoch => $bet->date_pricing->epoch,
