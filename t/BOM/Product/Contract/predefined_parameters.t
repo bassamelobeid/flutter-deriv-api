@@ -10,7 +10,7 @@ use Test::FailWarnings;
 use BOM::MarketData qw(create_underlying);
 use List::Util qw(first);
 use Date::Utility;
-use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods get_predefined_offerings);
+use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods get_predefined_offerings update_predefined_highlow);
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -221,6 +221,31 @@ subtest 'predefined barriers' => sub {
         cmp_bag($offering->{available_barriers}, $test->{available_barriers}, 'available barriers for ' . $testname);
         cmp_bag($offering->{expired_barriers},    $test->{expired_barriers},   'expired barriers for ' . $testname);
     }
+};
+
+subtest 'update_predefined_highlow' => sub {
+    my $now = Date::Utility->new;
+    my $symbol = 'frxUSDJPY';
+    SKIP: {
+        skip 'non trading day', 4, unless create_underlying($symbol)->calendar->trades_on($now);
+        setup_ticks($symbol,[[$now->minus_time_interval('100d'), 100], [$now, 100], [$now->plus_time_interval('10s'), 101]]);
+        my $new_tick = {
+            symbol => $symbol,
+            epoch => $now->plus_time_interval('30s')->epoch,
+            price => 101.001
+        };
+        my $tp = generate_trading_periods($symbol);
+        ok update_predefined_highlow($new_tick), 'updated highlow';
+        my $offering = get_predefined_offerings($symbol);
+        my $touch = first {$_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M'} @$offering;
+        ok !scalar(@{$touch->{expired_barriers}}), 'no expired barrier detected';
+        $new_tick->{epoch} += 1;
+        $new_tick->{price} = 115;
+        ok update_predefined_highlow($new_tick), 'next update';
+        $offering = get_predefined_offerings($symbol);
+        $touch = first {$_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M'} @$offering;
+        ok scalar(@{$touch->{expired_barriers}}), 'expired barrier detected';
+    };
 };
 
 sub setup_ticks {

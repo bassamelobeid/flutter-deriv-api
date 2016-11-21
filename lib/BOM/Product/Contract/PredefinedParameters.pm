@@ -6,6 +6,7 @@ use warnings;
 use Exporter qw(import);
 our @EXPORT_OK = qw(get_predefined_offerings get_trading_periods generate_trading_periods update_predefined_highlow seconds_to_period_expiration);
 
+use JSON qw(to_json);
 use Time::HiRes;
 use Date::Utility;
 use List::Util qw(first min max);
@@ -122,7 +123,7 @@ sub generate_trading_periods {
     push @trading_periods, @intraday_periods if @intraday_periods;
 
     my $ttl = seconds_to_period_expiration($date);
-    BOM::System::Chronicle::get_chronicle_writer()->set($cache_namespace, $key, \@trading_periods, $date, $ttl);
+    BOM::System::Chronicle::get_chronicle_writer()->set($cache_namespace, $key, [grep { defined } @trading_periods], $date, $ttl);
 
     return \@trading_periods;
 }
@@ -138,33 +139,32 @@ sub update_predefined_highlow {
 
     my $underlying = create_underlying($tick_data->{symbol});
     my $now        = $tick_data->{epoch};
-    my $offerings  = get_predefined_offerings($underlying->symbol);
+    my @periods    = @{get_trading_periods($underlying->symbol)};
     my $new_quote  = $tick_data->{price};
 
-    return unless @$offerings;
+    return unless @periods;
 
-    foreach my $offering (@$offerings) {
-        next if ($offering->{barrier_category} ne 'american');
-        my $period          = $offering->{trading_period};
-        my $key             = join '_', ('highlow', $underlying->symbol, $period->{date_start}->{epoch}, $period->{date_expiry}->{epoch});
+    foreach my $period (@periods) {
+        my $key = join '_', ('highlow', $underlying->symbol, $period->{date_start}->{epoch}, $period->{date_expiry}->{epoch});
         my $current_highlow = BOM::System::Chronicle::get_chronicle_reader()->get($cache_namespace, $key);
         my ($new_high, $new_low);
 
         if ($current_highlow) {
             my ($high, $low) = map { $current_highlow->[$_] } (0, 1);
-            $new_high = max($tick_data->{price}, $high);
-            $new_low = min($tick_data->{price}, $low);
+            $new_high = max($new_quote, $high);
+            $new_low = min($new_quote, $low);
         } else {
             my $db_highlow = $underlying->get_high_low_for_period({
                 start => $period->{date_start}->{epoch},
                 end   => $now,
             });
-            $new_high = max($tick_data->{price}, $db_highlow->{high});
-            $new_low = min($tick_data->{price}, $db_highlow->{low});
+            $new_high = max($new_quote, $db_highlow->{high});
+            $new_low = min($new_quote, $db_highlow->{low});
         }
 
         my $ttl = max(0, $period->{date_expiry}->{epoch} - $now);
-        BOM::System::Chronicle::get_chronicle_writer()->set($cache_namespace, $key, [$new_high, $new_low], Date::Utility->new, $ttl);
+        # not using chronicle here because we don't want to save historical highlow data
+        BOM::System::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json([$new_high, $new_low]), 'PX', $ttl);
     }
 
     return 1;
