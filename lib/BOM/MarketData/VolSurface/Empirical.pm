@@ -14,7 +14,6 @@ use YAML::XS qw(LoadFile);
 use Quant::Framework::EconomicEventCalendar;
 
 use BOM::MarketData::Fetcher::VolSurface;
-#use BOM::Market::AggTicks;
 use BOM::MarketData::Types;
 
 use Data::Resample::ResampleCache;
@@ -44,13 +43,6 @@ sub get_volatility {
     my $interval = Time::Duration::Concise->new(interval => max(900, $args->{seconds_to_expiration}) . 's');
     my $fill_cache = $args->{fill_cache} // 1;
 
-    #my $at    = BOM::Market::AggTicks->new;
-    #my $ticks = $at->retrieve({
-    #    underlying   => $underlying,
-    #    interval     => $interval,
-    #    ending_epoch => $args->{current_epoch},
-    #    fill_cache   => $fill_cache,
-    #});
     my $resample_cache = Data::Resample::ResampleCache->new({
         redis => Cache::RedisDB->redis,
     });
