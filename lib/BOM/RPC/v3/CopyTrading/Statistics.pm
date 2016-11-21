@@ -9,6 +9,7 @@ use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Context qw (localize);
+use BOM::System::RedisReplicated;
 
 use Performance::Probability qw(get_performance_probability);
 
@@ -138,26 +139,26 @@ sub trader_statistics {
 
     # Calculate common trading statistics for multiple accounts
     my $trades_breakdown = {};
-    my $trades_statistic = {};
-    my ($total_trades, $avg_duration, $trades_profitable);
+
+    my ($total_trades, $avg_duration, $avg_profit, $avg_loss, $trades_profitable);
 
     my $txn_dm = BOM::Database::DataMapper::Transaction->new({db => $db});
 
     # trades average duration
-    $avg_duration = $txn_dm->get_trades_avg_duration($trader_accounts);
-    ($avg_duration) = ($avg_duration =~ /^(\d{2}:\d{2}:\d{2})(\.)?/);
-    $avg_duration = Date::Utility->new('2000-01-01 ' . $avg_duration)->seconds_after_midnight if $avg_duration;
+    $avg_duration = sprintf("%u", BOM::System::RedisReplicated::redis_read->get("COPY_TRADING_AVG_DURATION:$trader_id") || 0);
 
     # trades profitable && total trades count
-    $trades_statistic  = $txn_dm->get_trades_profitable($trader_accounts);
-    $total_trades      = $trades_statistic->{'win'}->{count} + $trades_statistic->{'loss'}->{count};
-    $trades_profitable = $trades_statistic->{'win'}->{count} / ($total_trades || 1);
+    my $win_trades  = BOM::System::RedisReplicated::redis_read->get("COPY_TRADING_PROFITABLE:$trader_id:win")  || 0;
+    my $loss_trades = BOM::System::RedisReplicated::redis_read->get("COPY_TRADING_PROFITABLE:$trader_id:loss") || 0;
+    $total_trades      = $win_trades + $loss_trades;
+    $trades_profitable = sprintf("%.4f", $win_trades / ($total_trades || 1));
+    $avg_profit        = sprintf("%.4f", BOM::System::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:win") || 0);
+    $avg_loss          = sprintf("%.4f", BOM::System::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:loss") || 0);
 
     # trades_breakdown
-    my $symbols_breakdown = $txn_dm->get_symbols_breakdown($trader_accounts);
-    for my $symbol_data (@$symbols_breakdown) {
-        my $symbol = $symbol_data->[0];
-        my $trades = $symbol_data->[1];
+    my %symbols_breakdown = @{BOM::System::RedisReplicated::redis_write->hgetall("COPY_TRADING_SYMBOLS_BREAKDOWN:$trader_id")};
+    for my $symbol (keys %symbols_breakdown) {
+        my $trades = $symbols_breakdown{$symbol};
         $trades_breakdown->{create_underlying($symbol)->market->name} += $trades;
     }
     for my $market (keys %$trades_breakdown) {
@@ -173,10 +174,10 @@ sub trader_statistics {
         performance_probability         => $performance_probability,
         # trading
         total_trades      => $total_trades,
-        trades_profitable => sprintf("%.4f", $trades_profitable),
+        trades_profitable => $trades_profitable,
         avg_duration      => $avg_duration,
-        avg_profit        => sprintf("%.4f", $trades_statistic->{'win'}->{avg}),
-        avg_loss          => sprintf("%.4f", $trades_statistic->{'loss'}->{avg}),
+        avg_profit        => $avg_profit,
+        avg_loss          => $avg_loss,
         trades_breakdown  => $trades_breakdown,
         # copiers
         copiers => 0,    # TODO
