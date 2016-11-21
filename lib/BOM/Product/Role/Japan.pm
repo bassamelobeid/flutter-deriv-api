@@ -129,7 +129,7 @@ around _validate_barrier_type => sub {
     }
 
     return;
-    }
+};
 
 sub _subvalidate_single_barrier {
     my $self = shift;
