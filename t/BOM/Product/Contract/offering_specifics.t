@@ -12,6 +12,8 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
 use Cache::RedisDB;
+use BOM::Market::AggTicks;
+
 BOM::Market::AggTicks->new->flush();
 
 my $now = Date::Utility->new('2016-09-22');
