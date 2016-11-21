@@ -22,7 +22,7 @@ use Postgres::FeedDB::Spot::Tick;
 use Quant::Framework::CorrelationMatrix;
 
 use Price::Calculator;
-use BOM::Product::Pricing::Engine::EuropeanDigitalSlope;
+use Pricing::Engine::EuropeanDigitalSlope;
 use Pricing::Engine::TickExpiry;
 
 use BOM::System::Chronicle;
@@ -530,7 +530,7 @@ sub _build_greek_engine {
 sub _build_pricing_engine_name {
     my $self = shift;
 
-    my $engine_name = $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'BOM::Product::Pricing::Engine::EuropeanDigitalSlope';
+    my $engine_name = $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'Pricing::Engine::EuropeanDigitalSlope';
 
     if ($self->tick_expiry) {
         my @symbols = create_underlying_db->get_symbols_for(
@@ -568,11 +568,23 @@ sub _match_symbol {
     return;
 }
 
-sub _build_pricing_engine {
+sub _market_convention {
     my $self = shift;
 
-    my $pricing_engine;
+    return {
+        get_rollover_time => sub {
+            my $when = shift;
+            return Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($when);
+        },
+    };
+}
+
+sub _engine_ask_probability {
+    my $self = shift;
+
     if ($self->new_interface_engine) {
+        my %pricing_parameters;
+
         if($self->pricing_engine_name eq 'Pricing::Engine::Digits') {
             %pricing_parameters = (
                 strikes           => $self->barrier ? $self->barrier->as_absolute : undef,
@@ -607,8 +619,17 @@ sub _build_pricing_engine {
                 economic_events   => $self->_generate_market_data->{economic_events},
             );
         } elsif($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
+            my $construct_args = {
+                symbol           => $self->underlying->market->name,
+                for_date         => $self->underlying->for_date,
+                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
+            };
+            my $matrices = Quant::Framework::CorrelationMatrix->new($construct_args);
+
             %pricing_parameters = (
+                correlation_matrices => $matrices->document,
                 contract_type        => $self->pricing_code,
+                trading_calendar     => $self->calendar,
                 spot                 => $self->pricing_spot,
                 strikes              => [grep { $_ } values %{$self->barriers_for_pricing}],
                 date_start           => $self->effective_start,
@@ -623,6 +644,8 @@ sub _build_pricing_engine {
                 priced_with          => $self->priced_with,
                 underlying_symbol    => $self->underlying->symbol,
                 volsurface           => $self->volsurface->surface,
+                volsurface_recorded_date => $self->volsurface->recorded_date,
+                market_convention    => $self->_market_convention,
             );
         } else {
             die "Unknown pricing engine: " . $self->pricing_engine_name;
@@ -632,7 +655,21 @@ sub _build_pricing_engine {
             die "Missing pricing parameters for engine " . $self->pricing_engine_name . " - " . join ',', @missing_parameters;
         }
 
-        $pricing_engine = $self->pricing_engine_name->new(%pricing_parameters);
+        my $package = $self->pricing_engine_name . '::ask_probability';
+        my $coderef = \&$package;
+        $DB::single=1;
+        return $coderef->(\%pricing_parameters);
+    }
+
+    return;
+}
+
+sub _build_pricing_engine {
+    my $self = shift;
+
+    my $pricing_engine;
+    if ($self->new_interface_engine) {
+        return;
     } else {
         $pricing_engine = $self->pricing_engine_name->new({
             bet                     => $self,
@@ -1032,7 +1069,7 @@ my $pc_params_setters = {
                 name        => 'theo_probability',
                 description => 'theoretical value of a contract',
                 set_by      => $self->pricing_engine_name,
-                base_amount => $self->pricing_engine->ask_probability,
+                base_amount => $self->_engine_ask_probability,
                 minimum     => 0,
                 maximum     => 1,
             });
@@ -1312,7 +1349,7 @@ sub _build_risk_markup {
     my $self = shift;
 
     my $base_amount = 0;
-    if ($self->pricing_engine->can('risk_markup')) {
+    if ($self->pricing_engine and $self->pricing_engine->can('risk_markup')) {
         $base_amount = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->pricing_engine->risk_markup->amount;
     }
 
@@ -1764,7 +1801,7 @@ sub _build_new_interface_engine {
         'Pricing::Engine::Asian'                => 1,
         'Pricing::Engine::Digits'               => 1,
         'Pricing::Engine::TickExpiry'           => 1,
-        'BOM::Product::Pricing::Engine::EuropeanDigitalSlope' => 1,
+        'Pricing::Engine::EuropeanDigitalSlope' => 1,
     );
 
     return $engines{$self->pricing_engine_name} // 0;
