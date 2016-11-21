@@ -1888,7 +1888,7 @@ sub _market_data {
             #return BOM::Market::AggTicks->new->retrieve($args);
             return Data::Resample::ResampleCache->new({
                     redis => Cache::RedisDB->redis,
-                })->resample_cache_get({symbol => $underlying_symbol});
+                })->resample_cache_get({symbol => $underlying_symbol,});
         },
         get_overnight_tenor => sub {
             return $volsurface->_ON_day;
