@@ -5,7 +5,6 @@ use Moose;
 with 'App::Base::Daemon';
 
 use BOM::Product::Contract::PredefinedParameters qw(update_predefined_highlow);
-use BOM::System::RedisReplicated;
 
 use JSON;
 
