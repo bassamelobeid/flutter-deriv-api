@@ -30,7 +30,7 @@ sub available_contracts_for_symbol {
     if ($calendar->trades_on($now)) {
         $open      = $calendar->opening_on($now)->epoch;
         $close     = $calendar->closing_on($now)->epoch;
-        $offerings = get_predefined_offerings($underlying);
+        $offerings = get_predefined_offerings($underlying->symbol, $underlying->for_date);
     }
 
     return {

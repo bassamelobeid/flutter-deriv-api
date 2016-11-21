@@ -4,8 +4,9 @@ use strict;
 use warnings;
 
 use Exporter qw(import);
-our @EXPORT_OK = qw(generate_predefined_offerings get_predefined_offerings update_predefined_highlow get_predefined_highlow);
+our @EXPORT_OK = qw(get_predefined_offerings get_trading_periods generate_trading_periods update_predefined_highlow seconds_to_period_expiration);
 
+use Time::HiRes;
 use Date::Utility;
 use List::Util qw(first min max);
 use Math::CDF qw(qnorm);
@@ -19,12 +20,125 @@ use BOM::Platform::Runtime;
 
 my $cache_namespace = 'predefined_parameters';
 
+=head2 get_predefined_offerings
+
+Returns an array reference of predefined product offerings for an underlying symbol.
+Each offering has the following additional keys:
+ - available_barriers
+ - expired_barriers
+ - trading_period
+
+->get_predefined_offerings('frxUSDJPY'); # get latest predefined offerings
+->get_predefined_offerings('frxUSDJPY', $date); # historical predefined offerings
+
+=cut
+
+sub get_predefined_offerings {
+    my ($symbol, $date) = @_;
+
+    my @offerings = _get_offerings($symbol);
+    my $underlying = create_underlying($symbol, $date);
+    $date //= Date::Utility->new;
+
+    my $new = _apply_predefined_parameters($date, $underlying, \@offerings);
+
+    return $new if $new and @$new;
+    return [];
+}
+
+=head2 get_trading_periods
+
+Returns an array reference of trading period for an underlying symbol from redis cache.
+Returns an empty array reference if request period is not found in cache.
+
+Each trading period a hash reference with  the following keys:
+ - date_start
+ - date_expiry
+ - duration
+
+->get_trading_periods('frxUSDJPY'); # get latest trading period
+->get_trading_periods('frxUSDJPY', $date); # historical trading period
+
+=cut
+
+sub get_trading_periods {
+    my ($symbol, $date) = @_;
+
+    my $underlying = create_underlying($symbol, $date);
+    $date //= Date::Utility->new;
+
+    my $key    = join '_', ('trading_period', $underlying->symbol, $date->date, $date->hour);
+    my $reader = BOM::System::Chronicle::get_chronicle_reader($underlying->for_date);
+    my $cache  = $underlying->for_date ? $reader->get_for($cache_namespace, $key, $underlying->for_date) : $reader->get($cache_namespace, $key);
+
+    return $cache // [];
+}
+
+=head2 generate_trading_periods
+
+Generates and returns an array reference of trading period for an underlying symbol.
+
+Each trading period a hash reference with  the following keys:
+ - date_start
+ - date_expiry
+ - duration
+
+->generate_trading_periods('frxUSDJPY'); # generates latest trading period
+->generate_trading_periods('frxUSDJPY', $date); # generates trading period based on historical conditions
+
+Generation algorithm are based on the Japan regulators requirements:
+Intraday contract:
+1) Start at 15 min before closest even hour and expires with duration of 2 hours and 15 min.
+   Mon-Friday
+   00:00-02:00, 01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00 <break>23:45-02:00, 01:45-04:00,
+
+   For AUDJPY,USDJPY,AUDUSD, it will be:
+    00:00-02:00,01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00 <break> 21:45:00-23:59:59, 23:45-02:00,01:45-04:00, 03:45-06:00
+
+
+2) Start at 00:45 and expires with durarion of 5 hours and 15 min and spaces the next available trading window by 4 hours.
+   Example: 00:45-06:00 ; 04:45-10:00 ; 08:45-14:00 ; 12:45-18:00
+
+
+Daily contract:
+1) Daily contract: Start at 00:00GMT and end at 23:59:59GMT of the day
+2) Weekly contract: Start at 00:00GMT first trading day of the week and end at the close of last trading day of the week
+3) Monthly contract: Start at 00:00GMT of the first trading day of the calendar month and end at the close of the last trading day of the month
+4) Quarterly contract: Start at 00:00GMT of the first trading day of the quarter and end at the close of the last trading day of the quarter.
+
+=cut
+
+sub generate_trading_periods {
+    my ($symbol, $date) = @_;
+
+    my $underlying = create_underlying($symbol, $date);
+    $date //= Date::Utility->new;
+
+    return [] unless $underlying->calendar->trades_on($date);
+
+    my $key = join '_', ('trading_period', $underlying->symbol, $date->date, $date->hour);
+    my @trading_periods = _get_daily_trading_window($underlying, $date);
+    my @intraday_periods = _get_intraday_trading_window($underlying, $date);
+    push @trading_periods, @intraday_periods if @intraday_periods;
+
+    my $ttl = seconds_to_period_expiration($date);
+    BOM::System::Chronicle::get_chronicle_writer()->set($cache_namespace, $key, \@trading_periods, $date, $ttl);
+
+    return \@trading_periods;
+}
+
+=head2 update_predefined_highlow
+
+For a given tick, it updates a list of relevant high-low period.
+
+=cut
+
 sub update_predefined_highlow {
     my $tick_data = shift;
 
     my $underlying = create_underlying($tick_data->{symbol});
     my $now        = $tick_data->{epoch};
-    my $offerings  = get_predefined_offerings($underlying);
+    my $offerings  = get_predefined_offerings($underlying->symbol);
     my $new_quote  = $tick_data->{price};
 
     return unless @$offerings;
@@ -56,7 +170,7 @@ sub update_predefined_highlow {
     return 1;
 }
 
-sub get_predefined_highlow {
+sub _get_predefined_highlow {
     my ($underlying, $period) = @_;
 
     if ($underlying->for_date) {
@@ -75,100 +189,51 @@ sub get_predefined_highlow {
     return ();
 }
 
-=head2 generate_predefined_offerings
+=head2 seconds_to_period_expiration
 
-We set the predefined trading periods based on Japan requirement:
-Intraday contract:
-1) Start at 15 min before closest even hour and expires with duration of 2 hours and 15 min.
-   Mon-Friday
-   00:00-02:00, 01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00 <break>23:45-02:00, 01:45-04:00, 
+Returns the seconds to expiry of a trading period.
 
-   For AUDJPY,USDJPY,AUDUSD, it will be 
-    00:00-02:00,01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00<break> 21:45:00 -23:59:59, 23:45-02:00,01:45-04:00, 03:45-06:00
+A trading period expires at every XX:45 and XX:00.
 
+So seconds_to_period_expiration is explained in minutes for comfort :
+hh:00 => seconds_to_period_expiration = 45 min
+hh:03 => seconds_to_period_expiration = 42 min
+hh:29 => seconds_to_period_expiration = 16 min
+hh:44 => seconds_to_period_expiration = 1 min
+hh:45 => seconds_to_period_expiration = 15 min
+hh:54 => seconds_to_period_expiration = 6 min
+hh:59 => seconds_to_period_expiration = 1 min
+hh:00 => seconds_to_period_expiration = 45 min
 
-3) Start at 00:45 and expires with durarion of 5 hours and 15 min and spaces the next available trading window by 4 hours.
-   Example: 00:45-06:00 ; 04:45-10:00 ; 08:45-14:00 ; 12:45-18:00
-
-
-Daily contract:
-1) Daily contract: Start at 00:00GMT and end at 23:59:59GMT of the day
-2) Weekly contract: Start at 00:00GMT first trading day of the week and end at the close of last trading day of the week
-3) Monthly contract: Start at 00:00GMT of the first trading day of the calendar month and end at the close of the last trading day of the month
-4) Quarterly contract: Start at 00:00GMT of the first trading day of the quarter and end at the close of the last trading day of the quarter.
-
-To set the predefined barriers on each trading period.
-We do a binary search to find out the boundaries barriers associated with theo_prob [0.02,0.98] of a digital call,
-then split into 20 barriers that within this boundaries. The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
 =cut
 
-sub generate_predefined_offerings {
-    my ($symbol, $for_date) = @_;
+sub seconds_to_period_expiration {
+    my $from_date = shift;
 
-    my @offerings = _get_offerings($symbol);
-    my $underlying = create_underlying($symbol, $for_date);
+    my $minute = $from_date->minute;
 
-    $for_date = Date::Utility->new unless $for_date;
+    my $next_gen_epoch =
+        ($minute < 45)
+        ? Date::Utility->new->today->plus_time_interval($from_date->hour . 'h45m')->epoch
+        : Date::Utility->new->today->plus_time_interval($from_date->hour + 1 . 'h')->epoch;
 
-    return [] unless $underlying->calendar->trades_on($for_date);
-
-    # we perform two things here:
-    # - split offerings into applicable trading periods.
-    # - calculate barriers.
-    my @new_offerings = _apply_predefined_parameters($for_date, $underlying, \@offerings);
-
-    my $key = join '_', ('offerings', $underlying->symbol, $for_date->date, $for_date->hour);
-    BOM::System::Chronicle::get_chronicle_writer()->set($cache_namespace, $key, \@new_offerings, $for_date);
-
-    return \@new_offerings;
+    return $next_gen_epoch - Time::HiRes::time;
 }
 
-sub get_predefined_offerings {
-    my $underlying = shift;
-
-    my $for_date = $underlying->for_date // Date::Utility->new;
-    my $key       = join '_', ('offerings', $underlying->symbol, $for_date->date, $for_date->hour);
-    my $reader    = BOM::System::Chronicle::get_chronicle_reader($underlying->for_date);
-    my $offerings = $underlying->for_date ? $reader->get_for($cache_namespace, $key, $for_date) : $reader->get($cache_namespace, $key);
-
-    foreach my $offering (@$offerings) {
-        my $period           = $offering->{trading_period};
-        my @expired_barriers = ();
-        if ($offering->{barrier_category} eq 'american') {
-            my ($high, $low) = get_predefined_highlow($underlying, $period);
-
-            foreach my $barrier (@{$offering->{available_barriers}}) {
-                my $ref_barrier = (ref $barrier ne 'ARRAY') ? [$barrier] : $barrier;
-                my @expired = grep { $_ < $high && $_ > $low } @$ref_barrier;
-                push @expired_barriers, $barrier if @expired;
-            }
-        }
-        $offering->{expired_barriers} = \@expired_barriers;
-    }
-
-    return $offerings // [];
-}
-
-sub _get_trading_periods {
-    my ($for_date, $underlying) = @_;
-
-    my @trading_periods = _get_daily_trading_window($underlying, $for_date);
-    my @intraday_periods = _get_intraday_trading_window($underlying, $for_date);
-    push @trading_periods, @intraday_periods if @intraday_periods;
-
-    return \@trading_periods;
-}
-
+# we perform three things here:
+# - split offerings into applicable trading periods.
+# - calculate barriers.
+# - set expired barriers.
 sub _apply_predefined_parameters {
-    my ($for_date, $underlying, $offerings) = @_;
+    my ($date, $underlying, $offerings) = @_;
 
-    my $trading_periods = _get_trading_periods($for_date, $underlying);
+    my $trading_periods = get_trading_periods($underlying->symbol, $underlying->for_date);
 
     return () unless @$trading_periods;
 
-    my $close_epoch = $underlying->calendar->closing_on($for_date)->epoch;
+    my $close_epoch = $underlying->calendar->closing_on($date)->epoch;
     # full trading seconds
-    my $trading_seconds = $close_epoch - $for_date->truncate_to_day->epoch;
+    my $trading_seconds = $close_epoch - $date->truncate_to_day->epoch;
 
     my @new_offerings;
     foreach my $offering (@$offerings) {
@@ -194,27 +259,48 @@ sub _apply_predefined_parameters {
             my $trading_duration = $date_expiry - $date_start;
             if ($trading_duration < $minimum_contract_duration or $trading_duration > $maximum_contract_duration) {
                 next;
-            } elsif ($for_date->day_of_week == 5
+            } elsif ($date->day_of_week == 5
                 and $trading_duration < 86400
                 and ($date_expiry > $close_epoch or $date_start > $close_epoch))
             {
                 next;
             } else {
                 my $available_barriers = _calculate_available_barriers($underlying, $offering, $trading_period);
+                my $expired_barriers =
+                    ($offering->{barrier_category} eq 'american') ? _get_expired_barriers($underlying, $available_barriers, $trading_period) : [];
 
                 push @new_offerings,
                     +{
                     %{$offering},
                     trading_period     => $trading_period,
-                    available_barriers => $available_barriers
+                    available_barriers => $available_barriers,
+                    expired_barriers   => $expired_barriers,
                     };
             }
         }
     }
 
-    return @new_offerings;
+    return \@new_offerings;
 }
 
+sub _get_expired_barriers {
+    my ($underlying, $available_barriers, $trading_period) = @_;
+
+    my ($high, $low) = _get_predefined_highlow($underlying, $trading_period);
+
+    my @expired_barriers;
+    foreach my $barrier (@$available_barriers) {
+        my $ref_barrier = (ref $barrier ne 'ARRAY') ? [$barrier] : $barrier;
+        my @expired = grep { $_ < $high && $_ > $low } @$ref_barrier;
+        push @expired_barriers, $barrier if @expired;
+    }
+
+    return \@expired_barriers;
+}
+
+#To set the predefined barriers on each trading period.
+#We do a binary search to find out the boundaries barriers associated with theo_prob [0.02,0.98] of a digital call,
+#then split into 20 barriers that within this boundaries. The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
 sub _calculate_available_barriers {
     my ($underlying, $offering, $trading_period) = @_;
 
@@ -294,10 +380,10 @@ sub _get_strike_from_call_bs_price {
 # Hence, we will generate the window at HH::45 (HH is the predefined trading hour) to include any new trading window and will also generate the trading window again at the next HH:00 to remove any expired trading window.
 
 sub _get_intraday_trading_window {
-    my ($underlying, $for_date) = @_;
+    my ($underlying, $date) = @_;
 
-    my $start_of_day = $for_date->truncate_to_day;
-    my ($hour, $minute, $date_str) = ($for_date->hour, $for_date->minute, $for_date->date);
+    my $start_of_day = $date->truncate_to_day;
+    my ($hour, $minute, $date_str) = ($date->hour, $date->minute, $date->date);
 
     $hour = $minute < 45 ? $hour : $hour + 1;
     my $even_hour = $hour - ($hour % 2);
@@ -310,17 +396,17 @@ sub _get_intraday_trading_window {
     my @intraday_windows;
 
     my $window_2h = _get_intraday_window({
-        now        => $for_date,
+        now        => $date,
         date_start => $start_of_day->plus_time_interval($even_hour . 'h'),
         duration   => '2h'
     });
 
     # Previous 2 hours contract should be always available in the first 15 minutes of the next one
     # (except start of the trading day and also the first window after the break)
-    if (($for_date->epoch - $window_2h->{date_start}->{epoch}) / 60 < 15 && $even_hour - 2 >= 0 && $even_hour != 22) {
+    if (($date->epoch - $window_2h->{date_start}->{epoch}) / 60 < 15 && $even_hour - 2 >= 0 && $even_hour != 22) {
         push @intraday_windows,
             _get_intraday_window({
-                now        => $for_date,
+                now        => $date,
                 date_start => $start_of_day->plus_time_interval(($even_hour - 2) . 'h'),
                 duration   => '2h'
             });
@@ -332,7 +418,7 @@ sub _get_intraday_trading_window {
     $odd_hour = $odd_hour % 4 == 1 ? $odd_hour : $odd_hour - 2;
 
     if ($hour > 0 and $hour < 18 and $odd_hour != 21) {
-        push @intraday_windows, map { _get_intraday_window({now => $for_date, date_start => $_, duration => '5h'}) }
+        push @intraday_windows, map { _get_intraday_window({now => $date, date_start => $_, duration => '5h'}) }
             grep { $_->is_after($start_of_day) }
             map { $start_of_day->plus_time_interval($_ . 'h') } ($odd_hour, $odd_hour - 4);
     }
@@ -347,15 +433,15 @@ To get the end of day, weekly, monthly , quarterly, and yearly trading window.
 =cut
 
 sub _get_daily_trading_window {
-    my ($underlying, $for_date) = @_;
+    my ($underlying, $date) = @_;
 
     my $calendar = $underlying->calendar;
-    my $now_dow  = $for_date->day_of_week;
-    my $now_year = $for_date->year;
+    my $now_dow  = $date->day_of_week;
+    my $now_year = $date->year;
     my @daily_duration;
 
     # weekly contract
-    my $first_day_of_week      = $for_date->truncate_to_day->minus_time_interval($now_dow - 1 . 'd');
+    my $first_day_of_week      = $date->truncate_to_day->minus_time_interval($now_dow - 1 . 'd');
     my $first_day_of_next_week = $first_day_of_week->plus_time_interval('7d');
     push @daily_duration,
         _get_trade_date_of_daily_window({
@@ -366,8 +452,8 @@ sub _get_daily_trading_window {
         });
 
     # monthly contract
-    my $first_day_of_month      = Date::Utility->new('1-' . $for_date->month_as_string . '-' . $now_year);
-    my $first_day_of_next_month = Date::Utility->new('1-' . $for_date->months_ahead(1));
+    my $first_day_of_month      = Date::Utility->new('1-' . $date->month_as_string . '-' . $now_year);
+    my $first_day_of_next_month = Date::Utility->new('1-' . $date->months_ahead(1));
     push @daily_duration,
         _get_trade_date_of_daily_window({
             current_date_start => $first_day_of_month,
@@ -377,7 +463,7 @@ sub _get_daily_trading_window {
         });
 
     # quarterly contract
-    my $current_quarter_month     = $for_date->quarter_of_year * 3 - 2;
+    my $current_quarter_month     = $date->quarter_of_year * 3 - 2;
     my $first_day_of_quarter      = Date::Utility->new($now_year . "-$current_quarter_month-01");
     my $first_day_of_next_quarter = Date::Utility->new('1-' . $first_day_of_quarter->months_ahead(3));
     push @daily_duration,
@@ -389,8 +475,8 @@ sub _get_daily_trading_window {
         });
 
     # This is for 0 day contract
-    my $start_of_day = $for_date->truncate_to_day;
-    my $close_of_day = $calendar->closing_on($for_date);
+    my $start_of_day = $date->truncate_to_day;
+    my $close_of_day = $calendar->closing_on($date);
     push @daily_duration,
         {
         date_start => {
