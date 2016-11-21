@@ -8,7 +8,8 @@ use Test::MockModule;
 use Test::FailWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Market::AggTicks;
+#use BOM::Market::AggTicks;
+use Data::Resample::ResampleCache;
 use Date::Utility;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -49,9 +50,15 @@ my $bet_params = {
     duration     => '2m',
 };
 
-my $mocked = Test::MockModule->new('BOM::Market::AggTicks');
+#my $mocked = Test::MockModule->new('BOM::Market::AggTicks');
+#$mocked->mock(
+#    'retrieve',
+#    sub {
+#        [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_} } (0 .. 10)];
+#    });
+my $mocked = Test::MockModule->new('Data::Resample::ResampleCache');
 $mocked->mock(
-    'retrieve',
+    'resample_cache_get',
     sub {
         [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_} } (0 .. 10)];
     });
@@ -77,9 +84,16 @@ subtest 'inefficient period' => sub {
 
     note('set duration to five ticks.');
     $bet_params->{duration} = '5t';
-    my $mock = Test::MockModule->new('BOM::Market::AggTicks');
+    #my $mock = Test::MockModule->new('BOM::Market::AggTicks');
+    #$mock->mock(
+    #    'retrieve',
+    #    sub {
+    #        my $dp = $bet_params->{date_pricing}->epoch;
+    #        [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp + 19)];
+    #    });
+    my $mock = Test::MockModule->new('Data::Resample::ResampleCache');
     $mock->mock(
-        'retrieve',
+        'resample_cache_get',
         sub {
             my $dp = $bet_params->{date_pricing}->epoch;
             [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp + 19)];

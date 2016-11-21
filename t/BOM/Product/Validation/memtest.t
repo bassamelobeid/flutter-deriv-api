@@ -18,12 +18,19 @@ use Date::Utility;
 use Finance::Asset;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Market::AggTicks;
+#use BOM::Market::AggTicks;
+use Data::Resample::ResampleCache;
 
 note('mocking ticks to prevent warnings.');
-my $mocked = Test::MockModule->new('BOM::Market::AggTicks');
+#my $mocked = Test::MockModule->new('BOM::Market::AggTicks');
+my $mocked = Test::MockModule->new('Data::Resample::ResampleCache');
+#$mocked->mock(
+#    'retrieve',
+#    sub {
+#        [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_} } (0 .. 10)];
+#    });
 $mocked->mock(
-    'retrieve',
+    'resample_cache_get',
     sub {
         [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_} } (0 .. 10)];
     });
