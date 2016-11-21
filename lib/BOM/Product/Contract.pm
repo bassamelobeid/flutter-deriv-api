@@ -1026,33 +1026,20 @@ my $pc_params_setters = {
 
     probability => sub {
         my $self        = shift;
-        my $probability = $self->pricing_engine->theo_probability + $self->risk_markup;
+        my $probability;
         if ($self->new_interface_engine) {
             $probability = Math::Util::CalculatedValue::Validatable->new({
                 name        => 'theo_probability',
                 description => 'theoretical value of a contract',
                 set_by      => $self->pricing_engine_name,
-                base_amount => $probability,
+                base_amount => $self->pricing_engine->ask_probability,
                 minimum     => 0,
                 maximum     => 1,
             });
+        } else {
+            $probability = $self->pricing_engine->theo_probability + $self->risk_markup;
         }
         $self->price_calculator->theo_probability($probability);
-    },
-    bs_probability => sub {
-        my $self           = shift;
-        my $bs_probability = $self->pricing_engine->bs_probability;
-        if ($self->new_interface_engine) {
-            $bs_probability = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'bs_probability',
-                description => 'BlackScholes value of a contract',
-                set_by      => $self->pricing_engine_name,
-                base_amount => $bs_probability,
-                minimum     => 0,
-                maximum     => 1,
-            });
-        }
-        $self->price_calculator->bs_probability($bs_probability);
     },
     opposite_ask_probability => sub {
         my $self = shift;
@@ -1320,6 +1307,7 @@ has [qw(risk_markup commission_markup base_commission commission_from_stake)] =>
     lazy_build => 1,
 );
 
+#this is supposed to be called for legacy pricing engines (not new interface)
 sub _build_risk_markup {
     my $self = shift;
 
