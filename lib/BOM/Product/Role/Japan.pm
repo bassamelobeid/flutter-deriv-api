@@ -131,7 +131,7 @@ around _validate_barrier_type => sub {
     return;
     }
 
-    sub _subvalidate_single_barrier {
+sub _subvalidate_single_barrier {
     my $self = shift;
 
     if (%{$self->predefined_contracts} and my $info = $self->predefined_contracts->{$self->date_expiry->epoch}) {
