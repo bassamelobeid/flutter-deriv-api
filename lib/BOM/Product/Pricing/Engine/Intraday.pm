@@ -16,7 +16,9 @@ with 'BOM::Product::Pricing::Engine::Role::StandardMarkup';
 
 use Math::Function::Interpolator;
 
-use BOM::Market::AggTicks;
+#use BOM::Market::AggTicks;
+use Cache::RedisDB;
+use Data::Resample::ResampleCache;
 use List::Util qw(max);
 use BOM::Platform::Context qw(request localize);
 use Format::Util::Numbers qw( roundnear );
@@ -29,8 +31,9 @@ The source of the ticks used for this pricing.  BOM::Market::AggTicks
 =cut
 
 has tick_source => (
-    is      => 'ro',
-    default => sub { BOM::Market::AggTicks->new },
+    is => 'ro',
+    #default => sub { BOM::Market::AggTicks->new },
+    default => sub { Data::Resample::ResampleCache->new({redis => Cache::RedisDB->redis,}) },
 );
 
 has [qw(period_opening_value period_closing_value long_term_vol)] => (

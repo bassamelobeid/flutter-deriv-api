@@ -41,6 +41,9 @@ use BOM::Product::RiskProfile;
 use BOM::Product::Types;
 use LandingCompany::Offerings qw(get_contract_specifics);
 
+use Cache::RedisDB;
+use Data::Resample::ResampleCache;
+
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
 require BOM::Product::Pricing::Engine::Intraday::Index;
@@ -1882,7 +1885,10 @@ sub _market_data {
                 symbol   => $underlying_symbol,
                 for_date => $for_date
             });
-            return BOM::Market::AggTicks->new->retrieve($args);
+            #return BOM::Market::AggTicks->new->retrieve($args);
+            return Data::Resample::ResampleCache->new({
+                    redis => Cache::RedisDB->redis,
+                })->resample_cache_get({symbol => $underlying_symbol});
         },
         get_overnight_tenor => sub {
             return $volsurface->_ON_day;
