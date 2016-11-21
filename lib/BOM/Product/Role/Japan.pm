@@ -115,6 +115,7 @@ around _validate_barrier => sub {
 };
 
 around _validate_barrier_type => sub {
+    my $orig = shift;
     my $self = shift;
 
     foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
@@ -122,7 +123,7 @@ around _validate_barrier_type => sub {
         if (defined $self->$barrier and $self->$barrier->barrier_type ne 'absolute') {
 
             return {
-                message           => 'barrier should be absolue',
+                message           => 'barrier should be absolute',
                 message_to_client => localize('Contracts with predefined barrier would need an absolute barrier'),
             };
         }
