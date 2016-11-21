@@ -2,16 +2,21 @@
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "properties": {
-        "transactions": {
-            "type": ["array", "null"],
-            "maxItem": "0",
-            "minItem": "0",
-            "required": "1"
-        },
-        "count": {
-            "type": "integer",
+        "error": {
+            "type": "object",
             "required": "1",
-            "pattern": "^0$"
+            "properties": {
+                "message_to_client": {
+                    "type": "string",
+                    "required": "1",
+                    "pattern": "^The token is invalid\.$"
+                },
+                "code": {
+                    "type": "string",
+                    "required": "1",
+                    "pattern": "^InvalidToken$"
+                }
+            }
         }
     }
 }
