@@ -1,0 +1,17 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "transactions": {
+            "type": ["array", "null"],
+            "maxItem": "0",
+            "minItem": "0",
+            "required": "1"
+        },
+        "count": {
+            "type": "integer",
+            "required": "1",
+            "pattern": "^0$"
+        }
+    }
+}
