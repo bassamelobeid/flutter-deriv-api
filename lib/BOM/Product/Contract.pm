@@ -1074,7 +1074,7 @@ my $pc_params_setters = {
                 maximum     => 1,
             });
         } else {
-            $probability = $self->pricing_engine->theo_probability + $self->risk_markup;
+            $probability = $self->pricing_engine->probability;
         }
         $self->price_calculator->theo_probability($probability);
     },
