@@ -5,6 +5,7 @@ use Moose;
 with 'App::Base::Daemon';
 
 use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods seconds_to_period_expiration);
+use Parallel::ForkManager;
 use Time::HiRes;
 use Date::Utility;
 
@@ -16,11 +17,15 @@ sub daemon_run {
     my $self = shift;
 
     my @selected_symbols = BOM::Product::Contract::PredefinedParameters::supported_symbols;
+    my $fm               = Parallel::ForkManager->new(scalar(@selected_symbols));
 
     while (1) {
         foreach my $symbol (@selected_symbols) {
+            $fm->start and next;
             generate_trading_periods($symbol);
+            $fm->finish;
         }
+        $fm->wait_all_children;
 
         my $now            = Date::Utility->new;
         my $sleep_interval = seconds_to_period_expiration($now);
