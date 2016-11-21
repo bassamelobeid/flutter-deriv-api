@@ -922,6 +922,23 @@ sub _build_corporate_actions {
     return \@actions;
 }
 
+=head2 otm_threshold
+
+An abbreviation for deep out of the money threshold. This is used to floor and cap prices.
+
+=cut
+
+has otm_threshold => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_deep_otm_threshold {
+    my $self = shift;
+
+    return $self->market->deep_otm_threshold;
+}
+
 has price_calculator => (
     is         => 'ro',
     isa        => 'Price::Calculator',
@@ -937,7 +954,7 @@ sub _build_price_calculator {
 
     return Price::Calculator->new({
             currency                => $self->currency,
-            deep_otm_threshold      => $self->market->deep_otm_threshold,
+            deep_otm_threshold      => $self->otm_threshold,
             maximum_total_markup    => BOM::System::Config::quants->{commission}->{maximum_total_markup},
             base_commission_min     => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
             base_commission_max     => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
