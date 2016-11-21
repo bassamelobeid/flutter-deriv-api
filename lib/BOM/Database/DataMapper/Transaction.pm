@@ -397,12 +397,12 @@ sub get_monthly_payments_sum {
 }
 
 sub unprocessed_bets {
-    my ($self, $last_processed_id, $accounts) = @_;
+    my ($self, $last_processed_id, $unsold_ids, $accounts) = @_;
 
     my $sql = q{
             SELECT
-                underlying_symbol,
-                (sell_time - start_time) as duration,
+                id, sell_time, underlying_symbol,
+                (EXTRACT(hour FROM (sell_time - start_time)) * 60 * 60 + EXTRACT(minutes FROM (sell_time - start_time)) * 60 + EXTRACT(seconds FROM (sell_time - start_time))) as duration_seconds,
                 ((sell_price - buy_price) / buy_price) as profit,
                 CASE
                     WHEN (sell_price - buy_price) > 0 THEN 'win'
@@ -412,71 +412,22 @@ sub unprocessed_bets {
             FROM
                 bet.financial_market_bet
             WHERE
-                account_id IN ($1)
+                account_id IN (?)
+                AND (
+                    id > ?
+                    ##UNSOLD_IDS##
+                )
+            ORDER BY id ASC
         };
 
-    my @binds = (join(',', (map {$_->id} @$accounts)));
-    return $self->db->dbh->selectall_arrayref($sql, undef, @binds);
-}
+    my @binds = (join(',', (map {$_->id} @$accounts)), $last_processed_id);
 
-sub get_trades_avg_duration {
-    my ($self, $accounts) = @_;
+    if (@$unsold_ids) {
+        $sql =~ s/##UNSOLD_IDS##/OR id IN(?)/;
+        push @binds, join(',', @$unsold_ids);
+    }
+    $sql =~ s/##UNSOLD_IDS##//;
 
-    my $sql = q{
-            SELECT
-                (avg(sell_time - start_time)) as avg_duration
-            FROM
-                bet.financial_market_bet
-            WHERE
-                account_id IN ($1)
-        };
-
-    my @binds = (join(',', (map {$_->id} @$accounts)));
-    return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
-}
-
-sub get_trades_profitable {
-    my ($self, $accounts) = @_;
-
-    my $sql = q{
-            SELECT profitable, count(*), avg(profit)
-            FROM
-            (
-                SELECT
-                    buy_price, sell_price, ((sell_price-buy_price)/buy_price) as profit,
-                    CASE
-                        WHEN (sell_price - buy_price) > 0 THEN 'win'
-                        ELSE 'loss'
-                    END
-                    AS profitable
-                FROM
-                    bet.financial_market_bet
-                WHERE
-                    sell_price IS NOT NUll
-                    AND account_id IN ($1)
-            ) t
-            GROUP BY profitable
-        };
-
-    my @binds = (join(',', (map {$_->id} @$accounts)));
-    return $self->db->dbh->selectall_hashref($sql, 'profitable', undef, @binds);
-}
-
-sub get_symbols_breakdown {
-    my ($self, $accounts) = @_;
-
-    my $sql = q{
-            SELECT
-                underlying_symbol, count(*)
-            FROM
-                bet.financial_market_bet
-            WHERE
-                account_id IN ($1)
-            GROUP BY
-                underlying_symbol
-        };
-
-    my @binds = (join(',', (map {$_->id} @$accounts)));
     return $self->db->dbh->selectall_arrayref($sql, undef, @binds);
 }
 

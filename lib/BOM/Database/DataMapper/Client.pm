@@ -108,7 +108,7 @@ sub copytrading_traders_list {
             allow_copiers IS TRUE
     };
 
-    return $self->db->dbh->selectall_arrayref($sql);
+    return $self->db->dbh->selectcol_arrayref($sql);
 }
 
 no Moose;
