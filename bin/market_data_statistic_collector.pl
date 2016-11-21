@@ -197,11 +197,7 @@ sub _collect_pipsize_stats {
         my $spot       = $underlying->spot;
         my $sigma      = sqrt($vol**2 / 365 / 86400 * 10);
         my $test_stat  = $spot * $sigma / $pipsize;
-        my $warning = $test_stat<100;
-        my $stop_sell = $test_stat<10;
         stats_gauge('test_statistic', $test_stat, {tags => ['tag:' . $underlying->{symbol}]});
-        stats_gauge('warning', $warning, {tags => ['tag:' . $underlying->{symbol}]});
-        stats_gauge('stop_sell', $stop_sell, {tags => ['tag:' . $underlying->{symbol}]});
     }
     return;
 }
