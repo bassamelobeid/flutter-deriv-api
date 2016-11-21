@@ -15,7 +15,7 @@ sub documentation {
 sub daemon_run {
     my $self = shift;
 
-    my @symbols = ('frxUSDJPY');
+    my @symbols = BOM::Product::Contract::PredefinedParameters::supported_symbols;
 
     my $redis = BOM::System::RedisReplicated::redis_read();
 

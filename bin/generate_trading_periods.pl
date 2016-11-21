@@ -15,7 +15,7 @@ sub documentation {
 sub daemon_run {
     my $self = shift;
 
-    my @selected_symbols = qw(frxUSDJPY);
+    my @selected_symbols = BOM::Product::Contract::PredefinedParameters::supported_symbols;
 
     while (1) {
         foreach my $symbol (@selected_symbols) {

@@ -220,6 +220,14 @@ sub seconds_to_period_expiration {
     return $next_gen_epoch - Time::HiRes::time;
 }
 
+sub _flyby {
+    return get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, 'japan');
+}
+
+sub supported_symbols {
+    return _flyby()->values_for_key('underlying_symbol');
+}
+
 # we perform three things here:
 # - split offerings into applicable trading periods.
 # - calculate barriers.
@@ -554,7 +562,7 @@ sub _get_trade_date_of_daily_window {
 sub _get_offerings {
     my $symbol = shift;
 
-    my $flyby = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, 'japan');
+    my $flyby = _flyby();
 
     my %similar_args = (
         underlying_symbol => $symbol,
