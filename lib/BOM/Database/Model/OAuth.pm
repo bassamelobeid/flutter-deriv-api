@@ -87,15 +87,27 @@ sub get_loginid_by_access_token {
     my ($self, $token) = @_;
 
     ## extends access token expires 60 days
-    my $expires_in = 5184000;
-    my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;
+    my $expires_in = '60 days';
 
-    return $self->dbh->selectrow_array("
-        UPDATE oauth.access_token
-        SET last_used=NOW(), expires=?
-        WHERE access_token = ? AND expires > NOW()
-        RETURNING loginid, creation_time, ua_fingerprint
-    ", undef, $expires_time, $token);
+    return $self->dbh->selectrow_array(<<'SQL', undef, $token, $expires_in);
+WITH upd AS (
+     UPDATE oauth.access_token
+        SET last_used=now(),
+            expires='tomorrow'::TIMESTAMP + $2::INTERVAL
+      WHERE access_token = $1
+        AND expires > now()
+  RETURNING loginid, creation_time, ua_fingerprint
+)
+SELECT loginid, creation_time, ua_fingerprint
+  FROM oauth.access_token
+ WHERE access_token = $1
+   AND expires > now()
+   AND last_used >= 'today'::TIMESTAMP
+ UNION ALL
+SELECT *
+  FROM upd
+ LIMIT 1
+SQL
 }
 
 sub get_scopes_by_access_token {
@@ -259,9 +271,9 @@ sub get_used_apps_by_loginid {
 
     my $apps = $self->dbh->selectall_arrayref("
         SELECT
-            u.app_id, name, a.scopes, a.app_markup_percentage
+            u.app_id, a.name, a.scopes, a.app_markup_percentage
         FROM oauth.apps a JOIN oauth.user_scope_confirm u ON a.id=u.app_id
-        WHERE loginid = ? AND a.active ORDER BY a.name
+        WHERE u.loginid = ? AND a.active ORDER BY a.name
     ", {Slice => {}}, $loginid);
     return [] unless $apps;
 
