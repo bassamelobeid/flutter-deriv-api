@@ -4,10 +4,13 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Deep;
 use Test::FailWarnings;
 
+use BOM::MarketData qw(create_underlying);
+use List::Util qw(first);
 use Date::Utility;
-use BOM::Product::Contract::PredefinedParameters qw(generate_predefined_offerings);
+use BOM::Product::Contract::PredefinedParameters qw(generate_predefined_offerings get_predefined_offerings);
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -20,7 +23,7 @@ subtest 'non trading day' => sub {
     my $saturday = Date::Utility->new('2016-11-19');                               # saturday
     my $offerings = generate_predefined_offerings($supported_symbol, $saturday);
     ok !@$offerings, 'no offerings were generated on non trading day';
-    setup_ticks($monday, $supported_symbol);
+    setup_ticks($supported_symbol, [[$monday->minus_time_interval('100d')], [$monday]]);
     $offerings = generate_predefined_offerings($supported_symbol, $monday);
     ok @$offerings, 'generates predefined offerings on a trading day';
 };
@@ -96,7 +99,7 @@ subtest 'intraday trading period' => sub {
     foreach my $input (@test_inputs) {
         my ($symbol, $category, $date, $count, $periods) = map { $input->[$_] } (0 .. 4);
         $date = Date::Utility->new($date);
-        setup_ticks($date, $symbol);
+        setup_ticks($symbol, [[$date->minus_time_interval('100d')], [$date]]);
         note('generating for ' . $symbol . '. Time set to ' . $date->day_as_string . ' at ' . $date->time);
         my $offerings = generate_predefined_offerings($symbol, $date);
         my @intraday = grep { $_->{expiry_type} eq 'intraday' } @$offerings;
@@ -116,16 +119,116 @@ subtest 'intraday trading period' => sub {
     }
 };
 
+subtest 'predefined barriers' => sub {
+    my $symbol = 'frxEURUSD';
+    my $date   = Date::Utility->new("2015-08-24 00:00:00");
+    setup_ticks($symbol, [[$date->minus_time_interval('100d')], [$date, 1.1521], [$date->plus_time_interval('10m'), 1.15591]]);
+
+    my @inputs = ({
+            match => {
+                contract_category => 'callput',
+                duration          => '5h15m',
+                expiry_type       => 'intraday'
+            },
+            ticks => [[$date->minus_time_interval('100d')], [$date, 1.1521], [$date->plus_time_interval('10m'), 1.15591]],
+            available_barriers => [1.15015, 1.15207, 1.15303, 1.15399, 1.15495, 1.15591, 1.15687, 1.15783, 1.15879, 1.15975, 1.16167],
+            expired_barriers   => [],
+        },
+        {
+            match => {
+                contract_category => 'touchnotouch',
+                duration          => '1W',
+                expiry_type       => 'daily'
+            },
+            ticks => [
+                [$date->minus_time_interval('100d')],
+                [$date,                            1.1521],
+                [$date->plus_time_interval(1),     1.1520],
+                [$date->plus_time_interval(3),     1.15667],
+                [$date->plus_time_interval('10m'), 1.15591]
+            ],
+            available_barriers => [1.12474, 1.13386, 1.13842, 1.14298, 1.14754, 1.1521, 1.15666, 1.16122, 1.16578, 1.17034, 1.17946],
+            expired_barriers   => [1.1521, 1.15666],
+        },
+        {
+             match => {
+                 contract_category => 'staysinout',
+                 duration          => '1W',
+                 expiry_type       => 'daily'
+             },
+             ticks => [
+                 [$date->minus_time_interval('100d')],
+                 [$date,                            1.1521],
+                 [$date->plus_time_interval(1),     1.1520],
+                 [$date->plus_time_interval(3),     1.15667],
+                 [$date->plus_time_interval('10m'), 1.15591]
+             ],
+             available_barriers => [[1.14754, 1.15666], [1.14298, 1.16122], [1.13842, 1.16578], [1.13386, 1.17034]],
+             expired_barriers => [[1.14754, 1.15666]],
+        },
+        {
+             match => {
+                 contract_category => 'endsinout',
+                 duration          => '1W',
+                 expiry_type       => 'daily'
+             },
+             ticks => [
+                 [$date->minus_time_interval('100d')],
+                 [$date,                            1.1521],
+                 [$date->plus_time_interval(1),     1.1520],
+                 [$date->plus_time_interval(3),     1.15667],
+                 [$date->plus_time_interval('10m'), 1.15591]
+             ],
+            available_barriers => [
+                [1.14754, 1.15666],
+                [1.14298, 1.1521],
+                [1.1521, 1.16122],
+                [1.13842, 1.14754],
+                [1.15666, 1.16578],
+                [1.13386, 1.14298],
+                [1.16122, 1.17034],
+                [1.12474, 1.13842],
+                [1.16578 ,1.17946]
+            ],
+            expired_barriers => [],
+        },
+    );
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => $symbol,
+            recorded_date => $date
+        });
+
+    my $generation_date = $date->plus_time_interval('1h');
+    generate_predefined_offerings($symbol, $generation_date);
+
+    foreach my $test (@inputs) {
+        setup_ticks($symbol, $test->{ticks});
+        my $offerings = get_predefined_offerings(create_underlying($symbol, $generation_date));
+        my $m        = $test->{match};
+        my $offering = first {
+            $_->{expiry_type} eq $m->{expiry_type}
+                and $_->{contract_category} eq $m->{contract_category}
+                and $_->{trading_period}->{duration} eq $m->{duration}
+        }
+        @$offerings;
+        my $testname = join '_', map {$m->{$_}} qw(contract_category expiry_type duration);
+        cmp_bag($offering->{available_barriers}, $test->{available_barriers}, 'available barriers for ' . $testname);
+        cmp_bag($offering->{expired_barriers},    $test->{expired_barriers},   'expired barriers for ' . $testname);
+    }
+};
+
 sub setup_ticks {
-    my ($date, $symbol, $quote) = @_;
+    my ($symbol, $data) = @_;
 
     BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables();
-    my $first_tick_time = Date::Utility->new($date)->minus_time_interval('100d');
-    my $now             = Date::Utility->new($date);
-    for ($first_tick_time, $now) {
+    foreach my $d (@$data) {
+        my ($date, $quote) = map { $d->[$_] } (0, 1);
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => $symbol,
-            epoch      => $_->epoch,
+            epoch      => $date->epoch,
             $quote ? (quote => $quote) : (),
         });
     }

@@ -138,12 +138,9 @@ sub get_predefined_offerings {
             my ($high, $low) = get_predefined_highlow($underlying, $period);
 
             foreach my $barrier (@{$offering->{available_barriers}}) {
-                # for double barrier contracts, $barrier is [high, low]
-                if (ref $barrier eq 'ARRAY' and not($high < $barrier->[0] and $low > $barrier->[1])) {
-                    push @expired_barriers, $barrier;
-                } elsif ($high >= $barrier or $low <= $barrier) {
-                    push @expired_barriers, $barrier;
-                }
+                my $ref_barrier = (ref $barrier ne 'ARRAY') ? [$barrier] : $barrier;
+                my @expired = grep { $_ < $high && $_ > $low } @$ref_barrier;
+                push @expired_barriers, $barrier if @expired;
             }
         }
         $offering->{expired_barriers} = \@expired_barriers;
@@ -221,9 +218,6 @@ sub _apply_predefined_parameters {
 sub _calculate_available_barriers {
     my ($underlying, $offering, $trading_period) = @_;
 
-    my $start_tick = $underlying->tick_at($trading_period->{date_start}->{epoch})
-        or die 'Could not get spot for ' . $underlying->symbol . ' at ' . $trading_period->{date_start}->{date};
-
     my $barriers = _calculate_barriers({
         underlying      => $underlying,
         call_prices     => [0.02, 0.98],
@@ -253,7 +247,7 @@ sub _calculate_barriers {
     my $args = shift;
 
     my ($underlying, $call_prices, $trading_period) = @{$args}{qw(underlying call_prices trading_periods)};
-    my $tick = $underlying->tick_at($trading_period->{date_start}->{epoch})
+    my $tick = $underlying->tick_at($trading_period->{date_start}->{epoch}, {allow_inconsistent => 1})
         or die 'Could not retrieve tick for ' . $underlying->symbol . ' at ' . Date::Utility->new($trading_period->{date_start}->{epoch});
     my $spot_at_start = $tick->quote;
     my $tiy = ($trading_period->{date_expiry}->{epoch} - $trading_period->{date_start}->{epoch}) / (365 * 86400);
