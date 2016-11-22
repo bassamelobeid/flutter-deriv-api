@@ -9,7 +9,7 @@
                 "message_to_client": {
                     "type": "string",
                     "required": "1",
-                    "pattern": "^The token is invalid.$"
+                    "pattern": "^The token is invalid\\.$"
                 },
                 "code": {
                     "type": "string",
