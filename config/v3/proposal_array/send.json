@@ -4,7 +4,7 @@
   "title": "Get latest prices for a specific contract with different barriers",
   "description": "Get latest prices for a specific contract with different barriers",
   "properties": {
-    "proposal": {
+    "proposal_array": {
       "type": "integer",
       "description":"Must be 1",
       "pattern": "^1$",
