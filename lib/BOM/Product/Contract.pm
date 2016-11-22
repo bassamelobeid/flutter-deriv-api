@@ -2316,8 +2316,6 @@ sub validate_price {
 sub _validate_barrier_type {
     my $self = shift;
 
-    my $epoch_expiry = $self->date_expiry->epoch;
-    my $epoch_start  = $self->date_start->epoch;
     my $intraday     = $self->is_intraday;
     my $barrier_type = $intraday ? 'relative' : 'absolute';
     my $error_message =

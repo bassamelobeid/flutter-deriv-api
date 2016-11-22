@@ -115,7 +115,6 @@ around _validate_barrier => sub {
 };
 
 override _validate_barrier_type => sub {
-    my $orig = shift;
     my $self = shift;
 
     foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
