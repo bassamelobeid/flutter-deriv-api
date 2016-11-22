@@ -175,7 +175,6 @@ sub _categorized_economic_events {
 
         next unless keys %dereference;
         $dereference{release_time} = Date::Utility->new($event->{release_date})->epoch;
-        $dereference{magnitude}    = $dereference{magnitude};
         push @events, \%dereference;
     }
 
