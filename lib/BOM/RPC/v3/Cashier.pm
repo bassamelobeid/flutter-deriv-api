@@ -311,7 +311,7 @@ sub _get_epg_url {
         $url .= 'epg.binary.com/epg';
     }
 
-    $url .= "/handshake?token=" . _get_handoff_token_key($loginid) . "&currency=$currency&action=$action";
+    $url .= "/handshake?token=" . _get_handoff_token_key($loginid) . "loginid=$loginid&currency=$currency&action=$action";
 
     return $url;
 }
