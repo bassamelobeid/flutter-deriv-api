@@ -24,7 +24,6 @@ sub proposal {
     my ($c, $req_storage) = @_;
 
     my $args = $req_storage->{args};
-
     $c->call_rpc({
             args        => $args,
             method      => 'send_ask',
@@ -55,6 +54,17 @@ sub proposal {
                 return $api_response;
             },
         });
+    return;
+}
+
+sub proposal_array {
+    my ($c, $req_storage) = @_;
+    my $args     = $req_storage->{args};
+    my $barriers = delete $args->{barriers};
+    for my $barrier (@$barriers) {
+        $args->{barrier} = $barrier;
+        proposal($c, $req_storage);
+    }
     return;
 }
 
