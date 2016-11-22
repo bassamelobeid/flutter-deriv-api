@@ -258,6 +258,8 @@ sub _get_pricing_parameter_from_vv_pricer {
         map { $_ => $pricing_arg->{$_} } qw(t discount_rate mu)
     };
 
+   $pricing_parameters->{bs_probability}->{'K2'} = $pricing_arg->{barrier2} if $contract->two_barriers;
+
     $pricing_parameters->{market_supplement}->{vanna} = _get_market_supplement_parameters($pe, 'vanna');
     $pricing_parameters->{market_supplement}->{volga} = _get_market_supplement_parameters($pe, 'volga');
     $pricing_parameters->{market_supplement}->{vega}  = _get_market_supplement_parameters($pe, 'vega');
