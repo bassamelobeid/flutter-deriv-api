@@ -88,6 +88,8 @@ if ($broker and ($id or $short_code)) {
         ? _get_pricing_parameter_from_IH_pricer($traded_contract, $action_type, $discounted_probability)
         : $contract->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'
         ? _get_pricing_parameter_from_slope_pricer($traded_contract, $action_type, $discounted_probability)
+        : $contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated'
+        ? _get_pricing_parameter_from_vv_pricer($traded_contract, $action_type, $discounted_probability)
         : die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
 
     @contract_details = (
@@ -213,6 +215,78 @@ sub _get_pricing_parameter_from_IH_pricer {
 
 }
 
+sub _get_pricing_parameter_from_vv_pricer {
+    my ($contract, $action_type, $discounted_probability) = @_;
+
+    my $pe = $contract->pricing_engine;
+    my $pricing_parameters;
+    my $risk_markup       = $contract->risk_markup->amount;
+    my $commission_markup = $contract->commission_markup->amount;
+    my $theo_probability  = $pe->base_probability->amount;
+
+    if ($action_type eq 'sell') {
+        $pricing_parameters->{bid_probability} = {
+            discounted_probability            => $discounted_probability->amount,
+            opposite_contract_ask_probability => $contract->ask_probability->amount
+        };
+
+        $pricing_parameters->{opposite_contract_ask_probability} = {
+            theoretical_probability => $theo_probability,
+            risk_markup             => $risk_markup,
+            commission_markup       => $commission_markup,
+
+        };
+
+    } else {
+
+        $pricing_parameters->{ask_probability} = {
+            theoretical_probability => $theo_probability,
+            risk_markup             => $risk_markup,
+            commission_markup       => $commission_markup,
+        };
+    }
+
+    $pricing_parameters->{theoretical_probability} = {
+        bs_probability    => $pe->bs_probability->amount,
+        market_supplement => $pe->market_supplement->amount,
+    };
+    my $pricing_arg = $contract->pricing_args;
+    $pricing_parameters->{bs_probability} = {
+        'S'   => $pricing_arg->{spot},
+        'K'   => $pricing_arg->{barrier1},
+        'vol' => $pricing_arg->{iv},
+        map { $_ => $pricing_arg->{$_} } qw(t discount_rate mu)
+    };
+
+    $pricing_parameters->{market_supplement}->{vanna} = _get_market_supplement_parameters($pe, 'vanna');
+    $pricing_parameters->{market_supplement}->{volga} = _get_market_supplement_parameters($pe, 'volga');
+    $pricing_parameters->{market_supplement}->{vega}  = _get_market_supplement_parameters($pe, 'vega');
+
+    $pricing_parameters->{commission_markup} = {
+        base_commission       => $contract->base_commission,
+        commission_multiplier => $contract->commission_multiplier($contract->payout),
+
+    };
+
+    my $risk_markup = $pe->risk_markup;
+    $pricing_parameters->{risk_markup} = {
+        vol_spread_markup  => $risk_markup->peek_amount('vol_spread_markup'),
+        vol_spread         => $risk_markup->peek_amount('vol_spread'),
+        bet_vega           => $risk_markup->peek_amount('bet_vega'),
+        spot_spread_markup => $risk_markup->peek_amount('spot_spread_markup'),
+        bet_delta => $risk_markup->peek_amount('bet_delta'),
+        spot_spread                   => $risk_markup->peek_amount('spot_spread'),
+        forward_start                 => $risk_markup->peek_amount('forward_start'),
+        eod_market_risk_markup        => $risk_markup->peek_amount('eod_market_risk_markup'),
+        butterfly_markup              => $risk_markup->peek_amount('butterfly_markup'),
+        butterfly_greater_than_cutoff => $risk_markup->peek_amount('butterfly_greater_than_cutoff'),
+        spread_to_markup              => $risk_markup->peek_amount('spread_to_markup'),
+
+    };
+
+    return $pricing_parameters;
+}
+
 sub _get_pricing_parameter_from_slope_pricer {
     my ($contract, $action_type, $discounted_probability) = @_;
 
@@ -265,6 +339,7 @@ sub _get_pricing_parameter_from_slope_pricer {
         };
 
     }
+
     $pricing_parameters->{bs_probability}->{payout} = $contract->payout;
     $pricing_parameters->{risk_markup} = $debug_information->{risk_markup}{parameters};
 
@@ -286,6 +361,22 @@ sub _get_bs_probability_parameters {
     };
     return $bs_parameter;
 }
+
+sub _get_market_supplement_parameters {
+    my $pe   = shift;
+    my $type = shift;
+
+    my $correction    = $type . '_correction';
+    my $ms_correction = $pe->$correction;
+    my $ms_parameter  = {
+        "$type correction"      => $ms_correction->amount,
+        "$type survival weight" => $ms_correction->peek_amount('survival_weight'),
+        "Bet $type"             => $ms_correction->peek_amount('bet_' . $type),
+        "$type market price"    => $ms_correction->peek_amount($type . '_market_price'),
+    };
+    return $ms_parameter;
+}
+
 BOM::Backoffice::Request::template->process(
     'backoffice/contract_details.html.tt',
     {
