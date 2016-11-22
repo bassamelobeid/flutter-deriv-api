@@ -1,0 +1,14 @@
+{
+    "proposal":1,
+    "subscribe":1,
+    "basis":"payout",
+    "amount":1000,
+    "currency":"JPY",
+    "symbol":"frxAUDJPY",
+    "req_id":1,
+    "date_expiry":"1479787200",
+    "trading_period_start":"1479779100",
+    "contract_type":"CALLE",
+    "barrier":[81.975, 81.879, 81.831],
+    "passthrough":{}
+}
