@@ -109,7 +109,6 @@ sub cashier {
     }
 
     my $error = '';
-
     if ($action eq 'deposit' and $client->get_status('unwelcome')) {
         $error = localize('Your account is restricted to withdrawals only.');
     } elsif ($client->documents_expired) {
@@ -141,19 +140,14 @@ sub cashier {
         return $error_sub->($error);
     }
 
-    ## if cashier provider == 'epg', we'll use EPG cashier
-    if (($args->{provider} // '') eq 'epg') {
-        BOM::System::AuditLog::log('redirecting to epg');
-        return 'https://www.' . lc($params->{website_name}) . '/epg/?currency=' . $currency
-            if ($params->{website_name} // '') =~ /qa/;    # for QA server
-        return 'https://epg.binary.com/epg/?currency=' . $currency;
+    my $df_client;
+    if ($args->{provider} eq 'doughflow') {
+        $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client_loginid});
+        # We ask the client which currency they wish to deposit/withdraw in
+        # if they've never deposited before
+        $currency = $currency || $df_client->doughflow_currency;
     }
 
-    my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client_loginid});
-
-    # We ask the client which currency they wish to deposit/withdraw in
-    # if they've never deposited before
-    $currency = $currency || $df_client->doughflow_currency;
     if (not $currency) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'ASK_CURRENCY',
@@ -180,6 +174,11 @@ sub cashier {
                 message_to_client => localize('Verify your withdraw request.'),
             });
         }
+    }
+
+    ## if cashier provider == 'epg', we'll return epg url
+    if ($args->{provider} eq 'epg') {
+        return _get_epg_url($client->loginid, $params->{website_name}, $currency);
     }
 
     # hit DF's CreateCustomer API
@@ -298,6 +297,23 @@ sub _get_handoff_token_key {
     $handoff_token->save;
 
     return $handoff_token->key;
+}
+
+sub _get_epg_url {
+    my ($loginid, $website_name, $currency) = @_;
+
+    BOM::System::AuditLog::log('redirecting to epg');
+
+    my $url = 'https://';
+    if (($website_name // '') =~ /qa/) {
+        $url .= 'www.' . lc($website_name) . '/epg';
+    } else {
+        $url .= 'epg.binary.com/epg';
+    }
+
+    $url .= "?handofftoken=" . _get_handoff_token_key($loginid) . "&currency=$currency";
+
+    return $url;
 }
 
 sub get_limits {
