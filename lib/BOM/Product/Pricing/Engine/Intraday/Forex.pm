@@ -244,8 +244,8 @@ sub _build_ticks_for_trend {
         #aggregated   => $self->more_than_short_term_cutoff,
     });
 
-    #print "###### " . $remaining_interval->seconds . " " . $bet->date_pricing->epoch . " " . $self->more_than_short_term_cutoff .  "\n";
-    #print "###### " . Dumper($ticks->[-1]) . "\n";
+    print "###### " . $remaining_interval->seconds . " " . $bet->date_pricing->epoch . " " . $self->more_than_short_term_cutoff . "\n";
+    print "###### " . Dumper($ticks) . "\n";
 
     return $ticks;
 }
