@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "start_time": {
+      "type": "integer",
+      "required": "1"
+    },
+    "loginid": {
+      "type": "string",
+      "pattern": "^MF\\d+$",
+      "required": "1"
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^$",
+      "required": "1"
+    },
+    "buy_count": {
+      "type": "integer",
+      "required": "1"
+    },
+    "buy_amount": {
+      "type": "number",
+      "required": "1"
+    },
+    "sell_count": {
+      "type": "integer",
+      "required": "1"
+    },
+    "sell_amount": {
+      "type": "number",
+      "required": "1"
+    },
+    "potential_profit": {
+      "type": "number",
+      "required": "1"
+    },
+    "open_contract_count": {
+      "type": "integer",
+      "required": "1"
+    }
+  }
+}
