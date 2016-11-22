@@ -252,13 +252,14 @@ sub _get_pricing_parameter_from_vv_pricer {
     };
     my $pricing_arg = $contract->pricing_args;
     $pricing_parameters->{bs_probability} = {
-        'S'   => $pricing_arg->{spot},
-        'K'   => $pricing_arg->{barrier1},
-        'vol' => $pricing_arg->{iv},
+        'S'      => $pricing_arg->{spot},
+        'K'      => $pricing_arg->{barrier1},
+        'vol'    => $pricing_arg->{iv},
+        'payout' => $contract->payout,
         map { $_ => $pricing_arg->{$_} } qw(t discount_rate mu)
     };
 
-   $pricing_parameters->{bs_probability}->{'K2'} = $pricing_arg->{barrier2} if $contract->two_barriers;
+    $pricing_parameters->{bs_probability}->{'K2'} = $pricing_arg->{barrier2} if $contract->two_barriers;
 
     $pricing_parameters->{market_supplement}->{vanna} = _get_market_supplement_parameters($pe, 'vanna');
     $pricing_parameters->{market_supplement}->{volga} = _get_market_supplement_parameters($pe, 'volga');
@@ -272,11 +273,11 @@ sub _get_pricing_parameter_from_vv_pricer {
 
     my $risk_markup = $pe->risk_markup;
     $pricing_parameters->{risk_markup} = {
-        vol_spread_markup  => $risk_markup->peek_amount('vol_spread_markup'),
-        vol_spread         => $risk_markup->peek_amount('vol_spread'),
-        bet_vega           => $risk_markup->peek_amount('bet_vega'),
-        spot_spread_markup => $risk_markup->peek_amount('spot_spread_markup'),
-        bet_delta => $risk_markup->peek_amount('bet_delta'),
+        vol_spread_markup             => $risk_markup->peek_amount('vol_spread_markup'),
+        vol_spread                    => $risk_markup->peek_amount('vol_spread'),
+        bet_vega                      => $risk_markup->peek_amount('bet_vega'),
+        spot_spread_markup            => $risk_markup->peek_amount('spot_spread_markup'),
+        bet_delta                     => $risk_markup->peek_amount('bet_delta'),
         spot_spread                   => $risk_markup->peek_amount('spot_spread'),
         forward_start                 => $risk_markup->peek_amount('forward_start'),
         eod_market_risk_markup        => $risk_markup->peek_amount('eod_market_risk_markup'),
@@ -298,7 +299,7 @@ sub _get_pricing_parameter_from_slope_pricer {
     my $contract_type     = $pe->contract_type;
     my $risk_markup       = $contract->risk_markup->amount;
     my $commission_markup = $contract->commission_markup->amount;
-
+    my $ask_price         = $contract->ask_price;
     if ($action_type eq 'sell') {
         $pricing_parameters->{bid_probability} = {
             discounted_probability            => $discounted_probability->amount,
@@ -323,26 +324,54 @@ sub _get_pricing_parameter_from_slope_pricer {
 
     my $theo_param = $debug_information->{$contract_type}{base_probability}{parameters};
 
-    if ($contract->priced_with ne 'base') {
-        $pricing_parameters->{bs_probability}   = _get_bs_probability_parameters($theo_param->{bs_probability}{parameters});
-        $pricing_parameters->{slope_adjustment} = {
-            weight => $contract_type eq 'CALL' ? -1 : 1,
-            slope => $theo_param->{slope_adjustment}{parameters}{slope},
-            vanilla_vega => $theo_param->{slope_adjustment}{parameters}{vanilla_vega}{amount},
-        };
+    if (not $contract->two_barriers) {
+        if ($contract->priced_with ne 'base') {
+            $pricing_parameters->{bs_probability} = _get_bs_probability_parameters($theo_param->{bs_probability}{parameters}, $contract->payout);
+            $pricing_parameters->{slope_adjustment} = {
+                weight => $contract_type eq 'CALL' ? -1 : 1,
+                slope => $theo_param->{slope_adjustment}{parameters}{slope},
+                vanilla_vega => $theo_param->{slope_adjustment}{parameters}{vanilla_vega}{amount},
+            };
+        } elsif ($contract->priced_with eq 'base') {
+            $pricing_parameters->{bs_probability} =
+                _get_bs_probability_parameters($theo_param->{numeraire_probability}{parameters}{bs_probability}{parameters}, $contract->payout);
+            my $slope_param = $theo_param->{numeraire_probability}{parameters}{slope_adjustment}{parameters};
+            $pricing_parameters->{slope_adjustment} = {
+                weight => $contract_type eq 'CALL' ? -1 : 1,
+                slope => $slope_param->{slope},
+                vanilla_vega => $slope_param->{vanilla_vega}{amount},
+            };
+        }
     } else {
-        $pricing_parameters->{bs_probability} =
-            _get_bs_probability_parameters($theo_param->{numeraire_probability}{parameters}{bs_probability}{parameters});
-        my $slope_param = $theo_param->{numeraire_probability}{parameters}{slope_adjustment}{parameters};
-        $pricing_parameters->{slope_adjustment} = {
-            weight => $contract_type eq 'CALL' ? -1 : 1,
-            slope => $slope_param->{slope},
-            vanilla_vega => $slope_param->{vanilla_vega}{amount},
-        };
+        my $call_prob = $debug_information->{CALL}{base_probability};
+        my $put_prob  = $debug_information->{PUT}{base_probability};
 
+        if ($contract_type eq 'EXPIRYRANGE') {
+            $pricing_parameters->{theoretical_probability} = {
+                discounted_probabality   => $contract->discounted_probability->amount,
+                call_and_put_probability => $call_prob->{amount} + $put_prob->{amount}};
+        } else {
+            $pricing_parameters->{theoretical_probability} = {call_and_put_probability => $call_prob->{amount} + $put_prob->{amount}};
+        }
+
+        $pricing_parameters->{call_bs_probability} =
+            _get_bs_probability_parameters($call_prob->{parameters}{bs_probability}{parameters}, $contract->payout);
+        my $call_slope_param = $call_prob->{parameters}{slope_adjustment}{parameters};
+        $pricing_parameters->{call_slope_adjustment} = {
+            weight       => -1,
+            slope        => $call_slope_param->{slope},
+            vanilla_vega => $call_slope_param->{vanilla_vega}{amount},
+        };
+        $pricing_parameters->{put_bs_probability} =
+            _get_bs_probability_parameters($put_prob->{parameters}{bs_probability}{parameters}, $contract->payout);
+        my $put_slope_param = $put_prob->{parameters}{slope_adjustment}{parameters};
+        $pricing_parameters->{put_slope_adjustment} = {
+            weight       => -1,
+            slope        => $put_slope_param->{slope},
+            vanilla_vega => $put_slope_param->{vanilla_vega}{amount},
+        };
     }
 
-    $pricing_parameters->{bs_probability}->{payout} = $contract->payout;
     $pricing_parameters->{risk_markup} = $debug_information->{risk_markup}{parameters};
 
     $pricing_parameters->{commission_markup} = {
@@ -354,11 +383,13 @@ sub _get_pricing_parameter_from_slope_pricer {
 }
 
 sub _get_bs_probability_parameters {
-    my $prob         = shift;
-    my $bs_parameter = {
-        'K' => $prob->{strikes}[0],
-        "S" => $prob->{spot},
-        't' => $prob->{_timeinyears},
+    my $prob            = shift;
+    my $contract_payout = shift;
+    my $bs_parameter    = {
+        'K'      => $prob->{strikes}[0],
+        "S"      => $prob->{spot},
+        't'      => $prob->{_timeinyears},
+        'payout' => $contract_payout,
         map { $_ => $prob->{$_} } qw(discount_rate mu vol),
     };
     return $bs_parameter;
