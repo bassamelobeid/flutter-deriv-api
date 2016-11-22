@@ -115,7 +115,7 @@ sub trader_statistics {
                 $cumulative_pnl = $cumulative_pnl + ($contract->{sell_price} - $contract->{buy_price});
             }
         }
-        if (grep {$_->{bet_type} =~ /call|put/i} @{$sold_contracts}) {
+        if (grep {$_->{bet_type} =~ /^(call|put)$/i} @{$sold_contracts}) {
             push @$performance_probability,
                 sprintf(
                 "%.4f",
