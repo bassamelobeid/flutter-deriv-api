@@ -12,6 +12,12 @@ use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
 use BOM::System::Config;
 
+use Data::Resample::TicksCache;
+use Data::Resample::ResampleCache;
+use Cache::RedisDB;
+use BOM::Market::AggTicks;
+use Data::Dumper;
+
 sub clone {
     my ($self, $changes) = @_;
     return $self->new({
@@ -229,14 +235,19 @@ sub _build_ticks_for_trend {
 
     my $remaining_interval = Time::Duration::Concise::Localize->new(interval => $lookback_secs);
 
-    return $self->tick_source->tick_cache_get({
-        symbol => $bet->underlying,
+    my $ticks = $self->tick_source->tick_cache_get({
+        symbol => $bet->underlying->symbol,
         #interval     => $remaining_interval,
-        start_epoch  => $bet->date_pricing->epoch - $remaining_interval->seconds,
-        ending_epoch => $bet->date_pricing->epoch,
-        backtest     => !$bet->backtest,
+        start_epoch => $bet->date_pricing->epoch - $remaining_interval->seconds,
+        end_epoch   => $bet->date_pricing->epoch,
+        backtest    => !$bet->backtest,
         #aggregated   => $self->more_than_short_term_cutoff,
     });
+
+    #print "###### " . $remaining_interval->seconds . " " . $bet->date_pricing->epoch . " " . $self->more_than_short_term_cutoff .  "\n";
+    #print "###### " . Dumper($ticks->[-1]) . "\n";
+
+    return $ticks;
 }
 
 has lookback_seconds => (
