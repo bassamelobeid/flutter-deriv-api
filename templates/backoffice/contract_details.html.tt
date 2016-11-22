@@ -2,7 +2,7 @@
 <form action="" method="post">
     <table>
         <tr><td>Transaction ID</td><td><input value="[% id %]" size="20" type="text" name="id" id="id"/></td></tr>
-        <tr><td>Short Code</td><td><input value="[% short_code %]" size="20" type="text" name="short_code" id="short_code"/></td></tr>
+        <tr><td>Short Code</td><td><input value="[% short_code %]" size="20" type="text" name="short_code" id="short_code"/>If input with shortcode, the currency field need to be included as well</td></tr>
         <tr><td>Currency</td><td><input value="[% currency %]" size="20" type="text" name="currency" id="currency"/></td></tr>
         <tr><td>Start time</td><td><input value="[% start %]" size="20" type="text" name="start" id="start"/> If left empty, it will always price at contract's start time</td></tr>
         <input  type="hidden" value="[% broker %]"name="broker" id="broker"/>
