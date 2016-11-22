@@ -62,7 +62,8 @@
         "description":"Barriers for the contract (or last digit prediction for digit contracts). Contracts less than 24 hours in duration would need a relative barrier (barriers which need +/-), meaning that the entry spot would be adjusted accordingly with that amount to define a barrier.",
         "items": {
             "type": "string",
-            "pattern": "^[+-]?\\d+\\.?\\d*$"
+            "pattern": "^[+-]?\\d+\\.?\\d*$",
+            "description":"Barrier for the contract (or last digit prediction for digit contracts). Contracts less than 24 hours in duration would need a relative barrier (barriers which need +/-), meaning that the entry spot would be adjusted accordingly with that amount to define a barrier."
         }
     },
     "amount_per_point": {
