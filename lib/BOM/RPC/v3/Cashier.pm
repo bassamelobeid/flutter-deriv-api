@@ -182,33 +182,6 @@ sub cashier {
         }
     }
 
-    # create handoff token
-    my $cb = BOM::Database::ClientDB->new({
-        client_loginid => $df_client->loginid,
-    });
-
-    BOM::Database::DataMapper::Payment::DoughFlow->new({
-            client_loginid => $df_client->loginid,
-            db             => $cb->db,
-        })->delete_expired_tokens();
-
-    my $handoff_token = BOM::Database::Model::HandoffToken->new(
-        db                 => $cb->db,
-        data_object_params => {
-            key            => BOM::Database::Model::HandoffToken::generate_session_key,
-            client_loginid => $df_client->loginid,
-            expires        => time + 60,
-        },
-    );
-    $handoff_token->save;
-
-    my $doughflow_loc  = BOM::System::Config::third_party->{doughflow}->{location};
-    my $doughflow_pass = BOM::System::Config::third_party->{doughflow}->{passcode};
-    my $url            = $doughflow_loc . '/CreateCustomer.asp';
-
-    my $broker = $df_client->broker;
-    my $sportsbook = get_sportsbook($broker, $currency);
-
     # hit DF's CreateCustomer API
     my $ua = LWP::UserAgent->new(timeout => 20);
     $ua->ssl_opts(
@@ -216,13 +189,19 @@ sub cashier {
         SSL_verify_mode => SSL_VERIFY_NONE
     );    #temporarily disable host verification as full ssl certificate chain is not available in doughflow.
 
+    my $doughflow_loc     = BOM::System::Config::third_party->{doughflow}->{location};
+    my $doughflow_pass    = BOM::System::Config::third_party->{doughflow}->{passcode};
+    my $url               = $doughflow_loc . '/CreateCustomer.asp';
+    my $sportsbook        = get_sportsbook($df_client->broker, $currency);
+    my $handoff_token_key = _get_handoff_token_key($df_client->loginid);
+
     my $result = $ua->post(
         $url,
         $df_client->create_customer_property_bag({
                 SecurePassCode => $doughflow_pass,
                 Sportsbook     => $sportsbook,
                 IP_Address     => '127.0.0.1',
-                Password       => $handoff_token->key,
+                Password       => $handoff_token_key,
             }));
 
     if ($result->{'_content'} ne 'OK') {
@@ -266,7 +245,7 @@ sub cashier {
         );
     }
 
-    my $secret = String::UTF8::MD5::md5($df_client->loginid . '-' . $handoff_token->key);
+    my $secret = String::UTF8::MD5::md5($df_client->loginid . '-' . $handoff_token_key);
 
     if ($action eq 'deposit') {
         $action = 'DEPOSIT';
@@ -275,7 +254,7 @@ sub cashier {
     }
 
     Path::Tiny::path('/tmp/doughflow_tokens.txt')
-        ->append_utf8(join(":", Date::Utility->new()->datetime_ddmmmyy_hhmmss, $df_client->loginid, $handoff_token->key, $action));
+        ->append_utf8(join(":", Date::Utility->new()->datetime_ddmmmyy_hhmmss, $df_client->loginid, $handoff_token_key, $action));
 
     # build DF link
     $url =
@@ -286,13 +265,39 @@ sub cashier {
         . '&Lang='
         . get_doughflow_language_code_for($params->{language})
         . '&Password='
-        . $handoff_token->key
+        . $handoff_token_key
         . '&Secret='
         . $secret
         . '&Action='
         . $action;
     BOM::System::AuditLog::log('redirecting to doughflow', $df_client->loginid);
     return $url;
+}
+
+sub _get_handoff_token_key {
+    my $loginid = shift;
+
+    # create handoff token
+    my $cb = BOM::Database::ClientDB->new({
+        client_loginid => $loginid,
+    });
+
+    BOM::Database::DataMapper::Payment::DoughFlow->new({
+            client_loginid => $loginid,
+            db             => $cb->db,
+        })->delete_expired_tokens();
+
+    my $handoff_token = BOM::Database::Model::HandoffToken->new(
+        db                 => $cb->db,
+        data_object_params => {
+            key            => BOM::Database::Model::HandoffToken::generate_session_key,
+            client_loginid => $loginid,
+            expires        => time + 60,
+        },
+    );
+    $handoff_token->save;
+
+    return $handoff_token->key;
 }
 
 sub get_limits {
