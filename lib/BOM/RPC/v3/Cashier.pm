@@ -57,8 +57,9 @@ sub cashier {
         });
     }
 
-    my $args = $params->{args};
-    my $action = $args->{cashier} // 'deposit';
+    my $args     = $params->{args};
+    my $action   = $args->{cashier} // 'deposit';
+    my $provider = $args->{provider} // 'doughflow';
 
     my $currency;
     if (my $account = $client->default_account) {
@@ -141,7 +142,7 @@ sub cashier {
     }
 
     my $df_client;
-    if ($args->{provider} eq 'doughflow') {
+    if ($provider eq 'doughflow') {
         $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client_loginid});
         # We ask the client which currency they wish to deposit/withdraw in
         # if they've never deposited before
@@ -177,7 +178,7 @@ sub cashier {
     }
 
     ## if cashier provider == 'epg', we'll return epg url
-    if ($args->{provider} eq 'epg') {
+    if ($provider eq 'epg') {
         return _get_epg_url($client->loginid, $params->{website_name}, $currency, $action);
     }
 

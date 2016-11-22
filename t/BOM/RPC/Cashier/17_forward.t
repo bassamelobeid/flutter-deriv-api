@@ -31,7 +31,7 @@ subtest 'Initialization' => sub {
 my $params = {
     language => 'EN',
     source   => 1,
-    args     => {provider => 'doughflow'},
+    args     => {},
 };
 
 my $email     = 'dummy' . rand(999) . '@binary.com';

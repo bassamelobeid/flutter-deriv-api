@@ -38,8 +38,7 @@ my $code = BOM::Platform::Token->new({
 my $params = {
     args => {
         cashier           => 'withdraw',
-        verification_code => $code,
-        provider          => 'doughflow'
+        verification_code => $code
     }};
 
 my ($t, $c);
