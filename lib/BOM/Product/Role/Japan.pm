@@ -114,7 +114,7 @@ around _validate_barrier => sub {
     return $self->_subvalidate_single_barrier();
 };
 
-around _validate_barrier_type => sub {
+override _validate_barrier_type => sub {
     my $orig = shift;
     my $self = shift;
 
