@@ -14,6 +14,7 @@ use Math::Util::CalculatedValue::Validatable;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Format::Util::Numbers qw(to_monetary_number_format);
 use Price::Calculator;
+use Clone::PP qw(clone);
 
 my %pricer_cmd_handler = (
     price => \&process_ask_event,
@@ -59,11 +60,13 @@ sub proposal {
 
 sub proposal_array {
     my ($c, $req_storage) = @_;
-    my $args     = $req_storage->{args};
-    my $barriers = delete $args->{barriers};
+    my $barriers = delete $req_storage->{args}{barriers};
+
     for my $barrier_arg (@$barriers) {
+        my $new_req_storage = clone($req_storage);
+        my $args     = $req_storage->{args};
         @{$args}{keys %$barrier_arg} = values %$barrier_arg;
-        proposal($c, $req_storage);
+        proposal($c, $new_req_storage);
     }
     return;
 }
