@@ -4,7 +4,7 @@ package BOM::Product::PredefinedOfferings;
 use Moose;
 with 'App::Base::Daemon';
 
-use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods seconds_to_period_expiration);
+use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods next_generation_epoch);
 use Parallel::ForkManager;
 use Time::HiRes;
 use Date::Utility;
@@ -27,8 +27,9 @@ sub daemon_run {
         }
         $fm->wait_all_children;
 
-        my $now            = Date::Utility->new;
-        my $sleep_interval = seconds_to_period_expiration($now);
+        my $next = next_generation_epoch(Date::Utility->new);
+        my $sleep_interval = $next - Time::HiRes::time;
+
         Time::HiRes::sleep($sleep_interval);
     }
 

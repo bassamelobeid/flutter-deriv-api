@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Exporter qw(import);
-our @EXPORT_OK = qw(get_predefined_offerings get_trading_periods generate_trading_periods update_predefined_highlow seconds_to_period_expiration);
+our @EXPORT_OK = qw(get_predefined_offerings get_trading_periods generate_trading_periods update_predefined_highlow next_generation_epoch);
 
 use JSON qw(to_json from_json);
 use Time::HiRes;
@@ -125,7 +125,8 @@ sub generate_trading_periods {
     my @intraday_periods = _get_intraday_trading_window($underlying, $date);
     push @trading_periods, @intraday_periods if @intraday_periods;
 
-    my $ttl = seconds_to_period_expiration($date);
+    my $next = next_generation_epoch($date);
+    my $ttl  = max(1, $next - $date->epoch);
     BOM::System::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json([grep { defined } @trading_periods]), 'PX', $ttl);
 
     return \@trading_periods;
@@ -166,7 +167,7 @@ sub update_predefined_highlow {
             $new_low = min($new_quote, $db_highlow->{low});
         }
 
-        my $ttl = max(0, $period->{date_expiry}->{epoch} - $now);
+        my $ttl = max(1, $period->{date_expiry}->{epoch} - $now);
         # not using chronicle here because we don't want to save historical highlow data
         BOM::System::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json([$new_high, $new_low]), 'PX', $ttl);
     }
@@ -193,25 +194,13 @@ sub _get_predefined_highlow {
     return ();
 }
 
-=head2 seconds_to_period_expiration
+=head2 next_generation_interval
 
-Returns the seconds to expiry of a trading period.
-
-A trading period expires at every XX:45 and XX:00.
-
-So seconds_to_period_expiration is explained in minutes for comfort :
-hh:00 => seconds_to_period_expiration = 45 min
-hh:03 => seconds_to_period_expiration = 42 min
-hh:29 => seconds_to_period_expiration = 16 min
-hh:44 => seconds_to_period_expiration = 1 min
-hh:45 => seconds_to_period_expiration = 15 min
-hh:54 => seconds_to_period_expiration = 6 min
-hh:59 => seconds_to_period_expiration = 1 min
-hh:00 => seconds_to_period_expiration = 45 min
+Returns XX:45 if requested date is before XX:45, else returns XX:00
 
 =cut
 
-sub seconds_to_period_expiration {
+sub next_generation_epoch {
     my $from_date = shift;
 
     my $minute = $from_date->minute;
@@ -221,7 +210,7 @@ sub seconds_to_period_expiration {
         ? Date::Utility->new->today->plus_time_interval($from_date->hour . 'h45m')->epoch
         : Date::Utility->new->today->plus_time_interval($from_date->hour + 1 . 'h')->epoch;
 
-    return $next_gen_epoch - Time::HiRes::time;
+    return $next_gen_epoch;
 }
 
 sub _flyby {
@@ -346,7 +335,7 @@ sub _calculate_barriers {
 
     my ($underlying, $call_prices, $trading_period) = @{$args}{qw(underlying call_prices trading_periods)};
     my $tick = $underlying->tick_at($trading_period->{date_start}->{epoch}, {allow_inconsistent => 1})
-        or die 'Could not retrieve tick for ' . $underlying->symbol . ' at ' . Date::Utility->new($trading_period->{date_start}->{epoch});
+        or die 'Could not retrieve tick for ' . $underlying->symbol . ' at ' . Date::Utility->new($trading_period->{date_start}->{epoch})->datetime;
     my $spot_at_start = $tick->quote;
     my $tiy = ($trading_period->{date_expiry}->{epoch} - $trading_period->{date_start}->{epoch}) / (365 * 86400);
 
