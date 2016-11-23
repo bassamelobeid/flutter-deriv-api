@@ -9,6 +9,6 @@
     "date_expiry":"1479787200",
     "trading_period_start":"1479779100",
     "contract_type":"CALLE",
-    "barrier":[81.975, 81.879, 81.831],
+    "barriers":[{"barrier": "84.451", "barrier2": "83.467"}, {"barrier": "82.811", "barrier2": "82.155"}],
     "passthrough":{}
 }
