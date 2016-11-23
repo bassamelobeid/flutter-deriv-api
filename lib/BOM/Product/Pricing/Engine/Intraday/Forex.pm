@@ -279,7 +279,7 @@ sub _build_ticks_for_trend {
             end_epoch => $bet->date_pricing->epoch,
             num       => 1,
         });
-        push @$ticks, $latest_tick->[0] if ($latest_tick and $ticks and $latest_tick->[0]->{epoch} > $ticks->[-1]->{agg_epoch});
+        #push @$ticks, $latest_tick->[0] if ($latest_tick and $ticks and $latest_tick->[0]->{epoch} > $ticks->[-1]->{agg_epoch});
     }
 
     #my $ticks = BOM::Market::AggTicks->new->retrieve({
