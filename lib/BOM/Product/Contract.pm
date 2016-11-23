@@ -584,7 +584,7 @@ sub _market_convention {
 }
 
 has engine_ask_probability => (
-    is      => 'ro',
+    is         => 'ro',
     lazy_build => 1,
 );
 
@@ -626,7 +626,7 @@ sub _build_engine_ask_probability {
                         tick_count   => 20
                     }
                 ),
-                economic_events => $self->_generate_market_data->{economic_events},
+                economic_events => _generate_market_data($self->underlying, $self->date_start)->{economic_events},
             );
         } elsif ($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
             %pricing_parameters = (
@@ -640,7 +640,7 @@ sub _build_engine_ask_probability {
                 date_expiry              => $self->date_expiry,
                 discount_rate            => $self->discount_rate,
                 mu                       => $self->mu,
-                vol                      => $self->pricing_vol,
+                ($self->has_pricing_vol ? (vol  => $self->has_pricing_vol):()),
                 payouttime_code          => $self->payouttime_code,
                 q_rate                   => $self->q_rate,
                 r_rate                   => $self->r_rate,
@@ -1382,10 +1382,10 @@ sub _build_risk_markup {
     my $self = shift;
 
     my $base_amount = 0;
-        $DB::single=1;
+    $DB::single = 1;
     if ($self->pricing_engine and $self->pricing_engine->can('risk_markup')) {
         $base_amount = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->pricing_engine->risk_markup->amount;
-    } elsif ( $self->new_interface_engine ) {
+    } elsif ($self->new_interface_engine) {
         $base_amount = $self->debug_information->{risk_markup}->{amount};
     }
 
