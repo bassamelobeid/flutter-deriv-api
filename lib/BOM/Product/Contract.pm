@@ -627,12 +627,11 @@ sub _engine_ask_probability {
             my $matrices = Quant::Framework::CorrelationMatrix->new($construct_args);
 
             %pricing_parameters = (
-                correlation_matrices => $matrices->document,
                 contract_type        => $self->pricing_code,
-                trading_calendar     => $self->calendar,
                 spot                 => $self->pricing_spot,
                 strikes              => [grep { $_ } values %{$self->barriers_for_pricing}],
                 date_start           => $self->effective_start,
+                chronicle_reader     => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
                 date_pricing         => $self->date_pricing,
                 date_expiry          => $self->date_expiry,
                 discount_rate        => $self->discount_rate,
@@ -657,7 +656,6 @@ sub _engine_ask_probability {
 
         my $package = $self->pricing_engine_name . '::ask_probability';
         my $coderef = \&$package;
-        $DB::single=1;
         return $coderef->(\%pricing_parameters);
     }
 
@@ -1060,23 +1058,39 @@ my $pc_params_setters = {
     commission_markup      => sub { my $self = shift; $self->price_calculator->commission_markup($self->commission_markup) },
     commission_from_stake  => sub { my $self = shift; $self->price_calculator->commission_from_stake($self->commission_from_stake) },
     discounted_probability => sub { my $self = shift; $self->price_calculator->discounted_probability($self->discounted_probability) },
-
-    probability => sub {
+    probability            => sub {
         my $self        = shift;
         my $probability;
         if ($self->new_interface_engine) {
             $probability = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'theo_probability',
-                description => 'theoretical value of a contract',
+                    name        => 'theo_probability',
+                    description => 'theoretical value of a contract',
+                    set_by      => $self->pricing_engine_name,
+                    base_amount => $self->_engine_ask_probability,
+                    minimum     => 0,
+                    maximum     => 1,
+                });
+        } else {
+            $probability = $self->pricing_engine->probability;
+        }
+        $self->price_calculator->theo_probability($probability);
+    },
+    bs_probability => sub {
+        my $self           = shift;
+        my $bs_probability;
+        if ($self->new_interface_engine) {
+            $bs_probability = Math::Util::CalculatedValue::Validatable->new({
+                name        => 'bs_probability',
+                description => 'BlackScholes value of a contract',
                 set_by      => $self->pricing_engine_name,
                 base_amount => $self->_engine_ask_probability,
                 minimum     => 0,
                 maximum     => 1,
             });
         } else {
-            $probability = $self->pricing_engine->probability;
+            $bs_probability = $self->pricing_engine->bs_probability;
         }
-        $self->price_calculator->theo_probability($probability);
+        $self->price_calculator->bs_probability($bs_probability);
     },
     opposite_ask_probability => sub {
         my $self = shift;
