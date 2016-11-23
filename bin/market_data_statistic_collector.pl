@@ -189,7 +189,7 @@ sub _collect_correlation_ages {
 }
 
 sub _collect_pipsize_stats {
-    my @symbols = create_underlying_db->get_symbols_for(market => ['volidx']);
+    my @symbols = create_underlying_db->get_symbols_for(market => ['volidx'], submarket => ['random_index']);
     foreach my $symbol (@symbols) {
         my $underlying = create_underlying($symbol);
         my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
