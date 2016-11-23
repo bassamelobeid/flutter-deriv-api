@@ -279,7 +279,7 @@ sub _build_ticks_for_trend {
             end_epoch => $bet->date_pricing->epoch,
             num       => 1,
         });
-        #push @$ticks, $latest_tick->[0] if ($latest_tick and $ticks and $latest_tick->[0]->{epoch} > $ticks->[-1]->{agg_epoch});
+        push @$ticks, $latest_tick->[0] if (scalar(@$latest_tick) and scalar(@$ticks) and $latest_tick->[0]->{epoch} > $ticks->[-1]->{agg_epoch});
     }
 
     #my $ticks = BOM::Market::AggTicks->new->retrieve({
@@ -292,7 +292,7 @@ sub _build_ticks_for_trend {
 
     print "###### " . $remaining_interval->seconds . " " . $bet->date_pricing->epoch . " " . $self->more_than_short_term_cutoff . "\n";
     print "###### TickLength: " . scalar(@$ticks) . "\n";
-    #print "###### FirstTick: " . Dumper($ticks->[0]) . " LastTick: " . Dumper($ticks->[-1]) . " 2nd last: " . Dumper($ticks->[-2]) . "\n";
+    print "###### FirstTick: " . Dumper($ticks->[0]) . " LastTick: " . Dumper($ticks->[-1]) . " 2nd last: " . Dumper($ticks->[-2]) . "\n";
 
     return $ticks;
 }
