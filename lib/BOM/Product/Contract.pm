@@ -583,7 +583,12 @@ sub _market_convention {
     };
 }
 
-sub _engine_ask_probability {
+has engine_ask_probability => (
+    is      => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_engine_ask_probability {
     my $self = shift;
 
     if ($self->new_interface_engine) {
@@ -624,15 +629,9 @@ sub _engine_ask_probability {
                 economic_events => $self->_generate_market_data->{economic_events},
             );
         } elsif ($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
-            my $construct_args = {
-                symbol           => $self->underlying->market->name,
-                for_date         => $self->underlying->for_date,
-                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
-            };
-            my $matrices = Quant::Framework::CorrelationMatrix->new($construct_args);
-
             %pricing_parameters = (
                 contract_type            => $self->pricing_code,
+                for_date                 => $self->underlying->for_date,
                 spot                     => $self->pricing_spot,
                 strikes                  => [grep { $_ } values %{$self->barriers_for_pricing}],
                 date_start               => $self->effective_start,
@@ -1071,7 +1070,7 @@ my $pc_params_setters = {
                 name        => 'theo_probability',
                 description => 'theoretical value of a contract',
                 set_by      => $self->pricing_engine_name,
-                base_amount => $self->_engine_ask_probability,
+                base_amount => $self->engine_ask_probability,
                 minimum     => 0,
                 maximum     => 1,
             });
@@ -1084,7 +1083,7 @@ my $pc_params_setters = {
         my $self = shift;
         my $bs_probability;
         if ($self->new_interface_engine) {
-            my $ask_probability = $self->_engine_ask_probability;
+            my $ask_probability = $self->engine_ask_probability;
 
             if ($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
                 $bs_probability = Math::Util::CalculatedValue::Validatable->new({
@@ -1383,8 +1382,11 @@ sub _build_risk_markup {
     my $self = shift;
 
     my $base_amount = 0;
+        $DB::single=1;
     if ($self->pricing_engine and $self->pricing_engine->can('risk_markup')) {
         $base_amount = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->pricing_engine->risk_markup->amount;
+    } elsif ( $self->new_interface_engine ) {
+        $base_amount = $self->debug_information->{risk_markup}->{amount};
     }
 
     return Math::Util::CalculatedValue::Validatable->new({
