@@ -258,9 +258,10 @@ subtest 'invalid bet payout hobbling around' => sub {
         date_start   => $starting,
         date_pricing => $starting,
         duration     => '3d',
-        barrier      => '100.085',
+        barrier      => 'S8500P',
         current_tick => $tick,
     };
+
     my $bet = produce_contract($bet_params);
 
     my $expected_reasons = [qr/payout amount outside acceptable range.*/];
@@ -332,7 +333,7 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{amount}  = 20000;
-    $bet_params->{barrier} = '100.001';
+    $bet_params->{barrier} = 'S10P';
     $bet                   = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but when we ask for a higher payout, it validates just fine.');
 
@@ -352,7 +353,7 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     $mocked_contract->unmock_all;
 
     $bet_params->{duration} = '11d';
-    $bet_params->{barrier}  = '99.88';
+    $bet_params->{barrier}  = 'S-2P';
     $bet_params->{bet_type} = 'ONETOUCH';
 
     $bet              = produce_contract($bet_params);
@@ -394,10 +395,10 @@ subtest 'invalid barriers knocked down for great justice' => sub {
 
     $bet_params->{bet_type}     = 'UPORDOWN';
     $bet_params->{high_barrier} = 100.001;
-    $bet_params->{low_barrier}  = '99.99995';
+    $bet_params->{low_barrier}  = 'S-5P';
     $bet_params->{duration}     = '7d';
     $bet                        = produce_contract($bet_params);
-    $expected_reasons = [ qr/stake.*same as.*payout/, qr/Barrier too far from spot/];
+    $expected_reasons = [qr/^Mixed.*barriers/, qr/stake.*same as.*payout/, qr/Barrier too far from spot/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{low_barrier} = -100;      # Fine, we'll set our low barrier like you want.
@@ -846,7 +847,7 @@ subtest 'invalid lifetimes.. how rude' => sub {
 
     $bet_params->{bet_type} = 'CALL';
     $bet_params->{duration} = '1d';
-    $bet_params->{barrier}  = 101;
+    $bet_params->{barrier}  = 'S10P';
     $bet                    = produce_contract($bet_params);
     $expected_reasons       = [qr/Daily duration.*outside acceptable range/];
     test_error_list('buy', $bet, $expected_reasons);
@@ -866,7 +867,7 @@ subtest 'invalid lifetimes.. how rude' => sub {
     $bet_params->{date_start}   = $underlying->calendar->opening_on(Date::Utility->new('28-Mar-13'))->plus_time_interval('15m');
     $bet_params->{date_pricing} = $bet_params->{date_start};
     $bet_params->{duration}     = '8d';
-    $bet_params->{barrier}      = 101;
+    $bet_params->{barrier}      = 'S1P';
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
@@ -875,6 +876,7 @@ subtest 'invalid lifetimes.. how rude' => sub {
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
         {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
+
     $bet              = produce_contract($bet_params);
     $expected_reasons = [qr/enough trading.*calendar days/];
     test_error_list('buy', $bet, $expected_reasons);
