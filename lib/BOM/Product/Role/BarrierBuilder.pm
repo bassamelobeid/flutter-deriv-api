@@ -163,7 +163,7 @@ sub _apply_barrier_adjustment {
 
     #When pricing options during the news event period, the expected return shifts the strikes/barriers so that prices are marked up. Here are examples for each contract type:
     #A binary call strike = 105 and an expected return of 2% will be priced as a binary call strike = 105/(1+2%)
-    #A binary put strike = 105 and an expected return of 2% will be priced as a binary call strike = 105*(1+2%)
+    #A binary put strike = 105 and an expected return of 2% will be priced as a binary put strike = 105*(1+2%)
     #A touch (upper) barrier = 105 and an expected return of 2% will be priced as a touch barrier = 105/(1+2%)
     #A touch (lower) barrier = 105 and an expected return of 2% will be priced as a touch barrier = 105*(1+2%)
     #A no-touch (upper) barrier = 105 and an expected return of 2% will be priced as a no-touch barrier = 105*(1+2%)
