@@ -57,8 +57,7 @@ has [qw(id pricing_code display_name sentiment other_side_code payout_type payou
 
 has debug_information => (
     is      => 'ro',
-    default => sub { {} } 
-);
+    default => sub { {} });
 
 # Check whether the contract is expired or not . It is expired only if it passes the expiry time time and has valid exit tick
 has is_expired => (
@@ -590,12 +589,12 @@ sub _engine_ask_probability {
     if ($self->new_interface_engine) {
         my %pricing_parameters;
 
-        if($self->pricing_engine_name eq 'Pricing::Engine::Digits') {
+        if ($self->pricing_engine_name eq 'Pricing::Engine::Digits') {
             %pricing_parameters = (
-                strikes           => $self->barrier ? $self->barrier->as_absolute : undef,
-                contract_type     => $self->pricing_code,
+                strikes => $self->barrier ? $self->barrier->as_absolute : undef,
+                contract_type => $self->pricing_code,
             );
-        } elsif($self->pricing_engine_name eq 'Pricing::Engine::Asian') {
+        } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Asian') {
             %pricing_parameters = (
                 spot              => $self->pricing_spot,
                 strikes           => [grep { $_ } values %{$self->barriers_for_pricing}],
@@ -610,20 +609,21 @@ sub _engine_ask_probability {
                 contract_type     => $self->pricing_code,
                 underlying_symbol => $self->underlying->symbol,
             );
-        } elsif($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
+        } elsif ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
             %pricing_parameters = (
                 contract_type     => $self->pricing_code,
                 underlying_symbol => $self->underlying->symbol,
                 date_start        => $self->effective_start,
                 date_pricing      => $self->date_pricing,
                 ticks             => BOM::Market::AggTicks->new->retrieve({
-                    underlying        => $self->underlying,
-                    ending_epoch      => $self->date_start->epoch,
-                    tick_count        => 20
-                }),
-                economic_events   => $self->_generate_market_data->{economic_events},
+                        underlying   => $self->underlying,
+                        ending_epoch => $self->date_start->epoch,
+                        tick_count   => 20
+                    }
+                ),
+                economic_events => $self->_generate_market_data->{economic_events},
             );
-        } elsif($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
+        } elsif ($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
             my $construct_args = {
                 symbol           => $self->underlying->market->name,
                 for_date         => $self->underlying->for_date,
@@ -632,30 +632,30 @@ sub _engine_ask_probability {
             my $matrices = Quant::Framework::CorrelationMatrix->new($construct_args);
 
             %pricing_parameters = (
-                contract_type        => $self->pricing_code,
-                spot                 => $self->pricing_spot,
-                strikes              => [grep { $_ } values %{$self->barriers_for_pricing}],
-                date_start           => $self->effective_start,
-                chronicle_reader     => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
-                date_pricing         => $self->date_pricing,
-                date_expiry          => $self->date_expiry,
-                discount_rate        => $self->discount_rate,
-                mu                   => $self->mu,
-                vol                  => $self->pricing_vol,
-                payouttime_code      => $self->payouttime_code,
-                q_rate               => $self->q_rate,
-                r_rate               => $self->r_rate,
-                priced_with          => $self->priced_with,
-                underlying_symbol    => $self->underlying->symbol,
-                volsurface           => $self->volsurface->surface,
+                contract_type            => $self->pricing_code,
+                spot                     => $self->pricing_spot,
+                strikes                  => [grep { $_ } values %{$self->barriers_for_pricing}],
+                date_start               => $self->effective_start,
+                chronicle_reader         => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
+                date_pricing             => $self->date_pricing,
+                date_expiry              => $self->date_expiry,
+                discount_rate            => $self->discount_rate,
+                mu                       => $self->mu,
+                vol                      => $self->pricing_vol,
+                payouttime_code          => $self->payouttime_code,
+                q_rate                   => $self->q_rate,
+                r_rate                   => $self->r_rate,
+                priced_with              => $self->priced_with,
+                underlying_symbol        => $self->underlying->symbol,
+                volsurface               => $self->volsurface->surface,
                 volsurface_recorded_date => $self->volsurface->recorded_date,
-                market_convention    => $self->_market_convention,
+                market_convention        => $self->_market_convention,
             );
         } else {
             die "Unknown pricing engine: " . $self->pricing_engine_name;
         }
 
-        if(my @missing_parameters = grep !exists $pricing_parameters{$_}, @{$self->pricing_engine_name->required_args}) {
+        if (my @missing_parameters = grep !exists $pricing_parameters{$_}, @{$self->pricing_engine_name->required_args}) {
             die "Missing pricing parameters for engine " . $self->pricing_engine_name . " - " . join ',', @missing_parameters;
         }
 
@@ -1064,35 +1064,49 @@ my $pc_params_setters = {
     commission_from_stake  => sub { my $self = shift; $self->price_calculator->commission_from_stake($self->commission_from_stake) },
     discounted_probability => sub { my $self = shift; $self->price_calculator->discounted_probability($self->discounted_probability) },
     probability            => sub {
-        my $self        = shift;
+        my $self = shift;
         my $probability;
         if ($self->new_interface_engine) {
             $probability = Math::Util::CalculatedValue::Validatable->new({
-                    name        => 'theo_probability',
-                    description => 'theoretical value of a contract',
-                    set_by      => $self->pricing_engine_name,
-                    base_amount => $self->_engine_ask_probability,
-                    minimum     => 0,
-                    maximum     => 1,
-                });
+                name        => 'theo_probability',
+                description => 'theoretical value of a contract',
+                set_by      => $self->pricing_engine_name,
+                base_amount => $self->_engine_ask_probability,
+                minimum     => 0,
+                maximum     => 1,
+            });
         } else {
             $probability = $self->pricing_engine->probability;
         }
         $self->price_calculator->theo_probability($probability);
     },
     bs_probability => sub {
-        my $self           = shift;
+        my $self = shift;
         my $bs_probability;
         if ($self->new_interface_engine) {
-            $self->_engine_ask_probability;
-            $bs_probability = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'bs_probability',
-                description => 'BlackScholes value of a contract',
-                set_by      => $self->pricing_engine_name,
-                base_amount => $self->debug_information->{bs_probability}{amount},
-                minimum     => 0,
-                maximum     => 1,
-            });
+            my $ask_probability = $self->_engine_ask_probability;
+
+            if ($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
+                $bs_probability = Math::Util::CalculatedValue::Validatable->new({
+                    name        => 'bs_probability',
+                    description => 'BlackScholes value of a contract',
+                    set_by      => $self->pricing_engine_name,
+                    base_amount => $self->debug_information->{$self->pricing_code}->{base_probability}->{parameters}->{bs_probability}{amount},
+                    minimum     => 0,
+                    maximum     => 1,
+                });
+            } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Digits'
+                or $self->pricing_engine_name eq 'Pricing::Engine::Asian')
+            {
+                $bs_probability = Math::Util::CalculatedValue::Validatable->new({
+                    name        => 'bs_probability',
+                    description => 'BlackScholes value of a contract',
+                    set_by      => $self->pricing_engine_name,
+                    base_amount => $ask_probability,
+                    minimum     => 0,
+                    maximum     => 1,
+                });
+            }
         } else {
             $bs_probability = $self->pricing_engine->bs_probability;
         }
@@ -1827,7 +1841,6 @@ sub _build_new_interface_engine {
     return $engines{$self->pricing_engine_name} // 0;
 }
 
-
 sub _generate_market_data {
     my ($underlying, $date_start) = @_;
 
@@ -1862,7 +1875,6 @@ sub _generate_market_data {
     $result->{economic_events} = \@applicable_news;
     return $result;
 }
-
 
 sub _market_data {
     my $self = shift;
