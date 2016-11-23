@@ -12,6 +12,8 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 
+use Cache::RedisDB;
+
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -52,6 +54,26 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch + 1,
     quote      => 0.9936,
 });
+
+my $redis = Cache::RedisDB->redis;
+my $unagg_key   = "AGGTICKS_frxAUDCAD" . "_31m_FULL";
+my $encoder = Sereal::Encoder->new({
+        canonical => 1,
+    });
+my %defaults = (
+        symbol     => 'frxAUDCAD',
+        epoch      => $now->epoch, 
+        quote      => 0.9935,
+        bid        => 0.9935,
+        ask        => 0.9935,
+        count      => 1,
+    );
+$redis->zadd($unagg_key, $defaults{epoch}, $encoder->encode(\%defaults));
+
+$defaults{epoch} = $now->epoch+1;
+$defaults{quote} = 0.9936;
+$redis->zadd($unagg_key, $defaults{epoch}, $encoder->encode(\%defaults));
+
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDCAD',
     epoch      => $now->epoch + 1,
