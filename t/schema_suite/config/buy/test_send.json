@@ -1,0 +1,9 @@
+{
+ "token":"[_1]",
+ "token_type":"oauth_token",
+ "args":{
+    "buy": "[_2]",
+    "price": 10
+    }
+}
+
