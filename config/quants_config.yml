@@ -31,7 +31,7 @@ bet_limits:
       EUR: 1
       AUD: 1
       GBP: 1
-      JPY: 100
+      JPY: 70
     volidx:
       USD: 0.7
       EUR: 0.7
