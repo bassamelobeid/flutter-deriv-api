@@ -2324,14 +2324,15 @@ sub _validate_barrier_type {
     # The barrier for atm bet is always SOP which is relative
     return if ($self->is_atm_bet and defined $self->barrier and $self->barrier->barrier_type eq 'relative');
 
-
     foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
 
         if (defined $self->$barrier and $self->$barrier->barrier_type ne $barrier_type) {
 
             return {
                 message           => 'barrier should be ' . $barrier_type,
-                message_to_client => $intraday ? localize('Contracts less than 24 hours in duration would need a relative barrier. (barriers which need +/-)') : localize('Contracts more than 24 hours in duration would need an absolute barrier.'),
+                message_to_client => $intraday
+                ? localize('Contracts less than 24 hours in duration would need a relative barrier. (barriers which need +/-)')
+                : localize('Contracts more than 24 hours in duration would need an absolute barrier.'),
             };
         }
     }
