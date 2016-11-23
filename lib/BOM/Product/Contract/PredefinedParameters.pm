@@ -127,7 +127,7 @@ sub generate_trading_periods {
 
     my $next = next_generation_epoch($date);
     my $ttl = max(1, $next - $date->epoch);
-    BOM::System::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json([grep { defined } @trading_periods]), 'PX', $ttl);
+    BOM::System::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json([grep { defined } @trading_periods]), 'EX', $ttl);
 
     return \@trading_periods;
 }
@@ -169,7 +169,7 @@ sub update_predefined_highlow {
 
         my $ttl = max(1, $period->{date_expiry}->{epoch} - $now);
         # not using chronicle here because we don't want to save historical highlow data
-        BOM::System::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json([$new_high, $new_low]), 'PX', $ttl);
+        BOM::System::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json([$new_high, $new_low]), 'EX', $ttl);
     }
 
     return 1;
