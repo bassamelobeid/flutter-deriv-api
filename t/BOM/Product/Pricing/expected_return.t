@@ -113,12 +113,10 @@ foreach my $key (sort { $a cmp $b } keys %{$expected}) {
     }
 
     my $c = produce_contract($contract_args);
-    $DB::single=1;
 
     is roundnear(0.00001, $c->barriers_for_pricing->{barrier1}), $exp[0], "correct first barrier for $key";
     is roundnear(0.00001, $c->barriers_for_pricing->{barrier2}), $exp[1], "correct second barrier for $key" if $c->two_barriers;
 
-    $DB::single=1;
     #force pricing similar contract without any tentative events
     $contract_args->{tentative_events} = [];
     $c = produce_contract($contract_args);
