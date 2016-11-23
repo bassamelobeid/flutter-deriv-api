@@ -8,7 +8,7 @@
       "properties": {
         "balance_after": {
           "type": "number",
-          "pattern": "^[_3]$",
+          "pattern": "^[_2]$",
           "required": 1
         },
         "longcode": {
