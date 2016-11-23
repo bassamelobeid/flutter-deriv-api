@@ -90,23 +90,7 @@ sub get_loginid_by_access_token {
     my $expires_in = '60 days';
 
     return $self->dbh->selectrow_array(<<'SQL', undef, $token, $expires_in);
-WITH upd AS (
-     UPDATE oauth.access_token
-        SET last_used=now(),
-            expires='tomorrow'::TIMESTAMP + $2::INTERVAL
-      WHERE access_token = $1
-        AND expires > now()
-  RETURNING loginid, creation_time, ua_fingerprint
-)
-SELECT loginid, creation_time, ua_fingerprint
-  FROM oauth.access_token
- WHERE access_token = $1
-   AND expires > now()
-   AND last_used >= 'today'::TIMESTAMP
- UNION ALL
-SELECT *
-  FROM upd
- LIMIT 1
+SELECT * FROM oauth.get_loginid_by_access_token($1, $2::INTERVAL)
 SQL
 }
 
