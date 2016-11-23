@@ -6,7 +6,7 @@ use warnings;
 use Exporter qw(import);
 our @EXPORT_OK = qw(get_predefined_offerings get_trading_periods generate_trading_periods update_predefined_highlow seconds_to_period_expiration);
 
-use JSON qw(to_json);
+use JSON qw(to_json from_json);
 use Time::HiRes;
 use Date::Utility;
 use List::Util qw(first min max);
@@ -16,7 +16,7 @@ use LandingCompany::Offerings qw(get_offerings_flyby);
 
 use BOM::Product::Contract::Category;
 use BOM::MarketData qw(create_underlying);
-use BOM::System::Chronicle;
+use BOM::System::RedisReplicated;
 use BOM::Platform::Runtime;
 
 my $cache_namespace = 'predefined_parameters';
@@ -68,11 +68,14 @@ sub get_trading_periods {
     my $underlying = create_underlying($symbol, $date);
     $date //= Date::Utility->new;
 
-    my $key    = join '_', ('trading_period', $underlying->symbol, $date->date, $date->hour);
-    my $reader = BOM::System::Chronicle::get_chronicle_reader($underlying->for_date);
-    my $cache  = $underlying->for_date ? $reader->get_for($cache_namespace, $key, $underlying->for_date) : $reader->get($cache_namespace, $key);
+    return generate_trading_periods($underlying->symbol, $underlying->for_date) if $underlying->for_date;
 
-    return $cache // [];
+    my $key = join '_', ('trading_period', $underlying->symbol, $date->date, $date->hour);
+    my $cache = BOM::System::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
+
+    return from_json($cache) if ($cache);
+
+    return [];
 }
 
 =head2 generate_trading_periods
@@ -123,7 +126,7 @@ sub generate_trading_periods {
     push @trading_periods, @intraday_periods if @intraday_periods;
 
     my $ttl = seconds_to_period_expiration($date);
-    BOM::System::Chronicle::get_chronicle_writer()->set($cache_namespace, $key, [grep { defined } @trading_periods], $date, $ttl);
+    BOM::System::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json([grep { defined } @trading_periods]), 'PX', $ttl);
 
     return \@trading_periods;
 }
@@ -146,10 +149,11 @@ sub update_predefined_highlow {
 
     foreach my $period (@periods) {
         my $key = join '_', ('highlow', $underlying->symbol, $period->{date_start}->{epoch}, $period->{date_expiry}->{epoch});
-        my $current_highlow = BOM::System::Chronicle::get_chronicle_reader()->get($cache_namespace, $key);
+        my $cache = BOM::System::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
         my ($new_high, $new_low);
 
-        if ($current_highlow) {
+        if ($cache) {
+            my $current_highlow = from_json($cache);
             my ($high, $low) = map { $current_highlow->[$_] } (0, 1);
             $new_high = max($new_quote, $high);
             $new_low = min($new_quote, $low);
@@ -183,9 +187,9 @@ sub _get_predefined_highlow {
     }
 
     my $highlow_key = join '_', ('highlow', $underlying->symbol, $period->{date_start}->{epoch}, $period->{date_expiry}->{epoch});
-    my $cache = BOM::System::Chronicle::get_chronicle_reader->get($cache_namespace, $highlow_key);
+    my $cache = BOM::System::RedisReplicated::redis_read->get($cache_namespace . '::' . $highlow_key);
 
-    return @$cache if ($cache);
+    return @{from_json($cache)} if ($cache);
     return ();
 }
 
