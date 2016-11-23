@@ -59,7 +59,7 @@ subtest 'predefined_contracts' => sub {
 
     $bet_params->{landing_company} = 'japan';
     $bet_params->{bet_type}        = 'CALLE';
-    $bet_params->{barrier}         = 'S10P';
+    $bet_params->{barrier}         = '100.010';
     $c                             = produce_contract($bet_params);
     ok %{$c->predefined_contracts}, 'has predefined_contracts for japan';
     ok !$c->is_valid_to_buy, 'not valid to buy';
@@ -91,8 +91,8 @@ subtest 'predefined_contracts' => sub {
     like($c->primary_validation_error->message_to_client, qr/Invalid barrier/, 'throws error');
 
     $bet_params->{bet_type}     = 'EXPIRYMISS';
-    $bet_params->{high_barrier} = 101;
-    $bet_params->{low_barrier}  = 99;
+    $bet_params->{high_barrier} = '101';
+    $bet_params->{low_barrier}  = '99';
     $c                          = produce_contract($bet_params);
     $c->predefined_contracts({
             $expiry_epoch => {
