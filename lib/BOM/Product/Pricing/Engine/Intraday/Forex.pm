@@ -235,13 +235,13 @@ sub _build_ticks_for_trend {
 
     my $remaining_interval = Time::Duration::Concise::Localize->new(interval => $lookback_secs);
 
-    my $tmp = BOM::Market::AggTicks->new->retrieve({
-        underlying   => $bet->underlying,
-        interval     => $remaining_interval,
-        ending_epoch => $bet->date_pricing->epoch,
-        fill_cache   => 1,
-        aggregated   => $self->more_than_short_term_cutoff,
-    });
+    #my $tmp = BOM::Market::AggTicks->new->retrieve({
+    #    underlying   => $bet->underlying,
+    #    interval     => $remaining_interval,
+    #    ending_epoch => $bet->date_pricing->epoch,
+    #    fill_cache   => 1,
+    #    aggregated   => $self->more_than_short_term_cutoff,
+    #});
 
     my $ticks_source =
         $self->more_than_short_term_cutoff
@@ -292,7 +292,7 @@ sub _build_ticks_for_trend {
 
     print "###### " . $remaining_interval->seconds . " " . $bet->date_pricing->epoch . " " . $self->more_than_short_term_cutoff . "\n";
     print "###### TickLength: " . scalar(@$ticks) . "\n";
-    print "###### FirstTick: " . Dumper($ticks->[0]) . " LastTick: " . Dumper($ticks->[-1]) . " 2nd last: " . Dumper($ticks->[-2]) . "\n";
+    #print "###### FirstTick: " . Dumper($ticks->[0]) . " LastTick: " . Dumper($ticks->[-1]) . " 2nd last: " . Dumper($ticks->[-2]) . "\n";
 
     return $ticks;
 }
