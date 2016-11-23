@@ -14,7 +14,7 @@ use Date::Utility;
 use Cache::RedisDB;
 use BOM::Market::AggTicks;
 
-BOM::Market::AggTicks->new->flush();
+#BOM::Market::AggTicks->new->flush();
 
 my $now = Date::Utility->new('2016-09-22');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

@@ -18,7 +18,7 @@ use Text::CSV::Slurp;
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-BOM::Market::AggTicks->new->flush;
+#BOM::Market::AggTicks->new->flush;
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed');
 
 my @symbols = map { create_underlying($_) } create_underlying_db->symbols_for_intraday_index;

@@ -60,7 +60,7 @@ my $args = {
     barrier      => 'S0P',
 };
 
-BOM::Market::AggTicks->new->flush;
+#BOM::Market::AggTicks->new->flush;
 
 subtest 'PUT variations' => sub {
     lives_ok {

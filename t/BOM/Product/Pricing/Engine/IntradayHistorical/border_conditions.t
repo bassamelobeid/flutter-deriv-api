@@ -17,7 +17,7 @@ use Quant::Framework::VolSurface::Utils;
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-BOM::Market::AggTicks->new->flush;
+#BOM::Market::AggTicks->new->flush;
 
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
 
