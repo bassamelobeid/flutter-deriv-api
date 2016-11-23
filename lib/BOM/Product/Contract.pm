@@ -55,6 +55,11 @@ has [qw(id pricing_code display_name sentiment other_side_code payout_type payou
     default => undef,
 );
 
+has debug_information => (
+    is      => 'ro',
+    default => sub { {} } 
+);
+
 # Check whether the contract is expired or not . It is expired only if it passes the expiry time time and has valid exit tick
 has is_expired => (
     is         => 'ro',
@@ -656,7 +661,7 @@ sub _engine_ask_probability {
 
         my $package = $self->pricing_engine_name . '::ask_probability';
         my $coderef = \&$package;
-        return $coderef->(\%pricing_parameters);
+        return $coderef->(\%pricing_parameters, $self->debug_information);
     }
 
     return;
@@ -1079,11 +1084,12 @@ my $pc_params_setters = {
         my $self           = shift;
         my $bs_probability;
         if ($self->new_interface_engine) {
+            $self->_engine_ask_probability;
             $bs_probability = Math::Util::CalculatedValue::Validatable->new({
                 name        => 'bs_probability',
                 description => 'BlackScholes value of a contract',
                 set_by      => $self->pricing_engine_name,
-                base_amount => $self->_engine_ask_probability,
+                base_amount => $self->debug_information->{bs_probability}{amount},
                 minimum     => 0,
                 maximum     => 1,
             });

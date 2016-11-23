@@ -51,7 +51,7 @@ foreach my $code (@codes) {
         {
             symbol        => $_,
             recorded_date => $now,
-        }) for (qw/GBP USD/);
+        }) for (qw/GBP USD GBP-USD/);
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
