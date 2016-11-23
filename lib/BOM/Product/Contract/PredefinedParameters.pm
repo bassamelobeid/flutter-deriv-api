@@ -289,6 +289,11 @@ sub _get_expired_barriers {
 
     my ($high, $low) = _get_predefined_highlow($underlying, $trading_period);
 
+    unless ($high and $low) {
+        warn "highlow is undefined for $trading_period->{date_start}->{date} - $trading_period->{date_expiry}->{date}";
+        return [];
+    }
+
     my @expired_barriers;
     foreach my $barrier (@$available_barriers) {
         my $ref_barrier = (ref $barrier ne 'ARRAY') ? [$barrier] : $barrier;
