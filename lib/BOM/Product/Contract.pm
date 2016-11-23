@@ -2318,15 +2318,12 @@ sub _validate_barrier_type {
 
     my $intraday = $self->is_intraday;
     my $barrier_type = $intraday ? 'relative' : 'absolute';
-    my $error_message =
-        $intraday
-        ? 'Contracts less than 24 hours in duration would need a relative barrier. (barriers which need +/-)'
-        : 'Contracts more than 24 hours in duration would need an absolute barrier';
 
     return if ($self->tick_expiry or $self->is_spread);
 
     # The barrier for atm bet is always SOP which is relative
-    return if ($self->is_atm_bet and $self->barrier->barrier_type eq 'relative');
+    return if ($self->is_atm_bet and defined $self->barrier and $self->barrier->barrier_type eq 'relative');
+
 
     foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
 
@@ -2334,7 +2331,7 @@ sub _validate_barrier_type {
 
             return {
                 message           => 'barrier should be ' . $barrier_type,
-                message_to_client => localize($error_message),
+                message_to_client => $intraday ? localize('Contracts less than 24 hours in duration would need a relative barrier. (barriers which need +/-)') : localize('Contracts more than 24 hours in duration would need an absolute barrier.'),
             };
         }
     }
