@@ -90,7 +90,8 @@ sub get_loginid_by_access_token {
     my $expires_in = '60 days';
 
     return $self->dbh->selectrow_array(<<'SQL', undef, $token, $expires_in);
-SELECT * FROM oauth.get_loginid_by_access_token($1, $2::INTERVAL)
+SELECT loginid, creation_time, ua_fingerprint
+  FROM oauth.get_loginid_by_access_token($1, $2::INTERVAL)
 SQL
 }
 
