@@ -235,60 +235,37 @@ sub _build_ticks_for_trend {
 
     my $remaining_interval = Time::Duration::Concise::Localize->new(interval => $lookback_secs);
 
-    #my $tmp = BOM::Market::AggTicks->new->retrieve({
-    #    underlying   => $bet->underlying,
-    #    interval     => $remaining_interval,
-    #    ending_epoch => $bet->date_pricing->epoch,
-    #    fill_cache   => 1,
-    #    aggregated   => $self->more_than_short_term_cutoff,
-    #});
-
-    my $ticks_source =
-        $self->more_than_short_term_cutoff
-        ? Data::Resample::ResampleCache->new({
-            redis => Cache::RedisDB->redis,
-        })
-        : Data::Resample::TicksCache->new({
-            redis => Cache::RedisDB->redis,
-        });
-
-    my $ticks;
-    if ($self->more_than_short_term_cutoff) {
-        $ticks = $ticks_source->resample_cache_get({
-            symbol      => $bet->underlying->symbol,
-            start_epoch => $bet->date_pricing->epoch - $remaining_interval->seconds,
-            end_epoch   => $bet->date_pricing->epoch,
-            backtest    => !$bet->backtest,
-        });
-    } else {
-        $ticks = $ticks_source->tick_cache_get({
-            symbol      => $bet->underlying->symbol,
-            start_epoch => $bet->date_pricing->epoch - $remaining_interval->seconds,
-            end_epoch   => $bet->date_pricing->epoch,
-            backtest    => !$bet->backtest,
-        });
-    }
-
     my $ticks_cache = Data::Resample::TicksCache->new({
         redis => Cache::RedisDB->redis,
     });
 
+    my $resample_cache = Data::Resample::ResampleCache->new({
+        redis => Cache::RedisDB->redis,
+    });
+
+    my $ticks;
     if ($self->more_than_short_term_cutoff) {
+        $ticks = $resample_cache->resample_cache_get({
+            symbol      => $bet->underlying->symbol,
+            start_epoch => $bet->date_pricing->epoch - $remaining_interval->seconds,
+            end_epoch   => $bet->date_pricing->epoch,
+            backtest    => !$bet->backtest,
+        });
+
         my $latest_tick = $ticks_cache->tick_cache_get_num_ticks({
             symbol    => $bet->underlying->symbol,
             end_epoch => $bet->date_pricing->epoch,
             num       => 1,
         });
         push @$ticks, $latest_tick->[0] if (scalar(@$latest_tick) and scalar(@$ticks) and $latest_tick->[0]->{epoch} > $ticks->[-1]->{agg_epoch});
+    } else {
+        $ticks = $ticks_cache->tick_cache_get({
+            symbol      => $bet->underlying->symbol,
+            start_epoch => $bet->date_pricing->epoch - $remaining_interval->seconds,
+            end_epoch   => $bet->date_pricing->epoch,
+            backtest    => !$bet->backtest,
+        });
     }
-
-    #my $ticks = BOM::Market::AggTicks->new->retrieve({
-    #    underlying   => $bet->underlying,
-    #    interval     => $remaining_interval,
-    #    ending_epoch => $bet->date_pricing->epoch,
-    #    fill_cache   => !$bet->backtest,
-    #    aggregated   => $self->more_than_short_term_cutoff,
-    #});
 
     print "###### " . $remaining_interval->seconds . " " . $bet->date_pricing->epoch . " " . $self->more_than_short_term_cutoff . "\n";
     print "###### TickLength: " . scalar(@$ticks) . "\n";
