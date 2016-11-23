@@ -62,7 +62,7 @@ if ($broker and ($id or $short_code)) {
     my $action_type = $details->{action_type} // 'buy';    #If it is with shortcode as input, we just want to verify the ask price
     my $sell_time = $details->{sell_time};
     my $purchase_time = $details->{purchase_time} // $original_contract->date_start;
-    my $landing_company = $landing_company = LandingCompany::Registry::get_by_broker($broker)->short;
+    my $landing_company = defined $client ? $client->landing_company->short : LandingCompany::Registry::get_by_broker($broker)->short;
 
     $start =
           $params{start}          ? Date::Utility->new($params{start})
@@ -201,13 +201,8 @@ sub _get_pricing_parameter_from_IH_pricer {
 
     my $risk_markup = $pe->risk_markup;
     $pricing_parameters->{risk_markup} = {
-        economic_events_markup          => $risk_markup->peek_amount('economic_events_markup')          // 0,
-        intraday_historical_iv_risk     => $risk_markup->peek_amount('intraday_historical_iv_risk')     // 0,
-        quiet_period_markup             => $risk_markup->peek_amount('quiet_period_markup')             // 0,
-        vol_spread_markup               => $risk_markup->peek_amount('vol_spread_markup')               // 0,
-        eod_market_risk_markup          => $risk_markup->peek_amount('intraday_eod_markup')             // 0,
-        spot_jump_markup                => $risk_markup->peek_amount('spot_jump_markup')                // 0,
-        short_term_kurtosis_risk_markup => $risk_markup->peek_amount('short_term_kurtosis_risk_markup') // 0,
+        map { $_ => $risk_markup->peek_amount($_) // 0 }
+            qw(economic_events_markup intraday_historical_iv_risk quiet_period_markup vol_spread_markup intraday_eod_markup spot_jump_markup short_term_kurtosis_risk_markup),
 
     };
 
@@ -273,17 +268,8 @@ sub _get_pricing_parameter_from_vv_pricer {
 
     my $risk_markup = $pe->risk_markup;
     $pricing_parameters->{risk_markup} = {
-        vol_spread_markup             => $risk_markup->peek_amount('vol_spread_markup'),
-        vol_spread                    => $risk_markup->peek_amount('vol_spread'),
-        bet_vega                      => $risk_markup->peek_amount('bet_vega'),
-        spot_spread_markup            => $risk_markup->peek_amount('spot_spread_markup'),
-        bet_delta                     => $risk_markup->peek_amount('bet_delta'),
-        spot_spread                   => $risk_markup->peek_amount('spot_spread'),
-        forward_start                 => $risk_markup->peek_amount('forward_start'),
-        eod_market_risk_markup        => $risk_markup->peek_amount('eod_market_risk_markup'),
-        butterfly_markup              => $risk_markup->peek_amount('butterfly_markup'),
-        butterfly_greater_than_cutoff => $risk_markup->peek_amount('butterfly_greater_than_cutoff'),
-        spread_to_markup              => $risk_markup->peek_amount('spread_to_markup'),
+        map { $_ => $risk_markup->peek_amount($_) // 0 }
+            qw(vol_spread_markup vol_spread bet_vega spot_spread_markup bet_delta spot_spread forward_start eod_market_risk_markup butterfly_markup butterfly_greater_than_cutoff spread_to_markup),
 
     };
 
@@ -325,14 +311,7 @@ sub _get_pricing_parameter_from_slope_pricer {
     my $theo_param = $debug_information->{$contract_type}{base_probability}{parameters};
 
     if (not $contract->two_barriers) {
-        if ($contract->priced_with ne 'base') {
-            $pricing_parameters->{bs_probability} = _get_bs_probability_parameters($theo_param->{bs_probability}{parameters}, $contract->payout);
-            $pricing_parameters->{slope_adjustment} = {
-                weight => $contract_type eq 'CALL' ? -1 : 1,
-                slope => $theo_param->{slope_adjustment}{parameters}{slope},
-                vanilla_vega => $theo_param->{slope_adjustment}{parameters}{vanilla_vega}{amount},
-            };
-        } elsif ($contract->priced_with eq 'base') {
+        if ($contract->priced_with eq 'base') {
             $pricing_parameters->{bs_probability} =
                 _get_bs_probability_parameters($theo_param->{numeraire_probability}{parameters}{bs_probability}{parameters}, $contract->payout);
             my $slope_param = $theo_param->{numeraire_probability}{parameters}{slope_adjustment}{parameters};
@@ -340,6 +319,13 @@ sub _get_pricing_parameter_from_slope_pricer {
                 weight => $contract_type eq 'CALL' ? -1 : 1,
                 slope => $slope_param->{slope},
                 vanilla_vega => $slope_param->{vanilla_vega}{amount},
+            };
+        } else {
+            $pricing_parameters->{bs_probability} = _get_bs_probability_parameters($theo_param->{bs_probability}{parameters}, $contract->payout);
+            $pricing_parameters->{slope_adjustment} = {
+                weight => $contract_type eq 'CALL' ? -1 : 1,
+                slope => $theo_param->{slope_adjustment}{parameters}{slope},
+                vanilla_vega => $theo_param->{slope_adjustment}{parameters}{vanilla_vega}{amount},
             };
         }
     } else {
