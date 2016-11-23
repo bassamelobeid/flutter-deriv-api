@@ -41,8 +41,9 @@ my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
 $at->fill_from_historical_feed({
     underlying   => $underlying,
     ending_epoch => $date_start->epoch,
-    interval     => Time::Duration::Concise->new('interval' => '1h'),
+    interval     => Time::Duration::Concise->new('interval' => '2h'),
 });
+
 my $recorded_date = $date_start->truncate_to_day;
 Test::BOM::UnitTestPrice::create_pricing_data($underlying->symbol, $payout_currency, $recorded_date);
 
