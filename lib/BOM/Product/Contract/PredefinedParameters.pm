@@ -126,7 +126,7 @@ sub generate_trading_periods {
     push @trading_periods, @intraday_periods if @intraday_periods;
 
     my $next = next_generation_epoch($date);
-    my $ttl  = max(1, $next - $date->epoch);
+    my $ttl = max(1, $next - $date->epoch);
     BOM::System::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json([grep { defined } @trading_periods]), 'PX', $ttl);
 
     return \@trading_periods;
