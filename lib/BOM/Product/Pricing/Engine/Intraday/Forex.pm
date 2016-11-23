@@ -252,12 +252,6 @@ sub _build_ticks_for_trend {
             backtest    => !$bet->backtest,
         });
 
-        my $latest_tick = $ticks_cache->tick_cache_get_num_ticks({
-            symbol    => $bet->underlying->symbol,
-            end_epoch => $bet->date_pricing->epoch,
-            num       => 1,
-        });
-        push @$ticks, $latest_tick->[0] if (scalar(@$latest_tick) and scalar(@$ticks) and $latest_tick->[0]->{epoch} > $ticks->[-1]->{agg_epoch});
     } else {
         $ticks = $ticks_cache->tick_cache_get({
             symbol      => $bet->underlying->symbol,
@@ -265,6 +259,15 @@ sub _build_ticks_for_trend {
             end_epoch   => $bet->date_pricing->epoch,
             backtest    => !$bet->backtest,
         });
+    }
+
+    if ($self->more_than_short_term_cutoff) {
+        my $latest_tick = $ticks_cache->tick_cache_get_num_ticks({
+            symbol    => $bet->underlying->symbol,
+            end_epoch => $bet->date_pricing->epoch,
+            num       => 1,
+        });
+        push @$ticks, $latest_tick->[0] if (scalar(@$latest_tick) and scalar(@$ticks) and $latest_tick->[0]->{epoch} > $ticks->[-1]->{agg_epoch});
     }
 
     print "###### " . $remaining_interval->seconds . " " . $bet->date_pricing->epoch . " " . $self->more_than_short_term_cutoff . "\n";
