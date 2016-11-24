@@ -28,6 +28,7 @@ use BOM::RPC::v3::App;
 use BOM::RPC::v3::Japan::NewAccount;
 use BOM::RPC::v3::MT5::Account;
 use BOM::RPC::v3::CopyTrading::Statistics;
+use BOM::RPC::v3::CopyTrading;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
