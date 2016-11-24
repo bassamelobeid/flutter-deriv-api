@@ -20,6 +20,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 #use BOM::Market::AggTicks;
 use Data::Resample::ResampleCache;
+use Data::Resample::TicksCache;
 use Cache::RedisDB;
 
 note('mocking ticks to prevent warnings.');
