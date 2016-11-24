@@ -60,6 +60,7 @@
     "barriers": {
        "type": "array",
         "description":"Barriers for the contract",
+        "required": "1",
         "items": {
             "type": "object",
             "description": "Barrier for the contract",
