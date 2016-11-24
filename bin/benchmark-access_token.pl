@@ -32,10 +32,15 @@ sub doit {
     my @times;
 
     while ($req--) {
-	$m->get_loginid_by_access_token($token);
+	my @l = $m->get_loginid_by_access_token($token);
 	my $now = Time::HiRes::time;
-	push @times, ($now-$stmp)*1000;
 	$stmp = $now;
+
+	push @times, ($now-$stmp)*1000;
+
+	die "loginid" unless length $l[0];
+	die "creation_time" unless length $l[1];
+	die "ua_fingerprint" unless length $l[2];
     }
     my $end = Time::HiRes::time;
 
