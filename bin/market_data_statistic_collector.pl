@@ -189,11 +189,8 @@ sub _collect_correlation_ages {
 }
 
 sub _collect_pipsize_stats {
-    my @symbols = create_underlying_db->get_symbols_for(market => ['volidx'], submarket => ['random_index', 'random_daily']);
+    my @symbols = create_underlying_db->get_symbols_for(market => ['volidx'], submarket => ['random_index', 'random_daily'], contract_category => 'ANY');
     foreach my $symbol (@symbols) {
-        if ($symbol eq 'RDMOON' or $symbol eq 'RDSUN') {
-            next;
-        }
         my $underlying = create_underlying($symbol);
         my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
         my $vol        = $volsurface->get_volatility();
