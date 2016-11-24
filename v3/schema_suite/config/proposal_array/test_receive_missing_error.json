@@ -34,7 +34,7 @@
         },
         "msg_type": {
             "type": "string",
-            "pattern": "^proposal$",
+            "pattern": "^proposal_array$",
             "required": "1"
         }
     }
