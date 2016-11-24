@@ -586,6 +586,8 @@ sub set_settings {
             # this may return error or {status => 1}
             $err = BOM::RPC::v3::Japan::NewAccount::set_jp_settings($params);
         }
+
+        $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && $client->broker_code ne 'CR';
     }
 
     return $err if $err->{error};
@@ -598,8 +600,7 @@ sub set_settings {
         $user->save;
     }
 
-    if (defined $allow_copiers) {
-        return BOM::RPC::v3::Utility::permission_error() if $client->broker_code ne 'CR';
+    if ($allow_copiers) {
         $client->allow_copiers($allow_copiers);
     }
 
