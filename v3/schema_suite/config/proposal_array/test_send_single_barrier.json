@@ -7,5 +7,12 @@
   "symbol": "[_2]",
   "duration": "[_3]",
   "duration_unit": "[_4]",
-  "barrier": "[_5]"
+    "barriers": [
+        {
+            "barrier": "[_5]"
+        },
+        {
+            "barrier": "[_6]"
+        }
+    ]
 }
