@@ -20,6 +20,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 #use BOM::Market::AggTicks;
 use Data::Resample::ResampleCache;
+use Cache::RedisDB;
 
 note('mocking ticks to prevent warnings.');
 #my $mocked = Test::MockModule->new('BOM::Market::AggTicks');
@@ -176,6 +177,22 @@ subtest 'memory cycle test' => sub {
             epoch      => $now->epoch,
             quote      => 100,
         });
+
+        my $redis     = Cache::RedisDB->redis;
+        my $unagg_key = "AGGTICKS_$u_symbol" . "_31m_FULL";
+        my $encoder   = Sereal::Encoder->new({
+            canonical => 1,
+        });
+        my %defaults = (
+            symbol => $u_symbol,
+            epoch  => $now->epoch,
+            quote  => 100,
+            bid    => 100,
+            ask    => 100,
+            count  => 1,
+        );
+        $redis->zadd($unagg_key, $defaults{epoch}, $encoder->encode(\%defaults));
+
         foreach my $type (@contract_types) {
             foreach my $start_type (
                 get_offerings_with_filter(
