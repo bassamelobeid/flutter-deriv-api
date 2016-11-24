@@ -138,7 +138,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         }
                         my $code = join '_', @codes;
                         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
-                        $DB::single=1;
+
                         is roundnear(0.00001, $c->theo_probability->amount), roundnear(0.00001, $expectation->{$code}),
                             'theo probability matches [' . $code . " - " . $c->shortcode . ']';
                     }
