@@ -1,5 +1,5 @@
 {
-  "proposal": 1,
+  "proposal_array": 1,
   "amount": "100",
   "basis": "payout",
   "currency": "USD",
