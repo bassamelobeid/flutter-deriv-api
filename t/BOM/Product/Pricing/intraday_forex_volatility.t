@@ -16,9 +16,12 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
+use Data::Resample::ResampleCache;
+use Data::Resample::TicksCache;
+
 my $ticks = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/ticks.yml');
 
-my $mocked = Test::MockModule->new('BOM::Market::AggTicks');
+my $mocked = Test::MockModule->new('Data::Resample::ResampleCache');
 
 my $now = Date::Utility->new('2016-08-05 12:00:00');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -45,7 +48,7 @@ my $contract_args = {
 };
 
 subtest 'no ticks in agg ticks' => sub {
-    $mocked->mock('retrieve', sub { [] });
+    $mocked->mock('resample_cache_get', sub { [] });
     my $c = produce_contract($contract_args);
     $c->pricing_args;
     is $c->pricing_vol, $c->pricing_args->{long_term_prediction}, 'we rely solely on long term prediction if there is no aggregated ticks.';
@@ -53,7 +56,7 @@ subtest 'no ticks in agg ticks' => sub {
 };
 
 subtest 'one tick in agg ticks' => sub {
-    $mocked->mock('retrieve', sub { [$ticks->[0]] });
+    $mocked->mock('resample_cache_get', sub { [$ticks->[0]] });
     my $c = produce_contract($contract_args);
     $c->pricing_args;
     is $c->pricing_vol, $c->pricing_args->{long_term_prediction}, 'we rely solely on long term prediction if there is only one aggregated tick.';
@@ -62,7 +65,7 @@ subtest 'one tick in agg ticks' => sub {
 
 subtest 'ten ticks in agg ticks' => sub {
     $mocked->mock(
-        'retrieve',
+        'resample_cache_get',
         sub {
             [map { $ticks->[$_] } (0 .. 9)];
         });
@@ -74,7 +77,7 @@ subtest 'ten ticks in agg ticks' => sub {
 };
 
 subtest 'full set of agg ticks' => sub {
-    $mocked->mock('retrieve', sub { $ticks });
+    $mocked->mock('resample_cache_get', sub { $ticks });
     my $c = produce_contract($contract_args);
     $c->pricing_args;
     is $c->pricing_vol, 0.105908540749393, 'we rely solely on long term prediction if there is only one aggregated tick.';
