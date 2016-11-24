@@ -599,6 +599,7 @@ sub set_settings {
     }
 
     if (defined $allow_copiers) {
+        return BOM::RPC::v3::Utility::permission_error() if $client->broker_code ne 'CR';
         $client->allow_copiers($allow_copiers);
     }
 
