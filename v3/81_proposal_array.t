@@ -90,7 +90,9 @@ try {
 }
 catch {
     ok(0, "time out to wait messages");
-};
+  };
+
+@res = sort { $a->{echo_req}{barrier} cmp $b->{echo_req}{barrier} } @res;
 
 for (0 .. 1) {
     is($res[$_]{echo_req}{barrier},  $sent_json->{barriers}[$_]{barrier},  'barrier correct');
