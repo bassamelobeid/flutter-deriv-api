@@ -1910,8 +1910,8 @@ sub _market_data {
                 }
                 )->tick_cache_get_num_ticks({
                     symbol    => $underlying_symbol,
-                    end_epoch => $self->effective_start->epoch,
-                    num       => 20,
+                    end_epoch => $args->{ending_epoch},
+                    num       => $args->{tick_count},
                 });
         },
         get_overnight_tenor => sub {
