@@ -37,11 +37,6 @@ has '+type' => (
     default => 'flat',
 );
 
-has atm_spread_point => (
-    is      => 'ro',
-    default => '50',
-);
-
 has underlying => (
     is         => 'ro',
     lazy_build => 1,
@@ -71,12 +66,6 @@ sub _build_flat_vol {
     my $self = shift;
     return $vol->{$self->symbol};
 }
-
-# a fixed 7% of volatility spread
-has flat_atm_spread => (
-    is      => 'ro',
-    default => 0.07,
-);
 
 =head2 get_volatility
 
@@ -139,7 +128,7 @@ has surface => (
 sub _build_surface {
     my $self = shift;
 
-    return {map { $_ => {vol_spread => {$self->atm_spread_point => $self->flat_atm_spread}, smile => $self->get_smile($_)} } (qw(1 7 30 90 180 360))};
+    return {map { $_ => {smile => $self->get_smile($_)} } (qw(1 7 30 90 180 360))};
 }
 
 has surface_data => (
