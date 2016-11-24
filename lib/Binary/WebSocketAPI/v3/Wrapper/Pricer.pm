@@ -60,6 +60,8 @@ sub proposal {
 
 sub proposal_array {
     my ($c, $req_storage) = @_;
+    delete $req_storage->{args}{proposal_array};
+    $req_storage->{args}{proposal} = "1";
     my $barriers = delete $req_storage->{args}{barriers};
 
     for my $barrier_arg (@$barriers) {
