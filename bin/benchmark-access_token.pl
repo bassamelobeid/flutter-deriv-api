@@ -34,9 +34,9 @@ sub doit {
     while ($req--) {
 	my @l = $m->get_loginid_by_access_token($token);
 	my $now = Time::HiRes::time;
-	$stmp = $now;
 
 	push @times, ($now-$stmp)*1000;
+	$stmp = $now;
 
 	die "loginid" unless length $l[0];
 	die "creation_time" unless length $l[1];
