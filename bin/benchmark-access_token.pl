@@ -19,7 +19,7 @@ sub doit {
     printf "Child $$: %.3f sec\n", Time::HiRes::time - $stmp;
 }
 
-my @pids;
+my (@pids, $pid);
 
 for (1..$fork) {
     select undef, undef, undef, 0.1 until (defined ($pid=fork));
