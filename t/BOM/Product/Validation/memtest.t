@@ -34,6 +34,18 @@ my $mocked = Test::MockModule->new('Data::Resample::ResampleCache');
 $mocked->mock(
     'resample_cache_get',
     sub {
+        [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_, agg_epoch => $_} } (0 .. 10)];
+    });
+
+my $mocked2 = Test::MockModule->new('Data::Resample::TicksCache');
+#$mocked->mock(
+#    'retrieve',
+#    sub {
+#        [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_} } (0 .. 10)];
+#    });
+$mocked2->mock(
+    'tick_cache_get',
+    sub {
         [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_} } (0 .. 10)];
     });
 
