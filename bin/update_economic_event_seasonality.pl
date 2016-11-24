@@ -3,7 +3,7 @@ package BOM::MarketDataAutoUpdater::UpdateEconomicEventSeasonality;
 
 =head1 NAME
 
-BOM::MarkeyDataAutoUpdater::UpdateEconomicEventSeasonality;
+BOM::MarketDataAutoUpdater::UpdateEconomicEventSeasonality;
 
 =head1 DESCRIPTION
 
