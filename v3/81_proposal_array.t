@@ -48,3 +48,7 @@ $t = $t->send_ok({json => $sent_json});
 $t = $t->message_ok;
 my $res = decode_json($t->message->[1]);
 diag(Dumper($res));
+$t = $t->message_ok;
+$res = decode_json($t->message->[1]);
+diag(Dumper($res));
+done_testing;
