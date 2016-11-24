@@ -22,7 +22,8 @@ sub hist {
 	$lim += $dist, push(@lim, $lim), $dist*=2, $hist[++$curr] = 0 while $_ > $lim;
 	$hist[$curr]++;
     }
-    return sprintf 'min=%.3f max=%.3f hist=(%s) lim=(%s)', $times[0], $times[-1], join(',', @hist), join(',', map {sprintf '%.3f', $_} @lim);
+    return sprintf 'min=%.3f max=%.3f hist=(%s) lim=(%s)', $times[0], $times[-1],
+	           join(',', @hist), join(',', map {sprintf '%.3f', $_} @lim);
 }
 
 sub doit {
