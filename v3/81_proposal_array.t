@@ -21,17 +21,18 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 build_test_R_50_data();
 my $t = build_wsapi_test();
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-                                                         'economic_events',
-                                                         {
-                                                          events => [{
-                                                                      symbol       => 'USD',
-                                                                      release_date => 1,
-                                                                      source       => 'forexfactory',
-                                                                      impact       => 1,
-                                                                      event_name   => 'FOMC',
-                                                                     }]});
+#BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+#                                                         'economic_events',
+#                                                         {
+#                                                          events => [{
+#                                                                      symbol       => 'USD',
+#                                                                      release_date => 1,
+#                                                                      source       => 'forexfactory',
+#                                                                      impact       => 1,
+#                                                                      event_name   => 'FOMC',
+#                                                                     }]});
+
 $t = $t->send_ok({json => {proposal_array => 1}})->message_ok;
 my $empty_proposal_open_contract = decode_json($t->message->[1]);
-diag(Dumper($empty_proposal_open_contract));
+is($empty_proposal_open_contract->{error}{details}{barriers}, 'is missing and is required');
 
