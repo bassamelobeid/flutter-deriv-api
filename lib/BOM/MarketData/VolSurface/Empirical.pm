@@ -16,6 +16,7 @@ use Quant::Framework::EconomicEventCalendar;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData::Types;
 
+use BOM::Market::AggTicks;
 use Data::Resample::ResampleCache;
 use Data::Resample::TicksCache;
 
