@@ -56,11 +56,22 @@ sub get_volatility {
     my $resample_cache = Data::Resample::ResampleCache->new({
         redis => Cache::RedisDB->redis,
     });
+    my $resample_cache = Data::Resample::TicksCache->new({
+        redis => Cache::RedisDB->redis,
+    });
+
     my $ticks = $resample_cache->resample_cache_get({
         symbol      => $underlying->symbol,
         start_epoch => $args->{current_epoch} - $interval->seconds,
         end_epoch   => $args->{current_epoch},
     });
+
+    my $latest_tick = $ticks_cache->tick_cache_get_num_ticks({
+        symbol    => $underlying->symbol,
+        end_epoch => $args->{current_epoch},
+        num       => 1,
+    });
+    push @$ticks, $latest_tick->[0] if (scalar(@$latest_tick) and scalar(@$ticks) and $latest_tick->[0]->{epoch} > $ticks->[-1]->{agg_epoch});
 
     # minimum of 1 second to avoid division by zero error.
     my $requested_interval = Time::Duration::Concise->new(interval => max(1, $args->{seconds_to_expiration}));
