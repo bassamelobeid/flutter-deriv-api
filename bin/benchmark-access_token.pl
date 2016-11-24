@@ -12,7 +12,7 @@ $fork //= 10;
 
 sub hist {
     my @times = sort {$a<=>$b} @_;
-    my $dist = ($times[-1] - $times[0]) / 512;
+    my $dist = ($times[-1] - $times[0]) / 65536;
 
     my @hist = (0);
     my $curr = 0;
