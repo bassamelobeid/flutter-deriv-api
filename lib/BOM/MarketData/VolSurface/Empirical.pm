@@ -56,7 +56,7 @@ sub get_volatility {
     my $resample_cache = Data::Resample::ResampleCache->new({
         redis => Cache::RedisDB->redis,
     });
-    my $resample_cache = Data::Resample::TicksCache->new({
+    my $ticks_cache = Data::Resample::TicksCache->new({
         redis => Cache::RedisDB->redis,
     });
 
