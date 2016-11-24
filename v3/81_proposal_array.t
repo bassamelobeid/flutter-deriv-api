@@ -44,11 +44,18 @@ my $sent_json =
                ]
   };
 
+my @res;
 $t = $t->send_ok({json => $sent_json});
 $t = $t->message_ok;
-my $res = decode_json($t->message->[1]);
-diag(Dumper($res));
+push @res, decode_json($t->message->[1]);
 $t = $t->message_ok;
 $res = decode_json($t->message->[1]);
-diag(Dumper($res));
+push @res, decode_json($t->message->[1]);
+@res = sort {$a->{echo_req}{barrier} cmp $b->{echo_req}{barrier}};
+for (0..1){
+  is($res[$_]{echo_req}{barrier}, $sent_json->{barriers}[$_]{barrier}, 'barrier correct');
+  is($res[$_]{echo_req}{proposal}, "1", "ws command should be a proposal");
+  is($res[$_]{msg_type}, 'proposal', "message type should be proposal");
+  is($res[$_]{proposal}{longcode}, "Win payout if Volatility 100 Index is strictly higher than entry spot plus $ssent_json->{barriers}[$_]{barrier}.00 at 1 minute after contract start time." );
+}
 done_testing;
