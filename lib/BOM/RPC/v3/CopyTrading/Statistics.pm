@@ -15,7 +15,6 @@ use Performance::Probability qw(get_performance_probability);
 
 use List::Util qw/sum0/;
 use Try::Tiny;
-use Data::Dumper;
 
 sub trader_statistics {
     my $params = shift->{args};
@@ -28,7 +27,12 @@ sub trader_statistics {
                 message_to_client => localize('Login ID ([_1]) does not exist.', $trader_id)});
     }
 
-    # TODO check that client allows copy trading
+    # Check that client allows copy trading
+    unless ($trader->allow_copiers) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'CopyTradingNotAllowed',
+                message_to_client => localize('Trader does not allow copy trading.')});
+    }
 
     my $trader_date_joined = Date::Utility->new($trader->date_joined);
     my $trader_accounts    = [$trader->account];
