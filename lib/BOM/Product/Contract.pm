@@ -1904,13 +1904,15 @@ sub _market_data {
                 symbol   => $underlying_symbol,
                 for_date => $for_date
             });
-            return BOM::Market::AggTicks->new->retrieve($args);
-            #return Data::Resample::ResampleCache->new({
-            #        redis => Cache::RedisDB->redis,
-            #    }
-            #    )->resample_cache_get({
-            #        symbol => $underlying_symbol,
-            #    });
+            #return BOM::Market::AggTicks->new->retrieve($args);
+            return Data::Resample::TicksCache->new({
+                    redis => Cache::RedisDB->redis,
+                }
+                )->tick_cache_get_num_ticks({
+                    symbol    => $underlying_symbol,
+                    end_epoch => $self->effective_start->epoch,
+                    num       => 20,
+                });
         },
         get_overnight_tenor => sub {
             return $volsurface->_ON_day;
