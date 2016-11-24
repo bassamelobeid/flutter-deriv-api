@@ -49,7 +49,6 @@ $t = $t->send_ok({json => $sent_json});
 $t = $t->message_ok;
 push @res, decode_json($t->message->[1]);
 $t = $t->message_ok;
-$res = decode_json($t->message->[1]);
 push @res, decode_json($t->message->[1]);
 @res = sort {$a->{echo_req}{barrier} cmp $b->{echo_req}{barrier}};
 for (0..1){
