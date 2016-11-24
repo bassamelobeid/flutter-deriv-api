@@ -66,7 +66,7 @@ sub proposal_array {
 
     for my $barrier_arg (@$barriers) {
         my $new_req_storage = clone($req_storage);
-        my $args     = $new_req_storage->{args};
+        my $args            = $new_req_storage->{args};
         @{$args}{keys %$barrier_arg} = values %$barrier_arg;
         proposal($c, $new_req_storage);
     }
