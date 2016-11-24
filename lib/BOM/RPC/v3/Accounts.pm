@@ -600,7 +600,7 @@ sub set_settings {
         $user->save;
     }
 
-    if ($allow_copiers) {
+    if (defined $allow_copiers) {
         $client->allow_copiers($allow_copiers);
     }
 
