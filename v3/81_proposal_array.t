@@ -39,7 +39,7 @@ my $sent_json =
                  "barrier"=> "0"
                 },
                 {
-                 "barrier"=> "1"
+                 "barrier"=> "0"
                 }
                ]
   };
