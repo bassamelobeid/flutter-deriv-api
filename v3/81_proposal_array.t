@@ -32,14 +32,14 @@ my $sent_json =
    "currency"=> "USD",
    "contract_type"=> "CALL",
    "symbol"=> "R_100",
-   "duration"=> "10",
-   "duration_unit"=> "t",
+   "duration"=> "1",
+   "duration_unit"=> "m",
    "barriers"=> [
                 {
-                 "barrier"=> "0"
+                 "barrier"=> "+1"
                 },
                 {
-                 "barrier"=> "0"
+                 "barrier"=> "+2"
                 }
                ]
   };
