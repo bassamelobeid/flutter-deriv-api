@@ -50,7 +50,7 @@ $t = $t->message_ok;
 push @res, decode_json($t->message->[1]);
 $t = $t->message_ok;
 push @res, decode_json($t->message->[1]);
-@res = sort {$a->{echo_req}{barrier} cmp $b->{echo_req}{barrier}};
+@res = sort {$a->{echo_req}{barrier} cmp $b->{echo_req}{barrier}} @res;
 for (0..1){
   is($res[$_]{echo_req}{barrier}, $sent_json->{barriers}[$_]{barrier}, 'barrier correct');
   is($res[$_]{echo_req}{proposal}, "1", "ws command should be a proposal");
