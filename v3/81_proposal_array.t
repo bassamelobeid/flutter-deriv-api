@@ -55,6 +55,6 @@ for (0..1){
   is($res[$_]{echo_req}{barrier}, $sent_json->{barriers}[$_]{barrier}, 'barrier correct');
   is($res[$_]{echo_req}{proposal}, "1", "ws command should be a proposal");
   is($res[$_]{msg_type}, 'proposal', "message type should be proposal");
-  is($res[$_]{proposal}{longcode}, "Win payout if Volatility 100 Index is strictly higher than entry spot plus $ssent_json->{barriers}[$_]{barrier}.00 at 1 minute after contract start time." );
+  is($res[$_]{proposal}{longcode}, "Win payout if Volatility 100 Index is strictly higher than entry spot plus $sent_json->{barriers}[$_]{barrier}.00 at 1 minute after contract start time." );
 }
 done_testing;
