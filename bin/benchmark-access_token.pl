@@ -14,11 +14,11 @@ sub hist {
     my @times = sort {$a<=>$b} @_;
     my $dist = ($times[-1] - $times[0]) / 10;
 
-    my @hist;
+    my @hist = (0);
     my $curr = 0;
     my $lim = $dist;
     for (@times) {
-	$lim += $dist, $curr++ while $_ > $lim;
+	$lim += $dist, $hist[++$curr] = 0 while $_ > $lim;
 	$hist[$curr]++;
     }
     return sprintf 'min=%.3f max=%.3f hist=(%s)', $times[0], $times[-1], join(',', @hist);
