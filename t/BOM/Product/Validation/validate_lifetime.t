@@ -10,6 +10,7 @@ use Test::FailWarnings;
 use BOM::Product::ContractFactory qw(produce_contract);
 #use BOM::Market::AggTicks;
 use Data::Resample::ResampleCache;
+use Data::Resample::TicksCache;
 use Date::Utility;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -63,6 +64,13 @@ $mocked->mock(
         [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_} } (0 .. 10)];
     });
 
+my $mocked2 = Test::MockModule->new('Data::Resample::TicksCache');
+$mocked2->mock(
+    'tick_cache_get',
+    sub {
+        [map { {quote => 100, symbol => 'frxUSDJPY', agg_epoch => $_, epoch => $_} } (0 .. 10)];
+    });
+
 subtest 'inefficient period' => sub {
     note('price at 2016-09-19 19:59:59');
     my $c = produce_contract($bet_params);
@@ -98,6 +106,22 @@ subtest 'inefficient period' => sub {
             my $dp = $bet_params->{date_pricing}->epoch;
             [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp + 19)];
         });
+
+    my $mock2 = Test::MockModule->new('Data::Resample::TicksCache');
+    $mock2->mock(
+        'tick_cache_get',
+        sub {
+            my $dp = $bet_params->{date_pricing}->epoch;
+            [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp + 19)];
+        });
+
+    $mock2->mock(
+        'tick_cache_get_num_ticks',
+        sub {
+            my $dp = $bet_params->{date_pricing}->epoch;
+            [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp + 19)];
+        });
+    
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy,       'valid to buy';
     ok $c->market_is_inefficient, 'market inefficient flag triggered for tick expiry';
