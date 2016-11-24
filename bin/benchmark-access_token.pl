@@ -33,5 +33,5 @@ for (1..$fork) {
 }
 
 my $stmp = Time::HiRes::time;
-waitpid $_ for @pids;
+waitpid $_, 0 for @pids;
 printf "Parent: %.3f sec\n", Time::HiRes::time - $stmp;
