@@ -388,10 +388,10 @@ sub _get_market_supplement_parameters {
     my $correction    = $type . '_correction';
     my $ms_correction = $pe->$correction;
     my $ms_parameter  = {
-        "$type correction"      => $ms_correction->amount,
-        "$type survival weight" => $ms_correction->peek_amount('survival_weight'),
-        "Bet $type"             => $ms_correction->peek_amount('bet_' . $type),
-        "$type market price"    => $ms_correction->peek_amount($type . '_market_price'),
+        $type . "_correction"      => $ms_correction->amount,
+        $type . "_survival_weight" => $ms_correction->peek_amount('survival_weight'),
+        "Bet_" . $type             => $ms_correction->peek_amount('bet_' . $type),
+        $type . "_market_price"    => $ms_correction->peek_amount($type . '_market_price'),
     };
     return $ms_parameter;
 }
