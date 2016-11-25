@@ -31,13 +31,29 @@ sub trader_statistics {
     # TODO check that client allows copy trading
 
     my $trader_date_joined = Date::Utility->new($trader->date_joined);
-    my $trader_accounts    = [$trader->account];
+    my $result_hash        = {
+        active_since => $trader_date_joined->epoch,
+        # performance
+        monthly_profitable_trades       => {},
+        yearly_profitable_trades        => {},
+        last_12months_profitable_trades => 0,
+        performance_probability         => 0,
+        # trading
+        total_trades      => 0,
+        trades_profitable => 0,
+        avg_duration      => 0,
+        avg_profit        => 0,
+        avg_loss          => 0,
+        trades_breakdown  => {},
+        # copiers
+        copiers => 0,    # TODO
+    };
+
+    my $trader_accounts = [$trader->account];
 
     # Check that client has accounts
     unless (@$trader_accounts) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'TraderHasNoTrades',
-                message_to_client => localize('Trader ([_1]) has no trades.', $trader_id)});
+        return $result_hash;
     }
 
     my $db = BOM::Database::ClientDB->new({
@@ -45,10 +61,7 @@ sub trader_statistics {
         })->db;
 
     # Calculate average performance for multiple accounts
-    my $now                       = Date::Utility->new();
-    my $monthly_profitable_trades = {};
-    my $yearly_profitable_trades  = {};
-    my ($last_12months_profitable_trades, $performance_probability);
+    my $now = Date::Utility->new();
     for my $account (@{$trader_accounts}) {
         my $txn_dm = BOM::Database::DataMapper::Transaction->new({
             client_loginid => $trader->loginid,
@@ -75,17 +88,17 @@ sub trader_statistics {
                 my $E0 = $txn_dm->get_balance_before_date($current_month);    # it's the equity at the beginning of the month
 
                 my $current_month_profit = sprintf("%.4f", ((($E1 + $W) - ($E0 + $D)) / ($E0 + $D)));
-                push @{$monthly_profitable_trades->{$year . '-' . $month}}, $current_month_profit;
+                push @{$result_hash->{monthly_profitable_trades}->{$year . '-' . $month}}, $current_month_profit;
                 push @sorted_monthly_profits,          $current_month_profit;
                 push @monthly_profits_of_current_year, $current_month_profit;
             }
 
-            push @{$yearly_profitable_trades->{$year}}, _year_performance(@monthly_profits_of_current_year);
+            push @{$result_hash->{yearly_profitable_trades}->{$year}}, _year_performance(@monthly_profits_of_current_year);
         }
 
         # last 12 months profitable
         my $last_month_idx = scalar(@sorted_monthly_profits) < 12 ? scalar(@sorted_monthly_profits) : 12;
-        push @$last_12months_profitable_trades, _year_performance(@sorted_monthly_profits[-$last_month_idx .. -1]);
+        push @{$result_hash->{last_12months_profitable_trades}}, _year_performance(@sorted_monthly_profits[-$last_month_idx .. -1]);
 
         # Performance Probability
         my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
@@ -116,7 +129,7 @@ sub trader_statistics {
             }
         }
         if (grep { $_->{bet_type} =~ /^(call|put)$/i } @{$sold_contracts}) {
-            push @$performance_probability,
+            push @{$result_hash->{performance_probability}},
                 sprintf(
                 "%.4f",
                 1 - Performance::Probability::get_performance_probability({
@@ -132,56 +145,38 @@ sub trader_statistics {
     }
 
     # Average for multiply accounts
-    $monthly_profitable_trades->{$_} = _mean(@{$monthly_profitable_trades->{$_}}) for keys %{$monthly_profitable_trades};
-    $yearly_profitable_trades->{$_}  = _mean(@{$yearly_profitable_trades->{$_}})  for keys %{$yearly_profitable_trades};
-    $last_12months_profitable_trades = _mean(@$last_12months_profitable_trades);
-    $performance_probability         = _mean(@$performance_probability);
+    $result_hash->{monthly_profitable_trades}->{$_} = _mean(@{$result_hash->{monthly_profitable_trades}->{$_}})
+        for keys %{$result_hash->{monthly_profitable_trades}};
+    $result_hash->{yearly_profitable_trades}->{$_} = _mean(@{$result_hash->{yearly_profitable_trades}->{$_}})
+        for keys %{$result_hash->{yearly_profitable_trades}};
+    $result_hash->{last_12months_profitable_trades} = _mean(@{$result_hash->{last_12months_profitable_trades}});
+    $result_hash->{performance_probability}         = _mean(@{$result_hash->{performance_probability}});
 
     # Calculate common trading statistics for multiple accounts
-    my $trades_breakdown = {};
-
-    my ($total_trades, $avg_duration, $avg_profit, $avg_loss, $trades_profitable);
-
     my $txn_dm = BOM::Database::DataMapper::Transaction->new({db => $db});
 
     # trades average duration
-    $avg_duration = sprintf("%u", BOM::System::RedisReplicated::redis_read->get("COPY_TRADING_AVG_DURATION:$trader_id") || 0);
+    $result_hash->{avg_duration} = sprintf("%u", BOM::System::RedisReplicated::redis_read->get("COPY_TRADING_AVG_DURATION:$trader_id") || 0);
 
     # trades profitable && total trades count
     my $win_trades  = BOM::System::RedisReplicated::redis_read->get("COPY_TRADING_PROFITABLE:$trader_id:win")  || 0;
     my $loss_trades = BOM::System::RedisReplicated::redis_read->get("COPY_TRADING_PROFITABLE:$trader_id:loss") || 0;
-    $total_trades      = $win_trades + $loss_trades;
-    $trades_profitable = sprintf("%.4f", $win_trades / ($total_trades || 1));
-    $avg_profit        = sprintf("%.4f", BOM::System::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:win") || 0);
-    $avg_loss          = sprintf("%.4f", BOM::System::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:loss") || 0);
+    $result_hash->{total_trades}      = $win_trades + $loss_trades;
+    $result_hash->{trades_profitable} = sprintf("%.4f", $win_trades / ($result_hash->{total_trades} || 1));
+    $result_hash->{avg_profit}        = sprintf("%.4f", BOM::System::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:win") || 0);
+    $result_hash->{avg_loss} = sprintf("%.4f", BOM::System::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:loss") || 0);
 
     # trades_breakdown
     my %symbols_breakdown = @{BOM::System::RedisReplicated::redis_write->hgetall("COPY_TRADING_SYMBOLS_BREAKDOWN:$trader_id")};
     for my $symbol (keys %symbols_breakdown) {
         my $trades = $symbols_breakdown{$symbol};
-        $trades_breakdown->{create_underlying($symbol)->market->name} += $trades;
+        $result_hash->{trades_breakdown}->{create_underlying($symbol)->market->name} += $trades;
     }
-    for my $market (keys %$trades_breakdown) {
-        $trades_breakdown->{$market} = sprintf("%.4f", $trades_breakdown->{$market} / $total_trades);
+    for my $market (keys %{$result_hash->{trades_breakdown}}) {
+        $result_hash->{trades_breakdown}->{$market} = sprintf("%.4f", $result_hash->{trades_breakdown}->{$market} / $result_hash->{total_trades});
     }
 
-    return {
-        active_since => $trader_date_joined->epoch,
-        # performance
-        monthly_profitable_trades       => $monthly_profitable_trades,
-        yearly_profitable_trades        => $yearly_profitable_trades,
-        last_12months_profitable_trades => $last_12months_profitable_trades,
-        performance_probability         => $performance_probability,
-        # trading
-        total_trades      => $total_trades,
-        trades_profitable => $trades_profitable,
-        avg_duration      => $avg_duration,
-        avg_profit        => $avg_profit,
-        avg_loss          => $avg_loss,
-        trades_breakdown  => $trades_breakdown,
-        # copiers
-        copiers => 0,    # TODO
-    };
+    return $result_hash;
 }
 
 sub _year_performance {
