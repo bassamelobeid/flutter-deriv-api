@@ -58,7 +58,6 @@ if ($broker and ($id or $short_code)) {
     my $currency_param   = $details->{currency_code} // $currency_code;
 
     my $original_contract = produce_contract($short_code_param, $currency_param);
-
     my $action_type = $details->{action_type} // 'buy';    #If it is with shortcode as input, we just want to verify the ask price
     my $sell_time = $details->{sell_time};
     my $purchase_time = $details->{purchase_time} // $original_contract->date_start;
@@ -76,7 +75,6 @@ if ($broker and ($id or $short_code)) {
     my $traded_bid     = $details->{bid_price};
     my $traded_ask     = $details->{ask_price};
     my $slippage_price = $details->{price_slippage};
-    my $action_type    = $details->{action_type};
     my $order_price    = $details->{order_price} // $contract->ask_price;
     my $prev_tick      = $contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
 
@@ -101,7 +99,7 @@ if ($broker and ($id or $short_code)) {
         order_type             => $action_type,
         order_price            => $order_price,
         slippage_price         => $slippage_price // 'NA.',
-        trade_ask_price        => $traded_ask,
+        trade_ask_price        => $traded_ask // 'NA.',
         trade_bid_price        => $traded_bid // 'NA. (unsold)',
         payout                 => $contract->payout,
         tick_before_trade_time => $prev_tick,
@@ -308,25 +306,21 @@ sub _get_pricing_parameter_from_slope_pricer {
         };
     }
 
-    my $theo_param = $debug_information->{$contract_type}{base_probability}{parameters};
-    my $display_contract_type  = lc($contract_type); 
+    my $theo_param            = $debug_information->{$contract_type}{base_probability}{parameters};
+    my $display_contract_type = lc($contract_type);
+
+    warn "shortcode" . $contract->shortcode . " contract type $display_contract_type price with " . $contract->priced_with;
     if (not $contract->two_barriers) {
         if ($contract->priced_with eq 'base') {
             $pricing_parameters->{bs_probability} =
-                _get_bs_probability_parameters($theo_param->{numeraire_probability}{parameters}{bs_probability}{parameters}, $contract->payout,$display_contract_type);
+                _get_bs_probability_parameters($theo_param->{numeraire_probability}{parameters}{bs_probability}{parameters},
+                $contract->payout, $display_contract_type);
             my $slope_param = $theo_param->{numeraire_probability}{parameters}{slope_adjustment}{parameters};
-            $pricing_parameters->{slope_adjustment} = {
-                $display_contract_type."_weight" => $contract_type eq 'CALL' ? -1 : 1,
-                $display_contract_type."_slope" => $slope_param->{slope},
-                $display_contract_type."_vanilla_vega" => $slope_param->{vanilla_vega}{amount},
-            };
+            $pricing_parameters->{slope_adjustment} = _get_slope_parameters($slope_param, $display_contract_type);
         } else {
-            $pricing_parameters->{bs_probability} = _get_bs_probability_parameters($theo_param->{bs_probability}{parameters}, $contract->payout,$display_contract_type);
-            $pricing_parameters->{slope_adjustment} = {
-                $display_contract_type."_weight" => $contract_type eq 'CALL' ? -1 : 1,
-                $display_contract_type."_slope" => $theo_param->{slope_adjustment}{parameters}{slope},
-                $display_contract_type."_vanilla_vega" => $theo_param->{slope_adjustment}{parameters}{vanilla_vega}{amount},
-            };
+            $pricing_parameters->{bs_probability} =
+                _get_bs_probability_parameters($theo_param->{bs_probability}{parameters}, $contract->payout, $display_contract_type);
+            $pricing_parameters->{slope_adjustment} = _get_slope_parameters($theo_param->{slope_adjustment}{parameters}, $display_contract_type);
         }
     } else {
         my $call_prob = $debug_information->{CALL}{base_probability};
@@ -343,19 +337,11 @@ sub _get_pricing_parameter_from_slope_pricer {
         $pricing_parameters->{call_bs_probability} =
             _get_bs_probability_parameters($call_prob->{parameters}{bs_probability}{parameters}, $contract->payout, 'call');
         my $call_slope_param = $call_prob->{parameters}{slope_adjustment}{parameters};
-        $pricing_parameters->{call_slope_adjustment} = {
-            call_weight       => -1,
-            call_slope        => $call_slope_param->{slope},
-            call_vanilla_vega => $call_slope_param->{vanilla_vega}{amount},
-        };
+        $pricing_parameters->{call_slope_adjustment} = _get_slope_parameters($call_slope_param, 'call');
         $pricing_parameters->{put_bs_probability} =
             _get_bs_probability_parameters($put_prob->{parameters}{bs_probability}{parameters}, $contract->payout, 'put');
         my $put_slope_param = $put_prob->{parameters}{slope_adjustment}{parameters};
-        $pricing_parameters->{put_slope_adjustment} = {
-            put_weight       => 1,
-            put_slope        => $put_slope_param->{slope},
-            put_vanilla_vega => $put_slope_param->{vanilla_vega}{amount},
-        };
+        $pricing_parameters->{put_slope_adjustment} = _get_slope_parameters($put_slope_param, 'put');
     }
 
     $pricing_parameters->{risk_markup} = $debug_information->{risk_markup}{parameters};
@@ -368,18 +354,30 @@ sub _get_pricing_parameter_from_slope_pricer {
     return $pricing_parameters;
 }
 
+sub _get_slope_parameters {
+    my $slope_param   = shift;
+    my $contract_type = shift;
+
+    my $slope_parameter = {
+        $contract_type . "_weight" => $contract_type eq 'call' ? -1 : 1,
+        $contract_type . "_slope" => $slope_param->{slope},
+        $contract_type . "_vanilla_vega" => $slope_param->{vanilla_vega}{amount},
+
+    };
+    return $slope_parameter;
+}
 
 sub _get_bs_probability_parameters {
     my $prob            = shift;
     my $contract_payout = shift;
-    my $bet_type        = shift;
+    my $contract_type   = shift;
 
-    my $bs_parameter    = {
-        $bet_type."_K"       => $prob->{strikes}[0],
-        $bet_type."_S"       => $prob->{spot},
-        $bet_type."_t"      => $prob->{_timeinyears},
-        $bet_type."_payout" => $contract_payout,
-        map { $bet_type.'_'.$_ => $prob->{$_} } qw(discount_rate mu vol),
+    my $bs_parameter = {
+        $contract_type . "_K"      => $prob->{strikes}[0],
+        $contract_type . "_S"      => $prob->{spot},
+        $contract_type . "_t"      => $prob->{_timeinyears},
+        $contract_type . "_payout" => $contract_payout,
+        map { $contract_type . '_' . $_ => $prob->{$_} } qw(discount_rate mu vol),
     };
     return $bs_parameter;
 }
