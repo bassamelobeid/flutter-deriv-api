@@ -12,14 +12,14 @@ $fork //= 10;
 
 sub hist {
     my @times = sort {$a<=>$b} @_;
-    my $dist = ($times[-1] - $times[0]) / 65536;
+    my $dist = (log($times[-1]) - log($times[0])) / 30;
 
     my @hist = (0);
     my $curr = 0;
-    my $lim = $dist + $times[0];
-    my @lim = ($lim);
+    my $lim = log($times[0]) + $dist;
+    my @lim = (exp $lim);
     for (@times) {
-	$lim += $dist, push(@lim, $lim), $dist*=2, $hist[++$curr] = 0 while $_ > $lim;
+	$lim += $dist, push(@lim, exp $lim), $hist[++$curr] = 0 while log > $lim;
 	$hist[$curr]++;
     }
     return sprintf 'min=%.3f max=%.3f hist=(%s) lim=(%s)', $times[0], $times[-1],
