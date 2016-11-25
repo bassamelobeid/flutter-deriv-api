@@ -14,13 +14,10 @@ before_install:
     - /tmp/travis-scripts/fixHostName.sh
     - /tmp/travis-scripts/setup_cpan.sh
 install:
-    - sudo apt-get update
     - source /tmp/travis-scripts/devbox_path.sh
-    - /tmp/travis-scripts/setup_postfix.sh
     - . /tmp/travis-scripts/setup_perl5lib.sh
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
     - /etc/rmg/bin/prove -Ilib -r t/
-
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
