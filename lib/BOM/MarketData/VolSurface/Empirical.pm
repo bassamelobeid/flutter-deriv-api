@@ -4,10 +4,7 @@ use Moose;
 
 use Machine::Epsilon;
 use Math::Gauss::XS qw(pdf);
-use Cache::RedisDB;
 use List::Util qw(max min sum);
-use List::MoreUtils qw(uniq);
-use Tie::Scalar::Timeout;
 use Time::Duration::Concise;
 use YAML::XS qw(LoadFile);
 
@@ -248,51 +245,6 @@ sub _get_effective_news_time {
     my $effective_time = $news_time + $shift_seconds;
 
     return $effective_time;
-}
-
-sub _get_volatility_seasonality_areas {
-    my ($self, $times) = @_;
-
-    my @seasonality;
-    my $secondly_seasonality = $self->per_second_seasonality_curve;
-    foreach my $time (@$times) {
-        my $second_of_day = $time % 86400;
-        push @seasonality, $secondly_seasonality->[$second_of_day];
-    }
-
-    return \@seasonality;
-}
-
-has per_second_seasonality_curve => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-# Cache curves in process, pull from Redis when necessary.
-tie my $curve_cache, 'Tie::Scalar::Timeout', EXPIRES => '+1h';
-
-sub _build_per_second_seasonality_curve {
-    my $self = shift;
-
-    my $symbol = $self->underlying->symbol;
-    $curve_cache //= {};    # Expiration leads to undef.
-
-    my $per_second = $curve_cache->{$symbol};
-    if (not $per_second) {
-        my $key_space = 'SECONDLY_SEASONALITY';
-        $per_second = Cache::RedisDB->get($key_space, $symbol);
-
-        if (not $per_second) {
-            my $coefficients = $self->_get_coefficients('volatility_seasonality_coef')->{data};
-            my $interpolator = Math::Function::Interpolator->new(points => $coefficients);
-            # The coefficients from the YAML are stored as hours. We want to do per-second.
-            $per_second = [map { $interpolator->cubic($_ / 3600) } (0 .. 86399)];
-            Cache::RedisDB->set($key_space, $symbol, $per_second, 43201);    # Recompute every 12 hours or so
-        }
-        $curve_cache->{$symbol} = $per_second;
-    }
-
-    return $per_second;
 }
 
 has underlying => (
