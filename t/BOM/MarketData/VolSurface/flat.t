@@ -17,7 +17,7 @@ subtest 'everything' => sub {
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         );
-        ok !$flat->get_volatility, 'undef for unrecognized underlyings';
+        is $flat->get_volatility, 0.1, '0.1 for unrecognized underlyings';
         $flat = BOM::MarketData::VolSurface::Flat->new(
             underlying       => create_underlying('R_100'),
             underlying       => create_underlying('R_100'),
