@@ -4,7 +4,7 @@ use warnings;
 use Test::More qw( no_plan );
 use Test::Exception;
 use Test::MockModule;
-use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
+use Email::Folder::Search;
 use File::Spec;
 use JSON qw(decode_json);
 
@@ -153,16 +153,16 @@ subtest 'realtime report generation' => sub {
     note 'This may not be checking what you think.  It can not tell when things sold.';
     is($dm->get_last_generated_historical_marked_to_market_time, $now->db_timestamp, 'It ran and updated our timestamp.');
     note "Includes a lot of unit test transactions about which we don't care.";
-
+    my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
     is($called_count, 1, 'BOM::Product::Transaction::sell_expired_contracts called only once');
-    my %msg = get_email_by_address_subject(
+    my @msgs = $mailbox->search(
         email   => 'quants-market-data@regentmarkets.com',
         subject => qr/AutoSell Failures/
     );
-    ok(%msg, "find the email");
+    ok(@msgs, "find the email");
     $short_code =~ s/FLASHU/CALL/;
-    ok($msg{body} =~ /Shortcode:   $short_code/, "contract $short_code has error");
-    my @errors = $msg{body} =~ /Shortcode:/g;
+    ok($msgs[0]{body} =~ /Shortcode:   $short_code/, "contract $short_code has error");
+    my @errors = $msgs[0]{body} =~ /Shortcode:/g;
     is(scalar @errors, 1, "number of contracts that have errors ");
 
     my @is_sold = (1, 1, 0, 0, 0);
