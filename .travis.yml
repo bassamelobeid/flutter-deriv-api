@@ -17,7 +17,6 @@ env:
     - TEST_SUITE=v3_1 SH=bash
     - TEST_SUITE=v3_2 SH=bash
     - TEST_SUITE=v3_3 SH=bash
-    - TEST_SUITE=v3_4 SH=bash
     - TEST_SUITE=structure SH=bash
     - TEST_SUITE=leaktest SH=bash
     - TEST_SUITE=json_schema_1 SH=bash
