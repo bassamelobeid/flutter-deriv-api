@@ -9,6 +9,7 @@ use Data::Dumper;
 use BOM::Platform::Client;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize);
+use BOM::Platform::Copiers;
 
 use LandingCompany::Offerings;
 
@@ -46,12 +47,29 @@ sub copy_start {
                 message_to_client => localize('[_1]', $type)}) unless exists $contract_types->{$type};
     }
 
+    BOM::Platform::Copiers->update_or_create({
+        trader_id => $trader->loginid,
+        copier_id => $client->loginid,
+        broker => $client->broker_code,
+        %$args,
+    });
+
     return {status => 1};
 }
 
 sub copy_stop {
     my $params = shift;
     my $args   = $params->{args};
+
+    my $trader_id = uc $params->{trader_id};
+    my $trader = try { BOM::Platform::Client->new({loginid => $trader_id}) };
+    unless ($trader) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'WrongLoginID',
+                message_to_client => localize('Login ID ([_1]) does not exist.', $trader_id)});
+    }
+
+    # TODO check that current client copies the trader
 
     return {status => 1};
 }
