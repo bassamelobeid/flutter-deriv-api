@@ -254,9 +254,7 @@ sub _get_pricing_parameter_from_vv_pricer {
 
     $pricing_parameters->{bs_probability}->{'K2'} = $pricing_arg->{barrier2} if $contract->two_barriers;
 
-    $pricing_parameters->{market_supplement}->{vanna} = _get_market_supplement_parameters($pe, 'vanna');
-    $pricing_parameters->{market_supplement}->{volga} = _get_market_supplement_parameters($pe, 'volga');
-    $pricing_parameters->{market_supplement}->{vega}  = _get_market_supplement_parameters($pe, 'vega');
+    $pricing_parameters->{market_supplement} = _get_market_supplement_parameters($pe);
 
     $pricing_parameters->{commission_markup} = {
         base_commission       => $contract->base_commission,
@@ -383,17 +381,18 @@ sub _get_bs_probability_parameters {
 }
 
 sub _get_market_supplement_parameters {
-    my $pe   = shift;
-    my $type = shift;
+    my $pe = shift;
 
-    my $correction    = $type . '_correction';
-    my $ms_correction = $pe->$correction;
-    my $ms_parameter  = {
-        $type . "_correction"      => $ms_correction->amount,
-        $type . "_survival_weight" => $ms_correction->peek_amount('survival_weight'),
-        "Bet_" . $type             => $ms_correction->peek_amount('bet_' . $type),
-        $type . "_market_price"    => $ms_correction->peek_amount($type . '_market_price'),
-    };
+    my $ms_parameter;
+    foreach $type ('vanna', 'volga', 'vega') {
+        my $correction    = $type . '_correction';
+        my $ms_correction = $pe->$correction;
+        $ms_parameter->{$type . "_correction"}      = $ms_correction->amount;
+        $ms_parameter->{$type . "_survival_weight"} = $ms_correction->peek_amount('survival_weight');
+        $ms_parameter->{"Bet_" . $type}             = $ms_correction->peek_amount('bet_' . $type);
+        $ms_parameter->{$type . "_market_price"}    = $ms_correction->peek_amount($type . '_market_price');
+
+    }
     return $ms_parameter;
 }
 
