@@ -137,7 +137,6 @@ sub _predefined_trading_period {
     my $today_close_epoch = $today_close->epoch;
     my $today             = $now->truncate_to_day;                                # Start of the day object.
     my $trading_periods   = Cache::RedisDB->get($cache_keyspace, $trading_key);
-
     if (not $trading_periods) {
         $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
         my $even_hour = $now_hour - ($now_hour % 2);
@@ -153,9 +152,10 @@ sub _predefined_trading_period {
                 duration   => '2h'
             });
 
+            my $minutes_from_window_start = ($now->epoch - $window_2h->{date_start}->{epoch}) / 60;
             # Previous 2 hours contract should be always available in the first 15 minutes of the next one
             # (except start of the trading day and also the first window after the break)
-            if (($now->epoch - $window_2h->{date_start}->{epoch}) / 60 < 15 && $even_hour - 2 >= 0 && $even_hour != 22) {
+            if ($minutes_from_window_start < 15 && $even_hour - 2 >= 0 && (not grep { ($even_hour - 2) == $_ } @skip_even_hour)) {
                 push @$trading_periods,
                     _get_intraday_trading_window({
                         now        => $now,
@@ -176,6 +176,7 @@ sub _predefined_trading_period {
                     map { $today->plus_time_interval($_ . 'h') } ($odd_hour, $odd_hour - 4);
             }
         }
+
         # This is for 0 day contract
         push @$trading_periods,
             {
@@ -268,7 +269,7 @@ sub _get_intraday_trading_window {
     my $date_start       = $args->{date_start};
     my $duration         = $args->{duration};
     my $now              = $args->{now};
-    my $is_monday_start  = $now->day_of_week == 1 && $date_start->hour == 0;
+    my $is_monday_start  = $date_start->day_of_week == 1 && $date_start->hour == 0;
     my $early_date_start = $is_monday_start ? $date_start : $date_start->minus_time_interval('15m');
     my $date_expiry      = $date_start->hour == 22 ? $date_start->plus_time_interval('1h59m59s') : $date_start->plus_time_interval($duration);
     if ($now->is_before($date_expiry)) {
