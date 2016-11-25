@@ -11,8 +11,8 @@ use Tie::Scalar::Timeout;
 use Time::Duration::Concise;
 use YAML::XS qw(LoadFile);
 
-use Quant::Framework::EconomicEventCalendar;
-
+use BOM::System::Chronicle;
+use Quant::Framework::Seasonality;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::AggTicks;
 use BOM::MarketData::Types;
@@ -84,8 +84,12 @@ sub get_volatility {
         push @time_samples_fut, $i;
     }
 
+    my $qfs = Quant::Framework::Seasonality->new(chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($underlying->for_date));
     #seasonality future
-    my $seasonality_fut = $self->_get_volatility_seasonality_areas(\@time_samples_fut);
+    my $seasonality_fut = $qfs->get_volatility_seasonality({
+        underlying_symbol => $underlying->symbol,
+        time_series       => \@time_samples_fut
+    });
 
     #news triangles future
     #no news if not requested
@@ -116,9 +120,12 @@ sub get_volatility {
         my @tick_epochs = map { $_->{epoch} } @good_ticks;
         my @time_samples_past = map { ($tick_epochs[$_] + $tick_epochs[$_ - $returns_sep]) / 2 } ($returns_sep .. $#tick_epochs);
         my $weights = _calculate_weights(\@time_samples_past, $categorized_events);
-        my $observed_vol     = _calculate_observed_volatility(\@good_ticks, \@time_samples_past, \@tick_epochs, $weights);
-        my $seasonality_past = $self->_get_volatility_seasonality_areas(\@time_samples_past);
-        my $news_past        = [(1) x (scalar @time_samples_past)];
+        my $observed_vol = _calculate_observed_volatility(\@good_ticks, \@time_samples_past, \@tick_epochs, $weights);
+        my $seasonality_past = $qfs->get_volatility_seasonality({
+            underlying_symbol => $underlying->symbol,
+            time_series       => \@time_samples_past
+        });
+        my $news_past = [(1) x (scalar @time_samples_past)];
         if ($args->{include_news_impact}) {
             my $contract_details = {
                 start    => $c_start,
