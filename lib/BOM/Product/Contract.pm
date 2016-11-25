@@ -44,7 +44,6 @@ use LandingCompany::Offerings qw(get_contract_specifics);
 use Cache::RedisDB;
 use Data::Resample::ResampleCache;
 use Data::Resample::TicksCache;
-use BOM::Market::AggTicks;
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -1904,7 +1903,6 @@ sub _market_data {
                 symbol   => $underlying_symbol,
                 for_date => $for_date
             });
-            #return BOM::Market::AggTicks->new->retrieve($args);
             return Data::Resample::TicksCache->new({
                     redis => Cache::RedisDB->redis,
                 }

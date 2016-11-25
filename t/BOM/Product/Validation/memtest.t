@@ -18,13 +18,11 @@ use Date::Utility;
 use Finance::Asset;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-#use BOM::Market::AggTicks;
 use Data::Resample::ResampleCache;
 use Data::Resample::TicksCache;
 use Cache::RedisDB;
 
 note('mocking ticks to prevent warnings.');
-#my $mocked = Test::MockModule->new('BOM::Market::AggTicks');
 my $mocked = Test::MockModule->new('Data::Resample::ResampleCache');
 #$mocked->mock(
 #    'retrieve',

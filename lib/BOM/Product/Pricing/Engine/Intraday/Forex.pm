@@ -15,7 +15,6 @@ use BOM::System::Config;
 use Data::Resample::TicksCache;
 use Data::Resample::ResampleCache;
 use Cache::RedisDB;
-use BOM::Market::AggTicks;
 use Data::Dumper;
 
 sub clone {

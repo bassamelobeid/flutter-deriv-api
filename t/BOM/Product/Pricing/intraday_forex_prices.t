@@ -5,7 +5,6 @@ use Test::Most tests => 4;
 use File::Spec;
 use YAML::XS qw(LoadFile);
 use LandingCompany::Offerings qw(get_offerings_with_filter);
-use BOM::Market::AggTicks;
 use Date::Utility;
 use BOM::Product::ContractFactory qw( produce_contract );
 
@@ -21,8 +20,6 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Cache::RedisDB;
 use Data::Resample::ResampleCache;
 
-my $at = BOM::Market::AggTicks->new;
-$at->flush;
 
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');

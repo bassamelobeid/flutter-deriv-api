@@ -8,7 +8,6 @@ use Test::MockModule;
 use Test::FailWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-#use BOM::Market::AggTicks;
 use Data::Resample::ResampleCache;
 use Date::Utility;
 
@@ -20,7 +19,6 @@ Cache::RedisDB->flushall;
 initialize_realtime_ticks_db();
 
 note('mocking ticks to prevent warnings.');
-#my $mocked = Test::MockModule->new('BOM::Market::AggTicks');
 #$mocked->mock(
 #    'retrieve',
 #    sub {

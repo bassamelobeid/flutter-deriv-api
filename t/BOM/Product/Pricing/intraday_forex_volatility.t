@@ -8,7 +8,6 @@ use Test::FailWarnings;
 
 use Test::MockModule;
 use YAML::XS qw(LoadFile);
-use BOM::Market::AggTicks;
 use Date::Utility;
 use BOM::Product::ContractFactory qw( produce_contract );
 

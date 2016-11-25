@@ -16,7 +16,6 @@ with 'BOM::Product::Pricing::Engine::Role::StandardMarkup';
 
 use Math::Function::Interpolator;
 
-#use BOM::Market::AggTicks;
 use Cache::RedisDB;
 use Data::Resample::ResampleCache;
 use Data::Resample::TicksCache;
@@ -27,13 +26,12 @@ use Time::Duration::Concise;
 
 =head2 tick_source
 
-The source of the ticks used for this pricing.  BOM::Market::AggTicks
+The source of the ticks used for this pricing. 
 
 =cut
 
 has tick_source => (
     is => 'ro',
-    #default => sub { BOM::Market::AggTicks->new },
     default => sub { Data::Resample::TicksCache->new({redis => Cache::RedisDB->redis,}) },
 );
 
