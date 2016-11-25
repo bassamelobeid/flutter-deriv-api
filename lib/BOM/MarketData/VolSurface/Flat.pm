@@ -37,6 +37,11 @@ has '+type' => (
     default => 'flat',
 );
 
+has atm_spread_point => (
+    is      => 'ro',
+    default => '50',
+);
+
 has underlying => (
     is         => 'ro',
     lazy_build => 1,
@@ -128,7 +133,7 @@ has surface => (
 sub _build_surface {
     my $self = shift;
 
-    return {map { $_ => {smile => $self->get_smile($_)} } (qw(1 7 30 90 180 360))};
+    return {map { $_ => {vol_spread => {$self->atm_spread_point => 0}, smile => $self->get_smile($_)} } (qw(1 7 30 90 180 360))};
 }
 
 has surface_data => (
