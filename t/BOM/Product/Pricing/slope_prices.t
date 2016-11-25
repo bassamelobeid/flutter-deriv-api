@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 660;
+use Test::More;
 use Test::Exception;
 
 use Format::Util::Numbers qw(roundnear);
@@ -150,3 +150,5 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
         }
     }
 }
+
+done_testing;
