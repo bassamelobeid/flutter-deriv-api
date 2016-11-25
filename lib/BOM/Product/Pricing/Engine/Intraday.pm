@@ -31,7 +31,7 @@ The source of the ticks used for this pricing.
 =cut
 
 has tick_source => (
-    is => 'ro',
+    is      => 'ro',
     default => sub { Data::Resample::TicksCache->new({redis => Cache::RedisDB->redis,}) },
 );
 
