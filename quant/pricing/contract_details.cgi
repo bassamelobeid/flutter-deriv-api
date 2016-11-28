@@ -32,8 +32,6 @@ BOM::Backoffice::Sysinit::init();
 BOM::Backoffice::Auth0::can_access(['Quants']);
 my %params = %{request()->params};
 my ($pricing_parameters, @contract_details, $start);
-# Flush off all the agg tick cache as it might affected the repricing of this tool.
-BOM::Market::AggTicks->new->flush();
 
 my $broker        = $params{broker}     // request()->broker_code;
 my $id            = $params{id}         // '';
@@ -71,6 +69,10 @@ if ($broker and ($id or $short_code)) {
     my $pricing_args = $original_contract->build_parameters;
     $pricing_args->{date_pricing}    = $start;
     $pricing_args->{landing_company} = $landing_company;
+
+   # Flush off all the agg tick cache as it might affected the repricing of this tool.
+   BOM::Market::AggTicks->new->flush();
+
     my $contract       = produce_contract($pricing_args);
     my $traded_bid     = $details->{bid_price};
     my $traded_ask     = $details->{ask_price};
