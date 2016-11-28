@@ -32,7 +32,7 @@ if (my $code = $input{promocode}) {
 Bar($pc ? "EDIT PROMOTIONAL CODE" : "ADD PROMOTIONAL CODE");
 
 my @messages;
-my $countries_instance = LandingCompany::Countries->instance;
+my $countries_instance = LandingCompany::Countries->new();
 
 if ($input{save}) {
     @messages = _validation_errors(%input);
