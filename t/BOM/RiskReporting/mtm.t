@@ -1,11 +1,12 @@
 use strict;
 use warnings;
 
-use Test::More qw( no_plan );
+use Test::More;
 use Test::Exception;
 use Test::MockModule;
 use Email::Folder::Search;
 use File::Spec;
+use Path::Tiny;
 use JSON qw(decode_json);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -153,6 +154,7 @@ subtest 'realtime report generation' => sub {
     note 'This may not be checking what you think.  It can not tell when things sold.';
     is($dm->get_last_generated_historical_marked_to_market_time, $now->db_timestamp, 'It ran and updated our timestamp.');
     note "Includes a lot of unit test transactions about which we don't care.";
+    path('/tmp/default.mailbox')->touch;
     my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
     is($called_count, 1, 'BOM::Product::Transaction::sell_expired_contracts called only once');
     my @msgs = $mailbox->search(
@@ -172,5 +174,8 @@ subtest 'realtime report generation' => sub {
         my $is_sold = $fmb->is_sold // 0;
         is($is_sold, $is_sold[$index], "fmb $fmbs[$index]{fmb_id} is_sold value should be $is_sold[$index]");
     }
+    done_testing;
 };
+done_testing;
+
 
