@@ -395,7 +395,7 @@ sub unprocessed_bets {
     my $sql = q{
             SELECT
                 id, sell_time, underlying_symbol,
-                (EXTRACT(hour FROM (sell_time - start_time)) * 60 * 60 + EXTRACT(minutes FROM (sell_time - start_time)) * 60 + EXTRACT(seconds FROM (sell_time - start_time))) as duration_seconds,
+                date_part('epoch', (sell_time - start_time)::interval) as duration_seconds,
                 ((sell_price - buy_price) / buy_price) as profit,
                 CASE
                     WHEN (sell_price - buy_price) > 0 THEN 'win'
