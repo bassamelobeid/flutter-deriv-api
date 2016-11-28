@@ -655,6 +655,19 @@ sub _build_engine_ask_probability {
                 volsurface_recorded_date => $self->volsurface->recorded_date,
                 market_convention        => $self->_market_convention,
             );
+        } elsif ($self->pricing_engine_name eq 'Pricing::Engine::BlackScholes') {
+            %pricing_parameters = (
+                two_barriers             => $self->two_barriers,
+                strikes                  => [grep { $_ } values %{$self->barriers_for_pricing}],
+                spot                     => $self->pricing_spot,
+                t                        => $self->timeinyears,
+                discount_rate            => $self->discount_rate,
+                mu                       => $self->mu,
+                iv                       => $self->volsurface->get_volatility,
+                payout_timecode          => $self->payouttime_code,
+                payout_type              => $self->payout_type,
+                pricing_code             => $self->pricing_code,
+            );
         } else {
             die "Unknown pricing engine: " . $self->pricing_engine_name;
         }
