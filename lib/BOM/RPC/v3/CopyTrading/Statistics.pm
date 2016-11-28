@@ -62,6 +62,7 @@ sub copytrading_statistics {
 
     # Calculate average performance for multiple accounts
     my $now = Date::Utility->new();
+    my (@last_12months_profitable_trades, @performance_probability);
     for my $account (@{$trader_accounts}) {
         my $txn_dm = BOM::Database::DataMapper::Transaction->new({
             client_loginid => $trader->loginid,
@@ -82,8 +83,7 @@ sub copytrading_statistics {
                 my $current_month = $date->datetime_yyyymmdd_hhmmss;
                 my $next_month    = $date->plus_time_interval('31d')->datetime_yyyymmdd_hhmmss;
 
-                my $W = $txn_dm->get_monthly_payments_sum($date, 'withdrawal');
-                my $D = $txn_dm->get_monthly_payments_sum($date, 'deposit');
+                my ($D, $W) = @{$txn_dm->get_monthly_payments_sum($date)};
                 my $E1 = $txn_dm->get_balance_before_date($next_month);       # it's the equity at the end of the month
                 my $E0 = $txn_dm->get_balance_before_date($current_month);    # it's the equity at the beginning of the month
 
@@ -98,7 +98,7 @@ sub copytrading_statistics {
 
         # last 12 months profitable
         my $last_month_idx = scalar(@sorted_monthly_profits) < 12 ? scalar(@sorted_monthly_profits) : 12;
-        push @{$result_hash->{last_12months_profitable_trades}}, _year_performance(@sorted_monthly_profits[-$last_month_idx .. -1]);
+        push @last_12months_profitable_trades, _year_performance(@sorted_monthly_profits[-$last_month_idx .. -1]);
 
         # Performance Probability
         my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
@@ -129,7 +129,7 @@ sub copytrading_statistics {
             }
         }
         if (grep { $_->{bet_type} =~ /^(call|put)$/i } @{$sold_contracts}) {
-            push @{$result_hash->{performance_probability}},
+            push @performance_probability,
                 sprintf(
                 "%.4f",
                 1 - Performance::Probability::get_performance_probability({
@@ -149,8 +149,8 @@ sub copytrading_statistics {
         for keys %{$result_hash->{monthly_profitable_trades}};
     $result_hash->{yearly_profitable_trades}->{$_} = _mean(@{$result_hash->{yearly_profitable_trades}->{$_}})
         for keys %{$result_hash->{yearly_profitable_trades}};
-    $result_hash->{last_12months_profitable_trades} = _mean(@{$result_hash->{last_12months_profitable_trades}});
-    $result_hash->{performance_probability}         = _mean(@{$result_hash->{performance_probability}});
+    $result_hash->{last_12months_profitable_trades} = _mean(@last_12months_profitable_trades);
+    $result_hash->{performance_probability}         = _mean(@performance_probability);
 
     # Calculate common trading statistics for multiple accounts
     my $txn_dm = BOM::Database::DataMapper::Transaction->new({db => $db});
