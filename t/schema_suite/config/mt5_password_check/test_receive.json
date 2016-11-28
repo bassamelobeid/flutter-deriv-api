@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "mt5_password_check": {
+     "type": "string",
+     "pattern": "^1$"
+    }
+  }
+}

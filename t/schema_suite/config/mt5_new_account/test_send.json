@@ -1,0 +1,20 @@
+{
+    "token": "[_1]",
+    "args": {
+       "mt5_new_account": "1",
+       "account_type": "demo",
+       "email": "test@mailinator.com",
+       "name": "Travis Test",
+       "mainPassword": "AbcDv1234",
+       "investPassword": "AbcDv1234",
+       "leverage": "100",
+       "address": "Dummy address",
+       "state": "Valleta",
+       "city": "Valletta",
+       "zipCode": "VLT 1117",
+       "country": "id",
+       "company": "Binary Limited",
+       "phone": "+6123456789",
+       "phonePassword": "AbcDv1234"
+    }
+}

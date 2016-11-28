@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "echo_req": {
+      "required": "1"
+    },
+    "mt5_password_change": {
+      "type": "integer",
+      "pattern": "^1$"
+    },
+    "msg_type": {
+      "type": "string",
+      "required": "1",
+      "pattern": "^mt5_password_change$"
+    }
+  }
+}
