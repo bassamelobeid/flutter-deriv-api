@@ -17,7 +17,7 @@ use List::Util qw/sum0/;
 use Try::Tiny;
 use Data::Dumper;
 
-sub trader_statistics {
+sub copytrading_statistics {
     my $params = shift->{args};
 
     my $trader_id = uc $params->{trader_id};
