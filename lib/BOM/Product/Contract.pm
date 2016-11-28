@@ -24,6 +24,7 @@ use Quant::Framework::CorrelationMatrix;
 use Price::Calculator;
 use Pricing::Engine::EuropeanDigitalSlope;
 use Pricing::Engine::TickExpiry;
+use Pricing::Engine::BlackScholes;
 
 use BOM::System::Chronicle;
 
@@ -535,6 +536,9 @@ sub _build_pricing_engine_name {
     my $self = shift;
 
     my $engine_name = $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'Pricing::Engine::EuropeanDigitalSlope';
+
+     #For Volatility indices, we use plain BS formula for pricing instead of VV/Slope
+     $engine_name = 'Pricing::Engine::BlackScholes' if $self->market->name eq 'volidx';
 
     if ($self->tick_expiry) {
         my @symbols = create_underlying_db->get_symbols_for(
@@ -1835,6 +1839,7 @@ sub _build_new_interface_engine {
     my $self = shift;
 
     my %engines = (
+        'Pricing::Engine::BlackScholes'         => 1,
         'Pricing::Engine::Asian'                => 1,
         'Pricing::Engine::Digits'               => 1,
         'Pricing::Engine::TickExpiry'           => 1,
