@@ -374,26 +374,19 @@ sub get_balance_before_date {
 }
 
 sub get_monthly_payments_sum {
-    my ($self, $date, $action_type) = @_;
-
-    if ($action_type ne $BOM::Database::Model::Constants::WITHDRAWAL and $action_type ne $BOM::Database::Model::Constants::DEPOSIT) {
-        Carp::croak("[get_month_payment_sum] wrong action type [$action_type]");
-    }
-
-    my $where_amount = 'AND amount' . ($action_type eq 'withdrawal' ? '<' : '>') . '0';
+    my ($self, $date) = @_;
 
     my $sql = q{
-        SELECT sum(amount)
+        SELECT sum(CASE WHEN amount > 0 THEN amount ELSE 0 END) deposit,
+               sum(CASE WHEN amount < 0 THEN amount ELSE 0 END) withdrawal
           FROM payment.payment
-          WHERE account_id = $1
-            ##WHERE_AMOUNT##
-            AND date_trunc('month', $2::TIMESTAMP) <= payment_time
-            AND payment_time < date_trunc('month', $2::TIMESTAMP) + '1 month'::INTERVAL
+         WHERE account_id = $1
+           AND date_trunc('month', $2::TIMESTAMP) <= payment_time
+           AND payment_time < date_trunc('month', $2::TIMESTAMP) + '1 month'::INTERVAL
     };
-    $sql =~ s/##WHERE_AMOUNT##/$where_amount/g;
 
     my @binds = ($self->account->id, $date->datetime_yyyymmdd_hhmmss);
-    return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
+    return $self->db->dbh->selectrow_arrayref($sql, undef, @binds);
 }
 
 sub unprocessed_bets {
