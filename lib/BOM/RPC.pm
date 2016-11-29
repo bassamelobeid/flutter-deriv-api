@@ -229,7 +229,7 @@ sub startup {
         ['mt5_deposit',         \&BOM::RPC::v3::MT5::Account::mt5_deposit,         1],
         ['mt5_withdrawal',      \&BOM::RPC::v3::MT5::Account::mt5_withdrawal,      1],
 
-        ['copytrading_statistics', \&BOM::RPC::v3::CopyTrading::Statistics::trader_statistics],
+        ['copytrading_statistics', \&BOM::RPC::v3::CopyTrading::Statistics::copytrading_statistics],
         ['copy_start', \&BOM::RPC::v3::CopyTrading::copy_start, 1],
         ['copy_stop',  \&BOM::RPC::v3::CopyTrading::copy_stop,  1],
     );
