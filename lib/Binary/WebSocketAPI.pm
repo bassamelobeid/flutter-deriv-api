@@ -104,6 +104,7 @@ sub startup {
                 user_agent     => $user_agent,
                 ua_fingerprint => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
                 $app_id ? (source => $app_id) : (),
+                brand => (defang_lite($c->req->param('brand')) // 'binary'),
             );
         });
 
@@ -436,8 +437,9 @@ sub startup {
             actions => $actions,
 
             # action hooks
-            before_forward           => [\&Binary::WebSocketAPI::Hooks::before_forward,             \&Binary::WebSocketAPI::Hooks::get_rpc_url],
-            before_call              => [\&Binary::WebSocketAPI::Hooks::add_app_id,                 \&Binary::WebSocketAPI::Hooks::start_timing],
+            before_forward => [\&Binary::WebSocketAPI::Hooks::before_forward, \&Binary::WebSocketAPI::Hooks::get_rpc_url],
+            before_call =>
+                [\&Binary::WebSocketAPI::Hooks::add_app_id, \&Binary::WebSocketAPI::Hooks::add_brand, \&Binary::WebSocketAPI::Hooks::start_timing],
             before_get_rpc_response  => [\&Binary::WebSocketAPI::Hooks::log_call_timing],
             after_got_rpc_response   => [\&Binary::WebSocketAPI::Hooks::log_call_timing_connection, \&Binary::WebSocketAPI::Hooks::error_check],
             before_send_api_response => [
