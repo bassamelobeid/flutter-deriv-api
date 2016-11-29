@@ -200,6 +200,6 @@ subtest 'all status are covered' => sub {
     my $all_status = BOM::Platform::Client::client_status_types;
     fail("missing status $_") for sort grep !exists $seen{$_}, keys %$all_status;
     done_testing();
-    }
+};
 
-    done_testing();
+done_testing();
