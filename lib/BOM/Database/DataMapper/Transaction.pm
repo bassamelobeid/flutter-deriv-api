@@ -392,14 +392,14 @@ sub get_monthly_payments_sum {
 sub unprocessed_bets {
     my ($self, $last_processed_id, $unsold_ids) = @_;
 
-    my $where_unsold_ids;
+    my $where_unsold_ids = '';
     my @binds = ($self->account->id, $last_processed_id);
     if (@$unsold_ids) {
         $where_unsold_ids = 'OR id IN(?)';
         push @binds, join(',', @$unsold_ids);
     }
 
-    my $sql = <'SQL' . $where_unsold_ids <<'SQL';
+    my $sql = qq{
         SELECT
             id, sell_time, underlying_symbol,
             date_part('epoch', (sell_time - start_time)::interval) as duration_seconds,
@@ -413,11 +413,9 @@ sub unprocessed_bets {
             bet.financial_market_bet
         WHERE
             account_id = ?
-            AND (id > ?
-SQL
-            )
+            AND (id > ? $where_unsold_ids)
         ORDER BY id ASC
-SQL
+    };
 
     return $self->db->dbh->selectall_arrayref($sql, undef, @binds);
 }
