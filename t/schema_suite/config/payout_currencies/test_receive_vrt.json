@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "required": "1",
+  "items": {
+    "type": "string",
+    "pattern": "^[_1]$",
+    "required": "1"
+  }
+}

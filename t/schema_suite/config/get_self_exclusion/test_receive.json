@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "max_balance":{
+      "type": "integer",
+      "pattern": "^9123123$",
+      "required": "1"
+    },
+    "max_turnover":{
+      "type": "integer",
+      "pattern": "^123123$",
+      "required": "1"
+    },
+    "max_losses":{
+      "type": "integer",
+      "pattern": "^129381231$",
+      "required": "1"
+    },
+    "max_7day_turnover":{
+      "type": "integer",
+      "pattern": "^1203123$",
+      "required": "1"
+    },
+    "max_7day_losses":{
+      "type": "integer",
+      "pattern": "^129837123$",
+      "required": "1"
+    },
+    "max_30day_turnover":{
+      "type": "integer",
+      "pattern": "^12837123$",
+      "required": "1"
+    },
+    "max_30day_losses":{
+      "type": "integer",
+      "pattern": "^19834234$",
+      "required": "1"
+    },
+    "max_open_bets":{
+      "type": "integer",
+      "pattern": "^9123123$",
+      "required": "1"
+    },
+    "session_duration_limit":{
+      "type": "integer",
+      "pattern": "^12934$",
+      "required": "1"
+    }
+  }
+}

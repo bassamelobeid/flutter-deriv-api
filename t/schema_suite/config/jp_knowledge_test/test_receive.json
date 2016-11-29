@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "test_taken_epoch": {
+      "type": "integer",
+      "pattern": "\\d{10}",
+      "required": "1"
+    }
+  }
+}

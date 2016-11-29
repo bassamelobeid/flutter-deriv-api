@@ -3,7 +3,7 @@ use warnings;
 use BOM::Test::RPC::Client;
 use Test::Most;
 use Test::Mojo;
-use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
+use Email::Folder::Search;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
@@ -32,7 +32,8 @@ my $user_vr = BOM::Platform::User->create(
 $user_vr->save;
 $user_vr->add_loginid({loginid => $test_loginid_vr});
 $user_vr->save;
-clear_mailbox();
+my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
+$mailbox->init;
 
 my ($status, $code);
 
@@ -49,6 +50,7 @@ my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 # reset password vrtc
 my $method = 'reset_password';
 subtest 'reset_password_vrtc' => sub {
+    $mailbox->clear;
     $code = BOM::Platform::Token->new({
             email       => $email_vr,
             expires_in  => 3600,
@@ -63,12 +65,11 @@ subtest 'reset_password_vrtc' => sub {
 
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({status => 1});
     my $subject = 'Your password has been reset.';
-    my %msg     = get_email_by_address_subject(
+    my @msgs     = $mailbox->search(
         email   => $email_vr,
         subject => qr/\Q$subject\E/
     );
-    ok(%msg, "email received");
-    clear_mailbox();
+    ok(@msgs, "email received");
 };
 
 # refetch vrtc user
@@ -145,13 +146,14 @@ subtest $method => sub {
         })->token;
     $params->{args}->{verification_code} = $code;
 
+    $mailbox->clear;
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({status => 1});
     my $subject = 'Your password has been reset.';
-    my %msg     = get_email_by_address_subject(
+    my @msgs     = $mailbox->search(
         email   => $email_cr,
         subject => qr/\Q$subject\E/
     );
-    ok(%msg, "email received");
+    ok(@msgs, "email received");
 };
 
 # refetch cr user

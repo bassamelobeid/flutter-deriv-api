@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "tokens": {
+      "type": "array",
+      "items": {
+          "type": "null"
+        },
+        "required": "1"
+    },
+    "delete_token": {
+      "type":"integer",
+      "pattern": "^1$",
+      "required": "1"
+    }
+  },
+  "required": "1"
+}

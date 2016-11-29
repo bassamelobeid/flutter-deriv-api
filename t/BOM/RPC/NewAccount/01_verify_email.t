@@ -13,7 +13,7 @@ use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::RPC::v3::Utility;
 use BOM::Database::Model::AccessToken;
-use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
+use Email::Folder::Search;
 use BOM::Platform::User;
 
 use utf8;
@@ -33,6 +33,9 @@ my @params = (
     # cleanup
     BOM::Database::Model::AccessToken->new->dbh->do('DELETE FROM auth.access_token');
 }
+
+my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
+$mailbox->init;
 
 subtest 'Initialization' => sub {
     lives_ok {
@@ -64,8 +67,7 @@ subtest 'Initialization' => sub {
 };
 
 subtest 'Account opening request with email does not exist' => sub {
-    clear_mailbox();
-
+    $mailbox->clear;
     $params[1]->{args}->{verify_email} = 'test' . rand(999) . '@binary.com';
     $params[1]->{args}->{type}         = 'account_opening';
     $params[1]->{server_name}          = 'binary.com';
@@ -74,17 +76,15 @@ subtest 'Account opening request with email does not exist' => sub {
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
-    my %msg = get_email_by_address_subject(
+    my @msgs = $mailbox->search(
         email   => $params[1]->{args}->{verify_email},
         subject => qr/Verify your email address/
     );
-    ok keys %msg, 'Email sent successfully';
-    clear_mailbox();
+    ok @msgs, 'Email sent successfully';
 };
 
 subtest 'Account opening request with email exists' => sub {
-    clear_mailbox();
-
+    $mailbox->clear;
     $params[1]->{args}->{verify_email} = $email;
     $params[1]->{args}->{type}         = 'account_opening';
     $params[1]->{server_name}          = 'binary.com';
@@ -93,17 +93,15 @@ subtest 'Account opening request with email exists' => sub {
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
-    my %msg = get_email_by_address_subject(
+    my @msgs = $mailbox->search(
         email   => $params[1]->{args}->{verify_email},
         subject => qr/A Duplicate Email Address Has Been Submitted/
     );
-    ok keys %msg, 'Email sent successfully';
-    clear_mailbox();
+    ok @msgs, 'Email sent successfully';
 };
 
 subtest 'Reset password for exists user' => sub {
-    clear_mailbox();
-
+    $mailbox->clear;
     $params[1]->{args}->{verify_email} = $email;
     $params[1]->{args}->{type}         = 'reset_password';
     $params[1]->{server_name}          = 'binary.com';
@@ -112,12 +110,11 @@ subtest 'Reset password for exists user' => sub {
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
-    my %msg = get_email_by_address_subject(
+    my @msgs = $mailbox->search(
         email   => $params[1]->{args}->{verify_email},
         subject => qr/New Password Request/
     );
-    ok keys %msg, 'Email sent successfully';
-    clear_mailbox();
+    ok @msgs, 'Email sent successfully';
 };
 
 subtest 'Reset password for not exists user' => sub {
@@ -131,7 +128,7 @@ subtest 'Reset password for not exists user' => sub {
 };
 
 subtest 'Payment agent withdraw' => sub {
-    clear_mailbox();
+    $mailbox->clear;
 
     $params[1]->{args}->{verify_email} = $email;
     $params[1]->{args}->{type}         = 'paymentagent_withdraw';
@@ -144,27 +141,26 @@ subtest 'Payment agent withdraw' => sub {
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
-    my %msg = get_email_by_address_subject(
+    my @msgs = $mailbox->search(
         email   => $params[1]->{args}->{verify_email},
         subject => qr/Verify your withdrawal request/
     );
-    ok keys %msg, 'Email sent successfully';
-    clear_mailbox();
+    ok @msgs, 'Email sent successfully';
+    $mailbox->clear;
 
     $params[1]->{args}->{verify_email} = 'dummy@email.com';
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
-    %msg = get_email_by_address_subject(
+    @msgs = $mailbox->search(
         email   => $params[1]->{args}->{verify_email},
         subject => qr/Verify your withdrawal request/
     );
-    is %msg, 0, 'no email as token email different from passed email';
+    ok !@msgs, 'no email as token email different from passed email';
 };
 
 subtest 'Payment withdraw' => sub {
-    clear_mailbox();
-
+    $mailbox->clear;
     $params[1]->{args}->{verify_email} = $email;
     $params[1]->{args}->{type}         = 'payment_withdraw';
     $params[1]->{server_name}          = 'binary.com';
@@ -176,22 +172,22 @@ subtest 'Payment withdraw' => sub {
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
-    my %msg = get_email_by_address_subject(
+    my @msgs = $mailbox->search(
         email   => $params[1]->{args}->{verify_email},
         subject => qr/Verify your withdrawal request/
     );
-    ok keys %msg, 'Email sent successfully';
-    clear_mailbox();
+    ok @msgs, 'Email sent successfully';
+    $mailbox->clear;
 
     $params[1]->{args}->{verify_email} = 'dummy@email.com';
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
-    %msg = get_email_by_address_subject(
+    @msgs = $mailbox->search(
         email   => $params[1]->{args}->{verify_email},
         subject => qr/Verify your withdrawal request/
     );
-    is %msg, 0, 'no email as token email different from passed email';
+    ok !@msgs, 'no email as token email different from passed email';
 };
 
 done_testing();
