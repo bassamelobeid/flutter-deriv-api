@@ -74,14 +74,17 @@ if ($broker and ($id or $short_code)) {
    # Flush off all the agg tick cache as it might affected the repricing of this tool.
    BOM::Market::AggTicks->new->flush();
 
+
     my $contract       = produce_contract($pricing_args);
+    my $display_price =  $action_type eq 'buy' ? $contract->ask_price : $contract->bid_price;
     my $traded_bid     = $details->{bid_price};
     my $traded_ask     = $details->{ask_price};
     my $slippage_price = $details->{price_slippage};
-    my $order_price    = $details->{order_price} // $contract->ask_price;
+    my $order_price    = $details->{order_price} // $display_price;
     my $prev_tick      = $contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
     my $pricing_spot   = $details->{pricing_spot};
 
+    
     my $traded_contract = $action_type eq 'buy' ? $contract : $contract->opposite_contract;
     my $discounted_probability = $contract->discounted_probability;
 
