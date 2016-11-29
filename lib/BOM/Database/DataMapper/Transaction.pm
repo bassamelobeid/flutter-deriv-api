@@ -401,7 +401,7 @@ sub unprocessed_bets {
 
     my $sql = qq{
         SELECT
-            id, sell_time, underlying_symbol,
+            id, is_sold, underlying_symbol,
             date_part('epoch', (sell_time - start_time)::interval) as duration_seconds,
             ((sell_price - buy_price) / buy_price) as profit,
             CASE
