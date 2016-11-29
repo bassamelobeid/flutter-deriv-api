@@ -55,6 +55,7 @@ if ($broker and ($id or $short_code)) {
     my $short_code_param = $details->{shortcode}     // $short_code;
     my $currency_param   = $details->{currency_code} // $currency_code;
 
+
     my $original_contract = produce_contract($short_code_param, $currency_param);
     my $action_type = $details->{action_type} // 'buy';    #If it is with shortcode as input, we just want to verify the ask price
     my $sell_time = $details->{sell_time};
@@ -79,6 +80,7 @@ if ($broker and ($id or $short_code)) {
     my $slippage_price = $details->{price_slippage};
     my $order_price    = $details->{order_price} // $contract->ask_price;
     my $prev_tick      = $contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
+    my $pricing_spot   = $details->{pricing_spot};
 
     my $traded_contract = $action_type eq 'buy' ? $contract : $contract->opposite_contract;
     my $discounted_probability = $contract->discounted_probability;
@@ -105,6 +107,7 @@ if ($broker and ($id or $short_code)) {
         trade_bid_price        => $traded_bid // 'NA. (unsold)',
         payout                 => $contract->payout,
         tick_before_trade_time => $prev_tick,
+        pricing_spot           => $pricing_spot,
     );
 }
 my $display = $params{download} ? 'download' : 'display';
