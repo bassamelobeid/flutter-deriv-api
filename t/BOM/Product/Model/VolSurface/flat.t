@@ -23,8 +23,8 @@ subtest "looks flat" => sub {
                     day          => $days
                 }
             ),
-            0.07,
-            $days . ' days ATM spread is flat.'
+            0.00,
+            $days . ' days ATM spread is zero.'
         );
         for (0 .. 19) {
             my $strike = rand(20000);
