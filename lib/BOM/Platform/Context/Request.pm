@@ -139,9 +139,9 @@ sub _build_domain_name {
     my $name = $host_name[0];
 
     if ($name =~ /^qa\d+$/) {
-        return 'binary' . $name . '.com';
+        return 'www.binary' . $name . '.com';
     }
-    return 'binary.com';
+    return 'www.binary.com';
 }
 
 sub _build_language {
@@ -175,7 +175,8 @@ sub _build_brand {
     if (my $domain = $self->domain_name) {
         # webtrader.champion-fx.com -> champion, visit this regex
         # when we add new brand
-        return $domain =~ /\.([a-z]+).*?\./;
+        ($domain) = ($domain =~ /\.([a-z]+).*?\./);
+        return $domain;
     }
 
     return "binary";
