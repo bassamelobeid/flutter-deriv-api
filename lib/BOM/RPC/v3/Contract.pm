@@ -28,7 +28,8 @@ sub validate_symbol {
     if (!$symbol || none { $symbol eq $_ } @offerings) {
         # There's going to be a few symbols that are disabled or otherwise not provided for valid reasons, but if we have nothing,
         # or it's a symbol that's very unlikely to be disabled, it'd be nice to know.
-        warn "Symbol $symbol not found, our offerings are: " . join(',', @offerings) if $symbol and ($symbol =~ /^R_(100|75|50|25|10)$/ or not @offerings);
+        warn "Symbol $symbol not found, our offerings are: " . join(',', @offerings)
+            if $symbol and ($symbol =~ /^R_(100|75|50|25|10)$/ or not @offerings);
         return {
             error => {
                 code    => 'InvalidSymbol',
