@@ -28,7 +28,7 @@ my %skip_category = (
 );
 
 my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/vv_config.yml');
-my @underlying_symbols = ('frxBROUSD', 'AEX', 'frxXAUUSD', 'RDBEAR', 'RDBULL', 'R_100', 'R_25', 'WLDEUR', 'frxEURSEK', 'frxUSDJPY');
+my @underlying_symbols = ('frxBROUSD', 'AEX', 'frxXAUUSD', 'WLDEUR', 'frxEURSEK', 'frxUSDJPY');
 my $payout_currency    = 'USD';
 my $spot               = 100;
 my $offerings_cfg      = BOM::Platform::Runtime->instance->get_offerings_config;
@@ -85,6 +85,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                             push @codes, $c->barrier->as_absolute;
                         }
                         my $code = join '_', @codes;
+
                         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
                         is roundnear(0.00001, $c->theo_probability->amount), roundnear(0.00001, $expectation->{$code}),
                             'theo probability matches [' . $code . ']';

@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 192;
+use Test::More tests => 288;
 use Test::Exception;
 
 use Format::Util::Numbers qw(roundnear);
@@ -74,7 +74,6 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
         get_offerings_with_filter($offerings_cfg, 'contract_category', {underlying_symbol => $ul->symbol}))
     {
         my $category_obj = BOM::Product::Contract::Category->new($contract_category);
-        next if $category_obj->is_path_dependent;
         my @duration = map { $_ * 86400 } (7, 14);
         foreach my $duration (@duration) {
             my @barriers = (
@@ -110,8 +109,9 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         %$barrier,
                     };
 
-                    #Go to the next contract, if current setting has one barrier and contract type needs two
-                    next if $contract_type =~ /EXPIRY/ and not exists $barrier->{high_barrier};
+                    #Go to the next contract, if current setting has one barrier and contract type needs two or vice versa
+                    next if $contract_type =~ /^(EXPIRY|RANGE|UPORDOWN)/ and not exists $barrier->{high_barrier};
+                    next if $contract_type !~ /^(EXPIRY|RANGE|UPORDOWN)/ and exists $barrier->{high_barrier};
 
                     lives_ok {
                         my $c = produce_contract($args);

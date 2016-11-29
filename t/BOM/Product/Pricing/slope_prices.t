@@ -71,14 +71,6 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         volatility => $vol,
                     })};
 
-            @barriers = (
-                {barrier => 'S0P'},
-                {barrier => 'S100P'},
-                {
-                    high_barrier => '103',
-                    low_barrier  => '94'
-                }) if $ul->market->name eq 'volidx';
-
             foreach my $barrier (@barriers) {
                 my %equal = (
                     CALLE        => 1,
@@ -89,8 +81,6 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                 foreach my $contract_type (grep { !$equal{$_} }
                     get_offerings_with_filter($offerings_cfg, 'contract_type', {contract_category => $contract_category}))
                 {
-                    $duration /= 15 if $ul->market->name eq 'volidx';
-
                     my $args = {
                         bet_type     => $contract_type,
                         underlying   => $ul,
@@ -99,8 +89,6 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         duration     => $duration . 's',
                         currency     => $payout_currency,
                         payout       => 1000,
-                        $ul->market->name eq 'volidx' ? (pricing_vol => 0.12) : (),
-                        $ul->market->name eq 'volidx' ? (spot        => 100)  : (),
                         %$barrier,
                     };
 
