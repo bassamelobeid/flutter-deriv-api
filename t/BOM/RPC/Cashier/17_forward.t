@@ -19,6 +19,15 @@ use BOM::Platform::User;
 use BOM::Platform::Client;
 
 my ($t, $rpc_ct);
+my $client_mocked = Test::MockModule->new('BOM::Platform::Client');
+my %seen;
+$client_mocked->mock(
+    'set_status',
+    sub {
+        my $status = $_[1];
+        $seen{$status}++;
+        return $client_mocked->original('set_status')->(@_);
+    });
 
 subtest 'Initialization' => sub {
     lives_ok {
@@ -93,7 +102,6 @@ subtest 'common' => sub {
     $client_cr->save;
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
-    my $client_mocked = Test::MockModule->new('BOM::Platform::Client');
     $client_mocked->mock('documents_expired', sub { return 1 });
 
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client documents have expired')
@@ -188,4 +196,10 @@ subtest 'landing_companies_specific' => sub {
 
 };
 
-done_testing();
+subtest 'all status are covered' => sub {
+    my $all_status = BOM::Platform::Client::client_status_types;
+    fail("missing status $_") for sort grep !exists $seen{$_}, keys %$all_status;
+    done_testing();
+    }
+
+    done_testing();
