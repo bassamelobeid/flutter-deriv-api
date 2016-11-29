@@ -73,8 +73,12 @@ sub get_volatility {
 
     my $categorized_events = $self->_categorized_economic_events($economic_events);
 
-    my $c_start = $args->{current_epoch};
-    my $c_end   = $c_start + $args->{seconds_to_expiration};
+    # Future time samples is extended for 5 minutes at both ends.
+    # This is to accommodate for the uncertainty of economic event impact kick-in time.
+    # Hence, a five minute buffer is added to both ends.
+    my $buffer_seconds = 0;
+    my $c_start        = $args->{current_epoch} - $buffer_seconds;
+    my $c_end          = $c_start + $args->{seconds_to_expiration} + $buffer_seconds;
     my @time_samples_fut;
 
     for (my $i = $c_start; $i <= $c_end; $i += 15) {
@@ -92,11 +96,10 @@ sub get_volatility {
     #no news if not requested
     my $news_fut = [(1) x (scalar @time_samples_fut)];
     if ($args->{include_news_impact}) {
-        my $contract_details = {
-            start    => $c_start,
-            duration => $args->{seconds_to_expiration},
-        };
-        $news_fut = _calculate_news_triangle(\@time_samples_fut, $categorized_events, $contract_details);
+        $news_fut = $qfs->get_economic_event_seasonality({
+            underlying_symbol => $underlying->symbol,
+            time_series       => \@time_samples_fut
+        });
     }
 
     my $future_sum                 = sum(map { ($seasonality_fut->[$_] * $news_fut->[$_])**2 } (0 .. $#time_samples_fut));
@@ -124,11 +127,10 @@ sub get_volatility {
         });
         my $news_past = [(1) x (scalar @time_samples_past)];
         if ($args->{include_news_impact}) {
-            my $contract_details = {
-                start    => $c_start,
-                duration => $args->{seconds_to_expiration},
-            };
-            $news_past = _calculate_news_triangle(\@time_samples_past, $categorized_events, $contract_details);
+            $news_past = $qfs->get_economic_event_seasonality({
+                underlying_symbol => $underlying->symbol,
+                time_series       => \@time_samples_past
+            });
         }
         my $past_sum                   = sum(map { ($seasonality_past->[$_] * $news_past->[$_])**2 * $weights->[$_] } (0 .. $#time_samples_past));
         my $past_seasonality           = sqrt($past_sum / sum(@$weights));
@@ -200,51 +202,6 @@ sub _calculate_weights {
     }
 
     return \@combined;
-}
-
-sub _calculate_news_triangle {
-    my ($times, $news_array, $contract) = @_;
-
-    my @times    = @$times;
-    my @combined = (1) x scalar(@times);
-    my $eps      = machine_epsilon();
-    foreach my $news (@$news_array) {
-        my $effective_news_time = _get_effective_news_time($news->{release_time}, $contract->{start}, $contract->{duration});
-        # +1e-9 is added to prevent a division by zero error if news magnitude is 1
-        my $decay_coef = -log(2 / ($news->{magnitude} - 1 + $eps)) / $news->{duration};
-        my @triangle;
-        foreach my $time (@$times) {
-            if ($time < $effective_news_time) {
-                push @triangle, 1;
-            } else {
-                my $chunk = ($news->{magnitude} - 1) * exp(-$decay_coef * ($time - $effective_news_time)) + 1;
-                push @triangle, $chunk;
-            }
-        }
-        @combined = map { max($triangle[$_], $combined[$_]) } (0 .. $#times);
-    }
-
-    return \@combined;
-}
-
-sub _get_effective_news_time {
-    my ($news_time, $contract_start, $contract_duration) = @_;
-
-    my $five_minutes_in_seconds = 5 * 60;
-    my $shift_seconds           = 0;
-    my $contract_end            = $contract_start + $contract_duration;
-    if ($news_time > $contract_start - $five_minutes_in_seconds and $news_time < $contract_start) {
-        $shift_seconds = $contract_start - $news_time;
-    } elsif ($news_time < $contract_end + $five_minutes_in_seconds and $news_time > $contract_end - $five_minutes_in_seconds) {
-        # Always shifts to the contract start time if duration is less than 5 minutes.
-        my $max_shift = min($five_minutes_in_seconds, $contract_duration);
-        my $desired_start = $contract_end - $max_shift;
-        $shift_seconds = $desired_start - $news_time;
-    }
-
-    my $effective_time = $news_time + $shift_seconds;
-
-    return $effective_time;
 }
 
 has underlying => (

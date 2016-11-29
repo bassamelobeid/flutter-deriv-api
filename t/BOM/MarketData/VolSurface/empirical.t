@@ -11,6 +11,8 @@ use Format::Util::Numbers qw/roundnear/;
 use BOM::MarketData;
 use BOM::MarketData::Types;
 use BOM::MarketData::VolSurface::Empirical;
+use Quant::Framework::Seasonality;
+use BOM::System::Chronicle;
 use BOM::MarketData qw(create_underlying);
 use BOM::Market::AggTicks;
 use Date::Utility;
@@ -685,6 +687,11 @@ subtest 'seasonalized volatility' => sub {
     'lives through process of getting seasonalized volatility';
 };
 
+my $qfs = Quant::Framework::Seasonality->new(
+    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
+    chronicle_writer => BOM::System::Chronicle::get_chronicle_writer
+);
+
 subtest 'seasonalized volatility with news' => sub {
     my $eco_data = {
         symbol        => 'USD',
@@ -694,6 +701,11 @@ subtest 'seasonalized volatility with news' => sub {
         recorded_date => $now,
         source        => 'forexfactory'
     };
+    $qfs->generate_economic_event_seasonality({
+        underlying_symbol => 'frxAUDJPY',
+        fill_cache        => 1,
+        economic_events   => [$eco_data],
+    });
     lives_ok {
         my $vs = BOM::MarketData::VolSurface::Empirical->new(underlying => 'frxAUDJPY');
         is $vs->get_volatility({
@@ -715,6 +727,11 @@ subtest 'seasonalized volatility with news' => sub {
         recorded_date => $now,
         source        => 'forexfactory'
     };
+    $qfs->generate_economic_event_seasonality({
+        underlying_symbol => 'frxUSDJPY',
+        fill_cache        => 1,
+        economic_events   => [$uncategorized],
+    });
     lives_ok {
         my $vs = BOM::MarketData::VolSurface::Empirical->new(underlying => 'frxUSDJPY');
         is $vs->get_volatility({
