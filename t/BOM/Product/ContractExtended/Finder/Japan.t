@@ -245,7 +245,7 @@ subtest "check_intraday trading_period_non_JPY" => sub {
             date_start  => [Date::Utility->new('2015-11-23 23:45:00')->epoch],
             date_expiry => [Date::Utility->new('2015-11-23 02:00:00')->epoch],
         },
- 
+
         # tues
         '2015-11-24 00:00:00' => {
             combination => 1,
