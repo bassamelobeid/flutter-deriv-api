@@ -308,7 +308,7 @@ subtest 'invalid bet types are dull' => sub {
 };
 
 subtest 'invalid contract stake evokes sympathy' => sub {
-    plan tests => 5;
+    plan tests => 6;
 
     my $underlying = create_underlying('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
@@ -356,6 +356,9 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     $bet_params->{bet_type} = 'ONETOUCH';
 
     $bet              = produce_contract($bet_params);
+    ok $bet->is_valid_to_buy, 'valid to buy with probability 0.997';
+    $bet_params->{barrier} = 99.99;
+    $bet = produce_contract($bet_params);
     $expected_reasons = [qr/stake same as payout/];
     test_error_list('buy', $bet, $expected_reasons);
 
