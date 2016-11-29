@@ -312,7 +312,6 @@ sub _get_pricing_parameter_from_slope_pricer {
     my $theo_param            = $debug_information->{$contract_type}{base_probability}{parameters};
     my $display_contract_type = lc($contract_type);
 
-    warn "shortcode" . $contract->shortcode . " contract type $display_contract_type price with " . $contract->priced_with;
     if (not $contract->two_barriers) {
         if ($contract->priced_with eq 'base') {
             $pricing_parameters->{bs_probability} =
