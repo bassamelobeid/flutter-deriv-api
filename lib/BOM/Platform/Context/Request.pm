@@ -55,6 +55,11 @@ has 'params' => (
     lazy_build => 1,
 );
 
+has 'brand' => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
 has '_ip' => (
     is => 'ro',
 );
@@ -162,6 +167,18 @@ sub _build_language {
 sub _build_client_ip {
     my $self = shift;
     return ($self->_ip || '127.0.0.1');
+}
+
+sub _build_brand {
+    my $self = shift;
+
+    if (my $domain = $self->domain_name) {
+        # webtrader.champion-fx.com -> champion, visit this regex
+        # when we add new brand
+        return $domain =~ /\.([a-z]+).*?\./;
+    }
+
+    return "binary";
 }
 
 sub BUILD {
