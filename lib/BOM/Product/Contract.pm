@@ -1786,7 +1786,7 @@ sub _pricing_parameters {
         q_rate            => $self->q_rate,
         r_rate            => $self->r_rate,
         mu                => $self->mu,
-        vol               => $self->two_barriers ? [grep { $_ } values %{$self->pricing_vol_for_two_barriers}] : $self->pricing_vol,
+        vol               => $self->two_barriers ? $self->pricing_vol_for_two_barriers : $self->pricing_vol,
         payouttime_code   => $self->payouttime_code,
         contract_type     => $self->pricing_code,
         underlying_symbol => $self->underlying->symbol,
