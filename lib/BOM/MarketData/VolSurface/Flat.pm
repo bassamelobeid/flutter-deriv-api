@@ -69,14 +69,9 @@ has flat_vol => (
 
 sub _build_flat_vol {
     my $self = shift;
-    return $vol->{$self->symbol};
+    #if vol for this symbol does not exist in the yaml file, assume default 10% vol
+    return $vol->{$self->symbol} // 0.1;
 }
-
-# a fixed 7% of volatility spread
-has flat_atm_spread => (
-    is      => 'ro',
-    default => 0.07,
-);
 
 =head2 get_volatility
 
@@ -139,7 +134,7 @@ has surface => (
 sub _build_surface {
     my $self = shift;
 
-    return {map { $_ => {vol_spread => {$self->atm_spread_point => $self->flat_atm_spread}, smile => $self->get_smile($_)} } (qw(1 7 30 90 180 360))};
+    return {map { $_ => {vol_spread => {$self->atm_spread_point => 0}, smile => $self->get_smile($_)} } (qw(1 7 30 90 180 360))};
 }
 
 has surface_data => (
