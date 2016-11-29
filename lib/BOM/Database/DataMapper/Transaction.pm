@@ -374,59 +374,48 @@ sub get_balance_before_date {
 }
 
 sub get_monthly_payments_sum {
-    my ($self, $date, $action_type) = @_;
-
-    if ($action_type ne $BOM::Database::Model::Constants::WITHDRAWAL and $action_type ne $BOM::Database::Model::Constants::DEPOSIT) {
-        Carp::croak("[get_month_payment_sum] wrong action type [$action_type]");
-    }
-
-    my $where_amount = 'AND amount' . ($action_type eq 'withdrawal' ? '<' : '>') . '0';
+    my ($self, $date) = @_;
 
     my $sql = q{
-        SELECT sum(amount)
+        SELECT sum(CASE WHEN amount > 0 THEN amount ELSE 0 END) deposit,
+               sum(CASE WHEN amount < 0 THEN amount ELSE 0 END) withdrawal
           FROM payment.payment
-          WHERE account_id = $1
-            ##WHERE_AMOUNT##
-            AND date_trunc('month', $2::TIMESTAMP) <= payment_time
-            AND payment_time < date_trunc('month', $2::TIMESTAMP) + '1 month'::INTERVAL
+         WHERE account_id = $1
+           AND date_trunc('month', $2::TIMESTAMP) <= payment_time
+           AND payment_time < date_trunc('month', $2::TIMESTAMP) + '1 month'::INTERVAL
     };
-    $sql =~ s/##WHERE_AMOUNT##/$where_amount/g;
 
     my @binds = ($self->account->id, $date->datetime_yyyymmdd_hhmmss);
-    return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
+    return $self->db->dbh->selectrow_arrayref($sql, undef, @binds);
 }
 
 sub unprocessed_bets {
-    my ($self, $last_processed_id, $unsold_ids, $accounts) = @_;
+    my ($self, $last_processed_id, $unsold_ids) = @_;
 
-    my $sql = q{
-            SELECT
-                id, sell_time, underlying_symbol,
-                (EXTRACT(hour FROM (sell_time - start_time)) * 60 * 60 + EXTRACT(minutes FROM (sell_time - start_time)) * 60 + EXTRACT(seconds FROM (sell_time - start_time))) as duration_seconds,
-                ((sell_price - buy_price) / buy_price) as profit,
-                CASE
-                    WHEN (sell_price - buy_price) > 0 THEN 'win'
-                    ELSE 'loss'
-                END
-                AS profitable
-            FROM
-                bet.financial_market_bet
-            WHERE
-                account_id IN (?)
-                AND (
-                    id > ?
-                    ##UNSOLD_IDS##
-                )
-            ORDER BY id ASC
-        };
-
-    my @binds = (join(',', (map {$_->id} @$accounts)), $last_processed_id);
-
+    my $where_unsold_ids = '';
+    my @binds = ($self->account->id, $last_processed_id);
     if (@$unsold_ids) {
-        $sql =~ s/##UNSOLD_IDS##/OR id IN(?)/;
+        $where_unsold_ids = 'OR id IN(?)';
         push @binds, join(',', @$unsold_ids);
     }
-    $sql =~ s/##UNSOLD_IDS##//;
+
+    my $sql = qq{
+        SELECT
+            id, sell_time, underlying_symbol,
+            date_part('epoch', (sell_time - start_time)::interval) as duration_seconds,
+            ((sell_price - buy_price) / buy_price) as profit,
+            CASE
+                WHEN (sell_price - buy_price) > 0 THEN 'win'
+                ELSE 'loss'
+            END
+            AS profitable
+        FROM
+            bet.financial_market_bet
+        WHERE
+            account_id = ?
+            AND (id > ? $where_unsold_ids)
+        ORDER BY id ASC
+    };
 
     return $self->db->dbh->selectall_arrayref($sql, undef, @binds);
 }
