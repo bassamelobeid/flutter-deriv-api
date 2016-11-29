@@ -660,7 +660,7 @@ sub _build_engine_ask_probability {
                 two_barriers             => $self->two_barriers,
                 strikes                  => [grep { $_ } values %{$self->barriers_for_pricing}],
                 spot                     => $self->pricing_spot,
-                t                        => $self->timeinyears,
+                t                        => $self->timeinyears->amount,
                 discount_rate            => $self->discount_rate,
                 mu                       => $self->mu,
                 iv                       => $self->volsurface->get_volatility,
