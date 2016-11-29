@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 372;
+use Test::More;
 use Test::Exception;
 
 use Format::Util::Numbers qw(roundnear);
@@ -71,6 +71,9 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         volatility => $vol,
                     })};
 
+            #we only price ATM contracts for financial instruments with flat vol-surface
+            @barriers = ( {barrier => 'S0P'} ) if $ul->volatility_surface_type eq 'flat' and $ul->market->name ne 'volidx';
+
             foreach my $barrier (@barriers) {
                 my %equal = (
                     CALLE        => 1,
@@ -111,3 +114,5 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
         }
     }
 }
+
+done_testing;
