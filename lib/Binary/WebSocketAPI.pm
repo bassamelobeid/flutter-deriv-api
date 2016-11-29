@@ -104,7 +104,7 @@ sub startup {
                 user_agent     => $user_agent,
                 ua_fingerprint => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
                 $app_id ? (source => $app_id) : (),
-                brand => (defang_lite($c->req->param('brand')) // 'binary'),
+                brand => (defang_lite($c->req->param('brand')) || 'binary'),
             );
         });
 
