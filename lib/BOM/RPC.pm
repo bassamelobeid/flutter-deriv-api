@@ -68,6 +68,7 @@ sub register {
             }
             $params->{token_details} = $token_details;
             $args->{language} = $params->{language} if ($params->{language});
+            $args->{brand} = $params->{brand} if ($params->{brand});
 
             if (exists $params->{server_name}) {
                 $params->{website_name} = BOM::RPC::v3::Utility::website_name(delete $params->{server_name});
