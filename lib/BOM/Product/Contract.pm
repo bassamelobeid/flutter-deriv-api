@@ -1771,7 +1771,6 @@ sub _pricing_parameters {
         t                 => $self->timeinyears->amount,
         payout_type       => $self->payout_type,
     };
-    
 
     #Only send qf-market-data if the engine really needs it.
     #because the calculation is expensive and also it may not be compatible with
