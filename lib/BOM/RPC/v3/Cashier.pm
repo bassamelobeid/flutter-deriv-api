@@ -57,8 +57,9 @@ sub cashier {
         });
     }
 
-    my $args = $params->{args};
-    my $action = $args->{cashier} // 'deposit';
+    my $args     = $params->{args};
+    my $action   = $args->{cashier} // 'deposit';
+    my $provider = $args->{provider} // 'doughflow';
 
     my $currency;
     if (my $account = $client->default_account) {
@@ -109,7 +110,6 @@ sub cashier {
     }
 
     my $error = '';
-
     if ($action eq 'deposit' and $client->get_status('unwelcome')) {
         $error = localize('Your account is restricted to withdrawals only.');
     } elsif ($client->documents_expired) {
@@ -141,19 +141,14 @@ sub cashier {
         return $error_sub->($error);
     }
 
-    ## if cashier provider == 'epg', we'll use EPG cashier
-    if (($args->{provider} // '') eq 'epg') {
-        BOM::System::AuditLog::log('redirecting to epg');
-        return 'https://www.' . lc($params->{website_name}) . '/epg/?currency=' . $currency
-            if ($params->{website_name} // '') =~ /qa/;    # for QA server
-        return 'https://epg.binary.com/epg/?currency=' . $currency;
+    my $df_client;
+    if ($provider eq 'doughflow') {
+        $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client_loginid});
+        # We ask the client which currency they wish to deposit/withdraw in
+        # if they've never deposited before
+        $currency = $currency || $df_client->doughflow_currency;
     }
 
-    my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client_loginid});
-
-    # We ask the client which currency they wish to deposit/withdraw in
-    # if they've never deposited before
-    $currency = $currency || $df_client->doughflow_currency;
     if (not $currency) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'ASK_CURRENCY',
@@ -182,32 +177,10 @@ sub cashier {
         }
     }
 
-    # create handoff token
-    my $cb = BOM::Database::ClientDB->new({
-        client_loginid => $df_client->loginid,
-    });
-
-    BOM::Database::DataMapper::Payment::DoughFlow->new({
-            client_loginid => $df_client->loginid,
-            db             => $cb->db,
-        })->delete_expired_tokens();
-
-    my $handoff_token = BOM::Database::Model::HandoffToken->new(
-        db                 => $cb->db,
-        data_object_params => {
-            key            => BOM::Database::Model::HandoffToken::generate_session_key,
-            client_loginid => $df_client->loginid,
-            expires        => time + 60,
-        },
-    );
-    $handoff_token->save;
-
-    my $doughflow_loc  = BOM::System::Config::third_party->{doughflow}->{location};
-    my $doughflow_pass = BOM::System::Config::third_party->{doughflow}->{passcode};
-    my $url            = $doughflow_loc . '/CreateCustomer.asp';
-
-    my $broker = $df_client->broker;
-    my $sportsbook = get_sportsbook($broker, $currency);
+    ## if cashier provider == 'epg', we'll return epg url
+    if ($provider eq 'epg') {
+        return _get_epg_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language});
+    }
 
     # hit DF's CreateCustomer API
     my $ua = LWP::UserAgent->new(timeout => 20);
@@ -216,13 +189,19 @@ sub cashier {
         SSL_verify_mode => SSL_VERIFY_NONE
     );    #temporarily disable host verification as full ssl certificate chain is not available in doughflow.
 
+    my $doughflow_loc     = BOM::System::Config::third_party->{doughflow}->{location};
+    my $doughflow_pass    = BOM::System::Config::third_party->{doughflow}->{passcode};
+    my $url               = $doughflow_loc . '/CreateCustomer.asp';
+    my $sportsbook        = get_sportsbook($df_client->broker, $currency);
+    my $handoff_token_key = _get_handoff_token_key($df_client->loginid);
+
     my $result = $ua->post(
         $url,
         $df_client->create_customer_property_bag({
                 SecurePassCode => $doughflow_pass,
                 Sportsbook     => $sportsbook,
                 IP_Address     => '127.0.0.1',
-                Password       => $handoff_token->key,
+                Password       => $handoff_token_key,
             }));
 
     if ($result->{'_content'} ne 'OK') {
@@ -282,7 +261,7 @@ sub cashier {
         );
     }
 
-    my $secret = String::UTF8::MD5::md5($df_client->loginid . '-' . $handoff_token->key);
+    my $secret = String::UTF8::MD5::md5($df_client->loginid . '-' . $handoff_token_key);
 
     if ($action eq 'deposit') {
         $action = 'DEPOSIT';
@@ -291,7 +270,7 @@ sub cashier {
     }
 
     Path::Tiny::path('/tmp/doughflow_tokens.txt')
-        ->append_utf8(join(":", Date::Utility->new()->datetime_ddmmmyy_hhmmss, $df_client->loginid, $handoff_token->key, $action));
+        ->append_utf8(join(":", Date::Utility->new()->datetime_ddmmmyy_hhmmss, $df_client->loginid, $handoff_token_key, $action));
 
     # build DF link
     $url =
@@ -302,12 +281,57 @@ sub cashier {
         . '&Lang='
         . get_doughflow_language_code_for($params->{language})
         . '&Password='
-        . $handoff_token->key
+        . $handoff_token_key
         . '&Secret='
         . $secret
         . '&Action='
         . $action;
     BOM::System::AuditLog::log('redirecting to doughflow', $df_client->loginid);
+    return $url;
+}
+
+sub _get_handoff_token_key {
+    my $loginid = shift;
+
+    # create handoff token
+    my $cb = BOM::Database::ClientDB->new({
+        client_loginid => $loginid,
+    });
+
+    BOM::Database::DataMapper::Payment::DoughFlow->new({
+            client_loginid => $loginid,
+            db             => $cb->db,
+        })->delete_expired_tokens();
+
+    my $handoff_token = BOM::Database::Model::HandoffToken->new(
+        db                 => $cb->db,
+        data_object_params => {
+            key            => BOM::Database::Model::HandoffToken::generate_session_key,
+            client_loginid => $loginid,
+            expires        => time + 60,
+        },
+    );
+    $handoff_token->save;
+
+    return $handoff_token->key;
+}
+
+sub _get_epg_url {
+    my ($loginid, $website_name, $currency, $action, $language) = @_;
+
+    BOM::System::AuditLog::log('redirecting to epg');
+
+    $language = uc($language // 'EN');
+
+    my $url = 'https://';
+    if (($website_name // '') =~ /qa/) {
+        $url .= 'www.' . lc($website_name) . '/epg';
+    } else {
+        $url .= 'epg.binary.com/epg';
+    }
+
+    $url .= "/handshake?token=" . _get_handoff_token_key($loginid) . "&loginid=$loginid&currency=$currency&action=$action&l=$language";
+
     return $url;
 }
 
