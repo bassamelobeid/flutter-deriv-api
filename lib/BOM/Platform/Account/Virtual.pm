@@ -15,7 +15,7 @@ use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Token;
 use BOM::Platform::Account;
-use BOM::Platform::Context qw(localize);
+use BOM::Platform::Context qw(localize request);
 
 sub create_account {
     my $args    = shift;
@@ -32,14 +32,14 @@ sub create_account {
         return {error => 'invalid'};
     } elsif (BOM::Platform::User->new({email => $email})) {
         return {error => 'duplicate email'};
-    } elsif ($residence && LandingCompany::Countries->instance->restricted_country($residence)) {
+    } elsif ($residence && LandingCompany::Countries->new(brand => request()->brand)->restricted_country($residence)) {
         return {error => 'invalid residence'};
     }
 
     my ($client, $error);
     try {
         die 'residence is empty' if (not $residence);
-        my $company_name = LandingCompany::Countries->instance->virtual_company_for_country($residence);
+        my $company_name = LandingCompany::Countries->new(brand => request()->brand)->virtual_company_for_country($residence);
 
         $client = BOM::Platform::Client->register_and_return_new_client({
             broker_code                   => LandingCompany::Registry::get($company_name)->broker_codes->[0],
