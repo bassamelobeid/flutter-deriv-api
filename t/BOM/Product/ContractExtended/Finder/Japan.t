@@ -292,31 +292,29 @@ subtest "check_intraday trading_period_non_JPY" => sub {
 subtest "predefined barriers" => sub {
     my %expected_barriers = (
         call_intraday => {
-            available_barriers => [1.15015, 1.15207, 1.15303, 1.15399, 1.15495, 1.15591, 1.15687, 1.15783, 1.15879, 1.15975, 1.16167],
-            barrier            => 1.15207,
+            available_barriers => [1.15141, 1.15241, 1.15341, 1.15471, 1.15591, 1.15711, 1.15841, 1.15941, 1.16041],
+            barrier            => 1.15141,
             expired_barriers   => [],
         },
         onetouch_daily => {
-            available_barriers => [1.13815, 1.14407, 1.14703, 1.14999, 1.15295, 1.15591, 1.15887, 1.16183, 1.16479, 1.16775, 1.17367],
-            barrier            => 1.15141,
-            expired_barriers   => [1.15295],
+            available_barriers => [1.14196, 1.14506, 1.14816, 1.15219, 1.15591, 1.15963, 1.16366, 1.16676, 1.16986],
+            barrier            => 1.15219,
+            expired_barriers => [1.14816, 1.15219],
         },
 
         range_daily => {
-            available_barriers => [[1.15295, 1.15887], [1.14999, 1.16183], [1.14703, 1.16479], [1.14407, 1.16775]],
-            expired_barriers => [[1.15295, 1.15887]],
+            available_barriers => [[1.14816, 1.16366], [1.14506, 1.16676], [1.14196, 1.16986]],
+            expired_barriers => [[1.14816, 1.16366]],
         },
         expiryrange_daily => {
             available_barriers => [
-                [1.15295, 1.15887],
-                [1.14999, 1.15591],
-                [1.15591, 1.16183],
-                [1.14703, 1.15295],
-                [1.15887, 1.16479],
-                [1.14407, 1.14999],
-                [1.16183, 1.16775],
-                [1.13815, 1.14703],
-                [1.16479, 1.17367]
+                [1.16366, 1.16986],
+                [1.15963, 1.16676],
+                [1.15591, 1.16366],
+                [1.15219, 1.15963],
+                [1.14816, 1.15591],
+                [1.14506, 1.15219],
+                [1.14196, 1.14816],
             ],
             expired_barriers => [],
         },
@@ -349,7 +347,7 @@ subtest "predefined barriers" => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'frxEURUSD',
             epoch      => Date::Utility->new($_)->epoch,
-            quote      => 1.1521,
+            quote      => 1.1481,
         }) for ("2015-08-24 00:10:00");
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -464,22 +462,24 @@ subtest "predefined barriers" => sub {
 
     my %expected_barriers_2 = (
         onetouch_daily => {
-            available_barriers => [1.13815, 1.14407, 1.14703, 1.14999, 1.15295, 1.15591, 1.15887, 1.16183, 1.16479, 1.16775, 1.17367],
-            barrier            => 1.15141,
-            expired_barriers   => [1.15295],
+            available_barriers => [1.14196, 1.14506, 1.14816, 1.15219, 1.15591, 1.15963, 1.16366, 1.16676, 1.16986],
+            barrier            => 1.15219,
+            expired_barriers => [1.14816, 1.15219, 1.15591],
         },
 
         range_daily => {
-            available_barriers => [[1.15295, 1.15887], [1.14999, 1.16183], [1.14703, 1.16479], [1.14407, 1.16775]],
-            expired_barriers => [[1.15295, 1.15887]],
+            available_barriers => [[1.14816, 1.16366], [1.14506, 1.16676], [1.14196, 1.16986]],
+            ,
+            expired_barriers => [[1.14816, 1.16366]],
         },
 
     );
+
     my $new_date = Date::Utility->new("2015-08-24 00:20:00");
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'frxEURUSD',
             epoch      => $_->epoch,
-            quote      => 1.151,
+            quote      => 1.156,
         }) for ($new_date);
 
     BOM::Product::Contract::Finder::Japan::_set_predefined_barriers({
