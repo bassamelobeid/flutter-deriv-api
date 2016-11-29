@@ -197,8 +197,8 @@ sub _collect_pipsize_stats {
         my $pipsize    = $underlying->pip_size;
         my $spot       = $underlying->spot;
         my $sigma      = sqrt($vol**2 / 365 / 86400 * 10);
-        my $test_stat  = $spot * $sigma / $pipsize;
-        stats_gauge('test_statistic', $test_stat, {tags => ['tag:' . $underlying->{symbol}]});
+        my $volidx_digit_move  = $spot * $sigma / $pipsize;
+        stats_gauge('volidx_digit_move <10% threshold', $volidx_digit_move, {tags => ['tag:' . $underlying->{symbol}]});
     }
     return;
 }
