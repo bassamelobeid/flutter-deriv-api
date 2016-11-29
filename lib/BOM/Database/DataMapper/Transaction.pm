@@ -390,36 +390,34 @@ sub get_monthly_payments_sum {
 }
 
 sub unprocessed_bets {
-    my ($self, $last_processed_id, $unsold_ids, $accounts) = @_;
+    my ($self, $last_processed_id, $unsold_ids) = @_;
 
-    my $sql = q{
-            SELECT
-                id, sell_time, underlying_symbol,
-                date_part('epoch', (sell_time - start_time)::interval) as duration_seconds,
-                ((sell_price - buy_price) / buy_price) as profit,
-                CASE
-                    WHEN (sell_price - buy_price) > 0 THEN 'win'
-                    ELSE 'loss'
-                END
-                AS profitable
-            FROM
-                bet.financial_market_bet
-            WHERE
-                account_id IN (?)
-                AND (
-                    id > ?
-                    ##UNSOLD_IDS##
-                )
-            ORDER BY id ASC
-        };
-
-    my @binds = (join(',', (map {$_->id} @$accounts)), $last_processed_id);
-
+    my $where_unsold_ids;
+    my @binds = ($self->account->id, $last_processed_id);
     if (@$unsold_ids) {
-        $sql =~ s/##UNSOLD_IDS##/OR id IN(?)/;
+        $where_unsold_ids = 'OR id IN(?)';
         push @binds, join(',', @$unsold_ids);
     }
-    $sql =~ s/##UNSOLD_IDS##//;
+
+    my $sql = <'SQL' . $where_unsold_ids <<'SQL';
+        SELECT
+            id, sell_time, underlying_symbol,
+            date_part('epoch', (sell_time - start_time)::interval) as duration_seconds,
+            ((sell_price - buy_price) / buy_price) as profit,
+            CASE
+                WHEN (sell_price - buy_price) > 0 THEN 'win'
+                ELSE 'loss'
+            END
+            AS profitable
+        FROM
+            bet.financial_market_bet
+        WHERE
+            account_id = ?
+            AND (id > ?
+SQL
+            )
+        ORDER BY id ASC
+SQL
 
     return $self->db->dbh->selectall_arrayref($sql, undef, @binds);
 }
