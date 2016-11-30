@@ -95,6 +95,7 @@ subtest $method => sub {
     ok $new_loginid =~ /^VRTC\d+/, 'new VR loginid';
     my $user = BOM::Platform::User->new({email => $email});
     ok $user->utm_source =~ '^google\.com$', 'utm registered as expected';
+    ok $user->gclid_url =~ '^FQdb3wodOkkGBgCMrlnPq42q8C$', 'gclid value returned as expected';
     is $user->email_consent, undef, 'email consent not passed during account creation so its undef';
 
     my ($resp_loginid, $t, $uaf) = BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token});
