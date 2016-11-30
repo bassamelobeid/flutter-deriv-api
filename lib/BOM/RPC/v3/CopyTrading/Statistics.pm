@@ -152,7 +152,7 @@ sub copytrading_statistics {
     $result_hash->{avg_loss} = sprintf("%.4f", BOM::System::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:loss") || 0);
 
     # trades_breakdown
-    my %symbols_breakdown = @{BOM::System::RedisReplicated::redis_write->hgetall("COPY_TRADING_SYMBOLS_BREAKDOWN:$trader_id")};
+    my %symbols_breakdown = @{BOM::System::RedisReplicated::redis_read->hgetall("COPY_TRADING_SYMBOLS_BREAKDOWN:$trader_id")};
     for my $symbol (keys %symbols_breakdown) {
         my $trades = $symbols_breakdown{$symbol};
         $result_hash->{trades_breakdown}->{create_underlying($symbol)->market->name} += $trades;
