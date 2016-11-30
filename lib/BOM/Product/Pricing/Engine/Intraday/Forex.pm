@@ -259,14 +259,14 @@ sub _build_ticks_for_trend {
         });
     }
 
-    #if ($self->more_than_short_term_cutoff) {
-    #    my $latest_tick = $ticks_cache->tick_cache_get_num_ticks({
-    #        symbol    => $bet->underlying->symbol,
-    #        end_epoch => $bet->date_pricing->epoch,
-    #        num       => 1,
-    #    });
-    #    push @$ticks, $latest_tick->[0] if (scalar(@$latest_tick) and scalar(@$ticks) and $latest_tick->[0]->{epoch} > $ticks->[-1]->{agg_epoch});
-    #}
+    if ($self->more_than_short_term_cutoff) {
+        my $latest_tick = $ticks_cache->tick_cache_get_num_ticks({
+            symbol    => $bet->underlying->symbol,
+            end_epoch => $bet->date_pricing->epoch,
+            num       => 1,
+        });
+        push @$ticks, $latest_tick->[0] if (scalar(@$latest_tick) and scalar(@$ticks) and $latest_tick->[0]->{epoch} > $ticks->[-1]->{agg_epoch});
+    }
 
     return $ticks;
 }
