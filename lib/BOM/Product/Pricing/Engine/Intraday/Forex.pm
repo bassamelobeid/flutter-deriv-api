@@ -749,7 +749,7 @@ sub _get_economic_events {
     my ($self, $start, $end) = @_;
 
     my $qfs = Quant::Framework::Seasonality->new;
-    my $events = $qfs->categorize_events($self->underlying->symbol, $self->economic_events);
+    my $events = $qfs->categorize_events($self->bet->underlying->symbol, $self->economic_events);
 
     return $events;
 }
