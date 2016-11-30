@@ -19,11 +19,6 @@ Cache::RedisDB->flushall;
 initialize_realtime_ticks_db();
 
 note('mocking ticks to prevent warnings.');
-#$mocked->mock(
-#    'retrieve',
-#    sub {
-#        [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_} } (0 .. 10)];
-#    });
 my $mocked = Test::MockModule->new('Data::Resample::ResampleCache');
 $mocked->mock(
     'resample_cache_get',

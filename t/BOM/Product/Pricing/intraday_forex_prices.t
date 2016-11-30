@@ -38,12 +38,6 @@ my $duration        = 3600;
 
 my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
 
-#$at->fill_from_historical_feed({
-#    underlying   => $underlying,
-#    ending_epoch => $date_start->epoch,
-#    interval     => Time::Duration::Concise->new('interval' => '2h'),
-#});
-
 my $start = $date_start->epoch - 7200;
 $start = $start - $start % 15;
 my $first_agg = $start - 15;
@@ -53,7 +47,6 @@ my $hist_ticks = $underlying->ticks_in_between_start_end({
         end_time   => $date_start->epoch,
     });
 
-#print "@@@@@ " . scalar(@$hist_ticks) . "\n";
 my @tmp_ticks = reverse @$hist_ticks;
 
 my $resample_cache = Data::Resample::ResampleCache->new({redis => Cache::RedisDB->redis,});

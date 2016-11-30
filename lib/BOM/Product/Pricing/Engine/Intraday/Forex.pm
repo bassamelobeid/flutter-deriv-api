@@ -269,10 +269,6 @@ sub _build_ticks_for_trend {
         push @$ticks, $latest_tick->[0] if (scalar(@$latest_tick) and scalar(@$ticks) and $latest_tick->[0]->{epoch} > $ticks->[-1]->{agg_epoch});
     }
 
-    #print "###### " . $remaining_interval->seconds . " " . $bet->date_pricing->epoch . " " . $self->more_than_short_term_cutoff . "\n";
-    #print "###### TickLength: " . scalar(@$ticks) . "\n";
-    #print "###### FirstTick: " . Dumper($ticks->[0]) . " LastTick: " . Dumper($ticks->[-1]) . " 2nd last: " . Dumper($ticks->[-2]) . "\n";
-
     return $ticks;
 }
 

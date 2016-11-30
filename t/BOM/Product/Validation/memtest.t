@@ -24,11 +24,6 @@ use Cache::RedisDB;
 
 note('mocking ticks to prevent warnings.');
 my $mocked = Test::MockModule->new('Data::Resample::ResampleCache');
-#$mocked->mock(
-#    'retrieve',
-#    sub {
-#        [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_} } (0 .. 10)];
-#    });
 $mocked->mock(
     'resample_cache_get',
     sub {
@@ -36,11 +31,6 @@ $mocked->mock(
     });
 
 my $mocked2 = Test::MockModule->new('Data::Resample::TicksCache');
-#$mocked->mock(
-#    'retrieve',
-#    sub {
-#        [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_} } (0 .. 10)];
-#    });
 $mocked2->mock(
     'tick_cache_get',
     sub {
