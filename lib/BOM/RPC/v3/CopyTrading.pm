@@ -9,7 +9,7 @@ use Data::Dumper;
 use BOM::Platform::Client;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize);
-use BOM::Platform::Copiers;
+use BOM::Platform::Copier;
 
 use LandingCompany::Offerings;
 
@@ -19,7 +19,7 @@ sub copy_start {
 
     my $trader_token  = $args->{copy_start};
     my $token_details = BOM::RPC::v3::Utility::get_token_details($trader_token);
-    my $trader = try { BOM::Platform::Client->new({loginid => $token_details->{loginid}}) };
+    my $trader        = try { BOM::Platform::Client->new({loginid => $token_details->{loginid}}) };
     unless ($token_details && $trader) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidToken',
@@ -41,16 +41,26 @@ sub copy_start {
 
     my @trade_types = ref($args->{trade_types}) eq 'ARRAY' ? @{$args->{trade_types}} : $args->{trade_types};
     my $contract_types = LandingCompany::Offerings::get_all_contract_types();
-    for my $type (@trade_types) {
+    for my $type (grep { $_ } @trade_types) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'IvalidTradeType',
                 message_to_client => localize('[_1]', $type)}) unless exists $contract_types->{$type};
     }
 
-    BOM::Platform::Copiers->update_or_create({
+    my @assets = ref($args->{assets}) eq 'ARRAY' ? @{$args->{assets}} : $args->{assets};
+    for my $symbol (grep { $_ } @assets) {
+        my $response = BOM::RPC::v3::Contract::validate_underlying($symbol);
+        if ($response and exists $response->{error}) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => $response->{error}->{code},
+                    message_to_client => BOM::Platform::Context::localize($response->{error}->{message}, $symbol)});
+        }
+    }
+
+    BOM::Platform::Copier->update_or_create({
         trader_id => $trader->loginid,
         copier_id => $client->loginid,
-        broker => $client->broker_code,
+        broker    => $client->broker_code,
         %$args,
     });
 
