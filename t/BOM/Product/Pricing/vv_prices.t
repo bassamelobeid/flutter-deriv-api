@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 588;
+use Test::More tests => 252;
 use Test::Exception;
 
 use Format::Util::Numbers qw(roundnear);
