@@ -58,6 +58,7 @@ sub copytrading_statistics {
 
     my $db = BOM::Database::ClientDB->new({
             client_loginid => $trader->loginid,
+            operation      => 'replica',
         })->db;
 
     # Calculate average performance for multiple accounts
