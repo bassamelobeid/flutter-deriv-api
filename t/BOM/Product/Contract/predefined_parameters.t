@@ -134,7 +134,7 @@ subtest 'predefined barriers' => sub {
                 expiry_type       => 'intraday'
             },
             ticks => [[$date->minus_time_interval('100d')], [$date, 1.1521], [$date->plus_time_interval('10m'), 1.15591]],
-            available_barriers => [1.15015, 1.15207, 1.15303, 1.15399, 1.15495, 1.15591, 1.15687, 1.15783, 1.15879, 1.15975, 1.16167],
+            available_barriers => [ 1.15141, 1.15241, 1.15341, 1.15471, 1.15591, 1.15711, 1.15841, 1.15941, 1.16041,],
             expired_barriers   => [],
         },
         {
@@ -146,12 +146,12 @@ subtest 'predefined barriers' => sub {
             ticks => [
                 [$date->minus_time_interval('100d')],
                 [$date,                            1.1521],
-                [$date->plus_time_interval(1),     1.1520],
-                [$date->plus_time_interval(3),     1.15667],
+                [$date->plus_time_interval(1),     1.14621],
+                [$date->plus_time_interval(3),     1.15799],
                 [$date->plus_time_interval('10m'), 1.15591]
             ],
-            available_barriers => [1.12474, 1.13386, 1.13842, 1.14298, 1.14754, 1.1521, 1.15666, 1.16122, 1.16578, 1.17034, 1.17946],
-            expired_barriers   => [1.1521, 1.15666],
+            available_barriers => [ 1.13005, 1.13495, 1.13985, 1.14622, 1.1521, 1.15798, 1.16435, 1.16925, 1.17415,],
+            expired_barriers   => [1.14622, 1.15798, 1.1521],
         },
         {
              match => {
@@ -162,12 +162,12 @@ subtest 'predefined barriers' => sub {
              ticks => [
                  [$date->minus_time_interval('100d')],
                  [$date,                            1.1521],
-                 [$date->plus_time_interval(1),     1.1520],
+                 [$date->plus_time_interval(1),     1.13984],
                  [$date->plus_time_interval(3),     1.15667],
                  [$date->plus_time_interval('10m'), 1.15591]
              ],
-             available_barriers => [[1.14754, 1.15666], [1.14298, 1.16122], [1.13842, 1.16578], [1.13386, 1.17034]],
-             expired_barriers => [[1.14754, 1.15666]],
+             available_barriers => [ [1.13985, 1.16435], [1.13495, 1.16925], [1.13005, 1.17415]],
+             expired_barriers => [[1.13985, 1.16435]],
         },
         {
              match => {
@@ -182,17 +182,7 @@ subtest 'predefined barriers' => sub {
                  [$date->plus_time_interval(3),     1.15667],
                  [$date->plus_time_interval('10m'), 1.15591]
              ],
-            available_barriers => [
-                [1.14754, 1.15666],
-                [1.14298, 1.1521],
-                [1.1521, 1.16122],
-                [1.13842, 1.14754],
-                [1.15666, 1.16578],
-                [1.13386, 1.14298],
-                [1.16122, 1.17034],
-                [1.12474, 1.13842],
-                [1.16578 ,1.17946]
-            ],
+            available_barriers => [ [1.16435, 1.17415], [1.15798, 1.16925], [1.1521, 1.16435], [1.14622, 1.15798], [1.13985, 1.1521], [1.13495, 1.14622], [1.13005, 1.13985],],
             expired_barriers => [],
         },
     );
@@ -218,6 +208,7 @@ subtest 'predefined barriers' => sub {
         }
         @$offerings;
         my $testname = join '_', map {$m->{$_}} qw(contract_category expiry_type duration);
+        use Data::Dumper;
         cmp_bag($offering->{available_barriers}, $test->{available_barriers}, 'available barriers for ' . $testname);
         cmp_bag($offering->{expired_barriers},    $test->{expired_barriers},   'expired barriers for ' . $testname);
     }
