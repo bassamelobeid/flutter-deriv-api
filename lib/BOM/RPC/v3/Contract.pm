@@ -345,10 +345,14 @@ sub get_bid {
             # or when the contract is expired.
             if ($sell_time or $contract->is_expired) {
                 $response->{is_expired} = 1;
-                my $sell_tick =
-                    ($contract->is_path_dependent and $contract->hit_tick)
-                    ? $contract->hit_tick
-                    : $contract->underlying->tick_at($sell_time, {allow_inconsistent => 1});
+
+                my $hit_tick = $contract->hit_tick;
+                my $sell_tick = $contract->underlying->tick_at($sell_time, {allow_inconsistent => 1});
+
+                if ($contract->is_path_dependent and $hit_tick and $hit_tick->epoch <= $sell_time) {
+                    $sell_tick = $hit_tick;
+                }
+
                 if ($sell_tick) {
                     $response->{sell_spot}      = $contract->underlying->pipsized_value($sell_tick->quote);
                     $response->{sell_spot_time} = $sell_tick->epoch;
