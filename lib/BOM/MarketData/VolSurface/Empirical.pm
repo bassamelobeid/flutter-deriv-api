@@ -121,7 +121,7 @@ sub get_volatility {
         $short_term_prediction = machine_epsilon();
     } else {
         my @tick_epochs = map { $_->{epoch} } @good_ticks;
-        my @time_samples_past = map { ($tick_epochs[$_] + $tick_epochs[$_ - $returns_sep]) / 2 } ($returns_sep .. $#tick_epochs);
+        my @time_samples_past = map { int(($tick_epochs[$_] + $tick_epochs[$_ - $returns_sep]) / 2) } ($returns_sep .. $#tick_epochs);
         my $weights = _calculate_weights(\@time_samples_past, $categorized_events);
         my $observed_vol = _calculate_observed_volatility(\@good_ticks, \@time_samples_past, \@tick_epochs, $weights);
         my $seasonality_past = $qfs->get_volatility_seasonality({
