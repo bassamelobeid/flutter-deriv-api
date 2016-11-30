@@ -39,7 +39,7 @@ my $bet_params = {
     date_start   => $now,
     date_pricing => $now,
     duration     => '2m',
-    barrier      => '101.1',
+    barrier      => 'S11P',
     currency     => 'USD',
     payout       => 10,
 };
@@ -49,17 +49,32 @@ subtest '2-minute non ATM callput' => sub {
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like $c->primary_validation_error->message, qr/Intraday duration not acceptable/, 'throws error duration not accepted.';
     $c = produce_contract({%$bet_params, landing_company => 'japan'});
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    like $c->primary_validation_error->message, qr/barrier should be absolute/, 'throws error barrier type not correct';
+    $c = produce_contract({%$bet_params, landing_company => 'japan',barrier => '101.1'});
     ok $c->is_valid_to_buy, 'valid to buy';
     note('sets duration to 1m59s.');
     $c = produce_contract({
         %$bet_params,
         duration        => '1m59s',
-        landing_company => 'japan'
+        landing_company => 'japan',
+        barrier         => '101.1'
     });
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like $c->primary_validation_error->message, qr/Intraday duration not acceptable/, 'throws error duration not accepted.';
     note('sets duration to 15 minutes.');
-    $c = produce_contract({%$bet_params, duration => '15m'});
+    $c = produce_contract({
+        %$bet_params,
+        duration => '15m',
+        barrier  => '101.1'
+    });
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    like $c->primary_validation_error->message, qr/barrier should be relative/, 'throws error barrier type not correct';
+    $c = produce_contract({
+        %$bet_params,
+        duration => '15m',
+        barrier  => 'S11P'
+    });
     ok $c->is_valid_to_buy, 'valid to buy';
 };
 
@@ -68,13 +83,18 @@ subtest '2-minute touch' => sub {
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like $c->primary_validation_error->message, qr/trying unauthorised combination/, 'throws error duration not accepted.';
-    $c = produce_contract({%$bet_params, landing_company => 'japan'});
+    $c = produce_contract({
+        %$bet_params,
+        landing_company => 'japan',
+        barrier         => '101.1'
+    });
     ok $c->is_valid_to_buy, 'valid to buy';
     note('sets duration to 1m59s.');
     $c = produce_contract({
         %$bet_params,
         duration        => '1m59s',
-        landing_company => 'japan'
+        landing_company => 'japan',
+        barrier         => '101.1'
     });
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like $c->primary_validation_error->message, qr/Intraday duration not acceptable/, 'throws error duration not accepted.';
@@ -89,18 +109,31 @@ subtest '2-minute touch' => sub {
 
 subtest '2-minute upordown' => sub {
     $bet_params->{bet_type}     = 'UPORDOWN';
-    $bet_params->{high_barrier} = 110;
-    $bet_params->{low_barrier}  = 90;
+    $bet_params->{high_barrier} = 'S1000P';
+    $bet_params->{low_barrier}  = 'S-1000P';
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like $c->primary_validation_error->message, qr/trying unauthorised combination/, 'throws error duration not accepted.';
-    $c = produce_contract({%$bet_params, landing_company => 'japan'});
+    $c = produce_contract({%$bet_params, landing_company => 'japan', currency => 'JPY', payout => 1000});
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    like $c->primary_validation_error->message, qr/barrier should be absolute/, 'throws error barrier type not correct';
+    $c = produce_contract({
+        %$bet_params,
+        landing_company => 'japan',
+        high_barrier    => '110',
+        low_barrier     => '90',
+        currency => 'JPY',
+        payout => 1000,
+    });
     ok $c->is_valid_to_buy, 'valid to buy';
     note('sets duration to 1m59s.');
     $c = produce_contract({
-        %$bet_params,
-        duration        => '1m59s',
-        landing_company => 'japan'
+            %$bet_params,
+            duration        => '1m59s',
+            landing_company => 'japan',
+            high_barrier    => '110',
+            low_barrier     => '90',
+
     });
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like $c->primary_validation_error->message, qr/Intraday duration not acceptable/, 'throws error duration not accepted.';
@@ -108,18 +141,29 @@ subtest '2-minute upordown' => sub {
 
 subtest '2-minute expirymiss' => sub {
     $bet_params->{bet_type}     = 'EXPIRYMISS';
-    $bet_params->{high_barrier} = 110;
-    $bet_params->{low_barrier}  = 90;
+    $bet_params->{high_barrier} = 'S1000P';
+    $bet_params->{low_barrier}  = 'S-1000P';
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like $c->primary_validation_error->message, qr/trying unauthorised combination/, 'throws error duration not accepted.';
-    $c = produce_contract({%$bet_params, landing_company => 'japan'});
+    $c = produce_contract({
+        %$bet_params,
+        landing_company => 'japan',
+        high_barrier    => '110',
+        low_barrier     => '90',
+        currency => 'JPY',
+        payout => 1000
+    });
     ok $c->is_valid_to_buy, 'valid to buy';
     note('sets duration to 1m59s.');
     $c = produce_contract({
         %$bet_params,
         duration        => '1m59s',
-        landing_company => 'japan'
+        landing_company => 'japan',
+        currency => 'JPY',
+        payout => 1000,
+        high_barrier    => '110',
+        low_barrier     => '90',
     });
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like $c->primary_validation_error->message, qr/Intraday duration not acceptable/, 'throws error duration not accepted.';

@@ -137,7 +137,6 @@ sub _predefined_trading_period {
     my $today_close_epoch = $today_close->epoch;
     my $today             = $now->truncate_to_day;                                # Start of the day object.
     my $trading_periods   = Cache::RedisDB->get($cache_keyspace, $trading_key);
-
     if (not $trading_periods) {
         $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
         my $even_hour = $now_hour - ($now_hour % 2);
@@ -153,9 +152,10 @@ sub _predefined_trading_period {
                 duration   => '2h'
             });
 
+            my $minutes_from_window_start = ($now->epoch - $window_2h->{date_start}->{epoch}) / 60;
             # Previous 2 hours contract should be always available in the first 15 minutes of the next one
             # (except start of the trading day and also the first window after the break)
-            if (($now->epoch - $window_2h->{date_start}->{epoch}) / 60 < 15 && $even_hour - 2 >= 0 && $even_hour != 22) {
+            if ($minutes_from_window_start < 15 && $even_hour - 2 >= 0 && (not grep { ($even_hour - 2) == $_ } @skip_even_hour)) {
                 push @$trading_periods,
                     _get_intraday_trading_window({
                         now        => $now,
@@ -176,6 +176,7 @@ sub _predefined_trading_period {
                     map { $today->plus_time_interval($_ . 'h') } ($odd_hour, $odd_hour - 4);
             }
         }
+
         # This is for 0 day contract
         push @$trading_periods,
             {
@@ -268,7 +269,7 @@ sub _get_intraday_trading_window {
     my $date_start       = $args->{date_start};
     my $duration         = $args->{duration};
     my $now              = $args->{now};
-    my $is_monday_start  = $now->day_of_week == 1 && $date_start->hour == 0;
+    my $is_monday_start  = $date_start->day_of_week == 1 && $date_start->hour == 0;
     my $early_date_start = $is_monday_start ? $date_start : $date_start->minus_time_interval('15m');
     my $date_expiry      = $date_start->hour == 22 ? $date_start->plus_time_interval('1h59m59s') : $date_start->plus_time_interval($duration);
     if ($now->is_before($date_expiry)) {
@@ -396,7 +397,7 @@ sub _set_predefined_barriers {
                 start_tick => $start_tick->quote,
                 vol        => 0.1,
             });
-        } qw(0.02 0.98);
+        } qw(0.05 0.95);
         $available_barriers = _split_boundaries_barriers({
             pip_size           => $underlying->pip_size,
             start_tick         => $start_tick->quote,
@@ -487,8 +488,8 @@ sub _get_expired_barriers {
 
 =head2 _get_barriers_pair
 
-- For staysinout contract, we need to pair the barriers symmetry, ie (42, 58), (34,66), (26,74), (18,82) 
-- For endsinout contract, we need to pair barriers as follow: (42,58), (34,50), (50,66), (26,42), (58,74), (18,34), (66,82), (2, 26), (74, 98)
+- For staysinout contract, we need to pair the barriers symmetry, ie (25,75), (15,85), (5,95) 
+- For endsinout contract, we need to pair barriers as follow: (75,95), (62,85),(50,75),(38,62),(25,50),(15,38),(5,25)
 
 Note: 42 is -8d from the spot at start and 58 is +8d from spot at start
 where d is the minimum increment that determine by divided the distance of boundaries by 96 (48 each side) 
@@ -504,8 +505,8 @@ sub _get_barriers_pair {
     my $list_of_expired_barriers = $args->{expired_barriers};
     my @barrier_pairs =
         $contract_category eq 'staysinout'
-        ? ([42, 58], [34, 66], [26, 74], [18, 82])
-        : ([42, 58], [34, 50], [50, 66], [26, 42], [58, 74], [18, 34], [66, 82], [2, 26], [74, 98]);
+        ? ([25, 75], [15, 85], [5, 95])
+        : ([75, 95], [62, 85], [50, 75], [38, 62], [25, 50], [15, 38], [5, 25]);
     my @barriers;
     my @expired_barriers;
     for my $pair (@barrier_pairs) {
@@ -526,7 +527,7 @@ sub _get_barriers_pair {
 
 =head2 _split_boundaries_barriers
 
--Split the boundaries barriers into 10 barriers by divided the distance of boundaries by 96 (48 each side) - to be used as increment.
+-Split the boundaries barriers into 9 barriers by divided the distance of boundaries by 90 (45 each side) - to be used as increment.
 The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
 - Included entry spot as well
 
@@ -539,7 +540,7 @@ sub _split_boundaries_barriers {
     my $spot_at_start               = $args->{start_tick};
     my @boundaries_barrier          = @{$args->{boundaries_barrier}};
     my $distance_between_boundaries = abs($boundaries_barrier[0] - $boundaries_barrier[1]);
-    my @steps                       = (8, 16, 24, 32, 48);
+    my @steps                       = (12, 25, 35, 45);
     my $minimum_step                = roundnear($pip_size, $distance_between_boundaries / ($steps[-1] * 2));
     my %barriers                    = map { (50 - $_ => $spot_at_start - $_ * $minimum_step, 50 + $_ => $spot_at_start + $_ * $minimum_step) } @steps;
     $barriers{50} = $spot_at_start;
