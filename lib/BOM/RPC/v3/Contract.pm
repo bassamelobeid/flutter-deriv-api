@@ -165,7 +165,7 @@ sub _get_ask {
 
             # need this warning to be logged for Japan as a regulatory requirement
             warn "[JPLOG]"
-                . $contract->shortcode . ":,"
+                . $contract->shortcode . ","
                 . $ask_price . ","
                 . $contract->pricing_spot . ","
                 . $contract->pricing_vol . ","
