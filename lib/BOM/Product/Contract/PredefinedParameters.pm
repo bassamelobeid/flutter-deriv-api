@@ -305,14 +305,13 @@ sub _get_expired_barriers {
 }
 
 #To set the predefined barriers on each trading period.
-#We do a binary search to find out the boundaries barriers associated with theo_prob [0.02,0.98] of a digital call,
+#We do a binary search to find out the boundaries barriers associated with theo_prob [0.05,0.95] of a digital call,
 #then split into 20 barriers that within this boundaries. The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
 sub _calculate_available_barriers {
     my ($underlying, $offering, $trading_period) = @_;
 
     my $barriers = _calculate_barriers({
         underlying      => $underlying,
-        call_prices     => [0.02, 0.98],
         trading_periods => $trading_period,
     });
 
@@ -320,14 +319,14 @@ sub _calculate_available_barriers {
     if ($offering->{barriers} == 1) {
         $available_barriers = [sort { $a <=> $b } values %$barriers];
     } elsif ($offering->{barriers} == 2) {
-        # For staysinout contract, we need to pair the barriers symmetry, ie (42, 58), (34,66), (26,74), (18,82)
-        # For endsinout contract, we need to pair barriers as follow: (42,58), (34,50), (50,66), (26,42), (58,74), (18,34), (66,82), (2, 26), (74, 98)
+        # For staysinout contract, we need to pair the barriers symmetry, ie (25,75), (15,85), (5,95)
+        # For endsinout contract, we need to pair barriers as follow: (75,95), (62,85),(50,75),(38,62),(25,50),(15,38),(5,25)
         # Note: 42 is -8d from the spot at start and 58 is +8d from spot at start
-        # where d is the minimum increment that determine by divided the distance of boundaries by 96 (48 each side)
+        # where d is the minimum increment that determine by divided the distance of boundaries by 95 (45 each side)
         my @barrier_pairs =
             $offering->{contract_category} eq 'staysinout'
-            ? ([42, 58], [34, 66], [26, 74], [18, 82])
-            : ([42, 58], [34, 50], [50, 66], [26, 42], [58, 74], [18, 34], [66, 82], [2, 26], [74, 98]);
+            ? ([25, 75], [15, 85], [5, 95])
+            : ([75, 95], [62, 85], [50, 75], [38, 62], [25, 50], [15, 38], [5, 25]);
 
         $available_barriers = [map { [$barriers->{$_->[0]}, $barriers->{$_->[1]}] } @barrier_pairs];
     }
@@ -338,19 +337,19 @@ sub _calculate_available_barriers {
 sub _calculate_barriers {
     my $args = shift;
 
-    my ($underlying, $call_prices, $trading_period) = @{$args}{qw(underlying call_prices trading_periods)};
+    my ($underlying, $trading_period) = @{$args}{qw(underlying trading_periods)};
     my $tick = $underlying->tick_at($trading_period->{date_start}->{epoch}, {allow_inconsistent => 1})
         or die 'Could not retrieve tick for ' . $underlying->symbol . ' at ' . Date::Utility->new($trading_period->{date_start}->{epoch})->datetime;
     my $spot_at_start = $tick->quote;
     my $tiy = ($trading_period->{date_expiry}->{epoch} - $trading_period->{date_start}->{epoch}) / (365 * 86400);
 
-    my @initial_barriers = map { _get_strike_from_call_bs_price($_, $tiy, $spot_at_start, 0.1) } (0.02, 0.98);
+    my @initial_barriers = map { _get_strike_from_call_bs_price($_, $tiy, $spot_at_start, 0.1) } (0.05, 0.95);
 
-    # Split the boundaries barriers into 10 barriers by divided the distance of boundaries by 96 (48 each side) - to be used as increment.
+    # Split the boundaries barriers into 9 barriers by divided the distance of boundaries by 95 (45 each side) - to be used as increment.
     # The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
     # Included entry spot as well
     my $distance_between_boundaries = abs($initial_barriers[0] - $initial_barriers[1]);
-    my @steps                       = (8, 16, 24, 32, 48);
+    my @steps                       = (12, 25, 35, 45);
     my $minimum_step                = roundnear($underlying->pip_size, $distance_between_boundaries / ($steps[-1] * 2));
     my %barriers                    = map { (50 - $_ => $spot_at_start - $_ * $minimum_step, 50 + $_ => $spot_at_start + $_ * $minimum_step) } @steps;
     $barriers{50} = $spot_at_start;
