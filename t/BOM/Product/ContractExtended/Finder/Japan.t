@@ -134,60 +134,60 @@ subtest "check_intraday trading_period_JPY" => sub {
     my %expected_intraday_trading_period = (
         # monday
         '2015-11-23 00:00:00' => {
-            combination => 2,                                                    # one call and one put
+            combination => 1,                                                    # one call and one put
             date_start  => [Date::Utility->new('2015-11-23 00:00:00')->epoch],
             date_expiry => [Date::Utility->new('2015-11-23 02:00:00')->epoch],
         },
         '2015-11-23 01:00:00' => {
-            combination => 4,
+            combination => 2,
             date_start  => [map { Date::Utility->new($_)->epoch } ('2015-11-23 00:00:00', '2015-11-23 00:45:00',)],
             date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-11-23 02:00:00', '2015-11-23 06:00:00',)],
 
         },
         '2015-11-23 18:00:00' => {combination => 0},
         '2015-11-23 21:45:00' => {
-            combination => 2,
+            combination => 1,
             date_start  => [Date::Utility->new('2015-11-23 21:45:00')->epoch],
             date_expiry => [Date::Utility->new('2015-11-23 23:59:59')->epoch],
         },
 
         '2015-11-23 22:00:00' => {
-            combination => 2,
+            combination => 1,
             date_start  => [Date::Utility->new('2015-11-23 21:45:00')->epoch],
             date_expiry => [Date::Utility->new('2015-11-23 23:59:59')->epoch],
         },
         '2015-11-23 23:45:00' => {
-            combination => 4,
+            combination => 2,
             date_start  => [map { Date::Utility->new($_)->epoch } ('2015-11-23 21:45:00', '2015-11-23 23:45:00',)],
             date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-11-23 23:59:59', '2015-11-24 02:00:00',)],
         },
 
         # tues
         '2015-11-24 00:00:00' => {
-            combination => 2,
+            combination => 1,
             date_start  => [Date::Utility->new('2015-11-23 23:45:00')->epoch],
             date_expiry => [Date::Utility->new('2015-11-24 02:00:00')->epoch],
         },
         '2015-11-24 01:00:00' => {
-            combination => 4,
+            combination => 2,
             date_start  => [map { Date::Utility->new($_)->epoch } ('2015-11-23 23:45:00', '2015-11-24 00:45:00',)],
             date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-11-24 02:00:00', '2015-11-24 06:00:00',)],
 
         },
         '2015-11-24 21:00:00' => {combination => 0},
         '2015-11-24 23:00:00' => {
-            combination => 2,
+            combination => 1,
             date_start  => [Date::Utility->new('2015-11-24 21:45:00')->epoch],
             date_expiry => [Date::Utility->new('2015-11-24 23:59:59')->epoch],
         },
         # Friday
         '2015-11-27 00:00:00' => {
-            combination => 2,
+            combination => 1,
             date_start  => [Date::Utility->new('2015-11-26 23:45:00')->epoch],
             date_expiry => [Date::Utility->new('2015-11-27 02:00:00')->epoch],
         },
         '2015-11-27 02:00:00' => {
-            combination => 4,
+            combination => 2,
             date_start  => [map { Date::Utility->new($_)->epoch } ('2015-11-27 01:45:00', '2015-11-27 00:45:00',)],
             date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-11-27 04:00:00', '2015-11-27 06:00:00',)],
 
@@ -201,7 +201,8 @@ subtest "check_intraday trading_period_JPY" => sub {
 
     );
 
-    my @i_offerings = grep { $_->{expiry_type} eq 'intraday' } BOM::Product::Contract::Finder::Japan::get_offerings('frxUSDJPY');
+    my @i_offerings =
+        grep { $_->{expiry_type} eq 'intraday' and $_->{contract_type} eq 'CALLE' } BOM::Product::Contract::Finder::Japan::get_offerings('frxUSDJPY');
     my $ex = create_underlying('frxUSDJPY')->calendar;
     foreach my $date (keys %expected_intraday_trading_period) {
         my $now                = Date::Utility->new($date);
@@ -211,22 +212,21 @@ subtest "check_intraday trading_period_JPY" => sub {
             date      => $now,
             symbol    => 'frxUSDJPY',
         });
+
+        my @got_date_start  = map { $intraday_offerings[$_]{trading_period}{date_start}{epoch} } keys @intraday_offerings;
+        my @got_date_expiry = map { $intraday_offerings[$_]{trading_period}{date_expiry}{epoch} } keys @intraday_offerings;
+
         is(
             scalar @intraday_offerings,
             $expected_intraday_trading_period{$date}{combination},
             "Matching expected intraday combination on USDJPY for $date"
         );
 
-        cmp_deeply(
-            $intraday_offerings[0]{trading_period}{date_expiry}{epoch},
-            $expected_intraday_trading_period{$date}{date_expiry}[0],
-            "Expected date_expiry for $date"
-        );
-        cmp_deeply(
-            $intraday_offerings[0]{trading_period}{date_start}{epoch},
-            $expected_intraday_trading_period{$date}{date_start}[0],
-            "Expected date_start for $date"
-        );
+        if (scalar @intraday_offerings > 1) {
+            cmp_deeply(\@got_date_start, $expected_intraday_trading_period{$date}{date_start}, "Expected date_start for $date");
+
+            cmp_deeply(\@got_date_expiry, $expected_intraday_trading_period{$date}{date_expiry}, "Expected date_expiry for $date");
+        }
     }
 
 };
@@ -234,15 +234,21 @@ subtest "check_intraday trading_period_non_JPY" => sub {
     my %expected_eur_intraday_trading_period = (
         # monday
         '2015-11-23 00:00:00' => {
-            combination => 2,
+            combination => 1,
             date_start  => [Date::Utility->new('2015-11-23 00:00:00')->epoch],
             date_expiry => [Date::Utility->new('2015-11-23 02:00:00')->epoch],
         },
         '2015-11-23 18:00:00' => {combination => 0},
         '2015-11-23 22:00:00' => {combination => 0},
+        '2015-11-23 23:45:00' => {
+            combination => 1,
+            date_start  => [Date::Utility->new('2015-11-23 23:45:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-23 02:00:00')->epoch],
+        },
+
         # tues
         '2015-11-24 00:00:00' => {
-            combination => 2,
+            combination => 1,
             date_start  => [Date::Utility->new('2015-11-23 23:45:00')->epoch],
             date_expiry => [Date::Utility->new('2015-11-24 02:00:00')->epoch],
         },
@@ -253,7 +259,8 @@ subtest "check_intraday trading_period_non_JPY" => sub {
         '2015-11-27 19:00:00' => {combination => 0},
     );
 
-    my @e_offerings = grep { $_->{expiry_type} eq 'intraday' } BOM::Product::Contract::Finder::Japan::get_offerings('frxEURUSD');
+    my @e_offerings =
+        grep { $_->{expiry_type} eq 'intraday' and $_->{contract_type} eq 'CALLE' } BOM::Product::Contract::Finder::Japan::get_offerings('frxEURUSD');
     my $ex = create_underlying('frxEURUSD')->calendar;
     foreach my $date (keys %expected_eur_intraday_trading_period) {
         my $now              = Date::Utility->new($date);
@@ -263,53 +270,51 @@ subtest "check_intraday trading_period_non_JPY" => sub {
             date      => $now,
             symbol    => 'frxEURUSD',
         });
+
+        my @got_date_start  = map { $eurusd_offerings[$_]{trading_period}{date_start}{epoch} } keys @eurusd_offerings;
+        my @got_date_expiry = map { $eurusd_offerings[$_]{trading_period}{date_expiry}{epoch} } keys @eurusd_offerings;
+
         is(
             scalar @eurusd_offerings,
             $expected_eur_intraday_trading_period{$date}{combination},
             "Matching expected intraday combination on EURUSD for $date"
         );
 
-        cmp_deeply(
-            $eurusd_offerings[0]{trading_period}{date_expiry}{epoch},
-            $expected_eur_intraday_trading_period{$date}{date_expiry}[0],
-            "Expected date_expiry for $date"
-        );
-        cmp_deeply(
-            $eurusd_offerings[0]{trading_period}{date_start}{epoch},
-            $expected_eur_intraday_trading_period{$date}{date_start}[0],
-            "Expected date_start for $date"
-        );
+        if (scalar @eurusd_offerings > 1) {
+            cmp_deeply(\@got_date_start, $expected_eur_intraday_trading_period{$date}{date_start}, "Expected date_start for $date");
+
+            cmp_deeply(\@got_date_expiry, $expected_eur_intraday_trading_period{$date}{date_expiry}, "Expected date_expiry for $date");
+        }
+
     }
 
 };
 subtest "predefined barriers" => sub {
     my %expected_barriers = (
         call_intraday => {
-            available_barriers => [1.15015, 1.15207, 1.15303, 1.15399, 1.15495, 1.15591, 1.15687, 1.15783, 1.15879, 1.15975, 1.16167],
-            barrier            => 1.15207,
+            available_barriers => [1.15141, 1.15241, 1.15341, 1.15471, 1.15591, 1.15711, 1.15841, 1.15941, 1.16041],
+            barrier            => 1.15141,
             expired_barriers   => [],
         },
         onetouch_daily => {
-            available_barriers => [1.13815, 1.14407, 1.14703, 1.14999, 1.15295, 1.15591, 1.15887, 1.16183, 1.16479, 1.16775, 1.17367],
-            barrier            => 1.15141,
-            expired_barriers   => [1.15295],
+            available_barriers => [1.14196, 1.14506, 1.14816, 1.15219, 1.15591, 1.15963, 1.16366, 1.16676, 1.16986],
+            barrier            => 1.15219,
+            expired_barriers => [1.14816, 1.15219],
         },
 
         range_daily => {
-            available_barriers => [[1.15295, 1.15887], [1.14999, 1.16183], [1.14703, 1.16479], [1.14407, 1.16775]],
-            expired_barriers => [[1.15295, 1.15887]],
+            available_barriers => [[1.14816, 1.16366], [1.14506, 1.16676], [1.14196, 1.16986]],
+            expired_barriers => [[1.14816, 1.16366]],
         },
         expiryrange_daily => {
             available_barriers => [
-                [1.15295, 1.15887],
-                [1.14999, 1.15591],
-                [1.15591, 1.16183],
-                [1.14703, 1.15295],
-                [1.15887, 1.16479],
-                [1.14407, 1.14999],
-                [1.16183, 1.16775],
-                [1.13815, 1.14703],
-                [1.16479, 1.17367]
+                [1.16366, 1.16986],
+                [1.15963, 1.16676],
+                [1.15591, 1.16366],
+                [1.15219, 1.15963],
+                [1.14816, 1.15591],
+                [1.14506, 1.15219],
+                [1.14196, 1.14816],
             ],
             expired_barriers => [],
         },
@@ -342,7 +347,7 @@ subtest "predefined barriers" => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'frxEURUSD',
             epoch      => Date::Utility->new($_)->epoch,
-            quote      => 1.1521,
+            quote      => 1.1481,
         }) for ("2015-08-24 00:10:00");
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -457,22 +462,24 @@ subtest "predefined barriers" => sub {
 
     my %expected_barriers_2 = (
         onetouch_daily => {
-            available_barriers => [1.13815, 1.14407, 1.14703, 1.14999, 1.15295, 1.15591, 1.15887, 1.16183, 1.16479, 1.16775, 1.17367],
-            barrier            => 1.15141,
-            expired_barriers   => [1.15295],
+            available_barriers => [1.14196, 1.14506, 1.14816, 1.15219, 1.15591, 1.15963, 1.16366, 1.16676, 1.16986],
+            barrier            => 1.15219,
+            expired_barriers => [1.14816, 1.15219, 1.15591],
         },
 
         range_daily => {
-            available_barriers => [[1.15295, 1.15887], [1.14999, 1.16183], [1.14703, 1.16479], [1.14407, 1.16775]],
-            expired_barriers => [[1.15295, 1.15887]],
+            available_barriers => [[1.14816, 1.16366], [1.14506, 1.16676], [1.14196, 1.16986]],
+            ,
+            expired_barriers => [[1.14816, 1.16366]],
         },
 
     );
+
     my $new_date = Date::Utility->new("2015-08-24 00:20:00");
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'frxEURUSD',
             epoch      => $_->epoch,
-            quote      => 1.151,
+            quote      => 1.156,
         }) for ($new_date);
 
     BOM::Product::Contract::Finder::Japan::_set_predefined_barriers({

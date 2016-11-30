@@ -11,6 +11,10 @@ use Data::Dumper;
 
 my $landing_company = 'japan';
 
+override _build_otm_threshold => sub {
+    return 0.035;    # a fixed 3.5% for japan regardless of market though we only offer forex now.
+};
+
 # we do not want to apply this for Japan.
 override apply_market_inefficient_limit => sub {
     return 0;
@@ -112,6 +116,23 @@ around _validate_barrier => sub {
 
     return $self->_subvalidate_double_barrier() if ($self->two_barriers);
     return $self->_subvalidate_single_barrier();
+};
+
+override _validate_barrier_type => sub {
+    my $self = shift;
+
+    foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
+
+        if (defined $self->$barrier and $self->$barrier->barrier_type ne 'absolute') {
+
+            return {
+                message           => 'barrier should be absolute',
+                message_to_client => localize('Contracts with predefined barrier would need an absolute barrier'),
+            };
+        }
+    }
+
+    return;
 };
 
 sub _subvalidate_single_barrier {
