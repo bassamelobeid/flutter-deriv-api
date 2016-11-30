@@ -40,7 +40,7 @@ $mocked->mock(
                 'bias'         => 0.010000,
                 'duration'     => 60.000000,
                 'magnitude'    => 1.000000,
-                'release_time' => 1389096000,
+                'release_epoch' => 1389096000,
             }];
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
