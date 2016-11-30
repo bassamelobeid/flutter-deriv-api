@@ -397,7 +397,7 @@ sub _set_predefined_barriers {
                 start_tick => $start_tick->quote,
                 vol        => 0.1,
             });
-        } qw(0.02 0.98);
+        } qw(0.05 0.95);
         $available_barriers = _split_boundaries_barriers({
             pip_size           => $underlying->pip_size,
             start_tick         => $start_tick->quote,
@@ -488,8 +488,8 @@ sub _get_expired_barriers {
 
 =head2 _get_barriers_pair
 
-- For staysinout contract, we need to pair the barriers symmetry, ie (42, 58), (34,66), (26,74), (18,82) 
-- For endsinout contract, we need to pair barriers as follow: (42,58), (34,50), (50,66), (26,42), (58,74), (18,34), (66,82), (2, 26), (74, 98)
+- For staysinout contract, we need to pair the barriers symmetry, ie (25,75), (15,85), (5,95) 
+- For endsinout contract, we need to pair barriers as follow: (75,95), (62,85),(50,75),(38,62),(25,50),(15,38),(5,25)
 
 Note: 42 is -8d from the spot at start and 58 is +8d from spot at start
 where d is the minimum increment that determine by divided the distance of boundaries by 96 (48 each side) 
@@ -505,8 +505,8 @@ sub _get_barriers_pair {
     my $list_of_expired_barriers = $args->{expired_barriers};
     my @barrier_pairs =
         $contract_category eq 'staysinout'
-        ? ([42, 58], [34, 66], [26, 74], [18, 82])
-        : ([42, 58], [34, 50], [50, 66], [26, 42], [58, 74], [18, 34], [66, 82], [2, 26], [74, 98]);
+        ? ([25, 75], [15, 85], [5, 95])
+        : ([75, 95], [62, 85], [50, 75], [38, 62], [25, 50], [15, 38], [5, 25]);
     my @barriers;
     my @expired_barriers;
     for my $pair (@barrier_pairs) {
@@ -527,7 +527,7 @@ sub _get_barriers_pair {
 
 =head2 _split_boundaries_barriers
 
--Split the boundaries barriers into 10 barriers by divided the distance of boundaries by 96 (48 each side) - to be used as increment.
+-Split the boundaries barriers into 9 barriers by divided the distance of boundaries by 90 (45 each side) - to be used as increment.
 The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
 - Included entry spot as well
 
@@ -540,7 +540,7 @@ sub _split_boundaries_barriers {
     my $spot_at_start               = $args->{start_tick};
     my @boundaries_barrier          = @{$args->{boundaries_barrier}};
     my $distance_between_boundaries = abs($boundaries_barrier[0] - $boundaries_barrier[1]);
-    my @steps                       = (8, 16, 24, 32, 48);
+    my @steps                       = (12, 25, 35, 45);
     my $minimum_step                = roundnear($pip_size, $distance_between_boundaries / ($steps[-1] * 2));
     my %barriers                    = map { (50 - $_ => $spot_at_start - $_ * $minimum_step, 50 + $_ => $spot_at_start + $_ * $minimum_step) } @steps;
     $barriers{50} = $spot_at_start;
