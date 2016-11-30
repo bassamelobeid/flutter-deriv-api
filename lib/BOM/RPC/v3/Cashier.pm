@@ -237,6 +237,22 @@ sub cashier {
             });
         }
 
+        if ($errortext =~ /customer too old/) {
+            $client->add_note('DOUGHFLOW_AGE_LIMIT_EXCEEDED',
+                      "The Doughflow server refused to process the request due to customer age.\n"
+                    . "There is currently a hardcoded limit on their system which rejects anyone over 100 years old.\n"
+                    . "If the client's details have been confirmed as valid, we will need to raise this issue with\n"
+                    . "the Doughflow support team.\n"
+                    . "Doughflow response: [$errortext]");
+
+            return $error_sub->(
+                localize(
+                    'Sorry, there was a problem validating your personal information with our payment processor. Please contact our Customer Service team.'
+                ),
+                'Error with DF CreateCustomer API loginid[' . $df_client->loginid . '] error[' . $errortext . ']'
+            );
+        }
+
         warn "Unknown Doughflow error: $errortext\n";
 
         return $error_sub->(
