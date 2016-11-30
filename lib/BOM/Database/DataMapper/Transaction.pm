@@ -395,8 +395,8 @@ sub unprocessed_bets {
     my $where_unsold_ids = '';
     my @binds = ($self->account->id, $last_processed_id);
     if (@$unsold_ids) {
-        $where_unsold_ids = 'OR id IN(?)';
-        push @binds, join(',', @$unsold_ids);
+        $where_unsold_ids = 'OR id IN(' . join(',', ('?') x scalar(@$unsold_ids)) . ')';
+        push @binds, @$unsold_ids;
     }
 
     my $sql = qq{
