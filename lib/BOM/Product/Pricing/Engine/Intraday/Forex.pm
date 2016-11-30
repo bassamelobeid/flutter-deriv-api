@@ -719,7 +719,7 @@ sub _build_economic_events_spot_risk_markup {
 
     my @combined = (0) x scalar(@time_samples);
     foreach my $news (@$news_array) {
-        my $effective_news_time = _get_effective_news_time($news->{release_time}, $start->epoch, $contract_duration);
+        my $effective_news_time = _get_effective_news_time($news->{release_epoch}, $start->epoch, $contract_duration);
         # +1e-9 is added to prevent a division by zero error if news magnitude is 1
         my $decay_coef = -log(2 / ($news->{magnitude} + 1e-9)) / $news->{duration};
         my @triangle;
