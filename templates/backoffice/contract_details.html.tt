@@ -1,8 +1,10 @@
 <p>[% contract.longcode %]</p>
 <form action="" method="post">
     <table>
-        <tr><td>Transaction ID</td><td><input value="[% id %]" size="20" type="text" name="id" id="id"/></td></tr>
-        <tr><td>Start time</td><td><input value="[% start %]" size="20" type="text" name="start" id="start"/> If left empty, it will always price at contract's start time</td></tr>
+        <tr><td>Transaction ID</td><td><input value="[% id %]" size="20" type="text" name="id" id="id"/><b>Input this if you would like to verify contract's price with a transaction id</b></td></tr>
+        <tr><td>Short Code</td><td><input value="[% short_code %]" size="20" type="text" name="short_code" id="short_code"/><b>Input this if you would like to verify contract's price with shortcode .</b></td></tr>
+        <tr><td>Currency</td><td><input value="[% currency %]" size="20" type="text" name="currency" id="currency"/><b>Input this if you would like to verify contract's price with shortcode.</b></td></tr>
+        <tr><td>Start time</td><td><input value="[% start %]" size="20" type="text" name="start" id="start"/><b>Input this only if you would to verify contract's price at a specific time, otherwise leave it empty and it will price at the contract's start time [with the input of shortcode] or transaction's time [with the input of transaction id.(Buy time if it is a buy transaction and sell time if it is a sell transaction)] </b></td></tr>
         <input  type="hidden" value="[% broker %]"name="broker" id="broker"/>
         <tr><td colspan=2><input type="submit" name="price" value="View in Table"/></td></tr>
         <tr><td colspan=2><input type="submit" name="download" value="Download as CSV file"/></td></tr>
@@ -22,6 +24,7 @@
         <p><b>ORDER_TYPE = [% contract_details.order_type  %]</b></p>
         <p><b>PAYOUT = [% contract_details.payout  %]</b></p>
         <p><b>TICK_BEFORE_TRADE_TIME = [% contract_details.tick_before_trade_time %]</b></p>
+        <p><b>PRICING_SPOT = [% contract_details.pricing_spot %]</b></p>
           [% FOREACH key =pricing_parameters.keys.sort %]
                <p><table id="dtr" border="1" cellpadding="1" cellspacing="0">
                 <tr><td><b> [% key %] </b></td></tr>
