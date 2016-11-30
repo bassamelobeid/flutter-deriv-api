@@ -14,9 +14,8 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::AggTicks;
 use BOM::MarketData::Types;
 
-my $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
-my $coefficients    = LoadFile('/home/git/regentmarkets/bom-market/config/files/volatility_calibration_coefficients.yml');
-my $returns_sep     = 4;
+my $coefficients = LoadFile('/home/git/regentmarkets/bom-market/config/files/volatility_calibration_coefficients.yml');
+my $returns_sep  = 4;
 
 sub get_volatility {
     my ($self, $args) = @_;
@@ -71,21 +70,24 @@ sub get_volatility {
         interval => min($requested_interval->seconds, (@good_ticks < 2 ? 0 : $good_ticks[-1]->{epoch} - $good_ticks[0]->{epoch})));
     $self->volatility_scaling_factor($actual_lookback_interval->seconds / $requested_interval->seconds);
 
-    my $categorized_events = $self->_categorized_economic_events($economic_events);
+    my $qfs = Quant::Framework::Seasonality->new(chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($underlying->for_date));
+    my $categorized_events = $qfs->categorize_events($underlying->symbol, $economic_events);
 
-    # Future time samples is extended for 5 minutes at both ends.
-    # This is to accommodate for the uncertainty of economic event impact kick-in time.
-    # Hence, a five minute buffer is added to both ends.
-    my $buffer_seconds = 0;
-    my $c_start        = $args->{current_epoch} - $buffer_seconds;
-    my $c_end          = $c_start + $args->{seconds_to_expiration} + $buffer_seconds;
+    # Future time samples is extended for 5 minutes at both ends. This is to accommodate for the uncertainty of economic event impact kick-in time.
+    # This will only be applied on contract less than 5 hours because of the decaying effect of economic event's impact.
+    my $shifted_events =
+        ($args->{include_news_impact} and $args->{seconds_to_expiration} < 5 * 3600)
+        ? _apply_shifting_logic($categorized_events, $args->{current_epoch}, $args->{seconds_to_expiration})
+        : $categorized_events;
+
+    my $c_start = $args->{current_epoch};
+    my $c_end   = $c_start + $args->{seconds_to_expiration};
     my @time_samples_fut;
 
     for (my $i = $c_start; $i <= $c_end; $i += 15) {
         push @time_samples_fut, $i;
     }
 
-    my $qfs = Quant::Framework::Seasonality->new(chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($underlying->for_date));
     #seasonality future
     my $seasonality_fut = $qfs->get_volatility_seasonality({
         underlying_symbol => $underlying->symbol,
@@ -97,8 +99,9 @@ sub get_volatility {
     my $news_fut = [(1) x (scalar @time_samples_fut)];
     if ($args->{include_news_impact}) {
         $news_fut = $qfs->get_economic_event_seasonality({
-            underlying_symbol => $underlying->symbol,
-            time_series       => \@time_samples_fut
+            underlying_symbol  => $underlying->symbol,
+            categorized_events => $shifted_events,
+            time_series        => \@time_samples_fut,
         });
     }
 
@@ -128,8 +131,9 @@ sub get_volatility {
         my $news_past = [(1) x (scalar @time_samples_past)];
         if ($args->{include_news_impact}) {
             $news_past = $qfs->get_economic_event_seasonality({
-                underlying_symbol => $underlying->symbol,
-                time_series       => \@time_samples_past
+                underlying_symbol  => $underlying->symbol,
+                categorized_events => $shifted_events,
+                time_series        => \@time_samples_past
             });
         }
         my $past_sum                   = sum(map { ($seasonality_past->[$_] * $news_past->[$_])**2 * $weights->[$_] } (0 .. $#time_samples_past));
@@ -151,6 +155,30 @@ sub get_volatility {
     return $seasonalized_vol;
 }
 
+sub _apply_shifting_logic {
+    my ($economic_events, $contract_start, $contract_duration) = @_;
+
+    my $five_minutes_in_seconds = 5 * 60;
+    my $shift_seconds           = 0;
+    my $contract_end            = $contract_start + $contract_duration;
+
+    my @shifted;
+    foreach my $event (@$economic_events) {
+        my $news_time = $event->{release_epoch};
+        if ($news_time >= $contract_start and $news_time <= $contract_end) {
+            push @shifted, $event;
+        } elsif ($news_time > $contract_start - $five_minutes_in_seconds and $news_time < $contract_start) {
+            push @shifted, +{%$event, release_epoch => $contract_start};
+        } elsif ($news_time < $contract_end + $five_minutes_in_seconds and $news_time > $contract_end - $five_minutes_in_seconds) {
+            # Always shifts to the contract start time if duration is less than 5 minutes.
+            my $max_shift = min($five_minutes_in_seconds, $contract_duration);
+            push @shifted, +{%$event, release_epoch => $contract_end - $max_shift};
+        }
+    }
+
+    return \@shifted;
+}
+
 sub _calculate_observed_volatility {
     my ($ticks, $time_samples_past, $tick_epochs, $weights) = @_;
 
@@ -166,27 +194,6 @@ sub _calculate_observed_volatility {
     return $observed_vol;
 }
 
-sub _categorized_economic_events {
-    my ($self, $raw_events) = @_;
-
-    my $underlying = $self->underlying;
-    my @events;
-    foreach my $event (@$raw_events) {
-        my $event_name = $event->{event_name};
-        $event_name =~ s/\s/_/g;
-        my $key             = $underlying->symbol . '_' . $event->{symbol} . '_' . $event->{impact} . '_' . $event_name;
-        my $default         = $underlying->symbol . '_' . $event->{symbol} . '_' . $event->{impact} . '_default';
-        my $news_parameters = $news_categories->{$key} // $news_categories->{$default};
-        my %dereference     = $news_parameters ? %$news_parameters : ();
-
-        next unless keys %dereference;
-        $dereference{release_time} = Date::Utility->new($event->{release_date})->epoch;
-        push @events, \%dereference;
-    }
-
-    return \@events;
-}
-
 sub _calculate_weights {
     my ($times, $news_array) = @_;
 
@@ -195,8 +202,8 @@ sub _calculate_weights {
     foreach my $news (@$news_array) {
         foreach my $idx (0 .. $#times) {
             my $time   = $times[$idx];
-            my $width  = $time < $news->{release_time} ? 2 * 60 : 2 * 60 + $news->{duration};
-            my $weight = 1 / (1 + pdf($time, $news->{release_time}, $width) / pdf(0, 0, $width) * ($news->{magnitude} - 1));
+            my $width  = $time < $news->{release_epoch} ? 2 * 60 : 2 * 60 + $news->{duration};
+            my $weight = 1 / (1 + pdf($time, $news->{release_epoch}, $width) / pdf(0, 0, $width) * ($news->{magnitude} - 1));
             $combined[$idx] = min($combined[$idx], $weight);
         }
     }
