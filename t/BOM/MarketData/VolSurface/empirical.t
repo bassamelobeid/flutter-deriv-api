@@ -703,7 +703,7 @@ subtest 'seasonalized volatility with news' => sub {
                 include_news_impact   => 1
             }
             ),
-            0.273329710580157, '';
+            0.273329521307744, '';
         ok !$vs->error, 'no error';
     }
     'lives through process of getting seasonalized volatility';
@@ -747,7 +747,7 @@ subtest 'economic event shifting logic' => sub {
         economic_events       => [$valid_event],
         include_news_impact   => 1,
     });
-    is $v, 0.194141276137837, 'event occur right before start. Impact of economic event shifted forward';
+    is $v, 0.194141395362914, 'event occur right before start. Impact of economic event shifted forward';
     $valid_event = {
         symbol        => 'USD',
         release_date  => $now->plus_time_interval('17m'),
