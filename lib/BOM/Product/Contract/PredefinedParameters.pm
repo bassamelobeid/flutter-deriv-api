@@ -409,7 +409,7 @@ sub _get_intraday_trading_window {
     # Previous 2 hours contract should be always available in the first 15 minutes of the next one
     # (except start of the trading day and also the first window after the break)
     my $skips_prev_window = first { $even_hour - 2 == $_ } @skips_hour;
-    if (($date->epoch - $window_2h->{date_start}->{epoch}) / 60 < 15 && $even_hour - 2 >= 0 && not $skips_prev_window) {
+    if (($date->epoch - $window_2h->{date_start}->{epoch}) / 60 < 15 && $even_hour - 2 >= 0 && !$skips_prev_window) {
         push @intraday_windows,
             _get_intraday_window({
                 now        => $date,
