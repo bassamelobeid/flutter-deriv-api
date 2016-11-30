@@ -408,7 +408,8 @@ sub _get_intraday_trading_window {
 
     # Previous 2 hours contract should be always available in the first 15 minutes of the next one
     # (except start of the trading day and also the first window after the break)
-    if (($date->epoch - $window_2h->{date_start}->{epoch}) / 60 < 15 && $even_hour - 2 >= 0 && $even_hour != 22) {
+    my $skips_prev_window = first { $even_hour - 2 == $_ } @skips_hour;
+    if (($date->epoch - $window_2h->{date_start}->{epoch}) / 60 < 15 && $even_hour - 2 >= 0 && not $skips_prev_window) {
         push @intraday_windows,
             _get_intraday_window({
                 now        => $date,
@@ -509,7 +510,7 @@ sub _get_intraday_window {
     my $date_start       = $args->{date_start};
     my $duration         = $args->{duration};
     my $now              = $args->{now};
-    my $is_monday_start  = $now->day_of_week == 1 && $date_start->hour == 0;
+    my $is_monday_start  = $date_start->day_of_week == 1 && $date_start->hour == 0;
     my $early_date_start = $is_monday_start ? $date_start : $date_start->minus_time_interval('15m');
     my $date_expiry      = $date_start->hour == 22 ? $date_start->plus_time_interval('1h59m59s') : $date_start->plus_time_interval($duration);
     if ($now->is_before($date_expiry)) {
