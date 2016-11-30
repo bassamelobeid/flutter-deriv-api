@@ -171,11 +171,6 @@ sub _year_performance {
     return sprintf("%.4f", $profits_mult - 1);
 }
 
-sub _mean {
-    my @arr = grep { defined $_ && $_ } @_;
-    return sum0(@arr) / (scalar(@arr) || 1);
-}
-
 1;
 
 __END__
