@@ -26,14 +26,10 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 use LandingCompany::Registry;
-use BOM::Market::AggTicks;
-
 BOM::Backoffice::Sysinit::init();
 BOM::Backoffice::Auth0::can_access(['Quants']);
 my %params = %{request()->params};
 my ($pricing_parameters, @contract_details, $start);
-# Flush off all the agg tick cache as it might affected the repricing of this tool.
-BOM::Market::AggTicks->new->flush();
 
 
 my $broker        = $params{broker}     // request()->broker_code;
