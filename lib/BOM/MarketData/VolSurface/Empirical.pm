@@ -165,14 +165,14 @@ sub _apply_shifting_logic {
     my @shifted;
     foreach my $event (@$economic_events) {
         my $news_time = $event->{release_epoch};
-        if ($news_time >= $contract_start and $news_time <= $contract_end) {
-            push @shifted, $event;
-        } elsif ($news_time > $contract_start - $five_minutes_in_seconds and $news_time < $contract_start) {
+        if ($news_time > $contract_start - $five_minutes_in_seconds and $news_time < $contract_start) {
             push @shifted, +{%$event, release_epoch => $contract_start};
         } elsif ($news_time < $contract_end + $five_minutes_in_seconds and $news_time > $contract_end - $five_minutes_in_seconds) {
             # Always shifts to the contract start time if duration is less than 5 minutes.
             my $max_shift = min($five_minutes_in_seconds, $contract_duration);
             push @shifted, +{%$event, release_epoch => $contract_end - $max_shift};
+        } else {
+            push @shifted, $event;
         }
     }
 
