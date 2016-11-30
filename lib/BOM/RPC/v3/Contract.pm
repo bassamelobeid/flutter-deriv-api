@@ -165,10 +165,10 @@ sub _get_ask {
 
             # need this warning to be logged for Japan as a regulatory requirement
             warn "[JPLOG]"
-                . $contract->shortcode . ":"
-                . $ask_price . ":"
-                . $contract->pricing_spot . ":"
-                . $contract->pricing_vol . ":"
+                . $contract->shortcode . ":,"
+                . $ask_price . ","
+                . $contract->pricing_spot . ","
+                . $contract->pricing_vol . ","
                 . ($p2->{trading_period_start} // '') . "\n"
                 if ($p2->{currency} && $p2->{currency} eq 'JPY');
 
