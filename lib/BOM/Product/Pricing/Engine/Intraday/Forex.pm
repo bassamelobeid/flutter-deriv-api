@@ -261,7 +261,7 @@ sub _build_ticks_for_trend {
         #$ticks = $ticks_cache->tick_cache_get({
         #    symbol      => $bet->underlying->symbol,
         $ticks = $data_resample->tick_cache_get({
-            underlying  => $bet->underlying->symbol,
+            underlying  => $bet->underlying,
             start_epoch => $bet->date_pricing->epoch - $remaining_interval->seconds,
             end_epoch   => $bet->date_pricing->epoch,
             backtest    => $bet->backtest,
