@@ -78,6 +78,7 @@ sub create_account {
     my $utm_source    = $details->{utm_source};
     my $utm_medium    = $details->{utm_medium};
     my $utm_campaign  = $details->{utm_campaign};
+    my $gclid_url     = $details->{gclid_url};
     my $email_consent = $details->{email_consent};
 
     my $user = BOM::Platform::User->create(
@@ -88,7 +89,8 @@ sub create_account {
         $source        ? (app_id        => $source)        : (),
         $utm_source    ? (utm_source    => $utm_source)    : (),
         $utm_medium    ? (utm_medium    => $utm_medium)    : (),
-        $utm_campaign  ? (utm_campaign  => $utm_campaign)  : ());
+        $utm_campaign  ? (utm_campaign  => $utm_campaign)  : (),
+        $gclid_url     ? (gclid_url     => $gclid_url)     : ());
     $user->add_loginid({loginid => $client->loginid});
     $user->save;
     $client->deposit_virtual_funds($source, localize('Virtual money credit to account'));
