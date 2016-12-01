@@ -310,13 +310,13 @@ sub _calculate_available_barriers {
     my ($underlying, $offering, $trading_period) = @_;
 
     my $barriers = _calculate_barriers({
-        underlying       => $underlying,
-        trading_periods  => $trading_period,
-        barrier_category => $offering->{barrier_category},
+        underlying      => $underlying,
+        trading_periods => $trading_period,
     });
 
     my $available_barriers;
     if ($offering->{barriers} == 1) {
+        delete $barriers->{50} if $offering->{barrier_category} eq 'american';
         $available_barriers = [sort { $a <=> $b } values %$barriers];
     } elsif ($offering->{barriers} == 2) {
         # For staysinout contract, we need to pair the barriers symmetry, ie (25,75), (15,85), (5,95)
@@ -366,7 +366,6 @@ sub _calculate_barriers {
     my @steps                       = (12, 25, 35, 45);
     my $minimum_step                = roundnear($underlying->pip_size, $distance_between_boundaries / ($steps[-1] * 2));
     my %barriers                    = map { (50 - $_ => $spot_at_start - $_ * $minimum_step, 50 + $_ => $spot_at_start + $_ * $minimum_step) } @steps;
-    $barriers{50} = $spot_at_start if $args->{barrier_category} ne 'american';
 
     my $ttl = max(1, $trading_period->{date_expiry}->{epoch} - $trading_period->{date_start}->{epoch});
     BOM::System::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json(\%barriers), 'EX', $ttl);
