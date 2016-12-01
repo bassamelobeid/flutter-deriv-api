@@ -310,8 +310,9 @@ sub _calculate_available_barriers {
     my ($underlying, $offering, $trading_period) = @_;
 
     my $barriers = _calculate_barriers({
-        underlying      => $underlying,
-        trading_periods => $trading_period,
+        underlying       => $underlying,
+        trading_periods  => $trading_period,
+        barrier_category => $offering->{barrier_category},
     });
 
     my $available_barriers;
@@ -351,7 +352,7 @@ sub _calculate_barriers {
     my @steps                       = (12, 25, 35, 45);
     my $minimum_step                = roundnear($underlying->pip_size, $distance_between_boundaries / ($steps[-1] * 2));
     my %barriers                    = map { (50 - $_ => $spot_at_start - $_ * $minimum_step, 50 + $_ => $spot_at_start + $_ * $minimum_step) } @steps;
-    $barriers{50} = $spot_at_start;
+    $barriers{50} = $spot_at_start if $args->{barrier_category} ne 'american';
 
     return \%barriers;
 }
