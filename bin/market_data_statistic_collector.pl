@@ -198,7 +198,7 @@ sub _collect_pipsize_stats {
         my $spot       = $underlying->spot;
         my $sigma      = sqrt($vol**2 / 365 / 86400 * 10);
         my $quants_volidx_digit_move  = $spot * $sigma / $pipsize;
-        stats_gauge('volidx_digit_move', $quants_volidx_digit_move, {tags => ['tag:' . $underlying->{symbol}]});
+        stats_gauge('quants_volidx_digit_move', $quants_volidx_digit_move, {tags => ['tag:' . $underlying->{symbol}]});
     }
     return;
 }
