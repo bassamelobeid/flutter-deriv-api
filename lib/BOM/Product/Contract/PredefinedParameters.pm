@@ -368,7 +368,7 @@ sub _calculate_barriers {
     my %barriers                    = map { (50 - $_ => $spot_at_start - $_ * $minimum_step, 50 + $_ => $spot_at_start + $_ * $minimum_step) } @steps;
     $barriers{50} = $spot_at_start if $args->{barrier_category} ne 'american';
 
-    my $ttl = max(1, $trading_period->{date_expiry}->epoch - $trading_period->{date_start}->{epoch});
+    my $ttl = max(1, $trading_period->{date_expiry}->{epoch} - $trading_period->{date_start}->{epoch});
     BOM::System::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json(\%barriers), 'EX', $ttl);
 
     return \%barriers;
