@@ -70,29 +70,30 @@ sub copytrading_statistics {
     });
 
     # trader performance
+    for my $row (@{$txn_dm->get_monthly_payments_sum_1()}) {
+        my ($year, $month, $D, $W) = @$row;
+        $result_hash->{monthly_profitable_trades}->{$year . '-' . $month}->{deposit}    = $D;
+        $result_hash->{monthly_profitable_trades}->{$year . '-' . $month}->{withdrawal} = $W;
+    }
+    for my $row (@{$txn_dm->get_monthly_balance()}) {
+        my ($year, $month, $E0, $E1) = @$row;
+        $result_hash->{monthly_profitable_trades}->{$year . '-' . $month}->{E0} = $E0;
+        $result_hash->{monthly_profitable_trades}->{$year . '-' . $month}->{E1} = $E1;
+    }
     my @sorted_monthly_profits;
-    for (my $year = $trader_date_joined->year; $year <= $now->year; $year++) {
-        my @monthly_profits_of_current_year;
-        for (my $month = 1; $month <= 12; $month++) {
-            $month = sprintf("%.2u", $month);
-            my $date = Date::Utility->new("$year-$month-01");
-            next if $date->month < $trader_date_joined->month and $date->year == $trader_date_joined->year;
-            next if $date->month > $now->month and $date->year == $now->year;
-
-            my $current_month = $date->datetime_yyyymmdd_hhmmss;
-            my $next_month    = $date->plus_time_interval('31d')->datetime_yyyymmdd_hhmmss;
-
-            my ($D, $W) = @{$txn_dm->get_monthly_payments_sum($date)};
-            my $E1 = $txn_dm->get_balance_before_date($next_month);       # it's the equity at the end of the month
-            my $E0 = $txn_dm->get_balance_before_date($current_month);    # it's the equity at the beginning of the month
-
-            my $current_month_profit = sprintf("%.4f", ((($E1 + $W) - ($E0 + $D)) / ($E0 + $D)));
-            $result_hash->{monthly_profitable_trades}->{$year . '-' . $month} = $current_month_profit;
-            push @sorted_monthly_profits,          $current_month_profit;
-            push @monthly_profits_of_current_year, $current_month_profit;
-        }
-
-        $result_hash->{yearly_profitable_trades}->{$year} = _year_performance(@monthly_profits_of_current_year);
+    for my $date (sort keys %{$result_hash->{monthly_profitable_trades}}) {
+        my ($year) = ($date =~ /(\d{4})/);
+        my $D      = $result_hash->{monthly_profitable_trades}->{$date}->{deposit};
+        my $W      = $result_hash->{monthly_profitable_trades}->{$date}->{withdrawal};
+        my $E0     = $result_hash->{monthly_profitable_trades}->{$date}->{E0};
+        my $E1     = $result_hash->{monthly_profitable_trades}->{$date}->{E1};
+        my $current_month_profit = sprintf("%.4f", ((($E1 + $W) - ($E0 + $D)) / ($E0 + $D)));
+        $result_hash->{monthly_profitable_trades}->{$date} = $current_month_profit;
+        push @sorted_monthly_profits, $current_month_profit;
+        push @{$result_hash->{yearly_profitable_trades}->{$year}}, $current_month_profit;
+    }
+    for my $year (keys %{$result_hash->{yearly_profitable_trades}}) {
+        $result_hash->{yearly_profitable_trades}->{$year} = _year_performance(@{$result_hash->{yearly_profitable_trades}->{$year}});
     }
 
     # last 12 months profitable
