@@ -147,6 +147,8 @@ sub script_run {
         print "[$@]";
         die $@;
     }
+
+    done_testing;
 }
 
 sub analyse_report {
@@ -175,6 +177,6 @@ sub analyse_report {
 }
 no Moose;
 __PACKAGE__->meta->make_immutable;
-done_testing;
+
 package main;
 exit DatasetRunner->new()->run();
