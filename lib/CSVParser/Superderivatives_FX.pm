@@ -67,11 +67,13 @@ sub _build_records {
 
     my $surface_data = $self->_get_surface_data($vol_lines, $underlying, $spot, $rate);
 
-    my $underlying_config = $underlying->config;
-    $underlying_config->{spot} = $spot;
+    $underlying->set_combined_realtime({
+            epoch => $date_start->epoch,
+            quote => $spot
+        });
 
     my $surface = Quant::Framework::VolSurface::Delta->new(
-        underlying_config    => $underlying_config,
+        underlying    => $underlying,
         recorded_date => $date_start,
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),

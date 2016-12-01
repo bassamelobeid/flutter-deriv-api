@@ -49,7 +49,7 @@ sub _build_records {
     my $currency     = $data->{currency};
 
     my $surface = Quant::Framework::VolSurface::Moneyness->new(
-        underlying_config       => $underlying->config,
+        underlying       => $underlying,
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         surface          => $surface_data,
@@ -161,7 +161,7 @@ sub _setup_quanto_volsurface {
     }
     my $volsurface = Quant::Framework::VolSurface::Delta->new(
         surface       => \%surface_data,
-        underlying_config    => $underlying->config,
+        underlying       => $underlying,
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         recorded_date => $date,

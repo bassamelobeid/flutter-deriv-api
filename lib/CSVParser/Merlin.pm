@@ -173,7 +173,7 @@ sub _build_records {
         my $surface_date = Date::Utility->new($record{date_start}->truncate_to_day->epoch + 14 * 3600);
 
         $record{surface} = Quant::Framework::VolSurface::Delta->new(
-            underlying_config      => $record{underlying}->config,
+            underlying       => $record{underlying},
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
             recorded_date   => $surface_date,
