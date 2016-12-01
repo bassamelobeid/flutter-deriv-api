@@ -24,7 +24,9 @@
         <p><b>ORDER_TYPE = [% contract_details.order_type  %]</b></p>
         <p><b>PAYOUT = [% contract_details.payout  %]</b></p>
         <p><b>TICK_BEFORE_TRADE_TIME = [% contract_details.tick_before_trade_time %]</b></p>
-        <p><b>PRICING_SPOT = [% contract_details.pricing_spot %]</b></p>
+        <p><b>REF_SPOT = [% contract_details.ref_spot %]</b></p>
+        <p><b>REF_VOL = [% contract_details.ref_vol %]</b></p>
+        <p><b>REF_VOL_2 = [% contract_details.ref_vol_2 %]</b></p>
           [% FOREACH key =pricing_parameters.keys.sort %]
                <p><table id="dtr" border="1" cellpadding="1" cellspacing="0">
                 <tr><td><b> [% key %] </b></td></tr>
