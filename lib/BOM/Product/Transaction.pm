@@ -1250,7 +1250,7 @@ sub _build_pricing_comment {
         @{$args}{'contract', 'price', 'action', 'price_slippage', 'requested_price', 'recomputed_price', 'trading_period_start'};
 
     # IV is the pricing vol (high barrier vol if it is double barrier contract), iv_2 is the low barrier vol.
-    my $iv = $contract->pricing_vol;
+    my $iv   = $contract->pricing_vol;
     my $iv_2 = 0;
 
     if ($contract->two_barriers) {
