@@ -16,6 +16,7 @@ use Quant::Framework::EconomicEventCalendar;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData::Types;
 
+use BOM::System::RedisReplicated;
 use Data::Resample::ResampleCache;
 use Data::Resample::TicksCache;
 
@@ -45,7 +46,8 @@ sub get_volatility {
     my $fill_cache = $args->{fill_cache} // 1;
 
     my $resample_cache = Data::Resample::ResampleCache->new({
-        redis => Cache::RedisDB->redis,
+        redis_read  => BOM::System::RedisReplicated::redis_read(),
+        redis_write => BOM::System::RedisReplicated::redis_write(),
     });
 #    my $ticks_cache = Data::Resample::TicksCache->new({
 #        redis => Cache::RedisDB->redis,
