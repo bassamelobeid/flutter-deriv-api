@@ -1,6 +1,4 @@
 #!/etc/rmg/bin/perl
-package BOM::Product::TradingPeriod;
-
 use strict;
 use warnings;
 
