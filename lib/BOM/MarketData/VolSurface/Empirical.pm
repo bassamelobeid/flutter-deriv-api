@@ -49,31 +49,28 @@ sub get_volatility {
         redis_read  => BOM::System::RedisReplicated::redis_read(),
         redis_write => BOM::System::RedisReplicated::redis_write(),
     });
-#    my $ticks_cache = Data::Resample::TicksCache->new({
-#        redis => Cache::RedisDB->redis,
-#    });
 
     my $ticks;
-    if (not $fill_cache) {
-        my $raw_ticks = $underlying->ticks_in_between_start_end({
-            start_time => $args->{current_epoch} - $interval->seconds,
-            end_time   => $args->{current_epoch},
-        });
+#    if (not $fill_cache) {
+#        my $raw_ticks = $underlying->ticks_in_between_start_end({
+#            start_time => $args->{current_epoch} - $interval->seconds,
+#            end_time   => $args->{current_epoch},
+#        });
 
-        my @rev_ticks = reverse @$raw_ticks;
-        $ticks = $resample_cache->resample_cache_backfill({
-            symbol => $underlying->symbol,
-            ticks  => \@rev_ticks,
-        });
-    } else {
+#        my @rev_ticks = reverse @$raw_ticks;
+#        $ticks = $resample_cache->resample_cache_backfill({
+#            symbol => $underlying->symbol,
+#            ticks  => \@rev_ticks,
+#        });
+#    } else {
 
-        $ticks = $resample_cache->resample_cache_get({
-            symbol      => $underlying->symbol,
-            start_epoch => $args->{current_epoch} - $interval->seconds,
-            end_epoch   => $args->{current_epoch},
-        });
+    $ticks = $resample_cache->resample_cache_get({
+        symbol      => $underlying->symbol,
+        start_epoch => $args->{current_epoch} - $interval->seconds,
+        end_epoch   => $args->{current_epoch},
+    });
 
-    }
+#    }
 
 #    my $latest_tick = $ticks_cache->tick_cache_get_num_ticks({
 #        symbol    => $underlying->symbol,
