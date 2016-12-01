@@ -55,13 +55,15 @@ sub get_volatility {
 
     my $ticks;
     if ($underlying->for_date) {
-        my $raw_ticks = reverse $underlying->ticks_in_between_start_end({
+        my $raw_ticks = $underlying->ticks_in_between_start_end({
             start_time => $args->{current_epoch} - $interval->seconds,
             end_time   => $args->{current_epoch},
         });
+
+        my @rev_ticks = reverse @$raw_ticks;
         $ticks = $resample_cache->resample_cache_backfill({
             symbol => $underlying->symbol,
-            ticks  => $raw_ticks,
+            ticks  => \@rev_ticks,
         });
     } else {
 
