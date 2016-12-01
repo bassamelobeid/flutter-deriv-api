@@ -338,7 +338,7 @@ sub _calculate_barriers {
     my $args = shift;
 
     my ($underlying, $trading_period) = @{$args}{qw(underlying trading_periods)};
-    my $key = join '_', ($underlying->symbol, $trading_period->{date_start}->{epoch}, $trading_period->{date_expiry}->{epoch});
+    my $key = join '_', ('barriers', $underlying->symbol, $trading_period->{date_start}->{epoch}, $trading_period->{date_expiry}->{epoch});
     my $cache = BOM::System::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
 
     return from_json($cache) if $cache;
