@@ -1755,7 +1755,7 @@ sub __validate_jurisdictional_restrictions {
     my $loginid     = $client->loginid;
     my $market_name = $contract->market->name;
 
-    if (!$residence && $loginid !~ /^VRT/) {
+    if (!$residence && $loginid !~ /^VR/) {
         return Error::Base->cuss(
             -type              => 'NoResidenceCountry',
             -mesg              => 'Client cannot place contract as we do not know their residence.',
