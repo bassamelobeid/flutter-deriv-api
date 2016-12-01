@@ -338,8 +338,17 @@ sub _calculate_barriers {
     my $args = shift;
 
     my ($underlying, $trading_period) = @{$args}{qw(underlying trading_periods)};
-    my $tick = $underlying->tick_at($trading_period->{date_start}->{epoch}, {allow_inconsistent => 1})
-        or die 'Could not retrieve tick for ' . $underlying->symbol . ' at ' . Date::Utility->new($trading_period->{date_start}->{epoch})->datetime;
+    my $tick = $underlying->tick_at($trading_period->{date_start}->{epoch}, {allow_inconsistent => 1});
+
+    unless ($tick) {
+        # If spot at requested time is not present, we will use current spot.
+        # This should not happen in production, it is for QA purposes.
+        warn "using current tick to calculate barrier for period [$trading_period->{date_start}->{date} - $trading_period->{date_expiry}->{date}]";
+        $tick = $underlying->spot_tick
+            or die 'Could not retrieve tick for '
+            . $underlying->symbol . ' at '
+            . Date::Utility->new($trading_period->{date_start}->{epoch})->datetime;
+    }
     my $spot_at_start = $tick->quote;
     my $tiy = ($trading_period->{date_expiry}->{epoch} - $trading_period->{date_start}->{epoch}) / (365 * 86400);
 
