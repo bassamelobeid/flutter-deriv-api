@@ -257,16 +257,17 @@ sub adjust_barriers_for_tentative_events {
 }
 sub _build_economic_events_markup {
     my $self = shift;
+    my $bet = $self->bet;
     my $markup;
 
-    my @barrier_args = ($bet->two_barriers) ? ($args->{barrier1}, $args->{barrier2}) : ($args->{barrier1});
+    my @barrier_args = ($bet->two_barriers) ? ($bet->high_barrier, $bet->low_barrier) : ($bet->barrier);
     my @adjusted_barriers = map { $self->adjust_barriers_for_tentative_events($_) } @barrier_args;
 
     #if there is a change needed in the berriers due to tentative events:
     if ( array_diff(@barrier_args, @adjusted_barriers) ) {
         my $barrier_hash = {};
 
-        if ( $self->bet->two_barriers ) {
+        if ( $bet->two_barriers ) {
             $barrier_hash->{high_barrier} = $adjusted_barriers[0];
             $barrier_hash->{low_barrier} = $adjusted_barriers[1];
         } else {
@@ -274,7 +275,7 @@ sub _build_economic_events_markup {
         }
 
         my $new_engine = BOM::Product::Pricing::Engine::Intraday::Forex->new({
-                    bet                     => make_similar_contract($self->bet, $barrier_hash),
+                    bet                     => make_similar_contract($bet, $barrier_hash),
                     apply_bounceback_safety => $self->apply_bounceback_safety,
                     inefficient_period      => $self->inefficient_period,
                     inactive_period         => $self->inactive_period,
