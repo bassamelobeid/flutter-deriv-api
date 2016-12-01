@@ -152,7 +152,7 @@ sub get_bet_results {
             quote      => $bet_args->{current_spot},
             epoch      => $bet_args->{date_start}->epoch,
         );
-        $bet_args->{volsurface}->underlying->set_combined_realtime(
+        $bet_args->{volsurface}->underlying->set_combined_realtime({
             quote => $bet_args->{current_spot},
             epoch => $date_start->epoch
         });
