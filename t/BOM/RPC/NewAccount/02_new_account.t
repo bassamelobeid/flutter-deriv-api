@@ -86,6 +86,7 @@ subtest $method => sub {
     $params->{args}->{utm_source}   = 'google.com';
     $params->{args}->{utm_medium}   = 'email';
     $params->{args}->{utm_campaign} = 'spring sale';
+    $params->{args}->{gclid_url}    = 'FQdb3wodOkkGBgCMrlnPq42q8C';
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
         ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
         ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
@@ -94,6 +95,7 @@ subtest $method => sub {
     ok $new_loginid =~ /^VRTC\d+/, 'new VR loginid';
     my $user = BOM::Platform::User->new({email => $email});
     ok $user->utm_source =~ '^google\.com$', 'utm registered as expected';
+    ok $user->gclid_url =~ '^FQdb3wodOkkGBgCMrlnPq42q8C$', 'gclid value returned as expected';
     is $user->email_consent, undef, 'email consent not passed during account creation so its undef';
 
     my ($resp_loginid, $t, $uaf) = BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token});
