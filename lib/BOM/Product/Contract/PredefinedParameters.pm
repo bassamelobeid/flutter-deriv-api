@@ -163,10 +163,9 @@ sub update_predefined_highlow {
                 start => $period->{date_start}->{epoch},
                 end   => $now,
             });
-            $new_high = max($new_quote, $db_highlow->{high});
-            $new_low = min($new_quote, $db_highlow->{low});
+            $new_high = defined $db_highlow->{high} ? max($new_quote, $db_highlow->{high}) : $new_quote;
+            $new_low = defined $db_highlow->{low} ? min($new_quote, $db_highlow->{low}) : $new_quote;
         }
-
         my $ttl = max(1, $period->{date_expiry}->{epoch} - $now);
         # not using chronicle here because we don't want to save historical highlow data
         BOM::System::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json([$new_high, $new_low]), 'EX', $ttl);

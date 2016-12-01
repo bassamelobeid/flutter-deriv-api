@@ -4,7 +4,7 @@ use warnings;
 
 use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods next_generation_epoch);
 use Parallel::ForkManager;
-use Time::HiRes qw(clock_nanosleep TIMER_ABSTIME);
+use Time::HiRes qw(clock_nanosleep TIMER_ABSTIME CLOCK_REALTIME);
 use Date::Utility;
 
 #This daemon generates predefined trading periods for selected underlying symbols at XX:45 and XX:00
