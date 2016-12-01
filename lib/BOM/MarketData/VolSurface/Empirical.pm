@@ -19,6 +19,7 @@ use BOM::MarketData::Types;
 use BOM::System::RedisReplicated;
 use Data::Resample::ResampleCache;
 use Data::Resample::TicksCache;
+use BOM::Market::DataResample;
 
 my $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
 my $coefficients    = LoadFile('/home/git/regentmarkets/bom-market/config/files/volatility_calibration_coefficients.yml');
@@ -45,12 +46,17 @@ sub get_volatility {
     my $interval = Time::Duration::Concise->new(interval => max(900, $args->{seconds_to_expiration}) . 's');
     my $fill_cache = $args->{fill_cache} // 1;
 
-    my $resample_cache = Data::Resample::ResampleCache->new({
-        redis_read  => BOM::System::RedisReplicated::redis_read(),
-        redis_write => BOM::System::RedisReplicated::redis_write(),
-    });
+    #my $resample_cache = Data::Resample::ResampleCache->new({
+    #    redis_read  => BOM::System::RedisReplicated::redis_read(),
+    #    redis_write => BOM::System::RedisReplicated::redis_write(),
+    #});
 
-    my $ticks;
+    my $ticks = BOM::Market::DataResample->new()->resample_cache_get({
+        underlying  => $underlying,
+        start_epoch => $args->{current_epoch} - $interval->seconds,
+        end_epoch   => $args->{current_epoch},
+        backtest    => !$fill_cache,
+    });
 #    if (not $fill_cache) {
 #        my $raw_ticks = $underlying->ticks_in_between_start_end({
 #            start_time => $args->{current_epoch} - $interval->seconds,
@@ -64,11 +70,11 @@ sub get_volatility {
 #        });
 #    } else {
 
-    $ticks = $resample_cache->resample_cache_get({
-        symbol      => $underlying->symbol,
-        start_epoch => $args->{current_epoch} - $interval->seconds,
-        end_epoch   => $args->{current_epoch},
-    });
+    #$ticks = $resample_cache->resample_cache_get({
+    #    symbol      => $underlying->symbol,
+    #    start_epoch => $args->{current_epoch} - $interval->seconds,
+    #    end_epoch   => $args->{current_epoch},
+    #});
 
 #    }
 
