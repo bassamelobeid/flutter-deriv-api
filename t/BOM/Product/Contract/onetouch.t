@@ -8,7 +8,7 @@ use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-
+use Format::Util::Numbers qw(roundnear);
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 
@@ -67,7 +67,7 @@ subtest 'touch' => sub {
         is $c->code,         'ONETOUCH';
         is $c->pricing_code, 'ONETOUCH';
         is $c->ask_price, 9.77;
-        is $c->pricing_vol , 0.116352521473428;
+        is roundnear(0.001,$c->pricing_vol) , 0.116;
         is $c->sentiment,    'high_vol';
         ok $c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];

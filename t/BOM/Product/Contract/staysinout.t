@@ -8,7 +8,7 @@ use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-
+use Format::Util::Numbers qw(roundnear);
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 
@@ -72,7 +72,7 @@ subtest 'range' => sub {
         is $c->code,         'RANGE';
         is $c->pricing_code, 'RANGE';
         is $c->ask_price, 0.5;
-        is $c->pricing_vol, 0.128906941591445;
+        is roundnear(0.001, $c->pricing_vol), 0.129;
         is $c->sentiment,    'low_vol';
         ok $c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
