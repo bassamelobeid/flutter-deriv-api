@@ -5,7 +5,7 @@ perl:
 matrix:
     fast_finish: true
 addons:
-    postgresql: "9.3"
+    postgresql: "9.4"
 services:
     - redis-server
 cache: apt
@@ -29,6 +29,7 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-feed
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-populator
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-websocket-tests
     - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/php-mt5-webapi
