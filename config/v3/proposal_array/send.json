@@ -63,7 +63,7 @@
         "required": "1",
         "items": {
             "type": "object",
-            "description": "Barrier for the contract",
+            "description": "Array of barrier(s) for the contracts to price",
             "properties": {
                     "barrier": {
                         "type": "string",
