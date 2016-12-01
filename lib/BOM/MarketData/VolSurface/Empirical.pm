@@ -54,7 +54,7 @@ sub get_volatility {
 #    });
 
     my $ticks;
-    if ($underlying->for_date) {
+    if (not $fill_cache) {
         my $raw_ticks = $underlying->ticks_in_between_start_end({
             start_time => $args->{current_epoch} - $interval->seconds,
             end_time   => $args->{current_epoch},
