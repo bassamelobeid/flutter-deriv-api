@@ -53,12 +53,10 @@ sub _collect_vol_ages {
     my @offered_forex = grep { not $skip_list{$_} } create_underlying_db->get_symbols_for(
         market            => 'forex',
         submarket         => ['major_pairs', 'minor_pairs'],
-        broker            => 'VRT',
         contract_category => 'ANY',
     );
     my @offered_others = grep { not $skip_list{$_} and $_ !~ /^SYN/ } create_underlying_db->get_symbols_for(
         market            => ['indices', 'commodities'],
-        broker            => 'VRT',
         contract_category => 'ANY',
     );
     my @smart_fx = create_underlying_db->get_symbols_for(
@@ -76,7 +74,6 @@ sub _collect_vol_ages {
         create_underlying_db->get_symbols_for(
         market            => 'stocks',
         contract_category => 'ANY',
-        broker            => 'VRT',
         submarket         => ['france', 'belgium', 'amsterdam']);
 
     my @symbols = grep { !$skip_list{$_} } (@offer_underlyings, @quanto_currencies);
@@ -113,7 +110,6 @@ sub _collect_rates_ages {
         market            => ['forex'],
         submarket         => ['major_pairs', 'minor_pairs'],
         contract_category => 'ANY',
-        broker            => 'VRT',
     );
 
     my @quanto_currencies = create_underlying_db->get_symbols_for(
@@ -211,7 +207,6 @@ sub _collect_dividend_ages {
         );
     my @offer_indices = grep { not $skip_list{$_} and $_ !~ /^SYN/ } create_underlying_db->get_symbols_for(
         market            => ['indices'],
-        broker            => 'VRT',
         contract_category => 'ANY',
     );
 
