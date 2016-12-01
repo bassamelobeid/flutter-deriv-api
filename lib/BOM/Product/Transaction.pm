@@ -1255,8 +1255,8 @@ sub _build_pricing_comment {
 
     if ($contract->two_barriers) {
 
-        $iv   = $contract->pricing_vol_for_two_barriers{high_barrier_vol};
-        $iv_2 = $contract->pricing_vol_for_two_barriers{low_barrier_vol};
+        $iv   = $contract->pricing_vol_for_two_barriers->{high_barrier_vol};
+        $iv_2 = $contract->pricing_vol_for_two_barriers->{low_barrier_vol};
 
     }
 
