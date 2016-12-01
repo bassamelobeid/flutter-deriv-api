@@ -288,7 +288,7 @@ sub is_vip {
     return $self->vip_since ? 1 : 0;
 }
 
-sub is_virtual { return shift->broker =~ /^VRT/ }
+sub is_virtual { return shift->broker =~ /^VR/ }
 
 sub has_funded { return (shift->first_funded_date ? 1 : 0) }
 
