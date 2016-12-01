@@ -60,16 +60,38 @@ sub proposal {
 
 sub proposal_array {
     my ($c, $req_storage) = @_;
-    delete $req_storage->{args}{proposal_array};
-    $req_storage->{args}{proposal} = "1";
-    my $barriers = delete $req_storage->{args}{barriers};
 
-    for my $barrier_arg (@$barriers) {
-        my $new_req_storage = clone($req_storage);
-        my $args            = $new_req_storage->{args};
-        @{$args}{keys %$barrier_arg} = values %$barrier_arg;
-        proposal($c, $new_req_storage);
-    }
+    my $args = $req_storage->{args};
+    $c->call_rpc({
+            args        => $args,
+            method      => 'send_ask',
+            msg_type    => 'proposal_array',
+            call_params => {
+                language              => $c->stash('language'),
+                app_markup_percentage => $c->stash('app_markup_percentage'),
+                landing_company       => $c->stash('landing_company_name'),
+            },
+            success => sub {
+                my ($c, $rpc_response, $req_storage) = @_;
+                my $cache = {
+                    longcode            => $rpc_response->{longcode},
+                    contract_parameters => delete $rpc_response->{contract_parameters}};
+                $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
+                $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
+            },
+            response => sub {
+                my ($rpc_response, $api_response, $req_storage) = @_;
+                return $api_response if $rpc_response->{error};
+
+                $api_response->{passthrough} = $req_storage->{args}->{passthrough};
+                if (my $uuid = $req_storage->{uuid}) {
+                    $api_response->{proposal_array}->{id} = $uuid;
+                } else {
+                    $api_response = $c->new_error('proposal_array', 'AlreadySubscribed', $c->l('You are already subscribed to proposal array.'));
+                }
+                return $api_response;
+            },
+        });
     return;
 }
 
