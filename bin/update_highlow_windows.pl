@@ -17,7 +17,6 @@ $redis->subscription_loop(
     subscribe        => [map { 'FEED::' . $_ } @symbols],
     default_callback => sub {
         my $tick_data = from_json($_[3]);
-        warn "data received $_[3]";
         update_predefined_highlow($tick_data);
     },
 );
