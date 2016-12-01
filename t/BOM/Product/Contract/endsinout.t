@@ -51,13 +51,21 @@ subtest 'expiry miss' => sub {
         is $c->code,         'EXPIRYMISS';
         is $c->pricing_code, 'EXPIRYMISS';
         is $c->sentiment,    'high_vol';
+        is $c->ask_price, '6.8';
         ok !$c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
         is_deeply $c->supported_start_types, ['spot'];
         isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
         isa_ok $c->greek_engine,   'BOM::Product::Pricing::Greeks::BlackScholes';
+        my $call = $c->pricing_engine->debug_information->{CALL}{base_probability};
+        my $put = $c->pricing_engine->debug_information->{PUT}{base_probability};
+        is $call->{amount}, 0.58483093773976, 'correct tv for CALL';
+        is $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol},           0.176343476564023,   'correct vol for call';
+        is $put->{amount}, 0.0528685827451215, 'correct tv for PUT';
+        is $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol},           0.243848364817504,   'correct vol for put'; 
     }
     'generic';
+
 
     lives_ok {
         $args->{date_pricing} = $now->plus_time_interval('10s');
@@ -104,11 +112,20 @@ subtest 'expiry range' => sub {
         isa_ok $c, 'BOM::Product::Contract::Expiryrange';
         is $c->code,         'EXPIRYRANGE';
         is $c->pricing_code, 'EXPIRYRANGE';
+        is $c->ask_price,    '4.24';
         ok $c->sentiment,    'low_vol';
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
         is_deeply $c->supported_start_types, ['spot'];
         isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
         isa_ok $c->greek_engine,   'BOM::Product::Pricing::Greeks::BlackScholes';
+       my $call = $c->pricing_engine->debug_information->{CALL}{base_probability};
+        my $put = $c->pricing_engine->debug_information->{PUT}{base_probability};
+        is $call->{amount},0.565704047706556 , 'correct tv for CALL';
+        is $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol},           0.175496264304824,   'correct vol for call';
+        is $put->{amount}, 0.0528682700332989, 'correct tv for PUT';
+        is $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol},           0.243848633618193,   'correct vol for put'; 
+
+
     }
     'generic';
 
