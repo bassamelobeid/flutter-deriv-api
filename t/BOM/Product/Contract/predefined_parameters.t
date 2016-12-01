@@ -150,8 +150,8 @@ subtest 'predefined barriers' => sub {
                 [$date->plus_time_interval(3),     1.15799],
                 [$date->plus_time_interval('10m'), 1.15591]
             ],
-            available_barriers => [ 1.13005, 1.13495, 1.13985, 1.14622, 1.1521, 1.15798, 1.16435, 1.16925, 1.17415,],
-            expired_barriers   => [1.14622, 1.15798, 1.1521],
+            available_barriers => [ 1.13005, 1.13495, 1.13985, 1.14622, 1.15798, 1.16435, 1.16925, 1.17415,],
+            expired_barriers   => [1.14622, 1.15798],
         },
         {
              match => {
