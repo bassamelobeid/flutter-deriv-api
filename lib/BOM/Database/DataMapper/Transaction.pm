@@ -373,6 +373,57 @@ sub get_balance_before_date {
     return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
 }
 
+sub get_monthly_payments_sum_1 {
+    my ($self) = @_;
+
+    my $sql = q{
+        SELECT extract(year from payment_time),
+               extract(month from payment_time),
+               sum(CASE WHEN amount > 0 THEN amount ELSE 0 END) deposit,
+               sum(CASE WHEN amount < 0 THEN amount ELSE 0 END) withdrawal
+          FROM payment.payment
+         WHERE account_id = $1
+      GROUP BY extract(year from payment_time), extract(month from payment_time)
+      ORDER BY extract(year from payment_time), extract(month from payment_time)
+    };
+
+    my @binds = ($self->account->id);
+    return $self->db->dbh->selectall_arrayref($sql, undef, @binds);
+}
+
+sub get_monthly_balance {
+    my ($self) = @_;
+
+    my $sql = q{
+        SELECT  t2.year, t2.month, max(t2.E0) AS E0, max(t2.E1) AS E1
+        FROM (
+            SELECT  t1.year, t1.month,
+                    CASE WHEN t1.transaction_time = t1.min_time THEN balance_before
+                    END AS E0,
+                    CASE WHEN t1.transaction_time = t1.max_time THEN balance_after
+                    END AS E1
+            FROM (
+                SELECT account_id,
+                       balance_after,
+                       (balance_after - amount) balance_before,
+                       transaction_time,
+                       extract(year from transaction_time) AS year,
+                       extract(month from transaction_time) AS month,
+                       max(transaction_time) over (partition by extract(year from transaction_time), extract(month from transaction_time)) AS max_time,
+                       min(transaction_time) over (partition by extract(year from transaction_time), extract(month from transaction_time)) AS min_time
+                FROM   transaction.transaction
+                WHERE  account_id = $1
+                ORDER BY transaction_time
+            ) as t1
+            WHERE t1.transaction_time = t1.max_time OR t1.transaction_time = t1.min_time
+        ) AS t2
+        GROUP BY t2.year, t2.month;
+    };
+
+    my @binds = ($self->account->id);
+    return $self->db->dbh->selectall_arrayref($sql, undef, @binds);
+}
+
 sub get_monthly_payments_sum {
     my ($self, $date) = @_;
 
