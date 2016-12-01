@@ -10,7 +10,6 @@ use JSON qw(from_json);
 #Update high and low of symbols for predefined periods.
 
 my @symbols = BOM::Product::Contract::PredefinedParameters::supported_symbols;
-@symbols = ('frxUSDJPY');
 my $redis = Cache::RedisDB->redis;
 
 $redis->subscription_loop(
