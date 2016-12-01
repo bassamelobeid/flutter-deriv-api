@@ -212,7 +212,7 @@ has japan_pricing_info => (
 sub _build_japan_pricing_info {
     my $self = shift;
 
-    my $iv   = $contract->pricing_vol;
+    my $iv   = $self->pricing_vol;
     my $iv_2 = '0';
 
     if ($self->two_barriers) {
