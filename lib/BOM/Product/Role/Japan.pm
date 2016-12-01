@@ -216,12 +216,12 @@ sub _build_japan_pricing_info {
     my $iv_2 = '0';
 
     if ($self->two_barriers) {
-        $iv = $self->pricing_vol_for_two_barriers->{high_barrier_vol};
+        $iv   = $self->pricing_vol_for_two_barriers->{high_barrier_vol};
         $iv_2 = $self->pricing_vol_for_two_barriers->{low_barrier_vol};
 
     }
 
-    my $pricing_info = join ',', qw($self->shortcode $self->ask_price, $self->pricing_spot $iv $iv_2);
+    my $pricing_info = join ',', qw($self->shortcode $self->ask_price $self->pricing_spot $iv $iv_2);
 
     return $pricing_info;
 
