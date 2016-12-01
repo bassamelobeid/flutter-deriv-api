@@ -5,6 +5,7 @@ extends 'BOM::Product::Pricing::Engine::Intraday';
 
 use List::Util qw(max min sum first);
 use YAML::XS qw(LoadFile);
+use Array::Utils qw(:all);
 
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
@@ -200,7 +201,9 @@ sub _build_intraday_vega {
 
 sub adjust_barriers_for_tentative_events {
     my $self = shift;
-    my @barriers = shift;
+    my $barrier = shift;
+
+    my $bet = $self->bet;
 
     #When pricing options during the news event period, the expected return shifts the strikes/barriers so that prices are marked up. Here are examples for each contract type:
     #A binary call strike = 105 and an expected return of 2% will be priced as a binary call strike = 105/(1+2%)
@@ -209,9 +212,8 @@ sub adjust_barriers_for_tentative_events {
     #A touch (lower) barrier = 105 and an expected return of 2% will be priced as a touch barrier = 105*(1+2%)
     #A no-touch (upper) barrier = 105 and an expected return of 2% will be priced as a no-touch barrier = 105*(1+2%)
     #A no-touch (lower) barrier = 105 and an expected return of 2% will be priced as a no-touch barrier = 105/(1+2%)
-
     #get a list of applicable tentative economic events
-    my $tentative_events = $self->bet->tentative_events;
+    my $tentative_events = $bet->tentative_events;
 
     my $expected_return = 0;
 
@@ -219,17 +221,17 @@ sub adjust_barriers_for_tentative_events {
         #if event is for to asset_symbol minus the return
         #if event is for quoted_currency_symbol add the return
         #For example for EURUSD, asset symbol is EUR and quoted currency is USD
-        if ($event->{symbol} eq $self->underlying->asset_symbol) {
+        if ($event->{symbol} eq $bet->underlying->asset_symbol) {
             $expected_return -= $event->{expected_return};
-        } elsif ($event->{symbol} eq $self->underlying->quoted_currency_symbol) {
+        } elsif ($event->{symbol} eq $bet->underlying->quoted_currency_symbol) {
             $expected_return += $event->{expected_return};
         }
     }
 
     my $er_factor = 1 + ($expected_return / 100);
-    my $barrier_u = $barrier > $self->pricing_spot;
-    my $barrier_d = $barrier < $self->pricing_spot;
-    my $type      = $self->code;
+    my $barrier_u = $barrier > $bet->pricing_spot;
+    my $barrier_d = $barrier < $bet->pricing_spot;
+    my $type      = $bet->code;
 
     #final barrier is either "Barrier * (1+ER)" or "Barrier / (1+ER)"
     if ((
@@ -249,57 +251,70 @@ sub adjust_barriers_for_tentative_events {
         $er_factor = 1 / $er_factor;
     }
 
-    return ($high_barrier, $low_barrier);
+    $barrier *= $er_factor;
+
+    return $barrier;
 }
 sub _build_economic_events_markup {
     my $self = shift;
     my $markup;
 
     my @barrier_args = ($bet->two_barriers) ? ($args->{barrier1}, $args->{barrier2}) : ($args->{barrier1});
+    my @adjusted_barriers = map { $self->adjust_barriers_for_tentative_events($_) } @barrier_args;
 
-    if ( $self->adjust_barriers_for_tentative_events(@barrier_args) ) {
+    #if there is a change needed in the berriers due to tentative events:
+    if ( array_diff(@barrier_args, @adjusted_barriers) ) {
+        my $barrier_hash = {};
+
+        if ( $self->bet->two_barriers ) {
+            $barrier_hash->{high_barrier} = $adjusted_barriers[0];
+            $barrier_hash->{low_barrier} = $adjusted_barriers[1];
+        } else {
+            $barrier_hash->{barrier} = $adjusted_barriers[0];
+        }
+
         my $new_engine = BOM::Product::Pricing::Engine::Intraday::Forex->new({
-            bet                     => $self->bet,
-            apply_bounceback_safety => $self->apply_bounceback_safety,
-            inefficient_period      => $self->inefficient_period,
-            inactive_period         => $self->inactive_period,
-            economic_events         => $self->economic_events,
-        });
+                    bet                     => make_similar_contract($self->bet, $barrier_hash),
+                    apply_bounceback_safety => $self->apply_bounceback_safety,
+                    inefficient_period      => $self->inefficient_period,
+                    inactive_period         => $self->inactive_period,
+                    economic_events         => $self->economic_events,
+                });
 
-        my $new_prob = $new_engine->base_probability;
-        $markup = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'economic_events_markup',
-                description => 'economic events markup based on tentative events in the contract period',
-                set_by      => __PACKAGE__,
-                base_amount => max(0, $new_prob - $self->base_probability),
-            });
-    } else {
-        $markup = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'economic_events_markup',
-                description => 'the maximum of spot or volatility risk markup of economic events',
-                set_by      => __PACKAGE__,
-                base_amount => max($self->economic_events_volatility_risk_markup->amount, $self->economic_events_spot_risk_markup->amount),
-            });
+            my $new_prob = $new_engine->base_probability;
+            $markup = Math::Util::CalculatedValue::Validatable->new({
+                    name        => 'economic_events_markup',
+                    description => 'economic events markup based on tentative events in the contract period',
+                    set_by      => __PACKAGE__,
+                    base_amount => max(0, $new_prob - $self->base_probability),
+                });
+        } else {
+            $markup = Math::Util::CalculatedValue::Validatable->new({
+                    name        => 'economic_events_markup',
+                    description => 'the maximum of spot or volatility risk markup of economic events',
+                    set_by      => __PACKAGE__,
+                    base_amount => max($self->economic_events_volatility_risk_markup->amount, $self->economic_events_spot_risk_markup->amount),
+                });
 
-        $markup->include_adjustment('info', $self->economic_events_volatility_risk_markup);
-        $markup->include_adjustment('info', $self->economic_events_spot_risk_markup);
+            $markup->include_adjustment('info', $self->economic_events_volatility_risk_markup);
+            $markup->include_adjustment('info', $self->economic_events_spot_risk_markup);
 
+        }
+
+        return $markup;
     }
 
-    return $markup;
-}
+    has ticks_for_trend => (
+        is         => 'ro',
+        lazy_build => 1,
+    );
 
-has ticks_for_trend => (
-    is         => 'ro',
-    lazy_build => 1,
-);
+    sub _build_ticks_for_trend {
+        my $self = shift;
 
-sub _build_ticks_for_trend {
-    my $self = shift;
-
-    my $bet              = $self->bet;
-    my $duration_in_secs = $bet->timeindays->amount * 86400;
-    my $lookback_secs    = $duration_in_secs * 2;              # lookback twice the duratiom
+        my $bet              = $self->bet;
+        my $duration_in_secs = $bet->timeindays->amount * 86400;
+        my $lookback_secs    = $duration_in_secs * 2;              # lookback twice the duratiom
     my $period_start     = $bet->date_pricing->epoch;
 
     my $remaining_interval = Time::Duration::Concise::Localize->new(interval => $lookback_secs);
