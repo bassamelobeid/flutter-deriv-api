@@ -708,7 +708,7 @@ sub get_volsurface {
     my $recorded_date = $data->{recorded_date};
     my $cutoff        = $data->{cutoff};
     my $surface       = Quant::Framework::VolSurface::Delta->new(
-        underlying_config      => create_underlying($underlying_symbol)->config,
+        underlying      => create_underlying($underlying_symbol),
         recorded_date   => Date::Utility->new($recorded_date),
         surface         => $surface_data,
         print_precision => undef,

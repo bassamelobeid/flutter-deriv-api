@@ -152,7 +152,11 @@ sub get_bet_results {
             quote      => $bet_args->{current_spot},
             epoch      => $bet_args->{date_start}->epoch,
         );
-        $bet_args->{volsurface}->underlying_config->{spot} = $bet_args->{current_spot};
+        $bet_args->{volsurface}->underlying->set_combined_realtime({
+            quote => $bet_args->{current_spot},
+            epoch => $date_start->epoch
+        });
+
 
         my $bet = produce_contract($bet_args);
 
