@@ -199,7 +199,8 @@ sub _build_intraday_vega {
 }
 
 sub adjust_barriers_for_tentative_events {
-    my ($high_barrier, $low_barrier) = @_;
+    my $self = shift;
+    my @barriers = shift;
 
     #When pricing options during the news event period, the expected return shifts the strikes/barriers so that prices are marked up. Here are examples for each contract type:
     #A binary call strike = 105 and an expected return of 2% will be priced as a binary call strike = 105/(1+2%)
@@ -210,7 +211,7 @@ sub adjust_barriers_for_tentative_events {
     #A no-touch (lower) barrier = 105 and an expected return of 2% will be priced as a no-touch barrier = 105/(1+2%)
 
     #get a list of applicable tentative economic events
-    my $tentative_events = $self->tentative_events;
+    my $tentative_events = $self->bet->tentative_events;
 
     my $expected_return = 0;
 
@@ -252,15 +253,7 @@ sub adjust_barriers_for_tentative_events {
 }
 sub _build_economic_events_markup {
     my $self = shift;
-    my $markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'economic_events_markup',
-            description => 'the maximum of spot or volatility risk markup of economic events',
-            set_by      => __PACKAGE__,
-            base_amount => max($self->economic_events_volatility_risk_markup->amount, $self->economic_events_spot_risk_markup->amount),
-        });
-
-    $markup->include_adjustment('info', $self->economic_events_volatility_risk_markup);
-    $markup->include_adjustment('info', $self->economic_events_spot_risk_markup);
+    my $markup;
 
     my @barrier_args = ($bet->two_barriers) ? ($args->{barrier1}, $args->{barrier2}) : ($args->{barrier1});
 
@@ -273,13 +266,24 @@ sub _build_economic_events_markup {
             economic_events         => $self->economic_events,
         });
 
-        my $changed_prob = $new_engine->base_probability;
+        my $new_prob = $new_engine->base_probability;
+        $markup = Math::Util::CalculatedValue::Validatable->new({
+                name        => 'economic_events_markup',
+                description => 'economic events markup based on tentative events in the contract period',
+                set_by      => __PACKAGE__,
+                base_amount => max(0, $new_prob - $self->base_probability),
+            });
+    } else {
         $markup = Math::Util::CalculatedValue::Validatable->new({
                 name        => 'economic_events_markup',
                 description => 'the maximum of spot or volatility risk markup of economic events',
                 set_by      => __PACKAGE__,
-                base_amount => max(0, $changed_prob - $self->base_probability),
+                base_amount => max($self->economic_events_volatility_risk_markup->amount, $self->economic_events_spot_risk_markup->amount),
             });
+
+        $markup->include_adjustment('info', $self->economic_events_volatility_risk_markup);
+        $markup->include_adjustment('info', $self->economic_events_spot_risk_markup);
+
     }
 
     return $markup;
