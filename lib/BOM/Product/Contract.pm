@@ -41,6 +41,7 @@ use BOM::Product::RiskProfile;
 use BOM::Product::Types;
 use LandingCompany::Offerings qw(get_contract_specifics);
 
+use Cache::RedisDB;
 use BOM::System::RedisReplicated;
 use Data::Resample::ResampleCache;
 use Data::Resample::TicksCache;
@@ -1904,7 +1905,8 @@ sub _market_data {
                 for_date => $for_date
             });
             return Data::Resample::TicksCache->new({
-                    redis_read  => BOM::System::RedisReplicated::redis_read(),
+                    #redis_read  => BOM::System::RedisReplicated::redis_read(),
+                    redis_read  => Cache::RedisDB->redis,
                     redis_write => BOM::System::RedisReplicated::redis_write(),
                 }
                 )->tick_cache_get_num_ticks({
