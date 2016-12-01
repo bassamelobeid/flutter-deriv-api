@@ -338,6 +338,11 @@ sub _calculate_barriers {
     my $args = shift;
 
     my ($underlying, $trading_period) = @{$args}{qw(underlying trading_periods)};
+    my $key = join '_', ($underlying->symbol, $trading_period->{date_start}->{epoch}, $trading_period->{date_expiry}->{epoch});
+    my $cache = BOM::System::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
+
+    return from_json($cache) if $cache;
+
     my $tick = $underlying->tick_at($trading_period->{date_start}->{epoch}, {allow_inconsistent => 1});
 
     unless ($tick) {
@@ -362,6 +367,9 @@ sub _calculate_barriers {
     my $minimum_step                = roundnear($underlying->pip_size, $distance_between_boundaries / ($steps[-1] * 2));
     my %barriers                    = map { (50 - $_ => $spot_at_start - $_ * $minimum_step, 50 + $_ => $spot_at_start + $_ * $minimum_step) } @steps;
     $barriers{50} = $spot_at_start if $args->{barrier_category} ne 'american';
+
+    my $ttl = max(1, $trading_period->{date_expiry}->epoch - $trading_period->{date_start}->{epoch});
+    BOM::System::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json(\%barriers), 'EX', $ttl);
 
     return \%barriers;
 }
