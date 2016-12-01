@@ -53,11 +53,25 @@ sub get_volatility {
 #        redis => Cache::RedisDB->redis,
 #    });
 
-    my $ticks = $resample_cache->resample_cache_get({
-        symbol      => $underlying->symbol,
-        start_epoch => $args->{current_epoch} - $interval->seconds,
-        end_epoch   => $args->{current_epoch},
-    });
+    my $ticks;
+    if ($underlying->for_date) {
+        my $raw_ticks = reverse $underlying->ticks_in_between_start_end({
+            start_time => $args->{current_epoch} - $interval->seconds,
+            end_time   => $args->{current_epoch},
+        });
+        $ticks = $resample_cache->resample_cache_backfill({
+            symbol => $underlying->symbol,
+            ticks  => $raw_ticks,
+        });
+    } else {
+
+        $ticks = $resample_cache->resample_cache_get({
+            symbol      => $underlying->symbol,
+            start_epoch => $args->{current_epoch} - $interval->seconds,
+            end_epoch   => $args->{current_epoch},
+        });
+
+    }
 
 #    my $latest_tick = $ticks_cache->tick_cache_get_num_ticks({
 #        symbol    => $underlying->symbol,
