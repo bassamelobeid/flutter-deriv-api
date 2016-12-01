@@ -34,7 +34,7 @@ has '_available_broker_codes' => (
     default => sub {
         my @codes = LandingCompany::Registry::all_broker_codes;
         # do not process FOG or any virtual broker code
-        @codes = grep { $_ !~ /^(?:FOG|VRT)/ } @codes;
+        @codes = grep { $_ !~ /^(?:FOG|VR)/ } @codes;
 
         return \@codes;
     },
