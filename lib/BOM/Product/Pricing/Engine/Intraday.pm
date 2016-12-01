@@ -16,7 +16,7 @@ with 'BOM::Product::Pricing::Engine::Role::StandardMarkup';
 
 use Math::Function::Interpolator;
 
-use Cache::RedisDB;
+use BOM::System::RedisReplicated;
 use Data::Resample::ResampleCache;
 use Data::Resample::TicksCache;
 use List::Util qw(max);
@@ -32,7 +32,12 @@ The source of the ticks used for this pricing.
 
 has tick_source => (
     is      => 'ro',
-    default => sub { Data::Resample::TicksCache->new({redis => Cache::RedisDB->redis,}) },
+    default => sub {
+        Data::Resample::TicksCache->new({
+            redis_read  => BOM::System::RedisReplicated::redis_read(),
+            redis_write => BOM::System::RedisReplicated::redis_write(),
+        });
+    },
 );
 
 has [qw(period_opening_value period_closing_value long_term_vol)] => (

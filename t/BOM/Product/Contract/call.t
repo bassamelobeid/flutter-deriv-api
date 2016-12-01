@@ -13,6 +13,7 @@ use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 
 use Cache::RedisDB;
+use BOM::System::RedisReplicated;
 
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');
@@ -55,7 +56,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => 0.9936,
 });
 
-my $redis = Cache::RedisDB->redis;
+my $redis = BOM::System::RedisReplicated::redis_write();
 my $unagg_key   = "AGGTICKS_frxAUDCAD" . "_31m_FULL";
 my $encoder = Sereal::Encoder->new({
         canonical => 1,

@@ -14,7 +14,7 @@ use BOM::System::Config;
 
 use Data::Resample::TicksCache;
 use Data::Resample::ResampleCache;
-use Cache::RedisDB;
+use BOM::System::RedisReplicated;
 
 sub clone {
     my ($self, $changes) = @_;
@@ -234,11 +234,13 @@ sub _build_ticks_for_trend {
     my $remaining_interval = Time::Duration::Concise::Localize->new(interval => $lookback_secs);
 
     my $ticks_cache = Data::Resample::TicksCache->new({
-        redis => Cache::RedisDB->redis,
+        redis_read  => BOM::System::RedisReplicated::redis_read(),
+        redis_write => BOM::System::RedisReplicated::redis_write(),
     });
 
     my $resample_cache = Data::Resample::ResampleCache->new({
-        redis => Cache::RedisDB->redis,
+        redis_read  => BOM::System::RedisReplicated::redis_read(),
+        redis_write => BOM::System::RedisReplicated::redis_write(),
     });
 
     my $ticks;
