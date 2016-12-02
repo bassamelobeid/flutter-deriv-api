@@ -44,11 +44,11 @@ sub buy {
         || return BOM::RPC::v3::Utility::create_error({
             code              => 'ContractCreationFailure',
             message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
-
     my $trx = BOM::Product::Transaction->new({
         client        => $client,
         contract      => $contract,
         price         => ($args->{price} || 0),
+        amount_type   => $contract_parameters->{amount_type},
         purchase_date => $purchase_date,
         source        => $source,
         (defined $trading_period_start) ? (trading_period_start => $trading_period_start) : (),
@@ -168,6 +168,7 @@ sub buy_contract_for_multiple_accounts {
             multiple      => \@result,
             contract      => $contract,
             price         => ($args->{price} || 0),
+            amount_type   => $contract_parameters->{amount_type},
             purchase_date => $purchase_date,
             source        => $source,
         });
@@ -232,6 +233,7 @@ sub sell {
     my $trx      = BOM::Product::Transaction->new({
         client      => $client,
         contract    => $contract,
+        amount_type => $contract_parameters->{amount_type},
         contract_id => $id,
         price       => ($args->{price} || 0),
         source      => $source,
