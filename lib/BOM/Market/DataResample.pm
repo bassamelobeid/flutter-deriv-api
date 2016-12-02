@@ -26,8 +26,7 @@ has ticks_cache => (
     is      => 'ro',
     default => sub {
         Data::Resample::DataCache->new({
-            redis_read  => BOM::System::RedisReplicated::redis_read(),
-            redis_write => BOM::System::RedisReplicated::redis_write(),
+            redis_read => BOM::System::RedisReplicated::redis_read(),
         });
     },
 );
@@ -36,8 +35,7 @@ has resample_cache => (
     is      => 'ro',
     default => sub {
         Data::Resample::ResampleCache->new({
-            redis_read  => BOM::System::RedisReplicated::redis_read(),
-            redis_write => BOM::System::RedisReplicated::redis_write(),
+            redis_read => BOM::System::RedisReplicated::redis_read(),
         });
     },
 );
