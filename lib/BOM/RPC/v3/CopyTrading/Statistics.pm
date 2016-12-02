@@ -70,7 +70,7 @@ sub copytrading_statistics {
     });
 
     # trader performance
-    for my $row (@{$txn_dm->get_monthly_payments_sum_1()}) {
+    for my $row (@{$txn_dm->get_monthly_payments_sum()}) {
         my ($year, $month, $D, $W) = @$row;
         $result_hash->{monthly_profitable_trades}->{$year . '-' . $month}->{deposit}    = $D;
         $result_hash->{monthly_profitable_trades}->{$year . '-' . $month}->{withdrawal} = $W;
