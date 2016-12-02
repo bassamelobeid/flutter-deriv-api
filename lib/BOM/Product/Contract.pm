@@ -1904,19 +1904,11 @@ sub _market_data {
                 symbol   => $underlying_symbol,
                 for_date => $for_date
             });
-            #return Data::Resample::TicksCache->new({
-            #        redis_read => BOM::System::RedisReplicated::redis_read(),
-            #        redis_write => BOM::System::RedisReplicated::redis_write(),
-            #    }
-            #    )->tick_cache_get_num_ticks({
-            #        symbol    => $underlying_symbol,
-            #        end_epoch => $args->{ending_epoch},
-            #        num       => $args->{tick_count},
-            #    });
+
             return BOM::Market::DataResample->new()->tick_cache_get_num_ticks({
-                symbol    => $args->{underlying},
-                end_epoch => $args->{ending_epoch},
-                num       => $args->{tick_count},
+                underlying => $args->{underlying},
+                end_epoch  => $args->{ending_epoch},
+                num        => $args->{tick_count},
             });
         },
         get_overnight_tenor => sub {
