@@ -20,12 +20,12 @@ use Moose;
 use Quant::Framework::Underlying;
 use BOM::System::RedisReplicated;
 use Data::Resample::ResampleCache;
-use Data::Resample::TicksCache;
+use Data::Resample::DataCache;
 
 has ticks_cache => (
     is      => 'ro',
     default => sub {
-        Data::Resample::TicksCache->new({
+        Data::Resample::DataCache->new({
             redis_read  => BOM::System::RedisReplicated::redis_read(),
             redis_write => BOM::System::RedisReplicated::redis_write(),
         });
@@ -60,7 +60,7 @@ sub resample_cache_get {
         my @rev_ticks = reverse @$raw_ticks;
         $ticks = $self->resample_cache->resample_cache_backfill({
             symbol   => $underlying->symbol,
-            ticks    => \@rev_ticks,
+            data     => \@rev_ticks,
             backtest => $backtest,
         });
     } else {
@@ -89,7 +89,7 @@ sub tick_cache_get {
             end_time   => $end_time,
         });
     } else {
-        $ticks = $self->ticks_cache->tick_cache_get({
+        $ticks = $self->ticks_cache->data_cache_get({
             symbol      => $underlying->symbol,
             start_epoch => $start_time,
             end_epoch   => $end_time,
@@ -106,7 +106,7 @@ sub tick_cache_get_num_ticks {
     my $num        = $args->{num};
     my $end_time   = $args->{end_epoch};
 
-    my $ticks = $self->ticks_cache->tick_cache_get_num_ticks({
+    my $ticks = $self->ticks_cache->data_cache_get_num_data({
         symbol    => $underlying->symbol,
         end_epoch => $end_time,
         num       => $num,
