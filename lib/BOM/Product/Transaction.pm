@@ -116,8 +116,8 @@ sub _build_payout {
 }
 
 has amount_type => (
-    is      => 'rw',
-    isa     => 'Str',
+    is       => 'rw',
+    isa      => 'Str',
     required => 1,
 );
 
