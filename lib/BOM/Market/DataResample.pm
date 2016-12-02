@@ -99,6 +99,22 @@ sub tick_cache_get {
     return $ticks;
 }
 
+sub tick_cache_get_num_ticks {
+    my ($self, $args) = @_;
+
+    my $underlying = $args->{underlying};
+    my $num        = $args->{num};
+    my $end_time   = $args->{end_epoch};
+
+    my $ticks = $self->ticks_cache->tick_cache_get_num_ticks({
+        symbol    => $underlying->symbol,
+        end_epoch => $end_time,
+        num       => $num,
+    });
+
+    return $ticks;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
