@@ -15,10 +15,6 @@ use Quant::Framework::EconomicEventCalendar;
 
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData::Types;
-
-use BOM::System::RedisReplicated;
-use Data::Resample::ResampleCache;
-use Data::Resample::TicksCache;
 use BOM::Market::DataResample;
 
 my $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
@@ -46,44 +42,12 @@ sub get_volatility {
     my $interval = Time::Duration::Concise->new(interval => max(900, $args->{seconds_to_expiration}) . 's');
     my $fill_cache = $args->{fill_cache} // 1;
 
-    #my $resample_cache = Data::Resample::ResampleCache->new({
-    #    redis_read  => BOM::System::RedisReplicated::redis_read(),
-    #    redis_write => BOM::System::RedisReplicated::redis_write(),
-    #});
-
     my $ticks = BOM::Market::DataResample->new()->resample_cache_get({
         underlying  => $underlying,
         start_epoch => $args->{current_epoch} - $interval->seconds,
         end_epoch   => $args->{current_epoch},
         backtest    => !$fill_cache,
     });
-#    if (not $fill_cache) {
-#        my $raw_ticks = $underlying->ticks_in_between_start_end({
-#            start_time => $args->{current_epoch} - $interval->seconds,
-#            end_time   => $args->{current_epoch},
-#        });
-
-#        my @rev_ticks = reverse @$raw_ticks;
-#        $ticks = $resample_cache->resample_cache_backfill({
-#            symbol => $underlying->symbol,
-#            ticks  => \@rev_ticks,
-#        });
-#    } else {
-
-    #$ticks = $resample_cache->resample_cache_get({
-    #    symbol      => $underlying->symbol,
-    #    start_epoch => $args->{current_epoch} - $interval->seconds,
-    #    end_epoch   => $args->{current_epoch},
-    #});
-
-#    }
-
-#    my $latest_tick = $ticks_cache->tick_cache_get_num_ticks({
-#        symbol    => $underlying->symbol,
-#        end_epoch => $args->{current_epoch},
-#        num       => 1,
-#    });
-#    push @$ticks, $latest_tick->[0] if (scalar(@$latest_tick) and scalar(@$ticks) and $latest_tick->[0]->{epoch} > $ticks->[-1]->{agg_epoch});
 
     # minimum of 1 second to avoid division by zero error.
     my $requested_interval = Time::Duration::Concise->new(interval => max(1, $args->{seconds_to_expiration}));
