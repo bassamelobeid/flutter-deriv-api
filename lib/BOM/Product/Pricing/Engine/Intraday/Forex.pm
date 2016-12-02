@@ -11,10 +11,6 @@ use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
 use BOM::System::Config;
-
-use Data::Resample::TicksCache;
-use Data::Resample::ResampleCache;
-use BOM::System::RedisReplicated;
 use BOM::Market::DataResample;
 
 sub clone {
@@ -234,22 +230,10 @@ sub _build_ticks_for_trend {
 
     my $remaining_interval = Time::Duration::Concise::Localize->new(interval => $lookback_secs);
 
-#    my $ticks_cache = Data::Resample::TicksCache->new({
-#        redis_read  => BOM::System::RedisReplicated::redis_read(),
-#        redis_write => BOM::System::RedisReplicated::redis_write(),
-#    });
-
-#    my $resample_cache = Data::Resample::ResampleCache->new({
-#        redis_read  => BOM::System::RedisReplicated::redis_read(),
-#        redis_write => BOM::System::RedisReplicated::redis_write(),
-#    });
-
     my $data_resample = BOM::Market::DataResample->new;
 
     my $ticks;
     if ($self->more_than_short_term_cutoff) {
-        #$ticks = $resample_cache->resample_cache_get({
-        #    symbol      => $bet->underlying->symbol,
         $ticks = $data_resample->resample_cache_get({
             underlying  => $bet->underlying,
             start_epoch => $bet->date_pricing->epoch - $remaining_interval->seconds,
@@ -258,8 +242,6 @@ sub _build_ticks_for_trend {
         });
 
     } else {
-        #$ticks = $ticks_cache->tick_cache_get({
-        #    symbol      => $bet->underlying->symbol,
         $ticks = $data_resample->tick_cache_get({
             underlying  => $bet->underlying,
             start_epoch => $bet->date_pricing->epoch - $remaining_interval->seconds,
