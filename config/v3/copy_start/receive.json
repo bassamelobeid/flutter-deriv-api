@@ -11,8 +11,8 @@
     },
     "copy_start": {
       "type": "integer",
-      "title": "Copy starting confirmation",
-      "description": "Copy starting confirmation"
+      "title": "Copy start confirmation",
+      "description": "Copy start confirmation"
     },
     "msg_type": {
       "type": "string",
