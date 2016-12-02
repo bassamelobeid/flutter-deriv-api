@@ -41,10 +41,7 @@ use BOM::Product::RiskProfile;
 use BOM::Product::Types;
 use LandingCompany::Offerings qw(get_contract_specifics);
 
-use Cache::RedisDB;
-use BOM::System::RedisReplicated;
-use Data::Resample::ResampleCache;
-use Data::Resample::TicksCache;
+use BOM::Market::DataResample;
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
