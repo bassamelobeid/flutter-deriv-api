@@ -132,10 +132,13 @@ $p_2->{current_tick} = $tick_2;
 $contract_2          = produce_contract($p_2);
 
 my $transaction_2 = BOM::Product::Transaction->new({
-    price    => $contract_2->ask_price,
-    client   => $new_client,
-    contract => $contract_2,
+    price         => $contract_2->ask_price,
+    client        => $new_client,
+    contract      => $contract_2,
+    purchase_date => $start_time_2,
 });
+my $b = $transaction_2->buy;
+
 isnt $transaction_2->buy, 'undef', 'successful buy';
 
 my $start_time_3  = Date::Utility->new->epoch;
@@ -259,9 +262,10 @@ $p_6->{current_tick} = $tick_6;
 $contract_6          = produce_contract($p_6);
 local $ENV{REQUEST_STARTTIME} = $start_time_6;
 my $transaction_6 = BOM::Product::Transaction->new({
-    price    => 51.88,
-    client   => $new_client,
-    contract => $contract_6,
+    price         => 51.88,
+    client        => $new_client,
+    contract      => $contract_6,
+    purchase_date => $start_time_6,
 });
 isnt $transaction_6->buy(skip_validation => 1), 'undef', 'successful buy';
 
