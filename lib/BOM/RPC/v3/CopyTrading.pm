@@ -17,6 +17,13 @@ sub copy_start {
     my $params = shift;
     my $args   = $params->{args};
 
+    my $multiplier = $args->{multiplier};
+    if ($multiplier && $multiplier !~ /^\d+$/) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidMultiplier',
+                message_to_client => localize('Multiplier value must be unsigned integer')});
+    }
+
     my $trader_token  = $args->{copy_start};
     my $token_details = BOM::RPC::v3::Utility::get_token_details($trader_token);
     my $trader        = try { BOM::Platform::Client->new({loginid => $token_details->{loginid}}) };
