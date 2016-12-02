@@ -59,11 +59,11 @@
     },
     "barriers": {
        "type": "array",
-        "description":"Barriers for the contract",
+        "description":"Array of barrier(s) for the contract",
         "required": "1",
         "items": {
             "type": "object",
-            "description": "Array of barrier(s) for the contracts to price",
+            "description": "barrier(s) for the contracts to price",
             "properties": {
                     "barrier": {
                         "type": "string",
