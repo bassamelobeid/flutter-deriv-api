@@ -9,19 +9,21 @@ use Test::NoWarnings;
 use Test::Warn;
 use Test::MockModule;
 
+use Date::Utility;
+use Crypt::NamedKeys;
+Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
+
+use Client::Account;
+
 use BOM::DailySummaryReport;
 use BOM::Platform::Runtime;
-use Date::Utility;
 use BOM::Database::Helper::FinancialMarketBet;
-
 use BOM::System::Password;
 use BOM::Platform::Client::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use Crypt::NamedKeys;
-Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => 'USD'});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('index',    {symbol => 'R_100'});
