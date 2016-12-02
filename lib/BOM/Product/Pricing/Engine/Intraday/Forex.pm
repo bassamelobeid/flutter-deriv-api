@@ -4,6 +4,7 @@ use Moose;
 extends 'BOM::Product::Pricing::Engine::Intraday';
 
 use List::Util qw(max min sum first);
+use Array::Utils qw(:all);
 use YAML::XS qw(LoadFile);
 
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
@@ -234,7 +235,7 @@ sub _tentative_events_markup {
         ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute)
         : ($bet->barrier->as_absolute);
 
-    my @adjusted_barriers = map { $bet->_get_barrier_for_tentative_events ($_) } @barrier_args;
+    my @adjusted_barriers = map { $self->_get_barrier_for_tentative_events ($_) } @barrier_args;
 
     #if there is a change needed in the berriers due to tentative events:
     if (array_diff(@barrier_args, @adjusted_barriers)) {

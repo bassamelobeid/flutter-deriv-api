@@ -161,7 +161,6 @@ sub _apply_barrier_adjustment {
         $barrier += $barrier_adj_future_value;
     }
 
-
     return $barrier;
 }
 
