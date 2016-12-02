@@ -118,7 +118,7 @@ sub _build_payout {
 has amount_type => (
     is      => 'rw',
     isa     => 'Str',
-    default => 'payout',
+    required => 1,
 );
 
 has comment => (
