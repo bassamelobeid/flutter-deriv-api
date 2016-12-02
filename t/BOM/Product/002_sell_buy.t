@@ -62,17 +62,17 @@ subtest 'check duplicate sell with Model' => sub {
 
     my $txn_id;
     my $contract = produce_contract('RANGE_FRXEURUSD_5_1310631887_15_JUL_11_14356_14057', 'USD');
-
     my $txn_buy;
     lives_ok {
         # buy
         local $ENV{REQUEST_STARTTIME} = '2011-07-14 08:24:46';
 
         $txn_buy = BOM::Product::Transaction->new({
-            contract => $contract,
-            client   => $client,
-            price    => 3.46,
-            comment  => $comment,
+            contract    => $contract,
+            amount_type => 'payout',
+            client      => $client,
+            price       => 3.46,
+            comment     => $comment,
         });
         $txn_buy->buy(skip_validation => 1);
         $txn_id = $txn_buy->transaction_id;
@@ -84,6 +84,7 @@ subtest 'check duplicate sell with Model' => sub {
         my $txn = BOM::Product::Transaction->new({
             contract    => $contract,
             client      => $client,
+            amount_type => 'payout',
             price       => 1.95,
             comment     => $comment,
             contract_id => $txn_buy->contract_id,
@@ -123,10 +124,11 @@ subtest 'check duplicate sell with legacy line' => sub {
         local $ENV{REQUEST_STARTTIME} = '2011-07-28 06:30:39';
 
         $txn_buy = BOM::Product::Transaction->new({
-            contract => $contract,
-            client   => $client,
-            price    => 1.2,
-            comment  => $comment,
+            contract    => $contract,
+            client      => $client,
+            amount_type => 'payout',
+            price       => 1.2,
+            comment     => $comment,
         });
         $txn_buy->buy(skip_validation => 1);
         $txn_id = $txn_buy->transaction_id;
@@ -160,6 +162,7 @@ subtest 'check duplicate sell with legacy line' => sub {
         contract    => $contract,
         client      => $client,
         price       => 0,
+        amount_type => 'payout',
         comment     => $comment,
         contract_id => $txn_buy->contract_id,
     });
@@ -175,9 +178,10 @@ subtest 'check buy bet without quants bet params' => sub {
         local $ENV{REQUEST_STARTTIME} = '2011-09-08 07:23:53';
 
         my $txn = BOM::Product::Transaction->new({
-            contract => produce_contract('UPORDOWN_FRXUSDJPY_5_1315466633_12_SEP_11_771000_762300', 'USD'),
-            client   => $client,
-            price    => 1.2,
+            contract    => produce_contract('UPORDOWN_FRXUSDJPY_5_1315466633_12_SEP_11_771000_762300', 'USD'),
+            client      => $client,
+            price       => 1.2,
+            amount_type => 'payout',
         });
         $txn->buy(skip_validation => 1);
         $txn_id = $txn->transaction_id;
