@@ -804,7 +804,7 @@ sub set_self_exclusion {
         catch {
             $exclusion_end_error = 1;
         };
-        return $error_sub->(localize('Exclude time convertation error.'), 'exclude_until') if $exclusion_end_error;
+        return $error_sub->(localize('Exclusion time conversion error.'), 'exclude_until') if $exclusion_end_error;
 
         # checking for the exclude until date which must be larger than today's date
         if (not $exclusion_end->is_after($now)) {
