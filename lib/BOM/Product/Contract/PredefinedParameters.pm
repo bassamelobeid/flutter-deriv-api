@@ -317,7 +317,7 @@ sub _calculate_available_barriers {
     my $available_barriers;
     if ($offering->{barriers} == 1) {
         delete $barriers->{50} if $offering->{barrier_category} eq 'american';
-        $available_barriers = [sort { $a <=> $b } values %$barriers];
+        $available_barriers = [map { $underlying->pipsized_value($_) } sort { $a <=> $b } values %$barriers];
     } elsif ($offering->{barriers} == 2) {
         # For staysinout contract, we need to pair the barriers symmetry, ie (25,75), (15,85), (5,95)
         # For endsinout contract, we need to pair barriers as follow: (75,95), (62,85),(50,75),(38,62),(25,50),(15,38),(5,25)
@@ -328,7 +328,8 @@ sub _calculate_available_barriers {
             ? ([25, 75], [15, 85], [5, 95])
             : ([75, 95], [62, 85], [50, 75], [38, 62], [25, 50], [15, 38], [5, 25]);
 
-        $available_barriers = [map { [$barriers->{$_->[0]}, $barriers->{$_->[1]}] } @barrier_pairs];
+        $available_barriers =
+            [map { [$underlying->pipsized_value($barriers->{$_->[0]}), $underlying->pipsized_value($barriers->{$_->[1]})] } @barrier_pairs];
     }
 
     return $available_barriers;
