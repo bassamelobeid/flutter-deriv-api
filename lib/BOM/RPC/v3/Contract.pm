@@ -444,7 +444,7 @@ sub send_multiple_ask {
 
     for my $barriers (@$barriers_array) {
         $params->{args}->{barrier} = $barriers->{barrier};
-        @{$params->{args}}{keys %$barriers} = values $barriers;
+        @{$params->{args}}{keys %$barriers} = values %$barriers;
         my $res = send_ask($params);
         $response = {%$response, %$res};
         if (not exists $res->{error}) {
