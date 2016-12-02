@@ -14,12 +14,16 @@ use 5.010;
 use Moose::Role;
 requires 'bet';
 
-use List::Util qw(first);
+use List::Util qw(first min max);
+use Array::Utils qw(:all);
 use Math::Function::Interpolator;
+use Machine::Epsilon;
 
 use BOM::Product::Pricing::Greeks::BlackScholes;
 use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
+
+my $MACHINE_EPSILON = machine_epsilon();
 
 has [
     qw(smile_uncertainty_markup butterfly_markup vol_spread_markup spot_spread_markup risk_markup forward_starting_markup economic_events_markup eod_market_risk_markup)
@@ -310,6 +314,7 @@ sub _build_risk_markup {
         $risk_markup->include_adjustment('add', $self->butterfly_markup);
     }
 
+
     my $spread_to_markup = Math::Util::CalculatedValue::Validatable->new({
         name        => 'spread_to_markup',
         description => 'Apply half of spread to each side',
@@ -318,8 +323,54 @@ sub _build_risk_markup {
     });
 
     $risk_markup->include_adjustment('divide', $spread_to_markup);
+    
+    if ( $self->bet->market->name eq 'forex' ) {
+        $risk_markup->include_adjustment('add', $self->tentative_events_markup);
+    }
 
     return $risk_markup;
+}
+
+sub tentative_events_markup {
+    my $self = shift;
+    my $bet = $self->bet;
+
+    my $markup = 0;
+
+    my @barrier_args =
+          ($bet->two_barriers)
+        ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute)
+        : ($bet->barrier->as_absolute);
+
+    my @adjusted_barriers = map { $bet->get_barrier_for_tentative_events ($_) } @barrier_args;
+
+    #if there is a change needed in the berriers due to tentative events:
+    if (array_diff(@barrier_args, @adjusted_barriers)) {
+        my $barrier_hash = {};
+
+        if ($bet->two_barriers) {
+            $barrier_hash->{high_barrier} = $adjusted_barriers[0];
+            $barrier_hash->{low_barrier}  = $adjusted_barriers[1];
+        } else {
+            $barrier_hash->{barrier} = $adjusted_barriers[0];
+        }
+
+        my $new_bet = BOM::Product::ContractFactory::make_similar_contract($bet, $barrier_hash);
+        my $new_prob = $new_bet->pricing_engine->base_probability->amount;
+        $markup = max(0, $new_prob - $self->base_probability->amount);
+
+        print "Base prob=" . $self->base_probability->amount . "\n";
+        print "new prob=" . $new_prob . "\n";
+        print "tentative markup = " . $markup . "\n";
+    }
+
+
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'economic_events_markup',
+        description => 'economic events markup based on tentative events in the contract period',
+        set_by      => __PACKAGE__,
+        base_amount => $markup,
+    });
 }
 
 sub _build_forward_starting_markup {

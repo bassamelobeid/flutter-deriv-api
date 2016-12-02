@@ -5,7 +5,6 @@ extends 'BOM::Product::Pricing::Engine::Intraday';
 
 use List::Util qw(max min sum first);
 use YAML::XS qw(LoadFile);
-use Array::Utils qw(:all);
 
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
@@ -199,134 +198,53 @@ sub _build_intraday_vega {
     return $idv;
 }
 
-sub adjust_barriers_for_tentative_events {
-    my $self = shift;
-    my $barrier = shift;
-
-    my $bet = $self->bet;
-
-    #When pricing options during the news event period, the expected return shifts the strikes/barriers so that prices are marked up. Here are examples for each contract type:
-    #A binary call strike = 105 and an expected return of 2% will be priced as a binary call strike = 105/(1+2%)
-    #A binary put strike = 105 and an expected return of 2% will be priced as a binary put strike = 105*(1+2%)
-    #A touch (upper) barrier = 105 and an expected return of 2% will be priced as a touch barrier = 105/(1+2%)
-    #A touch (lower) barrier = 105 and an expected return of 2% will be priced as a touch barrier = 105*(1+2%)
-    #A no-touch (upper) barrier = 105 and an expected return of 2% will be priced as a no-touch barrier = 105*(1+2%)
-    #A no-touch (lower) barrier = 105 and an expected return of 2% will be priced as a no-touch barrier = 105/(1+2%)
-    #get a list of applicable tentative economic events
-    my $tentative_events = $bet->tentative_events;
-
-    my $expected_return = 0;
-
-    foreach my $event (@{$tentative_events}) {
-        #if event is for to asset_symbol minus the return
-        #if event is for quoted_currency_symbol add the return
-        #For example for EURUSD, asset symbol is EUR and quoted currency is USD
-        if ($event->{symbol} eq $bet->underlying->asset_symbol) {
-            $expected_return -= $event->{expected_return};
-        } elsif ($event->{symbol} eq $bet->underlying->quoted_currency_symbol) {
-            $expected_return += $event->{expected_return};
-        }
-    }
-
-    my $er_factor = 1 + ($expected_return / 100);
-    my $barrier_u = $barrier > $bet->pricing_spot;
-    my $barrier_d = $barrier < $bet->pricing_spot;
-    my $type      = $bet->code;
-
-    #final barrier is either "Barrier * (1+ER)" or "Barrier / (1+ER)"
-    if ((
-            $type eq 'CALL'
-                or $type eq 'CALLE'
-        )
-            or ($type eq 'ONETOUCH'     && $barrier_u)
-            or ($type eq 'NOTOUCH'      && $barrier_d)
-            or ($type eq 'EXPIRYRANGE'  && $barrier_u)
-            or ($type eq 'EXPIRYRANGEE' && $barrier_u)
-            or ($type eq 'EXPIRYMISS'   && $barrier_d)
-            or ($type eq 'EXPIRYMISSE'  && $barrier_d)
-            or ($type eq 'RANGE'        && $barrier_d)
-            or ($type eq 'UPORDOWN'     && $barrier_u))
-    {
-
-        $er_factor = 1 / $er_factor;
-    }
-
-    $barrier *= $er_factor;
-
-    return $barrier;
-}
 sub _build_economic_events_markup {
     my $self = shift;
-    my $bet = $self->bet;
+    my $bet  = $self->bet;
     my $markup;
 
-    my @barrier_args = ($bet->two_barriers) ? ($bet->high_barrier, $bet->low_barrier) : ($bet->barrier);
-    my @adjusted_barriers = map { $self->adjust_barriers_for_tentative_events($_) } @barrier_args;
+    my $tentative_events_markup = $self->tentative_events_markup;
+    
+    if ( $tentative_events_markup->amount != 0 ) {
+        $markup = $tentative_events_markup;
+    } else {
+        $markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'economic_events_markup',
+            description => 'the maximum of spot or volatility risk markup of economic events',
+            set_by      => __PACKAGE__,
+            base_amount => max($self->economic_events_volatility_risk_markup->amount, $self->economic_events_spot_risk_markup->amount),
+        });
 
-    #if there is a change needed in the berriers due to tentative events:
-    if ( array_diff(@barrier_args, @adjusted_barriers) ) {
-        my $barrier_hash = {};
+        $markup->include_adjustment('info', $self->economic_events_volatility_risk_markup);
+        $markup->include_adjustment('info', $self->economic_events_spot_risk_markup);
 
-        if ( $bet->two_barriers ) {
-            $barrier_hash->{high_barrier} = $adjusted_barriers[0];
-            $barrier_hash->{low_barrier} = $adjusted_barriers[1];
-        } else {
-            $barrier_hash->{barrier} = $adjusted_barriers[0];
-        }
-
-        my $new_engine = BOM::Product::Pricing::Engine::Intraday::Forex->new({
-                    bet                     => make_similar_contract($bet, $barrier_hash),
-                    apply_bounceback_safety => $self->apply_bounceback_safety,
-                    inefficient_period      => $self->inefficient_period,
-                    inactive_period         => $self->inactive_period,
-                    economic_events         => $self->economic_events,
-                });
-
-            my $new_prob = $new_engine->base_probability;
-            $markup = Math::Util::CalculatedValue::Validatable->new({
-                    name        => 'economic_events_markup',
-                    description => 'economic events markup based on tentative events in the contract period',
-                    set_by      => __PACKAGE__,
-                    base_amount => max(0, $new_prob - $self->base_probability),
-                });
-        } else {
-            $markup = Math::Util::CalculatedValue::Validatable->new({
-                    name        => 'economic_events_markup',
-                    description => 'the maximum of spot or volatility risk markup of economic events',
-                    set_by      => __PACKAGE__,
-                    base_amount => max($self->economic_events_volatility_risk_markup->amount, $self->economic_events_spot_risk_markup->amount),
-                });
-
-            $markup->include_adjustment('info', $self->economic_events_volatility_risk_markup);
-            $markup->include_adjustment('info', $self->economic_events_spot_risk_markup);
-
-        }
-
-        return $markup;
     }
 
-    has ticks_for_trend => (
-        is         => 'ro',
-        lazy_build => 1,
-    );
+    return $markup;
+}
 
-    sub _build_ticks_for_trend {
-        my $self = shift;
+has ticks_for_trend => (
+    is         => 'ro',
+    lazy_build => 1,
+);
 
-        my $bet              = $self->bet;
-        my $duration_in_secs = $bet->timeindays->amount * 86400;
-        my $lookback_secs    = $duration_in_secs * 2;              # lookback twice the duratiom
+sub _build_ticks_for_trend {
+    my $self = shift;
+
+    my $bet              = $self->bet;
+    my $duration_in_secs = $bet->timeindays->amount * 86400;
+    my $lookback_secs    = $duration_in_secs * 2;              # lookback twice the duratiom
     my $period_start     = $bet->date_pricing->epoch;
 
     my $remaining_interval = Time::Duration::Concise::Localize->new(interval => $lookback_secs);
 
     return $self->tick_source->retrieve({
-            underlying   => $bet->underlying,
-            interval     => $remaining_interval,
-            ending_epoch => $bet->date_pricing->epoch,
-            fill_cache   => !$bet->backtest,
-            aggregated   => $self->more_than_short_term_cutoff,
-        });
+        underlying   => $bet->underlying,
+        interval     => $remaining_interval,
+        ending_epoch => $bet->date_pricing->epoch,
+        fill_cache   => !$bet->backtest,
+        aggregated   => $self->more_than_short_term_cutoff,
+    });
 }
 
 has lookback_seconds => (
@@ -382,11 +300,11 @@ sub _build_intraday_trend {
     my @ticks    = @{$self->ticks_for_trend};
     my $average  = (@ticks) ? sum(map { $_->{quote} } @ticks) / @ticks : $bet->pricing_args->{spot};
     my $avg_spot = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'average_spot',
-            description => 'mean of spot over 2 * duration of the contract',
-            set_by      => __PACKAGE__,
-            base_amount => $average,
-        });
+        name        => 'average_spot',
+        description => 'mean of spot over 2 * duration of the contract',
+        set_by      => __PACKAGE__,
+        base_amount => $average,
+    });
 
     my $trend = 0;
     # Lookback seconds is only set to zero if @ticks has less than or equal to one element.

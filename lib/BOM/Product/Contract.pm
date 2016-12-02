@@ -1771,6 +1771,9 @@ sub _pricing_parameters {
     $result->{qf_market_data} = _generate_market_data($self->underlying, $self->date_start)
         if first { $_ eq 'qf_market_data' } @{$self->pricing_engine_name->required_args};
 
+    $result->{tentative_events} = $self->tentative_events 
+        if $self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope;
+
     return $result;
 }
 
@@ -2871,6 +2874,65 @@ sub _build_market_is_inactive {
     return 0 if $hour <= 20;
 
     return 1;
+}
+
+sub get_barrier_for_tentative_events {
+    my $self    = shift;
+    my $barrier = shift;
+
+    my $bet = $self;
+
+    #When pricing options during the news event period, the expected return shifts the strikes/barriers so that prices are marked up. Here are examples for each contract type:
+    #A binary call strike = 105 and an expected return of 2% will be priced as a binary call strike = 105/(1+2%)
+    #A binary put strike = 105 and an expected return of 2% will be priced as a binary put strike = 105*(1+2%)
+    #A touch (upper) barrier = 105 and an expected return of 2% will be priced as a touch barrier = 105/(1+2%)
+    #A touch (lower) barrier = 105 and an expected return of 2% will be priced as a touch barrier = 105*(1+2%)
+    #A no-touch (upper) barrier = 105 and an expected return of 2% will be priced as a no-touch barrier = 105*(1+2%)
+    #A no-touch (lower) barrier = 105 and an expected return of 2% will be priced as a no-touch barrier = 105/(1+2%)
+    #get a list of applicable tentative economic events
+    my $tentative_events = $bet->tentative_events;
+
+    my $expected_return = 0;
+
+    foreach my $event (@{$tentative_events}) {
+        #if event is for to asset_symbol minus the return
+        #if event is for quoted_currency_symbol add the return
+        #For example for EURUSD, asset symbol is EUR and quoted currency is USD
+        if ($event->{symbol} eq $bet->underlying->asset_symbol) {
+            $expected_return += $event->{expected_return};
+        } elsif ($event->{symbol} eq $bet->underlying->quoted_currency_symbol) {
+            $expected_return += $event->{expected_return};
+        }
+    }
+
+    $expected_return /= 100;
+
+    my $er_factor = 1 + $expected_return;
+    my $barrier_u = $barrier >= $bet->pricing_spot;
+    my $barrier_d = $barrier <= $bet->pricing_spot;
+    my $type      = $bet->code;
+
+    #final barrier is either "Barrier * (1+ER)" or "Barrier / (1+ER)"
+    if ((
+               $type eq 'CALL'
+            or $type eq 'CALLE'
+        )
+        or ($type eq 'ONETOUCH'     && $barrier_u)
+        or ($type eq 'NOTOUCH'      && $barrier_d)
+        or ($type eq 'EXPIRYRANGE'  && $barrier_u)
+        or ($type eq 'EXPIRYRANGEE' && $barrier_u)
+        or ($type eq 'EXPIRYMISS'   && $barrier_d)
+        or ($type eq 'EXPIRYMISSE'  && $barrier_d)
+        or ($type eq 'RANGE'        && $barrier_d)
+        or ($type eq 'UPORDOWN'     && $barrier_u))
+    {
+
+        $er_factor = 1 - $expected_return;
+    }
+
+    $barrier *= $er_factor;
+
+    return $barrier;
 }
 
 has skips_price_validation => (
