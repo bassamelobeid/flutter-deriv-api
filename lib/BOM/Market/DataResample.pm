@@ -43,10 +43,11 @@ has resample_cache => (
 sub resample_cache_get {
     my ($self, $args) = @_;
 
-    my $underlying = $args->{underlying};
-    my $start_time = $args->{start_epoch};
-    my $end_time   = $args->{end_epoch};
-    my $backtest   = $args->{backtest} // 0;
+    my $underlying    = $args->{underlying};
+    my $start_time    = $args->{start_epoch};
+    my $end_time      = $args->{end_epoch};
+    my $backtest      = $args->{backtest} // 0;
+    my $resample_flag = $args->{resample} // 1;
 
     my $ticks;
     if ($backtest) {
@@ -56,18 +57,25 @@ sub resample_cache_get {
         });
 
         my @rev_ticks = reverse @$raw_ticks;
-        $ticks = $self->resample_cache->resample_cache_backfill({
-            symbol   => $underlying->symbol,
-            data     => \@rev_ticks,
-            backtest => $backtest,
-        });
+        $ticks = $resample_flag
+            ? $self->resample_cache->resample_cache_backfill({
+                symbol   => $underlying->symbol,
+                data     => \@rev_ticks,
+                backtest => $backtest,
+            })
+            : \@rev_ticks;
     } else {
-
-        $ticks = $self->resample_cache->resample_cache_get({
-            symbol      => $underlying->symbol,
-            start_epoch => $start_time,
-            end_epoch   => $end_time,
-        });
+        $ticks = $resample_flag
+            ? $self->resample_cache->resample_cache_get({
+                symbol      => $underlying->symbol,
+                start_epoch => $start_time,
+                end_epoch   => $end_time,
+            })
+            : $ticks = $self->ticks_cache->data_cache_get({
+                symbol      => $underlying->symbol,
+                start_epoch => $start_time,
+                end_epoch   => $end_time,
+            });
     }
     return $ticks;
 }
