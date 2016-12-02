@@ -222,7 +222,7 @@ sub process_realtime_events {
                     next;
                 }
 
-                $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
+                $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);?/;
                 my $ohlc = {
                     id        => $feed_channels_type->{$channel}->{uuid},
                     epoch     => $m[1],
