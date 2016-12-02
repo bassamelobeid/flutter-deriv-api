@@ -272,6 +272,7 @@ my $transaction_6 = BOM::Product::Transaction->new({
     contract      => $contract_6,
     purchase_date => $start_time_6,
     amount_type => $p_6->{amount_type},
+   });
 isnt $transaction_6->buy(skip_validation => 1), 'undef', 'successful buy';
 
 $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
