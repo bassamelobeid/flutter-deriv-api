@@ -16,9 +16,7 @@ with 'BOM::Product::Pricing::Engine::Role::StandardMarkup';
 
 use Math::Function::Interpolator;
 
-use BOM::System::RedisReplicated;
-use Data::Resample::ResampleCache;
-use Data::Resample::TicksCache;
+use BOM::Market::DataResample;
 use List::Util qw(max);
 use BOM::Platform::Context qw(request localize);
 use Format::Util::Numbers qw( roundnear );
@@ -33,10 +31,7 @@ The source of the ticks used for this pricing.
 has tick_source => (
     is      => 'ro',
     default => sub {
-        Data::Resample::TicksCache->new({
-            redis_read  => BOM::System::RedisReplicated::redis_read(),
-            redis_write => BOM::System::RedisReplicated::redis_write(),
-        });
+        BOM::Market::DataResample->new;
     },
 );
 
