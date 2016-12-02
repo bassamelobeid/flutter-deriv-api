@@ -533,8 +533,8 @@ sub pre_validate_start_expire_dates {
     my $params = shift;
     my ($start_epoch, $expiry_epoch, $duration);
 
-    state $pre_limits_max_duration = BOM::Platform::Runtime->instance->app_config->contract_pre_limits->max_duration;
-    state $pre_limits_max_forward  = BOM::Platform::Runtime->instance->app_config->contract_pre_limits->max_forward;
+    state $pre_limits_max_duration = 31536000;    # 365 days
+    state $pre_limits_max_forward  = 604800;      # 7 days (Maximum offset from now for creating a contract)
 
     my $now_epoch = Date::Utility->new->epoch;
     # no try/catch here, expecting higher level try/catch
