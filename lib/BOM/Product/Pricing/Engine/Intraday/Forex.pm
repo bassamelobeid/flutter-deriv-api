@@ -203,7 +203,7 @@ sub _build_economic_events_markup {
     my $bet  = $self->bet;
     my $markup;
 
-    my $tentative_events_markup = $self->tentative_events_markup;
+    my $tentative_events_markup = $self->_tentative_events_markup;
     
     if ( $tentative_events_markup->amount != 0 ) {
         $markup = $tentative_events_markup;
@@ -221,6 +221,104 @@ sub _build_economic_events_markup {
     }
 
     return $markup;
+}
+
+sub _tentative_events_markup {
+    my $self = shift;
+    my $bet = $self->bet;
+
+    my $markup = 0;
+
+    my @barrier_args =
+          ($bet->two_barriers)
+        ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute)
+        : ($bet->barrier->as_absolute);
+
+    my @adjusted_barriers = map { $bet->_get_barrier_for_tentative_events ($_) } @barrier_args;
+
+    #if there is a change needed in the berriers due to tentative events:
+    if (array_diff(@barrier_args, @adjusted_barriers)) {
+        my $barrier_hash = {};
+
+        if ($bet->two_barriers) {
+            $barrier_hash->{high_barrier} = $adjusted_barriers[0];
+            $barrier_hash->{low_barrier}  = $adjusted_barriers[1];
+        } else {
+            $barrier_hash->{barrier} = $adjusted_barriers[0];
+        }
+
+        my $new_bet = BOM::Product::ContractFactory::make_similar_contract($bet, $barrier_hash);
+        my $new_prob = $new_bet->pricing_engine->base_probability->amount;
+        $markup = max(0, $new_prob - $self->base_probability->amount);
+    }
+
+
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'economic_events_markup',
+        description => 'economic events markup based on tentative events in the contract period',
+        set_by      => __PACKAGE__,
+        base_amount => $markup,
+    });
+}
+
+
+sub _get_barrier_for_tentative_events {
+    my $self    = shift;
+    my $barrier = shift;
+
+    my $bet = $self->bet;
+
+    #When pricing options during the news event period, the expected return shifts the strikes/barriers so that prices are marked up. Here are examples for each contract type:
+    #A binary call strike = 105 and an expected return of 2% will be priced as a binary call strike = 105/(1+2%)
+    #A binary put strike = 105 and an expected return of 2% will be priced as a binary put strike = 105*(1+2%)
+    #A touch (upper) barrier = 105 and an expected return of 2% will be priced as a touch barrier = 105/(1+2%)
+    #A touch (lower) barrier = 105 and an expected return of 2% will be priced as a touch barrier = 105*(1+2%)
+    #A no-touch (upper) barrier = 105 and an expected return of 2% will be priced as a no-touch barrier = 105*(1+2%)
+    #A no-touch (lower) barrier = 105 and an expected return of 2% will be priced as a no-touch barrier = 105/(1+2%)
+    #get a list of applicable tentative economic events
+    my $tentative_events = $bet->tentative_events;
+
+    my $expected_return = 0;
+
+    foreach my $event (@{$tentative_events}) {
+        #if event is for to asset_symbol minus the return
+        #if event is for quoted_currency_symbol add the return
+        #For example for EURUSD, asset symbol is EUR and quoted currency is USD
+        if ($event->{symbol} eq $bet->underlying->asset_symbol) {
+            $expected_return += $event->{expected_return};
+        } elsif ($event->{symbol} eq $bet->underlying->quoted_currency_symbol) {
+            $expected_return += $event->{expected_return};
+        }
+    }
+
+    $expected_return /= 100;
+
+    my $er_factor = 1 + $expected_return;
+    my $barrier_u = $barrier >= $bet->pricing_spot;
+    my $barrier_d = $barrier <= $bet->pricing_spot;
+    my $type      = $bet->code;
+
+    #final barrier is either "Barrier * (1+ER)" or "Barrier / (1+ER)"
+    if ((
+               $type eq 'CALL'
+            or $type eq 'CALLE'
+        )
+        or ($type eq 'ONETOUCH'     && $barrier_u)
+        or ($type eq 'NOTOUCH'      && $barrier_d)
+        or ($type eq 'EXPIRYRANGE'  && $barrier_u)
+        or ($type eq 'EXPIRYRANGEE' && $barrier_u)
+        or ($type eq 'EXPIRYMISS'   && $barrier_d)
+        or ($type eq 'EXPIRYMISSE'  && $barrier_d)
+        or ($type eq 'RANGE'        && $barrier_d)
+        or ($type eq 'UPORDOWN'     && $barrier_u))
+    {
+
+        $er_factor = 1 - $expected_return;
+    }
+
+    $barrier *= $er_factor;
+
+    return $barrier;
 }
 
 has ticks_for_trend => (
