@@ -357,23 +357,7 @@ sub get_transactions_ws {
     return $self->db->dbh->selectall_arrayref($sql, {Slice => {}}, @binds);
 }
 
-sub get_balance_before_date {
-    my ($self, $before_date) = @_;
-
-    my $sql = q{
-        SELECT balance_after FROM transaction.transaction
-        WHERE
-            account_id = $1
-            AND transaction_time < date_trunc('month', $2::TIMESTAMP)
-        ORDER BY transaction_time DESC, id DESC
-        LIMIT 1
-    };
-
-    my @binds = ($self->account->id, $before_date);
-    return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
-}
-
-sub get_monthly_payments_sum_1 {
+sub get_monthly_payments_sum {
     my ($self) = @_;
 
     my $sql = q{
@@ -422,22 +406,6 @@ sub get_monthly_balance {
 
     my @binds = ($self->account->id);
     return $self->db->dbh->selectall_arrayref($sql, undef, @binds);
-}
-
-sub get_monthly_payments_sum {
-    my ($self, $date) = @_;
-
-    my $sql = q{
-        SELECT sum(CASE WHEN amount > 0 THEN amount ELSE 0 END) deposit,
-               sum(CASE WHEN amount < 0 THEN amount ELSE 0 END) withdrawal
-          FROM payment.payment
-         WHERE account_id = $1
-           AND date_trunc('month', $2::TIMESTAMP) <= payment_time
-           AND payment_time < date_trunc('month', $2::TIMESTAMP) + '1 month'::INTERVAL
-    };
-
-    my @binds = ($self->account->id, $date->datetime_yyyymmdd_hhmmss);
-    return $self->db->dbh->selectrow_arrayref($sql, undef, @binds);
 }
 
 sub unprocessed_bets {
