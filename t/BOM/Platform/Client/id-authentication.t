@@ -6,7 +6,7 @@ use File::Spec;
 use JSON qw(decode_json);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Platform::Client;
+use Client::Account;
 
 use BOM::Platform::Client::IDAuthentication;
 {
@@ -23,7 +23,7 @@ use BOM::Platform::Client::IDAuthentication;
 }
 
 subtest 'Constructor' => sub {
-    my $client = BOM::Platform::Client->new({loginid => 'VRTC1001'});
+    my $client = Client::Account->new({loginid => 'VRTC1001'});
 
     my $v = new_ok('IDAuthentication', [client => $client]);
 
@@ -34,7 +34,7 @@ subtest 'Constructor' => sub {
 };
 
 subtest 'No authentication for virtuals' => sub {
-    my $c = BOM::Platform::Client->new({loginid => 'VRTC1001'});
+    my $c = Client::Account->new({loginid => 'VRTC1001'});
 
     my $v = IDAuthentication->new(client => $c);
     ok !$v->client->is_first_deposit_pending, 'no tracking of first deposit';
