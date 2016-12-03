@@ -20,7 +20,7 @@ use f_brokerincludeall;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Database::ClientDB;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);
 use BOM::Backoffice::Request qw(request);
@@ -47,7 +47,7 @@ if ($broker and ($id or $short_code)) {
                 operation   => 'backoffice_replica',
             })->get_details_by_transaction_ref($id);
 
-        $client = BOM::Platform::Client::get_instance({'loginid' => $details->{loginid}});
+        $client = Client::::Account::get_instance({'loginid' => $details->{loginid}});
 
     }
 

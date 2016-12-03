@@ -6,6 +6,8 @@ use Format::Util::Strings qw( defang );
 use Path::Tiny;
 use Cache::RedisDB;
 
+use Client::Account;
+
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
@@ -27,7 +29,7 @@ my $input             = request()->params;
 
 my ($client, $message);
 if ($input->{'dcctype'} ne 'file_content') {
-    $client = BOM::Platform::Client::get_instance({'loginid' => uc($input->{'clientloginid'})});
+    $client = Client::Account::get_instance({'loginid' => uc($input->{'clientloginid'})});
 
     if (not $client) {
         print "ERROR: " . $input->{'clientloginid'} . " does not exist! Perhaps you made a typo?";

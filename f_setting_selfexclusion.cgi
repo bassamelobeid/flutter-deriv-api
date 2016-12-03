@@ -5,6 +5,8 @@ use strict 'vars';
 use Scalar::Util qw(looks_like_number);
 use Date::Utility;
 
+use Client::Account;
+
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Form;
 
@@ -26,7 +28,7 @@ if ($loginid =~ /^VRT/) {
     code_exit_BO();
 }
 
-my $client = BOM::Platform::Client::get_instance({'loginid' => $loginid})
+my $client = Client::Account::get_instance({'loginid' => $loginid})
     || die "[$0] Could not get the client object instance for client [$loginid]";
 
 my $broker = $client->broker;

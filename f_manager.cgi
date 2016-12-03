@@ -25,7 +25,7 @@ my $today = Date::Utility->new->date_ddmmmyy;
 # SHOW CLIENT DOCS
 if (request()->param('whattodo') eq 'showdocs') {
     my $loginid = uc(request()->param('loginID'));
-    my $client = BOM::Platform::Client->new({loginid => $loginid});
+    my $client = Client::Account->new({loginid => $loginid});
     Bar("SHOW CLIENT PAYMENT DOCS FOR $loginid " . $client->full_name);
     print "ID docs:";
     print show_client_id_docs($client, show_delete => 1);

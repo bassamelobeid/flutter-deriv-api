@@ -4,6 +4,9 @@ package main;
 use strict 'vars';
 
 use Locale::Country;
+
+use Client::Account;
+
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Database::DAO::Client;
 use f_brokerincludeall;
@@ -36,7 +39,7 @@ my $login_ids = BOM::Database::DAO::Client::get_loginids_for_clients_with_expire
 });
 
 foreach my $loginID (@{$login_ids}) {
-    my $client = BOM::Platform::Client::get_instance({'loginid' => $loginID}) || next;
+    my $client = Client::Account::get_instance({'loginid' => $loginID}) || next;
 
     my $client_name  = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
     my $client_email = $client->email;

@@ -10,6 +10,8 @@ use BOM::System::AuditLog;
 use BOM::DualControl;
 BOM::Backoffice::Sysinit::init();
 
+use Client::Account;
+
 PrintContentType();
 BrokerPresentation("MAKE DUAL CONTROL CODE");
 BOM::Backoffice::Auth0::can_access(['CS']);
@@ -36,7 +38,7 @@ unless ($input->{clientloginid}) {
     code_exit_BO();
 }
 
-my $client = BOM::Platform::Client::get_instance({'loginid' => uc($input->{'clientloginid'})});
+my $client = Client::Account::get_instance({'loginid' => uc($input->{'clientloginid'})});
 if (not $client) {
     print "ERROR: " . $input->{'clientloginid'} . " does not exist! Perhaps you made a typo?";
     code_exit_BO();
