@@ -5,7 +5,7 @@ package BOM::API::Payment::Account;
 use Moo;
 with 'BOM::API::Payment::Role::Plack';
 
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Database::DataMapper::Account;
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 use Try::Tiny;
