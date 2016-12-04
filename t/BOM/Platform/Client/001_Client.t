@@ -8,7 +8,7 @@ use Test::MockTime;
 use Test::More qw( no_plan );
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Platform::Client;
+use Client::Account;
 
 my $login_id = 'CR0022';
 
@@ -16,10 +16,10 @@ subtest "Client load and saving." => sub {
     plan tests => 43;
     # create client object
     my $client;
-    lives_ok { $client = BOM::Platform::Client->new({'loginid' => $login_id}); }
-    "Can create client object 'BOM::Platform::Client::get_instance({'loginid' => $login_id})'";
+    lives_ok { $client = Client::Account->new({'loginid' => $login_id}); }
+    "Can create client object 'Client::Account::get_instance({'loginid' => $login_id})'";
 
-    isa_ok($client, 'BOM::Platform::Client');
+    isa_ok($client, 'Client::Account');
     is($client->loginid, $login_id, 'Test $client->loginid');
     is(
         $client->first_name,
@@ -43,14 +43,14 @@ subtest "Client load and saving." => sub {
     $client->last_name('Houshyar');
     $client->save({'clerk' => 'test_suite'});
 
-    lives_ok { $client = BOM::Platform::Client->new({'loginid' => 'CR0006'}); }
-    "Can create client object 'BOM::Platform::Client::get_instance({'loginid' => CR0006})'";
+    lives_ok { $client = Client::Account->new({'loginid' => 'CR0006'}); }
+    "Can create client object 'Client::Account::get_instance({'loginid' => CR0006})'";
     ok(!$client->client_fully_authenticated(), 'CR0006 - not fully authenticated as it has ADDRESS status only');
     $client->set_authentication('ID_NOTARIZED')->status('pass');
     ok($client->client_fully_authenticated(), 'CR0006 - fully authenticated as it has ID_NOTARIZED');
 
-    lives_ok { $client = BOM::Platform::Client->new({'loginid' => 'CR0007'}); }
-    "Can create client object 'BOM::Platform::Client::get_instance({'loginid' => CR0007})'";
+    lives_ok { $client = Client::Account->new({'loginid' => 'CR0007'}); }
+    "Can create client object 'Client::Account::get_instance({'loginid' => CR0007})'";
     is($client->client_fully_authenticated(), 1, "CR0007 - fully authenticated");
 
     my $client_details = {
@@ -87,7 +87,7 @@ subtest "Client load and saving." => sub {
         'citizen'               => 'br'
     };
 
-    $client = BOM::Platform::Client->rnew(%$client_details);
+    $client = Client::Account->rnew(%$client_details);
 
     is($client->loginid,    $client_details->{'loginid'},         'compare loginid between client object instantize with client hash ref');
     is($client->broker,     $client_details->{'broker_code'},     'compare broker between client object instantize with client hash ref');
@@ -136,7 +136,7 @@ subtest "Client load and saving." => sub {
         'first_name'      => 'MX client',
     };
 
-    $client = BOM::Platform::Client->rnew(%$client_details);
+    $client = Client::Account->rnew(%$client_details);
 
     is($client->loginid,    $client_details->{'loginid'},         'compare loginid between client object instantize with another client hash ref');
     is($client->broker,     $client_details->{'broker_code'},     'compare broker between client object instantize with another client hash ref');
