@@ -11,7 +11,7 @@ use Time::Duration::Concise::Localize;
 use BOM::RPC::v3::Utility;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Platform::Context qw (localize request);
 use BOM::Product::Contract::Offerings;
 use LandingCompany::Offerings qw(get_offerings_with_filter get_permitted_expiries);
@@ -236,7 +236,7 @@ sub active_symbols {
     my $language             = $params->{language}                || 'EN';
     my $token_details        = $params->{token_details};
     if ($token_details and exists $token_details->{loginid}) {
-        my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
+        my $client = Client::Account->new({loginid => $token_details->{loginid}});
         $landing_company_name = $client->landing_company->short if $client;
     }
 
