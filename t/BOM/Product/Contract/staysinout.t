@@ -18,8 +18,9 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
-        date   => Date::Utility->new
+        recorded_date   => $now,
     }) for ('USD', 'JPY');
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
@@ -136,7 +137,7 @@ subtest 'up or down' => sub {
         $args->{high_barrier} = 'S10P';
         my $c = produce_contract($args);
         ok $c->is_intraday;
-        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::BlackScholes';
         ok $c->high_barrier;
         cmp_ok $c->high_barrier->as_absolute, '==', 100.10, 'correct high barrier';
         ok $c->low_barrier;
