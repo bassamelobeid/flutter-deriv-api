@@ -6,7 +6,7 @@ use Try::Tiny;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Runtime;
-use BOM::Platform::Client::PaymentAgent;
+use Client::Account::PaymentAgent;
 use BOM::Backoffice::Form;
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
@@ -24,7 +24,7 @@ my $whattodo = request()->param('whattodo');
 Bar('Payment Agent Setting');
 
 if ($whattodo eq 'create') {
-    my $client = BOM::Platform::Client->new({loginid => $loginid});
+    my $client = Client::Account->new({loginid => $loginid});
 
     if ($client->client_fully_authenticated) {
         my ($pa, $error);
@@ -49,7 +49,7 @@ if ($whattodo eq 'create') {
 }
 
 if ($whattodo eq 'show') {
-    my $pa = BOM::Platform::Client::PaymentAgent->new({loginid => $loginid});
+    my $pa = Client::Account::PaymentAgent->new({loginid => $loginid});
     my $payment_agent_registration_form = BOM::Backoffice::Form::get_payment_agent_registration_form($loginid, $broker);
 
     my $input_fields = {
@@ -81,9 +81,9 @@ if ($whattodo eq 'show') {
 
     code_exit_BO();
 } elsif ($whattodo eq 'apply') {
-    my $pa = BOM::Platform::Client::PaymentAgent->new({loginid => $loginid});
+    my $pa = Client::Account::PaymentAgent->new({loginid => $loginid});
     unless ($pa) {
-        my $client = BOM::Platform::Client->new({loginid => $loginid});
+        my $client = Client::Account->new({loginid => $loginid});
         # if its new so we need to set it
         $pa = $client->set_payment_agent unless $pa;
     }

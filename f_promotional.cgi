@@ -205,7 +205,7 @@ my $table_header =
     . '<th>Notify client?</th>'
     . '<th>Further details</th>' . '</tr>';
 
-my @clients = BOM::Platform::Client->by_promo_code(
+my @clients = Client::Account->by_promo_code(
     broker_code => $broker,
     status      => 'APPROVAL'
 );

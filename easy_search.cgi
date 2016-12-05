@@ -30,7 +30,7 @@ my $tt = BOM::Backoffice::Request::template();
 if (my $search = $params{search}) {
     my $clients;
     if (looks_like_number($search)) {
-        $clients = BOM::Platform::Client->get_objects_from_sql(
+        $clients = Client::Account->get_objects_from_sql(
             broker_code => $broker,
             args        => [$search],
             sql         => qq[select c.* from betonmarkets.client c
@@ -42,7 +42,7 @@ if (my $search = $params{search}) {
         );
     } else {
         my $like = {like => "$search%"};
-        $clients = BOM::Platform::Client->by_args(
+        $clients = Client::Account->by_args(
             limit       => $LIMIT,
             broker_code => $broker,
             or          => [
@@ -60,7 +60,7 @@ if (my $search = $params{search}) {
 
 } elsif (my $loginid = $params{loginid}) {
 
-    my $client = BOM::Platform::Client->new({loginid => $loginid}) || die "client $loginid not found\n";
+    my $client = Client::Account->new({loginid => $loginid}) || die "client $loginid not found\n";
     $stash->{client} = $client;
 
     if (

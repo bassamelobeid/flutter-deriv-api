@@ -2,6 +2,8 @@
 package main;
 use strict 'vars';
 
+use Client::Account;
+
 use Text::Trim;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
@@ -45,7 +47,7 @@ if ($action_type =~ /SELECT A DATABASE TO VIEW/) {
 
 if ($action_type !~ /(oklogins)/) {
     $clientID = rtrim($clientID);
-    $client = BOM::Platform::Client::get_instance({'loginid' => $clientID});
+    $client = Client::Account::get_instance({'loginid' => $clientID});
 
     if (not $client) {
         print "<br /><font color=red><b>ERROR : Bad loginID ' $clientID '</b></font><br /><br />";
@@ -80,7 +82,7 @@ my $remove_success_msg =
 if ($action_type eq 'oklogins') {
     LOGIN:
     foreach my $login_id (split(/\s+/, $clientID)) {
-        my $client = BOM::Platform::Client::get_instance({'loginid' => $login_id});
+        my $client = Client::Account::get_instance({'loginid' => $login_id});
         if (not $client) {
             push @invalid_logins, $login_id;
             next LOGIN;

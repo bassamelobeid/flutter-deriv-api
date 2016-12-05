@@ -4,6 +4,9 @@ use strict 'vars';
 
 use Locale::Country;
 use f_brokerincludeall;
+
+use Client::Account;
+
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
@@ -39,7 +42,7 @@ if (request()->param('depositswithdrawalsonly') eq 'yes') {
     Bar($loginID);
 }
 
-my $client = BOM::Platform::Client::get_instance({'loginid' => $loginID});
+my $client = Client::Account::get_instance({'loginid' => $loginID});
 if (not $client) {
     print "Error : wrong loginID ($loginID) could not get client instance";
     code_exit_BO();
