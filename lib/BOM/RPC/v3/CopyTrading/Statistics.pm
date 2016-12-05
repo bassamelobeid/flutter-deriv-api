@@ -21,7 +21,7 @@ sub copytrading_statistics {
     my $params = shift->{args};
 
     my $trader_id = uc $params->{trader_id};
-    my $trader = try { BOM::Platform::Client->new({loginid => $trader_id}) };
+    my $trader = try { Client::Account->new({loginid => $trader_id}) };
     unless ($trader) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'WrongLoginID',
