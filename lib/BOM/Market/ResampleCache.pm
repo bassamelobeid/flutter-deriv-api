@@ -141,9 +141,11 @@ has 'data_resample' => (
 sub _make_key {
     my ($self, $symbol, $resample) = @_;
 
-    my @bits = ("RESAMPLE", $symbol);
+    #my @bits = ("RESAMPLE", $symbol);
+    my @bits = ("AGGTICKS", $symbol);
     if ($resample) {
-        push @bits, ($self->sampling_frequency->as_concise_string, 'RESAMPLE');
+        #push @bits, ($self->sampling_frequency->as_concise_string, 'RESAMPLE');
+        push @bits, ($self->sampling_frequency->as_concise_string, 'AGG');
     } else {
         push @bits, ($self->raw_retention_interval->as_concise_string, 'FULL');
     }
