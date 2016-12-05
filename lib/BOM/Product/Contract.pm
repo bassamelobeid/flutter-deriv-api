@@ -1759,7 +1759,6 @@ sub _build_pricing_vol_for_two_barriers {
         to   => $self->date_expiry,
     };
 
-
     $vol_args->{strike} = $self->barriers_for_pricing->{barrier1};
     my $high_barrier_vol = $self->volsurface->get_volatility($vol_args);
 
@@ -1769,9 +1768,7 @@ sub _build_pricing_vol_for_two_barriers {
     return {
         high_barrier_vol => $high_barrier_vol,
         low_barrier_vol  => $low_barrier_vol
-
     };
-
 }
 
 sub _pricing_parameters {
