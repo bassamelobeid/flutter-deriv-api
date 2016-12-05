@@ -210,7 +210,7 @@ has japan_pricing_info => (
 
 #compose a string contains all the pricing info that needed to be log for Japan
 sub _build_japan_pricing_info {
-    my $self = shift;
+    my $self                 = shift;
     my $trading_window_start = shift;
 
     my $iv   = $self->pricing_vol;
