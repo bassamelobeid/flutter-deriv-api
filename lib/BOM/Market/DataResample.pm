@@ -83,10 +83,12 @@ sub tick_cache_get {
 
     my $ticks;
     if ($backtest) {
-        my $ticks = $underlying->ticks_in_between_start_end({
+        my $raw_ticks = $underlying->ticks_in_between_start_end({
             start_time => $start_time,
             end_time   => $end_time,
         });
+        my @rev_ticks = reverse @$raw_ticks;
+        $ticks = \@rev_ticks;
     } else {
         $ticks = $self->resample_cache->data_cache_get({
             symbol      => $underlying->symbol,
