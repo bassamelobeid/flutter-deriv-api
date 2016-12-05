@@ -13,7 +13,6 @@ use BOM::System::RedisReplicated;
 
 use Performance::Probability qw(get_performance_probability);
 
-use List::Util qw/sum0/;
 use Try::Tiny;
 use Data::Dumper;
 
