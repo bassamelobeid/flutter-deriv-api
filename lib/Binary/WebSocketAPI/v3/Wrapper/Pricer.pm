@@ -326,7 +326,7 @@ sub process_ask_event {
         $type      = "proposal_array";
         $responses = $response->{array};
     } else {
-        responses = [$response];
+        $responses = [$response];
     }
 
     foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
