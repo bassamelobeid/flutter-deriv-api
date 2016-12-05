@@ -3,6 +3,9 @@ package main;
 use strict 'vars';
 
 use f_brokerincludeall;
+
+use Client::Account;
+
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Product::Transaction;
@@ -36,7 +39,7 @@ if ($loginID !~ /^$broker/) {
     code_exit_BO();
 }
 
-my $client = BOM::Platform::Client::get_instance({'loginid' => $loginID});
+my $client = Client::Account::get_instance({'loginid' => $loginID});
 if (not $client) {
     print "<B><font color=red>ERROR : No such client $loginID.<P>";
     code_exit_BO();

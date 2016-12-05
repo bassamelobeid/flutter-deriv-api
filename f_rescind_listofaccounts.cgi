@@ -28,7 +28,7 @@ my $grandtotal = 0;
 CLIENT:
 foreach my $loginID (split(/,/, $listaccounts)) {
 
-    my $client = eval { BOM::Platform::Client->new({loginid => $loginID}) } || do {
+    my $client = eval { Client::Account->new({loginid => $loginID}) } || do {
         print "<br/>error: cannot find client '$loginID'";
         next CLIENT;
     };

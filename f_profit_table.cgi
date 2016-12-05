@@ -7,7 +7,7 @@ use Format::Util::Numbers qw(roundnear);
 use Machine::Epsilon;
 
 use LandingCompany::Countries;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Backoffice::Sysinit ();
@@ -32,7 +32,7 @@ if ($loginID !~ /^(\D+)(\d+)$/) {
     code_exit_BO();
 }
 
-my $client = BOM::Platform::Client::get_instance({'loginid' => $loginID});
+my $client = Client::Account::get_instance({'loginid' => $loginID});
 if (not $client) {
     print "Error : wrong loginID ($loginID) could not get client instance";
     code_exit_BO();

@@ -24,7 +24,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-use BOM::Platform::Client;
+use Client::Account;
 use LandingCompany::Registry;
 
 PrintContentType();
@@ -42,7 +42,7 @@ my $bet = do {
     if ($broker) {
         $landing_company = LandingCompany::Registry::get_by_broker($broker)->short;
     } elsif ($loginid) {
-        my $client = BOM::Platform::Client::get_instance({'loginid' => $loginid});
+        my $client = Client::Account::get_instance({'loginid' => $loginid});
         $landing_company = $client->landing_company->short;
     }
 

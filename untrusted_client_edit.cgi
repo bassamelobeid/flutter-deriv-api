@@ -3,6 +3,8 @@ package main;
 
 use strict 'vars';
 
+use Client::Account;
+
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
@@ -37,7 +39,7 @@ Bar("UNTRUSTED/DISABLE CLIENT");
 
 LOGIN:
 foreach my $login_id (split(/\s+/, $clientID)) {
-    my $client = BOM::Platform::Client::get_instance({'loginid' => $login_id});
+    my $client = Client::Account::get_instance({'loginid' => $login_id});
     if (not $client) {
         push @invalid_logins, $login_id;
         next LOGIN;

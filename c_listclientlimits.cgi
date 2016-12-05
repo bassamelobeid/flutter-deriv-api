@@ -4,6 +4,9 @@ package main;
 use strict 'vars';
 
 use f_brokerincludeall;
+
+use Client::Account;
+
 use BOM::Database::DataMapper::Account;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
@@ -24,7 +27,7 @@ if ($login !~ /^$broker\d+$/) {
 }
 
 # Withdrawal limits
-my $client = BOM::Platform::Client::get_instance({'loginid' => $login}) || die "[$0] could not get client for $login";
+my $client = Client::Account::get_instance({'loginid' => $login}) || die "[$0] could not get client for $login";
 my $curr = $client->currency;
 
 my $account_mapper = BOM::Database::DataMapper::Account->new({
