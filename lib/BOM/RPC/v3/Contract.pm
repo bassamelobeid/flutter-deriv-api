@@ -449,12 +449,13 @@ sub send_multiple_ask {
         if (not exists $res->{error}) {
             push @{$response->{array}},
                 {
+                %$berriers,
                 ask_price     => $res->{ask_price},
                 display_value => $res->{display_value},
                 longcode      => $res->{longcode},
                 };
         } else {
-            push @{$response->{array}}, {error => $res->{error}};
+            push @{$response->{array}}, {%$berriers, error => $res->{error}};
         }
 
         $response->{rpc_times} += $res->{rpc_time} // 0;
