@@ -439,32 +439,37 @@ sub send_ask {
 sub send_multiple_ask {
     my $params         = {%{+shift}};
     my $barriers_array = delete $params->{args}->{barriers};
-    my $response       = {};
+    my $responses      = [];
 
     for my $barriers (@$barriers_array) {
         $params->{args}->{barrier} = $barriers->{barrier};
         @{$params->{args}}{keys %$barriers} = values %$barriers;
         my $res = send_ask($params);
-        $response = {%$response, %$res};
         if (not exists $res->{error}) {
-            push @{$response->{array}},
-                {
-                %$barriers,
-                ask_price     => $res->{ask_price},
-                display_value => $res->{display_value},
-                longcode      => $res->{longcode},
-                };
+            push @$responses, $res;
         } else {
-            push @{$response->{array}}, {%$barriers, error => $res->{error}};
+            push @$responses, {%$res, %$barriers};
         }
-
-        $response->{rpc_times} += $res->{rpc_time} // 0;
+        #$response = {%$response, %$res};
+        #if (not exists $res->{error}) {
+        #    push @{$response->{array}},
+        #        {
+        #        %$barriers,
+        #        ask_price     => $res->{ask_price},
+        #        display_value => $res->{display_value},
+        #        longcode      => $res->{longcode},
+        #        };
+        #} else {
+        #    push @{$response->{array}}, {%$barriers, error => $res->{error}};
+        #}
+        #
+        #$response->{rpc_times} += $res->{rpc_time} // 0;
     }
 
-    $response->{rpc_time} = $response->{rpc_times};
-    delete @{$response}{qw(ask_price display_value longcode rpc_times error)};
+    #$response->{rpc_time} = $response->{rpc_times};
+    #delete @{$response}{qw(ask_price display_value longcode rpc_times error)};
 
-    return $response;
+    return {array => $responses};
 }
 
 sub get_contract_details {
