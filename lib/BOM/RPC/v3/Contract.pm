@@ -449,7 +449,7 @@ sub send_multiple_ask {
         if (not exists $res->{error}) {
             push @{$response->{array}},
                 {
-                %$berriers,
+                %$barriers,
                 ask_price     => $res->{ask_price},
                 display_value => $res->{display_value},
                 longcode      => $res->{longcode},
