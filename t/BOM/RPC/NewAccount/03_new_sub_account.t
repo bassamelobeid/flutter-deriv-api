@@ -15,7 +15,7 @@ use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Token;
-use BOM::Platform::Client;
+use Client::Account;
 
 use utf8;
 
@@ -110,7 +110,7 @@ subtest $method => sub {
         $rpc_ct->call_ok('new_sub_account', $params)
             ->has_no_system_error->has_error->error_code_is('PermissionDenied', 'Allow omnibus flag needs to be set to create sub account');
 
-        my $real_client = BOM::Platform::Client->new({loginid => $new_loginid});
+        my $real_client = Client::Account->new({loginid => $new_loginid});
         $real_client->allow_omnibus(1);
         $real_client->save();
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token($real_client->loginid, 'real account token');
@@ -125,7 +125,7 @@ subtest $method => sub {
         my $sub_account_loginid = $result->{client_id};
         ok $sub_account_loginid =~ /^CR\d+$/, 'new CR sub account loginid';
 
-        my $sub_client = BOM::Platform::Client->new({loginid => $sub_account_loginid});
+        my $sub_client = Client::Account->new({loginid => $sub_account_loginid});
         is $sub_client->sub_account_of, $new_loginid, 'Correct loginid populated for sub_account_of for sub account';
         is $sub_client->email,         $real_client->email,         'Email for master and sub account is same';
         is $sub_client->date_of_birth, $real_client->date_of_birth, 'Date of birth for master and sub account is same';

@@ -28,7 +28,8 @@ sub validate_symbol {
     if (!$symbol || none { $symbol eq $_ } @offerings) {
         # There's going to be a few symbols that are disabled or otherwise not provided for valid reasons, but if we have nothing,
         # or it's a symbol that's very unlikely to be disabled, it'd be nice to know.
-        warn "Symbol $symbol not found, our offerings are: " . join(',', @offerings) if $symbol and ($symbol =~ /R_\d+/ or not @offerings);
+        warn "Symbol $symbol not found, our offerings are: " . join(',', @offerings)
+            if $symbol and ($symbol =~ /^R_(100|75|50|25|10)$/ or not @offerings);
         return {
             error => {
                 code    => 'InvalidSymbol',
@@ -163,7 +164,12 @@ sub _get_ask {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
 
             # need this warning to be logged for Japan as a regulatory requirement
-            warn "[JPLOG]" . $contract->shortcode . ":" . $ask_price . ":" . ($p2->{trading_period_start} // '') . "\n"
+            warn "[JPLOG]"
+                . $contract->shortcode . ","
+                . $ask_price . ","
+                . $contract->pricing_spot . ","
+                . $contract->pricing_vol . ","
+                . ($p2->{trading_period_start} // '') . "\n"
                 if ($p2->{currency} && $p2->{currency} eq 'JPY');
 
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
@@ -186,7 +192,7 @@ sub _get_ask {
                         staking_limits        => $contract->staking_limits,
                         )
                     : (),
-                    deep_otm_threshold         => $contract->market->deep_otm_threshold,
+                    deep_otm_threshold         => $contract->otm_threshold,
                     underlying_base_commission => $contract->underlying->base_commission,
                     maximum_total_markup       => BOM::System::Config::quants->{commission}->{maximum_total_markup},
                     base_commission_min        => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},

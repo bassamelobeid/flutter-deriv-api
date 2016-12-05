@@ -302,7 +302,7 @@ sub mt5_deposit {
     # MT5 login or binary loginid not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $to_mt5, $fm_loginid]);
 
-    my $fm_client = BOM::Platform::Client->new({loginid => $fm_loginid});
+    my $fm_client = Client::Account->new({loginid => $fm_loginid});
 
     # only for real money account
     if ($fm_client->is_virtual) {
@@ -422,7 +422,7 @@ sub mt5_withdrawal {
     # MT5 login or binary loginid not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $fm_mt5, $to_loginid]);
 
-    my $to_client = BOM::Platform::Client->new({loginid => $to_loginid});
+    my $to_client = Client::Account->new({loginid => $to_loginid});
 
     # only for real money account
     if ($to_client->is_virtual) {
