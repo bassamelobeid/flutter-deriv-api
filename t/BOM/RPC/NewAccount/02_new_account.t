@@ -15,7 +15,7 @@ use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Token;
-use BOM::Platform::Client;
+use Client::Account;
 
 use utf8;
 
@@ -169,7 +169,7 @@ subtest $method => sub {
         $params->{token} = $auth_token;
 
         {
-            my $module = Test::MockModule->new('BOM::Platform::Client');
+            my $module = Test::MockModule->new('Client::Account');
             $module->mock('new', sub { });
 
             $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('AuthorizationRequired', 'It should check auth');
@@ -263,7 +263,7 @@ subtest $method => sub {
         $params->{token} = $auth_token;
 
         {
-            my $module = Test::MockModule->new('BOM::Platform::Client');
+            my $module = Test::MockModule->new('Client::Account');
             $module->mock('new', sub { });
 
             $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('AuthorizationRequired', 'It should check auth');
@@ -327,7 +327,7 @@ subtest $method => sub {
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^MF\d+/, 'new MF loginid';
 
-        ok(BOM::Platform::Client->new({loginid => $new_loginid})->get_status('financial_risk_approval'),
+        ok(Client::Account->new({loginid => $new_loginid})->get_status('financial_risk_approval'),
             'For mf accounts we will set financial risk approval status');
 
         my ($resp_loginid, $t, $uaf) = BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token});
@@ -380,7 +380,7 @@ subtest $method => sub {
         $params->{token} = $auth_token;
 
         {
-            my $module = Test::MockModule->new('BOM::Platform::Client');
+            my $module = Test::MockModule->new('Client::Account');
             $module->mock('new', sub { });
 
             $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('AuthorizationRequired', 'It should check auth');
