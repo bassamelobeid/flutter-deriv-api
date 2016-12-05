@@ -450,7 +450,7 @@ sub send_multiple_ask {
             push @{$response->{array}},
                 {
                 ask_price     => $res->{ask_price},
-                display_price => $res->{display_price},
+                display_value => $res->{display_value},
                 longcode      => $res->{longcode},
                 };
         } else {
@@ -461,7 +461,7 @@ sub send_multiple_ask {
     }
 
     $response->{rpc_time} = $response->{rpc_times};
-    delete @{$response}{qw(ask_price display_price longcode rpc_times error)};
+    delete @{$response}{qw(ask_price display_value longcode rpc_times error)};
 
     return $response;
 }
