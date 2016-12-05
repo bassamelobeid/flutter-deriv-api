@@ -3,7 +3,7 @@ package BOM::RPC::v3::CopyTrading::Statistics;
 use strict;
 use warnings;
 
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::FinancialMarketBet;
@@ -13,14 +13,13 @@ use BOM::System::RedisReplicated;
 
 use Performance::Probability qw(get_performance_probability);
 
-use List::Util qw/sum0/;
 use Try::Tiny;
 
 sub copytrading_statistics {
     my $params = shift->{args};
 
     my $trader_id = uc $params->{trader_id};
-    my $trader = try { BOM::Platform::Client->new({loginid => $trader_id}) };
+    my $trader = try { Client::Account->new({loginid => $trader_id}) };
     unless ($trader) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'WrongLoginID',
