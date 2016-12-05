@@ -211,6 +211,7 @@ has japan_pricing_info => (
 #compose a string contains all the pricing info that needed to be log for Japan
 sub _build_japan_pricing_info {
     my $self = shift;
+    my $trading_window_start = shift;
 
     my $iv   = $self->pricing_vol;
     my $iv_2 = '0';
@@ -221,7 +222,8 @@ sub _build_japan_pricing_info {
 
     }
 
-    my $pricing_info = join ',', qw($self->shortcode $self->ask_price $self->pricing_spot $iv $iv_2);
+    my $bid_price = $self->payout - $self->opposite_contract->ask_price;
+    my $pricing_info = join ',', qw($self->shortcode $trading_window_start $self->ask_price $bid_price $self->pricing_spot $iv $iv_2);
 
     return $pricing_info;
 
