@@ -86,15 +86,11 @@ my $contract_args = {
 my $expected = {
     'CALL_0'          => 69.37,
     'CALL_1000'       => 65.27,
-    'EXPIRYMISS_2000' => 86.41,
-    'EXPIRYRANGE_2000'=> 21.04,
-    'NOTOUCH_0'       => 5,
-    'NOTOUCH_1000'    => 6.49,
-    'ONETOUCH_2000'   => 97.18,
+    'NOTOUCH_0'       => 34.25,
+    'NOTOUCH_1000'    => 44.25,
+    'ONETOUCH_2000'   => 99.52,
     'PUT_1000'        => 74.39,
     'PUT_0'           => 69.4,
-    'RANGE_2500'      => 5,
-    'UPORDOWN_2500'   => 100,
 };
 
 my $underlying = create_underlying('frxEURUSD');
@@ -106,12 +102,7 @@ foreach my $key (sort { $a cmp $b } keys %{$expected}) {
 
     $contract_args->{bet_type} = $bet_type;
 
-    if ( grep { $bet_type eq $_ } qw(CALL CALLE PUT PUTE ONETOUCH NOTOUCH)  ) {
-        $contract_args->{barrier} = 'S' . $pip_diff . 'P';
-    } else {
-        $contract_args->{high_barrier} = 'S' . $pip_diff . 'P';
-        $contract_args->{low_barrier} = 'S-' . $pip_diff . 'P';
-    }
+    $contract_args->{barrier} = 'S' . $pip_diff . 'P';
 
     my $c = produce_contract($contract_args);
 
