@@ -440,7 +440,6 @@ sub send_multiple_ask {
     my $params         = {%{+shift}};
     my $barriers_array = delete $params->{args}->{barriers};
     my $response       = {};
-    my %error;
 
     for my $barriers (@$barriers_array) {
         $params->{args}->{barrier} = $barriers->{barrier};
@@ -462,7 +461,7 @@ sub send_multiple_ask {
     }
 
     $response->{rpc_time} = $response->{rpc_times};
-    delete @{$response}{qw(ask_price display_price longcode rpc_times)};
+    delete @{$response}{qw(ask_price display_price longcode rpc_times error)};
 
     return $response;
 }
