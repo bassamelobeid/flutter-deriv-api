@@ -6,7 +6,7 @@ use warnings;
 use Try::Tiny;
 use Data::Dumper;
 
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Copier;
@@ -26,7 +26,7 @@ sub copy_start {
 
     my $trader_token  = $args->{copy_start};
     my $token_details = BOM::RPC::v3::Utility::get_token_details($trader_token);
-    my $trader        = try { BOM::Platform::Client->new({loginid => $token_details->{loginid}}) };
+    my $trader        = try { Client::Account->new({loginid => $token_details->{loginid}}) };
     unless ($token_details && $trader) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidToken',
@@ -81,7 +81,7 @@ sub copy_stop {
     my $client = $params->{client};
 
     my $trader_id = uc $params->{trader_id};
-    my $trader = try { BOM::Platform::Client->new({loginid => $trader_id}) };
+    my $trader = try { Client::Account->new({loginid => $trader_id}) };
     unless ($trader) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'WrongLoginID',
