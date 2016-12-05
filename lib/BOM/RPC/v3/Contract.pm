@@ -455,7 +455,7 @@ sub send_multiple_ask {
                 longcode      => $res->{longcode},
                 };
         } else {
-            push @{$response->{array}}, {%$berriers, error => $res->{error}};
+            push @{$response->{array}}, {%$barriers, error => $res->{error}};
         }
 
         $response->{rpc_times} += $res->{rpc_time} // 0;
