@@ -249,7 +249,12 @@ sub _tentative_events_markup {
         }
 
         my $new_bet = BOM::Product::ContractFactory::make_similar_contract($bet, $barrier_hash);
-        my $new_prob = $new_bet->pricing_engine->base_probability->amount;
+        my $new_prob = $new_bet->pricing_engine->base_probability;
+
+        if ( ref($new_prob) eq 'Math::Util::CalculatedValue::Validatable' ) {
+            $new_prob = $new_prob->amount;
+        }
+
         $markup = max(0, $new_prob - $self->base_probability->amount);
     }
 
