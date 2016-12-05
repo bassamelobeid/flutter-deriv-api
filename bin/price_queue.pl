@@ -28,10 +28,12 @@ while (1) {
         _sleep_to_next_second();
     }
 
-    my $keys = $redis->scan_all(
+    # We prepend short_code where possible, so sorting means we should get similar contracts together,
+    # which should help with portfolio table update synchronisation
+    my $keys = [ sort @{ $redis->scan_all(
         MATCH => 'PRICER_KEYS::*',
         COUNT => 20000
-    );
+    ) } ];
 
     DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.size', (scalar @$keys), {tags => ['tag:' . $internal_ip]});
     DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.not_processed', $redis->llen('pricer_jobs'), {tags => ['tag:' . $internal_ip]});

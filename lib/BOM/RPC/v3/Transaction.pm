@@ -12,7 +12,7 @@ use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Product::Transaction;
 use BOM::Platform::Context qw (localize request);
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 
@@ -22,7 +22,7 @@ sub buy {
     my $token_details = $params->{token_details};
     return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
-    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
+    my $client = Client::Account->new({loginid => $token_details->{loginid}});
 
     # NOTE: no need to call BOM::RPC::v3::Utility::check_authorization. All checks
     #       are done again in BOM::Product::Transaction
@@ -88,7 +88,7 @@ sub buy_contract_for_multiple_accounts {
     my $token_details = $params->{token_details};
     return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
-    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
+    my $client = Client::Account->new({loginid => $token_details->{loginid}});
 
     # NOTE: no need to call BOM::RPC::v3::Utility::check_authorization. All checks
     #       are done again in BOM::Product::Transaction

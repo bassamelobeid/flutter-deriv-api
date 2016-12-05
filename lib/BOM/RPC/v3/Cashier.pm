@@ -20,6 +20,7 @@ use YAML::XS qw(LoadFile);
 
 use LandingCompany::Registry;
 use LandingCompany::Countries;
+use Client::Account::PaymentAgent;
 
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency in_USD);
 
@@ -28,7 +29,7 @@ use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw (localize request);
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Platform::Email qw(send_email);
 use BOM::System::Config;
 use BOM::System::AuditLog;
@@ -42,7 +43,7 @@ use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::DataMapper::Client;
 use BOM::Database::ClientDB;
 
-my $payment_limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'));
+my $payment_limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'));
 
 sub cashier {
     my $params = shift;
@@ -414,7 +415,7 @@ sub paymentagent_list {
     my $token_details = $params->{token_details};
     my $client;
     if ($token_details and exists $token_details->{loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
+        $client = Client::Account->new({loginid => $token_details->{loginid}});
     }
 
     my $broker_code = $client ? $client->broker_code : 'CR';
@@ -518,7 +519,7 @@ sub paymentagent_transfer {
         return $error_sub->(localize('Invalid amount. minimum is 10, maximum is 2000.'));
     }
 
-    my $client_to = try { BOM::Platform::Client->new({loginid => $loginid_to}) };
+    my $client_to = try { Client::Account->new({loginid => $loginid_to}) };
     unless ($client_to) {
         return $reject_error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to));
     }
@@ -773,7 +774,7 @@ sub paymentagent_withdraw {
         return $error_sub->(localize('Invalid amount. minimum is 10, maximum is 2000.'));
     }
 
-    my $paymentagent = BOM::Platform::Client::PaymentAgent->new({'loginid' => $paymentagent_loginid})
+    my $paymentagent = Client::Account::PaymentAgent->new({'loginid' => $paymentagent_loginid})
         or return $error_sub->(localize('Sorry, the Payment Agent does not exist.'));
 
     if ($client->broker ne $paymentagent->broker) {

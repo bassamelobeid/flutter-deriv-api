@@ -16,7 +16,7 @@ use BOM::RPC::v3::Accounts;
 use BOM::System::Password;
 use BOM::Platform::Token;
 use BOM::Platform::User;
-use BOM::Platform::Client;
+use Client::Account;
 
 my ($t, $rpc_ct);
 
@@ -93,7 +93,7 @@ subtest 'common' => sub {
     $client_cr->save;
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
-    my $client_mocked = Test::MockModule->new('BOM::Platform::Client');
+    my $client_mocked = Test::MockModule->new('Client::Account');
     $client_mocked->mock('documents_expired', sub { return 1 });
 
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client documents have expired')

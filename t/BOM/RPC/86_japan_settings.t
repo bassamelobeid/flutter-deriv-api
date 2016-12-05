@@ -15,7 +15,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
 ## do not send email
-my $client_mocked = Test::MockModule->new('BOM::Platform::Client');
+my $client_mocked = Test::MockModule->new('Client::Account');
 $client_mocked->mock('add_note', sub { return 1 });
 
 my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
@@ -81,7 +81,7 @@ subtest 'create VRTJ & JP client' => sub {
     like $jp_loginid, qr/^JP\d+$/, "JP client created";
 
     # activate JP real money a/c
-    $jp_client = BOM::Platform::Client->new({loginid => $jp_loginid});
+    $jp_client = Client::Account->new({loginid => $jp_loginid});
     $jp_client->clr_status('disabled');
     $jp_client->set_status('jp_activation_pending', 'test', 'for test');
     $jp_client->save;
