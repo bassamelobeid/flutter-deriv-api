@@ -50,7 +50,7 @@ my $hist_ticks = $underlying->ticks_in_between_start_end({
 my @tmp_ticks = reverse @$hist_ticks;
 
 my $resample_cache = BOM::Market::ResampleCache->new;
-$resample_cache->resample_cache_backfill({symbol => 'frxUSDJPY', ticks => \@tmp_ticks,});
+$resample_cache->resample_cache_backfill({symbol => 'frxUSDJPY', data => \@tmp_ticks,});
 
 my $recorded_date = $date_start->truncate_to_day;
 Test::BOM::UnitTestPrice::create_pricing_data($underlying->symbol, $payout_currency, $recorded_date);
