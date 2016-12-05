@@ -174,7 +174,8 @@ sub resample_cache_backfill {
     my $data     = $args->{data}     // [];
     my $backtest = $args->{backtest} // 0;
 
-    my $key = $self->_make_key($symbol, 0);
+    my $key          = $self->_make_key($symbol, 0);
+    my $resample_key = $self->_make_key($symbol, 1);
 
     if (not $backtest) {
         foreach my $single_data (@$data) {
@@ -182,9 +183,17 @@ sub resample_cache_backfill {
         }
     }
 
-    return $self->data_resample->resample({
+    my $resample_data = $self->data_resample->resample({
         data => $data,
     });
+
+    if (not $backtest) {
+        foreach my $single_data (@$resample_data) {
+            $self->_update($self->redis_write, $resample_key, $single_data->{resample_epoch}, $self->encoder->encode($single_data));
+        }
+    }
+
+    return $resample_data;
 }
 
 =head2 resample_cache_get
@@ -281,9 +290,7 @@ sub data_cache_insert {
         {
             #do resampling
             my $resample_data = $self->data_resample->resample({
-                symbol    => $to_store{symbol},
-                end_epoch => $boundary,
-                data      => \@datas,
+                data => \@datas,
             });
 
             foreach my $tick (@$resample_data) {
