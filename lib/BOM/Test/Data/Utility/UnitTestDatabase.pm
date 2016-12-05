@@ -2,7 +2,7 @@ package BOM::Test::Data::Utility::UnitTestDatabase;
 
 use MooseX::Singleton;
 use BOM::Database::ClientDB;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Database::Model::FinancialMarketBet::HigherLowerBet;
 use BOM::Database::Model::FinancialMarketBet::SpreadBet;
 use BOM::Database::Model::FinancialMarketBet::TouchBet;
@@ -110,7 +110,7 @@ sub create_client {
         $client_data->{$_} = $args->{$_};
     }
 
-    my $client = BOM::Platform::Client->rnew;
+    my $client = Client::Account->rnew;
 
     for (keys %$client_data) {
         $client->$_($client_data->{$_});

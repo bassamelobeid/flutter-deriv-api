@@ -17,7 +17,7 @@ use Sereal::Encoder;
 
 use BOM::Database::Model::OAuth;
 use BOM::System::RedisReplicated;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Test::Data::Utility::UnitTestMarketData;    # we :init later for unit/auth test DBs
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase;
@@ -304,7 +304,7 @@ sub _free_gift {
 sub _set_allow_omnibus {
     my $r = walk_hierarchy(shift, $response);
 
-    my $client = BOM::Platform::Client->new({loginid => $r});
+    my $client = Client::Account->new({loginid => $r});
     $client->allow_omnibus(1);
     $client->save();
 
