@@ -167,8 +167,10 @@ sub _get_ask {
             warn "[JPLOG]"
                 . $contract->shortcode . ","
                 . $ask_price . ","
+                . ($contract->payout - $contract->opposite_contract->ask_price) . ","
                 . $contract->pricing_spot . ","
                 . $contract->pricing_vol . ","
+                . '0' . ","
                 . ($p2->{trading_period_start} // '') . "\n"
                 if ($p2->{currency} && $p2->{currency} eq 'JPY');
 
