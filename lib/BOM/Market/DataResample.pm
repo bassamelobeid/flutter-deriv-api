@@ -28,14 +28,26 @@ has resample_cache => (
     },
 );
 
+sub resample_or_raw {
+    my ($self, $args) = @_;
+
+    my $resample_flag = $args->{resample} // 1;
+
+    my $ticks;
+    if ($resample_flag) {
+        $ticks = $self->resample_cache_get($args);
+    } else {
+        $ticks = $self->tick_cache_get($args);
+    }
+}
+
 sub resample_cache_get {
     my ($self, $args) = @_;
 
-    my $underlying    = $args->{underlying};
-    my $start_time    = $args->{start_epoch};
-    my $end_time      = $args->{end_epoch};
-    my $backtest      = $args->{backtest} // 0;
-    my $resample_flag = $args->{resample} // 1;
+    my $underlying = $args->{underlying};
+    my $start_time = $args->{start_epoch};
+    my $end_time   = $args->{end_epoch};
+    my $backtest   = $args->{backtest} // 0;
 
     my $ticks;
     if ($backtest) {
