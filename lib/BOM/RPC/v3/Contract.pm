@@ -187,7 +187,7 @@ sub _get_ask {
                         staking_limits        => $contract->staking_limits,
                         )
                     : (),
-                    deep_otm_threshold         => $contract->market->deep_otm_threshold,
+                    deep_otm_threshold         => $contract->otm_threshold,
                     underlying_base_commission => $contract->underlying->base_commission,
                     maximum_total_markup       => BOM::System::Config::quants->{commission}->{maximum_total_markup},
                     base_commission_min        => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
