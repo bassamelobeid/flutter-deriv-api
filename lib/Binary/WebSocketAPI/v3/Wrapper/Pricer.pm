@@ -366,7 +366,7 @@ sub process_ask_event {
             delete @{$results->{$type}}{qw(contract_parameters rpc_time)};
             push @results, $results;    #[];
         }
-        my $send_result = $type eq 'proposal_array' ? \@results : $results[0];
+        my $send_result = $type eq 'proposal_array' ? {array => \@results} : $results[0];
         $c->send({json => $send_result}, {args => $stash_data->{args}});
     }
     return;
