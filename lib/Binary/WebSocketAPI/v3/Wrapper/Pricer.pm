@@ -73,11 +73,16 @@ sub proposal_array {
             },
             success => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
-                my $cache = {
-                    longcode            => $rpc_response->{longcode},
-                    contract_parameters => delete $rpc_response->{contract_parameters}};
-                $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
-                $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
+
+                my $caches = [];
+                for my $response (@{$rpc_response->{array}}) {
+                    my $cache = {
+                        longcode            => $response->{longcode},
+                        contract_parameters => delete $response->{contract_parameters}};
+                    $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
+                    push @$caches, $cache;
+                }
+                $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $caches);
             },
             response => sub {
                 my ($rpc_response, $api_response, $req_storage) = @_;
@@ -316,40 +321,53 @@ sub process_ask_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
 
     my $type = 'proposal';
+    my $responses;
     if (exists($response->{array})) {
-        $type = "proposal_array";
+        $type      = "proposal_array";
+        $responses = $response->{array};
+    } else {
+        responses = [$response];
     }
-    my $theo_probability = delete $response->{theo_probability};
-    foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
-        my $results;
 
-        unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
-            $stash_data->{cache}->{contract_parameters}->{longcode} = $stash_data->{cache}->{longcode};
-            my $adjusted_results =
-                _price_stream_results_adjustment($c, $stash_data->{args}, $stash_data->{cache}->{contract_parameters}, $response, $theo_probability);
-            if (my $ref = $adjusted_results->{error}) {
-                my $err = $c->new_error($type, $ref->{code}, $ref->{message_to_client});
-                $err->{error}->{details} = $ref->{details} if exists $ref->{details};
-                $results = $err;
-            } else {
-                $results = {
-                    msg_type => $type,
-                    $type    => {
-                        %$adjusted_results,
-                        id       => $stash_data->{uuid},
-                        longcode => $stash_data->{cache}->{longcode},
-                    },
+    foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
+        my $caches = $type eq 'proposal_array' ? $stash_data->{cache} : [$stash_data->{cache}];
+        my @results;
+        for my $i (0 .. $#$responses) {
+            my $response         = $responses->{$i};
+            my $cache            = $caches->[$i];
+            my $theo_probability = $response->{theo_probability};
+            my $results;
+
+            unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
+                $cache->{contract_parameters}->{longcode} = $cache->{longcode};
+                my $adjusted_results =
+                    _price_stream_results_adjustment($c, $stash_data->{args}, $cache->{contract_parameters}, $response, $theo_probability);
+                if (my $ref = $adjusted_results->{error}) {
+                    my $err = $c->new_error($type, $ref->{code}, $ref->{message_to_client});
+                    $err->{error}->{details} = $ref->{details} if exists $ref->{details};
+                    $results = $err;
+                } else {
+                    $results = {
+                        msg_type => $type,
+                        $type    => {
+                            %$adjusted_results,
+                            id       => $stash_data->{uuid},
+                            longcode => $cache->{longcode},
+                        },
+                    };
+                }
+            }
+            if ($c->stash('debug')) {
+                $results->{debug} = {
+                    time   => $results->{$type}->{rpc_time},
+                    method => $type,
                 };
             }
+            delete @{$results->{$type}}{qw(contract_parameters rpc_time)};
+            push @results, $results;    #[];
         }
-        if ($c->stash('debug')) {
-            $results->{debug} = {
-                time   => $results->{$type}->{rpc_time},
-                method => $type,
-            };
-        }
-        delete @{$results->{$type}}{qw(contract_parameters rpc_time)};
-        $c->send({json => $results}, {args => $stash_data->{args}});
+        my $send_result = $type eq 'proposal_array' ? \@results : $results[0];
+        $c->send({json => $send_result}, {args => $stash_data->{args}});
     }
     return;
 }
