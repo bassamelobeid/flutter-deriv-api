@@ -64,7 +64,7 @@ sub proposal_array {
     my $args = $req_storage->{args};
     $c->call_rpc({
             args        => $args,
-            method      => 'send_ask',
+            method      => 'send_multiple_ask',
             msg_type    => 'proposal_array',
             call_params => {
                 language              => $c->stash('language'),
