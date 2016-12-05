@@ -17,6 +17,7 @@ A wrapper to let us use Redis SortedSets to get aggregated tick data.
 use 5.010;
 use Moose;
 
+use List::Util qw( first min max );
 use Quant::Framework::Underlying;
 use BOM::System::RedisReplicated;
 use BOM::Market::ResampleCache;
