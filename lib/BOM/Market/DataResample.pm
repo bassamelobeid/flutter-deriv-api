@@ -52,8 +52,12 @@ sub resample_cache_get {
 
     my $ticks;
     if ($backtest) {
+        my $start = $end - min($end_time - $start_time, $self->resample_cache->agg_retention_interval->seconds);
+        $start = $start - $start % $self->resample_cache->agg_interval->seconds;
+        my $first_agg = $start - $self->resample_cache->agg_interval->seconds;
+
         my $raw_ticks = $underlying->ticks_in_between_start_end({
-            start_time => $start_time,
+            start_time => $first_agg,
             end_time   => $end_time,
         });
 
@@ -83,8 +87,12 @@ sub tick_cache_get {
 
     my $ticks;
     if ($backtest) {
+        my $start = $end - min($end_time - $start_time, $self->resample_cache->agg_retention_interval->seconds);
+        $start = $start - $start % $self->resample_cache->agg_interval->seconds;
+        my $first_agg = $start - $self->resample_cache->agg_interval->seconds;
+
         my $raw_ticks = $underlying->ticks_in_between_start_end({
-            start_time => $start_time,
+            start_time => $first_agg,
             end_time   => $end_time,
         });
         my @rev_ticks = reverse @$raw_ticks;
