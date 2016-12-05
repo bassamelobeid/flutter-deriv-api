@@ -291,7 +291,7 @@ sub _get_stashed {
 
 sub _free_gift {
     my ($loginid) = @_;
-    my $client = BOM::Platform::Client->new({loginid => $loginid});
+    my $client = Client::Account->new({loginid => $loginid});
     $client->payment_free_gift(
         currency => 'USD',
         amount   => 10000,
