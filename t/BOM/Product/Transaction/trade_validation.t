@@ -11,7 +11,7 @@ use Format::Util::Numbers qw(roundnear);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -59,7 +59,7 @@ my $random_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',
 });
 
-my $client     = BOM::Platform::Client->new({loginid => 'MX1001'});
+my $client     = Client::Account->new({loginid => 'MX1001'});
 my $currency   = 'GBP';
 my $account    = $client->default_account;
 my $loginid    = $client->loginid;
@@ -95,7 +95,7 @@ my $contract = produce_contract({
 subtest 'IOM withdrawal limit' => sub {
     plan tests => 5;
 
-    my $withdraw_limit = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->{withdrawal_limits}->{iom}->{limit_for_days};
+    my $withdraw_limit = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'))->{withdrawal_limits}->{iom}->{limit_for_days};
 
     $client->payment_free_gift(
         currency     => 'GBP',
@@ -262,7 +262,7 @@ subtest 'contract date pricing Validation' => sub {
 subtest 'valid currency test' => sub {
     plan tests => 3;
 
-    my $mock_contract = Test::MockModule->new('BOM::Platform::Client');
+    my $mock_contract = Test::MockModule->new('Client::Account');
 
     subtest 'invalid currency' => sub {
         $mock_contract->mock('currency', sub { 'ABC' });
@@ -920,9 +920,9 @@ subtest 'SELL - sell pricing adjustment' => sub {
 subtest 'Purchase Sell Contract' => sub {
     plan tests => 4;
 
-    my $client = BOM::Platform::Client->new({loginid => 'CR2002'});
-    $client = BOM::Platform::Client::get_instance({'loginid' => $client->loginid});
-    my $mocked_client = Test::MockModule->new('BOM::Platform::Client');
+    my $client = Client::Account->new({loginid => 'CR2002'});
+    $client = Client::Account::get_instance({'loginid' => $client->loginid});
+    my $mocked_client = Test::MockModule->new('Client::Account');
     $mocked_client->mock('residence', sub { return 'al' });
     my $currency = 'USD';
     $client->set_default_account($currency);

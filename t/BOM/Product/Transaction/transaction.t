@@ -8,7 +8,7 @@ use Test::More tests => 25;
 use Test::Exception;
 use Guard;
 use Crypt::NamedKeys;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::System::Password;
 use BOM::Platform::Client::Utility;
 
@@ -119,7 +119,7 @@ sub create_client {
     my $broker = shift;
     $broker ||= 'CR';
 
-    return BOM::Platform::Client->register_and_return_new_client({
+    return Client::Account->register_and_return_new_client({
         broker_code      => $broker,
         client_password  => BOM::System::Password::hashpw('12345678'),
         salutation       => 'Ms',
@@ -1169,7 +1169,7 @@ subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_
         });
 
         my $error = do {
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_account_balance => sub { note "mocked Client->get_limit_for_account_balance returning 99.99"; 99.99 });
 
             $txn->buy;
@@ -1221,7 +1221,7 @@ subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_
         });
 
         my $error = do {
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_account_balance => sub { note "mocked Client->get_limit_for_account_balance returning 100"; 100 });
 
             $txn->buy;
@@ -1272,7 +1272,7 @@ subtest 'max_open_bets validation', sub {
         });
 
         my $error = do {
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_open_positions => sub { note "mocked Client->get_limit_for_open_positions returning 2"; 2 });
 
             is +BOM::Product::Transaction->new({
@@ -1342,7 +1342,7 @@ subtest 'max_open_bets validation: selling bets on the way', sub {
 
         my $txn_id_buy_expired_contract;
         my $error = do {
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_open_positions => sub { note "mocked Client->get_limit_for_open_positions returning 2"; 2 });
 
             is +BOM::Product::Transaction->new({
@@ -1443,7 +1443,7 @@ subtest 'max_payout_open_bets validation', sub {
         });
 
         my $error = do {
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 29.99"; 29.99 });
 
             is +BOM::Product::Transaction->new({
@@ -1480,7 +1480,7 @@ subtest 'max_payout_open_bets validation', sub {
 
         # retry with a slightly higher limit should succeed
         $error = do {
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 30.00"; 30.00 });
 
             $txn->buy;
@@ -1529,7 +1529,7 @@ subtest 'max_payout_open_bets validation', sub {
         });
 
         my $error = do {
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 29.99"; 29.99 });
             my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
 
@@ -1577,7 +1577,7 @@ subtest 'max_payout_open_bets validation', sub {
 
         # retry with a slightly higher limit should succeed
         $error = do {
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 30.00"; 30.00 });
             my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
 
@@ -1628,7 +1628,7 @@ subtest 'max_payout_open_bets validation: selling bets on the way', sub {
 
         my $txn_id_buy_expired_contract;
         my $error = do {
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 29.99"; 29.99 });
 
             is +BOM::Product::Transaction->new({
@@ -1721,7 +1721,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
 
         my $error = do {
             # need to do this because these limits are not by landing company anymore
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 1000.00"; 1000.00});
             note "change quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit->{USD}} to 29.99";
             local BOM::System::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
@@ -1921,7 +1921,7 @@ subtest 'max_turnover validation', sub {
         });
 
         my $error = do {
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_daily_turnover =>
                     sub { note "mocked Client->get_limit_for_daily_turnover returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
             $mock_client->mock(client_fully_authenticated => sub { note "mocked Client->client_fully_authenticated returning false"; undef });
@@ -1960,7 +1960,7 @@ subtest 'max_turnover validation', sub {
         }
 
         $error = do {
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_daily_turnover =>
                     sub { note "mocked Client->get_limit_for_daily_turnover returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
             $mock_client->mock(client_fully_authenticated => sub { note "mocked Client->client_fully_authenticated returning true"; 1 });
@@ -2012,7 +2012,7 @@ subtest 'max_turnover validation', sub {
             }
             'bought a bet yesterday 23:59:59';
 
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(
                 get_limit_for_daily_turnover => sub { note "mocked Client->get_limit_for_daily_turnover returning " . (3 * 5.20); 3 * 5.20 });
 
@@ -2066,7 +2066,7 @@ subtest 'max_7day_turnover validation', sub {
         });
 
         my $error = do {
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(
                 get_limit_for_7day_turnover => sub { note "mocked Client->get_limit_for_7day_turnover returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 }
             );
@@ -2104,7 +2104,7 @@ subtest 'max_7day_turnover validation', sub {
 
         # retry with a slightly higher limit should succeed
         $error = do {
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(
                 get_limit_for_7day_turnover => sub { note "mocked Client->get_limit_for_7day_turnover returning " . (3 * 5.20); 3 * 5.20 });
 
@@ -2158,7 +2158,7 @@ subtest 'max_30day_turnover validation', sub {
         });
 
         my $error = do {
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_30day_turnover =>
                     sub { note "mocked Client->get_limit_for_30day_turnover returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
 
@@ -2195,7 +2195,7 @@ subtest 'max_30day_turnover validation', sub {
 
         # retry with a slightly higher limit should succeed
         $error = do {
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(
                 get_limit_for_30day_turnover => sub { note "mocked Client->get_limit_for_30day_turnover returning " . (3 * 5.20); 3 * 5.20 });
 
@@ -2259,7 +2259,7 @@ subtest 'max_losses validation', sub {
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(
                 get_limit_for_daily_losses => sub { note "mocked Client->get_limit_for_daily_losses returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
 
@@ -2320,7 +2320,7 @@ subtest 'max_losses validation', sub {
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(
                 get_limit_for_daily_losses => sub { note "mocked Client->get_limit_for_daily_losses returning " . (3 * 5.20); 3 * 5.20 });
 
@@ -2384,7 +2384,7 @@ subtest 'max_7day_losses validation', sub {
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(
                 get_limit_for_7day_losses => sub { note "mocked Client->get_limit_for_7day_losses returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
 
@@ -2445,7 +2445,7 @@ subtest 'max_7day_losses validation', sub {
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_7day_losses => sub { note "mocked Client->get_limit_for_7day_losses returning " . (3 * 5.20); 3 * 5.20 }
             );
 
@@ -2509,7 +2509,7 @@ subtest 'max_30day_losses validation', sub {
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(
                 get_limit_for_30day_losses => sub { note "mocked Client->get_limit_for_30day_losses returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
 
@@ -2570,7 +2570,7 @@ subtest 'max_30day_losses validation', sub {
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(
                 get_limit_for_30day_losses => sub { note "mocked Client->get_limit_for_30day_losses returning " . (3 * 5.20); 3 * 5.20 });
 
