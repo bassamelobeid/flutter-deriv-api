@@ -233,22 +233,30 @@ sub _build_ticks_for_trend {
     my $data_resample = BOM::Market::DataResample->new;
 
     my $ticks;
-    if ($self->more_than_short_term_cutoff) {
-        $ticks = $data_resample->resample_cache_get({
-            underlying  => $bet->underlying,
-            start_epoch => $bet->date_pricing->epoch - $remaining_interval->seconds,
-            end_epoch   => $bet->date_pricing->epoch,
-            backtest    => $bet->backtest,
-        });
+    my $backtest = ($bet->underlying->for_date) ? 1 : 0;
+    $ticks = $data_resample->get({
+        underlying  => $bet->underlying,
+        start_epoch => $bet->date_pricing->epoch - $remaining_interval->seconds,
+        end_epoch   => $bet->date_pricing->epoch,
+        backtest    => $bet->backtest,
+        resample    => $self->more_than_short_term_cutoff,
+    });
+    #if ($self->more_than_short_term_cutoff) {
+    #    $ticks = $data_resample->resample_cache_get({
+    #        underlying  => $bet->underlying,
+    #        start_epoch => $bet->date_pricing->epoch - $remaining_interval->seconds,
+    #        end_epoch   => $bet->date_pricing->epoch,
+    #        backtest    => $bet->backtest,
+    #    });
 
-    } else {
-        $ticks = $data_resample->tick_cache_get({
-            underlying  => $bet->underlying,
-            start_epoch => $bet->date_pricing->epoch - $remaining_interval->seconds,
-            end_epoch   => $bet->date_pricing->epoch,
-            backtest    => $bet->backtest,
-        });
-    }
+    #} else {
+    #    $ticks = $data_resample->tick_cache_get({
+    #        underlying  => $bet->underlying,
+    #        start_epoch => $bet->date_pricing->epoch - $remaining_interval->seconds,
+    #        end_epoch   => $bet->date_pricing->epoch,
+    #        backtest    => $bet->backtest,
+    #    });
+    #}
 
     return $ticks;
 }
