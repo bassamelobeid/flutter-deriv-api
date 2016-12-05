@@ -5,7 +5,7 @@ use Test::MockTime;
 use Test::More qw(no_plan);
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Platform::Client;
+use Client::Account;
 
 my $loginid1 = 'CR0020';
 my $payment_agent;
@@ -13,11 +13,11 @@ my $payment_agent;
 #################################
 # testing: new
 
-Test::Exception::lives_ok { $payment_agent = BOM::Platform::Client::PaymentAgent->new({'loginid' => $loginid1}) }
+Test::Exception::lives_ok { $payment_agent = Client::Account::PaymentAgent->new({'loginid' => $loginid1}) }
 "Can get PaymentAgent client object";
 
 my $class = ref $payment_agent;
-is($class, 'BOM::Platform::Client::PaymentAgent', 'Class is BOM::Platform::Client::PaymentAgent');
+is($class, 'Client::Account::PaymentAgent', 'Class is BOM::Platform::Client::PaymentAgent');
 
 #################################
 # testing: intrinsic attributes
@@ -43,7 +43,7 @@ Test::Exception::lives_ok {
 }
 "save payment agent";
 
-my $pa2 = BOM::Platform::Client::PaymentAgent->new({loginid => $payment_agent->client_loginid});
+my $pa2 = Client::Account::PaymentAgent->new({loginid => $payment_agent->client_loginid});
 ok($pa2->summary, "new summary");
 
 #################################
@@ -51,5 +51,5 @@ ok($pa2->summary, "new summary");
 
 my $client2 = $pa2->client;
 ok($client2, "mandatory Client object exists for $loginid1");
-is(ref($client2), 'BOM::Platform::Client', 'related client is the (smarter) BP::Client not the base Rose object');
+is(ref($client2), 'Client::Account', 'related client is the (smarter) BP::Client not the base Rose object');
 

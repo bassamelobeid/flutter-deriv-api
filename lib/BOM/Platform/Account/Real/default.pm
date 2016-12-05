@@ -11,13 +11,13 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 use Data::Validate::Sanctions qw(is_sanctioned);
 
 use LandingCompany::Countries;
+use Client::Account;
+use Client::Account::Desk;
 
 use BOM::System::Config;
-use BOM::Platform::Desk;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(request);
-use BOM::Platform::Client;
 use BOM::Platform::Account;
 
 sub validate {
@@ -118,7 +118,7 @@ sub register_client {
     my $details = shift;
 
     my ($client, $error);
-    try { $client = BOM::Platform::Client->register_and_return_new_client($details); }
+    try { $client = Client::Account->register_and_return_new_client($details); }
     catch {
         $error = $_;
     };
@@ -184,7 +184,7 @@ sub add_details_to_desk {
 
     if (BOM::System::Config::on_production()) {
         try {
-            my $desk_api = BOM::Platform::Desk->new({
+            my $desk_api = Client::Account::Desk->new({
                 desk_url     => BOM::System::Config::third_party->{desk}->{api_uri},
                 api_key      => BOM::System::Config::third_party->{desk}->{api_key},
                 secret_key   => BOM::System::Config::third_party->{desk}->{api_key_secret},

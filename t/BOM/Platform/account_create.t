@@ -8,7 +8,9 @@ use Test::More (tests => 3);
 use Test::Exception;
 use Test::Warn;
 use Test::MockModule;
-use BOM::Platform::Client;
+
+use Client::Account;
+
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
@@ -36,7 +38,7 @@ is($vr_acc->{error}, 'invalid residence', 'create VR acc failed: restricted coun
 
 $on_production = 0;
 
-my $client_mocked = Test::MockModule->new('BOM::Platform::Client');
+my $client_mocked = Test::MockModule->new('Client::Account');
 $client_mocked->mock('add_note', sub { return 1 });
 
 my $vr_details = {
@@ -122,7 +124,7 @@ subtest 'create account' => sub {
         if ($broker eq 'MLT') {
             lives_ok { $real_acc = create_mf_acc($real_client, $user); } "create MF acc";
             is($real_acc->{client}->broker, 'MF', "Successfully create " . $real_acc->{client}->loginid);
-            my $cl = BOM::Platform::Client->new({loginid => $real_acc->{client}->loginid});
+            my $cl = Client::Account->new({loginid => $real_acc->{client}->loginid});
             my $data = from_json $cl->financial_assessment()->data;
             is $data->{total_score}, 20, "got the total score";
         } else {

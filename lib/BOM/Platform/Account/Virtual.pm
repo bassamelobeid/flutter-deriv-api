@@ -6,12 +6,13 @@ use warnings;
 use Try::Tiny;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
+use Client::Account;
+
 use BOM::System::Password;
 
 use BOM::Platform::Runtime;
 use LandingCompany::Countries;
 use LandingCompany::Registry;
-use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Token;
 use BOM::Platform::Account;
@@ -41,7 +42,7 @@ sub create_account {
         die 'residence is empty' if (not $residence);
         my $company_name = LandingCompany::Countries->new(brand => request()->brand)->virtual_company_for_country($residence);
 
-        $client = BOM::Platform::Client->register_and_return_new_client({
+        $client = Client::Account->register_and_return_new_client({
             broker_code                   => LandingCompany::Registry::get($company_name)->broker_codes->[0],
             client_password               => $password,
             salutation                    => '',

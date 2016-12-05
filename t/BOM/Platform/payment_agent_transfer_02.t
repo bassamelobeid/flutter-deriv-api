@@ -6,14 +6,15 @@ use warnings;
 use Test::More;
 use Test::Exception;
 
-use BOM::Platform::Client;
-use BOM::Platform::Client::PaymentAgent;
-use BOM::Platform::Client::Payments;
+use Client::Account;
+use Client::Account::Payments;
+use Client::Account::PaymentAgent;
+
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-my $pa        = BOM::Platform::Client::PaymentAgent->new({loginid => 'CR0020'});
+my $pa        = Client::Account::PaymentAgent->new({loginid => 'CR0020'});
 my $pa_client = $pa->client;
-my $client    = BOM::Platform::Client->new({loginid => 'CR0021'});
+my $client    = Client::Account->new({loginid => 'CR0021'});
 
 subtest 'get_today_client_payment_agent_transfer_total_amount' => sub {
     my $clientdb = BOM::Database::ClientDB->new({

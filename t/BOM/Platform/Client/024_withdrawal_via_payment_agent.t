@@ -7,15 +7,15 @@ use Test::More qw(no_plan);
 use Test::Exception;
 
 use Date::Utility;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-my $rose_client = BOM::Platform::Client->new({loginid => 'CR2002'});
+my $rose_client = Client::Account->new({loginid => 'CR2002'});
 my $loginid     = $rose_client->loginid;
 my $account     = $rose_client->default_account;
 
 my $client;
-lives_ok { $client = BOM::Platform::Client->new({loginid => $loginid}) } 'Can create client object.';
+lives_ok { $client = Client::Account->new({loginid => $loginid}) } 'Can create client object.';
 
 $client->payment_legacy_payment(
     currency     => 'USD',
