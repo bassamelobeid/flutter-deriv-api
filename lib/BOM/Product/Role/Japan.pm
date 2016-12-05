@@ -224,8 +224,7 @@ sub _build_japan_pricing_info {
 
     my $bid_price = $self->payout - $self->opposite_contract->ask_price;
     my $pricing_info = join ',', qw($self->shortcode $trading_window_start $self->ask_price $bid_price $self->pricing_spot $iv $iv_2);
-
-    return $pricing_info;
+    return $pricing_info . "\n";
 
 }
 
