@@ -3,7 +3,7 @@ package BOM::RPC::v3::CopyTrading::Statistics;
 use strict;
 use warnings;
 
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::FinancialMarketBet;
