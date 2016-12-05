@@ -333,7 +333,7 @@ sub process_ask_event {
         my $caches = $type eq 'proposal_array' ? $stash_data->{cache} : [$stash_data->{cache}];
         my @results;
         for my $i (0 .. $#$responses) {
-            my $response         = $responses->{$i};
+            my $response         = $responses->[$i];
             my $cache            = $caches->[$i];
             my $theo_probability = $response->{theo_probability};
             my $results;
