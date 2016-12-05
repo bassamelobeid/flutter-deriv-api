@@ -39,6 +39,7 @@ sub get {
     } else {
         $ticks = $self->tick_cache_get($args);
     }
+    return $ticks;
 }
 
 sub resample_cache_get {
