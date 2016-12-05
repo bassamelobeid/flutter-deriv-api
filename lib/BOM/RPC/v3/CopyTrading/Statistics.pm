@@ -57,7 +57,6 @@ sub copytrading_statistics {
 
     my $db = BOM::Database::ClientDB->new({
             client_loginid => $trader->loginid,
-            operation      => 'replica',
         })->db;
 
     # Calculate average performance for multiple accounts
@@ -66,6 +65,7 @@ sub copytrading_statistics {
         client_loginid => $trader->loginid,
         currency_code  => $account->currency_code,
         db             => $db,
+        operation      => 'replica',
     });
 
     # trader performance
@@ -104,6 +104,7 @@ sub copytrading_statistics {
         client_loginid => $trader->loginid,
         currency_code  => $account->currency_code,
         db             => $db,
+        operation      => 'replica',
     });
 
     my $sold_contracts = $fmb_dm->get_sold({
