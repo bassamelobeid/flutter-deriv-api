@@ -16,7 +16,7 @@ use BOM::System::RedisReplicated;
 
 =head1 NAME
 
-Data::Resample - A module that allows to resample a data feed. 
+Resample::Cache - A module that works with redis for resample datas. 
 
 =head1 VERSION
 

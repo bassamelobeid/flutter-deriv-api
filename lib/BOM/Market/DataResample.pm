@@ -28,7 +28,7 @@ has resample_cache => (
     },
 );
 
-sub resample_or_raw {
+sub get {
     my ($self, $args) = @_;
 
     my $resample_flag = $args->{resample} // 1;
