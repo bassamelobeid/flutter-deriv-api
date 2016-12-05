@@ -10,7 +10,7 @@ use Guard;
 use Try::Tiny;
 
 use BOM::Platform::Runtime;
-use BOM::Database::DataMapper::Client;
+use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Platform::Client::Utility;
 
@@ -158,14 +158,14 @@ sub write_transaction_line {
     my $client = $c->user;
 
     # Lock the customer's account
-    my $client_data_mapper = BOM::Database::DataMapper::Client->new({client_loginid => $client->loginid});
-    if (not $client_data_mapper->freeze) {
+    my $client_db = BOM::Database::ClientDB->new({client_loginid => $client->loginid});
+    if (not $client_db->freeze) {
         return $c->throw(403, "Unable to lock customer account; please contact customer support");
     }
     ## unfreeze on exit no matter it's succeed or not
     scope_guard {
         # Unlock the customer's account
-        $client_data_mapper->unfreeze;
+        $client_db->unfreeze;
     };
 
     my $currency_code  = $c->request_parameters->{currency_code};
