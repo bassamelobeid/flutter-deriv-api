@@ -238,7 +238,7 @@ sub _build_ticks_for_trend {
         underlying  => $bet->underlying,
         start_epoch => $bet->date_pricing->epoch - $remaining_interval->seconds,
         end_epoch   => $bet->date_pricing->epoch,
-        backtest    => $backtest,
+        backtest    => $bet->backtest,
         resample    => $self->more_than_short_term_cutoff,
     });
 
