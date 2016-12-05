@@ -216,7 +216,7 @@ sub _build_japan_pricing_info {
     my $iv   = $self->pricing_vol;
     my $iv_2 = '0';
 
-    if ($self->has_pricing_vol_for_two_barriers) {
+    if ($self->pricing_vol_for_two_barriers) {
         $iv   = $self->pricing_vol_for_two_barriers->{high_barrier_vol};
         $iv_2 = $self->pricing_vol_for_two_barriers->{low_barrier_vol};
 

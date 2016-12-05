@@ -1751,10 +1751,14 @@ has pricing_vol_for_two_barriers => (
 sub _build_pricing_vol_for_two_barriers {
     my $self = shift;
 
+    return if not $self->two_barriers;
+    return if $self->pricing_engine_name ne 'Pricing::Engine::EuropeanDigitalSlope';
+
     my $vol_args = {
         from => $self->date_start,
         to   => $self->date_expiry,
     };
+
 
     $vol_args->{strike} = $self->barriers_for_pricing->{barrier1};
     my $high_barrier_vol = $self->volsurface->get_volatility($vol_args);
@@ -1786,7 +1790,7 @@ sub _pricing_parameters {
         q_rate            => $self->q_rate,
         r_rate            => $self->r_rate,
         mu                => $self->mu,
-        vol               => $self->two_barriers ? $self->pricing_vol_for_two_barriers : $self->pricing_vol,
+        vol               => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
         payouttime_code   => $self->payouttime_code,
         contract_type     => $self->pricing_code,
         underlying_symbol => $self->underlying->symbol,
