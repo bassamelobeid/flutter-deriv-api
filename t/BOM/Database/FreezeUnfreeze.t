@@ -1,14 +1,14 @@
 use Test::More tests => 7;
 use Test::Exception;
 
-use BOM::Database::DataMapper::Client;
+use BOM::Database::ClientDB;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $loginid = 'CR0016';
 my $client_data_mapper;
 
 lives_ok {
-    $client_data_mapper = BOM::Database::DataMapper::Client->new({
+    $client_db = BOM::Database::ClientDB->new({
         client_loginid => $loginid,
     });
 }
