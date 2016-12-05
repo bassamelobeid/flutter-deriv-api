@@ -6,7 +6,7 @@ use warnings;
 
 use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
-use BOM::Database::DataMapper::Client;
+use BOM::Database::ClientDB;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use BOM::Product::Transaction;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -36,11 +36,11 @@ foreach my $loginID (split(/,/, $listaccounts)) {
     my $name  = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
     my $email = $client->email;
 
-    my $client_data_mapper = BOM::Database::DataMapper::Client->new({
+    my $client_db = BOM::Database::ClientDB->new({
         client_loginid => $loginID,
     });
 
-    if (not $client_data_mapper->freeze) {
+    if (not $client_db->freeze) {
         die "Account stuck in previous transaction $loginID";
     }
 
@@ -76,7 +76,7 @@ foreach my $loginID (split(/,/, $listaccounts)) {
     }
     $grandtotal += in_USD($b, $curr);
 
-    $client_data_mapper->unfreeze;
+    $client_db->unfreeze;
 }
 
 print "<hr>Grand total recovered (converted to USD): USD $grandtotal<P>";

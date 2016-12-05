@@ -10,7 +10,7 @@ use Try::Tiny;
 
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
-use BOM::Database::DataMapper::Client;
+use BOM::Database::ClientDB;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -169,21 +169,21 @@ unless ($params{skip_validation}) {
 
 my $transRef;
 
-my $client_data_mapper = BOM::Database::DataMapper::Client->new({
+my $client_db = BOM::Database::ClientDB->new({
     client_loginid => $loginID,
 });
 
-$client_data_mapper->freeze || do {
+$client_db->freeze || do {
     print "ERROR: Account stuck in previous transaction $loginID";
     code_exit_BO();
 };
 
-my $to_data_mapper = BOM::Database::DataMapper::Client->new({
+my $to_client_db = BOM::Database::ClientDB->new({
     client_loginid => $loginID,
 });
 
 if ($ttype eq 'TRANSFER') {
-    $to_data_mapper->freeze || do {
+    $to_client_db->freeze || do {
         print "ERROR: To-Account stuck in previous transaction $toLoginID";
         code_exit_BO();
         }
