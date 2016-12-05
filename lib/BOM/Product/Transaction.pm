@@ -17,7 +17,7 @@ use YAML::XS qw(LoadFile);
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Runtime;
 use LandingCompany::Countries;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::System::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
@@ -38,7 +38,7 @@ use Finance::Asset::Market::Types;
 
 has client => (
     is  => 'ro',
-    isa => 'BOM::Platform::Client',
+    isa => 'Client::Account',
 );
 
 has multiple => (
@@ -203,7 +203,7 @@ sub BUILDARGS {
     return $args;
 }
 
-my $payment_limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'));
+my $payment_limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'));
 
 my %known_errors;              # forward declaration
 sub sell_expired_contracts;    # forward declaration
@@ -585,7 +585,7 @@ sub buy {    ## no critic (RequireArgUnpacking)
 #   thought to be already erroneous. Otherwise the element should contain
 #   a "loginid" key.
 #   The following keys are added:
-#   * client: the BOM::Platform::Client object corresponding to the loginid
+#   * client: the Client::Account object corresponding to the loginid
 #   * limits: a hash representing the betting limits of this client
 #   * fmb and txn: the FMB and transaction records that have been written
 #     to the database in case of success
@@ -627,7 +627,7 @@ sub batch_buy {    ## no critic (RequireArgUnpacking)
 
     for my $m (@{$self->multiple}) {
         next if $m->{code};
-        my $c = try { BOM::Platform::Client->new({loginid => $m->{loginid}}) };
+        my $c = try { Client::Account->new({loginid => $m->{loginid}}) };
         unless ($c) {
             $m->{code}  = 'InvalidLoginid';
             $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
