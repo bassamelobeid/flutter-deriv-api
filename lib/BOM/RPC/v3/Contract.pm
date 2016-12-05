@@ -440,7 +440,7 @@ sub send_multiple_ask {
     my $params         = {%{+shift}};
     my $barriers_array = delete $params->{args}->{barriers};
     my $responses      = [];
-
+    my $rpc_time = 0;
     for my $barriers (@$barriers_array) {
         $params->{args}->{barrier} = $barriers->{barrier};
         @{$params->{args}}{keys %$barriers} = values %$barriers;
@@ -463,13 +463,13 @@ sub send_multiple_ask {
         #    push @{$response->{array}}, {%$barriers, error => $res->{error}};
         #}
         #
-        #$response->{rpc_times} += $res->{rpc_time} // 0;
+        $rpc_time += $res->{rpc_time} // 0;
     }
 
     #$response->{rpc_time} = $response->{rpc_times};
     #delete @{$response}{qw(ask_price display_value longcode rpc_times error)};
 
-    return {array => $responses};
+    return {array => $responses, rpc_time => $rpc_time};
 }
 
 sub get_contract_details {
