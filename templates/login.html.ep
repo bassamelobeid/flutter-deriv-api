@@ -10,7 +10,7 @@
         <% } %>
         <div><input type="email" id="txtEmail" name="email" placeholder="<%= l('Email') %>" autocomplete="off" autofocus="autofocus" maxlength="254" /></div>
         <div><input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" /></div>
-        <div><button type="submit" id="btnLogin" class="button" name="login" value='<%= l('Login') %>'><%= l('Login') %></button></div>
+        <div><button type="submit" id="btnLogin" class="button" name="login" value='<%= l('Log in') %>'><%= l('Login') %></button></div>
         <input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
         <div class="links" style="display:none;">
             <div id="oa_social_login_container"></div>
