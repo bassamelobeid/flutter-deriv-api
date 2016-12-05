@@ -182,7 +182,7 @@ subtest 'predefined barriers' => sub {
                  [$date->plus_time_interval(3),     1.15667],
                  [$date->plus_time_interval('10m'), 1.15591]
              ],
-            available_barriers => [ [1.16435, 1.17415], [1.15798, 1.16925], [1.1521, 1.16435], [1.14622, 1.15798], [1.13985, 1.1521], [1.13495, 1.14622], [1.13005, 1.13985],],
+            available_barriers => [ [1.16435, 1.17415], [1.15798, 1.16925], ["1.15210", 1.16435], [1.14622, 1.15798], [1.13985, "1.15210"], [1.13495, 1.14622], [1.13005, 1.13985],],
             expired_barriers => [],
         },
     );
@@ -208,7 +208,6 @@ subtest 'predefined barriers' => sub {
         }
         @$offerings;
         my $testname = join '_', map {$m->{$_}} qw(contract_category expiry_type duration);
-        use Data::Dumper;
         cmp_bag($offering->{available_barriers}, $test->{available_barriers}, 'available barriers for ' . $testname);
         cmp_bag($offering->{expired_barriers},    $test->{expired_barriers},   'expired barriers for ' . $testname);
     }
@@ -219,11 +218,11 @@ subtest 'update_predefined_highlow' => sub {
     my $symbol = 'frxUSDJPY';
     SKIP: {
         skip 'non trading day', 4, unless create_underlying($symbol)->calendar->trades_on($now);
-        setup_ticks($symbol,[[$now->minus_time_interval('100d'), 100], [$now, 100], [$now->plus_time_interval('10s'), 101]]);
+        setup_ticks($symbol,[[$now->minus_time_interval('100d'), 100], [$now, 69], [$now->plus_time_interval('10s'), 69.1]]);
         my $new_tick = {
             symbol => $symbol,
             epoch => $now->plus_time_interval('30s')->epoch,
-            price => 101.001
+            price => 69.2
         };
         my $tp = generate_trading_periods($symbol);
         ok update_predefined_highlow($new_tick), 'updated highlow';
@@ -231,7 +230,7 @@ subtest 'update_predefined_highlow' => sub {
         my $touch = first {$_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M'} @$offering;
         ok !scalar(@{$touch->{expired_barriers}}), 'no expired barrier detected';
         $new_tick->{epoch} += 1;
-        $new_tick->{price} = 115;
+        $new_tick->{price} = 125;
         ok update_predefined_highlow($new_tick), 'next update';
         $offering = get_predefined_offerings($symbol);
         $touch = first {$_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M'} @$offering;
