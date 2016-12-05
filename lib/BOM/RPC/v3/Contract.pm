@@ -166,12 +166,12 @@ sub _get_ask {
             # need this warning to be logged for Japan as a regulatory requirement
             warn "[JPLOG]"
                 . $contract->shortcode . ","
+                . ($p2->{trading_period_start} // '') . ","
                 . $ask_price . ","
                 . ($contract->payout - $contract->opposite_contract->ask_price) . ","
                 . $contract->pricing_spot . ","
                 . $contract->pricing_vol . ","
-                . '0' . ","
-                . ($p2->{trading_period_start} // '') . "\n"
+                . '0' . "\n"
                 if ($p2->{currency} && $p2->{currency} eq 'JPY');
 
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
