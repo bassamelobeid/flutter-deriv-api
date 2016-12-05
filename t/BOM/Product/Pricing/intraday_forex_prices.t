@@ -49,7 +49,7 @@ my $hist_ticks = $underlying->ticks_in_between_start_end({
 
 my @tmp_ticks = reverse @$hist_ticks;
 
-my $resample_cache = Data::Resample::ResampleCache->new;
+my $resample_cache = BOM::Market::ResampleCache->new;
 $resample_cache->resample_cache_backfill({symbol => 'frxUSDJPY', ticks => \@tmp_ticks,});
 
 my $recorded_date = $date_start->truncate_to_day;

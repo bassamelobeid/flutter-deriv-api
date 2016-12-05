@@ -92,7 +92,7 @@ subtest 'inefficient period' => sub {
             [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp + 19)];
         });
 
-    my $mock2 = Test::MockModule->new('BOM::Market::TicksCache');
+    my $mock2 = Test::MockModule->new('BOM::Market::ResampleCache');
     $mock2->mock(
         'data_cache_get',
         sub {
