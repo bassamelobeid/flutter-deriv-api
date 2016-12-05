@@ -1178,7 +1178,7 @@ sub transfer_between_accounts {
         $error_unfreeze_msg_sub->($err, '', @unfreeze);
     };
 
-    my $err_msg        = "from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount], ";
+    my $err_msg      = "from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount], ";
     my $fm_client_db = BOM::Database::ClientDB->new({
         client_loginid => $client_from->loginid,
     });
