@@ -15,12 +15,11 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
-use Data::Resample::ResampleCache;
-use Data::Resample::TicksCache;
+use BOM::Market::ResampleCache;
 
 my $ticks = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/ticks.yml');
 
-my $mocked = Test::MockModule->new('Data::Resample::ResampleCache');
+my $mocked = Test::MockModule->new('BOM::Market::ResampleCache');
 
 my $now = Date::Utility->new('2016-08-05 12:00:00');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

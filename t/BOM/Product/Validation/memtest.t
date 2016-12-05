@@ -18,21 +18,20 @@ use Date::Utility;
 use Finance::Asset;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use Data::Resample::ResampleCache;
-use Data::Resample::TicksCache;
+use BOM::Market::ResampleCache;
 use Cache::RedisDB;
 
 note('mocking ticks to prevent warnings.');
-my $mocked = Test::MockModule->new('Data::Resample::ResampleCache');
+my $mocked = Test::MockModule->new('BOM::Market::ResampleCache');
 $mocked->mock(
     'resample_cache_get',
     sub {
         [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_, agg_epoch => $_} } (0 .. 10)];
     });
 
-my $mocked2 = Test::MockModule->new('Data::Resample::TicksCache');
+my $mocked2 = Test::MockModule->new('BOM::Market::ResampleCache');
 $mocked2->mock(
-    'tick_cache_get',
+    'data_cache_get',
     sub {
         [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_} } (0 .. 10)];
     });

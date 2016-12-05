@@ -8,8 +8,7 @@ use Test::MockModule;
 use Test::FailWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use Data::Resample::ResampleCache;
-use Data::Resample::TicksCache;
+use BOM::Market::ResampleCache;
 use Date::Utility;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -50,16 +49,16 @@ my $bet_params = {
     duration     => '2m',
 };
 
-my $mocked = Test::MockModule->new('Data::Resample::ResampleCache');
+my $mocked = Test::MockModule->new('BOM::Market::ResampleCache');
 $mocked->mock(
     'resample_cache_get',
     sub {
         [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_} } (0 .. 10)];
     });
 
-my $mocked2 = Test::MockModule->new('Data::Resample::TicksCache');
+my $mocked2 = Test::MockModule->new('BOM::Market::ResampleCache');
 $mocked2->mock(
-    'tick_cache_get',
+    'data_cache_get',
     sub {
         [map { {quote => 100, symbol => 'frxUSDJPY', agg_epoch => $_, epoch => $_} } (0 .. 10)];
     });
@@ -85,7 +84,7 @@ subtest 'inefficient period' => sub {
 
     note('set duration to five ticks.');
     $bet_params->{duration} = '5t';
-    my $mock = Test::MockModule->new('Data::Resample::ResampleCache');
+    my $mock = Test::MockModule->new('BOM::Market::ResampleCache');
     $mock->mock(
         'resample_cache_get',
         sub {
@@ -93,16 +92,16 @@ subtest 'inefficient period' => sub {
             [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp + 19)];
         });
 
-    my $mock2 = Test::MockModule->new('Data::Resample::TicksCache');
+    my $mock2 = Test::MockModule->new('BOM::Market::TicksCache');
     $mock2->mock(
-        'tick_cache_get',
+        'data_cache_get',
         sub {
             my $dp = $bet_params->{date_pricing}->epoch;
             [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp + 19)];
         });
 
     $mock2->mock(
-        'tick_cache_get_num_ticks',
+        'data_cache_get_num_data',
         sub {
             my $dp = $bet_params->{date_pricing}->epoch;
             [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp + 19)];

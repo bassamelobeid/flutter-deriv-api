@@ -18,7 +18,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 use BOM::System::RedisReplicated;
-use Data::Resample::ResampleCache;
+use BOM::Market::ResampleCache;
 
 
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
@@ -49,10 +49,7 @@ my $hist_ticks = $underlying->ticks_in_between_start_end({
 
 my @tmp_ticks = reverse @$hist_ticks;
 
-my $resample_cache = Data::Resample::ResampleCache->new({
-	redis_read  => BOM::System::RedisReplicated::redis_read(),
-	redis_write  => BOM::System::RedisReplicated::redis_write(),
-});
+my $resample_cache = Data::Resample::ResampleCache->new;
 $resample_cache->resample_cache_backfill({symbol => 'frxUSDJPY', ticks => \@tmp_ticks,});
 
 my $recorded_date = $date_start->truncate_to_day;
