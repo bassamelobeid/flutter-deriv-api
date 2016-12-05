@@ -19,24 +19,12 @@ use Moose;
 
 use Quant::Framework::Underlying;
 use BOM::System::RedisReplicated;
-use Data::Resample::ResampleCache;
-use Data::Resample::DataCache;
-
-has ticks_cache => (
-    is      => 'ro',
-    default => sub {
-        Data::Resample::DataCache->new({
-            redis_read => BOM::System::RedisReplicated::redis_read(),
-        });
-    },
-);
+use BOM::Market::ResampleCache;
 
 has resample_cache => (
     is      => 'ro',
     default => sub {
-        Data::Resample::ResampleCache->new({
-            redis_read => BOM::System::RedisReplicated::redis_read(),
-        });
+        BOM::Market::ResampleCache->new;
     },
 );
 
@@ -87,7 +75,7 @@ sub tick_cache_get {
             end_time   => $end_time,
         });
     } else {
-        $ticks = $self->ticks_cache->data_cache_get({
+        $ticks = $self->resample_cache->data_cache_get({
             symbol      => $underlying->symbol,
             start_epoch => $start_time,
             end_epoch   => $end_time,
@@ -104,7 +92,7 @@ sub tick_cache_get_num_ticks {
     my $num        = $args->{num};
     my $end_time   = $args->{end_epoch};
 
-    my $ticks = $self->ticks_cache->data_cache_get_num_data({
+    my $ticks = $self->resample_cache->data_cache_get_num_data({
         symbol    => $underlying->symbol,
         end_epoch => $end_time,
         num       => $num,
