@@ -42,12 +42,6 @@ sub update_or_create {
     for my $asset (@{$args->{assets} || [qw/all/]}) {
         for my $trade_type (@{$args->{trade_types} || [qw/all/]}) {
             my $self = $class->rnew(
-                trader_id => $args->{trader_id},
-                copier_id => $args->{copier_id},
-                broker    => $args->{broker},
-            );
-
-            $self = $class->rnew(
                 broker          => $args->{broker},
                 trader_id       => $args->{trader_id},
                 copier_id       => $args->{copier_id},
