@@ -64,10 +64,10 @@ sub resample_cache_get {
 
         my @rev_ticks = reverse @$raw_ticks;
         $ticks = $self->resample_cache->resample_cache_backfill({
-            symbol   => $underlying->symbol,
-            data     => \@rev_ticks,
-            backtest => $backtest,
-        });
+                symbol   => $underlying->symbol,
+                data     => \@rev_ticks,
+                backtest => $backtest,
+            }) if ($raw_ticks);
     } else {
         $ticks = $self->resample_cache->resample_cache_get({
             symbol      => $underlying->symbol,
