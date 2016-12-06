@@ -192,9 +192,9 @@ sub startup {
 
         ['verify_email', \&BOM::RPC::v3::NewAccount::verify_email],
 
-        ['send_ask', \&BOM::RPC::v3::Contract::send_ask],
+        ['send_ask',          \&BOM::RPC::v3::Contract::send_ask],
         ['send_multiple_ask', \&BOM::RPC::v3::Contract::send_multiple_ask],
-        ['get_bid',  \&BOM::RPC::v3::Contract::get_bid],
+        ['get_bid',           \&BOM::RPC::v3::Contract::get_bid],
         ['get_contract_details', \&BOM::RPC::v3::Contract::get_contract_details, 1],
 
         ['new_account_real',        \&BOM::RPC::v3::NewAccount::new_account_real,         1],
@@ -244,7 +244,7 @@ sub startup {
                 $dispatcher->app->log->error(qq{Internal error: $err});
                 $m->invalid_request('Invalid request');
                 return;
-            }
+                }
         });
 
     my $request_counter = 0;
