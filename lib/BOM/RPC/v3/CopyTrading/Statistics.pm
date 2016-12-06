@@ -27,7 +27,12 @@ sub copytrading_statistics {
                 message_to_client => localize('Login ID ([_1]) does not exist.', $trader_id)});
     }
 
-    # TODO check that client allows copy trading
+    # Check that client allows copy trading
+    unless ($trader->allow_copiers) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'CopyTradingNotAllowed',
+                message_to_client => localize('Trader does not allow copy trading.')});
+    }
 
     my $trader_date_joined = Date::Utility->new($trader->date_joined);
     my $result_hash        = {
@@ -132,17 +137,21 @@ sub copytrading_statistics {
     # let’s try if client has at least 50 contracts
     # let Ren know if there are still errors
     if (scalar(grep { $_->{bet_type} =~ /^(call|put)$/i } @{$sold_contracts}) > 50) {
-        $result_hash->{performance_probability} = sprintf(
-            "%.4f",
-            1 - Performance::Probability::get_performance_probability({
-                    pnl          => $cumulative_pnl,
-                    payout       => $contract_parameters->{payout_price},
-                    bought_price => $contract_parameters->{buy_price},
-                    types        => $contract_parameters->{bet_type},
-                    underlying   => $contract_parameters->{underlying_symbol},
-                    start_time   => $contract_parameters->{start_time},
-                    sell_time    => $contract_parameters->{sell_time},
-                }));
+        try {
+            $result_hash->{performance_probability} = sprintf(
+                "%.4f",
+                1 - Performance::Probability::get_performance_probability({
+                        pnl          => $cumulative_pnl,
+                        payout       => $contract_parameters->{payout_price},
+                        bought_price => $contract_parameters->{buy_price},
+                        types        => $contract_parameters->{bet_type},
+                        underlying   => $contract_parameters->{underlying_symbol},
+                        start_time   => $contract_parameters->{start_time},
+                        sell_time    => $contract_parameters->{sell_time},
+                    }));
+        } catch {
+            warn "Performance probability calculating error: $_";
+        };
     }
 
     # trades average duration
