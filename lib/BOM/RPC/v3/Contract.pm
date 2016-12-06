@@ -166,10 +166,11 @@ sub _get_ask {
             # need this warning to be logged for Japan as a regulatory requirement
             warn "[JPLOG]"
                 . $contract->shortcode . ","
+                . ($p2->{trading_period_start} // '') . ","
                 . $ask_price . ","
+                . ($contract->payout - $contract->opposite_contract->ask_price) . ","
                 . $contract->pricing_spot . ","
-                . $contract->pricing_vol . ","
-                . ($p2->{trading_period_start} // '') . "\n"
+                . $contract->pricing_vol . "," . '0' . "\n"
                 if ($p2->{currency} && $p2->{currency} eq 'JPY');
 
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
@@ -192,7 +193,7 @@ sub _get_ask {
                         staking_limits        => $contract->staking_limits,
                         )
                     : (),
-                    deep_otm_threshold         => $contract->market->deep_otm_threshold,
+                    deep_otm_threshold         => $contract->otm_threshold,
                     underlying_base_commission => $contract->underlying->base_commission,
                     maximum_total_markup       => BOM::System::Config::quants->{commission}->{maximum_total_markup},
                     base_commission_min        => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},

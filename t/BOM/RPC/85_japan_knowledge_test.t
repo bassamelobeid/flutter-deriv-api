@@ -12,7 +12,7 @@ use BOM::RPC::v3::Japan::NewAccount;
 use BOM::RPC::v3::Accounts;
 
 ## do not send email
-my $client_mocked = Test::MockModule->new('BOM::Platform::Client');
+my $client_mocked = Test::MockModule->new('Client::Account');
 $client_mocked->mock('add_note', sub { return 1 });
 
 my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
@@ -108,7 +108,7 @@ subtest 'First Test taken: fail test' => sub {
     };
 
     subtest 'Test result exists in financial assessment' => sub {
-        $jp_client = BOM::Platform::Client->new({loginid => $jp_loginid});
+        $jp_client = Client::Account->new({loginid => $jp_loginid});
         my $financial_data = from_json($jp_client->financial_assessment->data);
 
         my $tests = $financial_data->{jp_knowledge_test};
@@ -166,7 +166,7 @@ subtest 'Test is allowed after 1 day' => sub {
     };
 
     subtest '2 Tests result in financial assessment' => sub {
-        $jp_client = BOM::Platform::Client->new({loginid => $jp_loginid});
+        $jp_client = Client::Account->new({loginid => $jp_loginid});
         my $financial_data = from_json($jp_client->financial_assessment->data);
 
         my $tests = $financial_data->{jp_knowledge_test};
