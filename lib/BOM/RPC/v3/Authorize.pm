@@ -7,7 +7,7 @@ use Date::Utility;
 
 use BOM::System::AuditLog;
 use BOM::RPC::v3::Utility;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Platform::User;
 use BOM::Platform::Context qw (localize request);
 use BOM::RPC::v3::Utility;
@@ -24,7 +24,7 @@ sub authorize {
 
     my ($loginid, $scopes) = @{$token_details}{qw/loginid scopes/};
 
-    my $client = BOM::Platform::Client->new({loginid => $loginid});
+    my $client = Client::Account->new({loginid => $loginid});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client;
 
     if ($client->get_status('disabled')) {

@@ -15,7 +15,7 @@ use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Token;
-use BOM::Platform::Client;
+use Client::Account;
 
 use utf8;
 
@@ -77,7 +77,7 @@ subtest 'check_landing_company' => sub {
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Transfer error as wrong landing companies')
         ->error_message_is('The account transfer is unavailable for your account.', 'Correct error message for transfer failure');
 
-    $client_cr = BOM::Platform::Client->new({loginid => $client_cr->loginid});
+    $client_cr = Client::Account->new({loginid => $client_cr->loginid});
     ok $client_cr->get_status('disabled'), 'Client CR cannot transfer to MLT';
 
     $client_mf->set_default_account('EUR');
@@ -140,7 +140,7 @@ subtest $method => sub {
             ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Transfer error as wrong to client')
             ->error_message_is('The account transfer is unavailable for your account.', 'Correct error message for transfering to random client');
 
-        $client_mlt = BOM::Platform::Client->new({loginid => $client_mlt->loginid});
+        $client_mlt = Client::Account->new({loginid => $client_mlt->loginid});
         ok $client_mlt->get_status('disabled'), 'Disabled as tampereb by transferring to random client';
 
         $client_mlt->clr_status('disabled');
@@ -194,8 +194,8 @@ subtest $method => sub {
         is $result->{client_to_full_name}, $client_mf->full_name, 'transfer_between_accounts to client name is ok';
 
         ## after withdraw, check both balance
-        $client_mlt = BOM::Platform::Client->new({loginid => $client_mlt->loginid});
-        $client_mf  = BOM::Platform::Client->new({loginid => $client_mf->loginid});
+        $client_mlt = Client::Account->new({loginid => $client_mlt->loginid});
+        $client_mf  = Client::Account->new({loginid => $client_mf->loginid});
         ok $client_mlt->default_account->balance == 90, '-10';
         ok $client_mf->default_account->balance == 10,  '+10';
     };
@@ -240,7 +240,7 @@ subtest 'Sub account transfer' => sub {
             ->error_message_is('The account transfer is unavailable for your account.',
             'Correct error message for sub account as client is not marked as allow_omnibus');
 
-        $client_cr = BOM::Platform::Client->new({loginid => $client_cr->loginid});
+        $client_cr = Client::Account->new({loginid => $client_cr->loginid});
         ok $client_cr->get_status('disabled'), 'Client CR disabled';
         $client_cr->clr_status('disabled');
         # set allow_omnibus (master account has this set)
@@ -252,13 +252,13 @@ subtest 'Sub account transfer' => sub {
             ->error_message_is('The account transfer is unavailable for your account.',
             'Correct error message for sub account as client has no sub account');
 
-        $client_cr = BOM::Platform::Client->new({loginid => $client_cr->loginid});
+        $client_cr = Client::Account->new({loginid => $client_cr->loginid});
         ok $client_cr->get_status('disabled'), 'Client CR disabled';
         $client_cr->clr_status('disabled');
         $client_cr->allow_omnibus(1);
         $client_cr->save();
 
-        $client_cr1 = BOM::Platform::Client->new({loginid => $client_cr1->loginid});
+        $client_cr1 = Client::Account->new({loginid => $client_cr1->loginid});
         # set cr1 client as sub account of cr
         $client_cr1->sub_account_of($client_cr->loginid);
         $client_cr1->save();
@@ -285,8 +285,8 @@ subtest 'Sub account transfer' => sub {
         is $result->{client_to_loginid}, $client_cr1->loginid, 'Client to loginid is correct';
 
         # after withdraw, check both balance
-        $client_cr  = BOM::Platform::Client->new({loginid => $client_cr->loginid});
-        $client_cr1 = BOM::Platform::Client->new({loginid => $client_cr1->loginid});
+        $client_cr  = Client::Account->new({loginid => $client_cr->loginid});
+        $client_cr1 = Client::Account->new({loginid => $client_cr1->loginid});
         ok $client_cr->default_account->balance == 90,  '-10';
         ok $client_cr1->default_account->balance == 10, '+10';
     };
