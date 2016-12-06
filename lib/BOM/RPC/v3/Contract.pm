@@ -456,7 +456,7 @@ sub send_multiple_ask {
     }
 
     return {
-        array    => $responses,
+        proposals    => $responses,
         rpc_time => $rpc_time,
     };
 }
