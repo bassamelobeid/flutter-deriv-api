@@ -14,7 +14,7 @@
             "title":"Multiple Price Proposal Response",
             "description":"Latest price and other details for a given contract",
             "properties": {
-                "array" : {
+                "proposals" : {
                     "type": "array",
                     "description": "Multiple Price Proposal Result",
                     "required": "1",

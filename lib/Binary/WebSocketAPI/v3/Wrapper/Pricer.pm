@@ -322,9 +322,9 @@ sub process_ask_event {
 
     my $type = 'proposal';
     my $responses;
-    if (exists($response->{array})) {
+    if (exists($response->{proposals})) {
         $type      = "proposal_array";
-        $responses = $response->{array};
+        $responses = $response->{proposals};
     } else {
         $responses = [$response];
     }
@@ -366,7 +366,7 @@ sub process_ask_event {
             delete @{$results->{$type}}{qw(contract_parameters rpc_time)};
             push @results, $results;    #[];
         }
-        my $send_result = $type eq 'proposal_array' ? {array => \@results} : $results[0];
+        my $send_result = $type eq 'proposal_array' ? {proposals => \@results} : $results[0];
         $c->send({json => $send_result}, {args => $stash_data->{args}});
     }
     return;
