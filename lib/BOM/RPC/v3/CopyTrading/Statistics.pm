@@ -128,7 +128,10 @@ sub copytrading_statistics {
             $cumulative_pnl = $cumulative_pnl + ($contract->{sell_price} - $contract->{buy_price});
         }
     }
-    if (grep { $_->{bet_type} =~ /^(call|put)$/i } @{$sold_contracts}) {
+    # Ren: the model doesn’t work because if there are too few contract
+    # let’s try if client has at least 50 contracts
+    # let Ren know if there are still errors
+    if (scalar(grep { $_->{bet_type} =~ /^(call|put)$/i } @{$sold_contracts}) > 50) {
         $result_hash->{performance_probability} = sprintf(
             "%.4f",
             1 - Performance::Probability::get_performance_probability({
