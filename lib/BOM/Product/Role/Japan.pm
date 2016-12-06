@@ -203,13 +203,8 @@ sub _subvalidate_double_barrier {
     return;
 }
 
-has japan_pricing_info => (
-    is         => 'rw',
-    lazy_build => 1,
-);
-
 #compose a string contains all the pricing info that needed to be log for Japan
-sub _build_japan_pricing_info {
+sub japan_pricing_info {
     my $self                 = shift;
     my $trading_window_start = shift;
 
@@ -223,7 +218,8 @@ sub _build_japan_pricing_info {
     }
 
     my $bid_price = $self->payout - $self->opposite_contract->ask_price;
-    my $pricing_info = join ',', qw($self->shortcode $trading_window_start $self->ask_price $bid_price $self->pricing_spot $iv $iv_2);
+    my $pricing_info = join ',', ($self->shortcode, $trading_window_start, $self->ask_price, $bid_price, $self->pricing_spot, $iv, $iv_2);
+
     return $pricing_info . "\n";
 
 }
