@@ -450,7 +450,7 @@ sub send_multiple_ask {
             push @$responses, $res;
         } else {
             $error = $res;
-            @{$error->{details}}{keys %$barriers} = values %$barriers;
+            @{$error->{error}{details}}{keys %$barriers} = values %$barriers;
             push @$responses, {%$res, %$barriers};
         }
         $rpc_time += $res->{rpc_time} // 0;
