@@ -451,15 +451,15 @@ sub send_multiple_ask {
             push @$responses, $res;
         } else {
             @{$res->{error}{details}}{keys %$barriers} = values %$barriers;
-            $res->{error}{continue_price_stream} = 1; # we continue price stream because for multiple_ask
+            $res->{error}{continue_price_stream} = 1;    # we continue price stream because for multiple_ask
             push @$responses, $res;
         }
         $rpc_time += $res->{rpc_time} // 0;
     }
 
     return {
-        proposals    => $responses,
-        rpc_time => $rpc_time,
+        proposals => $responses,
+        rpc_time  => $rpc_time,
     };
 }
 
