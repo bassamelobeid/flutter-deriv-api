@@ -11,7 +11,7 @@ use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
 use BOM::System::Config;
-use BOM::Market::DataResample;
+use BOM::Market::DataDecimate;
 
 sub clone {
     my ($self, $changes) = @_;
@@ -237,7 +237,7 @@ sub _build_ticks_for_trend {
         start_epoch => $bet->date_pricing->epoch - $remaining_interval->seconds,
         end_epoch   => $bet->date_pricing->epoch,
         backtest    => $backtest,
-        resample    => $self->more_than_short_term_cutoff,
+        decimate    => $self->more_than_short_term_cutoff,
     });
 
     return $ticks;

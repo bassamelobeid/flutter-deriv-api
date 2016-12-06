@@ -42,7 +42,7 @@ use BOM::Product::RiskProfile;
 use BOM::Product::Types;
 use LandingCompany::Offerings qw(get_contract_specifics);
 
-use BOM::Market::DataResample;
+use BOM::Market::DataDecimate;
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -1912,7 +1912,7 @@ sub _market_data {
                 for_date => $for_date
             });
 
-            return BOM::Market::DataResample->new()->tick_cache_get_num_ticks({
+            return BOM::Market::DataDecimate->new()->tick_cache_get_num_ticks({
                 underlying => $args->{underlying},
                 end_epoch  => $args->{ending_epoch},
                 num        => $args->{tick_count},

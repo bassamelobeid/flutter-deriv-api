@@ -8,7 +8,7 @@ use Test::MockModule;
 use Test::FailWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Market::ResampleCache;
+use BOM::Market::DecimateCache;
 use Date::Utility;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -19,9 +19,9 @@ Cache::RedisDB->flushall;
 initialize_realtime_ticks_db();
 
 note('mocking ticks to prevent warnings.');
-my $mocked = Test::MockModule->new('BOM::Market::ResampleCache');
+my $mocked = Test::MockModule->new('BOM::Market::DecimateCache');
 $mocked->mock(
-    'resample_cache_get',
+    'decimate_cache_get',
     sub {
         [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_} } (0 .. 10)];
     });

@@ -16,7 +16,7 @@ with 'BOM::Product::Pricing::Engine::Role::StandardMarkup';
 
 use Math::Function::Interpolator;
 
-use BOM::Market::DataResample;
+use BOM::Market::DataDecimate;
 use List::Util qw(max);
 use BOM::Platform::Context qw(request localize);
 use Format::Util::Numbers qw( roundnear );
@@ -31,7 +31,7 @@ The source of the ticks used for this pricing.
 has tick_source => (
     is      => 'ro',
     default => sub {
-        BOM::Market::DataResample->new;
+        BOM::Market::DataDecimate->new;
     },
 );
 

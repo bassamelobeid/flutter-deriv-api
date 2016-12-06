@@ -18,8 +18,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 use BOM::System::RedisReplicated;
-use BOM::Market::ResampleCache;
-
+use BOM::Market::DecimateCache;
 
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
@@ -49,8 +48,8 @@ my $hist_ticks = $underlying->ticks_in_between_start_end({
 
 my @tmp_ticks = reverse @$hist_ticks;
 
-my $resample_cache = BOM::Market::ResampleCache->new;
-$resample_cache->resample_cache_backfill({symbol => 'frxUSDJPY', data => \@tmp_ticks,});
+my $decimate_cache = BOM::Market::DecimateCache->new;
+$decimate_cache->decimate_cache_backfill({symbol => 'frxUSDJPY', data => \@tmp_ticks,});
 
 my $recorded_date = $date_start->truncate_to_day;
 Test::BOM::UnitTestPrice::create_pricing_data($underlying->symbol, $payout_currency, $recorded_date);
