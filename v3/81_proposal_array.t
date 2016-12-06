@@ -48,7 +48,7 @@ try {
     alarm(0);
 }
 catch {
-    ok(0, "time out to wait messages");
+    fail("time out to wait messages");
 };
 
 @res = sort { $a->{echo_req}{barrier} cmp $b->{echo_req}{barrier} } @res;
