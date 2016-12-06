@@ -15,7 +15,7 @@ use Quant::Framework::EconomicEventCalendar;
 
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData::Types;
-use BOM::Market::DataResample;
+use BOM::Market::DataDecimate;
 
 my $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
 my $coefficients    = LoadFile('/home/git/regentmarkets/bom-market/config/files/volatility_calibration_coefficients.yml');
@@ -42,7 +42,7 @@ sub get_volatility {
     my $interval = Time::Duration::Concise->new(interval => max(900, $args->{seconds_to_expiration}) . 's');
     my $fill_cache = $args->{fill_cache} // 1;
 
-    my $ticks = BOM::Market::DataResample->new()->resample_cache_get({
+    my $ticks = BOM::Market::DataDecimate->new()->decimate_cache_get({
         underlying  => $underlying,
         start_epoch => $args->{current_epoch} - $interval->seconds,
         end_epoch   => $args->{current_epoch},
