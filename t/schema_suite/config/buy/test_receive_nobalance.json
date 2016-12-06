@@ -6,7 +6,8 @@
       "type": "object",
       "properties": {
         "code": {
-          "type": "string"
+          "type": "string",
+          "value":"InsufficientBalance"
         },
         "message": {
           "type": "string"
