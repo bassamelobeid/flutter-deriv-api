@@ -150,7 +150,7 @@ sub copytrading_statistics {
                         sell_time    => $contract_parameters->{sell_time},
                     }));
         } catch {
-            warn "Performance probability calculating error: $_";
+            warn "Performance probability calculation error: $_";
         };
     }
 
