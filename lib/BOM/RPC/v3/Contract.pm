@@ -456,9 +456,9 @@ sub send_multiple_ask {
     }
 
     return {
-        %$error,
         array    => $responses,
-        rpc_time => $rpc_time
+        rpc_time => $rpc_time,
+        %$error,
     };
 }
 
