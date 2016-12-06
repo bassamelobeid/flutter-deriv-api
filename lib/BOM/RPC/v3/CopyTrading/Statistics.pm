@@ -112,7 +112,7 @@ sub copytrading_statistics {
     });
 
     my $sold_contracts = $fmb_dm->get_sold({
-        limit => 9e5,
+        limit => 100,
     });
 
     my $cumulative_pnl      = 0;
