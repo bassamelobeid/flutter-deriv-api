@@ -47,7 +47,7 @@ sub payout_currencies {
     if ($client) {
         if ($client->default_account) {
             $currencies = [$client->currency];
-        } else { # client have not yet selected currency, so return Landing Company's allowed list
+        } else {    # client have not yet selected currency, so return Landing Company's allowed list
             my $lc = $client->landing_company;
             $currencies = $lc->legal_allowed_currencies;
         }
