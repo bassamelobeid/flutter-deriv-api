@@ -441,6 +441,7 @@ sub send_multiple_ask {
     my $barriers_array = delete $params->{args}->{barriers};
     my $responses      = [];
     my $rpc_time       = 0;
+    my $error = {};
     for my $barriers (@$barriers_array) {
         $params->{args}->{barrier} = $barriers->{barrier};
         @{$params->{args}}{keys %$barriers} = values %$barriers;
@@ -448,12 +449,14 @@ sub send_multiple_ask {
         if (not exists $res->{error}) {
             push @$responses, $res;
         } else {
+            $error = $res; #return one error
             push @$responses, {%$res, %$barriers};
         }
         $rpc_time += $res->{rpc_time} // 0;
     }
 
     return {
+        %$error;
         array    => $responses,
         rpc_time => $rpc_time
     };
