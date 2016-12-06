@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= l('Login') %></title>
+    <title><%= l('Log in') %></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel='stylesheet' href='/oauth2/css/styles.css' />
     <link rel='stylesheet' href='https://style.binary.com/binary.css' />
