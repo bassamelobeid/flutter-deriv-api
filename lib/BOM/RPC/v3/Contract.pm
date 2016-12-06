@@ -449,7 +449,7 @@ sub send_multiple_ask {
         if (not exists $res->{error}) {
             push @$responses, $res;
         } else {
-            $error = $res; #return one error
+            $error = {%$res, %$barriers}; #return one error
             push @$responses, {%$res, %$barriers};
         }
         $rpc_time += $res->{rpc_time} // 0;
