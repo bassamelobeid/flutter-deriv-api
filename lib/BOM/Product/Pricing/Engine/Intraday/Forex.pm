@@ -230,11 +230,9 @@ sub _build_ticks_for_trend {
 
     my $remaining_interval = Time::Duration::Concise::Localize->new(interval => $lookback_secs);
 
-    my $data_resample = BOM::Market::DataResample->new;
-
     my $ticks;
     my $backtest = ($bet->underlying->for_date) ? 1 : 0;
-    $ticks = $data_resample->get({
+    $ticks = $self->tick_source->get({
         underlying  => $bet->underlying,
         start_epoch => $bet->date_pricing->epoch - $remaining_interval->seconds,
         end_epoch   => $bet->date_pricing->epoch,
