@@ -10,7 +10,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Database::Model::OAuth;
 use BOM::System::Password;
 
@@ -51,7 +51,7 @@ $t = $t->send_ok({json => {set_account_currency => 'USD'}})->message_ok;
 $res = decode_json($t->message->[1]);
 is $res->{set_account_currency}, 0, 'Can not set default currency again';
 
-$test_client = BOM::Platform::Client->new({loginid => $test_client->loginid});
+$test_client = Client::Account->new({loginid => $test_client->loginid});
 ok $test_client->default_account, 'Default account set correctly';
 is $test_client->currency, 'EUR', 'Got correct client currency after setting account';
 

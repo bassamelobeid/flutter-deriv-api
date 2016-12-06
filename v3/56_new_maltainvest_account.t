@@ -13,7 +13,7 @@ use BOM::Database::Model::OAuth;
 
 ## do not send email
 use Test::MockModule;
-my $client_mocked = Test::MockModule->new('BOM::Platform::Client');
+my $client_mocked = Test::MockModule->new('Client::Account');
 $client_mocked->mock('add_note', sub { return 1 });
 
 my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
@@ -95,7 +95,7 @@ subtest 'MLT upgrade to MF account' => sub {
         my $loginid = $res->{new_account_maltainvest}->{client_id};
         like($loginid, qr/^MF\d+$/, "got MF client $loginid");
 
-        my $client = BOM::Platform::Client->new({loginid => $loginid});
+        my $client = Client::Account->new({loginid => $loginid});
         isnt($client->financial_assessment->data, undef, 'has financial assessment');
     };
 };
@@ -124,7 +124,7 @@ subtest 'VR upgrade to MF - Germany' => sub {
         my $loginid = $res->{new_account_maltainvest}->{client_id};
         like($loginid, qr/^MF\d+$/, "got MF client $loginid");
 
-        my $client = BOM::Platform::Client->new({loginid => $loginid});
+        my $client = Client::Account->new({loginid => $loginid});
         isnt($client->financial_assessment->data, undef, 'has financial assessment');
     };
 };
