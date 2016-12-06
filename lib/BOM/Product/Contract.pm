@@ -24,6 +24,7 @@ use Quant::Framework::CorrelationMatrix;
 use Price::Calculator;
 use Pricing::Engine::EuropeanDigitalSlope;
 use Pricing::Engine::TickExpiry;
+use Pricing::Engine::BlackScholes;
 
 use BOM::System::Chronicle;
 
@@ -531,6 +532,9 @@ sub _build_pricing_engine_name {
     my $self = shift;
 
     my $engine_name = $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'Pricing::Engine::EuropeanDigitalSlope';
+
+    #For Volatility indices, we use plain BS formula for pricing instead of VV/Slope
+    $engine_name = 'Pricing::Engine::BlackScholes' if $self->market->name eq 'volidx';
 
     if ($self->tick_expiry) {
         my @symbols = create_underlying_db->get_symbols_for(
@@ -1552,6 +1556,9 @@ sub _build_news_adjusted_pricing_vol {
 sub _build_vol_at_strike {
     my $self = shift;
 
+    #If surface is flat, don't bother calculating all those arguments
+    return $self->volsurface->get_volatility if ($self->underlying->volatility_surface_type eq 'flat');
+
     my $pricing_spot = $self->pricing_spot;
     my $vol_args     = {
         strike => $self->barriers_for_pricing->{barrier1},
@@ -1732,6 +1739,7 @@ sub _build_new_interface_engine {
     my $self = shift;
 
     my %engines = (
+        'Pricing::Engine::BlackScholes'         => 1,
         'Pricing::Engine::Asian'                => 1,
         'Pricing::Engine::Digits'               => 1,
         'Pricing::Engine::TickExpiry'           => 1,
@@ -1763,6 +1771,8 @@ sub _pricing_parameters {
         underlying_symbol => $self->underlying->symbol,
         market_data       => $self->_market_data,
         market_convention => $self->_market_convention,
+        t                 => $self->timeinyears->amount,
+        payout_type       => $self->payout_type,
     };
 
     #Only send qf-market-data if the engine really needs it.
