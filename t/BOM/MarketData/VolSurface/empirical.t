@@ -12,7 +12,7 @@ use BOM::MarketData;
 use BOM::MarketData::Types;
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData qw(create_underlying);
-use BOM::Market::ResampleCache;
+use BOM::Market::DecimateCache;
 use Date::Utility;
 
 # last tick time
@@ -568,14 +568,14 @@ subtest 'general' => sub {
     qr/is required/, 'throws error if underlying is not specified';
 };
 
-my $mock_at = Test::MockModule->new('BOM::Market::ResampleCache');
+my $mock_at = Test::MockModule->new('BOM::Market::DecimateCache');
 
 my $mock_emp = Test::MockModule->new('BOM::MarketData::VolSurface::Empirical');
 $mock_emp->mock('long_term_vol', sub { 0.11 });
 
 subtest 'error check' => sub {
     lives_ok {
-        $mock_at->mock('resample_cache_get', sub { [] });
+        $mock_at->mock('decimate_cache_get', sub { [] });
 
         my $vs = BOM::MarketData::VolSurface::Empirical->new(underlying => 'frxUSDJPY');
         is $vs->get_volatility({
@@ -586,12 +586,12 @@ subtest 'error check' => sub {
             $vs->long_term_prediction, 'vol is long term prediction';
         ok !$vs->error, 'no error even if there\'s no ticks';
         $mock_at->mock(
-            'resample_cache_get',
+            'decimate_cache_get',
             sub {
                 [map { $ticks->[$_] } (0 .. 3)];
             });
         $mock_at->mock(
-            'resample_cache_get',
+            'decimate_cache_get',
             sub {
                 [map { $ticks->[$_] } (0 .. 46)];
             });
@@ -605,7 +605,7 @@ subtest 'error check' => sub {
         ok !$vs->error, 'no error is set when we have less than 80% ticks to calculate volatility';
         $vs->error('');
         $mock_at->mock(
-            'resample_cache_get',
+            'decimate_cache_get',
             sub {
                 my @stale_ticks = map { $ticks->[0] } (0 .. 21);
                 my @normal_ticks = map { $ticks->[$_] } (22 .. 38);
@@ -620,7 +620,7 @@ subtest 'error check' => sub {
         ok !$vs->error, 'no error if we have stale ticks in cache';
         $vs->error('');
         $mock_at->mock(
-            'resample_cache_get',
+            'decimate_cache_get',
             sub {
                 my @stale_ticks = map { $ticks->[0] } (10 .. 21);
                 my @normal_ticks = map { $ticks->[$_] } (22 .. 38);
@@ -636,7 +636,7 @@ subtest 'error check' => sub {
         ok !$vs->error, 'no error if we have stale ticks in between cache.';
         $vs->error('');
         $mock_at->mock(
-            'resample_cache_get',
+            'decimate_cache_get',
             sub {
                 return [(map { $ticks->[0] } (0 .. 9))];
             });
@@ -649,7 +649,7 @@ subtest 'error check' => sub {
         ok !$vs->error, 'no error if we have no good ticks';
         $vs->error('');
         $mock_at->mock(
-            'resample_cache_get',
+            'decimate_cache_get',
             sub {
                 return [(
                         map {
@@ -675,7 +675,7 @@ subtest 'error check' => sub {
 };
 
 subtest 'seasonalized volatility' => sub {
-    $mock_at->mock('resample_cache_get', sub { $ticks });
+    $mock_at->mock('decimate_cache_get', sub { $ticks });
 
     lives_ok {
         my $vs = BOM::MarketData::VolSurface::Empirical->new(underlying => 'frxUSDJPY');

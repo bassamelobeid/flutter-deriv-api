@@ -1,4 +1,4 @@
-package BOM::Market::ResampleCache;
+package BOM::Market::DecimateCache;
 
 use strict;
 use warnings;
@@ -10,13 +10,13 @@ use RedisDB;
 use Date::Utility;
 use Sereal::Encoder;
 use Sereal::Decoder;
-use Data::Resample;
+use Data::Decimate;
 
 use BOM::System::RedisReplicated;
 
 =head1 NAME
 
-Resample::Cache - A module that works with redis for resample datas. 
+BOM::Market::DecimateCache - A module that works with redis for decimated datas. 
 
 =head1 VERSION
 
@@ -24,11 +24,11 @@ Version 0.01
 
 =head1 SYNOPSIS
 
-  use BOM::Market::ResampleCache;
+  use BOM::Market::DecimateCache;
 
 =head1 DESCRIPTION
 
-A module that allows you to resample a data feed
+A module that allows you to retrieve a decimated data feed from redis.
 
 =cut
 
@@ -41,7 +41,7 @@ our $VERSION = '0.01';
 
 =head2 data_cache_size
 
-=head2 resample_cache_size
+=head2 decimate_cache_size
 
 =cut
 
@@ -57,22 +57,22 @@ has data_cache_size => (
     default => 1860,
 );
 
-has resample_cache_size => (
+has decimate_cache_size => (
     is      => 'ro',
     default => 2880,
 );
 
-has resample_retention_interval => (
+has decimate_retention_interval => (
     is      => 'ro',
     isa     => 'time_interval',
     lazy    => 1,
     coerce  => 1,
-    builder => '_build_resample_retention_interval',
+    builder => '_build_decimate_retention_interval',
 );
 
-sub _build_resample_retention_interval {
+sub _build_decimate_retention_interval {
     my $self = shift;
-    my $interval = int($self->resample_cache_size / (60 / $self->sampling_frequency->seconds));
+    my $interval = int($self->decimate_cache_size / (60 / $self->sampling_frequency->seconds));
     return $interval . 'm';
 }
 
@@ -125,10 +125,10 @@ has 'redis_write' => (
     },
 );
 
-has 'data_resample' => (
+has 'data_decimate' => (
     is      => 'ro',
     default => sub {
-        Data::Resample->new;
+        Data::Decimate->new;
     },
 );
 
@@ -139,11 +139,11 @@ has 'data_resample' => (
 =cut
 
 sub _make_key {
-    my ($self, $symbol, $resample) = @_;
+    my ($self, $symbol, $decimate) = @_;
 
     #my @bits = ("RESAMPLE", $symbol);
     my @bits = ("AGGTICKS", $symbol);
-    if ($resample) {
+    if ($decimate) {
         #push @bits, ($self->sampling_frequency->as_concise_string, 'RESAMPLE');
         push @bits, ($self->sampling_frequency->as_concise_string, 'AGG');
     } else {
@@ -163,11 +163,11 @@ sub _update {
     return $redis->zadd($key, $score, $value);
 }
 
-=head2 resample_cache_backfill
+=head2 decimate_cache_backfill
 
 =cut
 
-sub resample_cache_backfill {
+sub decimate_cache_backfill {
     my ($self, $args) = @_;
 
     my $symbol   = $args->{symbol}   // '';
@@ -183,24 +183,24 @@ sub resample_cache_backfill {
         }
     }
 
-    my $resample_data = $self->data_resample->resample({
+    my $resample_data = $self->data_decimate->decimate({
         data => $data,
     });
 
     if (not $backtest) {
         foreach my $single_data (@$resample_data) {
-            $self->_update($self->redis_write, $resample_key, $single_data->{resample_epoch}, $self->encoder->encode($single_data));
+            $self->_update($self->redis_write, $resample_key, $single_data->{decimate_epoch}, $self->encoder->encode($single_data));
         }
     }
 
     return $resample_data;
 }
 
-=head2 resample_cache_get
+=head2 decimate_cache_get
 
 =cut
 
-sub resample_cache_get {
+sub decimate_cache_get {
     my ($self, $args) = @_;
 
     my $which = $args->{symbol}      // '';
@@ -261,7 +261,7 @@ sub data_cache_get_num_data {
 
 =head2 data_cache_insert
 
-Also insert into resample cache if data crosses 15s boundary.
+Also insert into decimate cache if data crosses 15s boundary.
 
 =cut
 
@@ -289,13 +289,13 @@ sub data_cache_insert {
             @{$self->redis_read->zrangebyscore($key, $boundary - $self->sampling_frequency->seconds - 1, $boundary)})
         {
             #do resampling
-            my $resample_data = $self->data_resample->resample({
+            my $resample_data = $self->data_decimate->decimate({
                 data => \@datas,
             });
 
             foreach my $tick (@$resample_data) {
 
-                $self->_update($self->redis_write, $resample_key, $tick->{resample_epoch}, $self->encoder->encode($tick));
+                $self->_update($self->redis_write, $resample_key, $tick->{decimate_epoch}, $self->encoder->encode($tick));
             }
         } elsif (
             my @resample_data = map {
@@ -308,12 +308,12 @@ sub data_cache_insert {
                 )})
         {
             my $single_data = $resample_data[0];
-            $single_data->{resample_epoch} = $boundary;
+            $single_data->{decimate_epoch} = $boundary;
             $single_data->{count}          = 0;
             $self->_update(
                 $self->redis_write,
                 $self->_make_key($to_store{symbol}, 1),
-                $single_data->{resample_epoch},
+                $single_data->{decimate_epoch},
                 $self->encoder->encode($single_data));
         }
     }
