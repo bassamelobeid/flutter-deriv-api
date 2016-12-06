@@ -2,23 +2,29 @@
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "properties": {
-        "proposal": {
+        "proposal_array": {
             "type": "object",
             "required": "1",
             "properties" : {
+                "proposals" : {
+                    "type": "array",
+                    "required" : "1",
+                    "items" :{
+                        "type": "object",
+                        "properties": {
                 "longcode": {
                     "type": "string",
-                    "pattern": "^[_6]$",
+                    "pattern": "^[_7]$",
                     "required": "1"
                 },
                 "ask_price": {
                     "type": "number",
-                    "pattern": "^[_7]$",
+                    "pattern": "^[_8]$",
                     "required": "1"
                 },
                 "display_value": {
                     "type": "number",
-                    "pattern": "^[_8]$",
+                    "pattern": "^[_9]$",
                     "required": "1"
                 },
                 "date_start": {
@@ -38,13 +44,17 @@
                 },
                 "spot": {
                     "type": "number",
-                    "pattern": "^[_9]$",
+                    "pattern": "^[_10]$",
                     "required": "1"
                 },
                 "spot_time": {
                     "type": "number",
                     "pattern": "^\\d+$",
                     "required": "1"
+                }
+                            
+                        }
+                    }
                 }
             }
         },
@@ -53,7 +63,7 @@
         },
         "msg_type": {
             "type": "string",
-            "pattern": "^proposal$",
+            "pattern": "^proposal_array$",
             "required": "1"
         }
     }

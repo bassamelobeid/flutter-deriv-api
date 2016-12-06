@@ -1,5 +1,5 @@
 {
-  "proposal": 1,
+  "proposal_array": 1,
   "amount": "100",
   "basis": "payout",
   "currency": "USD",
@@ -7,5 +7,5 @@
   "symbol": "[_2]",
   "duration": "[_3]",
   "duration_unit": "[_4]",
-  "barrier": "[_5]"
+  "barriers": [{"barrier" : "[_5]"},{"barrier": "[_6]"}]
 }
