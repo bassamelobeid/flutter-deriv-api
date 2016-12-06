@@ -75,7 +75,7 @@ sub proposal_array {
                 my ($c, $rpc_response, $req_storage) = @_;
 
                 my $caches = [];
-                for my $response (@{$rpc_response->{array}}) {
+                for my $response (@{$rpc_response->{proposals}}) {
                     my $cache = {
                         longcode            => $response->{longcode},
                         contract_parameters => delete $response->{contract_parameters}};
