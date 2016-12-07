@@ -178,7 +178,7 @@ sub decimate_cache_backfill {
         }
     }
 
-    return $resample_data;
+    return $decimate_data;
 }
 
 =head2 decimate_cache_get
