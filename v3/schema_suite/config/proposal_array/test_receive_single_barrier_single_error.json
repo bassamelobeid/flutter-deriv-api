@@ -77,7 +77,7 @@
                                                 },
                                                 "barrier": {
                                                     "required" : "1",
-                                                    "pattern" : "^[_6]$"
+                                                    "enum" : ["[_6]"]
                                                 },
                                                 "payout": {
                                                     "required" : "1"
