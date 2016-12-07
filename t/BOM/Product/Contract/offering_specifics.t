@@ -5,10 +5,13 @@ use warnings;
 
 use Test::More;
 use Test::FailWarnings;
+use Test::MockModule;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
+my $mock = Test::MockModule->new('BOM::Product::Contract::PredefinedParameters');
+$mock->mock('get_trading_periods', sub {[]});
 use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
 use Cache::RedisDB;
@@ -27,11 +30,11 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol        => $_,
         recorded_date => $now
     }) for qw(USD JPY JPY-USD);
-my $fake_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
-    epoch      => $now->epoch,
+    epoch      => $_->epoch,
     quote      => 100
-});
+}) for ($now->minus_time_interval('100d'), $now);
 
 my $bet_params = {
     underlying   => 'frxUSDJPY',
@@ -43,7 +46,6 @@ my $bet_params = {
     currency     => 'USD',
     payout       => 10,
 };
-Cache::RedisDB->set('FINDER_PREDEFINED_SET', 'frxUSDJPY==2016-09-22==00', []);
 subtest '2-minute non ATM callput' => sub {
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
