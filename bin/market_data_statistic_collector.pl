@@ -12,8 +12,6 @@ To set statistic of market data. For example age of vol file, age of dividend, a
 
 =cut
 
-#comment
-
 use Moose;
 
 use BOM::Platform::Runtime;
@@ -231,13 +229,10 @@ sub _collect_dividend_ages {
 
 }
 
-sub _collect_vol_diff_stat();
-{
-
+sub _collect_vol_diff_stat {
     my @underlyings = map { create_underlying($_) } create_underlying_db->get_symbols_for(
         market    => 'forex',
         submarket => 'major_pairs',
-
     );
 
     foreach my $underlying (@underlyings) {
@@ -253,7 +248,6 @@ sub _collect_vol_diff_stat();
 
         if ($day_of_week == 5) {
             $total_var_On = ($vol_On**2) * 3;
-
         }
         stats_gauge('total_variance_diff_On_1w', $total_var_1w - $total_var_On, {tags => ['tag:' . $underlying->{symbol}]});
         stats_gauge('total_variance_diff_On_1m', $total_var_1m - $total_var_On, {tags => ['tag:' . $underlying->{symbol}]});
