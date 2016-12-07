@@ -19,6 +19,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 use BOM::System::RedisReplicated;
 use BOM::Market::DecimateCache;
+use Data::Decimate qw(decimate);
 
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
@@ -49,7 +50,23 @@ my $hist_ticks = $underlying->ticks_in_between_start_end({
 my @tmp_ticks = reverse @$hist_ticks;
 
 my $decimate_cache = BOM::Market::DecimateCache->new;
-$decimate_cache->decimate_cache_backfill({symbol => 'frxUSDJPY', data => \@tmp_ticks,});
+
+my $key          = $decimate_cache->_make_key('frxUSDJPY', 0);
+my $decimate_key = $decimate_cache->_make_key('frxUSDJPY', 1);
+
+foreach my $single_data (@$tmp_ticks) {
+       $decimate_cache->_update($decimate_cache->redis_write, $key, $single_data->{epoch}, $decimate_cache->encoder->encode($single_data));
+}
+
+my $decimate_data = Data::Decimate::decimate($decimate_cache->sampling_frequency->seconds, $ticks);
+
+foreach my $single_data (@$decimate_data) {
+            $decimate_cache->_update(
+                $decimate_cache->redis_write,
+                $decimate_key,
+                $single_data->{decimate_epoch},
+                $decimate_cache->encoder->encode($single_data));
+}
 
 my $recorded_date = $date_start->truncate_to_day;
 Test::BOM::UnitTestPrice::create_pricing_data($underlying->symbol, $payout_currency, $recorded_date);
