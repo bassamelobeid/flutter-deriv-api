@@ -469,6 +469,24 @@ subtest 'send_ask_when_date_expiry_smaller_than_date_start' => sub {
 
 };
 
+subtest 'send_multiple_ask' => sub {
+  my $params = {
+                client_ip => '127.0.0.1',
+                args      => {
+                              "amount"           => "100",
+                              "basis"            => "payout",
+                              "contract_type"    => "DIGITMATCH",
+                              "currency"         => "USD",
+                              "duration"         => "10",
+                              "duration_unit"    => "t",
+                              "symbol"           => "R_50",
+                             }};
+
+  my $result = $c->call_ok('send_multiple_ask', $params)->has_no_error->result;
+  use Data::Dumper;
+  diag($result);
+};
+
 subtest 'get_bid' => sub {
     # just one tick for missing market data
     create_ticks([100, $now->epoch - 899, 'R_50']);
