@@ -63,11 +63,9 @@ sub decimate_cache_get {
         });
 
         my @rev_ticks = reverse @$raw_ticks;
-        $ticks = $self->decimate_cache->decimate_cache_backfill({
-                symbol   => $underlying->symbol,
-                data     => \@rev_ticks,
-                backtest => $backtest,
-            }) if ($raw_ticks);
+        $ticks = $self->decimate_cache->data_decimate->decimate({
+            data => $data,
+        });
     } else {
         $ticks = $self->decimate_cache->decimate_cache_get({
             symbol      => $underlying->symbol,
