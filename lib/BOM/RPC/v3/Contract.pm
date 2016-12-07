@@ -347,7 +347,7 @@ sub get_bid {
             if ($sell_time or $contract->is_expired) {
                 $response->{is_expired} = 1;
 
-                # for path dependent contracts contract may have hit tick but not sell time
+                # path dependent contracts may have hit tick but not sell time
                 my $sell_tick = $sell_time ? $contract->underlying->tick_at($sell_time, {allow_inconsistent => 1}) : undef;
 
                 my $hit_tick;
