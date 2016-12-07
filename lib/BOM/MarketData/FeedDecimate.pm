@@ -35,6 +35,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use ExpiryQueue qw( update_queue_for_tick );
 use Time::HiRes;
 
+use Data::Decimate qw(decimate);
 use BOM::Market::DecimateCache;
 
 has timeout => (
@@ -86,9 +87,7 @@ sub BUILD {
             $decimate_cache->_update($decimate_cache->redis_write, $key, $single_data->{epoch}, $decimate_cache->encoder->encode($single_data));
         }
 
-        my $decimate_data = $decimate_cache->data_decimate->decimate({
-            data => $ticks,
-        });
+        my $decimate_data = Data::Decimate::decimate($decimate_cache->sampling_frequency->seconds, $ticks);
 
         foreach my $single_data (@$decimate_data) {
             $decimate_cache->_update(

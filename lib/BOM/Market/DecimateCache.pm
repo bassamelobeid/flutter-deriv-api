@@ -10,7 +10,7 @@ use RedisDB;
 use Date::Utility;
 use Sereal::Encoder;
 use Sereal::Decoder;
-use Data::Decimate;
+use Data::Decimate qw(decimate);
 
 use BOM::System::RedisReplicated;
 
@@ -119,13 +119,6 @@ has 'redis_write' => (
     },
 );
 
-has 'data_decimate' => (
-    is      => 'ro',
-    default => sub {
-        Data::Decimate->new;
-    },
-);
-
 =head1 SUBROUTINES/METHODS
 
 =head2 _make_key
@@ -177,12 +170,10 @@ sub decimate_cache_backfill {
         }
     }
 
-    my $resample_data = $self->data_decimate->decimate({
-        data => $data,
-    });
+    my $decimate_data = Data::Decimate::decimate($self->sampling_frequency->seconds, $data);
 
     if (not $backtest) {
-        foreach my $single_data (@$resample_data) {
+        foreach my $single_data (@$decimate_data) {
             $self->_update($self->redis_write, $resample_key, $single_data->{decimate_epoch}, $self->encoder->encode($single_data));
         }
     }
@@ -283,16 +274,13 @@ sub data_cache_insert {
             @{$self->redis_read->zrangebyscore($key, $boundary - $self->sampling_frequency->seconds - 1, $boundary)})
         {
             #do resampling
-            my $resample_data = $self->data_decimate->decimate({
-                data => \@datas,
-            });
+            my $decimate_data = Data::Decimate::decimate($self->sampling_frequency->seconds, \@datas);
 
-            foreach my $tick (@$resample_data) {
-
+            foreach my $tick (@$decimate_data) {
                 $self->_update($self->redis_write, $resample_key, $tick->{decimate_epoch}, $self->encoder->encode($tick));
             }
         } elsif (
-            my @resample_data = map {
+            my @decimate_data = map {
                 $self->decoder->decode($_)
             } reverse @{
                 $self->redis_read->zrevrangebyscore(
@@ -301,7 +289,7 @@ sub data_cache_insert {
                     0, 'LIMIT', 0, 1
                 )})
         {
-            my $single_data = $resample_data[0];
+            my $single_data = $decimate_data[0];
             $single_data->{decimate_epoch} = $boundary;
             $single_data->{count}          = 0;
             $self->_update(
