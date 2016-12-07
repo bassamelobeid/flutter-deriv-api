@@ -480,6 +480,7 @@ subtest 'send_multiple_ask' => sub {
                               "duration"         => "10",
                               "duration_unit"    => "t",
                               "symbol"           => "R_50",
+                              "barriers"         => [{"barrrier" => "0"}, {"barrier" => "1"}]
                              }};
 
   my $result = $c->call_ok('send_multiple_ask', $params)->has_no_error->result;
