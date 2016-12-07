@@ -21,6 +21,7 @@ use List::Util qw( first min max );
 use Quant::Framework::Underlying;
 use BOM::System::RedisReplicated;
 use BOM::Market::DecimateCache;
+use Data::Decimate qw(decimate);
 
 has decimate_cache => (
     is      => 'ro',
@@ -63,9 +64,7 @@ sub decimate_cache_get {
         });
 
         my @rev_ticks = reverse @$raw_ticks;
-        $ticks = $self->decimate_cache->data_decimate->decimate({
-            data => \@rev_ticks,
-        });
+        $ticks = Data::Decimate::decimate($self->decimate_cache->sampling_frequency->seconds, \@rev_ticks);
     } else {
         $ticks = $self->decimate_cache->decimate_cache_get({
             symbol      => $underlying->symbol,
