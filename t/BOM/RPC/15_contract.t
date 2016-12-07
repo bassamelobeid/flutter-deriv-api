@@ -487,7 +487,7 @@ subtest 'send_multiple_ask' => sub {
   my $outer_expected_keys = [sort {$a cmp $b} (qw(rpc_time proposals))];
   cmp_deeply([sort keys %$result], $outer_expected_keys, 'result keys is correct');
   is(scalar(@{$result->{proposals}}), 2, "There are 2 proposals");
-  my $inner_expected_keys = [sort {$a cmp $b} (qw(longcode spot display_value sport_time ask_price date_start rpc_time contract_parameters payout))];
+  my $inner_expected_keys = [sort {$a cmp $b} (qw(longcode spot display_value spot_time ask_price date_start rpc_time contract_parameters payout))];
   for my $proposal (@{$result->{proposals}}){
     cmp_deeply([sort keys %$proposal], $inner_expected_keys, 'result keys is correct in proposals');
   }
