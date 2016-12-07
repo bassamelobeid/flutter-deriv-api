@@ -484,7 +484,7 @@ subtest 'send_multiple_ask' => sub {
 
   my $result = $c->call_ok('send_multiple_ask', $params)->has_no_error->result;
   use Data::Dumper;
-  diag($result);
+  diag(Dumper($result));
 };
 
 subtest 'get_bid' => sub {
