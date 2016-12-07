@@ -86,7 +86,7 @@ code_exit_BO();
 sub _validation_errors {
     my %input = @_;
     my @errors;
-    for (qw/country description/) {
+    for (qw/country description amount/) {
         $input{$_} || push @errors, "Field '$_' must be supplied";
     }
     # some of these are stored as json thus aren't checked by the orm or the database..
