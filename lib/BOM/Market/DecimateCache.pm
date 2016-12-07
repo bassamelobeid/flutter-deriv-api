@@ -18,10 +18,6 @@ use BOM::System::RedisReplicated;
 
 BOM::Market::DecimateCache - A module that works with redis for decimated datas. 
 
-=head1 VERSION
-
-Version 0.01
-
 =head1 SYNOPSIS
 
   use BOM::Market::DecimateCache;
@@ -31,8 +27,6 @@ Version 0.01
 A module that allows you to retrieve a decimated data feed from redis.
 
 =cut
-
-our $VERSION = '0.01';
 
 =head1 ATTRIBUTES
 =cut

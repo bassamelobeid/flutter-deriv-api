@@ -64,7 +64,7 @@ sub decimate_cache_get {
 
         my @rev_ticks = reverse @$raw_ticks;
         $ticks = $self->decimate_cache->data_decimate->decimate({
-            data => $data,
+            data => \@rev_ticks,
         });
     } else {
         $ticks = $self->decimate_cache->decimate_cache_get({
