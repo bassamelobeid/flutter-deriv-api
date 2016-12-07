@@ -100,8 +100,8 @@ subtest 'contract creation and purchase' => sub {
         ok $contract->is_path_dependent, 'is path dependent';
         is_deeply $contract->supported_expiries, ['intraday', 'daily'], 'proper expires type';
         is_deeply $contract->supported_start_types, ['spot'], 'spot start type';
-        isa_ok $contract->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
-        isa_ok $contract->greek_engine,   'BOM::Product::Pricing::Greeks::BlackScholes';
+        isa_ok $contract->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated', 'Correct pricing engine';
+        isa_ok $contract->greek_engine,   'BOM::Product::Pricing::Greeks::BlackScholes',           'Correct greek engine';
     }
     'generic';
 
@@ -113,7 +113,7 @@ subtest 'contract creation and purchase' => sub {
     });
 
     my $error = $txn->buy(skip_validation => 1);
-    ok(!$error, 'should no error to buy the contract');
+    ok(!$error, 'no error in buy');
 };
 
 # sleep as we want barrier to be hit
