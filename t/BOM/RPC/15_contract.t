@@ -480,7 +480,7 @@ subtest 'send_multiple_ask' => sub {
                               "duration"         => "10",
                               "duration_unit"    => "t",
                               "symbol"           => "R_50",
-                              "barriers"         => [{"barrrier" => "1"}, {"barrier" => "2"}]
+                              "barriers"         => [{"barrrier" => "3"}, {"barrier" => "2"}]
                              }};
   use Data::Dumper;
   my $result = $c->call_ok('send_multiple_ask', $params)->has_no_error->result;
