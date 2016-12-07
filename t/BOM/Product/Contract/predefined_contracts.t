@@ -12,10 +12,18 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods);
 use Cache::RedisDB;
 Cache::RedisDB->flushall;
 initialize_realtime_ticks_db;
+BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
+
 my $now = Date::Utility->new('2016-09-28 10:00:00');
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'frxUSDJPY',
+    epoch => $_,
+}) for ($now->minus_time_interval('100d')->epoch, $now->epoch, $now->plus_time_interval('1s')->epoch);
+generate_trading_periods('frxUSDJPY',$now);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
@@ -31,11 +39,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 
 subtest 'predefined_contracts' => sub {
-    my $fake_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
-        epoch      => $now->epoch,
-        quote      => 100,
-    });
     my $bet_params = {
         underlying   => 'frxUSDJPY',
         bet_type     => 'CALL',
@@ -45,7 +48,6 @@ subtest 'predefined_contracts' => sub {
         currency     => 'USD',
         payout       => 10,
         duration     => '15m',
-        current_tick => $fake_tick,
     };
     my $c = produce_contract($bet_params);
     ok !$c->can('predefined_contracts'), 'no predefined_contracts for costarica';
