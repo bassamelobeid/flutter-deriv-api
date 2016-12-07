@@ -54,11 +54,11 @@ my $decimate_cache = BOM::Market::DecimateCache->new;
 my $key          = $decimate_cache->_make_key('frxUSDJPY', 0);
 my $decimate_key = $decimate_cache->_make_key('frxUSDJPY', 1);
 
-foreach my $single_data (@$tmp_ticks) {
+foreach my $single_data (@tmp_ticks) {
        $decimate_cache->_update($decimate_cache->redis_write, $key, $single_data->{epoch}, $decimate_cache->encoder->encode($single_data));
 }
 
-my $decimate_data = Data::Decimate::decimate($decimate_cache->sampling_frequency->seconds, $ticks);
+my $decimate_data = Data::Decimate::decimate($decimate_cache->sampling_frequency->seconds, \@tmp_ticks);
 
 foreach my $single_data (@$decimate_data) {
             $decimate_cache->_update(
