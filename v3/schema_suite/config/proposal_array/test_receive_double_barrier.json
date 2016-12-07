@@ -20,17 +20,17 @@
                         "properties": {
                             "longcode": {
                                 "type": "string",
-                                "pattern": "^[_7]$",
+                                "pattern": "^[_9]$",
                                 "required": "1"
                             },
                             "ask_price": {
                                 "type": "number",
-                                "pattern": "^[_8]$",
+                                "pattern": "^[_10]",
                                 "required": "1"
                             },
                             "display_value": {
                                 "type": "number",
-                                "pattern": "^[_9]$",
+                                "pattern": "^[_11]",
                                 "required": "1"
                             },
                             "date_start": {
@@ -45,7 +45,7 @@
                             },
                             "spot": {
                                 "type": "number",
-                                "pattern": "^[_10]$",
+                                "pattern": "^[_12]$",
                                 "required": "1"
                             },
                             "spot_time": {
