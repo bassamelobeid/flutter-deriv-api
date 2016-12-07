@@ -66,7 +66,7 @@
                                         "message_to_client" : {
                                             "type" : "string",
                                             "required" : "1",
-                                            "pattern": "^Barrier is not an integer between 0 to 9.$"
+                                            "pattern": "^[_13]$"
                                         },
                                         "details": {
                                             "type" : "object",
@@ -77,7 +77,11 @@
                                                 },
                                                 "barrier": {
                                                     "required" : "1",
-                                                    "enum" : ["[_6]"]
+                                                    "enum" : ["[_7]"]
+                                                },
+                                                "barrier2": {
+                                                    "required" : "1",
+                                                    "enum" : ["[_8]"]
                                                 },
                                                 "payout": {
                                                     "required" : "1"
