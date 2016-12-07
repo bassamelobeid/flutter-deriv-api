@@ -17,7 +17,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use File::Slurp;
 use JSON::Schema;
 use Try::Tiny;
-use Format::Util::Strings qw( defang_lite );
+use Format::Util::Strings qw( defang );
 use Digest::MD5 qw(md5_hex);
 use RateLimitations::Pluggable;
 use Time::Duration::Concise;
@@ -75,7 +75,7 @@ sub startup {
         before_dispatch => sub {
             my $c = shift;
 
-            my $lang = defang_lite($c->param('l'));
+            my $lang = defang($c->param('l'));
             if ($lang =~ /^\D{2}(_\D{2})?$/) {
                 $c->stash(language => uc $lang);
                 $c->res->headers->header('Content-Language' => lc $lang);
@@ -89,7 +89,7 @@ sub startup {
                 $c->stash(debug => 1);
             }
 
-            my $app_id    = defang_lite($c->req->param('app_id'));
+            my $app_id    = defang($c->req->param('app_id'));
             my $client_ip = $c->client_ip;
 
             if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
@@ -104,7 +104,7 @@ sub startup {
                 user_agent     => $user_agent,
                 ua_fingerprint => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
                 $app_id ? (source => $app_id) : (),
-                brand => (defang_lite($c->req->param('brand')) || 'binary'),
+                brand => (defang($c->req->param('brand')) || 'binary'),
             );
         });
 
