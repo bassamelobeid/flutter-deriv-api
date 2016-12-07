@@ -150,37 +150,6 @@ sub _update {
     return $redis->zadd($key, $score, $value);
 }
 
-=head2 decimate_cache_backfill
-
-=cut
-
-sub decimate_cache_backfill {
-    my ($self, $args) = @_;
-
-    my $symbol   = $args->{symbol}   // '';
-    my $data     = $args->{data}     // [];
-    my $backtest = $args->{backtest} // 0;
-
-    my $key          = $self->_make_key($symbol, 0);
-    my $resample_key = $self->_make_key($symbol, 1);
-
-    if (not $backtest) {
-        foreach my $single_data (@$data) {
-            $self->_update($self->redis_write, $key, $single_data->{epoch}, $self->encoder->encode($single_data));
-        }
-    }
-
-    my $decimate_data = Data::Decimate::decimate($self->sampling_frequency->seconds, $data);
-
-    if (not $backtest) {
-        foreach my $single_data (@$decimate_data) {
-            $self->_update($self->redis_write, $resample_key, $single_data->{decimate_epoch}, $self->encoder->encode($single_data));
-        }
-    }
-
-    return $decimate_data;
-}
-
 =head2 decimate_cache_get
 
 =cut
