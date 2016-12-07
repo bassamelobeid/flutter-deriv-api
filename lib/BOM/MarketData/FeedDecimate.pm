@@ -71,7 +71,7 @@ sub BUILD {
     my $start = $end - (12 * 60 * 60);
     $start = $start - ($start % 15) - 15;
 
-    my $data_resample = BOM::Market::DecimateCache->new();
+    my $decimate_cache = BOM::Market::DecimateCache->new();
 
     foreach my $ul (@uls) {
         my $ticks = $ul->ticks_in_between_start_end({
@@ -79,10 +79,24 @@ sub BUILD {
             end_time   => $end,
         });
 
-        $data_resample->resample_cache_backfill({
-            symbol => $ul->symbol,
-            ticks  => $ticks,
+        my $key          = $decimate_cache->_make_key($ul->symbol, 0);
+        my $decimate_key = $decimate_cache->_make_key($ul->symbol, 1);
+
+        foreach my $single_data (@$data) {
+            $decimate_cache->_update($decimate_cache->redis_write, $key, $single_data->{epoch}, $decimate_cache->encoder->encode($single_data));
+        }
+
+        my $decimate_data = $decimate_cache->data_decimate->decimate({
+            data => $ticks,
         });
+
+        foreach my $single_data (@$decimate_data) {
+            $decimate_cache->_update(
+                $decimate_cache->redis_write,
+                $decimate_key,
+                $single_data->{decimate_epoch},
+                $decimate_cache->encoder->encode($single_data));
+        }
     }
 
     return;
