@@ -86,7 +86,7 @@ code_exit_BO();
 sub _validation_errors {
     my %input = @_;
     my @errors;
-    for (qw/country description/) {
+    for (qw/country description amount/) {
         $input{$_} || push @errors, "Field '$_' must be supplied";
     }
     # some of these are stored as json thus aren't checked by the orm or the database..
@@ -100,6 +100,7 @@ sub _validation_errors {
         if $input{min_turnover} && $input{promo_code_type} ne 'FREE_BET';
     push @errors, "MINUMUM DEPOSIT is only for GET_X_WHEN_DEPOSIT_Y promotions"
         if $input{min_deposit} && $input{promo_code_type} ne 'GET_X_WHEN_DEPOSIT_Y';
+    push @errors, "Amount must be integer and in between 0 and 999" if ($input{amount} and $input{amount} !~ /^[1-9](?:[0-9]){0,2}$/);
     return @errors;
 }
 
