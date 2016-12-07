@@ -480,12 +480,17 @@ subtest 'send_multiple_ask' => sub {
                               "duration"         => "10",
                               "duration_unit"    => "t",
                               "symbol"           => "R_50",
-                              "barriers"         => [{"barrrier" => "0"}, {"barrier" => "1"}]
+                              "barriers"         => [{"barrrier" => "1"}, {"barrier" => "2"}]
                              }};
 
   my $result = $c->call_ok('send_multiple_ask', $params)->has_no_error->result;
-  use Data::Dumper;
-  diag(Dumper($result));
+  my $outer_expected_keys = [sort {$a cmp $b} (qw(rpc_time proposals))];
+  cmp_deeply([sort keys %$result], $outer_expected_keys, 'result keys is correct');
+  is(scalar(@{$result->{proposals}}), 2, "There are 2 proposals");
+  my $inner_expected_keys = [sort {$a cmp $b} (qw(longcode spot display_value sport_time ask_price date_start rpc_time contract_parameters payout))];
+  for my $proposal (@{$result->{proposals}}){
+    cmp_deeply([sort keys %$result], $innter_expected_keys, 'result keys is correct in proposals');
+  }
 };
 
 subtest 'get_bid' => sub {
