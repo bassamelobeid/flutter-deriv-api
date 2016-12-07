@@ -150,7 +150,7 @@ sub jp_knowledge_test {
     }
 
     my $args = $params->{args};
-    my ($score, $status) = @{$args}{'score', 'status'};
+    my ($score, $status, $question) = @{$args}{'score', 'status', 'questions'};
 
     $jp_client->clr_status($_) for ('jp_knowledge_test_pending', 'jp_knowledge_test_fail');
     if ($status eq 'pass') {
@@ -171,6 +171,10 @@ sub jp_knowledge_test {
         };
     $financial_data->{jp_knowledge_test} = $results;
     $jp_client->financial_assessment({data => encode_json($financial_data)});
+
+    foreach $question (@$questions) {
+	#process the question here
+    }
 
     if (not $jp_client->save()) {
         return BOM::RPC::v3::Utility::create_error({
