@@ -100,7 +100,7 @@ sub _validation_errors {
         if $input{min_turnover} && $input{promo_code_type} ne 'FREE_BET';
     push @errors, "MINUMUM DEPOSIT is only for GET_X_WHEN_DEPOSIT_Y promotions"
         if $input{min_deposit} && $input{promo_code_type} ne 'GET_X_WHEN_DEPOSIT_Y';
-    push @errors, "Amount should be between 0 and 999" if ($input{amount} and $input{amount} > 999);
+    push @errors, "Amount should be between 0 and 999" if ($input{amount} and ($input{amount} > 999 or $input{amount} < 1));
     return @errors;
 }
 
