@@ -15,11 +15,11 @@ sub contracts_for {
     my $args         = $params->{args};
     my $symbol       = $args->{contracts_for};
     my $currency     = $args->{currency} || 'USD';
-    my $product_type = $args->{product_type} // 'common';
+    my $product_type = $args->{product_type};
 
     my $contracts_for = get_contracts_for({
-        symbol       => $symbol,
-        product_type => $product_type
+        symbol => $symbol,
+        ($product_type) ? (product_type => $product_type) : (),
     });
 
     my $i = 0;
