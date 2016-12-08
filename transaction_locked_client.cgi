@@ -7,7 +7,7 @@ use f_brokerincludeall;
 use CGI;
 
 use BOM::Platform::Runtime;
-use BOM::Database::DataMapper::Client;
+use BOM::Database::ClientDB;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
 
@@ -26,10 +26,10 @@ my @clients = $cgi->param('clients');
 
 foreach my $client_loginid (@clients) {
     try {
-        my $client_data_mapper = BOM::Database::DataMapper::Client->new({
+        my $client_db = BOM::Database::ClientDB->new({
             client_loginid => $client_loginid,
         });
-        $client_data_mapper->unlock_client_loginid();
+        $client_db->unlock_client_loginid();
         print '<em>Unlocked: ' . $client_loginid . '</em><br>';
     }
     catch {
@@ -37,11 +37,11 @@ foreach my $client_loginid (@clients) {
     };
 }
 
-my $client_data_mapper = BOM::Database::DataMapper::Client->new({
+my $client_db = BOM::Database::ClientDB->new({
     broker_code => request()->broker_code,
 });
 
-my $clients_list = $client_data_mapper->locked_client_list();
+my $clients_list = $client_db->locked_client_list();
 
 BOM::Backoffice::Request::template->process('backoffice/transaction_locked_client.html.tt', {locked_client_list => $clients_list})
     || die BOM::Backoffice::Request::template->error();

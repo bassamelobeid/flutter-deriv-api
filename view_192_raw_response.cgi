@@ -21,7 +21,7 @@ BOM::Backoffice::Auth0::can_access(['CS']);
 my $loginID       = request()->param('loginID');
 my $search_option = request()->param('search_option');
 
-my $client = BOM::Platform::Client->new({loginid => $loginID}) || die "could not get client for $loginID";
+my $client = Client::Account->new({loginid => $loginID}) || die "could not get client for $loginID";
 
 my $report = BOM::Platform::ProveID->new(
     client        => $client,

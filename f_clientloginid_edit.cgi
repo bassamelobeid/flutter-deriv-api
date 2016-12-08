@@ -43,7 +43,7 @@ my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {login
 # let the client-check offer a chance to retry.
 eval { BrokerPresentation("$loginid CLIENT DETAILS") };
 
-my $client = eval { BOM::Platform::Client->new({loginid => $loginid}) } || do {
+my $client = eval { Client::Account->new({loginid => $loginid}) } || do {
     my $err = $@;
     print "<p>ERROR: Client [$loginid] not found.</p>";
     if ($err) {
@@ -471,11 +471,11 @@ my $client_broker = $client->broker;
 my $len = length($number);
 for (1 .. $attempts) {
     $prev_loginid = sprintf "$client_broker%0*d", $len, $number - $_;
-    last if $prev_client = BOM::Platform::Client->new({loginid => $prev_loginid});
+    last if $prev_client = Client::Account->new({loginid => $prev_loginid});
 }
 for (1 .. $attempts) {
     $next_loginid = sprintf "$client_broker%0*d", $len, $number + $_;
-    last if $next_client = BOM::Platform::Client->new({loginid => $next_loginid});
+    last if $next_client = Client::Account->new({loginid => $next_loginid});
 }
 
 if ($prev_client) {
