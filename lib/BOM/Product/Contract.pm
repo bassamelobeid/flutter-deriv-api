@@ -537,8 +537,8 @@ sub _build_pricing_engine_name {
 
     my $engine_name = $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'Pricing::Engine::EuropeanDigitalSlope';
 
-     #For Volatility indices, we use plain BS formula for pricing instead of VV/Slope
-     $engine_name = 'Pricing::Engine::BlackScholes' if $self->market->name eq 'volidx';
+    #For Volatility indices, we use plain BS formula for pricing instead of VV/Slope
+    $engine_name = 'Pricing::Engine::BlackScholes' if $self->market->name eq 'volidx';
 
     if ($self->tick_expiry) {
         my @symbols = create_underlying_db->get_symbols_for(
@@ -669,7 +669,11 @@ sub _build_engine_ask_probability {
             payout_type              => $self->payout_type,
             pricing_code             => $self->pricing_code,
         );
-    } else {
+
+    } else ( BS) {
+        t                 => $self->timeinyears->amount,
+        payout_type       => $self->payout_type,
+    }else {
         die "Unknown pricing engine: " . $self->pricing_engine_name;
     }
 
@@ -1683,6 +1687,9 @@ sub _build_news_adjusted_pricing_vol {
 
 sub _build_vol_at_strike {
     my $self = shift;
+
+    #If surface is flat, don't bother calculating all those arguments
+    return $self->volsurface->get_volatility if ($self->underlying->volatility_surface_type eq 'flat');
 
     my $pricing_spot = $self->pricing_spot;
     my $vol_args     = {
