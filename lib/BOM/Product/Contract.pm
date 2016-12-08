@@ -658,22 +658,17 @@ sub _build_engine_ask_probability {
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::BlackScholes') {
         %pricing_parameters = (
-            two_barriers             => $self->two_barriers,
             strikes                  => [grep { $_ } values %{$self->barriers_for_pricing}],
             spot                     => $self->pricing_spot,
             t                        => $self->timeinyears->amount,
             discount_rate            => $self->discount_rate,
             mu                       => $self->mu,
-            iv                       => $self->volsurface->get_volatility,
-            payout_timecode          => $self->payouttime_code,
+            payouttime_code          => $self->payouttime_code,
             payout_type              => $self->payout_type,
-            pricing_code             => $self->pricing_code,
+            contract_type            => $self->pricing_code,
+            vol                      => $self->pricing_vol,
         );
-
-    } else ( BS) {
-        t                 => $self->timeinyears->amount,
-        payout_type       => $self->payout_type,
-    }else {
+    } else {
         die "Unknown pricing engine: " . $self->pricing_engine_name;
     }
 
