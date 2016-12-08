@@ -11,7 +11,7 @@ use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use Date::Utility;
 use BOM::Test::RPC::Client;
-use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods);
+use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods update_predefined_highlow);
 
 use utf8;
 
@@ -47,7 +47,8 @@ subtest "Request $method" => sub {
     ok !grep { $_->{contract_type} =~ /^(CALL|PUT|EXPIRYMISS|EXPIRYRANGE)E$/ } @{$result->{available}};
 
     generate_trading_periods('frxUSDJPY');
-    $params[1]{args}{region}        = 'japan';
+    update_predefined_highlow({symbol => 'frxUSDJPY', price => 100, epoch => time});
+    $params[1]{args}{product_type}        = 'multi_barrier';
     $params[1]{args}{contracts_for} = 'frxUSDJPY';
     $result                         = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
     is_deeply [sort keys %{$result}],
