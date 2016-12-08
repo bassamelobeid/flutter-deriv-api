@@ -8,7 +8,7 @@ use BOM::RPC::v3::Cashier;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::AccessToken;
-use BOM::Database::DataMapper::Client;
+use BOM::Database::ClientDB;
 
 my $client_mocked = Test::MockModule->new('Client::Account');
 $client_mocked->mock('add_note', sub { return 1 });
@@ -192,17 +192,17 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
             }});
     ok $res->{error}->{message_to_client} =~ /An error occurred while processing request/, 'An error occurred while processing request';
 
-    my $client_data_mapper = BOM::Database::DataMapper::Client->new({
+    my $client_db = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,
     });
 
-    my $pa_client_data_mapper = BOM::Database::DataMapper::Client->new({
+    my $pa_client_db = BOM::Database::ClientDB->new({
         client_loginid => $pa_client->loginid,
     });
 
     # need unfreeze client after withdraw error
-    $client_data_mapper->unfreeze;
-    $pa_client_data_mapper->unfreeze;
+    $client_db->unfreeze;
+    $pa_client_db->unfreeze;
 
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
             client => $client,
@@ -215,8 +215,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
             }});
     ok $res->{error}->{message_to_client} =~ /Request too frequent. Please try again later./, 'Too many attempts';
 
-    $client_data_mapper->unfreeze;
-    $pa_client_data_mapper->unfreeze;
+    $client_db->unfreeze;
+    $pa_client_db->unfreeze;
 
     # sleep for 3 seconds as we have limit for 2 seconds
     sleep 3;
@@ -381,17 +381,17 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 amount                => 100,
             }});
     ok $res->{error}->{message_to_client} =~ /An error occurred while processing request/, 'An error occurred while processing request';
-    my $client_data_mapper = BOM::Database::DataMapper::Client->new({
+    my $client_db = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,
     });
 
-    my $pa_client_data_mapper = BOM::Database::DataMapper::Client->new({
+    my $pa_client_db = BOM::Database::ClientDB->new({
         client_loginid => $pa_client->loginid,
     });
 
     # need unfreeze client after transfer error
-    $client_data_mapper->unfreeze;
-    $pa_client_data_mapper->unfreeze;
+    $client_db->unfreeze;
+    $pa_client_db->unfreeze;
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
             client => $pa_client,
@@ -403,8 +403,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
             }});
     ok $res->{error}->{message_to_client} =~ /Request too frequent. Please try again later./, 'Too many attempts';
 
-    $client_data_mapper->unfreeze;
-    $pa_client_data_mapper->unfreeze;
+    $client_db->unfreeze;
+    $pa_client_db->unfreeze;
 
     # sleep for 3 seconds as we have limit for 2 seconds
     sleep 3;
