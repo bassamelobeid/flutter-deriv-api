@@ -239,7 +239,7 @@ sub _tentative_events_markup {
 
     #if there is a change needed in the berriers due to tentative events:
     my $barriers_changed = 0;
-    for my $i (0..scalar @barrier_args - 1) {
+    for my $i (0 .. scalar @barrier_args - 1) {
         #barriers sometimes are numbers and somtime string. so using array_diff does not help
         $barriers_changed = 1 if $barrier_args[$i] != $adjusted_barriers[$i];
     }
