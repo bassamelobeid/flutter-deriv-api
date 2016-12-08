@@ -83,7 +83,7 @@ my $rates_file_content;
 sub site_limits {
 
     my $now = time;
-    if($now - $rates_file_last_load > RATES_FILE_CACHE_TIME) {
+    if ($now - $rates_file_last_load > RATES_FILE_CACHE_TIME) {
         $rates_file_content = LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml');
         $rates_file_last_load = $now;
     }
