@@ -109,7 +109,6 @@ foreach my $key (sort { $a cmp $b } keys %{$expected}) {
 
     is $c->ask_price, $expected->{$key}, "correct ask price for $key";
     is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', "correct engine for $key";
-    my $trtr = 12; 
 }
 
 done_testing();

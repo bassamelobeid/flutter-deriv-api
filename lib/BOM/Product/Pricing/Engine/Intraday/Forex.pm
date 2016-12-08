@@ -238,7 +238,13 @@ sub _tentative_events_markup {
     my @adjusted_barriers = map { $self->_get_barrier_for_tentative_events($_) } @barrier_args;
 
     #if there is a change needed in the berriers due to tentative events:
-    if (@barrier_args != @adjusted_barriers) {
+    my $barriers_changed = 0;
+    for my $i (0..scalar @barrier_args - 1) {
+        #barriers sometimes are numbers and somtime string. so using array_diff does not help
+        $barriers_changed = 1 if $barrier_args[$i] != $adjusted_barriers[$i];
+    }
+
+    if ($barriers_changed) {
         my $barrier_hash = {};
 
         if ($bet->two_barriers) {
