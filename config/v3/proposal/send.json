@@ -94,6 +94,11 @@
     "req_id": {
       "type": "integer",
       "description": "Optional field to map request to response"
+    },
+    "product_type": {
+      "type": "product_type",
+      "description": "Optional field to select product type. Set to 'multi_barrier' to indicate the proposal is coming from Multi Barrier Trading platform. Defaults to 'basic'",
+      "default": "basic"
     }
   },
   "additionalProperties": false
