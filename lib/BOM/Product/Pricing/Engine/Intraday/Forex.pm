@@ -205,8 +205,8 @@ sub _build_economic_events_markup {
     my $markup;
 
     my $tentative_events_markup = $self->_tentative_events_markup;
-    
-    if ( $tentative_events_markup->amount != 0 ) {
+
+    if ($tentative_events_markup->amount != 0) {
         $markup = $tentative_events_markup;
     } else {
         $markup = Math::Util::CalculatedValue::Validatable->new({
@@ -226,7 +226,7 @@ sub _build_economic_events_markup {
 
 sub _tentative_events_markup {
     my $self = shift;
-    my $bet = $self->bet;
+    my $bet  = $self->bet;
 
     my $markup = 0;
 
@@ -235,10 +235,10 @@ sub _tentative_events_markup {
         ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute)
         : ($bet->barrier->as_absolute);
 
-    my @adjusted_barriers = map { $self->_get_barrier_for_tentative_events ($_) } @barrier_args;
+    my @adjusted_barriers = map { $self->_get_barrier_for_tentative_events($_) } @barrier_args;
 
     #if there is a change needed in the berriers due to tentative events:
-    if (array_diff(@barrier_args, @adjusted_barriers)) {
+    if (@barrier_args != @adjusted_barriers) {
         my $barrier_hash = {};
 
         if ($bet->two_barriers) {
@@ -251,13 +251,12 @@ sub _tentative_events_markup {
         my $new_bet = BOM::Product::ContractFactory::make_similar_contract($bet, $barrier_hash);
         my $new_prob = $new_bet->pricing_engine->base_probability;
 
-        if ( ref($new_prob) eq 'Math::Util::CalculatedValue::Validatable' ) {
+        if (ref($new_prob) eq 'Math::Util::CalculatedValue::Validatable') {
             $new_prob = $new_prob->amount;
         }
 
         $markup = max(0, $new_prob - $self->base_probability->amount);
     }
-
 
     return Math::Util::CalculatedValue::Validatable->new({
         name        => 'economic_events_markup',
@@ -266,7 +265,6 @@ sub _tentative_events_markup {
         base_amount => $markup,
     });
 }
-
 
 sub _get_barrier_for_tentative_events {
     my $self    = shift;
