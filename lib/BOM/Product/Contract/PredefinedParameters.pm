@@ -296,7 +296,7 @@ sub _get_expired_barriers {
     my @expired_barriers;
     foreach my $barrier (@$available_barriers) {
         my $ref_barrier = (ref $barrier ne 'ARRAY') ? [$barrier] : $barrier;
-        my @expired = grep { $_ < $high && $_ > $low } @$ref_barrier;
+        my @expired = grep { $_ <= $high && $_ >= $low } @$ref_barrier;
         push @expired_barriers, $barrier if @expired;
     }
 
