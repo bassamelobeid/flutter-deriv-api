@@ -84,13 +84,13 @@ my $contract_args = {
 
 #key is "contract type_pip diff" and value is expected barrier(s)
 my $expected = {
-    'CALL_0'          => 63.48,
+    'CALL_0'          => 69.37,
     'CALL_1000'       => 65.27,
-    'NOTOUCH_0'       => 26.9,
-    'NOTOUCH_1000'    => 22.72,
-    'ONETOUCH_2000'   => 100,
+    'NOTOUCH_0'       => 34.25,
+    'NOTOUCH_1000'    => 44.25,
+    'ONETOUCH_2000'   => 99.52,
     'PUT_1000'        => 74.39,
-    'PUT_0'           => 43.53,
+    'PUT_0'           => 69.4,
 };
 
 my $underlying = create_underlying('frxEURUSD');
@@ -102,13 +102,13 @@ foreach my $key (sort { $a cmp $b } keys %{$expected}) {
 
     $contract_args->{bet_type} = $bet_type;
     $contract_args->{barrier} = 'S' . $pip_diff . 'P';
-    $contract_args->{landing_company} = 'japan' if ($key !~ qr/_0$/);
+    $contract_args->{pricing_engine_name} = 'BOM::Product::Pricing::Engine::Intraday::Forex';
+    $contract_args->{landing_company} = 'japan';
 
     my $c = produce_contract($contract_args);
 
     is $c->ask_price, $expected->{$key}, "correct ask price for $key";
     is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', "correct engine for $key";
-    $DB::single = 1 if $key eq 'CALL_0';
     my $trtr = 12; 
 }
 
