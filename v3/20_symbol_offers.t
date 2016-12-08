@@ -8,6 +8,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods);
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use Test::MockModule;
@@ -18,6 +19,7 @@ initialize_realtime_ticks_db();
 use Finance::Asset;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD JPY);
 my $now = Date::Utility->new;
+generate_trading_periods('frxUSDJPY');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
