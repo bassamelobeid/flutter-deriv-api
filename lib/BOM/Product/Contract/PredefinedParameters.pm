@@ -144,7 +144,7 @@ sub update_predefined_highlow {
     my $underlying = create_underlying($tick_data->{symbol});
     my $now        = $tick_data->{epoch};
     my @periods    = @{get_trading_periods($underlying->symbol)};
-    my $new_quote  = $tick_data->{price};
+    my $new_quote  = $tick_data->{quote};
 
     return unless @periods;
 
