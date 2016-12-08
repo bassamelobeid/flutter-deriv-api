@@ -595,110 +595,105 @@ has engine_ask_probability => (
 sub _build_engine_ask_probability {
     my $self = shift;
 
-    if ($self->new_interface_engine) {
-        my %pricing_parameters;
+    return if not $self->new_interface_engine;
 
-        if ($self->pricing_engine_name eq 'Pricing::Engine::Digits') {
-            %pricing_parameters = (
-                strikes => $self->barrier ? $self->barrier->as_absolute : undef,
-                contract_type => $self->pricing_code,
-            );
-        } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Asian') {
-            %pricing_parameters = (
-                spot              => $self->pricing_spot,
-                strikes           => [grep { $_ } values %{$self->barriers_for_pricing}],
-                date_start        => $self->effective_start,
-                date_expiry       => $self->date_expiry,
-                date_pricing      => $self->date_pricing,
-                discount_rate     => $self->discount_rate,
-                q_rate            => $self->q_rate,
-                r_rate            => $self->r_rate,
-                vol               => $self->pricing_vol,
-                payouttime_code   => $self->payouttime_code,
-                contract_type     => $self->pricing_code,
-                underlying_symbol => $self->underlying->symbol,
-            );
-        } elsif ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
-            %pricing_parameters = (
-                contract_type     => $self->pricing_code,
-                underlying_symbol => $self->underlying->symbol,
-                date_start        => $self->effective_start,
-                date_pricing      => $self->date_pricing,
-                ticks             => BOM::Market::AggTicks->new->retrieve({
-                        underlying   => $self->underlying,
-                        ending_epoch => $self->date_start->epoch,
-                        tick_count   => 20
-                    }
-                ),
-                economic_events => _generate_market_data($self->underlying, $self->date_start)->{economic_events},
-            );
-        } elsif ($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
-            %pricing_parameters = (
-                contract_type            => $self->pricing_code,
-                for_date                 => $self->underlying->for_date,
-                spot                     => $self->pricing_spot,
-                strikes                  => [grep { $_ } values %{$self->barriers_for_pricing}],
-                date_start               => $self->effective_start,
-                chronicle_reader         => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
-                date_pricing             => $self->date_pricing,
-                date_expiry              => $self->date_expiry,
-                discount_rate            => $self->discount_rate,
-                mu                       => $self->mu,
-                ($self->has_pricing_vol ? (vol  => $self->pricing_vol):()),
-                ($self->underlying->volatility_surface_type eq 'flat' ? (vol => $self->pricing_vol):()),
-                payouttime_code          => $self->payouttime_code,
-                q_rate                   => $self->q_rate,
-                r_rate                   => $self->r_rate,
-                priced_with              => $self->priced_with,
-                underlying_symbol        => $self->underlying->symbol,
-                volsurface               => $self->volsurface->surface,
-                volsurface_recorded_date => $self->volsurface->recorded_date,
-                market_convention        => $self->_market_convention,
-            );
-        } elsif ($self->pricing_engine_name eq 'Pricing::Engine::BlackScholes') {
-            %pricing_parameters = (
-                two_barriers             => $self->two_barriers,
-                strikes                  => [grep { $_ } values %{$self->barriers_for_pricing}],
-                spot                     => $self->pricing_spot,
-                t                        => $self->timeinyears->amount,
-                discount_rate            => $self->discount_rate,
-                mu                       => $self->mu,
-                iv                       => $self->volsurface->get_volatility,
-                payout_timecode          => $self->payouttime_code,
-                payout_type              => $self->payout_type,
-                pricing_code             => $self->pricing_code,
-            );
-        } else {
-            die "Unknown pricing engine: " . $self->pricing_engine_name;
-        }
+    my %pricing_parameters;
 
-        if (my @missing_parameters = grep !exists $pricing_parameters{$_}, @{$self->pricing_engine_name->required_args}) {
-            die "Missing pricing parameters for engine " . $self->pricing_engine_name . " - " . join ',', @missing_parameters;
-        }
-
-        my $package = $self->pricing_engine_name . '::ask_probability';
-        my $coderef = \&$package;
-        return $coderef->(\%pricing_parameters, $self->debug_information);
+    if ($self->pricing_engine_name eq 'Pricing::Engine::Digits') {
+        %pricing_parameters = (
+            strikes => $self->barrier ? $self->barrier->as_absolute : undef,
+            contract_type => $self->pricing_code,
+        );
+    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Asian') {
+        %pricing_parameters = (
+            spot              => $self->pricing_spot,
+            strikes           => [grep { $_ } values %{$self->barriers_for_pricing}],
+            date_start        => $self->effective_start,
+            date_expiry       => $self->date_expiry,
+            date_pricing      => $self->date_pricing,
+            discount_rate     => $self->discount_rate,
+            q_rate            => $self->q_rate,
+            r_rate            => $self->r_rate,
+            vol               => $self->pricing_vol,
+            payouttime_code   => $self->payouttime_code,
+            contract_type     => $self->pricing_code,
+            underlying_symbol => $self->underlying->symbol,
+        );
+    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
+        %pricing_parameters = (
+            contract_type     => $self->pricing_code,
+            underlying_symbol => $self->underlying->symbol,
+            date_start        => $self->effective_start,
+            date_pricing      => $self->date_pricing,
+            ticks             => BOM::Market::AggTicks->new->retrieve({
+                    underlying   => $self->underlying,
+                    ending_epoch => $self->date_start->epoch,
+                    tick_count   => 20
+                }
+            ),
+            economic_events => _generate_market_data($self->underlying, $self->date_start)->{economic_events},
+        );
+    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
+        %pricing_parameters = (
+            contract_type            => $self->pricing_code,
+            for_date                 => $self->underlying->for_date,
+            spot                     => $self->pricing_spot,
+            strikes                  => [grep { $_ } values %{$self->barriers_for_pricing}],
+            date_start               => $self->effective_start,
+            chronicle_reader         => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
+            date_pricing             => $self->date_pricing,
+            date_expiry              => $self->date_expiry,
+            discount_rate            => $self->discount_rate,
+            mu                       => $self->mu,
+            ($self->has_pricing_vol ? (vol  => $self->pricing_vol):()),
+            ($self->underlying->volatility_surface_type eq 'flat' ? (vol => $self->pricing_vol):()),
+            payouttime_code          => $self->payouttime_code,
+            q_rate                   => $self->q_rate,
+            r_rate                   => $self->r_rate,
+            priced_with              => $self->priced_with,
+            underlying_symbol        => $self->underlying->symbol,
+            volsurface               => $self->volsurface->surface,
+            volsurface_recorded_date => $self->volsurface->recorded_date,
+            market_convention        => $self->_market_convention,
+        );
+    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::BlackScholes') {
+        %pricing_parameters = (
+            two_barriers             => $self->two_barriers,
+            strikes                  => [grep { $_ } values %{$self->barriers_for_pricing}],
+            spot                     => $self->pricing_spot,
+            t                        => $self->timeinyears->amount,
+            discount_rate            => $self->discount_rate,
+            mu                       => $self->mu,
+            iv                       => $self->volsurface->get_volatility,
+            payout_timecode          => $self->payouttime_code,
+            payout_type              => $self->payout_type,
+            pricing_code             => $self->pricing_code,
+        );
+    } else {
+        die "Unknown pricing engine: " . $self->pricing_engine_name;
     }
 
-    return;
+    if (my @missing_parameters = grep !exists $pricing_parameters{$_}, @{$self->pricing_engine_name->required_args}) {
+        die "Missing pricing parameters for engine " . $self->pricing_engine_name . " - " . join ',', @missing_parameters;
+    }
+
+    my $package = $self->pricing_engine_name . '::ask_probability';
+    my $coderef = \&$package;
+    return $coderef->(\%pricing_parameters, $self->debug_information);
 }
 
 sub _build_pricing_engine {
     my $self = shift;
 
-    my $pricing_engine;
-    if ($self->new_interface_engine) {
-        return;
-    } else {
-        $pricing_engine = $self->pricing_engine_name->new({
+    return if $self->new_interface_engine;
+
+    my $pricing_engine = $self->pricing_engine_name->new({
             bet                     => $self,
             apply_bounceback_safety => !$self->for_sale,
             inefficient_period      => $self->market_is_inefficient,
             inactive_period         => $self->market_is_inactive,
             $self->priced_with_intraday_model ? (economic_events => $self->economic_events_for_volatility_calculation) : (),
         });
-    }
 
     return $pricing_engine;
 }
