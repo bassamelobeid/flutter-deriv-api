@@ -10,6 +10,8 @@ use Try::Tiny;
 use Path::Tiny;
 use File::ReadBackwards;
 
+use Client::Account;
+
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
 use BOM::Database::DataMapper::FinancialMarketBet;
@@ -53,7 +55,7 @@ if (request()->param('whattodo') eq 'closeatzero') {
 
     my $client;
     try {
-        $client = BOM::Platform::Client::get_instance({loginid => request()->param('loginid')});
+        $client = Client::Account::get_instance({loginid => request()->param('loginid')});
     }
     catch {
         print "Cannot get client instance with loginid " . request()->param('loginid');

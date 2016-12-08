@@ -20,46 +20,67 @@ use f_brokerincludeall;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Database::ClientDB;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
+use LandingCompany::Registry;
 BOM::Backoffice::Sysinit::init();
 BOM::Backoffice::Auth0::can_access(['Quants']);
 my %params = %{request()->params};
 my ($pricing_parameters, @contract_details, $start);
 
-my $broker = $params{broker} // request()->broker_code;
-my $id = $params{id} ? $params{id} : '';
 
-if ($broker and $id) {
-    my $details = BOM::Database::DataMapper::Transaction->new({
-            broker_code => $broker,
-            operation   => 'backoffice_replica',
-        })->get_details_by_transaction_ref($id);
+my $broker        = $params{broker}     // request()->broker_code;
+my $id            = $params{id}         // '';
+my $short_code    = $params{short_code} // '';
+my $currency_code = $params{currency}   // '';
 
-    my $original_contract = produce_contract($details->{shortcode}, $details->{currency_code});
-    my $client        = BOM::Platform::Client::get_instance({'loginid' => $details->{loginid}});
-    my $action_type   = $details->{action_type};                                                   # buy or sell
-    my $sell_time     = $details->{sell_time};
-    my $purchase_time = $details->{purchase_time};
+if ($broker and ($id or $short_code)) {
+
+    my ($details, $client);
+
+    if ($id) {
+        $details = BOM::Database::DataMapper::Transaction->new({
+                broker_code => $broker,
+                operation   => 'backoffice_replica',
+            })->get_details_by_transaction_ref($id);
+
+        $client = Client::::Account::get_instance({'loginid' => $details->{loginid}});
+
+    }
+
+    my $short_code_param = $details->{shortcode}     // $short_code;
+    my $currency_param   = $details->{currency_code} // $currency_code;
+
+
+    my $original_contract = produce_contract($short_code_param, $currency_param);
+    my $action_type = $details->{action_type} // 'buy';    #If it is with shortcode as input, we just want to verify the ask price
+    my $sell_time = $details->{sell_time};
+    my $purchase_time = $details->{purchase_time} // $original_contract->date_start;
+    my $landing_company = defined $client ? $client->landing_company->short : LandingCompany::Registry::get_by_broker($broker)->short;
 
     $start =
           $params{start}          ? Date::Utility->new($params{start})
         : ($action_type eq 'buy') ? Date::Utility->new($purchase_time)
         :                           Date::Utility->new($sell_time);
+
     my $pricing_args = $original_contract->build_parameters;
     $pricing_args->{date_pricing}    = $start;
-    $pricing_args->{landing_company} = $client->landing_company->short;
+    $pricing_args->{landing_company} = $landing_company;
+
+
     my $contract       = produce_contract($pricing_args);
+    my $display_price =  $action_type eq 'buy' ? $contract->ask_price : $contract->bid_price;
     my $traded_bid     = $details->{bid_price};
     my $traded_ask     = $details->{ask_price};
     my $slippage_price = $details->{price_slippage};
-    my $action_type    = $details->{action_type};
-    my $order_price    = $details->{order_price};
+    my $order_price    = $details->{order_price} // $display_price;
     my $prev_tick      = $contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
+    my $pricing_spot   = $details->{pricing_spot};
 
+    
     my $traded_contract = $action_type eq 'buy' ? $contract : $contract->opposite_contract;
     my $discounted_probability = $contract->discounted_probability;
 
@@ -68,21 +89,24 @@ if ($broker and $id) {
         ? _get_pricing_parameter_from_IH_pricer($traded_contract, $action_type, $discounted_probability)
         : $contract->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'
         ? _get_pricing_parameter_from_slope_pricer($traded_contract, $action_type, $discounted_probability)
+        : $contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated'
+        ? _get_pricing_parameter_from_vv_pricer($traded_contract, $action_type, $discounted_probability)
         : die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
 
     @contract_details = (
-        login_id               => $details->{loginid},
-        trans_id               => $id,
+        login_id => $details->{loginid} // 'NA.',
+        trans_id => $id // 'NA.',
         short_code             => $contract->shortcode,
         description            => $contract->longcode,
-        ccy                    => $details->{currency_code},
+        ccy                    => $contract->currency,
         order_type             => $action_type,
         order_price            => $order_price,
         slippage_price         => $slippage_price // 'NA.',
-        trade_ask_price        => $traded_ask,
+        trade_ask_price        => $traded_ask // 'NA.',
         trade_bid_price        => $traded_bid // 'NA. (unsold)',
         payout                 => $contract->payout,
         tick_before_trade_time => $prev_tick,
+        pricing_spot           => $pricing_spot,
     );
 }
 my $display = $params{download} ? 'download' : 'display';
@@ -179,18 +203,77 @@ sub _get_pricing_parameter_from_IH_pricer {
 
     my $risk_markup = $pe->risk_markup;
     $pricing_parameters->{risk_markup} = {
-        economic_events_markup          => $risk_markup->peek_amount('economic_events_markup')          // 0,
-        intraday_historical_iv_risk     => $risk_markup->peek_amount('intraday_historical_iv_risk')     // 0,
-        quiet_period_markup             => $risk_markup->peek_amount('quiet_period_markup')             // 0,
-        vol_spread_markup               => $risk_markup->peek_amount('vol_spread_markup')               // 0,
-        eod_market_risk_markup          => $risk_markup->peek_amount('intraday_eod_markup')             // 0,
-        spot_jump_markup                => $risk_markup->peek_amount('spot_jump_markup')                // 0,
-        short_term_kurtosis_risk_markup => $risk_markup->peek_amount('short_term_kurtosis_risk_markup') // 0,
+        map { $_ => $risk_markup->peek_amount($_) // 0 }
+            qw(economic_events_markup intraday_historical_iv_risk quiet_period_markup vol_spread_markup intraday_eod_markup spot_jump_markup short_term_kurtosis_risk_markup),
 
     };
 
     return $pricing_parameters;
 
+}
+
+sub _get_pricing_parameter_from_vv_pricer {
+    my ($contract, $action_type, $discounted_probability) = @_;
+
+    my $pe = $contract->pricing_engine;
+    my $pricing_parameters;
+    my $risk_markup       = $contract->risk_markup->amount;
+    my $commission_markup = $contract->commission_markup->amount;
+    my $theo_probability  = $pe->base_probability->amount;
+
+    if ($action_type eq 'sell') {
+        $pricing_parameters->{bid_probability} = {
+            discounted_probability            => $discounted_probability->amount,
+            opposite_contract_ask_probability => $contract->ask_probability->amount
+        };
+
+        $pricing_parameters->{opposite_contract_ask_probability} = {
+            theoretical_probability => $theo_probability,
+            risk_markup             => $risk_markup,
+            commission_markup       => $commission_markup,
+
+        };
+
+    } else {
+
+        $pricing_parameters->{ask_probability} = {
+            theoretical_probability => $theo_probability,
+            risk_markup             => $risk_markup,
+            commission_markup       => $commission_markup,
+        };
+    }
+
+    $pricing_parameters->{theoretical_probability} = {
+        bs_probability    => $pe->bs_probability->amount,
+        market_supplement => $pe->market_supplement->amount,
+    };
+    my $pricing_arg = $contract->pricing_args;
+    $pricing_parameters->{bs_probability} = {
+        'S'      => $pricing_arg->{spot},
+        'K'      => $pricing_arg->{barrier1},
+        'vol'    => $pricing_arg->{iv},
+        'payout' => $contract->payout,
+        map { $_ => $pricing_arg->{$_} } qw(t discount_rate mu)
+    };
+
+    $pricing_parameters->{bs_probability}->{'K2'} = $pricing_arg->{barrier2} if $contract->two_barriers;
+
+    $pricing_parameters->{market_supplement} = _get_market_supplement_parameters($pe);
+
+    $pricing_parameters->{commission_markup} = {
+        base_commission       => $contract->base_commission,
+        commission_multiplier => $contract->commission_multiplier($contract->payout),
+
+    };
+
+    my $risk_markup = $pe->risk_markup;
+    $pricing_parameters->{risk_markup} = {
+        map { $_ => $risk_markup->peek_amount($_) // 0 }
+            qw(vol_spread_markup vol_spread bet_vega spot_spread_markup bet_delta spot_spread forward_start eod_market_risk_markup butterfly_markup butterfly_greater_than_cutoff spread_to_markup),
+
+    };
+
+    return $pricing_parameters;
 }
 
 sub _get_pricing_parameter_from_slope_pricer {
@@ -202,7 +285,7 @@ sub _get_pricing_parameter_from_slope_pricer {
     my $contract_type     = $pe->contract_type;
     my $risk_markup       = $contract->risk_markup->amount;
     my $commission_markup = $contract->commission_markup->amount;
-
+    my $ask_price         = $contract->ask_price;
     if ($action_type eq 'sell') {
         $pricing_parameters->{bid_probability} = {
             discounted_probability            => $discounted_probability->amount,
@@ -225,27 +308,43 @@ sub _get_pricing_parameter_from_slope_pricer {
         };
     }
 
-    my $theo_param = $debug_information->{$contract_type}{base_probability}{parameters};
+    my $theo_param            = $debug_information->{$contract_type}{base_probability}{parameters};
+    my $display_contract_type = lc($contract_type);
 
-    if ($contract->priced_with ne 'base') {
-        $pricing_parameters->{bs_probability}   = _get_bs_probability_parameters($theo_param->{bs_probability}{parameters});
-        $pricing_parameters->{slope_adjustment} = {
-            weight => $contract_type eq 'CALL' ? -1 : 1,
-            slope => $theo_param->{slope_adjustment}{parameters}{slope},
-            vanilla_vega => $theo_param->{slope_adjustment}{parameters}{vanilla_vega}{amount},
-        };
+    if (not $contract->two_barriers) {
+        if ($contract->priced_with eq 'base') {
+            $pricing_parameters->{bs_probability} =
+                _get_bs_probability_parameters($theo_param->{numeraire_probability}{parameters}{bs_probability}{parameters},
+                $contract->payout, $display_contract_type);
+            my $slope_param = $theo_param->{numeraire_probability}{parameters}{slope_adjustment}{parameters};
+            $pricing_parameters->{slope_adjustment} = _get_slope_parameters($slope_param, $display_contract_type);
+        } else {
+            $pricing_parameters->{bs_probability} =
+                _get_bs_probability_parameters($theo_param->{bs_probability}{parameters}, $contract->payout, $display_contract_type);
+            $pricing_parameters->{slope_adjustment} = _get_slope_parameters($theo_param->{slope_adjustment}{parameters}, $display_contract_type);
+        }
     } else {
-        $pricing_parameters->{bs_probability} =
-            _get_bs_probability_parameters($theo_param->{numeraire_probability}{parameters}{bs_probability}{parameters});
-        my $slope_param = $theo_param->{numeraire_probability}{parameters}{slope_adjustment}{parameters};
-        $pricing_parameters->{slope_adjustment} = {
-            weight => $contract_type eq 'CALL' ? -1 : 1,
-            slope => $slope_param->{slope},
-            vanilla_vega => $slope_param->{vanilla_vega}{amount},
-        };
+        my $call_prob = $debug_information->{CALL}{base_probability};
+        my $put_prob  = $debug_information->{PUT}{base_probability};
 
+        if ($contract_type eq 'EXPIRYRANGE') {
+            $pricing_parameters->{theoretical_probability} = {
+                discounted_probabality   => $contract->discounted_probability->amount,
+                call_and_put_probability => $call_prob->{amount} + $put_prob->{amount}};
+        } else {
+            $pricing_parameters->{theoretical_probability} = {call_and_put_probability => $call_prob->{amount} + $put_prob->{amount}};
+        }
+
+        $pricing_parameters->{call_bs_probability} =
+            _get_bs_probability_parameters($call_prob->{parameters}{bs_probability}{parameters}, $contract->payout, 'call');
+        my $call_slope_param = $call_prob->{parameters}{slope_adjustment}{parameters};
+        $pricing_parameters->{call_slope_adjustment} = _get_slope_parameters($call_slope_param, 'call');
+        $pricing_parameters->{put_bs_probability} =
+            _get_bs_probability_parameters($put_prob->{parameters}{bs_probability}{parameters}, $contract->payout, 'put');
+        my $put_slope_param = $put_prob->{parameters}{slope_adjustment}{parameters};
+        $pricing_parameters->{put_slope_adjustment} = _get_slope_parameters($put_slope_param, 'put');
     }
-    $pricing_parameters->{bs_probability}->{payout} = $contract->payout;
+
     $pricing_parameters->{risk_markup} = $debug_information->{risk_markup}{parameters};
 
     $pricing_parameters->{commission_markup} = {
@@ -256,21 +355,57 @@ sub _get_pricing_parameter_from_slope_pricer {
     return $pricing_parameters;
 }
 
+sub _get_slope_parameters {
+    my $slope_param   = shift;
+    my $contract_type = shift;
+
+    my $slope_parameter = {
+        $contract_type . "_weight" => $contract_type eq 'call' ? -1 : 1,
+        $contract_type . "_slope" => $slope_param->{slope},
+        $contract_type . "_vanilla_vega" => $slope_param->{vanilla_vega}{amount},
+
+    };
+    return $slope_parameter;
+}
+
 sub _get_bs_probability_parameters {
-    my $prob         = shift;
+    my $prob            = shift;
+    my $contract_payout = shift;
+    my $contract_type   = shift;
+
     my $bs_parameter = {
-        'K' => $prob->{strikes}[0],
-        "S" => $prob->{spot},
-        't' => $prob->{_timeinyears},
-        map { $_ => $prob->{$_} } qw(discount_rate mu vol),
+        $contract_type . "_K"      => $prob->{strikes}[0],
+        $contract_type . "_S"      => $prob->{spot},
+        $contract_type . "_t"      => $prob->{_timeinyears},
+        $contract_type . "_payout" => $contract_payout,
+        map { $contract_type . '_' . $_ => $prob->{$_} } qw(discount_rate mu vol),
     };
     return $bs_parameter;
 }
+
+sub _get_market_supplement_parameters {
+    my $pe = shift;
+
+    my $ms_parameter;
+    foreach $type ('vanna', 'volga', 'vega') {
+        my $correction    = $type . '_correction';
+        my $ms_correction = $pe->$correction;
+        $ms_parameter->{$type . "_correction"}      = $ms_correction->amount;
+        $ms_parameter->{$type . "_survival_weight"} = $ms_correction->peek_amount('survival_weight');
+        $ms_parameter->{"Bet_" . $type}             = $ms_correction->peek_amount('bet_' . $type);
+        $ms_parameter->{$type . "_market_price"}    = $ms_correction->peek_amount($type . '_market_price');
+
+    }
+    return $ms_parameter;
+}
+
 BOM::Backoffice::Request::template->process(
     'backoffice/contract_details.html.tt',
     {
         broker             => $broker,
         id                 => $id,
+        short_code         => $short_code,
+        currency           => $currency,
         contract_details   => {@contract_details},
         start              => $start ? $start->datetime : '',
         pricing_parameters => $pricing_parameters,

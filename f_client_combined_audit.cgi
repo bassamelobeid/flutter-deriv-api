@@ -14,7 +14,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Runtime;
-use BOM::Platform::Client;
+use Client::Account;
 use feature "state";
 
 BOM::Backoffice::Sysinit::init();
@@ -25,7 +25,7 @@ my $startdate = request()->param('startdate');
 my $enddate   = request()->param('enddate');
 
 # get client complete transaction statements
-my $client = BOM::Platform::Client::get_instance({'loginid' => $loginid});
+my $client = Client::Account::get_instance({'loginid' => $loginid});
 if (not $client) {
     print "Error : wrong loginID ($loginid) could not get client instance";
     code_exit_BO();

@@ -7,7 +7,7 @@ matrix:
 env:
     - PERL5LIB=/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/cpan/local/lib/perl5:/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi:/home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib
 addons:
-    postgresql: "9.3"
+    postgresql: "9.4"
 services:
     - redis-server
 cache: apt

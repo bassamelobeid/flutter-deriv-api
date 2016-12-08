@@ -1,8 +1,12 @@
 package BOM::Backoffice::Request;
 
+use strict;
+use warnings;
+
 use feature 'state';
 
-use base qw( Exporter );
+use Exporter qw(import export_to_level);
+
 use Template;
 use Template::Stash;
 use Format::Util::Numbers;
@@ -13,7 +17,12 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Context::I18N;
 use BOM::Backoffice::Request::Base;
 
-state $current_request;
+# Represents the currently-active request, and should be cleared in L</request_completed>
+# as soon as the request finishes.
+my $current_request;
+# Holds information used by TT2 processing, and should also be cleared in L</request_completed>
+# after the current request.
+my $template_config;
 
 sub request {
     my $new_request = shift;
@@ -24,6 +33,7 @@ sub request {
 
 sub request_completed {
     $current_request = undef;
+    $template_config = undef;
     _configure_for_request(request());
     return;
 }
@@ -63,10 +73,8 @@ usage,
 
 sub template {
     my $what = shift || 'template';
-    if (not $template_config->{template}) {
-        $template_config->{stash} = _configure_template_stash_for(request());
-        $template_config->{template} = _configure_template_for(request(), $template_config->{stash});
-    }
+    $template_config->{stash} ||= _configure_template_stash_for(request());
+    $template_config->{template} = _configure_template_for(request(), $template_config->{stash});
     return $template_config->{$what};
 }
 

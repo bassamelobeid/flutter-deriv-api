@@ -56,7 +56,7 @@ BOM::Backoffice::Auth0::can_access(['Payments']);
 my $staff = BOM::Backoffice::Auth0::from_cookie();
 my $clerk = $staff->{nickname};
 
-my $client = eval { BOM::Platform::Client->new({loginid => $loginID}) } || do {
+my $client = eval { Client::Account->new({loginid => $loginID}) } || do {
     print "Error: no such client $loginID";
     code_exit_BO();
 };
@@ -68,7 +68,7 @@ if ($ttype eq 'TRANSFER') {
         print "ERROR: transfer-to LoginID missing";
         code_exit_BO();
     }
-    $toClient = eval { BOM::Platform::Client->new({loginid => $toLoginID}) } || do {
+    $toClient = eval { Client::Account->new({loginid => $toLoginID}) } || do {
         print "Error: no such transfer-to client $toLoginID";
         code_exit_BO();
     };
