@@ -215,8 +215,8 @@ catch {
     printf STDERR "got here\n";
 };
 
-$client_data_mapper->unfreeze;
-$to_data_mapper->unfreeze if $toLoginID;
+$client_db->unfreeze;
+$to_client_db->unfreeze if $toLoginID;
 
 code_exit_BO() if $leave;
 
