@@ -16,10 +16,11 @@
           "pattern": "^[A-Z]{3}$",
           "default": "USD"
         },
-        "region":{
+        "product_type":{
             "type":"string",
-            "description":"Set to 'japan' to retrieve contracts available under Japanese regulations, or 'other' otherwise.",
-            "pattern":"^(japan|other)$"
+            "description":"There are two trading platforms. Set to 'multi_barrier' to receive contracts with multi barrier trading. Defaults to 'basic'",
+            "pattern":"^(multi_barrier|basic)$",
+            "default": "basic",
         },
         "passthrough":{
             "type":"object",
