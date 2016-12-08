@@ -172,15 +172,13 @@ sub _get_ask {
                     });
 
             } else {
-                my $payout = 0;
-                try { $payout = $contract->payout };
                 $response = BOM::RPC::v3::Utility::create_error({
                         continue_price_stream => $contract->continue_price_stream,
                         message_to_client     => $message_to_client,
                         code                  => $code,
                         details               => {
                             display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price)),
-                            payout => sprintf('%.2f', $payout),
+                            payout => sprintf('%.2f', $contract->payout),
                         },
                     });
             }
