@@ -222,7 +222,7 @@ subtest 'update_predefined_highlow' => sub {
         my $new_tick = {
             symbol => $symbol,
             epoch => $now->plus_time_interval('30s')->epoch,
-            price => 69.2
+            quote => 69.2
         };
         my $tp = generate_trading_periods($symbol);
         ok update_predefined_highlow($new_tick), 'updated highlow';
@@ -230,7 +230,7 @@ subtest 'update_predefined_highlow' => sub {
         my $touch = first {$_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M'} @$offering;
         ok !scalar(@{$touch->{expired_barriers}}), 'no expired barrier detected';
         $new_tick->{epoch} += 1;
-        $new_tick->{price} = 125;
+        $new_tick->{quote} = 125;
         ok update_predefined_highlow($new_tick), 'next update';
         $offering = get_predefined_offerings($symbol);
         $touch = first {$_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M'} @$offering;
