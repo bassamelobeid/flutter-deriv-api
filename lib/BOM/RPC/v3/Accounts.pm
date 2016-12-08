@@ -43,20 +43,9 @@ sub payout_currencies {
         $client = Client::Account->new({loginid => $token_details->{loginid}});
     }
 
-    my $currencies;
-    if ($client) {
-        if ($client->default_account) {
-            $currencies = [$client->currency];
-        } else {    # client have not yet selected currency, so return Landing Company's allowed list
-            my $lc = $client->landing_company;
-            $currencies = $lc->legal_allowed_currencies;
-        }
-    } else {
-        my $lc = LandingCompany::Registry::get('costarica');
-        $currencies = $lc->legal_allowed_currencies;
-    }
-
-    return $currencies;
+    return [$client->currency] if $client && $client->default_account;
+    my $lc = $client ? $client->landing_company : LandingCompany::Registry::get('costarica');
+    return $lc->legal_allowed_currencies;
 }
 
 sub landing_company {
