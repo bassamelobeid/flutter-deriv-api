@@ -14,6 +14,7 @@ use LandingCompany::Countries;
 use Client::Account;
 use Client::Account::Desk;
 
+use BOM::Database::ClientDB;
 use BOM::System::Config;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
@@ -68,7 +69,7 @@ sub validate {
         if ((any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid)) and not $details->{sub_account_of}) {
             return {error => 'duplicate email'};
         }
-        if (BOM::Database::DataMapper::Client->new({broker_code => $broker})->get_duplicate_client($details)) {
+        if (BOM::Database::ClientDB->new({broker_code => $broker})->get_duplicate_client($details)) {
             return {error => 'duplicate name DOB'};
         }
 
