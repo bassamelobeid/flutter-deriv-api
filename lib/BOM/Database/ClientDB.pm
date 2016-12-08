@@ -123,10 +123,7 @@ sub getall_arrayref {
     return \@result;
 }
 
-
-
 # methods from BOM::Database::DataMapper::Client
-
 sub get_duplicate_client {
     my $self = shift;
     my $args = shift;
@@ -216,9 +213,6 @@ sub locked_client_list {
 
     return $sth->fetchall_hashref('client_loginid');
 }
-
-
-
 
 no Moose;
 
