@@ -47,7 +47,7 @@ if ($broker and ($id or $short_code)) {
                 operation   => 'backoffice_replica',
             })->get_details_by_transaction_ref($id);
 
-        $client = Client::::Account::get_instance({'loginid' => $details->{loginid}});
+        $client = Client::Account::get_instance({'loginid' => $details->{loginid}});
 
     }
 
