@@ -18,7 +18,7 @@ use utf8;
 set_absolute_time(Date::Utility->new('2016-03-18 00:00:00')->epoch);
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
-    epoch => Date::Utility->new->minus_time_interval('100d')->epoch,
+    epoch      => Date::Utility->new->minus_time_interval('100d')->epoch,
 });
 
 my ($t, $rpc_ct);
