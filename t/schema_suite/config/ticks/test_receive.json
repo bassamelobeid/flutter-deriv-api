@@ -1,0 +1,16 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+       "stash": {
+           "type": "object",
+           "required": "1",
+           "properties":{
+               "[_1]_display_decimals": {
+                   "type": "integer",
+                   "required": "1"
+               }
+           }
+       }
+    }
+}

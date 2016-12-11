@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "value":"InsufficientBalance"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "msg_type": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "error",
+    "msg_type"
+  ]
+}

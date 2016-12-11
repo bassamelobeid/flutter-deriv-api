@@ -1,0 +1,18 @@
+{
+    "token":"[_1]",
+        "token_type":"oauth_token",
+        "args":{
+            "buy": 1,
+            "price":100
+        },
+        "contract_parameters":{
+            "amount": "100",
+            "basis": "stake",
+            "contract_type": "CALL",
+            "currency": "USD",
+            "duration": "60",
+            "duration_unit": "s",
+            "symbol": "R_100",
+            "price":100
+        }
+}
