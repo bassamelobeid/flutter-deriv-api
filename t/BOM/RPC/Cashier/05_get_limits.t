@@ -47,7 +47,7 @@ subtest 'CR' => sub {
 
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
-    my $limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->{withdrawal_limits}->{costarica};
+    my $limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'))->{withdrawal_limits}->{costarica};
 
     subtest 'expected errors' => sub {
         $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'invalid token');
@@ -137,7 +137,7 @@ subtest 'JP' => sub {
 
     $params->{token} = $token;
 
-    my $limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->{withdrawal_limits}->{japan};
+    my $limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'))->{withdrawal_limits}->{japan};
 
     subtest 'unauthenticated' => sub {
         my $expected_result = {
@@ -200,7 +200,7 @@ subtest 'MLT' => sub {
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
     $params->{token} = $token;
 
-    my $limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->{withdrawal_limits}->{malta};
+    my $limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'))->{withdrawal_limits}->{malta};
 
     subtest 'unauthenticated' => sub {
         my $expected_result = {
@@ -263,7 +263,7 @@ subtest 'MX' => sub {
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
     $params->{token} = $token;
 
-    my $limits = LoadFile(File::ShareDir::dist_file('LandingCompany', 'payment_limits.yml'))->{withdrawal_limits}->{iom};
+    my $limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'))->{withdrawal_limits}->{iom};
 
     subtest 'unauthenticated' => sub {
         my $expected_result = {
