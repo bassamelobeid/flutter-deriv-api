@@ -6,7 +6,7 @@ use warnings;
 use utf8;
 use BOM::System::Password;
 use Format::Util::Strings qw( defang );
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Platform::Client::Utility;
 
 use FindBin;
@@ -24,8 +24,8 @@ subtest 'Client getters, setters' => sub {
 
     # create client object
     my $client;
-    Test::Exception::lives_ok { $client = BOM::Platform::Client::get_instance({'loginid' => $login_id}); }
-    "Can create client object 'BOM::Platform::Client::get_instance({'loginid' => $login_id})'";
+    Test::Exception::lives_ok { $client = Client::Account::get_instance({'loginid' => $login_id}); }
+    "Can create client object 'Client::Account::get_instance({'loginid' => $login_id})'";
 
     is($client->broker, 'CR', 'client broker is CR');
 
@@ -133,17 +133,17 @@ my $open_account_details = {
 
 my $client;
 subtest 'create client' => sub {
-    Test::Exception::lives_ok { $client = BOM::Platform::Client->register_and_return_new_client($open_account_details) } "create new client success";
+    Test::Exception::lives_ok { $client = Client::Account->register_and_return_new_client($open_account_details) } "create new client success";
     my $new_loginid = $client->loginid;
 
     # Test save method
-    $client = BOM::Platform::Client::get_instance({'loginid' => $new_loginid});
+    $client = Client::Account::get_instance({'loginid' => $new_loginid});
     $client->first_name('Amy');
     $client->last_name('mimi');
     $client->email('test@betonmarkets.com');
     Test::Exception::lives_ok { $client->save(); } "[save] call client save OK";
 
-    BOM::Platform::Client::get_instance({'loginid' => $new_loginid});
+    Client::Account::get_instance({'loginid' => $new_loginid});
     is($client->first_name,              "Amy",                   "[save] client first_name is: Amy");
     is($client->last_name,               "mimi",                  "[save] client last_name is: mimi");
     is($client->email,                   'test@betonmarkets.com', '[save] client email is: shuwnyuan@betonmarkets.com');
@@ -172,7 +172,7 @@ subtest 'Gender based on Salutation' => sub {
         $details{email}      = 'test+' . $salutation . '@binary.com';
         $details{first_name} = 'first-name-' . $salutation;
 
-        $client = BOM::Platform::Client->register_and_return_new_client(\%details);
+        $client = Client::Account->register_and_return_new_client(\%details);
 
         is($client->salutation, $salutation, 'Salutation: ' . $client->salutation);
         is($client->gender, $gender_map{$salutation}, 'gender: ' . $client->gender);
@@ -193,7 +193,7 @@ subtest 'no salutation, default Gender: m' => sub {
 
         $details{email}      = 'test++' . $i . '@binary.com';
         $details{first_name} = 'first-name-' . $i;
-        $client              = BOM::Platform::Client->register_and_return_new_client(\%details);
+        $client              = Client::Account->register_and_return_new_client(\%details);
 
         is($client->salutation, '',  'Salutation: ' . $client->salutation);
         is($client->gender,     'm', 'default gender: m');
@@ -207,7 +207,7 @@ subtest 'no salutation, set Gender explicitly' => sub {
     $details{gender}     = 'f';
     $details{email}      = 'test++ff@binary.com';
     $details{first_name} = 'first-name-ff';
-    $client              = BOM::Platform::Client->register_and_return_new_client(\%details);
+    $client              = Client::Account->register_and_return_new_client(\%details);
 
     is($client->salutation, '',  'Salutation: ' . $client->salutation);
     is($client->gender,     'f', 'gender: ' . $client->gender);

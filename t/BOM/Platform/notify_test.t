@@ -4,11 +4,13 @@ use strict;
 use warnings;
 use Test::More tests => 5;
 use Test::Exception;
+
+use Client::Account;
+use Client::Account::PaymentAgent;
+
 use BOM::Database::Model::Account;
 use BOM::Database::Model::DataCollection::QuantsBetVariables;
 use BOM::Database::Helper::FinancialMarketBet;
-use BOM::Platform::Client;
-use BOM::Platform::Client::PaymentAgent;
 use BOM::Database::ClientDB;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use YAML::XS;
@@ -42,9 +44,9 @@ $acc3 = create_account 'CR0028';
 $acc4 = create_account 'CR0008';
 
 # for payments tests
-my $pa        = BOM::Platform::Client::PaymentAgent->new({loginid => 'CR0020'});
+my $pa        = Client::Account::PaymentAgent->new({loginid => 'CR0020'});
 my $pa_client = $pa->client;
-my $client    = BOM::Platform::Client->new({loginid => 'CR0021'});
+my $client    = Client::Account->new({loginid => 'CR0021'});
 
 # for notify listening
 my $config = YAML::XS::LoadFile('/etc/rmg/clientdb.yml');

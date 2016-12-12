@@ -6,8 +6,10 @@ use warnings;
 use Test::More tests => 28;
 use Test::NoWarnings ();    # no END block test
 use Test::Exception;
+
+use Client::Account;
+
 use BOM::Database::Helper::FinancialMarketBet;
-use BOM::Platform::Client;
 use BOM::Database::ClientDB;
 use BOM::System::Password;
 use BOM::Platform::Client::Utility;
@@ -23,7 +25,7 @@ sub db {
 }
 
 sub create_client {
-    return BOM::Platform::Client->register_and_return_new_client({
+    return Client::Account->register_and_return_new_client({
         broker_code      => 'CR',
         client_password  => BOM::System::Password::hashpw('12345678'),
         salutation       => 'Mr',
