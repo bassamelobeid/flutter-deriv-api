@@ -13,7 +13,7 @@ my @symbols = BOM::Product::Contract::PredefinedParameters::supported_symbols;
 my $redis = Cache::RedisDB->redis;
 
 $redis->subscription_loop(
-    subscribe        => [map { 'FEED::' . $_ } @symbols],
+    subscribe        => [map { 'FEED_LATEST_TICK::' . $_ } @symbols],
     default_callback => sub {
         my $tick_data = from_json($_[3]);
         update_predefined_highlow($tick_data);
