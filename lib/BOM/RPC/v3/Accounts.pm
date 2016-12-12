@@ -795,9 +795,16 @@ sub set_self_exclusion {
 
     my $exclude_until = $args{exclude_until};
     if (defined $exclude_until && $exclude_until =~ /^\d{4}\-\d{2}\-\d{2}$/) {
-        my $now           = Date::Utility->new;
-        my $exclusion_end = Date::Utility->new($exclude_until);
-        my $six_month     = Date::Utility->new(DateTime->now()->add(months => 6)->ymd);
+        my $now = Date::Utility->new;
+        my $six_month = Date::Utility->new(DateTime->now()->add(months => 6)->ymd);
+        my ($exclusion_end, $exclusion_end_error);
+        try {
+            $exclusion_end = Date::Utility->new($exclude_until);
+        }
+        catch {
+            $exclusion_end_error = 1;
+        };
+        return $error_sub->(localize('Exclusion time conversion error.'), 'exclude_until') if $exclusion_end_error;
 
         # checking for the exclude until date which must be larger than today's date
         if (not $exclusion_end->is_after($now)) {
