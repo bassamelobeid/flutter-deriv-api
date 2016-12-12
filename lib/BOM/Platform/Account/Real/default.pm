@@ -2,7 +2,7 @@ package BOM::Platform::Account::Real::default;
 
 use strict;
 use warnings;
-
+use feature 'state';
 use Date::Utility;
 use Try::Tiny;
 use Locale::Country;
