@@ -228,6 +228,17 @@ sub _tentative_events_markup {
     my $self = shift;
     my $bet  = $self->bet;
 
+    #Don't calculate expected return if contract is ATM
+    #In this case, economic events markup will be calculated using normal formula
+    if ( $bet->is_atm_bet ) {
+        return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'economic_events_markup',
+                description => 'economic events markup based on tentative events in the contract period',
+                set_by      => __PACKAGE__,
+                base_amount => 0,
+            });
+    }
+
     my $markup = 0;
 
     my @barrier_args =
