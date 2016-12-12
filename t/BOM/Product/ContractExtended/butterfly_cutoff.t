@@ -12,23 +12,19 @@ Tests the butterfly_markup based off of the butterfly_cutoff.
 use Test::Most;
 use Test::FailWarnings;
 use Test::MockModule;
-use File::Spec;
 use JSON qw(decode_json);
 
 use Postgres::FeedDB::Spot::Tick;
-use BOM::MarketData::Fetcher::VolSurface;
+
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
-use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types;
 
-my $underlying       = create_underlying('frxUSDJPY');
+my $spot             = 79.08;
 my $bet_start        = Date::Utility->new('2012-02-01 01:00:00');
+my $underlying       = create_underlying('frxUSDJPY');
 my $longterm_expiry  = Date::Utility->new($bet_start->epoch + 7 * 86400);
 my $shortterm_expiry = Date::Utility->new($bet_start->epoch + 23 * 3540);
-my $dm               = BOM::MarketData::Fetcher::VolSurface->new;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -55,7 +51,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         type          => 'implied',
         implied_from  => 'USD'
     });
-my $spot = 79.08;
 
 # Strategy: Test that the butterfly_markup is correctly computed only for surfaces where the ON BF is greater than the butterfly_cutoff,
 subtest 'ON 25D BF > 1.' => sub {
@@ -134,6 +129,13 @@ subtest 'ON 25D BF > 1.' => sub {
 sub _sample_surface {
 
     my %override_smile = @_;
+
+    my $tick = Postgres::FeedDB::Spot::Tick->new(
+        quote  => $spot,
+        epoch  => 1,
+        symbol => $underlying->symbol,
+    );
+    $underlying->{spot_tick} = $tick;
 
     my $surface = Quant::Framework::VolSurface::Delta->new(
         underlying        => $underlying,

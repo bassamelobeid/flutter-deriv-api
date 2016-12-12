@@ -634,6 +634,8 @@ sub _build_engine_ask_probability {
             economic_events => _generate_market_data($self->underlying, $self->date_start)->{economic_events},
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
+        my $fixed_vol = $self->has_pricing_vol || $self->underlying->volatility_surface_type eq 'flat';
+
         %pricing_parameters = (
             contract_type            => $self->pricing_code,
             for_date                 => $self->underlying->for_date,
@@ -645,8 +647,7 @@ sub _build_engine_ask_probability {
             date_expiry              => $self->date_expiry,
             discount_rate            => $self->discount_rate,
             mu                       => $self->mu,
-            ($self->has_pricing_vol ? (vol  => $self->pricing_vol):()),
-            ($self->underlying->volatility_surface_type eq 'flat' ? (vol => $self->pricing_vol):()),
+            ($fixed_vol ? (vol  => $self->pricing_vol):()),
             payouttime_code          => $self->payouttime_code,
             q_rate                   => $self->q_rate,
             r_rate                   => $self->r_rate,
