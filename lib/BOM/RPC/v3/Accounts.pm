@@ -47,7 +47,13 @@ sub payout_currencies {
     if ($client) {
         $currencies = [$client->currency];
     } else {
-        my $lc = LandingCompany::Registry::get('costarica');
+        # We may have a landing company even if we're not logged in - typically this
+        # is obtained from the GeoIP country code lookup. If we have one, use it.
+        my $name = $params->{landing_company_name};
+        my $lc = LandingCompany::Registry::get($name || 'costarica');
+        # ... but we fall back to Costa Rica as a useful default, since it has most
+        # currencies enabled.
+        $lc ||= LandingCompany::Registry::get('costarica');
         $currencies = $lc->legal_allowed_currencies;
     }
 
