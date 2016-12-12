@@ -19,7 +19,7 @@ use BOM::Platform::Token;
 # Seconds between reloads of the rate_limitations.yml file.
 # We don't want to reload too frequently, since we may see a lot of `website_status` calls.
 # However, it's a config file held outside the repo, so we also don't want to let it get too old.
-use constant RATES_FILE_CACHE_TIME => 10;
+use constant RATES_FILE_CACHE_TIME => 120;
 
 sub get_token_details {
     my $token = shift;
