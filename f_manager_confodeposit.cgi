@@ -10,7 +10,7 @@ use Try::Tiny;
 
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
-use BOM::Database::DataMapper::Client;
+use BOM::Database::ClientDB;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -56,7 +56,7 @@ BOM::Backoffice::Auth0::can_access(['Payments']);
 my $staff = BOM::Backoffice::Auth0::from_cookie();
 my $clerk = $staff->{nickname};
 
-my $client = eval { BOM::Platform::Client->new({loginid => $loginID}) } || do {
+my $client = eval { Client::Account->new({loginid => $loginID}) } || do {
     print "Error: no such client $loginID";
     code_exit_BO();
 };
@@ -68,7 +68,7 @@ if ($ttype eq 'TRANSFER') {
         print "ERROR: transfer-to LoginID missing";
         code_exit_BO();
     }
-    $toClient = eval { BOM::Platform::Client->new({loginid => $toLoginID}) } || do {
+    $toClient = eval { Client::Account->new({loginid => $toLoginID}) } || do {
         print "Error: no such transfer-to client $toLoginID";
         code_exit_BO();
     };
@@ -169,21 +169,21 @@ unless ($params{skip_validation}) {
 
 my $transRef;
 
-my $client_data_mapper = BOM::Database::DataMapper::Client->new({
+my $client_db = BOM::Database::ClientDB->new({
     client_loginid => $loginID,
 });
 
-$client_data_mapper->freeze || do {
+$client_db->freeze || do {
     print "ERROR: Account stuck in previous transaction $loginID";
     code_exit_BO();
 };
 
-my $to_data_mapper = BOM::Database::DataMapper::Client->new({
+my $to_client_db = BOM::Database::ClientDB->new({
     client_loginid => $loginID,
 });
 
 if ($ttype eq 'TRANSFER') {
-    $to_data_mapper->freeze || do {
+    $to_client_db->freeze || do {
         print "ERROR: To-Account stuck in previous transaction $toLoginID";
         code_exit_BO();
         }
@@ -215,8 +215,8 @@ catch {
     printf STDERR "got here\n";
 };
 
-$client_data_mapper->unfreeze;
-$to_data_mapper->unfreeze if $toLoginID;
+$client_db->unfreeze;
+$to_client_db->unfreeze if $toLoginID;
 
 code_exit_BO() if $leave;
 

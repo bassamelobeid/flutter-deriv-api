@@ -5,6 +5,8 @@ use strict 'vars';
 use URL::Encode qw( url_encode );
 use HTML::Entities;
 
+use Client::Account;
+
 use f_brokerincludeall;
 use BOM::Backoffice::Request qw(request localize);
 use BOM::Platform::Email qw(send_email);
@@ -27,7 +29,7 @@ if (not $loginID) {
     code_exit_BO();
 }
 
-my $client      = BOM::Platform::Client::get_instance({'loginid' => $loginID}) || die "[f_clientloginid_newpassword cgi] bad client $loginID";
+my $client      = Client::Account::get_instance({'loginid' => $loginID}) || die "[f_clientloginid_newpassword cgi] bad client $loginID";
 my $email       = $client->email;
 my $client_name = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
 

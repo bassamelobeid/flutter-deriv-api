@@ -11,7 +11,7 @@ use Data::Dumper;
 
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 
@@ -29,7 +29,7 @@ if (request()->param('created')) {
     $created = lc(request()->param('created'));
 }
 
-my $client = BOM::Platform::Client::get_instance({'loginid' => $loginid});
+my $client = Client::Account::get_instance({'loginid' => $loginid});
 if (not $client) {
     print "Error : wrong loginID ($loginid) could not get client instance";
     code_exit_BO();
