@@ -186,7 +186,7 @@ sub _get_ask {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
 
             # need this warning to be logged for Japan as a regulatory requirement
-            warn "[JPLOG]"
+            warn "[JPLOG],"
                 . $contract->shortcode . ","
                 . ($p2->{trading_period_start} // '') . ","
                 . $ask_price . ","
