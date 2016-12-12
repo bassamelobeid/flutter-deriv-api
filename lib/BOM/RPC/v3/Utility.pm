@@ -16,6 +16,11 @@ use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
 use BOM::Platform::Token;
 
+# Seconds between reloads of the rate_limitations.yml file.
+# We don't want to reload too frequently, since we may see a lot of `website_status` calls.
+# However, it's a config file held outside the repo, so we also don't want to let it get too old.
+use constant RATES_FILE_CACHE_TIME => 120;
+
 sub get_token_details {
     my $token = shift;
 
@@ -71,9 +76,17 @@ sub permission_error {
             message_to_client => localize('Permission denied.')});
 }
 
+# Start this at zero to ensure we always load on first call.
+my $rates_file_last_load = 0;
+my $rates_file_content;
+
 sub site_limits {
 
-    my $rates_file_content = LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml');
+    my $now = time;
+    if ($now - $rates_file_last_load > RATES_FILE_CACHE_TIME) {
+        $rates_file_content = LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml');
+        $rates_file_last_load = $now;
+    }
 
     my $limits;
     $limits->{max_proposal_subscription} = {

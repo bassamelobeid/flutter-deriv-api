@@ -65,7 +65,7 @@ subtest 'reset_password_vrtc' => sub {
 
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({status => 1});
     my $subject = 'Your password has been reset.';
-    my @msgs     = $mailbox->search(
+    my @msgs    = $mailbox->search(
         email   => $email_vr,
         subject => qr/\Q$subject\E/
     );
@@ -149,7 +149,7 @@ subtest $method => sub {
     $mailbox->clear;
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({status => 1});
     my $subject = 'Your password has been reset.';
-    my @msgs     = $mailbox->search(
+    my @msgs    = $mailbox->search(
         email   => $email_cr,
         subject => qr/\Q$subject\E/
     );
