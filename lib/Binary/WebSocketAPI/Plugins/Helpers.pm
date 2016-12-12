@@ -45,6 +45,8 @@ sub register {
             # Note: xx means there is no country data
             $client_country = 'aq' if ($client_country eq 'xx');
 
+            $c->stash->{landing_company_name} ||= 'jp' if $client_country eq 'jp';
+
             return $c->stash->{country_code} = $client_country;
         });
 
