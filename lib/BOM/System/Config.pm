@@ -41,7 +41,7 @@ sub quants {
 }
 
 sub sanction_file {
-    return "/var/sanctions/sanctions.csv";
+    return "/var/lib/sanctions/sanctions.csv";
 }
 
 {
