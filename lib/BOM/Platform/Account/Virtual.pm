@@ -6,12 +6,13 @@ use warnings;
 use Try::Tiny;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
+use Client::Account;
+
 use BOM::System::Password;
 
 use BOM::Platform::Runtime;
 use LandingCompany::Countries;
 use LandingCompany::Registry;
-use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Token;
 use BOM::Platform::Account;
@@ -41,7 +42,7 @@ sub create_account {
         die 'residence is empty' if (not $residence);
         my $company_name = LandingCompany::Countries->instance->virtual_company_for_country($residence);
 
-        $client = BOM::Platform::Client->register_and_return_new_client({
+        $client = Client::Account->register_and_return_new_client({
             broker_code                   => LandingCompany::Registry::get($company_name)->broker_codes->[0],
             client_password               => $password,
             salutation                    => '',
@@ -77,6 +78,7 @@ sub create_account {
     my $utm_source    = $details->{utm_source};
     my $utm_medium    = $details->{utm_medium};
     my $utm_campaign  = $details->{utm_campaign};
+    my $gclid_url     = $details->{gclid_url};
     my $email_consent = $details->{email_consent};
 
     my $user = BOM::Platform::User->create(
@@ -87,7 +89,8 @@ sub create_account {
         $source        ? (app_id        => $source)        : (),
         $utm_source    ? (utm_source    => $utm_source)    : (),
         $utm_medium    ? (utm_medium    => $utm_medium)    : (),
-        $utm_campaign  ? (utm_campaign  => $utm_campaign)  : ());
+        $utm_campaign  ? (utm_campaign  => $utm_campaign)  : (),
+        $gclid_url     ? (gclid_url     => $gclid_url)     : ());
     $user->add_loginid({loginid => $client->loginid});
     $user->save;
     $client->deposit_virtual_funds($source, localize('Virtual money credit to account'));

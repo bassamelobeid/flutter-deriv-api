@@ -6,14 +6,14 @@ use warnings;
 use Test::MockTime;
 use Test::More qw(no_plan);
 use Test::Exception;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $login_id = 'MLT0017';
 
 # create client object
 my $client;
-Test::Exception::lives_ok { $client = BOM::Platform::Client->new({loginid => $login_id}) } "Can create client object $login_id";
+Test::Exception::lives_ok { $client = Client::Account->new({loginid => $login_id}) } "Can create client object $login_id";
 
 is($client->broker, 'MLT', 'client broker is MLT');
 

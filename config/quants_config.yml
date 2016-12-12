@@ -4,10 +4,10 @@ commission:
     historical_vol_meanrev: 0.10
   digital_spread:
     level_multiplier: 1.4
-  maximum_total_markup: 50
+  maximum_total_markup: 100
   adjustment:
     minimum: 1
-    maximum: 500
+    maximum: 10000 #this define the maximum commission scaling. When it is 10000 mean it is 100% scaling
     forward_start_factor: 1.5
 
 bet_limits:
@@ -31,7 +31,7 @@ bet_limits:
       EUR: 1
       AUD: 1
       GBP: 1
-      JPY: 100
+      JPY: 70
     volidx:
       USD: 0.7
       EUR: 0.7

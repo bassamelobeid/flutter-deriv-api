@@ -2,8 +2,11 @@ use strict;
 use warnings;
 use Test::More (tests => 3);
 use Test::Exception;
+
+use Client::Account;
+use Client::Account::Payments;
+
 use BOM::Database::DataMapper::Account;
-use BOM::Platform::Client::Payments;
 use BOM::Database::Model::Transaction;
 use BOM::Database::Model::Constants;
 
@@ -14,7 +17,7 @@ my ($acc_data_mapper, $balance);
 subtest "Try MX, GBP" => sub {
     lives_ok {
         # Setup fixtures
-        my $client = BOM::Platform::Client->new({loginid => 'MX0012'});
+        my $client = Client::Account->new({loginid => 'MX0012'});
         my $account = $client->default_account;
 
         $client->payment_free_gift(
@@ -54,7 +57,7 @@ subtest "get_balance" => sub {
 subtest "making new transaction" => sub {
     lives_ok {
 
-        my $client = BOM::Platform::Client->new({loginid => 'CR0008'});
+        my $client = Client::Account->new({loginid => 'CR0008'});
         $client->payment_legacy_payment(
             currency     => 'USD',
             amount       => 3,

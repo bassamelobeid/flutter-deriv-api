@@ -6,13 +6,13 @@ use Test::More qw(no_plan);
 use Test::Exception;
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Platform::Client;
+use Client::Account;
 
 my $login_id = 'CR0011';
 my $client;
 
-lives_ok { $client = BOM::Platform::Client::get_instance({'loginid' => $login_id}); }
-"Can create client object 'BOM::Platform::Client::get_instance({'loginid' => $login_id})'";
+lives_ok { $client = Client::Account::get_instance({'loginid' => $login_id}); }
+"Can create client object 'Client::Account::get_instance({'loginid' => $login_id})'";
 
 is($client->is_vip,    0,     "client is not VIP");
 is($client->vip_since, undef, "client vip_since is undef");
@@ -34,8 +34,8 @@ is($client->vip_since, $initial_vip_since, "client vip_since doesn't change if y
 lives_ok { $client->save() } "can save client";
 
 # reload client
-lives_ok { $client = BOM::Platform::Client::get_instance({'loginid' => $login_id}); }
-"Can create client object 'BOM::Platform::Client::get_instance({'loginid' => $login_id})'";
+lives_ok { $client = Client::Account::get_instance({'loginid' => $login_id}); }
+"Can create client object 'Client::Account::get_instance({'loginid' => $login_id})'";
 
 is($client->is_vip, 1, "saving VIP status work, flag persist reloads.");
 is($client->vip_since, $initial_vip_since, "client vip_since value persist reloads (got: " . $client->vip_since . ")");
@@ -45,8 +45,8 @@ is($client->vip_since, undef, "client vip_since reset to undef when toogling off
 lives_ok { $client->save() } "can save client";
 
 # reload client
-lives_ok { $client = BOM::Platform::Client::get_instance({'loginid' => $login_id}); }
-"Can create client object 'BOM::Platform::Client::get_instance({'loginid' => $login_id})'";
+lives_ok { $client = Client::Account::get_instance({'loginid' => $login_id}); }
+"Can create client object 'Client::Account::get_instance({'loginid' => $login_id})'";
 
 is($client->is_vip,    0,     "saving non-VIP status work, flag persist reloads.");
 is($client->vip_since, undef, "client vip_since reset persist reloads");

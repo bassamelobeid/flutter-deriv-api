@@ -37,7 +37,7 @@ my %new_client_details = (
 
 sub new_client {
     my $currency = shift;
-    my $c = BOM::Platform::Client->register_and_return_new_client({%new_client_details, @_});
+    my $c = Client::Account->register_and_return_new_client({%new_client_details, @_});
     $c->set_default_account($currency);
     $c;
 }

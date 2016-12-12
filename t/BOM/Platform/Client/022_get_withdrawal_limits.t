@@ -13,7 +13,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
-use BOM::Platform::Client;
+use Client::Account;
 use Date::Utility;
 use BOM::Platform::Client::Utility;
 
@@ -24,7 +24,7 @@ my $now = Date::Utility->new;
 subtest 'CR0027.' => sub {
     plan tests => 2;
 
-    my $client = BOM::Platform::Client->new({loginid => 'CR0027'});
+    my $client = Client::Account->new({loginid => 'CR0027'});
     my $withdrawal_limits = $client->get_withdrawal_limits();
 
     is($withdrawal_limits->{'frozen_free_gift'},         0,   'USD frozen_free_gift is 0');
@@ -34,7 +34,7 @@ subtest 'CR0027.' => sub {
 subtest 'CR0028.' => sub {
     plan tests => 2;
 
-    my $client = BOM::Platform::Client->new({loginid => 'CR0028'});
+    my $client = Client::Account->new({loginid => 'CR0028'});
     my $withdrawal_limits = $client->get_withdrawal_limits();
 
     cmp_ok($withdrawal_limits->{'frozen_free_gift'}, '==', 20, 'USD frozen_free_gift is 20');
