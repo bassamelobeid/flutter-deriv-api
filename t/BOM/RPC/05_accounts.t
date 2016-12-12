@@ -916,7 +916,7 @@ subtest $method => sub {
     $test_client->load;
     ok(!$test_client->cashier_setting_password, 'Cashier password unset');
     $subject = 'Cashier password updated';
-    @msgs     = $mailbox->search(
+    @msgs    = $mailbox->search(
         email   => $email,
         subject => qr/\Q$subject\E/
     );
