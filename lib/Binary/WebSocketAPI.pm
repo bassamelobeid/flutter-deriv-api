@@ -142,7 +142,7 @@ sub startup {
         ['contracts_for'],
         ['residence_list'],
         ['states_list'],
-        ['payout_currencies', {stash_params => [qw/ token /]}],
+        ['payout_currencies', {stash_params => [qw/ token landing_company_name /]}],
         ['landing_company'],
         ['landing_company_details'],
         ['get_corporate_actions'],
