@@ -22,11 +22,11 @@ my ($t, $rpc_ct);
 my $client_mocked = Test::MockModule->new('Client::Account');
 my %seen;
 $client_mocked->mock(
-    'set_status',
+    'get_status',
     sub {
         my $status = $_[1];
         $seen{$status}++;
-        return $client_mocked->original('set_status')->(@_);
+        return $client_mocked->original('get_status')->(@_);
     });
 
 subtest 'Initialization' => sub {
