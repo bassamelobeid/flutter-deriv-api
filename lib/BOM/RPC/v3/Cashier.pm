@@ -116,6 +116,20 @@ sub cashier {
         });
     }
 
+    if ($client->residence eq 'jp' and ($client->get_status('jp_knowledge_test_pending' or $client->get_status('jp_knowledge_test_fail')))) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'ASK_JP_KNOWLEDGE_TEST',
+            message_to_client => localize('Please do a knowledge test.'),
+        });
+    }
+
+    if ($client->residence eq 'jp' and $client->get_status('jp_activation_pending')) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'JP_NOT_ACTIVITION',
+            message_to_client => localize('Account not activated.'),
+        });
+    }
+
     my $error = '';
     if ($action eq 'deposit' and $client->get_status('unwelcome')) {
         $error = localize('Your account is restricted to withdrawals only.');
