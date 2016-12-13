@@ -93,13 +93,6 @@ sub cashier {
         });
     }
 
-    if (not $client->get_status('financial_risk_approval')) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'ASK_FINANCIAL_RISK_APPROVAL',
-            message_to_client => localize('Financial Risk approval is required.'),
-        });
-    }
-
     my $landing_company = $client->landing_company;
     if ($landing_company->short eq 'maltainvest') {
         # $c->authenticate()
@@ -107,6 +100,13 @@ sub cashier {
                 code              => 'ASK_AUTHENTICATE',
                 message_to_client => localize('Client is not fully authenticated.'),
             }) unless $client->client_fully_authenticated;
+
+        if (not $client->get_status('financial_risk_approval')) {
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'ASK_FINANCIAL_RISK_APPROVAL',
+                message_to_client => localize('Financial Risk approval is required.'),
+            });
+        }
     }
 
     if ($client->residence eq 'gb' and not $client->get_status('ukgc_funds_protection')) {
