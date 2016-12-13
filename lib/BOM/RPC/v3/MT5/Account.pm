@@ -13,7 +13,7 @@ use BOM::RPC::v3::Cashier;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::User;
 use BOM::MT5::User;
-use BOM::Database::DataMapper::Client;
+use BOM::Database::ClientDB;
 use BOM::Platform::Runtime;
 
 my $countries_list;
@@ -302,7 +302,7 @@ sub mt5_deposit {
     # MT5 login or binary loginid not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $to_mt5, $fm_loginid]);
 
-    my $fm_client = BOM::Platform::Client->new({loginid => $fm_loginid});
+    my $fm_client = Client::Account->new({loginid => $fm_loginid});
 
     # only for real money account
     if ($fm_client->is_virtual) {
@@ -323,10 +323,10 @@ sub mt5_deposit {
     }
 
     # withdraw from Binary a/c
-    my $fm_data_mapper = BOM::Database::DataMapper::Client->new({
+    my $fm_client_db = BOM::Database::ClientDB->new({
         client_loginid => $fm_loginid,
     });
-    if (not $fm_data_mapper->freeze) {
+    if (not $fm_client_db->freeze) {
         return $error_sub->(localize('If this error persists, please contact customer support.'),
             "Account stuck in previous transaction $fm_loginid");
     }
@@ -346,7 +346,7 @@ sub mt5_deposit {
 
     if ($withdraw_error) {
         # should be save to unlock account
-        $fm_data_mapper->unfreeze;
+        $fm_client_db->unfreeze;
 
         return $error_sub->(
             BOM::RPC::v3::Cashier::__client_withdrawal_notes({
@@ -389,7 +389,7 @@ sub mt5_deposit {
         return $error_sub->($status->{error});
     }
 
-    $fm_data_mapper->unfreeze;
+    $fm_client_db->unfreeze;
     return {
         status                => 1,
         binary_transaction_id => $txn->id
@@ -422,7 +422,7 @@ sub mt5_withdrawal {
     # MT5 login or binary loginid not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $fm_mt5, $to_loginid]);
 
-    my $to_client = BOM::Platform::Client->new({loginid => $to_loginid});
+    my $to_client = Client::Account->new({loginid => $to_loginid});
 
     # only for real money account
     if ($to_client->is_virtual) {
@@ -443,10 +443,10 @@ sub mt5_withdrawal {
         return $error_sub->(localize('Your account [_1] cashier section was locked.', $to_loginid));
     }
 
-    my $to_data_mapper = BOM::Database::DataMapper::Client->new({
+    my $to_client_db = BOM::Database::ClientDB->new({
         client_loginid => $to_loginid,
     });
-    if (not $to_data_mapper->freeze) {
+    if (not $to_client_db->freeze) {
         return $error_sub->(localize('If this error persists, please contact customer support.'),
             "Account stuck in previous transaction $to_loginid");
     }
@@ -486,7 +486,7 @@ sub mt5_withdrawal {
     $account->save(cascade => 1);
     $payment->save(cascade => 1);
 
-    $to_data_mapper->unfreeze;
+    $to_client_db->unfreeze;
     return {
         status                => 1,
         binary_transaction_id => $txn->id

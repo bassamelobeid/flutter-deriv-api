@@ -16,10 +16,10 @@ use BOM::RPC::v3::Accounts;
 use BOM::System::Password;
 use BOM::Platform::Token;
 use BOM::Platform::User;
-use BOM::Platform::Client;
+use Client::Account;
 
 my ($t, $rpc_ct);
-my $client_mocked = Test::MockModule->new('BOM::Platform::Client');
+my $client_mocked = Test::MockModule->new('Client::Account');
 my %seen;
 $client_mocked->mock(
     'set_status',

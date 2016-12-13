@@ -18,7 +18,7 @@ use LandingCompany::Countries;
 use BOM::Platform::Email qw(send_email);
 use LandingCompany::Registry;
 use BOM::Platform::Locale;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Platform::User;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Token;
@@ -40,7 +40,7 @@ sub payout_currencies {
     my $token_details = $params->{token_details};
     my $client;
     if ($token_details and exists $token_details->{loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
+        $client = Client::Account->new({loginid => $token_details->{loginid}});
     }
 
     my $currencies;
@@ -795,9 +795,16 @@ sub set_self_exclusion {
 
     my $exclude_until = $args{exclude_until};
     if (defined $exclude_until && $exclude_until =~ /^\d{4}\-\d{2}\-\d{2}$/) {
-        my $now           = Date::Utility->new;
-        my $exclusion_end = Date::Utility->new($exclude_until);
-        my $six_month     = Date::Utility->new(DateTime->now()->add(months => 6)->ymd);
+        my $now = Date::Utility->new;
+        my $six_month = Date::Utility->new(DateTime->now()->add(months => 6)->ymd);
+        my ($exclusion_end, $exclusion_end_error);
+        try {
+            $exclusion_end = Date::Utility->new($exclude_until);
+        }
+        catch {
+            $exclusion_end_error = 1;
+        };
+        return $error_sub->(localize('Exclusion time conversion error.'), 'exclude_until') if $exclusion_end_error;
 
         # checking for the exclude until date which must be larger than today's date
         if (not $exclusion_end->is_after($now)) {
@@ -913,7 +920,7 @@ sub api_token {
     my $sub_account_loginid = $params->{args}->{sub_account};
     my ($rtn, $sub_account_client);
     if ($sub_account_loginid) {
-        $sub_account_client = BOM::Platform::Client->new({loginid => $sub_account_loginid});
+        $sub_account_client = Client::Account->new({loginid => $sub_account_loginid});
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidSubAccount',
                 message_to_client => localize('Please provide a valid sub account loginid.')}
