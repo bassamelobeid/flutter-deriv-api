@@ -205,6 +205,15 @@ subtest 'landing_companies_specific' => sub {
         ->has_no_system_error->has_error->error_code_is('ASK_UK_FUNDS_PROTECTION', 'GB residence needs to accept fund protection')
         ->error_message_is('Please accept Funds Protection.', 'GB residence needs to accept fund protection');
 
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_jp->loginid, 'test token');
+    $client_jp->set_default_account('USD');
+    $client_jp->residence('jp');
+    $client_jp->save;
+
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('ASK_UK_FUNDS_PROTECTION', 'GB residence needs to accept fund protection')
+        ->error_message_is('Please accept Funds Protection.', 'GB residence needs to accept fund protection');
+
 };
 
 subtest 'all status are covered' => sub {
