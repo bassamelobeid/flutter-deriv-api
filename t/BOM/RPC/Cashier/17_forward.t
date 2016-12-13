@@ -210,9 +210,9 @@ subtest 'landing_companies_specific' => sub {
     $client_jp->residence('jp');
     my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
     $client_jp->set_status('tnc_approval', 'system', $current_tnc_version);
+    $client_jp->set_status('jp_knowledge_test_pending', 'system', 1);
     $client_jp->save;
 
-    $client_jp->set_status('jp_knowledge_test_pending', 'system', 1);
 
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_JP_KNOWLEDGE_TEST', 'Japan residence needs a knowledge test')
