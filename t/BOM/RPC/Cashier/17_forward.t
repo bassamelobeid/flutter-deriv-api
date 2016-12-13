@@ -206,7 +206,7 @@ subtest 'landing_companies_specific' => sub {
         ->error_message_is('Please accept Funds Protection.', 'GB residence needs to accept fund protection');
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_jp->loginid, 'test token');
-    $client_jp->set_default_account('USD');
+    $client_jp->set_default_account('JPY');
     $client_jp->residence('jp');
     my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
     $client_jp->set_status('tnc_approval', 'system', $current_tnc_version);
