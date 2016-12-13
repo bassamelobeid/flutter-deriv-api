@@ -335,7 +335,7 @@ sub _get_barrier_for_tentative_events {
     my $barrier_d = $barrier <= $bet->pricing_spot;
     my $type      = $bet->code;
 
-    #final barrier is either "Barrier * (1+ER)" or "Barrier / (1+ER)"
+    #final barrier is either "Barrier * (1+ER)" or "Barrier * (1-ER)"
     if ((
             $type eq 'CALL'
                 or $type eq 'CALLE'
