@@ -198,7 +198,7 @@ subtest 'landing_companies_specific' => sub {
 
 subtest 'all status are covered' => sub {
     my $all_status = Client::Account::client_status_types;
-    my %all_status = %$$all_status;
+    my %all_status = %$all_status;
     my @ignored_status = qw(age_verification);
     delete @all_status{@ignored_status};
     fail("missing status $_") for sort grep !exists $seen{$_}, keys %$all_status;
