@@ -543,7 +543,7 @@ subtest 'all methods on a selection of underlyings' => sub {
             my $test_day      = $today->plus_time_interval($days_hence . 'd');
             my $day_weight    = $trading_calendar->weight_on($test_day);
             my $period_weight = $trading_calendar->weighted_days_in_period($today, $test_day);
-            if ($trading_calendar->pseudo_holidays->{$test_day->days_since_epoch} and $ul->market->name eq 'indices'){
+            if ($trading_calendar->pseudo_holidays->{$test_day->days_since_epoch} and $trading_calendar->trades_on($test_day) and $ul->market->name eq 'indices'){
                 cmp_ok(
                 $day_weight, '<',
                 $trading_calendar->closed_weight,
