@@ -26,9 +26,6 @@ sub create_account {
     my $password  = BOM::System::Password::hashpw($details->{client_password});
     my $residence = $details->{residence};
 
-    # TODO: to be removed later
-    BOM::Platform::Account::invalid_japan_access_check($residence, $email);
-
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
         return {error => 'invalid'};
     } elsif (BOM::Platform::User->new({email => $email})) {

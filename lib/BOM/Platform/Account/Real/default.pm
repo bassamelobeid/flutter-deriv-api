@@ -87,9 +87,6 @@ sub validate {
         if ($dob_date->is_after($cutoff)) {
             return {error => 'too young'};
         }
-
-        # TODO: to be removed later
-        BOM::Platform::Account::invalid_japan_access_check($residence, $from_client->email);
     }
     return;
 }
