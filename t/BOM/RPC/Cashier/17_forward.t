@@ -240,6 +240,7 @@ subtest 'all status are covered' => sub {
     my @ignored_status = qw(age_verification);
     delete @all_status{@ignored_status};
     fail("missing status $_") for sort grep !exists $seen{$_}, keys %all_status;
+    pass("ok to prevent warning 'no tests run");
     done_testing();
 };
 
