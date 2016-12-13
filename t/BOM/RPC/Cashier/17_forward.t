@@ -210,7 +210,7 @@ subtest 'landing_companies_specific' => sub {
     $client_jp->residence('jp');
     my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
     $client_jp->set_status('tnc_approval', 'system', $current_tnc_version);
-    $client_jp->set_status('jp_knowledge_test_pending', 'system', 1);
+    $client_jp->set_status('jp_knowledge_test_pending', 'system', 'set for test');
     $client_jp->save;
 
 
@@ -218,7 +218,7 @@ subtest 'landing_companies_specific' => sub {
         ->has_no_system_error->has_error->error_code_is('ASK_JP_KNOWLEDGE_TEST', 'Japan residence needs a knowledge test')
         ->error_message_is('Please do a knowledge test.', 'Japan residence needs a knowledge test');
     $client_jp->clr_status('jp_knowledge_test_pending');
-    $client_jp->set_status('jp_knowledge_test_fail', 'system', 1);
+    $client_jp->set_status('jp_knowledge_test_fail', 'system', 'set for test');
     $client_jp->save;
 
     $rpc_ct->call_ok($method, $params)
@@ -226,7 +226,7 @@ subtest 'landing_companies_specific' => sub {
         ->error_message_is('Please do a knowledge test.', 'Japan residence needs a knowledge test');
 
     $client_jp->clr_status('jp_knowledge_test_fail');
-    $client_jp->set_status('jp_activation_pending', 'system', 1);
+    $client_jp->set_status('jp_activation_pending', 'system', 'set for test');
     $client_jp->save;
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_NOT_ACTIVATION', 'Japan residence needs account activation')
