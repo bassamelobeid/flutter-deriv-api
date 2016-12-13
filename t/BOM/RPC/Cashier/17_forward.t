@@ -184,9 +184,9 @@ subtest 'landing_companies_specific' => sub {
         ->has_no_system_error->has_error->error_code_is('ASK_AUTHENTICATE', 'MF client needs to be fully authenticated')
         ->error_message_is('Client is not fully authenticated.', 'MF client needs to be fully authenticated');
 
-    $client_mfclient->set_authentication('ID_DOCUMENT')->status('pass');
-    $client->save;
-    
+    $client_mf->set_authentication('ID_DOCUMENT')->status('pass');
+    $client_mf->save;
+
     $rpc_ct->call_ok($method, $params)
           ->has_no_system_error->has_error->error_code_is('ASK_FINANCIAL_RISK_APPROVAL', 'financial risk approval is required')
           ->error_message_is('Financial Risk approval is required.', 'financial risk approval is required');
