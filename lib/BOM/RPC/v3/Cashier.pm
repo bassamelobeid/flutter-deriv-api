@@ -125,7 +125,7 @@ sub cashier {
 
     if ($client->residence eq 'jp' and $client->get_status('jp_activation_pending')) {
         return BOM::RPC::v3::Utility::create_error({
-            code              => 'JP_NOT_ACTIVITION',
+            code              => 'JP_NOT_ACTIVATION',
             message_to_client => localize('Account not activated.'),
         });
     }

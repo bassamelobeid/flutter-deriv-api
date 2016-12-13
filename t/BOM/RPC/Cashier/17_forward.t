@@ -212,9 +212,25 @@ subtest 'landing_companies_specific' => sub {
     $client_jp->set_status('tnc_approval', 'system', $current_tnc_version);
     $client_jp->save;
 
+    $client_jp->set_status('jp_knowledge_test_pending', 'system', 1);
+
     $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('ASK_UK_FUNDS_PROTECTION', 'GB residence needs to accept fund protection')
-        ->error_message_is('Please accept Funds Protection.', 'GB residence needs to accept fund protection');
+        ->has_no_system_error->has_error->error_code_is('ASK_JP_KNOWLEDGE_TEST', 'Japan residence needs a knowledge test');
+    ->error_message_is('Please do a knowledge test.', 'Japan residence needs a knowledge test');
+    $client_jp->clr_status('jp_knowledge_test_pending');
+    $client_jp->set_status('jp_knowledge_test_fail', 'system', 1);
+    $client_jp->save;
+
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('ASK_JP_KNOWLEDGE_TEST', 'Japan residence needs a knowledge test');
+    ->error_message_is('Please do a knowledge test.', 'Japan residence needs a knowledge test');
+
+    $client_jp->clr_status('jp_knowledge_test_fail');
+    $client_jp->set_status('jp_activation_pending', 'system', 1);
+    $client_jp->save;
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('ASK_NOT_ACTIVATION', 'Japan residence needs account activation');
+    ->error_message_is('Account not activated.', 'Japan residence needs account activation');
 
 };
 
