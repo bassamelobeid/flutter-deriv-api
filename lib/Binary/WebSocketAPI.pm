@@ -91,6 +91,7 @@ sub startup {
 
             my $app_id    = defang($c->req->param('app_id'));
             my $client_ip = $c->client_ip;
+            my $brand     = defang($c->req->param('brand'));
 
             if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
                 $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
@@ -103,8 +104,8 @@ sub startup {
                 country_code   => $c->country_code,
                 user_agent     => $user_agent,
                 ua_fingerprint => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
-                $app_id ? (source => $app_id) : (),
-                brand => (defang($c->req->param('brand')) || 'binary'),
+                ($app_id =~ /^\d{1,10}$/) ? (source => $app_id) : (),
+                brand => (($brand =~ /^\w{1,10}?$/) ? $brand : 'binary'),
             );
         });
 
