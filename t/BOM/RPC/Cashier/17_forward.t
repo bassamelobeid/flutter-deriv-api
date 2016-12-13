@@ -184,6 +184,12 @@ subtest 'landing_companies_specific' => sub {
         ->has_no_system_error->has_error->error_code_is('ASK_AUTHENTICATE', 'MF client needs to be fully authenticated')
         ->error_message_is('Client is not fully authenticated.', 'MF client needs to be fully authenticated');
 
+    $client_mfclient->set_authentication('ID_DOCUMENT')->status('pass');
+
+    $rpc_ct->call_ok($method, $params)
+          ->has_no_system_error->has_error->error_code_is('ASK_FINANCIAL_RISK_APPROVAL', 'financial risk approval is required')
+          ->error_message_is('Financial Risk approval is required.', 'financial risk approval is required');
+
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
 
     $client_mx->set_default_account('GBP');
