@@ -93,6 +93,13 @@ sub cashier {
         });
     }
 
+    if (not $client->get_status('financial_risk_approval'))) {
+      return BOM::RPC::v3::Utility::create_error({
+                                                  code              => 'ASK_FINANCIAL_RISK_APPROVAL',
+                                                  message_to_client => localize('Financial Risk approval is required.'),
+                                                 });
+    }
+
     my $landing_company = $client->landing_company;
     if ($landing_company->short eq 'maltainvest') {
         # $c->authenticate()
