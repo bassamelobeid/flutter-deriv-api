@@ -48,7 +48,7 @@ my $c = produce_contract({
     date_pricing => $now,
     bet_type     => 'FLASHU'
 });
-is $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope', 'correct pricing engine';
+is $c->pricing_engine_name, 'Pricing::Engine::BlackScholes', 'correct pricing engine';
 is roundnear(0.0001, $c->bs_probability->amount), 0.4999, 'bs probability is 0.4999';
 is $c->commission_markup->amount, 0.015, 'total markup is 0.015';
 
@@ -58,7 +58,7 @@ $c = produce_contract({
     date_pricing => $now,
     bet_type     => 'FLASHD',
 });
-is $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope', 'correct pricing engine';
+is $c->pricing_engine_name, 'Pricing::Engine::BlackScholes', 'correct pricing engine';
 is roundnear(0.0001, $c->bs_probability->amount), 0.5001, 'bs probability is 0.5001';
 is $c->commission_markup->amount, 0.015, 'total markup is 0.015';
 
