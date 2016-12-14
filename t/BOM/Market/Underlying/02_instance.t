@@ -538,15 +538,26 @@ subtest 'all methods on a selection of underlyings' => sub {
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
             underlying       => $ul,
         });
+        my $trading_calendar = $builder->build_trading_calendar;
         foreach my $days_hence (1 .. 7) {
             my $test_day      = $today->plus_time_interval($days_hence . 'd');
-            my $day_weight    = $builder->build_trading_calendar->weight_on($test_day);
-            my $period_weight = $builder->build_trading_calendar->weighted_days_in_period($today, $test_day);
+            my $day_weight    = $trading_calendar->weight_on($test_day);
+            my $period_weight = $trading_calendar->weighted_days_in_period($today, $test_day);
+            if ($trading_calendar->pseudo_holidays->{$test_day->days_since_epoch} and $trading_calendar->trades_on($test_day) and $ul->market->name eq 'indices'){
+                cmp_ok(
+                $day_weight, '<',
+                $trading_calendar->closed_weight,
+                $ul->display_name . ' weight for ' . $test_day->date . ' For indices, the weight is lower than closed weight during pseudo_holidays'
+            );
+
+
+            }else{
             cmp_ok(
                 $day_weight, '>=',
-                $builder->build_trading_calendar->closed_weight,
+                $trading_calendar->closed_weight,
                 $ul->display_name . ' weight for ' . $test_day->date . ' is at least as big as the closed weight'
             );
+            }
             cmp_ok($day_weight, '<=', 1, 'And no larger than 1');
             cmp_ok(
                 roundnear(0.01, $period_weight - $prev_weight),
