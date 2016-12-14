@@ -492,10 +492,10 @@ sub send_multiple_ask {
         $params->{args}->{barrier} = $barriers->{barrier};
         @{$params->{args}}{keys %$barriers} = values %$barriers;
         my $res = send_ask($params);
+        @{$res}{keys %$barriers} = values %$barriers;
         if (not exists $res->{error}) {
             push @$responses, $res;
         } else {
-            @{$res->{error}{details}}{keys %$barriers} = values %$barriers;
             $res->{error}{continue_price_stream} = 1;    # we continue price stream because for multiple_ask
             push @$responses, $res;
         }
