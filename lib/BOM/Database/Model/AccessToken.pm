@@ -40,8 +40,10 @@ sub create_token {
 sub get_loginid_by_token {
     my ($self, $token) = @_;
 
-    return $self->dbh->selectrow_array("UPDATE auth.access_token SET last_used=NOW() WHERE token = ? RETURNING client_loginid, creation_time",
-        undef, $token);
+    return $self->dbh->selectrow_array(<<'SQL', undef, $token);
+SELECT loginid, creation_time
+  FROM auth.get_loginid_by_access_token($1)
+SQL
 }
 
 sub get_scopes_by_access_token {
