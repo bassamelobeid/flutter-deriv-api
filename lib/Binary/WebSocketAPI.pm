@@ -99,11 +99,12 @@ sub startup {
 
             my $user_agent = $c->req->headers->header('User-Agent');
             $c->stash(
-                server_name    => $c->server_name,
-                client_ip      => $client_ip,
-                country_code   => $c->country_code,
-                user_agent     => $user_agent,
-                ua_fingerprint => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
+                server_name          => $c->server_name,
+                client_ip            => $client_ip,
+                country_code         => $c->country_code,
+                landing_company_name => $c->landing_company_name,
+                user_agent           => $user_agent,
+                ua_fingerprint       => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
                 ($app_id =~ /^\d{1,10}$/) ? (source => $app_id) : (),
                 brand => (($brand =~ /^\w{1,10}?$/) ? $brand : 'binary'),
             );
