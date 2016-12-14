@@ -15,6 +15,6 @@ print BOM::TentativeEvents::update_event({
     id           => request()->param('id'),
     blankout     => request()->param('blankout'),
     blankout_end => request()->param('blankout_end'),
-    expected_return => request()->param('expected_return'),
+    tentative_event_shift => request()->param('tentative_event_shift'),
 });
 
