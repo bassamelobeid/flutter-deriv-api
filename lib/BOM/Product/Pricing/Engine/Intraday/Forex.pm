@@ -217,6 +217,33 @@ sub _build_economic_events_markup {
     return $markup;
 }
 
+=head2 _tentative_events_markup
+
+As part of the Japanese regulatory requirement, we are required to provide bid and ask prices at all times during 
+trading hours. One of our backoffice controls, namely the tentative blackout period tool which stops sales of 
+**non-ATM** intraday contracts spanning a tentative period does not to fulfill this requirement. 
+
+This branch aims to the generalise the blackout period tool, by introducing a new measure called ‘expected returns’ 
+to control the range of option prices (of all types) across strike/barrier prices. 
+
+For an x% expected return input, all **non-ATM** intraday contracts (< 5 hours) spanning a tentative period are re-priced as follow:
+ 
+-   Binary calls at strike prices K will be priced as binary calls at strike prices K*(1-x%)
+ 
+-   Binary puts at strike prices K will be priced as binary puts at strike prices K*(1+x%)
+ 
+-   Touch options with upper barriers K will be priced as touch options with upper barriers K*(1-x%)
+
+-   Touch options with lower barriers K will be priced as touch options with lower barriers K*(1+x%)
+ 
+-   No-touch options with upper barriers K will be priced as no-touch options with upper barrier K*(1+x%)
+ 
+-   No-touch options with lower barriers K will be priced as no-touch options with lower barriers K*(1-x%)
+
+Note: The tool does not affect intraday **ATM** contracts.
+
+=cut
+
 sub _tentative_events_markup {
     my $self = shift;
     my $bet  = $self->bet;
