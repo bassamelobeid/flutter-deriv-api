@@ -221,7 +221,7 @@ sub _tentative_events_markup {
     my $self = shift;
     my $bet  = $self->bet;
 
-    #Don't calculate expected return if contract is ATM
+    #Don't calculate tentative event shfit if contract is ATM
     #In this case, economic events markup will be calculated using normal formula
     if ($bet->is_atm_bet) {
         return Math::Util::CalculatedValue::Validatable->new({
@@ -296,30 +296,30 @@ sub _get_barrier_for_tentative_events {
 
     my $bet = $self->bet;
 
-    #When pricing options during the news event period, the expected return shifts the strikes/barriers so that prices are marked up. Here are examples for each contract type:
-    #A binary call strike = 105 and an expected return of 2% will be priced as a binary call strike = 105/(1+2%)
-    #A binary put strike = 105 and an expected return of 2% will be priced as a binary put strike = 105*(1+2%)
-    #A touch (upper) barrier = 105 and an expected return of 2% will be priced as a touch barrier = 105/(1+2%)
-    #A touch (lower) barrier = 105 and an expected return of 2% will be priced as a touch barrier = 105*(1+2%)
-    #A no-touch (upper) barrier = 105 and an expected return of 2% will be priced as a no-touch barrier = 105*(1+2%)
-    #A no-touch (lower) barrier = 105 and an expected return of 2% will be priced as a no-touch barrier = 105/(1+2%)
+    #When pricing options during the news event period, the tentative event  shifts the strikes/barriers so that prices are marked up. Here are examples for each contract type:
+    #A binary call strike = 105 and an tentative event  of 2% will be priced as a binary call strike = 105/(1+2%)
+    #A binary put strike = 105 and an tentative event shift of 2% will be priced as a binary put strike = 105*(1+2%)
+    #A touch (upper) barrier = 105 and an tentative event shift of 2% will be priced as a touch barrier = 105/(1+2%)
+    #A touch (lower) barrier = 105 and an tentative event shift of 2% will be priced as a touch barrier = 105*(1+2%)
+    #A no-touch (upper) barrier = 105 and an tentative event shift of 2% will be priced as a no-touch barrier = 105*(1+2%)
+    #A no-touch (lower) barrier = 105 and an tentative event shift of 2% will be priced as a no-touch barrier = 105/(1+2%)
     #get a list of applicable tentative economic events
     my $tentative_events = $bet->tentative_events;
 
-    my $expected_return = 0;
+    my $tentative_event_shift = 0;
 
     foreach my $event (@{$tentative_events}) {
-        #We add-up all expected returns applicable for any of symbols of the currency pair
+        #We add-up all tentative event shfit  applicable for any of symbols of the currency pair
         if ($event->{symbol} eq $bet->underlying->asset_symbol) {
-            $expected_return += $event->{expected_return};
+            $tentative_event_shift += $event->{tentative_event_shift};
         } elsif ($event->{symbol} eq $bet->underlying->quoted_currency_symbol) {
-            $expected_return += $event->{expected_return};
+            $tentative_event_shift += $event->{tentative_event_shift};
         }
     }
 
-    $expected_return /= 100;
+    $tentative_event_shift /= 100;
 
-    my $er_factor = 1 + $expected_return;
+    my $er_factor = 1 + $tentative_event_shift;
     my $barrier_u = $barrier >= $bet->pricing_spot;
     my $barrier_d = $barrier <= $bet->pricing_spot;
     my $type      = $bet->code;
@@ -339,7 +339,7 @@ sub _get_barrier_for_tentative_events {
         or ($type eq 'UPORDOWN'     && $barrier_u))
     {
 
-        $er_factor = 1 - $expected_return;
+        $er_factor = 1 - $tentative_event_shift;
     }
 
     $barrier *= $er_factor;

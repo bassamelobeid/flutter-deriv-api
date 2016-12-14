@@ -49,7 +49,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 blankout     => $blackout_start->epoch,
                 blankout_end => $blackout_end->epoch,
                 is_tentative => 1,
-                expected_return => 0.02,
+                tentative_event_shift => 0.02,
                 event_name   => 'Test tentative',
                 impact       => 5,
             }
@@ -60,7 +60,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 blankout     => $blackout_start->epoch,
                 blankout_end => $blackout_end->epoch,
                 is_tentative => 1,
-                expected_return => 0.01,
+                tentative_event_shift => 0.01,
                 event_name   => 'Test tentative',
                 impact       => 5,
             }
