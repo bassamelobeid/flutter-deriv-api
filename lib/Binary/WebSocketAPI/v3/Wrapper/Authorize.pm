@@ -28,6 +28,7 @@ sub authorize_success {
     my @param = (
         $c->stash('account_id'),
         $c->country_code,
+        $c->stash('client_ip'),
         $c->stash('user_agent')
     );
     my $key = join "\0",  @param;
