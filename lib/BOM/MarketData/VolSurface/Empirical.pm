@@ -9,7 +9,7 @@ use Time::Duration::Concise;
 use YAML::XS qw(LoadFile);
 
 use BOM::System::Chronicle;
-use Quant::Framework::Seasonality;
+use Volatility::Seasonality;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::AggTicks;
 use BOM::MarketData::Types;
@@ -70,7 +70,7 @@ sub get_volatility {
         interval => min($requested_interval->seconds, (@good_ticks < 2 ? 0 : $good_ticks[-1]->{epoch} - $good_ticks[0]->{epoch})));
     $self->volatility_scaling_factor($actual_lookback_interval->seconds / $requested_interval->seconds);
 
-    my $qfs = Quant::Framework::Seasonality->new(chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($underlying->for_date));
+    my $qfs = Volatility::Seasonality->new(chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($underlying->for_date));
     my $categorized_events = $qfs->categorize_events($underlying->symbol, $economic_events);
 
     # Future time samples is extended for 5 minutes at both ends. This is to accommodate for the uncertainty of economic event impact kick-in time.
