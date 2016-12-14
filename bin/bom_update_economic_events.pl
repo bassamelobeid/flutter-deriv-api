@@ -6,6 +6,8 @@ use Moose;
 with 'App::Base::Script';
 
 use ForexFactory;
+use Volatility::Seasonality;
+use BOM::MarketData qw(create_underlying_db);
 use Quant::Framework::EconomicEventCalendar;
 use BOM::Platform::Runtime;
 use Date::Utility;
@@ -51,6 +53,22 @@ sub script_run {
             })->save;
 
         print "stored " . (scalar @$events_received) . " events ($tentative_count are tentative events) in chronicle...\n";
+
+        my @underlying_symbols = create_underlying_db->symbols_for_intraday_fx();
+        my $qfs                = Quant::Framework::Seasonality->new(
+            chronicle_reader => BOM::System::RedisReplicated::redis_read,
+            chronicle_writer => BOM::System::RedisReplicated::redis_write
+        );
+
+        foreach my $symbol (@underlying_symbols) {
+            $qfs->generate_economic_event_seasonality({
+                underlying_symbol => $symbol,
+                economic_events   => $events_received
+            });
+        }
+
+        print "generated economic events impact curves for " . scalar(@underlying_symbols) . " underlying symbols.";
+
     }
     catch {
         print 'Error occured while saving events: ' . $_;
