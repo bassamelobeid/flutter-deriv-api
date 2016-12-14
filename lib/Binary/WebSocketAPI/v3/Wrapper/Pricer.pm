@@ -356,14 +356,6 @@ sub process_ask_event {
             push @results, $results;
         }
 
-        if ($c->stash('debug')) {
-            $results->{debug} = {
-                time   => $results->{$type}->{rpc_time},
-                method => $type,
-            };
-        }
-        delete @{$results->{$type}}{qw(contract_parameters rpc_time)};
-
         my $send_result;
         if ($type eq 'proposal_array') {
 
