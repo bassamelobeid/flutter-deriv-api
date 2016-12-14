@@ -498,7 +498,7 @@ subtest 'send_multiple_ask' => sub {
     my $outer_expected_keys = [sort (qw(rpc_time proposals))];
     cmp_deeply([sort keys %$result], $outer_expected_keys, 'result keys is correct');
     is(scalar(@{$result->{proposals}}), 2, "There are 2 proposals");
-    my $inner_expected_keys = [sort (qw(longcode spot display_value spot_time ask_price date_start rpc_time contract_parameters payout))];
+    my $inner_expected_keys = [sort (qw(longcode spot display_value spot_time ask_price date_start rpc_time contract_parameters payout barrier))];
     for my $proposal (@{$result->{proposals}}) {
         cmp_deeply([sort keys %$proposal], $inner_expected_keys, 'result keys is correct in proposals');
     }
@@ -507,10 +507,10 @@ subtest 'send_multiple_ask' => sub {
     $result = $c->call_ok('send_multiple_ask', $params)->has_no_error->result;
     cmp_deeply([sort keys %$result], $outer_expected_keys, 'result keys is correct');
     is(scalar(@{$result->{proposals}}), 2, "There are 2 proposals");
-    cmp_deeply([sort keys %{$result->{proposals}[0]}], [sort qw(error rpc_time)], 'the first proposal has error');
+    cmp_deeply([sort keys %{$result->{proposals}[0]}], [sort qw(error rpc_time barrier)], 'the first proposal has error');
     my $expected_error_keys = [sort qw(message_to_client details continue_price_stream code)];
     cmp_deeply([sort keys %{$result->{proposals}[0]{error}}], $expected_error_keys, "error keys ok");
-    my $expected_details_keys = [sort qw(display_value barrier payout)];
+    my $expected_details_keys = [sort qw(display_value payout)];
     cmp_deeply([sort keys %{$result->{proposals}[0]{error}{details}}], $expected_details_keys, "details keys ok");
     my $proposal = $result->{proposals}[1];
     cmp_deeply([sort keys %$proposal], $inner_expected_keys, 'the second proposal still ok');
