@@ -106,7 +106,7 @@ sub startup {
                 user_agent           => $user_agent,
                 ua_fingerprint       => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
                 ($app_id =~ /^\d{1,10}$/) ? (source => $app_id) : (),
-                brand => (($brand =~ /^\w{1,10}?$/) ? $brand : 'binary'),
+                brand => (($brand =~ /^\w{1,10}$/) ? $brand : 'binary'),
             );
         });
 
