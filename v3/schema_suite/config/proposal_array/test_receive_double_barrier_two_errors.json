@@ -41,14 +41,6 @@
                                             "display_value": {
                                                 "required" : "1"
                                             },
-                                            "barrier": {
-                                                "required" : "1",
-                                                "enum" : ["[_5]","[_7]"]
-                                            },
-                                            "barrier2": {
-                                                "required" : "1",
-                                                "enum" : ["[_6]","[_8]"]
-                                            },
                                             "payout": {
                                                 "required" : "1"
                                             }
