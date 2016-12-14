@@ -230,13 +230,13 @@ sub _tentative_events_markup {
 
     #Don't calculate expected return if contract is ATM
     #In this case, economic events markup will be calculated using normal formula
-    if ( $bet->is_atm_bet ) {
+    if ($bet->is_atm_bet) {
         return Math::Util::CalculatedValue::Validatable->new({
-                name        => 'economic_events_markup',
-                description => 'economic events markup based on tentative events in the contract period',
-                set_by      => __PACKAGE__,
-                base_amount => 0,
-            });
+            name        => 'economic_events_markup',
+            description => 'economic events markup based on tentative events in the contract period',
+            set_by      => __PACKAGE__,
+            base_amount => 0,
+        });
     }
 
     my $markup = 0;
@@ -258,17 +258,17 @@ sub _tentative_events_markup {
     if ($barriers_changed) {
         my $type = $bet->code;
         #For one-touch and no-touch, If barrier crosses the spot because of our barrier adjustments, just make sure prob will be 100%
-        if ( $type eq 'ONETOUCH' or $type eq 'NOTOUCH' ) {
+        if ($type eq 'ONETOUCH' or $type eq 'NOTOUCH') {
             for my $i (0 .. scalar @barrier_args - 1) {
-                if ( ( $barrier_args[$i] < $bet->pricing_spot and $adjusted_barriers[$i] >= $bet->pricing_spot ) or
-                    ( $barrier_args[$i] > $bet->pricing_spot and $adjusted_barriers[$i] <= $bet->pricing_spot ) 
-                ) {
+                if (   ($barrier_args[$i] < $bet->pricing_spot and $adjusted_barriers[$i] >= $bet->pricing_spot)
+                    or ($barrier_args[$i] > $bet->pricing_spot and $adjusted_barriers[$i] <= $bet->pricing_spot))
+                {
                     return Math::Util::CalculatedValue::Validatable->new({
-                            name        => 'economic_events_markup',
-                            description => 'economic events markup based on tentative events in the contract period',
-                            set_by      => __PACKAGE__,
-                            base_amount => 1.0,
-                        });
+                        name        => 'economic_events_markup',
+                        description => 'economic events markup based on tentative events in the contract period',
+                        set_by      => __PACKAGE__,
+                        base_amount => 1.0,
+                    });
                 }
             }
         }
@@ -292,11 +292,11 @@ sub _tentative_events_markup {
     }
 
     return Math::Util::CalculatedValue::Validatable->new({
-            name        => 'economic_events_markup',
-            description => 'economic events markup based on tentative events in the contract period',
-            set_by      => __PACKAGE__,
-            base_amount => $markup,
-        });
+        name        => 'economic_events_markup',
+        description => 'economic events markup based on tentative events in the contract period',
+        set_by      => __PACKAGE__,
+        base_amount => $markup,
+    });
 }
 
 sub _get_barrier_for_tentative_events {
@@ -337,17 +337,17 @@ sub _get_barrier_for_tentative_events {
 
     #final barrier is either "Barrier * (1+ER)" or "Barrier * (1-ER)"
     if ((
-            $type eq 'CALL'
-                or $type eq 'CALLE'
+               $type eq 'CALL'
+            or $type eq 'CALLE'
         )
-            or ($type eq 'ONETOUCH'     && $barrier_u)
-            or ($type eq 'NOTOUCH'      && $barrier_d)
-            or ($type eq 'EXPIRYRANGE'  && $barrier_u)
-            or ($type eq 'EXPIRYRANGEE' && $barrier_u)
-            or ($type eq 'EXPIRYMISS'   && $barrier_d)
-            or ($type eq 'EXPIRYMISSE'  && $barrier_d)
-            or ($type eq 'RANGE'        && $barrier_d)
-            or ($type eq 'UPORDOWN'     && $barrier_u))
+        or ($type eq 'ONETOUCH'     && $barrier_u)
+        or ($type eq 'NOTOUCH'      && $barrier_d)
+        or ($type eq 'EXPIRYRANGE'  && $barrier_u)
+        or ($type eq 'EXPIRYRANGEE' && $barrier_u)
+        or ($type eq 'EXPIRYMISS'   && $barrier_d)
+        or ($type eq 'EXPIRYMISSE'  && $barrier_d)
+        or ($type eq 'RANGE'        && $barrier_d)
+        or ($type eq 'UPORDOWN'     && $barrier_u))
     {
 
         $er_factor = 1 - $expected_return;
