@@ -377,7 +377,7 @@ sub process_ask_event {
             }
         } else {
             my $result = $results[0];
-            if (exists $results->{error}) {
+            if (exists $result->{error}) {
                 $send_result = $result;
             } else {
                 $send_result = {
