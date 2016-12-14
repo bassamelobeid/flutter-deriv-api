@@ -432,7 +432,7 @@ sub _get_intraday_trading_window {
         push @intraday_windows,
             _get_intraday_window({
                 now        => $date,
-                date_start => $start_of_day->plus_time_interval($odd_hour -4 . 'h'),
+                date_start => $start_of_day->plus_time_interval($odd_hour - 4 . 'h'),
                 duration   => '5h'
             });
 
