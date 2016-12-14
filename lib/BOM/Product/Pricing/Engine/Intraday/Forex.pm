@@ -248,7 +248,7 @@ sub _tentative_events_markup {
 
     my @adjusted_barriers = map { $self->_get_barrier_for_tentative_events($_) } @barrier_args;
 
-    #if there is a change needed in the berriers due to tentative events:
+    #if there is a change needed in the barriers due to tentative events:
     my $barriers_changed = 0;
     for my $i (0 .. scalar @barrier_args - 1) {
         #barriers sometimes are numbers and somtime string. so using array_diff does not help
@@ -284,9 +284,7 @@ sub _tentative_events_markup {
         my $new_bet = BOM::Product::ContractFactory::make_similar_contract($bet, $barrier_hash);
         my $new_prob = $new_bet->pricing_engine->base_probability;
 
-        if (ref($new_prob) eq 'Math::Util::CalculatedValue::Validatable') {
-            $new_prob = $new_prob->amount;
-        }
+        $new_prob = $new_prob->amount if Scalar::Util::blessed($new_prob) && $new_prob->isa('Math::Util::CalculatedValue::Validatable');
 
         $markup = max(0, $new_prob - $self->base_probability->amount);
     }
@@ -318,9 +316,7 @@ sub _get_barrier_for_tentative_events {
     my $expected_return = 0;
 
     foreach my $event (@{$tentative_events}) {
-        #if event is for to asset_symbol minus the return
-        #if event is for quoted_currency_symbol add the return
-        #For example for EURUSD, asset symbol is EUR and quoted currency is USD
+        #We add-up all expected returns applicable for any of symbols of the currency pair
         if ($event->{symbol} eq $bet->underlying->asset_symbol) {
             $expected_return += $event->{expected_return};
         } elsif ($event->{symbol} eq $bet->underlying->quoted_currency_symbol) {
