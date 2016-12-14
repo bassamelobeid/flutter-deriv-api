@@ -353,6 +353,7 @@ sub get_limits {
     my $limit = +{
         account_balance => $client->get_limit_for_account_balance,
         payout          => $client->get_limit_for_payout,
+        payout_per_symbol_and_contract_type => BOM::System::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$client->currency},
         open_positions  => $client->get_limit_for_open_positions,
     };
 
