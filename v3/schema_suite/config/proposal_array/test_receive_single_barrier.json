@@ -17,6 +17,10 @@
                     "items" :{
                         "type": "object",
                         "properties": {
+                            "barrier": {
+                                "required" : "1",
+                                "enum" : ["[_5]","[_6]"]
+                            },
                             "longcode": {
                                 "type": "string",
                                 "pattern": "^[_7]$",

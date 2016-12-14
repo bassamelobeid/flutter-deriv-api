@@ -17,6 +17,10 @@
                     "items" : {
                         "type": "object",
                         "properties" : {
+                            "barrier": {
+                                "required" : "1",
+                                "enum" : ["[_5]","[_6]"]
+                            },
                             "error" :{
                                 "type" : "object",
                                 "required": "1",
@@ -32,10 +36,6 @@
                                         "properties": {
                                             "display_value": {
                                                 "required" : "1"
-                                            },
-                                            "barrier": {
-                                                "required" : "1",
-                                                "enum" : ["[_5]","[_6]"]
                                             },
                                             "payout": {
                                                 "required" : "1"
@@ -54,7 +54,6 @@
                             }
                         }
                     }
-                    
                 }
             }
         },

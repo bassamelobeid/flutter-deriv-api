@@ -18,6 +18,14 @@
                     "items" :{
                         "type": "object",
                         "properties": {
+                            "barrier": {
+                                "required" : "1",
+                                "enum" : ["[_5]","[_7]"]
+                            },
+                            "barrier2": {
+                                "required" : "1",
+                                "enum" : ["[_6]","[_8]"]
+                            },
                             "longcode": {
                                 "type": "string",
                                 "pattern": "^[_9]$",
