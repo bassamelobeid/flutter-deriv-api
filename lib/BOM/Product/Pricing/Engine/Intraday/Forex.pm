@@ -283,11 +283,11 @@ sub _tentative_events_markup {
     }
 
     return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'economic_events_markup',
-        description => 'economic events markup based on tentative events in the contract period',
-        set_by      => __PACKAGE__,
-        base_amount => $markup,
-    });
+            name        => 'economic_events_volatility_risk_markup',
+            description => 'markup to account for volatility risk of economic events',
+            set_by      => __PACKAGE__,
+            base_amount => $markup,
+        });
 }
 
 sub _get_barrier_for_tentative_events {
@@ -326,17 +326,17 @@ sub _get_barrier_for_tentative_events {
 
     #final barrier is either "Barrier * (1+ER)" or "Barrier * (1-ER)"
     if ((
-               $type eq 'CALL'
-            or $type eq 'CALLE'
+            $type eq 'CALL'
+                or $type eq 'CALLE'
         )
-        or ($type eq 'ONETOUCH'     && $barrier_u)
-        or ($type eq 'NOTOUCH'      && $barrier_d)
-        or ($type eq 'EXPIRYRANGE'  && $barrier_u)
-        or ($type eq 'EXPIRYRANGEE' && $barrier_u)
-        or ($type eq 'EXPIRYMISS'   && $barrier_d)
-        or ($type eq 'EXPIRYMISSE'  && $barrier_d)
-        or ($type eq 'RANGE'        && $barrier_d)
-        or ($type eq 'UPORDOWN'     && $barrier_u))
+            or ($type eq 'ONETOUCH'     && $barrier_u)
+            or ($type eq 'NOTOUCH'      && $barrier_d)
+            or ($type eq 'EXPIRYRANGE'  && $barrier_u)
+            or ($type eq 'EXPIRYRANGEE' && $barrier_u)
+            or ($type eq 'EXPIRYMISS'   && $barrier_d)
+            or ($type eq 'EXPIRYMISSE'  && $barrier_d)
+            or ($type eq 'RANGE'        && $barrier_d)
+            or ($type eq 'UPORDOWN'     && $barrier_u))
     {
 
         $er_factor = 1 - $expected_return;
@@ -363,12 +363,12 @@ sub _build_ticks_for_trend {
     my $remaining_interval = Time::Duration::Concise::Localize->new(interval => $lookback_secs);
 
     return $self->tick_source->retrieve({
-        underlying   => $bet->underlying,
-        interval     => $remaining_interval,
-        ending_epoch => $bet->date_pricing->epoch,
-        fill_cache   => !$bet->backtest,
-        aggregated   => $self->more_than_short_term_cutoff,
-    });
+            underlying   => $bet->underlying,
+            interval     => $remaining_interval,
+            ending_epoch => $bet->date_pricing->epoch,
+            fill_cache   => !$bet->backtest,
+            aggregated   => $self->more_than_short_term_cutoff,
+        });
 }
 
 has lookback_seconds => (
