@@ -441,10 +441,23 @@ sub _get_intraday_trading_window {
     my $odd_hour = ($hour % 2) ? $hour : $hour - 1;
     $odd_hour = $odd_hour % 4 == 1 ? $odd_hour : $odd_hour - 2;
 
-    if ($hour > 0 and $hour < 18 and $odd_hour != 21) {
-        push @intraday_windows, map { _get_intraday_window({now => $date, date_start => $_, duration => '5h'}) }
-            grep { $_->is_after($start_of_day) }
-            map { $start_of_day->plus_time_interval($_ . 'h') } ($odd_hour, $odd_hour - 4);
+    if ($odd_hour >= 1 and $odd_hour < 17) {
+        push @intraday_windows,
+            _get_intraday_window({
+                now        => $date,
+                date_start => $start_of_day->plus_time_interval($odd_hour . 'h'),
+                duration   => '5h'
+            });
+    }
+
+    my $previous_odd_hour = $odd_hour - 4;
+    if ($previous_odd_hour >= 1 and $previous_odd_hour <= 13) {
+        push @intraday_windows,
+            _get_intraday_window({
+                now        => $date,
+                date_start => $start_of_day->plus_time_interval($previous_odd_hour . 'h'),
+                duration   => '5h'
+            });
     }
 
     return @intraday_windows;
