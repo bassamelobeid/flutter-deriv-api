@@ -6,8 +6,7 @@
         <td>Currency:</td>
         <td>Impact:</td>
         <td></td>
-        <td>Expected Return:</td> 
-        <td></td>
+        <td colspan="2">Expected Return:(0.25 for BOJ)</td> 
         <td></td>
     </tr>
     [% FOREACH row = events %]
@@ -18,7 +17,7 @@
         <td>[% row.symbol %]</td>
         <td>[% row.impact %]</td>
         <td>[% row.event_name %]</td>
-        <td><input class="expected_return" type="text" style='width: 30px' value="[% row.expected_return %]">&nbsp;%
+        <td><input class="expected_return" type="text" style='width: 30px' value="[% row.expected_return %]">&nbsp;% 
         <td><button onclick=
         "updateEvent('[% row.id %]');">Update</button></td>
         <td class="result"></td>
