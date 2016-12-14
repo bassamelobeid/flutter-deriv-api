@@ -204,22 +204,15 @@ sub _build_economic_events_markup {
     my $bet  = $self->bet;
     my $markup;
 
-    my $tentative_events_markup = $self->_tentative_events_markup;
+    $markup = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'economic_events_markup',
+        description => 'the maximum of spot or volatility risk markup of economic events',
+        set_by      => __PACKAGE__,
+        base_amount => max($self->economic_events_volatility_risk_markup->amount, $self->economic_events_spot_risk_markup->amount),
+    });
 
-    if ($tentative_events_markup->amount != 0) {
-        $markup = $tentative_events_markup;
-    } else {
-        $markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'economic_events_markup',
-            description => 'the maximum of spot or volatility risk markup of economic events',
-            set_by      => __PACKAGE__,
-            base_amount => max($self->economic_events_volatility_risk_markup->amount, $self->economic_events_spot_risk_markup->amount),
-        });
-
-        $markup->include_adjustment('info', $self->economic_events_volatility_risk_markup);
-        $markup->include_adjustment('info', $self->economic_events_spot_risk_markup);
-
-    }
+    $markup->include_adjustment('info', $self->economic_events_volatility_risk_markup);
+    $markup->include_adjustment('info', $self->economic_events_spot_risk_markup);
 
     return $markup;
 }
@@ -232,8 +225,8 @@ sub _tentative_events_markup {
     #In this case, economic events markup will be calculated using normal formula
     if ($bet->is_atm_bet) {
         return Math::Util::CalculatedValue::Validatable->new({
-            name        => 'economic_events_markup',
-            description => 'economic events markup based on tentative events in the contract period',
+            name        => 'economic_events_volatility_risk_markup',
+            description => 'markup to account for volatility risk of economic events',
             set_by      => __PACKAGE__,
             base_amount => 0,
         });
@@ -264,8 +257,8 @@ sub _tentative_events_markup {
                     or ($barrier_args[$i] > $bet->pricing_spot and $adjusted_barriers[$i] <= $bet->pricing_spot))
                 {
                     return Math::Util::CalculatedValue::Validatable->new({
-                        name        => 'economic_events_markup',
-                        description => 'economic events markup based on tentative events in the contract period',
+                        name        => 'economic_events_volatility_risk_markup',
+                        description => 'markup to account for volatility risk of economic events',
                         set_by      => __PACKAGE__,
                         base_amount => 1.0,
                     });
@@ -820,23 +813,30 @@ has [qw(economic_events_volatility_risk_markup economic_events_spot_risk_markup)
 sub _build_economic_events_volatility_risk_markup {
     my $self = shift;
 
-    my $markup_base_amount = 0;
-    # since we are parsing in both vols now, we just check for difference in vol to determine if there's a markup
-    if ($self->pricing_vol != $self->news_adjusted_pricing_vol) {
-        my $tv_without_news = $self->base_probability->amount;
-        my $tv_with_news    = $self->clone({
-                pricing_vol    => $self->news_adjusted_pricing_vol,
-                intraday_trend => $self->intraday_trend,
-            })->base_probability->amount;
-        $markup_base_amount = max(0, $tv_with_news - $tv_without_news);
-    }
+    my $markup;
+    my $tentative_events_markup = $self->_tentative_events_markup;
 
-    my $markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'economic_events_volatility_risk_markup',
-        description => 'markup to account for volatility risk of economic events',
-        set_by      => __PACKAGE__,
-        base_amount => $markup_base_amount,
-    });
+    if ($tentative_events_markup->amount != 0) {
+        $markup = $tentative_events_markup;
+    } else {
+        my $markup_base_amount = 0;
+        # since we are parsing in both vols now, we just check for difference in vol to determine if there's a markup
+        if ($self->pricing_vol != $self->news_adjusted_pricing_vol) {
+            my $tv_without_news = $self->base_probability->amount;
+            my $tv_with_news    = $self->clone({
+                    pricing_vol    => $self->news_adjusted_pricing_vol,
+                    intraday_trend => $self->intraday_trend,
+                })->base_probability->amount;
+            $markup_base_amount = max(0, $tv_with_news - $tv_without_news);
+        }
+
+        $markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'economic_events_volatility_risk_markup',
+            description => 'markup to account for volatility risk of economic events',
+            set_by      => __PACKAGE__,
+            base_amount => $markup_base_amount,
+        });
+    }
 
     return $markup;
 }
