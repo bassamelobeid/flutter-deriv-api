@@ -348,25 +348,63 @@ sub process_ask_event {
                     $results = $err;
                 } else {
                     $results = {
-                        msg_type => $type,
-                        $type    => {
-                            %$adjusted_results,
-                            id       => $stash_data->{uuid},
-                            longcode => $cache->{longcode},
-                        },
+                        %$adjusted_results,
+                        longcode => $cache->{longcode},
                     };
                 }
             }
+            push @results, $results;
+        }
+
+        if ($c->stash('debug')) {
+            $results->{debug} = {
+                time   => $results->{$type}->{rpc_time},
+                method => $type,
+            };
+        }
+        delete @{$results->{$type}}{qw(contract_parameters rpc_time)};
+
+        my $send_result;
+        if ($type eq 'proposal_array') {
+
+            for my $result (@results) {
+                delete @{$result->{$type}}{qw(contract_parameters rpc_time)};
+            }
+
+            $send_result = {
+                msg_type => $type,
+                $type    => {
+                    proposals => \@results,
+                    id        => $stash_data->{uuid},
+                }};
             if ($c->stash('debug')) {
-                $results->{debug} = {
-                    time   => $results->{$type}->{rpc_time},
+                $send_result->{debug} = {
+                    time   => $response->{rpc_time},
                     method => $type,
                 };
             }
-            delete @{$results->{$type}}{qw(contract_parameters rpc_time)};
-            push @results, $results;
+        } else {
+            my $result = $results[0];
+            if (exists $results->{error}) {
+                $send_result = $result;
+            } else {
+                $send_result = {
+                    msg_type => $type,
+                    $type    => {
+                        id => $stash_data->{uuid},
+                        %$result,
+                    }};
+            }
+
+            if ($c->stash('debug')) {
+                $send_result->{debug} = {
+                    time   => $send_result->{$type}->{rpc_time},
+                    method => $type,
+                };
+            }
+            delete @{$send_result->{$type}}{qw(contract_parameters rpc_time)};
         }
-        my $send_result = $type eq 'proposal_array' ? {proposals => \@results} : $results[0];
+
         $c->send({json => $send_result}, {args => $stash_data->{args}});
     }
     return;
