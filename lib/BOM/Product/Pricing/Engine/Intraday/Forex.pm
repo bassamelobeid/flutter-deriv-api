@@ -8,7 +8,7 @@ use YAML::XS qw(LoadFile);
 
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
-use Quant::Framework::Seasonality;
+use Volatility::Seasonality;
 use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
 use BOM::System::Config;
@@ -748,7 +748,7 @@ sub _build_economic_events_spot_risk_markup {
 sub _get_economic_events {
     my ($self, $start, $end) = @_;
 
-    my $qfs = Quant::Framework::Seasonality->new;
+    my $qfs = Volatility::Seasonality->new;
     my $events = $qfs->categorize_events($self->bet->underlying->symbol, $self->economic_events);
 
     return $events;
