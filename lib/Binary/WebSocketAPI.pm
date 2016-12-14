@@ -424,9 +424,8 @@ sub startup {
             return $stash->{rate_limitations} // do {
                 # do not hold reference to stash in stash
                 weaken $stash;
-                my $limits = $rates_config{$c->landing_company_name // 'binary'};
                 my $rl = RateLimitations::Pluggable->new(
-                    limits => $limits,
+                    limits => $rates_config{$c->landing_company_name // 'binary'},
                     getter => sub {
                         my ($service) = @_;
                         return $stash->{rate_limitations_hits}{$service} //= [];
