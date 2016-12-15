@@ -324,17 +324,58 @@ sub process_bid_event {
 sub process_ask_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
 
-    my $type = 'proposal';
-    my $responses;
-    if (exists($response->{proposals})) {
-        $type      = "proposal_array";
-        $responses = $response->{proposals};
-    } else {
-        $responses = [$response];
+    if (exists($response->{proposals})) {    #proposal_array
+        _process_ask_proposal_array_event(@_);
+    } else {                                 #proposal
+        _process_ask_proposal_event(@_);
     }
+    return;
+}
 
+sub _process_ask_proposal_event {
+    my ($c, $response, $redis_channel, $pricing_channel) = @_;
+    my $type = 'proposal';
+
+    my $theo_probability = delete $response->{theo_probability};
     foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
-        my $caches = $type eq 'proposal_array' ? $stash_data->{cache} : [$stash_data->{cache}];
+        my $results;
+
+        unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
+            $stash_data->{cache}->{contract_parameters}->{longcode} = $stash_data->{cache}->{longcode};
+            my $adjusted_results =
+                _price_stream_results_adjustment($c, $stash_data->{args}, $stash_data->{cache}->{contract_parameters}, $response, $theo_probability);
+            if (my $ref = $adjusted_results->{error}) {
+                my $err = $c->new_error($type, $ref->{code}, $ref->{message_to_client});
+                $err->{error}->{details} = $ref->{details} if exists $ref->{details};
+                $results = $err;
+            } else {
+                $results = {
+                    msg_type => $type,
+                    $type    => {
+                        %$adjusted_results,
+                        id       => $stash_data->{uuid},
+                        longcode => $stash_data->{cache}->{longcode},
+                    },
+                };
+            }
+        }
+        if ($c->stash('debug')) {
+            $results->{debug} = {
+                time   => $results->{$type}->{rpc_time},
+                method => $type,
+            };
+        }
+        delete @{$results->{$type}}{qw(contract_parameters rpc_time)};
+        $c->send({json => $results}, {args => $stash_data->{args}});
+    }
+    return;
+}
+
+sub _process_ask_proposal_array_event {
+    my $type      = 'proposal_array';
+    my $responses = $response->{proposals};
+    foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
+        my $caches = $stash_data->{cache};
         my @results;
         for my $i (0 .. $#$responses) {
             my $response         = clone($responses->[$i]);
@@ -357,47 +398,22 @@ sub process_ask_event {
                     };
                 }
             }
-            delete $results->{msg_type} if $type eq 'proposal_array';
-            delete $results->{contract_parameters};
+            delete @{$results}{qw(msg_type contract_parameters)};
             push @results, $results;
         }
 
-        my $send_result;
-        if ($type eq 'proposal_array') {
-            $send_result = {
-                msg_type => $type,
-                $type    => {
-                    proposals => \@results,
-                    id        => $stash_data->{uuid},
-                }};
-            if ($c->stash('debug')) {
-                $send_result->{debug} = {
-                    time   => $response->{rpc_time},
-                    method => $type,
-                };
-            }
-        } else {    # $type eq 'proposal'
-            my $result = $results[0];
-            if (exists $result->{error}) {
-                $send_result = $result;
-            } else {
-                $send_result = {
-                    msg_type => $type,
-                    $type    => {
-                        id => $stash_data->{uuid},
-                        %$result,
-                    }};
-            }
-
-            if ($c->stash('debug')) {
-                $send_result->{debug} = {
-                    time   => $send_result->{$type}->{rpc_time},
-                    method => $type,
-                };
-            }
-            delete $send_result->{$type}{rpc_time};
+        my $send_result = {
+            msg_type => $type,
+            $type    => {
+                proposals => \@results,
+                id        => $stash_data->{uuid},
+            }};
+        if ($c->stash('debug')) {
+            $send_result->{debug} = {
+                time   => $response->{rpc_time},
+                method => $type,
+            };
         }
-
         $c->send({json => $send_result}, {args => $stash_data->{args}});
     }
     return;
