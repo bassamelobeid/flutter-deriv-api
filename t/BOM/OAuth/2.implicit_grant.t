@@ -29,8 +29,8 @@ my $app_id = do {
 };
 
 ## create test user to login
-my $email     = 'abc@binary.com';
-my $password  = 'jskjd8292922';
+my $email    = 'abc@binary.com';
+my $password = 'jskjd8292922';
 {
     my $hash_pwd  = BOM::System::Password::hashpw($password);
     my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({

@@ -10,7 +10,7 @@ use Mojo::Util qw(url_escape);
 use List::MoreUtils qw(any firstval);
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(localize);
+use BOM::Platform::Context qw(localize request);
 use Client::Account;
 use BOM::Platform::User;
 use BOM::Platform::Email qw(send_email);
@@ -353,7 +353,8 @@ sub __login {
                         $message = localize(
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
                             $client->email, $r->client_ip,
-                            LandingCompany::Countries->instance->countries->country_from_code($country_code) // $country_code, $user_agent);
+                            LandingCompany::Countries->new(brand => request()->brand)->countries->country_from_code($country_code) // $country_code,
+                            $user_agent);
                     } else {
                         $message = localize(
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3], browser: [_4] and app: [_5]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
