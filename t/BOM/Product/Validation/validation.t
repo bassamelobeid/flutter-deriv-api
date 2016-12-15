@@ -400,7 +400,7 @@ subtest 'invalid barriers knocked down for great justice' => sub {
     $bet_params->{low_barrier}  = '99.99995';
     $bet_params->{duration}     = '7d';
     $bet                        = produce_contract($bet_params);
-    $expected_reasons = [ qr/stake.*same as.*payout/, qr/Barrier too far from spot/];
+    $expected_reasons = [qr/stake.*same as.*payout/, qr/Barrier too far from spot/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{low_barrier} = -100;      # Fine, we'll set our low barrier like you want.
