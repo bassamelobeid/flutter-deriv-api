@@ -83,8 +83,7 @@ sub _build_symbols_to_update {
             market            => 'stocks',
             contract_category => 'ANY',
             exclude_disabled  => 1,
-            submarket         => ['india_otc_stock', 'us_otc_stock', 'uk_otc_stock', 'ge_otc_stock',]
-        );
+            submarket         => ['india_otc_stock', 'us_otc_stock', 'uk_otc_stock', 'ge_otc_stock',]);
     }
 
     return \@symbols_to_update;
