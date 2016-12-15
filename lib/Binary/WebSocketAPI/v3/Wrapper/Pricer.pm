@@ -360,7 +360,7 @@ sub process_ask_event {
         if ($type eq 'proposal_array') {
 
             for my $result (@results) {
-                delete @{$result->{$type}}{qw(contract_parameters rpc_time)};
+                delete $result->{contract_parameters};
             }
 
             $send_result = {
