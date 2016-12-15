@@ -22,7 +22,7 @@ for (1 .. 500) {
 }
 
 # high real account buy sell pricing limit
-for (1 .. 1320) {
+for (1 .. 60) {
     ok(not Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'buy',                    1));
     ok(not Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'sell',                   1));
     ok(not Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal',               1));
@@ -30,7 +30,7 @@ for (1 .. 1320) {
 }
 
 # proposal for the rest if limited
-for (1 .. 1320) {
+for (1 .. 60) {
     ok(not Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal', 0));
 }
 ok(Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal', 0)) or die "here";
@@ -39,12 +39,12 @@ ok(Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal', 0)) or die "
 {
     my $i = 0;
     my $failed;
-    while ($i < 5000) {
+    while ($i < 100) {
         $failed = $_ for grep Binary::WebSocketAPI::Hooks::reached_limit_check($c, $_, 0), qw(portfolio profit_table);
         last if $failed;
         ++$i;
     }
-    is($i, 660, 'rate limiting for portfolio happened after expected number of iterations');
+    is($i, 30, 'rate limiting for portfolio happened after expected number of iterations');
 }
 ok(Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'portfolio',    0));
 ok(Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'profit_table', 0));
@@ -68,7 +68,7 @@ is $res->{error}->{code}, 'RateLimit';
 {
     my $res2;
     my $i = 0;
-    while ($i < 10000) {
+    while ($i < 500) {
         $t->tx->send({json => {payout_currencies => 1}}, sub { Mojo::IOLoop->stop });
         Mojo::IOLoop->start;
         note "still waiting after $i iterations" unless $i % 100;
@@ -81,7 +81,7 @@ is $res->{error}->{code}, 'RateLimit';
         # so it seems to be just due to slower performance
         local $TODO = 'Travis run is too slow for the rate limit to trigger, the minute expires before the rate limit kicks in';
         is $res2->{error}->{code}, 'RateLimit';
-        is $i, 5280, "RateLimit for payout_currencies happened after expected number of iterations";
+        is $i, 240, "RateLimit for payout_currencies happened after expected number of iterations";
     }
 }
 
