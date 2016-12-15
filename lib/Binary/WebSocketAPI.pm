@@ -401,16 +401,21 @@ sub startup {
     }
 
     # configuration-compatibility with RateLimitations
-    my $rates_file_content = LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml');
+    my %rates_files = (
+        binary => LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml'),
+        japan  => LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/japan_perl_rate_limitations.yml'));
 
     my %rates_config;
     # convert configuration to RateLimitations::Pluggable format
     # (i.e. unify human-readable time intervals like '1m' to seconds (60))
-    for my $service (keys %$rates_file_content) {
-        for my $interval (keys %{$rates_file_content->{$service}}) {
-            my $seconds = Time::Duration::Concise->new(interval => $interval)->seconds;
-            my $count = $rates_file_content->{$service}->{$interval};
-            $rates_config{$service}->{$seconds} = $count;
+    for my $company (keys %rates_files) {
+        my $rates_file_content = $rates_files{$company};
+        for my $service (keys %$rates_file_content) {
+            for my $interval (keys %{$rates_file_content->{$service}}) {
+                my $seconds = Time::Duration::Concise->new(interval => $interval)->seconds;
+                my $count = $rates_file_content->{$service}->{$interval};
+                $rates_config{$company}{$service}->{$seconds} = $count;
+            }
         }
     }
 
@@ -422,7 +427,7 @@ sub startup {
                 # do not hold reference to stash in stash
                 weaken $stash;
                 my $rl = RateLimitations::Pluggable->new(
-                    limits => \%rates_config,
+                    limits => ($rates_config{$c->landing_company_name // ''} // $rates_config{binary}),
                     getter => sub {
                         my ($service) = @_;
                         return $stash->{rate_limitations_hits}{$service} //= [];
