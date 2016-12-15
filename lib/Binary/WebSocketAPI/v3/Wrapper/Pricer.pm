@@ -46,9 +46,6 @@ sub proposal {
                 my ($rpc_response, $api_response, $req_storage) = @_;
                 return $api_response if $rpc_response->{error};
 
-                for my $proposal (@{$api_response->{proposal_array}{proposals}}){
-                  delete $proposal->{error}{continue_price_stream} if exists $proposal->{error};
-                }
                 $api_response->{passthrough} = $req_storage->{args}->{passthrough};
                 if (my $uuid = $req_storage->{uuid}) {
                     $api_response->{proposal}->{id} = $uuid;
@@ -90,6 +87,10 @@ sub proposal_array {
             response => sub {
                 my ($rpc_response, $api_response, $req_storage) = @_;
                 return $api_response if $rpc_response->{error};
+
+                for my $proposal (@{$api_response->{proposal_array}{proposals}}){
+                  delete $proposal->{error}{continue_price_stream} if exists $proposal->{error};
+                }
 
                 $api_response->{passthrough} = $req_storage->{args}->{passthrough};
                 if (my $uuid = $req_storage->{uuid}) {
