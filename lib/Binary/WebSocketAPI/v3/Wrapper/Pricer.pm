@@ -353,7 +353,7 @@ sub process_ask_event {
                     };
                 }
             }
-            delete $result->{contract_parameters};
+            delete $results->{contract_parameters};
             push @results, $results;
         }
 
