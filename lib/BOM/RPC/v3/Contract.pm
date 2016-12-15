@@ -500,6 +500,7 @@ sub send_multiple_ask {
             push @$responses, $res;
         }
         $rpc_time += $res->{rpc_time} // 0;
+        delete $res->{rpc_time};
     }
 
     return {
