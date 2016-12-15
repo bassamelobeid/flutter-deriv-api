@@ -2589,10 +2589,6 @@ sub _build_market_risk_blackouts {
             push @blackout_periods, [$effective_sod->plus_time_interval($_->{start})->epoch, $effective_sod->plus_time_interval($_->{end})->epoch]
                 for @inefficient_periods;
         }
-
-        if (not $self->is_atm_bet and $self->underlying->market->name eq 'forex') {
-            push @blackout_periods, [$_->{blankout}, $_->{blankout_end}] for @{$self->tentative_events};
-        }
     }
 
     return \@blackout_periods;
