@@ -29,10 +29,10 @@ $surface_string =~ s/point/./g;
 my $surface_data = from_json($surface_string);
 
 my $surface = Quant::Framework::VolSurface::Moneyness->new(
-    underlying        => $underlying,
-    surface           => $surface_data,
-    recorded_date     => $recorded_date,
-    spot_reference    => $spot,
+    underlying     => $underlying,
+    surface        => $surface_data,
+    recorded_date  => $recorded_date,
+    spot_reference => $spot,
 );
 
 my $response;
