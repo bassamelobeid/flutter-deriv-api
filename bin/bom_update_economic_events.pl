@@ -9,6 +9,7 @@ use ForexFactory;
 use Volatility::Seasonality;
 use BOM::MarketData qw(create_underlying_db);
 use Quant::Framework::EconomicEventCalendar;
+use Volatility::Seasonality;
 use BOM::Platform::Runtime;
 use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
@@ -55,7 +56,7 @@ sub script_run {
         print "stored " . (scalar @$events_received) . " events ($tentative_count are tentative events) in chronicle...\n";
 
         my @underlying_symbols = create_underlying_db->symbols_for_intraday_fx();
-        my $qfs                = Quant::Framework::Seasonality->new(
+        my $qfs                = Volatility::Seasonality->new(
             chronicle_reader => BOM::System::RedisReplicated::redis_read,
             chronicle_writer => BOM::System::RedisReplicated::redis_write
         );
