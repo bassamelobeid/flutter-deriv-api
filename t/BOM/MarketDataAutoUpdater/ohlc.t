@@ -125,7 +125,6 @@ subtest 'valid close' => sub {
     'close for HSI updated successfully';
 };
 
-
 # update_combined_realtime(
 #   datetime => $bom_date,            # tick time
 #   underlying => $model_underlying,  # underlying

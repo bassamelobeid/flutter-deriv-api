@@ -32,7 +32,6 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
-
 # Prep:
 my $fake_date = Date::Utility->new('2012-08-13 15:55:55');
 set_absolute_time($fake_date->epoch);
@@ -62,10 +61,10 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 Quant::Framework::Utils::Test::create_doc(
     'volsurface_delta',
     {
-        underlying        => create_underlying($_),
-        chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader,
-        chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer,
-        recorded_date     => Date::Utility->new,
+        underlying       => create_underlying($_),
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
+        recorded_date    => Date::Utility->new,
     }) for qw(frxAUDJPY frxGBPJPY frxUSDJPY frxGBPINR);
 
 initialize_realtime_ticks_db;
@@ -101,9 +100,9 @@ my $usdjpy = create_underlying('frxUSDJPY');
 my $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        underlying        => $usdjpy,
-        surface           => $data,
-        recorded_date     => Date::Utility->new(time - (4 * 3600 + 1)),
+        underlying    => $usdjpy,
+        surface       => $data,
+        recorded_date => Date::Utility->new(time - (4 * 3600 + 1)),
     });
 
 subtest 'more than 4 hours old' => sub {
@@ -150,9 +149,9 @@ $data = {
 $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        underlying        => $usdjpy,
-        recorded_date     => Date::Utility->new(time - 7199),
-        surface           => $data
+        underlying    => $usdjpy,
+        recorded_date => Date::Utility->new(time - 7199),
+        surface       => $data
     });
 
 subtest 'big jump' => sub {
@@ -171,10 +170,10 @@ $clone->{14}->{smile}->{25} = 1.3;
 $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        underlying        => $usdjpy,
-        recorded_date     => Date::Utility->new(time - 7199),
-        surface           => $clone,
-        save              => 0,
+        underlying    => $usdjpy,
+        recorded_date => Date::Utility->new(time - 7199),
+        surface       => $clone,
+        save          => 0,
     });
 
 subtest 'big difference' => sub {
@@ -195,8 +194,8 @@ subtest 'big difference' => sub {
 $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        underlying        => $usdjpy,
-        recorded_date     => Date::Utility->new(time - 7199),
+        underlying    => $usdjpy,
+        recorded_date => Date::Utility->new(time - 7199),
     });
 
 subtest 'save valid' => sub {
@@ -245,8 +244,8 @@ subtest "Friday after close, weekend, won't open check." => sub {
         my $surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'volsurface_delta',
             {
-                underlying        => $usdjpy,
-                recorded_date     => Date::Utility->new($details->{datetime}),
+                underlying    => $usdjpy,
+                recorded_date => Date::Utility->new($details->{datetime}),
             });
 
         my $result = $auf->passes_additional_check($surface);
