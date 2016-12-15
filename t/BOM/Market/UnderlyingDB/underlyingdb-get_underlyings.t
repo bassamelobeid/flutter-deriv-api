@@ -38,7 +38,6 @@ cmp_bag [
         contract_category => 'callput',
         start_type        => 'spot',
         expiry_type       => 'intraday',
-        broker            => 'CR',
     )
     ],
     \@ul_indices_on_flash,
@@ -49,7 +48,6 @@ cmp_bag [
         contract_category => 'callput',
         start_type        => 'spot',
         expiry_type       => 'intraday',
-        broker            => 'VRTC',
     )
     ],
     \@ul_indices_on_flash, "Correct list of flashes for indices on virtual accounts";
@@ -62,7 +60,6 @@ eq_or_diff [
     sort $udb->get_symbols_for(
         market            => 'forex',
         contract_category => 'endsinout',
-        broker            => 'MLT',
     )
     ],
     \@ul_forex_on_endsinout, "Correct list of endsinout for forex on real accounts";
@@ -70,7 +67,6 @@ eq_or_diff [
     sort $udb->get_symbols_for(
         market            => 'forex',
         contract_category => 'endsinout',
-        broker            => 'VRTC',
     )
     ],
     \@ul_forex_on_endsinout, "Correct list of endsinout for forex on virtual accounts";
@@ -82,7 +78,6 @@ eq_or_diff [
     sort $udb->get_symbols_for(
         market            => 'indices',
         contract_category => 'endsinout',
-        broker            => 'VRTC',
     )
     ],
     \@ul_indices_on_endsinout, "Correct list of endsinout for indices on real accounts";
@@ -91,7 +86,6 @@ eq_or_diff [
     sort $udb->get_symbols_for(
         market            => ['indices', 'forex',],
         contract_category => 'endsinout',
-        broker            => 'VRTC',
     )
     ],
     [sort @ul_forex_on_endsinout, @ul_indices_on_endsinout],
@@ -121,8 +115,7 @@ eq_or_diff [
     ],
     \@ul_commodities_active, "Correct list for commodities";
 
-throws_ok { $udb->get_symbols_for(contract_category => 'IV', broker => 'VRTC',); } qr/market is not specified/,
-    'Could not get underlyings if market is not specified';
+throws_ok { $udb->get_symbols_for(contract_category => 'IV'); } qr/market is not specified/, 'Could not get underlyings if market is not specified';
 
 subtest "sub market related" => sub {
     my @ul_random_daily = qw( RDBEAR RDBULL );
@@ -167,7 +160,6 @@ subtest "sub market related" => sub {
         sort $udb->get_symbols_for(
             market            => 'indices',
             contract_category => 'endsinout',
-            broker            => 'VRTC',
             submarket         => 'americas',
         )
         ],
@@ -192,7 +184,6 @@ subtest 'including disabled' => sub {
             $udb->get_symbols_for(
                 market            => 'forex',
                 contract_category => 'endsinout',
-                broker            => 'VRTC',
             )
         ),
         "USD/JPY returned for when unfiltered for disabled."
@@ -202,7 +193,6 @@ subtest 'including disabled' => sub {
             $udb->get_symbols_for(
                 market            => 'forex',
                 contract_category => 'endsinout',
-                broker            => 'VRTC',
                 exclude_disabled  => 1,
             )
         ),
