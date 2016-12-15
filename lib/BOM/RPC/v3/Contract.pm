@@ -134,7 +134,7 @@ sub _get_ask {
     };
     return $response if $response;
     try {
-        $contract = produce_contract($p2)
+        $contract = produce_contract($p2);
     }
     catch {
         warn __PACKAGE__ . " _get_ask produce_contract failed, parameters: " . Dumper($p2);
