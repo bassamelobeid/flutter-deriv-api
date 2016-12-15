@@ -349,7 +349,6 @@ sub process_ask_event {
                 if (my $ref = $adjusted_results->{error}) {
                     my $err = $c->new_error($type, $ref->{code}, $ref->{message_to_client});
                     $err->{error}->{details} = $ref->{details} if exists $ref->{details};
-                    delete $err->{msg_type} if $type eq 'proposal_array';
                     $results = $err;
                 } else {
                     $results = {
@@ -358,6 +357,7 @@ sub process_ask_event {
                     };
                 }
             }
+            delete $results->{msg_type} if $type eq 'proposal_array';
             delete $results->{contract_parameters};
             push @results, $results;
         }
