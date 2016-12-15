@@ -88,8 +88,8 @@ sub proposal_array {
                 my ($rpc_response, $api_response, $req_storage) = @_;
                 return $api_response if $rpc_response->{error};
 
-                for my $proposal (@{$api_response->{proposal_array}{proposals}}){
-                  delete $proposal->{error}{continue_price_stream} if exists $proposal->{error};
+                for my $proposal (@{$api_response->{proposal_array}{proposals}}) {
+                    delete $proposal->{error}{continue_price_stream} if exists $proposal->{error};
                 }
 
                 $api_response->{passthrough} = $req_storage->{args}->{passthrough};
@@ -376,7 +376,7 @@ sub process_ask_event {
                     method => $type,
                 };
             }
-        } else {
+        } else {    # $type eq 'proposal'
             my $result = $results[0];
             if (exists $result->{error}) {
                 $send_result = $result;
