@@ -31,7 +31,6 @@ BOM::Backoffice::Auth0::can_access(['Quants']);
 my %params = %{request()->params};
 my ($pricing_parameters, @contract_details, $start);
 
-
 my $broker        = $params{broker}     // request()->broker_code;
 my $id            = $params{id}         // '';
 my $short_code    = $params{short_code} // '';
@@ -47,13 +46,12 @@ if ($broker and ($id or $short_code)) {
                 operation   => 'backoffice_replica',
             })->get_details_by_transaction_ref($id);
 
-        $client = Client::::Account::get_instance({'loginid' => $details->{loginid}});
+        $client = Client::Account::get_instance({'loginid' => $details->{loginid}});
 
     }
 
     my $short_code_param = $details->{shortcode}     // $short_code;
     my $currency_param   = $details->{currency_code} // $currency_code;
-
 
     my $original_contract = produce_contract($short_code_param, $currency_param);
     my $action_type = $details->{action_type} // 'buy';    #If it is with shortcode as input, we just want to verify the ask price
@@ -70,9 +68,8 @@ if ($broker and ($id or $short_code)) {
     $pricing_args->{date_pricing}    = $start;
     $pricing_args->{landing_company} = $landing_company;
 
-
     my $contract       = produce_contract($pricing_args);
-    my $display_price =  $action_type eq 'buy' ? $contract->ask_price : $contract->bid_price;
+    my $display_price  = $action_type eq 'buy' ? $contract->ask_price : $contract->bid_price;
     my $traded_bid     = $details->{bid_price};
     my $traded_ask     = $details->{ask_price};
     my $slippage_price = $details->{price_slippage};
@@ -80,7 +77,6 @@ if ($broker and ($id or $short_code)) {
     my $prev_tick      = $contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
     my $pricing_spot   = $details->{pricing_spot};
 
-    
     my $traded_contract = $action_type eq 'buy' ? $contract : $contract->opposite_contract;
     my $discounted_probability = $contract->discounted_probability;
 

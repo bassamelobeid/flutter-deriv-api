@@ -73,7 +73,7 @@ sub generate_report {
     foreach my $currency (sort @{$self->currencies}) {
         foreach my $broker (sort @{$self->brokercodes}) {
             # We don't care about these for Virtuals.
-            if ($broker !~ /^\w+$/ or $broker =~ /^VRT/ or $broker eq 'FOG') {
+            if ($broker !~ /^\w+$/ or $broker =~ /^VR/ or $broker eq 'FOG') {
                 next;
             }
 
