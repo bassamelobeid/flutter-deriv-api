@@ -63,10 +63,6 @@
                         {
                             "type": "object",
                             "properties" : {
-                                "barrier": {
-                                    "required" : "1",
-                                    "enum" : ["[_6]"]
-                                },
                                 "error" :{
                                     "type" : "object",
                                     "required": "1",
@@ -85,12 +81,12 @@
                                                 },
                                                 "payout": {
                                                     "required" : "1"
+                                                },
+                                                "barrier": {
+                                                    "required" : "1",
+                                                    "enum" : ["[_6]"]
                                                 }
                                             }
-                                        },
-                                        "continue_price_stream": {
-                                            "required" : "1",
-                                            "pattern" : "^1$"
                                         },
                                         "code": {
                                             "required": "1",

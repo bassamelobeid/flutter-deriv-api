@@ -17,14 +17,6 @@
                     "items" : {
                         "type": "object",
                         "properties" : {
-                                "barrier": {
-                                    "required" : "1",
-                                    "enum" : ["[_5]","[_7]"]
-                                },
-                                "barrier2": {
-                                    "required" : "1",
-                                    "enum" : ["[_6]","[_8]"]
-                                },
                             "error" :{
                                 "type" : "object",
                                 "required": "1",
@@ -38,6 +30,14 @@
                                         "type" : "object",
                                         "required" : "1",
                                         "properties": {
+                                            "barrier": {
+                                                "required" : "1",
+                                                "enum" : ["[_5]","[_7]"]
+                                            },
+                                            "barrier2": {
+                                                "required" : "1",
+                                                "enum" : ["[_6]","[_8]"]
+                                            },
                                             "display_value": {
                                                 "required" : "1"
                                             },
@@ -45,10 +45,6 @@
                                                 "required" : "1"
                                             }
                                         }
-                                    },
-                                    "continue_price_stream": {
-                                        "required" : "1",
-                                        "pattern" : "^1$"
                                     },
                                     "code": {
                                         "required": "1",
