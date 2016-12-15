@@ -89,12 +89,10 @@ sub _build_symbols_to_update {
         market            => ['forex'],
         submarket         => ['major_pairs', 'minor_pairs'],
         contract_category => 'ANY',
-        broker            => 'VRT',
     );
     my @commodities = create_underlying_db->get_symbols_for(
         market            => 'commodities',
         contract_category => 'ANY',
-        broker            => 'VRT',
     );
 
     my @quanto_currencies = create_underlying_db->get_symbols_for(
