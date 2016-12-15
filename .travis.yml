@@ -1,13 +1,8 @@
 language: perl
 perl:
     - "5.14.2-thr"
-    - "5.24"
 matrix:
     fast_finish: true
-go:
-    - 1.5
-node_js:
-    - "4.1"
 addons:
     postgresql: "9.3"
 services:
