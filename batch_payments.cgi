@@ -127,7 +127,7 @@ read_csv_row_and_callback(
                         comment => $statement_comment
                     }))
             {
-                $error = "Same transaction found in client account. Check [transaciton id: $duplicate_record]";
+                $error = "Same transaction found in client account. Check [transaction id: $duplicate_record]";
                 last;
             }
         }
