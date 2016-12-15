@@ -372,6 +372,7 @@ sub _process_ask_proposal_event {
 }
 
 sub _process_ask_proposal_array_event {
+    my ($c, $response, $redis_channel, $pricing_channel) = @_;
     my $type      = 'proposal_array';
     my $responses = $response->{proposals};
     foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
