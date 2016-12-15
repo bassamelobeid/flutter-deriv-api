@@ -43,7 +43,7 @@ sub ticks {
                     }
                     undef $api_response unless $api_response->{error};    # Don't return anything if subscribed ok
                     return $api_response;
-                    }
+                }
             });
     }
     return;
@@ -152,7 +152,7 @@ sub ticks_history {
                     return {
                         msg_type => $rpc_response->{type},
                         %{$rpc_response->{data}}};
-                    }
+                }
             });
     };
 
