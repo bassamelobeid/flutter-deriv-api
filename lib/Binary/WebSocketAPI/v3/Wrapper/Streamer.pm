@@ -43,7 +43,7 @@ sub ticks {
                     }
                     undef $api_response unless $api_response->{error};    # Don't return anything if subscribed ok
                     return $api_response;
-                }
+                    }
             });
     }
     return;
@@ -152,7 +152,7 @@ sub ticks_history {
                     return {
                         msg_type => $rpc_response->{type},
                         %{$rpc_response->{data}}};
-                }
+                    }
             });
     };
 
@@ -494,7 +494,8 @@ sub _skip_streaming {
     my $args = shift;
 
     my $skip_symbols = ($skip_symbol_list{$args->{symbol}}) ? 1 : 0;
-    my $atm_contract = ($args->{contract_type} =~ /^(CALL|PUT)$/ and not ($args->{barrier} or ($args->{proposal_array} and $args->{barriers} ))) ? 1 : 0;
+    my $atm_contract =
+        ($args->{contract_type} =~ /^(CALL|PUT)$/ and not($args->{barrier} or ($args->{proposal_array} and $args->{barriers}))) ? 1 : 0;
     my $fixed_expiry = $args->{date_expiry} ? 1 : 0;
     my ($skip_tick_expiry, $skip_intraday_atm_non_fixed_expiry) = (0, 0);
     if (defined $args->{duration_unit}) {
