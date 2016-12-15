@@ -394,7 +394,7 @@ sub process_ask_event {
                     method => $type,
                 };
             }
-            delete $send_result->{contract_parameters};
+            delete @{$send_result->{$type}}{qw(contract_parameters rpc_time)};
         }
 
         $c->send({json => $send_result}, {args => $stash_data->{args}});
