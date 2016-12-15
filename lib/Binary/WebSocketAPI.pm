@@ -17,7 +17,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use File::Slurp;
 use JSON::Schema;
 use Try::Tiny;
-use Format::Util::Strings qw( defang_lite );
+use Format::Util::Strings qw( defang );
 use Digest::MD5 qw(md5_hex);
 use RateLimitations::Pluggable;
 use Time::Duration::Concise;
@@ -75,7 +75,7 @@ sub startup {
         before_dispatch => sub {
             my $c = shift;
 
-            my $lang = defang_lite($c->param('l'));
+            my $lang = defang($c->param('l'));
             if ($lang =~ /^\D{2}(_\D{2})?$/) {
                 $c->stash(language => uc $lang);
                 $c->res->headers->header('Content-Language' => lc $lang);
@@ -89,8 +89,9 @@ sub startup {
                 $c->stash(debug => 1);
             }
 
-            my $app_id    = defang_lite($c->req->param('app_id'));
+            my $app_id    = defang($c->req->param('app_id'));
             my $client_ip = $c->client_ip;
+            my $brand     = defang($c->req->param('brand'));
 
             if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
                 $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
@@ -104,7 +105,8 @@ sub startup {
                 landing_company_name => $c->landing_company_name,
                 user_agent           => $user_agent,
                 ua_fingerprint       => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
-                $app_id ? (source => $app_id) : (),
+                ($app_id =~ /^\d{1,10}$/) ? (source => $app_id) : (),
+                brand => (($brand =~ /^\w{1,10}$/) ? $brand : 'binary'),
             );
         });
 
@@ -437,8 +439,9 @@ sub startup {
             actions => $actions,
 
             # action hooks
-            before_forward           => [\&Binary::WebSocketAPI::Hooks::before_forward,             \&Binary::WebSocketAPI::Hooks::get_rpc_url],
-            before_call              => [\&Binary::WebSocketAPI::Hooks::add_app_id,                 \&Binary::WebSocketAPI::Hooks::start_timing],
+            before_forward => [\&Binary::WebSocketAPI::Hooks::before_forward, \&Binary::WebSocketAPI::Hooks::get_rpc_url],
+            before_call =>
+                [\&Binary::WebSocketAPI::Hooks::add_app_id, \&Binary::WebSocketAPI::Hooks::add_brand, \&Binary::WebSocketAPI::Hooks::start_timing],
             before_get_rpc_response  => [\&Binary::WebSocketAPI::Hooks::log_call_timing],
             after_got_rpc_response   => [\&Binary::WebSocketAPI::Hooks::log_call_timing_connection, \&Binary::WebSocketAPI::Hooks::error_check],
             before_send_api_response => [
