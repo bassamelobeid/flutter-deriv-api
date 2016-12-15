@@ -101,11 +101,11 @@ if ($filen eq 'editvol') {
         };
     }
     my %surface_args = (
-        underlying        => $underlying,
-        chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
-        chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
-        surface           => $surface_data,
-        recorded_date     => Date::Utility->new,
+        underlying       => $underlying,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        surface          => $surface_data,
+        recorded_date    => Date::Utility->new,
         (request()->param('spot_reference') ? (spot_reference => request()->param('spot_reference')) : ()),
     );
     my $existing_surface_args = {
