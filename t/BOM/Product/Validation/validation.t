@@ -1183,6 +1183,7 @@ subtest 'zero vol' => sub {
 };
 
 subtest 'tentative events' => sub {
+    #Make sure there is no blackout period
     my $now = Date::Utility->new('2016-03-18 05:00:00');
     set_absolute_time($now->epoch);
     my $blackout_start = $now->minus_time_interval('1h');
@@ -1217,27 +1218,14 @@ subtest 'tentative events' => sub {
     $c = produce_contract($contract_args);
     ok !$c->_validate_start_and_expiry_date, 'no error if contract is atm';
     $contract_args->{barrier} = 'S20P';
-    $c = produce_contract($contract_args);
-    ok $c->_validate_start_and_expiry_date, 'throws error if contract expiring on the tentative event\'s blackout period';
-    cmp_ok(
-        ($c->_validate_start_and_expiry_date)[0]->{message},
-        'eq',
-        'blackout period [symbol: frxAUDUSD] [from: 1458273600] [to: 1458280800]',
-        'correct error message'
-    );
 
     $c = produce_contract({%$contract_args, underlying => 'frxGBPCHF'});
     ok !$c->_validate_start_and_expiry_date, 'no error if event is not affecting the underlying';
 
     $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_end->minus_time_interval('1s');
     $c = produce_contract($contract_args);
-    ok $c->_validate_start_and_expiry_date, 'throws error if contract starts on tentative event\'s blackout end';
-    cmp_ok(
-        ($c->_validate_start_and_expiry_date)[0]->{message},
-        'eq',
-        'blackout period [symbol: frxAUDUSD] [from: 1458273600] [to: 1458280800]',
-        'correct error message'
-    );
+    ok !$c->_validate_start_and_expiry_date, 'Does not throw error if contract starts on tentative event\'s blackout end';
+
     $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_start->minus_time_interval('1s');
     delete $contract_args->{duration};
     $contract_args->{date_expiry} = $blackout_end->plus_time_interval('1s');
