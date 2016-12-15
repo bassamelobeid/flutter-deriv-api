@@ -26,12 +26,6 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Database::Model::OAuth;
 use LandingCompany::Countries;
 
-my $countries_list;
-
-BEGIN {
-    $countries_list = LandingCompany::Countries->instance->countries_list;
-}
-
 sub _create_oauth_token {
     my $loginid = shift;
     my ($access_token) = BOM::Database::Model::OAuth->new->store_access_token_only('1', $loginid);
@@ -207,6 +201,7 @@ sub new_account_real {
 
     my $company;
     if ($args->{residence}) {
+        my $countries_list = LandingCompany::Countries->new(brand => request()->brand)->countries_list;
         $company = $countries_list->{$args->{residence}}->{gaming_company};
         $company = $countries_list->{$args->{residence}}->{financial_company} if (not $company or $company eq 'none');
     }
@@ -326,7 +321,7 @@ sub new_account_japan {
                 message_to_client => $error_map->{'invalid'}});
     }
 
-    my $company = $countries_list->{'jp'}->{financial_company};
+    my $company = LandingCompany::Countries->new(brand => request()->brand)->countries_list->{'jp'}->{financial_company};
 
     if (not $company) {
         return BOM::RPC::v3::Utility::create_error({
