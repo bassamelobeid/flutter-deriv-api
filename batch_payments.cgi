@@ -48,7 +48,7 @@ if ($preview) {
     open my $fh, '>:encoding(UTF-8)', $payments_csv_file or die "writing upload: $!";
     while (<$payments_csv_fh>) {
         s/\s*$//;    # remove various combos of unix/windows rec-separators
-        printf $fh "$_\n";
+        $fh->print("$_\n");
     }
     close $fh;
 }
