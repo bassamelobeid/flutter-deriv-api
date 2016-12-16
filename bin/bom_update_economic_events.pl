@@ -8,7 +8,7 @@ with 'App::Base::Script';
 use ForexFactory;
 use Volatility::Seasonality;
 use Quant::Framework::EconomicEventCalendar;
-use LandingCompany::Offerings qw(get_offerings_flyby);
+use BOM::MarketData qw(create_underlying_db);
 use Volatility::Seasonality;
 use BOM::Platform::Runtime;
 use Date::Utility;
@@ -55,15 +55,8 @@ sub script_run {
 
         print "stored " . (scalar @$events_received) . " events ($tentative_count are tentative events) in chronicle...\n";
 
-        my @underlying_symbols = uniq(
-            map { $_->{underlying_symbol} } grep { $_->{max_historical_pricer_duration} } get_offerings_flyby()->query({
-                    expiry_type       => 'intraday',
-                    start_type        => 'spot',
-                    market            => ['forex', 'commodities'],
-                    contract_category => 'callput',
-                    barrier_category  => 'euro_non_atm',
-                }));
-        my $qfs = Volatility::Seasonality->new(
+        my @underlying_symbols = create_underlying_db->symbols_for_intraday_fx;
+        my $qfs                = Volatility::Seasonality->new(
             chronicle_reader => BOM::System::RedisReplicated::redis_read,
             chronicle_writer => BOM::System::RedisReplicated::redis_write
         );
