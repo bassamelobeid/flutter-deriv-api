@@ -1125,7 +1125,8 @@ my $pc_params_setters = {
                     maximum     => 1,
                 });
             } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Digits'
-                or $self->pricing_engine_name eq 'Pricing::Engine::Asian')
+                or $self->pricing_engine_name eq 'Pricing::Engine::Asian'
+                or $self->pricing_engine_name eq 'Pricing::Engine::BlackScholes')
             {
                 $bs_probability = Math::Util::CalculatedValue::Validatable->new({
                     name        => 'bs_probability',
