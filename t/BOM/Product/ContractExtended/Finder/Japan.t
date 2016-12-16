@@ -18,19 +18,20 @@ use Date::Utility;
 BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD JPY AUD CAD EUR);
 subtest "predefined contracts for symbol" => sub {
-   my $now = Date::Utility->new('2015-08-21 05:30:00');
-   foreach my $symbol (qw(frxUSDJPY frxAUDUSD frxEURUSD)) {
-       BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-               underlying => $symbol,
-               epoch      => Date::Utility->new($_)->epoch,
-               quote      => 100,
-           })
-           for (
-           "2015-01-01",          "2015-07-01",          "2015-08-03",          "2015-08-17", "2015-08-21",
-           "2015-08-21 00:45:00", "2015-08-21 03:45:00", "2015-08-21 04:45:00", "2015-08-21 05:30:00", "2015-08-24 00:00:00",  "2015-08-31", "2015-08-31 00:00:01", "2015-09-04 16:30:00", time
-           );
-       generate_trading_periods($symbol, $now);
-   }
+    my $now = Date::Utility->new('2015-08-21 05:30:00');
+    foreach my $symbol (qw(frxUSDJPY frxAUDUSD frxEURUSD)) {
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                underlying => $symbol,
+                epoch      => Date::Utility->new($_)->epoch,
+                quote      => 100,
+            })
+            for (
+            "2015-01-01",          "2015-07-01",          "2015-08-03",          "2015-08-17",          "2015-08-21",
+            "2015-08-21 00:45:00", "2015-08-21 03:45:00", "2015-08-21 04:45:00", "2015-08-21 05:30:00", "2015-08-24 00:00:00",
+            "2015-08-31",          "2015-08-31 00:00:01", "2015-09-04 16:30:00", time
+            );
+        generate_trading_periods($symbol, $now);
+    }
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'holiday',
@@ -99,7 +100,7 @@ subtest "predefined trading_period" => sub {
 
     my @offerings = BOM::Product::Contract::PredefinedParameters::_get_offerings('frxUSDJPY');
     is(scalar(@offerings), $expected_count{'offering'}, 'Expected total contract before included predefined trading period');
-    my $now      = Date::Utility->new('2015-09-04 17:00:00');
+    my $now = Date::Utility->new('2015-09-04 17:00:00');
     my $underlying = create_underlying('frxUSDJPY', $now);
     generate_trading_periods($underlying->symbol, $now);
     my @new = @{BOM::Product::Contract::PredefinedParameters::_apply_predefined_parameters($now, $underlying, \@offerings)};
@@ -145,41 +146,125 @@ subtest "check_intraday trading_period_JPY" => sub {
             date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-11-23 02:00:00', '2015-11-23 06:00:00',)],
 
         },
-        '2015-11-23 18:00:00' => {combination => 0},
-        '2015-11-23 21:45:00' => {
-            combination => 1,
-            date_start  => [Date::Utility->new('2015-11-23 21:45:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-23 23:59:59')->epoch],
+        '2015-11-23 13:00:00' => {
+            combination => 3,
+            date_start  => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-23 11:45:00', '2015-11-23 12:45:00', '2015-11-23 08:45:00',)
+            ],
+            date_expiry => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-23 14:00:00', '2015-11-23 18:00:00', '2015-11-23 14:00:00',)
+            ],
+
+        },
+        '2015-11-23 14:00:00' => {
+            combination => 2,
+            date_start  => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-23 13:45:00', '2015-11-23 12:45:00',)
+            ],
+            date_expiry => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-23 16:00:00', '2015-11-23 18:00:00',)
+            ],
+
         },
 
+        '2015-11-23 17:00:00' => {
+            combination => 2,
+            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-11-23 15:45:00', '2015-11-23 12:45:00',)],
+            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-11-23 18:00:00', '2015-11-23 18:00:00',)],
+
+        },
+
+        '2015-11-23 18:00:00' => {combination => 0},
+        '2015-11-23 19:00:00' => {combination => 0},
+        '2015-11-23 20:00:00' => {combination => 0},
+        '2015-11-23 21:00:00' => {combination => 0},
         '2015-11-23 22:00:00' => {
             combination => 1,
             date_start  => [Date::Utility->new('2015-11-23 21:45:00')->epoch],
             date_expiry => [Date::Utility->new('2015-11-23 23:59:59')->epoch],
         },
-        '2015-11-23 23:45:00' => {
-            combination => 2,
-            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-11-23 21:45:00', '2015-11-23 23:45:00',)],
-            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-11-23 23:59:59', '2015-11-24 02:00:00',)],
-        },
-
         # tues
-        '2015-11-24 00:00:00' => {
-            combination => 1,
-            date_start  => [Date::Utility->new('2015-11-23 23:45:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-24 02:00:00')->epoch],
-        },
-        '2015-11-24 01:00:00' => {
-            combination => 2,
-            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-11-23 23:45:00', '2015-11-24 00:45:00',)],
-            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-11-24 02:00:00', '2015-11-24 06:00:00',)],
+        '2015-11-24 01:45:00' => {
+            combination => 3,
+            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-11-23 23:45:00', '2015-11-24 01:45:00', '2015-11-24 00:45:00',)],
+            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-11-24 02:00:00', '2015-11-24 04:00:00', '2015-11-24 06:00:00',)],
 
         },
-        '2015-11-24 21:00:00' => {combination => 0},
-        '2015-11-24 23:00:00' => {
+        '2015-11-24 12:45:00' => {
+            combination => 3,
+            date_start  => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-24 11:45:00', '2015-11-24 12:45:00', '2015-11-24 08:45:00',)
+            ],
+            date_expiry => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-24 14:00:00', '2015-11-24 18:00:00', '2015-11-24 14:00:00',)
+            ],
+
+        },
+        '2015-11-24 14:45:00' => {
+            combination => 2,
+            date_start  => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-24 13:45:00', '2015-11-24 12:45:00',)
+            ],
+            date_expiry => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-24 16:00:00', '2015-11-24 18:00:00',)
+            ],
+
+        },
+        '2015-11-24 17:45:00' => {
+            combination => 2,
+            date_start  => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-24 15:45:00', '2015-11-24 12:45:00',)
+            ],
+            date_expiry => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-24 18:00:00', '2015-11-24 18:00:00',)
+            ],
+
+        },
+        '2015-11-24 18:45:00' => {combination => 0},
+        '2015-11-24 19:45:00' => {combination => 0},
+        '2015-11-24 20:45:00' => {combination => 0},
+        '2015-11-24 21:45:00' => {
             combination => 1,
             date_start  => [Date::Utility->new('2015-11-24 21:45:00')->epoch],
             date_expiry => [Date::Utility->new('2015-11-24 23:59:59')->epoch],
+        },
+        '2015-11-24 22:45:00' => {
+            combination => 1,
+            date_start  => [Date::Utility->new('2015-11-24 21:45:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-24 23:59:59')->epoch],
+        },
+        '2015-11-24 23:45:00' => {
+            combination => 2,
+            date_start  => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-24 21:45:00', '2015-11-24 23:45:00',)
+            ],
+            date_expiry => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-24 23:59:59', '2015-11-25 02:00:00',)
+            ],
         },
         # Friday
         '2015-11-27 00:00:00' => {
@@ -202,9 +287,10 @@ subtest "check_intraday trading_period_JPY" => sub {
 
     );
 
-    my @i_offerings = grep { $_->{expiry_type} eq 'intraday' and  $_->{contract_type} eq 'CALLE'} BOM::Product::Contract::PredefinedParameters::_get_offerings('frxUSDJPY');
-    foreach my $date (keys %expected_intraday_trading_period) {
-        my $now                = Date::Utility->new($date);
+    my @i_offerings = grep { $_->{expiry_type} eq 'intraday' and $_->{contract_type} eq 'CALLE' }
+        BOM::Product::Contract::PredefinedParameters::_get_offerings('frxUSDJPY');
+    foreach my $date (sort keys %expected_intraday_trading_period) {
+        my $now = Date::Utility->new($date);
         my $ex = create_underlying('frxUSDJPY', $now);
         generate_trading_periods($ex->symbol, $now);
         my @intraday_offerings = @{BOM::Product::Contract::PredefinedParameters::_apply_predefined_parameters($now, $ex, \@i_offerings)};
@@ -254,9 +340,10 @@ subtest "check_intraday trading_period_non_JPY" => sub {
         '2015-11-27 19:00:00' => {combination => 0},
     );
 
-    my @e_offerings = grep { $_->{expiry_type} eq 'intraday' and  $_->{contract_type} eq 'CALLE'} BOM::Product::Contract::PredefinedParameters::_get_offerings('frxEURUSD');
+    my @e_offerings = grep { $_->{expiry_type} eq 'intraday' and $_->{contract_type} eq 'CALLE' }
+        BOM::Product::Contract::PredefinedParameters::_get_offerings('frxEURUSD');
     foreach my $date (keys %expected_eur_intraday_trading_period) {
-        my $now              = Date::Utility->new($date);
+        my $now = Date::Utility->new($date);
         my $ex = create_underlying('frxEURUSD', $now);
         generate_trading_periods($ex->symbol, $now);
         my @eurusd_offerings = @{BOM::Product::Contract::PredefinedParameters::_apply_predefined_parameters($now, $ex, \@e_offerings)};

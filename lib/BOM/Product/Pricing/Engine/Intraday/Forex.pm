@@ -4,6 +4,7 @@ use Moose;
 extends 'BOM::Product::Pricing::Engine::Intraday';
 
 use List::Util qw(max min sum first);
+use Array::Utils qw(:all);
 use YAML::XS qw(LoadFile);
 
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
@@ -201,8 +202,10 @@ sub _build_intraday_vega {
 
 sub _build_economic_events_markup {
     my $self = shift;
+    my $bet  = $self->bet;
+    my $markup;
 
-    my $markup = Math::Util::CalculatedValue::Validatable->new({
+    $markup = Math::Util::CalculatedValue::Validatable->new({
         name        => 'economic_events_markup',
         description => 'the maximum of spot or volatility risk markup of economic events',
         set_by      => __PACKAGE__,
@@ -213,6 +216,163 @@ sub _build_economic_events_markup {
     $markup->include_adjustment('info', $self->economic_events_spot_risk_markup);
 
     return $markup;
+}
+
+=head2 _tentative_events_markup
+
+As part of the Japanese regulatory requirement, we are required to provide bid and ask prices at all times during 
+trading hours. One of our backoffice controls, namely the tentative blackout period tool which stops sales of 
+**non-ATM** intraday contracts spanning a tentative period does not to fulfill this requirement. 
+
+This branch aims to the generalise the blackout period tool, by introducing a new measure called ‘expected returns’ 
+to control the range of option prices (of all types) across strike/barrier prices. 
+
+For an x% expected return input, all **non-ATM** intraday contracts (< 5 hours) spanning a tentative period are re-priced as follow:
+ 
+-   Binary calls at strike prices K will be priced as binary calls at strike prices K*(1-x%)
+ 
+-   Binary puts at strike prices K will be priced as binary puts at strike prices K*(1+x%)
+ 
+-   Touch options with upper barriers K will be priced as touch options with upper barriers K*(1-x%)
+
+-   Touch options with lower barriers K will be priced as touch options with lower barriers K*(1+x%)
+ 
+-   No-touch options with upper barriers K will be priced as no-touch options with upper barrier K*(1+x%)
+ 
+-   No-touch options with lower barriers K will be priced as no-touch options with lower barriers K*(1-x%)
+
+Note: The tool does not affect intraday **ATM** contracts.
+
+=cut
+
+sub _tentative_events_markup {
+    my $self = shift;
+    my $bet  = $self->bet;
+
+    #Don't calculate tentative event shfit if contract is ATM
+    #In this case, economic events markup will be calculated using normal formula
+    if ($bet->is_atm_bet) {
+        return Math::Util::CalculatedValue::Validatable->new({
+            name        => 'economic_events_volatility_risk_markup',
+            description => 'markup to account for volatility risk of economic events',
+            set_by      => __PACKAGE__,
+            base_amount => 0,
+        });
+    }
+
+    my $markup = 0;
+
+    my @barrier_args =
+          ($bet->two_barriers)
+        ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute)
+        : ($bet->barrier->as_absolute);
+
+    my @adjusted_barriers = map { $self->_get_barrier_for_tentative_events($_) } @barrier_args;
+
+    #if there is a change needed in the barriers due to tentative events:
+    my $barriers_changed = 0;
+    for my $i (0 .. scalar @barrier_args - 1) {
+        #barriers sometimes are numbers and somtime string. so using array_diff does not help
+        $barriers_changed = 1 if $barrier_args[$i] != $adjusted_barriers[$i];
+    }
+
+    if ($barriers_changed) {
+        my $type = $bet->code;
+        #For one-touch and no-touch, If barrier crosses the spot because of our barrier adjustments, just make sure prob will be 100%
+        if ($type eq 'ONETOUCH' or $type eq 'NOTOUCH') {
+            for my $i (0 .. scalar @barrier_args - 1) {
+                if (   ($barrier_args[$i] < $bet->pricing_spot and $adjusted_barriers[$i] >= $bet->pricing_spot)
+                    or ($barrier_args[$i] > $bet->pricing_spot and $adjusted_barriers[$i] <= $bet->pricing_spot))
+                {
+                    return Math::Util::CalculatedValue::Validatable->new({
+                        name        => 'economic_events_volatility_risk_markup',
+                        description => 'markup to account for volatility risk of economic events',
+                        set_by      => __PACKAGE__,
+                        base_amount => 1.0,
+                    });
+                }
+            }
+        }
+
+        my $barrier_hash = {};
+        if ($bet->two_barriers) {
+            $barrier_hash->{high_barrier} = $adjusted_barriers[0];
+            $barrier_hash->{low_barrier}  = $adjusted_barriers[1];
+        } else {
+            $barrier_hash->{barrier} = $adjusted_barriers[0];
+        }
+
+        my $new_bet = BOM::Product::ContractFactory::make_similar_contract($bet, $barrier_hash);
+        my $new_prob = $new_bet->pricing_engine->base_probability;
+
+        $new_prob = $new_prob->amount if Scalar::Util::blessed($new_prob) && $new_prob->isa('Math::Util::CalculatedValue::Validatable');
+
+        $markup = max(0, $new_prob - $self->base_probability->amount);
+    }
+
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'economic_events_volatility_risk_markup',
+        description => 'markup to account for volatility risk of economic events',
+        set_by      => __PACKAGE__,
+        base_amount => $markup,
+    });
+}
+
+sub _get_barrier_for_tentative_events {
+    my $self    = shift;
+    my $barrier = shift;
+
+    my $bet = $self->bet;
+
+    #When pricing options during the news event period, the tentative event  shifts the strikes/barriers so that prices are marked up. Here are examples for each contract type:
+    #A binary call strike = 105 and an tentative event  of 2% will be priced as a binary call strike = 105/(1+2%)
+    #A binary put strike = 105 and an tentative event shift of 2% will be priced as a binary put strike = 105*(1+2%)
+    #A touch (upper) barrier = 105 and an tentative event shift of 2% will be priced as a touch barrier = 105/(1+2%)
+    #A touch (lower) barrier = 105 and an tentative event shift of 2% will be priced as a touch barrier = 105*(1+2%)
+    #A no-touch (upper) barrier = 105 and an tentative event shift of 2% will be priced as a no-touch barrier = 105*(1+2%)
+    #A no-touch (lower) barrier = 105 and an tentative event shift of 2% will be priced as a no-touch barrier = 105/(1+2%)
+    #get a list of applicable tentative economic events
+    my $tentative_events = $bet->tentative_events;
+
+    my $tentative_event_shift = 0;
+
+    foreach my $event (@{$tentative_events}) {
+        #We add-up all tentative event shfit  applicable for any of symbols of the currency pair
+        if ($event->{symbol} eq $bet->underlying->asset_symbol) {
+            $tentative_event_shift += $event->{tentative_event_shift};
+        } elsif ($event->{symbol} eq $bet->underlying->quoted_currency_symbol) {
+            $tentative_event_shift += $event->{tentative_event_shift};
+        }
+    }
+
+    $tentative_event_shift /= 100;
+
+    my $er_factor = 1 + $tentative_event_shift;
+    my $barrier_u = $barrier >= $bet->pricing_spot;
+    my $barrier_d = $barrier <= $bet->pricing_spot;
+    my $type      = $bet->code;
+
+    #final barrier is either "Barrier * (1+ER)" or "Barrier * (1-ER)"
+    if ((
+               $type eq 'CALL'
+            or $type eq 'CALLE'
+        )
+        or ($type eq 'ONETOUCH'     && $barrier_u)
+        or ($type eq 'NOTOUCH'      && $barrier_d)
+        or ($type eq 'EXPIRYRANGE'  && $barrier_u)
+        or ($type eq 'EXPIRYRANGEE' && $barrier_u)
+        or ($type eq 'EXPIRYMISS'   && $barrier_d)
+        or ($type eq 'EXPIRYMISSE'  && $barrier_d)
+        or ($type eq 'RANGE'        && $barrier_d)
+        or ($type eq 'UPORDOWN'     && $barrier_u))
+    {
+
+        $er_factor = 1 - $tentative_event_shift;
+    }
+
+    $barrier *= $er_factor;
+
+    return $barrier;
 }
 
 has ticks_for_trend => (
@@ -681,23 +841,30 @@ has [qw(economic_events_volatility_risk_markup economic_events_spot_risk_markup)
 sub _build_economic_events_volatility_risk_markup {
     my $self = shift;
 
-    my $markup_base_amount = 0;
-    # since we are parsing in both vols now, we just check for difference in vol to determine if there's a markup
-    if ($self->pricing_vol != $self->news_adjusted_pricing_vol) {
-        my $tv_without_news = $self->base_probability->amount;
-        my $tv_with_news    = $self->clone({
-                pricing_vol    => $self->news_adjusted_pricing_vol,
-                intraday_trend => $self->intraday_trend,
-            })->base_probability->amount;
-        $markup_base_amount = max(0, $tv_with_news - $tv_without_news);
-    }
+    my $markup;
+    my $tentative_events_markup = $self->_tentative_events_markup;
 
-    my $markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'economic_events_volatility_risk_markup',
-        description => 'markup to account for volatility risk of economic events',
-        set_by      => __PACKAGE__,
-        base_amount => $markup_base_amount,
-    });
+    if ($tentative_events_markup->amount != 0) {
+        $markup = $tentative_events_markup;
+    } else {
+        my $markup_base_amount = 0;
+        # since we are parsing in both vols now, we just check for difference in vol to determine if there's a markup
+        if ($self->pricing_vol != $self->news_adjusted_pricing_vol) {
+            my $tv_without_news = $self->base_probability->amount;
+            my $tv_with_news    = $self->clone({
+                    pricing_vol    => $self->news_adjusted_pricing_vol,
+                    intraday_trend => $self->intraday_trend,
+                })->base_probability->amount;
+            $markup_base_amount = max(0, $tv_with_news - $tv_without_news);
+        }
+
+        $markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'economic_events_volatility_risk_markup',
+            description => 'markup to account for volatility risk of economic events',
+            set_by      => __PACKAGE__,
+            base_amount => $markup_base_amount,
+        });
+    }
 
     return $markup;
 }

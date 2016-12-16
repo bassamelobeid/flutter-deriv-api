@@ -72,7 +72,7 @@ subtest 'disable underlying due to corporate action' => sub {
     my $orig = BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions;
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions(['frxAUDUSD']);
     $bet_params->{underlying} = 'frxAUDUSD';
-    $bet_params->{barrier}             = 'S0P'; 
+    $bet_params->{barrier}    = 'S0P';
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->{message}, qr/suspended due to corporate actions/, 'Underlying suspended due to corporate action');
