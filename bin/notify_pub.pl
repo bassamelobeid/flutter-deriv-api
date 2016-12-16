@@ -94,7 +94,7 @@ sub _master_db_connections {
 sub _db {
     my $ip = shift;
     DBI->connect(
-        "dbi:Pg:dbname=regentmarkets;host=$ip;port=5432;application_name=notify_pub",
+        "dbi:Pg:dbname=regentmarkets;host=$ip;port=5432;application_name=notify_pub;sslmode=require",
         'write',
         $conn->{$ip},
         {
