@@ -8,16 +8,10 @@ has 'login_id' => (
     is => 'rw',
 );
 
-has 'qid' => (
-    is => 'rw',
-);
-
-has 'pass' => (
-    is => 'rw',
-);
-
-has 'test_id' => (
-    is => 'rw',
+has questions => (
+    is      => 'rw',
+    isa     => 'ArrayRef',
+    default => sub { [] },
 );
 
 has 'db' => (
@@ -28,8 +22,22 @@ has 'db' => (
 sub record_questions_answered {
     my $self = shift;
 
-    $self->db->dbh->do('INSERT INTO questions_answered (loginid,qid,pass,test_id) values(?,?,?,?)',
-        undef, $self->login_id, $self->qid, $self->pass, $self->test_id);
+    $self->db->dbh->{AutoCommit} = 0;
+
+    my $insert_sth = $dbh->prepare(
+        q{
+        INSERT INTO data_collection.questions_answered (loginid,qid,answer, pass,test_id, question_presented, category) values(?,?,?,?,?,?)
+    }
+    );
+
+    for my $question (@{$self->questions}) {
+
+        $insert_sth->execute($self->loginid, $question->qid, $question->answer, $question->pass, $self->testid, $question->question,
+            $question->category);
+
+    }
+
+    $self->db->dbh->commit;
 
     return 1;
 }
