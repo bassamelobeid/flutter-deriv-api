@@ -130,6 +130,16 @@ sub cashier {
         });
     }
 
+    if (   $client->landing_company->country ne 'Costa Rica'
+        && !$client->get_status('age_verification')
+        && !$client->has_valid_documents)
+    {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'ASK_AGE_VERIFICATION',
+            message_to_client => localize('Account needs age verification'),
+        });
+    }
+
     my $error = '';
     if ($action eq 'deposit' and $client->get_status('unwelcome')) {
         $error = localize('Your account is restricted to withdrawals only.');
