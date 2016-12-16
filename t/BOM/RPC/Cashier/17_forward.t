@@ -232,7 +232,7 @@ subtest 'landing_companies_specific' => sub {
         ->has_no_system_error->has_error->error_code_is('JP_NOT_ACTIVATION', 'Japan residence needs account activation')
         ->error_message_is('Account not activated.', 'Japan residence needs account activation');
 
-    $client_jp->clr_status('jp_activiation_pending');
+    $client_jp->clr_status('jp_activation_pending');
     $client_jp->save;
     $rpc_ct->call_ok($method, $params)
       ->has_no_system_error->has_error->error_code_is('ASK_AGE_VERIFICATION', 'need age verification')
