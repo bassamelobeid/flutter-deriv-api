@@ -118,7 +118,7 @@ sub _process_incoming_messages {
         my $tick_yml  = zmq_msg_data($msg);
         my $tick      = try { Load($tick_yml) };
         my $timestamp = delete $tick->{timestamp};
-        stats_timing('feed.latency.client_entry', int(1000 * (Time::HiRes::time - $timestamp)))
+        stats_timing('feed.decimate.client_entry', int(1000 * (Time::HiRes::time - $timestamp)))
             if $timestamp;
         zmq_msg_close($msg);
         next unless $tick;    # invalid yaml
