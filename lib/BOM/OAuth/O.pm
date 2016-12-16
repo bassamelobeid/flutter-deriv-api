@@ -32,6 +32,8 @@ sub authorize {
 
     $app_id or return $c->__bad_request('the request was missing app_id');
 
+    # need to remove this once we confirm that no one is using
+    # it, added warn below to confirm
     my $id_map = {
         'binarycom'                        => 1,
         'binary-expiryd'                   => 2,
@@ -75,6 +77,7 @@ sub authorize {
     };
 
     if ($app_id !~ /^\d+$/ and exists $id_map->{$app_id}) {
+        warn "Using old app id - $app_id, if this warning comes inform marketing to contact app developer";
         $app_id = $id_map->{$app_id};
     }
     return $c->__bad_request('the request was missing valid app_id') if ($app_id !~ /^\d+$/);
