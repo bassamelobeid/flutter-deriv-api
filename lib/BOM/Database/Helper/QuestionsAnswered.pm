@@ -8,6 +8,10 @@ has 'login_id' => (
     is => 'rw',
 );
 
+has 'test_id' => (
+    is => 'rw',
+);
+
 has questions => (
     is      => 'rw',
     isa     => 'ArrayRef',
@@ -31,8 +35,7 @@ sub record_questions_answered {
     );
 
     for my $question (@{$self->questions}) {
-
-        $insert_sth->execute($self->loginid, $question->qid, $question->answer, $question->pass, $self->testid, $question->question,
+        $insert_sth->execute($self->login_id, $question->qid, $question->answer, $question->pass, $self->test_id, $question->question,
             $question->category);
 
     }
