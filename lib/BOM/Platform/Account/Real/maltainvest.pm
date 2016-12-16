@@ -4,8 +4,8 @@ use strict;
 use warnings;
 
 use JSON qw(encode_json);
-use LandingCompany::Countries;
 
+use Brands;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Email qw(send_email);
 use BOM::System::Config;
@@ -19,7 +19,7 @@ sub _validate {
 
     # also allow MLT UK client to open MF account
     my $from_client = $args->{from_client};
-    my $company = LandingCompany::Countries->new(brand => request()->brand)->financial_company_for_country($from_client->residence) // '';
+    my $company = Brands->new(name => request()->brand)->landing_company_countries->financial_company_for_country($from_client->residence) // '';
     return if ($company eq 'maltainvest' or ($from_client->residence eq 'gb' and $from_client->landing_company->short eq 'malta'));
 
     warn("maltainvest acc opening err: loginid:" . $from_client->loginid . " residence:" . $from_client->residence . " financial_company:$company");
