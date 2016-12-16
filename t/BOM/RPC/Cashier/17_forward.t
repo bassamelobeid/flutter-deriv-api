@@ -205,6 +205,12 @@ subtest 'landing_companies_specific' => sub {
         ->has_no_system_error->has_error->error_code_is('ASK_UK_FUNDS_PROTECTION', 'GB residence needs to accept fund protection')
         ->error_message_is('Please accept Funds Protection.', 'GB residence needs to accept fund protection');
 
+    $client_mx->set_status('financial_risk_approval', 'system', 'set for test');
+    $client_mx->save;
+    $rpc_ct->call_ok($method, $params)
+      ->has_no_system_error->has_error->error_code_is('ASK_AGE_VERIFICATION', 'need age verification')
+      ->error_message_is('Account needs age verification', 'need verification');
+
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_jp->loginid, 'test token');
     $client_jp->set_default_account('JPY');
     $client_jp->residence('jp');
@@ -236,10 +242,7 @@ subtest 'landing_companies_specific' => sub {
 
 subtest 'all status are covered' => sub {
     my $all_status     = Client::Account::client_status_types;
-    my %all_status     = %$all_status;
-    my @ignored_status = qw(age_verification);
-    delete @all_status{@ignored_status};
-    fail("missing status $_") for sort grep !exists $seen{$_}, keys %all_status;
+    fail("missing status $_") for sort grep !exists $seen{$_}, keys %$all_status;
     pass("ok to prevent warning 'no tests run");
     done_testing();
 };
