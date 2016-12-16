@@ -174,11 +174,13 @@ sub jp_knowledge_test {
     $jp_client->financial_assessment({data => encode_json($financial_data)});
 
     #save the questions here.
-    my $questions_ans = BOM::Database::Helper::QuestionsAnswered->new({
-        login_id  => $client->loginid,
-        questions => $questions,
-        db        => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
-    });
+    if ($questions) {
+        my $questions_ans = BOM::Database::Helper::QuestionsAnswered->new({
+            login_id  => $client->loginid,
+            questions => $questions,
+            db        => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
+        });
+    }
 
     if (not $jp_client->save()) {
         return BOM::RPC::v3::Utility::create_error({
