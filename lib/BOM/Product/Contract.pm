@@ -637,17 +637,17 @@ sub _build_engine_ask_probability {
         my $fixed_vol = $self->has_pricing_vol || $self->underlying->volatility_surface_type eq 'flat';
 
         %pricing_parameters = (
-            contract_type            => $self->pricing_code,
-            for_date                 => $self->underlying->for_date,
-            spot                     => $self->pricing_spot,
-            strikes                  => [grep { $_ } values %{$self->barriers_for_pricing}],
-            date_start               => $self->effective_start,
-            chronicle_reader         => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
-            date_pricing             => $self->date_pricing,
-            date_expiry              => $self->date_expiry,
-            discount_rate            => $self->discount_rate,
-            mu                       => $self->mu,
-            ($fixed_vol ? (vol  => $self->pricing_vol):()),
+            contract_type    => $self->pricing_code,
+            for_date         => $self->underlying->for_date,
+            spot             => $self->pricing_spot,
+            strikes          => [grep { $_ } values %{$self->barriers_for_pricing}],
+            date_start       => $self->effective_start,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
+            date_pricing     => $self->date_pricing,
+            date_expiry      => $self->date_expiry,
+            discount_rate    => $self->discount_rate,
+            mu               => $self->mu,
+            ($fixed_vol ? (vol => $self->pricing_vol) : ()),
             payouttime_code          => $self->payouttime_code,
             q_rate                   => $self->q_rate,
             r_rate                   => $self->r_rate,
@@ -659,15 +659,15 @@ sub _build_engine_ask_probability {
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::BlackScholes') {
         %pricing_parameters = (
-            strikes                  => [grep { $_ } values %{$self->barriers_for_pricing}],
-            spot                     => $self->pricing_spot,
-            t                        => $self->timeinyears->amount,
-            discount_rate            => $self->discount_rate,
-            mu                       => $self->mu,
-            payouttime_code          => $self->payouttime_code,
-            payout_type              => $self->payout_type,
-            contract_type            => $self->pricing_code,
-            vol                      => $self->pricing_vol,
+            strikes         => [grep { $_ } values %{$self->barriers_for_pricing}],
+            spot            => $self->pricing_spot,
+            t               => $self->timeinyears->amount,
+            discount_rate   => $self->discount_rate,
+            mu              => $self->mu,
+            payouttime_code => $self->payouttime_code,
+            payout_type     => $self->payout_type,
+            contract_type   => $self->pricing_code,
+            vol             => $self->pricing_vol,
         );
     } else {
         die "Unknown pricing engine: " . $self->pricing_engine_name;
@@ -688,12 +688,12 @@ sub _build_pricing_engine {
     return if $self->new_interface_engine;
 
     my $pricing_engine = $self->pricing_engine_name->new({
-            bet                     => $self,
-            apply_bounceback_safety => !$self->for_sale,
-            inefficient_period      => $self->market_is_inefficient,
-            inactive_period         => $self->market_is_inactive,
-            $self->priced_with_intraday_model ? (economic_events => $self->economic_events_for_volatility_calculation) : (),
-        });
+        bet                     => $self,
+        apply_bounceback_safety => !$self->for_sale,
+        inefficient_period      => $self->market_is_inefficient,
+        inactive_period         => $self->market_is_inactive,
+        $self->priced_with_intraday_model ? (economic_events => $self->economic_events_for_volatility_calculation) : (),
+    });
 
     return $pricing_engine;
 }
