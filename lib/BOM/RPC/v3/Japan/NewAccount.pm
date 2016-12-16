@@ -172,9 +172,7 @@ sub jp_knowledge_test {
     $financial_data->{jp_knowledge_test} = $results;
     $jp_client->financial_assessment({data => encode_json($financial_data)});
 
-    foreach $question (@$questions) {
-	#process the question here
-    }
+    #save the questions here.
 
     if (not $jp_client->save()) {
         return BOM::RPC::v3::Utility::create_error({
