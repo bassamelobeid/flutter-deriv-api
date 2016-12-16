@@ -180,6 +180,8 @@ sub jp_knowledge_test {
             questions => $questions,
             db        => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
         });
+
+        $questions_ans->record_questions_answered;
     }
 
     if (not $jp_client->save()) {
