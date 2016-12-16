@@ -6,14 +6,20 @@ use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
 
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use Date::Utility;
 use BOM::Test::RPC::Client;
+use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods);
 
 use utf8;
 
 set_absolute_time(Date::Utility->new('2016-03-18 00:00:00')->epoch);
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'frxUSDJPY',
+    epoch      => Date::Utility->new->minus_time_interval('100d')->epoch,
+});
 
 my ($t, $rpc_ct);
 my $method = 'contracts_for';
@@ -40,10 +46,10 @@ subtest "Request $method" => sub {
     ok @{$result->{available}}, 'It should return available contracts';
     ok !grep { $_->{contract_type} =~ /^(CALL|PUT|EXPIRYMISS|EXPIRYRANGE)E$/ } @{$result->{available}};
 
+    generate_trading_periods('frxUSDJPY');
     $params[1]{args}{region}        = 'japan';
     $params[1]{args}{contracts_for} = 'frxUSDJPY';
     $result                         = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
-
     is_deeply [sort keys %{$result}],
         [sort qw/ available close open hit_count spot feed_license /],
         'It should return contracts_for object for japan region';
