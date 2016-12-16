@@ -19,6 +19,13 @@ use BOM::Product::Contract::Strike;
 use base qw( Exporter );
 our @EXPORT_OK = qw(available_contracts_for_symbol);
 
+my %equal_contracts = (
+    CALLE        => 1,
+    PUTE         => 1,
+    EXPIRYRANGEE => 1,
+    EXPIRYMISSE  => 1,
+);
+
 sub available_contracts_for_symbol {
     my $args            = shift;
     my $symbol          = $args->{symbol} || die 'no symbol';
@@ -34,7 +41,7 @@ sub available_contracts_for_symbol {
     }
 
     my $flyby = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $landing_company);
-    my @offerings = $flyby->query({underlying_symbol => $symbol});
+    my @offerings = grep { !$equal_contracts{$_->{contract_type}} } $flyby->query({underlying_symbol => $symbol});
 
     for my $o (@offerings) {
         my $cc = $o->{contract_category};
