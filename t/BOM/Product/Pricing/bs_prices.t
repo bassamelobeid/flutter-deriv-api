@@ -123,7 +123,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                             push @codes, $c->barrier->as_absolute;
                         }
                         my $code = join '_', @codes;
-                        isa_ok $c->pricing_engine, 'Pricing::Engine::BlackScholes';
+                        isa_ok $c->pricing_engine_name, 'Pricing::Engine::BlackScholes';
                         is roundnear(0.00001, $c->theo_probability->amount), roundnear(0.00001, $expectation->{$code}),
                             'theo probability matches [' . $code . " - " . $c->shortcode . ']';
                     }
