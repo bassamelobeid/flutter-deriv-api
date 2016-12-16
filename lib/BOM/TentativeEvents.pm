@@ -26,10 +26,10 @@ sub generate_tentative_events_form {
         sort { $a->{estimated_release_date} <=> $b->{estimated_release_date} }
         grep { Date::Utility->new($_->{estimated_release_date})->is_after(Date::Utility->new->minus_time_interval('1d')) } map {
         my $event = $events->{$_};
-        $event->{release_date}    = Date::Utility->new($event->{estimated_release_date});
-        $event->{date}            = $event->{release_date}->date_ddmmmyyyy;
-        $event->{blankout}        = Date::Utility->new($event->{blankout})->time_hhmm if $event->{blankout};
-        $event->{blankout_end}    = Date::Utility->new($event->{blankout_end})->time_hhmm if $event->{blankout_end};
+        $event->{release_date} = Date::Utility->new($event->{estimated_release_date});
+        $event->{date}         = $event->{release_date}->date_ddmmmyyyy;
+        $event->{blankout}     = Date::Utility->new($event->{blankout})->time_hhmm if $event->{blankout};
+        $event->{blankout_end} = Date::Utility->new($event->{blankout_end})->time_hhmm if $event->{blankout_end};
         $event;
         } keys %$events;
     my $form = '';
@@ -71,8 +71,8 @@ sub update_event {
 
     my $existing = $events->{$params->{id}};
     my $rd       = Date::Utility->new($existing->{estimated_release_date});
-    $existing->{blankout}        = $rd->plus_time_interval("$b1[0]h$b1[1]m")->epoch;
-    $existing->{blankout_end}    = $rd->plus_time_interval("$b2[0]h$b2[1]m")->epoch;
+    $existing->{blankout}              = $rd->plus_time_interval("$b1[0]h$b1[1]m")->epoch;
+    $existing->{blankout_end}          = $rd->plus_time_interval("$b2[0]h$b2[1]m")->epoch;
     $existing->{tentative_event_shift} = $params->{tentative_event_shift};
 
     my $diff = $existing->{blankout_end} - $existing->{blankout};
