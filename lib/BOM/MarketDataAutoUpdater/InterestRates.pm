@@ -83,7 +83,6 @@ sub _passes_sanity_check {
     my @iv_symbols = create_underlying_db->get_symbols_for(
         market            => 'forex, commodities',
         contract_category => 'IV',
-        broker            => 'FOG',
     );
     my $offers_iv = grep { $symbol =~ /$_/ } @iv_symbols;
     my $required_iv_terms = notall { defined $data->{$_} } qw(30 90 180);
