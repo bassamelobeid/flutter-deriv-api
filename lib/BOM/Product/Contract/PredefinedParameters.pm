@@ -404,19 +404,41 @@ sub _get_strike_from_call_bs_price {
 
 sub _get_intraday_trading_window {
     my ($underlying, $date) = @_;
+    my @intraday_windows;
 
     my $start_of_day = $date->truncate_to_day;
-    my ($hour, $minute, $date_str) = ($date->hour, $date->minute, $date->date);
+    my ($current_hour, $minute, $date_str) = ($date->hour, $date->minute, $date->date);
 
-    $hour = $minute < 45 ? $hour : $hour + 1;
+    my $hour = $minute < 45 ? $current_hour : $current_hour + 1;
     my $even_hour = $hour - ($hour % 2);
+
+    # We only want odd hour of 1, 5, 9, 13
+    my $odd_hour = ($hour % 2) ? $hour : $hour - 1;
+    $odd_hour = $odd_hour % 4 == 1 ? $odd_hour : $odd_hour - 2;
+
     # We did not offer intraday contract after NY16. However, we turn on these three pairs on Japan
     my @skips_hour = (first { $_ eq $underlying->symbol } qw(frxUSDJPY frxAUDJPY frxAUDUSD)) ? (18, 20) : (18, 20, 22);
     my $skips_intraday = first { $even_hour == $_ } @skips_hour;
 
-    return () if $skips_intraday;
+    # At 17:45GMT, we should still have the one that expired on 18GMT
+    if ($even_hour == 18 and $current_hour == 17) {
+        push @intraday_windows,
+            _get_intraday_window({
+                now        => $date,
+                date_start => $start_of_day->plus_time_interval(($even_hour - 2) . 'h'),
+                duration   => '2h'
+            });
 
-    my @intraday_windows;
+        push @intraday_windows,
+            _get_intraday_window({
+                now        => $date,
+                date_start => $start_of_day->plus_time_interval($odd_hour - 4 . 'h'),
+                duration   => '5h'
+            });
+
+    }
+
+    return @intraday_windows if $skips_intraday;
 
     my $window_2h = _get_intraday_window({
         now        => $date,
@@ -437,14 +459,23 @@ sub _get_intraday_trading_window {
     }
 
     push @intraday_windows, $window_2h;
+    if ($odd_hour >= 1 and $odd_hour < 17) {
+        push @intraday_windows,
+            _get_intraday_window({
+                now        => $date,
+                date_start => $start_of_day->plus_time_interval($odd_hour . 'h'),
+                duration   => '5h'
+            });
+    }
 
-    my $odd_hour = ($hour % 2) ? $hour : $hour - 1;
-    $odd_hour = $odd_hour % 4 == 1 ? $odd_hour : $odd_hour - 2;
-
-    if ($hour > 0 and $hour < 18 and $odd_hour != 21) {
-        push @intraday_windows, map { _get_intraday_window({now => $date, date_start => $_, duration => '5h'}) }
-            grep { $_->is_after($start_of_day) }
-            map { $start_of_day->plus_time_interval($_ . 'h') } ($odd_hour, $odd_hour - 4);
+    my $previous_odd_hour = $odd_hour - 4;
+    if ($previous_odd_hour >= 1 and $previous_odd_hour <= 13) {
+        push @intraday_windows,
+            _get_intraday_window({
+                now        => $date,
+                date_start => $start_of_day->plus_time_interval($previous_odd_hour . 'h'),
+                duration   => '5h'
+            });
     }
 
     return @intraday_windows;
