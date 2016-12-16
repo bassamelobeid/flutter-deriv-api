@@ -3,7 +3,7 @@ use Encode;
 
 use Format::Util::Strings qw( set_selected_item );
 use Date::Utility;
-use LandingCompany::Countries;
+use Brands;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
@@ -53,7 +53,7 @@ sub print_client_details {
 
     my @countries;
     my $country_codes = {};
-    my $lc_countries  = LandingCompany::Countries->new()->countries;
+    my $lc_countries = Brands->new(name => request()->brand)->landing_company_countries->countries;
     foreach my $country_name (sort $lc_countries->all_country_names) {
         push @countries, $country_name;
         $country_codes->{$country_name} = $lc_countries->code_from_country($country_name);

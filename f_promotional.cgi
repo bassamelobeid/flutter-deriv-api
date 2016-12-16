@@ -6,7 +6,7 @@ use Locale::Country;
 use DateTime;
 use JSON;
 use File::stat qw( stat );
-use LandingCompany::Countries;
+use Brands;
 
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
@@ -139,7 +139,8 @@ if (@$pcs) {
         my $amount = $pc_currency . $pc->{_json}->{amount};
 
         my @countries =
-            map { /ALL/ ? 'ALL' : LandingCompany::Countries->new()->countries->country_from_code($_) } split(/,/, $pc->{_json}->{country});
+            map { /ALL/ ? 'ALL' : Brands->new(name => request()->brand)->landing_company_countries->countries->country_from_code($_) }
+            split(/,/, $pc->{_json}->{country});
 
         my $href = request()->url_for(
             'backoffice/promocode_edit.cgi',
