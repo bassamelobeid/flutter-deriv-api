@@ -15,6 +15,7 @@ use BOM::Platform::User;
 use BOM::System::Config;
 use BOM::Platform::Context qw (localize);
 use BOM::System::AuditLog;
+use BOM::Database::Helper::QuestionsAnswered;
 use LandingCompany::Registry;
 
 sub get_jp_account_status {
@@ -173,6 +174,11 @@ sub jp_knowledge_test {
     $jp_client->financial_assessment({data => encode_json($financial_data)});
 
     #save the questions here.
+    my $questions_ans = BOM::Database::Helper::QuestionsAnswered->new({
+        login_id  => $client->loginid,
+        questions => $questions,
+        db        => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
+    });
 
     if (not $jp_client->save()) {
         return BOM::RPC::v3::Utility::create_error({
