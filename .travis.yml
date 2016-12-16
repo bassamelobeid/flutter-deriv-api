@@ -1,7 +1,6 @@
 language: perl
 perl:
     - "5.14.2-thr"
-    - "5.24"
 matrix:
     fast_finish: true
 env:
