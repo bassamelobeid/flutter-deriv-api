@@ -19,12 +19,20 @@ use Postgres::FeedDB::Spot::Tick;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::MarketData qw(create_underlying);
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
 my $spot             = 79.08;
 my $bet_start        = Date::Utility->new('2012-02-01 01:00:00');
 my $underlying       = create_underlying('frxUSDJPY');
 my $longterm_expiry  = Date::Utility->new($bet_start->epoch + 7 * 86400);
 my $shortterm_expiry = Date::Utility->new($bet_start->epoch + 23 * 3540);
+
+#insert this tick into feed-db so everywhere when they want to fetch data
+#like vol, the vol-surface can fetch the underlying's spot_tick
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $bet_start->epoch,
+        quote      => $spot,
+    });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -174,6 +182,8 @@ sub _sample_bet {
         epoch  => 1,
         symbol => $underlying->symbol,
     );
+
+
 
     my %bet_args = ((
             underlying   => $underlying->symbol,

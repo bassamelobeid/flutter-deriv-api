@@ -1412,7 +1412,6 @@ sub _build_risk_markup {
     my $self = shift;
 
     my $base_amount = 0;
-    $DB::single = 1;
     if ($self->pricing_engine and $self->pricing_engine->can('risk_markup')) {
         $base_amount = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->pricing_engine->risk_markup->amount;
     } elsif ($self->new_interface_engine) {

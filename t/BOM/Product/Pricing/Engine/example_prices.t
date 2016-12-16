@@ -234,7 +234,6 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
         is(roundnear(1e-4, $theo->amount), roundnear(1e-4, $expectations->{theo_prob}), 'Theo probability is correct for ' . $bet->pricing_engine_name);
         is(roundnear(1e-4, $bet->commission_markup->amount), $expectations->{commission_markup}, 'Commission markup is correct.');
         is(roundnear(1e-4, $bet->risk_markup->amount), roundnear(1e-4, $expectations->{risk_markup}), 'Risk markup is correctfor ' . $bet->pricing_engine_name);
-        $DB::single=1 if $bet->risk_markup->amount == 0 ;
         $date_pricing++;
         $date_start++;
 
