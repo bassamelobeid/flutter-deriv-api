@@ -151,7 +151,7 @@ sub jp_knowledge_test {
     }
 
     my $args = $params->{args};
-    my ($score, $status, $question) = @{$args}{'score', 'status', 'questions'};
+    my ($score, $status, $questions) = @{$args}{'score', 'status', 'questions'};
 
     $jp_client->clr_status($_) for ('jp_knowledge_test_pending', 'jp_knowledge_test_fail');
     if ($status eq 'pass') {
