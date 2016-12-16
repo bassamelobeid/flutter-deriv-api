@@ -12,7 +12,7 @@
     },
     "end": {
       "type": "string",
-      "pattern": "^(latest|\\d{10})$",
+      "pattern": "^(latest|\\d{1,10})$",
       "description": "Epoch value representing the end-datetime of the ticks. If non-numeric value (e.g. \"latest\", the end-datetime will be the latest available timestamp.",
       "required": "1"
     },
