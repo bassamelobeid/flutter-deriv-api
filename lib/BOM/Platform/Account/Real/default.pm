@@ -144,9 +144,10 @@ sub after_register_client {
         $client->set_status('disabled', 'system', 'client disabled as marked as UNTERR');
         $client->save;
         $client->add_note('UNTERR', "UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list.");
+        my $brand = Brands->new(name => request()->brand);
         send_email({
-            from    => BOM::System::Config::email_address('support'),
-            to      => BOM::System::Config::email_address('compliance'),
+            from    => $brand->email('support'),
+            to      => $brand->email('compliance'),
             subject => $client->loginid . ' marked as UNTERR',
             message => ["UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list."],
         });

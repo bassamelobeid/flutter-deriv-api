@@ -8,7 +8,6 @@ use JSON qw(encode_json);
 use Brands;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Email qw(send_email);
-use BOM::System::Config;
 use BOM::Platform::Context qw(request);
 
 sub _validate {
@@ -63,9 +62,10 @@ sub create_account {
     BOM::Platform::Account::Real::default::add_details_to_desk($client, $details);
 
     if ($financial_assessment->{total_score} > 59) {
+        my $brand = Brands->new(name => request()->brand);
         send_email({
-            from    => BOM::System::Config::email_address('support'),
-            to      => BOM::System::Config::email_address('compliance'),
+            from    => $brand->email('support'),
+            to      => $brand->email('compliance'),
             subject => $client->loginid . ' considered as professional trader',
             message =>
                 [$client->loginid . ' scored ' . $financial_assessment->{total_score} . ' and is therefore considered a professional trader.'],
