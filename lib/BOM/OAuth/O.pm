@@ -4,20 +4,19 @@ use Mojo::Base 'Mojolicious::Controller';
 use Date::Utility;
 use Try::Tiny;
 use Digest::MD5 qw(md5_hex);
-# login
 use Email::Valid;
 use Mojo::Util qw(url_escape);
 use List::MoreUtils qw(any firstval);
 
+use Brands;
+use Client::Account;
+use LandingCompany::Registry;
+
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize request);
-use Client::Account;
 use BOM::Platform::User;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
-use LandingCompany::Registry;
-use LandingCompany::Countries;
-use BOM::System::Config;
 
 sub __oauth_model {
     return BOM::Database::Model::OAuth->new;
@@ -352,9 +351,12 @@ sub __login {
                     if ($app->{id} eq '1') {
                         $message = localize(
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
-                            $client->email, $r->client_ip,
-                            LandingCompany::Countries->new(brand => request()->brand)->countries->country_from_code($country_code) // $country_code,
-                            $user_agent);
+                            $client->email,
+                            $r->client_ip,
+                            Brands->new(name => request()->brand)->landing_company_countries->countries->country_from_code($country_code)
+                                // $country_code,
+                            $user_agent
+                        );
                     } else {
                         $message = localize(
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3], browser: [_4] and app: [_5]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
@@ -362,7 +364,7 @@ sub __login {
                     }
 
                     send_email({
-                        from               => BOM::System::Config::email_address('support'),
+                        from               => Brands->new(name => request()->brand)->emails('support'),
                         to                 => $client->email,
                         subject            => localize('New Sign-In Activity Detected'),
                         message            => [$message],
