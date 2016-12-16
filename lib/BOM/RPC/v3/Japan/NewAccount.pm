@@ -177,6 +177,7 @@ sub jp_knowledge_test {
     if ($questions) {
         my $questions_ans = BOM::Database::Helper::QuestionsAnswered->new({
             login_id  => $client->loginid,
+            test_id   => time,
             questions => $questions,
             db        => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
         });
