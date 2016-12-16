@@ -11,7 +11,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 my $mock = Test::MockModule->new('BOM::Product::Contract::PredefinedParameters');
-$mock->mock('get_trading_periods', sub {[]});
+$mock->mock('get_trading_periods', sub { [] });
 use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
 use Cache::RedisDB;
@@ -31,10 +31,10 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now
     }) for qw(USD JPY JPY-USD);
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxUSDJPY',
-    epoch      => $_->epoch,
-    quote      => 100
-}) for ($now->minus_time_interval('100d'), $now);
+        underlying => 'frxUSDJPY',
+        epoch      => $_->epoch,
+        quote      => 100
+    }) for ($now->minus_time_interval('100d'), $now);
 
 my $bet_params = {
     underlying   => 'frxUSDJPY',

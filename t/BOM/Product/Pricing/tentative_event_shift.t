@@ -44,25 +44,24 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         recorded_date => $now,
         events        => [{
-                symbol       => 'USD',
-                release_date => $now->epoch,
-                blankout     => $blackout_start->epoch,
-                blankout_end => $blackout_end->epoch,
-                is_tentative => 1,
+                symbol                => 'USD',
+                release_date          => $now->epoch,
+                blankout              => $blackout_start->epoch,
+                blankout_end          => $blackout_end->epoch,
+                is_tentative          => 1,
                 tentative_event_shift => 0.02,
-                event_name   => 'Test tentative',
-                impact       => 5,
-            }
-        ,
-        {
-                symbol       => 'EUR',
-                release_date => $now->epoch,
-                blankout     => $blackout_start->epoch,
-                blankout_end => $blackout_end->epoch,
-                is_tentative => 1,
+                event_name            => 'Test tentative',
+                impact                => 5,
+            },
+            {
+                symbol                => 'EUR',
+                release_date          => $now->epoch,
+                blankout              => $blackout_start->epoch,
+                blankout_end          => $blackout_end->epoch,
+                is_tentative          => 1,
                 tentative_event_shift => 0.01,
-                event_name   => 'Test tentative',
-                impact       => 5,
+                event_name            => 'Test tentative',
+                impact                => 5,
             }
         ],
     });
@@ -76,34 +75,33 @@ my $contract_args = {
     date_pricing => $now,
     date_start   => $now,
     current_tick => Postgres::FeedDB::Spot::Tick->new({
-        symbol => 'frxEURUSD',
-        epoch  => $now->epoch,
-        quote  => 100,
-    })
-};
+            symbol => 'frxEURUSD',
+            epoch  => $now->epoch,
+            quote  => 100,
+        })};
 
 #key is "contract type_pip diff" and value is expected barrier(s)
 my $expected = {
-    'CALL_0'          => 55.8,
-    'CALL_1000'       => 65.27,
-    'NOTOUCH_0'       => 6.35,
-    'NOTOUCH_1000'    => 44.25,
-    'ONETOUCH_2000'   => 100,
-    'PUT_1000'        => 74.39,
-    'PUT_0'           => 55.84,
+    'CALL_0'        => 55.8,
+    'CALL_1000'     => 65.27,
+    'NOTOUCH_0'     => 6.35,
+    'NOTOUCH_1000'  => 44.25,
+    'ONETOUCH_2000' => 100,
+    'PUT_1000'      => 74.39,
+    'PUT_0'         => 55.84,
 };
 
 my $underlying = create_underlying('frxEURUSD');
-my $module = Test::MockModule->new('Quant::Framework::Underlying');
+my $module     = Test::MockModule->new('Quant::Framework::Underlying');
 $module->mock('spot_tick', sub { $contract_args->{current_tick} });
 
 foreach my $key (sort { $a cmp $b } keys %{$expected}) {
     my ($bet_type, $pip_diff) = split '_', $key;
 
-    $contract_args->{bet_type} = $bet_type;
-    $contract_args->{barrier} = 'S' . $pip_diff . 'P';
+    $contract_args->{bet_type}            = $bet_type;
+    $contract_args->{barrier}             = 'S' . $pip_diff . 'P';
     $contract_args->{pricing_engine_name} = 'BOM::Product::Pricing::Engine::Intraday::Forex';
-    $contract_args->{landing_company} = 'japan';
+    $contract_args->{landing_company}     = 'japan';
 
     my $c = produce_contract($contract_args);
 

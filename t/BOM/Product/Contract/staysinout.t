@@ -17,8 +17,8 @@ my $now = Date::Utility->new('10-Mar-2015');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        recorded_date   => $now,
+        symbol        => $_,
+        recorded_date => $now,
     }) for ('USD', 'JPY');
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

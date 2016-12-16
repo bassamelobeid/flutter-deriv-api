@@ -20,7 +20,7 @@ my $supported_symbol = 'frxUSDJPY';
 my $monday           = Date::Utility->new('2016-11-14');    # monday
 
 subtest 'non trading day' => sub {
-    my $saturday = Date::Utility->new('2016-11-19');                               # saturday
+    my $saturday = Date::Utility->new('2016-11-19');        # saturday
     generate_trading_periods($supported_symbol, $saturday);
     my $offerings = get_predefined_offerings($supported_symbol, $saturday);
     ok !@$offerings, 'no offerings were generated on non trading day';
@@ -134,7 +134,7 @@ subtest 'predefined barriers' => sub {
                 expiry_type       => 'intraday'
             },
             ticks => [[$date->minus_time_interval('100d')], [$date, 1.1521], [$date->plus_time_interval('10m'), 1.15591]],
-            available_barriers => [ 1.15141, 1.15241, 1.15341, 1.15471, 1.15591, 1.15711, 1.15841, 1.15941, 1.16041,],
+            available_barriers => [1.15141, 1.15241, 1.15341, 1.15471, 1.15591, 1.15711, 1.15841, 1.15941, 1.16041,],
             expired_barriers   => [],
         },
         {
@@ -150,39 +150,47 @@ subtest 'predefined barriers' => sub {
                 [$date->plus_time_interval(3),     1.15799],
                 [$date->plus_time_interval('10m'), 1.15591]
             ],
-            available_barriers => [ 1.13005, 1.13495, 1.13985, 1.14622, 1.15798, 1.16435, 1.16925, 1.17415,],
+            available_barriers => [1.13005, 1.13495, 1.13985, 1.14622, 1.15798, 1.16435, 1.16925, 1.17415,],
             expired_barriers   => [1.14622, 1.15798],
         },
         {
-             match => {
-                 contract_category => 'staysinout',
-                 duration          => '1W',
-                 expiry_type       => 'daily'
-             },
-             ticks => [
-                 [$date->minus_time_interval('100d')],
-                 [$date,                            1.1521],
-                 [$date->plus_time_interval(1),     1.13984],
-                 [$date->plus_time_interval(3),     1.15667],
-                 [$date->plus_time_interval('10m'), 1.15591]
-             ],
-             available_barriers => [ [1.13985, 1.16435], [1.13495, 1.16925], [1.13005, 1.17415]],
-             expired_barriers => [[1.13985, 1.16435]],
+            match => {
+                contract_category => 'staysinout',
+                duration          => '1W',
+                expiry_type       => 'daily'
+            },
+            ticks => [
+                [$date->minus_time_interval('100d')],
+                [$date,                            1.1521],
+                [$date->plus_time_interval(1),     1.13984],
+                [$date->plus_time_interval(3),     1.15667],
+                [$date->plus_time_interval('10m'), 1.15591]
+            ],
+            available_barriers => [[1.13985, 1.16435], [1.13495, 1.16925], [1.13005, 1.17415]],
+            expired_barriers => [[1.13985, 1.16435]],
         },
         {
-             match => {
-                 contract_category => 'endsinout',
-                 duration          => '1W',
-                 expiry_type       => 'daily'
-             },
-             ticks => [
-                 [$date->minus_time_interval('100d')],
-                 [$date,                            1.1521],
-                 [$date->plus_time_interval(1),     1.1520],
-                 [$date->plus_time_interval(3),     1.15667],
-                 [$date->plus_time_interval('10m'), 1.15591]
-             ],
-            available_barriers => [ [1.16435, 1.17415], [1.15798, 1.16925], ["1.15210", 1.16435], [1.14622, 1.15798], [1.13985, "1.15210"], [1.13495, 1.14622], [1.13005, 1.13985],],
+            match => {
+                contract_category => 'endsinout',
+                duration          => '1W',
+                expiry_type       => 'daily'
+            },
+            ticks => [
+                [$date->minus_time_interval('100d')],
+                [$date,                            1.1521],
+                [$date->plus_time_interval(1),     1.1520],
+                [$date->plus_time_interval(3),     1.15667],
+                [$date->plus_time_interval('10m'), 1.15591]
+            ],
+            available_barriers => [
+                [1.16435,   1.17415],
+                [1.15798,   1.16925],
+                ["1.15210", 1.16435],
+                [1.14622,   1.15798],
+                [1.13985,   "1.15210"],
+                [1.13495,   1.14622],
+                [1.13005,   1.13985],
+            ],
             expired_barriers => [],
         },
     );
@@ -200,42 +208,42 @@ subtest 'predefined barriers' => sub {
     foreach my $test (@inputs) {
         setup_ticks($symbol, $test->{ticks});
         my $offerings = get_predefined_offerings($symbol, $generation_date);
-        my $m        = $test->{match};
-        my $offering = first {
+        my $m         = $test->{match};
+        my $offering  = first {
             $_->{expiry_type} eq $m->{expiry_type}
                 and $_->{contract_category} eq $m->{contract_category}
                 and $_->{trading_period}->{duration} eq $m->{duration}
         }
         @$offerings;
-        my $testname = join '_', map {$m->{$_}} qw(contract_category expiry_type duration);
+        my $testname = join '_', map { $m->{$_} } qw(contract_category expiry_type duration);
         cmp_bag($offering->{available_barriers}, $test->{available_barriers}, 'available barriers for ' . $testname);
-        cmp_bag($offering->{expired_barriers},    $test->{expired_barriers},   'expired barriers for ' . $testname);
+        cmp_bag($offering->{expired_barriers},   $test->{expired_barriers},   'expired barriers for ' . $testname);
     }
 };
 
 subtest 'update_predefined_highlow' => sub {
-    my $now = Date::Utility->new;
+    my $now    = Date::Utility->new;
     my $symbol = 'frxUSDJPY';
     SKIP: {
         skip 'non trading day', 4, unless create_underlying($symbol)->calendar->trades_on($now);
-        setup_ticks($symbol,[[$now->minus_time_interval('100d'), 100], [$now, 69], [$now->plus_time_interval('10s'), 69.1]]);
+        setup_ticks($symbol, [[$now->minus_time_interval('100d'), 100], [$now, 69], [$now->plus_time_interval('10s'), 69.1]]);
         my $new_tick = {
             symbol => $symbol,
-            epoch => $now->plus_time_interval('30s')->epoch,
-            quote => 69.2
+            epoch  => $now->plus_time_interval('30s')->epoch,
+            quote  => 69.2
         };
         my $tp = generate_trading_periods($symbol);
         ok update_predefined_highlow($new_tick), 'updated highlow';
         my $offering = get_predefined_offerings($symbol);
-        my $touch = first {$_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M'} @$offering;
+        my $touch = first { $_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M' } @$offering;
         ok !scalar(@{$touch->{expired_barriers}}), 'no expired barrier detected';
         $new_tick->{epoch} += 1;
         $new_tick->{quote} = 125;
         ok update_predefined_highlow($new_tick), 'next update';
         $offering = get_predefined_offerings($symbol);
-        $touch = first {$_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M'} @$offering;
+        $touch = first { $_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M' } @$offering;
         ok scalar(@{$touch->{expired_barriers}}), 'expired barrier detected';
-    };
+    }
 };
 
 sub setup_ticks {
