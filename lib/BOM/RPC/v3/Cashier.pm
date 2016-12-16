@@ -21,7 +21,6 @@ use YAML::XS qw(LoadFile);
 use Brands;
 use Client::Account;
 use LandingCompany::Registry;
-use LandingCompany::Countries;
 use Client::Account::PaymentAgent;
 
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency in_USD);
@@ -425,7 +424,7 @@ sub paymentagent_list {
 
     # add country name plus code
     foreach (@{$countries}) {
-        $_->[1] = LandingCompany::Countries->new(brand => request()->brand)->countries->localized_code2country($_->[0], $language);
+        $_->[1] = Brands->new(name => request()->brand)->landing_company_countries->countries->localized_code2country($_->[0], $language);
     }
 
     my $authenticated_paymentagent_agents =

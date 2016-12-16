@@ -3,8 +3,7 @@ package BOM::RPC::v3::Static;
 use strict;
 use warnings;
 
-use LandingCompany::Countries;
-
+use Brands;
 use BOM::Platform::Runtime;
 use BOM::Platform::Locale;
 use BOM::Platform::Context qw (request);
@@ -13,7 +12,7 @@ use BOM::RPC::v3::Utility;
 sub residence_list {
     my $residence_countries_list;
 
-    my $lc_countries = LandingCompany::Countries->new(brand => request()->brand);
+    my $lc_countries = Brands->new(name => request()->brand)->landing_company_countries;
     my $countries = $lc_countries->countries;
     foreach my $country_selection (
         sort { $a->{translated_name} cmp $b->{translated_name} }

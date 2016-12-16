@@ -11,7 +11,6 @@ use Date::Utility;
 use Data::Password::Meter;
 use Brands;
 use Client::Account;
-use LandingCompany::Countries;
 use LandingCompany::Registry;
 
 use BOM::RPC::v3::Utility;
@@ -65,7 +64,7 @@ sub landing_company {
     my $params = shift;
 
     my $country  = $params->{args}->{landing_company};
-    my $configs  = LandingCompany::Countries->new(brand => request()->brand)->countries_list;
+    my $configs  = Brands->new(name => request()->brand)->landing_company_countries->countries_list;
     my $c_config = $configs->{$country};
     unless ($c_config) {
         ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
@@ -514,7 +513,8 @@ sub get_settings {
     if ($client->residence) {
         $country_code = $client->residence;
         $country =
-            LandingCompany::Countries->new(brand => request()->brand)->countries->localized_code2country($client->residence, $params->{language});
+            Brands->new(name => request()->brand)
+            ->landing_company_countries->countries->localized_code2country($client->residence, $params->{language});
     }
 
     my $client_tnc_status = $client->get_status('tnc_approval');
