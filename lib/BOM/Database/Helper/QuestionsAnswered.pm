@@ -24,7 +24,7 @@ sub record_questions_answered {
 
     $self->db->dbh->{AutoCommit} = 0;
 
-    my $insert_sth = $dbh->prepare(
+    my $insert_sth = $self->db->dbh->prepare(
         q{
         INSERT INTO data_collection.questions_answered (loginid,qid,answer, pass,test_id, question_presented, category) values(?,?,?,?,?,?)
     }
