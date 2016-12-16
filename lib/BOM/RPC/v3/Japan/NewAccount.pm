@@ -7,6 +7,8 @@ use JSON qw(from_json encode_json);
 use DateTime;
 use Date::Utility;
 
+use Brands;
+use LandingCompany::Registry;
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Locale;
 use BOM::Platform::Account::Real::japan;
@@ -15,7 +17,6 @@ use BOM::Platform::User;
 use BOM::System::Config;
 use BOM::Platform::Context qw (localize);
 use BOM::System::AuditLog;
-use LandingCompany::Registry;
 
 sub get_jp_account_status {
     my $client = shift;
@@ -216,7 +217,7 @@ support@binary.com',
         );
 
         send_email({
-            from               => BOM::System::Config::email_address('support'),
+            from               => Brands->new(name => request()->brand)->emails('support'),
             to                 => $client->email,
             subject            => localize('Kindly send us your documents for verification.'),
             message            => [$email_content],
@@ -393,7 +394,7 @@ sub set_jp_settings {
     $message .= "\n" . localize('The [_1] team.', $website_name);
 
     send_email({
-        from               => BOM::System::Config::email_address('support'),
+        from               => Brands->new(name => request()->brand)->emails('support'),
         to                 => $client->email,
         subject            => $client->loginid . ' ' . localize('Change in account settings'),
         message            => [$message],

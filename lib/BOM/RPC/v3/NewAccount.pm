@@ -10,6 +10,8 @@ use Data::Password::Meter;
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
+use Brands;
+use LandingCompany::Countries;
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
@@ -24,7 +26,6 @@ use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (localize request);
 use BOM::Database::Model::OAuth;
-use LandingCompany::Countries;
 
 sub _create_oauth_token {
     my $loginid = shift;
@@ -125,8 +126,8 @@ sub verify_email {
             );
 
         send_email({
-                from               => BOM::System::Config::email_address('support'),
-                to                 => $email,
+                from => Brands->new(name => request()->brand)->emails('support'),
+                to   => $email,
                 subject            => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
                 message            => [$message],
                 use_email_template => 1
@@ -135,8 +136,8 @@ sub verify_email {
 
     if (BOM::Platform::User->new({email => $email}) && $type eq 'reset_password') {
         send_email({
-                from    => BOM::System::Config::email_address('support'),
-                to      => $email,
+                from => Brands->new(name => request()->brand)->emails('support'),
+                to   => $email,
                 subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
                 message => [
                     BOM::Platform::Context::localize(
@@ -149,8 +150,8 @@ sub verify_email {
     } elsif ($type eq 'account_opening') {
         unless (BOM::Platform::User->new({email => $email})) {
             send_email({
-                    from    => BOM::System::Config::email_address('support'),
-                    to      => $email,
+                    from => Brands->new(name => request()->brand)->emails('support'),
+                    to   => $email,
                     subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
                     message => [
                         BOM::Platform::Context::localize(
@@ -162,8 +163,8 @@ sub verify_email {
                 });
         } else {
             send_email({
-                    from    => BOM::System::Config::email_address('support'),
-                    to      => $email,
+                    from => Brands->new(name => request()->brand)->emails('support'),
+                    to   => $email,
                     subject => BOM::Platform::Context::localize('A Duplicate Email Address Has Been Submitted - [_1]', $params->{website_name}),
                     message => [
                         '<div style="line-height:200%;color:#333333;font-size:15px;">'
