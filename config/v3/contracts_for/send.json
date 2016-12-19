@@ -18,7 +18,7 @@
         },
         "product_type":{
             "type":"string",
-            "description":"There are two trading platforms. Set to 'multi_barrier' to receive contracts with multi barrier trading. Defaults to 'basic'",
+            "description":"Set to 'multi_barrier' to get a list of contracts with predefined trading windows and barriers for a given symbol. Default to 'basic'",
             "pattern":"^(multi_barrier|basic)$",
             "default": "basic"
         },
