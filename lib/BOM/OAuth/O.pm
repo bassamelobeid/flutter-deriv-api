@@ -98,11 +98,11 @@ sub authorize {
 
         ## show login form
         return $c->render(
-            template => $app_id eq '1' ? 'loginbinary' : 'login',
-            layout => 'default',
-            app       => $app,
-            error     => $error,
-            r         => $c->stash('request'),
+            template => $app_id eq '1' ? 'binary/loginbinary' : 'binary/login',
+            layout   => 'binary/default',
+            app      => $app,
+            error    => $error,
+            r        => $c->stash('request'),
             csrftoken => $c->csrf_token,
         );
     }
@@ -137,8 +137,8 @@ sub authorize {
     unless ($is_all_approved) {
         ## show scope confirms
         return $c->render(
-            template => 'scope_confirms',
-            layout   => 'default',
+            template  => 'binary/scope_confirms',
+            layout    => 'binary/default',
             app       => $app,
             client    => $client,
             scopes    => \@scopes,
@@ -247,12 +247,11 @@ sub __login {
 
     if ($err) {
         $c->render(
-            template => $app->{id} eq '1' ? 'loginbinary' : 'login',
-            layout => 'default',
-
-            app       => $app,
-            error     => $err,
-            r         => $c->stash('request'),
+            template => $app->{id} eq '1' ? 'binary/loginbinary' : 'binary/login',
+            layout   => 'binary/default',
+            app      => $app,
+            error    => $err,
+            r        => $c->stash('request'),
             csrftoken => $c->csrf_token,
         );
         return;
