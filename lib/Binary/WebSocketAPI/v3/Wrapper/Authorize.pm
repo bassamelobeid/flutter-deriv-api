@@ -26,7 +26,7 @@ sub authorize_success {
 
     # Collect some information about this client if they didn't use an app_id,
     # but only log the warning once per unique case.
-    my @param = ($c->stash('account_id'), $c->country_code, $c->stash('client_ip'), $c->stash('user_agent'));
+    my @param = ($c->stash('account_id') // '(unknown account)', $c->country_code, $c->stash('client_ip'), $c->stash('user_agent') // '(none provided)');
     my $key = join "\0", @param;
     warn sprintf "[Missing app_id] Client %s from %s (%s), UA %s\n", @param
         unless $c->stash('source')
