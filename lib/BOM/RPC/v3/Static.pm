@@ -13,7 +13,8 @@ use BOM::RPC::v3::Utility;
 sub residence_list {
     my $residence_countries_list;
 
-    my $countries = LandingCompany::Countries->instance->countries;
+    my $lc_countries = LandingCompany::Countries->new(brand => request()->brand);
+    my $countries = $lc_countries->countries;
     foreach my $country_selection (
         sort { $a->{translated_name} cmp $b->{translated_name} }
         map { +{code => $_, translated_name => $countries->localized_code2country($_, request()->language)} } $countries->all_country_codes
@@ -33,7 +34,7 @@ sub residence_list {
             $phone_idd ? (phone_idd => $phone_idd) : ()};
 
         # to be removed later - JP
-        if (LandingCompany::Countries->instance->restricted_country($country_code) or $country_code eq 'jp') {
+        if ($lc_countries->restricted_country($country_code) or $country_code eq 'jp') {
             $option->{disabled} = 'DISABLED';
         } elsif (request()->country_code eq $country_code) {
             $option->{selected} = 'selected';

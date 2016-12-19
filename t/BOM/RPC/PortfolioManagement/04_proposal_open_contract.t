@@ -171,7 +171,7 @@ subtest $method => sub {
         $rpc_ct->call_ok(@params)->has_no_system_error->result_is_deeply({
                 $contract_id => {
                     error => {
-                        message_to_client => 'Sorry, an error occurred while processing your request.',
+                        message_to_client => 'Cannot create contract',
                         code              => 'GetProposalFailure',
                     },
                 },
@@ -179,7 +179,7 @@ subtest $method => sub {
             'Should return error instead contract data',
         );
     }
-    [qr/^Unhandled exception in get_bid/], "Expected warn about error contract producinng";
+    [qr/^BOM::RPC::v3::Contract get_bid produce_contract failed/], "Expected warn about error contract producinng";
 };
 
 done_testing();
