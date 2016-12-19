@@ -174,10 +174,10 @@ foreach my $loginID (keys %{$results}) {
 
 if ($email_notification) {
     my $brand = Brands->new(name => request()->brand);
-    my $email_to = join(',', ($brand->email('compliance'), $brand->email('accounting')));
+    my $email_to = join(',', ($brand->emails('compliance'), $brand->emails('accounting')));
 
     my $ret = send_email({
-        'from'    => $brand->email('system'),
+        'from'    => $brand->emails('system'),
         'to'      => $email_to,
         'subject' => 'Funds withdrawn for disabled accounts',
         'message' => ["To be informed that the funds have been withdrawn for the following disabled account(s):\n\n$email_notification"],

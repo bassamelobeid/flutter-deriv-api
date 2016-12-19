@@ -42,7 +42,7 @@ my $bet_ref  = request()->param('ref');
 my $subject;
 my @body;
 my $brand = Brands->new(name => request()->brand);
-my $to = $brand->email('alert_quants');
+my $to = $brand->emails('alert_quants');
 
 # Make transaction on client account
 if (request()->param('whattodo') eq 'closeatzero') {
@@ -124,7 +124,7 @@ if (request()->param('whattodo') eq 'closeatzero') {
     @body    = ("We manually closed the contract [Ref: $bet_ref] at price $currency 0 for client[$loginID]. \n");
 
     send_email({
-        from    => $brand->email('system'),
+        from    => $brand->emails('system'),
         to      => $to,
         subject => $subject,
         message => \@body,

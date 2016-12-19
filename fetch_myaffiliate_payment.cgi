@@ -94,8 +94,8 @@ if (not defined $pid) {
 
         my $brand = Brands->new(name => request()->brand);
         send_email({
-            from       => $brand->email('system'),
-            to         => $brand->email('affiliates'),
+            from       => $brand->emails('system'),
+            to         => $brand->emails('affiliates'),
             subject    => 'Fetch Myaffiliates payment info: (' . $from->date_yyyymmdd . ' - ' . $to->date_yyyymmdd . ')',
             message    => \@message,
             attachment => \@csv_file_locs,

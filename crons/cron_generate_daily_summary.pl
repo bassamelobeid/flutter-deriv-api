@@ -59,8 +59,8 @@ foreach my $broker (keys %{$total_pl}) {
 }
 my $brand = Brands->new(name => request()->brand);
 send_email({
-    'from'    => $brand->email('system'),
-    'to'      => $brand->email('accounting'),
+    'from'    => $brand->emails('system'),
+    'to'      => $brand->emails('accounting'),
     'subject' => 'Daily Outstanding Bets Profit / Lost [' . $run_for->date . ']',
     'message' => \@mail_msg,
 });

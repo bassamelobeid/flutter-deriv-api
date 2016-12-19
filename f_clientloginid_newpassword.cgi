@@ -61,7 +61,7 @@ BOM::Backoffice::Request::template->process(
     {
         'link'     => $link,
         'token'    => $token,
-        'helpdesk' => $brand->email('support')
+        'helpdesk' => $brand->emails('support')
     },
     \$lost_pass_email
 );
@@ -72,7 +72,7 @@ Bar('emailing change password link to ' . $loginID);
 print '<p class="success_message">Emailing change password link to ' . $client_name . ' at ' . $email . ' ...</p>';
 
 my $result = send_email({
-    from               => $brand->email('support'),
+    from               => $brand->emails('support'),
     to                 => $email,
     subject            => localize('New Password Request'),
     message            => [$lost_pass_email,],

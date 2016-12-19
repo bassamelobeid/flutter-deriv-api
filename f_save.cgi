@@ -234,8 +234,8 @@ if ($filen eq 'f_broker/promocodes.txt' and not BOM::System::Config::on_qa and $
     warn("promocodes.txt EDITED BY $clerk");
     my $brand = Brands->new(name => request()->brand);
     send_email({
-            from    => $brand->email('system'),
-            to      => $brand->email('compliance'),
+            from    => $brand->emails('system'),
+            to      => $brand->emails('compliance'),
             subject => "Promotional Codes edited by $clerk",
             message => ["$ENV{'REMOTE_ADDR'}\n$ENV{'HTTP_USER_AGENT'} \nDIFF=\n$diff", '================', 'NEW FILE=', @lines]});
 }

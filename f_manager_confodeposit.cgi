@@ -278,7 +278,7 @@ print "</form>";
 my $staffemail = $staff->{'email'};
 
 my $brand            = Brands->new(name => request()->brand);
-my $email_accountant = $brand->email('accounting');
+my $email_accountant = $brand->emails('accounting');
 my $toemail          = ($staffemail eq $email_accountant) ? "$staffemail" : "$staffemail,$email_accountant";
 
 if ($toemail && $informclient) {
@@ -292,7 +292,7 @@ if ($toemail && $informclient) {
         . localize('Kind Regards') . "\n\n"
         . 'Binary.com';
 
-    my $support_email = $brand->email('support');
+    my $support_email = $brand->emails('support');
 
     my $result = send_email({
         from               => $support_email,
