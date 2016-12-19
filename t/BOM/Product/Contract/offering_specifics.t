@@ -53,7 +53,11 @@ subtest '2-minute non ATM callput' => sub {
     $c = produce_contract({%$bet_params, landing_company => 'japan'});
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like $c->primary_validation_error->message, qr/barrier should be absolute/, 'throws error barrier type not correct';
-    $c = produce_contract({%$bet_params, landing_company => 'japan',barrier => '101.1'});
+    $c = produce_contract({
+        %$bet_params,
+        landing_company => 'japan',
+        barrier         => '101.1'
+    });
     ok $c->is_valid_to_buy, 'valid to buy';
     note('sets duration to 1m59s.');
     $c = produce_contract({
@@ -116,7 +120,12 @@ subtest '2-minute upordown' => sub {
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like $c->primary_validation_error->message, qr/trying unauthorised combination/, 'throws error duration not accepted.';
-    $c = produce_contract({%$bet_params, landing_company => 'japan', currency => 'JPY', payout => 1000});
+    $c = produce_contract({
+        %$bet_params,
+        landing_company => 'japan',
+        currency        => 'JPY',
+        payout          => 1000
+    });
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like $c->primary_validation_error->message, qr/barrier should be absolute/, 'throws error barrier type not correct';
     $c = produce_contract({
@@ -124,8 +133,8 @@ subtest '2-minute upordown' => sub {
         landing_company => 'japan',
         high_barrier    => '110',
         low_barrier     => '90',
-        currency => 'JPY',
-        payout => 1000,
+        currency        => 'JPY',
+        payout          => 1000,
     });
     ok $c->is_valid_to_buy, 'valid to buy';
     note('sets duration to 1m59s.');
@@ -153,8 +162,8 @@ subtest '2-minute expirymiss' => sub {
         landing_company => 'japan',
         high_barrier    => '110',
         low_barrier     => '90',
-        currency => 'JPY',
-        payout => 1000
+        currency        => 'JPY',
+        payout          => 1000
     });
     ok $c->is_valid_to_buy, 'valid to buy';
     note('sets duration to 1m59s.');
@@ -162,8 +171,8 @@ subtest '2-minute expirymiss' => sub {
         %$bet_params,
         duration        => '1m59s',
         landing_company => 'japan',
-        currency => 'JPY',
-        payout => 1000,
+        currency        => 'JPY',
+        payout          => 1000,
         high_barrier    => '110',
         low_barrier     => '90',
     });

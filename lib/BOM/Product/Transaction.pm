@@ -14,7 +14,7 @@ use Format::Util::Numbers qw(commas roundnear to_monetary_number_format);
 use Try::Tiny;
 use YAML::XS qw(LoadFile);
 
-use BOM::Platform::Context qw(localize);
+use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Runtime;
 use LandingCompany::Countries;
 use Client::Account;
@@ -1755,7 +1755,7 @@ sub __validate_jurisdictional_restrictions {
     my $loginid     = $client->loginid;
     my $market_name = $contract->market->name;
 
-    if (!$residence && $loginid !~ /^VRT/) {
+    if (!$residence && $loginid !~ /^VR/) {
         return Error::Base->cuss(
             -type              => 'NoResidenceCountry',
             -mesg              => 'Client cannot place contract as we do not know their residence.',
@@ -1783,7 +1783,7 @@ sub __validate_jurisdictional_restrictions {
         );
     }
 
-    if ($residence && $market_name eq 'volidx' && LandingCompany::Countries->instance->volidx_restricted_country($residence)) {
+    if ($residence && $market_name eq 'volidx' && LandingCompany::Countries->new(brand => request()->brand)->volidx_restricted_country($residence)) {
         return Error::Base->cuss(
             -type => 'RandomRestrictedCountry',
             -mesg => 'Clients are not allowed to place Volatility Index contracts as their country is restricted.',
@@ -1793,7 +1793,10 @@ sub __validate_jurisdictional_restrictions {
     }
 
     # For certain countries such as Belgium, we are not allow to sell financial product to them.
-    if ($residence && $market_name ne 'volidx' && LandingCompany::Countries->instance->financial_binaries_restricted_country($residence)) {
+    if (   $residence
+        && $market_name ne 'volidx'
+        && LandingCompany::Countries->new(brand => request()->brand)->financial_binaries_restricted_country($residence))
+    {
         return Error::Base->cuss(
             -type => 'FinancialBinariesRestrictedCountry',
             -mesg => 'Clients are not allowed to place financial products contracts as their country is restricted.',
