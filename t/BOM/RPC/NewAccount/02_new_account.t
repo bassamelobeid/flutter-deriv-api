@@ -94,7 +94,7 @@ subtest $method => sub {
     my $new_loginid = $rpc_ct->result->{client_id};
     ok $new_loginid =~ /^VRTC\d+/, 'new VR loginid';
     my $user = BOM::Platform::User->new({email => $email});
-    ok $user->utm_source =~ '^google\.com$', 'utm registered as expected';
+    ok $user->utm_source =~ '^google\.com$',               'utm registered as expected';
     ok $user->gclid_url =~ '^FQdb3wodOkkGBgCMrlnPq42q8C$', 'gclid value returned as expected';
     is $user->email_consent, undef, 'email consent not passed during account creation so its undef';
 

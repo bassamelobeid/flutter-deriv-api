@@ -12,7 +12,7 @@ use Data::Password::Meter;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::Japan::NewAccount;
-use BOM::Platform::Context qw (localize);
+use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
 use LandingCompany::Countries;
 use BOM::Platform::Email qw(send_email);
@@ -47,7 +47,13 @@ sub payout_currencies {
     if ($client) {
         $currencies = [$client->currency];
     } else {
-        my $lc = LandingCompany::Registry::get('costarica');
+        # We may have a landing company even if we're not logged in - typically this
+        # is obtained from the GeoIP country code lookup. If we have one, use it.
+        my $name = $params->{landing_company_name};
+        my $lc = LandingCompany::Registry::get($name || 'costarica');
+        # ... but we fall back to Costa Rica as a useful default, since it has most
+        # currencies enabled.
+        $lc ||= LandingCompany::Registry::get('costarica');
         $currencies = $lc->legal_allowed_currencies;
     }
 
@@ -58,7 +64,7 @@ sub landing_company {
     my $params = shift;
 
     my $country  = $params->{args}->{landing_company};
-    my $configs  = LandingCompany::Countries->instance->countries_list;
+    my $configs  = LandingCompany::Countries->new(brand => request()->brand)->countries_list;
     my $c_config = $configs->{$country};
     unless ($c_config) {
         ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
@@ -506,7 +512,8 @@ sub get_settings {
     $dob_epoch = Date::Utility->new($client->date_of_birth)->epoch if ($client->date_of_birth);
     if ($client->residence) {
         $country_code = $client->residence;
-        $country = LandingCompany::Countries->instance->countries->localized_code2country($client->residence, $params->{language});
+        $country =
+            LandingCompany::Countries->new(brand => request()->brand)->countries->localized_code2country($client->residence, $params->{language});
     }
 
     my $client_tnc_status = $client->get_status('tnc_approval');
@@ -802,9 +809,16 @@ sub set_self_exclusion {
 
     my $exclude_until = $args{exclude_until};
     if (defined $exclude_until && $exclude_until =~ /^\d{4}\-\d{2}\-\d{2}$/) {
-        my $now           = Date::Utility->new;
-        my $exclusion_end = Date::Utility->new($exclude_until);
-        my $six_month     = Date::Utility->new(DateTime->now()->add(months => 6)->ymd);
+        my $now = Date::Utility->new;
+        my $six_month = Date::Utility->new(DateTime->now()->add(months => 6)->ymd);
+        my ($exclusion_end, $exclusion_end_error);
+        try {
+            $exclusion_end = Date::Utility->new($exclude_until);
+        }
+        catch {
+            $exclusion_end_error = 1;
+        };
+        return $error_sub->(localize('Exclusion time conversion error.'), 'exclude_until') if $exclusion_end_error;
 
         # checking for the exclude until date which must be larger than today's date
         if (not $exclusion_end->is_after($now)) {

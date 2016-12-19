@@ -40,7 +40,6 @@ use BOM::Database::Model::HandoffToken;
 use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
-use BOM::Database::DataMapper::Client;
 use BOM::Database::ClientDB;
 
 my $payment_limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'));
@@ -425,7 +424,7 @@ sub paymentagent_list {
 
     # add country name plus code
     foreach (@{$countries}) {
-        $_->[1] = LandingCompany::Countries->instance->countries->localized_code2country($_->[0], $language);
+        $_->[1] = LandingCompany::Countries->new(brand => request()->brand)->countries->localized_code2country($_->[0], $language);
     }
 
     my $authenticated_paymentagent_agents =
@@ -564,22 +563,22 @@ sub paymentagent_transfer {
     }
 
     # freeze loginID to avoid a race condition
-    my $fm_data_mapper = BOM::Database::DataMapper::Client->new({
+    my $fm_client_db = BOM::Database::ClientDB->new({
         client_loginid => $loginid_fm,
     });
-    if (not $fm_data_mapper->freeze) {
+    if (not $fm_client_db->freeze) {
         return $error_sub->(
             localize('An error occurred while processing request. If this error persists, please contact customer support'),
             "Account stuck in previous transaction $loginid_fm"
         );
     }
 
-    my $to_data_mapper = BOM::Database::DataMapper::Client->new({
+    my $to_client_db = BOM::Database::ClientDB->new({
         client_loginid => $loginid_to,
     });
 
-    if (not $to_data_mapper->freeze) {
-        $fm_data_mapper->unfreeze;
+    if (not $to_client_db->freeze) {
+        $fm_client_db->unfreeze;
         return $error_sub->(
             localize('An error occurred while processing request. If this error persists, please contact customer support'),
             "Account stuck in previous transaction $loginid_to"
@@ -611,23 +610,23 @@ sub paymentagent_transfer {
 
     # maximum amount USD 100000 per day
     if (($amount_transferred + $amount) >= 100000) {
-        $fm_data_mapper->unfreeze;
-        $to_data_mapper->unfreeze;
+        $fm_client_db->unfreeze;
+        $to_client_db->unfreeze;
 
         return $reject_error_sub->(localize('Sorry, you have exceeded the maximum allowable transfer amount for today.'));
     }
 
     # do not allow more than 1000 transactions per day
     if ($count > 1000) {
-        $fm_data_mapper->unfreeze;
-        $to_data_mapper->unfreeze;
+        $fm_client_db->unfreeze;
+        $to_client_db->unfreeze;
 
         return $reject_error_sub->(localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
     }
 
     if ($client_to->default_account and $amount + $client_to->default_account->balance > $client_to->get_limit_for_account_balance) {
-        $fm_data_mapper->unfreeze;
-        $to_data_mapper->unfreeze;
+        $fm_client_db->unfreeze;
+        $to_client_db->unfreeze;
         return $reject_error_sub->(localize('Sorry, client balance will exceed limits with this payment.'));
     }
 
@@ -654,8 +653,8 @@ sub paymentagent_transfer {
         $error = "Paymentagent Transfer failed to $loginid_to [$_]";
     };
 
-    $fm_data_mapper->unfreeze;
-    $to_data_mapper->unfreeze;
+    $fm_client_db->unfreeze;
+    $to_client_db->unfreeze;
 
     if ($error) {
         # too many attempts
@@ -817,23 +816,23 @@ sub paymentagent_withdraw {
         };
     }
 
-    my $client_data_mapper = BOM::Database::DataMapper::Client->new({
+    my $client_db = BOM::Database::ClientDB->new({
         client_loginid => $client_loginid,
     });
 
     # freeze loginID to avoid a race condition
-    if (not $client_data_mapper->freeze) {
+    if (not $client_db->freeze) {
         return $error_sub->(
             localize('An error occurred while processing request. If this error persists, please contact customer support'),
             "Account stuck in previous transaction $client_loginid"
         );
     }
-    my $paymentagent_data_mapper = BOM::Database::DataMapper::Client->new({
+    my $paymentagent_client_db = BOM::Database::ClientDB->new({
         client_loginid => $paymentagent_loginid,
     });
 
-    if (not $paymentagent_data_mapper->freeze) {
-        $client_data_mapper->unfreeze;
+    if (not $paymentagent_client_db->freeze) {
+        $client_db->unfreeze;
         return $error_sub->(
             localize('An error occurred while processing request. If this error persists, please contact customer support'),
             "Account stuck in previous transaction $paymentagent_loginid"
@@ -867,8 +866,8 @@ sub paymentagent_withdraw {
     my $daily_limit = (DateTime->now->day_of_week() > 5) ? 1500 : 5000;
 
     if (($amount_transferred + $amount) > $daily_limit) {
-        $client_data_mapper->unfreeze;
-        $paymentagent_data_mapper->unfreeze;
+        $client_db->unfreeze;
+        $paymentagent_client_db->unfreeze;
 
         return $reject_error_sub->(
             localize('Sorry, you have exceeded the maximum allowable transfer amount [_1] for today.', $currency . $daily_limit));
@@ -886,8 +885,8 @@ sub paymentagent_withdraw {
 
     # do not allowed more than 20 transactions per day
     if ($count > 20) {
-        $client_data_mapper->unfreeze;
-        $paymentagent_data_mapper->unfreeze;
+        $client_db->unfreeze;
+        $paymentagent_client_db->unfreeze;
 
         return $reject_error_sub->(localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
     }
@@ -921,8 +920,8 @@ sub paymentagent_withdraw {
         $error = "Paymentagent Withdraw failed to $paymentagent_loginid [$_]";
     };
 
-    $client_data_mapper->unfreeze;
-    $paymentagent_data_mapper->unfreeze;
+    $client_db->unfreeze;
+    $paymentagent_client_db->unfreeze;
 
     if ($error) {
         # too many attempts
@@ -1164,7 +1163,7 @@ sub transfer_between_accounts {
     my $error_unfreeze_msg_sub = sub {
         my ($err, $client_message, @unfreeze) = @_;
         foreach my $loginid (@unfreeze) {
-            BOM::Database::DataMapper::Client->new({
+            BOM::Database::ClientDB->new({
                     client_loginid => $loginid,
                 })->unfreeze;
         }
@@ -1179,19 +1178,19 @@ sub transfer_between_accounts {
         $error_unfreeze_msg_sub->($err, '', @unfreeze);
     };
 
-    my $err_msg        = "from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount], ";
-    my $fm_data_mapper = BOM::Database::DataMapper::Client->new({
+    my $err_msg      = "from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount], ";
+    my $fm_client_db = BOM::Database::ClientDB->new({
         client_loginid => $client_from->loginid,
     });
 
-    if (not $fm_data_mapper->freeze) {
+    if (not $fm_client_db->freeze) {
         return $error_unfreeze_sub->("$err_msg error[Account stuck in previous transaction " . $client_from->loginid . ']');
     }
-    my $to_data_mapper = BOM::Database::DataMapper::Client->new({
+    my $to_client_db = BOM::Database::ClientDB->new({
         client_loginid => $client_to->loginid,
     });
 
-    if (not $to_data_mapper->freeze) {
+    if (not $to_client_db->freeze) {
         return $error_unfreeze_sub->("$err_msg error[Account stuck in previous transaction " . $client_to->loginid . ']', $client_from->loginid);
     }
 
@@ -1284,8 +1283,8 @@ sub transfer_between_accounts {
 
     BOM::System::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
-    $fm_data_mapper->unfreeze;
-    $to_data_mapper->unfreeze;
+    $fm_client_db->unfreeze;
+    $to_client_db->unfreeze;
 
     return {
         status              => 1,

@@ -12,9 +12,14 @@ use LandingCompany::Countries;
 
 use BOM::Database::Model::AccessToken;
 use BOM::Database::Model::OAuth;
-use BOM::Platform::Context qw (localize);
+use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
 use BOM::Platform::Token;
+
+# Seconds between reloads of the rate_limitations.yml file.
+# We don't want to reload too frequently, since we may see a lot of `website_status` calls.
+# However, it's a config file held outside the repo, so we also don't want to let it get too old.
+use constant RATES_FILE_CACHE_TIME => 120;
 
 sub get_token_details {
     my $token = shift;
@@ -71,9 +76,17 @@ sub permission_error {
             message_to_client => localize('Permission denied.')});
 }
 
+# Start this at zero to ensure we always load on first call.
+my $rates_file_last_load = 0;
+my $rates_file_content;
+
 sub site_limits {
 
-    my $rates_file_content = LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml');
+    my $now = time;
+    if ($now - $rates_file_last_load > RATES_FILE_CACHE_TIME) {
+        $rates_file_content = LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml');
+        $rates_file_last_load = $now;
+    }
 
     my $limits;
     $limits->{max_proposal_subscription} = {
@@ -228,8 +241,9 @@ sub get_real_acc_opening_type {
     my $from_client = $args->{from_client};
 
     return unless ($from_client->residence);
-    my $gaming_company    = LandingCompany::Countries->instance->gaming_company_for_country($from_client->residence);
-    my $financial_company = LandingCompany::Countries->instance->financial_company_for_country($from_client->residence);
+    my $lc_countries      = LandingCompany::Countries->new(brand => request()->brand);
+    my $gaming_company    = $lc_countries->gaming_company_for_country($from_client->residence);
+    my $financial_company = $lc_countries->financial_company_for_country($from_client->residence);
 
     if ($from_client->is_virtual) {
         return 'real' if ($gaming_company);
