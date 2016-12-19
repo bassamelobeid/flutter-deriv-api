@@ -76,15 +76,14 @@ sub _build_symbols_to_update {
             contract_category => 'ANY',
         );
         # forcing it here since we don't have offerings for the index.
-        push @symbols_to_update, qw(FTSE IXIC BIST100);
+        push @symbols_to_update, qw(FTSE IXIC BIST100 DJI);
 
     } else {
         @symbols_to_update = create_underlying_db->get_symbols_for(
             market            => 'stocks',
             contract_category => 'ANY',
             exclude_disabled  => 1,
-            submarket         => ['france', 'belgium', 'amsterdam', 'india_otc_stock', 'us_otc_stock', 'uk_otc_stock', 'ge_otc_stock', 'au_otc_stock']
-        );
+            submarket         => ['india_otc_stock', 'us_otc_stock', 'uk_otc_stock', 'ge_otc_stock',]);
     }
 
     return \@symbols_to_update;
