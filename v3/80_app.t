@@ -15,6 +15,7 @@ use BOM::System::Password;
 use BOM::Platform::User;
 use Client::Account;
 use BOM::Database::Model::OAuth;
+use Test::Deep;
 use Test::Warnings qw(warnings);
 
 my $t = build_wsapi_test();
