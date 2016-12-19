@@ -30,7 +30,7 @@ sub record_questions_answered {
 
     my $insert_sth = $self->db->dbh->prepare(
         q{
-        INSERT INTO data_collection.questions_answered (loginid,qid,answer, pass,test_id, question_presented, category) values(?,?,?,?,?,?)
+        INSERT INTO japan.questions_answered (client_loginid, qid, answer, pass,test_id, question_presented, category) values(?,?,?,?,?,?,?)
     }
     );
 
