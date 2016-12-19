@@ -38,15 +38,7 @@ my $cv = Math::Util::CalculatedValue::Validatable->new({
     description => 'test',
     set_by      => 'tester'
 });
-#<<<<<<< HEAD
-#=======
-#my $mock = Test::MockModule->new('BOM::Market::AggTicks');
-#$mock->mock(
-#    'retrieve',
-#    sub {
-#        [map { {epoch => $_, quote => 10} } (0 .. 5)];
-#    });
-#>>>>>>> 294205b0423e000be166f8cae4735c0968f8eba1
+
 my $mock_intraday = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
 
 $mock_intraday->mock('intraday_delta_correction', sub { $cv });
