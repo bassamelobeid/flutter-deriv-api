@@ -903,7 +903,7 @@ sub set_self_exclusion {
         my $brand = Brands->new(name => request()->brand);
         send_email({
             from    => $brand->emails('compliance'),
-            to      => $brands->emails('compliance') . ',' . $brands->emails('support'),
+            to      => $brand->emails('compliance') . ',' . $brand->emails('support'),
             subject => "Client set self-exclusion limits",
             message => [$message],
         });
