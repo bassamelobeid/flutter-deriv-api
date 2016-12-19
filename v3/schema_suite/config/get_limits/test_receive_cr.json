@@ -125,7 +125,7 @@
                 },
                 "payout": {
                   "type": "integer",
-                  "pattern": "^100000$",
+                  "pattern": "^50000$",
                   "required": "1"
                 },
                 "remainder": {
