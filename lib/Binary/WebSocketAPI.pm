@@ -17,7 +17,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use File::Slurp;
 use JSON::Schema;
 use Try::Tiny;
-use Format::Util::Strings qw( defang_lite );
+use Format::Util::Strings qw( defang );
 use Digest::MD5 qw(md5_hex);
 use RateLimitations::Pluggable;
 use Time::Duration::Concise;
@@ -75,7 +75,7 @@ sub startup {
         before_dispatch => sub {
             my $c = shift;
 
-            my $lang = defang_lite($c->param('l'));
+            my $lang = defang($c->param('l'));
             if ($lang =~ /^\D{2}(_\D{2})?$/) {
                 $c->stash(language => uc $lang);
                 $c->res->headers->header('Content-Language' => lc $lang);
@@ -89,8 +89,9 @@ sub startup {
                 $c->stash(debug => 1);
             }
 
-            my $app_id    = defang_lite($c->req->param('app_id'));
+            my $app_id    = defang($c->req->param('app_id'));
             my $client_ip = $c->client_ip;
+            my $brand     = defang($c->req->param('brand'));
 
             if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
                 $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
@@ -98,12 +99,14 @@ sub startup {
 
             my $user_agent = $c->req->headers->header('User-Agent');
             $c->stash(
-                server_name    => $c->server_name,
-                client_ip      => $client_ip,
-                country_code   => $c->country_code,
-                user_agent     => $user_agent,
-                ua_fingerprint => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
-                $app_id ? (source => $app_id) : (),
+                server_name          => $c->server_name,
+                client_ip            => $client_ip,
+                country_code         => $c->country_code,
+                landing_company_name => $c->landing_company_name,
+                user_agent           => $user_agent,
+                ua_fingerprint       => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
+                ($app_id =~ /^\d{1,10}$/) ? (source => $app_id) : (),
+                brand => (($brand =~ /^\w{1,10}$/) ? $brand : 'binary'),
             );
         });
 
@@ -141,7 +144,7 @@ sub startup {
         ['contracts_for'],
         ['residence_list'],
         ['states_list'],
-        ['payout_currencies', {stash_params => [qw/ token /]}],
+        ['payout_currencies', {stash_params => [qw/ token landing_company_name /]}],
         ['landing_company'],
         ['landing_company_details'],
         ['get_corporate_actions'],
@@ -400,16 +403,21 @@ sub startup {
     }
 
     # configuration-compatibility with RateLimitations
-    my $rates_file_content = LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml');
+    my %rates_files = (
+        binary => LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml'),
+        japan  => LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/japan_perl_rate_limitations.yml'));
 
     my %rates_config;
     # convert configuration to RateLimitations::Pluggable format
     # (i.e. unify human-readable time intervals like '1m' to seconds (60))
-    for my $service (keys %$rates_file_content) {
-        for my $interval (keys %{$rates_file_content->{$service}}) {
-            my $seconds = Time::Duration::Concise->new(interval => $interval)->seconds;
-            my $count = $rates_file_content->{$service}->{$interval};
-            $rates_config{$service}->{$seconds} = $count;
+    for my $company (keys %rates_files) {
+        my $rates_file_content = $rates_files{$company};
+        for my $service (keys %$rates_file_content) {
+            for my $interval (keys %{$rates_file_content->{$service}}) {
+                my $seconds = Time::Duration::Concise->new(interval => $interval)->seconds;
+                my $count = $rates_file_content->{$service}->{$interval};
+                $rates_config{$company}{$service}->{$seconds} = $count;
+            }
         }
     }
 
@@ -421,7 +429,7 @@ sub startup {
                 # do not hold reference to stash in stash
                 weaken $stash;
                 my $rl = RateLimitations::Pluggable->new(
-                    limits => \%rates_config,
+                    limits => ($rates_config{$c->landing_company_name // ''} // $rates_config{binary}),
                     getter => sub {
                         my ($service) = @_;
                         return $stash->{rate_limitations_hits}{$service} //= [];
@@ -438,8 +446,9 @@ sub startup {
             actions => $actions,
 
             # action hooks
-            before_forward           => [\&Binary::WebSocketAPI::Hooks::before_forward,             \&Binary::WebSocketAPI::Hooks::get_rpc_url],
-            before_call              => [\&Binary::WebSocketAPI::Hooks::add_app_id,                 \&Binary::WebSocketAPI::Hooks::start_timing],
+            before_forward => [\&Binary::WebSocketAPI::Hooks::before_forward, \&Binary::WebSocketAPI::Hooks::get_rpc_url],
+            before_call =>
+                [\&Binary::WebSocketAPI::Hooks::add_app_id, \&Binary::WebSocketAPI::Hooks::add_brand, \&Binary::WebSocketAPI::Hooks::start_timing],
             before_get_rpc_response  => [\&Binary::WebSocketAPI::Hooks::log_call_timing],
             after_got_rpc_response   => [\&Binary::WebSocketAPI::Hooks::log_call_timing_connection, \&Binary::WebSocketAPI::Hooks::error_check],
             before_send_api_response => [
