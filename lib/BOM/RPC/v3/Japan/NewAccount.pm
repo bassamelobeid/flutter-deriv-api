@@ -15,7 +15,7 @@ use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
 use BOM::System::Config;
-use BOM::Platform::Context qw (localize);
+use BOM::Platform::Context qw (localize request);
 use BOM::System::AuditLog;
 
 sub get_jp_account_status {
