@@ -1,0 +1,41 @@
+<div id="topbar-binary"></div>
+<div id="header-binary">
+    <a href="https://www.binary.com/<%= lc($r->language) %>/home.html">
+        <img id="symbol-logo" src="https://style.binary.com/images/logo/symbol.svg" />
+        <img id="type-logo" src="https://style.binary.com/images/logo/type.svg" alt="Binary.com" />
+    </a>
+</div>
+<div id="container-binary">
+    <h1><%= l('Log in') %></h1>
+    <fieldset>
+        <legend><%= l('Your Details') %></legend>
+        <% if (stash('error')) { %>
+            <p class='errorfield'><%= stash('error') %></p>
+        <% } %>
+        <div id="wrapper" class="login">
+            <form id="frmLogin" method="POST">
+                <div><input type="email" id="txtEmail" name="email" placeholder="<%= l('Email') %>" autocomplete="off" autofocus="autofocus" maxlength="254" /></div>
+                <div><input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" /></div>
+                <div><button type="submit" id="btnLogin" class="button" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button></div>
+                <input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
+            </form>
+        </div>
+        <p class="links">
+            <a class="pjaxload" id="lost-password" href="https://www.binary.com/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Lost Password?') %></a> |
+            <a class="pjaxload" id="create-account" href="https://www.binary.com/<%= lc($r->language) %>/home.html"><%= l('Open an Account') %></a>
+        </p>
+        <div class="links" style="display:none;">
+            <div id="oa_social_login_container"></div>
+        </div>
+    </fieldset>
+</div>
+
+<script type="text/javascript">
+var your_callback_script = '<%= $oneall_callback %>';
+
+/* Embeds the buttons into the container oa_social_login_container */
+var _oneall = _oneall || [];
+_oneall.push(['social_login', 'set_providers', ['facebook', 'google', 'twitter']]);
+_oneall.push(['social_login', 'set_callback_uri', your_callback_script]);
+_oneall.push(['social_login', 'do_render_ui', 'oa_social_login_container']);
+</script>
