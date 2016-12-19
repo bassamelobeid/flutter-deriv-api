@@ -6,7 +6,10 @@ use Moose;
 with 'App::Base::Script';
 
 use ForexFactory;
+use Volatility::Seasonality;
 use Quant::Framework::EconomicEventCalendar;
+use BOM::MarketData qw(create_underlying_db);
+use Volatility::Seasonality;
 use BOM::Platform::Runtime;
 use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
@@ -14,7 +17,7 @@ use JSON;
 use Path::Tiny;
 use BOM::System::RedisReplicated;
 use Try::Tiny;
-use List::Util qw(first);
+use List::Util qw(first uniq);
 
 sub documentation { return 'This script runs economic events update from forex factory at 00:00 GMT'; }
 
@@ -51,6 +54,22 @@ sub script_run {
             })->save;
 
         print "stored " . (scalar @$events_received) . " events ($tentative_count are tentative events) in chronicle...\n";
+
+        my @underlying_symbols = create_underlying_db->symbols_for_intraday_fx;
+        my $qfs                = Volatility::Seasonality->new(
+            chronicle_reader => BOM::System::RedisReplicated::redis_read,
+            chronicle_writer => BOM::System::RedisReplicated::redis_write
+        );
+
+        foreach my $symbol (@underlying_symbols) {
+            $qfs->generate_economic_event_seasonality({
+                underlying_symbol => $symbol,
+                economic_events   => $events_received
+            });
+        }
+
+        print "generated economic events impact curves for " . scalar(@underlying_symbols) . " underlying symbols.";
+
     }
     catch {
         print 'Error occured while saving events: ' . $_;
