@@ -19,7 +19,7 @@ my $daily_turnover_limit = $client->get_limit({'for' => 'daily_turnover'});
 is($daily_turnover_limit, 500000, '50000 by default');
 
 my $payout_limit = $client->get_limit({'for' => 'payout'});
-is($payout_limit, 100000, 'open positions payout limit = 100000');
+is($payout_limit, 50000, 'open positions payout limit = 50000');
 #setting
 
 $client->custom_max_daily_turnover(222222);
