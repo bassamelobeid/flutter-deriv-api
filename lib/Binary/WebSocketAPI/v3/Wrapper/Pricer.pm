@@ -80,7 +80,7 @@ sub proposal_array {
                     if (exists($response->{error})) {
                         $cache = {
                             error                 => 1,
-                            app_markup_percentage => $c->stash('app_markup_percentage');
+                            app_markup_percentage => $c->stash('app_markup_percentage'),
                         };
                     } else {
                         $cache = {
