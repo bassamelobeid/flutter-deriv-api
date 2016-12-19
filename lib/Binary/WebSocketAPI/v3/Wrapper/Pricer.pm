@@ -505,7 +505,7 @@ sub _price_stream_results_adjustment {
 
     $results->{ask_price} = $results->{display_value} = $price_calculator->ask_price;
     $results->{payout} = $price_calculator->payout;
-    map {$results->{$_} .= ''} qw(ask_price display_value payout);
+    map { $results->{$_} .= '' } qw(ask_price display_value payout);
     stats_timing('price_adjustment.timing', 1000 * tv_interval($t));
 
     return $results;
