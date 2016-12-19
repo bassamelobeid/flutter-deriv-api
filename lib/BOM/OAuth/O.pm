@@ -13,7 +13,7 @@ use Client::Account;
 use LandingCompany::Registry;
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(localize request);
+use BOM::Platform::Context qw(localize);
 use BOM::Platform::User;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
@@ -88,6 +88,7 @@ sub authorize {
         }
     }
 
+    my $brand = $c->stash('brand')
     ## check user is logined
     unless ($client) {
         ## taken error from oneall
@@ -98,7 +99,7 @@ sub authorize {
 
         ## show login form
         return $c->render(
-            template => $app_id eq '1' ? 'binary/loginbinary' : 'binary/login',
+            template => $app_id eq '1' ? "$brand/loginbinary" : "$brand/login",
             layout   => 'binary/default',
             app      => $app,
             error    => $error,
@@ -137,8 +138,8 @@ sub authorize {
     unless ($is_all_approved) {
         ## show scope confirms
         return $c->render(
-            template  => 'binary/scope_confirms',
-            layout    => 'binary/default',
+            template  => "$brand/scope_confirms",
+            layout    => $brand,
             app       => $app,
             client    => $client,
             scopes    => \@scopes,
@@ -245,10 +246,11 @@ sub __login {
         }
     }
 
+    my $brand = $c->stash('brand');
     if ($err) {
         $c->render(
-            template => $app->{id} eq '1' ? 'binary/loginbinary' : 'binary/login',
-            layout   => 'binary/default',
+            template => $app->{id} eq '1' ? "$brand/loginbinary" : "$brand/login",
+            layout   => $brand,
             app      => $app,
             error    => $err,
             r        => $c->stash('request'),
@@ -305,7 +307,7 @@ sub __login {
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
                             $client->email,
                             $r->client_ip,
-                            Brands->new(name => request()->brand)->landing_company_countries->countries->country_from_code($country_code)
+                            Brands->new(name => $brand)->landing_company_countries->countries->country_from_code($country_code)
                                 // $country_code,
                             $user_agent
                         );
@@ -316,7 +318,7 @@ sub __login {
                     }
 
                     send_email({
-                        from               => Brands->new(name => request()->brand)->emails('support'),
+                        from               => Brands->new(name => $brand)->emails('support'),
                         to                 => $client->email,
                         subject            => localize('New Sign-In Activity Detected'),
                         message            => [$message],

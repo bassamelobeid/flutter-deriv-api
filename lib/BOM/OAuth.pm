@@ -51,6 +51,7 @@ sub startup {
             my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
             BOM::Platform::Context::request($request);
             $c->stash(request => $request);
+            $c->stash(brand => ($request->brand() // 'binary'));
         });
 
     $app->hook(
