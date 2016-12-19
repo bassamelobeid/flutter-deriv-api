@@ -20,8 +20,8 @@ sub run {
     my $result = BOM::MyAffiliates::GenerateRegistrationDaily->new->run;
     my $brand = Brands->new();
     send_email({
-        from    => $brand->email('system'),
-        to      => $brand->email('affiliates'),
+        from    => $brand->emails('system'),
+        to      => $brand->emails('affiliates'),
         subject => 'CRON registrations: Report for ' . $result->{start_time}->datetime_yyyymmdd_hhmmss_TZ,
         message => $result->{report},
     });

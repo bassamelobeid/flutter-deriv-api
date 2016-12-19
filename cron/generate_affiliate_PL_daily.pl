@@ -72,8 +72,8 @@ while ($to_date->days_between($processing_date) >= 0) {
 my $brand = Brands->new();
 # email CSV out for reporting purposes
 send_email({
-    from       => $brand->email('system'),
-    to         => $brand->email('affiliates'),
+    from       => $brand->emails('system'),
+    to         => $brand->emails('affiliates'),
     subject    => 'CRON generate_affiliate_PL_daily: ' . ' for date range ' . $from_date->date_yyyymmdd . ' - ' . $to_date->date_yyyymmdd,
     message    => ['Find attached the CSV that was generated.'],
     attachment => \@csv_filenames,

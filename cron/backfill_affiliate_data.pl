@@ -23,8 +23,8 @@ push @{$full_report}, @backfill_promo_codes_report;
 
 my $brand = Brands->new();
 send_email({
-    from    => $brand->email('system'),
-    to      => $brand->email('affiliates'),
+    from    => $brand->emails('system'),
+    to      => $brand->emails('affiliates'),
     subject => 'CRON backfill_affiliate_data: Report for ' . $runtime->datetime_yyyymmdd_hhmmss_TZ,
     message => $full_report,
 });
