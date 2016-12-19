@@ -23,7 +23,6 @@ form input, form button {
     width: 100%;
     height: 44px;
     margin-bottom: 2%;
-    background-color: white;
     text-align: center;
 }
 form input {background: white; padding: 2px 3px;}
@@ -33,7 +32,6 @@ form input {background: white; padding: 2px 3px;}
 ::-moz-placeholder {font-style: italic; color: #888;}
 :-ms-input-placeholder {font-style: italic; color: #888;}
 
-button, .button {cursor: pointer; display: block; margin: 0 auto; background: #2e8836;}
 #wrapper.login #btnLogin {margin-top: 15px;}
 
 /* Scope Confirmation */

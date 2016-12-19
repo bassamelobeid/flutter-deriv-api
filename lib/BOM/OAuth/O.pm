@@ -100,7 +100,6 @@ sub authorize {
         return $c->render(
             template => $app_id eq '1' ? 'loginbinary' : 'login',
             layout => 'default',
-
             app       => $app,
             error     => $error,
             r         => $c->stash('request'),
@@ -140,7 +139,6 @@ sub authorize {
         return $c->render(
             template => 'scope_confirms',
             layout   => 'default',
-
             app       => $app,
             client    => $client,
             scopes    => \@scopes,
