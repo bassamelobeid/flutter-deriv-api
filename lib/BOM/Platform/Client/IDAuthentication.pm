@@ -8,7 +8,7 @@ use Brands;
 use Client::Account;
 use BOM::System::Config;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Context qw(localize);
+use BOM::Platform::Context qw(localize request);
 use BOM::Platform::ProveID;
 
 has client => (
