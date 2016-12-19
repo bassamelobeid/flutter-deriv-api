@@ -877,8 +877,8 @@ sub paymentagent_withdraw {
         my $message = "Client $client_loginid transferred \$$amount_transferred to payment agent today";
         my $brand = Brands->new(name => request()->brand);
         send_email({
-            from    => $brand->email('support'),
-            to      => $brand->email('support'),
+            from    => $brand->emails('support'),
+            to      => $brand->emails('support'),
             subject => $message,
             message => [$message],
         });
@@ -975,8 +975,8 @@ sub __output_payments_error_message {
     my $error_message = $args->{'error_msg'};
 
     my $brand          = Brands->new(name => request()->brand);
-    my $payments_email = $brand->email('payments');
-    my $cs_email       = $brand->email('support');
+    my $payments_email = $brand->emails('payments');
+    my $cs_email       = $brand->emails('support');
 
     # amount is not always exist because error may happen before client submit the form
     # or when redirected from 3rd party site to failure script where no data is returned
