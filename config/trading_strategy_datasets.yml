@@ -1,0 +1,8 @@
+start_epoch: 1482132000
+end_epoch: 1482132300
+durations:
+  - 5t
+  - 10t
+  - 1m
+  - 5m
+  - 1h
