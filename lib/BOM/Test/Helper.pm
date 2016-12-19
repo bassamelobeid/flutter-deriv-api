@@ -50,6 +50,12 @@ sub build_wsapi_test {
     my $headers = shift || {};
     my $callback = shift;
 
+    # We use 1 by default for these tests, unless a value is provided.
+    # undef means "leave it out", used for a few tests that need to check
+    # that we handle missing app_id correctly.
+    $args->{app_id} = 1 unless exists $args->{app_id};
+    delete $args->{app_id} unless defined $args->{app_id};
+
     my $t = build_mojo_test('Binary::WebSocketAPI', $args);
 
     my @query_params;
