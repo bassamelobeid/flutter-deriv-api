@@ -35,7 +35,7 @@ sub record_questions_answered {
     );
 
     for my $question (@{$self->questions}) {
-        $insert_sth->execute($self->login_id, $question->qid, $question->answer, $question->pass, $self->test_id, $question->question,
+        $insert_sth->execute($self->login_id, $question->id, $question->answer, $question->pass, $self->test_id, $question->question,
             $question->category);
 
     }
