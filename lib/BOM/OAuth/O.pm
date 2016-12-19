@@ -8,7 +8,6 @@ use Email::Valid;
 use Mojo::Util qw(url_escape);
 use List::MoreUtils qw(any firstval);
 
-use Brands;
 use Client::Account;
 use LandingCompany::Registry;
 
@@ -88,7 +87,7 @@ sub authorize {
         }
     }
 
-    my $brand = $c->stash('brand')
+    my $brand_name = $c->stash('brand')->name;
     ## check user is logined
     unless ($client) {
         ## taken error from oneall
@@ -99,8 +98,8 @@ sub authorize {
 
         ## show login form
         return $c->render(
-            template => $app_id eq '1' ? "$brand/loginbinary" : "$brand/login",
-            layout   => 'binary/default',
+            template => $app_id eq '1' ? "$brand_name/loginbinary" : "$brand_name/login",
+            layout   => $brand_name,
             app      => $app,
             error    => $error,
             r        => $c->stash('request'),
@@ -138,8 +137,8 @@ sub authorize {
     unless ($is_all_approved) {
         ## show scope confirms
         return $c->render(
-            template  => "$brand/scope_confirms",
-            layout    => $brand,
+            template  => $brand_name . '/scope_confirms',
+            layout    => $brand_name,
             app       => $app,
             client    => $client,
             scopes    => \@scopes,
@@ -249,8 +248,8 @@ sub __login {
     my $brand = $c->stash('brand');
     if ($err) {
         $c->render(
-            template => $app->{id} eq '1' ? "$brand/loginbinary" : "$brand/login",
-            layout   => $brand,
+            template => $app->{id} eq '1' ? $brand->name . '/loginbinary' : $brand->name . '/login',
+            layout   => $brand->name,
             app      => $app,
             error    => $err,
             r        => $c->stash('request'),
@@ -305,12 +304,8 @@ sub __login {
                     if ($app->{id} eq '1') {
                         $message = localize(
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
-                            $client->email,
-                            $r->client_ip,
-                            Brands->new(name => $brand)->landing_company_countries->countries->country_from_code($country_code)
-                                // $country_code,
-                            $user_agent
-                        );
+                            $client->email, $r->client_ip,
+                            $brand->landing_company_countries->countries->country_from_code($country_code) // $country_code, $user_agent);
                     } else {
                         $message = localize(
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3], browser: [_4] and app: [_5]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
@@ -318,7 +313,7 @@ sub __login {
                     }
 
                     send_email({
-                        from               => Brands->new(name => $brand)->emails('support'),
+                        from               => $brand->emails('support'),
                         to                 => $client->email,
                         subject            => localize('New Sign-In Activity Detected'),
                         message            => [$message],
