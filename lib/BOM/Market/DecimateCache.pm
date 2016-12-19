@@ -128,10 +128,8 @@ has 'redis_write' => (
 sub _make_key {
     my ($self, $symbol, $decimate) = @_;
 
-    #my @bits = ("RESAMPLE", $symbol);
     my @bits = ("AGGTICKS", $symbol);
     if ($decimate) {
-        #push @bits, ($self->sampling_frequency->as_concise_string, 'RESAMPLE');
         push @bits, ($self->sampling_frequency->as_concise_string, 'AGG');
     } else {
         push @bits, ($self->raw_retention_interval->as_concise_string, 'FULL');
@@ -222,7 +220,7 @@ Also insert into decimate cache if data crosses 15s boundary.
 sub data_cache_insert {
     my ($self, $data) = @_;
 
-    $data = $data->as_hash if blessed($data);
+    $data = $data->as_hash if $data->can('as_hash');
 
     my %to_store = %$data;
 
