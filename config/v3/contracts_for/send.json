@@ -19,7 +19,7 @@
         "region":{
             "type":"string",
             "description":"Set to 'japan' to retrieve contracts available under Japanese regulations, or 'other' otherwise.This key will be obsolete in the next version upgrade. Please set 'product_type' to multi_barrier to get contracts available under Japanese regulations.",
-            "pattern":"^(japan|other)$",
+            "pattern":"^(japan|other)$"
         },
         "product_type":{
             "type":"string",
