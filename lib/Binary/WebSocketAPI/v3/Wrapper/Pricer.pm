@@ -408,6 +408,8 @@ sub _process_ask_proposal_array_event {
                 if (my $ref = $adjusted_results->{error}) {
                     my $err = $c->new_error($type, $ref->{code}, $ref->{message_to_client});
                     $err->{error}->{details} = $ref->{details} if exists $ref->{details};
+                    my $barriers = $stash_data->{args}{barriers}[$i];
+                    @{$err->{error}{details}}{keys %$barriers} = values %$barriers;
                     $results = $err;
                 } else {
                     $results = {
