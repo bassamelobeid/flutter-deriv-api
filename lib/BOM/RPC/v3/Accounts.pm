@@ -681,10 +681,7 @@ sub set_settings {
         localize('Receive news and special offers'),
         BOM::Platform::User->new({email => $client->email})->email_consent ? localize("Yes") : localize("No")]
         if exists $args->{email_consent};
-    push @updated_fields,
-        [
-        localize('Allow copiers'),
-        $client->allow_copiers ? localize("Yes") : localize("No")]
+    push @updated_fields, [localize('Allow copiers'), $client->allow_copiers ? localize("Yes") : localize("No")]
         if defined $allow_copiers;
 
     $message .= "<table>";
