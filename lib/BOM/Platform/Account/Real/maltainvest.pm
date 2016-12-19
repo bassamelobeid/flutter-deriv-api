@@ -64,8 +64,8 @@ sub create_account {
     if ($financial_assessment->{total_score} > 59) {
         my $brand = Brands->new(name => request()->brand);
         send_email({
-            from    => $brand->email('support'),
-            to      => $brand->email('compliance'),
+            from    => $brand->emails('support'),
+            to      => $brand->emails('compliance'),
             subject => $client->loginid . ' considered as professional trader',
             message =>
                 [$client->loginid . ' scored ' . $financial_assessment->{total_score} . ' and is therefore considered a professional trader.'],

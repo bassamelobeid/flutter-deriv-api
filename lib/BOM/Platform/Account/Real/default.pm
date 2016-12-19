@@ -147,8 +147,8 @@ sub after_register_client {
         $client->add_note('UNTERR', "UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list.");
         my $brand = Brands->new(name => request()->brand);
         send_email({
-            from    => $brand->email('support'),
-            to      => $brand->email('compliance'),
+            from    => $brand->emails('support'),
+            to      => $brand->emails('compliance'),
             subject => $client->loginid . ' marked as UNTERR',
             message => ["UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list."],
         });
