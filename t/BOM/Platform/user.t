@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use Test::MockTime;
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Test::Exception;
 use Test::Deep qw(cmp_deeply);
 
@@ -309,4 +309,45 @@ subtest 'MT5 logins' => sub {
     cmp_deeply(\@mt5_logins, ['MT1000', 'MT2000'], 'MT5 logins match');
 
     ok $_->loginid !~ /^MT\d+$/, 'should not include MT logins-' . $_->loginid for ($user->clients);
+};
+
+subtest 'Champion fx users' => sub {
+    my ($email_ch, $client_vrch, $client_ch, $vrch_loginid, $ch_loginid, $user_ch) = ('champion@binary.com');
+    lives_ok {
+        $client_vrch = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRCH',
+        });
+        $client_ch = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CH',
+        });
+
+        $client_vrch->email($email_ch);
+        $client_vrch->save;
+
+        $client_ch->email($email_ch);
+        $client_ch->save;
+
+        $vrch_loginid = $client_vrch->loginid;
+        like $vrch_loginid, qr/^VRCH/, "Correct virtual loginid";
+        $ch_loginid = $client_ch->loginid;
+        like $ch_loginid, qr/^CH/, "Correct real loginid";
+    }
+    'creating clients';
+
+    lives_ok {
+        $user_ch = BOM::Platform::User->create(
+            email    => $email_ch,
+            password => $hash_pwd
+        );
+        $user_ch->save;
+
+        $user_ch->add_loginid({loginid => $vrch_loginid});
+        $user_ch->save;
+    }
+    'create user with loginid';
+
+    subtest 'test attributes' => sub {
+        is $user_ch->email,    $email_ch, 'email ok';
+        is $user_ch->password, $hash_pwd, 'password ok';
+    };
 };
