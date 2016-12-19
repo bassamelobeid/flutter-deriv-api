@@ -38,8 +38,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        underlying        => create_underlying('frxUSDJPY'),
-        recorded_date     => $now
+        underlying    => create_underlying('frxUSDJPY'),
+        recorded_date => $now
     });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',

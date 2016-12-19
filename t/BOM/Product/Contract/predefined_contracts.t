@@ -102,7 +102,11 @@ subtest 'predefined_contracts' => sub {
             }});
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->message_to_client, qr/Invalid barrier/, 'throws error');
-    $c = produce_contract({%$bet_params, payout => 1000, currency => 'JPY'});
+    $c = produce_contract({
+        %$bet_params,
+        payout   => 1000,
+        currency => 'JPY'
+    });
     $c->predefined_contracts({
             $expiry_epoch => {
                 available_barriers => [['99.000', '101.000']],

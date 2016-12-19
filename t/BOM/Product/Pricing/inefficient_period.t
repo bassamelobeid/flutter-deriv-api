@@ -61,7 +61,7 @@ subtest 'inefficient craziness' => sub {
         payout       => 10,
     };
     my $c = produce_contract($bet_params);
-    is $c->pricing_engine->risk_markup->peek_amount('intraday_eod_markup'),0.05, 'eod markup added for ATM';
+    is $c->pricing_engine->risk_markup->peek_amount('intraday_eod_markup'), 0.05, 'eod markup added for ATM';
     $bet_params->{duration}   = '15m';
     $bet_params->{underlying} = 'R_100';
     $c                        = produce_contract($bet_params);

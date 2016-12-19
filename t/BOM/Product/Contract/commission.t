@@ -269,13 +269,13 @@ sub test_flexible_commission {
     my ($symbol, $market, $scaling) = @_;
 
     my $args = {
-        bet_type         => 'CALL',
-        underlying       => $symbol,
-        barrier          => 'S0P',
-        duration         => '1d',
-        amount           => 1000,
-        amount_type      => 'payout',
-        currency         => 'USD',
+        bet_type    => 'CALL',
+        underlying  => $symbol,
+        barrier     => 'S0P',
+        duration    => '1d',
+        amount      => 1000,
+        amount_type => 'payout',
+        currency    => 'USD',
     };
 
     BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market(100);
@@ -285,7 +285,7 @@ sub test_flexible_commission {
 
     BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market($scaling);
     $c = produce_contract($args);
-    if ( $scaling == 10000 ) {
+    if ($scaling == 10000) {
         is $c->ask_price, 1000, "max ask price when commissoin scaling is max for $symbol";
     } else {
         is $c->commission_markup->amount, $original_commission * ($scaling / 100), "correct commission markup with $scaling scaling for $symbol";
@@ -293,18 +293,18 @@ sub test_flexible_commission {
 }
 
 subtest 'flexible commission check for different markets' => sub {
-    test_flexible_commission 'R_100', 'volidx', 50;
-    test_flexible_commission 'frxEURUSD', 'forex', 30;
-    test_flexible_commission 'frxUSDJPY', 'forex', 70;
+    test_flexible_commission 'R_100',     'volidx',      50;
+    test_flexible_commission 'frxEURUSD', 'forex',       30;
+    test_flexible_commission 'frxUSDJPY', 'forex',       70;
     test_flexible_commission 'frxXAUUSD', 'commodities', 70;
-    test_flexible_commission 'FCHI', 'indices', 170;
-    test_flexible_commission 'FTSE', 'indices', 25;
+    test_flexible_commission 'FCHI',      'indices',     170;
+    test_flexible_commission 'FTSE',      'indices',     25;
 
-    test_flexible_commission 'R_100', 'volidx', 10000;
-    test_flexible_commission 'frxEURUSD', 'forex', 10000;
-    test_flexible_commission 'frxUSDJPY', 'forex', 10000;
+    test_flexible_commission 'R_100',     'volidx',      10000;
+    test_flexible_commission 'frxEURUSD', 'forex',       10000;
+    test_flexible_commission 'frxUSDJPY', 'forex',       10000;
     test_flexible_commission 'frxXAUUSD', 'commodities', 10000;
-    test_flexible_commission 'FCHI', 'indices', 10000;
-    test_flexible_commission 'FTSE', 'indices', 10000;
+    test_flexible_commission 'FCHI',      'indices',     10000;
+    test_flexible_commission 'FTSE',      'indices',     10000;
 };
 

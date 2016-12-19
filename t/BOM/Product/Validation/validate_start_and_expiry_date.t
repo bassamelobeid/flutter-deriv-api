@@ -406,7 +406,7 @@ subtest 'date expiry blackout - year end holidays for equity' => sub {
         }) for qw(frxAUDUSD frxUSDHKD);
     $bet_params->{underlying} = 'frxAUDUSD';
     $bet_params->{duration}   = '5d';
-    $bet_params->{barrier} = 'S0P';
+    $bet_params->{barrier}    = 'S0P';
     $c                        = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy for Forex during holiday blackout period';
 };
