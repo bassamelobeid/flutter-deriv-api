@@ -40,6 +40,10 @@ sub quants {
     return $config;
 }
 
+sub sanction_file {
+    return "/var/lib/binary/sanctions.csv";
+}
+
 {
     my $env = do {
         local @ARGV = ('/etc/rmg/environment');
