@@ -98,11 +98,11 @@ sub authorize {
 
         ## show login form
         return $c->render(
-            template => $app_id eq '1' ? "$brand_name/loginbinary" : "$brand_name/login",
-            layout   => $brand_name,
-            app      => $app,
-            error    => $error,
-            r        => $c->stash('request'),
+            template  => _get_login_template_name($app_id, $brand_name),
+            layout    => $brand_name,
+            app       => $app,
+            error     => $error,
+            r         => $c->stash('request'),
             csrftoken => $c->csrf_token,
         );
     }
@@ -248,11 +248,11 @@ sub _login {
     my $brand = $c->stash('brand');
     if ($err) {
         $c->render(
-            template => $app->{id} eq '1' ? $brand->name . '/loginbinary' : $brand->name . '/login',
-            layout   => $brand->name,
-            app      => $app,
-            error    => $err,
-            r        => $c->stash('request'),
+            template  => _get_login_template_name($app->{id}, $brand->name),
+            layout    => $brand->name,
+            app       => $app,
+            error     => $err,
+            r         => $c->stash('request'),
             csrftoken => $c->csrf_token,
         );
         return;
@@ -396,6 +396,18 @@ sub _get_details_from_environment {
         country    => uc($country // 'unknown'),
         user_agent => $user_agent
     };
+}
+
+sub _get_login_template_name {
+    my ($app_id, $brand_name) = @_;
+
+    # we have different login template for binary.com
+    # and for other apps
+    if ($app_id eq '1' and $brand_name =~ /^binary$/) {
+        return 'binary/loginbinary';
+    }
+
+    return $brand_name . '/login';
 }
 
 1;
