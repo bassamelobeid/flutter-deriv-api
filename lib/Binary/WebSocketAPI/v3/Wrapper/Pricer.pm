@@ -76,10 +76,18 @@ sub proposal_array {
 
                 my $caches = [];
                 for my $response (@{$rpc_response->{proposals}}) {
-                    my $cache = {
-                        longcode            => $response->{longcode},
-                        contract_parameters => delete $response->{contract_parameters}};
-                    $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
+                    my $cache;
+                    if (exists($response->{error})) {
+                        $cache = {
+                            error                 => 1,
+                            app_markup_percentage => $c->stash('app_markup_percentage');
+                        };
+                    } else {
+                        $cache = {
+                            longcode            => $response->{longcode},
+                            contract_parameters => delete $response->{contract_parameters}};
+                        $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
+                    }
                     push @$caches, $cache;
                 }
                 $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $caches);
@@ -385,6 +393,15 @@ sub _process_ask_proposal_array_event {
             my $results;
 
             unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
+                if (exists($cache->{error})) {
+                    # There is error when we ask proposal array
+                    # but now the error is gone
+                    # so we set cache as the first correct value
+                    $cache->{longcode}                                   = $response->{longcode};
+                    $cache->{contract_parameters}                        = $response->{contract_parameters};
+                    $cache->{contract_parameters}{app_markup_percentage} = delete $cache->{app_markup_percentage};
+                    delete $cache->{error};
+                }
                 $cache->{contract_parameters}->{longcode} = $cache->{longcode};
                 my $adjusted_results =
                     _price_stream_results_adjustment($c, $stash_data->{args}, $cache->{contract_parameters}, $response, $theo_probability);
