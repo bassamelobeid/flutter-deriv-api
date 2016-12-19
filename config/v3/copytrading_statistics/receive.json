@@ -79,8 +79,22 @@
               "required": 1
             }
           }
+        },
+        "performance_probability": {
+          "oneOf": [
+              { "type": "string", "pattern": "" },
+              { "type": "number" }
+            ],
+            "description": "Trader performance probability.",
+            "required": 1
+        },
+        "copiers": {
+          "type":"number",
+          "description": "Trader copiers count.",
+          "required": 1
         }
-      }
+      },
+      "additionalProperties": false
     },
     "msg_type": {
       "type": "string",
@@ -91,5 +105,6 @@
       "type": "integer",
       "description": "Optional field send in request to map to response, present only when request contains req_id"
     }
-  }
+  },
+  "additionalProperties": false
 }
