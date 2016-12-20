@@ -49,6 +49,9 @@ ok $res->{proposal_array}->{id}, 'Should return id';
 
 $t->send_ok({json => $req})->message_ok;
 $res = decode_json($t->message->[1]);
+use Data::Dumper;
+
+is(Dumper($res), "1", 'show res');
 is $res->{error}->{code}, 'AlreadySubscribed', 'Correct error for already subscribed with same req_id';
 
 $t->send_ok({json => {forget_all => 'proposal_array'}})->message_ok;
