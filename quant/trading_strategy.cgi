@@ -26,8 +26,12 @@ Bar('Trading strategy');
 my $base_dir = '/var/lib/binary/trading_strategy_data/';
 my $cgi = request()->cgi;
 my @datasets = sort map $_->basename('.csv'), path($base_dir)->children;
-my %strategies = map {; $_ => 1 } qw(buy_and_hold mean_reversal bollinger);
+my %strategies = map {; $_ => 1 } Finance::TradingStrategy->available_strategies;
 my @results;
+my %stats;
+my @spots;
+my $strategy_description;
+
 if($cgi->param('run')) {
     my ($dataset) = $cgi->param('dataset') =~ /^(\w+)$/;
     die "Invalid dataset provided" unless $dataset eq $cgi->param('dataset');
