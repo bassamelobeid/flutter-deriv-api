@@ -201,7 +201,7 @@ sub run {
             $response->{$call} = $result;
 
             use Data::Dumper;
-            warn Dumper $result;
+            diag Dumper $result;
 
             if ($start_stream_id) {
                 $test_app->start_stream($start_stream_id, $result->{$call}->{id}, $call);
