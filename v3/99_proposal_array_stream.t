@@ -27,6 +27,7 @@ is($empty_proposal_open_contract->{error}{details}{barriers}, 'is missing and it
 
 my $req = {
     "proposal_array" => 1,
+    "subscribe"      => 1,
     "amount"         => "100",
     "basis"          => "payout",
     "currency"       => "USD",
@@ -45,19 +46,11 @@ ok $res->{proposal_array}->{id}, 'Should return id';
 $req->{req_id} = 1;
 $t->send_ok({json => $req})->message_ok;
 $res = decode_json($t->message->[1]);
-diag(Dumper($res));
 ok $res->{proposal_array}->{id}, 'Should return id';
 
 $t->send_ok({json => $req})->message_ok;
 $res = decode_json($t->message->[1]);
 
-diag((Dumper($res));
-is $res->{error}->{code}, 'AlreadySubscribed', 'Correct error for already subscribed with same req_id';
-
-$t->send_ok({json => $req})->message_ok;
-$res = decode_json($t->message->[1]);
-
-diag(Dumper($res));
 is $res->{error}->{code}, 'AlreadySubscribed', 'Correct error for already subscribed with same req_id';
 
 $t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
