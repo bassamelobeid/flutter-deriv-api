@@ -62,7 +62,7 @@ use Data::Dumper;
 is(Dumper($res), "1", 'show res');
 is $res->{error}->{code}, 'AlreadySubscribed', 'Correct error for already subscribed with same req_id';
 
-$t->send_ok({json => {forget_all => 'proposal_array'}})->message_ok;
+$t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
 $res = decode_json($t->message->[1]);
 is(Dumper($res), "1", 'show forget_all res');
 is scalar @{$res->{forget_all}}, 2, 'Correct number of subscription forget';
