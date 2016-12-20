@@ -108,7 +108,7 @@ sub _build_brand {
 
     my $broker = $self->broker // '';
     if ($broker =~ /^(?:CH|VRCH)/) {
-        return 'champion-fx';
+        return 'champion';
     }
 
     return 'binary';
