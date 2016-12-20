@@ -24,7 +24,7 @@ sub forget_all {
         if ($type eq 'balance' or $type eq 'transaction' or $type eq 'proposal_open_contract') {
             @removed_ids{@{_forget_transaction_subscription($c, $type)}} = ();
         }
-        if ($type eq 'proposal' or $type eq 'proposal_open_contract') {
+        if ($type eq 'proposal' or $type eq 'proposal_array' or $type eq 'proposal_open_contract') {
             @removed_ids{@{_forget_all_pricing_subscriptions($c, $type)}} = ();
         }
         if ($type ne 'proposal_open_contract') {
@@ -111,7 +111,7 @@ sub _forget_pricing_subscription {
 sub _forget_all_pricing_subscriptions {
     my ($c, $type) = @_;
     my $price_daemon_cmd =
-          $type eq 'proposal'               ? 'price'
+          ($type eq 'proposal' or $type eq 'proposal_array') ? 'price'
         : $type eq 'proposal_open_contract' ? 'bid'
         :                                     undef;
     my $removed_ids     = [];
