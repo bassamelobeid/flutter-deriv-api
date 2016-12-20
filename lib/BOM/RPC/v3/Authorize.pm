@@ -81,6 +81,11 @@ sub authorize {
             landing_company_name => $client->landing_company->short,
             is_virtual           => ($client->is_virtual ? 1 : 0),
         },
+
+        # TODO
+        custom_max_payout => $client->custom_max_payout,
+        payout_limit      => $client->get_limit_for_payout,
+        # /TODO
     };
 }
 
