@@ -175,7 +175,7 @@ sub _build_brand {
     if (my $domain = $self->domain_name) {
         # webtrader.champion-fx.com -> champion, visit this regex
         # when we add new brand
-        ($domain) = ($domain =~ /\.([a-z]+(?:-[a-z]+)?).*?\./);
+        ($domain) = ($domain =~ /\.([a-z]+).*?\./);
         return $domain;
     }
 
