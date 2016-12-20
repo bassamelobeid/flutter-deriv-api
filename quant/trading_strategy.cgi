@@ -22,7 +22,7 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
-# BrokerPresentation('Trading strategy tests');
+BrokerPresentation('Trading strategy tests');
 
 Bar('Trading strategy');
 
