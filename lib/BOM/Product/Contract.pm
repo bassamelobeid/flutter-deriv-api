@@ -673,7 +673,7 @@ sub _build_engine_ask_probability {
         die "Unknown pricing engine: " . $self->pricing_engine_name;
     }
 
-    if (my @missing_parameters = grep !exists $pricing_parameters{$_}, @{$self->pricing_engine_name->required_args}) {
+    if (my @missing_parameters = grep { !exists $pricing_parameters{$_} } @{$self->pricing_engine_name->required_args}) {
         die "Missing pricing parameters for engine " . $self->pricing_engine_name . " - " . join ',', @missing_parameters;
     }
 
