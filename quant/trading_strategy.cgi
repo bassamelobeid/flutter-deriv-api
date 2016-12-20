@@ -13,10 +13,18 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
-BrokerPresentation('Risk Dashboard.');
 
-Bar('Risk Dashboard');
+# BrokerPresentation('Trading strategy tests');
 
-BOM::Backoffice::Request::template->process('backoffice/trading_strategy.tt', { });
+Bar('Trading strategy');
+
+my @datasets = sort map $_->basename('.csv'), path('/var/lib/binary/trading_strategy_data/')->children;
+my @strategies = qw(buy_and_hold mean_reversal bollinger);
+BOM::Backoffice::Request::template->process(
+    'backoffice/trading_strategy.html.tt', {
+        dataset_list => \@datasets,
+        strategy_list => \@strategies,
+    }
+);
 
 code_exit_BO();

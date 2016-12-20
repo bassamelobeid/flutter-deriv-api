@@ -1,4 +1,16 @@
 <h1>Trading strategy selection</h1>
 <p>
-Testing
+<label for="dataset">Dataset</label>
+<select name="dataset">
+[% FOR dataset IN dataset_list -%]
+ <option value="[% dataset %]">[% dataset %]</option>
+[% END -%]
+</select>
+
+<label for="strategy">Strategy</label>
+<select name="strategy">
+[% FOR strategy IN strategy_list -%]
+ <option value="[% strategy %]">[% strategy %]</option>
+[% END -%]
+</select>
 </p>
