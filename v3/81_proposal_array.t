@@ -48,8 +48,10 @@ try {
     alarm(0);
 }
 catch {
-    fail("time out to wait messages");
+    fail("time out");
 };
+
+is(scalar(@res), 2 , "2 responses");
 
 @res = sort { $a->{echo_req}{barrier} cmp $b->{echo_req}{barrier} } @res;
 
