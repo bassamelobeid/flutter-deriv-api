@@ -45,12 +45,6 @@ sub register {
             # Note: xx means there is no country data
             $client_country = 'aq' if ($client_country eq 'xx');
 
-            # JP users have a different trading page, and default to Japanese translations.
-            # Eventually we would handle this through branding, but for now we have a specific
-            # override - the landing_company_name here should match the $landing_company->short
-            # string.
-            $c->stash->{landing_company_name} ||= 'japan' if $client_country eq 'jp';
-
             return $c->stash->{country_code} = $client_country;
         });
 
