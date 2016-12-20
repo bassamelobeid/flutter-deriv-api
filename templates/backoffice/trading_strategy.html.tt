@@ -42,7 +42,7 @@ nv.addGraph(function() {
 
     d3.select('#chart svg')
         .datum([ {
-            key: "Profit/loss",
+            key: "Client profit/loss",
             color: "#ff0000",
             values: [
 [% FOREACH value IN result_list -%]
