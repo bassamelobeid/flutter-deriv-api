@@ -356,11 +356,6 @@ sub get_limits {
         payout_per_symbol_and_contract_type =>
             BOM::System::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$client->currency},
         open_positions => $client->get_limit_for_open_positions,
-
-        # TODO
-        custom_max_payout => $client->custom_max_payout,
-        payout_limit      => $client->get_limit_for_payout,
-        # /TODO
     };
 
     $limit->{market_specific} = BOM::Product::RiskProfile::get_current_profile_definitions($client);
