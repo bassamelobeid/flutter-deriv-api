@@ -45,26 +45,23 @@ ok $res->{proposal_array}->{id}, 'Should return id';
 $req->{req_id} = 1;
 $t->send_ok({json => $req})->message_ok;
 $res = decode_json($t->message->[1]);
-is(Dumper($res), "1", 'show res');
+diag(Dumper($res));
 ok $res->{proposal_array}->{id}, 'Should return id';
 
 $t->send_ok({json => $req})->message_ok;
 $res = decode_json($t->message->[1]);
-use Data::Dumper;
 
-is(Dumper($res), "1", 'show res');
+diag((Dumper($res));
 is $res->{error}->{code}, 'AlreadySubscribed', 'Correct error for already subscribed with same req_id';
 
 $t->send_ok({json => $req})->message_ok;
 $res = decode_json($t->message->[1]);
-use Data::Dumper;
 
-is(Dumper($res), "1", 'show res');
+diag(Dumper($res));
 is $res->{error}->{code}, 'AlreadySubscribed', 'Correct error for already subscribed with same req_id';
 
 $t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
 $res = decode_json($t->message->[1]);
-is(Dumper($res), "1", 'show forget_all res');
 is scalar @{$res->{forget_all}}, 2, 'Correct number of subscription forget';
 
 done_testing;
