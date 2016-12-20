@@ -94,6 +94,8 @@ subtest 'First Test taken: fail test' => sub {
             args   => {
                 score  => 10,
                 status => 'fail'
+                questions => ( {answer=>1, category=>1, id=>5, pass=>1, question=>'Question 5',},
+				{answer=>1, category=>1, id=>6, pass=>1, question=>'Question 6',} );
             }});
 
     $test_epoch = $res->{test_taken_epoch};
