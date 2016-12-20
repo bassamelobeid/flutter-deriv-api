@@ -2,13 +2,13 @@ package BOM::Platform::Account::Real::default;
 
 use strict;
 use warnings;
-
+use feature 'state';
 use Date::Utility;
 use Try::Tiny;
 use Locale::Country;
 use List::MoreUtils qw(any);
 use DataDog::DogStatsd::Helper qw(stats_inc);
-use Data::Validate::Sanctions qw(is_sanctioned);
+use Data::Validate::Sanctions;
 
 use LandingCompany::Countries;
 use Client::Account;
@@ -140,7 +140,8 @@ sub after_register_client {
 
     my $client_loginid = $client->loginid;
     my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
-    if (is_sanctioned($client->first_name, $client->last_name)) {
+    state $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::System::Config::sanction_file);
+    if ($sanctions->is_sanctioned($client->first_name, $client->last_name)) {
         $client->set_status('disabled', 'system', 'client disabled as marked as UNTERR');
         $client->save;
         $client->add_note('UNTERR', "UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list.");
