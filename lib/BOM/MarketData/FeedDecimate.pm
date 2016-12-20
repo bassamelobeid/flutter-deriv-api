@@ -83,7 +83,7 @@ sub BUILD {
         my $key          = $decimate_cache->_make_key($ul->symbol, 0);
         my $decimate_key = $decimate_cache->_make_key($ul->symbol, 1);
 
-        foreach my $single_data (@$data) {
+        foreach my $single_data (@$ticks) {
             $decimate_cache->_update($decimate_cache->redis_write, $key, $single_data->{epoch}, $decimate_cache->encoder->encode($single_data));
         }
 
