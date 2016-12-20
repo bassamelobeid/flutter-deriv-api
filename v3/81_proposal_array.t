@@ -36,71 +36,23 @@ my $sent_json = {
     "duration_unit"  => "m",
     "barriers"       => [{"barrier" => "+1"}, {"barrier" => "+2"}]};
 
-my @res;
-try {
-    local $SIG{ALRM} = sub { die "timeout" };
-    alarm(3);
-    $t = $t->send_ok({json => $sent_json});
-    $t = $t->message_ok;
-    push @res, decode_json($t->message->[1]);
-    $t = $t->message_ok;
-    push @res, decode_json($t->message->[1]);
-    alarm(0);
-}
-catch {
-    fail("time out");
-};
+my $res;
 
-is(scalar(@res), 2 , "2 responses");
+$t->send_ok({json => $sent_json})->message_ok;
+$res = decode_json($t->message->[1]);
+ok $res->{proposal}->{id}, 'Should return id';
 
-@res = sort { $a->{echo_req}{barrier} cmp $b->{echo_req}{barrier} } @res;
+$req->{req_id} = 1;
+$t->send_ok({json => $req})->message_ok;
+$res = decode_json($t->message->[1]);
+ok $res->{proposal_array}->{id}, 'Should return id';
 
-for (0 .. 1) {
-    is($res[$_]{echo_req}{barrier},  $sent_json->{barriers}[$_]{barrier}, 'barrier correct');
-    is($res[$_]{echo_req}{proposal}, "1",                                 "ws command should be a proposal");
-    is($res[$_]{msg_type},           'proposal',                          "message type should be proposal");
-}
+$t->send_ok({json => $req})->message_ok;
+$res = decode_json($t->message->[1]);
+is $res->{error}->{code}, 'AlreadySubscribed', 'Correct error for already subscribed with same req_id';
 
-@res       = ();
-$sent_json = {
-    "proposal_array" => 1,
-    "amount"         => "100",
-    "basis"          => "payout",
-    "currency"       => "USD",
-    "contract_type"  => "EXPIRYMISS",
-    "symbol"         => "R_100",
-    "duration"       => "2",
-    "duration_unit"  => "m",
-    "barriers"       => [{
-            "barrier"  => "+1",
-            "barrier2" => "-1",
-        },
-        {
-            "barrier"  => "+2",
-            "barrier2" => "-2",
-        }]};
-
-try {
-    local $SIG{ALRM} = sub { die "timeout" };
-    alarm(3);
-    $t = $t->send_ok({json => $sent_json});
-    $t = $t->message_ok;
-    push @res, decode_json($t->message->[1]);
-    $t = $t->message_ok;
-    push @res, decode_json($t->message->[1]);
-    alarm(0);
-}
-catch {
-    ok(0, "time out to wait messages");
-  };
-
-@res = sort { $a->{echo_req}{barrier} cmp $b->{echo_req}{barrier} } @res;
-
-for (0 .. 1) {
-    is($res[$_]{echo_req}{barrier},  $sent_json->{barriers}[$_]{barrier},  'barrier correct');
-    is($res[$_]{echo_req}{barrier2}, $sent_json->{barriers}[$_]{barrier2}, 'barrier2 correct');
-    is($res[$_]{echo_req}{proposal}, "1",                                  "ws command should be a proposal");
-    is($res[$_]{msg_type},           'proposal',                           "message type should be proposal");
-}
+$t->send_ok({json => {forget_all => 'proposal_array'}})->message_ok;
+$res = decode_json($t->message->[1]);
+is scalar @{$res->{forget_all}}, 2, 'Correct number of subscription forget';
 
 done_testing;
