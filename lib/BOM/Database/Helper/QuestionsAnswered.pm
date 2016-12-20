@@ -5,21 +5,21 @@ use Rose::DB;
 use Carp;
 
 has 'login_id' => (
-    is => 'rw',
+    is => 'ro',
 );
 
 has 'test_id' => (
-    is => 'rw',
+    is => 'ro',
 );
 
 has questions => (
-    is      => 'rw',
+    is      => 'ro',
     isa     => 'ArrayRef',
     default => sub { [] },
 );
 
 has 'db' => (
-    is  => 'rw',
+    is  => 'ro',
     isa => 'Rose::DB',
 );
 
