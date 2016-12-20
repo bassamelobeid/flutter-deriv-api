@@ -67,6 +67,7 @@ sub buy {
         client        => $client,
         contract      => $contract,
         price         => ($args->{price} || 0),
+        (exists $args->{parameters}{contract_payout} ? (payout => $args->{parameters}{contract_payout}) : ()),
         amount_type   => $contract_parameters->{amount_type},
         purchase_date => $purchase_date,
         source        => $source,
