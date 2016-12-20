@@ -32,9 +32,54 @@
  </tbody>
 </table>
 <div id="chart"> <svg style="height: 16em"> </svg> </div>
+<div id="spot"> <svg style="height: 16em"> </svg> </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.8.5/nv.d3.min.js"></script>
 <script type="text/javascript">
+nv.addGraph(function() {
+    var chart = nv.models.lineChart()
+        .margin({left: 100})
+        .useInteractiveGuideline(true)
+        .showLegend(true)
+        .showYAxis(true)
+        .showXAxis(true);
+
+    chart.xAxis
+        .axisLabel('Time')
+        .tickFormat(d3.format(',r'));
+/*
+    chart.y1Axis
+        .axisLabel('Cumulative client profit')
+        .tickFormat(d3.format('.02f'));
+    chart.y2Axis
+        .axisLabel('Spot price')
+        .tickFormat(d3.format('.02f'));
+*/
+
+    chart.yAxis
+        .axisLabel('Cumulative client profit')
+        .tickFormat(d3.format('.02f'));
+    // chart.lines.forceY([0]);
+
+    d3.select('#chart svg')
+        .datum([ {
+            key: "Client profit/loss",
+            color: "#ff0000",
+            values: [
+[% FOREACH value IN result_list -%]
+                { x: [% loop.index %], y: [% value %] }[% UNLESS loop.last -%],[% END %]
+[% END -%]
+            ]
+        } ])
+        .call(chart);
+
+    nv.utils.windowResize(function() { chart.update() });
+    chart.color(function (d, i) {
+            console.log("have %o and %o", d, i);
+            return d.values.map(function(v,i) { return v.y < 0 ? '#00ff00' : '#ff0000' });
+        });
+    return chart;
+});
 nv.addGraph(function() {
     var chart = nv.models.lineChart()
         .margin({left: 100})
@@ -51,12 +96,12 @@ nv.addGraph(function() {
         .axisLabel('Cumulative client profit')
         .tickFormat(d3.format('.02f'));
 
-    d3.select('#chart svg')
+    d3.select('#spot svg')
         .datum([ {
-            key: "Client profit/loss",
-            color: "#ff0000",
+            key: "Spot price",
+            color: "#00ff00",
             values: [
-[% FOREACH value IN result_list -%]
+[% FOREACH value IN spot_list -%]
                 { x: [% loop.index %], y: [% value %] }[% UNLESS loop.last -%],[% END %]
 [% END -%]
             ]

@@ -58,6 +58,7 @@ if($cgi->param('run')) {
     while(<$fh>) {
         my @market_data = split /\s*,\s*/;
         my %market_data = zip @hdr, @market_data;
+        push @spots, $market_data{quote};
         # Each ->execute returns true (buy) or false (ignore), we calculate client profit from each one and maintain a sum
         my $should_buy = $strategy->execute(%market_data);
         $sum += $should_buy
