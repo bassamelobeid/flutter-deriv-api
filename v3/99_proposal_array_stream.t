@@ -40,7 +40,7 @@ my $res;
 
 $t->send_ok({json => $req})->message_ok;
 $res = decode_json($t->message->[1]);
-ok $res->{proposal}->{id}, 'Should return id';
+ok $res->{proposal_array}->{id}, 'Should return id';
 
 $req->{req_id} = 1;
 $t->send_ok({json => $req})->message_ok;
