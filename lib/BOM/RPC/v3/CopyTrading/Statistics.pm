@@ -41,7 +41,7 @@ sub copytrading_statistics {
         monthly_profitable_trades       => {},
         yearly_profitable_trades        => {},
         last_12months_profitable_trades => 0,
-        performance_probability         => '',
+        performance_probability         => 1,
         # trading
         total_trades      => 0,
         trades_profitable => 0,
