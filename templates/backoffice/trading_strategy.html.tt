@@ -20,6 +20,14 @@
 </p>
 [% IF result_list.size -%]
 <h2>Results for [% dataset_selected || 'unknown dataset' %] with strategy [% strategy_selected || 'unknown' %]</h2>
+<p>[% description %]</p>
+<table>
+ <tbody>
+[% FOREACH stat IN statistics -%]
+ <tr><th>[% stat.0 %]</th><td>[% stat.1 %]</td></tr>
+[% END -%]
+ </tbody>
+</table>
 <div id="chart"> <svg style="height: 16em"> </svg> </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.8.5/nv.d3.min.js"></script>

@@ -14,6 +14,7 @@ use List::MoreUtils qw(zip);
 
 use lib '/home/git/regentmarkets/perl-Finance-TradingStrategy/lib';
 use Finance::TradingStrategy;
+use Finance::TradingStrategy::BuyAndHold;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -45,14 +46,33 @@ if($cgi->param('run')) {
         strategy => $strategy_name,
     );
 
+    $strategy_description = $strategy->description;
     my $fh = $path->openr_utf8 or die "Could not open dataset $path - $!";
     my $sum = 0;
     my @hdr = qw(epoch quote buy_price value);
+    $stats{end} = 0;
     while(<$fh>) {
         my @market_data = split /\s*,\s*/;
         my %market_data = zip @hdr, @market_data;
-        $sum += $strategy->execute(%market_data);
+        # Each ->execute returns true (buy) or false (ignore), we calculate client profit from each one and maintain a sum
+        $sum += $strategy->execute(%market_data)
+        ? ($market_data{value} - $market_data{buy_price})
+        : 0;
         push @results, $sum;
+        ++$stats{count};
+        if($market_data{value} > 0.001) {
+            ++$stats{'winners'};
+        } else {
+            ++$stats{'losers'};
+        }
+        $stats{buy_price}{mean} += $market_data{buy_price};
+        $stats{payout}{mean} += $market_data{value};
+        $stats{start} //= $market_data{epoch};
+        $stats{end} = $market_data{epoch} if $market_data{epoch} > $stats{end};
+    }
+    if($stats{count}) {
+        $stats{buy_price}{mean} /= $stats{count};
+        $stats{payout}{mean} /= $stats{count};
     }
 }
 
@@ -60,6 +80,17 @@ my %template_args = (
     dataset_list  => \@datasets,
     strategy_list => [ sort keys %strategies ],
     result_list   => \@results,
+    spot_list     => \@spots,
+    description   => $strategy_description,
+    statistics => [
+        [ 'Number of datapoints', $stats{count} ],
+        [ 'Starting date', Date::Utility->new($stats{start})->datetime ],
+        [ 'Ending date' ,Date::Utility->new($stats{end})->datetime ],
+        [ 'Average buy price' ,$stats{buy_price}{mean} ],
+        [ 'Average payout' ,$stats{payout}{mean} ],
+        [ 'Number of winning bets' ,$stats{winners} ],
+        [ 'Number of losing bets' ,$stats{losers} ],
+    ]
 );
 
 for my $k (qw(dataset strategy)) {
