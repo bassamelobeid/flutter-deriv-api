@@ -17,7 +17,7 @@
 </select>
 
 <label for="count">Count</label>
-<input name="count" value="0">
+<input name="count" value="[% count %]">
 
 <input name="run" type="submit" value="Run">
 </p>

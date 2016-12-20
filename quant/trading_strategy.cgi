@@ -35,6 +35,7 @@ my %stats;
 my @spots;
 my $strategy_description;
 
+my $count = $cgi->param('count');
 if($cgi->param('run')) {
     my ($dataset) = $cgi->param('dataset') =~ /^(\w+)$/;
     die "Invalid dataset provided" unless $dataset eq $cgi->param('dataset');
@@ -44,7 +45,6 @@ if($cgi->param('run')) {
     my $strategy_name = $cgi->param('strategy');
     die "Invalid strategy provided" unless exists $strategies{$strategy_name};
 
-    my $count = $cgi->param('count');
     my $strategy = Finance::TradingStrategy->new(
         strategy => $strategy_name,
         count => $count,
@@ -86,6 +86,7 @@ if($cgi->param('run')) {
 
 my %template_args = (
     dataset_list  => \@datasets,
+    count => $count,
     strategy_list => [ sort keys %strategies ],
     result_list   => \@results,
     spot_list     => \@spots,
