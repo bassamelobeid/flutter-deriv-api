@@ -220,7 +220,7 @@ Also insert into decimate cache if data crosses 15s boundary.
 sub data_cache_insert {
     my ($self, $data) = @_;
 
-    $data = $data->as_hash if $data->can('as_hash');
+    $data = $data->as_hash if blessed($data);
 
     my %to_store = %$data;
 
