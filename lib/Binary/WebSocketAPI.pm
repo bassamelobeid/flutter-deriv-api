@@ -113,8 +113,13 @@ sub startup {
     $app->plugin('ClientIP');
     $app->plugin('Binary::WebSocketAPI::Plugins::Helpers');
 
-    my $actions = [
-        ['authorize', {stash_params => [qw/ ua_fingerprint client_ip user_agent /]}],
+    my $actions = [[
+            'authorize',
+            {
+                stash_params => [qw/ ua_fingerprint client_ip user_agent /],
+                success      => \&Binary::WebSocketAPI::v3::Wrapper::Authorize::authorize_success,
+            }
+        ],
         [
             'logout',
             {
