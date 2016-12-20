@@ -1,5 +1,5 @@
-start_epoch: 1482132000
-end_epoch: 1482132300
+start_epoch: 1482105600
+end_epoch: 1482192000
 durations:
   - 5t
   - 10t
