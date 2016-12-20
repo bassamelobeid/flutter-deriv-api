@@ -80,7 +80,10 @@ if($cgi->param('run')) {
     }
     if($stats{count}) {
         $stats{buy_price}{mean} = $stats{buy_price}{sum} / $stats{count};
-        $stats{profit_margin} = sprintf '%.2f%%', -100.0 * $sum / $stats{bought_buy_price}{sum};
+        $stats{profit_margin} =
+            $stats{bought_buy_price}{sum}
+            ? sprintf '%.2f%%', -100.0 * $sum / $stats{bought_buy_price}{sum}
+            : 'N/A';
         $stats{payout}{mean} /= $stats{count};
     }
 }
