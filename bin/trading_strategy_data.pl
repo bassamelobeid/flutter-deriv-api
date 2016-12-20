@@ -24,7 +24,7 @@ my $now = time;
 my $output_base = '/var/lib/binary/trading_strategy_data';
 $_->remove for path($output_base)->children;
 
-for my $symbol (qw(frxUSDJPY R_100)) {
+for my $symbol (qw(frxAUDJPY R_50)) {
     print "Symbol $symbol\n";
     my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(
         db_handle => Postgres::FeedDB::read_dbh,
