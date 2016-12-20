@@ -42,8 +42,10 @@ if($cgi->param('run')) {
     my $strategy_name = $cgi->param('strategy');
     die "Invalid strategy provided" unless exists $strategies{$strategy_name};
 
+    my $count = $cgi->param('count');
     my $strategy = Finance::TradingStrategy->new(
         strategy => $strategy_name,
+        count => $count,
     );
 
     $strategy_description = $strategy->description;
