@@ -25,7 +25,7 @@ $t = $t->send_ok({json => {proposal_array => 1}})->message_ok;
 my $empty_proposal_open_contract = decode_json($t->message->[1]);
 is($empty_proposal_open_contract->{error}{details}{barriers}, 'is missing and it is required');
 
-my $sent_json = {
+my $req = {
     "proposal_array" => 1,
     "amount"         => "100",
     "basis"          => "payout",
@@ -38,7 +38,7 @@ my $sent_json = {
 
 my $res;
 
-$t->send_ok({json => $sent_json})->message_ok;
+$t->send_ok({json => $req})->message_ok;
 $res = decode_json($t->message->[1]);
 ok $res->{proposal}->{id}, 'Should return id';
 
