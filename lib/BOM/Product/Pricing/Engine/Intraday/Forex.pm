@@ -346,6 +346,9 @@ sub _get_barrier_for_tentative_events {
         }
     }
 
+    #quickly return if there is no shift
+    return $barrier if $tentative_event_shift == 0;
+
     $tentative_event_shift /= 100;
 
     my $er_factor = 1 + $tentative_event_shift;
