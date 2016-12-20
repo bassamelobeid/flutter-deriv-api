@@ -34,13 +34,15 @@ sub daemon_run {
     while (1) {
         try {
             BOM::RiskReporting::MarkedToModel->new->generate;
-        } catch {
+        }
+        catch {
             warn "Failure in BOM::RiskReporting::MarkedToModel: $_\n";
         };
         $self->rest;
         try {
             BOM::RiskReporting::Dashboard->new->generate;
-        } catch {
+        }
+        catch {
             warn "Failure in BOM::RiskReporting::Dashboard: $_\n";
         };
         $self->rest;

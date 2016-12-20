@@ -20,7 +20,7 @@
 </style>
 
 <form method="POST" action="?">
-    [% FOR b IN ['CR', 'MX', 'MF', 'MLT', 'VRTC', 'JP', 'VRTJ'] %]
+    [% FOR b IN ['CR', 'MX', 'MF', 'MLT', 'VRTC', 'JP', 'VRTJ', 'CH', 'VRCH'] %]
     <div class="brk">
         <input name="broker" type="radio" id="[%b%]" value="[%b%]"></input>
         <label for="[%b%]">[%b%]</label>

@@ -180,4 +180,3 @@ subtest 'realtime report generation' => sub {
 };
 done_testing;
 
-

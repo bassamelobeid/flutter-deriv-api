@@ -100,12 +100,12 @@ sub _include_metal_holidays_and_early_closes {
     my $us_holidays = $data->{NYSE};
 
     # From the study we did, gold is illiquid after European market close on those US holiday, so we set early close on those day.
-    # On Good Friday, since both US and European market are closed, the gold's feed tend to be very spare, so we decide to keep it as holiday. Other provider such as Panda and Idata also mark this day as holiday 
+    # On Good Friday, since both US and European market are closed, the gold's feed tend to be very spare, so we decide to keep it as holiday. Other provider such as Panda and Idata also mark this day as holiday
     $data->{METAL} = {
         $christmas => 'Christmas Day',
         $new_year  => "New Year\'s Day",
         map { $_ => 'Good Friday' } grep { $us_holidays->{$_} =~ /Good Friday/ } keys %{$us_holidays}};
-    $early_closes_data->{METAL} = { map { $_ => $us_holidays->{$_} } grep { $us_holidays->{$_} !~ /Good Friday/ } keys %{$us_holidays}};
+    $early_closes_data->{METAL} = {map { $_ => $us_holidays->{$_} } grep { $us_holidays->{$_} !~ /Good Friday/ } keys %{$us_holidays}};
     return;
 }
 

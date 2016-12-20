@@ -41,10 +41,10 @@ my $class = 'Quant::Framework::VolSurface::' . ($type eq 'moneyness' ? 'Moneynes
 my $surface;
 
 $surface = $class->new(
-    underlying        => $underlying,
-    surface           => $surface_data,
-    recorded_date     => $recorded_date,
-    spot_reference    => $spot,
+    underlying     => $underlying,
+    surface        => $surface_data,
+    recorded_date  => $recorded_date,
+    spot_reference => $spot,
 );
 
 my $response;

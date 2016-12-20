@@ -28,8 +28,7 @@ BrokerPresentation('Batch Credit/Debit to Clients Accounts');
 if (BOM::Platform::Runtime->instance->app_config->system->suspend->system) {
     print "ERROR: Sytem is suspended";
     code_exit_BO();
-}    
-
+}
 
 my $cgi               = CGI->new;
 my $broker            = request()->broker_code;

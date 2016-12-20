@@ -19,8 +19,8 @@ foreach my $rd ($now - 5 .. $now) {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
-            recorded_date     => Date::Utility->new($rd),
-            underlying        => $u
+            recorded_date => Date::Utility->new($rd),
+            underlying    => $u
         });
 }
 

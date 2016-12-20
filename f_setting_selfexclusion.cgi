@@ -22,7 +22,7 @@ my $loginid = request()->param('loginid');
 Bar("Setting Client Self Exclusion");
 
 # Not available for Virtual Accounts
-if ($loginid =~ /^VRT/) {
+if ($loginid =~ /^VR/) {
     print '<h1>' . localize('Self-Exclusion Facilities') . '</h1>';
     print '<p class="aligncenter">' . localize('We\'re sorry but the Self Exclusion facility is not available for Virtual Accounts.') . '</p>';
     code_exit_BO();

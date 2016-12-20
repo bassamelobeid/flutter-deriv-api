@@ -65,7 +65,7 @@ has 'domain_name' => (
 );
 
 {
-    my %known_codes = map {; $_ => 1 } qw(CR MLT MF MX VRTC FOG JP VRTJ);
+    my %known_codes = map { ; $_ => 1 } qw(CR MLT MF MX VRTC FOG JP VRTJ CH VRCH);
     has 'broker_code' => (
         is  => 'ro',
         isa => subtype(

@@ -31,7 +31,6 @@ BOM::Backoffice::Auth0::can_access(['Quants']);
 my %params = %{request()->params};
 my ($pricing_parameters, @contract_details, $start);
 
-
 my $broker        = $params{broker}     // request()->broker_code;
 my $id            = $params{id}         // '';
 my $short_code    = $params{short_code} // '';
@@ -54,7 +53,6 @@ if ($broker and ($id or $short_code)) {
     my $short_code_param = $details->{shortcode}     // $short_code;
     my $currency_param   = $details->{currency_code} // $currency_code;
 
-
     my $original_contract = produce_contract($short_code_param, $currency_param);
     my $action_type = $details->{action_type} // 'buy';    #If it is with shortcode as input, we just want to verify the ask price
     my $sell_time = $details->{sell_time};
@@ -69,7 +67,6 @@ if ($broker and ($id or $short_code)) {
     my $pricing_args = $original_contract->build_parameters;
     $pricing_args->{date_pricing}    = $start;
     $pricing_args->{landing_company} = $landing_company;
-
 
     my $contract       = produce_contract($pricing_args);
     my $display_price =  $action_type eq 'buy' ? $contract->ask_price : $contract->bid_price;

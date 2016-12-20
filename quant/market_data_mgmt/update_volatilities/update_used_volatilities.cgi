@@ -69,14 +69,11 @@ foreach my $market (@all_markets) {
     push @update_markets, $market if request()->param('update_$market');
 }
 
-my $update_including_vrt             = request()->param('update_including_vrt');
 my $update_including_intraday_double = request()->param('update_including_intraday_double');
 my $markets                          = request()->param('markets');
 
 # To give a warning when difference between old and new vol is too big
 my $warndifference = 0.1;
-
-my $broker = $update_including_vrt ? 'VRT' : 'FOG';
 
 my @markets;
 push @markets, split /\s+/, $markets if $markets;
@@ -85,14 +82,12 @@ if ($update_including_intraday_double) {
         create_underlying_db->get_symbols_for(
         market            => \@update_markets,
         contract_category => 'ANY',
-        broker            => 'VRT',
         );
 } else {
     push @markets,
         create_underlying_db->get_symbols_for(
         market            => \@update_markets,
         contract_category => 'IV',
-        broker            => $broker,
         );
 }
 

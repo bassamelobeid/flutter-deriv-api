@@ -3,6 +3,7 @@ use Encode;
 
 use Format::Util::Strings qw( set_selected_item );
 use Date::Utility;
+use LandingCompany::Countries;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
@@ -52,9 +53,10 @@ sub print_client_details {
 
     my @countries;
     my $country_codes = {};
-    foreach my $country_name (sort LandingCompany::Countries->instance->countries->all_country_names) {
+    my $lc_countries  = LandingCompany::Countries->new()->countries;
+    foreach my $country_name (sort $lc_countries->all_country_names) {
         push @countries, $country_name;
-        $country_codes->{$country_name} = LandingCompany::Countries->instance->countries->code_from_country($country_name);
+        $country_codes->{$country_name} = $lc_countries->code_from_country($country_name);
     }
 
     my ($proveID, $show_uploaded_documents);
@@ -68,7 +70,7 @@ sub print_client_details {
     }
 
     # COMMUNICATION ADDRESSES
-    my $client_phone_country = LandingCompany::Countries->instance->countries->code_from_phone($client->phone);
+    my $client_phone_country = $lc_countries->code_from_phone($client->phone);
     if (not $client_phone_country) {
         $client_phone_country = 'Unknown';
     }
