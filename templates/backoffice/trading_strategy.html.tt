@@ -1,5 +1,6 @@
 <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.8.5/nv.d3.min.css">
 <form>
+stats = ::[% statistics %]::
 <h1>Trading strategy selection</h1>
 <p>
 <label for="dataset">Dataset</label>
@@ -21,7 +22,28 @@
 
 <input name="run" type="submit" value="Run">
 </p>
-[% IF result_list.size -%]
+[% IF result_table.size -%]
+<h2>Results for all datasets with strategy [% strategy_selected || 'unknown' %]</h2>
+<table>
+ <thead>
+<tr>
+[% FOREACH hdr IN result_table.header -%]
+ <th>[% hdr %]</th>
+[% END -%]
+</tr>
+ </thead>
+ <tbody>
+[% FOREACH result IN result_table.body -%]
+<tr>
+[%  FOREACH stat IN result -%]
+ <td style="text-align:center; border:1px solid;">[% stat %]</td>
+[%  END -%]
+</tr>
+[% END -%]
+</tr>
+ </tbody>
+</table>
+[% ELSIF result_list.size -%]
 <h2>Results for [% dataset_selected || 'unknown dataset' %] with strategy [% strategy_selected || 'unknown' %]</h2>
 <p>[% description %]</p>
 <table>

@@ -29,21 +29,25 @@ Bar('Trading strategy');
 my $base_dir = '/var/lib/binary/trading_strategy_data/';
 my $cgi = request()->cgi;
 my @datasets = sort map $_->basename('.csv'), path($base_dir)->children;
+
 my %strategies = map {; $_ => 1 } Finance::TradingStrategy->available_strategies;
 my @results;
 my %stats;
 my @spots;
 my $strategy_description;
 
+my $strategy_name = $cgi->param('strategy');
+warn "Invalid strategy provided" unless exists $strategies{$strategy_name};
+
 my $count = $cgi->param('count');
-if($cgi->param('run')) {
-    my ($dataset) = $cgi->param('dataset') =~ /^(\w+)$/;
-    die "Invalid dataset provided" unless $dataset eq $cgi->param('dataset');
+
+my $rslt;
+my @tbl;
+
+my $process_dataset = sub {
+    my ($dataset) = @_;
     my $path = path($base_dir)->child($dataset);
     die "Dataset $path not found" unless $path->exists;
-
-    my $strategy_name = $cgi->param('strategy');
-    die "Invalid strategy provided" unless exists $strategies{$strategy_name};
 
     my $strategy = Finance::TradingStrategy->new(
         strategy => $strategy_name,
@@ -86,28 +90,73 @@ if($cgi->param('run')) {
             : 'N/A';
         $stats{payout}{mean} /= $stats{count};
     }
+    return {
+        result_list   => \@results,
+        spot_list     => \@spots,
+        statistics    => \%stats,
+        dataset       => $dataset,
+    };
+};
+
+my $statistics_table = sub {
+    my $stats = shift;
+warn "stats table with $stats";
+warn "bad stats - $stats" unless exists $stats->{count};
+    return [
+        [ 'Number of datapoints', $stats->{count} ],
+        [ 'Starting date', Date::Utility->new($stats->{start})->datetime ],
+        [ 'Ending date' ,Date::Utility->new($stats->{end})->datetime ],
+        [ 'Period' , Time::Duration::duration($stats->{end} - $stats->{start}) ],
+        [ 'Average buy price' ,$stats->{buy_price}{mean} ],
+        [ 'Average payout' ,$stats->{payout}{mean} ],
+        [ 'Number of winning bets' ,$stats->{winners} ],
+        [ 'Number of losing bets' ,$stats->{losers} ],
+        [ 'Bets bought' ,$stats->{trades} ],
+        [ 'Company profit margin', $stats->{profit_margin} ],
+    ];
+};
+
+# When the button is pressed, we end up in here:
+if($cgi->param('run')) {
+    my ($dataset) = $cgi->param('dataset') =~ /^(\w+)$/;
+    if($dataset eq 'Summary') {
+        for my $dataset (@datasets) {
+            push @tbl, $process_dataset->($dataset);
+        }
+        $rslt = { };
+    } else {
+        die "Invalid dataset provided" unless $dataset eq $cgi->param('dataset');
+        $rslt = $process_dataset->($dataset);
+    }
 }
 
+warn "had datasets @datasets";
 my %template_args = (
-    dataset_list  => \@datasets,
+    dataset_list  => [ 'Summary', @datasets ],
     count => $count,
     strategy_list => [ sort keys %strategies ],
-    result_list   => \@results,
-    spot_list     => \@spots,
     description   => $strategy_description,
-    statistics => [
-        [ 'Number of datapoints', $stats{count} ],
-        [ 'Starting date', Date::Utility->new($stats{start})->datetime ],
-        [ 'Ending date' ,Date::Utility->new($stats{end})->datetime ],
-        [ 'Period' , Time::Duration::duration($stats{end} - $stats{start}) ],
-        [ 'Average buy price' ,$stats{buy_price}{mean} ],
-        [ 'Average payout' ,$stats{payout}{mean} ],
-        [ 'Number of winning bets' ,$stats{winners} ],
-        [ 'Number of losing bets' ,$stats{losers} ],
-        [ 'Bets bought' ,$stats{trades} ],
-        [ 'Company profit margin', $stats{profit_margin} ],
-    ]
+    statistics => $statistics_table->($rslt->{statistics}),
+    result_list   => $rslt->{result_list},
+    spot_list     => $rslt->{spot_list},
+    dataset       => $rslt->{dataset},
 );
+
+
+if(@tbl) {
+    my @result_row;
+    my $hdr;
+    for my $result_for_dataset (@tbl) {
+warn "result for dataset = " . join ',' ,%$result_for_dataset;
+        my $stats = $statistics_table->($result_for_dataset->{statistics});
+        $hdr //= $stats;
+        push @result_row, [ $result_for_dataset->{dataset}, map $_->[1], @$stats ]
+    }
+    $template_args{result_table} = {
+        header => [ 'Dataset', map $_->[0], @$hdr ],
+        body => \@result_row,
+    };
+}
 
 for my $k (qw(dataset strategy)) {
     my $param = $cgi->param($k);
