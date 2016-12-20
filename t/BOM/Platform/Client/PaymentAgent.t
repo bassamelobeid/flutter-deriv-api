@@ -13,8 +13,7 @@ my $payment_agent;
 #################################
 # testing: new
 
-Test::Exception::lives_ok { $payment_agent = Client::Account::PaymentAgent->new({'loginid' => $loginid1}) }
-"Can get PaymentAgent client object";
+Test::Exception::lives_ok { $payment_agent = Client::Account::PaymentAgent->new({'loginid' => $loginid1}) } "Can get PaymentAgent client object";
 
 my $class = ref $payment_agent;
 is($class, 'Client::Account::PaymentAgent', 'Class is BOM::Platform::Client::PaymentAgent');
