@@ -238,7 +238,7 @@ cmp_deeply([ warnings {
     $res = decode_json($t->message->[1]);
     is $res->{msg_type}, 'authorize';
     test_schema('authorize', $res);
-} ], bag(qr/Missing app_id/), 'have warning if we leave out app_id');
+} ], bag(re(qr/Missing app_id/)), 'have warning if we leave out app_id');
 
 $t->finish_ok;
 
