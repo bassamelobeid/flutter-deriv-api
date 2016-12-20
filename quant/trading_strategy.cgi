@@ -12,6 +12,9 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use List::MoreUtils qw(zip);
 
+use lib '/home/git/regentmarkets/perl-Finance-TradingStrategy/lib';
+use Finance::TradingStrategy;
+
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -34,24 +37,35 @@ if($cgi->param('run')) {
     my $strategy_name = $cgi->param('strategy');
     die "Invalid strategy provided" unless exists $strategies{$strategy_name};
 
+    my $strategy = Finance::TradingStrategy->new(
+        strategy => $strategy_name,
+    );
+
     my $fh = $path->openr_utf8 or die "Could not open dataset $path - $!";
     my $sum = 0;
     my @hdr = qw(epoch quote buy_price value);
     while(<$fh>) {
-        my @quote = split /\s*,\s*/;
-        my %quote = zip @hdr, @quote;
-        # $strategy->execute(...)
-        $sum += $quote{value} - $quote{buy_price};
+        my @market_data = split /\s*,\s*/;
+        my %market_data = zip @hdr, @market_data;
+        $sum += $strategy->execute(%market_data);
         push @results, $sum;
     }
 }
 
+my %template_args = (
+    dataset_list  => \@datasets,
+    strategy_list => [ sort keys %strategies ],
+    result_list   => \@results,
+);
+
+for my $k (qw(dataset strategy)) {
+    my $param = $cgi->param($k);
+    $template_args{$k . '_selected'} = $param if $param;
+}
+
 BOM::Backoffice::Request::template->process(
-    'backoffice/trading_strategy.html.tt', {
-        dataset_list => \@datasets,
-        strategy_list => [ sort keys %strategies ],
-        result_list => \@results,
-    }
+    'backoffice/trading_strategy.html.tt',
+    \%template_args
 );
 
 code_exit_BO();
