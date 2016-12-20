@@ -33,7 +33,7 @@
           },
           "question":{
             "type":"string",
-            "pattern":"^[ A-Za-z0-9,.:;()?]*$",
+            "pattern":"^[\w\d\s//,.:;()?{}]*$",
             "description":"The question"
           },
           "answer":{
