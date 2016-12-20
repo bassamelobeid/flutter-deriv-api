@@ -69,14 +69,8 @@ if ($broker and ($id or $short_code)) {
     $pricing_args->{landing_company} = $landing_company;
 
     my $contract       = produce_contract($pricing_args);
-    my $display_price  = $action_type eq 'buy' ? $contract->ask_price : $contract->bid_price;
-    my $traded_bid     = $details->{bid_price};
-    my $traded_ask     = $details->{ask_price};
-    my $slippage_price = $details->{price_slippage};
-    my $order_price    = $details->{order_price} // $display_price;
+    my $display_price =  $action_type eq 'buy' ? $contract->ask_price : $contract->bid_price;
     my $prev_tick      = $contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
-    my $pricing_spot   = $details->{pricing_spot};
-
     my $traded_contract = $action_type eq 'buy' ? $contract : $contract->opposite_contract;
     my $discounted_probability = $contract->discounted_probability;
 
@@ -96,13 +90,15 @@ if ($broker and ($id or $short_code)) {
         description            => $contract->longcode,
         ccy                    => $contract->currency,
         order_type             => $action_type,
-        order_price            => $order_price,
-        slippage_price         => $slippage_price // 'NA.',
-        trade_ask_price        => $traded_ask // 'NA.',
-        trade_bid_price        => $traded_bid // 'NA. (unsold)',
+        order_price            => $details->{order_price} // $display_price,
+        slippage_price         => $details->{price_slippage} // 'NA.',
+        trade_ask_price        => $details->{ask_price} // 'NA.',
+        trade_bid_price        => $details->{bid_price} // 'NA. (unsold)',
         payout                 => $contract->payout,
         tick_before_trade_time => $prev_tick,
-        pricing_spot           => $pricing_spot,
+        ref_spot               => $details->{pricing_spot},
+        ref_vol                => $details->{high_barrier_vol}, #it will be the vol of barrier for the single barrier contract
+        ref_vol_2              => $details->{low_barrier_vol}
     );
 }
 my $display = $params{download} ? 'download' : 'display';
