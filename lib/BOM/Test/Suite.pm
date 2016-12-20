@@ -200,9 +200,6 @@ sub run {
             my $result = $test_app->test_schema($req_params, $content, $receive_file, $fail);
             $response->{$call} = $result;
 
-            use Data::Dumper;
-            diag Dumper $result;
-
             if ($start_stream_id) {
                 $test_app->start_stream($start_stream_id, $result->{$call}->{id}, $call);
             }
