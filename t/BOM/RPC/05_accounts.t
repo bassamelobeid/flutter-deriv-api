@@ -982,7 +982,7 @@ subtest $method => sub {
             'address_line_1'                 => 'Civic Center',
             'first_name'                     => 'bRaD',
             'email_consent'                  => '0',
-            'allow_copiers'                  => '0',
+            'allow_copiers'                  => undef,
         });
 
     $params->{token} = $token1;
