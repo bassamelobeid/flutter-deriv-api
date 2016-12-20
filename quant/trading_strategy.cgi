@@ -16,6 +16,8 @@ use lib '/home/git/regentmarkets/perl-Finance-TradingStrategy/lib';
 use Finance::TradingStrategy;
 use Finance::TradingStrategy::BuyAndHold;
 
+use Time::Duration ();
+
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -57,23 +59,27 @@ if($cgi->param('run')) {
         my @market_data = split /\s*,\s*/;
         my %market_data = zip @hdr, @market_data;
         # Each ->execute returns true (buy) or false (ignore), we calculate client profit from each one and maintain a sum
-        $sum += $strategy->execute(%market_data)
+        my $should_buy = $strategy->execute(%market_data);
+        $sum += $should_buy
         ? ($market_data{value} - $market_data{buy_price})
         : 0;
         push @results, $sum;
         ++$stats{count};
+        ++$stats{trades} if $should_buy;
         if($market_data{value} > 0.001) {
             ++$stats{'winners'};
         } else {
             ++$stats{'losers'};
         }
-        $stats{buy_price}{mean} += $market_data{buy_price};
+        $stats{bought_buy_price}{sum} += $market_data{buy_price} if $should_buy;
+        $stats{buy_price}{sum} += $market_data{buy_price};
         $stats{payout}{mean} += $market_data{value};
         $stats{start} //= $market_data{epoch};
         $stats{end} = $market_data{epoch} if $market_data{epoch} > $stats{end};
     }
     if($stats{count}) {
-        $stats{buy_price}{mean} /= $stats{count};
+        $stats{buy_price}{mean} = $stats{buy_price}{sum} / $stats{count};
+        $stats{profit_margin} = sprintf '%.2f%%', -100.0 * $sum / $stats{bought_buy_price}{sum};
         $stats{payout}{mean} /= $stats{count};
     }
 }
@@ -88,10 +94,13 @@ my %template_args = (
         [ 'Number of datapoints', $stats{count} ],
         [ 'Starting date', Date::Utility->new($stats{start})->datetime ],
         [ 'Ending date' ,Date::Utility->new($stats{end})->datetime ],
+        [ 'Period' , Time::Duration::duration($stats{end} - $stats{start}) ],
         [ 'Average buy price' ,$stats{buy_price}{mean} ],
         [ 'Average payout' ,$stats{payout}{mean} ],
         [ 'Number of winning bets' ,$stats{winners} ],
         [ 'Number of losing bets' ,$stats{losers} ],
+        [ 'Bets bought' ,$stats{trades} ],
+        [ 'Company profit margin', $stats{profit_margin} ],
     ]
 );
 
