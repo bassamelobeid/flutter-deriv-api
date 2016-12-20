@@ -36,7 +36,8 @@ sub buy {
     my $args                = $params->{args};
 
     my $trading_period_start = $contract_parameters->{trading_period_start};
-    my $purchase_date        = time;                                           # Purchase is considered to have happened at the point of request.
+
+    my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
     $contract_parameters->{landing_company} = $client->landing_company->short;
     my ($contract, $response);
@@ -63,10 +64,9 @@ sub buy {
     return $response if $response;
 
     my $trx = BOM::Product::Transaction->new({
-        client   => $client,
-        contract => $contract,
-        price    => ($args->{price} || 0),
-        (exists $args->{passthrough}{payout} ? (payout => $args->{passthrough}{payout}) : ()),
+        client        => $client,
+        contract      => $contract,
+        price         => ($args->{price} || 0),
         amount_type   => $contract_parameters->{amount_type},
         purchase_date => $purchase_date,
         source        => $source,
