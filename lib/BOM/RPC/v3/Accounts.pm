@@ -43,8 +43,17 @@ sub payout_currencies {
         $client = Client::Account->new({loginid => $token_details->{loginid}});
     }
 
+    # if client has default_account he had already choosed his currency..
     return [$client->currency] if $client && $client->default_account;
+
+    # or if client has not yet selected currency - we will use list from his LC
+    # or we may have a landing company even if we're not logged in - typically this
+    # is obtained from the GeoIP country code lookup. If we have one, use it.
     my $lc = $client ? $client->landing_company : LandingCompany::Registry::get($params->{landing_company_name} || 'costarica');
+    # ... but we fall back to Costa Rica as a useful default, since it has most
+    # currencies enabled.
+    $lc ||= LandingCompany::Registry::get('costarica');
+
     return $lc->legal_allowed_currencies;
 }
 
