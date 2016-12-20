@@ -76,6 +76,7 @@ subtest 'CR' => sub {
             'withdrawal_for_x_days_monetary'      => '0',
             'withdrawal_since_inception_monetary' => '0',
             'remainder'                           => roundnear(0.01, $limits->{lifetime_limit}),
+            payout_per_symbol_and_contract_type   => 10000,
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -102,6 +103,7 @@ subtest 'CR' => sub {
             'num_of_days'       => $limits->{for_days},
             'num_of_days_limit' => '99999999',
             'lifetime_limit'    => '99999999',
+            payout_per_symbol_and_contract_type   => 10000,
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -151,6 +153,7 @@ subtest 'JP' => sub {
             'withdrawal_for_x_days_monetary'      => '0',
             'withdrawal_since_inception_monetary' => '0',
             'remainder'                           => roundnear(0.01, $limits->{lifetime_limit}),
+            payout_per_symbol_and_contract_type   => 1000000,
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -180,6 +183,7 @@ subtest 'JP' => sub {
             'num_of_days'       => $limits->{for_days},
             'num_of_days_limit' => '99999999',
             'lifetime_limit'    => '99999999',
+            payout_per_symbol_and_contract_type   => 1000000,
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -214,6 +218,7 @@ subtest 'MLT' => sub {
             'withdrawal_for_x_days_monetary'      => '0',
             'withdrawal_since_inception_monetary' => '0',
             'remainder'                           => roundnear(0.01, $limits->{lifetime_limit}),
+            payout_per_symbol_and_contract_type   => 10000,
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -243,6 +248,7 @@ subtest 'MLT' => sub {
             'num_of_days'       => $limits->{for_days},
             'num_of_days_limit' => '99999999',
             'lifetime_limit'    => '99999999',
+            payout_per_symbol_and_contract_type   => 10000,
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -277,6 +283,7 @@ subtest 'MX' => sub {
             'withdrawal_for_x_days_monetary'      => '0',
             'withdrawal_since_inception_monetary' => '0',
             'remainder'                           => roundnear(0.01, $limits->{limit_for_days}),
+            payout_per_symbol_and_contract_type   => 10000,
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -306,6 +313,7 @@ subtest 'MX' => sub {
             'num_of_days'       => $limits->{for_days},
             'num_of_days_limit' => '99999999',
             'lifetime_limit'    => '99999999',
+            payout_per_symbol_and_contract_type   => 10000,
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');

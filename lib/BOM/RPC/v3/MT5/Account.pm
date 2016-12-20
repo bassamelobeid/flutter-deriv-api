@@ -10,17 +10,12 @@ use File::ShareDir;
 use Locale::Country::Extra;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Cashier;
-use BOM::Platform::Context qw (localize);
+use BOM::Platform::Context qw (localize request);
 use BOM::Platform::User;
 use BOM::MT5::User;
 use BOM::Database::ClientDB;
 use BOM::Platform::Runtime;
-
-my $countries_list;
-
-BEGIN {
-    $countries_list = YAML::XS::LoadFile(File::ShareDir::dist_file('LandingCompany', 'countries.yml'));
-}
+use LandingCompany::Countries;
 
 sub mt5_login_list {
     my $params = shift;
@@ -71,8 +66,9 @@ sub mt5_new_account {
         }
 
         # get MT company from countries.yml
-        my $mt_key     = 'mt_' . $account_type . '_company';
-        my $mt_company = 'none';
+        my $mt_key         = 'mt_' . $account_type . '_company';
+        my $mt_company     = 'none';
+        my $countries_list = LandingCompany::Countries->new(brand => request()->brand)->countries_list;
         if (defined $countries_list->{$client->residence} && defined $countries_list->{$client->residence}->{$mt_key}) {
             $mt_company = $countries_list->{$client->residence}->{$mt_key};
         }

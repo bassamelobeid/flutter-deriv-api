@@ -353,7 +353,9 @@ sub get_limits {
     my $limit = +{
         account_balance => $client->get_limit_for_account_balance,
         payout          => $client->get_limit_for_payout,
-        open_positions  => $client->get_limit_for_open_positions,
+        payout_per_symbol_and_contract_type =>
+            BOM::System::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$client->currency},
+        open_positions => $client->get_limit_for_open_positions,
     };
 
     $limit->{market_specific} = BOM::Product::RiskProfile::get_current_profile_definitions($client);
@@ -424,7 +426,7 @@ sub paymentagent_list {
 
     # add country name plus code
     foreach (@{$countries}) {
-        $_->[1] = LandingCompany::Countries->instance->countries->localized_code2country($_->[0], $language);
+        $_->[1] = LandingCompany::Countries->new(brand => request()->brand)->countries->localized_code2country($_->[0], $language);
     }
 
     my $authenticated_paymentagent_agents =

@@ -12,7 +12,7 @@ use LandingCompany::Countries;
 
 use BOM::Database::Model::AccessToken;
 use BOM::Database::Model::OAuth;
-use BOM::Platform::Context qw (localize);
+use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
 use BOM::Platform::Token;
 
@@ -241,8 +241,9 @@ sub get_real_acc_opening_type {
     my $from_client = $args->{from_client};
 
     return unless ($from_client->residence);
-    my $gaming_company    = LandingCompany::Countries->instance->gaming_company_for_country($from_client->residence);
-    my $financial_company = LandingCompany::Countries->instance->financial_company_for_country($from_client->residence);
+    my $lc_countries      = LandingCompany::Countries->new(brand => request()->brand);
+    my $gaming_company    = $lc_countries->gaming_company_for_country($from_client->residence);
+    my $financial_company = $lc_countries->financial_company_for_country($from_client->residence);
 
     if ($from_client->is_virtual) {
         return 'real' if ($gaming_company);

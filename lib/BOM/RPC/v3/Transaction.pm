@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Try::Tiny;
+use Data::Dumper;
 
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
@@ -39,11 +40,28 @@ sub buy {
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
     $contract_parameters->{landing_company} = $client->landing_company->short;
+    my ($contract, $response);
 
-    my $contract = try { produce_contract($contract_parameters) }
-        || return BOM::RPC::v3::Utility::create_error({
-            code              => 'ContractCreationFailure',
-            message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+    try {
+        die unless BOM::RPC::v3::Contract::pre_validate_start_expire_dates($contract_parameters);
+    }
+    catch {
+        warn __PACKAGE__ . " buy pre_validate_start_expire_dates failed, parameters: " . Dumper($contract_parameters);
+        $response = BOM::RPC::v3::Utility::create_error({
+                code              => 'ContractCreationFailure',
+                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+    };
+    return $response if $response;
+    try {
+        $contract = produce_contract($contract_parameters);
+    }
+    catch {
+        warn __PACKAGE__ . " buy produce_contract failed, parameters: " . Dumper($contract_parameters);
+        $response = BOM::RPC::v3::Utility::create_error({
+                code              => 'ContractCreationFailure',
+                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+    };
+    return $response if $response;
 
     my $trx = BOM::Product::Transaction->new({
         client        => $client,
@@ -61,7 +79,7 @@ sub buy {
         });
     }
 
-    my $response = {
+    $response = {
         transaction_id => $trx->transaction_id,
         contract_id    => $trx->contract_id,
         balance_after  => sprintf('%.2f', $trx->balance_after),
@@ -145,7 +163,7 @@ sub buy_contract_for_multiple_accounts {
             };
     }
 
-    my $contract;
+    my ($contract, $response);
     if ($found_at_least_one) {
         # NOTE: we rely here on BOM::Product::Transaction to perform all the
         #       client validations like client_status and self_exclusion.
@@ -158,10 +176,27 @@ sub buy_contract_for_multiple_accounts {
         $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
         $contract_parameters->{landing_company} = $client->landing_company->short;
 
-        $contract = try { produce_contract({%$contract_parameters}) }
-            || return BOM::RPC::v3::Utility::create_error({
-                code              => 'ContractCreationFailure',
-                message_to_client => localize('Cannot create contract')});
+        try {
+            die unless BOM::RPC::v3::Contract::pre_validate_start_expire_dates($contract_parameters);
+        }
+        catch {
+            warn __PACKAGE__
+                . " buy_contract_for_multiple_accounts pre_validate_start_expire_dates failed, parameters: "
+                . Dumper($contract_parameters);
+            $response = BOM::RPC::v3::Utility::create_error({
+                    code              => 'ContractCreationFailure',
+                    message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+        };
+        return $response if $response;
+        try {
+            $contract = produce_contract($contract_parameters);
+        }
+        catch {
+            warn __PACKAGE__ . " buy_contract_for_multiple_accounts produce_contract failed, parameters: " . Dumper($contract_parameters);
+            $response = BOM::RPC::v3::Utility::create_error({
+                    code              => 'ContractCreationFailure',
+                    message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+        };
 
         my $trx = BOM::Product::Transaction->new({
             client        => $client,
