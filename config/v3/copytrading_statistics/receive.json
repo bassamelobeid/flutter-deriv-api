@@ -81,12 +81,9 @@
           }
         },
         "performance_probability": {
-          "oneOf": [
-              { "type": "string", "pattern": "" },
-              { "type": "number" }
-            ],
-            "description": "Trader performance probability.",
-            "required": 1
+          "type": "number",
+          "description": "Trader performance probability.",
+          "required": 1
         },
         "copiers": {
           "type":"number",
