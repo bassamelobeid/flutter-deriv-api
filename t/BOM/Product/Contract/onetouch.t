@@ -8,7 +8,7 @@ use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-
+use Format::Util::Numbers qw(roundnear);
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 
@@ -17,9 +17,10 @@ my $now = Date::Utility->new('10-Mar-2015');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        date   => Date::Utility->new
-    }) for ('USD', 'JPY');
+        recorded_date => $now,
+        symbol        => $_,
+    }) for qw( USD JPY JPY-USD );
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
@@ -65,6 +66,8 @@ subtest 'touch' => sub {
         is $c->payouttime,   'hit';
         is $c->code,         'ONETOUCH';
         is $c->pricing_code, 'ONETOUCH';
+        is $c->ask_price, 9.77;
+        is roundnear(0.001,$c->pricing_vol) , 0.116;
         is $c->sentiment,    'high_vol';
         ok $c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];

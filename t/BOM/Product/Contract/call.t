@@ -8,7 +8,7 @@ use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-
+use Format::Util::Numbers qw(roundnear);
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 
@@ -81,6 +81,8 @@ subtest 'call variations' => sub {
         is $c->code,        'CALL';
         ok $c->is_intraday, 'is intraday';
         ok !$c->expiry_daily, 'not expiry daily';
+        is $c->ask_price, 5.59, 'correct ask price';
+        is roundnear(0.001,$c->pricing_vol), 0.103, 'correct pricing vol';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
         isa_ok $c->barrier,        'BOM::Product::Contract::Strike';
         cmp_ok $c->barrier->as_absolute, '==', 76.900, 'correct absolute barrier';
