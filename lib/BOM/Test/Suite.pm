@@ -303,10 +303,9 @@ sub _set_allow_omnibus {
 sub _change_status {
     my ($loginid, $action, $status) = @_;
     my $client = Client::Account->new({loginid => $loginid});
-    if($action eq 'set'){
-        $client->set_status($status,'system', 'for test');
-    }
-    else{
+    if ($action eq 'set') {
+        $client->set_status($status, 'system', 'for test');
+    } else {
         $client->clr_status($status);
     }
     $client->save;
