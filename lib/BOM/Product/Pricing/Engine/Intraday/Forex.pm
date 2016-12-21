@@ -331,13 +331,18 @@ sub _get_barrier_for_tentative_events {
     my $tentative_event_shift = 0;
 
     foreach my $event (@{$tentative_events}) {
+        my $shift = $event->{tentative_event_shift} // 0;
+
         #We add-up all tentative event shfit  applicable for any of symbols of the currency pair
         if ($event->{symbol} eq $bet->underlying->asset_symbol) {
-            $tentative_event_shift += $event->{tentative_event_shift};
+            $tentative_event_shift += $shift;
         } elsif ($event->{symbol} eq $bet->underlying->quoted_currency_symbol) {
-            $tentative_event_shift += $event->{tentative_event_shift};
+            $tentative_event_shift += $shift;
         }
     }
+
+    #quickly return if there is no shift
+    return $barrier if $tentative_event_shift == 0;
 
     $tentative_event_shift /= 100;
 
