@@ -262,4 +262,10 @@ sub add_app_id {
     return;
 }
 
+sub add_brand {
+    my ($c, $req_storage) = @_;
+    $req_storage->{call_params}->{brand} = $c->stash('brand');
+    return;
+}
+
 1;
