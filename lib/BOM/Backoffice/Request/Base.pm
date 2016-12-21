@@ -106,7 +106,7 @@ sub _build_broker_code {
 sub _build_brand {
     my $self = shift;
 
-    my $broker = $self->broker // '';
+    my $broker = $self->broker_code // '';
     if ($broker =~ /^(?:CH|VRCH)/) {
         return 'champion';
     }
