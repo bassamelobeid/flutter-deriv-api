@@ -103,7 +103,7 @@ my $process_dataset = sub {
         $stats{buy_price}{mean} = $stats{buy_price}{sum} / $stats{count};
         $stats{profit_margin} =
             $stats{bought_buy_price}{sum}
-            ? sprintf '%.2f%%', -100.0 * $sum / $stats{bought_buy_price}{sum}
+            ? sprintf '%.2f%% (%f/%f)', -100.0 *$sum / $stats{bought_buy_price}{sum}, $sum, $stats{bought_buy_price}{sum}
             : 'N/A';
         $stats{payout}{mean} /= $stats{count};
     }
