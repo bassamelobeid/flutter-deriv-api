@@ -17,14 +17,17 @@ use constant TICK_CHUNK_SIZE => 1000;
 
 my $config = LoadFile('config/trading_strategy_datasets.yml');
 
-my $start = $config->{start_epoch};
-my $end = $config->{end_epoch};
+my $target_date = Date::Utility->today->truncate_to_day;
+
+my $start = $target_date->epoch - 86400;
+my $end =   $target_date->epoch - 1;
+
 my $now = time;
 
-my $output_base = '/var/lib/binary/trading_strategy_data';
-$_->remove for path($output_base)->children;
+my $output_base = '/var/lib/binary/trading_strategy_data/' . $target_date->date;
+path($output_base)->mkpath;
 
-for my $symbol (qw(frxAUDJPY R_50)) {
+for my $symbol (@{$config->{underlyings}}) {
     print "Symbol $symbol\n";
     my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(
         db_handle => Postgres::FeedDB::read_dbh,
@@ -37,12 +40,12 @@ for my $symbol (qw(frxAUDJPY R_50)) {
     while($current < $end) {
         my @ticks = reverse @{$api->ticks_start_end_with_limit_for_charting({
             start_time => $current,
-            end_time => $end,
+            end_time => $current + TICK_CHUNK_SIZE,
             limit => TICK_CHUNK_SIZE,
         })};
         for my $duration (@{$config->{durations}}) {
             print "Duration $duration\n";
-            for my $bet_type (qw(PUT CALL)) {
+            for my $bet_type (@{$config->{types}}) {
                 print "Bet type $bet_type\n";
                 my $key = join '_', $symbol, $duration, $bet_type;
                 unless(exists $fh{$key}) {
@@ -73,7 +76,6 @@ for my $symbol (qw(frxAUDJPY R_50)) {
                 }
             }
         }
-    } continue {
-        $current += TICK_CHUNK_SIZE;
+	$current = 1 + $ticks[-1]{epoch};
     }
 }
