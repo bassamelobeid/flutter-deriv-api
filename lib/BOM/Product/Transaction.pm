@@ -14,10 +14,13 @@ use Format::Util::Numbers qw(commas roundnear to_monetary_number_format);
 use Try::Tiny;
 use YAML::XS qw(LoadFile);
 
+use Brands;
+use Client::Account;
+use LandingCompany::Registry;
+use Finance::Asset::Market::Types;
+
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Runtime;
-use LandingCompany::Countries;
-use Client::Account;
 use BOM::System::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
@@ -32,9 +35,7 @@ use BOM::Database::Model::DataCollection::QuantsBetVariables;
 use BOM::Database::Model::Constants;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::Helper::RejectedTrade;
-use LandingCompany::Registry;
 use BOM::Database::ClientDB;
-use Finance::Asset::Market::Types;
 
 has client => (
     is  => 'ro',
@@ -1796,7 +1797,8 @@ sub __validate_jurisdictional_restrictions {
         );
     }
 
-    if ($residence && $market_name eq 'volidx' && LandingCompany::Countries->new(brand => request()->brand)->volidx_restricted_country($residence)) {
+    my $lc_countries = Brands->new(name => request()->brand)->landing_company_countries;
+    if ($residence && $market_name eq 'volidx' && $lc_countries->volidx_restricted_country($residence)) {
         return Error::Base->cuss(
             -type => 'RandomRestrictedCountry',
             -mesg => 'Clients are not allowed to place Volatility Index contracts as their country is restricted.',
@@ -1808,7 +1810,7 @@ sub __validate_jurisdictional_restrictions {
     # For certain countries such as Belgium, we are not allow to sell financial product to them.
     if (   $residence
         && $market_name ne 'volidx'
-        && LandingCompany::Countries->new(brand => request()->brand)->financial_binaries_restricted_country($residence))
+        && $lc_countries->financial_binaries_restricted_country($residence))
     {
         return Error::Base->cuss(
             -type => 'FinancialBinariesRestrictedCountry',
