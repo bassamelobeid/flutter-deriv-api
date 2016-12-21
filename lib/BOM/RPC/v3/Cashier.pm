@@ -18,8 +18,9 @@ use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use YAML::XS qw(LoadFile);
 
+use Brands;
+use Client::Account;
 use LandingCompany::Registry;
-use LandingCompany::Countries;
 use Client::Account::PaymentAgent;
 
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency in_USD);
@@ -29,7 +30,6 @@ use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw (localize request);
-use Client::Account;
 use BOM::Platform::Email qw(send_email);
 use BOM::System::Config;
 use BOM::System::AuditLog;
@@ -115,7 +115,7 @@ sub cashier {
     } elsif ($client->documents_expired) {
         $error = localize(
             'Your identity documents have passed their expiration date. Kindly send a scan of a valid ID to <a href="mailto:[_1]">[_1]</a> to unlock your cashier.',
-            BOM::System::Config::email_address('support'));
+            Brands->new(name => request()->brand)->emails('support'));
     } elsif ($client->get_status('cashier_locked')) {
         $error = localize('Your cashier is locked');
     } elsif ($client->get_status('disabled')) {
@@ -353,7 +353,9 @@ sub get_limits {
     my $limit = +{
         account_balance => $client->get_limit_for_account_balance,
         payout          => $client->get_limit_for_payout,
-        open_positions  => $client->get_limit_for_open_positions,
+        payout_per_symbol_and_contract_type =>
+            BOM::System::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$client->currency},
+        open_positions => $client->get_limit_for_open_positions,
     };
 
     $limit->{market_specific} = BOM::Product::RiskProfile::get_current_profile_definitions($client);
@@ -424,7 +426,7 @@ sub paymentagent_list {
 
     # add country name plus code
     foreach (@{$countries}) {
-        $_->[1] = LandingCompany::Countries->instance->countries->localized_code2country($_->[0], $language);
+        $_->[1] = Brands->new(name => request()->brand)->landing_company_countries->countries->localized_code2country($_->[0], $language);
     }
 
     my $authenticated_paymentagent_agents =
@@ -680,7 +682,7 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
     );
 
     send_email({
-        'from'               => BOM::System::Config::email_address('support'),
+        'from'               => Brands->new(name => request()->brand)->emails('support'),
         'to'                 => $client_to->email,
         'subject'            => localize('Acknowledgement of Money Transfer'),
         'message'            => [$emailcontent],
@@ -875,9 +877,10 @@ sub paymentagent_withdraw {
 
     if ($amount_transferred > 1500) {
         my $message = "Client $client_loginid transferred \$$amount_transferred to payment agent today";
+        my $brand = Brands->new(name => request()->brand);
         send_email({
-            from    => BOM::System::Config::email_address('support'),
-            to      => BOM::System::Config::email_address('support'),
+            from    => $brand->emails('support'),
+            to      => $brand->emails('support'),
             subject => $message,
             message => [$message],
         });
@@ -950,7 +953,7 @@ sub paymentagent_withdraw {
         localize('The [_1] team.', $website_name),
     ];
     send_email({
-        from               => BOM::System::Config::email_address('support'),
+        from               => Brands->new(name => request()->brand)->emails('support'),
         to                 => $paymentagent->email,
         subject            => localize('Acknowledgement of Withdrawal Request'),
         message            => $emailcontent,
@@ -965,15 +968,17 @@ sub paymentagent_withdraw {
 }
 
 sub __output_payments_error_message {
-    my $args           = shift;
-    my $client         = $args->{'client'};
-    my $action         = $args->{'action'};
-    my $payment_type   = $args->{'payment_type'} || 'n/a';                 # used for reporting; if not given, not applicable
-    my $currency       = $args->{'currency'};
-    my $amount         = $args->{'amount'};
-    my $error_message  = $args->{'error_msg'};
-    my $payments_email = BOM::System::Config::email_address('payments');
-    my $cs_email       = BOM::System::Config::email_address('support');
+    my $args          = shift;
+    my $client        = $args->{'client'};
+    my $action        = $args->{'action'};
+    my $payment_type  = $args->{'payment_type'} || 'n/a';    # used for reporting; if not given, not applicable
+    my $currency      = $args->{'currency'};
+    my $amount        = $args->{'amount'};
+    my $error_message = $args->{'error_msg'};
+
+    my $brand          = Brands->new(name => request()->brand);
+    my $payments_email = $brand->emails('payments');
+    my $cs_email       = $brand->emails('support');
 
     # amount is not always exist because error may happen before client submit the form
     # or when redirected from 3rd party site to failure script where no data is returned

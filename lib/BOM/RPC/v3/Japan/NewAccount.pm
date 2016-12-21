@@ -7,15 +7,17 @@ use JSON qw(from_json encode_json);
 use DateTime;
 use Date::Utility;
 
+use Brands;
+use LandingCompany::Registry;
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Locale;
 use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
 use BOM::System::Config;
-use BOM::Platform::Context qw (localize);
+use BOM::Platform::Context qw (localize request);
 use BOM::System::AuditLog;
-use LandingCompany::Registry;
+use BOM::Database::Helper::QuestionsAnswered;
 
 sub get_jp_account_status {
     my $client = shift;
@@ -150,7 +152,7 @@ sub jp_knowledge_test {
     }
 
     my $args = $params->{args};
-    my ($score, $status) = @{$args}{'score', 'status'};
+    my ($score, $status, $questions) = @{$args}{'score', 'status', 'questions'};
 
     $jp_client->clr_status($_) for ('jp_knowledge_test_pending', 'jp_knowledge_test_fail');
     if ($status eq 'pass') {
@@ -171,6 +173,18 @@ sub jp_knowledge_test {
         };
     $financial_data->{jp_knowledge_test} = $results;
     $jp_client->financial_assessment({data => encode_json($financial_data)});
+
+    #save the questions here.
+    if ($questions) {
+        my $questions_ans = BOM::Database::Helper::QuestionsAnswered->new({
+            login_id  => $client->loginid,
+            test_id   => time,
+            questions => $questions,
+            db        => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
+        });
+
+        $questions_ans->record_questions_answered;
+    }
 
     if (not $jp_client->save()) {
         return BOM::RPC::v3::Utility::create_error({
@@ -216,7 +230,7 @@ support@binary.com',
         );
 
         send_email({
-            from               => BOM::System::Config::email_address('support'),
+            from               => Brands->new(name => request()->brand)->emails('support'),
             to                 => $client->email,
             subject            => localize('Kindly send us your documents for verification.'),
             message            => [$email_content],
@@ -393,7 +407,7 @@ sub set_jp_settings {
     $message .= "\n" . localize('The [_1] team.', $website_name);
 
     send_email({
-        from               => BOM::System::Config::email_address('support'),
+        from               => Brands->new(name => request()->brand)->emails('support'),
         to                 => $client->email,
         subject            => $client->loginid . ' ' . localize('Change in account settings'),
         message            => [$message],
