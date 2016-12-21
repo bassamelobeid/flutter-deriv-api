@@ -41,8 +41,8 @@ my $config = LoadFile('/home/git/regentmarkets/bom-backoffice/config/trading_str
 
 my @dates = sort map $_->basename, path($base_dir)->children;
 
-my $date = $cgi->param('date');
-$base_dir = path($base_dir)->child($date) if $date;
+my $date_selected = $cgi->param('date');
+$base_dir = path($base_dir)->child($date_selected) if $date_selected and $date_selected ne '*';
 
 my %strategies = map {; $_ => 1 } Finance::TradingStrategy->available_strategies;
 my $strategy_description;
@@ -76,34 +76,37 @@ my $process_dataset = sub {
     $stats{end} = 0;
     my $line = 0;
     while(<$fh>) {
-	next if $line++ % $skip;
-        my @market_data = split /\s*,\s*/;
-        my %market_data = zip @hdr, @market_data;
-        push @spots, $market_data{quote};
-        # Each ->execute returns true (buy) or false (ignore), we calculate client profit from each one and maintain a sum
-        my $should_buy = $strategy->execute(%market_data);
-        $sum += $should_buy
-        ? ($market_data{value} - $market_data{buy_price})
-        : 0;
-        push @results, $sum;
-        ++$stats{count};
-        ++$stats{trades} if $should_buy;
-        if($market_data{value} > 0.001) {
-            ++$stats{'winners'};
-        } else {
-            ++$stats{'losers'};
-        }
-        $stats{bought_buy_price}{sum} += $market_data{buy_price} if $should_buy;
-        $stats{buy_price}{sum} += $market_data{buy_price};
-        $stats{payout}{mean} += $market_data{value};
-        $stats{start} //= $market_data{epoch};
-        $stats{end} = $market_data{epoch} if $market_data{epoch} > $stats{end};
+        next if $line++ % $skip;
+        eval {
+            my @market_data = split /\s*,\s*/;
+            my %market_data = zip @hdr, @market_data;
+            push @spots, $market_data{quote};
+            # Each ->execute returns true (buy) or false (ignore), we calculate client profit from each one and maintain a sum
+            my $should_buy = $strategy->execute(%market_data);
+            $sum += $should_buy
+            ? ($market_data{value} - $market_data{buy_price})
+            : 0;
+            push @results, $sum;
+            ++$stats{count};
+            ++$stats{trades} if $should_buy;
+            if($market_data{value} > 0.001) {
+                ++$stats{'winners'};
+            } else {
+                ++$stats{'losers'};
+            }
+            $stats{bought_buy_price}{sum} += $market_data{buy_price} if $should_buy;
+            $stats{buy_price}{sum} += $market_data{buy_price};
+            $stats{payout}{mean} += $market_data{value};
+            $stats{start} //= Date::Utility->new($market_data{epoch});
+            $stats{end} //= $stats{start};
+            $stats{end} = Date::Utility->new($market_data{epoch}) if $market_data{epoch} > $stats{end}->epoch;
+        } or do { warn "Error processing line $line - $@"; 1 };
     }
     if($stats{count}) {
         $stats{buy_price}{mean} = $stats{buy_price}{sum} / $stats{count};
         $stats{profit_margin} =
             $stats{bought_buy_price}{sum}
-            ? sprintf '%.2f%% (%f/%f)', -100.0 *$sum / $stats{bought_buy_price}{sum}, $sum, $stats{bought_buy_price}{sum}
+            ? sprintf '%.2f%% (%s/%s)', -100.0 *$sum / $stats{bought_buy_price}{sum}, to_monetary_number_format($sum), to_monetary_number_format($stats{bought_buy_price}{sum})
             : 'N/A';
         $stats{payout}{mean} /= $stats{count};
     }
@@ -133,35 +136,47 @@ my $statistics_table = sub {
 };
 
 # When the button is pressed, we end up in here:
+my ($underlying_selected) = $cgi->param('underlying') =~ /^(\w+|\*)$/;
+my ($duration_selected) = $cgi->param('duration') =~ /^(\w+|\*)$/;
+my ($type_selected) = $cgi->param('type') =~ /^(\w+|\*)$/;
 if($cgi->param('run')) {
-    my ($underlying) = $cgi->param('underlying') =~ /^(\w+)$/;
-    my ($duration) = $cgi->param('duration') =~ /^(\w+)$/;
-    my ($type) = $cgi->param('type') =~ /^(\w+)$/;
-    my $dataset = join '_', $underlying, $duration, $type;
-    $rslt = $process_dataset->($dataset);
-} elsif($cgi->param('daily_summary')) {
-    $rslt = { };
-    for my $underlying (@{$config->{underlyings}}) {
-        for my $duration (@{$config->{durations}}) {
-            for my $type (@{$config->{types}}) {
-                my $dataset = join '_', $underlying, $duration, $type;
-                push @tbl, eval {
-                    $process_dataset->($dataset)
-                } or do {
-                    warn "Failed to process $dataset - $@";
-                    ()
-                };
+    if(grep { $_ eq '*' } $underlying_selected, $duration_selected, $type_selected) {
+        $rslt = { };
+TABLE:
+        for my $underlying ($underlying_selected eq '*' ? @{$config->{underlyings}} : $underlying_selected) {
+            for my $duration ($duration_selected eq '*' ? @{$config->{durations}} : $duration_selected) {
+                for my $type ($type_selected eq '*' ? @{$config->{types}} : $type_selected) {
+                    for my $date ($date_selected eq '*' ? @{$config->{underlyings}} : $underlying_selected) {
+                        my $dataset = join '_', $underlying, $duration, $type;
+                        push @tbl, eval {
+                            $process_dataset->($dataset)
+                        } or do {
+                            warn "Failed to process $dataset - $@";
+                            ()
+                        };
+                        last TABLE if @tbl > 300;
+                    }
+                }
             }
         }
+    } else {
+        my $dataset = join '_', $underlying_selected, $duration_selected, $type_selected;
+        $rslt = $process_dataset->($dataset);
     }
 }
 
 my %template_args = (
     parameter_list => {
-        duration => $config->{durations},
-        date => \@dates,
-        underlying => $config->{underlyings},
-        type => $config->{types},
+        duration => [ '*', @{$config->{durations}} ],
+        date => [ '*', @dates ],
+        underlying => [ '*', @{$config->{underlyings}} ],
+        type => [ '*', @{$config->{types}} ],
+    },
+    selected_parameter => {
+        date => $date_selected,
+        underlying => $underlying_selected,
+        duration => $duration_selected,
+        type => $type_selected,
     },
     count => $count,
     skip => $skip,
@@ -172,7 +187,7 @@ my %template_args = (
     spot_list     => $rslt->{spot_list},
     dataset       => $rslt->{dataset},
     dataset_base_dir => '/trading_strategy_data',
-    date => $date,
+    date => $date_selected,
 );
 
 
@@ -180,7 +195,6 @@ if(@tbl) {
     my @result_row;
     my $hdr;
     for my $result_for_dataset (@tbl) {
-warn "result for dataset = " . join ',' ,%$result_for_dataset;
         my $stats = $statistics_table->($result_for_dataset->{statistics});
         $hdr //= $stats;
         push @result_row, [ $result_for_dataset->{dataset}, map $_->[1], @$stats ]

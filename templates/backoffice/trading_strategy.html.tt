@@ -19,7 +19,6 @@
 <label for="count">Param 1</label>
 <input name="count" value="[% count %]">
 
-<input name="daily_summary" type="submit" value="Daily summary">
 <br>
 [%  END -%]
 [% END -%]
@@ -28,6 +27,7 @@
 <input name="skip" value="[% skip %]">
 
 <input name="run" type="submit" value="Run">
+
 [% IF result_table.size -%]
 <h2>Results for all datasets with strategy [% strategy_selected || 'unknown' %]</h2>
 <table>
@@ -65,8 +65,8 @@
 </tr>
  </tbody>
 </table>
-<div id="chart"> <svg style="height: 16em"> </svg> </div>
-<div id="spot"> <svg style="height: 16em"> </svg> </div>
+<div id="chart"> <svg style="height: 32em"> </svg> </div>
+<div id="spot"> <svg style="height: 32em"> </svg> </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.8.5/nv.d3.min.js"></script>
 <script type="text/javascript">
