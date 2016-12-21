@@ -4,9 +4,9 @@ package main;
 use strict;
 use warnings;
 
+use Brands;
 use Date::Utility;
 use BOM::Platform::Email qw(send_email);
-use BOM::System::Config;
 use BOM::MyAffiliates::BackfillManager;
 
 local $SIG{ALRM} = sub { die "alarm\n" };
@@ -21,9 +21,10 @@ my $full_report = ['Mark First Deposits:', ''];
 push @{$full_report}, ('', 'Promo Codes:', '');
 push @{$full_report}, @backfill_promo_codes_report;
 
+my $brand = Brands->new();
 send_email({
-    from    => BOM::System::Config::email_address('system'),
-    to      => BOM::System::Config::email_address('affiliates'),
+    from    => $brand->emails('system'),
+    to      => $brand->emails('affiliates'),
     subject => 'CRON backfill_affiliate_data: Report for ' . $runtime->datetime_yyyymmdd_hhmmss_TZ,
     message => $full_report,
 });

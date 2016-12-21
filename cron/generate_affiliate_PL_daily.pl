@@ -5,11 +5,11 @@ use Getopt::Long;
 use Path::Tiny;
 use FileHandle;
 
+use Brands;
 use Date::Utility;
 use BOM::Platform::Email qw(send_email);
 use BOM::MyAffiliates::ActivityReporter;
 use BOM::Platform::Runtime;
-use BOM::System::Config;
 
 local $SIG{ALRM} = sub { die "alarm\n" };
 alarm 1800;
@@ -69,10 +69,11 @@ while ($to_date->days_between($processing_date) >= 0) {
     $processing_date = Date::Utility->new($processing_date->epoch + 86400);
 }
 
+my $brand = Brands->new();
 # email CSV out for reporting purposes
 send_email({
-    from       => BOM::System::Config::email_address('system'),
-    to         => BOM::System::Config::email_address('affiliates'),
+    from       => $brand->emails('system'),
+    to         => $brand->emails('affiliates'),
     subject    => 'CRON generate_affiliate_PL_daily: ' . ' for date range ' . $from_date->date_yyyymmdd . ' - ' . $to_date->date_yyyymmdd,
     message    => ['Find attached the CSV that was generated.'],
     attachment => \@csv_filenames,

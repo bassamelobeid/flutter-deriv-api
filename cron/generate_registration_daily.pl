@@ -1,9 +1,9 @@
 #!/etc/rmg/bin/perl
 package main;
 
+use Brands;
 use BOM::MyAffiliates::GenerateRegistrationDaily;
 use BOM::Platform::Email qw(send_email);
-use BOM::System::Config;
 
 local $SIG{ALRM} = sub { die "alarm\n" };
 alarm 1800;
@@ -18,9 +18,10 @@ sub run {
     GetOptions('to=s' => \$to);
 
     my $result = BOM::MyAffiliates::GenerateRegistrationDaily->new->run;
+    my $brand = Brands->new();
     send_email({
-        from    => BOM::System::Config::email_address('system'),
-        to      => BOM::System::Config::email_address('affiliates'),
+        from    => $brand->emails('system'),
+        to      => $brand->emails('affiliates'),
         subject => 'CRON registrations: Report for ' . $result->{start_time}->datetime_yyyymmdd_hhmmss_TZ,
         message => $result->{report},
     });
