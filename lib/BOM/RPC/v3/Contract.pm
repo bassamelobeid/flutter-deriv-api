@@ -471,7 +471,7 @@ sub send_ask {
     };
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
-    map {exists($response->{$_}) && ($response->{$_} .= '')} qw(ask_price barrier date_start display_value payout spot spot_time);
+    map { exists($response->{$_}) && ($response->{$_} .= '') } qw(ask_price barrier date_start display_value payout spot spot_time);
     return $response;
 }
 
