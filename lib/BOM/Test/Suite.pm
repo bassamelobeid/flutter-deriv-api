@@ -300,6 +300,18 @@ sub _set_allow_omnibus {
     return $r;
 }
 
+sub _change_status {
+    my ($loginid, $action, $status) = @_;
+    my $client = Client::Account->new({loginid => $loginid});
+    if($action eq 'set'){
+        $client->set_status($status,'system', 'for test');
+    }
+    else{
+        $client->clr_status($status);
+    }
+    $client->save;
+}
+
 sub _setup_market_data {
     my $data = LoadFile('/home/git/regentmarkets/bom-test/data/suite_market_data.yml');
 
