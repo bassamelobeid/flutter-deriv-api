@@ -17,6 +17,7 @@ use BOM::Platform::User;
 use BOM::System::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::System::AuditLog;
+use BOM::Database::Helper::QuestionsAnswered;
 
 sub get_jp_account_status {
     my $client = shift;
@@ -151,7 +152,7 @@ sub jp_knowledge_test {
     }
 
     my $args = $params->{args};
-    my ($score, $status) = @{$args}{'score', 'status'};
+    my ($score, $status, $questions) = @{$args}{'score', 'status', 'questions'};
 
     $jp_client->clr_status($_) for ('jp_knowledge_test_pending', 'jp_knowledge_test_fail');
     if ($status eq 'pass') {
@@ -172,6 +173,18 @@ sub jp_knowledge_test {
         };
     $financial_data->{jp_knowledge_test} = $results;
     $jp_client->financial_assessment({data => encode_json($financial_data)});
+
+    #save the questions here.
+    if ($questions) {
+        my $questions_ans = BOM::Database::Helper::QuestionsAnswered->new({
+            login_id  => $client->loginid,
+            test_id   => time,
+            questions => $questions,
+            db        => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
+        });
+
+        $questions_ans->record_questions_answered;
+    }
 
     if (not $jp_client->save()) {
         return BOM::RPC::v3::Utility::create_error({
