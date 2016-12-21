@@ -625,7 +625,9 @@ sub get_details_by_transaction_ref {
         b.sell_time as sell_time,
         b.purchase_time as purchase_time,
         d.requested_price as order_price,
-        d.spot as pricing_spot
+        d.spot as pricing_spot,
+        d.iv as high_barrier_vol,
+        d.iv_2 as low_barrier_vol
       FROM
         transaction.transaction t
         JOIN bet.financial_market_bet b ON t.financial_market_bet_id=b.id
