@@ -12,8 +12,6 @@ To set statistic of market data. For example age of vol file, age of dividend, a
 
 =cut
 
-#test
-
 use Moose;
 
 use BOM::Platform::Runtime;
@@ -238,16 +236,16 @@ sub _collect_vol_diff_stat {
     foreach my $underlying (@underlyings) {
         my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
         my $surface    = $volsurface->surface_data;
-        my $vol_On     = $surface->{1}->{smile}->{50};
-        my $vol_1w     = $surface->{7}->{smile}->{50};
-        my $vol_1m = $surface->{30}->{smile}->{50} // $surface->{31}->{smile}->{50} // $surface->{29}->{smile}->{50} // $surface->{28}->{smile}->{50};
+        my $one_on_day = $volsurface->get_day_for_tenor('ON');
+        my $one_week_day = $volsurface->get_day_for_tenor('1W');
+        my $one_month_day = $volsurface->get_day_for_tenor('1M');
+        my $vol_On     = $surface->{$one_on_day}->{smile}->{50};
+        my $vol_1w     = $surface->{$one_week_day}->{smile}->{50};
+        my $vol_1m     = $surface->{$one_month_day}->{smile}->{50};
         my $day_of_week  = Date::Utility->new->day_of_week;
         my $total_var_On = ($vol_On**2) * 1;
         my $total_var_1w = ($vol_1w**2) * 7;
         my $total_var_1m = ($vol_1m**2) * 30;
-
-        if ($day_of_week == 5) {
-            $total_var_On = ($vol_On**2) * 3;
         }
         stats_gauge('total_variance_diff_On_1w', abs($total_var_1w - $total_var_On)/$total_var_On, {tags => ['tag:' . $underlying->{symbol}]});
         stats_gauge('total_variance_diff_On_1m', abs($total_var_1m - $total_var_On)/$total_var_On, {tags => ['tag:' . $underlying->{symbol}]});
