@@ -6,19 +6,20 @@ use warnings;
 
 use JSON;
 use Try::Tiny;
+use WWW::OneAll;
 use Date::Utility;
 use Data::Password::Meter;
+use Brands;
+use Client::Account;
+use LandingCompany::Registry;
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::Japan::NewAccount;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
-use LandingCompany::Countries;
 use BOM::Platform::Email qw(send_email);
-use LandingCompany::Registry;
 use BOM::Platform::Locale;
-use Client::Account;
 use BOM::Platform::User;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Token;
@@ -31,7 +32,6 @@ use BOM::Database::ClientDB;
 use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
-use WWW::OneAll;
 use BOM::Database::Model::UserConnect;
 
 sub payout_currencies {
@@ -64,7 +64,7 @@ sub landing_company {
     my $params = shift;
 
     my $country  = $params->{args}->{landing_company};
-    my $configs  = LandingCompany::Countries->new(brand => request()->brand)->countries_list;
+    my $configs  = Brands->new(name => request()->brand)->landing_company_countries->countries_list;
     my $c_config = $configs->{$country};
     unless ($c_config) {
         ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
@@ -307,7 +307,7 @@ sub change_password {
 
     BOM::System::AuditLog::log('password has been changed', $client->email);
     send_email({
-            from    => BOM::System::Config::email_address('support'),
+            from    => Brands->new(name => request()->brand)->emails('support'),
             to      => $client->email,
             subject => localize('Your password has been changed.'),
             message => [
@@ -371,7 +371,7 @@ sub cashier_password {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
         } else {
             send_email({
-                    'from'    => BOM::System::Config::email_address('support'),
+                    'from'    => Brands->new(name => request()->brand)->emails('support'),
                     'to'      => $client->email,
                     'subject' => localize("Cashier password updated"),
                     'message' => [
@@ -397,7 +397,7 @@ sub cashier_password {
         if (!BOM::System::Password::checkpw($unlock_password, $cashier_password)) {
             BOM::System::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
             send_email({
-                    'from'    => BOM::System::Config::email_address('support'),
+                    'from'    => Brands->new(name => request()->brand)->emails('support'),
                     'to'      => $client->email,
                     'subject' => localize("Failed attempt to unlock cashier section"),
                     'message' => [
@@ -419,7 +419,7 @@ sub cashier_password {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
         } else {
             send_email({
-                    'from'    => BOM::System::Config::email_address('support'),
+                    'from'    => Brands->new(name => request()->brand)->emails('support'),
                     'to'      => $client->email,
                     'subject' => localize("Cashier password updated"),
                     'message' => [
@@ -487,7 +487,7 @@ sub reset_password {
 
     BOM::System::AuditLog::log('password has been reset', $email, $args->{verification_code});
     send_email({
-            from    => BOM::System::Config::email_address('support'),
+            from    => Brands->new(name => request()->brand)->emails('support'),
             to      => $email,
             subject => localize('Your password has been reset.'),
             message => [
@@ -513,7 +513,8 @@ sub get_settings {
     if ($client->residence) {
         $country_code = $client->residence;
         $country =
-            LandingCompany::Countries->new(brand => request()->brand)->countries->localized_code2country($client->residence, $params->{language});
+            Brands->new(name => request()->brand)
+            ->landing_company_countries->countries->localized_code2country($client->residence, $params->{language});
     }
 
     my $client_tnc_status = $client->get_status('tnc_approval');
@@ -688,7 +689,7 @@ sub set_settings {
     $message .= "\n" . localize('The [_1] team.', $website_name);
 
     send_email({
-        from               => BOM::System::Config::email_address('support'),
+        from               => Brands->new(name => request()->brand)->emails('support'),
         to                 => $client->email,
         subject            => $client->loginid . ' ' . localize('Change in account settings'),
         message            => [$message],
@@ -899,9 +900,10 @@ sub set_self_exclusion {
 
     if ($message) {
         $message = "Client $client set the following self-exclusion limits:\n\n$message";
+        my $brand = Brands->new(name => request()->brand);
         send_email({
-            from    => BOM::System::Config::email_address('compliance'),
-            to      => BOM::System::Config::email_address('compliance') . ',' . BOM::System::Config::email_address('support'),
+            from    => $brand->emails('compliance'),
+            to      => $brand->emails('compliance') . ',' . $brand->emails('support'),
             subject => "Client set self-exclusion limits",
             message => [$message],
         });
@@ -1108,9 +1110,10 @@ sub set_financial_assessment {
         $message = ["An error occurred while updating assessment test details for $client_loginid. Please handle accordingly."];
     };
 
+    my $brand = Brands->new(name => request()->brand);
     send_email({
-        from    => BOM::System::Config::email_address('support'),
-        to      => BOM::System::Config::email_address('compliance'),
+        from    => $brand->emails('support'),
+        to      => $brand->emails('compliance'),
         subject => $subject,
         message => $message,
     });
