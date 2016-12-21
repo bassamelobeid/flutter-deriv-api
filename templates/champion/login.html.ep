@@ -1,0 +1,15 @@
+<h1><%= l('Log in') %></h1>
+<fieldset>
+    <legend><%= l('Your Details') %></legend>
+    <% if (stash('error')) { %>
+        <p class='errorfield'><%= stash('error') %></p>
+    <% } %>
+    <div id="wrapper" class="login">
+        <form id="frmLogin" method="POST">
+            <div><input type="email" id="txtEmail" name="email" placeholder="<%= l('Email') %>" autocomplete="off" autofocus="autofocus" maxlength="254" /></div>
+            <div><input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" /></div>
+            <div><button type="submit" id="btnLogin" class="button" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button></div>
+            <input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
+        </form>
+    </div>
+</fieldset>

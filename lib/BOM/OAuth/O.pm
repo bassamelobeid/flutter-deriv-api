@@ -4,22 +4,20 @@ use Mojo::Base 'Mojolicious::Controller';
 use Date::Utility;
 use Try::Tiny;
 use Digest::MD5 qw(md5_hex);
-# login
 use Email::Valid;
 use Mojo::Util qw(url_escape);
 use List::MoreUtils qw(any firstval);
 
-use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(localize request);
 use Client::Account;
+use LandingCompany::Registry;
+
+use BOM::Platform::Runtime;
+use BOM::Platform::Context qw(localize);
 use BOM::Platform::User;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
-use LandingCompany::Registry;
-use LandingCompany::Countries;
-use BOM::System::Config;
 
-sub __oauth_model {
+sub _oauth_model {
     return BOM::Database::Model::OAuth->new;
 }
 
@@ -31,62 +29,14 @@ sub authorize {
     # $response_type ||= 'code';    # default to Authorization Code
     $response_type = 'token';    # only support token
 
-    $app_id or return $c->__bad_request('the request was missing app_id');
+    $app_id or return $c->_bad_request('the request was missing app_id');
 
-    # need to remove this once we confirm that no one is using
-    # it, added warn below to confirm
-    my $id_map = {
-        'binarycom'                        => 1,
-        'binary-expiryd'                   => 2,
-        'binary-riskd'                     => 3,
-        'id-ct9oK1jjUNyxvPKYNdqJxuGX7bHvJ' => 10,
-        'id-evoGhPBCXfJTRnPcTmJ1yaGGOyD0B' => 11,
-        'id-5vndA78d0CUwdZIY8QjmS3fafV8G6' => 12,
-        'id-OWBASFFrGSqAAJwXohVbQbK2k2ZIf' => 13,
-        'id-vVa9bwUYEFCiMkErZrKvMGtzVMWvZ' => 14,
-        'id-avVHmHHAwfUfAFI7wojJE6ZtTc7S2' => 15,
-        'id-uWvVBcUiVeClE42Z6yupP6enXU283' => 16,
-        'id-h0WqKf4FUjukc4R9KKNTjPHBJ2hbW' => 17,
-        'id-OKJY118FaKoGMouqLVSpR0aTcEIgc' => 18,
-        'id-U9w4wlBvwakOOo6qlurAdzlhMM9ec' => 19,
-        'id-dCQvoX4iE6mnCrmVzNTpohV4w6UfJ' => 20,
-        'id-vN7ig1HDXJGLS6ymSvnStPioHyytG' => 21,
-        'id-Vb4N24n2Kbki6M6QqLUAbY7YzhtgE' => 22,
-        'id-Fyc42BtrzzFm2zNsdqYupfRHw2Uai' => 23,
-        'id-feDSSnPS7FurZ6vVaSdapN8TMApmI' => 24,
-        'id-vK8W8BBkjqYOeBqFNPoGp0GtBfeCr' => 25,
-        'id-sbFB3ptvRVHaPUQX6WBrpAMYnUx0X' => 26,
-        'id-MztUdUzmvv6D82jX3kTIV6YQZKNoH' => 27,
-        'id-im6XumYsBXJwsgBE7GdPVJOxzokLM' => 28,
-        'id-M7WpSJwvGlUbPHGzVeXGUiqLsldd4' => 29,
-        'id-8jsvu4KlqAIWe7QfMdooxI1MysKN5' => 30,
-        'id-qTwlgHJRdPhSoVlLr0xZSukpBzGZX' => 31,
-        'id-Gi4cqASC9Lj5BriayCJ1IMiZIr6M1' => 32,
-        'id-UuhLUU58MBvWoVvuueGOFpvuZxy9w' => 33,
-        'id-UzqwL5EoykkQfT2oe8W58XiqSkMVj' => 34,
-        'id-0NfVVJOTjP7MwibaLUp2mxT1NOBd6' => 35,
-        'id-9TOwkNEqEsJNL59sorlquaLcAP5zS' => 36,
-        'id-Cqt0tCagVnEqY4bBm27S1MUKXsKpu' => 37,
-        'id-8S86TbDrMuYAiKVztuHc4T22uPsXw' => 38,
-        'id-4Dif6suvu6raAPQM1J61g8RMfIaGw' => 39,
-        'id-ks8ZtIN7CHzdh9DRdCxWYROqfbsUp' => 40,
-        'id-2oiodQsKqKmVekhsCdF60FKwKIYt4' => 41,
-        'id-FwnhrVstk9kPBnDfocVpk8ZDtNs1V' => 42,
-        'id-lzNzcmvdgbB99jBFl3IGO3yLgmUSK' => 43,
-        'id-EmcupPkdLUKfScM8vsM6Hc4httJrL' => 44,
-        'id-yfBPXh3678sX8W1q6xDvr71pk1VJK' => 45,
-    };
+    return $c->_bad_request('the request was missing valid app_id') if ($app_id !~ /^\d+$/);
 
-    if ($app_id !~ /^\d+$/ and exists $id_map->{$app_id}) {
-        warn "Using old app id - $app_id, if this warning comes inform marketing to contact app developer";
-        $app_id = $id_map->{$app_id};
-    }
-    return $c->__bad_request('the request was missing valid app_id') if ($app_id !~ /^\d+$/);
-
-    my $oauth_model = __oauth_model();
+    my $oauth_model = _oauth_model();
     my $app         = $oauth_model->verify_app($app_id);
     unless ($app) {
-        return $c->__bad_request('the request was missing valid app_id');
+        return $c->_bad_request('the request was missing valid app_id');
     }
 
     my @scopes          = @{$app->{scopes}};
@@ -109,18 +59,18 @@ sub authorize {
         and ($c->csrf_token eq ($c->param('csrftoken') // ''))
         and $c->param('login'))
     {
-        $client = $c->__login($app) or return;
-        $c->session('__is_logined', 1);
-        $c->session('__loginid',    $client->loginid);
-    } elsif ($c->req->method eq 'POST' and $c->session('__is_logined')) {
+        $client = $c->_login($app) or return;
+        $c->session('_is_logined', 1);
+        $c->session('_loginid',    $client->loginid);
+    } elsif ($c->req->method eq 'POST' and $c->session('_is_logined')) {
         # get loginid from Mojo Session
-        $client = $c->__get_client;
-    } elsif ($c->session('__oneall_user_id')) {
+        $client = $c->_get_client;
+    } elsif ($c->session('_oneall_user_id')) {
         ## from Oneall Social Login
-        my $oneall_user_id = $c->session('__oneall_user_id');
-        $client = $c->__login($app, $oneall_user_id) or return;
-        $c->session('__is_logined', 1);
-        $c->session('__loginid',    $client->loginid);
+        my $oneall_user_id = $c->session('_oneall_user_id');
+        $client = $c->_login($app, $oneall_user_id) or return;
+        $c->session('_is_logined', 1);
+        $c->session('_loginid',    $client->loginid);
     }
 
     # set session on first page visit (GET)
@@ -131,25 +81,25 @@ sub authorize {
         my $domain_name = $r->domain_name;
         $domain_name =~ s/^oauth//;
         if (index($referer, $domain_name) > -1) {
-            $c->session('__is_app_approved' => 1);
+            $c->session('_is_app_approved' => 1);
         } else {
-            $c->session('__is_app_approved' => 0);
+            $c->session('_is_app_approved' => 0);
         }
     }
 
+    my $brand_name = $c->stash('brand')->name;
     ## check user is logined
     unless ($client) {
         ## taken error from oneall
         my $error = '';
-        if ($error = $c->session('__oneall_error')) {
-            delete $c->session->{__oneall_error};
+        if ($error = $c->session('_oneall_error')) {
+            delete $c->session->{_oneall_error};
         }
 
         ## show login form
         return $c->render(
-            template => $app_id eq '1' ? 'loginbinary' : 'login',
-            layout => 'default',
-
+            template  => _get_login_template_name($app_id, $brand_name),
+            layout    => $brand_name,
             app       => $app,
             error     => $error,
             r         => $c->stash('request'),
@@ -178,7 +128,7 @@ sub authorize {
     }
 
     ## if app_id=1 and referer is binary.com, we do not show the scope confirm screen
-    if ($app_id eq '1' and $c->session('__is_app_approved')) {
+    if ($app_id eq '1' and $c->session('_is_app_approved')) {
         $is_all_approved = 1;
     }
 
@@ -187,9 +137,8 @@ sub authorize {
     unless ($is_all_approved) {
         ## show scope confirms
         return $c->render(
-            template => 'scope_confirms',
-            layout   => 'default',
-
+            template  => $brand_name . '/scope_confirms',
+            layout    => $brand_name,
             app       => $app,
             client    => $client,
             scopes    => \@scopes,
@@ -226,15 +175,15 @@ sub authorize {
     $uri->query(\@params);
 
     ## clear session
-    delete $c->session->{__is_logined};
-    delete $c->session->{__loginid};
-    delete $c->session->{__is_app_approved};
-    delete $c->session->{__oneall_user_id};
+    delete $c->session->{_is_logined};
+    delete $c->session->{_loginid};
+    delete $c->session->{_is_app_approved};
+    delete $c->session->{_oneall_user_id};
 
     $c->redirect_to($uri);
 }
 
-sub __login {
+sub _login {
     my ($c, $app, $oneall_user_id) = @_;
 
     my ($user, $client, $last_login, $err);
@@ -272,7 +221,7 @@ sub __login {
         $last_login = $user->get_last_successful_login_history();
         my $result = $user->login(
             password        => $password,
-            environment     => $c->__login_env(),
+            environment     => $c->_login_env(),
             is_social_login => $oneall_user_id ? 1 : 0,
         );
 
@@ -296,11 +245,11 @@ sub __login {
         }
     }
 
+    my $brand = $c->stash('brand');
     if ($err) {
         $c->render(
-            template => $app->{id} eq '1' ? 'loginbinary' : 'login',
-            layout => 'default',
-
+            template  => _get_login_template_name($app->{id}, $brand->name),
+            layout    => $brand->name,
             app       => $app,
             error     => $err,
             r         => $c->stash('request'),
@@ -325,7 +274,7 @@ sub __login {
         loginid_list => url_escape($user->loginid_list_cookie_val),
         $options
     );
-    $c->__set_reality_check_cookie($user, $options);
+    $c->_set_reality_check_cookie($user, $options);
 
     $c->cookie(
         loginid => $client->loginid,
@@ -337,11 +286,11 @@ sub __login {
     );
 
     # send when client already has login session(s) and its not backoffice (app_id = 4, as we impersonate from backoffice using read only tokens)
-    if ($app->{id} ne '4' and __oauth_model()->has_other_login_sessions($client->loginid)) {
+    if ($app->{id} ne '4' and _oauth_model()->has_other_login_sessions($client->loginid)) {
         try {
             if ($last_login and exists $last_login->{environment}) {
                 my ($old_env, $user_agent, $r) =
-                    (__get_details_from_environment($last_login->{environment}), $c->req->headers->header('User-Agent') // '', $c->stash('request'));
+                    (_get_details_from_environment($last_login->{environment}), $c->req->headers->header('User-Agent') // '', $c->stash('request'));
 
                 # need to compare first two octet only
                 my ($old_ip, $new_ip, $country_code) = ($old_env->{ip}, $r->client_ip // '', uc($r->country_code // ''));
@@ -356,8 +305,7 @@ sub __login {
                         $message = localize(
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
                             $client->email, $r->client_ip,
-                            LandingCompany::Countries->new(brand => request()->brand)->countries->country_from_code($country_code) // $country_code,
-                            $user_agent);
+                            $brand->landing_company_countries->countries->country_from_code($country_code) // $country_code, $user_agent);
                     } else {
                         $message = localize(
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3], browser: [_4] and app: [_5]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
@@ -365,7 +313,7 @@ sub __login {
                     }
 
                     send_email({
-                        from               => BOM::System::Config::email_address('support'),
+                        from               => $brand->emails('support'),
                         to                 => $client->email,
                         subject            => localize('New Sign-In Activity Detected'),
                         message            => [$message],
@@ -383,7 +331,7 @@ sub __login {
     return $client;
 }
 
-sub __set_reality_check_cookie {
+sub _set_reality_check_cookie {
     my ($c, $user, $options) = @_;
 
     my $r = $c->stash('request');
@@ -402,7 +350,7 @@ sub __set_reality_check_cookie {
     return;
 }
 
-sub __login_env {
+sub _login_env {
     my $c = shift;
     my $r = $c->stash('request');
 
@@ -415,23 +363,23 @@ sub __login_env {
     return $environment;
 }
 
-sub __get_client {
+sub _get_client {
     my $c = shift;
 
-    my $client = Client::Account->new({loginid => $c->session('__loginid')});
+    my $client = Client::Account->new({loginid => $c->session('_loginid')});
     return if $client->get_status('disabled');
     return if $client->get_self_exclusion_until_dt;    # Excluded
 
     return $client;
 }
 
-sub __bad_request {
+sub _bad_request {
     my ($c, $error) = @_;
 
     return $c->throw_error('invalid_request', $error);
 }
 
-sub __get_details_from_environment {
+sub _get_details_from_environment {
     my $env = shift;
 
     return unless $env;
@@ -448,6 +396,18 @@ sub __get_details_from_environment {
         country    => uc($country // 'unknown'),
         user_agent => $user_agent
     };
+}
+
+sub _get_login_template_name {
+    my ($app_id, $brand_name) = @_;
+
+    # we have different login template for binary.com
+    # and for other apps
+    if ($app_id eq '1' and $brand_name =~ /^binary$/) {
+        return 'binary/loginbinary';
+    }
+
+    return $brand_name . '/login';
 }
 
 1;

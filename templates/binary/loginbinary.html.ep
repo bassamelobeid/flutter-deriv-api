@@ -1,8 +1,8 @@
 <div id="topbar-binary"></div>
 <div id="header-binary">
     <a href="https://www.binary.com/<%= lc($r->language) %>/home.html">
-        <img id="symbol-logo" src="/oauth2/images/binary-symbol-logo.svg" alt="" />
-        <img id="type-logo" src="/oauth2/images/binary-type-logo.svg" alt="Binary.com" />
+        <img id="symbol-logo" src="https://style.binary.com/images/logo/symbol.svg" />
+        <img id="type-logo" src="https://style.binary.com/images/logo/type.svg" alt="Binary.com" />
     </a>
 </div>
 <div id="container-binary">
