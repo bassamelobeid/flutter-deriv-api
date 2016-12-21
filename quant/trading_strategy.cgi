@@ -40,9 +40,9 @@ my $cgi = request()->cgi;
 my $config = LoadFile('/home/git/regentmarkets/bom-backoffice/config/trading_strategy_datasets.yml');
 
 my @dates = sort map $_->basename, path($base_dir)->children;
+warn "no dates" unless @dates;
 
 my $date_selected = $cgi->param('date');
-$base_dir = path($base_dir)->child($date_selected) if $date_selected and $date_selected ne '*';
 
 my %strategies = map {; $_ => 1 } Finance::TradingStrategy->available_strategies;
 my $strategy_description;
@@ -57,9 +57,10 @@ my $rslt;
 my @tbl;
 
 my $process_dataset = sub {
-    my ($dataset) = @_;
-    my $path = path($base_dir)->child($dataset . '.csv');
-    die "Dataset $path not found" unless $path->exists;
+    my ($date, $dataset) = @_;
+    my $path = path($base_dir)->child($date)->child($dataset . '.csv');
+warn "date path not found: " . path($base_dir)->child($date) unless path($base_dir)->child($date)->exists;
+    return unless $path->exists;
 
     my $strategy = Finance::TradingStrategy->new(
         strategy => $strategy_name,
@@ -73,7 +74,6 @@ my $process_dataset = sub {
     my @results;
     my %stats;
     my @spots;
-    $stats{end} = 0;
     my $line = 0;
     while(<$fh>) {
         next if $line++ % $skip;
@@ -97,8 +97,8 @@ my $process_dataset = sub {
             $stats{bought_buy_price}{sum} += $market_data{buy_price} if $should_buy;
             $stats{buy_price}{sum} += $market_data{buy_price};
             $stats{payout}{mean} += $market_data{value};
-            $stats{start} //= Date::Utility->new($market_data{epoch});
-            $stats{end} //= $stats{start};
+            $stats{start} ||= Date::Utility->new($market_data{epoch});
+            $stats{end} ||= $stats{start} or die 'no start info? epoch was ' . $market_data{epoch};
             $stats{end} = Date::Utility->new($market_data{epoch}) if $market_data{epoch} > $stats{end}->epoch;
         } or do { warn "Error processing line $line - $@"; 1 };
     }
@@ -121,11 +121,13 @@ my $process_dataset = sub {
 my $statistics_table = sub {
     my $stats = shift;
     warn "bad stats - " . join(',', %$stats) unless exists $stats->{count};
+    my $start_epoch = Date::Utility->new($stats->{start})->epoch;
+    my $end_epoch = Date::Utility->new($stats->{end})->epoch;
     return [
         [ 'Number of datapoints', $stats->{count} ],
         [ 'Starting date', Date::Utility->new($stats->{start})->datetime ],
         [ 'Ending date' ,Date::Utility->new($stats->{end})->datetime ],
-        [ 'Period' , Time::Duration::duration($stats->{end} - $stats->{start}) ],
+        [ 'Period' , Time::Duration::duration($end_epoch - $start_epoch) ],
         [ 'Average buy price', to_monetary_number_format($stats->{buy_price}{mean}) ],
         [ 'Average payout', to_monetary_number_format($stats->{payout}{mean}) ],
         [ 'Number of winning bets' ,$stats->{winners} ],
@@ -140,18 +142,19 @@ my ($underlying_selected) = $cgi->param('underlying') =~ /^(\w+|\*)$/;
 my ($duration_selected) = $cgi->param('duration') =~ /^(\w+|\*)$/;
 my ($type_selected) = $cgi->param('type') =~ /^(\w+|\*)$/;
 if($cgi->param('run')) {
-    if(grep { $_ eq '*' } $underlying_selected, $duration_selected, $type_selected) {
+    if(grep { $_ eq '*' } $underlying_selected, $duration_selected, $type_selected, $date_selected) {
         $rslt = { };
-TABLE:
+        TABLE:
         for my $underlying ($underlying_selected eq '*' ? @{$config->{underlyings}} : $underlying_selected) {
             for my $duration ($duration_selected eq '*' ? @{$config->{durations}} : $duration_selected) {
                 for my $type ($type_selected eq '*' ? @{$config->{types}} : $type_selected) {
-                    for my $date ($date_selected eq '*' ? @{$config->{underlyings}} : $underlying_selected) {
+                    for my $date ($date_selected eq '*' ? @dates : $date_selected) {
                         my $dataset = join '_', $underlying, $duration, $type;
+                        warn "will process dataset $dataset on $date";
                         push @tbl, eval {
-                            $process_dataset->($dataset)
+                            $process_dataset->($date, $dataset)
                         } or do {
-                            warn "Failed to process $dataset - $@";
+                            warn "Failed to process $dataset - $@" if $@;
                             ()
                         };
                         last TABLE if @tbl > 300;
@@ -161,7 +164,7 @@ TABLE:
         }
     } else {
         my $dataset = join '_', $underlying_selected, $duration_selected, $type_selected;
-        $rslt = $process_dataset->($dataset);
+        $rslt = $process_dataset->($date_selected, $dataset);
     }
 }
 
