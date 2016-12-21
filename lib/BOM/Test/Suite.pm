@@ -309,6 +309,7 @@ sub _change_status {
         $client->clr_status($status);
     }
     $client->save;
+    return;
 }
 
 sub _setup_market_data {
