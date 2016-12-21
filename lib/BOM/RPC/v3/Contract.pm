@@ -194,7 +194,7 @@ sub _get_ask {
                     # After cleaning these up, we expect this error to go away, but if you're
                     # seeing this message after 2016-12-21 then please check client currencies
                     # for that landing company.
-                    warn "JPY currency for non-JP contract - landing company is " . $p2->{landing_company};
+                    warn "JPY currency for non-JP contract - landing company is " . ($p2->{landing_company} // 'not available');
                 }
             }
 
