@@ -13,6 +13,7 @@ use BOM::Platform::Runtime;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Platform::Client::Utility;
+use BOM::Platform::Client::IDAuthentication;
 
 # one of deposit, withdrawal
 has 'type' => (
@@ -205,9 +206,10 @@ sub write_transaction_line {
     );
 
     # Write the payment transaction
-    my $trx;
+    my ($trx, $fdp);
 
     if ($c->type eq 'deposit') {
+        $fdp = $client->is_first_deposit_pending;
         $trx = $client->payment_doughflow(%payment_args);
     } elsif ($c->type eq 'withdrawal') {
         # Don't allow balances to ever go negative! Include any fee in this test.
@@ -224,6 +226,8 @@ sub write_transaction_line {
         }
         $trx = $client->payment_doughflow(%payment_args);
     }
+
+    BOM::Platform::Client::IDAuthentication->new(client => $client)->run_authentication if $fdp;
 
     if ($fee) {
         my $fee_trx = $client->payment_payment_fee(
