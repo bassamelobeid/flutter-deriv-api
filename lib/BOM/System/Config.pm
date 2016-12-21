@@ -40,6 +40,10 @@ sub quants {
     return $config;
 }
 
+sub sanction_file {
+    return "/var/lib/binary/sanctions.csv";
+}
+
 {
     my $env = do {
         local @ARGV = ('/etc/rmg/environment');
@@ -62,21 +66,6 @@ sub on_qa {
 
 sub on_development {
     return env() eq 'development';
-}
-
-sub email_address {
-    my $type = shift;
-    state $emails = {
-        support      => 'support@binary.com',
-        payments     => 'payments@binary.com',
-        system       => 'system@binary.com',
-        compliance   => 'compliance@binary.com',
-        affiliates   => 'affiliates@binary.com',
-        accounting   => 'x-acc@binary.com',
-        alert_quants => 'x-quants-alert@binary.com'
-    };
-    warn "Unknow email type $type" unless exists $emails->{$type};
-    return $emails->{$type} // 'support@binary.com';
 }
 
 1;

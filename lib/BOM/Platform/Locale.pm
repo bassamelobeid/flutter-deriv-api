@@ -7,8 +7,6 @@ use utf8;    # to support source-embedded country name strings in this module
 use Locale::SubCountry;
 
 use BOM::Platform::Runtime;
-use LandingCompany::Countries;
-
 use BOM::Platform::Context qw(request localize);
 
 sub translate_salutation {

@@ -4,9 +4,11 @@ use strict;
 use warnings;
 
 use JSON qw(encode_json);
+
+use Brands;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Email qw(send_email);
-use BOM::System::Config;
+use BOM::Platform::Context qw(request);
 
 sub _validate {
     my $args = shift;
@@ -16,7 +18,7 @@ sub _validate {
 
     # also allow MLT UK client to open MF account
     my $from_client = $args->{from_client};
-    my $company = LandingCompany::Countries->instance->financial_company_for_country($from_client->residence) // '';
+    my $company = Brands->new(name => request()->brand)->landing_company_countries->financial_company_for_country($from_client->residence) // '';
     return if ($company eq 'maltainvest' or ($from_client->residence eq 'gb' and $from_client->landing_company->short eq 'malta'));
 
     warn("maltainvest acc opening err: loginid:" . $from_client->loginid . " residence:" . $from_client->residence . " financial_company:$company");
@@ -60,9 +62,10 @@ sub create_account {
     BOM::Platform::Account::Real::default::add_details_to_desk($client, $details);
 
     if ($financial_assessment->{total_score} > 59) {
+        my $brand = Brands->new(name => request()->brand);
         send_email({
-            from    => BOM::System::Config::email_address('support'),
-            to      => BOM::System::Config::email_address('compliance'),
+            from    => $brand->emails('support'),
+            to      => $brand->emails('compliance'),
             subject => $client->loginid . ' considered as professional trader',
             message =>
                 [$client->loginid . ' scored ' . $financial_assessment->{total_score} . ' and is therefore considered a professional trader.'],

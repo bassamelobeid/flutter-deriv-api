@@ -6,17 +6,16 @@ use warnings;
 use Try::Tiny;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
+use Brands;
 use Client::Account;
 
 use BOM::System::Password;
-
 use BOM::Platform::Runtime;
-use LandingCompany::Countries;
 use LandingCompany::Registry;
 use BOM::Platform::User;
 use BOM::Platform::Token;
 use BOM::Platform::Account;
-use BOM::Platform::Context qw(localize);
+use BOM::Platform::Context qw(localize request);
 
 sub create_account {
     my $args    = shift;
@@ -26,21 +25,18 @@ sub create_account {
     my $password  = BOM::System::Password::hashpw($details->{client_password});
     my $residence = $details->{residence};
 
-    # TODO: to be removed later
-    BOM::Platform::Account::invalid_japan_access_check($residence, $email);
-
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
         return {error => 'invalid'};
     } elsif (BOM::Platform::User->new({email => $email})) {
         return {error => 'duplicate email'};
-    } elsif ($residence && LandingCompany::Countries->instance->restricted_country($residence)) {
+    } elsif ($residence && Brands->new(name => request()->brand)->landing_company_countries->restricted_country($residence)) {
         return {error => 'invalid residence'};
     }
 
     my ($client, $error);
     try {
         die 'residence is empty' if (not $residence);
-        my $company_name = LandingCompany::Countries->instance->virtual_company_for_country($residence);
+        my $company_name = Brands->new(name => request()->brand)->landing_company_countries->virtual_company_for_country($residence);
 
         $client = Client::Account->register_and_return_new_client({
             broker_code                   => LandingCompany::Registry::get($company_name)->broker_codes->[0],

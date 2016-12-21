@@ -2,18 +2,19 @@ package BOM::Platform::Account::Real::default;
 
 use strict;
 use warnings;
-
+use feature 'state';
 use Date::Utility;
 use Try::Tiny;
 use Locale::Country;
 use List::MoreUtils qw(any);
 use DataDog::DogStatsd::Helper qw(stats_inc);
-use Data::Validate::Sanctions qw(is_sanctioned);
+use Data::Validate::Sanctions;
 
-use LandingCompany::Countries;
+use Brands;
 use Client::Account;
 use Client::Account::Desk;
 
+use BOM::Database::ClientDB;
 use BOM::System::Config;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
@@ -37,7 +38,7 @@ sub validate {
         warn($msg . 'new account opening suspended');
         return {error => 'invalid'};
     }
-    if ($country and LandingCompany::Countries->instance->restricted_country($country)) {
+    if ($country and Brands->new(name => request()->brand)->landing_company_countries->restricted_country($country)) {
         warn($msg . "restricted IP country [$country]");
         return {error => 'invalid'};
     }
@@ -50,7 +51,7 @@ sub validate {
 
     if ($details) {
         # sub account can have different residence then omnibus master account
-        if (LandingCompany::Countries->instance->restricted_country($residence)
+        if (Brands->new(name => request()->brand)->landing_company_countries->restricted_country($residence)
             or (not $details->{sub_account_of} and $from_client->residence ne $residence))
         {
             warn($msg . "restricted residence [$residence], or mismatch with from_client residence: " . $from_client->residence);
@@ -68,7 +69,7 @@ sub validate {
         if ((any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid)) and not $details->{sub_account_of}) {
             return {error => 'duplicate email'};
         }
-        if (BOM::Database::DataMapper::Client->new({broker_code => $broker})->get_duplicate_client($details)) {
+        if (BOM::Database::ClientDB->new({broker_code => $broker})->get_duplicate_client($details)) {
             return {error => 'duplicate name DOB'};
         }
 
@@ -86,9 +87,6 @@ sub validate {
         if ($dob_date->is_after($cutoff)) {
             return {error => 'too young'};
         }
-
-        # TODO: to be removed later
-        BOM::Platform::Account::invalid_japan_access_check($residence, $from_client->email);
     }
     return;
 }
@@ -142,13 +140,15 @@ sub after_register_client {
 
     my $client_loginid = $client->loginid;
     my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
-    if (is_sanctioned($client->first_name, $client->last_name)) {
+    state $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::System::Config::sanction_file);
+    if ($sanctions->is_sanctioned($client->first_name, $client->last_name)) {
         $client->set_status('disabled', 'system', 'client disabled as marked as UNTERR');
         $client->save;
         $client->add_note('UNTERR', "UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list.");
+        my $brand = Brands->new(name => request()->brand);
         send_email({
-            from    => BOM::System::Config::email_address('support'),
-            to      => BOM::System::Config::email_address('compliance'),
+            from    => $brand->emails('support'),
+            to      => $brand->emails('compliance'),
             subject => $client->loginid . ' marked as UNTERR',
             message => ["UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list."],
         });
