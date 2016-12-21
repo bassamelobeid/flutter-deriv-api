@@ -1258,10 +1258,23 @@ sub _build_pricing_comment {
             [spread           => $contract->spread],
         );
     } else {
+
+        # IV is the pricing vol (high barrier vol if it is double barrier contract), iv_2 is the low barrier vol.
+        my $iv   = $contract->pricing_vol;
+        my $iv_2 = 0;
+
+        if ($contract->pricing_vol_for_two_barriers) {
+
+            $iv   = $contract->pricing_vol_for_two_barriers->{high_barrier_vol};
+            $iv_2 = $contract->pricing_vol_for_two_barriers->{low_barrier_vol};
+
+        }
+
         # This way the order of the fields is well-defined.
         @comment_fields = map { defined $_->[1] ? @$_ : (); } (
             [theo    => $contract->theo_price],
-            [iv      => $contract->pricing_vol],
+            [iv      => $iv],
+            [iv_2    => $iv_2],
             [win     => $contract->payout],
             [div     => $contract->q_rate],
             [int     => $contract->r_rate],

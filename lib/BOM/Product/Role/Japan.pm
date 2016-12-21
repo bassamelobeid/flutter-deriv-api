@@ -202,4 +202,26 @@ sub _subvalidate_double_barrier {
 
     return;
 }
+
+#compose a string contains all the pricing info that needed to be log for Japan
+sub japan_pricing_info {
+    my $self                 = shift;
+    my $trading_window_start = shift;
+
+    my $iv   = $self->pricing_vol;
+    my $iv_2 = '0';
+
+    if ($self->pricing_vol_for_two_barriers) {
+        $iv   = $self->pricing_vol_for_two_barriers->{high_barrier_vol};
+        $iv_2 = $self->pricing_vol_for_two_barriers->{low_barrier_vol};
+
+    }
+
+    my $bid_price = $self->payout - $self->opposite_contract->ask_price;
+    my $pricing_info = join ',', ($self->shortcode, $trading_window_start, $self->ask_price, $bid_price, $self->pricing_spot, $iv, $iv_2);
+
+    return "[JPLOG]," . $pricing_info . "\n";
+
+}
+
 1;
