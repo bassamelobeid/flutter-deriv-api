@@ -16,7 +16,7 @@
 [% END -%]
 </select>
 
-<label for="count">Count</label>
+<label for="count">Param 1</label>
 <input name="count" value="[% count %]">
 
 <input name="daily_summary" type="submit" value="Daily summary">
