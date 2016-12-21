@@ -18,6 +18,8 @@ use Finance::TradingStrategy::BuyAndHold;
 
 use Time::Duration ();
 
+use YAML qw(LoadFile);
+
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -28,12 +30,15 @@ Bar('Trading strategy');
 
 my $base_dir = '/var/lib/binary/trading_strategy_data/';
 my $cgi = request()->cgi;
-my @datasets = sort map $_->basename('.csv'), path($base_dir)->children;
+
+my $config = LoadFile('/home/git/regentmarkets/bom-backoffice/config/trading_strategy_datasets.yml');
+
+my @dates = sort map $_->basename, path($base_dir)->children;
+
+my $date = $cgi->param('date');
+$base_dir = path($base_dir)->child($date) if $date;
 
 my %strategies = map {; $_ => 1 } Finance::TradingStrategy->available_strategies;
-my @results;
-my %stats;
-my @spots;
 my $strategy_description;
 
 my $strategy_name = $cgi->param('strategy');
@@ -58,6 +63,9 @@ my $process_dataset = sub {
     my $fh = $path->openr_utf8 or die "Could not open dataset $path - $!";
     my $sum = 0;
     my @hdr = qw(epoch quote buy_price value);
+    my @results;
+    my %stats;
+    my @spots;
     $stats{end} = 0;
     while(<$fh>) {
         my @market_data = split /\s*,\s*/;
@@ -101,7 +109,7 @@ my $process_dataset = sub {
 my $statistics_table = sub {
     my $stats = shift;
 warn "stats table with $stats";
-warn "bad stats - $stats" unless exists $stats->{count};
+warn "bad stats - " . join(',', %$stats) unless exists $stats->{count};
     return [
         [ 'Number of datapoints', $stats->{count} ],
         [ 'Starting date', Date::Utility->new($stats->{start})->datetime ],
@@ -118,21 +126,30 @@ warn "bad stats - $stats" unless exists $stats->{count};
 
 # When the button is pressed, we end up in here:
 if($cgi->param('run')) {
-    my ($dataset) = $cgi->param('dataset') =~ /^(\w+)$/;
-    if($dataset eq 'Summary') {
-        for my $dataset (@datasets) {
-            push @tbl, $process_dataset->($dataset);
+    my ($underlying) = $cgi->param('underlying') =~ /^(\w+)$/;
+    my ($duration) = $cgi->param('duration') =~ /^(\w+)$/;
+    my ($type) = $cgi->param('type') =~ /^(\w+)$/;
+    my $dataset = join '_', $underlying, $duration, $type;
+    $rslt = $process_dataset->($dataset);
+} elsif($cgi->param('daily_summary')) {
+    $rslt = { };
+    for my $underlying (@{$config->{underlyings}}) {
+        for my $duration (@{$config->{durations}}) {
+            for my $type (@{$config->{types}}) {
+                my $dataset = join '_', $underlying, $duration, $type;
+                push @tbl, $process_dataset->($dataset);
+            }
         }
-        $rslt = { };
-    } else {
-        die "Invalid dataset provided" unless $dataset eq $cgi->param('dataset');
-        $rslt = $process_dataset->($dataset);
     }
 }
 
-warn "had datasets @datasets";
 my %template_args = (
-    dataset_list  => [ 'Summary', @datasets ],
+    parameter_list => {
+        duration => $config->{durations},
+        date => \@dates,
+        underlying => $config->{underlyings},
+        type => $config->{types},
+    },
     count => $count,
     strategy_list => [ sort keys %strategies ],
     description   => $strategy_description,
