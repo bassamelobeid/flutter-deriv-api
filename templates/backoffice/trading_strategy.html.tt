@@ -1,7 +1,5 @@
 <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.8.5/nv.d3.min.css">
 <form>
-<h1>Trading strategy selection</h1>
-<p>
 [% FOREACH parameter IN ['Date', 'Underlying', 'Duration', 'Type' ] -%]
 [% name = parameter | lower -%]
 <label for="[% name %]">[% parameter %]</label>
@@ -18,15 +16,18 @@
 [% END -%]
 </select>
 
-<input name="daily_summary" type="submit" value="Daily summary">
-[%  END -%]
-[% END -%]
-
 <label for="count">Count</label>
 <input name="count" value="[% count %]">
 
+<input name="daily_summary" type="submit" value="Daily summary">
+<br>
+[%  END -%]
+[% END -%]
+
+<label for="skip">Skip</label>
+<input name="skip" value="[% skip %]">
+
 <input name="run" type="submit" value="Run">
-</p>
 [% IF result_table.size -%]
 <h2>Results for all datasets with strategy [% strategy_selected || 'unknown' %]</h2>
 <table>
@@ -49,13 +50,19 @@
  </tbody>
 </table>
 [% ELSIF result_list.size -%]
-<h2>Results for [% dataset_selected || 'unknown dataset' %] with strategy [% strategy_selected || 'unknown' %]</h2>
+<h2>Results for [% dataset || 'unknown dataset' %] with strategy [% strategy_selected || 'unknown' %]</h2>
 <p>[% description %]</p>
 <table>
  <tbody>
 [% FOREACH stat IN statistics -%]
  <tr><th>[% stat.0 %]</th><td>[% stat.1 %]</td></tr>
 [% END -%]
+<tr>
+<th>Download dataset</th>
+<td>
+ <a href="[% dataset_base_dir %]/[% date %]/[% dataset %].csv">Download [% dataset %]</a>
+</td>
+</tr>
  </tbody>
 </table>
 <div id="chart"> <svg style="height: 16em"> </svg> </div>

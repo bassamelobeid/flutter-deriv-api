@@ -44,14 +44,15 @@ my $strategy_description;
 my $strategy_name = $cgi->param('strategy');
 warn "Invalid strategy provided" unless exists $strategies{$strategy_name};
 
-my $count = $cgi->param('count');
+my $count = $cgi->param('count') || 1;
+my $skip = $cgi->param('skip') || 1;
 
 my $rslt;
 my @tbl;
 
 my $process_dataset = sub {
     my ($dataset) = @_;
-    my $path = path($base_dir)->child($dataset);
+    my $path = path($base_dir)->child($dataset . '.csv');
     die "Dataset $path not found" unless $path->exists;
 
     my $strategy = Finance::TradingStrategy->new(
@@ -67,7 +68,9 @@ my $process_dataset = sub {
     my %stats;
     my @spots;
     $stats{end} = 0;
+    my $line = 0;
     while(<$fh>) {
+	next if $line++ % $skip;
         my @market_data = split /\s*,\s*/;
         my %market_data = zip @hdr, @market_data;
         push @spots, $market_data{quote};
@@ -151,12 +154,15 @@ my %template_args = (
         type => $config->{types},
     },
     count => $count,
+    skip => $skip,
     strategy_list => [ sort keys %strategies ],
     description   => $strategy_description,
     statistics => $statistics_table->($rslt->{statistics}),
     result_list   => $rslt->{result_list},
     spot_list     => $rslt->{spot_list},
     dataset       => $rslt->{dataset},
+    dataset_base_dir => '/trading_strategy_data',
+    date => $date,
 );
 
 
