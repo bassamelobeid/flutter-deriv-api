@@ -111,8 +111,7 @@ my $process_dataset = sub {
 
 my $statistics_table = sub {
     my $stats = shift;
-warn "stats table with $stats";
-warn "bad stats - " . join(',', %$stats) unless exists $stats->{count};
+    warn "bad stats - " . join(',', %$stats) unless exists $stats->{count};
     return [
         [ 'Number of datapoints', $stats->{count} ],
         [ 'Starting date', Date::Utility->new($stats->{start})->datetime ],
