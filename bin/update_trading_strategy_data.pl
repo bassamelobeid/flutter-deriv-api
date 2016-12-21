@@ -15,7 +15,7 @@ use constant TICK_CHUNK_SIZE => 1000;
 
 ++$|;
 
-my $config = LoadFile('config/trading_strategy_datasets.yml');
+my $config = LoadFile('/home/git/regentmarkets/bom-backoffice/config/trading_strategy_datasets.yml');
 
 my $target_date = Date::Utility->today->truncate_to_day;
 
