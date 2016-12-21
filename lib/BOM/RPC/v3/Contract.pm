@@ -186,8 +186,8 @@ sub _get_ask {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
             my $trading_window_start = $p2->{trading_period_start} // '';
             # need this warning to be logged for Japan as a regulatory requirement
-            if($p2->{currency} && $p2->{currency} eq 'JPY') {
-                if(my $code = $contract->can('japan_pricing_info')) {
+            if ($p2->{currency} && $p2->{currency} eq 'JPY') {
+                if (my $code = $contract->can('japan_pricing_info')) {
                     warn $code->($contract, $trading_window_start);
                 } else {
                     # We currently have 26 VRTC users with JPY as their account currency.
