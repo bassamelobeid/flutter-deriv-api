@@ -28,6 +28,12 @@ BrokerPresentation('Trading strategy tests');
 
 Bar('Trading strategy');
 
+my $hostname = Sys::Hostname::hostname();
+if(BOM::System::Config::on_production() && $hostname !~ /^collector01/) {
+	print "<h2>This must be run on collector01</h2>\n";	
+	code_exit_BO();
+}
+
 my $base_dir = '/var/lib/binary/trading_strategy_data/';
 my $cgi = request()->cgi;
 
