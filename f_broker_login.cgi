@@ -187,11 +187,18 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
 				<td class="whitelabel" colspan="2">QUANT TOOLS</td>
 			</tr>
 			<tr>
-				<td align="center" colspan="2">
-					<p><b>RISK DASHBOARD</b></p>
+				<td align="center">
+					<p><b>RISK DASHBOARD test</b></p>
 					<form action="~ . request()->url_for('backoffice/quant/risk_dashboard.cgi') . qq~" method="post"><font size=2>
 						<input type="submit" value="RISK DASHBOARD">
 					</font></form>
+                </td>
+				<td align="center">
+					<p><b>TRADING STRATEGIES</b></p>
+					<form action="~ . request()->url_for('backoffice/quant/trading_strategy.cgi') . qq~" method="post"><font size=2>
+						<input type="submit" value="TRADING STRATEGIES">
+					</font></form>
+                </td>
 			</tr>
 			<tr>
 				</td>
