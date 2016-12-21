@@ -64,6 +64,12 @@ has 'domain_name' => (
     lazy_build => 1,
 );
 
+has 'brand' => (
+    is         => 'ro',
+    isa        => 'Str',
+    lazy_build => 1,
+);
+
 {
     my %known_codes = map { ; $_ => 1 } qw(CR MLT MF MX VRTC FOG JP VRTJ CH VRCH);
     has 'broker_code' => (
@@ -95,6 +101,17 @@ sub _build_broker_code {
     }
 
     return 'CR';
+}
+
+sub _build_brand {
+    my $self = shift;
+
+    my $broker = $self->broker_code // '';
+    if ($broker =~ /^(?:CH|VRCH)/) {
+        return 'champion';
+    }
+
+    return 'binary';
 }
 
 sub _build_available_currencies {

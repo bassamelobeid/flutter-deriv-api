@@ -7,6 +7,7 @@ use warnings;
 use Scalar::Util qw(looks_like_number);
 use Path::Tiny;
 use Try::Tiny;
+use Brands;
 
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
@@ -14,7 +15,6 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::System::Config;
 use BOM::Backoffice::Request qw(request);
 use BOM::System::AuditLog;
 use BOM::ContractInfo;
@@ -277,8 +277,9 @@ print "</form>";
 # Email staff who input payment
 my $staffemail = $staff->{'email'};
 
-my $email_accountant = BOM::System::Config::email_address('accounting');
-my $toemail = ($staffemail eq $email_accountant) ? "$staffemail" : "$staffemail,$email_accountant";
+my $brand            = Brands->new(name => request()->brand);
+my $email_accountant = $brand->emails('accounting');
+my $toemail          = ($staffemail eq $email_accountant) ? "$staffemail" : "$staffemail,$email_accountant";
 
 if ($toemail && $informclient) {
 
@@ -291,7 +292,7 @@ if ($toemail && $informclient) {
         . localize('Kind Regards') . "\n\n"
         . 'Binary.com';
 
-    my $support_email = BOM::System::Config::email_address('support');
+    my $support_email = $brand->emails('support');
 
     my $result = send_email({
         from               => $support_email,

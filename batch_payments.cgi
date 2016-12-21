@@ -8,6 +8,7 @@ use Path::Tiny;
 use Try::Tiny;
 use Date::Utility;
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
+use Brands;
 
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
@@ -17,7 +18,6 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::DualControl;
 use BOM::System::AuditLog;
-use BOM::System::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Runtime;
 BOM::Backoffice::Sysinit::init();
@@ -265,9 +265,10 @@ if ($preview and @invalid_lines == 0) {
     BOM::System::AuditLog::log($msg, '', $clerk);
     Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")->append_utf8($msg);
 
+    my $brand = Brands->new(name => request()->brand);
     send_email({
-        'from'    => BOM::System::Config::email_address('support'),
-        'to'      => BOM::System::Config::email_address('accounting'),
+        'from'    => $brand->emails('support'),
+        'to'      => $brand->emails('accounting'),
         'subject' => 'Batch debit/credit client account on ' . Date::Utility->new->date_ddmmmyy,
         'message' => \@clients_has_been_processed,
     });

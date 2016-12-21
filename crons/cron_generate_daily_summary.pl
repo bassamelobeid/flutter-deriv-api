@@ -8,9 +8,11 @@ use strict;
 use warnings;
 use Getopt::Long;
 
+use Brands;
 use Date::Utility;
 use BOM::System::Config;
 use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Request qw(request);
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Runtime;
 use BOM::DailySummaryReport;
@@ -55,9 +57,10 @@ foreach my $broker (keys %{$total_pl}) {
         push @mail_msg, "$broker, $currency, $total_pl->{$broker}->{$currency}";
     }
 }
+my $brand = Brands->new(name => request()->brand);
 send_email({
-    'from'    => BOM::System::Config::email_address('system'),
-    'to'      => BOM::System::Config::email_address('accounting'),
+    'from'    => $brand->emails('system'),
+    'to'      => $brand->emails('accounting'),
     'subject' => 'Daily Outstanding Bets Profit / Lost [' . $run_for->date . ']',
     'message' => \@mail_msg,
 });
