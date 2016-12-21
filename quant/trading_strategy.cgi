@@ -145,7 +145,12 @@ if($cgi->param('run')) {
         for my $duration (@{$config->{durations}}) {
             for my $type (@{$config->{types}}) {
                 my $dataset = join '_', $underlying, $duration, $type;
-                push @tbl, $process_dataset->($dataset);
+                push @tbl, eval {
+                    $process_dataset->($dataset)
+                } or do {
+                    warn "Failed to process $dataset - $@";
+                    ()
+                };
             }
         }
     }
