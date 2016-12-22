@@ -12,6 +12,7 @@ use Date::Utility;
 use BOM::System::Config;
 use Format::Util::Numbers qw( commas );
 use Quant::Framework::InterestRate;
+use BOM::Backoffice::Request qw(request);
 use Quant::Framework::ImpliedRate;
 use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Moneyness;
@@ -231,9 +232,10 @@ if (    -e $overridefilename
 #internal audit warnings
 if ($filen eq 'f_broker/promocodes.txt' and not BOM::System::Config::on_qa and $diff) {
     warn("promocodes.txt EDITED BY $clerk");
+    my $brand = Brands->new(name => request()->brand);
     send_email({
-            from    => BOM::System::Config::email_address('system'),
-            to      => BOM::System::Config::email_address('compliance'),
+            from    => $brand->emails('system'),
+            to      => $brand->emails('compliance'),
             subject => "Promotional Codes edited by $clerk",
             message => ["$ENV{'REMOTE_ADDR'}\n$ENV{'HTTP_USER_AGENT'} \nDIFF=\n$diff", '================', 'NEW FILE=', @lines]});
 }

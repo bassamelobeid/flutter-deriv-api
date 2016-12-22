@@ -3,19 +3,20 @@ package main;
 
 use strict 'vars';
 use POSIX;
-use BOM::Database::DataMapper::Account;
 use Date::Utility;
+use Path::Tiny;
 use Format::Util::Numbers qw(roundnear);
-use BOM::System::Config;
-use BOM::Platform::Runtime;
+use Brands;
+use Client::Account;
+
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+use BOM::Database::DataMapper::Account;
+use BOM::Backoffice::Request qw(request);
+use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use open qw[ :encoding(UTF-8) ];
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);
 
-use Client::Account;
-
-use Path::Tiny;
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -172,10 +173,11 @@ foreach my $loginID (keys %{$results}) {
 }
 
 if ($email_notification) {
-    my $email_to = join(',', (BOM::System::Config::email_address('compliance'), BOM::System::Config::email_address('accounting')));
+    my $brand = Brands->new(name => request()->brand);
+    my $email_to = join(',', ($brand->emails('compliance'), $brand->emails('accounting')));
 
     my $ret = send_email({
-        'from'    => BOM::System::Config::email_address('system'),
+        'from'    => $brand->emails('system'),
         'to'      => $email_to,
         'subject' => 'Funds withdrawn for disabled accounts',
         'message' => ["To be informed that the funds have been withdrawn for the following disabled account(s):\n\n$email_notification"],

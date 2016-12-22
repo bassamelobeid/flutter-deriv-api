@@ -17,7 +17,6 @@ use Format::Util::Numbers qw(roundnear);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::Helper::FinancialMarketBet;
-use BOM::System::Config;
 use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -42,7 +41,8 @@ my $qty      = request()->param('qty');
 my $bet_ref  = request()->param('ref');
 my $subject;
 my @body;
-my $to = BOM::System::Config::email_address('alert_quants');
+my $brand = Brands->new(name => request()->brand);
+my $to = $brand->emails('alert_quants');
 
 # Make transaction on client account
 if (request()->param('whattodo') eq 'closeatzero') {
@@ -124,7 +124,7 @@ if (request()->param('whattodo') eq 'closeatzero') {
     @body    = ("We manually closed the contract [Ref: $bet_ref] at price $currency 0 for client[$loginID]. \n");
 
     send_email({
-        from    => BOM::System::Config::email_address('system'),
+        from    => $brand->emails('system'),
         to      => $to,
         subject => $subject,
         message => \@body,

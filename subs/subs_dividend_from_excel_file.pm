@@ -126,7 +126,7 @@ sub read_discrete_forecasted_dividend_from_excel_files {
 
         my $underlying = create_underlying($symbol);
         # If there is no spot for the index, get the spot from the OTC
-        my $spot       = $underlying->spot //  create_underlying('OTC_'.$symbol)->spot;
+        my $spot = $underlying->spot // create_underlying('OTC_' . $symbol)->spot;
         unless ($spot) {
             push @skipped, $underlying->symbol;
             next;
