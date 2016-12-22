@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use Try::Tiny;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
+use YAML::XS qw(Dump);
+use Fcntl qw/ :flock /;
 
 sub start_timing {
     my ($c, $req_storage) = @_;
@@ -265,6 +267,23 @@ sub add_app_id {
 sub add_brand {
     my ($c, $req_storage) = @_;
     $req_storage->{call_params}->{brand} = $c->stash('brand');
+    return;
+}
+
+sub log_hive_data {
+    my ($c, $req_storage) = @_;
+
+    my $call_params = $req_storage->{call_params};
+    if ($call_params->{source} and ($call_params->{source} == 1353 or $call_params->{source} == 1417)) {
+        try {
+            open my $fh, '>>', '/var/log/httpd/hive_app.log' or die 'cannot open file /var/log/hive_app.log';
+            flock $fh, LOCK_EX or die "cannot lock file using flock: $!";
+            my $args_dump = Dump $call_params->{args};
+            print $fh "---- Start: " . $req_storage->{method} . " -----\n" . $args_dump . "\n---- Close ----\n\n";
+            close $fh;
+        };
+    }
+
     return;
 }
 
