@@ -614,7 +614,7 @@ sub _build_engine_ask_probability {
             discount_rate     => $self->discount_rate,
             q_rate            => $self->q_rate,
             r_rate            => $self->r_rate,
-            vol               => $self->pricing_vol,
+            vol               => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
             payouttime_code   => $self->payouttime_code,
             contract_type     => $self->pricing_code,
             underlying_symbol => $self->underlying->symbol,
@@ -648,7 +648,7 @@ sub _build_engine_ask_probability {
             date_expiry              => $self->date_expiry,
             discount_rate            => $self->discount_rate,
             mu                       => $self->mu,
-            vol                      => $self->pricing_vol,
+            vol                      => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
             payouttime_code          => $self->payouttime_code,
             q_rate                   => $self->q_rate,
             r_rate                   => $self->r_rate,
@@ -668,7 +668,7 @@ sub _build_engine_ask_probability {
             payouttime_code => $self->payouttime_code,
             payout_type     => $self->payout_type,
             contract_type   => $self->pricing_code,
-            vol             => $self->pricing_vol,
+            vol => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
         );
     } else {
         die "Unknown pricing engine: " . $self->pricing_engine_name;
@@ -1878,6 +1878,36 @@ sub _build_new_interface_engine {
     return $engines{$self->pricing_engine_name} // 0;
 }
 
+# For European::Slope engine, we need call and put vol for double barriers contract
+has pricing_vol_for_two_barriers => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_pricing_vol_for_two_barriers',
+);
+
+sub _build_pricing_vol_for_two_barriers {
+    my $self = shift;
+
+    return if not $self->two_barriers;
+    return if $self->pricing_engine_name ne 'Pricing::Engine::EuropeanDigitalSlope';
+
+    my $vol_args = {
+        from => $self->date_start,
+        to   => $self->date_expiry,
+    };
+
+    $vol_args->{strike} = $self->barriers_for_pricing->{barrier1};
+    my $high_barrier_vol = $self->volsurface->get_volatility($vol_args);
+
+    $vol_args->{strike} = $self->barriers_for_pricing->{barrier2};
+    my $low_barrier_vol = $self->volsurface->get_volatility($vol_args);
+
+    return {
+        high_barrier_vol => $high_barrier_vol,
+        low_barrier_vol  => $low_barrier_vol
+    };
+}
+
 sub _generate_market_data {
     my ($underlying, $date_start) = @_;
 
@@ -2938,27 +2968,6 @@ sub _build_market_is_inefficient {
     # only 20:00/21:00 GMT to end of day
     my $disable_hour = $self->date_pricing->is_dst_in_zone('America/New_York') ? 20 : 21;
     return 0 if $hour < $disable_hour;
-    return 1;
-}
-
-has market_is_inactive => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_market_is_inactive {
-    my $self = shift;
-
-    # market inefficiency only applies to forex and commodities.
-    return 0 unless ($self->market->name eq 'forex' or $self->market->name eq 'commodities');
-    return 0 if $self->expiry_daily;
-
-    #this is not supposed to depend on DST changing so anything between (21,23)
-    #is considered inactive
-    my $hour = $self->date_pricing->hour + 0;
-    return 0 if $hour >= 23;
-    return 0 if $hour <= 20;
-
     return 1;
 }
 
