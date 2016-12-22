@@ -191,7 +191,7 @@ if ($ttype eq 'TRANSFER') {
 
 # NEW PAYMENT HANDLERS ..
 
-my ($leave, $client_pa_exp_date);
+my ($leave, $client_pa_exp);
 try {
     if ($ttype eq 'CREDIT' || $ttype eq 'DEBIT') {
         $client->smart_payment(
@@ -199,7 +199,7 @@ try {
             amount => $signed_amount,
             staff  => $clerk,
         );
-        $client_pa_exp_date = $client;
+        $client_pa_exp = $client;
     } elsif ($ttype eq 'TRANSFER') {
         $client->payment_account_transfer(
             currency => $curr,
@@ -207,7 +207,7 @@ try {
             amount   => $amount,
             staff    => $clerk,
         );
-        $client_pa_exp_date = $toClient;
+        $client_pa_exp = $toClient;
     }
 }
 catch {
@@ -224,8 +224,8 @@ code_exit_BO() if $leave;
 my $today = Date::Utility->today;
 # we need to set paymentagent_expiration_date for manual deposit
 # check with compliance if you want to change this
-$client_pa_exp_date->payment_agent_withdrawal_expiration_date($today->date_yyyymmdd);
-$client_pa_exp_date->save;
+$client_pa_exp->payment_agent_withdrawal_expiration_date($today->date_yyyymmdd);
+$client_pa_exp->save;
 
 my $now = Date::Utility->new;
 # Logging
