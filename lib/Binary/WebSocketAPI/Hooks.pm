@@ -276,7 +276,7 @@ sub log_data {
     my $call_params = $req_storage->{call_params};
     if ($call_params->{source} and ($call_params->{source} == 1353 or $call_params->{source} == 1417)) {
         try {
-            open my $fh, '>>', '/var/log/httpd/hive_app.log' or die 'cannot open file /var/log/hive_app.log';
+            open my $fh, '>>', '/var/log/httpd/hive_app.log' or die 'cannot open file /var/log/httpd/hive_app.log';
             flock $fh, LOCK_EX or die "cannot lock file using flock: $!";
             my $args_dump = Dump $call_params->{args};
             print $fh "---- Start: " . $req_storage->{method} . " -----\n" . $args_dump . "\n---- Close ----\n\n";
