@@ -1,0 +1,27 @@
+durations:
+  - 5t
+  - 10t
+  - 1m
+  - 5m
+  - 1h
+underlyings:
+  - R_50
+  - frxUSDJPY
+  - frxEURUSD
+  - frxGBPUSD
+  - frxAUDUSD
+  - frxEURCHF
+  - frxEURGBP
+  - frxUSDCAD
+  - AS51
+  - HSI
+  - M225
+  - BFX
+  - GDAXI
+  - SSMI
+  - FCHI
+  - ISEQ
+  - frxXAUUSD
+types:
+  - CALL
+  - PUT
