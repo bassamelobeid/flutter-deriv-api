@@ -236,16 +236,15 @@ sub _collect_vol_diff_stat {
     foreach my $underlying (@underlyings) {
         my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
         my $surface    = $volsurface->surface_data;
-        my $one_on_day = $volsurface->get_day_for_tenor('ON');
-        my $one_week_day = $volsurface->get_day_for_tenor('1W');
-        my $one_month_day = $volsurface->get_day_for_tenor('1M');
-        my $vol_On     = $surface->{$one_on_day}->{smile}->{50};
-        my $vol_1w     = $surface->{$one_week_day}->{smile}->{50};
-        my $vol_1m     = $surface->{$one_month_day}->{smile}->{50};
-        my $day_of_week  = Date::Utility->new->day_of_week;
-        my $total_var_On = ($vol_On**2) * 1;
-        my $total_var_1w = ($vol_1w**2) * 7;
-        my $total_var_1m = ($vol_1m**2) * 30;
+        my $day_for_on = $volsurface->get_day_for_tenor('ON');
+        my $day_for_one_week = $volsurface->get_day_for_tenor('1W');
+        my $day_for_one_month = $volsurface->get_day_for_tenor('1M');
+        my $vol_On     = $surface->{$day_for_on}->{smile}->{50};
+        my $vol_1w     = $surface->{$day_for_one_week}->{smile}->{50};
+        my $vol_1m     = $surface->{$day_for_one_month}->{smile}->{50};
+        my $total_var_On = ($vol_On**2) * $day_for_on;
+        my $total_var_1w = ($vol_1w**2) * $day_for_one_week;
+        my $total_var_1m = ($vol_1m**2) * $day_for_one_month;
         }
         stats_gauge('total_variance_diff_On_1w', abs($total_var_1w - $total_var_On)/$total_var_On, {tags => ['tag:' . $underlying->{symbol}]});
         stats_gauge('total_variance_diff_On_1m', abs($total_var_1m - $total_var_On)/$total_var_On, {tags => ['tag:' . $underlying->{symbol}]});
