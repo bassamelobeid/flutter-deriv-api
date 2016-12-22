@@ -81,7 +81,7 @@ sub sample_oneall_data {
                         'date_creation'    => 'Wed, 13 Jul 2016 12:10:12 +0200',
                         'connection_token' => '4dbadf81-f148-4ed5-b30f-4a6977edbfa7',
                         'status'           => 'succeeded',
-                        'callback_uri'     => 'http://www.binaryqa16.com/oauth2/oneall/callback?app_id=binarycom'
+                        'callback_uri'     => 'http://www.binaryqa16.com/oauth2/oneall/callback?app_id=1'
                     },
                     'user' => {
                         'user_token' => '49f5354c-c091-4cd1-9f3d-72bbb76b6dd0',
