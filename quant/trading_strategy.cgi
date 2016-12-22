@@ -104,9 +104,10 @@ warn "date path not found: " . path($base_dir)->child($date) unless path($base_d
     }
     if($stats{count}) {
         $stats{buy_price}{mean} = $stats{buy_price}{sum} / $stats{count};
+	$stats{sum_contracts_bought} = $sum;
         $stats{profit_margin} =
             $stats{bought_buy_price}{sum}
-            ? sprintf '%.2f%% (%s/%s)', -100.0 *$sum / $stats{bought_buy_price}{sum}, to_monetary_number_format($sum), to_monetary_number_format($stats{bought_buy_price}{sum})
+            ? sprintf '%.2f%%', -100.0 * $sum / $stats{bought_buy_price}{sum}
             : 'N/A';
         $stats{payout}{mean} /= $stats{count};
     }
@@ -133,6 +134,8 @@ my $statistics_table = sub {
         [ 'Number of winning bets' ,$stats->{winners} ],
         [ 'Number of losing bets' ,$stats->{losers} ],
         [ 'Bets bought' ,$stats->{trades} ],
+        [ 'Sum contracts bought', $stats->{bought_buy_price}{sum} ],
+        [ 'Company profit', -$stats->{sum_contracts_bought} ],
         [ 'Company profit margin', $stats->{profit_margin} ],
     ];
 };
