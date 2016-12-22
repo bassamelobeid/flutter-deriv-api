@@ -9,6 +9,8 @@ use HTML::FromText;
 use Try::Tiny;
 use Encode;
 
+use Brands;
+
 use BOM::System::Config;
 use BOM::Platform::Context qw(request);
 
@@ -68,7 +70,7 @@ sub send_email {
         }
     }
 
-    if ($fromemail eq BOM::System::Config::email_address('support')) {
+    if ($fromemail eq Brands->new(name => request()->brand)->emails('support')) {
         $fromemail = "\"Binary.com\" <$fromemail>";
     }
 
