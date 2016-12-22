@@ -270,7 +270,7 @@ sub add_brand {
     return;
 }
 
-sub log_hive_data {
+sub log_data {
     my ($c, $req_storage) = @_;
 
     my $call_params = $req_storage->{call_params};
