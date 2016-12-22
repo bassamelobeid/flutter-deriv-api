@@ -692,7 +692,6 @@ sub _build_pricing_engine {
         bet                     => $self,
         apply_bounceback_safety => !$self->for_sale,
         inefficient_period      => $self->market_is_inefficient,
-        inactive_period         => $self->market_is_inactive,
         $self->priced_with_intraday_model ? (economic_events => $self->economic_events_for_volatility_calculation) : (),
     });
 
