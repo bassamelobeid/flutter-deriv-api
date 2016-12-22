@@ -1722,7 +1722,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
         my $error = do {
             # need to do this because these limits are not by landing company anymore
             my $mock_client = Test::MockModule->new('Client::Account');
-            $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 1000.00"; 1000.00});
+            $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 1000.00"; 1000.00 });
             note "change quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit->{USD}} to 29.99";
             local BOM::System::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
 
