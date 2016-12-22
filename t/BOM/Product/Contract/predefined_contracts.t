@@ -20,10 +20,10 @@ BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
 
 my $now = Date::Utility->new('2016-09-28 10:00:00');
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxUSDJPY',
-    epoch => $_,
-}) for ($now->minus_time_interval('100d')->epoch, $now->epoch, $now->plus_time_interval('1s')->epoch);
-generate_trading_periods('frxUSDJPY',$now);
+        underlying => 'frxUSDJPY',
+        epoch      => $_,
+    }) for ($now->minus_time_interval('100d')->epoch, $now->epoch, $now->plus_time_interval('1s')->epoch);
+generate_trading_periods('frxUSDJPY', $now);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {

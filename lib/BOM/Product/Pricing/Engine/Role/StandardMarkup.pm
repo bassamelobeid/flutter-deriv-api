@@ -22,8 +22,8 @@ use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
 
 has [
-    qw(smile_uncertainty_markup butterfly_markup vol_spread_markup spot_spread_markup risk_markup forward_starting_markup economic_events_markup eod_market_risk_markup)
-    ] => (
+    qw(smile_uncertainty_markup butterfly_markup vol_spread_markup spot_spread_markup risk_markup forward_starting_markup economic_events_markup)] =>
+    (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
     lazy_build => 1,
@@ -40,35 +40,6 @@ has _volatility_seasonality_step_size => (
     isa     => 'Num',
     default => 100,
 );
-
-sub _build_eod_market_risk_markup {
-    my $self = shift;
-
-    my $bet      = $self->bet;
-    my $eod_base = 0;
-
-    my $ny_1700 = Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($bet->date_start);
-    my $ny_1600 = $ny_1700->minus_time_interval('1h');
-
-    if (
-        first { $bet->market->name eq $_ } (qw(forex commodities))
-            and $bet->timeindays->amount <= 3
-        and (
-            $ny_1600->is_before($bet->date_start)
-            or (    $bet->is_intraday
-                and $ny_1600->is_before($bet->date_expiry))))
-    {
-        $eod_base = 0.05;
-    }
-    my $eod_market_risk_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'eod_market_risk_markup',
-        description => 'Markup factor for EOD market uncertainty',
-        set_by      => __PACKAGE__,
-        base_amount => $eod_base,
-    });
-
-    return $eod_market_risk_markup;
-}
 
 sub _build_vol_spread_markup {
     my $self = shift;
@@ -297,12 +268,8 @@ sub _build_risk_markup {
         $risk_markup->include_adjustment('add',      $self->spot_spread_markup) if (not $self->bet->is_intraday);
         $risk_markup->include_adjustment('subtract', $self->forward_starting_markup);
 
-        if (not $self->bet->is_atm_bet) {
-            if (grep { $self->bet->market->name eq $_ } qw(indices stocks) and $self->bet->timeindays->amount < 7) {
-                $risk_markup->include_adjustment('add', $self->smile_uncertainty_markup);
-            }
-
-            $risk_markup->include_adjustment('add', $self->eod_market_risk_markup);
+        if (not $self->bet->is_atm_bet and grep { $self->bet->market->name eq $_ } qw(indices stocks) and $self->bet->timeindays->amount < 7) {
+            $risk_markup->include_adjustment('add', $self->smile_uncertainty_markup);
         }
     }
 
