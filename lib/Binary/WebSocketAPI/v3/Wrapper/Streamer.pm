@@ -291,7 +291,7 @@ sub _feed_channel_subscribe {
                         warn("callback invocation error during redis subscription to $symbol: $_");
                     };
                 }
-            });
+            }) unless ${^GLOBAL_PHASE} eq 'DESTRUCT';
     } elsif ($callback) {
         $invoke_cb = 1;
     }
