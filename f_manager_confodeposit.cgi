@@ -178,9 +178,9 @@ $client_db->freeze || do {
     code_exit_BO();
 };
 
-my $to_client_db = BOM::Database::ClientDB->new({
-    client_loginid => $toLoginID,
-});
+my $to_client_db = do {
+    BOM::Database::ClientDB->new({client_loginid => $toLoginID}) if $toLoginID;
+};
 
 if ($ttype eq 'TRANSFER') {
     $to_client_db->freeze || do {
