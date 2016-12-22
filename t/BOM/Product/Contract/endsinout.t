@@ -57,8 +57,9 @@ subtest 'expiry miss' => sub {
         is_deeply $c->supported_start_types, ['spot'];
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
         isa_ok $c->greek_engine,   'BOM::Product::Pricing::Greeks::BlackScholes';
-        my $call = $c->pricing_engine->debug_information->{CALL}{base_probability};
-        my $put  = $c->pricing_engine->debug_information->{PUT}{base_probability};
+        $c->engine_ask_probability;
+        my $call = $c->debug_information->{CALL}{base_probability};
+        my $put  = $c->debug_information->{PUT}{base_probability};
         is roundnear(0.001, $call->{amount}), 0.585, 'correct tv for CALL';
         is roundnear(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.176, 'correct vol for call';
         is roundnear(0.001, $put->{amount}), 0.053, 'correct tv for PUT';
@@ -117,8 +118,9 @@ subtest 'expiry range' => sub {
         is_deeply $c->supported_start_types, ['spot'];
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
         isa_ok $c->greek_engine,   'BOM::Product::Pricing::Greeks::BlackScholes';
-        my $call = $c->pricing_engine->debug_information->{CALL}{base_probability};
-        my $put  = $c->pricing_engine->debug_information->{PUT}{base_probability};
+        $c->engine_ask_probability;
+        my $call = $c->debug_information->{CALL}{base_probability};
+        my $put  = $c->debug_information->{PUT}{base_probability};
         is roundnear(0.001, $call->{amount}), 0.566, 'correct tv for CALL';
         is roundnear(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.175, 'correct vol for call';
         is roundnear(0.001, $put->{amount}), 0.053, 'correct tv for PUT';
