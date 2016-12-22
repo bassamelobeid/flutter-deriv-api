@@ -14,6 +14,7 @@ use Math::Util::CalculatedValue::Validatable;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Format::Util::Numbers qw(to_monetary_number_format);
 use Price::Calculator;
+use Clone::PP qw(clone);
 
 my %pricer_cmd_handler = (
     price => \&process_ask_event,
@@ -24,7 +25,6 @@ sub proposal {
     my ($c, $req_storage) = @_;
 
     my $args = $req_storage->{args};
-
     $c->call_rpc({
             args        => $args,
             method      => 'send_ask',
@@ -51,6 +51,60 @@ sub proposal {
                     $api_response->{proposal}->{id} = $uuid;
                 } else {
                     $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
+                }
+                return $api_response;
+            },
+        });
+    return;
+}
+
+sub proposal_array {
+    my ($c, $req_storage) = @_;
+
+    my $args = $req_storage->{args};
+    $c->call_rpc({
+            args        => $args,
+            method      => 'send_multiple_ask',
+            msg_type    => 'proposal_array',
+            call_params => {
+                language              => $c->stash('language'),
+                app_markup_percentage => $c->stash('app_markup_percentage'),
+                landing_company       => $c->stash('landing_company_name'),
+            },
+            success => sub {
+                my ($c, $rpc_response, $req_storage) = @_;
+
+                my $caches = [];
+                for my $response (@{$rpc_response->{proposals}}) {
+                    my $cache;
+                    if (exists($response->{error})) {
+                        $cache = {
+                            error                 => 1,
+                            app_markup_percentage => $c->stash('app_markup_percentage'),
+                        };
+                    } else {
+                        $cache = {
+                            longcode            => $response->{longcode},
+                            contract_parameters => delete $response->{contract_parameters}};
+                        $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
+                    }
+                    push @$caches, $cache;
+                }
+                $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $caches);
+            },
+            response => sub {
+                my ($rpc_response, $api_response, $req_storage) = @_;
+                return $api_response if $rpc_response->{error};
+
+                for my $proposal (@{$api_response->{proposal_array}{proposals}}) {
+                    delete $proposal->{error}{continue_price_stream} if exists $proposal->{error};
+                }
+
+                $api_response->{passthrough} = $req_storage->{args}->{passthrough};
+                if (my $uuid = $req_storage->{uuid}) {
+                    $api_response->{proposal_array}->{id} = $uuid;
+                } else {
+                    $api_response = $c->new_error('proposal_array', 'AlreadySubscribed', $c->l('You are already subscribed to proposal array.'));
                 }
                 return $api_response;
             },
@@ -277,6 +331,17 @@ sub process_bid_event {
 
 sub process_ask_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
+
+    if (exists($response->{proposals})) {    #proposal_array
+        _process_ask_proposal_array_event(@_);
+    } else {                                 #proposal
+        _process_ask_proposal_event(@_);
+    }
+    return;
+}
+
+sub _process_ask_proposal_event {
+    my ($c, $response, $redis_channel, $pricing_channel) = @_;
     my $type = 'proposal';
 
     my $theo_probability = delete $response->{theo_probability};
@@ -310,6 +375,66 @@ sub process_ask_event {
         }
         delete @{$results->{$type}}{qw(contract_parameters rpc_time)};
         $c->send({json => $results}, {args => $stash_data->{args}});
+    }
+    return;
+}
+
+sub _process_ask_proposal_array_event {
+    my ($c, $response, $redis_channel, $pricing_channel) = @_;
+    my $type      = 'proposal_array';
+    my $responses = $response->{proposals};
+    foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
+        my $caches = $stash_data->{cache};
+        my @results;
+        for my $i (0 .. $#$responses) {
+            my $response         = clone($responses->[$i]);
+            my $cache            = $caches->[$i];
+            my $theo_probability = delete $response->{theo_probability};
+            my $results;
+
+            unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
+                if (exists($cache->{error})) {
+                    # There is error when we ask proposal array
+                    # but now the error is gone
+                    # so we set cache as the first correct value
+                    $cache->{longcode}                                   = $response->{longcode};
+                    $cache->{contract_parameters}                        = $response->{contract_parameters};
+                    $cache->{contract_parameters}{app_markup_percentage} = delete $cache->{app_markup_percentage};
+                    delete $cache->{error};
+                }
+                $cache->{contract_parameters}->{longcode} = $cache->{longcode};
+                my $adjusted_results =
+                    _price_stream_results_adjustment($c, $stash_data->{args}, $cache->{contract_parameters}, $response, $theo_probability);
+                if (my $ref = $adjusted_results->{error}) {
+                    my $err = $c->new_error($type, $ref->{code}, $ref->{message_to_client});
+                    $err->{error}->{details} = $ref->{details} if exists $ref->{details};
+                    my $barriers = $stash_data->{args}{barriers}[$i];
+                    @{$err->{error}{details}}{keys %$barriers} = values %$barriers;
+                    $results = $err;
+                } else {
+                    $results = {
+                        %$adjusted_results,
+                        longcode => $cache->{longcode},
+                    };
+                }
+            }
+            delete @{$results}{qw(msg_type contract_parameters)};
+            push @results, $results;
+        }
+
+        my $send_result = {
+            msg_type => $type,
+            $type    => {
+                proposals => \@results,
+                id        => $stash_data->{uuid},
+            }};
+        if ($c->stash('debug')) {
+            $send_result->{debug} = {
+                time   => $response->{rpc_time},
+                method => $type,
+            };
+        }
+        $c->send({json => $send_result}, {args => $stash_data->{args}});
     }
     return;
 }
@@ -380,7 +505,7 @@ sub _price_stream_results_adjustment {
 
     $results->{ask_price} = $results->{display_value} = $price_calculator->ask_price;
     $results->{payout} = $price_calculator->payout;
-
+    map { $results->{$_} .= '' } qw(ask_price display_value payout);
     stats_timing('price_adjustment.timing', 1000 * tv_interval($t));
 
     return $results;
