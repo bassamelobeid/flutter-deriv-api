@@ -9,19 +9,11 @@ underlyings:
   - frxUSDJPY
   - frxEURUSD
   - frxGBPUSD
-  - frxAUDUSD
-  - frxEURCHF
-  - frxEURGBP
   - frxUSDCAD
-  - AS51
   - HSI
-  - M225
-  - BFX
   - GDAXI
   - SSMI
   - FCHI
-  - ISEQ
-  - frxXAUUSD
 types:
   - CALL
   - PUT
