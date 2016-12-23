@@ -587,12 +587,7 @@ sub _market_convention {
     };
 }
 
-has engine_theo_probability => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_engine_theo_probability {
+sub _build_new_interface_engine {
     my $self = shift;
     return if not $self->new_interface_engine;
 
@@ -677,15 +672,13 @@ sub _build_engine_theo_probability {
         die "Missing pricing parameters for engine " . $self->pricing_engine_name . " - " . join ',', @missing_parameters;
     }
 
-    my $package = $self->pricing_engine_name . '::theo_probability';
-    my $coderef = \&$package;
-    return $coderef->(\%pricing_parameters, $self->debug_information);
+    return $self->pricing_engine_name->new(%pricing_parameters);
 }
 
 sub _build_pricing_engine {
     my $self = shift;
 
-    return if $self->new_interface_engine;
+    return $self->_build_new_interface_engine if $self->new_interface_engine;
 
     my $pricing_engine = $self->pricing_engine_name->new({
         bet                     => $self,
