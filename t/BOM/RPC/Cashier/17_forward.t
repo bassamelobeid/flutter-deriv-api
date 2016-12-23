@@ -216,14 +216,14 @@ subtest 'landing_companies_specific' => sub {
 
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_JP_KNOWLEDGE_TEST', 'Japan residence needs a knowledge test')
-        ->error_message_is('Please do a knowledge test.', 'Japan residence needs a knowledge test');
+        ->error_message_is('You must complete the knowledge test to activate this account.', 'Japan residence needs a knowledge test');
     $client_jp->clr_status('jp_knowledge_test_pending');
     $client_jp->set_status('jp_knowledge_test_fail', 'system', 'set for test');
     $client_jp->save;
 
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_JP_KNOWLEDGE_TEST', 'Japan residence needs a knowledge test')
-        ->error_message_is('Please do a knowledge test.', 'Japan residence needs a knowledge test');
+        ->error_message_is('You must complete the knowledge test to activate this account.', 'Japan residence needs a knowledge test');
 
     $client_jp->clr_status('jp_knowledge_test_fail');
     $client_jp->set_status('jp_activation_pending', 'system', 'set for test');
