@@ -214,7 +214,7 @@ sub data_cache_get_num_data {
 
 =head2 data_cache_insert
 
-Also insert into decimate cache if data crosses 15s boundary.
+Insert raw data as well as decimated data if data crosses 15s boundary. In case the interval does not have any data, it will use previous interval's decimated data.
 
 =cut
 
@@ -250,21 +250,12 @@ sub data_cache_insert {
         } elsif (
             my @decimate_data = map {
                 $self->decoder->decode($_)
-            } reverse @{
-                $self->redis_read->zrevrangebyscore(
-                    $self->_make_key($to_store{symbol}, 1),
-                    $boundary - $self->sampling_frequency->seconds,
-                    0, 'LIMIT', 0, 1
-                )})
+            } reverse @{$self->redis_read->zrevrangebyscore($decimate_key, $boundary - $self->sampling_frequency->seconds, 0, 'LIMIT', 0, 1)})
         {
             my $single_data = $decimate_data[0];
             $single_data->{decimate_epoch} = $boundary;
             $single_data->{count}          = 0;
-            $self->_update(
-                $self->redis_write,
-                $self->_make_key($to_store{symbol}, 1),
-                $single_data->{decimate_epoch},
-                $self->encoder->encode($single_data));
+            $self->_update($self->redis_write, $decimate_key, $single_data->{decimate_epoch}, $self->encoder->encode($single_data));
         }
     }
 
