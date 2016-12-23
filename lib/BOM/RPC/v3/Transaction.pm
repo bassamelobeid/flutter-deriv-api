@@ -34,7 +34,7 @@ sub buy {
     my $source              = $params->{source};
     my $contract_parameters = $params->{contract_parameters};
     my $args                = $params->{args};
-
+    my $payout              = $params->{payout};
     my $trading_period_start = $contract_parameters->{trading_period_start};
 
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
@@ -67,7 +67,7 @@ sub buy {
         client        => $client,
         contract      => $contract,
         price         => ($args->{price} || 0),
-        (exists $args->{parameters}{contract_payout} ? (payout => $args->{parameters}{contract_payout}) : ()),
+        (exists $payout ? (payout => $payout) : ()),
         amount_type   => $contract_parameters->{amount_type},
         purchase_date => $purchase_date,
         source        => $source,
