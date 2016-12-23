@@ -230,24 +230,24 @@ sub _collect_vol_diff_stat {
     my @underlyings = map { create_underlying($_) } create_underlying_db->get_symbols_for(
         market    => 'forex',
         submarket => 'major_pairs',
+        contract_category => 'ANY',
     );
 
     foreach my $underlying (@underlyings) {
         my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
         my $surface    = $volsurface->surface_data;
-        my $vol_On     = $surface->{1}->{smile}->{50};
-        my $vol_1w     = $surface->{7}->{smile}->{50};
-        my $vol_1m = $surface->{30}->{smile}->{50} // $surface->{31}->{smile}->{50} // $surface->{29}->{smile}->{50} // $surface->{28}->{smile}->{50};
-        my $day_of_week  = Date::Utility->new->day_of_week;
-        my $total_var_On = ($vol_On**2) * 1;
-        my $total_var_1w = ($vol_1w**2) * 7;
-        my $total_var_1m = ($vol_1m**2) * 30;
-
-        if ($day_of_week == 5) {
-            $total_var_On = ($vol_On**2) * 3;
+        my $day_for_on = $volsurface->get_day_for_tenor('ON');
+        my $day_for_one_week = $volsurface->get_day_for_tenor('1W');
+        my $day_for_one_month = $volsurface->get_day_for_tenor('1M');
+        my $vol_On     = $surface->{$day_for_on}->{smile}->{50};
+        my $vol_1w     = $surface->{$day_for_one_week}->{smile}->{50};
+        my $vol_1m     = $surface->{$day_for_one_month}->{smile}->{50};
+        my $total_var_On = ($vol_On**2) * $day_for_on;
+        my $total_var_1w = ($vol_1w**2) * $day_for_one_week;
+        my $total_var_1m = ($vol_1m**2) * $day_for_one_month;
         }
-        stats_gauge('total_variance_diff_On_1w', $total_var_1w - $total_var_On, {tags => ['tag:' . $underlying->{symbol}]});
-        stats_gauge('total_variance_diff_On_1m', $total_var_1m - $total_var_On, {tags => ['tag:' . $underlying->{symbol}]});
+        stats_gauge('total_variance_diff_On_1w', abs($total_var_1w - $total_var_On)/$total_var_On, {tags => ['tag:' . $underlying->{symbol}]});
+        stats_gauge('total_variance_diff_On_1m', abs($total_var_1m - $total_var_On)/$total_var_On, {tags => ['tag:' . $underlying->{symbol}]});
     }
     return;
 }
