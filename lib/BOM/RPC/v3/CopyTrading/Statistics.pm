@@ -41,7 +41,7 @@ sub copytrading_statistics {
         monthly_profitable_trades       => {},
         yearly_profitable_trades        => {},
         last_12months_profitable_trades => 0,
-        performance_probability         => 0,
+        performance_probability         => 1,
         # trading
         total_trades      => 0,
         trades_profitable => 0,
@@ -140,17 +140,22 @@ sub copytrading_statistics {
     # let’s try if client has at least 50 contracts
     # let Ren know if there are still errors
     if (scalar(grep { $_->{bet_type} =~ /^(call|put)$/i } @{$sold_contracts}) > 50) {
-        $result_hash->{performance_probability} = sprintf(
-            "%.4f",
-            1 - Performance::Probability::get_performance_probability({
-                    pnl          => $cumulative_pnl,
-                    payout       => $contract_parameters->{payout_price},
-                    bought_price => $contract_parameters->{buy_price},
-                    types        => $contract_parameters->{bet_type},
-                    underlying   => $contract_parameters->{underlying_symbol},
-                    start_time   => $contract_parameters->{start_time},
-                    sell_time    => $contract_parameters->{sell_time},
-                }));
+        try {
+            $result_hash->{performance_probability} = sprintf(
+                "%.4f",
+                1 - Performance::Probability::get_performance_probability({
+                        pnl          => $cumulative_pnl,
+                        payout       => $contract_parameters->{payout_price},
+                        bought_price => $contract_parameters->{buy_price},
+                        types        => $contract_parameters->{bet_type},
+                        underlying   => $contract_parameters->{underlying_symbol},
+                        start_time   => $contract_parameters->{start_time},
+                        sell_time    => $contract_parameters->{sell_time},
+                    }));
+        }
+        catch {
+            warn "Performance probability calculation error: $_";
+        };
     }
 
     # trades average duration
