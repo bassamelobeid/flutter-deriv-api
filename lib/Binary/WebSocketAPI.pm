@@ -388,6 +388,8 @@ sub startup {
                 require_auth => 'admin',
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
+
+        ['copytrading_statistics'],
     ];
 
     for my $action (@$actions) {
