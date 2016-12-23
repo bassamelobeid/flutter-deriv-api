@@ -100,12 +100,44 @@ sub cashier {
                 code              => 'ASK_AUTHENTICATE',
                 message_to_client => localize('Client is not fully authenticated.'),
             }) unless $client->client_fully_authenticated;
+
+        if (not $client->get_status('financial_risk_approval')) {
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'ASK_FINANCIAL_RISK_APPROVAL',
+                message_to_client => localize('Financial Risk approval is required.'),
+            });
+        }
     }
 
     if ($client->residence eq 'gb' and not $client->get_status('ukgc_funds_protection')) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'ASK_UK_FUNDS_PROTECTION',
             message_to_client => localize('Please accept Funds Protection.'),
+        });
+    }
+
+    if ($client->residence eq 'jp' and ($client->get_status('jp_knowledge_test_pending') or $client->get_status('jp_knowledge_test_fail'))) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'ASK_JP_KNOWLEDGE_TEST',
+            message_to_client => localize('You must complete the knowledge test to activate this account.'),
+        });
+    }
+
+    if ($client->residence eq 'jp' and $client->get_status('jp_activation_pending')) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'JP_NOT_ACTIVATION',
+            message_to_client => localize('Account not activated.'),
+        });
+    }
+
+    if (   $client->landing_company->country ne 'Costa Rica'
+        && $client->landing_company->country ne 'Isle of Man'
+        && !$client->get_status('age_verification')
+        && !$client->has_valid_documents)
+    {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'ASK_AGE_VERIFICATION',
+            message_to_client => localize('Account needs age verification'),
         });
     }
 
