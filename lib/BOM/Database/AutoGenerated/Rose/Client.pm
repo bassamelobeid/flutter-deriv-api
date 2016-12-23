@@ -38,6 +38,7 @@ __PACKAGE__->meta->setup(
         myaffiliates_token                       => { type => 'varchar', length => 32 },
         myaffiliates_token_registered            => { type => 'boolean', default => 'false', not_null => 1 },
         checked_affiliate_exposures              => { type => 'boolean', default => 'false', not_null => 1 },
+        allow_copiers                            => { type => 'boolean', default => 'false' },
         custom_max_acbal                         => { type => 'integer' },
         custom_max_daily_turnover                => { type => 'integer' },
         custom_max_payout                        => { type => 'integer' },

@@ -214,6 +214,21 @@ sub locked_client_list {
     return $sth->fetchall_hashref('client_loginid');
 }
 
+sub copytrading_traders_list {
+    my ($self) = @_;
+
+    my $sql = q{
+        SELECT
+            loginid
+        FROM
+            betonmarkets.client
+        WHERE
+            allow_copiers IS TRUE
+    };
+
+    return $self->db->dbh->selectcol_arrayref($sql);
+}
+
 no Moose;
 
 __PACKAGE__->meta->make_immutable;

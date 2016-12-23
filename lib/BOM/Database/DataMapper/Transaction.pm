@@ -357,6 +357,94 @@ sub get_transactions_ws {
     return $self->db->dbh->selectall_arrayref($sql, {Slice => {}}, @binds);
 }
 
+sub get_monthly_payments_sum {
+    my ($self) = @_;
+
+    my $sql = q{
+        SELECT extract(year from payment_time),
+               extract(month from payment_time),
+               @ sum(CASE WHEN amount > 0 THEN amount ELSE 0 END) deposit,
+               @ sum(CASE WHEN amount < 0 THEN amount ELSE 0 END) withdrawal
+          FROM payment.payment
+         WHERE account_id = $1
+           AND extract(month from payment_time) > 5
+           AND extract(year from payment_time) >= 2016
+      GROUP BY 1, 2
+      ORDER BY 1, 2
+    };
+
+    my @binds = ($self->account->id);
+    return $self->db->dbh->selectall_arrayref($sql, undef, @binds);
+}
+
+sub get_monthly_balance {
+    my ($self) = @_;
+
+    my $sql = q{
+        SELECT  t2.year, t2.month, max(t2.E0) AS E0, max(t2.E1) AS E1
+        FROM (
+            SELECT  t1.year, t1.month,
+                    CASE WHEN t1.transaction_time = t1.min_time THEN balance_before
+                    END AS E0,
+                    CASE WHEN t1.transaction_time = t1.max_time THEN balance_after
+                    END AS E1
+            FROM (
+                SELECT account_id,
+                       balance_after,
+                       (balance_after - amount) balance_before,
+                       transaction_time,
+                       extract(year from transaction_time) AS year,
+                       extract(month from transaction_time) AS month,
+                       max(transaction_time) over (partition by extract(year from transaction_time), extract(month from transaction_time)) AS max_time,
+                       min(transaction_time) over (partition by extract(year from transaction_time), extract(month from transaction_time)) AS min_time
+                FROM   transaction.transaction
+                WHERE  account_id = $1
+                  AND  extract(month from transaction_time) > 5
+                  AND  extract(year from transaction_time) >= 2016
+                ORDER BY transaction_time
+            ) as t1
+            WHERE t1.transaction_time = t1.max_time OR t1.transaction_time = t1.min_time
+        ) AS t2
+        GROUP BY t2.year, t2.month;
+    };
+
+    my @binds = ($self->account->id);
+    return $self->db->dbh->selectall_arrayref($sql, undef, @binds);
+}
+
+sub unprocessed_bets {
+    my ($self, $last_processed_id, $unsold_ids) = @_;
+
+    my $where_unsold_ids = '';
+    my @binds = ($self->account->id, $last_processed_id);
+    if (@$unsold_ids) {
+        $where_unsold_ids = 'OR id IN(' . join(',', ('?') x scalar(@$unsold_ids)) . ')';
+        push @binds, @$unsold_ids;
+    }
+
+    my $sql = qq{
+        SELECT
+            id, is_sold, underlying_symbol,
+            date_part('epoch', (sell_time - start_time)::interval) as duration_seconds,
+            ((sell_price - buy_price) / buy_price) as profit,
+            CASE
+                WHEN (sell_price - buy_price) > 0 THEN 'win'
+                ELSE 'loss'
+            END
+            AS profitable
+        FROM
+            bet.financial_market_bet
+        WHERE
+            account_id = ?
+            AND (id > ? $where_unsold_ids)
+            AND  extract(month from purchase_time) > 5
+            AND  extract(year from purchase_time) >= 2016
+        ORDER BY id ASC
+    };
+
+    return $self->db->dbh->selectall_arrayref($sql, undef, @binds);
+}
+
 =head2 $self->get_transactions($parameters)
 
 Return list of transactions satisfying given parameters. Acceptable parameters are follows:
@@ -526,7 +614,7 @@ sub get_details_by_transaction_ref {
     my $self           = shift;
     my $transaction_id = shift;
     my $sql            = q{
-    SELECT 
+    SELECT
         a.client_loginid AS loginid,
         b.short_code AS shortcode,
         b.buy_price as ask_price,
