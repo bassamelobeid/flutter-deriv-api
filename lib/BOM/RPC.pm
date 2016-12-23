@@ -52,8 +52,36 @@ sub apply_usergroup {
     return;
 }
 
+sub auth{
+  my $params = shift;
+  my $token_details = $params->{token_details};
+  return BOM::RPC::v3::Utility::invalid_token_error()
+    unless $token_details and exists $token_details->{loginid};
+
+  my $client = Client::Account->new({loginid => $token_details->{loginid}});
+  if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+    return $auth_error;
+  }
+  $params->{client} = $client;
+  $params->{app_id} = $token_details->{app_id};
+  return $params;
+}
+
+sub validate_tnc{
+  my $params = shift;
+  
+}
+
 sub register {
-    my ($method, $code, $require_auth) = @_;
+    my ($method, $code, $before_hooks) = @_;
+
+    # check hooks at register time
+    my %hooks = (auth => \&auth);
+    my @before_hooks;
+    for my $hook (@$before_hooks) {
+      die "Error: no such hook $hook" unless exists($hooks{$hook});
+      push @before_hooks, $hooks{$hook};
+    }
     return MojoX::JSON::RPC::Service->new->register(
         $method,
         sub {
@@ -78,17 +106,7 @@ sub register {
             my $r = BOM::Platform::Context::Request->new($args);
             BOM::Platform::Context::request($r);
 
-            if ($require_auth) {
-                return BOM::RPC::v3::Utility::invalid_token_error()
-                    unless $token_details and exists $token_details->{loginid};
-
-                my $client = Client::Account->new({loginid => $token_details->{loginid}});
-                if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-                    return $auth_error;
-                }
-                $params->{client} = $client;
-                $params->{app_id} = $token_details->{app_id};
-            }
+            map {$_->($params);} @before_hooks;
 
             my $verify_app_res;
             if ($params->{valid_source}) {
