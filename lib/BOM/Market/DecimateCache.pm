@@ -129,9 +129,9 @@ has 'redis_write' => (
 sub _make_key {
     my ($self, $symbol, $decimate) = @_;
 
-    my @bits = ("AGGTICKS", $symbol);
+    my @bits = ("DECIMATE", $symbol);
     if ($decimate) {
-        push @bits, ($self->sampling_frequency->as_concise_string, 'AGG');
+        push @bits, ($self->sampling_frequency->as_concise_string, 'DEC');
     } else {
         push @bits, ($self->raw_retention_interval->as_concise_string, 'FULL');
     }
