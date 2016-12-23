@@ -49,7 +49,7 @@ for my $symbol (@{$config->{underlyings}}) {
                 print "Bet type $bet_type\n";
                 my $key = join '_', $symbol, $duration, $bet_type;
                 unless(exists $fh{$key}) {
-                    open $fh{$key}, '>:encoding(UTF-8)', $output_base . '/' . $key or die $!;
+                    open $fh{$key}, '>:encoding(UTF-8)', $output_base . '/' . $key . '.csv' or die $!;
                     $fh{$key}->autoflush(1);
                 }
                 for my $tick (@ticks) {
