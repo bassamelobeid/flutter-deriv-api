@@ -57,7 +57,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 my $redis = BOM::System::RedisReplicated::redis_write();
-my $unagg_key   = "AGGTICKS_frxAUDCAD" . "_31m_FULL";
+my $undec_key   = "DECIMATE_frxAUDCAD" . "_31m_FULL";
 my $encoder = Sereal::Encoder->new({
         canonical => 1,
     });
@@ -69,11 +69,11 @@ my %defaults = (
         ask        => 0.9935,
         count      => 1,
     );
-$redis->zadd($unagg_key, $defaults{epoch}, $encoder->encode(\%defaults));
+$redis->zadd($undec_key, $defaults{epoch}, $encoder->encode(\%defaults));
 
 $defaults{epoch} = $now->epoch+1;
 $defaults{quote} = 0.9936;
-$redis->zadd($unagg_key, $defaults{epoch}, $encoder->encode(\%defaults));
+$redis->zadd($undec_key, $defaults{epoch}, $encoder->encode(\%defaults));
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDCAD',

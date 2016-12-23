@@ -179,7 +179,7 @@ subtest 'memory cycle test' => sub {
         });
 
         my $redis     = Cache::RedisDB->redis;
-        my $unagg_key = "AGGTICKS_$u_symbol" . "_31m_FULL";
+        my $undec_key = "DECIMATE_$u_symbol" . "_31m_FULL";
         my $encoder   = Sereal::Encoder->new({
             canonical => 1,
         });
@@ -191,7 +191,7 @@ subtest 'memory cycle test' => sub {
             ask    => 100,
             count  => 1,
         );
-        $redis->zadd($unagg_key, $defaults{epoch}, $encoder->encode(\%defaults));
+        $redis->zadd($undec_key, $defaults{epoch}, $encoder->encode(\%defaults));
 
         foreach my $type (@contract_types) {
             foreach my $start_type (
