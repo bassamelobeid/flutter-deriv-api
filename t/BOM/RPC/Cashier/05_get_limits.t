@@ -96,14 +96,14 @@ subtest 'CR' => sub {
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         my $expected_result = {
-            'account_balance'   => $client->get_limit_for_account_balance,
-            'open_positions'    => $client->get_limit_for_open_positions,
-            'payout'            => $client->get_limit_for_payout,
-            'market_specific'   => BOM::Product::RiskProfile::get_current_profile_definitions($client),
-            'num_of_days'       => $limits->{for_days},
-            'num_of_days_limit' => '99999999',
-            'lifetime_limit'    => '99999999',
-            payout_per_symbol_and_contract_type   => 10000,
+            'account_balance'                   => $client->get_limit_for_account_balance,
+            'open_positions'                    => $client->get_limit_for_open_positions,
+            'payout'                            => $client->get_limit_for_payout,
+            'market_specific'                   => BOM::Product::RiskProfile::get_current_profile_definitions($client),
+            'num_of_days'                       => $limits->{for_days},
+            'num_of_days_limit'                 => '99999999',
+            'lifetime_limit'                    => '99999999',
+            payout_per_symbol_and_contract_type => 10000,
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -176,14 +176,14 @@ subtest 'JP' => sub {
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         my $expected_result = {
-            'account_balance'   => $client->get_limit_for_account_balance,
-            'open_positions'    => $client->get_limit_for_open_positions,
-            'payout'            => $client->get_limit_for_payout,
-            'market_specific'   => BOM::Product::RiskProfile::get_current_profile_definitions($client),
-            'num_of_days'       => $limits->{for_days},
-            'num_of_days_limit' => '99999999',
-            'lifetime_limit'    => '99999999',
-            payout_per_symbol_and_contract_type   => 1000000,
+            'account_balance'                   => $client->get_limit_for_account_balance,
+            'open_positions'                    => $client->get_limit_for_open_positions,
+            'payout'                            => $client->get_limit_for_payout,
+            'market_specific'                   => BOM::Product::RiskProfile::get_current_profile_definitions($client),
+            'num_of_days'                       => $limits->{for_days},
+            'num_of_days_limit'                 => '99999999',
+            'lifetime_limit'                    => '99999999',
+            payout_per_symbol_and_contract_type => 1000000,
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -241,14 +241,14 @@ subtest 'MLT' => sub {
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         my $expected_result = {
-            'account_balance'   => $client->get_limit_for_account_balance,
-            'open_positions'    => $client->get_limit_for_open_positions,
-            'payout'            => $client->get_limit_for_payout,
-            'market_specific'   => BOM::Product::RiskProfile::get_current_profile_definitions($client),
-            'num_of_days'       => $limits->{for_days},
-            'num_of_days_limit' => '99999999',
-            'lifetime_limit'    => '99999999',
-            payout_per_symbol_and_contract_type   => 10000,
+            'account_balance'                   => $client->get_limit_for_account_balance,
+            'open_positions'                    => $client->get_limit_for_open_positions,
+            'payout'                            => $client->get_limit_for_payout,
+            'market_specific'                   => BOM::Product::RiskProfile::get_current_profile_definitions($client),
+            'num_of_days'                       => $limits->{for_days},
+            'num_of_days_limit'                 => '99999999',
+            'lifetime_limit'                    => '99999999',
+            payout_per_symbol_and_contract_type => 10000,
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -306,14 +306,14 @@ subtest 'MX' => sub {
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         my $expected_result = {
-            'account_balance'   => $client->get_limit_for_account_balance,
-            'open_positions'    => $client->get_limit_for_open_positions,
-            'payout'            => $client->get_limit_for_payout,
-            'market_specific'   => BOM::Product::RiskProfile::get_current_profile_definitions($client),
-            'num_of_days'       => $limits->{for_days},
-            'num_of_days_limit' => '99999999',
-            'lifetime_limit'    => '99999999',
-            payout_per_symbol_and_contract_type   => 10000,
+            'account_balance'                   => $client->get_limit_for_account_balance,
+            'open_positions'                    => $client->get_limit_for_open_positions,
+            'payout'                            => $client->get_limit_for_payout,
+            'market_specific'                   => BOM::Product::RiskProfile::get_current_profile_definitions($client),
+            'num_of_days'                       => $limits->{for_days},
+            'num_of_days_limit'                 => '99999999',
+            'lifetime_limit'                    => '99999999',
+            payout_per_symbol_and_contract_type => 10000,
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
