@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "echo_req": {
+      "required": 1
+    },
+    "copytrading_statistics": {
+      "type":"object",
+      "properties": {
+        "active_since": {
+          "type": "integer",
+          "pattern": "^\\d+$",
+          "required": 1
+        },
+        "monthly_profitable_trades": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+          }
+        },
+        "yearly_profitable_trades": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+          }
+        },
+        "last_12months_profitable_trades": {
+          "type": "number",
+          "pattern": "^0$",
+          "requred": 1
+        },
+        "total_trades": {
+          "type": "integer",
+          "pattern": "^0$",
+          "requred": 1
+        },
+        "trades_profitable": {
+          "type": "number",
+          "pattern": "^0$",
+          "requred": 1
+        },
+        "avg_duration": {
+          "type": "integer",
+          "pattern": "^0$",
+          "requred": 1
+        },
+        "avg_profit": {
+          "type": "number",
+          "pattern": "^0$",
+          "requred": 1
+        },
+        "avg_loss": {
+          "type": "number",
+          "pattern": "^0$",
+          "requred": 1
+        },
+        "trades_breakdown": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+          }
+        }
+      }
+    },
+    "msg_type": {
+      "type": "string",
+      "required": 1
+    },
+    "req_id": {
+      "type": "integer"
+    }
+  }
+}
