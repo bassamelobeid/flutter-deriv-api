@@ -587,14 +587,13 @@ sub _market_convention {
     };
 }
 
-has engine_ask_probability => (
+has engine_theo_probability => (
     is         => 'ro',
     lazy_build => 1,
 );
 
-sub _build_engine_ask_probability {
+sub _build_engine_theo_probability {
     my $self = shift;
-
     return if not $self->new_interface_engine;
 
     my %pricing_parameters;
@@ -678,7 +677,7 @@ sub _build_engine_ask_probability {
         die "Missing pricing parameters for engine " . $self->pricing_engine_name . " - " . join ',', @missing_parameters;
     }
 
-    my $package = $self->pricing_engine_name . '::ask_probability';
+    my $package = $self->pricing_engine_name . '::theo_probability';
     my $coderef = \&$package;
     return $coderef->(\%pricing_parameters, $self->debug_information);
 }
@@ -1100,7 +1099,7 @@ my $pc_params_setters = {
                 name        => 'theo_probability',
                 description => 'theoretical value of a contract',
                 set_by      => $self->pricing_engine_name,
-                base_amount => $self->engine_ask_probability,
+                base_amount => $self->engine_theo_probability,
                 minimum     => 0,
                 maximum     => 1,
             });
@@ -1113,7 +1112,7 @@ my $pc_params_setters = {
         my $self = shift;
         my $bs_probability;
         if ($self->new_interface_engine) {
-            my $ask_probability = $self->engine_ask_probability;
+            my $ask_probability = $self->engine_theo_probability;
 
             if ($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
                 $bs_probability = Math::Util::CalculatedValue::Validatable->new({
