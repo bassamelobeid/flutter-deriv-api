@@ -167,9 +167,9 @@ sub decimate_cache_get {
 
     @res = map { $self->decoder->decode($_) } @{$redis->zrangebyscore($key, $start, $end)};
 
-    my @sorted = sort { $a->{epoch} <=> $b->{epoch} } @res;
+    #my @sorted = sort { $a->{epoch} <=> $b->{epoch} } @res;
 
-    return \@sorted;
+    return \@res;
 }
 
 my %prev_added_epoch;
