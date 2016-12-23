@@ -68,11 +68,13 @@ sub BUILD {
 
     my @uls = map { create_underlying($_) } create_underlying_db->symbols_for_intraday_fx;
 
+    my $decimate_cache = BOM::Market::DecimateCache->new();
+
+    my $interval = $decimate_cache->sampling_frequency->seconds;
+
     my $end = time;
     my $start = $end - (12 * 60 * 60);
-    $start = $start - ($start % 15) - 15;
-
-    my $decimate_cache = BOM::Market::DecimateCache->new();
+    $start = $start - ($start % $interval) - $interval;
 
     foreach my $ul (@uls) {
         my $ticks = $ul->ticks_in_between_start_end({
@@ -112,7 +114,7 @@ sub DEMOLISH {
 sub _process_incoming_messages {
     my ($self, $zmq) = @_;
     state $ticks_count;
-    my %symbols_to_agg = map { $_ => 1 } create_underlying_db->symbols_for_intraday_fx;
+    my %symbols_to_decimate = map { $_ => 1 } create_underlying_db->symbols_for_intraday_fx;
 
     while (my $msg = zmq_recvmsg($zmq, ZMQ_NOBLOCK)) {
         my $tick_yml  = zmq_msg_data($msg);
@@ -125,7 +127,7 @@ sub _process_incoming_messages {
 
         $tick = _cleanup_tick($tick);
 
-        $self->_tick_source->data_cache_insert($tick) if $symbols_to_agg{$tick->{symbol}};
+        $self->_tick_source->data_cache_insert($tick) if $symbols_to_decimate{$tick->{symbol}};
 
     }
 

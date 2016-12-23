@@ -46,6 +46,7 @@ has sampling_frequency => (
     coerce  => 1,
 );
 
+# size is the number of ticks
 has data_cache_size => (
     is      => 'ro',
     default => 1860,
@@ -226,7 +227,7 @@ sub data_cache_insert {
 
     $to_store{count} = 1;    # These are all single data;
     my $key          = $self->_make_key($to_store{symbol}, 0);
-    my $resample_key = $self->_make_key($to_store{symbol}, 1);
+    my $decimate_key = $self->_make_key($to_store{symbol}, 1);
 
     # check for resample interval boundary.
     my $current_epoch = $data->{epoch};
@@ -244,7 +245,7 @@ sub data_cache_insert {
             my $decimate_data = Data::Decimate::decimate($self->sampling_frequency->seconds, \@datas);
 
             foreach my $tick (@$decimate_data) {
-                $self->_update($self->redis_write, $resample_key, $tick->{decimate_epoch}, $self->encoder->encode($tick));
+                $self->_update($self->redis_write, $decimate_key, $tick->{decimate_epoch}, $self->encoder->encode($tick));
             }
         } elsif (
             my @decimate_data = map {

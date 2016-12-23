@@ -56,10 +56,10 @@ sub decimate_cache_get {
     if ($backtest) {
         my $start = $end_time - min($end_time - $start_time, $self->decimate_cache->decimate_retention_interval->seconds);
         $start = $start - $start % $self->decimate_cache->sampling_frequency->seconds;
-        my $first_agg = $start - $self->decimate_cache->sampling_frequency->seconds;
+        my $first_decimate = $start - $self->decimate_cache->sampling_frequency->seconds;
 
         my $raw_ticks = $underlying->ticks_in_between_start_end({
-            start_time => $first_agg,
+            start_time => $first_decimate,
             end_time   => $end_time,
         });
 
