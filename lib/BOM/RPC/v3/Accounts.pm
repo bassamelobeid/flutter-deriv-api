@@ -543,6 +543,7 @@ sub get_settings {
                 address_state                  => $client->state,
                 address_postcode               => $client->postcode,
                 phone                          => $client->phone,
+                allow_copiers                  => $client->allow_copiers,
                 is_authenticated_payment_agent => ($client->payment_agent and $client->payment_agent->is_authenticated) ? 1 : 0,
                 $client_tnc_status ? (client_tnc_status => $client_tnc_status->reason) : (),
             )
@@ -560,7 +561,7 @@ sub set_settings {
     my ($website_name, $client_ip, $user_agent, $language, $args) =
         @{$params}{qw/website_name client_ip user_agent language args/};
 
-    my ($residence, $err) = ($args->{residence});
+    my ($residence, $allow_copiers, $err) = ($args->{residence}, $args->{allow_copiers});
     if ($client->is_virtual) {
         # Virtual client can update
         # - residence, if residence not set. But not for Japan
@@ -590,6 +591,8 @@ sub set_settings {
             # this may return error or {status => 1}
             $err = BOM::RPC::v3::Japan::NewAccount::set_jp_settings($params);
         }
+
+        $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && $client->broker_code ne 'CR';
     }
 
     return $err if $err->{error};
@@ -600,6 +603,10 @@ sub set_settings {
         my $user = BOM::Platform::User->new({email => $client->email});
         $user->email_consent($args->{email_consent});
         $user->save;
+    }
+
+    if (defined $allow_copiers) {
+        $client->allow_copiers($allow_copiers);
     }
 
     # need to handle for $err->{status} as that come from japan settings
@@ -672,6 +679,8 @@ sub set_settings {
         localize('Receive news and special offers'),
         BOM::Platform::User->new({email => $client->email})->email_consent ? localize("Yes") : localize("No")]
         if exists $args->{email_consent};
+    push @updated_fields, [localize('Allow copiers'), $client->allow_copiers ? localize("Yes") : localize("No")]
+        if defined $allow_copiers;
 
     $message .= "<table>";
     foreach my $updated_field (@updated_fields) {
