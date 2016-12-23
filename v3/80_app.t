@@ -231,15 +231,4 @@ is $res->{msg_type}, 'authorize';
 is $res->{error}->{code}, 'InvalidAppID', 'Should return error if get wrong app_id and close connection';
 $t->finished_ok(1005);
 
-# Make sure we warn if there's no app_id
-cmp_deeply([ warnings {
-    $t = build_wsapi_test({app_id => undef});
-    $t = $t->send_ok({json => {authorize => $token}})->message_ok;
-    $res = decode_json($t->message->[1]);
-    is $res->{msg_type}, 'authorize';
-    test_schema('authorize', $res);
-} ], bag(re(qr/Missing app_id/)), 'have warning if we leave out app_id');
-
-$t->finish_ok;
-
 done_testing();
