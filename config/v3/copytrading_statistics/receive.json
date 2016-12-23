@@ -79,8 +79,19 @@
               "required": 1
             }
           }
+        },
+        "performance_probability": {
+          "type": "number",
+          "description": "Trader performance probability.",
+          "required": 1
+        },
+        "copiers": {
+          "type":"number",
+          "description": "Trader copiers count.",
+          "required": 1
         }
-      }
+      },
+      "additionalProperties": false
     },
     "msg_type": {
       "type": "string",
