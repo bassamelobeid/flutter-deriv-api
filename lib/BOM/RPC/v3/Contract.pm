@@ -134,7 +134,7 @@ sub _get_ask {
     };
     return $response if $response;
     try {
-        $contract = produce_contract($p2)
+        $contract = produce_contract($p2);
     }
     catch {
         warn __PACKAGE__ . " _get_ask produce_contract failed, parameters: " . Dumper($p2);
@@ -481,8 +481,36 @@ sub send_ask {
     };
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
-
+    map { exists($response->{$_}) && ($response->{$_} .= '') } qw(ask_price barrier date_start display_value payout spot spot_time);
     return $response;
+}
+
+sub send_multiple_ask {
+    my $params         = {%{+shift}};
+    my $barriers_array = delete $params->{args}->{barriers};
+    my $responses      = [];
+    my $rpc_time       = 0;
+
+    for my $barriers (@$barriers_array) {
+        $params->{args}->{barrier} = $barriers->{barrier};
+        @{$params->{args}}{keys %$barriers} = values %$barriers;
+        my $res = send_ask($params);
+        if (not exists $res->{error}) {
+            @{$res}{keys %$barriers} = values %$barriers;
+            push @$responses, $res;
+        } else {
+            $res->{error}{continue_price_stream} = 1;    # we continue price stream because for multiple_ask
+            @{$res->{error}{details}}{keys %$barriers} = values %$barriers;
+            push @$responses, $res;
+        }
+        $rpc_time += $res->{rpc_time} // 0;
+        delete $res->{rpc_time};
+    }
+
+    return {
+        proposals => $responses,
+        rpc_time  => $rpc_time,
+    };
 }
 
 sub get_contract_details {
