@@ -31,10 +31,10 @@ sub buy {
             code              => 'AuthorizationRequired',
             message_to_client => localize('Please log in.')}) unless $client;
 
-    my $source              = $params->{source};
-    my $contract_parameters = $params->{contract_parameters};
-    my $args                = $params->{args};
-    my $payout              = $params->{payout};
+    my $source               = $params->{source};
+    my $contract_parameters  = $params->{contract_parameters};
+    my $args                 = $params->{args};
+    my $payout               = $params->{payout};
     my $trading_period_start = $contract_parameters->{trading_period_start};
 
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
@@ -64,10 +64,10 @@ sub buy {
     return $response if $response;
 
     my $trx = BOM::Product::Transaction->new({
-        client        => $client,
-        contract      => $contract,
-        price         => ($args->{price} || 0),
-        (exists $payout ? (payout => $payout) : ()),
+        client   => $client,
+        contract => $contract,
+        price    => ($args->{price} || 0),
+        (defined $payout) ? (payout => $payout) : (),
         amount_type   => $contract_parameters->{amount_type},
         purchase_date => $purchase_date,
         source        => $source,
