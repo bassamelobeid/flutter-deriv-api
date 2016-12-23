@@ -119,7 +119,7 @@ sub cashier {
     if ($client->residence eq 'jp' and ($client->get_status('jp_knowledge_test_pending') or $client->get_status('jp_knowledge_test_fail'))) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'ASK_JP_KNOWLEDGE_TEST',
-            message_to_client => localize('Please do a knowledge test.'),
+            message_to_client => localize('You must complete the knowledge test to activate this account.'),
         });
     }
 
