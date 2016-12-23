@@ -332,7 +332,6 @@ subtest 'buy a spread bet' => sub {
         current_tick     => $tick_r100,
         stop_type        => 'point',
     });
-$DB::single=1;
     my $txn = BOM::Product::Transaction->new({
         client   => $new_client,
         contract => $c,
