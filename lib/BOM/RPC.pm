@@ -27,6 +27,7 @@ use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::App;
 use BOM::RPC::v3::Japan::NewAccount;
 use BOM::RPC::v3::MT5::Account;
+use BOM::RPC::v3::CopyTrading::Statistics;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -193,8 +194,9 @@ sub startup {
 
         ['verify_email', \&BOM::RPC::v3::NewAccount::verify_email],
 
-        ['send_ask', \&BOM::RPC::v3::Contract::send_ask],
-        ['get_bid',  \&BOM::RPC::v3::Contract::get_bid],
+        ['send_ask',          \&BOM::RPC::v3::Contract::send_ask],
+        ['send_multiple_ask', \&BOM::RPC::v3::Contract::send_multiple_ask],
+        ['get_bid',           \&BOM::RPC::v3::Contract::get_bid],
         ['get_contract_details', \&BOM::RPC::v3::Contract::get_contract_details, 1],
 
         ['new_account_real',        \&BOM::RPC::v3::NewAccount::new_account_real,         1],
@@ -227,6 +229,8 @@ sub startup {
         ['mt5_password_change', \&BOM::RPC::v3::MT5::Account::mt5_password_change, 1],
         ['mt5_deposit',         \&BOM::RPC::v3::MT5::Account::mt5_deposit,         1],
         ['mt5_withdrawal',      \&BOM::RPC::v3::MT5::Account::mt5_withdrawal,      1],
+
+        ['copytrading_statistics', \&BOM::RPC::v3::CopyTrading::Statistics::copytrading_statistics],
     );
     my $services = {};
     foreach my $srv (@services) {
