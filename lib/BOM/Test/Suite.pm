@@ -289,6 +289,17 @@ sub _get_stashed {
     return walk_hierarchy(shift, $response);
 }
 
+sub _free_gift {
+    my ($loginid) = @_;
+    my $client = Client::Account->new({loginid => $loginid});
+    $client->payment_free_gift(
+        currency => 'USD',
+        amount   => 10000,
+        remark   => 'free gift',
+    );
+    return;
+}
+
 # set allow omnibus flag, as it is required for creating new sub account
 sub _set_allow_omnibus {
     my $r = walk_hierarchy(shift, $response);
