@@ -9,6 +9,12 @@
 [%  END -%]
 </select>
 [%  IF parameter == 'Date' -%]
+<label for="price_type">Ask/theo price</label>
+<select name="price_type">
+ <option value="ask"[% IF selected_parameter.price_type == 'ask' %] selected="selected"[% END %]>Ask price</option>
+ <option value="theo"[% IF selected_parameter.price_type == 'theo' %] selected="selected"[% END %]>Theo price</option>
+</select>
+
 <label for="strategy">Strategy</label>
 <select name="strategy">
 [% FOR strategy IN strategy_list -%]

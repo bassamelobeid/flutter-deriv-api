@@ -75,7 +75,7 @@ for my $symbol (@{$config->{underlyings}}) {
                         if($contract_expired->is_expired) {
                             my $ask_price = $contract->ask_price;
                             my $value = $contract_expired->value;
-                            $fh{$key}->print( join(",", (map $tick->{$_}, qw(epoch quote)), $ask_price, $value) . "\n" );
+                            $fh{$key}->print( join(",", (map $tick->{$_}, qw(epoch quote)), $ask_price, $value, $contract->theo_price) . "\n" );
                         }
                     } catch {
                         warn "Failed to price with parameters " . Dumper($args) . " - $_\n";
@@ -83,6 +83,6 @@ for my $symbol (@{$config->{underlyings}}) {
                 }
             }
         }
-	$current = 1 + $ticks[-1]{epoch};
+        $current = 1 + $ticks[-1]{epoch};
     }
 }
