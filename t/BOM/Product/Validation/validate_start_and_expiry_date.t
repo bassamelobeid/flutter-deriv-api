@@ -134,7 +134,7 @@ subtest 'date start blackouts' => sub {
     # since this test is mainly test for blackout period, it is not matter what price it is .
     $mocked = Test::MockModule->new('BOM::Product::Contract::Call');
     $mocked->mock('market_is_inefficient', sub { 0 });
-    $mocked->mock('engine_ask_probability', sub { 0.5 });
+    $mocked->mock('engine_theo_probability', sub { 0.5 });
     $mocked->mock(
         'ask_probability',
         Math::Util::CalculatedValue::Validatable->new({
