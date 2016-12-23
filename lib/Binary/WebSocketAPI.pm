@@ -137,13 +137,14 @@ sub startup {
         ],
         ['active_symbols', {stash_params => [qw/ token /]}],
 
-        ['ticks',         {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::ticks}],
-        ['ticks_history', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::ticks_history}],
-        ['proposal',      {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Pricer::proposal}],
-        ['forget',        {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::forget}],
-        ['forget_all',    {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::forget_all}],
-        ['ping',          {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::ping}],
-        ['time',          {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::server_time}],
+        ['ticks',          {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::ticks}],
+        ['ticks_history',  {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::ticks_history}],
+        ['proposal',       {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Pricer::proposal}],
+        ['proposal_array', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Pricer::proposal_array}],
+        ['forget',         {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::forget}],
+        ['forget_all',     {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::forget_all}],
+        ['ping',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::ping}],
+        ['time',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::server_time}],
 
         ['website_status'],
         ['contracts_for'],
@@ -394,6 +395,8 @@ sub startup {
                 require_auth => 'admin',
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
+
+        ['copytrading_statistics'],
     ];
 
     for my $action (@$actions) {
