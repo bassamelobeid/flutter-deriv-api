@@ -117,7 +117,6 @@ sub startup {
             'authorize',
             {
                 stash_params => [qw/ ua_fingerprint client_ip user_agent /],
-                success      => \&Binary::WebSocketAPI::v3::Wrapper::Authorize::authorize_success,
             }
         ],
         [
@@ -455,8 +454,11 @@ sub startup {
             before_forward => [\&Binary::WebSocketAPI::Hooks::before_forward, \&Binary::WebSocketAPI::Hooks::get_rpc_url],
             before_call =>
                 [\&Binary::WebSocketAPI::Hooks::add_app_id, \&Binary::WebSocketAPI::Hooks::add_brand, \&Binary::WebSocketAPI::Hooks::start_timing],
-            before_get_rpc_response  => [\&Binary::WebSocketAPI::Hooks::log_call_timing],
-            after_got_rpc_response   => [\&Binary::WebSocketAPI::Hooks::log_call_timing_connection, \&Binary::WebSocketAPI::Hooks::error_check],
+            before_get_rpc_response => [\&Binary::WebSocketAPI::Hooks::log_call_timing],
+            after_got_rpc_response  => [
+                \&Binary::WebSocketAPI::Hooks::log_call_timing_connection, \&Binary::WebSocketAPI::Hooks::error_check,
+                \&Binary::WebSocketAPI::Hooks::log_data
+            ],
             before_send_api_response => [
                 \&Binary::WebSocketAPI::Hooks::add_req_data,      \&Binary::WebSocketAPI::Hooks::start_timing,
                 \&Binary::WebSocketAPI::Hooks::output_validation, \&Binary::WebSocketAPI::Hooks::add_call_debug
