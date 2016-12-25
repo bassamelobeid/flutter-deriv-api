@@ -67,8 +67,8 @@ sub process_job {
         return undef;
     }
 
-    if ( (not defined $underlying->spot_tick or not defined $underlying->spot_tick->epoch) and $underlying->calendar->is_open) {
-        warn "$params->{symbol} has invalid spot tick";
+    unless (defined $underlying->spot_tick and defined $underlying->spot_tick->epoch) {
+        warn "$params->{symbol} has invalid spot tick" if $underlying->calendar->is_open;
         DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => ['tag:' . $internal_ip]});
         return undef;
     }
