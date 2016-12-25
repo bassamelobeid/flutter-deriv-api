@@ -245,7 +245,6 @@ sub _collect_vol_diff_stat {
         my $total_var_On = ($vol_On**2) * $day_for_on;
         my $total_var_1w = ($vol_1w**2) * $day_for_one_week;
         my $total_var_1m = ($vol_1m**2) * $day_for_one_month;
-        }
         stats_gauge('total_variance_diff_On_1w', abs($total_var_1w - $total_var_On)/$total_var_On, {tags => ['tag:' . $underlying->{symbol}]});
         stats_gauge('total_variance_diff_On_1m', abs($total_var_1m - $total_var_On)/$total_var_On, {tags => ['tag:' . $underlying->{symbol}]});
     }
