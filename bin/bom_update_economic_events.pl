@@ -15,7 +15,7 @@ use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use JSON;
 use Path::Tiny;
-use BOM::System::RedisReplicated;
+use BOM::System::Chronicle;
 use Try::Tiny;
 use List::Util qw(first uniq);
 
@@ -57,8 +57,8 @@ sub script_run {
 
         my @underlying_symbols = create_underlying_db->symbols_for_intraday_fx;
         my $qfs                = Volatility::Seasonality->new(
-            chronicle_reader => BOM::System::RedisReplicated::redis_read,
-            chronicle_writer => BOM::System::RedisReplicated::redis_write
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         );
 
         foreach my $symbol (@underlying_symbols) {
