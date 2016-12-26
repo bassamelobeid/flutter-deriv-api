@@ -57,14 +57,14 @@ has [qw(id pricing_code display_name sentiment other_side_code payout_type payou
 );
 
 has debug_information => (
-    is      => 'ro',
+    is         => 'ro',
     lazy_build => 1,
 );
 
 sub _build_debug_information {
     my $self = shift;
 
-    return $self->pricing_engine->debug_info;
+    return $self->pricing_engine->can('debug_info') ? $self->pricing_engine->debug_info : {};
 }
 
 # Check whether the contract is expired or not . It is expired only if it passes the expiry time time and has valid exit tick
