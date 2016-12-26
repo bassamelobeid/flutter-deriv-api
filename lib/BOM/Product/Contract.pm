@@ -655,7 +655,7 @@ sub _create_new_interface_engine {
             underlying_symbol        => $self->underlying->symbol,
             volsurface               => $self->volsurface->surface,
             volsurface_recorded_date => $self->volsurface->recorded_date,
-            for_date                 => $self->udnerlying->for_date,
+            for_date                 => $self->underlying->for_date,
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::BlackScholes') {
         %pricing_parameters = (
