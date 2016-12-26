@@ -57,7 +57,7 @@ subtest 'expiry miss' => sub {
         is_deeply $c->supported_start_types, ['spot'];
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
         isa_ok $c->greek_engine,   'BOM::Product::Pricing::Greeks::BlackScholes';
-        $c->engine_theo_probability;
+        $c->ask_probability;
         my $call = $c->debug_information->{CALL}{base_probability};
         my $put  = $c->debug_information->{PUT}{base_probability};
         is roundnear(0.001, $call->{amount}), 0.585, 'correct tv for CALL';
@@ -118,7 +118,7 @@ subtest 'expiry range' => sub {
         is_deeply $c->supported_start_types, ['spot'];
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
         isa_ok $c->greek_engine,   'BOM::Product::Pricing::Greeks::BlackScholes';
-        $c->engine_theo_probability;
+        $c->ask_probability;
         my $call = $c->debug_information->{CALL}{base_probability};
         my $put  = $c->debug_information->{PUT}{base_probability};
         is roundnear(0.001, $call->{amount}), 0.566, 'correct tv for CALL';
