@@ -106,7 +106,6 @@ subtest 'Numbers and stuff.' => sub {
     ok(looks_like_number($bet->bid_price),   'Bid price looks like a number.');
     ok(looks_like_number($bet->payout),      'Payout looks like a number.');
     ok(looks_like_number($bet->ask_price),   'Ask price looks like a number.');
-    ok(looks_like_number($bet->bs_price),    'BS price looks like a number.');
     ok(looks_like_number($bet->theo_price),  'Theo price looks like a number.');
 
     lives_ok { shortcode_to_parameters($bet->shortcode) } 'Can extracts parameters from shortcode.';
