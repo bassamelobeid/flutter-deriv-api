@@ -134,7 +134,7 @@ sub _get_ask {
     };
     return $response if $response;
     try {
-        $contract = produce_contract($p2)
+        $contract = produce_contract($p2);
     }
     catch {
         warn __PACKAGE__ . " _get_ask produce_contract failed, parameters: " . Dumper($p2);
@@ -186,7 +186,17 @@ sub _get_ask {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
             my $trading_window_start = $p2->{trading_period_start} // '';
             # need this warning to be logged for Japan as a regulatory requirement
-            warn $contract->japan_pricing_info($trading_window_start) if ($p2->{currency} && $p2->{currency} eq 'JPY');
+            if ($p2->{currency} && $p2->{currency} eq 'JPY') {
+                if (my $code = $contract->can('japan_pricing_info')) {
+                    warn $code->($contract, $trading_window_start);
+                } else {
+                    # We currently have 26 VRTC users with JPY as their account currency.
+                    # After cleaning these up, we expect this error to go away, but if you're
+                    # seeing this message after 2016-12-21 then please check client currencies
+                    # for that landing company.
+                    warn "JPY currency for non-JP contract - landing company is " . ($p2->{landing_company} // 'not available');
+                }
+            }
 
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
             my $market_name = $contract->market->name;
@@ -471,8 +481,36 @@ sub send_ask {
     };
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
-
+    map { exists($response->{$_}) && ($response->{$_} .= '') } qw(ask_price barrier date_start display_value payout spot spot_time);
     return $response;
+}
+
+sub send_multiple_ask {
+    my $params         = {%{+shift}};
+    my $barriers_array = delete $params->{args}->{barriers};
+    my $responses      = [];
+    my $rpc_time       = 0;
+
+    for my $barriers (@$barriers_array) {
+        $params->{args}->{barrier} = $barriers->{barrier};
+        @{$params->{args}}{keys %$barriers} = values %$barriers;
+        my $res = send_ask($params);
+        if (not exists $res->{error}) {
+            @{$res}{keys %$barriers} = values %$barriers;
+            push @$responses, $res;
+        } else {
+            $res->{error}{continue_price_stream} = 1;    # we continue price stream because for multiple_ask
+            @{$res->{error}{details}}{keys %$barriers} = values %$barriers;
+            push @$responses, $res;
+        }
+        $rpc_time += $res->{rpc_time} // 0;
+        delete $res->{rpc_time};
+    }
+
+    return {
+        proposals => $responses,
+        rpc_time  => $rpc_time,
+    };
 }
 
 sub get_contract_details {

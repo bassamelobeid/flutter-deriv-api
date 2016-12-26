@@ -10,6 +10,7 @@ use Data::Password::Meter;
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
+use Brands;
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
@@ -24,7 +25,6 @@ use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (localize request);
 use BOM::Database::Model::OAuth;
-use LandingCompany::Countries;
 
 sub _create_oauth_token {
     my $loginid = shift;
@@ -125,8 +125,8 @@ sub verify_email {
             );
 
         send_email({
-                from                  => BOM::System::Config::email_address('support'),
-                to                    => $email,
+                from => Brands->new(name => request()->brand)->emails('support'),
+                to   => $email,
                 subject               => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
                 message               => [$message],
                 use_email_template    => 1,
@@ -136,8 +136,8 @@ sub verify_email {
 
     if (BOM::Platform::User->new({email => $email}) && $type eq 'reset_password') {
         send_email({
-                from    => BOM::System::Config::email_address('support'),
-                to      => $email,
+                from => Brands->new(name => request()->brand)->emails('support'),
+                to   => $email,
                 subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
                 message => [
                     BOM::Platform::Context::localize(
@@ -151,8 +151,8 @@ sub verify_email {
     } elsif ($type eq 'account_opening') {
         unless (BOM::Platform::User->new({email => $email})) {
             send_email({
-                    from    => BOM::System::Config::email_address('support'),
-                    to      => $email,
+                    from => Brands->new(name => request()->brand)->emails('support'),
+                    to   => $email,
                     subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
                     message => [
                         BOM::Platform::Context::localize(
@@ -165,8 +165,8 @@ sub verify_email {
                 });
         } else {
             send_email({
-                    from    => BOM::System::Config::email_address('support'),
-                    to      => $email,
+                    from => Brands->new(name => request()->brand)->emails('support'),
+                    to   => $email,
                     subject => BOM::Platform::Context::localize('A Duplicate Email Address Has Been Submitted - [_1]', $params->{website_name}),
                     message => [
                         '<div style="line-height:200%;color:#333333;font-size:15px;">'
@@ -205,7 +205,7 @@ sub new_account_real {
 
     my $company;
     if ($args->{residence}) {
-        my $countries_list = LandingCompany::Countries->new(brand => request()->brand)->countries_list;
+        my $countries_list = Brands->new(name => request()->brand)->landing_company_countries->countries_list;
         $company = $countries_list->{$args->{residence}}->{gaming_company};
         $company = $countries_list->{$args->{residence}}->{financial_company} if (not $company or $company eq 'none');
     }
@@ -325,7 +325,7 @@ sub new_account_japan {
                 message_to_client => $error_map->{'invalid'}});
     }
 
-    my $company = LandingCompany::Countries->new(brand => request()->brand)->countries_list->{'jp'}->{financial_company};
+    my $company = Brands->new(name => request()->brand)->landing_company_countries->countries_list->{'jp'}->{financial_company};
 
     if (not $company) {
         return BOM::RPC::v3::Utility::create_error({

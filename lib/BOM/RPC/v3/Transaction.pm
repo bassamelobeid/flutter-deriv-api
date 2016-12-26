@@ -188,6 +188,7 @@ sub buy_contract_for_multiple_accounts {
                     message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
         };
         return $response if $response;
+
         try {
             $contract = produce_contract($contract_parameters);
         }
@@ -197,6 +198,7 @@ sub buy_contract_for_multiple_accounts {
                     code              => 'ContractCreationFailure',
                     message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
         };
+        return $response if $response;
 
         my $trx = BOM::Product::Transaction->new({
             client        => $client,

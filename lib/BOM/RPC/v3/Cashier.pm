@@ -18,8 +18,9 @@ use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use YAML::XS qw(LoadFile);
 
+use Brands;
+use Client::Account;
 use LandingCompany::Registry;
-use LandingCompany::Countries;
 use Client::Account::PaymentAgent;
 
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency in_USD);
@@ -29,7 +30,6 @@ use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw (localize request);
-use Client::Account;
 use BOM::Platform::Email qw(send_email);
 use BOM::System::Config;
 use BOM::System::AuditLog;
@@ -100,6 +100,13 @@ sub cashier {
                 code              => 'ASK_AUTHENTICATE',
                 message_to_client => localize('Client is not fully authenticated.'),
             }) unless $client->client_fully_authenticated;
+
+        if (not $client->get_status('financial_risk_approval')) {
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'ASK_FINANCIAL_RISK_APPROVAL',
+                message_to_client => localize('Financial Risk approval is required.'),
+            });
+        }
     }
 
     if ($client->residence eq 'gb' and not $client->get_status('ukgc_funds_protection')) {
@@ -109,13 +116,38 @@ sub cashier {
         });
     }
 
+    if ($client->residence eq 'jp' and ($client->get_status('jp_knowledge_test_pending') or $client->get_status('jp_knowledge_test_fail'))) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'ASK_JP_KNOWLEDGE_TEST',
+            message_to_client => localize('You must complete the knowledge test to activate this account.'),
+        });
+    }
+
+    if ($client->residence eq 'jp' and $client->get_status('jp_activation_pending')) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'JP_NOT_ACTIVATION',
+            message_to_client => localize('Account not activated.'),
+        });
+    }
+
+    if (   $client->landing_company->country ne 'Costa Rica'
+        && $client->landing_company->country ne 'Isle of Man'
+        && !$client->get_status('age_verification')
+        && !$client->has_valid_documents)
+    {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'ASK_AGE_VERIFICATION',
+            message_to_client => localize('Account needs age verification'),
+        });
+    }
+
     my $error = '';
     if ($action eq 'deposit' and $client->get_status('unwelcome')) {
         $error = localize('Your account is restricted to withdrawals only.');
     } elsif ($client->documents_expired) {
         $error = localize(
             'Your identity documents have passed their expiration date. Kindly send a scan of a valid ID to <a href="mailto:[_1]">[_1]</a> to unlock your cashier.',
-            BOM::System::Config::email_address('support'));
+            Brands->new(name => request()->brand)->emails('support'));
     } elsif ($client->get_status('cashier_locked')) {
         $error = localize('Your cashier is locked');
     } elsif ($client->get_status('disabled')) {
@@ -426,7 +458,7 @@ sub paymentagent_list {
 
     # add country name plus code
     foreach (@{$countries}) {
-        $_->[1] = LandingCompany::Countries->new(brand => request()->brand)->countries->localized_code2country($_->[0], $language);
+        $_->[1] = Brands->new(name => request()->brand)->landing_company_countries->countries->localized_code2country($_->[0], $language);
     }
 
     my $authenticated_paymentagent_agents =
@@ -682,7 +714,7 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
     );
 
     send_email({
-        'from'               => BOM::System::Config::email_address('support'),
+        'from'               => Brands->new(name => request()->brand)->emails('support'),
         'to'                 => $client_to->email,
         'subject'            => localize('Acknowledgement of Money Transfer'),
         'message'            => [$emailcontent],
@@ -877,9 +909,10 @@ sub paymentagent_withdraw {
 
     if ($amount_transferred > 1500) {
         my $message = "Client $client_loginid transferred \$$amount_transferred to payment agent today";
+        my $brand = Brands->new(name => request()->brand);
         send_email({
-            from    => BOM::System::Config::email_address('support'),
-            to      => BOM::System::Config::email_address('support'),
+            from    => $brand->emails('support'),
+            to      => $brand->emails('support'),
             subject => $message,
             message => [$message],
         });
@@ -952,7 +985,7 @@ sub paymentagent_withdraw {
         localize('The [_1] team.', $website_name),
     ];
     send_email({
-        from               => BOM::System::Config::email_address('support'),
+        from               => Brands->new(name => request()->brand)->emails('support'),
         to                 => $paymentagent->email,
         subject            => localize('Acknowledgement of Withdrawal Request'),
         message            => $emailcontent,
@@ -967,15 +1000,17 @@ sub paymentagent_withdraw {
 }
 
 sub __output_payments_error_message {
-    my $args           = shift;
-    my $client         = $args->{'client'};
-    my $action         = $args->{'action'};
-    my $payment_type   = $args->{'payment_type'} || 'n/a';                 # used for reporting; if not given, not applicable
-    my $currency       = $args->{'currency'};
-    my $amount         = $args->{'amount'};
-    my $error_message  = $args->{'error_msg'};
-    my $payments_email = BOM::System::Config::email_address('payments');
-    my $cs_email       = BOM::System::Config::email_address('support');
+    my $args          = shift;
+    my $client        = $args->{'client'};
+    my $action        = $args->{'action'};
+    my $payment_type  = $args->{'payment_type'} || 'n/a';    # used for reporting; if not given, not applicable
+    my $currency      = $args->{'currency'};
+    my $amount        = $args->{'amount'};
+    my $error_message = $args->{'error_msg'};
+
+    my $brand          = Brands->new(name => request()->brand);
+    my $payments_email = $brand->emails('payments');
+    my $cs_email       = $brand->emails('support');
 
     # amount is not always exist because error may happen before client submit the form
     # or when redirected from 3rd party site to failure script where no data is returned

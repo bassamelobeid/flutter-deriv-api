@@ -6,20 +6,21 @@ use warnings;
 
 use JSON;
 use Try::Tiny;
+use WWW::OneAll;
 use Date::Utility;
 use Data::Password::Meter;
 use HTML::Entities qw(encode_entities);
+use Brands;
+use Client::Account;
+use LandingCompany::Registry;
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::Japan::NewAccount;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
-use LandingCompany::Countries;
 use BOM::Platform::Email qw(send_email);
-use LandingCompany::Registry;
 use BOM::Platform::Locale;
-use Client::Account;
 use BOM::Platform::User;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Token;
@@ -32,7 +33,6 @@ use BOM::Database::ClientDB;
 use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
-use WWW::OneAll;
 use BOM::Database::Model::UserConnect;
 
 sub payout_currencies {
@@ -44,28 +44,25 @@ sub payout_currencies {
         $client = Client::Account->new({loginid => $token_details->{loginid}});
     }
 
-    my $currencies;
-    if ($client) {
-        $currencies = [$client->currency];
-    } else {
-        # We may have a landing company even if we're not logged in - typically this
-        # is obtained from the GeoIP country code lookup. If we have one, use it.
-        my $name = $params->{landing_company_name};
-        my $lc = LandingCompany::Registry::get($name || 'costarica');
-        # ... but we fall back to Costa Rica as a useful default, since it has most
-        # currencies enabled.
-        $lc ||= LandingCompany::Registry::get('costarica');
-        $currencies = $lc->legal_allowed_currencies;
-    }
+    # if client has default_account he had already choosed his currency..
+    return [$client->currency] if $client && $client->default_account;
 
-    return $currencies;
+    # or if client has not yet selected currency - we will use list from his LC
+    # or we may have a landing company even if we're not logged in - typically this
+    # is obtained from the GeoIP country code lookup. If we have one, use it.
+    my $lc = $client ? $client->landing_company : LandingCompany::Registry::get($params->{landing_company_name} || 'costarica');
+    # ... but we fall back to Costa Rica as a useful default, since it has most
+    # currencies enabled.
+    $lc ||= LandingCompany::Registry::get('costarica');
+
+    return $lc->legal_allowed_currencies;
 }
 
 sub landing_company {
     my $params = shift;
 
     my $country  = $params->{args}->{landing_company};
-    my $configs  = LandingCompany::Countries->new(brand => request()->brand)->countries_list;
+    my $configs  = Brands->new(name => request()->brand)->landing_company_countries->countries_list;
     my $c_config = $configs->{$country};
     unless ($c_config) {
         ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
@@ -308,7 +305,7 @@ sub change_password {
 
     BOM::System::AuditLog::log('password has been changed', $client->email);
     send_email({
-            from    => BOM::System::Config::email_address('support'),
+            from    => Brands->new(name => request()->brand)->emails('support'),
             to      => $client->email,
             subject => localize('Your password has been changed.'),
             message => [
@@ -372,7 +369,7 @@ sub cashier_password {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
         } else {
             send_email({
-                    'from'    => BOM::System::Config::email_address('support'),
+                    'from'    => Brands->new(name => request()->brand)->emails('support'),
                     'to'      => $client->email,
                     'subject' => localize("Cashier password updated"),
                     'message' => [
@@ -398,7 +395,7 @@ sub cashier_password {
         if (!BOM::System::Password::checkpw($unlock_password, $cashier_password)) {
             BOM::System::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
             send_email({
-                    'from'    => BOM::System::Config::email_address('support'),
+                    'from'    => Brands->new(name => request()->brand)->emails('support'),
                     'to'      => $client->email,
                     'subject' => localize("Failed attempt to unlock cashier section"),
                     'message' => [
@@ -420,7 +417,7 @@ sub cashier_password {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
         } else {
             send_email({
-                    'from'    => BOM::System::Config::email_address('support'),
+                    'from'    => Brands->new(name => request()->brand)->emails('support'),
                     'to'      => $client->email,
                     'subject' => localize("Cashier password updated"),
                     'message' => [
@@ -488,7 +485,7 @@ sub reset_password {
 
     BOM::System::AuditLog::log('password has been reset', $email, $args->{verification_code});
     send_email({
-            from    => BOM::System::Config::email_address('support'),
+            from    => Brands->new(name => request()->brand)->emails('support'),
             to      => $email,
             subject => localize('Your password has been reset.'),
             message => [
@@ -514,7 +511,8 @@ sub get_settings {
     if ($client->residence) {
         $country_code = $client->residence;
         $country =
-            LandingCompany::Countries->new(brand => request()->brand)->countries->localized_code2country($client->residence, $params->{language});
+            Brands->new(name => request()->brand)
+            ->landing_company_countries->countries->localized_code2country($client->residence, $params->{language});
     }
 
     my $client_tnc_status = $client->get_status('tnc_approval');
@@ -546,6 +544,7 @@ sub get_settings {
                 address_state                  => $client->state,
                 address_postcode               => $client->postcode,
                 phone                          => $client->phone,
+                allow_copiers                  => $client->allow_copiers,
                 is_authenticated_payment_agent => ($client->payment_agent and $client->payment_agent->is_authenticated) ? 1 : 0,
                 $client_tnc_status ? (client_tnc_status => $client_tnc_status->reason) : (),
             )
@@ -563,7 +562,7 @@ sub set_settings {
     my ($website_name, $client_ip, $user_agent, $language, $args) =
         @{$params}{qw/website_name client_ip user_agent language args/};
 
-    my ($residence, $err) = ($args->{residence});
+    my ($residence, $allow_copiers, $err) = ($args->{residence}, $args->{allow_copiers});
     if ($client->is_virtual) {
         # Virtual client can update
         # - residence, if residence not set. But not for Japan
@@ -593,6 +592,8 @@ sub set_settings {
             # this may return error or {status => 1}
             $err = BOM::RPC::v3::Japan::NewAccount::set_jp_settings($params);
         }
+
+        $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && $client->broker_code ne 'CR';
     }
 
     return $err if $err->{error};
@@ -603,6 +604,10 @@ sub set_settings {
         my $user = BOM::Platform::User->new({email => $client->email});
         $user->email_consent($args->{email_consent});
         $user->save;
+    }
+
+    if (defined $allow_copiers) {
+        $client->allow_copiers($allow_copiers);
     }
 
     # need to handle for $err->{status} as that come from japan settings
@@ -670,6 +675,8 @@ sub set_settings {
         localize('Receive news and special offers'),
         BOM::Platform::User->new({email => $client->email})->email_consent ? localize("Yes") : localize("No")]
         if exists $args->{email_consent};
+    push @updated_fields, [localize('Allow copiers'), $client->allow_copiers ? localize("Yes") : localize("No")]
+        if defined $allow_copiers;
 
     $message .= "<table>";
     foreach my $updated_field (@updated_fields) {
@@ -684,7 +691,7 @@ sub set_settings {
     $message .= "\n" . localize('The [_1] team.', $website_name);
 
     send_email({
-        from                  => BOM::System::Config::email_address('support'),
+        from                  => Brands->new(name => request()->brand)->emails('support'),
         to                    => $client->email,
         subject               => $client->loginid . ' ' . localize('Change in account settings'),
         message               => [$message],
@@ -896,9 +903,10 @@ sub set_self_exclusion {
 
     if ($message) {
         $message = "Client $client set the following self-exclusion limits:\n\n$message";
+        my $brand = Brands->new(name => request()->brand);
         send_email({
-            from    => BOM::System::Config::email_address('compliance'),
-            to      => BOM::System::Config::email_address('compliance') . ',' . BOM::System::Config::email_address('support'),
+            from    => $brand->emails('compliance'),
+            to      => $brand->emails('compliance') . ',' . $brand->emails('support'),
             subject => "Client set self-exclusion limits",
             message => [$message],
         });
@@ -1105,9 +1113,10 @@ sub set_financial_assessment {
         $message = ["An error occurred while updating assessment test details for $client_loginid. Please handle accordingly."];
     };
 
+    my $brand = Brands->new(name => request()->brand);
     send_email({
-        from    => BOM::System::Config::email_address('support'),
-        to      => BOM::System::Config::email_address('compliance'),
+        from    => $brand->emails('support'),
+        to      => $brand->emails('compliance'),
         subject => $subject,
         message => $message,
     });

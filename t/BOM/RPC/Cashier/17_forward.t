@@ -19,6 +19,15 @@ use BOM::Platform::User;
 use Client::Account;
 
 my ($t, $rpc_ct);
+my $client_mocked = Test::MockModule->new('Client::Account');
+my %seen;
+$client_mocked->mock(
+    'get_status',
+    sub {
+        my $status = $_[1];
+        $seen{$status}++;
+        return $client_mocked->original('get_status')->(@_);
+    });
 
 subtest 'Initialization' => sub {
     lives_ok {
@@ -53,6 +62,10 @@ my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 my $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MX',
+    email       => $email
+});
+my $client_jp = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'JP',
     email       => $email
 });
 
@@ -93,7 +106,6 @@ subtest 'common' => sub {
     $client_cr->save;
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
-    my $client_mocked = Test::MockModule->new('Client::Account');
     $client_mocked->mock('documents_expired', sub { return 1 });
 
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client documents have expired')
@@ -176,6 +188,13 @@ subtest 'landing_companies_specific' => sub {
         ->has_no_system_error->has_error->error_code_is('ASK_AUTHENTICATE', 'MF client needs to be fully authenticated')
         ->error_message_is('Client is not fully authenticated.', 'MF client needs to be fully authenticated');
 
+    $client_mf->set_authentication('ID_DOCUMENT')->status('pass');
+    $client_mf->save;
+
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('ASK_FINANCIAL_RISK_APPROVAL', 'financial risk approval is required')
+        ->error_message_is('Financial Risk approval is required.', 'financial risk approval is required');
+
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
 
     $client_mx->set_default_account('GBP');
@@ -186,6 +205,46 @@ subtest 'landing_companies_specific' => sub {
         ->has_no_system_error->has_error->error_code_is('ASK_UK_FUNDS_PROTECTION', 'GB residence needs to accept fund protection')
         ->error_message_is('Please accept Funds Protection.', 'GB residence needs to accept fund protection');
 
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_jp->loginid, 'test token');
+    $client_jp->set_default_account('JPY');
+    $client_jp->residence('jp');
+    my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
+    $client_jp->set_status('tnc_approval', 'system', $current_tnc_version);
+    $client_jp->set_status('jp_knowledge_test_pending', 'system', 'set for test');
+    $client_jp->save;
+
+
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('ASK_JP_KNOWLEDGE_TEST', 'Japan residence needs a knowledge test')
+        ->error_message_is('You must complete the knowledge test to activate this account.', 'Japan residence needs a knowledge test');
+    $client_jp->clr_status('jp_knowledge_test_pending');
+    $client_jp->set_status('jp_knowledge_test_fail', 'system', 'set for test');
+    $client_jp->save;
+
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('ASK_JP_KNOWLEDGE_TEST', 'Japan residence needs a knowledge test')
+        ->error_message_is('You must complete the knowledge test to activate this account.', 'Japan residence needs a knowledge test');
+
+    $client_jp->clr_status('jp_knowledge_test_fail');
+    $client_jp->set_status('jp_activation_pending', 'system', 'set for test');
+    $client_jp->save;
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('JP_NOT_ACTIVATION', 'Japan residence needs account activation')
+        ->error_message_is('Account not activated.', 'Japan residence needs account activation');
+
+    $client_jp->clr_status('jp_activation_pending');
+    $client_jp->save;
+    $rpc_ct->call_ok($method, $params)
+      ->has_no_system_error->has_error->error_code_is('ASK_AGE_VERIFICATION', 'need age verification')
+      ->error_message_is('Account needs age verification', 'need verification');
+
+};
+
+subtest 'all status are covered' => sub {
+    my $all_status     = Client::Account::client_status_types;
+    fail("missing status $_") for sort grep !exists $seen{$_}, keys %$all_status;
+    pass("ok to prevent warning 'no tests run");
+    done_testing();
 };
 
 done_testing();
