@@ -1233,7 +1233,7 @@ sub __validate_currency {
     my $broker   = $client->broker_code;
     my $currency = $self->contract->currency;
 
-    if ($currency ne $client->currency) {
+    if ($client->default_account and $currency ne $client->currency) {
         return Error::Base->cuss(
             -type              => 'NotDefaultCurrency',
             -mesg              => "not default currency for client [$currency], client currency[" . $client->currency . "]",
