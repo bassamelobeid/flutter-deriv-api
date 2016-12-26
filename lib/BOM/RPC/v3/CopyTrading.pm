@@ -80,7 +80,7 @@ sub copy_stop {
 
     my $client = $params->{client};
 
-    my $trader_id = uc $params->{trader_id};
+    my $trader_id = uc $args->{copy_stop};
     my $trader = try { Client::Account->new({loginid => $trader_id}) };
     unless ($trader) {
         return BOM::RPC::v3::Utility::create_error({
