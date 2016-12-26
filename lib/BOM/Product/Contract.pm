@@ -602,13 +602,13 @@ sub _create_new_interface_engine {
 
     if ($self->pricing_engine_name eq 'Pricing::Engine::Digits') {
         %pricing_parameters = (
-            strikes => $self->barrier ? $self->barrier->as_absolute : undef,
+            strike => $self->barrier ? $self->barrier->as_absolute : undef,
             contract_type => $self->pricing_code,
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Asian') {
         %pricing_parameters = (
             spot              => $self->pricing_spot,
-            strikes           => [grep { $_ } values %{$self->barriers_for_pricing}],
+            strike            => [grep { $_ } values %{$self->barriers_for_pricing}]->[0],
             date_start        => $self->effective_start,
             date_expiry       => $self->date_expiry,
             date_pricing      => $self->date_pricing,
@@ -616,9 +616,7 @@ sub _create_new_interface_engine {
             q_rate            => $self->q_rate,
             r_rate            => $self->r_rate,
             vol               => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
-            payouttime_code   => $self->payouttime_code,
             contract_type     => $self->pricing_code,
-            underlying_symbol => $self->underlying->symbol,
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
         %pricing_parameters = (
@@ -657,7 +655,7 @@ sub _create_new_interface_engine {
             underlying_symbol        => $self->underlying->symbol,
             volsurface               => $self->volsurface->surface,
             volsurface_recorded_date => $self->volsurface->recorded_date,
-            market_convention        => $self->_market_convention,
+            for_date                 => $self->udnerlying->for_date,
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::BlackScholes') {
         %pricing_parameters = (
