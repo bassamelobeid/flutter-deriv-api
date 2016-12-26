@@ -587,7 +587,7 @@ sub _market_convention {
     };
 }
 
-sub _build_new_interface_engine {
+sub _create_new_interface_engine {
     my $self = shift;
     return if not $self->new_interface_engine;
 
@@ -678,7 +678,7 @@ sub _build_new_interface_engine {
 sub _build_pricing_engine {
     my $self = shift;
 
-    return $self->_build_new_interface_engine if $self->new_interface_engine;
+    return $self->_create_new_interface_engine if $self->new_interface_engine;
 
     my $pricing_engine = $self->pricing_engine_name->new({
         bet                     => $self,
@@ -1092,7 +1092,7 @@ my $pc_params_setters = {
                 name        => 'theo_probability',
                 description => 'theoretical value of a contract',
                 set_by      => $self->pricing_engine_name,
-                base_amount => $self->engine_theo_probability,
+                base_amount => $self->pricing_engine->theo_probability,
                 minimum     => 0,
                 maximum     => 1,
             });
@@ -1105,7 +1105,7 @@ my $pc_params_setters = {
         my $self = shift;
         my $bs_probability;
         if ($self->new_interface_engine) {
-            my $ask_probability = $self->engine_theo_probability;
+            my $ask_probability = $self->pricing_engine->theo_probability;
 
             if ($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
                 $bs_probability = Math::Util::CalculatedValue::Validatable->new({
