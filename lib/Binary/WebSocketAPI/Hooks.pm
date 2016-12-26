@@ -2,8 +2,11 @@ package Binary::WebSocketAPI::Hooks;
 
 use strict;
 use warnings;
+
+use JSON;
 use Try::Tiny;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
+use Fcntl qw/ :flock /;
 
 sub start_timing {
     my ($c, $req_storage) = @_;
@@ -265,6 +268,31 @@ sub add_app_id {
 sub add_brand {
     my ($c, $req_storage) = @_;
     $req_storage->{call_params}->{brand} = $c->stash('brand');
+    return;
+}
+
+# temporary sub added to log data so that
+# we can debug the calls received by this app
+sub log_data {
+    my ($c, $req_storage, $rpc_response) = @_;
+
+    my $call_params = $req_storage->{call_params};
+    # log request and respone data
+    if ($call_params->{source} and ($call_params->{source} == 1353 or $call_params->{source} == 1417)) {
+        try {
+            open my $fh, '>>', '/var/log/httpd/app_call.log' or die 'cannot open file /var/log/httpd/app_call.log';
+            flock $fh, LOCK_EX or die "cannot lock file using flock: $!";
+            print $fh "---- Start: "
+                . $req_storage->{method}
+                . " -----\n  -- Call params --\n    "
+                . encode_json($call_params)
+                . "\n  -- Response --\n    "
+                . encode_json($rpc_response->{rpc_response}->{result})
+                . "\n---- Close ----\n\n";
+            close $fh;
+        };
+    }
+
     return;
 }
 
