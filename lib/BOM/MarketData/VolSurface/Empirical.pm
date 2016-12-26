@@ -4,22 +4,18 @@ use Moose;
 
 use Machine::Epsilon;
 use Math::Gauss::XS qw(pdf);
-use Cache::RedisDB;
 use List::Util qw(max min sum);
-use List::MoreUtils qw(uniq);
-use Tie::Scalar::Timeout;
 use Time::Duration::Concise;
 use YAML::XS qw(LoadFile);
 
-use Quant::Framework::EconomicEventCalendar;
-
+use BOM::System::Chronicle;
+use Volatility::Seasonality;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::AggTicks;
 use BOM::MarketData::Types;
 
-my $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
-my $coefficients    = LoadFile('/home/git/regentmarkets/bom-market/config/files/volatility_calibration_coefficients.yml');
-my $returns_sep     = 4;
+my $coefficients = LoadFile('/home/git/regentmarkets/bom-market/config/files/volatility_calibration_coefficients.yml');
+my $returns_sep  = 4;
 
 sub get_volatility {
     my ($self, $args) = @_;
@@ -74,7 +70,15 @@ sub get_volatility {
         interval => min($requested_interval->seconds, (@good_ticks < 2 ? 0 : $good_ticks[-1]->{epoch} - $good_ticks[0]->{epoch})));
     $self->volatility_scaling_factor($actual_lookback_interval->seconds / $requested_interval->seconds);
 
-    my $categorized_events = $self->_categorized_economic_events($economic_events);
+    my $qfs = Volatility::Seasonality->new(chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($underlying->for_date));
+    my $categorized_events = $qfs->categorize_events($underlying->symbol, $economic_events);
+
+    # Future time samples is extended for 5 minutes at both ends. This is to accommodate for the uncertainty of economic event impact kick-in time.
+    # This will only be applied on contract less than 5 hours because of the decaying effect of economic event's impact.
+    my $shifted_events =
+        ($args->{include_news_impact} and $args->{seconds_to_expiration} < 5 * 3600)
+        ? _apply_shifting_logic($categorized_events, $args->{current_epoch}, $args->{seconds_to_expiration})
+        : $categorized_events;
 
     my $c_start = $args->{current_epoch};
     my $c_end   = $c_start + $args->{seconds_to_expiration};
@@ -85,17 +89,20 @@ sub get_volatility {
     }
 
     #seasonality future
-    my $seasonality_fut = $self->_get_volatility_seasonality_areas(\@time_samples_fut);
+    my $seasonality_fut = $qfs->get_volatility_seasonality({
+        underlying_symbol => $underlying->symbol,
+        time_series       => \@time_samples_fut
+    });
 
     #news triangles future
     #no news if not requested
     my $news_fut = [(1) x (scalar @time_samples_fut)];
     if ($args->{include_news_impact}) {
-        my $contract_details = {
-            start    => $c_start,
-            duration => $args->{seconds_to_expiration},
-        };
-        $news_fut = _calculate_news_triangle(\@time_samples_fut, $categorized_events, $contract_details);
+        $news_fut = $qfs->get_economic_event_seasonality({
+            underlying_symbol  => $underlying->symbol,
+            categorized_events => $shifted_events,
+            time_series        => \@time_samples_fut,
+        });
     }
 
     my $future_sum                 = sum(map { ($seasonality_fut->[$_] * $news_fut->[$_])**2 } (0 .. $#time_samples_fut));
@@ -114,17 +121,20 @@ sub get_volatility {
         $short_term_prediction = machine_epsilon();
     } else {
         my @tick_epochs = map { $_->{epoch} } @good_ticks;
-        my @time_samples_past = map { ($tick_epochs[$_] + $tick_epochs[$_ - $returns_sep]) / 2 } ($returns_sep .. $#tick_epochs);
+        my @time_samples_past = map { int(($tick_epochs[$_] + $tick_epochs[$_ - $returns_sep]) / 2) } ($returns_sep .. $#tick_epochs);
         my $weights = _calculate_weights(\@time_samples_past, $categorized_events);
-        my $observed_vol     = _calculate_observed_volatility(\@good_ticks, \@time_samples_past, \@tick_epochs, $weights);
-        my $seasonality_past = $self->_get_volatility_seasonality_areas(\@time_samples_past);
-        my $news_past        = [(1) x (scalar @time_samples_past)];
+        my $observed_vol = _calculate_observed_volatility(\@good_ticks, \@time_samples_past, \@tick_epochs, $weights);
+        my $seasonality_past = $qfs->get_volatility_seasonality({
+            underlying_symbol => $underlying->symbol,
+            time_series       => \@time_samples_past
+        });
+        my $news_past = [(1) x (scalar @time_samples_past)];
         if ($args->{include_news_impact}) {
-            my $contract_details = {
-                start    => $c_start,
-                duration => $args->{seconds_to_expiration},
-            };
-            $news_past = _calculate_news_triangle(\@time_samples_past, $categorized_events, $contract_details);
+            $news_past = $qfs->get_economic_event_seasonality({
+                underlying_symbol  => $underlying->symbol,
+                categorized_events => $shifted_events,
+                time_series        => \@time_samples_past
+            });
         }
         my $past_sum                   = sum(map { ($seasonality_past->[$_] * $news_past->[$_])**2 * $weights->[$_] } (0 .. $#time_samples_past));
         my $past_seasonality           = sqrt($past_sum / sum(@$weights));
@@ -145,6 +155,30 @@ sub get_volatility {
     return $seasonalized_vol;
 }
 
+sub _apply_shifting_logic {
+    my ($economic_events, $contract_start, $contract_duration) = @_;
+
+    my $five_minutes_in_seconds = 5 * 60;
+    my $shift_seconds           = 0;
+    my $contract_end            = $contract_start + $contract_duration;
+
+    my @shifted;
+    foreach my $event (@$economic_events) {
+        my $news_time = $event->{release_epoch};
+        if ($news_time > $contract_start - $five_minutes_in_seconds and $news_time < $contract_start) {
+            push @shifted, +{%$event, release_epoch => $contract_start};
+        } elsif ($news_time < $contract_end + $five_minutes_in_seconds and $news_time > $contract_end - $five_minutes_in_seconds) {
+            # Always shifts to the contract start time if duration is less than 5 minutes.
+            my $max_shift = min($five_minutes_in_seconds, $contract_duration);
+            push @shifted, +{%$event, release_epoch => $contract_end - $max_shift};
+        } else {
+            push @shifted, $event;
+        }
+    }
+
+    return \@shifted;
+}
+
 sub _calculate_observed_volatility {
     my ($ticks, $time_samples_past, $tick_epochs, $weights) = @_;
 
@@ -160,27 +194,6 @@ sub _calculate_observed_volatility {
     return $observed_vol;
 }
 
-sub _categorized_economic_events {
-    my ($self, $raw_events) = @_;
-
-    my $underlying = $self->underlying;
-    my @events;
-    foreach my $event (@$raw_events) {
-        my $event_name = $event->{event_name};
-        $event_name =~ s/\s/_/g;
-        my $key             = $underlying->symbol . '_' . $event->{symbol} . '_' . $event->{impact} . '_' . $event_name;
-        my $default         = $underlying->symbol . '_' . $event->{symbol} . '_' . $event->{impact} . '_default';
-        my $news_parameters = $news_categories->{$key} // $news_categories->{$default};
-        my %dereference     = $news_parameters ? %$news_parameters : ();
-
-        next unless keys %dereference;
-        $dereference{release_time} = Date::Utility->new($event->{release_date})->epoch;
-        push @events, \%dereference;
-    }
-
-    return \@events;
-}
-
 sub _calculate_weights {
     my ($times, $news_array) = @_;
 
@@ -189,103 +202,13 @@ sub _calculate_weights {
     foreach my $news (@$news_array) {
         foreach my $idx (0 .. $#times) {
             my $time   = $times[$idx];
-            my $width  = $time < $news->{release_time} ? 2 * 60 : 2 * 60 + $news->{duration};
-            my $weight = 1 / (1 + pdf($time, $news->{release_time}, $width) / pdf(0, 0, $width) * ($news->{magnitude} - 1));
+            my $width  = $time < $news->{release_epoch} ? 2 * 60 : 2 * 60 + $news->{duration};
+            my $weight = 1 / (1 + pdf($time, $news->{release_epoch}, $width) / pdf(0, 0, $width) * ($news->{magnitude} - 1));
             $combined[$idx] = min($combined[$idx], $weight);
         }
     }
 
     return \@combined;
-}
-
-sub _calculate_news_triangle {
-    my ($times, $news_array, $contract) = @_;
-
-    my @times    = @$times;
-    my @combined = (1) x scalar(@times);
-    my $eps      = machine_epsilon();
-    foreach my $news (@$news_array) {
-        my $effective_news_time = _get_effective_news_time($news->{release_time}, $contract->{start}, $contract->{duration});
-        # +1e-9 is added to prevent a division by zero error if news magnitude is 1
-        my $decay_coef = -log(2 / ($news->{magnitude} - 1 + $eps)) / $news->{duration};
-        my @triangle;
-        foreach my $time (@$times) {
-            if ($time < $effective_news_time) {
-                push @triangle, 1;
-            } else {
-                my $chunk = ($news->{magnitude} - 1) * exp(-$decay_coef * ($time - $effective_news_time)) + 1;
-                push @triangle, $chunk;
-            }
-        }
-        @combined = map { max($triangle[$_], $combined[$_]) } (0 .. $#times);
-    }
-
-    return \@combined;
-}
-
-sub _get_effective_news_time {
-    my ($news_time, $contract_start, $contract_duration) = @_;
-
-    my $five_minutes_in_seconds = 5 * 60;
-    my $shift_seconds           = 0;
-    my $contract_end            = $contract_start + $contract_duration;
-    if ($news_time > $contract_start - $five_minutes_in_seconds and $news_time < $contract_start) {
-        $shift_seconds = $contract_start - $news_time;
-    } elsif ($news_time < $contract_end + $five_minutes_in_seconds and $news_time > $contract_end - $five_minutes_in_seconds) {
-        # Always shifts to the contract start time if duration is less than 5 minutes.
-        my $max_shift = min($five_minutes_in_seconds, $contract_duration);
-        my $desired_start = $contract_end - $max_shift;
-        $shift_seconds = $desired_start - $news_time;
-    }
-
-    my $effective_time = $news_time + $shift_seconds;
-
-    return $effective_time;
-}
-
-sub _get_volatility_seasonality_areas {
-    my ($self, $times) = @_;
-
-    my @seasonality;
-    my $secondly_seasonality = $self->per_second_seasonality_curve;
-    foreach my $time (@$times) {
-        my $second_of_day = $time % 86400;
-        push @seasonality, $secondly_seasonality->[$second_of_day];
-    }
-
-    return \@seasonality;
-}
-
-has per_second_seasonality_curve => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-# Cache curves in process, pull from Redis when necessary.
-tie my $curve_cache, 'Tie::Scalar::Timeout', EXPIRES => '+1h';
-
-sub _build_per_second_seasonality_curve {
-    my $self = shift;
-
-    my $symbol = $self->underlying->symbol;
-    $curve_cache //= {};    # Expiration leads to undef.
-
-    my $per_second = $curve_cache->{$symbol};
-    if (not $per_second) {
-        my $key_space = 'SECONDLY_SEASONALITY';
-        $per_second = Cache::RedisDB->get($key_space, $symbol);
-
-        if (not $per_second) {
-            my $coefficients = $self->_get_coefficients('volatility_seasonality_coef')->{data};
-            my $interpolator = Math::Function::Interpolator->new(points => $coefficients);
-            # The coefficients from the YAML are stored as hours. We want to do per-second.
-            $per_second = [map { $interpolator->cubic($_ / 3600) } (0 .. 86399)];
-            Cache::RedisDB->set($key_space, $symbol, $per_second, 43201);    # Recompute every 12 hours or so
-        }
-        $curve_cache->{$symbol} = $per_second;
-    }
-
-    return $per_second;
 }
 
 has underlying => (
