@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More;
 use Test::Exception;
 use Test::MockModule;
 use Format::Util::Numbers qw/roundnear/;
@@ -707,7 +707,7 @@ subtest 'seasonalized volatility with news' => sub {
                 include_news_impact   => 1
             }
             ),
-            0.273329710580157, '';
+            0.273329521307744, '';
         ok !$vs->error, 'no error';
     }
     'lives through process of getting seasonalized volatility';
@@ -734,3 +734,39 @@ subtest 'seasonalized volatility with news' => sub {
     'lives through process of getting seasonalized volatility';
 };
 
+subtest 'economic event shifting logic' => sub {
+    $mock_at->mock('retrieve', sub { $ticks });
+    my $emp = BOM::MarketData::VolSurface::Empirical->new(underlying => 'frxUSDJPY');
+    my $valid_event = {
+        symbol        => 'USD',
+        release_date  => $now->minus_time_interval('2m'),
+        impact        => 1,
+        event_name    => 'CB Leading Index m/m',
+        recorded_date => $now,
+        source        => 'forexfactory'
+    };
+    my $v = $emp->get_volatility({
+        current_epoch         => $now->epoch,
+        seconds_to_expiration => 900,
+        economic_events       => [$valid_event],
+        include_news_impact   => 1,
+    });
+    is $v, 0.194141395362914, 'event occur right before start. Impact of economic event shifted forward';
+    $valid_event = {
+        symbol        => 'USD',
+        release_date  => $now->plus_time_interval('17m'),
+        impact        => 1,
+        event_name    => 'CB Leading Index m/m',
+        recorded_date => $now,
+        source        => 'forexfactory'
+    };
+    $v = $emp->get_volatility({
+        current_epoch         => $now->epoch,
+        seconds_to_expiration => 900,
+        economic_events       => [$valid_event],
+        include_news_impact   => 1,
+    });
+    is $v, 0.180534923058452, 'event occur right after contract expiration. Impact of economic event shifted 5 minutes backward at max';
+};
+
+done_testing();
