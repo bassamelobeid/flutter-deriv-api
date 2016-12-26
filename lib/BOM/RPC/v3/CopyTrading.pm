@@ -32,6 +32,11 @@ sub copy_start {
                 code              => 'InvalidToken',
                 message_to_client => localize('Invalid token')});
     }
+    unless (grep {/^read$/} @{$token_details->{scopes}}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'PermissionDenied',
+                message_to_client => localize('Permission denied, requires read scope.')});
+    }
     unless ($trader->allow_copiers) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'CopyTradingNotAllowed',
