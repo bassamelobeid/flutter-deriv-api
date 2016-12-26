@@ -1285,7 +1285,6 @@ sub _build_pricing_comment {
             [theta   => $contract->theta],
             [vanna   => $contract->vanna],
             [volga   => $contract->volga],
-            [bs_prob => $contract->bs_probability->amount],
             [spot    => $contract->current_spot]);
 
         # only manual sell and buy has a price

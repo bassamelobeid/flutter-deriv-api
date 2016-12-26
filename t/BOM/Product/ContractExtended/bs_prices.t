@@ -91,6 +91,6 @@ foreach my $code (@codes) {
 
     my $contract = produce_contract(\%bet_args);
 
-    is(roundnear(0.001, $contract->bs_probability->amount), roundnear(0.001, $expected[$count]), 'bs probability for [' . $contract->code . ']');
+    is(roundnear(0.001, $contract->theo_probability->amount), roundnear(0.001, $expected[$count]), 'bs probability for [' . $contract->code . ']');
     $count++;
 }

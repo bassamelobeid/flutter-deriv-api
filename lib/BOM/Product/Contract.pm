@@ -475,7 +475,6 @@ has [qw(
         theo_probability
         bid_probability
         discounted_probability
-        bs_probability
         timeinyears
         timeindays
         )
@@ -1076,7 +1075,6 @@ sub _build_price_calculator {
             ($self->has_ask_price)              ? (ask_price              => $self->ask_price)              : (),
             ($self->has_theo_probability)       ? (theo_probability       => $self->theo_probability)       : (),
             ($self->has_ask_probability)        ? (ask_probability        => $self->ask_probability)        : (),
-            ($self->has_bs_probability)         ? (bs_probability         => $self->bs_probability)         : (),
             ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
         });
 }
@@ -1106,39 +1104,6 @@ my $pc_params_setters = {
         }
         $self->price_calculator->theo_probability($probability);
     },
-    bs_probability => sub {
-        my $self = shift;
-        my $bs_probability;
-        if ($self->new_interface_engine) {
-            my $ask_probability = $self->pricing_engine->theo_probability;
-
-            if ($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
-                $bs_probability = Math::Util::CalculatedValue::Validatable->new({
-                    name        => 'bs_probability',
-                    description => 'BlackScholes value of a contract',
-                    set_by      => $self->pricing_engine_name,
-                    base_amount => $self->debug_information->{$self->pricing_code}->{base_probability}->{parameters}->{bs_probability}{amount},
-                    minimum     => 0,
-                    maximum     => 1,
-                });
-            } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Digits'
-                or $self->pricing_engine_name eq 'Pricing::Engine::Asian'
-                or $self->pricing_engine_name eq 'Pricing::Engine::BlackScholes')
-            {
-                $bs_probability = Math::Util::CalculatedValue::Validatable->new({
-                    name        => 'bs_probability',
-                    description => 'BlackScholes value of a contract',
-                    set_by      => $self->pricing_engine_name,
-                    base_amount => $ask_probability,
-                    minimum     => 0,
-                    maximum     => 1,
-                });
-            }
-        } else {
-            $bs_probability = $self->pricing_engine->bs_probability;
-        }
-        $self->price_calculator->bs_probability($bs_probability);
-    },
     opposite_ask_probability => sub {
         my $self = shift;
         $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability);
@@ -1147,7 +1112,6 @@ my $pc_params_setters = {
 
 my $pc_needed_params_map = {
     theo_probability       => [qw/ probability /],
-    bs_probability         => [qw/ bs_probability /],
     ask_probability        => [qw/ theo_probability /],
     bid_probability        => [qw/ theo_probability discounted_probability opposite_ask_probability /],
     payout                 => [qw/ theo_probability commission_from_stake /],
@@ -1383,19 +1347,6 @@ sub _build_app_markup_dollar_amount {
     my $self = shift;
 
     return roundnear(0.01, $self->app_markup->amount * $self->payout);
-}
-
-sub _build_bs_probability {
-    my $self = shift;
-
-    $self->_set_price_calculator_params('bs_probability');
-    return $self->price_calculator->bs_probability;
-}
-
-sub _build_bs_price {
-    my $self = shift;
-
-    return $self->_price_from_prob('bs_probability');
 }
 
 # base_commission can be overridden on contract type level.
