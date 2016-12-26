@@ -2,9 +2,11 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "array",
   "required": "1",
+  "minItems": "[_3]",
+  "maxItems": "[_3]",
   "items": {
     "type": "string",
-    "pattern": "^[_1]$",
+    "pattern": "^[_2]$",
     "required": "1"
   }
 }
