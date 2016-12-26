@@ -43,6 +43,7 @@ my @dates = sort map $_->basename, path($base_dir)->children;
 warn "no dates" unless @dates;
 
 my $date_selected = $cgi->param('date');
+my $price_type_selected = $cgi->param('price_type') || 'ask';
 
 my %strategies = map {; $_ => 1 } Finance::TradingStrategy->available_strategies;
 my $strategy_description;
@@ -70,7 +71,7 @@ warn "date path not found: " . path($base_dir)->child($date) unless path($base_d
     $strategy_description = $strategy->description;
     my $fh = $path->openr_utf8 or die "Could not open dataset $path - $!";
     my $sum = 0;
-    my @hdr = qw(epoch quote buy_price value);
+    my @hdr = qw(epoch quote buy_price value theo_price);
     my @results;
     my %stats;
     my @spots;
@@ -80,6 +81,7 @@ warn "date path not found: " . path($base_dir)->child($date) unless path($base_d
         eval {
             my @market_data = split /\s*,\s*/;
             my %market_data = zip @hdr, @market_data;
+            $market_data{buy_price} = $market_data{theo_price} if $price_type_selected eq 'theo';
             push @spots, $market_data{quote};
             # Each ->execute returns true (buy) or false (ignore), we calculate client profit from each one and maintain a sum
             my $should_buy = $strategy->execute(%market_data);
@@ -183,6 +185,7 @@ my %template_args = (
         underlying => $underlying_selected,
         duration => $duration_selected,
         type => $type_selected,
+        price_type => $price_type_selected,
     },
     count => $count,
     skip => $skip,

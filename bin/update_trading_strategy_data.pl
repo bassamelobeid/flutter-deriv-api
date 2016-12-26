@@ -1,6 +1,8 @@
 use strict;
 use warnings;
 
+no indirect;
+use Try::Tiny;
 use List::Util qw(sum);
 
 use Postgres::FeedDB;
@@ -9,6 +11,7 @@ use BOM::Product::ContractFactory qw(produce_contract);
 
 use YAML qw(LoadFile);
 use Path::Tiny;
+use Data::Dumper;
 
 # How many ticks to request at a time
 use constant TICK_CHUNK_SIZE => 1000;
@@ -37,12 +40,13 @@ for my $symbol (@{$config->{underlyings}}) {
     my %fh;
     print "Getting ticks from $start to $end...\n";
     my $current = $start;
+    BATCH:
     while($current < $end) {
         my @ticks = reverse @{$api->ticks_start_end_with_limit_for_charting({
             start_time => $current,
             end_time => $current + TICK_CHUNK_SIZE,
             limit => TICK_CHUNK_SIZE,
-        })};
+        })} or last BATCH; # if we had no ticks, then we're done for this symbol
         for my $duration (@{$config->{durations}}) {
             print "Duration $duration\n";
             for my $bet_type (@{$config->{types}}) {
@@ -63,19 +67,23 @@ for my $symbol (@{$config->{underlyings}}) {
                         payout       => 10,
                         barrier      => 'S0P',
                     };
-                    my $contract = produce_contract($args);
-                    my $contract_expired = produce_contract({
-                        %$args,
-                        date_pricing => $now,
-                    });
-                    if($contract_expired->is_expired) {
-                        my $ask_price = $contract->ask_price;
-                        my $value = $contract_expired->value;
-                        $fh{$key}->print( join(",", (map $tick->{$_}, qw(epoch quote)), $ask_price, $value) . "\n" );
+                    try {
+                        my $contract = produce_contract($args);
+                        my $contract_expired = produce_contract({
+                            %$args,
+                            date_pricing => $now,
+                        });
+                        if($contract_expired->is_expired) {
+                            my $ask_price = $contract->ask_price;
+                            my $value = $contract_expired->value;
+                            $fh{$key}->print( join(",", (map $tick->{$_}, qw(epoch quote)), $ask_price, $value, $contract->theo_price) . "\n" );
+                        }
+                    } catch {
+                        warn "Failed to price with parameters " . Dumper($args) . " - $_\n";
                     }
                 }
             }
         }
-	$current = 1 + $ticks[-1]{epoch};
+        $current = 1 + $ticks[-1]{epoch};
     }
 }
