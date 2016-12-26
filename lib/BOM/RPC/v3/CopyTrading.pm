@@ -23,6 +23,18 @@ sub copy_start {
                 code              => 'InvalidMultiplier',
                 message_to_client => localize('Multiplier value must be unsigned integer')});
     }
+    for my $stake_limit (qw/max_trade_stake min_trade_stake/) {
+        if ($args->{$stake_limit} && $args->{$stake_limit} < 0) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'InvalidStakeLimit',
+                    message_to_client => localize('Option [_1] value must be zero or positive number', $stake_limit)});
+        }
+    }
+    if ($args->{max_trade_stake} && $args->{min_trade_stake} && $args->{min_trade_stake} > $args->{max_trade_stake}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidStakeLimit',
+                message_to_client => localize('Min trade stake should be lower than max trade stake')});
+    }
 
     my $trader_token  = $args->{copy_start};
     my $token_details = BOM::RPC::v3::Utility::get_token_details($trader_token);
