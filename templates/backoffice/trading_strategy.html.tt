@@ -1,7 +1,5 @@
 <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.8.5/nv.d3.min.css">
 <form>
-<h1>Trading strategy selection</h1>
-<p>
 [% FOREACH parameter IN ['Date', 'Underlying', 'Duration', 'Type' ] -%]
 [% name = parameter | lower -%]
 <label for="[% name %]">[% parameter %]</label>
@@ -11,6 +9,12 @@
 [%  END -%]
 </select>
 [%  IF parameter == 'Date' -%]
+<label for="price_type">Ask/theo price</label>
+<select name="price_type">
+ <option value="ask"[% IF selected_parameter.price_type == 'ask' %] selected="selected"[% END %]>Ask price</option>
+ <option value="theo"[% IF selected_parameter.price_type == 'theo' %] selected="selected"[% END %]>Theo price</option>
+</select>
+
 <label for="strategy">Strategy</label>
 <select name="strategy">
 [% FOR strategy IN strategy_list -%]
@@ -18,15 +22,18 @@
 [% END -%]
 </select>
 
-<input name="daily_summary" type="submit" value="Daily summary">
+<label for="count">Param 1</label>
+<input name="count" value="[% count %]">
+
+<br>
 [%  END -%]
 [% END -%]
 
-<label for="count">Count</label>
-<input name="count" value="[% count %]">
+<label for="skip">Skip</label>
+<input name="skip" value="[% skip %]">
 
 <input name="run" type="submit" value="Run">
-</p>
+
 [% IF result_table.size -%]
 <h2>Results for all datasets with strategy [% strategy_selected || 'unknown' %]</h2>
 <table>
@@ -38,28 +45,43 @@
 </tr>
  </thead>
  <tbody>
+[% sum_contracts_bought = 0;
+   sum_company_profit = 0; -%]
 [% FOREACH result IN result_table.body -%]
 <tr>
 [%  FOREACH stat IN result -%]
  <td style="text-align:center; border:1px solid;">[% stat %]</td>
 [%  END -%]
+[% sum_contracts_bought = sum_contracts_bought + result.10;
+   sum_company_profit = sum_company_profit + result.11; -%]
 </tr>
 [% END -%]
+<tr>
+<td colspan="10">&nbsp;</td>
+<td style="text-align:center; border:1px solid;">[% sum_contracts_bought | format('%.02f') %]</td>
+<td style="text-align:center; border:1px solid;">[% sum_company_profit | format('%.02f')  %]</td>
+<td style="text-align:center; border:1px solid;">[% (100 * sum_company_profit / sum_contracts_bought) | format('%.02f') %]</td>
 </tr>
  </tbody>
 </table>
 [% ELSIF result_list.size -%]
-<h2>Results for [% dataset_selected || 'unknown dataset' %] with strategy [% strategy_selected || 'unknown' %]</h2>
+<h2>Results for [% dataset || 'unknown dataset' %] with strategy [% strategy_selected || 'unknown' %]</h2>
 <p>[% description %]</p>
 <table>
  <tbody>
 [% FOREACH stat IN statistics -%]
  <tr><th>[% stat.0 %]</th><td>[% stat.1 %]</td></tr>
 [% END -%]
+<tr>
+<th>Download dataset</th>
+<td>
+ <a href="[% dataset_base_dir %]/[% date %]/[% dataset %].csv">Download [% dataset %]</a>
+</td>
+</tr>
  </tbody>
 </table>
-<div id="chart"> <svg style="height: 16em"> </svg> </div>
-<div id="spot"> <svg style="height: 16em"> </svg> </div>
+<div id="chart"> <svg style="height: 32em"> </svg> </div>
+<div id="spot"> <svg style="height: 32em"> </svg> </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.8.5/nv.d3.min.js"></script>
 <script type="text/javascript">

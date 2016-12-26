@@ -6,6 +6,7 @@ use URL::Encode qw( url_encode );
 use HTML::Entities;
 
 use Client::Account;
+use Brands;
 
 use f_brokerincludeall;
 use BOM::Backoffice::Request qw(request localize);
@@ -55,12 +56,13 @@ if (BOM::System::Config::on_production) {
 }
 
 my $lost_pass_email;
+my $brand = Brands->new(name => request()->brand);
 BOM::Backoffice::Request::template->process(
     "email/lost_password.html.tt",
     {
         'link'     => $link,
         'token'    => $token,
-        'helpdesk' => BOM::System::Config::email_address('support')
+        'helpdesk' => $brand->emails('support')
     },
     \$lost_pass_email
 );
@@ -71,13 +73,13 @@ Bar('emailing change password link to ' . $loginID);
 print '<p class="success_message">Emailing change password link to ' . encode_entities($client_name) . ' at ' . encode_entities($email) . ' ...</p>';
 
 my $result = send_email({
-    from                  => BOM::System::Config::email_address('support'),
+    from                  => $brand->emails('support'),
     to                    => $email,
     subject               => localize('New Password Request'),
     message               => [$lost_pass_email,],
     template_loginid      => $loginID,
-    email_content_is_html => 1,
     use_email_template    => 1,
+    email_content_is_html => 1,
 });
 
 print '<p>New password issuance RESULT: ' . ($result) ? 'success' : 'fail' . '</p>';

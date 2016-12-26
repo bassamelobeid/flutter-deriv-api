@@ -10,6 +10,7 @@ use Locale::Country 'code2country';
 use Data::Dumper;
 use HTML::Entities;
 
+use Brands;
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Request qw(request);
@@ -25,7 +26,6 @@ use BOM::Database::Model::HandoffToken;
 use BOM::Database::ClientDB;
 use BOM::System::Config;
 use BOM::Backoffice::FormAccounts;
-use LandingCompany::Countries;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -696,7 +696,7 @@ print qq{
     <option value="">Please select</option>
 };
 
-my $lc_countries = LandingCompany::Countries->new()->countries;
+my $lc_countries = Brands->new(name => request()->brand)->landing_company_countries->countries;
 foreach my $country_name (sort $lc_countries->all_country_names) {
     my $code = $lc_countries->code_from_country($country_name);
     print "<option value='$code'>$country_name</option>";
