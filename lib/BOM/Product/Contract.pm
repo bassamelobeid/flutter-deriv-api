@@ -34,7 +34,7 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
-use BOM::MarketData::VolSurface::Empirical;
+use VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 
 use BOM::Product::Contract::Category;
@@ -766,7 +766,12 @@ sub _build_opposite_contract {
 
 sub _build_empirical_volsurface {
     my $self = shift;
-    return BOM::MarketData::VolSurface::Empirical->new(underlying => $self->underlying);
+
+    return VolSurface::Empirical->new(
+        underlying       => $self->underlying,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
+    );
 }
 
 sub _build_volsurface {
