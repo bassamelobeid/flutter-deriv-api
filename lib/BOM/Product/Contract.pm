@@ -607,16 +607,16 @@ sub _create_new_interface_engine {
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Asian') {
         %pricing_parameters = (
-            spot              => $self->pricing_spot,
-            strike            => [grep { $_ } values %{$self->barriers_for_pricing}]->[0],
-            date_start        => $self->effective_start,
-            date_expiry       => $self->date_expiry,
-            date_pricing      => $self->date_pricing,
-            discount_rate     => $self->discount_rate,
-            q_rate            => $self->q_rate,
-            r_rate            => $self->r_rate,
-            vol               => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
-            contract_type     => $self->pricing_code,
+            spot          => $self->pricing_spot,
+            strike        => [grep { $_ } values %{$self->barriers_for_pricing}]->[0],
+            date_start    => $self->effective_start,
+            date_expiry   => $self->date_expiry,
+            date_pricing  => $self->date_pricing,
+            discount_rate => $self->discount_rate,
+            q_rate        => $self->q_rate,
+            r_rate        => $self->r_rate,
+            vol           => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
+            contract_type => $self->pricing_code,
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
         %pricing_parameters = (
