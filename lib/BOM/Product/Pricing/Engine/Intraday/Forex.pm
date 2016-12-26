@@ -9,6 +9,7 @@ use YAML::XS qw(LoadFile);
 
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
+use Volatility::Seasonality;
 use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
 use BOM::System::Config;
@@ -880,7 +881,7 @@ sub _build_economic_events_spot_risk_markup {
 
     my @combined = (0) x scalar(@time_samples);
     foreach my $news (@$news_array) {
-        my $effective_news_time = _get_effective_news_time($news->{release_time}, $start->epoch, $contract_duration);
+        my $effective_news_time = _get_effective_news_time($news->{release_epoch}, $start->epoch, $contract_duration);
         # +1e-9 is added to prevent a division by zero error if news magnitude is 1
         my $decay_coef = -log(2 / ($news->{magnitude} + 1e-9)) / $news->{duration};
         my @triangle;
@@ -906,40 +907,13 @@ sub _build_economic_events_spot_risk_markup {
     return $spot_risk_markup;
 }
 
-my $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
-
 sub _get_economic_events {
     my ($self, $start, $end) = @_;
 
-    my $underlying         = $self->bet->underlying;
-    my $default_underlying = 'frxUSDJPY';
-    my @events;
-    # Sometimes new economic events pops up.
-    # We will need some time to figure out what to do with them.
-    # But at the mean time, they can be ignored.
-    my %known_skips = ('OPEC Meetings' => 1);
-    foreach my $event (@{$self->economic_events}) {
-        my $event_name = $event->{event_name};
-        next if ($known_skips{$event_name});
-        $event_name =~ s/\s/_/g;
-        my $key = first { exists $news_categories->{$_} }
-        map { (
-                $_ . '_' . $event->{symbol} . '_' . $event->{impact} . '_' . $event_name,
-                $_ . '_' . $event->{symbol} . '_' . $event->{impact} . '_default'
-                )
-        } ($underlying->symbol, $default_underlying);
-        unless ($key) {
-            # we want to know about the new economic events.
-            warn "Name: $event_name, affected currency: $event->{symbol}";
-            next;
-        }
-        my $news_parameters = $news_categories->{$key};
-        next unless $news_parameters;
-        $news_parameters->{release_time} = $event->{release_date};
-        push @events, $news_parameters;
-    }
+    my $qfs = Volatility::Seasonality->new;
+    my $events = $qfs->categorize_events($self->bet->underlying->symbol, $self->economic_events);
 
-    return \@events;
+    return $events;
 }
 
 sub _get_effective_news_time {
