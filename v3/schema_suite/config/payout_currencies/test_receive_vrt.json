@@ -13,6 +13,7 @@
     "payout_currencies": {
       "type": "array",
       "required": "1",
+      "minItems": "[_2]",
       "items": {
         "type": "string",
         "pattern": "^[_1]$",
