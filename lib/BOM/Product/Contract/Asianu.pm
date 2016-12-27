@@ -4,9 +4,6 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-use Pricing::Engine::BlackScholes;
-use BOM::Product::Pricing::Greeks::Asian;
-
 # Static methods.
 sub code { return 'ASIANU'; }
 
@@ -28,10 +25,6 @@ sub _build_pricing_engine {
     my $self = shift;
     my %pricing_parameters = map { $_ => $self->_pricing_parameters->{$_} } @{$self->pricing_engine_name->required_args};
     return Pricing::Engine::BlackScholes->new(\%pricing_parameters);
-}
-
-sub _build_greek_engine {
-    return BOM::Product::Pricing::Greeks::Asian->new({bet => shift});
 }
 
 has supplied_barrier => (
