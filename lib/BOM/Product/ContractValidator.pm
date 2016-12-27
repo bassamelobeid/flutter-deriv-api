@@ -1,4 +1,7 @@
-package BOM::Product::Contract;
+package BOM::Product::Contract;    ## no critic ( RequireFilenameMatchesPackage )
+
+use strict;
+use warnings;
 
 has skips_price_validation => (
     is      => 'ro',
