@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Try::Tiny;
-
+use Data::Dumper;
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
