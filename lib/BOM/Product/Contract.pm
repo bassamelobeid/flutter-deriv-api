@@ -770,7 +770,7 @@ sub _build_empirical_volsurface {
 
     return VolSurface::Empirical->new(
         underlying       => $self->underlying,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
     );
 }
@@ -1349,7 +1349,6 @@ sub _build_pricing_vol {
             uses_flat_vol   => $uses_flat_vol,
             ticks           => $self->ticks_for_volatility_calculation,
         });
-        $volatility_error = $volsurface->error if $volsurface->error;
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
             $vol = $self->volsurface->get_volatility({
