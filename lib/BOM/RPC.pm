@@ -7,7 +7,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use Proc::CPUUsage;
 use Time::HiRes;
 
-use BOM::Platform::Context;
+use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
 use Client::Account;
 use BOM::Database::Rose::DB;
@@ -187,7 +187,7 @@ sub startup {
 
         ['buy',                                \&BOM::RPC::v3::Transaction::buy],
         ['buy_contract_for_multiple_accounts', \&BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts],
-        ['sell', \&BOM::RPC::v3::Transaction::sell, [qw(auth)]],
+        ['sell',                               \&BOM::RPC::v3::Transaction::sell, [qw(auth)]],
 
         ['trading_times',         \&BOM::RPC::v3::MarketDiscovery::trading_times],
         ['asset_index',           \&BOM::RPC::v3::MarketDiscovery::asset_index],
