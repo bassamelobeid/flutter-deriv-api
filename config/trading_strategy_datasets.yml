@@ -5,7 +5,6 @@ durations:
   - 5m
   - 1h
 underlyings:
-  - R_50
   - frxUSDJPY
   - frxEURUSD
   - frxGBPUSD
@@ -14,6 +13,7 @@ underlyings:
   - GDAXI
   - SSMI
   - FCHI
+  - R_50
 types:
   - CALL
   - PUT

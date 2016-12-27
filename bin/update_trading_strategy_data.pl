@@ -40,12 +40,13 @@ for my $symbol (@{$config->{underlyings}}) {
     my %fh;
     print "Getting ticks from $start to $end...\n";
     my $current = $start;
+    BATCH:
     while($current < $end) {
         my @ticks = reverse @{$api->ticks_start_end_with_limit_for_charting({
             start_time => $current,
             end_time => $current + TICK_CHUNK_SIZE,
             limit => TICK_CHUNK_SIZE,
-        })};
+        })} or last BATCH; # if we had no ticks, then we're done for this symbol
         for my $duration (@{$config->{durations}}) {
             print "Duration $duration\n";
             for my $bet_type (@{$config->{types}}) {
