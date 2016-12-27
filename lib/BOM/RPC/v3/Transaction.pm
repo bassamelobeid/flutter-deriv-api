@@ -113,7 +113,7 @@ sub buy_contract_for_multiple_accounts {
         my $token_details = BOM::RPC::v3::Utility::get_token_details($t);
         my $loginid;
 
-        if ($token_details and $loginid = $token_details->{loginid} and grep({/^trade$/} @{$token_details->{scopes}})) {
+        if ($token_details and $loginid = $token_details->{loginid} and grep({ /^trade$/ } @{$token_details->{scopes}})) {
             push @result,
                 +{
                 token   => $t,
