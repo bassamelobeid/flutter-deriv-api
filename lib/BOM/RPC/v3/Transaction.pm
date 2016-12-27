@@ -20,17 +20,7 @@ use BOM::Database::ClientDB;
 sub buy {
     my $params = shift;
 
-    my $token_details = $params->{token_details};
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client = Client::Account->new({loginid => $token_details->{loginid}});
-
-    # NOTE: no need to call BOM::RPC::v3::Utility::check_authorization. All checks
-    #       are done again in BOM::Product::Transaction
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'AuthorizationRequired',
-            message_to_client => localize('Please log in.')}) unless $client;
-
+    my $client              = $params->{client};
     my $source              = $params->{source};
     my $contract_parameters = $params->{contract_parameters};
     my $args                = $params->{args};
@@ -103,17 +93,7 @@ sub buy {
 sub buy_contract_for_multiple_accounts {
     my $params = shift;
 
-    my $token_details = $params->{token_details};
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client = Client::Account->new({loginid => $token_details->{loginid}});
-
-    # NOTE: no need to call BOM::RPC::v3::Utility::check_authorization. All checks
-    #       are done again in BOM::Product::Transaction
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'AuthorizationRequired',
-            message_to_client => localize('Please log in.')}) unless $client;
-
+    my $client = $params->{client};
     my @result;
     my $found_at_least_one;
 
@@ -133,7 +113,7 @@ sub buy_contract_for_multiple_accounts {
         my $token_details = BOM::RPC::v3::Utility::get_token_details($t);
         my $loginid;
 
-        if ($token_details and $loginid = $token_details->{loginid} and grep({ /^trade$/ } @{$token_details->{scopes}})) {
+        if ($token_details and $loginid = $token_details->{loginid} and grep({/^trade$/} @{$token_details->{scopes}})) {
             push @result,
                 +{
                 token   => $t,

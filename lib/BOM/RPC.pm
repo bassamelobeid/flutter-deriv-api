@@ -185,9 +185,9 @@ sub startup {
         ['ticks_history', \&BOM::RPC::v3::TickStreamer::ticks_history],
         ['ticks',         \&BOM::RPC::v3::TickStreamer::ticks],
 
-        ['buy',                                \&BOM::RPC::v3::Transaction::buy],
-        ['buy_contract_for_multiple_accounts', \&BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts],
-        ['sell',                               \&BOM::RPC::v3::Transaction::sell, [qw(auth)]],
+        ['buy',                                \&BOM::RPC::v3::Transaction::buy,                                [qw(auth validate_tnc)]],
+        ['buy_contract_for_multiple_accounts', \&BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts, [qw(auth validate_tnc)]],
+        ['sell',                               \&BOM::RPC::v3::Transaction::sell,                               [qw(auth validate_tnc)]],
 
         ['trading_times',         \&BOM::RPC::v3::MarketDiscovery::trading_times],
         ['asset_index',           \&BOM::RPC::v3::MarketDiscovery::asset_index],
