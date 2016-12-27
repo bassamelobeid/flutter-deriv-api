@@ -7,7 +7,7 @@ commission:
   maximum_total_markup: 100
   adjustment:
     minimum: 1
-    maximum: 10000 #this define the maximum commission scaling. When it is 10000 mean it is 100% scaling
+    maximum: 10000
     forward_start_factor: 1.5
 
 bet_limits:
