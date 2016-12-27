@@ -1061,7 +1061,6 @@ sub _build_price_calculator {
     return Price::Calculator->new({
             currency                => $self->currency,
             deep_otm_threshold      => $self->otm_threshold,
-            maximum_total_markup    => BOM::System::Config::quants->{commission}->{maximum_total_markup},
             base_commission_scaling => $base_commission_scaling,
             app_markup_percentage   => $self->app_markup_percentage,
             ($self->has_base_commission)
