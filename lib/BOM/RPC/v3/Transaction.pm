@@ -171,10 +171,12 @@ sub buy_contract_for_multiple_accounts {
         my $source              = $params->{source};
         my $contract_parameters = $params->{contract_parameters};
         my $args                = $params->{args};
+        my $payout              = $params->{payout};
 
         my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
         $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
         $contract_parameters->{landing_company} = $client->landing_company->short;
+        my $amount_type = $contract_parameters->{amount_type};
 
         try {
             die unless BOM::RPC::v3::Contract::pre_validate_start_expire_dates($contract_parameters);
@@ -201,11 +203,12 @@ sub buy_contract_for_multiple_accounts {
         return $response if $response;
 
         my $trx = BOM::Product::Transaction->new({
-            client        => $client,
-            multiple      => \@result,
-            contract      => $contract,
-            price         => ($args->{price} || 0),
-            amount_type   => $contract_parameters->{amount_type},
+            client   => $client,
+            multiple => \@result,
+            contract => $contract,
+            price    => ($args->{price} || 0),
+            (defined $payout)      ? (payout      => $payout)      : (),
+            (defined $amount_type) ? (amount_type => $amount_type) : (),
             purchase_date => $purchase_date,
             source        => $source,
         });
@@ -266,11 +269,12 @@ sub sell {
 
     my $contract_parameters = shortcode_to_parameters($fmbs[0]->{short_code}, $client->currency);
     $contract_parameters->{landing_company} = $client->landing_company->short;
-    my $contract = produce_contract($contract_parameters);
-    my $trx      = BOM::Product::Transaction->new({
-        client      => $client,
-        contract    => $contract,
-        amount_type => $contract_parameters->{amount_type},
+    my $amount_type = $contract_parameters->{amount_type};
+    my $contract    = produce_contract($contract_parameters);
+    my $trx         = BOM::Product::Transaction->new({
+        client   => $client,
+        contract => $contract,
+        (defined $amount_type) ? (amount_type => $amount_type) : (),
         contract_id => $id,
         price       => ($args->{price} || 0),
         source      => $source,
