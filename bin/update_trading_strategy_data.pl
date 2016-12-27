@@ -40,12 +40,13 @@ for my $symbol (@{$config->{underlyings}}) {
     my %fh;
     print "Getting ticks from $start to $end...\n";
     my $current = $start;
+    BATCH:
     while($current < $end) {
         my @ticks = reverse @{$api->ticks_start_end_with_limit_for_charting({
             start_time => $current,
             end_time => $current + TICK_CHUNK_SIZE,
             limit => TICK_CHUNK_SIZE,
-        })};
+        })} or last BATCH; # if we had no ticks, then we're done for this symbol
         for my $duration (@{$config->{durations}}) {
             print "Duration $duration\n";
             for my $bet_type (@{$config->{types}}) {
@@ -75,7 +76,7 @@ for my $symbol (@{$config->{underlyings}}) {
                         if($contract_expired->is_expired) {
                             my $ask_price = $contract->ask_price;
                             my $value = $contract_expired->value;
-                            $fh{$key}->print( join(",", (map $tick->{$_}, qw(epoch quote)), $ask_price, $value) . "\n" );
+                            $fh{$key}->print( join(",", (map $tick->{$_}, qw(epoch quote)), $ask_price, $value, $contract->theo_price) . "\n" );
                         }
                     } catch {
                         warn "Failed to price with parameters " . Dumper($args) . " - $_\n";
@@ -83,6 +84,6 @@ for my $symbol (@{$config->{underlyings}}) {
                 }
             }
         }
-	$current = 1 + $ticks[-1]{epoch};
+        $current = 1 + $ticks[-1]{epoch};
     }
 }
