@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use Try::Tiny;
-use Data::Dumper;
 
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
@@ -30,16 +29,16 @@ sub buy {
     return BOM::RPC::v3::Utility::create_error({
             code              => 'AuthorizationRequired',
             message_to_client => localize('Please log in.')}) unless $client;
-
     my $source               = $params->{source};
     my $contract_parameters  = $params->{contract_parameters};
     my $args                 = $params->{args};
     my $payout               = $params->{payout};
     my $trading_period_start = $contract_parameters->{trading_period_start};
-
-    my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
+    my $purchase_date        = time;                                           # Purchase is considered to have happened at the point of request.
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
     $contract_parameters->{landing_company} = $client->landing_company->short;
+    my $amount_type = $contract_parameters->{amount_type};
+
     my ($contract, $response);
 
     try {
@@ -62,13 +61,12 @@ sub buy {
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
     };
     return $response if $response;
-
     my $trx = BOM::Product::Transaction->new({
         client   => $client,
         contract => $contract,
         price    => ($args->{price} || 0),
-        (defined $payout) ? (payout => $payout) : (),
-        amount_type   => $contract_parameters->{amount_type},
+        (defined $payout)      ? (payout      => $payout)      : (),
+        (defined $amount_type) ? (amount_type => $amount_type) : (),
         purchase_date => $purchase_date,
         source        => $source,
         (defined $trading_period_start) ? (trading_period_start => $trading_period_start) : (),
