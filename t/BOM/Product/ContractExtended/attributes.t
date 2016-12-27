@@ -81,7 +81,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 use BOM::Product::ContractFactory qw( produce_contract );
 
 subtest 'Numbers and stuff.' => sub {
-    plan tests => 13;
+    plan tests => 12;
 
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',

@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 8;
+use Test::More tests => 7;
 
 use Format::Util::Numbers qw(roundnear);
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -27,7 +27,6 @@ my @codes = qw(
     T_RANGE_FRXGBPUSD_1411603199_16200_15079_c_USD_EN
     T_UPORDOWN_FRXGBPUSD_1411603199_16215_15851_c_USD_EN
     T_INTRADU_FRXGBPUSD_300s_S0P_c_USD_EN
-    T_DIGITMATCH_R-50_7t_5_c_USD_EN
 );
 
 my @expected = (0.5, 0.876, 0.498, 0.475089218874021, 0.669, 0.321054315020547, 0.5, 0.1);
@@ -91,6 +90,10 @@ foreach my $code (@codes) {
 
     my $contract = produce_contract(\%bet_args);
 
-    is(roundnear(0.001, $contract->theo_probability->amount), roundnear(0.001, $expected[$count]), 'bs probability for [' . $contract->code . ']');
+    if ( $contract->pricing_engine->can('bs_probability')) {
+        is(roundnear(0.001, $contract->pricing_engine->bs_probability->amount), roundnear(0.001, $expected[$count]), 'bs probability for [' . $contract->code . ']');
+    } elsif ( $contract->pricing_engine->can('_bs_probability')) {
+        is(roundnear(0.001, $contract->pricing_engine->_bs_probability), roundnear(0.001, $expected[$count]), 'bs probability for [' . $contract->code . ']');
+    }
     $count++;
 }
