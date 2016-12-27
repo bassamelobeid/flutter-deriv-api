@@ -1,4 +1,4 @@
-use Test::More tests => 4;
+use Test::More;
 use Test::Exception;
 
 use BOM::Database::ClientDB;
@@ -20,4 +20,4 @@ ok(!$client_db->freeze, 'Can not lock client that is already stuck');
 
 ok($client_db->unfreeze, 'Client was unlocked successfully');
 
-done_testing(7);
+done_testing(4);
