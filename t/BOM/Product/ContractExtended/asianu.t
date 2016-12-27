@@ -37,7 +37,7 @@ my $args = {
 subtest 'asian' => sub {
     lives_ok {
         my $c = produce_contract($args);
-        isa_ok $c, 'BOM::Product::Contract::BlackScholes';
+        isa_ok $c, 'BOM::Product::Contract::Asianu';
         is $c->code, 'ASIANU';
         is $c->pricing_code => 'CALL';
         is $c->sentiment, 'up';
