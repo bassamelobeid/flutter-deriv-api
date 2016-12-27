@@ -1343,11 +1343,11 @@ sub _build_pricing_vol {
         # where the intraday_delta_correction is the bounceback which is a function of trend, not volatility.
         my $uses_flat_vol = ($self->is_atm_bet and $duration_seconds < 10 * 60) ? 1 : 0;
         $vol = $volsurface->get_volatility({
-            fill_cache            => !$self->backtest,
-            current_epoch         => $self->date_pricing->epoch,
-            seconds_to_expiration => $duration_seconds,
-            economic_events       => $self->economic_events_for_volatility_calculation,
-            uses_flat_vol         => $uses_flat_vol,
+            from            => $self->effective_start->epoch,
+            to              => $self->date_expiry->epoch,
+            economic_events => $self->economic_events_for_volatility_calculation,
+            uses_flat_vol   => $uses_flat_vol,
+            ticks           => $self->ticks_for_volatility_calculation,
         });
         $volatility_error = $volsurface->error if $volsurface->error;
     } else {
@@ -1452,15 +1452,32 @@ sub _build_news_adjusted_pricing_vol {
     # Only recalculated if there's economic_events.
     if ($seconds_to_expiry > 10 and @$events) {
         $news_adjusted_vol = $self->empirical_volsurface->get_volatility({
-            fill_cache            => !$self->backtest,
-            current_epoch         => $effective_start->epoch,
-            seconds_to_expiration => $seconds_to_expiry,
-            economic_events       => $events,
-            include_news_impact   => 1,
+            from                => $effective_start->epoch,
+            to                  => $self->date_expiry->epoch,
+            economic_events     => $events,
+            ticks               => $self->ticks_for_volatility_calculation,
+            include_news_impact => 1,
         });
     }
 
     return $news_adjusted_vol;
+}
+
+has ticks_for_volatility_calculation => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_ticks_for_volatility_calculation {
+    my $self = shift;
+
+    my $interval = Time::Duration::Concise->new(interval => max(900, $self->date_expiry->epoch - $self->effective_start->epoch) . 's');
+    return BOM::Market::AggTicks->new->retrieve({
+        underlying   => $self->underlying,
+        interval     => $interval,
+        ending_epoch => $self->effective_start->epoch,
+        fill_cache   => !$self->backtest,
+    });
 }
 
 sub _build_vol_at_strike {
