@@ -20,7 +20,7 @@ use BOM::Database::ClientDB;
 sub buy {
     my $params = shift;
 
-    my $client              = $params->{client};
+    my $client              = $params->{client} // die "client should be authed when get here";
     my $source              = $params->{source};
     my $contract_parameters = $params->{contract_parameters};
     my $args                = $params->{args};
@@ -93,7 +93,7 @@ sub buy {
 sub buy_contract_for_multiple_accounts {
     my $params = shift;
 
-    my $client = $params->{client};
+    my $client = $params->{client} // die "client should be authed when get here";
     my @result;
     my $found_at_least_one;
 
@@ -227,7 +227,7 @@ sub buy_contract_for_multiple_accounts {
 sub sell {
     my $params = shift;
 
-    my $client = $params->{client};
+    my $client = $params->{client} // die "client should be authed when get here";
 
     my ($source, $args) = ($params->{source}, $params->{args});
     my $id = $args->{sell};
