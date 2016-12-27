@@ -51,7 +51,6 @@ subtest "available contracts for symbol" => sub {
             staysinout   => 2,
             endsinout    => 2,
             digits       => 6,
-            asian        => 2,
         },
         frxUSDJPY => {
             callput      => 12,
