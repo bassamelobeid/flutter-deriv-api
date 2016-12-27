@@ -202,7 +202,7 @@ override '_build_bs_probability' => sub {
 
     my $new_bet = BOM::Product::ContractFactory::make_similar_contract($bet, {pricing_vol => $bet->atm_vols->{fordom}});
 
-    return BOM::Product::Pricing::Engine::BlackScholes->new({bet => $new_bet})->theo_probability;
+    return BOM::Product::Pricing::Engine::BlackScholes->new({bet => $new_bet})->bs_probability;
 
 };
 
