@@ -1111,7 +1111,6 @@ sub _build_ask_probability {
     return $self->price_calculator->ask_probability;
 }
 
-
 sub _price_from_prob {
     my ($self, $prob) = @_;
     if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {

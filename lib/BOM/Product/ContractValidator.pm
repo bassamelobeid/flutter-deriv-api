@@ -71,7 +71,7 @@ sub _confirm_validity {
     push @validation_methods, '_validate_barrier'                                         unless $args->{skip_barrier_validation};
     push @validation_methods, '_validate_barrier_type'                                    unless $self->for_sale;
     push @validation_methods, '_validate_feed';
-    push @validation_methods, '_validate_price'                                            unless $self->skips_price_validation;
+    push @validation_methods, '_validate_price'                                           unless $self->skips_price_validation;
     push @validation_methods, '_validate_volsurface'                                      unless $self->volsurface->type eq 'flat';
     push @validation_methods, '_validate_appconfig_age';
 
@@ -412,7 +412,6 @@ sub _validate_trading_times {
     return;
 }
 
-
 sub _validate_start_and_expiry_date {
     my $self = shift;
 
@@ -656,7 +655,6 @@ sub _build_date_expiry_blackouts {
 
     return \@periods;
 }
-
 
 has date_start_blackouts => (
     is         => 'ro',
