@@ -1,4 +1,4 @@
-use Test::More tests => 7;
+use Test::More tests => 4;
 use Test::Exception;
 
 use BOM::Database::ClientDB;
