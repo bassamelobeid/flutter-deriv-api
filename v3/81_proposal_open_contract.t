@@ -16,6 +16,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use BOM::System::RedisReplicated;
 use BOM::Database::DataMapper::FinancialMarketBet;
+use BOM::Platform::Runtime;
 
 build_test_R_50_data();
 my $t = build_wsapi_test();
@@ -37,6 +38,7 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
 $client->email($email);
+$client->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
 $client->save;
 
 my $loginid = $client->loginid;
