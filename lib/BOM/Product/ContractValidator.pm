@@ -700,3 +700,4 @@ sub _build_date_start_blackouts {
     return \@periods;
 }
 
+1;
