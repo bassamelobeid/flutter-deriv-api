@@ -2142,106 +2142,6 @@ sub _build_exit_tick {
     return $exit_tick;
 }
 
-has date_start_blackouts => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_date_start_blackouts {
-    my $self = shift;
-
-    my @periods;
-    my $underlying = $self->underlying;
-    my $calendar   = $underlying->calendar;
-    my $start      = $self->date_start;
-
-    # We need to set sod_blackout_start for forex on Monday morning because otherwise, if there is no tick ,it will always take Friday's last tick and trigger the missing feed check
-    if (my $sod = $calendar->opening_on($start)) {
-        my $sod_blackout =
-              ($underlying->sod_blackout_start) ? $underlying->sod_blackout_start
-            : ($underlying->market->name eq 'forex' and $self->is_forward_starting and $start->day_of_week == 1) ? '10m'
-            :                                                                                                      '';
-        if ($sod_blackout) {
-            push @periods, [$sod->epoch, $sod->plus_time_interval($sod_blackout)->epoch];
-        }
-    }
-
-    my $end_of_trading = $calendar->closing_on($start);
-    if ($end_of_trading) {
-        if ($self->is_intraday) {
-            my $eod_blackout =
-                ($self->tick_expiry and ($underlying->resets_at_open or ($underlying->market->name eq 'forex' and $start->day_of_week == 5)))
-                ? $self->max_tick_expiry_duration
-                : $underlying->eod_blackout_start;
-            push @periods, [$end_of_trading->minus_time_interval($eod_blackout)->epoch, $end_of_trading->epoch] if $eod_blackout;
-        }
-
-        if ($underlying->market->name eq 'indices' and not $self->is_intraday and not $self->is_atm_bet and $self->timeindays->amount <= 7) {
-            push @periods, [$end_of_trading->minus_time_interval('1h')->epoch, $end_of_trading->epoch];
-        }
-    }
-
-    return \@periods;
-}
-
-has date_expiry_blackouts => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_date_expiry_blackouts {
-    my $self = shift;
-
-    my @periods;
-    my $underlying = $self->underlying;
-    my $date_start = $self->date_start;
-
-    if ($self->is_intraday) {
-        my $end_of_trading = $underlying->calendar->closing_on($self->date_start);
-        if ($end_of_trading and my $expiry_blackout = $underlying->eod_blackout_expiry) {
-            push @periods, [$end_of_trading->minus_time_interval($expiry_blackout)->epoch, $end_of_trading->epoch];
-        }
-    } elsif ($self->expiry_daily and $underlying->market->equity and not $self->is_atm_bet) {
-        my $start_of_period = BOM::System::Config::quants->{bet_limits}->{holiday_blackout_start};
-        my $end_of_period   = BOM::System::Config::quants->{bet_limits}->{holiday_blackout_end};
-        if ($self->date_start->day_of_year >= $start_of_period or $self->date_start->day_of_year <= $end_of_period) {
-            my $year = $self->date_start->day_of_year > $start_of_period ? $date_start->year : $date_start->year - 1;
-            my $end_blackout = Date::Utility->new($year . '-12-31')->plus_time_interval($end_of_period . 'd23h59m59s');
-            push @periods, [$self->date_start->epoch, $end_blackout->epoch];
-        }
-    }
-
-    return \@periods;
-}
-
-=head2 market_risk_blackouts
-
-Periods of which we decide to stay out of the market due to high uncertainty.
-
-=cut
-
-has market_risk_blackouts => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_market_risk_blackouts {
-    my $self = shift;
-
-    my @blackout_periods;
-    my $effective_sod = $self->effective_start->truncate_to_day;
-    my $underlying    = $self->underlying;
-
-    if ($self->is_intraday) {
-        if (my @inefficient_periods = @{$underlying->inefficient_periods}) {
-            push @blackout_periods, [$effective_sod->plus_time_interval($_->{start})->epoch, $effective_sod->plus_time_interval($_->{end})->epoch]
-                for @inefficient_periods;
-        }
-    }
-
-    return \@blackout_periods;
-}
-
 has primary_validation_error => (
     is       => 'rw',
     init_arg => undef,
@@ -2296,11 +2196,6 @@ sub _build_market_is_inefficient {
     return 0 if $hour < $disable_hour;
     return 1;
 }
-
-has skips_price_validation => (
-    is      => 'ro',
-    default => 0,
-);
 
 # Don't mind me, I just need to make sure my attibutes are available.
 with 'BOM::Product::Role::Reportable';
