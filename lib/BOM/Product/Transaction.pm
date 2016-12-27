@@ -124,9 +124,8 @@ has amount_type => (
 
 sub _build_amount_type {
     my $self = shift;
-
-    return 'payout' if $self->contract->is_spread;
-    die 'amount type is required';
+    # default to payout if there is no amount_type pass in
+    return 'payout';
 
 }
 
