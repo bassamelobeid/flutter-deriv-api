@@ -39,7 +39,7 @@ my @methods = qw(buy buy_contract_for_multiple_accounts sell cashier);
 
 subtest 'no tnc yet' => sub {
     for my $method (@methods) {
-        $c->call_ok($method, $params)->has_error->error_message_is('Terms and conditions approval is required', "method $method check tnc");
+        $c->call_ok($method, $params)->has_error->error_message_is('Terms and conditions approval is required.', "method $method check tnc");
     }
     done_testing();
 };
@@ -49,7 +49,7 @@ $test_client->save;
 
 subtest 'tnc not correct yet' => sub {
     for my $method (@methods) {
-        $c->call_ok($method, $params)->has_error->error_message_is('Terms and conditions approval is required', "method $method check tnc");
+        $c->call_ok($method, $params)->has_error->error_message_is('Terms and conditions approval is required.', "method $method check tnc");
     }
     done_testing();
 };
