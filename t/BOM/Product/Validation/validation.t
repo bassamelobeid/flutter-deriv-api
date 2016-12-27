@@ -935,7 +935,7 @@ subtest 'underlying with critical corporate actions' => sub {
             spot_reference => $tick->quote,
         });
     my $bet = produce_contract($bet_params);
-    ok $bet->confirm_validity, 'can buy stock';
+    ok $bet->_confirm_validity, 'can buy stock';
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions(['USAAPL']);
     $bet = produce_contract($bet_params);
     my $expected_reasons = [qr/Underlying.*suspended/];
