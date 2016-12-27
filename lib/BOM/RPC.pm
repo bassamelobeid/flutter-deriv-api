@@ -286,7 +286,7 @@ sub startup {
                 $dispatcher->app->log->error(qq{Internal error: $err});
                 $m->invalid_request('Invalid request');
                 return;
-                }
+            }
         });
 
     my $request_counter = 0;
