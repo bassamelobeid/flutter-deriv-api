@@ -52,7 +52,7 @@ sub copytrading_statistics {
         # copiers
         copiers => BOM::Database::DataMapper::Copier->new(
             broker_code => 'CR',
-            operation   => 'backoffice_replica'
+            operation   => 'replica'
         )->get_copiers_cnt({trader_id => $trader_id}),
     };
 

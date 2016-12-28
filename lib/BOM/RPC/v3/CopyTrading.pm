@@ -46,7 +46,7 @@ sub copy_start {
     unless ($trader->allow_copiers) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'CopyTradingNotAllowed',
-                message_to_client => localize('Trader does not allow copy trading.')});
+                message_to_client => localize('Trader are not allowed copy trading.')});
     }
 
     my $client = $params->{client};
