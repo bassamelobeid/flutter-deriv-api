@@ -45,7 +45,6 @@ sub update_or_create {
                 broker          => $args->{broker},
                 trader_id       => $args->{trader_id},
                 copier_id       => $args->{copier_id},
-                multiplier      => $args->{multiplier},
                 min_trade_stake => $args->{min_trade_stake},
                 max_trade_stake => $args->{max_trade_stake},
                 trade_type      => $trade_type ne 'all' ? $trade_type : '',
