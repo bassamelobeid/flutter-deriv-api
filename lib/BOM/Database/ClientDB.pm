@@ -203,32 +203,6 @@ BEGIN {
     *unfreeze = \&unlock_client_loginid;
 }
 
-sub locked_client_list {
-    my $self = shift;
-
-    my $sth = $self->db->dbh->prepare(
-'SELECT *, age(now()::timestamp(0), time) as age from betonmarkets.client_lock where locked order by time'
-    );
-    $sth->execute();
-
-    return $sth->fetchall_hashref('client_loginid');
-}
-
-sub copytrading_traders_list {
-    my ($self) = @_;
-
-    my $sql = q{
-        SELECT
-            loginid
-        FROM
-            betonmarkets.client
-        WHERE
-            allow_copiers IS TRUE
-    };
-
-    return $self->db->dbh->selectcol_arrayref($sql);
-}
-
 no Moose;
 
 __PACKAGE__->meta->make_immutable;
