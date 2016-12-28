@@ -15,7 +15,6 @@ __PACKAGE__->meta->setup(
         trade_type      => { type => 'varchar', length => 50 },
         min_trade_stake => { type => 'numeric', precision => 4, scale => 14 },
         max_trade_stake => { type => 'numeric', precision => 4, scale => 14 },
-        multiplier      => { type => 'integer', default => 1 },
     ],
 
     foreign_keys => [
