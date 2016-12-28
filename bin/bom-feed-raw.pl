@@ -6,7 +6,7 @@ use warnings;
 use BOM::MarketData::FeedDecimate;
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
 
-$0 = 'bom-feed-decimate';
+$0 = 'bom-feed-raw';
 
 GetOptions(
     'd|feed-distributor=s'    => \my $feed_distributor,
@@ -33,10 +33,10 @@ my $client = BOM::MarketData::FeedDecimate->new(
     feed_distributor    => $feed_distributor,
     timeout             => $timeout,
 );
-print("Feed decimate starting\n");
+print("Feed raw starting\n");
 my $success = 1;
 while ($success) {
     $success = $client->iterate;
 }
 
-print("Feed decimate finished\n");
+print("Feed raw finished\n");
