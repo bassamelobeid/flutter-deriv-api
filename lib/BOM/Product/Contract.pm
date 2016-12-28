@@ -1342,11 +1342,10 @@ sub _build_pricing_vol {
         # volatility doesn't matter for less than 10 minutes ATM contracts,
         # where the intraday_delta_correction is the bounceback which is a function of trend, not volatility.
         my $uses_flat_vol = ($self->is_atm_bet and $duration_seconds < 10 * 60) ? 1 : 0;
-        $vol = $volsurface->get_volatility({
+        $vol = $uses_flat_vol ? $volsurface->long_term_volatility : $volsurface->get_volatility({
             from            => $self->effective_start->epoch,
             to              => $self->date_expiry->epoch,
             economic_events => $self->economic_events_for_volatility_calculation,
-            uses_flat_vol   => $uses_flat_vol,
             ticks           => $self->ticks_for_volatility_calculation,
         });
     } else {
