@@ -19,7 +19,7 @@ sub contracts_for {
     my $product_type = $args->{product_type} // 'basic';
 
     my $contracts_for;
-    if (($args->{region} and $args->{region} eq 'japan') or $product_type eq 'multi_barrier') {
+    if ($product_type eq 'multi_barrier') {
         $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol({symbol => $symbol});
     } else {
         $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol({symbol => $symbol});
