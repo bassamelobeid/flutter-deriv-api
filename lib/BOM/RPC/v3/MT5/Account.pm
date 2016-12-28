@@ -21,6 +21,9 @@ sub mt5_login_list {
     my $params = shift;
     my $client = $params->{client};
 
+    my $mt5_suspended = _is_mt5_suspended();
+    return $mt5_suspended if $mt5_suspended;
+
     my $setting;
 
     my @array;
@@ -43,6 +46,9 @@ sub mt5_login_list {
 
 sub mt5_new_account {
     my $params = shift;
+
+    my $mt5_suspended = _is_mt5_suspended();
+    return $mt5_suspended if $mt5_suspended;
 
     my $client       = $params->{client};
     my $args         = $params->{args};
@@ -157,6 +163,10 @@ sub _check_logins {
 
 sub mt5_get_settings {
     my $params = shift;
+
+    my $mt5_suspended = _is_mt5_suspended();
+    return $mt5_suspended if $mt5_suspended;
+
     my $client = $params->{client};
     my $args   = $params->{args};
     my $login  = $args->{login};
@@ -196,6 +206,10 @@ sub _mt5_is_real_account {
 
 sub mt5_set_settings {
     my $params = shift;
+
+    my $mt5_suspended = _is_mt5_suspended();
+    return $mt5_suspended if $mt5_suspended;
+
     my $client = $params->{client};
     my $args   = $params->{args};
     my $login  = $args->{login};
@@ -220,6 +234,10 @@ sub mt5_set_settings {
 
 sub mt5_password_check {
     my $params = shift;
+
+    my $mt5_suspended = _is_mt5_suspended();
+    return $mt5_suspended if $mt5_suspended;
+
     my $client = $params->{client};
     my $args   = $params->{args};
     my $login  = $args->{login};
@@ -238,6 +256,10 @@ sub mt5_password_check {
 
 sub mt5_password_change {
     my $params = shift;
+
+    my $mt5_suspended = _is_mt5_suspended();
+    return $mt5_suspended if $mt5_suspended;
+
     my $client = $params->{client};
     my $args   = $params->{args};
     my $login  = $args->{login};
@@ -267,6 +289,10 @@ sub mt5_password_change {
 
 sub mt5_deposit {
     my $params = shift;
+
+    my $mt5_suspended = _is_mt5_suspended();
+    return $mt5_suspended if $mt5_suspended;
+
     my $client = $params->{client};
     my $args   = $params->{args};
     my $source = $params->{source};
@@ -394,6 +420,10 @@ sub mt5_deposit {
 
 sub mt5_withdrawal {
     my $params = shift;
+
+    my $mt5_suspended = _is_mt5_suspended();
+    return $mt5_suspended if $mt5_suspended;
+
     my $client = $params->{client};
     my $args   = $params->{args};
     my $source = $params->{source};
@@ -487,6 +517,17 @@ sub mt5_withdrawal {
         status                => 1,
         binary_transaction_id => $txn->id
     };
+}
+
+sub _is_mt5_suspended {
+    my $app_config = BOM::Platform::Runtime->instance->app_config;
+
+    if ($app_config->system->suspend->system or $app_config->system->suspend->mt5) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'MT5APIError',
+                message_to_client => localize('MT5 API calls are suspended.')});
+    }
+    return undef;
 }
 
 1;
