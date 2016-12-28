@@ -179,6 +179,12 @@ read_csv_row_and_callback(
             if ($err) {
                 $client_account_table .= construct_row_line(%row, error => "Transaction Error: $err");
                 return;
+            } elsif ($action eq 'credit') {
+                # need to set this for batch payment in case of credit only
+                try {
+                    $client->payment_agent_withdrawal_expiration_date(Date::Utility->today->date_yyyymmdd);
+                    $client->save;
+                };
             }
             $row{remark} = sprintf "OK transaction reference id: %d", $trx->id;
 
