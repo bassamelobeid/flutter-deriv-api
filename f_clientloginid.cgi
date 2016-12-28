@@ -233,33 +233,6 @@ print "<br /><br /><form action=\""
     . "<br /><input type=submit value='Monitor Clients on this list'>"
     . "</form>";
 
-# Locked accounts
-Bar("List of locked accounts");
-print "<a href='"
-    . request()->url_for('backoffice/transaction_locked_client.cgi', {broker => $broker})
-    . "'>List of clients who are locked in transaction</a>";
-
-# Client Self Exclusion Report
-Bar('Client Self Exclusion Report');
-
-print 'View all Clients that currently have self exclusion settings set on their account.<br /><br />';
-
-print "<form action=\"" . request()->url_for('backoffice/self_exclusion_report.cgi') . "\" method=post>";
-print "<input type=hidden name=\"broker\" value=\"$broker\">";
-print "<input type=\"submit\" value=\"Go\">";
-print '</form>';
-
-# Expired ID documents
-Bar('Expired Identity Documents');
-
-print 'View all Clients who are AUTHENTICATED but have expired identity documents.<br /><br />';
-
-print "<form action=\"" . request()->url_for('backoffice/f_expired_documents_report.cgi') . "\" method=post>";
-print "<input type=hidden name=\"broker\" value=\"$broker\">";
-print "Expired before <input type=\"text\" style=\"width:100px\" maxlength=\"15\" name=\"date\" value=\"$today\"> ";
-print "<input type=\"submit\" value=\"Go\">";
-print '</form>';
-
 Bar('Client complete audit log');
 print 'View client sequential combined activity<br/><br/>';
 
