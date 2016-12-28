@@ -28,7 +28,7 @@ subtest "decimate_cache_insert_and_retrieve" => sub {
     is scalar(@$data), '142', "check number of test data";      
 
     for (my $i = 0; $i <= 141; $i++) {
-        $decimate_cache->data_cache_insert_raw($datas->[$i]);
+        $decimate_cache->data_cache_insert_raw($data->[$i]);
     }
 
     my $data_out = $decimate_cache->data_cache_get_num_data({
@@ -37,6 +37,10 @@ subtest "decimate_cache_insert_and_retrieve" => sub {
     });
 
     is scalar(@$data_out), '142', "retrieved 142 datas from cache";
+
+    #test insert_decimate
+    
+
 };
 
 sub data_from_csv {
