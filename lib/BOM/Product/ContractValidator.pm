@@ -284,7 +284,7 @@ sub _validate_barrier_type {
         if (defined $self->$barrier and $self->$barrier->barrier_type ne 'absolute') {
 
             return {
-                message           => 'barrier should be ' . $barrier_type,
+                message           => 'barrier should be absolute for multi-day contracts',
                 message_to_client => localize('Contracts more than 24 hours in duration would need an absolute barrier.'),
             };
         }
