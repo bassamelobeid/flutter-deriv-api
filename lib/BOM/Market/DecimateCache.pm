@@ -212,13 +212,11 @@ sub data_cache_get_num_data {
     return \@res;
 }
 
-=head2 data_cache_insert
-
-Insert raw data as well as decimated data if data crosses 15s boundary. In case the interval does not have any data, it will use previous interval's decimated data.
+=head2 data_cache_insert_insert_raw 
 
 =cut
 
-sub data_cache_insert {
+sub data_cache_insert_raw {
     my ($self, $data) = @_;
 
     $data = $data->as_hash if blessed($data);
@@ -229,39 +227,50 @@ sub data_cache_insert {
     my $key          = $self->_make_key($to_store{symbol}, 0);
     my $decimate_key = $self->_make_key($to_store{symbol}, 1);
 
-    # check for resample interval boundary.
-    my $current_epoch = $data->{epoch};
-    my $prev_added_epoch = $prev_added_epoch{$to_store{symbol}} // $current_epoch;
+    $self->_update($self->redis_write, $key, $data->{epoch}, $self->encoder->encode(\%to_store));
+
+    return;
+}
+
+=head2 data_cache_insert_insert_raw 
+
+=cut
+
+sub data_cache_insert_decimate {
+    my ($self, $data) = @_;
+
+    $data = $data->as_hash if blessed($data);
+
+    my %to_store = %$data;
+
+    $to_store{count} = 1;    # These are all single data;
+    my $key          = $self->_make_key($to_store{symbol}, 0);
+    my $decimate_key = $self->_make_key($to_store{symbol}, 1);
 
     my $boundary = $current_epoch - ($current_epoch % $self->sampling_frequency->seconds);
 
-    if ($current_epoch > $boundary and $prev_added_epoch <= $boundary) {
-        if (
-            my @datas =
-            map { $self->decoder->decode($_) }
-            @{$self->redis_read->zrangebyscore($key, $boundary - $self->sampling_frequency->seconds - 1, $boundary)})
-        {
-            #do resampling
-            my $decimate_data = Data::Decimate::decimate($self->sampling_frequency->seconds, \@datas);
+    if (
+        my @datas =
+        map { $self->decoder->decode($_) } @{$self->redis_read->zrangebyscore($key, $boundary - $self->sampling_frequency->seconds - 1, $boundary)})
+    {
+        #do resampling
+        my $decimate_data = Data::Decimate::decimate($self->sampling_frequency->seconds, \@datas);
 
-            foreach my $tick (@$decimate_data) {
-                $self->_update($self->redis_write, $decimate_key, $tick->{decimate_epoch}, $self->encoder->encode($tick));
-            }
-        } elsif (
-            my @decimate_data = map {
-                $self->decoder->decode($_)
-            } reverse @{$self->redis_read->zrevrangebyscore($decimate_key, $boundary - $self->sampling_frequency->seconds, 0, 'LIMIT', 0, 1)})
-        {
-            my $single_data = $decimate_data[0];
-            $single_data->{decimate_epoch} = $boundary;
-            $single_data->{count}          = 0;
-            $self->_update($self->redis_write, $decimate_key, $single_data->{decimate_epoch}, $self->encoder->encode($single_data));
+        foreach my $tick (@$decimate_data) {
+            $self->_update($self->redis_write, $decimate_key, $tick->{decimate_epoch}, $self->encoder->encode($tick));
         }
+    } elsif (
+        my @decimate_data = map {
+            $self->decoder->decode($_)
+        } reverse @{$self->redis_read->zrevrangebyscore($decimate_key, $boundary - $self->sampling_frequency->seconds, 0, 'LIMIT', 0, 1)})
+    {
+        my $single_data = $decimate_data[0];
+        $single_data->{decimate_epoch} = $boundary;
+        $single_data->{count}          = 0;
+        $self->_update($self->redis_write, $decimate_key, $single_data->{decimate_epoch}, $self->encoder->encode($single_data));
     }
 
-    $prev_added_epoch{$to_store{symbol}} = $current_epoch;
-
-    return $self->_update($self->redis_write, $key, $data->{epoch}, $self->encoder->encode(\%to_store));
+    return;
 }
 
 =head1 AUTHOR
