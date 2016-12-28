@@ -291,7 +291,7 @@ sub _feed_channel_subscribe {
                         warn("callback invocation error during redis subscription to $symbol: $_");
                     };
                 }
-            });
+            }) unless ${^GLOBAL_PHASE} eq 'DESTRUCT';
     } elsif ($callback) {
         $invoke_cb = 1;
     }
@@ -494,7 +494,8 @@ sub _skip_streaming {
     my $args = shift;
 
     my $skip_symbols = ($skip_symbol_list{$args->{symbol}}) ? 1 : 0;
-    my $atm_contract = ($args->{contract_type} =~ /^(CALL|PUT)$/ and not $args->{barrier}) ? 1 : 0;
+    my $atm_contract =
+        ($args->{contract_type} =~ /^(CALL|PUT)$/ and not($args->{barrier} or ($args->{proposal_array} and $args->{barriers}))) ? 1 : 0;
     my $fixed_expiry = $args->{date_expiry} ? 1 : 0;
     my ($skip_tick_expiry, $skip_intraday_atm_non_fixed_expiry) = (0, 0);
     if (defined $args->{duration_unit}) {
