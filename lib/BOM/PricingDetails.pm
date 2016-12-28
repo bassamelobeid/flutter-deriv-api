@@ -474,7 +474,7 @@ sub _get_overview {
         },
         {
             label => 'Barrier adjustment',
-            value => roundnear(0.0001, $bet->barriers_for_pricing->{barrier1} - $barrier_to_compare->as_absolute),
+            value => (defined $barrier_to_compare ? roundnear(0.0001, $bet->barriers_for_pricing->{barrier1} - $barrier_to_compare->as_absolute) : 0),
         },
     );
 
@@ -485,7 +485,7 @@ sub _get_overview {
         to    => $bet->date_expiry,
     });
     my ($delta_strike1, $delta_strike2) = (0, 0);
-    if ($bet->category_code ne 'digits') {
+    if (not($bet->category_code eq 'digits' or $bet->category_code eq 'asian')) {
         if ($bet->two_barriers) {
             $delta_strike1 = 100 * get_delta_for_strike({
                 strike           => $bet->high_barrier->as_absolute,
