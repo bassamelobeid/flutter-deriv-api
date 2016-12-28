@@ -10,10 +10,6 @@
       "description": "API tokens identifying the accounts of trader which will be used to copy trades",
       "required": "1"
     },
-    "multiplier": {
-      "type": "integer",
-      "description": "Optional field, used to set stake multiplier"
-    },
     "min_trade_stake": {
       "type": "number",
       "description": "Optional field, used to set minimal trade stake to be copied"
