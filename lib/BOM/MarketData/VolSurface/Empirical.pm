@@ -42,7 +42,7 @@ sub get_volatility {
         underlying  => $underlying,
         start_epoch => $args->{current_epoch} - $interval->seconds,
         end_epoch   => $args->{current_epoch},
-        backtest    => !$fill_cache,
+        backprice   => !$fill_cache,
     });
 
     # minimum of 1 second to avoid division by zero error.

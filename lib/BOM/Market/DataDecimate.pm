@@ -50,10 +50,10 @@ sub decimate_cache_get {
     my $underlying = $args->{underlying};
     my $start_time = $args->{start_epoch};
     my $end_time   = $args->{end_epoch};
-    my $backtest   = $args->{backtest} // 0;
+    my $backprice  = $args->{backprice} // 0;
 
     my $ticks;
-    if ($backtest) {
+    if ($backprice) {
         my $start = $end_time - min($end_time - $start_time, $self->decimate_cache->decimate_retention_interval->seconds);
         $start = $start - $start % $self->decimate_cache->sampling_frequency->seconds;
         my $first_decimate = $start - $self->decimate_cache->sampling_frequency->seconds;
@@ -81,10 +81,10 @@ sub tick_cache_get {
     my $underlying = $args->{underlying};
     my $start_time = $args->{start_epoch};
     my $end_time   = $args->{end_epoch};
-    my $backtest   = $args->{backtest} // 0;
+    my $backprice  = $args->{backprice} // 0;
 
     my $ticks;
-    if ($backtest) {
+    if ($backprice) {
         my $raw_ticks = $underlying->ticks_in_between_start_end({
             start_time => $start_time,
             end_time   => $end_time,
@@ -108,10 +108,10 @@ sub tick_cache_get_num_ticks {
     my $underlying = $args->{underlying};
     my $num        = $args->{num};
     my $end_time   = $args->{end_epoch};
-    my $backtest   = $args->{backtest} // 0;
+    my $backprice  = $args->{backprice} // 0;
 
     my $ticks;
-    if ($backtest) {
+    if ($backprice) {
         my $ticks = $underlying->ticks_in_between_end_limit({
             end_time => $end_time,
             limit    => $num,
