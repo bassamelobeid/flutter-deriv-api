@@ -18,6 +18,10 @@ use constant TICK_CHUNK_SIZE => 1000;
 
 ++$|;
 
+open my $unique_lock, '<', $0 or die $!;
+die "Another copy of $0 is already running - we expect to run daily, is the script taking more than 24h to complete?"
+    unless flock $unique_lock, LOCK_EX | LOCK_NB;
+
 my $config = LoadFile('/home/git/regentmarkets/bom-backoffice/config/trading_strategy_datasets.yml');
 
 my $target_date = Date::Utility->today->truncate_to_day;
