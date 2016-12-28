@@ -392,12 +392,12 @@ sub _build_ticks_for_trend {
     my $remaining_interval = Time::Duration::Concise::Localize->new(interval => $lookback_secs);
 
     my $ticks;
-    my $backtest = ($bet->underlying->for_date) ? 1 : 0;
+    my $backprice = ($bet->underlying->for_date) ? 1 : 0;
     $ticks = $self->tick_source->get({
         underlying  => $bet->underlying,
         start_epoch => $bet->date_pricing->epoch - $remaining_interval->seconds,
         end_epoch   => $bet->date_pricing->epoch,
-        backtest    => $backtest,
+        backprice   => $backtest,
         decimate    => $self->more_than_short_term_cutoff,
     });
 
