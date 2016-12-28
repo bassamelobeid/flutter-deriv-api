@@ -52,8 +52,35 @@ subtest "decimate_cache_insert_and_retrieve" => sub {
         end_epoch   => 1479203250,
     });
 
-    is scalar(@$decimate_data), '17', "retrieved 17 decimated datas";    
+    is scalar(@$decimate_data), '10', "retrieved 10 decimated datas";    
 
+};
+
+my $data2 = data_from_csv('t/BOM/Market/DecimateCache/sampledata2.csv');
+
+subtest "decimate_cache_insert_and_retrieve_with_missing_data" => sub {
+    my $decimate_cache = BOM::Market::DecimateCache->new();
+
+    ok $decimate_cache, "DecimateCache instance has been created";
+
+    my ($raw_key, $decimate_key) = map { $decimate_cache->_make_key('USDJPY', $_) } (0 .. 1);
+
+    my $redis = $decimate_cache->redis_write;
+    $redis->zremrangebyscore($raw_key, 0, 1479203250);
+    $redis->zremrangebyscore($decimate_key,   0, 1479203250);    
+
+    is scalar(@$data2), '142', "check number of test data";
+
+    for (my $i = 0; $i <= 128; $i++) {
+        $decimate_cache->data_cache_insert_raw($data2->[$i]);
+    }
+
+    my $data_out = $decimate_cache->data_cache_get_num_data({
+        symbol => 'USDJPY',
+        num    => 128,
+    });
+
+    is scalar(@$data_out), '128', "retrieved 128 datas from cache";
 };
 
 sub data_from_csv {
