@@ -17,17 +17,17 @@ use BOM::Market::DecimateCache;
 
 #add test case here
 
-#my $datas = datas_from_csv('t/sampledata.csv');
+my $data = data_from_csv('t/BOM/Market/DecimateCache/sampledata.csv');
 
 subtest "decimate_cache_insert_and_retrieve" => sub {
     my $decimate_cache = BOM::Market::DecimateCache->new();
 
     ok $decimate_cache, "DecimateCache instance has been created";  
    
-      
+    is scalar(@$data), '142', "check number of test data";      
 };
 
-sub datas_from_csv {
+sub data_from_csv {
     my $filename = shift;
 
     open(my $fh, '<:utf8', $filename) or die "Can't open $filename: $!";
