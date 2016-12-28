@@ -97,16 +97,12 @@ subtest 'client lock unlock' => sub {
     'Expect to initialize the client data mapper';
 
     ok($client_db->lock_client_loginid(), "Can lock client when there is no record in lock table initially.");
-    cmp_ok(scalar keys %{$client_db->locked_client_list()}, '==', 1, "There is one locked client");
 
     ok(!$client_db->lock_client_loginid(),   "Can not lock client wheb it is already locked.");
     ok($client_db->unlock_client_loginid(),  "Can unlock client.");
-    ok(!$client_db->unlock_client_loginid(), "Can not lock client if it is not locked.");
-
-    ok($client_db->lock_client_loginid(),   "Can lock client again when the record exists in lock table.");
+    ok($client_db->lock_client_loginid(),   "Can lock client again after unlock.");
     ok($client_db->unlock_client_loginid(), "Can unlock client.");
-
-    cmp_ok(scalar keys %{$client_db->locked_client_list()}, '==', 0, "There is no locked client");
+    ok(!$client_db->unlock_client_loginid(), "Can not lock client if it is not locked.");
 };
 
 subtest 'Login to self excluded client' => sub {
