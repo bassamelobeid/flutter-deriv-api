@@ -16,11 +16,6 @@
           "pattern": "^[A-Z]{3}$",
           "default": "USD"
         },
-        "region":{
-            "type":"string",
-            "description":"Set to 'japan' to retrieve contracts available under Japanese regulations, or 'other' otherwise.This key will be obsolete in the next version upgrade. Please set 'product_type' to multi_barrier to get contracts available under Japanese regulations.",
-            "pattern":"^(japan|other)$"
-        },
         "product_type":{
             "type":"string",
             "description":"Set to 'multi_barrier' to get a list of contracts with predefined trading windows and barriers for a given symbol. Default to 'basic'",
