@@ -14,6 +14,4 @@ use BOM::Backoffice::Auth0;
 use Client::Account;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Database::Rose::DB::StringifyRules;
-
 1;
