@@ -12,7 +12,7 @@
     "copy_start": {
       "type": "integer",
       "title": "Copy start confirmation",
-      "description": "Copy start confirmation"
+      "description": "Copy start confirmation. Returns 1 is success."
     },
     "msg_type": {
       "type": "string",

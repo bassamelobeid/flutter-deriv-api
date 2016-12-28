@@ -12,7 +12,7 @@
     "copy_stop": {
       "type": "integer",
       "title": "Copy stopping confirmation",
-      "description": "Copy stopping confirmation"
+      "description": "Copy stopping confirmation. Returns 1 is success."
     },
     "msg_type": {
       "type": "string",
