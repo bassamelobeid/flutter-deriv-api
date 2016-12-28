@@ -238,11 +238,13 @@ sub data_cache_insert_raw {
 sub data_cache_insert_decimate {
     my ($self, $symbol, $boundary) = @_;
 
+    my $raw_key      = $self->_make_key($symbol, 0);
     my $decimate_key = $self->_make_key($symbol, 1);
 
     if (
         my @datas =
-        map { $self->decoder->decode($_) } @{$self->redis_read->zrangebyscore($key, $boundary - ($self->sampling_frequency->seconds - 1), $boundary)})
+        map { $self->decoder->decode($_) }
+        @{$self->redis_read->zrangebyscore($raw_key, $boundary - ($self->sampling_frequency->seconds - 1), $boundary)})
     {
         #do resampling
         my $decimate_data = Data::Decimate::decimate($self->sampling_frequency->seconds, \@datas);
