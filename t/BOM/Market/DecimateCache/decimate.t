@@ -14,6 +14,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
 
 use BOM::Market::DecimateCache;
+use Text::CSV;
 
 #add test case here
 
