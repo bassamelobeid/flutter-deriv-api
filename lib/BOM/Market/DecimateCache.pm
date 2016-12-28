@@ -172,8 +172,6 @@ sub decimate_cache_get {
     return \@res;
 }
 
-my %prev_added_epoch;
-
 =head2 data_cache_get
 
 Retrieve datas from start epoch till end epoch .

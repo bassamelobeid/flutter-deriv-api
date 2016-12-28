@@ -38,8 +38,21 @@ subtest "decimate_cache_insert_and_retrieve" => sub {
 
     is scalar(@$data_out), '142', "retrieved 142 datas from cache";
 
-    #test insert_decimate
-    
+#test insert_decimate
+# try get all decimated datas
+# last data in our sample
+# USDJPY,1479203250,1479203250,108.254,108.256,108.257
+    for (my $i = 1479203115; $i <= 1479203250; $i=$i+15) {
+	$decimate_cache->data_cache_insert_decimate('USDJPY', $i);
+    }
+
+    my $decimate_data = $decimate_cache->decimate_cache_get({
+        symbol      => 'USDJPY',
+        start_epoch => 1479203101,
+        end_epoch   => 1479203250,
+    });
+
+    is scalar(@$decimate_data), '17', "retrieved 17 decimated datas";    
 
 };
 
