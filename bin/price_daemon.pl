@@ -61,14 +61,14 @@ sub process_job {
 
     my $underlying = _get_underlying($params) or return undef;
 
-    if(!ref($underlying)) {
+    if (!ref($underlying)) {
         warn "Have legacy underlying - $underlying with params " . Dumper($params) . "\n";
         DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => ['tag:' . $internal_ip]});
         return undef;
     }
 
     unless (defined $underlying->spot_tick and defined $underlying->spot_tick->epoch) {
-        warn "$params->{symbol} has invalid spot tick";
+        warn "$params->{symbol} has invalid spot tick" if $underlying->calendar->is_open;
         DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => ['tag:' . $internal_ip]});
         return undef;
     }
@@ -80,7 +80,11 @@ sub process_job {
 
     if ($price_daemon_cmd eq 'price') {
         $params->{streaming_params}->{add_theo_probability} = 1;
-        $response = BOM::RPC::v3::Contract::send_ask({args => $params});
+        if (exists $params->{barriers}) {
+            $response = BOM::RPC::v3::Contract::send_multiple_ask({args => $params});
+        } else {
+            $response = BOM::RPC::v3::Contract::send_ask({args => $params});
+        }
     } elsif ($price_daemon_cmd eq 'bid') {
         $params->{validation_params}->{skip_barrier_validation} = 1;
         $response = BOM::RPC::v3::Contract::send_bid($params);

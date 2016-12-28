@@ -981,7 +981,8 @@ subtest $method => sub {
             'address_city'                   => 'Beverly Hills',
             'address_line_1'                 => 'Civic Center',
             'first_name'                     => 'bRaD',
-            'email_consent'                  => '0'
+            'email_consent'                  => '0',
+            'allow_copiers'                  => '0',
         });
 
     $params->{token} = $token1;
