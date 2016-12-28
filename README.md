@@ -3,7 +3,16 @@ Postgres library
 
 ## CR Replication Schema
 
-![CR Replication Schema](doc/cr-replication-final.png)
+```
+(a) cr-dbpri01 us-east-1b - master-db
+(b) cr-dbpri02 us-east-1c - replica of (a) - Idle
+(c) cr-dbpri03 us-east-1a - replica of (a) - long running queries (Backoffice, cron)
+(d) cr-dbpri04 us-east-1a - replica of (a) - Client readonly queries
+(e) cr-dbpri05 gcloud     - replica of (a) - Idle
+(f) reportdb us-east-1a   - replica of (d) - JackDB reprots
+(g) Dropbox Wal shipping from (a) - dropbox agent running on (a)
+(h) PITR server  us-east-1a - Wal shipping from by syncing from (g) - Separate account with no access for devops team
+```
 
 ## Release Checklist
 
