@@ -620,8 +620,6 @@ sub _create_new_interface_engine {
             economic_events => _generate_market_data($self->underlying, $self->date_start)->{economic_events},
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
-        my $fixed_vol = $self->has_pricing_vol || $self->underlying->volatility_surface_type eq 'flat';
-
         #pricing_vol can be calculated using an empirical vol. So we have to sent the raw numberc
         %pricing_parameters = (
             contract_type            => $self->pricing_code,
