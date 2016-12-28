@@ -428,6 +428,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
             contract => $contract,
             action   => 'BUY',
             price    => $price,
+            amount_type => 'payout',
         });
         my $error = $transaction->_validate_trade_pricing_adjustment;
         is($error, undef, 'no error');
@@ -492,6 +493,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
             client   => $client,
             contract => $contract,
             action   => 'BUY',
+            amount_type => 'payout',
             price    => $requested_price,
         });
         my $error = $transaction->_validate_trade_pricing_adjustment;
@@ -512,6 +514,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
             contract => $contract,
             action   => 'BUY',
             price    => $price,
+            amount_type => 'payout',
         });
 
         $error = $transaction->_validate_trade_pricing_adjustment;
@@ -528,6 +531,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
             contract => $contract,
             action   => 'BUY',
             price    => $price,
+            amount_type => 'payout',
         });
         $error = $transaction->_validate_trade_pricing_adjustment;
         is($error, undef, 'BUY price decrease, better execution price');
@@ -543,6 +547,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
             contract => $contract,
             action   => 'SELL',
             price    => $requested_price,
+            amount_type => 'payout',
         });
         $error = $transaction->_validate_sell_pricing_adjustment;
         is($error->get_type, 'PriceMoved', 'Price move too much opposite favour of client');
@@ -562,6 +567,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
             contract => $contract,
             action   => 'SELL',
             price    => $price,
+            amount_type => 'payout',
         });
         $error = $transaction->_validate_sell_pricing_adjustment;
         is($error, undef, 'SELL price increase within allowable move');
@@ -577,6 +583,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
             contract => $contract,
             action   => 'SELL',
             price    => $price,
+            amount_type => 'payout',
         });
         $error = $transaction->_validate_sell_pricing_adjustment;
         is($error, undef, 'SELL price increase, better execution price');
@@ -584,7 +591,6 @@ subtest 'BUY - trade pricing adjustment' => sub {
         is $transaction->price_slippage, 1, 'correct probability slippage set';
         is $transaction->requested_price, $price, "correct requested price $price";
         is $transaction->recomputed_price, $contract->bid_price, 'correct recomputed price ' . $contract->bid_price;
-
         $mock_contract->unmock_all;
     };
 
@@ -948,6 +954,7 @@ subtest 'Purchase Sell Contract' => sub {
         client   => $client,
         contract => $contract,
         price    => $contract->ask_price,
+        amount_type => 'payout'
     });
 
     $ENV{REQUEST_STARTTIME} = $now->epoch - 1;
@@ -987,6 +994,7 @@ subtest 'Purchase Sell Contract' => sub {
             contract    => $contract,
             price       => $contract->bid_price,
             contract_id => $bpt->contract_id,
+            amount_type => 'payout'
         })->sell;
 
     is($error, undef, 'Able to sell the contract successfully');

@@ -2787,6 +2787,7 @@ subtest 'transaction slippage' => sub {
             client        => $cl,
             contract      => $contract,
             action        => 'BUY',
+            amount_type   => 'payout',
             price         => $price,
             purchase_date => $now,
         });
@@ -2845,6 +2846,7 @@ subtest 'transaction slippage' => sub {
             contract    => $contract,
             contract_id => $fmb_id,
             price       => $price,
+            amount_type => 'payout',
             source      => 23,
         });
 
