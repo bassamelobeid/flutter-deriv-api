@@ -522,9 +522,9 @@ sub mt5_withdrawal {
 sub _is_mt5_suspended {
     my $app_config = BOM::Platform::Runtime->instance->app_config;
 
-    if ($app_config->system->suspend->system or $app_config->system->suspend->mt5) {
+    if ($app_config->system->suspend->mt5) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'MT5APIError',
+                code              => 'MT5APISuspendedError',
                 message_to_client => localize('MT5 API calls are suspended.')});
     }
     return undef;
