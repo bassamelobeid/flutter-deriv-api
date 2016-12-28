@@ -110,6 +110,7 @@ subtest 'contract creation and purchase' => sub {
         contract      => $contract,
         price         => $contract->ask_price,
         purchase_date => $now,
+        amount_type   => 'payout'
     });
 
     my $error = $txn->buy(skip_validation => 1);
