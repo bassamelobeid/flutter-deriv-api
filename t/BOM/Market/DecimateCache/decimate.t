@@ -26,6 +26,17 @@ subtest "decimate_cache_insert_and_retrieve" => sub {
     ok $decimate_cache, "DecimateCache instance has been created";  
    
     is scalar(@$data), '142', "check number of test data";      
+
+    for (my $i = 0; $i <= 141; $i++) {
+        $decimate_cache->data_cache_insert_raw($datas->[$i]);
+    }
+
+    my $data_out = $decimate_cache->data_cache_get_num_data({
+        symbol => 'USDJPY',
+        num    => 142,
+    });
+
+    is scalar(@$data_out), '142', "retrieved 142 datas from cache";
 };
 
 sub data_from_csv {
