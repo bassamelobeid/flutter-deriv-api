@@ -69,9 +69,9 @@ subtest "decimate_cache_insert_and_retrieve_with_missing_data" => sub {
     $redis->zremrangebyscore($raw_key, 0, 1479203250);
     $redis->zremrangebyscore($decimate_key,   0, 1479203250);    
 
-    is scalar(@$data2), '142', "check number of test data";
+    is scalar(@$data2), '128', "check number of test data";
 
-    for (my $i = 0; $i <= 128; $i++) {
+    for (my $i = 0; $i <= 127; $i++) {
         $decimate_cache->data_cache_insert_raw($data2->[$i]);
     }
 
@@ -81,6 +81,18 @@ subtest "decimate_cache_insert_and_retrieve_with_missing_data" => sub {
     });
 
     is scalar(@$data_out), '128', "retrieved 128 datas from cache";
+
+    for (my $i = 1479203115; $i <= 1479203250; $i=$i+15) {
+        $decimate_cache->data_cache_insert_decimate('USDJPY', $i);
+    }
+
+    my $decimate_data = $decimate_cache->decimate_cache_get({
+        symbol      => 'USDJPY',
+        start_epoch => 1479203101,
+        end_epoch   => 1479203250,
+    });
+
+    is scalar(@$decimate_data), '10', "retrieved 10 decimated datas";
 };
 
 sub data_from_csv {
