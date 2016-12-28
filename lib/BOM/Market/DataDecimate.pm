@@ -108,12 +108,22 @@ sub tick_cache_get_num_ticks {
     my $underlying = $args->{underlying};
     my $num        = $args->{num};
     my $end_time   = $args->{end_epoch};
+    my $backtest   = $args->{backtest} // 0;
 
-    my $ticks = $self->decimate_cache->data_cache_get_num_data({
-        symbol    => $underlying->symbol,
-        end_epoch => $end_time,
-        num       => $num,
-    });
+    my $ticks;
+    if ($backtest) {
+        my $ticks = $underlying->ticks_in_between_end_limit({
+            start_time => $first_decimate,
+            end_time   => $end_time,
+            limit      => $num,
+        });
+    } else {
+        $ticks = $self->decimate_cache->data_cache_get_num_data({
+            symbol    => $underlying->symbol,
+            end_epoch => $end_time,
+            num       => $num,
+        });
+    }
 
     return $ticks;
 }
