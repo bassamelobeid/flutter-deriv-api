@@ -51,11 +51,13 @@ for my $symbol (@{$config->{underlyings}}) {
             end_time => $current + TICK_CHUNK_SIZE,
             limit => TICK_CHUNK_SIZE,
         })} or last BATCH; # if we had no ticks, then we're done for this symbol
-        for my $duration (@{$config->{durations}}) {
+        for (@{$config->{durations}}) {
+            my ($duration, %duration_options) = @$_;
+            $duration_options{step} //= '1t';
             print "Duration $duration\n";
             for my $bet_type (@{$config->{types}}) {
                 print "Bet type $bet_type\n";
-                my $key = join '_', $symbol, $duration, $bet_type;
+                my $key = join '_', $symbol, $duration, $duration_options{step}, $bet_type;
                 unless(exists $fh{$key}) {
                     open $fh{$key}, '>:encoding(UTF-8)', $output_base . '/' . $key . '.csv' or die $!;
                     $fh{$key}->autoflush(1);
