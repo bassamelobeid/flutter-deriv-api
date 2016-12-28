@@ -113,9 +113,8 @@ sub tick_cache_get_num_ticks {
     my $ticks;
     if ($backtest) {
         my $ticks = $underlying->ticks_in_between_end_limit({
-            start_time => $first_decimate,
-            end_time   => $end_time,
-            limit      => $num,
+            end_time => $end_time,
+            limit    => $num,
         });
     } else {
         $ticks = $self->decimate_cache->data_cache_get_num_data({
