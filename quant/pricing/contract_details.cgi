@@ -68,10 +68,10 @@ if ($broker and ($id or $short_code)) {
     $pricing_args->{date_pricing}    = $start;
     $pricing_args->{landing_company} = $landing_company;
 
-    my $contract       = produce_contract($pricing_args);
-    my $display_price =  $action_type eq 'buy' ? $contract->ask_price : $contract->bid_price;
-    my $prev_tick      = $contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
-    my $traded_contract = $action_type eq 'buy' ? $contract : $contract->opposite_contract;
+    my $contract               = produce_contract($pricing_args);
+    my $display_price          = $action_type eq 'buy' ? $contract->ask_price : $contract->bid_price;
+    my $prev_tick              = $contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
+    my $traded_contract        = $action_type eq 'buy' ? $contract : $contract->opposite_contract;
     my $discounted_probability = $contract->discounted_probability;
 
     $pricing_parameters =
@@ -97,9 +97,8 @@ if ($broker and ($id or $short_code)) {
         payout                 => $contract->payout,
         tick_before_trade_time => $prev_tick,
         ref_spot               => $details->{pricing_spot},
-        ref_vol                => $details->{high_barrier_vol}, #it will be the vol of barrier for the single barrier contract
-        ref_vol_2              => $details->{low_barrier_vol}
-    );
+        ref_vol                => $details->{high_barrier_vol},                #it will be the vol of barrier for the single barrier contract
+        ref_vol_2              => $details->{low_barrier_vol});
 }
 my $display = $params{download} ? 'download' : 'display';
 if ($display eq 'download') {
