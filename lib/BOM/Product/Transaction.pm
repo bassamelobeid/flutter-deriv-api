@@ -117,10 +117,18 @@ sub _build_payout {
 }
 
 has amount_type => (
-    is      => 'rw',
-    isa     => 'Str',
-    default => 'payout',
+    is         => 'rw',
+    isa        => 'Str',
+    lazy_build => 1,
 );
+
+sub _build_amount_type {
+    my $self = shift;
+
+    return 'payout' if $self->contract->is_spread;
+    die 'amount type is required';
+
+}
 
 has comment => (
     is      => 'rw',
