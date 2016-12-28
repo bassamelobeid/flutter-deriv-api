@@ -30,6 +30,7 @@ use BOM::System::Chronicle;
 
 use BOM::Platform::Context qw(localize);
 
+use BOM::Market::AggTicks;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -1450,11 +1451,11 @@ sub _build_news_adjusted_pricing_vol {
     # Only recalculated if there's economic_events.
     if ($seconds_to_expiry > 10 and @$events) {
         $news_adjusted_vol = $self->empirical_volsurface->get_volatility({
-            from                => $effective_start->epoch,
-            to                  => $self->date_expiry->epoch,
-            economic_events     => $events,
-            ticks               => $self->ticks_for_volatility_calculation,
-            include_news_impact => 1,
+            from                          => $effective_start->epoch,
+            to                            => $self->date_expiry->epoch,
+            economic_events               => $events,
+            ticks                         => $self->ticks_for_volatility_calculation,
+            include_economic_event_impact => 1,
         });
     }
 
