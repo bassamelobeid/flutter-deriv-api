@@ -178,9 +178,9 @@ $client_db->freeze || do {
     code_exit_BO();
 };
 
-my $to_client_db = BOM::Database::ClientDB->new({
-    client_loginid => $loginID,
-});
+my $to_client_db = do {
+    BOM::Database::ClientDB->new({client_loginid => $toLoginID}) if $toLoginID;
+};
 
 if ($ttype eq 'TRANSFER') {
     $to_client_db->freeze || do {
@@ -191,7 +191,7 @@ if ($ttype eq 'TRANSFER') {
 
 # NEW PAYMENT HANDLERS ..
 
-my $leave;
+my ($leave, $client_pa_exp);
 try {
     if ($ttype eq 'CREDIT' || $ttype eq 'DEBIT') {
         $client->smart_payment(
@@ -199,7 +199,7 @@ try {
             amount => $signed_amount,
             staff  => $clerk,
         );
-
+        $client_pa_exp = $client;
     } elsif ($ttype eq 'TRANSFER') {
         $client->payment_account_transfer(
             currency => $curr,
@@ -207,6 +207,7 @@ try {
             amount   => $amount,
             staff    => $clerk,
         );
+        $client_pa_exp = $toClient;
     }
 }
 catch {
@@ -219,6 +220,12 @@ $client_db->unfreeze;
 $to_client_db->unfreeze if $toLoginID;
 
 code_exit_BO() if $leave;
+
+my $today = Date::Utility->today;
+# we need to set paymentagent_expiration_date for manual deposit
+# check with compliance if you want to change this
+$client_pa_exp->payment_agent_withdrawal_expiration_date($today->date_yyyymmdd);
+$client_pa_exp->save;
 
 my $now = Date::Utility->new;
 # Logging
@@ -244,7 +251,6 @@ print qq[<p class="success_message">$success_message</p>];
 
 Bar("Today's entries for $loginID");
 
-my $today  = Date::Utility->today;
 my $after  = $today->datetime_yyyymmdd_hhmmss;
 my $before = $today->plus_time_interval('1d')->datetime_yyyymmdd_hhmmss;
 
