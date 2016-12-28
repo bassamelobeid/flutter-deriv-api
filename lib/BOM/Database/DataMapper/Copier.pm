@@ -7,14 +7,15 @@ sub get_copiers_cnt {
     my ($self, $args) = @_;
 
     my $sql = q{
-        SELECT count(*)
+        SELECT DISTINCT copier_id
           FROM betonmarkets.copiers
          WHERE trader_id = $1
     };
 
     my @binds = ($args->{trader_id});
-    return $self->db->dbh->selectcol_arrayref($sql, undef, @binds)->[0] // 0;
+    return scalar(@{$self->db->dbh->selectcol_arrayref($sql, undef, @binds) || []});
 }
+
 
 no Moose;
 __PACKAGE__->meta->make_immutable;
