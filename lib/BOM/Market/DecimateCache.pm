@@ -224,34 +224,25 @@ sub data_cache_insert_raw {
     my %to_store = %$data;
 
     $to_store{count} = 1;    # These are all single data;
-    my $key          = $self->_make_key($to_store{symbol}, 0);
-    my $decimate_key = $self->_make_key($to_store{symbol}, 1);
+    my $key = $self->_make_key($to_store{symbol}, 0);
 
     $self->_update($self->redis_write, $key, $data->{epoch}, $self->encoder->encode(\%to_store));
 
     return;
 }
 
-=head2 data_cache_insert_insert_raw 
+=head2 data_cache_insert_insert_decimate
 
 =cut
 
 sub data_cache_insert_decimate {
-    my ($self, $data) = @_;
+    my ($self, $symbol, $boundary) = @_;
 
-    $data = $data->as_hash if blessed($data);
-
-    my %to_store = %$data;
-
-    $to_store{count} = 1;    # These are all single data;
-    my $key          = $self->_make_key($to_store{symbol}, 0);
-    my $decimate_key = $self->_make_key($to_store{symbol}, 1);
-
-    my $boundary = $current_epoch - ($current_epoch % $self->sampling_frequency->seconds);
+    my $decimate_key = $self->_make_key($symbol, 1);
 
     if (
         my @datas =
-        map { $self->decoder->decode($_) } @{$self->redis_read->zrangebyscore($key, $boundary - $self->sampling_frequency->seconds - 1, $boundary)})
+        map { $self->decoder->decode($_) } @{$self->redis_read->zrangebyscore($key, $boundary - ($self->sampling_frequency->seconds - 1), $boundary)})
     {
         #do resampling
         my $decimate_data = Data::Decimate::decimate($self->sampling_frequency->seconds, \@datas);
