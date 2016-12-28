@@ -167,8 +167,6 @@ sub decimate_cache_get {
 
     @res = map { $self->decoder->decode($_) } @{$redis->zrangebyscore($key, $start, $end)};
 
-    #my @sorted = sort { $a->{epoch} <=> $b->{epoch} } @res;
-
     return \@res;
 }
 
