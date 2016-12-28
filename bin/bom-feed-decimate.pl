@@ -8,6 +8,8 @@ use BOM::MarketData qw(create_underlying_db);
 
 use BOM::Market::DecimateCache;
 
+use Data::Decimate qw(decimate);
+
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
 
 $0 = 'bom-feed-decimate';
@@ -29,6 +31,37 @@ print("Feed decimate starting\n");
 my $decimate_cache = BOM::Market::DecimateCache->new();
 
 my @uls = map { create_underlying($_) } create_underlying_db->symbols_for_intraday_fx;
+
+#back populate
+my $interval = $decimate_cache->sampling_frequency->seconds;
+
+my $end = time;
+my $start = $end - (12 * 60 * 60);
+$start = $start - ($start % $interval) - $interval;
+
+foreach my $ul (@uls) {
+    my $ticks = $ul->ticks_in_between_start_end({
+        start_time => $start,
+        end_time   => $end,
+    });
+
+    my $key          = $decimate_cache->_make_key($ul->symbol, 0);
+    my $decimate_key = $decimate_cache->_make_key($ul->symbol, 1);
+
+    foreach my $single_data (@$ticks) {
+        $decimate_cache->_update($decimate_cache->redis_write, $key, $single_data->{epoch}, $decimate_cache->encoder->encode($single_data));
+    }
+
+    my $decimate_data = Data::Decimate::decimate($decimate_cache->sampling_frequency->seconds, $ticks);
+
+    foreach my $single_data (@$decimate_data) {
+        $decimate_cache->_update(
+            $decimate_cache->redis_write,
+            $decimate_key,
+            $single_data->{decimate_epoch},
+            $decimate_cache->encoder->encode($single_data));
+    }
+}
 
 my $now               = int time;
 my $hold_time         = 1;

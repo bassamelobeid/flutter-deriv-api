@@ -66,40 +66,6 @@ sub BUILD {
     $self->_zmq_context($ctx);
     $self->_zmq_socket($sock);
 
-    my @uls = map { create_underlying($_) } create_underlying_db->symbols_for_intraday_fx;
-
-    my $decimate_cache = BOM::Market::DecimateCache->new();
-
-    my $interval = $decimate_cache->sampling_frequency->seconds;
-
-    my $end = time;
-    my $start = $end - (12 * 60 * 60);
-    $start = $start - ($start % $interval) - $interval;
-
-    foreach my $ul (@uls) {
-        my $ticks = $ul->ticks_in_between_start_end({
-            start_time => $start,
-            end_time   => $end,
-        });
-
-        my $key          = $decimate_cache->_make_key($ul->symbol, 0);
-        my $decimate_key = $decimate_cache->_make_key($ul->symbol, 1);
-
-        foreach my $single_data (@$ticks) {
-            $decimate_cache->_update($decimate_cache->redis_write, $key, $single_data->{epoch}, $decimate_cache->encoder->encode($single_data));
-        }
-
-        my $decimate_data = Data::Decimate::decimate($decimate_cache->sampling_frequency->seconds, $ticks);
-
-        foreach my $single_data (@$decimate_data) {
-            $decimate_cache->_update(
-                $decimate_cache->redis_write,
-                $decimate_key,
-                $single_data->{decimate_epoch},
-                $decimate_cache->encoder->encode($single_data));
-        }
-    }
-
     return;
 }
 
@@ -127,7 +93,7 @@ sub _process_incoming_messages {
 
         $tick = _cleanup_tick($tick);
 
-        $self->_tick_source->data_cache_insert($tick) if $symbols_to_decimate{$tick->{symbol}};
+        $self->_tick_source->data_cache_insert_raw($tick) if $symbols_to_decimate{$tick->{symbol}};
 
     }
 
