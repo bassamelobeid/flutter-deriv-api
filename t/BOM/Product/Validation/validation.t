@@ -355,11 +355,11 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     $bet_params->{barrier}  = '99.88';
     $bet_params->{bet_type} = 'ONETOUCH';
 
-    $bet              = produce_contract($bet_params);
+    $bet = produce_contract($bet_params);
     ok $bet->is_valid_to_buy, 'valid to buy with probability 0.997';
     $bet_params->{barrier} = 99.99;
-    $bet = produce_contract($bet_params);
-    $expected_reasons = [qr/stake same as payout/];
+    $bet                   = produce_contract($bet_params);
+    $expected_reasons      = [qr/stake same as payout/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{amount_type} = 'stake';
@@ -934,7 +934,7 @@ subtest 'underlying with critical corporate actions' => sub {
             spot_reference => $tick->quote,
         });
     my $bet = produce_contract($bet_params);
-    ok $bet->confirm_validity, 'can buy stock';
+    ok $bet->_confirm_validity, 'can buy stock';
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions(['USAAPL']);
     $bet = produce_contract($bet_params);
     my $expected_reasons = [qr/Underlying.*suspended/];
