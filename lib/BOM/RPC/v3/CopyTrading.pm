@@ -17,12 +17,6 @@ sub copy_start {
     my $params = shift;
     my $args   = $params->{args};
 
-    my $multiplier = $args->{multiplier};
-    if ($multiplier && $multiplier !~ /^\d+$/) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidMultiplier',
-                message_to_client => localize('Multiplier value must be unsigned integer')});
-    }
     for my $stake_limit (qw/max_trade_stake min_trade_stake/) {
         if ($args->{$stake_limit} && $args->{$stake_limit} < 0) {
             return BOM::RPC::v3::Utility::create_error({
