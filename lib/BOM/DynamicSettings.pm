@@ -171,6 +171,7 @@ sub get_settings_by_group {
                 system.suspend.all_logins
                 system.suspend.logins
                 system.suspend.system
+                system.suspend.mt5
                 )
         ],
         quant => [qw(
