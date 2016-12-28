@@ -279,8 +279,9 @@ sub _validate_barrier_type {
     return if ($self->is_atm_bet and defined $self->barrier and $self->barrier->barrier_type eq 'relative');
 
     foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-
-        if (defined $self->$barrier and $self->$barrier->barrier_type ne $barrier_type) {
+        # Barrier for ATM contracts must be relative.
+        # For non ATM, the barrier can be absolute or relative.
+        if ($self->is_atm_bet and defined $self->$barrier and $self->$barrier->barrier_type ne $barrier_type) {
 
             return {
                 message           => 'barrier should be ' . $barrier_type,
