@@ -59,7 +59,7 @@ sub copy_start {
 
     if ($client->broker_code ne 'CR') {
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'IvalidAccount',
+                code              => 'InvalidAccount',
                 message_to_client => localize('Copy trading allows for real money account only.')});
     }
 
@@ -67,7 +67,7 @@ sub copy_start {
     my $contract_types = LandingCompany::Offerings::get_all_contract_types();
     for my $type (grep { $_ } @trade_types) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'IvalidTradeType',
+                code              => 'InvalidTradeType',
                 message_to_client => localize('[_1]', $type)}) unless exists $contract_types->{$type};
     }
 
