@@ -63,12 +63,12 @@ subtest 'sell' => sub {
         interval     => '20m',
         tick_epoches => [$now - 1, $now, $now + 1, $now + 2]);
     ok($contract);
-
     my $txn = BOM::Product::Transaction->new({
         client        => $client,
         contract      => $contract,
         price         => $contract->ask_price,
         purchase_date => $now - 60 * 2,
+        amount_type   => 'payout',
     });
 
     my $error = $txn->buy(skip_validation => 1);

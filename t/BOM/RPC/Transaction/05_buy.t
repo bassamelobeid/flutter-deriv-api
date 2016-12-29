@@ -209,7 +209,8 @@ subtest 'app_markup_transaction' => sub {
         client        => $client,
         contract      => $contract,
         price         => $contract->ask_price,
-        purchase_date => $now
+        purchase_date => $now,
+        amount_type   => 'payout',
     });
     is $txn->buy(skip_validation => 1), undef, "no error in transaction buy";
     is $txn->app_markup, 0, "no app markup";
@@ -221,7 +222,8 @@ subtest 'app_markup_transaction' => sub {
         client        => $client,
         contract      => $contract,
         price         => $contract->ask_price,
-        purchase_date => $now
+        purchase_date => $now,
+        amount_type   => 'payout',
     });
     is $txn->buy(skip_validation => 1), undef, "no error in transaction buy";
     is $txn->app_markup, $app_markup_percentage / 100 * $contract->payout,
@@ -234,7 +236,8 @@ subtest 'app_markup_transaction' => sub {
         client        => $client,
         contract      => $contract,
         price         => $contract->ask_price,
-        purchase_date => $now
+        purchase_date => $now,
+        amount_type   => 'payout',
     });
     is $txn->buy(skip_validation => 1), undef, "no error in transaction buy for stake";
     is $txn->app_markup, 0, "no app markup for stake";
@@ -249,7 +252,8 @@ subtest 'app_markup_transaction' => sub {
         client        => $client,
         contract      => $contract,
         price         => $contract->ask_price,
-        purchase_date => $now
+        purchase_date => $now,
+        amount_type   => 'payout',
     });
     is $txn->buy(skip_validation => 1), undef, "no error in transaction buy for stake";
     is $txn->app_markup, sprintf('%.2f', $txn->payout * $app_markup_percentage / 100),
@@ -265,7 +269,8 @@ subtest 'app_markup_transaction' => sub {
         client        => $client,
         contract      => $contract,
         price         => $contract->ask_price,
-        purchase_date => $now
+        purchase_date => $now,
+        amount_type   => 'payout',
     });
     is $txn->app_markup, 0, "no app markup for spread contracts as of now, may be added in future";
 };
