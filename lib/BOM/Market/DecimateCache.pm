@@ -149,6 +149,18 @@ sub _update {
     return $redis->zadd($key, $score, $value);
 }
 
+=head2 clean_up
+
+=cut
+
+sub clean_up {
+    my ($self, $symbol, $end_epoch) = @_;
+
+    $self->redis_write->zremrangebyscore($self->_make_key($symbol, 1), 0, $end_epoch - $self->raw_retention_interval->seconds);
+    $self->redis_write->zremrangebyscore($self->_make_key($symbol, 1), 0, $end_epoch - $self->decimate_retention_interval->seconds);
+    return;
+}
+
 =head2 decimate_cache_get
 
 =cut
