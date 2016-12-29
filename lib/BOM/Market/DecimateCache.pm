@@ -156,9 +156,9 @@ sub _update {
 sub decimate_cache_get {
     my ($self, $args) = @_;
 
-    my $which = $args->{symbol}      // '';
-    my $start = $args->{start_epoch} // 0;
-    my $end   = $args->{end_epoch}   // time;
+    my $which = $args->{symbol};
+    my $start = $args->{start_epoch};
+    my $end   = $args->{end_epoch};
 
     my $redis = $self->redis_read;
 
@@ -179,8 +179,8 @@ Retrieve datas from start epoch till end epoch .
 sub data_cache_get {
     my ($self, $args) = @_;
     my $symbol = $args->{symbol};
-    my $start  = $args->{start_epoch} // 0;
-    my $end    = $args->{end_epoch} // time;
+    my $start  = $args->{start_epoch};
+    my $end    = $args->{end_epoch};
 
     my @res = map { $self->decoder->decode($_) } @{$self->redis_read->zrangebyscore($self->_make_key($symbol, 0), $start, $end)};
 
@@ -198,8 +198,8 @@ sub data_cache_get_num_data {
     my ($self, $args) = @_;
 
     my $symbol = $args->{symbol};
-    my $end    = $args->{end_epoch} // time;
-    my $num    = $args->{num} // 1;
+    my $end    = $args->{end_epoch};
+    my $num    = $args->{num};
 
     my @res;
 
