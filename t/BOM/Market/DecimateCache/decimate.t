@@ -101,6 +101,8 @@ subtest "decimate_cache_insert_and_retrieve_with_missing_data" => sub {
     });
 
     is scalar(@$decimate_data), '10', "retrieved 10 decimated datas";
+
+    is $decimate_data->[2]->{decimate_epoch}, '1479203145', "decimate_epoch is correct for first the missing interval";
 };
 
 sub data_from_csv {
