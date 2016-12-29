@@ -2,7 +2,6 @@
 
 use Test::Most;
 use JSON;
-use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data call_mocked_client/;
@@ -47,7 +46,7 @@ $user->save;
 $client->set_default_account('USD');
 $client->smart_payment(
     currency     => 'USD',
-    amount       => +100,
+    amount       => +10000,
     payment_type => 'external_cashier',
     remark       => 'test deposit'
 );
@@ -249,6 +248,77 @@ while (1) {
         price => $ask_price || 0,
     });
 is $call_params->{token}, $token;
+
+sleep 1;
+my %notouch = (
+    "amount"        => "100",
+    "basis"         => "payout",
+    "contract_type" => "NOTOUCH",
+    "currency"      => "USD",
+    "symbol"        => "R_50",
+    "duration"      => "2",
+    "duration_unit" => "h",
+    "barrier"       => "+1.574"
+);
+
+$t = $t->send_ok({
+        json => {
+            "proposal" => 1,
+            %notouch
+        }});
+$t->message_ok;
+my $proposal_1         = decode_json($t->message->[1]);
+my $proposal_id        = $proposal_1->{proposal}->{id};
+my $proposal_ask_price = $proposal_1->{proposal}->{ask_price};
+my $trigger_price      = $proposal_ask_price - 2;
+$t = $t->send_ok({
+        json => {
+            buy   => $proposal_id,
+            price => $trigger_price,
+        }});
+
+$t = $t->message_ok;
+my $response = decode_json($t->message->[1]);
+like(
+    $response->{error}{message},
+    qr/The underlying market has moved too much since you priced the contract. The contract price has changed/,
+    'price moved error'
+);
+
+$t = $t->send_ok({json => {forget => $proposal_1->{proposal}->{id}}})->message_ok;
+
+my %notouch_2 = (
+    "amount"        => "1000",
+    "basis"         => "stake",
+    "contract_type" => "NOTOUCH",
+    "currency"      => "USD",
+    "symbol"        => "R_100",
+    "duration"      => "2",
+    "duration_unit" => "m",
+    "barrier"       => "+25"
+);
+
+$t = $t->send_ok({
+        json => {
+            "proposal" => 1,
+            %notouch_2
+        }});
+$t->message_ok;
+$proposal_1  = decode_json($t->message->[1]);
+$proposal_id = $proposal_1->{proposal}->{id};
+$t           = $t->send_ok({
+        json => {
+            buy   => $proposal_id,
+            price => 100,
+        }});
+
+$t->message_ok;
+my $response_2 = decode_json($t->message->[1]);
+like(
+    $response_2->{error}{message},
+    qr/The underlying market has moved too much since you priced the contract. The contract payout has changed/,
+    'price moved error'
+);
 
 $t->finish_ok;
 
