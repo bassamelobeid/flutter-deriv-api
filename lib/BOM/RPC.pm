@@ -126,16 +126,16 @@ sub register {
             BOM::Platform::Context::request($r);
 
             for my $action (@before_actions) {
-              my $result;
-              try {
-                $result= $action->($params);
-              }
+                my $result;
+                try {
+                    $result = $action->($params);
+                }
                 catch {
-                  cluck("Error happened when call before_action $action at method $method: $_");
-                  return BOM::RPC::v3::Utility::create_error({
-                                                              code              => 'Internal Error',
-                                                              message_to_client => localize('Sorry, there is an internal error.'),
-                                                             });
+                    cluck("Error happened when call before_action $action at method $method: $_");
+                    return BOM::RPC::v3::Utility::create_error({
+                        code              => 'Internal Error',
+                        message_to_client => localize('Sorry, there is an internal error.'),
+                    });
                 }
 
                 return $result if (exists $result->{error});
