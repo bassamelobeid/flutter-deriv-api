@@ -37,12 +37,13 @@ sub get_volatility {
 
     my $interval = Time::Duration::Concise->new(interval => max(900, $args->{seconds_to_expiration}) . 's');
     my $fill_cache = $args->{fill_cache} // 1;
+    my $backprice = ($self->underlying->for_date) ? 1 : 0;
 
     my $ticks = BOM::Market::DataDecimate->new()->decimate_cache_get({
         underlying  => $underlying,
         start_epoch => $args->{current_epoch} - $interval->seconds,
         end_epoch   => $args->{current_epoch},
-        backprice   => !$fill_cache,
+        backprice   => $backprice,
     });
 
     # minimum of 1 second to avoid division by zero error.
