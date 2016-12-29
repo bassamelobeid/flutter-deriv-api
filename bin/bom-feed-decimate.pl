@@ -79,6 +79,7 @@ while (1) {
 
     foreach my $ul (@uls) {
         $decimate_cache->data_cache_insert_decimate($ul->symbol, $boundary);
+        $decimate_cache->clean_up($ul->symbol, $boundary);
     }
 }
 
