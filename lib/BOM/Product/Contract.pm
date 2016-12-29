@@ -608,7 +608,6 @@ sub _create_new_interface_engine {
             contract_type => $self->pricing_code,
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
-        my $backprice = ($self->underlying->for_date) ? 1 : 0;
         %pricing_parameters = (
             contract_type     => $self->pricing_code,
             underlying_symbol => $self->underlying->symbol,
@@ -618,7 +617,6 @@ sub _create_new_interface_engine {
                     underlying => $self->underlying,
                     end_epoch  => $self->date_start->epoch,
                     num        => 20,
-                    backprice  => $backprice,
                 }
             ),
             economic_events => _generate_market_data($self->underlying, $self->date_start)->{economic_events},
