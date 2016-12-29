@@ -43,10 +43,10 @@ sub copy_start {
                 code              => 'PermissionDenied',
                 message_to_client => localize('Permission denied, requires read scope.')});
     }
-    if ($trader->allow_copiers) {
+    unless ($trader->allow_copiers) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'CopyTradingNotAllowed',
-                message_to_client => localize('Trader are not allowed copy trading.')});
+                message_to_client => localize('Trader does not allow copy trading.')});
     }
 
     my $client = $params->{client};
@@ -55,6 +55,11 @@ sub copy_start {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccount',
                 message_to_client => localize('Copy trading allows for real money account only.')});
+    }
+    if ($client->allow_copiers) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'CopyTradingNotAllowed',
+                message_to_client => localize('Trader are not allowed copy trading.')});
     }
 
     my @trade_types = ref($args->{trade_types}) eq 'ARRAY' ? @{$args->{trade_types}} : $args->{trade_types};
