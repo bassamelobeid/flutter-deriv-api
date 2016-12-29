@@ -34,6 +34,7 @@ subtest "decimate_cache_insert_and_retrieve" => sub {
     my $data_out = $decimate_cache->data_cache_get_num_data({
         symbol => 'USDJPY',
         num    => 142,
+        end_epoch => 1479203250,
     });
 
     is scalar(@$data_out), '142', "retrieved 142 datas from cache";
@@ -78,6 +79,7 @@ subtest "decimate_cache_insert_and_retrieve_with_missing_data" => sub {
     my $data_out = $decimate_cache->data_cache_get_num_data({
         symbol => 'USDJPY',
         num    => 128,
+        end_epoch   => 1479203250,
     });
 
     is scalar(@$data_out), '128', "retrieved 128 datas from cache";
