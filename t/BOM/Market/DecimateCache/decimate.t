@@ -42,10 +42,10 @@ subtest "decimate_cache_insert_and_retrieve" => sub {
     is $data_out->[0]->{epoch}, '1479203101', "epoch is correct for first raw data";
     is $data_out->[141]->{epoch}, '1479203250', "epoch is correct for last raw data";
 
-#test insert_decimate
-# try get all decimated datas
-# last data in our sample
-# USDJPY,1479203250,1479203250,108.254,108.256,108.257
+    # test insert_decimate
+    # try get all decimated datas
+    # last data in our sample
+    # USDJPY,1479203250,1479203250,108.254,108.256,108.257
     for (my $i = 1479203115; $i <= 1479203250; $i=$i+15) {
 	$decimate_cache->data_cache_insert_decimate('frxUSDJPY', $i);
     }
@@ -58,11 +58,18 @@ subtest "decimate_cache_insert_and_retrieve" => sub {
 
     is scalar(@$decimate_data), '10', "retrieved 10 decimated datas";    
 
-    is $decimate_data->[0]->{epoch}, '1479203114', "epoch is correct for first decimate date";
-    is $decimate_data->[9]->{epoch}, '1479203250', "epoch is correct for first decimate date";
+    is $decimate_data->[0]->{epoch}, '1479203114', "epoch is correct for first decimate data";
+    is $decimate_data->[9]->{epoch}, '1479203250', "epoch is correct for first decimate data";
 
+    #let's check the value as well
+    #frxUSDJPY,1479203114,1479203115,108.285,108.286,108.288
+    is $decimate_data->[0]->{decimate_epoch}, '1479203115', "decimate_epoch is correct for first decimate data";    
+    is $decimate_data->[0]->{bid}, '108.285', "bid is correct for first decimate data";
+    is $decimate_data->[0]->{quote}, '108.286', "quote is correct for first decimate data";
+    is $decimate_data->[0]->{ask}, '108.288', "ask is correct for first decimate data";
 };
 
+#sampledata2.csv has missing data for some interval.
 my $data2 = data_from_csv('t/BOM/Market/DecimateCache/sampledata2.csv');
 
 subtest "decimate_cache_insert_and_retrieve_with_missing_data" => sub {
@@ -102,7 +109,13 @@ subtest "decimate_cache_insert_and_retrieve_with_missing_data" => sub {
 
     is scalar(@$decimate_data), '10', "retrieved 10 decimated datas";
 
-    is $decimate_data->[2]->{decimate_epoch}, '1479203145', "decimate_epoch is correct for first the missing interval";
+    is $decimate_data->[2]->{decimate_epoch}, '1479203145', "decimate_epoch is correct for the first missing interval";
+    # let's check the value as well.
+    # frxUSDJPY,1479203130,1479203130,108.272,108.278,108.284
+    is $decimate_data->[2]->{epoch}, '1479203130', "epoch is correct for the first missing interval";
+    is $decimate_data->[2]->{bid}, '108.272', "bid is correct ";
+    is $decimate_data->[2]->{quote}, '108.278', "quote is correct";
+    is $decimate_data->[2]->{ask}, '108.284', "ask is correct";
 };
 
 sub data_from_csv {
