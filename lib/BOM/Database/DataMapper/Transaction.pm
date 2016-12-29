@@ -367,7 +367,7 @@ sub get_monthly_payments_sum {
                @ sum(CASE WHEN amount < 0 THEN amount ELSE 0 END) withdrawal
           FROM payment.payment
          WHERE account_id = $1
-           AND payment_time >= '2016-06-01'::TIMESTAMP
+           AND payment_time >= '2016-06-01'::TIMESTAMP # Limit selecting time range to decrease DB load
       GROUP BY 1, 2
       ORDER BY 1, 2
     };
@@ -398,7 +398,7 @@ sub get_monthly_balance {
                        min(transaction_time) over (partition by extract(year from transaction_time), extract(month from transaction_time)) AS min_time
                 FROM   transaction.transaction
                 WHERE  account_id = $1
-                  AND  transaction_time >= '2016-06-01'::TIMESTAMP
+                  AND  transaction_time >= '2016-06-01'::TIMESTAMP # Limit selecting time range to decrease DB load
                 ORDER BY transaction_time
             ) as t1
             WHERE t1.transaction_time = t1.max_time OR t1.transaction_time = t1.min_time
@@ -435,7 +435,7 @@ sub unprocessed_bets {
         WHERE
             account_id = ?
             AND (id > ? $where_unsold_ids)
-            AND  purchase_time >= '2016-06-01'::TIMESTAMP
+            AND  purchase_time >= '2016-06-01'::TIMESTAMP # Limit selecting time range to decrease DB load
         ORDER BY id ASC
     };
 
