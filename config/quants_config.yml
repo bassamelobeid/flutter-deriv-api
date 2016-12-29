@@ -4,10 +4,7 @@ commission:
     historical_vol_meanrev: 0.10
   digital_spread:
     level_multiplier: 1.4
-  maximum_total_markup: 100
   adjustment:
-    minimum: 1
-    maximum: 10000
     forward_start_factor: 1.5
 
 bet_limits:
