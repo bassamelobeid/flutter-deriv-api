@@ -57,7 +57,7 @@ if (not $input{email_edit}) {
         {
             list     => 1,
             email    => $email,
-            loginids => [$user->loginid->loginid],
+            loginids => [map {$->loginid => 1} $user->loginid],
         },
     ) || die BOM::Backoffice::Request::template->error();
 
@@ -110,7 +110,7 @@ if ($email ne $new_email) {
             updated   => 1,
             old_email => $email,
             new_email => $new_email,
-            loginids  => [$user->loginid->loginid],
+            loginids  => [map {$->loginid => 1} $user->loginid],
         },
     ) || die BOM::Backoffice::Request::template->error();
 } else {
