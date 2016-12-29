@@ -270,13 +270,16 @@ sub _get_pricing_parameter_from_vv_pricer {
 sub _get_pricing_parameter_from_slope_pricer {
     my ($contract, $action_type, $discounted_probability) = @_;
 
-    my $pe                = $contract->pricing_engine;
-    my $debug_information = $pe->debug_information;
+    #force createion of debug_information
+    my $ask_probability = $contract->ask_probability;
+    my $debug_information = $contract->debug_information;
     my $pricing_parameters;
-    my $contract_type     = $pe->contract_type;
+    my $contract_type     = $contract->pricing_code;
     my $risk_markup       = $contract->risk_markup->amount;
     my $commission_markup = $contract->commission_markup->amount;
+    my $base_probability = $debug_information->{$contract_type}{base_probability}{amount};
     my $ask_price         = $contract->ask_price;
+
     if ($action_type eq 'sell') {
         $pricing_parameters->{bid_probability} = {
             discounted_probability            => $discounted_probability->amount,
@@ -284,7 +287,7 @@ sub _get_pricing_parameter_from_slope_pricer {
         };
 
         $pricing_parameters->{opposite_contract_ask_probability} = {
-            theoretical_probability => $pe->base_probability,
+            theoretical_probability => $base_probability,
             risk_markup             => $risk_markup,
             commission_markup       => $commission_markup,
 
@@ -293,7 +296,7 @@ sub _get_pricing_parameter_from_slope_pricer {
     } else {
 
         $pricing_parameters->{ask_probability} = {
-            theoretical_probability => $pe->base_probability,
+            theoretical_probability => $base_probability,
             risk_markup             => $risk_markup,
             commission_markup       => $commission_markup,
         };

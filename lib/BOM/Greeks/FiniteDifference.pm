@@ -28,7 +28,7 @@ has [qw(model_greeks)] => (
 has _method => (
     is         => 'ro',
     isa        => 'Str',
-    lazy_build => 1,
+    default    => 'theo_probability',
 );
 
 has [qw(original_params epsigma_prices epspot_prices eptime_prices dualep_prices)] => (
@@ -36,12 +36,6 @@ has [qw(original_params epsigma_prices epspot_prices eptime_prices dualep_prices
     isa        => 'HashRef',
     lazy_build => 1,
 );
-
-sub _build__method {
-    my $self = shift;
-
-    return ($self->model_greeks) ? 'theo_probability' : 'bs_probability';
-}
 
 sub _build_spot_epsilon {
     my $self = shift;

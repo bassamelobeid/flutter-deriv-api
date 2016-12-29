@@ -59,7 +59,6 @@ my %prices = (
     theo_probability => [],
     ask_probability  => [],
     bid_probability  => [],
-    bs_probability   => [],
     pricing_iv       => [],
     pricing_mu       => [],
 );
@@ -126,7 +125,6 @@ my $data = {
         'Barriers2'   => \@barriers2,
         'Ask value'   => $prices{ask_probability},
         'Bid value'   => $prices{bid_probability},
-        'BS value'    => $prices{bs_probability},
         'Bet value'   => $prices{theo_probability},
         'Pricing IV'  => $prices{pricing_iv},
         'Pricing mu'  => $prices{pricing_mu},
