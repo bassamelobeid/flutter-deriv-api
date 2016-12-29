@@ -6,7 +6,7 @@
   "properties": {
     "copy_start": {
       "type": "string",
-      "pattern": "^[\\w\\s-]+$",
+      "pattern": "^[\\w\\s-]{15,32}$",
       "description": "API tokens identifying the accounts of trader which will be used to copy trades",
       "required": "1"
     },

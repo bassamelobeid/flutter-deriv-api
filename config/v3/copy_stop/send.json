@@ -6,7 +6,7 @@
   "properties": {
     "copy_stop": {
       "type": "string",
-      "pattern": "^[\\w\\s-]+$",
+      "pattern": "^[\\w\\s-]{15,32}$",
       "description": "API tokens identifying the accounts which needs not to be copied",
       "required": "1"
     },
