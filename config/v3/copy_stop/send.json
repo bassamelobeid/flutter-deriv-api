@@ -6,9 +6,9 @@
   "properties": {
     "copy_stop": {
       "type": "string",
-      "pattern": "^[A-Za-z]+\\d+$",
-      "required": "1",
-      "description": "ID of the account which needs not to be copied"
+      "pattern": "^[\\w\\s-]+$",
+      "description": "API tokens identifying the accounts which needs not to be copied",
+      "required": "1"
     },
     "passthrough": {
       "type": "object",
