@@ -7,7 +7,7 @@ use Test::Trap;
 
 use BOM::Platform::Runtime;
 use Cache::RedisDB;
-use BOM::Feed::Client;
+use BOM::MarketData::FeedDecimate;
 use File::Slurp;
 use File::Temp;
 use ZMQ::Constants qw(ZMQ_PUB);
@@ -15,9 +15,6 @@ use ZMQ::LibZMQ3;
 use YAML::XS 0.35;
 use Net::EmptyPort qw(empty_port);
 
-# this crap takes a lot of time to initialize,
-# so better to do it before forking daemon,
-# otherwise we have to increase waiting time and timeout
 BOM::Platform::Runtime->instance->app_config;
 
 my $test_pid = $$;
@@ -33,7 +30,6 @@ my $pid = fork;
 if (!$pid) {
     # child;
     my $client = BOM::MarketData::FeedDecimate->new(
-        update_expiry_queue => 0,
         feed_distributor    => "localhost:$dist_port",
         timeout             => 2,
     );
