@@ -280,7 +280,7 @@ sub log_data {
     # log request and respone data
     if ($source and ($source == 1353 or $source == 1417)) {
         my $msg_type = $api_response->{msg_type} // '';
-        if ($msg_type !~ /^(?:tick|history|active_symbols|contracts_for|website_status|time|residence_list)$/) {
+        if ($msg_type !~ /^(?:tick|history|active_symbols|contracts_for|website_status|time|residence_list)$/ or exists $api_response->{error}) {
             try {
                 open my $fh, '>>', '/var/log/httpd/app_call.log' or die 'cannot open file /var/log/httpd/app_call.log';
                 flock $fh, LOCK_EX or die "cannot lock file using flock: $!";
