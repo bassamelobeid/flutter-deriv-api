@@ -279,7 +279,7 @@ sub log_data {
     my $source = $c->stash('source');
     # log request and respone data
     if ($source and ($source == 1353 or $source == 1417)) {
-        my $msg_type = $api_response->{msg_type};
+        my $msg_type = $api_response->{msg_type} // '';
         if ($msg_type !~ /^(?:tick|history|active_symbols|contracts_for|website_status|time|residence_list)$/) {
             try {
                 open my $fh, '>>', '/var/log/httpd/app_call.log' or die 'cannot open file /var/log/httpd/app_call.log';
