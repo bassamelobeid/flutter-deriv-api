@@ -132,7 +132,7 @@ sub register {
                 }
                 catch {
                     cluck("Error happened when call before_action $action at method $method: $_");
-                    return BOM::RPC::v3::Utility::create_error({
+                    $result = BOM::RPC::v3::Utility::create_error({
                         code              => 'Internal Error',
                         message_to_client => localize('Sorry, there is an internal error.'),
                     });
