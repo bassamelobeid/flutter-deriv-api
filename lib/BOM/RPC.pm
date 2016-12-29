@@ -6,6 +6,8 @@ use MojoX::JSON::RPC::Service;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use Proc::CPUUsage;
 use Time::HiRes;
+use Try::Tiny;
+use Carp qw(cluck);
 
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
@@ -124,7 +126,18 @@ sub register {
             BOM::Platform::Context::request($r);
 
             for my $action (@before_actions) {
-                my $result = $action->($params);
+              my $result;
+              try {
+                $result= $action->($params);
+              }
+                catch {
+                  cluck("Error happened when call before_action $action at method $method: $_");
+                  return BOM::RPC::v3::Utility::create_error({
+                                                              code              => 'Internal Error',
+                                                              message_to_client => localize('Sorry, there is an internal error.'),
+                                                             });
+                }
+
                 return $result if (exists $result->{error});
             }
 
