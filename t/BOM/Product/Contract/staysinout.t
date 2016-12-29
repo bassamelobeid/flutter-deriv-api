@@ -139,7 +139,7 @@ subtest 'up or down' => sub {
         $args->{high_barrier} = 'S10P';
         my $c = produce_contract($args);
         ok $c->is_intraday;
-        isa_ok $c->pricing_engine, 'Pricing::Engine::BlackScholes';
+        isa_ok $c->pricing_engine_name, 'Pricing::Engine::BlackScholes';
         ok $c->high_barrier;
         cmp_ok $c->high_barrier->as_absolute, '==', 100.10, 'correct high barrier';
         ok $c->low_barrier;
