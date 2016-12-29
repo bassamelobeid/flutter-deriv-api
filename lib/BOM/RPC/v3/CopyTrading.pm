@@ -43,7 +43,7 @@ sub copy_start {
                 code              => 'PermissionDenied',
                 message_to_client => localize('Permission denied, requires read scope.')});
     }
-    unless ($trader->allow_copiers) {
+    if ($trader->allow_copiers) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'CopyTradingNotAllowed',
                 message_to_client => localize('Trader are not allowed copy trading.')});
