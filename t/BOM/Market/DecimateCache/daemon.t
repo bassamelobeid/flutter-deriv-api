@@ -8,6 +8,7 @@ use Test::Trap;
 use BOM::Platform::Runtime;
 use Cache::RedisDB;
 use BOM::MarketData::FeedDecimate;
+use BOM::Market::DecimateCache;
 use File::Slurp;
 use File::Temp;
 use ZMQ::Constants qw(ZMQ_PUB);
@@ -20,10 +21,6 @@ BOM::Platform::Runtime->instance->app_config;
 my $test_pid = $$;
 my $dir      = File::Temp->newdir;
 
-#my $sub = Cache::RedisDB->redis_connection;
-#Cache::RedisDB->del('QUOTE', 'frxRMBMNT');
-
-#is(Cache::RedisDB->get('QUOTE', 'frxRMBMNT'), undef, "No realtime for frxRMBMNT");
 
 my $dist_port = empty_port;
 my $pid = fork;
@@ -52,10 +49,10 @@ sleep 1;
 my $time = time;
 my $tick = {
     epoch  => $time,
-    symbol => 'frxRMBMNT',
-    quote  => '8.8888',
-    bid    => '8.8887',
-    ask    => '8.8889',
+    symbol => 'frxUSDJPY',
+    quote  => '108.222',
+    bid    => '108.223',
+    ask    => '108.224',
 };
 zmq_sendmsg($pub_sock, Dump($tick), 0);
 
@@ -64,16 +61,24 @@ sleep(1);
 ok(!zmq_close($pub_sock));
 sleep(1);
 
-#my $rtick = Cache::RedisDB->get('QUOTE', 'frxRMBMNT');
-#eq_or_diff $rtick,
-#    {
-#    epoch  => $time,
-#    symbol => 'frxRMBMNT',
-#    quote  => '8.8888',
-#    bid    => '8.8887',
-#    ask    => '8.8889',
-#    },
-#    "combined realtime was updated";
+my $cache = BOM::Market::DecimateCache->new();
+
+my $rtick = $cache->data_cache_get_num_data({
+        symbol => 'frxUSDJPY',
+        num    => 1,
+        end_epoch => $time,
+    });
+
+eq_or_diff $rtick->[0],
+    {
+    epoch  => $time,
+    symbol => 'frxUSDJPY',
+    quote  => '108.222',
+    bid    => '108.223',
+    ask    => '108.224',
+    count  => 1,
+    },
+    "cache was updated";
 
 kill 9 => $pid;
 
