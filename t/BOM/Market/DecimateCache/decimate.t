@@ -32,7 +32,7 @@ subtest "decimate_cache_insert_and_retrieve" => sub {
     }
 
     my $data_out = $decimate_cache->data_cache_get_num_data({
-        symbol => 'USDJPY',
+        symbol => 'frxUSDJPY',
         num    => 142,
         end_epoch => 1479203250,
     });
@@ -44,11 +44,11 @@ subtest "decimate_cache_insert_and_retrieve" => sub {
 # last data in our sample
 # USDJPY,1479203250,1479203250,108.254,108.256,108.257
     for (my $i = 1479203115; $i <= 1479203250; $i=$i+15) {
-	$decimate_cache->data_cache_insert_decimate('USDJPY', $i);
+	$decimate_cache->data_cache_insert_decimate('frxUSDJPY', $i);
     }
 
     my $decimate_data = $decimate_cache->decimate_cache_get({
-        symbol      => 'USDJPY',
+        symbol      => 'frxUSDJPY',
         start_epoch => 1479203101,
         end_epoch   => 1479203250,
     });
@@ -64,7 +64,7 @@ subtest "decimate_cache_insert_and_retrieve_with_missing_data" => sub {
 
     ok $decimate_cache, "DecimateCache instance has been created";
 
-    my ($raw_key, $decimate_key) = map { $decimate_cache->_make_key('USDJPY', $_) } (0 .. 1);
+    my ($raw_key, $decimate_key) = map { $decimate_cache->_make_key('frxUSDJPY', $_) } (0 .. 1);
 
     my $redis = $decimate_cache->redis_write;
     $redis->zremrangebyscore($raw_key, 0, 1479203250);
@@ -77,7 +77,7 @@ subtest "decimate_cache_insert_and_retrieve_with_missing_data" => sub {
     }
 
     my $data_out = $decimate_cache->data_cache_get_num_data({
-        symbol => 'USDJPY',
+        symbol => 'frxUSDJPY',
         num    => 128,
         end_epoch   => 1479203250,
     });
@@ -85,11 +85,11 @@ subtest "decimate_cache_insert_and_retrieve_with_missing_data" => sub {
     is scalar(@$data_out), '128', "retrieved 128 datas from cache";
 
     for (my $i = 1479203115; $i <= 1479203250; $i=$i+15) {
-        $decimate_cache->data_cache_insert_decimate('USDJPY', $i);
+        $decimate_cache->data_cache_insert_decimate('frxUSDJPY', $i);
     }
 
     my $decimate_data = $decimate_cache->decimate_cache_get({
-        symbol      => 'USDJPY',
+        symbol      => 'frxUSDJPY',
         start_epoch => 1479203101,
         end_epoch   => 1479203250,
     });
