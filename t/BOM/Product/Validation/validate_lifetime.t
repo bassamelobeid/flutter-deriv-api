@@ -84,7 +84,7 @@ subtest 'inefficient period' => sub {
 
     note('set duration to five ticks.');
     $bet_params->{duration} = '5t';
-    my $mock = Test::MockModule->new('BOM::Market::DecimateCache');
+    my $mock = Test::MockModule->new('BOM::Market::DataDecimate');
     $mock->mock(
         'decimate_cache_get',
         sub {
@@ -92,16 +92,16 @@ subtest 'inefficient period' => sub {
             [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp + 19)];
         });
 
-    my $mock2 = Test::MockModule->new('BOM::Market::DecimateCache');
+    my $mock2 = Test::MockModule->new('BOM::Market::DataDecimate');
     $mock2->mock(
-        'data_cache_get',
+        'tick_cache_get',
         sub {
             my $dp = $bet_params->{date_pricing}->epoch;
             [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp + 19)];
         });
 
     $mock2->mock(
-        'data_cache_get_num_data',
+        'tick_cache_get_num_ticks',
         sub {
             my $dp = $bet_params->{date_pricing}->epoch;
             [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp + 19)];
