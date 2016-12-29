@@ -21,13 +21,6 @@ sub _build_pricing_engine_name {
     return 'Pricing::Engine::BlackScholes';
 }
 
-sub _build_pricing_engine {
-    my $self = shift;
-
-    my %pricing_parameters = map { $_ => $self->_pricing_parameters->{$_} } @{$self->pricing_engine_name->required_args};
-    return Pricing::Engine::BlackScholes->new(\%pricing_parameters);
-}
-
 has supplied_barrier => (
     is         => 'ro',
     lazy_build => 1,

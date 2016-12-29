@@ -110,6 +110,7 @@ $p->{current_tick} = $tick;
 $contract          = produce_contract($p);
 my $transaction = BOM::Product::Transaction->new({
     price         => $contract->ask_price,
+    amount_type   => $p->{amount_type},
     client        => $new_client,
     contract      => $contract,
     purchase_date => $contract->date_start,
@@ -136,6 +137,7 @@ my $transaction_2 = BOM::Product::Transaction->new({
     client        => $new_client,
     contract      => $contract_2,
     purchase_date => $start_time_2,
+    amount_type => $p_2->{amount_type},
 });
 my $b = $transaction_2->buy;
 
@@ -157,6 +159,7 @@ $contract_3          = produce_contract($p_3);
 my $transaction_3 = BOM::Product::Transaction->new({
     price         => $contract_3->ask_price,
     client        => $new_client,
+    amount_type   => $p_3->{amount_type},
     contract      => $contract_3,
     purchase_date => $contract_3->date_start,
 });
@@ -178,6 +181,7 @@ $contract_4          = produce_contract($p_4);
 my $transaction_4 = BOM::Product::Transaction->new({
     price         => $contract_4->ask_price,
     client        => $new_client,
+    amount_type   => $p_4->{amount_type},
     contract      => $contract_4,
     purchase_date => $contract_4->date_start,
 });
@@ -240,6 +244,7 @@ my $transaction_5 = BOM::Product::Transaction->new({
     price         => 70,
     client        => $new_client,
     contract      => $contract_5,
+    amount_type   => $p_5->{amount_type},
     purchase_date => $start_time_5,
 });
 
@@ -266,7 +271,8 @@ my $transaction_6 = BOM::Product::Transaction->new({
     client        => $new_client,
     contract      => $contract_6,
     purchase_date => $start_time_6,
-});
+    amount_type => $p_6->{amount_type},
+   });
 isnt $transaction_6->buy(skip_validation => 1), 'undef', 'successful buy';
 
 $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
