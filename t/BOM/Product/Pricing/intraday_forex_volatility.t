@@ -19,7 +19,7 @@ use BOM::Market::DecimateCache;
 
 my $ticks = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/ticks.yml');
 
-my $mocked = Test::MockModule->new('BOM::Market::DecimateCache');
+my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
 
 my $now = Date::Utility->new('2016-08-05 12:00:00');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
