@@ -8,7 +8,7 @@ use Test::MockModule;
 use Test::FailWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Market::DecimateCache;
+use BOM::Market::DataDecimate;
 use Date::Utility;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -49,18 +49,18 @@ my $bet_params = {
     duration     => '2m',
 };
 
-my $mocked = Test::MockModule->new('BOM::Market::DecimateCache');
+my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
 $mocked->mock(
-    'decimate_cache_get',
+    'tick_cache_get',
     sub {
         [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_} } (0 .. 10)];
     });
 
-my $mocked2 = Test::MockModule->new('BOM::Market::DecimateCache');
+my $mocked2 = Test::MockModule->new('BOM::Market::DataDecimate');
 $mocked2->mock(
-    'data_cache_get',
+    'decimate_cache_get',
     sub {
-        [map { {quote => 100, symbol => 'frxUSDJPY', agg_epoch => $_, epoch => $_} } (0 .. 10)];
+        [map { {quote => 100, symbol => 'frxUSDJPY', decimate_epoch => $_, epoch => $_} } (0 .. 10)];
     });
 
 subtest 'inefficient period' => sub {
