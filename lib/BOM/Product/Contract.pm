@@ -613,10 +613,10 @@ sub _create_new_interface_engine {
             underlying_symbol => $self->underlying->symbol,
             date_start        => $self->effective_start,
             date_pricing      => $self->date_pricing,
-            ticks             => BOM::Market::AggTicks->new->retrieve({
-                    underlying   => $self->underlying,
-                    ending_epoch => $self->date_start->epoch,
-                    tick_count   => 20
+            ticks             => BOM::Market::DataDecimate->new()->tick_cache_get_num_ticks({
+                    underlying => $self->underlying,
+                    end_epoch  => $self->date_start->epoch,
+                    num        => 20,
                 }
             ),
             economic_events => _generate_market_data($self->underlying, $self->date_start)->{economic_events},
