@@ -598,7 +598,7 @@ sub set_settings {
     if (
         $allow_copiers
         and @{BOM::Database::DataMapper::Copier->new(
-                broker_code => 'CR',
+                broker_code => $client->broker_code,
                 operation   => 'replica'
                 )->get_traders({copier_id => $client->loginid})
                 || []})
