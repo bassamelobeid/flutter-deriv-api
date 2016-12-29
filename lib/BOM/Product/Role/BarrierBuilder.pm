@@ -49,7 +49,7 @@ sub make_barrier {
 
     my $barrier = BOM::Product::Contract::Strike->new(
         underlying       => $self->underlying,
-        basis_tick       => $self->basis_tick,
+        basis_tick       => $self->_basis_tick,
         supplied_barrier => $string_version,
         %$extra_params,,
     );

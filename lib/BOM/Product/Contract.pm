@@ -49,13 +49,58 @@ require BOM::Product::Pricing::Engine::Intraday::Index;
 require BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
 require BOM::Product::Pricing::Greeks::BlackScholes;
 
+## INPUTS #######################
+
+has date_start => (
+    is         => 'ro',
+    isa        => 'date_object',
+    lazy_build => 1,
+    coerce     => 1,
+);
+
+sub _build_date_start {
+    return Date::Utility->new;
+}
+
+has date_pricing => (
+    is         => 'ro',
+    isa        => 'date_object',
+    lazy_build => 1,
+    coerce     => 1,
+);
+
+sub _build_date_pricing {
+    my $self = shift;
+    my $time = Time::HiRes::time();
+    $self->_date_pricing_milliseconds($time);
+    my $now = Date::Utility->new($time);
+    return ($self->has_pricing_new and $self->pricing_new)
+        ? $self->date_start
+        : $now;
+}
+
+# user supplied duration
+has duration => (is => 'ro');
+
+has date_expiry => (
+    is       => 'rw',
+    isa      => 'date_object',
+    coerce   => 1,
+    required => 1,
+);
+
+#backtest - Enable optimizations for speedier back testing.  Not suitable for production.
+#tick_expiry - A boolean that indicates if a contract expires after a pre-specified number of ticks.
+
+has [qw(backtest tick_expiry)] => (
+    is      => 'ro',
+    default => 0,
+);
+
+## OUTPUTS #####################
+
 sub is_spread { return 0 }
 sub is_legacy { return 0 }
-
-has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
-    is      => 'ro',
-    default => undef,
-);
 
 has debug_information => (
     is         => 'ro',
@@ -80,17 +125,6 @@ has is_settleable => (
     lazy_build => 1,
 );
 
-has continue_price_stream => (
-    is      => 'rw',
-    default => 0
-);
-
-has missing_market_data => (
-    is      => 'rw',
-    isa     => 'Bool',
-    default => 0
-);
-
 has category => (
     is      => 'ro',
     isa     => 'bom_contract_category',
@@ -108,6 +142,12 @@ sub _build_category_code {
     return $self->category->code;
 }
 
+#These data are coming from contrac_types.yml
+has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
+    is      => 'ro',
+    default => undef,
+);
+
 has ticks_to_expiry => (
     is         => 'ro',
     lazy_build => 1,
@@ -117,6 +157,24 @@ sub _build_ticks_to_expiry {
     return shift->tick_count + 1;
 }
 
+has [qw(date_settlement effective_start)] => (
+    is         => 'ro',
+    isa        => 'date_object',
+    lazy_build => 1,
+    coerce     => 1,
+);
+
+sub _build_effective_start {
+    my $self = shift;
+
+    return
+          ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_start
+        : ($self->date_pricing->is_after($self->date_start))  ? $self->date_pricing
+        :                                                       $self->date_start;
+}
+
+## INTERNAL (Private) ###########################
+
 # This is needed to determine if a contract is newly priced
 # or it is repriced from an existing contract.
 # Milliseconds matters since UI is reacting much faster now.
@@ -124,49 +182,11 @@ has _date_pricing_milliseconds => (
     is => 'rw',
 );
 
-has [qw(date_start date_settlement date_pricing effective_start)] => (
-    is         => 'ro',
-    isa        => 'date_object',
-    lazy_build => 1,
-    coerce     => 1,
-);
-
-sub _build_date_start {
-    return Date::Utility->new;
-}
-
-# user supplied duration
-has duration => (is => 'ro');
-
-sub _build_date_pricing {
-    my $self = shift;
-    my $time = Time::HiRes::time();
-    $self->_date_pricing_milliseconds($time);
-    my $now = Date::Utility->new($time);
-    return ($self->has_pricing_new and $self->pricing_new)
-        ? $self->date_start
-        : $now;
-}
-
-has date_expiry => (
-    is       => 'rw',
-    isa      => 'date_object',
-    coerce   => 1,
-    required => 1,
-);
-
-#backtest - Enable optimizations for speedier back testing.  Not suitable for production.
-#tick_expiry - A boolean that indicates if a contract expires after a pre-specified number of ticks.
-
-has [qw(backtest tick_expiry)] => (
-    is      => 'ro',
-    default => 0,
-);
-
-has basis_tick => (
+has _basis_tick => (
     is         => 'ro',
     isa        => 'Postgres::FeedDB::Spot::Tick',
     lazy_build => 1,
+    builder    => '_build_basis_tick',
 );
 
 sub _build_basis_tick {
@@ -201,6 +221,16 @@ sub _build_basis_tick {
 
     return $basis_tick;
 }
+
+
+
+
+
+
+
+
+
+
 
 # This attribute tells us if this contract was initially bought as a forward starting contract.
 # This should not be mistaken for is_forwarding_start attribute as that could change over time.
@@ -523,15 +553,6 @@ sub _build_date_settlement {
     }
 
     return $date_settlement;
-}
-
-sub _build_effective_start {
-    my $self = shift;
-
-    return
-          ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_start
-        : ($self->date_pricing->is_after($self->date_start))  ? $self->date_pricing
-        :                                                       $self->date_start;
 }
 
 sub _build_greek_engine {
