@@ -116,6 +116,7 @@ subtest "decimate_cache_insert_and_retrieve_with_missing_data" => sub {
     is $decimate_data->[2]->{bid}, '108.272', "bid is correct ";
     is $decimate_data->[2]->{quote}, '108.278', "quote is correct";
     is $decimate_data->[2]->{ask}, '108.284', "ask is correct";
+    is $decimate_data->[2]->{count}, '0', "count is correct.";
 };
 
 sub data_from_csv {
