@@ -18,6 +18,7 @@ use List::Util qw(first);
 use Math::Function::Interpolator;
 
 use BOM::Product::Pricing::Greeks::BlackScholes;
+use BOM::System::Config;
 use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
 

@@ -196,17 +196,16 @@ subtest 'Intraday::Forex' => sub {
 };
 
 subtest 'Slope' => sub {
-    plan tests => 6;
+    plan tests => 7;
 
-    my %params = map { $_ => $expiry_range->_pricing_parameters->{$_} } @{Pricing::Engine::EuropeanDigitalSlope->required_args};
-    my $engine = Pricing::Engine::EuropeanDigitalSlope->new(%params);
-
-    ok $engine->base_probability > 0, 'probability > 0';
-    ok $engine->base_probability < 1, 'probability < 1';
-    is scalar keys %{$engine->debug_information}, 3;
-    ok exists $engine->debug_information->{CALL};
-    ok exists $engine->debug_information->{PUT};
-    ok exists $engine->debug_information->{discounted_probability};
+    ok $expiry_range->ask_probability->amount > 0, 'probability > 0';
+    ok $expiry_range->ask_probability->amount < 1, 'probability < 1';
+    #We expect risk_markup, discounted_probability, CALL and PUT
+    is scalar keys %{$expiry_range->debug_information}, 4;
+    ok exists $expiry_range->debug_information->{CALL};
+    ok exists $expiry_range->debug_information->{PUT};
+    ok exists $expiry_range->debug_information->{discounted_probability};
+    ok exists $expiry_range->debug_information->{risk_markup};
 };
 
 sub _surface_with_10_deltas {

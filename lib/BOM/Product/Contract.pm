@@ -58,6 +58,17 @@ has [qw(id pricing_code display_name sentiment other_side_code payout_type payou
     default => undef,
 );
 
+has debug_information => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_debug_information {
+    my $self = shift;
+
+    return $self->pricing_engine->can('debug_info') ? $self->pricing_engine->debug_info : {};
+}
+
 # Check whether the contract is expired or not . It is expired only if it passes the expiry time time and has valid exit tick
 has is_expired => (
     is         => 'ro',
@@ -466,7 +477,6 @@ has [qw(
         theo_probability
         bid_probability
         discounted_probability
-        bs_probability
         timeinyears
         timeindays
         )
@@ -574,21 +584,98 @@ sub _match_symbol {
     return;
 }
 
+sub _market_convention {
+    my $self = shift;
+
+    return {
+        get_rollover_time => sub {
+            my $when = shift;
+            return Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($when);
+        },
+    };
+}
+
+sub _create_new_interface_engine {
+    my $self = shift;
+    return if not $self->new_interface_engine;
+
+    my %pricing_parameters;
+
+    if ($self->pricing_engine_name eq 'Pricing::Engine::Digits') {
+        %pricing_parameters = (
+            strike => $self->barrier ? $self->barrier->as_absolute : undef,
+            contract_type => $self->pricing_code,
+        );
+    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
+        %pricing_parameters = (
+            contract_type     => $self->pricing_code,
+            underlying_symbol => $self->underlying->symbol,
+            date_start        => $self->effective_start,
+            date_pricing      => $self->date_pricing,
+            ticks             => BOM::Market::AggTicks->new->retrieve({
+                    underlying   => $self->underlying,
+                    ending_epoch => $self->date_start->epoch,
+                    tick_count   => 20
+                }
+            ),
+            economic_events => _generate_market_data($self->underlying, $self->date_start)->{economic_events},
+        );
+    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
+        #pricing_vol can be calculated using an empirical vol. So we have to sent the raw numberc
+        %pricing_parameters = (
+            contract_type            => $self->pricing_code,
+            for_date                 => $self->underlying->for_date,
+            spot                     => $self->pricing_spot,
+            strikes                  => [grep { $_ } values %{$self->barriers_for_pricing}],
+            date_start               => $self->effective_start,
+            chronicle_reader         => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
+            date_pricing             => $self->date_pricing,
+            date_expiry              => $self->date_expiry,
+            discount_rate            => $self->discount_rate,
+            mu                       => $self->mu,
+            vol                      => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
+            payouttime_code          => $self->payouttime_code,
+            q_rate                   => $self->q_rate,
+            r_rate                   => $self->r_rate,
+            priced_with              => $self->priced_with,
+            underlying_symbol        => $self->underlying->symbol,
+            volsurface               => $self->volsurface->surface,
+            volsurface_recorded_date => $self->volsurface->recorded_date,
+        );
+    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::BlackScholes') {
+        %pricing_parameters = (
+            strikes         => [grep { $_ } values %{$self->barriers_for_pricing}],
+            spot            => $self->pricing_spot,
+            t               => $self->timeinyears->amount,
+            discount_rate   => $self->discount_rate,
+            mu              => $self->mu,
+            payouttime_code => $self->payouttime_code,
+            payout_type     => $self->payout_type,
+            contract_type   => $self->pricing_code,
+            vol => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
+        );
+    } else {
+        die "Unknown pricing engine: " . $self->pricing_engine_name;
+    }
+
+    if (my @missing_parameters = grep { !exists $pricing_parameters{$_} } @{$self->pricing_engine_name->required_args}) {
+        die "Missing pricing parameters for engine " . $self->pricing_engine_name . " - " . join ',', @missing_parameters;
+    }
+
+    return $self->pricing_engine_name->new(%pricing_parameters);
+}
+
 sub _build_pricing_engine {
     my $self = shift;
 
-    my $pricing_engine;
-    if ($self->new_interface_engine) {
-        my %pricing_parameters = map { $_ => $self->_pricing_parameters->{$_} } @{$self->pricing_engine_name->required_args};
-        $pricing_engine = $self->pricing_engine_name->new(%pricing_parameters);
-    } else {
-        $pricing_engine = $self->pricing_engine_name->new({
-            bet                     => $self,
-            apply_bounceback_safety => !$self->for_sale,
-            inefficient_period      => $self->market_is_inefficient,
-            $self->priced_with_intraday_model ? (economic_events => $self->economic_events_for_volatility_calculation) : (),
-        });
-    }
+    return $self->_create_new_interface_engine if $self->new_interface_engine;
+
+    my $pricing_engine = $self->pricing_engine_name->new({
+        bet                     => $self,
+        apply_bounceback_safety => !$self->for_sale,
+        inefficient_period      => $self->market_is_inefficient,
+        $self->priced_with_intraday_model ? (economic_events => $self->economic_events_for_volatility_calculation) : (),
+    });
 
     return $pricing_engine;
 }
@@ -965,9 +1052,6 @@ sub _build_price_calculator {
     return Price::Calculator->new({
             currency                => $self->currency,
             deep_otm_threshold      => $self->otm_threshold,
-            maximum_total_markup    => BOM::System::Config::quants->{commission}->{maximum_total_markup},
-            base_commission_min     => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
-            base_commission_max     => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
             base_commission_scaling => $base_commission_scaling,
             app_markup_percentage   => $self->app_markup_percentage,
             ($self->has_base_commission)
@@ -979,7 +1063,6 @@ sub _build_price_calculator {
             ($self->has_ask_price)              ? (ask_price              => $self->ask_price)              : (),
             ($self->has_theo_probability)       ? (theo_probability       => $self->theo_probability)       : (),
             ($self->has_ask_probability)        ? (ask_probability        => $self->ask_probability)        : (),
-            ($self->has_bs_probability)         ? (bs_probability         => $self->bs_probability)         : (),
             ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
         });
 }
@@ -988,40 +1071,26 @@ my $pc_params_setters = {
     timeinyears            => sub { my $self = shift; $self->price_calculator->timeinyears($self->timeinyears) },
     discount_rate          => sub { my $self = shift; $self->price_calculator->discount_rate($self->discount_rate) },
     staking_limits         => sub { my $self = shift; $self->price_calculator->staking_limits($self->staking_limits) },
-    theo_prabability       => sub { my $self = shift; $self->price_calculator->theo_probability($self->theo_probability) },
+    theo_probability       => sub { my $self = shift; $self->price_calculator->theo_probability($self->theo_probability) },
     commission_markup      => sub { my $self = shift; $self->price_calculator->commission_markup($self->commission_markup) },
     commission_from_stake  => sub { my $self = shift; $self->price_calculator->commission_from_stake($self->commission_from_stake) },
     discounted_probability => sub { my $self = shift; $self->price_calculator->discounted_probability($self->discounted_probability) },
-
-    probability => sub {
-        my $self        = shift;
-        my $probability = $self->pricing_engine->probability;
+    probability            => sub {
+        my $self = shift;
+        my $probability;
         if ($self->new_interface_engine) {
             $probability = Math::Util::CalculatedValue::Validatable->new({
                 name        => 'theo_probability',
                 description => 'theoretical value of a contract',
                 set_by      => $self->pricing_engine_name,
-                base_amount => $probability,
+                base_amount => $self->pricing_engine->theo_probability,
                 minimum     => 0,
                 maximum     => 1,
             });
+        } else {
+            $probability = $self->pricing_engine->probability;
         }
         $self->price_calculator->theo_probability($probability);
-    },
-    bs_probability => sub {
-        my $self           = shift;
-        my $bs_probability = $self->pricing_engine->bs_probability;
-        if ($self->new_interface_engine) {
-            $bs_probability = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'bs_probability',
-                description => 'BlackScholes value of a contract',
-                set_by      => $self->pricing_engine_name,
-                base_amount => $bs_probability,
-                minimum     => 0,
-                maximum     => 1,
-            });
-        }
-        $self->price_calculator->bs_probability($bs_probability);
     },
     opposite_ask_probability => sub {
         my $self = shift;
@@ -1031,13 +1100,12 @@ my $pc_params_setters = {
 
 my $pc_needed_params_map = {
     theo_probability       => [qw/ probability /],
-    bs_probability         => [qw/ bs_probability /],
-    ask_probability        => [qw/ theo_prabability /],
-    bid_probability        => [qw/ theo_prabability discounted_probability opposite_ask_probability /],
-    payout                 => [qw/ theo_prabability commission_from_stake /],
-    commission_markup      => [qw/ theo_prabability /],
-    commission_from_stake  => [qw/ theo_prabability commission_markup /],
-    validate_price         => [qw/ theo_prabability commission_markup commission_from_stake staking_limits /],
+    ask_probability        => [qw/ theo_probability /],
+    bid_probability        => [qw/ theo_probability discounted_probability opposite_ask_probability /],
+    payout                 => [qw/ theo_probability commission_from_stake /],
+    commission_markup      => [qw/ theo_probability /],
+    commission_from_stake  => [qw/ theo_probability commission_markup /],
+    validate_price         => [qw/ theo_probability commission_markup commission_from_stake staking_limits /],
     discounted_probability => [qw/ timeinyears discount_rate /],
 };
 
@@ -1174,19 +1242,6 @@ sub _build_app_markup_dollar_amount {
     return roundnear(0.01, $self->app_markup->amount * $self->payout);
 }
 
-sub _build_bs_probability {
-    my $self = shift;
-
-    $self->_set_price_calculator_params('bs_probability');
-    return $self->price_calculator->bs_probability;
-}
-
-sub _build_bs_price {
-    my $self = shift;
-
-    return $self->_price_from_prob('bs_probability');
-}
-
 # base_commission can be overridden on contract type level.
 # When this happens, underlying base_commission is ignored.
 has [qw(risk_markup commission_markup base_commission commission_from_stake)] => (
@@ -1194,12 +1249,15 @@ has [qw(risk_markup commission_markup base_commission commission_from_stake)] =>
     lazy_build => 1,
 );
 
+#this is supposed to be called for legacy pricing engines (not new interface)
 sub _build_risk_markup {
     my $self = shift;
 
     my $base_amount = 0;
-    if ($self->pricing_engine->can('risk_markup')) {
+    if ($self->pricing_engine and $self->pricing_engine->can('risk_markup')) {
         $base_amount = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->pricing_engine->risk_markup->amount;
+    } elsif ($self->new_interface_engine) {
+        $base_amount = $self->debug_information->{risk_markup}->{amount};
     }
 
     return Math::Util::CalculatedValue::Validatable->new({
@@ -1704,41 +1762,6 @@ sub _build_pricing_vol_for_two_barriers {
     };
 }
 
-sub _pricing_parameters {
-    my $self = shift;
-
-    my $result = {
-        priced_with => $self->priced_with,
-        spot        => $self->pricing_spot,
-        strikes     => $self->pricing_engine_name eq 'Pricing::Engine::Digits'
-        ? ($self->barrier ? $self->barrier->as_absolute : undef)
-        : [grep { $_ } values %{$self->barriers_for_pricing}],
-        date_start        => $self->effective_start,
-        date_expiry       => $self->date_expiry,
-        date_pricing      => $self->date_pricing,
-        discount_rate     => $self->discount_rate,
-        q_rate            => $self->q_rate,
-        r_rate            => $self->r_rate,
-        mu                => $self->mu,
-        vol               => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
-        payouttime_code   => $self->payouttime_code,
-        contract_type     => $self->pricing_code,
-        underlying_symbol => $self->underlying->symbol,
-        market_data       => $self->_market_data,
-        market_convention => $self->_market_convention,
-        t                 => $self->timeinyears->amount,
-        payout_type       => $self->payout_type,
-    };
-
-    #Only send qf-market-data if the engine really needs it.
-    #because the calculation is expensive and also it may not be compatible with
-    #Engine's configuration (e.g. fetching economic events for a long-term contract)
-    $result->{qf_market_data} = _generate_market_data($self->underlying, $self->date_start)
-        if first { $_ eq 'qf_market_data' } @{$self->pricing_engine_name->required_args};
-
-    return $result;
-}
-
 sub _generate_market_data {
     my ($underlying, $date_start) = @_;
 
@@ -1772,17 +1795,6 @@ sub _generate_market_data {
     #engines, we will add other market-data items too (e.g. dividends, vol-surface, ...)
     $result->{economic_events} = \@applicable_news;
     return $result;
-}
-
-sub _market_convention {
-    my $self = shift;
-
-    return {
-        get_rollover_time => sub {
-            my $when = shift;
-            return Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($when);
-        },
-    };
 }
 
 sub _market_data {
