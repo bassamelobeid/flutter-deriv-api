@@ -50,10 +50,7 @@ sub copytrading_statistics {
         avg_loss          => 0,
         trades_breakdown  => {},
         # copiers
-        copiers => BOM::Database::DataMapper::Copier->new(
-            broker_code => 'CR',
-            operation   => 'replica'
-        )->get_copiers_cnt({trader_id => $trader_id}),
+        copiers => 0
     };
 
     my $account = $trader->default_account;
@@ -63,7 +60,12 @@ sub copytrading_statistics {
         return $result_hash;
     }
 
-    my $db = BOM::Database::ClientDB->new({
+    $result_hash->{copiers} = BOM::Database::DataMapper::Copier->new(
+        broker_code => $account->currency_code,
+        operation   => 'replica'
+        )->get_copiers_cnt({trader_id => $trader_id}),
+
+        my $db = BOM::Database::ClientDB->new({
             client_loginid => $trader->loginid,
         })->db;
 
