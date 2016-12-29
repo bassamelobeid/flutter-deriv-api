@@ -220,9 +220,6 @@ sub _get_ask {
                         )
                     : (),
                     underlying_base_commission => $contract->underlying->base_commission,
-                    maximum_total_markup       => BOM::System::Config::quants->{commission}->{maximum_total_markup},
-                    base_commission_min        => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
-                    base_commission_max        => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
                     base_commission_scaling    => $base_commission_scaling,
                 },
             };
