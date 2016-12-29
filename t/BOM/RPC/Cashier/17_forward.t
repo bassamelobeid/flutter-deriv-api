@@ -209,10 +209,9 @@ subtest 'landing_companies_specific' => sub {
     $client_jp->set_default_account('JPY');
     $client_jp->residence('jp');
     my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
-    $client_jp->set_status('tnc_approval', 'system', $current_tnc_version);
+    $client_jp->set_status('tnc_approval',              'system', $current_tnc_version);
     $client_jp->set_status('jp_knowledge_test_pending', 'system', 'set for test');
     $client_jp->save;
-
 
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_JP_KNOWLEDGE_TEST', 'Japan residence needs a knowledge test')
@@ -234,14 +233,13 @@ subtest 'landing_companies_specific' => sub {
 
     $client_jp->clr_status('jp_activation_pending');
     $client_jp->save;
-    $rpc_ct->call_ok($method, $params)
-      ->has_no_system_error->has_error->error_code_is('ASK_AGE_VERIFICATION', 'need age verification')
-      ->error_message_is('Account needs age verification', 'need verification');
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_AGE_VERIFICATION', 'need age verification')
+        ->error_message_is('Account needs age verification', 'need verification');
 
 };
 
 subtest 'all status are covered' => sub {
-    my $all_status     = Client::Account::client_status_types;
+    my $all_status = Client::Account::client_status_types;
     fail("missing status $_") for sort grep !exists $seen{$_}, keys %$all_status;
     pass("ok to prevent warning 'no tests run");
     done_testing();
