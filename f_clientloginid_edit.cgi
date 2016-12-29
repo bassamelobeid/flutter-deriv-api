@@ -475,7 +475,7 @@ for (1 .. $attempts) {
 }
 for (1 .. $attempts) {
     $next_loginid = sprintf "$client_broker%0*d", $len, $number + $_;
-    last if $next_client = Client::Account->new({loginid => $next_loginid});
+    last if $next_client = Client::Account->new({loginid => $next_loginid})->loginid;
 }
 
 if ($prev_client) {
@@ -572,7 +572,7 @@ if ($client->landing_company->allows_payment_agents) {
     print '<p>Payment Agents are not available for this account.</p>';
 }
 
-Bar("CLIENT $client");
+Bar("CLIENT " . $client->loginid);
 
 my ($link_acc, $link_loginid);
 if ($client->comment =~ /move UK clients to \w+ \(from (\w+)\)/) {
