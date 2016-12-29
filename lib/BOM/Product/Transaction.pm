@@ -1281,20 +1281,19 @@ sub _build_pricing_comment {
 
         # This way the order of the fields is well-defined.
         @comment_fields = map { defined $_->[1] ? @$_ : (); } (
-            [theo    => $contract->theo_price],
-            [iv      => $iv],
-            [iv_2    => $iv_2],
-            [win     => $contract->payout],
-            [div     => $contract->q_rate],
-            [int     => $contract->r_rate],
-            [delta   => $contract->delta],
-            [gamma   => $contract->gamma],
-            [vega    => $contract->vega],
-            [theta   => $contract->theta],
-            [vanna   => $contract->vanna],
-            [volga   => $contract->volga],
-            [bs_prob => $contract->bs_probability->amount],
-            [spot    => $contract->current_spot]);
+            [theo  => $contract->theo_price],
+            [iv    => $iv],
+            [iv_2  => $iv_2],
+            [win   => $contract->payout],
+            [div   => $contract->q_rate],
+            [int   => $contract->r_rate],
+            [delta => $contract->delta],
+            [gamma => $contract->gamma],
+            [vega  => $contract->vega],
+            [theta => $contract->theta],
+            [vanna => $contract->vanna],
+            [volga => $contract->volga],
+            [spot  => $contract->current_spot]);
 
         # only manual sell and buy has a price
         if ($price) {

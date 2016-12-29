@@ -26,13 +26,6 @@ sub _build_pricing_engine_name {
     return 'Pricing::Engine::Digits';
 }
 
-sub _build_pricing_engine {
-    my $self = shift;
-
-    my %pricing_parameters = map { $_ => $self->_pricing_parameters->{$_} } @{$self->pricing_engine_name->required_args};
-    return Pricing::Engine::Digits->new(\%pricing_parameters);
-}
-
 sub _build_greek_engine {
     return BOM::Product::Pricing::Greeks::Digits->new({bet => shift});
 }
