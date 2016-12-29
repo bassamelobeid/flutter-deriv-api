@@ -39,6 +39,9 @@ subtest "decimate_cache_insert_and_retrieve" => sub {
 
     is scalar(@$data_out), '142', "retrieved 142 datas from cache";
 
+    is $data_out->[0]->{epoch}, '1479203101', "epoch is correct for first raw data";
+    is $data_out->[141]->{epoch}, '1479203250', "epoch is correct for last raw data";
+
 #test insert_decimate
 # try get all decimated datas
 # last data in our sample
@@ -54,6 +57,9 @@ subtest "decimate_cache_insert_and_retrieve" => sub {
     });
 
     is scalar(@$decimate_data), '10', "retrieved 10 decimated datas";    
+
+    is $decimate_data->[0]->{epoch}, '1479203114', "epoch is correct for first decimate date";
+    is $decimate_data->[9]->{epoch}, '1479203250', "epoch is correct for first decimate date";
 
 };
 
