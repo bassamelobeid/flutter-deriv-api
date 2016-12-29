@@ -112,7 +112,7 @@ sub tick_cache_get_num_ticks {
 
     my $ticks;
     if ($backprice) {
-        my $ticks = $underlying->ticks_in_between_end_limit({
+        $ticks = $underlying->ticks_in_between_end_limit({
             end_time => $end_time,
             limit    => $num,
         });
