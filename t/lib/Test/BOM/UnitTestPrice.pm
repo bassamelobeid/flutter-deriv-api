@@ -49,12 +49,39 @@ sub create_pricing_data {
     foreach my $underlying (@underlying_list) {
         if (grep { $underlying->volatility_surface_type eq $_ } qw(delta moneyness)) {
             next unless $underlying->volatility_surface_type;
-            BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-                'volsurface_' . $underlying->volatility_surface_type,
-                {
-                    symbol        => $underlying->symbol,
-                    recorded_date => $for_date,
-                });
+            if ($underlying->symbol eq 'frxBROUSD' or $underlying->symbol eq 'WLDEUR') {
+                BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+                    'volsurface_delta',
+                    {
+                        symbol       => $underlying->symbol,
+                        surface_data => {
+                            1 => {
+                                vol_spread => {50 => 0},
+                                smile      => {
+                                    25 => 0.1,
+                                    50 => 0.1,
+                                    75 => 0.1
+                                }
+                            },
+                            365 => {
+                                vol_spread => {50 => 0},
+                                smile      => {
+                                    25 => 0.1,
+                                    50 => 0.1,
+                                    75 => 0.1
+                                }
+                            },
+                        },
+                        recorded_date => $for_date,
+                    });
+            } else {
+                BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+                    'volsurface_' . $underlying->volatility_surface_type,
+                    {
+                        symbol        => $underlying->symbol,
+                        recorded_date => $for_date,
+                    });
+            }
         }
 
         if (grep { $underlying->market->name eq $_ } qw(forex commodities)) {
