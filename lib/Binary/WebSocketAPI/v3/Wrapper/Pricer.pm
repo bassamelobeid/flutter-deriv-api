@@ -113,82 +113,47 @@ sub proposal_array {
         });
     return;
 }
-use Data::Dumper;
+
 sub proposal_open_contract {
     my ($c, $response, $req_storage) = @_;
 
-    my $args = $req_storage->{args};
-    print "arhs: ".Dumper($args);
+    my $args         = $req_storage->{args};
     my $empty_answer = {
-                msg_type               => 'proposal_open_contract',
-                proposal_open_contract => {}};
+        msg_type               => 'proposal_open_contract',
+        proposal_open_contract => {}};
 
-#####
-my $emulate = 1;
-if ($args->{contract_id}) {
-    print "Going to emulate failure\n";
-    $emulate = 0;
-}
-#####
-
-
-    unless ($emulate and keys %$response) {
-        print "main if ok\n";
+    unless (keys %$response) {
+        # special case: 'proposal_open_contract' with contract_id set called immediately after 'buy'
+        # could return empty response because of DB replication delay
+        # so here retries are performed
         if ($args->{contract_id}) {
-            print "contract_id ok\n";
             my $last_contracts = $c->stash('last_contracts') // {};
             my $now = time;
             for (keys %$last_contracts) {
-                delete $last_contracts->{$_} if $now - $last_contracts->{$_} > 100; # keep contract bought in last 10 sec
+                # see Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_store_last_contract_id
+                delete $last_contracts->{$_} if $now - $last_contracts->{$_} > 10;    # keep contract bought in last 10 sec
             }
             $c->stash(last_contracts => $last_contracts);
             if ($last_contracts->{$args->{contract_id}}) {
-                print "calling RPC after delay\n";
-                #sleep 5;
-                print "sleeped ok\n";
                 my $retries = 5;
-                # special case, see also &Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_store_last_contract_id
-                #$c->call_rpc({
-                #    %$req_storage,
-                #    #method => 'proposal_open_contract',
-                #    response => sub {
-                #        my ($rpc_response, $response, $req_storage) = @_;
-                #        print "in RESPONSE\n";
-                #        return $response if $rpc_response->{error};
-                #        print "RPC response: ".Dumper($response);
-                #        _process_proposal_open_contract_response($c, $response->{proposal_open_contract}, $req_storage);
-                #        #return $api_response;
-                #        return;
-                #    },
-                #});
                 my $call_sub;
                 my $resp_sub = sub {
-                        my ($rpc_response, $response, $req_storage) = @_;
-                        print "in RESPONSE\n";
-                        return $response if $rpc_response->{error};
-                        print "RPC response: ".Dumper($response);
-                        unless ($emulate and keys %$response) {
-                            print "going to sleeP: $retries\n";
-                            sleep 1;
-                            $call_sub->($c, $req_storage) if $retries--;
-                            print "END OF LOOP\n";
-                        }
-                        _process_proposal_open_contract_response($c, $response->{proposal_open_contract}, $req_storage);
-                        #return $api_response;
-                        return;
+                    my ($rpc_response, $response, $req_storage) = @_;
+                    return $response if $rpc_response->{error};
+                    unless (keys %$response) {
+                        sleep 1;
+                        $call_sub->($c, $req_storage) if $retries--;
+                    }
+                    _process_proposal_open_contract_response($c, $response->{proposal_open_contract}, $req_storage);
+                    return;
                 };
                 $call_sub = sub {
                     my ($c, $req_storage) = @_;
-                    print "Call Sub $retries\n";
-                    $c->call_rpc({
-                        %$req_storage,
-                        response => $resp_sub
-                    });
+                    $c->call_rpc({%$req_storage, response => $resp_sub});
                 };
                 $call_sub->($c, $req_storage);
                 return;
             } else {
-                print "no contract_id in stash!\n";
                 return $empty_answer;
             }
         } else {
@@ -196,7 +161,6 @@ if ($args->{contract_id}) {
         }
     }
 
-    print "USUAL WAY==========\n".Dumper($response);
     _process_proposal_open_contract_response($c, $response, $req_storage);
 
     return;
@@ -260,7 +224,6 @@ sub _process_proposal_open_contract_response {
         }
     }
 }
-
 
 sub _serialized_args {
     my $h    = shift;
