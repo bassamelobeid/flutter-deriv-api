@@ -64,9 +64,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 subtest 'ON 25D BF > 1.' => sub {
     plan tests => 15;
 
-    my $mocked = Test::MockModule->new('BOM::Product::Contract');
-    $mocked->mock('uses_empirical_volatility', sub { 0 });
-
     my $surface = _sample_surface(
         25 => 0.10,
         50 => 0.10,
