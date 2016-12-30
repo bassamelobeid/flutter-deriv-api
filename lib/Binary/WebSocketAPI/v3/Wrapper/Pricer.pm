@@ -406,7 +406,7 @@ sub _process_ask_proposal_array_event {
                 }
                 $cache->{contract_parameters}->{longcode} = $cache->{longcode};
                 my $adjusted_results =
-                    _price_stream_results_adjustment($c, $stash_data->{args}, $cache->{contract_parameters}, $response, $theo_probability);
+                    _price_stream_results_adjustment($c, $stash_data->{args}, $cache, $response, $theo_probability);
                 if (my $ref = $adjusted_results->{error}) {
                     my $err = $c->new_error($type, $ref->{code}, $ref->{message_to_client});
                     $err->{error}->{details} = $ref->{details} if exists $ref->{details};
