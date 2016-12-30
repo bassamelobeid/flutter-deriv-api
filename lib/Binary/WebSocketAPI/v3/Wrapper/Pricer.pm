@@ -113,14 +113,73 @@ sub proposal_array {
         });
     return;
 }
-
+use Data::Dumper;
 sub proposal_open_contract {
     my ($c, $response, $req_storage) = @_;
 
     my $args = $req_storage->{args};
-    return {
-        msg_type               => 'proposal_open_contract',
-        proposal_open_contract => {}} unless keys %$response;
+    print "arhs: ".Dumper($args);
+    my $empty_answer = {
+                msg_type               => 'proposal_open_contract',
+                proposal_open_contract => {}};
+
+#####
+my $emulate = 1;
+if ($args->{contract_id}) {
+    print "Going to emulate failure\n";
+    $emulate = 0;
+}
+#####
+
+
+    unless ($emulate and keys %$response) {
+        print "main if ok\n";
+        if ($args->{contract_id}) {
+            print "contract_id ok\n";
+            my $last_contracts = $c->stash('last_contracts') // {};
+            my $now = time;
+            for (keys %$last_contracts) {
+                delete $last_contracts->{$_} if $now - $last_contracts->{$_} > 100; # keep contract bought in last 10 sec
+            }
+            $c->stash(last_contracts => $last_contracts);
+            if ($last_contracts->{$args->{contract_id}}) {
+                print "calling RPC after delay\n";
+                sleep 5;
+                print "sleeped ok\n";
+                # special case, see also &Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_store_last_contract_id
+                $c->call_rpc({
+                    %$req_storage,
+                    #method => 'proposal_open_contract',
+                    response => sub {
+                        my ($rpc_response, $response, $req_storage) = @_;
+                        print "in RESPONSE\n";
+                        return $response if $rpc_response->{error};
+                        print "RPC response: ".Dumper($response);
+                        _process_proposal_open_contract_response($c, $response->{proposal_open_contract}, $req_storage);
+                        #return $api_response;
+                        return;
+                    }
+                });
+                return;
+            } else {
+                print "no contract_id in stash!\n";
+                return $empty_answer;
+            }
+        } else {
+            return $empty_answer;
+        }
+    }
+
+    print "USUAL WAY==========\n".Dumper($response);
+    _process_proposal_open_contract_response($c, $response, $req_storage);
+
+    return;
+}
+
+sub _process_proposal_open_contract_response {
+    my ($c, $response, $req_storage) = @_;
+
+    my $args = $req_storage->{args};
 
     foreach my $contract (values %$response) {
         if (exists $contract->{error}) {
@@ -174,8 +233,8 @@ sub proposal_open_contract {
             );
         }
     }
-    return;
 }
+
 
 sub _serialized_args {
     my $h    = shift;

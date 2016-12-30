@@ -249,6 +249,7 @@ sub startup {
             {
                 require_auth   => 'trade',
                 before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
+                success        => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_store_last_contract_id,
             }
         ],
         [

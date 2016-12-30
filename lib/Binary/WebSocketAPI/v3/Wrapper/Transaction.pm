@@ -10,8 +10,26 @@ use List::Util qw(first);
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 
+use Data::Dumper;
+
+sub buy_store_last_contract_id {
+    my ($c, $api_response, $req_storage) = @_;
+    #print "buy_store_last_contract_id: ".Dumper($api_responce);
+    my $now = time;
+    my $last_contracts = $c->stash('last_contracts') // {};
+    for (keys %$last_contracts) {
+        delete $last_contracts->{$_} if $now - $last_contracts->{$_} > 100; # keep contract bought in last 10 sec
+    }
+    if ($api_response->{contract_id}) {
+        $last_contracts->{$api_response->{contract_id}} = $now;
+        $c->stash(last_contracts => $last_contracts);
+        print "Just stored new contract_id: ".Dumper($last_contracts);
+    }
+}
+
 sub buy_get_contract_params {
     my ($c, $req_storage) = @_;
+    print "buy_get_contract_params: HWA\n";
     my $args = $req_storage->{args};
     # 1. Take parameters from args if $args->{parameters} is defined instead ot taking it from proposal
     # 2. Calling forget_buy_proposal instead of forget_one as we need args for contract proposal
