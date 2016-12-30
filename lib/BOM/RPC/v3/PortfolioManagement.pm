@@ -85,10 +85,9 @@ sub _sell_expired_contracts {
 
     return $response;
 }
-use Data::Dumper;
+
 sub proposal_open_contract {
     my $params = shift;
-    #print "poc: params: ".Dumper($params);
 
     my $client = $params->{client};
 
