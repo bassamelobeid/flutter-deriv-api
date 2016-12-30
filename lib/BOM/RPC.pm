@@ -136,7 +136,7 @@ sub register {
                         code              => 'Internal Error',
                         message_to_client => localize('Sorry, there is an internal error.'),
                     });
-                }
+                };
 
                 return $result if (exists $result->{error});
             }
