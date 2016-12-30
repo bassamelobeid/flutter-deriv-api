@@ -108,6 +108,7 @@ subtest 'normal contract', sub {
     my $contract = Test::BOM::RPC::Contract::create_contract();
 
     my $result = BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts {
+        client              => $clm,
         token_details       => $clm_token_details,
         source              => 1,
         contract_parameters => {
@@ -165,6 +166,7 @@ subtest 'spread bet', sub {
     my $contract = Test::BOM::RPC::Contract::create_contract(is_spread => 1);
 
     my $result = BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts {
+        client              => $clm,
         token_details       => $clm_token_details,
         source              => 1,
         contract_parameters => {
