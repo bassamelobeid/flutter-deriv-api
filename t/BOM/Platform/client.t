@@ -100,8 +100,8 @@ subtest 'client lock unlock' => sub {
 
     ok(!$client_db->lock_client_loginid(),   "Can not lock client wheb it is already locked.");
     ok($client_db->unlock_client_loginid(),  "Can unlock client.");
-    ok($client_db->lock_client_loginid(),   "Can lock client again after unlock.");
-    ok($client_db->unlock_client_loginid(), "Can unlock client.");
+    ok($client_db->lock_client_loginid(),    "Can lock client again after unlock.");
+    ok($client_db->unlock_client_loginid(),  "Can unlock client.");
     ok(!$client_db->unlock_client_loginid(), "Can not lock client if it is not locked.");
 };
 
