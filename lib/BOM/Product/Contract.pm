@@ -182,7 +182,7 @@ sub _build_effective_start {
 
 #expiry_daily - Does this bet expire at close of the exchange?
 has [
-    qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_code 
+    qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_code
         translated_display_name is_forward_starting permitted_expiries effective_daily_trading_seconds)
     ] => (
     is         => 'ro',
@@ -321,16 +321,6 @@ sub _build_basis_tick {
 
     return $basis_tick;
 }
-
-
-
-
-
-
-
-
-
-
 
 has [qw( pricing_engine_name )] => (
     is         => 'rw',
