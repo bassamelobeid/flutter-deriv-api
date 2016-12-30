@@ -83,15 +83,6 @@ sub cashier {
         }
     }
 
-    my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
-    my $client_tnc_status   = $client->get_status('tnc_approval');
-    if (not $client_tnc_status or ($client_tnc_status->reason ne $current_tnc_version)) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'ASK_TNC_APPROVAL',
-            message_to_client => localize('Terms and conditions approval is required.'),
-        });
-    }
-
     my $landing_company = $client->landing_company;
     if ($landing_company->short eq 'maltainvest') {
         # $c->authenticate()
