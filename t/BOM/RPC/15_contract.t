@@ -111,6 +111,7 @@ subtest 'validate_license' => sub {
 };
 
 subtest 'validate_is_open' => sub {
+
     # weekend
     set_fixed_time(Date::Utility->new('2016-07-23')->epoch);
 
@@ -514,6 +515,7 @@ subtest 'send_multiple_ask' => sub {
 };
 
 subtest 'get_bid' => sub {
+
     # just one tick for missing market data
     create_ticks([100, $now->epoch - 899, 'R_50']);
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -658,7 +660,8 @@ subtest 'get_bid_skip_barrier_validation' => sub {
 
     $params->{validation_params} = {skip_barrier_validation => 1};
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-    ok(!exists $result->{validation_error}, "No barrier validation error") or diag "validatione error: " . ($result->{validation_error} // '<undef>');
+    ok(!exists $result->{validation_error}, "No barrier validation error")
+        or diag "validatione error: " . ($result->{validation_error} // '<undef>');
 
     restore_time();
 };
@@ -680,6 +683,7 @@ subtest $method => sub {
                     ->has_error->error_message_is('Cannot create contract', 'will report error if no short_code and currency');
             }
         ],
+
         # We get several undef warnings too, but we'll ignore them for this test
         supersetof(re('get_contract_details produce_contract failed')),
         '... and had warning about failed produce_contract'
@@ -941,7 +945,8 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
             'payout'                => '1000'
         };
 
-        skip 'This test fails on weekends', 2 + keys %$expected_result if $skip_weekend;
+        skip 'This test fails on weekends', 2 + keys %$expected_result
+            if $skip_weekend;
 
         $result = $result->has_no_system_error->has_no_error->result;
 
@@ -964,6 +969,7 @@ subtest 'app_markup_percentage' => sub {
     };
     my $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
     my $val    = $result->{ask_price};
+
     # check for payout proposal - ask_price should increase
     $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params), 1);
     is $result->{ask_price} - $val, 1 / 100 * 100, "as app markup is added so client has to 1% of payout";
@@ -1103,6 +1109,7 @@ sub _create_contract {
     my %args = @_;
 
     my $client = $args{client};
+
     #postpone 10 minutes to avoid conflicts
     $now = $now->plus_time_interval('10m');
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -1135,11 +1142,14 @@ sub _create_contract {
         date_expiry           => $args{date_expiry} // $date_expiry,
         barrier               => $args{barrier} // 'S0P',
         app_markup_percentage => $args{app_markup_percentage} // 0,
+
         # this is not what we want to test here.
         # setting it to false.
         uses_empirical_volatility => 0,
     };
-    if ($args{date_pricing}) { $contract_data->{date_pricing} = $args{date_pricing}; }
+    if ($args{date_pricing}) {
+        $contract_data->{date_pricing} = $args{date_pricing};
+    }
 
     if ($args{spread}) {
         delete $contract_data->{date_expiry};
@@ -1153,13 +1163,15 @@ sub _create_contract {
     my $contract = produce_contract($contract_data);
 
     my $txn = BOM::Product::Transaction->new({
-        client        => $client,
-        contract      => $contract,
-        price         => 100,
-        payout        => $contract->payout,
-        amount_type   => 'stake',
-        purchase_date => $args{purchase_date} ? $args{purchase_date} : $purchase_date,
-    });
+            client        => $client,
+            contract      => $contract,
+            price         => 100,
+            payout        => $contract->payout,
+            amount_type   => 'stake',
+            purchase_date => $args{purchase_date}
+            ? $args{purchase_date}
+            : $purchase_date,
+        });
 
     my $error = $txn->buy(skip_validation => 1);
     ok(!$error, 'should no error to buy the contract');
