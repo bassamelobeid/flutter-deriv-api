@@ -16,11 +16,6 @@ use Date::Utility;
 use YAML::XS qw(LoadFile);
 use Test::MockModule;
 
-my $mocked = Test::MockModule->new('BOM::Product::Contract');
-# Prices were originally built with only market volatility.
-# Would like to keep it that way.
-$mocked->mock('uses_empirical_volatility', sub { 0 });
-
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use Test::BOM::UnitTestPrice;
 
