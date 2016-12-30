@@ -572,7 +572,11 @@ if ($client->landing_company->allows_payment_agents) {
     print '<p>Payment Agents are not available for this account.</p>';
 }
 
-Bar("CLIENT " . $client->loginid);
+my $statuses = join '/', map { uc $_->status_code } $client->client_status;
+my $name     = $client->first_name;
+$name .= ' ' if $name;
+$name .= $client->last_name;
+Bar("CLIENT " . sprintf "%s %s%s", $client->loginid, ($name || '?'), ($statuses ? " [$statuses]" : ''));
 
 my ($link_acc, $link_loginid);
 if ($client->comment =~ /move UK clients to \w+ \(from (\w+)\)/) {
