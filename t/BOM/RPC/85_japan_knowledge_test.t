@@ -90,14 +90,26 @@ subtest 'no test taken yet' => sub {
 my $test_epoch;
 subtest 'First Test taken: fail test' => sub {
 
-    my @knowledge_test_questions = ( {answer=>1, category=>1, id=>5, pass=>1, question=>'Question 5',},
-                                {answer=>1, category=>1, id=>6, pass=>1, question=>'Question 6',} );
+    my @knowledge_test_questions = ({
+            answer   => 1,
+            category => 1,
+            id       => 5,
+            pass     => 1,
+            question => 'Question 5',
+        },
+        {
+            answer   => 1,
+            category => 1,
+            id       => 6,
+            pass     => 1,
+            question => 'Question 6',
+        });
 
     $res = BOM::RPC::v3::Japan::NewAccount::jp_knowledge_test({
             client => $vr_client,
             args   => {
-                score  => 10,
-                status => 'fail',
+                score     => 10,
+                status    => 'fail',
                 questions => \@knowledge_test_questions,
             }});
 
