@@ -74,14 +74,14 @@ while (1) {
 
     my $sleep = max(0, $next_start - time);
     sleep($sleep);
-    my $fill_poch = $next_start - $hold_time;
-    $boundary   = $boundary + $decimate_interval;
-    $next_start = $boundary + $hold_time;
 
     foreach my $ul (@uls) {
         $decimate_cache->data_cache_insert_decimate($ul->symbol, $boundary);
         $decimate_cache->clean_up($ul->symbol, $boundary);
     }
+
+    $boundary   = $boundary + $decimate_interval;
+    $next_start = $boundary + $hold_time;
 }
 
 print("Feed decimate finished\n");
