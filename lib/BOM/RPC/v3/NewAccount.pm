@@ -201,7 +201,7 @@ sub new_account_real {
 
     my $company;
     if ($args->{residence}) {
-        my $countries_list = Brands->new(name => request()->brand)->landing_company_countries->countries_list;
+        my $countries_list = Brands->new(name => request()->brand)->countries_instance->countries_list;
         $company = $countries_list->{$args->{residence}}->{gaming_company};
         $company = $countries_list->{$args->{residence}}->{financial_company} if (not $company or $company eq 'none');
     }
@@ -321,7 +321,7 @@ sub new_account_japan {
                 message_to_client => $error_map->{'invalid'}});
     }
 
-    my $company = Brands->new(name => request()->brand)->landing_company_countries->countries_list->{'jp'}->{financial_company};
+    my $company = Brands->new(name => request()->brand)->countries_instance->countries_list->{'jp'}->{financial_company};
 
     if (not $company) {
         return BOM::RPC::v3::Utility::create_error({

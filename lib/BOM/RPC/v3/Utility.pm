@@ -240,9 +240,9 @@ sub get_real_acc_opening_type {
     my $from_client = $args->{from_client};
 
     return unless ($from_client->residence);
-    my $lc_countries      = Brands->new(name => request()->brand)->landing_company_countries;
-    my $gaming_company    = $lc_countries->gaming_company_for_country($from_client->residence);
-    my $financial_company = $lc_countries->financial_company_for_country($from_client->residence);
+    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+    my $gaming_company     = $countries_instance->gaming_company_for_country($from_client->residence);
+    my $financial_company  = $countries_instance->financial_company_for_country($from_client->residence);
 
     if ($from_client->is_virtual) {
         return 'real' if ($gaming_company);

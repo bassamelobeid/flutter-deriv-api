@@ -451,7 +451,7 @@ sub paymentagent_list {
 
     # add country name plus code
     foreach (@{$countries}) {
-        $_->[1] = Brands->new(name => request()->brand)->landing_company_countries->countries->localized_code2country($_->[0], $language);
+        $_->[1] = Brands->new(name => request()->brand)->countries_instance->countries->localized_code2country($_->[0], $language);
     }
 
     my $authenticated_paymentagent_agents =
