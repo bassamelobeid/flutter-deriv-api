@@ -22,6 +22,7 @@ sub buy_store_last_contract_id {
         $last_contracts->{$api_response->{contract_id}} = $now;
         $c->stash(last_contracts => $last_contracts);
     }
+    return;
 }
 
 sub buy_get_contract_params {
