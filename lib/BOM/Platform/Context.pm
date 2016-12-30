@@ -20,6 +20,8 @@ use base qw( Exporter );
 
 our @EXPORT_OK = qw(request localize template);
 
+use Brands;
+
 use BOM::Platform::Context::Request;
 use Format::Util::Numbers;
 use BOM::Platform::Context::I18N;
@@ -103,7 +105,7 @@ sub _configure_template_for {
     my $request = shift;
     my $stash   = shift;
 
-    my @include_path = ('/home/git/regentmarkets/bom-platform/templates/');
+    my @include_path = (Brands->new(name => $request->brand)->template_dir);
 
     my $template_toolkit = Template->new({
             ENCODING     => 'utf8',
