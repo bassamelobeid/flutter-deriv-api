@@ -47,8 +47,7 @@ my $payment_limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payme
 sub cashier {
     my $params = shift;
 
-    my $client         = $params->{client};
-    my $client_loginid = $client->loginid;
+    my $client = $params->{client};
 
     if ($client->is_virtual) {
         return BOM::RPC::v3::Utility::create_error({
@@ -165,6 +164,7 @@ sub cashier {
     }
 
     my $df_client;
+    my $client_loginid = $client->loginid;
     if ($provider eq 'doughflow') {
         $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client_loginid});
         # We ask the client which currency they wish to deposit/withdraw in
@@ -235,6 +235,7 @@ sub cashier {
             $client->add_note('DOUGHFLOW_ADDRESS_MISMATCH',
                       "The Doughflow server rejected the client's name.\n"
                     . "If everything is correct with the client's name, notify the development team.\n"
+                    . "Loginid: $client_loginid\n"
                     . "Doughflow response: [$errortext]");
 
             return $error_sub->(
@@ -266,6 +267,7 @@ sub cashier {
                     . "There is currently a hardcoded limit on their system which rejects anyone over 100 years old.\n"
                     . "If the client's details have been confirmed as valid, we will need to raise this issue with\n"
                     . "the Doughflow support team.\n"
+                    . "Loginid: $client_loginid\n"
                     . "Doughflow response: [$errortext]");
 
             return $error_sub->(
