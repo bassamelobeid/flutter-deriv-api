@@ -1364,32 +1364,12 @@ has [qw(pricing_vol news_adjusted_pricing_vol)] => (
     lazy_build => 1,
 );
 
-has uses_empirical_volatility => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_uses_empirical_volatility {
-    my $self = shift;
-
-    # only applicable for forex and commodities because it has not been studied on other markets.
-    return 0 if (not($self->market->name eq 'forex' or $self->market->name eq 'commodities'));
-    # some forex has flat volatility, e.g. WLDUSD
-    return 0 if $self->underlying->volatility_surface_type eq 'flat';
-    return 0 if $self->is_forward_starting;
-
-    # first term on volsurface.
-    my $overnight_epoch = (sort { $a <=> $b } keys %{$self->volsurface->variance_table})[1];
-    return 0 if $self->date_expiry->epoch >= $overnight_epoch;
-    return 1;
-}
-
 sub _build_pricing_vol {
     my $self = shift;
 
     my $vol;
     my $volatility_error;
-    if ($self->uses_empirical_volatility) {
+    if ($self->priced_with_intraday_model) {
         my $volsurface       = $self->empirical_volsurface;
         my $duration_seconds = $self->timeindays->amount * 86400;
         # volatility doesn't matter for less than 10 minutes ATM contracts,
