@@ -85,9 +85,10 @@ sub _sell_expired_contracts {
 
     return $response;
 }
-
+use Data::Dumper;
 sub proposal_open_contract {
     my $params = shift;
+    #print "poc: params: ".Dumper($params);
 
     my $client = $params->{client};
 
@@ -103,44 +104,42 @@ sub proposal_open_contract {
     }
 
     my $response = {};
-    if (scalar @fmbs > 0) {
-        foreach my $fmb (@fmbs) {
-            my $id = $fmb->{id};
-            my $sell_time;
-            $sell_time = Date::Utility->new($fmb->{sell_time})->epoch if $fmb->{sell_time};
-            my $bid = BOM::RPC::v3::Contract::get_bid({
-                short_code            => $fmb->{short_code},
-                contract_id           => $id,
-                currency              => $client->currency,
-                is_sold               => $fmb->{is_sold},
-                sell_time             => $sell_time,
-                sell_price            => $fmb->{sell_price},
-                buy_price             => $fmb->{buy_price},
-                app_markup_percentage => $params->{app_markup_percentage},
-                landing_company       => $client->landing_company->short,
-            });
-            if (exists $bid->{error}) {
-                $response->{$id} = $bid;
-            } else {
-                my $transaction_ids = {buy => $fmb->{buy_transaction_id}};
-                $transaction_ids->{sell} = $fmb->{sell_transaction_id} if ($fmb->{sell_transaction_id});
+    foreach my $fmb (@fmbs) {
+        my $id = $fmb->{id};
+        my $sell_time;
+        $sell_time = Date::Utility->new($fmb->{sell_time})->epoch if $fmb->{sell_time};
+        my $bid = BOM::RPC::v3::Contract::get_bid({
+            short_code            => $fmb->{short_code},
+            contract_id           => $id,
+            currency              => $client->currency,
+            is_sold               => $fmb->{is_sold},
+            sell_time             => $sell_time,
+            sell_price            => $fmb->{sell_price},
+            buy_price             => $fmb->{buy_price},
+            app_markup_percentage => $params->{app_markup_percentage},
+            landing_company       => $client->landing_company->short,
+        });
+        if (exists $bid->{error}) {
+            $response->{$id} = $bid;
+        } else {
+            my $transaction_ids = {buy => $fmb->{buy_transaction_id}};
+            $transaction_ids->{sell} = $fmb->{sell_transaction_id} if ($fmb->{sell_transaction_id});
 
-                # ask_price doesn't make any sense for contract that are already bought or sold
-                delete $bid->{ask_price};
+            # ask_price doesn't make any sense for contract that are already bought or sold
+            delete $bid->{ask_price};
 
-                $response->{$id} = {
-                    transaction_ids => $transaction_ids,
-                    buy_price       => $fmb->{buy_price},
-                    purchase_time   => Date::Utility->new($fmb->{purchase_time})->epoch,
-                    account_id      => $fmb->{account_id},
-                    is_sold         => $fmb->{is_sold},
-                    $sell_time ? (sell_time => $sell_time) : (),
-                    defined $fmb->{sell_price}
-                    ? (sell_price => sprintf('%.2f', $fmb->{sell_price}))
-                    : (),
-                    %$bid
-                };
-            }
+            $response->{$id} = {
+                transaction_ids => $transaction_ids,
+                buy_price       => $fmb->{buy_price},
+                purchase_time   => Date::Utility->new($fmb->{purchase_time})->epoch,
+                account_id      => $fmb->{account_id},
+                is_sold         => $fmb->{is_sold},
+                $sell_time ? (sell_time => $sell_time) : (),
+                defined $fmb->{sell_price}
+                ? (sell_price => sprintf('%.2f', $fmb->{sell_price}))
+                : (),
+                %$bid
+            };
         }
     }
     return $response;
