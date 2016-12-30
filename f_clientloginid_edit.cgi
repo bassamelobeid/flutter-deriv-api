@@ -475,7 +475,7 @@ for (1 .. $attempts) {
 }
 for (1 .. $attempts) {
     $next_loginid = sprintf "$client_broker%0*d", $len, $number + $_;
-    last if $next_client = Client::Account->new({loginid => $next_loginid})->loginid;
+    last if $next_client = Client::Account->new({loginid => $next_loginid});
 }
 
 if ($prev_client) {
@@ -483,7 +483,7 @@ if ($prev_client) {
         <div class="flat">
             <form action="$self_post" method="post">
                 <input type="hidden" name="loginID" value="$prev_loginid">
-                <input type="submit" value="Previous Client ($prev_client)">
+                <input type="submit" value="Previous Client ($prev_loginid)">
             </form>
         </div>
     }
@@ -496,7 +496,7 @@ if ($next_client) {
         <div class="flat">
             <form action="$self_post" method="post">
                 <input type="hidden" name="loginID" value="$next_loginid">
-                <input type="submit" value="Next client ($next_client)">
+                <input type="submit" value="Next client ($next_loginid)">
             </form>
         </div>
     }
