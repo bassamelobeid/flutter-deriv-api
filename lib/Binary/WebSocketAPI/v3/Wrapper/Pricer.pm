@@ -149,7 +149,9 @@ sub proposal_open_contract {
                 };
                 $call_sub = sub {
                     my ($c, $req_storage) = @_;
-                    $c->call_rpc({%$req_storage, response => $resp_sub});
+                    my %call_params = %$req_storage;
+                    $call_params{response} = $resp_sub;
+                    $c->call_rpc(\%call_params);
                 };
                 $call_sub->($c, $req_storage);
                 return;
