@@ -26,7 +26,6 @@ sub buy_store_last_contract_id {
 
 sub buy_get_contract_params {
     my ($c, $req_storage) = @_;
-    print "buy_get_contract_params: HWA\n";
     my $args = $req_storage->{args};
     # 1. Take parameters from args if $args->{parameters} is defined instead ot taking it from proposal
     # 2. Calling forget_buy_proposal instead of forget_one as we need args for contract proposal
