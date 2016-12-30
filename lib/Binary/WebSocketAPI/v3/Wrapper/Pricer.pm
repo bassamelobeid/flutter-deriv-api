@@ -223,6 +223,7 @@ sub _process_proposal_open_contract_response {
             );
         }
     }
+    return;
 }
 
 sub _serialized_args {
