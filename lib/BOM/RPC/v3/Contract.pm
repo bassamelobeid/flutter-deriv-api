@@ -29,10 +29,12 @@ sub validate_symbol {
     my $symbol = shift;
     my @offerings = get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'underlying_symbol');
     if (!$symbol || none { $symbol eq $_ } @offerings) {
-        # There's going to be a few symbols that are disabled or otherwise not provided for valid reasons, but if we have nothing,
-        # or it's a symbol that's very unlikely to be disabled, it'd be nice to know.
+
+# There's going to be a few symbols that are disabled or otherwise not provided for valid reasons, but if we have nothing,
+# or it's a symbol that's very unlikely to be disabled, it'd be nice to know.
         warn "Symbol $symbol not found, our offerings are: " . join(',', @offerings)
-            if $symbol and ($symbol =~ /^R_(100|75|50|25|10)$/ or not @offerings);
+            if $symbol
+            and ($symbol =~ /^R_(100|75|50|25|10)$/ or not @offerings);
         return {
             error => {
                 code    => 'InvalidSymbol',
@@ -157,16 +159,23 @@ sub _get_ask {
                 $code              = "ContractValidationError";
             }
 
-            # When the date_expiry is smaller than date_start, we can not price, display the payout|stake on error message
+# When the date_expiry is smaller than date_start, we can not price, display the payout|stake on error message
             if ($contract->date_expiry->epoch <= $contract->date_start->epoch) {
 
-                my $display_value = $contract->has_payout ? $contract->payout : $contract->ask_price;
+                my $display_value =
+                      $contract->has_payout
+                    ? $contract->payout
+                    : $contract->ask_price;
                 $response = BOM::RPC::v3::Utility::create_error({
                         continue_price_stream => $contract->continue_price_stream,
                         message_to_client     => $message_to_client,
                         code                  => $code,
                         details               => {
-                            display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $display_value)),
+                            display_value => (
+                                  $contract->is_spread
+                                ? $contract->buy_level
+                                : sprintf('%.2f', $display_value)
+                            ),
                             payout => sprintf('%.2f', $display_value),
                         },
                     });
@@ -177,7 +186,11 @@ sub _get_ask {
                         message_to_client     => $message_to_client,
                         code                  => $code,
                         details               => {
-                            display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price)),
+                            display_value => (
+                                  $contract->is_spread
+                                ? $contract->buy_level
+                                : sprintf('%.2f', $contract->ask_price)
+                            ),
                             payout => sprintf('%.2f', $contract->payout),
                         },
                     });
@@ -185,6 +198,7 @@ sub _get_ask {
         } else {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
             my $trading_window_start = $p2->{trading_period_start} // '';
+
             # need this warning to be logged for Japan as a regulatory requirement
             if ($p2->{currency} && $p2->{currency} eq 'JPY') {
                 if (my $code = $contract->can('japan_pricing_info')) {
@@ -225,7 +239,9 @@ sub _get_ask {
             };
 
             # only required for non-spead contracts
-            if ($streaming_params->{add_theo_probability} and not $contract->is_spread) {
+            if ($streaming_params->{add_theo_probability}
+                and not $contract->is_spread)
+            {
                 $response->{theo_probability} = $contract->theo_probability->amount;
             }
 
@@ -290,11 +306,18 @@ sub get_bid {
     }
 
     try {
-        my $is_valid_to_sell = $contract->is_spread ? $contract->is_valid_to_sell : $contract->is_valid_to_sell($params->{validation_params});
+        my $is_valid_to_sell =
+              $contract->is_spread
+            ? $contract->is_valid_to_sell
+            : $contract->is_valid_to_sell($params->{validation_params});
 
         $response = {
             is_valid_to_sell => $is_valid_to_sell,
-            ($is_valid_to_sell ? () : (validation_error => $contract->primary_validation_error->message_to_client)),
+            (
+                $is_valid_to_sell
+                ? ()
+                : (validation_error => $contract->primary_validation_error->message_to_client)
+            ),
             bid_price           => sprintf('%.2f', $contract->bid_price),
             current_spot_time   => $contract->current_tick->epoch,
             contract_id         => $contract_id,
@@ -315,6 +338,7 @@ sub get_bid {
         };
 
         if ($contract->is_spread) {
+
             # spreads require different set of parameters.
             my $sign = $contract->sentiment eq 'up' ? '+' : '-';
             my $amount_per_point = $sign . $contract->amount_per_point;
@@ -323,7 +347,10 @@ sub get_bid {
             $response->{stop_loss_level}   = $contract->stop_loss_level;
             $response->{stop_profit_level} = $contract->stop_profit_level;
 
-            if ($contract->is_sold and defined $sell_price and defined $buy_price) {
+            if (    $contract->is_sold
+                and defined $sell_price
+                and defined $buy_price)
+            {
                 $response->{is_expired} = 1;
                 my $pnl              = $sell_price - $buy_price;
                 my $point_from_entry = $pnl / $contract->amount_per_point;
@@ -345,7 +372,9 @@ sub get_bid {
                 }
             }
         } else {
-            if (not $contract->may_settle_automatically and $contract->missing_market_data) {
+            if (not $contract->may_settle_automatically
+                and $contract->missing_market_data)
+            {
                 $response = BOM::RPC::v3::Utility::create_error({
                         code              => "GetProposalFailure",
                         message_to_client => localize(
@@ -354,8 +383,9 @@ sub get_bid {
                 return;
             }
 
-            $response->{is_settleable} = $contract->is_settleable;
-            $response->{has_corporate_actions} = 1 if @{$contract->corporate_actions};
+            $response->{is_settleable}         = $contract->is_settleable;
+            $response->{has_corporate_actions} = 1
+                if @{$contract->corporate_actions};
 
             $response->{barrier_count} = $contract->two_barriers ? 2 : 1;
             if ($contract->entry_tick) {
@@ -368,10 +398,12 @@ sub get_bid {
                     $response->{low_barrier}           = $contract->low_barrier->as_absolute;
                     $response->{original_high_barrier} = $contract->original_high_barrier->as_absolute
                         if defined $contract->original_high_barrier;
-                    $response->{original_low_barrier} = $contract->original_low_barrier->as_absolute if defined $contract->original_low_barrier;
+                    $response->{original_low_barrier} = $contract->original_low_barrier->as_absolute
+                        if defined $contract->original_low_barrier;
                 } elsif ($contract->barrier) {
-                    $response->{barrier} = $contract->barrier->as_absolute;
-                    $response->{original_barrier} = $contract->original_barrier->as_absolute if defined $contract->original_barrier;
+                    $response->{barrier}          = $contract->barrier->as_absolute;
+                    $response->{original_barrier} = $contract->original_barrier->as_absolute
+                        if defined $contract->original_barrier;
                 }
             }
 
@@ -380,7 +412,8 @@ sub get_bid {
                 $response->{exit_tick_time} = $contract->exit_tick->epoch;
             }
 
-            $response->{current_spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
+            $response->{current_spot} = $contract->current_spot
+                if $contract->underlying->feed_license eq 'realtime';
 
             # sell_spot and sell_spot_time are updated if the contract is sold
             # or when the contract is expired.
@@ -388,10 +421,16 @@ sub get_bid {
                 $response->{is_expired} = 1;
 
                 # path dependent contracts may have hit tick but not sell time
-                my $sell_tick = $sell_time ? $contract->underlying->tick_at($sell_time, {allow_inconsistent => 1}) : undef;
+                my $sell_tick =
+                      $sell_time
+                    ? $contract->underlying->tick_at($sell_time, {allow_inconsistent => 1})
+                    : undef;
 
                 my $hit_tick;
-                if ($contract->is_path_dependent and $hit_tick = $contract->hit_tick and (not $sell_time or $hit_tick->epoch <= $sell_time)) {
+                if (    $contract->is_path_dependent
+                    and $hit_tick = $contract->hit_tick
+                    and (not $sell_time or $hit_tick->epoch <= $sell_time))
+                {
                     $sell_tick = $hit_tick;
                 }
 
@@ -451,7 +490,8 @@ sub send_ask {
     my $tv = [Time::HiRes::gettimeofday];
 
     # provide landing_company information when it is available.
-    $params->{args}->{landing_company} = $params->{landing_company} if $params->{landing_company};
+    $params->{args}->{landing_company} = $params->{landing_company}
+        if $params->{landing_company};
 
     my $symbol   = $params->{args}->{symbol};
     my $response = validate_symbol($symbol);
@@ -517,7 +557,8 @@ sub get_contract_details {
 
     my ($response, $contract, $bet_params);
     try {
-        $bet_params = shortcode_to_parameters($params->{short_code}, $params->{currency});
+        $bet_params =
+            shortcode_to_parameters($params->{short_code}, $params->{currency});
     }
     catch {
         warn __PACKAGE__ . " get_contract_details shortcode_to_parameters failed: $params->{short_code}, currency: $params->{currency}";
@@ -551,9 +592,11 @@ sub get_contract_details {
 
 sub _log_exception {
     my ($component, $err) = @_;
-    # so this should never happen, because we're passing fixed strings and only in this module,
-    # but best not to let a typo ruin datadog's day
-    $component =~ s/[^a-z_]+/_/g and warn "invalid component passed to _log_error: $_[0]";
+
+# so this should never happen, because we're passing fixed strings and only in this module,
+# but best not to let a typo ruin datadog's day
+    $component =~ s/[^a-z_]+/_/g
+        and warn "invalid component passed to _log_error: $_[0]";
     warn "Unhandled exception in $component: $err\n";
     stats_inc('contract.exception.' . $component);
     return;
@@ -569,8 +612,12 @@ sub pre_validate_start_expire_dates {
     state $pre_limits_max_forward  = 604800;      # 7 days (Maximum offset from now for creating a contract)
 
     my $now_epoch = Date::Utility->new->epoch;
+
     # no try/catch here, expecting higher level try/catch
-    $start_epoch = $params->{date_start} ? Date::Utility->new($params->{date_start})->epoch : $now_epoch;
+    $start_epoch =
+        $params->{date_start}
+        ? Date::Utility->new($params->{date_start})->epoch
+        : $now_epoch;
     if ($params->{duration}) {
         if ($params->{duration} =~ /^(\d+)t$/) {    # ticks
             $duration = $1 * 2;
@@ -583,7 +630,10 @@ sub pre_validate_start_expire_dates {
         $duration     = $expiry_epoch - $start_epoch;
     }
 
-    return if $start_epoch + 5 < $now_epoch or $start_epoch - $now_epoch > $pre_limits_max_forward or $duration > $pre_limits_max_duration;
+    return
+           if $start_epoch + 5 < $now_epoch
+        or $start_epoch - $now_epoch > $pre_limits_max_forward
+        or $duration > $pre_limits_max_duration;
 
     return 1;    # seems like ok, but everything will be fully checked later.
 }
