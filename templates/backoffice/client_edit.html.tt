@@ -47,7 +47,7 @@ table#client_edit td{
 <table border="0" width="100%" id="client_edit">
     <tr>
         <td class="label">Email</td>
-        <td>: <b>[% client.email %]</b> (To edit client's email, <a href="[% request.url_for('backoffice/client_email.cgi', { email => client.email }) | 'none' %]">click here</a>)</td>
+        <td>: <b>[% client.email %]</b> (To edit client's email, <a href="[% request.url_for('backoffice/client_email.cgi', { email => client.email }) | none %]">click here</a>)</td>
     </tr>
     <tr>
         <td class="label">BROKER</td>
@@ -94,9 +94,9 @@ table#client_edit td{
     <tr>
         <td class="label">Date of Birth</td>
         <td>: 
-            <select name="dob_day">[% dob_day_options | 'none' %]</select>
-            <select name="dob_month">[% dob_month_options | 'none' %]</select>
-            <select name="dob_year">[% dob_year_options | 'none' %]</select>
+            <select name="dob_day">[% dob_day_options | none %]</select>
+            <select name="dob_month">[% dob_month_options | none %]</select>
+            <select name="dob_year">[% dob_year_options | none %]</select>
         </td>
     </tr>
     <tr>
@@ -146,7 +146,7 @@ table#client_edit td{
     </tr>
     <tr>
         <td class="label">State/Province</td>
-        <td>: <select name="state">[% state_options | 'none' %]</select> [% client.state %]</td>
+        <td>: <select name="state">[% state_options | none %]</select> [% client.state %]</td>
     </tr>
     <tr>
         <td class="label">Postcode</td>
@@ -259,13 +259,13 @@ table#client_edit td{
                         args.raw = 1; href_xml = request.url_for(raw_url, args );
                 %]
                         An Experian <span class="lspace">[% option %]</span> request <span class="lspace">has</span> been done.
-                        <a class="lspace" target="_blank" href="[% href_rpt | 'none' %]">[Report]</a>
-                        <a class="lspace" target="_blank" href="[% href_xml | 'none' %]">[XML]</a>
+                        <a class="lspace" target="_blank" href="[% href_rpt | none %]">[Report]</a>
+                        <a class="lspace" target="_blank" href="[% href_xml | none %]">[XML]</a>
                 [%
                         IF auth_request.has_downloaded_pdf;
                             pdf_args.path = "pdf/${client.loginid}.${option}.pdf";
                 %]
-                            <a class="lspace" target="_blank" href="[% request.url_for(doc_url, pdf_args) | 'none' %]">[PDF]</a>
+                            <a class="lspace" target="_blank" href="[% request.url_for(doc_url, pdf_args) | none %]">[PDF]</a>
                         [% END %]
                     [% ELSE %]
                         An Experian <span class="lspace">[% option %]</span> request <span class="lspace">has NOT</span> been done.
