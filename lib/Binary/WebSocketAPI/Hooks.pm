@@ -5,6 +5,7 @@ use warnings;
 
 use JSON;
 use Try::Tiny;
+use Path::Tiny;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Fcntl qw/ :flock /;
 
@@ -282,10 +283,8 @@ sub log_data {
         my $msg_type = $api_response->{msg_type} // '';
         if ($msg_type !~ /^(?:tick|history|active_symbols|contracts_for|website_status|time|residence_list)$/ or exists $api_response->{error}) {
             try {
-                open my $fh, '>>', '/var/log/httpd/app_call.log' or die 'cannot open file /var/log/httpd/app_call.log';
-                flock $fh, LOCK_EX or die "cannot lock file using flock: $!";
-                print $fh "---- Start: " . $msg_type . "\n  -- Response --\n    " . encode_json($api_response) . "\n---- Close ----\n\n";
-                close $fh;
+                Path::Tiny::path('/var/log/httpd/app_call.log')
+                    ->append("---- Start: " . $msg_type . "\n  -- Response --\n    " . encode_json($api_response) . "\n---- Close ----\n\n");
             };
         }
     }
