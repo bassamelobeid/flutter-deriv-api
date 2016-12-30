@@ -74,7 +74,7 @@ usage,
 sub template {
     my $what = shift || 'template';
     $template_config->{stash} ||= _configure_template_stash_for(request());
-    $template_config->{template} = _configure_template_for(request(), $template_config->{stash});
+    $template_config->{template} ||= _configure_template_for(request(), $template_config->{stash});
     return $template_config->{$what};
 }
 
