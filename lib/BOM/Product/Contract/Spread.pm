@@ -39,9 +39,9 @@ use constant {    # added for CustomClientLimits & Transaction
     pricing_engine_name => '',
 };
 
-has continue_price_stream => (     
-    is      => 'rw',      
-    default => 0     
+has continue_price_stream => (
+    is      => 'rw',
+    default => 0
 );
 
 # This is to indicate whether this is a sale transaction.
