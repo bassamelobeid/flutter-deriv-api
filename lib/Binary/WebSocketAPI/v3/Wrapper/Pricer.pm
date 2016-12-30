@@ -38,7 +38,9 @@ sub proposal {
                 my ($c, $rpc_response, $req_storage) = @_;
                 my $cache = {
                     longcode            => $rpc_response->{longcode},
-                    contract_parameters => delete $rpc_response->{contract_parameters}};
+                    contract_parameters => delete $rpc_response->{contract_parameters},
+                    payout              => $rpc_response->{payout},
+                };
                 $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
                 $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
             },
@@ -351,7 +353,7 @@ sub _process_ask_proposal_event {
         unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
             $stash_data->{cache}->{contract_parameters}->{longcode} = $stash_data->{cache}->{longcode};
             my $adjusted_results =
-                _price_stream_results_adjustment($c, $stash_data->{args}, $stash_data->{cache}->{contract_parameters}, $response, $theo_probability);
+                _price_stream_results_adjustment($c, $stash_data->{args}, $stash_data->{cache}, $response, $theo_probability);
             if (my $ref = $adjusted_results->{error}) {
                 my $err = $c->new_error($type, $ref->{code}, $ref->{message_to_client});
                 $err->{error}->{details} = $ref->{details} if exists $ref->{details};
@@ -442,10 +444,11 @@ sub _process_ask_proposal_array_event {
 sub _price_stream_results_adjustment {
     my $c                     = shift;
     my $orig_args             = shift;
-    my $contract_parameters   = shift;
+    my $cache                 = shift;
     my $results               = shift;
     my $resp_theo_probability = shift;
 
+    my $contract_parameters = $cache->{contract_parameters};
     # skips for spreads
     $_ eq $orig_args->{contract_type} and return $results for qw(SPREADU SPREADD);
 
@@ -470,7 +473,7 @@ sub _price_stream_results_adjustment {
     $contract_parameters->{theo_probability} = $theo_probability;
 
     my $price_calculator = Price::Calculator->new(%$contract_parameters);
-
+    $cache->{payout} = $price_calculator->payout;
     if (my $error = $price_calculator->validate_price) {
         my $error_map = {
             zero_stake             => sub { "Invalid stake" },
