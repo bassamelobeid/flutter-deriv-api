@@ -85,7 +85,7 @@ sub proposal_array {
                             app_markup_percentage => $c->stash('app_markup_percentage'),
                         };
                     } else {
-                      $cache = {
+                        $cache = {
                             payout              => $rpc_response->{payout},
                             longcode            => $response->{longcode},
                             contract_parameters => delete $response->{contract_parameters}};
