@@ -1840,10 +1840,13 @@ sub _market_data {
                 for_date => $for_date
             });
 
+            my $backprice = ($args->{underlying}->for_date) ? 1 : 0;
+
             return BOM::Market::DataDecimate->new()->tick_cache_get_num_ticks({
                 underlying => $args->{underlying},
                 end_epoch  => $args->{ending_epoch},
                 num        => $args->{tick_count},
+                backprice  => $backprice,
             });
         },
         get_overnight_tenor => sub {
