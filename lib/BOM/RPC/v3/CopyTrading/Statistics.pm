@@ -7,6 +7,7 @@ use Client::Account;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::FinancialMarketBet;
+use BOM::Database::DataMapper::Copier;
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Context qw (localize);
 use BOM::System::RedisReplicated;
@@ -14,7 +15,6 @@ use BOM::System::RedisReplicated;
 use Performance::Probability qw(get_performance_probability);
 
 use Try::Tiny;
-use Data::Dumper;
 
 sub copytrading_statistics {
     my $params = shift->{args};
@@ -50,7 +50,10 @@ sub copytrading_statistics {
         avg_loss          => 0,
         trades_breakdown  => {},
         # copiers
-        copiers => 0,    # TODO
+        copiers => BOM::Database::DataMapper::Copier->new(
+            broker_code => $trader->broker_code,
+            operation   => 'replica'
+        )->get_copiers_cnt({trader_id => $trader_id}),
     };
 
     my $account = $trader->default_account;
