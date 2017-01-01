@@ -30,6 +30,7 @@ use BOM::RPC::v3::App;
 use BOM::RPC::v3::Japan::NewAccount;
 use BOM::RPC::v3::MT5::Account;
 use BOM::RPC::v3::CopyTrading::Statistics;
+use BOM::RPC::v3::CopyTrading;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -282,6 +283,8 @@ sub startup {
         ['mt5_withdrawal',      \&BOM::RPC::v3::MT5::Account::mt5_withdrawal,      [qw(auth)]],
 
         ['copytrading_statistics', \&BOM::RPC::v3::CopyTrading::Statistics::copytrading_statistics],
+        ['copy_start',             \&BOM::RPC::v3::CopyTrading::copy_start, [qw(auth)]],
+        ['copy_stop',              \&BOM::RPC::v3::CopyTrading::copy_stop, [qw(auth)]],
     );
     my $services = {};
     foreach my $srv (@services) {
