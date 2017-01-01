@@ -390,6 +390,8 @@ sub startup {
         ],
 
         ['copytrading_statistics'],
+        ['copy_start', {require_auth => 'trade'}],
+        ['copy_stop',  {require_auth => 'trade'}],
     ];
 
     for my $action (@$actions) {
