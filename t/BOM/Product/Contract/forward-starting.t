@@ -152,21 +152,21 @@ subtest 'basis_tick for forward starting contract' => sub {
     };
     my $c = produce_contract($args);
     ok $c->pricing_new, 'is pricing new';
-    is $c->basis_tick->quote, 100, 'basis tick is current tick at date pricing';
-    is $c->basis_tick->epoch, $date_pricing->epoch, 'basis tick epoch is correct';
+    is $c->_basis_tick->quote, 100, 'basis tick is current tick at date pricing';
+    is $c->_basis_tick->epoch, $date_pricing->epoch, 'basis tick epoch is correct';
     is $c->shortcode, $expected_shortcode, 'shortcode is correct';
 
     $args->{date_pricing}               = $date_pricing->plus_time_interval('5m');
     $args->{starts_as_forward_starting} = 1;                                         #to simulate reprice of an existing forward starting contract
     $c                                  = produce_contract($args);
     ok $c->pricing_new, 'pricing new return before contract starts';
-    is $c->basis_tick->quote, 100, 'basis tick is current tick at date pricing';
-    is $c->basis_tick->epoch, $date_pricing->epoch, 'basis tick epoch is correct';
+    is $c->_basis_tick->quote, 100, 'basis tick is current tick at date pricing';
+    is $c->_basis_tick->epoch, $date_pricing->epoch, 'basis tick epoch is correct';
 
     $c = produce_contract($c->shortcode, 'USD');
     ok $c->starts_as_forward_starting, 'starts as forward starting';
     ok !$c->pricing_new, 'not pricing new';
-    is $c->basis_tick->quote, 101, 'basis tick is tick at start';
-    is $c->basis_tick->epoch, $date_start->epoch, 'correct epoch for tick';
+    is $c->_basis_tick->quote, 101, 'basis tick is tick at start';
+    is $c->_basis_tick->epoch, $date_start->epoch, 'correct epoch for tick';
     is $c->shortcode, $expected_shortcode, 'shortcode is correct';
 };
