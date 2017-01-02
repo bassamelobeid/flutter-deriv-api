@@ -65,6 +65,12 @@ has date_pricing => (
     coerce     => 1,
 );
 
+has [qw(pricing_args)] => (
+    is         => 'ro',
+    isa        => 'HashRef',
+    lazy_build => 1,
+);
+
 # user supplied duration
 has duration => (is => 'ro');
 
@@ -517,6 +523,36 @@ sub add_error {
 }
 
 #== BUILDERS =====================
+
+# The pricing, greek and markup engines need the same set of arguments,
+# so we provide this helper function which pulls all the revelant bits out of the object and
+# returns a nice HashRef for them.
+sub _build_pricing_args {
+    my $self = shift;
+
+    my $start_date           = $self->date_pricing;
+    my $barriers_for_pricing = $self->barriers_for_pricing;
+    my $args                 = {
+        spot            => $self->pricing_spot,
+        r_rate          => $self->r_rate,
+        t               => $self->timeinyears->amount,
+        barrier1        => $barriers_for_pricing->{barrier1},
+        barrier2        => $barriers_for_pricing->{barrier2},
+        q_rate          => $self->q_rate,
+        iv              => $self->pricing_vol,
+        discount_rate   => $self->discount_rate,
+        mu              => $self->mu,
+        payouttime_code => $self->payouttime_code,
+    };
+
+    if ($self->priced_with_intraday_model) {
+        $args->{long_term_prediction}      = $self->empirical_volsurface->long_term_prediction;
+        $args->{volatility_scaling_factor} = $self->empirical_volsurface->volatility_scaling_factor;
+        $args->{iv_with_news}              = $self->news_adjusted_pricing_vol;
+    }
+
+    return $args;
+}
 
 sub _build_debug_information {
     my $self = shift;
