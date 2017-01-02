@@ -146,6 +146,42 @@ sub get_aggregated_sum_of_transactions_of_month {
 
 }
 
+=item eod_market_values_of_month
+
+get market value for each end of day, for period of 1 month
+return hashref
+
+=cut
+
+sub eod_market_values_of_month {
+    my $self            = shift;
+    my $month_first_day = shift;
+    my $dbh             = $self->db->dbh;
+
+    my $sql = q{
+        SELECT
+            FLOOR(
+                extract(epoch from calculation_time) / 86400
+            ) * 86400 as calculation_time,
+
+            last(market_value ORDER BY calculation_time) as market_value
+        FROM
+            accounting.historical_marked_to_market
+        WHERE
+            calculation_time >= ?::date - interval '1 day'
+            AND calculation_time < ?::date + interval '1 month'
+        GROUP BY
+            FLOOR(
+                extract(epoch from calculation_time) / 86400
+            )
+    };
+
+    my $sth = $dbh->prepare($sql);
+    $sth->execute($month_first_day, $month_first_day);
+
+    return $sth->fetchall_hashref('calculation_time');
+}
+
 =item number_of_active_clients_of_month
 
 Returns the number of active clients for the month
