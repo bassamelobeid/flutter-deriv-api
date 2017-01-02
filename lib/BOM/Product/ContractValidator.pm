@@ -3,6 +3,13 @@ package BOM::Product::Contract;    ## no critic ( RequireFilenameMatchesPackage 
 use strict;
 use warnings;
 
+use Time::HiRes;
+use Date::Utility;
+
+use BOM::Platform::Runtime;
+use BOM::System::Config;
+use BOM::Platform::Context qw(localize);
+
 has continue_price_stream => (
     is      => 'rw',
     default => 0
