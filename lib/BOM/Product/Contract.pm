@@ -27,6 +27,8 @@ use BOM::Product::Contract::Category;
 use BOM::Product::RiskProfile;
 use BOM::Product::ContractValidator;
 use BOM::Product::ContractPricer;
+use BOM::MarketData::Types;
+use BOM::Product::Types;
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
