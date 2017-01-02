@@ -122,7 +122,7 @@ sub proposal_open_contract {
     my $empty_answer = {
         msg_type               => 'proposal_open_contract',
         proposal_open_contract => {}};
-
+        
     unless (keys %$response) {
         # special case: 'proposal_open_contract' with contract_id set called immediately after 'buy'
         # could return empty response because of DB replication delay
@@ -141,18 +141,18 @@ sub proposal_open_contract {
                 my $resp_sub = sub {
                     my ($rpc_response, $response, $req_storage) = @_;
                     return $response if $rpc_response->{error};
-                    unless (keys %$response) {
-                        sleep 1;
-                        $call_sub->($c, $req_storage) if $retries--;
+                    if (keys %{$response->{proposal_open_contract}} or not --$retries) { 
+                        _process_proposal_open_contract_response($c, $response->{proposal_open_contract}, $req_storage);
+                    } else {
+                        Mojo::IOLoop->timer(1, $call_sub);
                     }
-                    _process_proposal_open_contract_response($c, $response->{proposal_open_contract}, $req_storage);
                     return;
                 };
                 $call_sub = sub {
-                    my ($c, $req_storage) = @_;
                     my %call_params = %$req_storage;
                     $call_params{response} = $resp_sub;
                     $c->call_rpc(\%call_params);
+                    return;
                 };
                 $call_sub->($c, $req_storage);
                 return;
