@@ -260,3 +260,5 @@ sub _build_empirical_volsurface {
     return BOM::MarketData::VolSurface::Empirical->new(underlying => $self->underlying);
 }
 
+1;
+

@@ -3,6 +3,8 @@ package BOM::Product::Contract;    ## no critic ( RequireFilenameMatchesPackage 
 use strict;
 use warnings;
 
+use BOM::Product::ContractVol;
+
 ## ATTRIBUTES  #######################
 
 # Rates calculation, including quanto effects.
@@ -309,6 +311,8 @@ sub _generate_market_data {
     return $result;
 }
 
+## BUILDERS  #######################
+
 sub _build_domqqq {
     my $self = shift;
 
@@ -350,8 +354,6 @@ sub _build_forqqq {
 
     return $result;
 }
-
-## BUILDERS  #######################
 
 sub _build_otm_threshold {
     my $self = shift;
