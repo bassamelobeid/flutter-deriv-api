@@ -86,6 +86,7 @@ sub proposal_array {
                         };
                     } else {
                         $cache = {
+                            payout              => $rpc_response->{payout},
                             longcode            => $response->{longcode},
                             contract_parameters => delete $response->{contract_parameters}};
                         $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
@@ -405,8 +406,7 @@ sub _process_ask_proposal_array_event {
                     delete $cache->{error};
                 }
                 $cache->{contract_parameters}->{longcode} = $cache->{longcode};
-                my $adjusted_results =
-                    _price_stream_results_adjustment($c, $stash_data->{args}, $cache->{contract_parameters}, $response, $theo_probability);
+                my $adjusted_results = _price_stream_results_adjustment($c, $stash_data->{args}, $cache, $response, $theo_probability);
                 if (my $ref = $adjusted_results->{error}) {
                     my $err = $c->new_error($type, $ref->{code}, $ref->{message_to_client});
                     $err->{error}->{details} = $ref->{details} if exists $ref->{details};
