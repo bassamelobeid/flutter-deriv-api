@@ -50,13 +50,65 @@ require BOM::Product::Pricing::Engine::Intraday::Index;
 require BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
 require BOM::Product::Pricing::Greeks::BlackScholes;
 
+## INPUTS #######################
+
+has date_start => (
+    is         => 'ro',
+    isa        => 'date_object',
+    lazy_build => 1,
+    coerce     => 1,
+);
+
+sub _build_date_start {
+    return Date::Utility->new;
+}
+
+has date_pricing => (
+    is         => 'ro',
+    isa        => 'date_object',
+    lazy_build => 1,
+    coerce     => 1,
+);
+
+sub _build_date_pricing {
+    my $self = shift;
+    my $time = Time::HiRes::time();
+    $self->_date_pricing_milliseconds($time);
+    my $now = Date::Utility->new($time);
+    return ($self->has_pricing_new and $self->pricing_new)
+        ? $self->date_start
+        : $now;
+}
+
+# user supplied duration
+has duration => (is => 'ro');
+
+has date_expiry => (
+    is       => 'rw',
+    isa      => 'date_object',
+    coerce   => 1,
+    required => 1,
+);
+
+#backtest - Enable optimizations for speedier back testing.  Not suitable for production.
+#tick_expiry - A boolean that indicates if a contract expires after a pre-specified number of ticks.
+
+has [qw(backtest tick_expiry)] => (
+    is      => 'ro',
+    default => 0,
+);
+
+# This attribute tells us if this contract was initially bought as a forward starting contract.
+# This should not be mistaken for is_forwarding_start attribute as that could change over time.
+has starts_as_forward_starting => (
+    is      => 'ro',
+    default => 0,
+);
+
+## OUTPUTS #####################
+
 sub is_spread { return 0 }
 sub is_legacy { return 0 }
-
-has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
-    is      => 'ro',
-    default => undef,
-);
 
 has debug_information => (
     is         => 'ro',
@@ -81,17 +133,6 @@ has is_settleable => (
     lazy_build => 1,
 );
 
-has continue_price_stream => (
-    is      => 'rw',
-    default => 0
-);
-
-has missing_market_data => (
-    is      => 'rw',
-    isa     => 'Bool',
-    default => 0
-);
-
 has category => (
     is      => 'ro',
     isa     => 'bom_contract_category',
@@ -109,6 +150,12 @@ sub _build_category_code {
     return $self->category->code;
 }
 
+#These data are coming from contrac_types.yml
+has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
+    is      => 'ro',
+    default => undef,
+);
+
 has ticks_to_expiry => (
     is         => 'ro',
     lazy_build => 1,
@@ -118,101 +165,26 @@ sub _build_ticks_to_expiry {
     return shift->tick_count + 1;
 }
 
-# This is needed to determine if a contract is newly priced
-# or it is repriced from an existing contract.
-# Milliseconds matters since UI is reacting much faster now.
-has _date_pricing_milliseconds => (
-    is => 'rw',
-);
-
-has [qw(date_start date_settlement date_pricing effective_start)] => (
+has [qw(date_settlement effective_start)] => (
     is         => 'ro',
     isa        => 'date_object',
     lazy_build => 1,
     coerce     => 1,
 );
 
-sub _build_date_start {
-    return Date::Utility->new;
-}
-
-# user supplied duration
-has duration => (is => 'ro');
-
-sub _build_date_pricing {
-    my $self = shift;
-    my $time = Time::HiRes::time();
-    $self->_date_pricing_milliseconds($time);
-    my $now = Date::Utility->new($time);
-    return ($self->has_pricing_new and $self->pricing_new)
-        ? $self->date_start
-        : $now;
-}
-
-has date_expiry => (
-    is       => 'rw',
-    isa      => 'date_object',
-    coerce   => 1,
-    required => 1,
-);
-
-#backtest - Enable optimizations for speedier back testing.  Not suitable for production.
-#tick_expiry - A boolean that indicates if a contract expires after a pre-specified number of ticks.
-
-has [qw(backtest tick_expiry)] => (
-    is      => 'ro',
-    default => 0,
-);
-
-has basis_tick => (
-    is         => 'ro',
-    isa        => 'Postgres::FeedDB::Spot::Tick',
-    lazy_build => 1,
-);
-
-sub _build_basis_tick {
+sub _build_effective_start {
     my $self = shift;
 
-    my $waiting_for_entry_tick = localize('Waiting for entry tick.');
-    my $missing_market_data    = localize('Trading on this market is suspended due to missing market data.');
-    my ($basis_tick, $potential_error);
-
-    # basis_tick is only set to entry_tick when the contract has started.
-    if ($self->pricing_new) {
-        $basis_tick = $self->current_tick;
-        $potential_error = $self->starts_as_forward_starting ? $waiting_for_entry_tick : $missing_market_data;
-    } else {
-        $basis_tick      = $self->entry_tick;
-        $potential_error = $waiting_for_entry_tick;
-    }
-
-    # if there's no basis tick, don't die but catch the error.
-    unless ($basis_tick) {
-        $basis_tick = Postgres::FeedDB::Spot::Tick->new({
-            # slope pricer will die with illegal division by zero error when we get the slope
-            quote  => $self->underlying->pip_size * 2,
-            epoch  => time,
-            symbol => $self->underlying->symbol,
-        });
-        $self->add_error({
-            message           => "Waiting for entry tick [symbol: " . $self->underlying->symbol . "]",
-            message_to_client => $potential_error,
-        });
-    }
-
-    return $basis_tick;
+    return
+          ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_start
+        : ($self->date_pricing->is_after($self->date_start))  ? $self->date_pricing
+        :                                                       $self->date_start;
 }
-
-# This attribute tells us if this contract was initially bought as a forward starting contract.
-# This should not be mistaken for is_forwarding_start attribute as that could change over time.
-has starts_as_forward_starting => (
-    is      => 'ro',
-    default => 0,
-);
 
 #expiry_daily - Does this bet expire at close of the exchange?
 has [
-    qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_code translated_display_name is_forward_starting permitted_expiries effective_daily_trading_seconds)
+    qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_code
+        translated_display_name is_forward_starting permitted_expiries effective_daily_trading_seconds)
     ] => (
     is         => 'ro',
     lazy_build => 1,
@@ -300,6 +272,55 @@ sub _build_permitted_expiries {
 
     my $expiries_ref = $self->offering_specifics->{permitted};
     return $expiries_ref;
+}
+
+## INTERNAL (Private) ###########################
+
+# This is needed to determine if a contract is newly priced
+# or it is repriced from an existing contract.
+# Milliseconds matters since UI is reacting much faster now.
+has _date_pricing_milliseconds => (
+    is => 'rw',
+);
+
+has _basis_tick => (
+    is         => 'ro',
+    isa        => 'Postgres::FeedDB::Spot::Tick',
+    lazy_build => 1,
+    builder    => '_build_basis_tick',
+);
+
+sub _build_basis_tick {
+    my $self = shift;
+
+    my $waiting_for_entry_tick = localize('Waiting for entry tick.');
+    my $missing_market_data    = localize('Trading on this market is suspended due to missing market data.');
+    my ($basis_tick, $potential_error);
+
+    # basis_tick is only set to entry_tick when the contract has started.
+    if ($self->pricing_new) {
+        $basis_tick = $self->current_tick;
+        $potential_error = $self->starts_as_forward_starting ? $waiting_for_entry_tick : $missing_market_data;
+    } else {
+        $basis_tick      = $self->entry_tick;
+        $potential_error = $waiting_for_entry_tick;
+    }
+
+    # if there's no basis tick, don't die but catch the error.
+    unless ($basis_tick) {
+        $basis_tick = Postgres::FeedDB::Spot::Tick->new({
+            # slope pricer will die with illegal division by zero error when we get the slope
+            quote  => $self->underlying->pip_size * 2,
+            epoch  => time,
+            symbol => $self->underlying->symbol,
+        });
+        $self->add_error({
+            message           => "Waiting for entry tick [symbol: " . $self->underlying->symbol . "]",
+            message_to_client => $potential_error,
+        });
+    }
+
+    return $basis_tick;
 }
 
 has [qw( pricing_engine_name )] => (
@@ -524,15 +545,6 @@ sub _build_date_settlement {
     }
 
     return $date_settlement;
-}
-
-sub _build_effective_start {
-    my $self = shift;
-
-    return
-          ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_start
-        : ($self->date_pricing->is_after($self->date_start))  ? $self->date_pricing
-        :                                                       $self->date_start;
 }
 
 sub _build_greek_engine {
