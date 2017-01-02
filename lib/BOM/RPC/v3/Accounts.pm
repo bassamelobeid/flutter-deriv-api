@@ -595,6 +595,19 @@ sub set_settings {
         $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && $client->broker_code ne 'CR';
     }
 
+    if (
+        $allow_copiers
+        and @{BOM::Database::DataMapper::Copier->new(
+                broker_code => $client->broker_code,
+                operation   => 'replica'
+                )->get_traders({copier_id => $client->loginid})
+                || []})
+    {
+        $err = BOM::RPC::v3::Utility::create_error({
+                code              => 'AllowCopiersError',
+                message_to_client => localize("Copier can't be a trader.")});
+    }
+
     return $err if $err->{error};
 
     # email consent is per user whereas other settings are per client
