@@ -108,7 +108,7 @@ sub _calculate_results {
         my $base_or_num   = ($record->{numeraire} eq $record->{currency}) ? 'NUM' : 'BASE';
         my $merlin_mid    = ($record->{merlin_ask} + $record->{merlin_bid}) / 2;
         my $arb_available = ($bet->bid_probability->amount > $record->{merlin_ask} or $bet->ask_probability->amount < $record->{merlin_bid}) ? 1 : 0;
-        my $tv_diff       = abs($record->{merlin_tv} - $bet->bs_probability->amount);
+        my $tv_diff       = abs($record->{merlin_tv} - $bet->theo_probability->amount);
         my $bom_mid       = $bet->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope' ? $bet->pricing_engine->base_probability: $bet->pricing_engine->base_probability->amount;
         my $mid_diff      = abs($merlin_mid - $bom_mid);
         my @barriers = $bet->two_barriers ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute) : ($bet->barrier->as_absolute, 'NA');
