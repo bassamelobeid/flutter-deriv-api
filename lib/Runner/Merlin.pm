@@ -101,6 +101,7 @@ sub _calculate_results {
             quote      => $bet_args->{current_spot},
             epoch      => $bet_args->{date_start}->epoch,
         );
+        $bet_args->{pricing_engine_name} = 'Pricing::Engine::BlackScholes';
 
         my $bet           = produce_contract($bet_args);
         my $bet_type      = $bet->code;
