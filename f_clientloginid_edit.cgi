@@ -484,7 +484,7 @@ if ($prev_client) {
         <div class="flat">
             <form action="$self_post" method="post">
                 <input type="hidden" name="loginID" value="$prev_loginid">
-                <input type="submit" value="Previous Client (} . encode_entities($prev_client) . qq{)">
+                <input type="submit" value="Previous Client (} . encode_entities($prev_loginid) . qq{)">
             </form>
         </div>
     }
@@ -497,7 +497,7 @@ if ($next_client) {
         <div class="flat">
             <form action="$self_post" method="post">
                 <input type="hidden" name="loginID" value="$next_loginid">
-                <input type="submit" value="Next client (} . encode_entities($next_client) . qq{)">
+                <input type="submit" value="Next client (} . encode_entities($next_loginid) . qq{)">
             </form>
         </div>
     }
@@ -573,7 +573,12 @@ if ($client->landing_company->allows_payment_agents) {
     print '<p>Payment Agents are not available for this account.</p>';
 }
 
-Bar("CLIENT " . encode_entities($client));
+my $statuses = join '/', map { uc $_->status_code } $client->client_status;
+my $name     = $client->first_name;
+$name .= ' ' if $name;
+$name .= $client->last_name;
+my client_info = sprintf "%s %s%s", $client->loginid, ($name || '?'), ($statuses ? " [$statuses]" : '');
+Bar("CLIENT " . encode_entities(client_info));
 
 my ($link_acc, $link_loginid);
 if ($client->comment =~ /move UK clients to \w+ \(from (\w+)\)/) {

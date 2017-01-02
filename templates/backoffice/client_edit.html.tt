@@ -241,7 +241,7 @@ table#client_edit td{
                     'Expiry date format: dd-mon-yyyy or enter "clear" to clear it';
                     show_uploaded_documents;
                 ELSE;
-                    "There are no uploaded documents for $client - $client.full_name";
+                    "There are no uploaded documents for $client.loginid - $client.full_name";
                 END
             %]
 
