@@ -25,7 +25,6 @@ use Try::Tiny;
 
 use Mail::Sender;
 use BOM::Database::ClientDB;
-use BOM::Database::DataMapper::HistoricalMarkedToMarket;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Time::Duration::Concise::Localize;
