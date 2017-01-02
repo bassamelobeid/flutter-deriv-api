@@ -3,6 +3,17 @@ package BOM::Product::Contract;    ## no critic ( RequireFilenameMatchesPackage 
 use strict;
 use warnings;
 
+has continue_price_stream => (
+    is      => 'rw',
+    default => 0
+);
+
+has missing_market_data => (
+    is      => 'rw',
+    isa     => 'Bool',
+    default => 0
+);
+
 has skips_price_validation => (
     is      => 'ro',
     default => 0,
