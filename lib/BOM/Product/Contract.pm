@@ -41,6 +41,7 @@ use BOM::Product::Contract::Category;
 use BOM::Product::RiskProfile;
 use BOM::Product::Types;
 use BOM::Product::ContractValidator;
+use BOM::Product::ContractPricer;
 use LandingCompany::Offerings qw(get_contract_specifics);
 
 # require Pricing:: modules to avoid circular dependency problems.

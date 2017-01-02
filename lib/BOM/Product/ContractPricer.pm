@@ -3,6 +3,71 @@ package BOM::Product::Contract;    ## no critic ( RequireFilenameMatchesPackage 
 use strict;
 use warnings;
 
+## ATTRIBUTES  #######################
+
+has [qw(pricing_vol news_adjusted_pricing_vol)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+has economic_events_for_volatility_calculation => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+# Rates calculation, including quanto effects.
+
+has [qw(mu discount_rate)] => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
+has [qw(domqqq forqqq fordom)] => (
+    is         => 'ro',
+    isa        => 'HashRef',
+    lazy_build => 1,
+);
+
+has priced_with => (
+    is         => 'ro',
+    isa        => 'Str',
+    lazy_build => 1,
+);
+
+has [qw(atm_vols rho)] => (
+    is         => 'ro',
+    isa        => 'HashRef',
+    lazy_build => 1
+);
+
+# a hash reference for slow migration of pricing engine to the new interface.
+has new_interface_engine => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_new_interface_engine',
+);
+
+# For European::Slope engine, we need call and put vol for double barriers contract
+has pricing_vol_for_two_barriers => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_pricing_vol_for_two_barriers',
+);
+
+# we use pricing_engine_name matching all the time.
+has priced_with_intraday_model => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_priced_with_intraday_model',
+);
+
+has price_calculator => (
+    is         => 'ro',
+    isa        => 'Price::Calculator',
+    lazy_build => 1,
+);
+
 =head2 otm_threshold
 
 An abbreviation for deep out of the money threshold. This is used to floor and cap prices.
@@ -13,6 +78,38 @@ has otm_threshold => (
     is         => 'ro',
     lazy_build => 1,
 );
+
+has _volsurface_fetcher => (
+    is         => 'ro',
+    isa        => 'BOM::MarketData::Fetcher::VolSurface',
+    init_arg   => undef,
+    lazy_build => 1,
+);
+
+has empirical_volsurface => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+has [qw(volsurface)] => (
+    is         => 'rw',
+    isa        => 'Quant::Framework::VolSurface',
+    lazy_build => 1,
+);
+
+# discounted_probability - The discounted total probability, given the time value of the money at stake.
+# timeindays/timeinyears - note that for FX contracts of >=1 duration, these values will follow the market convention of integer days
+has [qw(
+        ask_probability
+        theo_probability
+        bid_probability
+        discounted_probability
+        )
+    ] => (
+    is         => 'ro',
+    isa        => 'Math::Util::CalculatedValue::Validatable',
+    lazy_build => 1,
+    );
 
 has [
     qw(q_rate
@@ -39,6 +136,24 @@ has ask_price => (
     lazy_build => 1,
 );
 
+has [qw( pricing_engine_name )] => (
+    is         => 'rw',
+    isa        => 'Str',
+    lazy_build => 1,
+);
+
+has pricing_engine => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+has greek_engine => (
+    is         => 'ro',
+    isa        => 'BOM::Product::Pricing::Greeks',
+    lazy_build => 1,
+    handles    => [qw(delta vega theta gamma vanna volga)],
+);
+
 has [qw(vol_at_strike)] => (
     is         => 'rw',
     isa        => 'Maybe[PositiveNum]',
@@ -56,12 +171,6 @@ has [qw(
     lazy_build => 1,
     );
 
-sub _build_otm_threshold {
-    my $self = shift;
-
-    return $self->market->deep_otm_threshold;
-}
-
 # Application developer's commission.
 # Defaults to 0%
 has app_markup_percentage => (
@@ -74,6 +183,258 @@ has [qw(app_markup_dollar_amount app_markup)] => (
     lazy_build => 1,
 );
 
+# base_commission can be overridden on contract type level.
+# When this happens, underlying base_commission is ignored.
+has [qw(risk_markup commission_markup base_commission commission_from_stake)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+## METHODS  #######################
+my $pc_params_setters = {
+    timeinyears            => sub { my $self = shift; $self->price_calculator->timeinyears($self->timeinyears) },
+    discount_rate          => sub { my $self = shift; $self->price_calculator->discount_rate($self->discount_rate) },
+    staking_limits         => sub { my $self = shift; $self->price_calculator->staking_limits($self->staking_limits) },
+    theo_probability       => sub { my $self = shift; $self->price_calculator->theo_probability($self->theo_probability) },
+    commission_markup      => sub { my $self = shift; $self->price_calculator->commission_markup($self->commission_markup) },
+    commission_from_stake  => sub { my $self = shift; $self->price_calculator->commission_from_stake($self->commission_from_stake) },
+    discounted_probability => sub { my $self = shift; $self->price_calculator->discounted_probability($self->discounted_probability) },
+    probability            => sub {
+        my $self = shift;
+        my $probability;
+        if ($self->new_interface_engine) {
+            $probability = Math::Util::CalculatedValue::Validatable->new({
+                name        => 'theo_probability',
+                description => 'theoretical value of a contract',
+                set_by      => $self->pricing_engine_name,
+                base_amount => $self->pricing_engine->theo_probability,
+                minimum     => 0,
+                maximum     => 1,
+            });
+        } else {
+            $probability = $self->pricing_engine->probability;
+        }
+        $self->price_calculator->theo_probability($probability);
+    },
+    opposite_ask_probability => sub {
+        my $self = shift;
+        $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability);
+    },
+};
+
+my $pc_needed_params_map = {
+    theo_probability       => [qw/ probability /],
+    ask_probability        => [qw/ theo_probability /],
+    bid_probability        => [qw/ theo_probability discounted_probability opposite_ask_probability /],
+    payout                 => [qw/ theo_probability commission_from_stake /],
+    commission_markup      => [qw/ theo_probability /],
+    commission_from_stake  => [qw/ theo_probability commission_markup /],
+    validate_price         => [qw/ theo_probability commission_markup commission_from_stake staking_limits /],
+    discounted_probability => [qw/ timeinyears discount_rate /],
+};
+
+sub commission_multiplier {
+    return shift->price_calculator->commission_multiplier(@_);
+}
+
+sub _set_price_calculator_params {
+    my ($self, $method) = @_;
+
+    for my $key (@{$pc_needed_params_map->{$method}}) {
+        $pc_params_setters->{$key}->($self);
+    }
+    return;
+}
+
+sub _create_new_interface_engine {
+    my $self = shift;
+    return if not $self->new_interface_engine;
+
+    my %pricing_parameters;
+
+    if ($self->pricing_engine_name eq 'Pricing::Engine::Digits') {
+        %pricing_parameters = (
+            strike => $self->barrier ? $self->barrier->as_absolute : undef,
+            contract_type => $self->pricing_code,
+        );
+    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
+        %pricing_parameters = (
+            contract_type     => $self->pricing_code,
+            underlying_symbol => $self->underlying->symbol,
+            date_start        => $self->effective_start,
+            date_pricing      => $self->date_pricing,
+            ticks             => BOM::Market::AggTicks->new->retrieve({
+                    underlying   => $self->underlying,
+                    ending_epoch => $self->date_start->epoch,
+                    tick_count   => 20
+                }
+            ),
+            economic_events => _generate_market_data($self->underlying, $self->date_start)->{economic_events},
+        );
+    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
+        #pricing_vol can be calculated using an empirical vol. So we have to sent the raw numberc
+        %pricing_parameters = (
+            contract_type            => $self->pricing_code,
+            for_date                 => $self->underlying->for_date,
+            spot                     => $self->pricing_spot,
+            strikes                  => [grep { $_ } values %{$self->barriers_for_pricing}],
+            date_start               => $self->effective_start,
+            chronicle_reader         => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
+            date_pricing             => $self->date_pricing,
+            date_expiry              => $self->date_expiry,
+            discount_rate            => $self->discount_rate,
+            mu                       => $self->mu,
+            vol                      => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
+            payouttime_code          => $self->payouttime_code,
+            q_rate                   => $self->q_rate,
+            r_rate                   => $self->r_rate,
+            priced_with              => $self->priced_with,
+            underlying_symbol        => $self->underlying->symbol,
+            volsurface               => $self->volsurface->surface,
+            volsurface_recorded_date => $self->volsurface->recorded_date,
+        );
+    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::BlackScholes') {
+        %pricing_parameters = (
+            strikes         => [grep { $_ } values %{$self->barriers_for_pricing}],
+            spot            => $self->pricing_spot,
+            t               => $self->timeinyears->amount,
+            discount_rate   => $self->discount_rate,
+            mu              => $self->mu,
+            payouttime_code => $self->payouttime_code,
+            payout_type     => $self->payout_type,
+            contract_type   => $self->pricing_code,
+            vol => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
+        );
+    } else {
+        die "Unknown pricing engine: " . $self->pricing_engine_name;
+    }
+
+    if (my @missing_parameters = grep { !exists $pricing_parameters{$_} } @{$self->pricing_engine_name->required_args}) {
+        die "Missing pricing parameters for engine " . $self->pricing_engine_name . " - " . join ',', @missing_parameters;
+    }
+
+    return $self->pricing_engine_name->new(%pricing_parameters);
+}
+
+sub _generate_market_data {
+    my ($underlying, $date_start) = @_;
+
+    my $for_date = $underlying->for_date;
+    my $result   = {};
+
+    #this is a list of symbols which are applicable when getting important economic events.
+    #Note that other than currency pair of the fx symbol, we include some other important currencies
+    #here because any event for these currencies, can potentially affect all other currencies too
+    my %applicable_symbols = (
+        USD                                 => 1,
+        AUD                                 => 1,
+        CAD                                 => 1,
+        CNY                                 => 1,
+        NZD                                 => 1,
+        $underlying->quoted_currency_symbol => 1,
+        $underlying->asset_symbol           => 1,
+    );
+
+    my $ee = Quant::Framework::EconomicEventCalendar->new({
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($for_date),
+        }
+        )->get_latest_events_for_period({
+            from => $date_start->minus_time_interval('10m'),
+            to   => $date_start->plus_time_interval('10m')});
+
+    my @applicable_news =
+        sort { $a->{release_date} <=> $b->{release_date} } grep { $applicable_symbols{$_->{symbol}} } @$ee;
+
+    #as of now, we only update the result with a raw list of economic events, later that we move to other
+    #engines, we will add other market-data items too (e.g. dividends, vol-surface, ...)
+    $result->{economic_events} = \@applicable_news;
+    return $result;
+}
+
+sub _vols_at_point {
+    my ($self, $end_date, $days_attr) = @_;
+
+    my $vol_args = {
+        delta => 50,
+        from  => $self->effective_start,
+        to    => $self->date_expiry,
+    };
+
+    my $market_name = $self->underlying->market->name;
+    my %vols_to_use;
+    foreach my $pair (qw(fordom domqqq forqqq)) {
+        my $pair_ref = $self->$pair;
+        $pair_ref->{volsurface} //= $self->_volsurface_fetcher->fetch_surface({
+            underlying => $pair_ref->{underlying},
+        });
+        $pair_ref->{vol} //= $pair_ref->{volsurface}->get_volatility($vol_args);
+        $vols_to_use{$pair} = $pair_ref->{vol};
+    }
+
+    if (none { $market_name eq $_ } (qw(forex commodities indices))) {
+        $vols_to_use{domqqq} = $vols_to_use{fordom};
+        $vols_to_use{forqqq} = $vols_to_use{domqqq};
+    }
+
+    return \%vols_to_use;
+}
+
+sub _build_atm_vols {
+    my $self = shift;
+
+    return $self->_vols_at_point($self->date_expiry, 'timeindays');
+}
+
+sub _build_domqqq {
+    my $self = shift;
+
+    my $result = {};
+
+    if ($self->priced_with eq 'quanto') {
+        $result->{underlying} = create_underlying({
+            symbol   => 'frx' . $self->underlying->quoted_currency_symbol . $self->currency,
+            for_date => $self->underlying->for_date
+        });
+        $result->{volsurface} = $self->_volsurface_fetcher->fetch_surface({
+            underlying => $result->{underlying},
+        });
+    } else {
+        $result = $self->fordom;
+    }
+
+    return $result;
+}
+
+sub _build_forqqq {
+    my $self = shift;
+
+    my $result = {};
+
+    if ($self->priced_with eq 'quanto' and ($self->underlying->market->name eq 'forex' or $self->underlying->market->name eq 'commodities')) {
+        $result->{underlying} = create_underlying({
+            symbol   => 'frx' . $self->underlying->asset_symbol . $self->currency,
+            for_date => $self->underlying->for_date
+        });
+
+        $result->{volsurface} = $self->_volsurface_fetcher->fetch_surface({
+            underlying => $result->{underlying},
+        });
+
+    } else {
+        $result = $self->domqqq;
+    }
+
+    return $result;
+}
+
+## BUILDERS  #######################
+
+sub _build_otm_threshold {
+    my $self = shift;
+
+    return $self->market->deep_otm_threshold;
+}
+
 sub _build_app_markup {
     return shift->price_calculator->app_markup;
 }
@@ -83,13 +444,6 @@ sub _build_app_markup_dollar_amount {
 
     return roundnear(0.01, $self->app_markup->amount * $self->payout);
 }
-
-# base_commission can be overridden on contract type level.
-# When this happens, underlying base_commission is ignored.
-has [qw(risk_markup commission_markup base_commission commission_from_stake)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
 
 #this is supposed to be called for legacy pricing engines (not new interface)
 sub _build_risk_markup {
@@ -187,10 +541,6 @@ sub _build_news_adjusted_pricing_vol {
 
     return $news_adjusted_vol;
 }
-has [qw(pricing_vol news_adjusted_pricing_vol)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
 
 sub _build_pricing_vol {
     my $self = shift;
@@ -242,11 +592,6 @@ sub _build_pricing_vol {
     return $vol;
 }
 
-has economic_events_for_volatility_calculation => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 sub _build_economic_events_for_volatility_calculation {
     my $self = shift;
 
@@ -263,39 +608,6 @@ sub _build_economic_events_for_volatility_calculation {
     return [grep { $_->{release_date} >= $start and $_->{release_date} <= $end and $_->{impact} > 1 } @$all_events];
 }
 
-# Rates calculation, including quanto effects.
-
-has [qw(mu discount_rate)] => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
-);
-
-has [qw(domqqq forqqq fordom)] => (
-    is         => 'ro',
-    isa        => 'HashRef',
-    lazy_build => 1,
-);
-
-has priced_with => (
-    is         => 'ro',
-    isa        => 'Str',
-    lazy_build => 1,
-);
-
-has [qw(atm_vols rho)] => (
-    is         => 'ro',
-    isa        => 'HashRef',
-    lazy_build => 1
-);
-
-# a hash reference for slow migration of pricing engine to the new interface.
-has new_interface_engine => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_new_interface_engine',
-);
-
 sub _build_new_interface_engine {
     my $self = shift;
 
@@ -308,13 +620,6 @@ sub _build_new_interface_engine {
 
     return $engines{$self->pricing_engine_name} // 0;
 }
-
-# For European::Slope engine, we need call and put vol for double barriers contract
-has pricing_vol_for_two_barriers => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_pricing_vol_for_two_barriers',
-);
 
 sub _build_pricing_vol_for_two_barriers {
     my $self = shift;
@@ -339,126 +644,8 @@ sub _build_pricing_vol_for_two_barriers {
     };
 }
 
-sub _generate_market_data {
-    my ($underlying, $date_start) = @_;
-
-    my $for_date = $underlying->for_date;
-    my $result   = {};
-
-    #this is a list of symbols which are applicable when getting important economic events.
-    #Note that other than currency pair of the fx symbol, we include some other important currencies
-    #here because any event for these currencies, can potentially affect all other currencies too
-    my %applicable_symbols = (
-        USD                                 => 1,
-        AUD                                 => 1,
-        CAD                                 => 1,
-        CNY                                 => 1,
-        NZD                                 => 1,
-        $underlying->quoted_currency_symbol => 1,
-        $underlying->asset_symbol           => 1,
-    );
-
-    my $ee = Quant::Framework::EconomicEventCalendar->new({
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($for_date),
-        }
-        )->get_latest_events_for_period({
-            from => $date_start->minus_time_interval('10m'),
-            to   => $date_start->plus_time_interval('10m')});
-
-    my @applicable_news =
-        sort { $a->{release_date} <=> $b->{release_date} } grep { $applicable_symbols{$_->{symbol}} } @$ee;
-
-    #as of now, we only update the result with a raw list of economic events, later that we move to other
-    #engines, we will add other market-data items too (e.g. dividends, vol-surface, ...)
-    $result->{economic_events} = \@applicable_news;
-    return $result;
-}
-
-has _volsurface_fetcher => (
-    is         => 'ro',
-    isa        => 'BOM::MarketData::Fetcher::VolSurface',
-    init_arg   => undef,
-    lazy_build => 1,
-);
-
 sub _build__volsurface_fetcher {
     return BOM::MarketData::Fetcher::VolSurface->new;
-}
-
-sub _vols_at_point {
-    my ($self, $end_date, $days_attr) = @_;
-
-    my $vol_args = {
-        delta => 50,
-        from  => $self->effective_start,
-        to    => $self->date_expiry,
-    };
-
-    my $market_name = $self->underlying->market->name;
-    my %vols_to_use;
-    foreach my $pair (qw(fordom domqqq forqqq)) {
-        my $pair_ref = $self->$pair;
-        $pair_ref->{volsurface} //= $self->_volsurface_fetcher->fetch_surface({
-            underlying => $pair_ref->{underlying},
-        });
-        $pair_ref->{vol} //= $pair_ref->{volsurface}->get_volatility($vol_args);
-        $vols_to_use{$pair} = $pair_ref->{vol};
-    }
-
-    if (none { $market_name eq $_ } (qw(forex commodities indices))) {
-        $vols_to_use{domqqq} = $vols_to_use{fordom};
-        $vols_to_use{forqqq} = $vols_to_use{domqqq};
-    }
-
-    return \%vols_to_use;
-}
-
-sub _build_atm_vols {
-    my $self = shift;
-
-    return $self->_vols_at_point($self->date_expiry, 'timeindays');
-}
-
-sub _build_domqqq {
-    my $self = shift;
-
-    my $result = {};
-
-    if ($self->priced_with eq 'quanto') {
-        $result->{underlying} = create_underlying({
-            symbol   => 'frx' . $self->underlying->quoted_currency_symbol . $self->currency,
-            for_date => $self->underlying->for_date
-        });
-        $result->{volsurface} = $self->_volsurface_fetcher->fetch_surface({
-            underlying => $result->{underlying},
-        });
-    } else {
-        $result = $self->fordom;
-    }
-
-    return $result;
-}
-
-sub _build_forqqq {
-    my $self = shift;
-
-    my $result = {};
-
-    if ($self->priced_with eq 'quanto' and ($self->underlying->market->name eq 'forex' or $self->underlying->market->name eq 'commodities')) {
-        $result->{underlying} = create_underlying({
-            symbol   => 'frx' . $self->underlying->asset_symbol . $self->currency,
-            for_date => $self->underlying->for_date
-        });
-
-        $result->{volsurface} = $self->_volsurface_fetcher->fetch_surface({
-            underlying => $result->{underlying},
-        });
-
-    } else {
-        $result = $self->domqqq;
-    }
-
-    return $result;
 }
 
 sub _build_fordom {
@@ -558,12 +745,6 @@ sub _build_rho {
     return \%rhos;
 }
 
-has price_calculator => (
-    is         => 'ro',
-    isa        => 'Price::Calculator',
-    lazy_build => 1,
-);
-
 sub _build_price_calculator {
     my $self = shift;
 
@@ -587,57 +768,6 @@ sub _build_price_calculator {
             ($self->has_ask_probability)        ? (ask_probability        => $self->ask_probability)        : (),
             ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
         });
-}
-
-my $pc_params_setters = {
-    timeinyears            => sub { my $self = shift; $self->price_calculator->timeinyears($self->timeinyears) },
-    discount_rate          => sub { my $self = shift; $self->price_calculator->discount_rate($self->discount_rate) },
-    staking_limits         => sub { my $self = shift; $self->price_calculator->staking_limits($self->staking_limits) },
-    theo_probability       => sub { my $self = shift; $self->price_calculator->theo_probability($self->theo_probability) },
-    commission_markup      => sub { my $self = shift; $self->price_calculator->commission_markup($self->commission_markup) },
-    commission_from_stake  => sub { my $self = shift; $self->price_calculator->commission_from_stake($self->commission_from_stake) },
-    discounted_probability => sub { my $self = shift; $self->price_calculator->discounted_probability($self->discounted_probability) },
-    probability            => sub {
-        my $self = shift;
-        my $probability;
-        if ($self->new_interface_engine) {
-            $probability = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'theo_probability',
-                description => 'theoretical value of a contract',
-                set_by      => $self->pricing_engine_name,
-                base_amount => $self->pricing_engine->theo_probability,
-                minimum     => 0,
-                maximum     => 1,
-            });
-        } else {
-            $probability = $self->pricing_engine->probability;
-        }
-        $self->price_calculator->theo_probability($probability);
-    },
-    opposite_ask_probability => sub {
-        my $self = shift;
-        $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability);
-    },
-};
-
-my $pc_needed_params_map = {
-    theo_probability       => [qw/ probability /],
-    ask_probability        => [qw/ theo_probability /],
-    bid_probability        => [qw/ theo_probability discounted_probability opposite_ask_probability /],
-    payout                 => [qw/ theo_probability commission_from_stake /],
-    commission_markup      => [qw/ theo_probability /],
-    commission_from_stake  => [qw/ theo_probability commission_markup /],
-    validate_price         => [qw/ theo_probability commission_markup commission_from_stake staking_limits /],
-    discounted_probability => [qw/ timeinyears discount_rate /],
-};
-
-sub _set_price_calculator_params {
-    my ($self, $method) = @_;
-
-    for my $key (@{$pc_needed_params_map->{$method}}) {
-        $pc_params_setters->{$key}->($self);
-    }
-    return;
 }
 
 sub _build_bid_probability {
@@ -676,24 +806,6 @@ sub _build_ask_price {
 
     return $self->_price_from_prob('ask_probability');
 }
-
-has [qw( pricing_engine_name )] => (
-    is         => 'rw',
-    isa        => 'Str',
-    lazy_build => 1,
-);
-
-has pricing_engine => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-has greek_engine => (
-    is         => 'ro',
-    isa        => 'BOM::Product::Pricing::Greeks',
-    lazy_build => 1,
-    handles    => [qw(delta vega theta gamma vanna volga)],
-);
 
 sub _build_greek_engine {
     my $self = shift;
@@ -751,76 +863,6 @@ sub _build_pricing_engine {
     return $pricing_engine;
 }
 
-sub _create_new_interface_engine {
-    my $self = shift;
-    return if not $self->new_interface_engine;
-
-    my %pricing_parameters;
-
-    if ($self->pricing_engine_name eq 'Pricing::Engine::Digits') {
-        %pricing_parameters = (
-            strike => $self->barrier ? $self->barrier->as_absolute : undef,
-            contract_type => $self->pricing_code,
-        );
-    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
-        %pricing_parameters = (
-            contract_type     => $self->pricing_code,
-            underlying_symbol => $self->underlying->symbol,
-            date_start        => $self->effective_start,
-            date_pricing      => $self->date_pricing,
-            ticks             => BOM::Market::AggTicks->new->retrieve({
-                    underlying   => $self->underlying,
-                    ending_epoch => $self->date_start->epoch,
-                    tick_count   => 20
-                }
-            ),
-            economic_events => _generate_market_data($self->underlying, $self->date_start)->{economic_events},
-        );
-    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
-        #pricing_vol can be calculated using an empirical vol. So we have to sent the raw numberc
-        %pricing_parameters = (
-            contract_type            => $self->pricing_code,
-            for_date                 => $self->underlying->for_date,
-            spot                     => $self->pricing_spot,
-            strikes                  => [grep { $_ } values %{$self->barriers_for_pricing}],
-            date_start               => $self->effective_start,
-            chronicle_reader         => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
-            date_pricing             => $self->date_pricing,
-            date_expiry              => $self->date_expiry,
-            discount_rate            => $self->discount_rate,
-            mu                       => $self->mu,
-            vol                      => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
-            payouttime_code          => $self->payouttime_code,
-            q_rate                   => $self->q_rate,
-            r_rate                   => $self->r_rate,
-            priced_with              => $self->priced_with,
-            underlying_symbol        => $self->underlying->symbol,
-            volsurface               => $self->volsurface->surface,
-            volsurface_recorded_date => $self->volsurface->recorded_date,
-        );
-    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::BlackScholes') {
-        %pricing_parameters = (
-            strikes         => [grep { $_ } values %{$self->barriers_for_pricing}],
-            spot            => $self->pricing_spot,
-            t               => $self->timeinyears->amount,
-            discount_rate   => $self->discount_rate,
-            mu              => $self->mu,
-            payouttime_code => $self->payouttime_code,
-            payout_type     => $self->payout_type,
-            contract_type   => $self->pricing_code,
-            vol => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
-        );
-    } else {
-        die "Unknown pricing engine: " . $self->pricing_engine_name;
-    }
-
-    if (my @missing_parameters = grep { !exists $pricing_parameters{$_} } @{$self->pricing_engine_name->required_args}) {
-        die "Missing pricing parameters for engine " . $self->pricing_engine_name . " - " . join ',', @missing_parameters;
-    }
-
-    return $self->pricing_engine_name->new(%pricing_parameters);
-}
-
 sub _build_empirical_volsurface {
     my $self = shift;
     return BOM::MarketData::VolSurface::Empirical->new(underlying => $self->underlying);
@@ -859,31 +901,6 @@ sub _build_pricing_mu {
     return $self->mu;
 }
 
-has empirical_volsurface => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-has [qw(volsurface)] => (
-    is         => 'rw',
-    isa        => 'Quant::Framework::VolSurface',
-    lazy_build => 1,
-);
-
-# discounted_probability - The discounted total probability, given the time value of the money at stake.
-# timeindays/timeinyears - note that for FX contracts of >=1 duration, these values will follow the market convention of integer days
-has [qw(
-        ask_probability
-        theo_probability
-        bid_probability
-        discounted_probability
-        )
-    ] => (
-    is         => 'ro',
-    isa        => 'Math::Util::CalculatedValue::Validatable',
-    lazy_build => 1,
-    );
-
 sub _build_r_rate {
     my $self = shift;
 
@@ -916,13 +933,6 @@ sub _build_pricing_new {
     return 1;
 }
 
-# we use pricing_engine_name matching all the time.
-has priced_with_intraday_model => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_priced_with_intraday_model',
-);
-
 sub _build_priced_with_intraday_model {
     my $self = shift;
 
@@ -935,10 +945,6 @@ sub _build_discounted_probability {
 
     $self->_set_price_calculator_params('discounted_probability');
     return $self->price_calculator->discounted_probability;
-}
-
-sub commission_multiplier {
-    return shift->price_calculator->commission_multiplier(@_);
 }
 
 1;
