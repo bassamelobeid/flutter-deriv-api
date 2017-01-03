@@ -110,7 +110,9 @@ sub site_limits {
 sub website_name {
     my $server_name = shift;
 
-    return 'Binary' . ($server_name =~ /^qa\d+$/ ? $server_name : '') . '.com';
+    return "Binary$server_name.com" if ($server_name =~ /^qa\d+$/);
+
+    return Brands->new(name => request()->brand)->website_name;
 }
 
 sub check_authorization {
