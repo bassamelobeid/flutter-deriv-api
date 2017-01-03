@@ -70,8 +70,9 @@ sub send_email {
         }
     }
 
-    if ($fromemail eq Brands->new(name => request()->brand)->emails('support')) {
-        $fromemail = "\"Binary.com\" <$fromemail>";
+    my $brand = Brands->new(name => request()->brand);
+    if ($fromemail eq $brand->emails('support')) {
+        $fromemail = "\"" . $brand->website_name . "\" <$fromemail>";
     }
 
     my $message = join("\n", @message);

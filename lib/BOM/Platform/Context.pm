@@ -95,7 +95,6 @@ sub _configure_template_stash_for {
         runtime                   => BOM::Platform::Runtime->instance,
         language                  => $request->language,
         request                   => $request,
-        broker_name               => 'Binary.com',
         l                         => \&localize,
         to_monetary_number_format => \&Format::Util::Numbers::to_monetary_number_format,
     });
