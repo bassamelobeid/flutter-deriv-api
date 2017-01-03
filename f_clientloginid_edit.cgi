@@ -483,7 +483,7 @@ if ($prev_client) {
         <div class="flat">
             <form action="$self_post" method="post">
                 <input type="hidden" name="loginID" value="$prev_loginid">
-                <input type="submit" value="Previous Client ($prev_client)">
+                <input type="submit" value="Previous Client ($prev_loginid)">
             </form>
         </div>
     }
@@ -496,7 +496,7 @@ if ($next_client) {
         <div class="flat">
             <form action="$self_post" method="post">
                 <input type="hidden" name="loginID" value="$next_loginid">
-                <input type="submit" value="Next client ($next_client)">
+                <input type="submit" value="Next client ($next_loginid)">
             </form>
         </div>
     }
@@ -572,7 +572,11 @@ if ($client->landing_company->allows_payment_agents) {
     print '<p>Payment Agents are not available for this account.</p>';
 }
 
-Bar("CLIENT $client");
+my $statuses = join '/', map { uc $_->status_code } $client->client_status;
+my $name     = $client->first_name;
+$name .= ' ' if $name;
+$name .= $client->last_name;
+Bar("CLIENT " . sprintf "%s %s%s", $client->loginid, ($name || '?'), ($statuses ? " [$statuses]" : ''));
 
 my ($link_acc, $link_loginid);
 if ($client->comment =~ /move UK clients to \w+ \(from (\w+)\)/) {
