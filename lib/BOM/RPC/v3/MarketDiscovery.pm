@@ -233,16 +233,18 @@ sub active_symbols {
     my $params = shift;
 
     my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
-    my $language             = $params->{language}                || 'EN';
-    my $token_details        = $params->{token_details};
+    my $product_type = $params->{args}->{product_type} // 'basic';
+    my $language = $params->{language} || 'EN';
+    my $token_details = $params->{token_details};
     if ($token_details and exists $token_details->{loginid}) {
         my $client = Client::Account->new({loginid => $token_details->{loginid}});
         $landing_company_name = $client->landing_company->short if $client;
     }
 
     my $appconfig_revision = BOM::Platform::Runtime->instance->app_config->current_revision;
-    my ($namespace, $key) =
-        ('legal_allowed_markets', join('::', ($params->{args}->{active_symbols}, $language, $landing_company_name, $appconfig_revision)));
+    my ($namespace, $key) = (
+        'legal_allowed_markets', join('::', ($params->{args}->{active_symbols}, $language, $landing_company_name, $product_type, $appconfig_revision))
+    );
 
     my $active_symbols;
     if (my $cached_symbols = Cache::RedisDB->get($namespace, $key)) {
