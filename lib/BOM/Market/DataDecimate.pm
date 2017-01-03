@@ -138,7 +138,6 @@ has sampling_frequency => (
     default => sub {
         Time::Duration::Concise->new('15s');
     },
-    coerce => 1,
 );
 
 # size is the number of ticks
@@ -156,7 +155,6 @@ has decimate_retention_interval => (
     is      => 'ro',
     isa     => 'Time::Duration::Concise',
     lazy    => 1,
-    coerce  => 1,
     builder => '_build_decimate_retention_interval',
 );
 
@@ -170,7 +168,6 @@ has raw_retention_interval => (
     is      => 'ro',
     isa     => 'Time::Duration::Concise',
     lazy    => 1,
-    coerce  => 1,
     builder => '_build_raw_retention_interval',
 );
 
