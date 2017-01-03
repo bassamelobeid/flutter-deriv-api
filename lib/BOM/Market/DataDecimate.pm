@@ -25,7 +25,6 @@ use Data::Decimate qw(decimate);
 use Date::Utility;
 use Sereal::Encoder;
 use Sereal::Decoder;
-use Time::Duration::Concise;
 
 sub get {
     my ($self, $args) = @_;
@@ -134,10 +133,9 @@ sub tick_cache_get_num_ticks {
 
 has sampling_frequency => (
     is      => 'ro',
-    isa     => 'Time::Duration::Concise',
-    default => sub {
-        Time::Duration::Concise->new('15s');
-    },
+    isa     => 'time_interval',
+    default => '15s',
+    coerce  => 1,
 );
 
 # size is the number of ticks
@@ -153,27 +151,29 @@ has decimate_cache_size => (
 
 has decimate_retention_interval => (
     is      => 'ro',
-    isa     => 'Time::Duration::Concise',
+    isa     => 'time_interval',
     lazy    => 1,
     builder => '_build_decimate_retention_interval',
+    coerce  => 1,
 );
 
 sub _build_decimate_retention_interval {
     my $self = shift;
     my $interval = int($self->decimate_cache_size / (60 / $self->sampling_frequency->seconds));
-    return Time::Duration::Concise->new($interval . 'm');
+    return $interval . 'm';
 }
 
 has raw_retention_interval => (
     is      => 'ro',
-    isa     => 'Time::Duration::Concise',
+    isa     => 'time_interval',
     lazy    => 1,
     builder => '_build_raw_retention_interval',
+    coerce  => 1,
 );
 
 sub _build_raw_retention_interval {
     my $interval = int(shift->data_cache_size / 60);
-    return Time::Duration::Concise->new($interval . 'm');
+    return $interval . 'm';
 }
 
 has decoder => (
