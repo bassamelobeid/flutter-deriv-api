@@ -53,7 +53,9 @@ foreach my $ul (@uls) {
         $decimate_cache->_update($decimate_cache->redis_write, $key, $single_data->{epoch}, $decimate_cache->encoder->encode($single_data));
     }
 
-    my $decimate_data = Data::Decimate::decimate($decimate_cache->sampling_frequency->seconds, $ticks);
+    my @rev_ticks = reverse @$ticks;
+
+    my $decimate_data = Data::Decimate::decimate($decimate_cache->sampling_frequency->seconds, \@rev_ticks);
 
     foreach my $single_data (@$decimate_data) {
         $decimate_cache->_update(
@@ -64,8 +66,10 @@ foreach my $ul (@uls) {
     }
 }
 
+print "Decimating realtime data...\n";
+
 my $now               = int time;
-my $hold_time         = 1;
+my $hold_time         = 2;
 my $decimate_interval = $decimate_cache->sampling_frequency->seconds;
 my $boundary          = $now - ($now % $decimate_interval) + ($decimate_interval);
 my $next_start        = $boundary + $hold_time;
