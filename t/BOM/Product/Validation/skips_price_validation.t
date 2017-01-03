@@ -8,7 +8,7 @@ use Test::MockModule;
 use Test::FailWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Market::DecimateCache;
+use BOM::Market::DataDecimate;
 use Date::Utility;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -19,7 +19,7 @@ Cache::RedisDB->flushall;
 initialize_realtime_ticks_db();
 
 note('mocking ticks to prevent warnings.');
-my $mocked = Test::MockModule->new('BOM::Market::DecimateCache');
+my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
 $mocked->mock(
     'decimate_cache_get',
     sub {

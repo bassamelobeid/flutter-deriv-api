@@ -18,7 +18,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 use BOM::System::RedisReplicated;
-use BOM::Market::DecimateCache;
+use BOM::Market::DataDecimate;
 use Data::Decimate qw(decimate);
 
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
@@ -49,7 +49,7 @@ my $hist_ticks = $underlying->ticks_in_between_start_end({
 
 my @tmp_ticks = reverse @$hist_ticks;
 
-my $decimate_cache = BOM::Market::DecimateCache->new;
+my $decimate_cache = BOM::Market::DataDecimate->new;
 
 my $key          = $decimate_cache->_make_key('frxUSDJPY', 0);
 my $decimate_key = $decimate_cache->_make_key('frxUSDJPY', 1);

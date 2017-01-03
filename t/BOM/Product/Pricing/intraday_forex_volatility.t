@@ -15,7 +15,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
-use BOM::Market::DecimateCache;
+use BOM::Market::DataDecimate;
 
 my $ticks = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/ticks.yml');
 
