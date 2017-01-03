@@ -63,7 +63,7 @@ sleep(1);
 
 my $cache = BOM::Market::DataDecimate->new();
 
-my $rtick = $cache->data_cache_get_num_data({
+my $rtick = $cache->_get_num_data_from_cache({
         symbol => 'frxUSDJPY',
         num    => 1,
         end_epoch => $time,

@@ -31,7 +31,7 @@ subtest "decimate_cache_insert_and_retrieve" => sub {
         $decimate_cache->data_cache_insert_raw($data->[$i]);
     }
 
-    my $data_out = $decimate_cache->data_cache_get_num_data({
+    my $data_out = $decimate_cache->_get_num_data_from_cache({
         symbol => 'frxUSDJPY',
         num    => 142,
         end_epoch => 1479203250,
@@ -89,7 +89,7 @@ subtest "decimate_cache_insert_and_retrieve_with_missing_data" => sub {
         $decimate_cache->data_cache_insert_raw($data2->[$i]);
     }
 
-    my $data_out = $decimate_cache->data_cache_get_num_data({
+    my $data_out = $decimate_cache->_get_num_data_from_cache({
         symbol => 'frxUSDJPY',
         num    => 128,
         end_epoch   => 1479203250,
