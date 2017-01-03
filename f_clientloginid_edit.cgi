@@ -577,8 +577,8 @@ my $statuses = join '/', map { uc $_->status_code } $client->client_status;
 my $name     = $client->first_name;
 $name .= ' ' if $name;
 $name .= $client->last_name;
-my client_info = sprintf "%s %s%s", $client->loginid, ($name || '?'), ($statuses ? " [$statuses]" : '');
-Bar("CLIENT " . encode_entities(client_info));
+my $client_info = sprintf "%s %s%s", $client->loginid, ($name || '?'), ($statuses ? " [$statuses]" : '');
+Bar("CLIENT " . encode_entities($client_info));
 
 my ($link_acc, $link_loginid);
 if ($client->comment =~ /move UK clients to \w+ \(from (\w+)\)/) {
