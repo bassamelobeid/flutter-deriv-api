@@ -61,7 +61,7 @@ sub decimate_cache_get {
         my @rev_ticks = reverse @$raw_ticks;
         $ticks = Data::Decimate::decimate($self->sampling_frequency->seconds, \@rev_ticks);
     } else {
-        $ticks = $self->_decimate_cache_get({
+        $ticks = $self->_get_decimate_from_cache({
             symbol      => $underlying->symbol,
             start_epoch => $start_time,
             end_epoch   => $end_time,
@@ -87,7 +87,7 @@ sub tick_cache_get {
         my @rev_ticks = reverse @$raw_ticks;
         $ticks = \@rev_ticks;
     } else {
-        $ticks = $self->data_cache_get({
+        $ticks = $self->_get_raw_from_cache({
             symbol      => $underlying->symbol,
             start_epoch => $start_time,
             end_epoch   => $end_time,
@@ -112,7 +112,7 @@ sub tick_cache_get_num_ticks {
             limit    => $num,
         });
     } else {
-        $ticks = $self->data_cache_get_num_data({
+        $ticks = $self->_get_num_data_from_cache({
             symbol    => $underlying->symbol,
             end_epoch => $end_time,
             num       => $num,
@@ -245,10 +245,13 @@ sub clean_up {
     return;
 }
 
-=head2 _decimate_cache_get
+=head2 _get_decimate_from_cache
+
+Get decimated data from cache.
+
 =cut
 
-sub _decimate_cache_get {
+sub _get_decimate_from_cache {
     my ($self, $args) = @_;
 
     my $which = $args->{symbol};
@@ -265,11 +268,11 @@ sub _decimate_cache_get {
     return \@res;
 }
 
-=head2 data_cache_get
+=head2 _get_raw_from_cache
 Retrieve datas from start epoch till end epoch .
 =cut
 
-sub data_cache_get {
+sub _get_raw_cache_get {
     my ($self, $args) = @_;
     my $symbol = $args->{symbol};
     my $start  = $args->{start_epoch};
@@ -280,11 +283,11 @@ sub data_cache_get {
     return \@res;
 }
 
-=head2 data_cache_get_num_data
+=head2 _get_num_data_from_cache
 Retrieve num number of data from DataCache.
 =cut
 
-sub data_cache_get_num_data {
+sub _get_num_data_from_cache {
 
     my ($self, $args) = @_;
 
