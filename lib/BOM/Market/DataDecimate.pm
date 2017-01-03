@@ -17,13 +17,15 @@ A wrapper to let us use Redis to get decimated tick data.
 use 5.010;
 use Moose;
 
+use BOM::System::RedisReplicated;
+
 use List::Util qw( first min max );
 use Quant::Framework::Underlying;
-use BOM::System::RedisReplicated;
 use Data::Decimate qw(decimate);
 use Date::Utility;
 use Sereal::Encoder;
 use Sereal::Decoder;
+use Time::Duration::Concise;
 
 sub get {
     my ($self, $args) = @_;
@@ -123,15 +125,20 @@ sub tick_cache_get_num_ticks {
 }
 
 =head2 sampling_frequency
+
 =head2 data_cache_size
+
 =head2 decimate_cache_size
+
 =cut
 
 has sampling_frequency => (
     is      => 'ro',
-    isa     => 'time_interval',
-    default => '15s',
-    coerce  => 1,
+    isa     => 'Time::Duration::Concise',
+    default => sub {
+        Time::Duration::Concise->new('15s');
+    },
+    coerce => 1,
 );
 
 # size is the number of ticks
@@ -147,7 +154,7 @@ has decimate_cache_size => (
 
 has decimate_retention_interval => (
     is      => 'ro',
-    isa     => 'time_interval',
+    isa     => 'Time::Duration::Concise',
     lazy    => 1,
     coerce  => 1,
     builder => '_build_decimate_retention_interval',
@@ -156,12 +163,12 @@ has decimate_retention_interval => (
 sub _build_decimate_retention_interval {
     my $self = shift;
     my $interval = int($self->decimate_cache_size / (60 / $self->sampling_frequency->seconds));
-    return $interval . 'm';
+    return Time::Duration::Concise->new($interval . 'm');
 }
 
 has raw_retention_interval => (
     is      => 'ro',
-    isa     => 'time_interval',
+    isa     => 'Time::Duration::Concise',
     lazy    => 1,
     coerce  => 1,
     builder => '_build_raw_retention_interval',
@@ -169,7 +176,7 @@ has raw_retention_interval => (
 
 sub _build_raw_retention_interval {
     my $interval = int(shift->data_cache_size / 60);
-    return $interval . 'm';
+    return Time::Duration::Concise->new($interval . 'm');
 }
 
 has decoder => (
@@ -272,7 +279,7 @@ sub _get_decimate_from_cache {
 Retrieve datas from start epoch till end epoch .
 =cut
 
-sub _get_raw_cache_get {
+sub _get_raw_from_cache {
     my ($self, $args) = @_;
     my $symbol = $args->{symbol};
     my $start  = $args->{start_epoch};
