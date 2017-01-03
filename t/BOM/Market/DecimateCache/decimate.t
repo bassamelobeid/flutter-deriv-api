@@ -13,7 +13,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::MarketData qw(create_underlying);
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
 
-use BOM::Market::DecimateCache;
+use BOM::Market::DataDecimate;
 use Text::CSV;
 
 #add test case here
@@ -21,9 +21,9 @@ use Text::CSV;
 my $data = data_from_csv('t/BOM/Market/DecimateCache/sampledata.csv');
 
 subtest "decimate_cache_insert_and_retrieve" => sub {
-    my $decimate_cache = BOM::Market::DecimateCache->new();
+    my $decimate_cache = BOM::Market::DataDecimate->new();
 
-    ok $decimate_cache, "DecimateCache instance has been created";  
+    ok $decimate_cache, "Instance has been created";  
    
     is scalar(@$data), '142', "check number of test data";      
 
@@ -73,9 +73,9 @@ subtest "decimate_cache_insert_and_retrieve" => sub {
 my $data2 = data_from_csv('t/BOM/Market/DecimateCache/sampledata2.csv');
 
 subtest "decimate_cache_insert_and_retrieve_with_missing_data" => sub {
-    my $decimate_cache = BOM::Market::DecimateCache->new();
+    my $decimate_cache = BOM::Market::DataDecimate->new();
 
-    ok $decimate_cache, "DecimateCache instance has been created";
+    ok $decimate_cache, "Instance has been created";
 
     my ($raw_key, $decimate_key) = map { $decimate_cache->_make_key('frxUSDJPY', $_) } (0 .. 1);
 

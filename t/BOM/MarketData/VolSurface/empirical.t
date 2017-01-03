@@ -12,7 +12,7 @@ use BOM::MarketData;
 use BOM::MarketData::Types;
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData qw(create_underlying);
-use BOM::Market::DecimateCache;
+use BOM::Market::DataDecimate;
 use Date::Utility;
 
 # last tick time
@@ -568,7 +568,7 @@ subtest 'general' => sub {
     qr/is required/, 'throws error if underlying is not specified';
 };
 
-my $mock_at = Test::MockModule->new('BOM::Market::DecimateCache');
+my $mock_at = Test::MockModule->new('BOM::Market::DataDecimate');
 
 my $mock_emp = Test::MockModule->new('BOM::MarketData::VolSurface::Empirical');
 $mock_emp->mock('long_term_vol', sub { 0.11 });

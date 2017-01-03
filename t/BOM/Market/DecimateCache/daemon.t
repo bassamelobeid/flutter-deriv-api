@@ -8,7 +8,7 @@ use Test::Trap;
 use BOM::Platform::Runtime;
 use Cache::RedisDB;
 use BOM::MarketData::FeedDecimate;
-use BOM::Market::DecimateCache;
+use BOM::Market::DataDecimate;
 use File::Slurp;
 use File::Temp;
 use ZMQ::Constants qw(ZMQ_PUB);
@@ -61,7 +61,7 @@ sleep(1);
 ok(!zmq_close($pub_sock));
 sleep(1);
 
-my $cache = BOM::Market::DecimateCache->new();
+my $cache = BOM::Market::DataDecimate->new();
 
 my $rtick = $cache->data_cache_get_num_data({
         symbol => 'frxUSDJPY',
