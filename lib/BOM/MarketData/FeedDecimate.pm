@@ -36,7 +36,7 @@ use ExpiryQueue qw( update_queue_for_tick );
 use Time::HiRes;
 
 use Data::Decimate qw(decimate);
-use BOM::Market::DecimateCache;
+use BOM::Market::DataDecimate;
 
 has timeout => (
     is       => 'ro',
@@ -152,7 +152,7 @@ sub _cleanup_tick {
 has _tick_source => (
     is      => 'ro',
     default => sub {
-        BOM::Market::DecimateCache->new;
+        BOM::Market::DataDecimate->new;
     },
 );
 
