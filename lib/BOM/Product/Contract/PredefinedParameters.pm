@@ -395,7 +395,11 @@ sub _get_strike_from_call_bs_price {
 
 # Japan's intraday predefined trading window are as follow:
 # 2 hours and 15 min duration:
-# 00:00-02:00,01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00 21:45:00, 23:45-02:00,01:45-04:00, 03:45-06:00
+# For AUDJPY, USDJPY, AUDUSD
+# 00:00-02:00,01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00,21:45- 23:59:59, 23:45-02:00,01:45-04:00, 03:45-06:00
+#
+# For other pairs:
+# 00:00-02:00,01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00,23:45-02:00,01:45-04:00, 03:45-06:00
 #
 # 5 hours and 15 min duration:
 # 00:45-06:00 ; 04:45-10:00 ; 08:45-14:00 ; 12:45-18:00
@@ -408,8 +412,8 @@ sub _get_intraday_trading_window {
 
     my $start_of_day = $date->truncate_to_day;
     my ($current_hour, $minute, $date_str) = ($date->hour, $date->minute, $date->date);
-
-    my $hour = $minute < 45 ? $current_hour : $current_hour + 1;
+    my $calendar  = $underlying->calendar;
+    my $hour      = $minute < 45 ? $current_hour : $current_hour + 1;
     my $even_hour = $hour - ($hour % 2);
 
     # We only want odd hour of 1, 5, 9, 13
@@ -425,6 +429,7 @@ sub _get_intraday_trading_window {
         push @intraday_windows,
             _get_intraday_window({
                 now        => $date,
+                calendar   => $calendar,
                 date_start => $start_of_day->plus_time_interval(($even_hour - 2) . 'h'),
                 duration   => '2h'
             });
@@ -432,6 +437,7 @@ sub _get_intraday_trading_window {
         push @intraday_windows,
             _get_intraday_window({
                 now        => $date,
+                calendar   => $calendar,
                 date_start => $start_of_day->plus_time_interval($odd_hour - 4 . 'h'),
                 duration   => '5h'
             });
@@ -442,6 +448,7 @@ sub _get_intraday_trading_window {
 
     my $window_2h = _get_intraday_window({
         now        => $date,
+        calendar   => $calendar,
         date_start => $start_of_day->plus_time_interval($even_hour . 'h'),
         duration   => '2h'
     });
@@ -453,6 +460,7 @@ sub _get_intraday_trading_window {
         push @intraday_windows,
             _get_intraday_window({
                 now        => $date,
+                calendar   => $calendar,
                 date_start => $start_of_day->plus_time_interval(($even_hour - 2) . 'h'),
                 duration   => '2h'
             });
@@ -463,6 +471,7 @@ sub _get_intraday_trading_window {
         push @intraday_windows,
             _get_intraday_window({
                 now        => $date,
+                calendar   => $calendar,
                 date_start => $start_of_day->plus_time_interval($odd_hour . 'h'),
                 duration   => '5h'
             });
@@ -473,6 +482,7 @@ sub _get_intraday_trading_window {
         push @intraday_windows,
             _get_intraday_window({
                 now        => $date,
+                calendar   => $calendar,
                 date_start => $start_of_day->plus_time_interval($previous_odd_hour . 'h'),
                 duration   => '5h'
             });
@@ -565,14 +575,17 @@ To get the intraday trading window of a trading duration. Start at 15 minute bef
 =cut
 
 sub _get_intraday_window {
-    my $args             = shift;
-    my $date_start       = $args->{date_start};
-    my $duration         = $args->{duration};
-    my $now              = $args->{now};
-    my $is_monday_start  = $date_start->day_of_week == 1 && $date_start->hour == 0;
-    my $early_date_start = $is_monday_start ? $date_start : $date_start->minus_time_interval('15m');
-    my $date_expiry      = $date_start->hour == 22 ? $date_start->plus_time_interval('1h59m59s') : $date_start->plus_time_interval($duration);
-    if ($now->is_before($date_expiry)) {
+    my $args           = shift;
+    my $date_start     = $args->{date_start};
+    my $duration       = $args->{duration};
+    my $calendar       = $args->{calendar};
+    my $now            = $args->{now};
+    my $is_early_close = $calendar->closes_early_on($now);
+    # If it is early close on the day before, it should start at 00GMT.
+    my $start_at_00 = ($date_start->day_of_week == 1 or $calendar->closes_early_on($date_start->minus_time_interval('1d'))) && $date_start->hour == 0;
+    my $early_date_start = $start_at_00 ? $date_start : $date_start->minus_time_interval('15m');
+    my $date_expiry = $date_start->hour == 22 ? $date_start->plus_time_interval('1h59m59s') : $date_start->plus_time_interval($duration);
+    if (($now->is_before($date_expiry)) or (defined $is_early_close and $is_early_close->is_after($date_expiry))) {
         return {
             date_start => {
                 date  => $early_date_start->datetime,
@@ -582,7 +595,7 @@ sub _get_intraday_window {
                 date  => $date_expiry->datetime,
                 epoch => $date_expiry->epoch,
             },
-            duration => $duration . (!$is_monday_start ? '15m' : ''),
+            duration => $duration . (!$start_at_00 ? '15m' : ''),
         };
     }
 }
