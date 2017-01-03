@@ -251,8 +251,9 @@ sub active_symbols {
         $active_symbols = $cached_symbols;
     } else {
         my $offerings_config = BOM::Platform::Runtime->instance->get_offerings_config;
-
-        my @all_active = get_offerings_with_filter($offerings_config, 'underlying_symbol', {landing_company => $landing_company_name});
+        my $offerings_args = {landing_company => $landing_company_name};
+        $offerings_args->{submarket} = 'major_pairs' if $product_type eq 'multi_barrier';
+        my @all_active = get_offerings_with_filter($offerings_config, 'underlying_symbol', $offerings_args);
         # symbols would be active if we allow forward starting contracts on them.
         my %forward_starting = map { $_ => 1 } get_offerings_with_filter(
             $offerings_config,
