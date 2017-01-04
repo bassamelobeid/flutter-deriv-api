@@ -14,13 +14,19 @@ use BOM::Platform::Context qw(localize);
 
 has economic_events_for_volatility_calculation => (
     is         => 'ro',
-    isa        => 'HashRef',
+    isa        => 'Array',
     lazy_build => 1,
 );
 
-has [qw(pricing_vol vol_at_strike news_adjusted_pricing_vol pricing_vol_for_two_barriers)] => (
+has [qw(pricing_vol vol_at_strike news_adjusted_pricing_vol)] => (
     is         => 'ro',
     isa        => 'Maybe[PositiveNum]',
+    lazy_build => 1,
+);
+
+has pricing_vol_for_two_barriers => (
+    is         => 'ro',
+    isa        => 'Maybe[HashRef]',
     lazy_build => 1,
 );
 
