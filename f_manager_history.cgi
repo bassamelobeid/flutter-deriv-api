@@ -65,10 +65,10 @@ my $client_email = $client->email;
 print '<form action="'
     . request()->url_for('backoffice/f_clientloginid_edit.cgi')
     . '" method=post>'
-    . '<input type=hidden name=broker value='
-    . $broker . '>'
-    . '<input type=hidden name=loginID value='
-    . $loginID . '>'
+    . '<input type=hidden name=broker value="'
+    . $broker . '">'
+    . '<input type=hidden name=loginID value="'
+    . $loginID . '">'
     . '<input type=submit value="View/edit '
     . $loginID
     . ' details">'
@@ -78,10 +78,10 @@ print '<table width=100%>' . '<tr>'
     . '<form  action="'
     . request()->url_for('backoffice/f_manager_history.cgi')
     . '" method=post>'
-    . '<td align=right> Quick jump to see another statement: <input name=loginID type=text size=15 value='
-    . $loginID . '>'
-    . '<input type=hidden name=broker value='
-    . $broker . '>'
+    . '<td align=right> Quick jump to see another statement: <input name=loginID type=text size=15 value="'
+    . $loginID . '">'
+    . '<input type=hidden name=broker value="'
+    . $broker . '">'
     . '<input type=hidden name=l value=EN>'
     . '<input type=submit value=view>'
     . '<input type=checkbox value=yes name=depositswithdrawalsonly>Deposits and Withdrawals only' . '</td>'
@@ -92,9 +92,9 @@ my $senvs = $ENV{'SCRIPT_NAME'};
 $ENV{'SCRIPT_NAME'} = '';
 $ENV{'SCRIPT_NAME'} = $senvs;
 
-print $client_name . ' Email:' . $client_email . ' Country:' . $citizen . ' Residence:' . $residence;
+print encode_entities($client_name) . ' Email:' . encode_entities($client_email) . ' Country:' . encode_entities($citizen) . ' Residence:' . encode_entities($residence);
 if ($tel) {
-    print ' Tel:' . $tel;
+    print ' Tel:' . encode_entities($tel);
 }
 print '<br />';
 
