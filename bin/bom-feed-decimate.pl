@@ -6,7 +6,7 @@ use warnings;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData qw(create_underlying_db);
 
-use BOM::Market::DecimateCache;
+use BOM::Market::DataDecimate;
 
 use List::Util qw(max);
 use Data::Decimate qw(decimate);
@@ -29,7 +29,7 @@ EOF
 
 print("Feed decimate starting\n");
 
-my $decimate_cache = BOM::Market::DecimateCache->new();
+my $decimate_cache = BOM::Market::DataDecimate->new();
 
 my @uls = map { create_underlying($_) } create_underlying_db->symbols_for_intraday_fx;
 
