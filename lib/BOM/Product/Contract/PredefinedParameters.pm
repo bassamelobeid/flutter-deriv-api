@@ -109,7 +109,7 @@ Daily contract:
 2) Weekly contract: Start at 00:00GMT first trading day of the week and end at the close of last trading day of the week
 3) Monthly contract: Start at 00:00GMT of the first trading day of the calendar month and end at the close of the last trading day of the month
 4) Quarterly contract: Start at 00:00GMT of the first trading day of the quarter and end at the close of the last trading day of the quarter.
-
+5) Yearly contract: Start at 00:00GMT of the first trading day of the year and end at the close of the last trading day of the year.
 =cut
 
 sub generate_trading_periods {
@@ -529,6 +529,17 @@ sub _get_daily_trading_window {
             calendar           => $calendar
         });
 
+    # yearly contract
+    my $first_day_of_year      = Date::Utility->new($now_year . "-01-01");
+    my $first_day_of_next_year = Date::Utility->new('1-' . $first_day_of_year->months_ahead(12));
+    push @daily_duration,
+        _get_trade_date_of_daily_window({
+            current_date_start => $first_day_of_year,
+            next_date_start    => $first_day_of_next_year,
+            duration           => '1Y',
+            calendar           => $calendar
+        });
+
     # This is for 0 day contract
     my $start_of_day = $date->truncate_to_day;
     my $close_of_day = $calendar->closing_on($date);
@@ -544,7 +555,6 @@ sub _get_daily_trading_window {
         },
         duration => '0d'
         };
-
     return @daily_duration;
 }
 
