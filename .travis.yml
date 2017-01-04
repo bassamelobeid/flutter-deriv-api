@@ -54,3 +54,5 @@ install:
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
     - make $TEST_SUITE
+after_script:
+    - /tmp/travis-scripts/wait_for_ssh.sh
