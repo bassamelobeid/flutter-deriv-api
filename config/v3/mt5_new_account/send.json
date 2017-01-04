@@ -15,6 +15,10 @@
       "description": "Account type",
       "required": "1"
     },
+    "sub_account_type": {
+      "enum": ["cent", "standard", "stp"],
+      "description": "Cent: Fixed spreads, High leverage. Standard: Variable spreads, Medium leverage. STP: Straight through processing, Variable tight spreads"
+    },
     "email": {
       "type": "string",
       "format": "email",
