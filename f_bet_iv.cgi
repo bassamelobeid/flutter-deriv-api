@@ -10,6 +10,7 @@ use subs::subs_dividend_from_excel_file;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
+use HTML::Entities;
 
 use BOM::MarketData::Fetcher::CorporateAction;
 use Bloomberg::FileDownloader;
@@ -49,7 +50,7 @@ my $directory_listing_url = request()->url_for('backoffice/f_bbdl_list_directory
 print '<LI><b>BBDL FTP directory listing<b> - click this button to list the contents of the BBDL servers.';
 print qq~
 <form method=post action=$directory_listing_url>
-<input type=hidden name=broker value=$broker>
+<input type=hidden name=broker value=~ . encode_entities($broker) . qq~>
  <input type=submit value='List Directory'> (click once; will be slow)
 </form>~;
 
@@ -80,7 +81,7 @@ print qq~<br><form method=post action=$request_files_upload_url>
 my $single_file_upload_dir = request()->url_for('backoffice/f_bbdl_upload.cgi');
 print qq~<P><LI>
 <form method=post action=$single_file_upload_dir>
-<input type=hidden name=broker value=$broker>
+<input type=hidden name=broker value=$~ . encode_entities($broker) . qq~>
 Upload a file to the Bloomberg Data License FTP folder:<br>
 Filename: <input type=text size=20 name=filename value='scheduled.req'>
 <input type=submit value='Upload File'><br>
@@ -96,7 +97,7 @@ my $download_dir = request()->url_for('backoffice/f_bbdl_download.cgi');
 print qq~
 <LI>
 <form method=post action=$download_dir>
-<input type=hidden name=broker value=$broker>
+<input type=hidden name=broker value=~ . encode_entities($broker) . qq~>
 Download Filename: <input type=text size=20 name=filename value='scheduled.out'>
 <input type=submit value='Download File'>
 </form>~;
