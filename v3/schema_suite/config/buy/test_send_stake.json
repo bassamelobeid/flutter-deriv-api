@@ -6,7 +6,7 @@
     "basis": "stake",
     "contract_type": "CALL",
     "currency": "USD",
-    "symbol": "frxAUDJPY",
+    "symbol": "R_50",
     "duration": 10,
     "duration_unit": "m"
   }
