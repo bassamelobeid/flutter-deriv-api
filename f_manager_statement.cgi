@@ -33,6 +33,7 @@ if ($outputtype eq 'csv') {
 }
 
 my $broker = request()->broker_code;
+my $encoded_broker = encode_entities($broker);
 BOM::Backoffice::Auth0::can_access(['CS']);
 
 if ($loginID !~ /^$broker/) {
@@ -51,19 +52,19 @@ my $client_email = $client->email;
 Bar("$encoded_loginID ($client_email) Portfolio");
 
 print "<form style=\"float:left\" action=\"" . request()->url_for('backoffice/f_clientloginid_edit.cgi') . "\" METHOD=POST>";
-print "<input type=hidden name=broker value=$broker>";
-print "<input type=hidden name=loginID value=\"$loginID\">";
-print "<INPUT type=\"submit\" value=\"EDIT $loginID DETAILS\">";
+print "<input type=hidden name=broker value=$encoded_broker>";
+print "<input type=hidden name=loginID value=\"$encoded_loginID\">";
+print "<INPUT type=\"submit\" value=\"EDIT $encoded_loginID DETAILS\">";
 print "</form><form style=\"float:right\" action=\"" . request()->url_for('backoffice/f_manager_statement.cgi') . "\" method=\"POST\">
-Quick jump to see another portfolio: <input name=loginID type=text size=10 value='$broker'>";
+Quick jump to see another portfolio: <input name=loginID type=text size=10 value='$encoded_broker'>";
 print "<input type=hidden name=\"outputtype\" value=\"table\">";
-print "<input type=hidden name=\"broker\" value=\"$broker\">";
+print "<input type=hidden name=\"broker\" value=\"$encoded_broker\">";
 print "<input type=hidden name=\"l\" value=\"EN\">";
 print "<INPUT type=\"submit\" value=\"Go\"></form>
 
 <form style=\"float:left\" action=\"" . request()->url_for('backoffice/f_manager_history.cgi') . "\" method=\"POST\">
-<input type=hidden name=\"loginID\" value=\"$loginID\" />
-<input type=hidden name=\"broker\" value=\"$broker\" />
+<input type=hidden name=\"loginID\" value=\"$encoded_loginID\" />
+<input type=hidden name=\"broker\" value=\"$encoded_broker\" />
 <input type=hidden name=\"l\" value=\"EN\" />
 <input type=submit value=\"CLIENT STATEMENT\" />
 </form><div style=\"clear:both\"></div>";

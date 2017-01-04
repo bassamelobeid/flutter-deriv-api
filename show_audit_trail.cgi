@@ -3,6 +3,7 @@ package main;
 
 use strict;
 use warnings;
+use HTML::Entities;
 
 use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
@@ -114,7 +115,7 @@ for ($category) {
     }
 }
 unless (@tables) {
-    print "Unsupported audit-trail category [$category]";
+    print "Unsupported audit-trail category [" . encode_entities($category) . "]";
     code_exit_BO();
 }
 
