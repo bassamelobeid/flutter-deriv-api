@@ -58,7 +58,7 @@ sub decimate_cache_get {
 
         my $raw_ticks = $underlying->ticks_in_between_start_end({
 #            start_time => $first_decimate,
-                start_time => $start,
+                start_time => $start_time,
                 end_time   => $end_time,
         });
 
