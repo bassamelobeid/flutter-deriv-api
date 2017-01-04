@@ -13,16 +13,21 @@ use BOM::Product::Contract::Finder::Japan;
 sub contracts_for {
     my $params = shift;
 
-    my $args         = $params->{args};
-    my $symbol       = $args->{contracts_for};
-    my $currency     = $args->{currency} || 'USD';
-    my $product_type = $args->{product_type} // 'basic';
+    my $args            = $params->{args};
+    my $symbol          = $args->{contracts_for};
+    my $currency        = $args->{currency} || 'USD';
+    my $product_type    = $args->{product_type} // 'basic';
+    my $landing_company = $args->{landing_company} // 'costarica';
 
     my $contracts_for;
+    my $query_args = {
+        symbol          => $symbol,
+        landing_company => $landing_company,
+    };
     if ($product_type eq 'multi_barrier') {
-        $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol({symbol => $symbol});
+        $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol($query_args);
     } else {
-        $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol({symbol => $symbol});
+        $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol($query_args);
     }
 
     my $i = 0;
