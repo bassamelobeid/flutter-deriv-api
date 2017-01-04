@@ -53,12 +53,12 @@ subtest "predefined contracts for symbol" => sub {
     my %expected = (
         frxUSDJPY => {
             contract_count => {
-                callput      => 14,
-                touchnotouch => 6,
-                staysinout   => 6,
-                endsinout    => 6,
+                callput      => 16,
+                touchnotouch => 8,
+                staysinout   => 8,
+                endsinout    => 8,
             },
-            hit_count => 32,
+            hit_count => 40,
         },
         frxAUDCAD => {hit_count => 0},
     );
@@ -78,11 +78,11 @@ subtest "predefined contracts for symbol" => sub {
 subtest "predefined trading_period" => sub {
     my %expected_count = (
         offering                                => 10,
-        offering_with_predefined_trading_period => 30,
+        offering_with_predefined_trading_period => 38,
         trading_period                          => {
             call_intraday => 2,
-            call_daily    => 4,
-            range_daily   => 3,
+            call_daily    => 5,
+            range_daily   => 4,
         });
 
     my %expected_trading_period = (
@@ -92,9 +92,9 @@ subtest "predefined trading_period" => sub {
             date_start  => [map { Date::Utility->new($_)->epoch } ('2015-09-04 15:45:00', '2015-09-04 12:45:00',)],
         },
         range_daily => {
-            duration => ['1W', '1M', '3M'],
-            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-09-04 21:00:00', '2015-09-30 23:59:59', '2015-09-30 23:59:59',)],
-            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-08-31 00:00:00', '2015-09-01 00:00:00', '2015-07-01 00:00:00',)],
+            duration => ['1W', '1M', '3M', '1Y'],
+            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-09-04 21:00:00', '2015-09-30 23:59:59', '2015-09-30 23:59:59', '2015-12-31 23:59:59')],
+            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-08-31 00:00:00', '2015-09-01 00:00:00', '2015-07-01 00:00:00', '2015-01-02 00:00:00')],
         },
     );
 
