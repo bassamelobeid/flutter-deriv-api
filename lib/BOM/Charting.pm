@@ -440,36 +440,4 @@ sub _quote_interval_change {
     }
 }
 
-sub _get_price_changes_html {
-    my $args       = shift;
-    my $prices     = $args->{prices};
-    my $underlying = $args->{underlying};
-
-    my $licence_type = $underlying->feed_license;
-
-    my $changes_html;
-    my $license = 1;
-    my $delay_seconds = ($licence_type eq 'delayed') ? 60 * $underlying->delay_amount : 0;
-    my $previous_price;
-    foreach my $datum (@{$prices}) {
-        my $epoch = $datum->{epoch};
-        # if the end of the interval is within the delay amount
-        # (the 'time_interval' represents the end of the period)
-        # then we cannot show the data
-        $license = 0
-            if ($license
-            and $delay_seconds
-            and (time - $epoch <= $delay_seconds));
-
-        my $price = $datum->{quote};
-
-        if ($previous_price) {
-            $changes_html->{$epoch} = _quote_interval_change($previous_price, $price, $underlying, $license);
-        }
-        $previous_price = $price;
-    }
-
-    return $changes_html;
-}
-
 1;

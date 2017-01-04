@@ -25,7 +25,6 @@ use Try::Tiny;
 
 use Mail::Sender;
 use BOM::Database::ClientDB;
-use BOM::Database::DataMapper::HistoricalMarkedToMarket;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Time::Duration::Concise::Localize;
@@ -313,10 +312,7 @@ sub cache_daily_turnover {
     });
     my $aggregate_transactions = $report_mapper->get_aggregated_sum_of_transactions_of_month({date => $curr_month->db_timestamp});
 
-    my $eod_market_values = BOM::Database::DataMapper::HistoricalMarkedToMarket->new({
-            broker_code => 'FOG',
-            operation   => 'collector'
-        })->eod_market_values_of_month($curr_month->db_timestamp);
+    my $eod_market_values = $report_mapper->eod_market_values_of_month($curr_month->db_timestamp);
 
     my $active_clients = $report_mapper->number_of_active_clients_of_month($curr_month->db_timestamp);
 
