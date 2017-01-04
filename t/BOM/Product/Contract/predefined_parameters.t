@@ -24,7 +24,7 @@ subtest 'non trading day' => sub {
     generate_trading_periods($supported_symbol, $saturday);
     my $offerings = get_predefined_offerings($supported_symbol, $saturday);
     ok !@$offerings, 'no offerings were generated on non trading day';
-    setup_ticks($supported_symbol, [[$monday->minus_time_interval('100d')], [$monday]]);
+    setup_ticks($supported_symbol, [[$monday->minus_time_interval('400d')], [$monday]]);
     generate_trading_periods($supported_symbol, $monday);
     $offerings = get_predefined_offerings($supported_symbol, $monday);
     ok @$offerings, 'generates predefined offerings on a trading day';
@@ -101,7 +101,7 @@ subtest 'intraday trading period' => sub {
     foreach my $input (@test_inputs) {
         my ($symbol, $category, $date, $count, $periods) = map { $input->[$_] } (0 .. 4);
         $date = Date::Utility->new($date);
-        setup_ticks($symbol, [[$date->minus_time_interval('100d')], [$date]]);
+        setup_ticks($symbol, [[$date->minus_time_interval('400d')], [$date]]);
         note('generating for ' . $symbol . '. Time set to ' . $date->day_as_string . ' at ' . $date->time);
         generate_trading_periods($symbol, $date);
         my $offerings = get_predefined_offerings($symbol, $date);
@@ -125,7 +125,7 @@ subtest 'intraday trading period' => sub {
 subtest 'predefined barriers' => sub {
     my $symbol = 'frxEURUSD';
     my $date   = Date::Utility->new("2015-08-24 00:00:00");
-    setup_ticks($symbol, [[$date->minus_time_interval('100d')], [$date, 1.1521], [$date->plus_time_interval('10m'), 1.15591]]);
+    setup_ticks($symbol, [[$date->minus_time_interval('400d')], [$date, 1.1521], [$date->plus_time_interval('10m'), 1.15591]]);
 
     my @inputs = ({
             match => {
@@ -133,7 +133,7 @@ subtest 'predefined barriers' => sub {
                 duration          => '5h15m',
                 expiry_type       => 'intraday'
             },
-            ticks => [[$date->minus_time_interval('100d')], [$date, 1.1521], [$date->plus_time_interval('10m'), 1.15591]],
+            ticks => [[$date->minus_time_interval('400d')], [$date, 1.1521], [$date->plus_time_interval('10m'), 1.15591]],
             available_barriers => [1.15141, 1.15241, 1.15341, 1.15471, 1.15591, 1.15711, 1.15841, 1.15941, 1.16041,],
             expired_barriers   => [],
         },
@@ -144,7 +144,7 @@ subtest 'predefined barriers' => sub {
                 expiry_type       => 'daily'
             },
             ticks => [
-                [$date->minus_time_interval('100d')],
+                [$date->minus_time_interval('400d')],
                 [$date,                            1.1521],
                 [$date->plus_time_interval(1),     1.14621],
                 [$date->plus_time_interval(3),     1.15799],
@@ -160,7 +160,7 @@ subtest 'predefined barriers' => sub {
                 expiry_type       => 'daily'
             },
             ticks => [
-                [$date->minus_time_interval('100d')],
+                [$date->minus_time_interval('400d')],
                 [$date,                            1.1521],
                 [$date->plus_time_interval(1),     1.13984],
                 [$date->plus_time_interval(3),     1.15667],
@@ -176,7 +176,7 @@ subtest 'predefined barriers' => sub {
                 expiry_type       => 'daily'
             },
             ticks => [
-                [$date->minus_time_interval('100d')],
+                [$date->minus_time_interval('400d')],
                 [$date,                            1.1521],
                 [$date->plus_time_interval(1),     1.1520],
                 [$date->plus_time_interval(3),     1.15667],
@@ -223,7 +223,7 @@ subtest 'predefined barriers' => sub {
 
 subtest 'update_predefined_highlow' => sub {
     my $now    = Date::Utility->new;
-    my $symbol = 'frxUSDJPY';
+    my $symbol = 'frxGBPUSD';
     SKIP: {
         skip 'non trading day', 4, unless create_underlying($symbol)->calendar->trades_on($now);
         setup_ticks($symbol, [[$now->minus_time_interval('100d'), 100], [$now, 69], [$now->plus_time_interval('10s'), 69.1]]);

@@ -1570,6 +1570,9 @@ sub _validate_trade_pricing_adjustment {
                     amount      => $final_value,
                 });
             $self->contract($new_contract);
+
+            #Since we reset the payout and recreate new contract with the new payout, the $self->price need to set to the new contract ask price.
+            $self->price($self->contract->ask_price);
         }
     }
 
