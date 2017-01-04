@@ -50,9 +50,10 @@ sub mt5_new_account {
     my $mt5_suspended = _is_mt5_suspended();
     return $mt5_suspended if $mt5_suspended;
 
-    my $client       = $params->{client};
-    my $args         = $params->{args};
-    my $account_type = delete $args->{account_type};
+    my $client           = $params->{client};
+    my $args             = $params->{args};
+    my $account_type     = delete $args->{account_type};
+    my $sub_account_type = delete $args->{sub_account_type} // '';
 
     my $group;
     if ($account_type eq 'demo') {
@@ -67,8 +68,12 @@ sub mt5_new_account {
             return BOM::RPC::v3::Utility::permission_error();
         }
 
-        if ($account_type eq 'financial' && !$client->client_fully_authenticated) {
-            return BOM::RPC::v3::Utility::permission_error();
+        if ($account_type eq 'financial') {
+            return BOM::RPC::v3::Utility::permission_error() unless $client->client_fully_authenticated;
+
+            BOM::RPC::v3::Utility::create_error({
+                    code              => 'InvalidSubAccountType',
+                    message_to_client => localize('Invalid sub account type.')}) unless ($sub_account_type =~ /^(?:cent|standard|stp)$/);
         }
 
         # get MT company from countries.yml
@@ -84,6 +89,7 @@ sub mt5_new_account {
         }
 
         $group = 'real\\' . $mt_company;
+        $group .= "_$sub_account_type" if $account_type eq 'financial';
     } else {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccountType',
