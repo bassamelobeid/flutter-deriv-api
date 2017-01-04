@@ -21,14 +21,14 @@ use LandingCompany::Offerings qw(get_contract_specifics);
 
 use BOM::System::Chronicle;
 use BOM::Platform::Context qw(localize);
+use BOM::MarketData::Types;
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Contract::Category;
 use BOM::Product::RiskProfile;
+use BOM::Product::Types;
 use BOM::Product::ContractValidator;
 use BOM::Product::ContractPricer;
-use BOM::MarketData::Types;
-use BOM::Product::Types;
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
