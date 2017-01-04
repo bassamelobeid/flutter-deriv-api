@@ -17,6 +17,7 @@ use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Moneyness;
 use Date::Utility;
 use BOM::System::Chronicle;
+use BOM::MarketData qw(create_underlying);
 
 =head2 symbols_for_delta
 
@@ -73,12 +74,14 @@ sub run {
 
     foreach my $symbol (@{$self->symbols_for_moneyness}) {
         my $surface_data = {map { $_ => {vol_spread => _get_volspread('moneyness'), smile => _get_smile('moneyness')} } @tenors};
+        my $underlying = create_underlying($symbol);
         Quant::Framework::VolSurface::Moneyness->new({
-                underlying       => create_underlying($symbol),
+                underlying       => $underlying,
                 surface_data     => $surface_data,
                 recorded_date    => $now,
                 chronicle_reader => $chronicle_r,
                 chronicle_writer => $chronicle_w,
+                spot_reference   => $underlying->spot,
             })->save;
     }
 
