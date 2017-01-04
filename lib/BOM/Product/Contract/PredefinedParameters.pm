@@ -665,8 +665,7 @@ sub _get_offerings {
             %similar_args,
         });
 
-    return
-        map { $_->{barriers} = BOM::Product::Contract::Category->new($_->{contract_category})->two_barriers ? 2 : 1; $_ }
+    return map { $_->{barriers} = BOM::Product::Contract::Category->new($_->{contract_category})->two_barriers ? 2 : 1; $_ }
         grep { $supported_contract_types{$_->{contract_type}} } @offerings;
 }
 1;
