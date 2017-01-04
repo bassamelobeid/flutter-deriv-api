@@ -26,6 +26,8 @@ use Date::Utility;
 use Sereal::Encoder;
 use Sereal::Decoder;
 
+use Time::Duration::Concise;
+
 sub get {
     my ($self, $args) = @_;
 
@@ -133,9 +135,10 @@ sub tick_cache_get_num_ticks {
 
 has sampling_frequency => (
     is      => 'ro',
-    isa     => 'time_interval',
-    default => '15s',
-    coerce  => 1,
+    isa     => 'Time::Duration::Concise',
+    default => sub {
+        Time::Duration::Concise->new(interval => '15s');
+    },
 );
 
 # size is the number of ticks
