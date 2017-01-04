@@ -69,7 +69,7 @@ sub print_client_details {
     }
 
     # COMMUNICATION ADDRESSES
-    my $client_phone_country = $lc_countries->code_from_phone($client->phone);
+    my $client_phone_country = $countries_instance->code_from_phone($client->phone);
     if (not $client_phone_country) {
         $client_phone_country = 'Unknown';
     }
