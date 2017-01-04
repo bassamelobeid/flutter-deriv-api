@@ -19,6 +19,17 @@ use BOM::MarketData qw(create_underlying);
 use BOM::System::RedisReplicated;
 use BOM::Platform::Runtime;
 
+my %supported_contract_types = (
+    CALLE        => 1,
+    PUT          => 1,
+    EXPIRYMISS   => 1,
+    EXPIRYRANGEE => 1,
+    RANGE        => 1,
+    UPORDOWN     => 1,
+    ONETOUCH     => 1,
+    NOTOUCH      => 1,
+);
+
 my $cache_namespace = 'predefined_parameters';
 
 =head2 get_predefined_offerings
@@ -654,6 +665,8 @@ sub _get_offerings {
             %similar_args,
         });
 
-    return map { $_->{barriers} = BOM::Product::Contract::Category->new($_->{contract_category})->two_barriers ? 2 : 1; $_ } @offerings;
+    return
+        map { $_->{barriers} = BOM::Product::Contract::Category->new($_->{contract_category})->two_barriers ? 2 : 1; $_ }
+        grep { $supported_contract_types{$_->{contract_type}} } @offerings;
 }
 1;
