@@ -4,7 +4,7 @@ use strict 'vars';
 
 use Locale::Country;
 use f_brokerincludeall;
-
+use HTML::Entities;
 use Client::Account;
 
 use BOM::Platform::Locale;
@@ -15,7 +15,7 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 my $loginID = uc(request()->param('loginID'));
-
+my $encoded_loginID = encode_entities($loginID);
 PrintContentType();
 BrokerPresentation($loginID . ' HISTORY', '', '');
 BOM::Backoffice::Auth0::can_access(['CS']);
@@ -27,7 +27,7 @@ if ($loginID =~ /^([A-Z]+)/) {
 
 $loginID =~ s/\s//g;
 if ($loginID !~ /^$broker/) {
-    print 'Error : wrong loginID ' . $loginID;
+    print 'Error : wrong loginID ' . $encoded_loginID;
     code_exit_BO();
 }
 
@@ -44,7 +44,7 @@ if (request()->param('depositswithdrawalsonly') eq 'yes') {
 
 my $client = Client::Account::get_instance({'loginid' => $loginID});
 if (not $client) {
-    print "Error : wrong loginID ($loginID) could not get client instance";
+    print "Error : wrong loginID ($encoded_loginID) could not get client instance";
     code_exit_BO();
 }
 
