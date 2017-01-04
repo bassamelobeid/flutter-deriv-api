@@ -126,22 +126,4 @@ sub transfer_from_client_to_pa {
     );
 }
 
-sub transfer_from_pa_to_client {
-    # Always ensure that PAYMENT AGENT always available
-    my $dt_mocked = Test::MockModule->new('DateTime');
-    $dt_mocked->mock('day_of_week', sub { return 2 });
-
-    $pa_client->validate_agent_payment(
-        amount   => $transfer_amount,
-        currency => $client_account->currency_code,
-        toClient => $client,
-    );
-
-    $pa_client->payment_account_transfer(
-        amount   => $transfer_amount,
-        currency => $client_account->currency_code,
-        toClient => $client,
-        remark   => 'Transfer from Payment Agent to CR0010 Paypal Transaction reference: #USD10#F72117379D1DD7B5# Timestamp: 22-Jul-11 08:36:49GMT',
-    );
-}
 
