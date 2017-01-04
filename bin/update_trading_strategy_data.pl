@@ -12,11 +12,16 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use YAML qw(LoadFile);
 use Path::Tiny;
 use Data::Dumper;
+use Fcntl qw(:flock);
 
 # How many ticks to request at a time
 use constant TICK_CHUNK_SIZE => 1000;
 
 ++$|;
+
+open my $unique_lock, '<', $0 or die $!;
+die "Another copy of $0 is already running - we expect to run daily, is the script taking more than 24h to complete?"
+    unless flock $unique_lock, LOCK_EX | LOCK_NB;
 
 my $config = LoadFile('/home/git/regentmarkets/bom-backoffice/config/trading_strategy_datasets.yml');
 
@@ -33,7 +38,7 @@ path($output_base)->mkpath;
 for my $symbol (@{$config->{underlyings}}) {
     print "Symbol $symbol\n";
     my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(
-        db_handle => Postgres::FeedDB::read_dbh,
+        db_handle => Postgres::FeedDB::read_dbh(),
         underlying => $symbol 
     );
 
