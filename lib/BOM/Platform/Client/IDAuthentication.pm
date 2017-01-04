@@ -126,7 +126,7 @@ sub _request_id_authentication {
     my $brand         = Brands->new(name => request()->brand);
     my $support_email = $brand->emails('support');
     my $ce_subject    = localize('Documents are required to verify your identity');
-    my $ce_body       = localize(<<'EOM', $client_name, $brands->website_name, $support_email);
+    my $ce_body       = localize(<<'EOM', $client_name, $brand->website_name, $support_email);
 Dear [_1],
 
 We are writing to you regarding your account with [_2].
