@@ -152,9 +152,9 @@ sub mt5_new_account {
 
     return {
         login        => $mt5_login,
+        balance      => $balance,
         account_type => $account_type,
-        balance      => $balance
-    };
+        ($sub_account_type) ? (sub_account_type => $sub_account_type) : ()};
 }
 
 sub _check_logins {
