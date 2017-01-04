@@ -154,29 +154,27 @@ has decimate_cache_size => (
 
 has decimate_retention_interval => (
     is      => 'ro',
-    isa     => 'time_interval',
+    isa     => 'Time::Duration::Concise',
     lazy    => 1,
     builder => '_build_decimate_retention_interval',
-    coerce  => 1,
 );
 
 sub _build_decimate_retention_interval {
     my $self = shift;
     my $interval = int($self->decimate_cache_size / (60 / $self->sampling_frequency->seconds));
-    return $interval . 'm';
+    return Time::Duration::Concise->new(interval => $interval . 'm');
 }
 
 has raw_retention_interval => (
     is      => 'ro',
-    isa     => 'time_interval',
+    isa     => 'Time::Duration::Concise',
     lazy    => 1,
     builder => '_build_raw_retention_interval',
-    coerce  => 1,
 );
 
 sub _build_raw_retention_interval {
     my $interval = int(shift->data_cache_size / 60);
-    return $interval . 'm';
+    return Time::Duration::Concise->new(interval => $interval . 'm');
 }
 
 has decoder => (
