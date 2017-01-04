@@ -19,7 +19,7 @@ has economic_events_for_volatility_calculation => (
 
 has [qw(pricing_vol vol_at_strike news_adjusted_pricing_vol)] => (
     is         => 'ro',
-    isa        => 'Maybe[PositiveNum]',
+    isa        => 'Maybe[Num]',
     lazy_build => 1,
 );
 
