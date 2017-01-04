@@ -919,9 +919,7 @@ sub set_self_exclusion {
 
     if ($message) {
         my $statuses = join '/', map { uc $_->status_code } $client->client_status;
-        my $name = $client->first_name;
-        $name .= ' ' if $name;
-        $name .= $client->last_name;
+        my $name = ($client->first_name ? $client->first_name . ' ' : '') . $client->last_name;
 
         my $client_title = sprintf "%s %s%s", $client->loginid, ($name || '?'), ($statuses ? " [$statuses]" : '');
 
