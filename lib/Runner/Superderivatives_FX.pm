@@ -160,11 +160,14 @@ sub get_bet_results {
 
         my $bet = produce_contract($bet_args);
 
-        my $bom_mid =
-              $bet->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'
-            ? $bet->pricing_engine->base_probability
-            : $bet->pricing_engine->base_probability->amount;
-        my $bom_bs   = $bet->bs_probability->amount;
+        my $bs_prob = $bet->pricing_engine->can('_bs_probability') ? $bet->pricing_engine->_bs_probability : $bet->pricing_engine->bs_probability;
+        my $base_prob = $bet->pricing_engine->can('_base_probability') ? $bet->pricing_engine->_base_probability : $bet->pricing_engine->base_probability;
+
+        $bs_prob = $bs_prob->amount if ref $bs_prob;
+        $base_prob = $base_prob->amount if ref $base_prob;
+
+        my $bom_mid = $base_prob;
+        my $bom_bs   = $bs_prob;
         my $sd_mid   = $record->{sd_mid};
         my @barriers = $bet->two_barriers ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute) : ($bet->barrier->as_absolute, 'NA');
         next if $sd_mid < 0.05 or $sd_mid > 0.95;
