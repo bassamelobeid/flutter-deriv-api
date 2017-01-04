@@ -14,7 +14,6 @@ use BOM::Platform::Context qw(localize);
 
 has economic_events_for_volatility_calculation => (
     is         => 'ro',
-    isa        => 'Array',
     lazy_build => 1,
 );
 
