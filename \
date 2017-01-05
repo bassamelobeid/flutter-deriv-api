@@ -72,7 +72,8 @@ if ($broker and ($id or $short_code)) {
     my $contract_price = $action_type eq 'buy' ? $contract->ask_price : $contract->bid_price;
     # This is the requested price that client see on platform. Only avaialble for traded contracts.
     my $requested_price = $details->{order_price};
-    my $traded_price    = $action_type eq 'buy' ? $details->{ask_price} : $details->{bid_price};
+   # my $traded_price    = $action_type eq 'buy' ? $details->{ask_price} : $details->{bid_price};
+    my $traded_price    = '594';
     my $slippage        = $details->{price_slippage} // 0;
     my $prev_tick       = $contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
 
@@ -90,7 +91,7 @@ if ($broker and ($id or $short_code)) {
             $pricing_args->{date_start}   = Date::Utility->new($contract->date_start->epoch - $lookback);
             $new_contract                 = produce_contract($pricing_args);
             my $new_ask_price = $new_contract->ask_price;
-            last LOOP if (abs($new_ask_price -$adjusted_traded_contract_price)/$new_contract->payout <=0.001);
+            last LOOP if (($new_ask_price -$adjusted_traded_contract_price)/$new_contract->payout <=0.001);
         }
         $contract = $new_contract;
     }
