@@ -68,10 +68,34 @@ if ($broker and ($id or $short_code)) {
     $pricing_args->{date_pricing}    = $start;
     $pricing_args->{landing_company} = $landing_company;
 
-    my $contract               = produce_contract($pricing_args);
-    my $display_price          = $action_type eq 'buy' ? $contract->ask_price : $contract->bid_price;
-    my $prev_tick              = $contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
-    my $traded_contract        = $action_type eq 'buy' ? $contract : $contract->opposite_contract;
+    my $contract = produce_contract($pricing_args);
+    my $contract_price = $action_type eq 'buy' ? $contract->ask_price : $contract->bid_price;
+    # This is the requested price that client see on platform. Only avaialble for traded contracts.
+    my $requested_price = $details->{order_price};
+    my $traded_price    = $action_type eq 'buy' ? $details->{ask_price} : $details->{bid_price};
+    my $slippage        = $details->{price_slippage} // 0;
+    my $prev_tick       = $contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
+
+    # apply slippage according to reflect the difference between traded price and recomputed price
+    my $adjusted_traded_contract_price =
+        ($traded_price == $requested_price) ? ($action_type eq 'buy' ? $traded_price - $slippage : $traded_price + $slippage) : $traded_price;
+
+    my $diff = $adjusted_traded_contract_price - $contract_price;
+    # If there is difference, look backward and forward to find the match price.
+    if ($diff) {
+        my $new_contract;
+        LOOP:
+        for my $lookback (1 .. 60, map -$_, 1 .. 60) {
+            $pricing_args->{date_pricing} = Date::Utility->new($contract->date_start->epoch - $lookback);
+            $pricing_args->{date_start}   = Date::Utility->new($contract->date_start->epoch - $lookback);
+            $new_contract                 = produce_contract($pricing_args);
+            my $new_ask_price = $new_contract->ask_price;
+            last LOOP if (($new_ask_price -$adjusted_traded_contract_price)/$new_contract->payout <=0.001);
+        }
+        $contract = $new_contract;
+    }
+
+    my $traded_contract = $action_type eq 'buy' ? $contract : $contract->opposite_contract;
     my $discounted_probability = $contract->discounted_probability;
 
     $pricing_parameters =
@@ -86,18 +110,18 @@ if ($broker and ($id or $short_code)) {
     @contract_details = (
         login_id => $details->{loginid} // 'NA.',
         trans_id => $id // 'NA.',
-        short_code             => $contract->shortcode,
-        description            => $contract->longcode,
-        ccy                    => $contract->currency,
-        order_type             => $action_type,
-        order_price            => $details->{order_price} // $display_price,
-        slippage_price         => $details->{price_slippage} // 'NA.',
-        trade_ask_price        => $details->{ask_price} // 'NA.',
-        trade_bid_price        => $details->{bid_price} // 'NA. (unsold)',
-        payout                 => $contract->payout,
+        short_code  => $short_code_param,
+        description => $original_contract->longcode,
+        ccy         => $contract->currency,
+        order_type  => $action_type,
+        order_price => $requested_price // $action_type eq 'buy' ? $contract->ask_price : $contract->bid_price,
+        slippage_price  => $slippage             // 'NA.',
+        trade_ask_price => $details->{ask_price} // 'NA.',
+        trade_bid_price => $details->{bid_price} // 'NA. (unsold)',
+        payout          => $contract->payout,
         tick_before_trade_time => $prev_tick,
         ref_spot               => $details->{pricing_spot},
-        ref_vol                => $details->{high_barrier_vol},                #it will be the vol of barrier for the single barrier contract
+        ref_vol                => $details->{high_barrier_vol},    #it will be the vol of barrier for the single barrier contract
         ref_vol_2              => $details->{low_barrier_vol});
 }
 my $display = $params{download} ? 'download' : 'display';
@@ -271,13 +295,13 @@ sub _get_pricing_parameter_from_slope_pricer {
     my ($contract, $action_type, $discounted_probability) = @_;
 
     #force createion of debug_information
-    my $ask_probability = $contract->ask_probability;
+    my $ask_probability   = $contract->ask_probability;
     my $debug_information = $contract->debug_information;
     my $pricing_parameters;
     my $contract_type     = $contract->pricing_code;
     my $risk_markup       = $contract->risk_markup->amount;
     my $commission_markup = $contract->commission_markup->amount;
-    my $base_probability = $debug_information->{$contract_type}{base_probability}{amount};
+    my $base_probability  = $debug_information->{$contract_type}{base_probability}{amount};
     my $ask_price         = $contract->ask_price;
 
     if ($action_type eq 'sell') {
