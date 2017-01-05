@@ -41,7 +41,7 @@ my $db = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,
     })->db;
 
-Bar($loginID . " - Profit between " . $startdate->datetime . " and " . $enddate->datetime);
+Bar($encoded_loginID . " - Profit between " . $startdate->datetime . " and " . $enddate->datetime);
 
 my $txn_dm = BOM::Database::DataMapper::Transaction->new({
     client_loginid => $client->loginid,
