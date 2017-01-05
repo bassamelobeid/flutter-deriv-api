@@ -233,7 +233,7 @@ sub _flyby {
 }
 
 sub supported_symbols {
-    return _flyby()->values_for_key('underlying_symbol');
+    return _flyby()->query({submarket => 'major_pairs'}, ['underlying_symbol']);
 }
 
 # we perform three things here:
