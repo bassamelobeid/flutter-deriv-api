@@ -3,6 +3,7 @@ package main;
 
 use strict;
 use warnings;
+use HTML::Entities;
 use Scalar::Util qw(looks_like_number);
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -75,7 +76,7 @@ if (my $search = $params{search}) {
     my $href_args = {loginID => $loginid};
     $stash->{client_href} = request()->url_for("backoffice/f_clientloginid_edit.cgi", $href_args);
 
-    Bar("Client $client");
+    Bar("Client " . encode_entities($client));
 }
 
 $tt->process('backoffice/easy_search.html.tt', $stash)
