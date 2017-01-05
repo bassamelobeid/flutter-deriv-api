@@ -13,6 +13,8 @@ use Try::Tiny;
 use Client::Account;
 use BOM::Product::Transaction;
 
+autoflush STDOUT 1
+
 GetOptions(
     't|threads_number=i' => \my $threads_number,
     'h|help'             => \my $help,
