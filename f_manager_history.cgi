@@ -17,7 +17,7 @@ BOM::Backoffice::Sysinit::init();
 my $loginID = uc(request()->param('loginID'));
 my $encoded_loginID = encode_entities($loginID);
 PrintContentType();
-BrokerPresentation($loginID . ' HISTORY', '', '');
+BrokerPresentation($encoded_loginID . ' HISTORY', '', '');
 BOM::Backoffice::Auth0::can_access(['CS']);
 
 my $broker;
@@ -37,9 +37,9 @@ my $enddate   = request()->param('enddate');
 $loginID =~ /^(\D+)(\d+)$/;
 
 if (request()->param('depositswithdrawalsonly') eq 'yes') {
-    Bar($loginID . ' (DEPO & WITH ONLY)');
+    Bar($encoded_loginID . ' (DEPO & WITH ONLY)');
 } else {
-    Bar($loginID);
+    Bar($encoded_loginID);
 }
 
 my $client = Client::Account::get_instance({'loginid' => $loginID});
@@ -54,7 +54,7 @@ if (not $currency or $currency eq 'default') {
 }
 
 # print other untrusted section warning in backoffice
-print build_client_warning_message($client->loginid) . '<br />';
+print build_client_warning_message(encode_entities($client->loginid)) . '<br />';
 
 my $tel          = $client->phone;
 my $citizen      = Locale::Country::code2country($client->citizen);
@@ -66,11 +66,11 @@ print '<form action="'
     . request()->url_for('backoffice/f_clientloginid_edit.cgi')
     . '" method=post>'
     . '<input type=hidden name=broker value="'
-    . $broker . '">'
+    . encode_entities($broker) . '">'
     . '<input type=hidden name=loginID value="'
-    . $loginID . '">'
+    . encode_entities($loginID) . '">'
     . '<input type=submit value="View/edit '
-    . $loginID
+    . encode_entities($loginID)
     . ' details">'
     . '</form>';
 
@@ -79,9 +79,9 @@ print '<table width=100%>' . '<tr>'
     . request()->url_for('backoffice/f_manager_history.cgi')
     . '" method=post>'
     . '<td align=right> Quick jump to see another statement: <input name=loginID type=text size=15 value="'
-    . $loginID . '">'
+    . encode_entities($loginID) . '">'
     . '<input type=hidden name=broker value="'
-    . $broker . '">'
+    . encode_entities($broker) . '">'
     . '<input type=hidden name=l value=EN>'
     . '<input type=submit value=view>'
     . '<input type=checkbox value=yes name=depositswithdrawalsonly>Deposits and Withdrawals only' . '</td>'
