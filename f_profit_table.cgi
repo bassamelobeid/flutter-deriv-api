@@ -5,6 +5,7 @@ use strict 'vars';
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
 use Machine::Epsilon;
+use HTML::Entities;
 
 use Brands;
 use Client::Account;
@@ -22,19 +23,20 @@ use f_brokerincludeall;
 BOM::Backoffice::Sysinit::init();
 
 my $loginID = uc(request()->param('loginID'));
+my $encoded_loginID = $loginID;
 
 PrintContentType();
-BrokerPresentation($loginID . ' Contracts Analysis', '', '');
+BrokerPresentation($encoded_loginID . ' Contracts Analysis', '', '');
 my $staff = BOM::Backoffice::Auth0::can_access(['CS']);
 
 if ($loginID !~ /^(\D+)(\d+)$/) {
-    print "Error : wrong loginID ($loginID) could not get client instance";
+    print "Error : wrong loginID ($encoded_loginID) could not get client instance";
     code_exit_BO();
 }
 
 my $client = Client::Account::get_instance({'loginid' => $loginID});
 if (not $client) {
-    print "Error : wrong loginID ($loginID) could not get client instance";
+    print "Error : wrong loginID ($encoded_loginID) could not get client instance";
     code_exit_BO();
 }
 
@@ -49,7 +51,7 @@ my $clientdb = BOM::Database::ClientDB->new({
     client_loginid => $client->loginid,
 });
 
-Bar($loginID . " - Contracts");
+Bar($encoded_loginID . " - Contracts");
 my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
     client_loginid => $client->loginid,
     currency_code  => $client->currency,
