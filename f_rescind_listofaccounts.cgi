@@ -27,14 +27,16 @@ my $grandtotal = 0;
 
 CLIENT:
 foreach my $loginID (split(/,/, $listaccounts)) {
-
+    my $encoded_loginID = encode_entities($loginID);
     my $client = eval { Client::Account->new({loginid => $loginID}) } || do {
-        print "<br/>error: cannot find client '$loginID'";
+        print "<br/>error: cannot find client '$encoded_loginID'";
         next CLIENT;
     };
 
     my $name  = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
     my $email = $client->email;
+    my $encoded_name = encode_entities($name);
+    my $encoded_email = encode_entities($email);
 
     my $client_db = BOM::Database::ClientDB->new({
         client_loginid => $loginID,
@@ -46,15 +48,16 @@ foreach my $loginID (split(/,/, $listaccounts)) {
 
     my $curr = $client->currency;
     my $b    = $client->default_account->balance;
+    my $encoded_curr = encode_entities($curr);
 
     if (request()->param('whattodo') eq 'Do it for real !') {
 
         if (my $sold_bets = BOM::Product::Transaction::sell_expired_contracts({client => $client})) {
-            print "<br>[FOR REAL] $loginID ($name $email) Expired bets closed out:";
-            print "Account has been credited with <strong>$curr $sold_bets->{total_credited}</strong>";
+            print "<br>[FOR REAL] $encoded_loginID ($encoded_name $encoded_email) Expired bets closed out:";
+            printf "Account has been credited with <strong>$encoded_curr %s</strong>", encode_entities($sold_bets->{total_credited});
 
             if ($sold_bets->{skip_contract} > 0) {
-                print "<br>SKIP $loginID $curr as sell $sold_bets->{skip_contract} expired bets failed";
+                printf "<br>SKIP $encoded_loginID $encoded_curr as sell %s expired bets failed", encode_entities($sold_bets->{skip_contract});
                 next CLIENT;
             }
             # recalc balance
@@ -62,7 +65,7 @@ foreach my $loginID (split(/,/, $listaccounts)) {
         }
 
         if ($b > 0) {
-            print "<br>[FOR REAL] $loginID ($name $email) rescinding <b>$curr$b</b>";
+            print "<br>[FOR REAL] $encoded_loginID ($encoded_name $encoded_email) rescinding <b>$encoded_curr$b</b>";
             $client->payment_legacy_payment(
                 currency     => $curr,
                 amount       => -$b,
@@ -72,7 +75,7 @@ foreach my $loginID (split(/,/, $listaccounts)) {
             );
         }
     } else {
-        print "<br>[Simulate] $loginID ($name $email) <b>$curr$b</b>";
+        print "<br>[Simulate] $encoded_loginID ($encoded_name $encoded_email) <b>$encoded_curr$b</b>";
     }
     $grandtotal += in_USD($b, $curr);
 
