@@ -8,6 +8,7 @@ use Path::Tiny;
 use Format::Util::Numbers qw(roundnear);
 use Brands;
 use Client::Account;
+use HTML::Entities;
 
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use BOM::Database::DataMapper::Account;
@@ -24,7 +25,7 @@ BOM::Backoffice::Sysinit::init();
 my $show = request()->param('show');
 if (request()->param('action') ne 'DOWNLOAD CSV') {
     PrintContentType();
-    BrokerPresentation("MONITOR $show");
+    BrokerPresentation(encode_entities("MONITOR $show"));
 }
 
 my $broker = request()->broker_code;
@@ -84,15 +85,15 @@ print '<form method="post" id="download_csv_form" action="'
     . request()->url_for('backoffice/f_viewclientsubset.cgi') . '" '
     . $on_submit_event . ' >'
     . '<input type="hidden" name="show" value="'
-    . request()->param('show') . '">'
+    . encode_entities(request()->param('show')) . '">'
     . '<input type="hidden" name="onlylarge" value="'
-    . request()->param('onlylarge') . '">'
+    . encode_entities(request()->param('onlylarge')) . '">'
     . '<input type="hidden" name="onlyfunded" value="'
-    . request()->param('onlyfunded') . '" />'
+    . encode_entities(request()->param('onlyfunded')) . '" />'
     . '<input type="hidden" name="onlynonzerobalance" value="'
-    . request()->param('onlynonzerobalance') . '" />'
+    . encode_entities(request()->param('onlynonzerobalance')) . '" />'
     . '<input type="hidden" name="broker" value="'
-    . $broker . '">'
+    . encode_entities($broker) . '">'
     . '<input type="submit" name="action" value="DOWNLOAD CSV" />'
     . '</form>';
 
@@ -148,25 +149,25 @@ foreach my $loginID (keys %{$results}) {
 
     print "<tr>"
         . "<td>$loginID</td>" . "<td>"
-        . $client->{name}
+        . encode_entities($client->{name})
         . "&nbsp;</td>" . "<td>"
-        . $client->{citizen}
+        . encode_entities($client->{citizen})
         . "&nbsp;</td>"
         . "<td><font size=1>"
-        . $client->{email}
+        . encode_entities($client->{email})
         . "&nbsp;</font></td>"
         . "<td>\$"
-        . $client->{agg_payment_usd} . "</td>"
+        . encode_entities($client->{agg_payment_usd}) . "</td>"
         . "<td>\$"
-        . $client->{balance_usd}
+        . encode_entities($client->{balance_usd})
         . "&nbsp;</td>" . "<td>"
-        . $client->{cashier_locked}
+        . encode_entities($client->{cashier_locked})
         . "&nbsp;</td>" . "<td>"
-        . $client->{equity}
+        . encode_entities($client->{equity})
         . "&nbsp;</td>" . "<td>"
-        . $client->{last_access}
+        . encode_entities($client->{last_access})
         . " days $recover &nbsp;</td>" . "<td>"
-        . $client->{reason}
+        . encode_entities($client->{reason})
         . "&nbsp;</td>" . "</tr>";
 
     $total_bal += $client->{balance_usd};
@@ -184,7 +185,7 @@ if ($email_notification) {
     });
 
     if (not $ret) {
-        print '<p style="font-weight:bold; color:red; text-align:center; padding:1em 0;"> Notification was not sent: Error ' . $ret . ' </p>';
+        print '<p style="font-weight:bold; color:red; text-align:center; padding:1em 0;"> Notification was not sent: Error ' . encode_entities($ret) . ' </p>';
     }
 }
 
@@ -199,57 +200,46 @@ my $paging;
 
 if ($total) {
     if ($prev_page >= 1) {
+      my $link = $home_link->clone;
+      $link->query(
+                   broker => $broker,
+                   show => $show,
+                   limit => $limit,
+                   page => $prev_page,
+                   onlylarge => request()->param('onlylarge'),
+                   onlyfunded => request()->param('onlyfunded'),
+                   onlynonzerobalance=> request()->param('onlynonzerobalance'),
+                   recoverfromfraudpassword => request()->param('recoverfromfraudpassword'),
+                   recoverdays => request()->param('recoverdays'),
+                  );
         $prev_page =
               '<a id="prev_page" href="'
-            . $home_link
-            . '?broker='
-            . $broker
-            . '&show='
-            . $show
-            . '&limit='
-            . $limit
-            . '&page='
-            . $prev_page
-            . '&onlylarge='
-            . request()->param('onlylarge')
-            . '&onlyfunded='
-            . request()->param('onlyfunded')
-            . '&onlynonzerobalance='
-            . request()->param('onlynonzerobalance')
-            . '&recoverfromfraudpassword='
-            . request()->param('recoverfromfraudpassword')
-            . '&recoverdays='
-            . request()->param('recoverdays')
+            . $link
             . '">Previous '
-            . $limit . '</a>';
+            . encode_entities($limit) . '</a>';
     } else {
         $prev_page = '';
     }
 
     if ($next_page <= $total_page) {
+        my $link = $home_link->clone;
+        $link->query(
+                     broker => $broker,
+                     show => $show,
+                     limit => $limit,
+                     page => $next_page,
+                     onlylarge => request()->param('onlylarge'),
+                     onlyfunded => request()->param('onlyfunded'),
+                     onlynonzerobalance=> request()->param('onlynonzerobalance'),
+                     recoverfromfraudpassword => request()->param('recoverfromfraudpassword'),
+                     recoverdays => request()->param('recoverdays'),
+                    );
+
         $next_page =
               '<a id="next_page" href="'
-            . $home_link
-            . '?broker='
-            . $broker
-            . '&show='
-            . $show
-            . '&limit='
-            . $limit
-            . '&page='
-            . $next_page
-            . '&onlylarge='
-            . request()->param('onlylarge')
-            . '&onlyfunded='
-            . request()->param('onlyfunded')
-            . '&onlynonzerobalance='
-            . request()->param('onlynonzerobalance')
-            . '&recoverfromfraudpassword='
-            . request()->param('recoverfromfraudpassword')
-            . '&recoverdays='
-            . request()->param('recoverdays')
+            . $link
             . '">Next '
-            . $next_total . '</a>';
+            . encode_entities($next_total) . '</a>';
     } else {
         $next_page = '';
     }
@@ -260,26 +250,26 @@ if ($total) {
             . request()->url_for('backoffice/f_viewclientsubset.cgi')
             . '" method="post">'
             . '<input type="hidden" name="broker" value="'
-            . $broker . '" />'
+            . encode_entities($broker) . '" />'
             . '<input type="hidden" name="limit" value="'
-            . $limit . '" />'
+            . encode_entities($limit) . '" />'
             . '<input type="hidden" name="show" value="'
-            . $show . '" />'
+            . encode_entities($show) . '" />'
             . '<input type="hidden" name="onlylarge" value="'
-            . request()->param('onlylarge') . '" />'
+            . encode_entities(request()->param('onlylarge')) . '" />'
             . '<input type="hidden" name="onlyfunded" value="'
-            . request()->param('onlyfunded') . '" />'
+            . encode_entities(request()->param('onlyfunded')) . '" />'
             . '<input type="hidden" name="onlynonzerobalance" value="'
-            . request()->param('onlynonzerobalance') . '" />'
+            . encode_entities(request()->param('onlynonzerobalance')) . '" />'
             . '<input type="hidden" name="recoverfromfraudpassword" value="'
-            . request()->param('recoverfromfraudpassword') . '" />'
+            . encode_entities(request()->param('recoverfromfraudpassword')) . '" />'
             . '<input type="hidden" name="recoverdays" value="'
-            . request()->param('recoverdays') . '" />'
+            . encode_entities(request()->param('recoverdays')) . '" />'
             . $prev_page . ' <em>'
             . ' Page: <input size="3" maxlength="3" type="text" id="page_input" name="page" value="'
-            . $page_selected
+            . encode_entities($page_selected)
             . '" /> of '
-            . $total_page
+            . encode_entities($total_page)
             . ' <input type="submit" value="Go" />'
             . '</em> '
             . $next_page
@@ -292,7 +282,7 @@ print '</table>';
 
 close(FILE);
 
-print '<p>Total a/c balances of clients in the list: USD ' . $total_bal . '</p><br />';
+print '<p>Total a/c balances of clients in the list: USD ' . encode_entities($total_bal) . '</p><br />';
 
 code_exit_BO();
 
