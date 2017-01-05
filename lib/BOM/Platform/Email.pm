@@ -58,8 +58,6 @@ sub send_email {
     # which sometimes gets double-encoded after sending
     $subject = encode('MIME-Q', $subject);
 
-    # DON'T send email on devbox except to RMG emails
-    return 1 if !BOM::System::Config::on_production() && $email !~ /(?:binary|regentmarkets|betonmarkets)\.com$/;
     return 1 if $ENV{SKIP_EMAIL};
 
     my @toemails = split(/\s*\,\s*/, $email);
