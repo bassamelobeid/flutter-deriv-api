@@ -87,7 +87,8 @@ sub proposal_array {
                         };
                     } else {
                         $cache = {
-                            payout              => $response->{payout},
+                            # this looks like a typo because by looking at the logic, we should be using $response->{payout}. But it is not!
+                            payout              => $rpc_response->{payout},
                             longcode            => $response->{longcode},
                             contract_parameters => delete $response->{contract_parameters}};
                         $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
