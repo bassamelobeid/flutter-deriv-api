@@ -9,21 +9,29 @@ use BOM::MarketData::Types;
 use BOM::Platform::Context qw (localize request);
 use BOM::Product::Contract::Finder;
 use BOM::Product::Contract::Finder::Japan;
+use Client::Account;
 
 sub contracts_for {
     my $params = shift;
 
-    my $args            = $params->{args};
-    my $symbol          = $args->{contracts_for};
-    my $currency        = $args->{currency} || 'USD';
-    my $product_type    = $args->{product_type} // 'basic';
-    my $landing_company = $args->{landing_company} // 'costarica';
+    my $args                 = $params->{args};
+    my $symbol               = $args->{contracts_for};
+    my $currency             = $args->{currency} || 'USD';
+    my $product_type         = $args->{product_type} // 'basic';
+    my $landing_company_name = $args->{landing_company} // 'costarica';
+
+    my $token_details = $params->{token_details};
+    if ($token_details and exists $token_details->{loginid}) {
+        my $client = Client::Account->new({loginid => $token_details->{loginid}});
+        $landing_company_name = $client->landing_company->short if $client;
+    }
 
     my $contracts_for;
     my $query_args = {
         symbol          => $symbol,
-        landing_company => $landing_company,
+        landing_company => $landing_company_name,
     };
+
     if ($product_type eq 'multi_barrier') {
         $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol($query_args);
     } else {
