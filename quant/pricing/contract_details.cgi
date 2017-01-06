@@ -219,7 +219,7 @@ sub _get_pricing_parameter_from_IH_pricer {
     my $risk_markup = $pe->risk_markup;
     $pricing_parameters->{risk_markup} = {
         map { $_ => $risk_markup->peek_amount($_) // 0 }
-            qw(economic_events_markup intraday_historical_iv_risk quiet_period_markup vol_spread_markup intraday_eod_markup spot_jump_markup short_term_kurtosis_risk_markup),
+            qw(economic_events_markup intraday_historical_iv_risk quiet_period_markup vol_spread_markup intraday_eod_markup short_term_kurtosis_risk_markup),
 
     };
 
@@ -284,7 +284,7 @@ sub _get_pricing_parameter_from_vv_pricer {
     my $risk_markup = $pe->risk_markup;
     $pricing_parameters->{risk_markup} = {
         map { $_ => $risk_markup->peek_amount($_) // 0 }
-            qw(vol_spread_markup vol_spread bet_vega spot_spread_markup bet_delta spot_spread forward_start eod_market_risk_markup butterfly_markup butterfly_greater_than_cutoff spread_to_markup),
+            qw(vol_spread_markup vol_spread bet_vega spot_spread_markup bet_delta spot_spread butterfly_markup butterfly_greater_than_cutoff spread_to_markup),
 
     };
 
