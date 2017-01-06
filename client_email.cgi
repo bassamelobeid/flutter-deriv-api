@@ -5,6 +5,7 @@ use open qw[ :encoding(UTF-8) ];
 use Try::Tiny;
 use Email::Valid;
 use List::MoreUtils qw( uniq any firstval );
+use HTML::Entities;
 
 use f_brokerincludeall;
 use Format::Util::Strings qw( defang );
@@ -33,12 +34,15 @@ my $now   = Date::Utility->new;
 
 my %input = %{request()->params};
 my $email = trim(lc defang($input{email}));
+my $encoded_email = encode_entities($email);
 
 my $new_email;
+my $encoded_new_email;
 if ($input{new_email}) {
     $new_email = trim(lc defang($input{new_email}));
+    $encoded_new_email = encode_entities($new_email);
     if (not Email::Valid->address($new_email)) {
-        print "invalid email format [$new_email]";
+        print "invalid email format [$encoded_new_email]";
         code_exit_BO();
     }
 }
@@ -46,7 +50,7 @@ if ($input{new_email}) {
 my $user = BOM::Platform::User->new({email => $email});
 if (not $user) {
     my $self_href = request()->url_for('backoffice/client_email.cgi');
-    print "<p>ERROR: Clients with email <b>$email</b> not found.</p>";
+    print "<p>ERROR: Clients with email <b>$encoded_email</b> not found.</p>";
     code_exit_BO();
 }
 
@@ -78,7 +82,7 @@ if ($error) {
 
 if ($email ne $new_email) {
     if (BOM::Platform::User->new({email => $new_email})) {
-        print "Email update not allowed, as same email [$new_email] already exists in system";
+        print "Email update not allowed, as same email [$encoded_new_email] already exists in system";
         code_exit_BO();
     }
 
@@ -92,7 +96,7 @@ if ($email ne $new_email) {
         }
     }
     catch {
-        print "Update email for user $email failed, reason: [$_]";
+        print "Update email for user $encoded_email failed, reason: [" . encode_entities($_) . "]";
         code_exit_BO();
     };
 
