@@ -25,6 +25,11 @@ use Future::Utils ();
 # can issue in parallel. Used for proposal_array.
 use constant PARALLEL_RPC_COUNT => 4;
 
+# How long we'll wait for all component requests to complete
+# Since this is pricing code, anything more than a few seconds
+# isn't going to be much use to anyone.
+use constant PARALLEL_RPC_TIMEOUT => 20;
+
 my %pricer_cmd_handler = (
     price => \&process_ask_event,
     bid   => \&process_bid_event,
@@ -83,54 +88,63 @@ sub proposal_array {
 
     # Process a few RPC calls at a time.
     my $retained;
-    $retained = (Future::Utils::fmap {
-        my $barrier = shift;
+    $retained = Future->needs_any(
+        # Upper limit on total time taken - we don't really
+        # care how long individual requests take, but we do
+        # expect all the calls to complete in a reasonable time
+        Future::Mojo->new_timer(
+            PARALLEL_RPC_TIMEOUT
+        )->transform(done => sub {
+            return +{ error => $c->l('Request timed out') }
+        }),
+        Future::Utils::fmap {
+            my $barrier = shift;
 
-        # Shallow copy of $args since we want to override a few top-level keys for the RPC calls
-        my $args = %{ $req_storage->{args} };
+            # Shallow copy of $args since we want to override a few top-level keys for the RPC calls
+            my $args = %{ $req_storage->{args} };
 
-        $args->{barrier} = $barriers->{barrier};
-        @{$args}{keys %$barriers} = values %$barriers;
-        my $f = Future::Mojo->new;
-        $c->call_rpc({
-            args        => $args,
-            method      => 'send_ask',
-            msg_type    => 'proposal',
-            call_params => {
-                language              => $c->stash('language'),
-                app_markup_percentage => $c->stash('app_markup_percentage'),
-                landing_company       => $c->landing_company_name,
-            },
-            success => sub {
-                my ($c, $rpc_response, $req_storage) = @_;
-                my $cache = {
-                    longcode            => $rpc_response->{longcode},
-                    contract_parameters => delete $rpc_response->{contract_parameters},
-                    payout              => $rpc_response->{payout},
-                };
-                $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
-                $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
-            },
-            response => sub {
-                my ($rpc_response, $api_response, $req_storage) = @_;
-                if($rpc_response->{error}) {
-                    $f->fail($api_response);
+            $args->{barrier} = $barriers->{barrier};
+            @{$args}{keys %$barriers} = values %$barriers;
+            my $f = Future::Mojo->new;
+            $c->call_rpc({
+                args        => $args,
+                method      => 'send_ask',
+                msg_type    => 'proposal',
+                call_params => {
+                    language              => $c->stash('language'),
+                    app_markup_percentage => $c->stash('app_markup_percentage'),
+                    landing_company       => $c->landing_company_name,
+                },
+                success => sub {
+                    my ($c, $rpc_response, $req_storage) = @_;
+                    my $cache = {
+                        longcode            => $rpc_response->{longcode},
+                        contract_parameters => delete $rpc_response->{contract_parameters},
+                        payout              => $rpc_response->{payout},
+                    };
+                    $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
+                    $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
+                },
+                response => sub {
+                    my ($rpc_response, $api_response, $req_storage) = @_;
+                    if($rpc_response->{error}) {
+                        $f->fail($api_response);
+                        return;
+                    }
+
+                    $api_response->{passthrough} = $req_storage->{args}->{passthrough};
+                    if (my $uuid = $req_storage->{uuid}) {
+                        $api_response->{proposal}->{id} = $uuid;
+                    } else {
+                        $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
+                    }
+                    $f->done($api_response);
                     return;
-                }
-
-                $api_response->{passthrough} = $req_storage->{args}->{passthrough};
-                if (my $uuid = $req_storage->{uuid}) {
-                    $api_response->{proposal}->{id} = $uuid;
-                } else {
-                    $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
-                }
-                $f->done($api_response);
-                return;
-            },
-        });
-        $f;
-    } foreach => [ @{$args->{barriers}} ],
-      concurrent => PARALLEL_RPC_COUNT
+                },
+            });
+            $f;
+        } foreach => [ @{$args->{barriers}} ],
+          concurrent => PARALLEL_RPC_COUNT
     )->on_ready(sub {
         my $f = shift;
         try {
@@ -156,6 +170,8 @@ sub proposal_array {
         undef $retained;
     });
 
+    # Send nothing back to the client yet. We'll push a response
+    # once the RPC calls complete or time out
     return;
 }
 
