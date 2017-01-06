@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 use Text::CSV;
+use HTML::Entities;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType_excel );
 
@@ -31,7 +32,7 @@ if (open my $fh, $file_name) {
 } else {
     PrintContentType();
     BrokerPresentation("MONTHLY CLIENT REPORT");
-    print "<p>Sorry.. Monthly Client Report for $broker, $crdr, $yyyymm is not available</p>";
+    print "<p>Sorry.. Monthly Client Report for ". encode_entities("$broker, $crdr, $yyyymm") . " is not available</p>";
     code_exit_BO();
 }
 
