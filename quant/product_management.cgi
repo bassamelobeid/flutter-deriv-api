@@ -44,7 +44,7 @@ if ($r->param('update_limit')) {
             if (first { $value eq $_ } @{$known_values{$key}}) {
                 $ref{$key} = $value;
             } else {
-                print "Unrecognized value[" . $r->param($key) . "] for $key. Nothing is updated!!";
+                print "Unrecognized value[" . encode_entities($r->param($key)) . "] for $key. Nothing is updated!!";
                 code_exit_BO();
             }
         }
