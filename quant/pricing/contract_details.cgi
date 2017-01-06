@@ -35,7 +35,7 @@ my $broker        = $params{broker}     // request()->broker_code;
 my $id            = $params{id}         // '';
 my $short_code    = $params{short_code} // '';
 my $currency_code = $params{currency}   // '';
-
+my $file_name;
 if ($broker and ($id or $short_code)) {
 
     my ($details, $client);
@@ -52,7 +52,7 @@ if ($broker and ($id or $short_code)) {
 
     my $short_code_param = $details->{shortcode}     // $short_code;
     my $currency_param   = $details->{currency_code} // $currency_code;
-
+    $file_name = $short_code . '.csv' // $details->{loginid} . '_' . $id . '.csv';
     my $original_contract = produce_contract($short_code_param, $currency_param);
     my $action_type = $details->{action_type} // 'buy';    #If it is with shortcode as input, we just want to verify the ask price
     my $sell_time = $details->{sell_time};
@@ -116,6 +116,7 @@ if ($broker and ($id or $short_code)) {
         order_type  => $action_type,
         order_price => $requested_price // $action_type eq 'buy' ? $contract->ask_price : $contract->bid_price,
         slippage_price  => $slippage             // 'NA.',
+        trade_time      => $action_type eq 'buy' ? $purchase_time : $sell_time;
         trade_ask_price => $details->{ask_price} // 'NA.',
         trade_bid_price => $details->{bid_price} // 'NA. (unsold)',
         payout          => $contract->payout,
@@ -126,7 +127,7 @@ if ($broker and ($id or $short_code)) {
 }
 my $display = $params{download} ? 'download' : 'display';
 if ($display eq 'download') {
-    output_as_csv($pricing_parameters, \@contract_details);
+    output_as_csv($pricing_parameters, \@contract_details, $file_name);
     return;
 }
 
@@ -137,9 +138,7 @@ Bar("Contract's Parameters");
 sub output_as_csv {
     my $param            = shift;
     my $contract_details = shift;
-    my $loginid          = $contract_details->[1];
-    my $trans_id         = $contract_details->[3];
-    my $csv_name         = $loginid . '_' . $trans_id . '.csv';
+    my $csv_name         = shift;
     PrintContentType_excel($csv_name);
     my $size = scalar @$contract_details;
     for (my $i = 0; $i <= $size; $i = $i + 2) {
