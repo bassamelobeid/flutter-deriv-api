@@ -4,6 +4,7 @@ use strict 'vars';
 
 use Scalar::Util qw(looks_like_number);
 use Date::Utility;
+use HTML::Entities;
 
 use Client::Account;
 
@@ -39,7 +40,7 @@ my $self_exclusion_form = BOM::Backoffice::Form::get_self_exclusion_form({
 });
 
 my $page =
-    '<h2> The Client [loginid: ' . $loginid . '] self-exclusion settings are as follows. You may change it by editing the corresponding value.</h2>';
+    '<h2> The Client [loginid: ' . encode_entities($loginid) . '] self-exclusion settings are as follows. You may change it by editing the corresponding value.</h2>';
 
 #to generate existing limits
 if (my $self_exclusion = $client->get_self_exclusion) {
