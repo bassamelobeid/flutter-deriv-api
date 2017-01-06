@@ -8,7 +8,6 @@ use File::Slurp qw(append_file write_file);
 use List::Util qw(sum max);
 use Text::CSV;
 use Carp;
-use Clone 'clone';
 
 use CSVParser::Superderivatives_FX;
 use BOM::Product::ContractFactory qw( produce_contract );
@@ -113,8 +112,6 @@ sub get_bet_results {
     my $csv = Text::CSV->new();
     my $analysis_results;
     foreach my $record (@$records) {
-        my $original_surface = clone($record->{volsurface});
-
         my $date_start   = $record->{date_start};
         my $date_expiry  = $record->{date_expiry};
         my $underlying   = $record->{underlying};
@@ -161,17 +158,10 @@ sub get_bet_results {
 
 
         my $bet = produce_contract($bet_args);
-        my $bs_prob = $bet->pricing_engine->can('_bs_probability') ? $bet->pricing_engine->_bs_probability : $bet->pricing_engine->bs_probability;
 
-        #Re-create the bet, because initial call will modify input vol-surface and add some more tenors
-        $bet_args->{volsurface} = $original_surface;
-        $bet = produce_contract($bet_args);
-        my $base_prob = $bet->pricing_engine->can('_base_probability') ? $bet->pricing_engine->_base_probability : $bet->pricing_engine->base_probability;
-        $bs_prob = $bs_prob->amount if ref $bs_prob;
-        $base_prob = $base_prob->amount if ref $base_prob;
+        my $bom_mid = $bet->pricing_engine->can('_base_probability') ? $bet->pricing_engine->_base_probability : $bet->pricing_engine->base_probability->amount;
+        my $bom_bs   = $bet->pricing_engine->can('_bs_probability') ? $bet->pricing_engine->_bs_probability : $bet->pricing_engine->bs_probability->amount;
 
-        my $bom_mid = $base_prob;
-        my $bom_bs   = $bs_prob;
         my $sd_mid   = $record->{sd_mid};
         my @barriers = $bet->two_barriers ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute) : ($bet->barrier->as_absolute, 'NA');
         next if $sd_mid < 0.05 or $sd_mid > 0.95;
