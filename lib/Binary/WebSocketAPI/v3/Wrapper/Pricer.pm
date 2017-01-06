@@ -18,6 +18,12 @@ use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Format::Util::Numbers qw(to_monetary_number_format);
 use Price::Calculator;
 use Clone::PP qw(clone);
+use Future::Mojo ();
+use Future::Utils ();
+
+# Number of RPC requests a single active websocket call
+# can issue in parallel. Used for proposal_array.
+use constant PARALLEL_RPC_COUNT => 4;
 
 my %pricer_cmd_handler = (
     price => \&process_ask_event,
@@ -63,58 +69,93 @@ sub proposal {
     return;
 }
 
+=head2 proposal_array
+
+Pricing proposals for multiple barriers.
+
+Issues a separate RPC request for each barrier, then collates the results
+in a single response back to the client.
+
+=cut
+
 sub proposal_array {
     my ($c, $req_storage) = @_;
 
-    my $args = $req_storage->{args};
-    $c->call_rpc({
+    # Process a few RPC calls at a time.
+    my $retained;
+    $retained = (Future::Utils::fmap {
+        my $barrier = shift;
+
+        # Shallow copy of $args since we want to override a few top-level keys for the RPC calls
+        my $args = %{ $req_storage->{args} };
+
+        $args->{barrier} = $barriers->{barrier};
+        @{$args}{keys %$barriers} = values %$barriers;
+        my $f = Future::Mojo->new;
+        $c->call_rpc({
             args        => $args,
-            method      => 'send_multiple_ask',
-            msg_type    => 'proposal_array',
+            method      => 'send_ask',
+            msg_type    => 'proposal',
             call_params => {
                 language              => $c->stash('language'),
                 app_markup_percentage => $c->stash('app_markup_percentage'),
-                landing_company       => $c->stash('landing_company_name'),
+                landing_company       => $c->landing_company_name,
             },
             success => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
-
-                my $caches = [];
-                for my $response (@{$rpc_response->{proposals}}) {
-                    my $cache;
-                    if (exists($response->{error})) {
-                        $cache = {
-                            error                 => 1,
-                            app_markup_percentage => $c->stash('app_markup_percentage'),
-                        };
-                    } else {
-                        $cache = {
-                            payout              => $rpc_response->{payout},
-                            longcode            => $response->{longcode},
-                            contract_parameters => delete $response->{contract_parameters}};
-                        $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
-                    }
-                    push @$caches, $cache;
-                }
-                $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $caches);
+                my $cache = {
+                    longcode            => $rpc_response->{longcode},
+                    contract_parameters => delete $rpc_response->{contract_parameters},
+                    payout              => $rpc_response->{payout},
+                };
+                $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
+                $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
             },
             response => sub {
                 my ($rpc_response, $api_response, $req_storage) = @_;
-                return $api_response if $rpc_response->{error};
-
-                for my $proposal (@{$api_response->{proposal_array}{proposals}}) {
-                    delete $proposal->{error}{continue_price_stream} if exists $proposal->{error};
+                if($rpc_response->{error}) {
+                    $f->fail($api_response);
+                    return;
                 }
 
                 $api_response->{passthrough} = $req_storage->{args}->{passthrough};
                 if (my $uuid = $req_storage->{uuid}) {
-                    $api_response->{proposal_array}->{id} = $uuid;
+                    $api_response->{proposal}->{id} = $uuid;
                 } else {
-                    $api_response = $c->new_error('proposal_array', 'AlreadySubscribed', $c->l('You are already subscribed to proposal array.'));
+                    $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
                 }
-                return $api_response;
+                $f->done($api_response);
+                return;
             },
         });
+        $f;
+    } foreach => [ @{$args->{barriers}} ],
+      concurrent => PARALLEL_RPC_COUNT
+    )->on_ready(sub {
+        my $f = shift;
+        try {
+            # If any of the requests failed, this will throw
+            my @result = $f->get;
+            # Return a single result back to the client.
+            $c->send({
+                json => {
+                    proposals => \@result
+                }
+            });
+        } catch {
+            warn "Failed - $_";
+            $c->send({
+                json => $c->wsp_error(
+                    $msg_type,
+                    'ProposalArrayFailure',
+                    'Sorry, an error occurred while processing your request.'
+                )
+            });
+        };
+        # Capture this to keep the Future alive until it's done
+        undef $retained;
+    });
+
     return;
 }
 
