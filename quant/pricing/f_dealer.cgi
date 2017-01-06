@@ -9,7 +9,7 @@ use f_brokerincludeall;
 use Try::Tiny;
 use Path::Tiny;
 use File::ReadBackwards;
-
+use HTML::Entities;
 use Client::Account;
 
 use Date::Utility;
@@ -44,31 +44,35 @@ my @body;
 my $brand = Brands->new(name => request()->brand);
 my $to = $brand->emails('alert_quants');
 
+my $encoded_loginID = encode_entities($loginID);
+my $encoded_currency = encode_entities($currency);
+my $encoded_broker = encode_entities($broker);
+
 # Make transaction on client account
 if (request()->param('whattodo') eq 'closeatzero') {
 
-    if ($currency !~ /^\w\w\w$/)    { print "Error with curr " . request()->param('curr');       code_exit_BO(); }
-    if ($price !~ /^\d*\.?\d*$/)    { print "Error with price " . request()->param('price');     code_exit_BO(); }
+    if ($currency !~ /^\w\w\w$/)    { print "Error with curr " . $encoded_currency;       code_exit_BO(); }
+    if ($price !~ /^\d*\.?\d*$/)    { print "Error with price " . encode_entities($price);     code_exit_BO(); }
     if ($price eq "")               { print "Error : no price entered";                          code_exit_BO(); }
-    if ($loginID !~ /^$broker\d+$/) { print "Error with loginid " . request()->param('loginid'); code_exit_BO(); }
-    if ($qty !~ /^\d+$/ or request()->param('qty') > 50) { print "Error with qty " . request()->param('qty'); code_exit_BO(); }
+    if ($loginID !~ /^$broker\d+$/) { print "Error with loginid " . $encoded_loginID; code_exit_BO(); }
+    if ($qty !~ /^\d+$/ or $qty > 50) { print "Error with qty " . encode_entities($qty); code_exit_BO(); }
 
     my $client;
     try {
-        $client = Client::Account::get_instance({loginid => request()->param('loginid')});
+        $client = Client::Account::get_instance({loginid => $loginID});
     }
     catch {
-        print "Cannot get client instance with loginid " . request()->param('loginid');
+        print "Cannot get client instance with loginid " . $encoded_loginID;
         code_exit_BO();
     };
 
     my $ttype = 'CREDIT';
 
     if (request()->param('buysell') ne 'SELL') {
-        print "You can only sell the contract. You had choosen " . request()->param('buysell');
+        print "You can only sell the contract. You had choosen " . encode_entities(request()->param('buysell'));
         code_exit_BO();
     }
-    if (request()->param('price') != 0) { print "You can only close position at zero price"; code_exit_BO(); }
+    if ($price != 0) { print "You can only close position at zero price"; code_exit_BO(); }
 
     # Further error checks
     my $fmb_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
@@ -105,17 +109,17 @@ if (request()->param('whattodo') eq 'closeatzero') {
 
     Bar("Done");
     print "Done!<P>
- <FORM target=$loginID ACTION=\"" . request()->url_for('backoffice/f_manager_history.cgi') . "\" METHOD=\"POST\">
- <input name=loginID type=hidden value=$loginID>
- <INPUT type=hidden name=\"broker\" value=\"$broker\">
- <INPUT type=hidden name=\"currency\" value=\"$currency\">
+ <FORM target=$encoded_loginID ACTION=\"" . request()->url_for('backoffice/f_manager_history.cgi') . "\" METHOD=\"POST\">
+ <input name=loginID type=hidden value=$encoded_loginID>
+ <INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">
+ <INPUT type=hidden name=\"currency\" value=\"$encoded_currency\">
  <INPUT type=hidden name=\"l\" value=\"EN\">
  <INPUT type=\"submit\" value='View client statement'>
  </FORM>
- <FORM target=$loginID ACTION=\"" . request()->url_for('backoffice/f_manager_statement.cgi') . "\" METHOD=\"POST\">
- <input name=loginID type=hidden value=$loginID>
- <INPUT type=hidden name=\"broker\" value=\"$broker\">
- <INPUT type=hidden name=\"currency\" value=\"$currency\">
+ <FORM target=$encoded_loginID ACTION=\"" . request()->url_for('backoffice/f_manager_statement.cgi') . "\" METHOD=\"POST\">
+ <input name=loginID type=hidden value=$encoded_loginID>
+ <INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">
+ <INPUT type=hidden name=\"currency\" value=\"$encoded_currency\">
  <INPUT type=hidden name=\"l\" value=\"EN\">
  <INPUT type=\"submit\" value='View client portfolio'>
  </FORM>";
@@ -139,13 +143,13 @@ print qq~
 <FORM name=maketrans onsubmit="return confirm('Are you sure ? Please double-check all inputs.');" method=POST action="~
     . request()->url_for('backoffice/quant/pricing/f_dealer.cgi') . qq~">
 <input type=hidden name=whattodo value=closeatzero>
-<input type=hidden name=broker value=$broker>
+<input type=hidden name=broker value=$encoded_broker>
 <select name=buysell><option selected>SELL</select>
 <br>PRICE: <select name=curr><option>~ . get_currency_options() . qq~</select>
 <input type=hidden size=12 name=price value=0><a>0</a>
 <br>QUANTITY: <input type=text size=12 name=qty value=1>
 <br>BET REFERENCE (not TXNID) : <input type=text size=12 name=ref value=''>
-<br>CLIENT LOGINID: <input type=text size=12 name=loginid value=$broker>
+<br>CLIENT LOGINID: <input type=text size=12 name=loginid value=$encoded_broker>
 <br>COMMENT: <input type=text size=45 maxlength=90 name=comment>
 <tr><td><input type=submit value='- Close Contract -'></td></tr>
 </form>
