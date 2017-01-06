@@ -157,6 +157,8 @@ sub get_bet_results {
         });
 
 
+        #force re-createion of surface 
+        $record->{volsurface}->clear_surface;
         my $bet = produce_contract($bet_args);
 
         my $bom_mid = $bet->pricing_engine->can('_base_probability') ? $bet->pricing_engine->_base_probability : $bet->pricing_engine->base_probability->amount;
@@ -170,6 +172,10 @@ sub get_bet_results {
         my $sd_ask = $record->{sd_ask};
 
         my $mid_diff = abs($sd_mid - $bom_mid);
+
+        #force re-createion of surface 
+        $record->{volsurface}->clear_surface;
+        $bet = produce_contract($bet_args);
 
         my $arbitrage_check = ($bet->bid_probability->amount > $sd_ask or $bet->ask_probability->amount < $sd_bid) ? 1 : 0;
 
