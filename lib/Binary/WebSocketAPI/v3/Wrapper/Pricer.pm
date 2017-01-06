@@ -2,6 +2,9 @@ package Binary::WebSocketAPI::v3::Wrapper::Pricer;
 
 use strict;
 use warnings;
+
+no indirect;
+use Try::Tiny;
 use JSON;
 use Data::Dumper;
 use Format::Util::Numbers qw(roundnear);
