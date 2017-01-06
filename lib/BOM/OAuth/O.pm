@@ -305,7 +305,7 @@ sub _login {
                         $message = localize(
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
                             $client->email, $r->client_ip,
-                            $brand->landing_company_countries->countries->country_from_code($country_code) // $country_code, $user_agent);
+                            $brand->countries_instance->countries->country_from_code($country_code) // $country_code, $user_agent);
                     } else {
                         $message = localize(
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3], browser: [_4] and app: [_5]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
