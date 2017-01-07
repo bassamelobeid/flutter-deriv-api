@@ -86,7 +86,7 @@ my $remove_success_msg =
 if ($action_type eq 'oklogins') {
     LOGIN:
     foreach my $login_id (split(/\s+/, $clientID)) {
-        my $encoded_login_id = encode_entities($logini_id);
+        my $encoded_login_id = encode_entities($login_id);
         my $client = Client::Account::get_instance({'loginid' => $login_id});
         if (not $client) {
             push @invalid_logins, $login_id;
