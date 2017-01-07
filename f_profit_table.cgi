@@ -131,7 +131,7 @@ BOM::Backoffice::Request::template->process(
         posted_startdate        => $startdate,
         posted_enddate          => $enddate,
         currency                => $client->currency,
-        residence               => Brands->new(name => request()->brand)->landing_company_countries->countries->country_from_code($client->residence),
+        residence               => Brands->new(name => request()->brand)->countries_instance->countries->country_from_code($client->residence),
         contract_details        => \&BOM::ContractInfo::get_info,
         performance_probability => $performance_probability,
         inv_performance_probability => $inv_performance_probability,

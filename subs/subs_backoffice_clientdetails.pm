@@ -52,10 +52,10 @@ sub print_client_details {
 
     my @countries;
     my $country_codes = {};
-    my $lc_countries = Brands->new(name => request()->brand)->landing_company_countries->countries;
-    foreach my $country_name (sort $lc_countries->all_country_names) {
+    my $countries_instance = Brands->new(name => request()->brand)->countries_instance->countries;
+    foreach my $country_name (sort $countries_instance->all_country_names) {
         push @countries, $country_name;
-        $country_codes->{$country_name} = $lc_countries->code_from_country($country_name);
+        $country_codes->{$country_name} = $countries_instance->code_from_country($country_name);
     }
 
     my ($proveID, $show_uploaded_documents);
@@ -69,7 +69,7 @@ sub print_client_details {
     }
 
     # COMMUNICATION ADDRESSES
-    my $client_phone_country = $lc_countries->code_from_phone($client->phone);
+    my $client_phone_country = $countries_instance->code_from_phone($client->phone);
     if (not $client_phone_country) {
         $client_phone_country = 'Unknown';
     }
