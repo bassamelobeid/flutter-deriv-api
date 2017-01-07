@@ -81,7 +81,7 @@ print qq~<br><form method=post action=$request_files_upload_url>
 my $single_file_upload_dir = request()->url_for('backoffice/f_bbdl_upload.cgi');
 print qq~<P><LI>
 <form method=post action=$single_file_upload_dir>
-<input type=hidden name=broker value=$~ . encode_entities($broker) . qq~>
+<input type=hidden name=broker value=~ . encode_entities($broker) . qq~>
 Upload a file to the Bloomberg Data License FTP folder:<br>
 Filename: <input type=text size=20 name=filename value='scheduled.req'>
 <input type=submit value='Upload File'><br>
