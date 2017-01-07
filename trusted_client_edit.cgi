@@ -67,7 +67,7 @@ if ($reason =~ /SELECT A REASON/) {
 ## BUILD MESSAGE TO PRINT TO SCREEN                                 ##
 ######################################################################
 my $encoded_reason = encode_entities($reason);
-my $encoded_clerk = encode_entities($clerk);
+my $encoded_clerk  = encode_entities($clerk);
 my $insert_error_msg =
     "<br /><font color=red><b>ERROR :</font></b>&nbsp;&nbsp;<b>$encoded_clientID $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has not been saved<br /><br />";
 
@@ -111,7 +111,7 @@ if ($action_type eq 'oklogins') {
 # handle invalid login
 if (@invalid_logins) {
     print '<br /><font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Failed to save these invalid login ID: <b>'
-        . join(', ', map {encode_entities($_)} @invalid_logins)
+        . join(', ', map { encode_entities($_) } @invalid_logins)
         . '</b><br /><br />';
 }
 

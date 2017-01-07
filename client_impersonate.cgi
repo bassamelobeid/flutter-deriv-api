@@ -20,8 +20,8 @@ BOM::Backoffice::Auth0::can_access(['CS']);
 
 Bar('Client Impersonate');
 
-my $login = request()->param('impersonate_loginid');
-my $broker = request()->param('broker') // request()->broker_code;
+my $login         = request()->param('impersonate_loginid');
+my $broker        = request()->param('broker') // request()->broker_code;
 my $encoded_login = encode_entities($login);
 
 if ($login !~ /^$broker\d+$/) {

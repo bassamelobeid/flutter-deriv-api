@@ -12,7 +12,7 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('BACKOFFICE ACCOUNTS');
 my $broker           = request()->broker_code;
-my $encoded_broker = encode_entities($broker);
+my $encoded_broker   = encode_entities($broker);
 my $staff            = BOM::Backoffice::Auth0::can_access(['Payments']);
 my $clerk            = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $currency_options = get_currency_options();
@@ -79,7 +79,8 @@ print "<form id=\"paymentDCC\" action=\""
     . "</select>"
     . " LoginID of the client: <input type=\"text\" size=\"12\" name=\"clientloginid\">"
     . "<br>Input a comment/reminder about this DCC: <input type=\"text\" size=\"50\" name=\"reminder\">"
-    . "<br><input type=\"submit\" value='Make Dual Control Code (by " . encode_entities($clerk) . ")'>"
+    . "<br><input type=\"submit\" value='Make Dual Control Code (by "
+    . encode_entities($clerk) . ")'>"
     . "</form>";
 
 my $tt = BOM::Backoffice::Request::template;

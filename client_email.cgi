@@ -32,14 +32,14 @@ my $staff = BOM::Backoffice::Auth0::can_access(['CS']);
 my $clerk = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $now   = Date::Utility->new;
 
-my %input = %{request()->params};
-my $email = trim(lc defang($input{email}));
+my %input         = %{request()->params};
+my $email         = trim(lc defang($input{email}));
 my $encoded_email = encode_entities($email);
 
 my $new_email;
 my $encoded_new_email;
 if ($input{new_email}) {
-    $new_email = trim(lc defang($input{new_email}));
+    $new_email         = trim(lc defang($input{new_email}));
     $encoded_new_email = encode_entities($new_email);
     if (not Email::Valid->address($new_email)) {
         print "invalid email format [$encoded_new_email]";
@@ -61,7 +61,7 @@ if (not $input{email_edit}) {
         {
             list     => 1,
             email    => $email,
-            loginids => [map {$_->loginid} $user->loginid],
+            loginids => [map { $_->loginid } $user->loginid],
         },
     ) || die BOM::Backoffice::Request::template->error();
 
@@ -114,7 +114,7 @@ if ($email ne $new_email) {
             updated   => 1,
             old_email => $email,
             new_email => $new_email,
-            loginids  => [map {$_->loginid} $user->loginid],
+            loginids  => [map { $_->loginid } $user->loginid],
         },
     ) || die BOM::Backoffice::Request::template->error();
 } else {

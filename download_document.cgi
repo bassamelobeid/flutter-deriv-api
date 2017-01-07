@@ -18,7 +18,7 @@ BOM::Backoffice::Auth0::can_access();
 # category: id_scan (Default), 192_result
 my $category = request()->param('category');
 # Path can be directory or file path
-my $path = request()->param('path');
+my $path         = request()->param('path');
 my $encoded_path = encode_entities($path);
 
 # hacker checks

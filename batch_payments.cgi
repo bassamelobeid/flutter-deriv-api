@@ -224,7 +224,7 @@ if (%summary_amount_by_currency and scalar @invalid_lines == 0) {
       <table class="summary"><caption>Currency Totals</caption><tr><th>Currency</th><th>Credits</th><th>Debits</th></tr>
     ];
     foreach my $currency (sort keys %summary_amount_by_currency) {
-        my $c = encode_entities($currency);
+        my $c  = encode_entities($currency);
         my $cr = encode_entities(to_monetary_number_format(roundnear(0.1, $summary_amount_by_currency{$currency}{credit})));
         my $db = encode_entities(to_monetary_number_format(roundnear(0.1, $summary_amount_by_currency{$currency}{debit})));
         $summary_table .= "<tr><th>$c</th><td>$cr</td><td>$db</td></tr>";
@@ -240,16 +240,19 @@ if ($preview and @invalid_lines == 0) {
         . request()->url_for("backoffice/f_makedcc.cgi")
         . "\" method=\"post\">"
         . "<input type=hidden name=\"dcctype\" value=\"file_content\">"
-        . "<input type=hidden name=\"broker\" value=\"" . encode_entities($broker) . "\">"
+        . "<input type=hidden name=\"broker\" value=\""
+        . encode_entities($broker) . "\">"
         . "<input type=hidden name=\"l\" value=\"EN\">"
         . '<input type="hidden" name="purpose" value="batch clients payments" />'
-        . "<input type=hidden name=\"file_location\" value=\"" . encode_entities($payments_csv_file) . "\">"
+        . "<input type=hidden name=\"file_location\" value=\""
+        . encode_entities($payments_csv_file) . "\">"
         . "Make sure you check the above details before you make dual control code<br>"
         . "<br>Input a comment/reminder about this DCC: <input type=text size=50 name=reminder>"
         . "Type of transaction: <select name='transtype'>"
         . "<option value='BATCHACCOUNT'>Batch Account</option><option value='BATCHDOUGHFLOW'>Batch Doughflow</option>"
         . "</select>"
-        . "<br /><input type=\"submit\" value='Make Dual Control Code (by " . encode_entities($clerk) . ")'>"
+        . "<br /><input type=\"submit\" value='Make Dual Control Code (by "
+        . encode_entities($clerk) . ")'>"
         . "</form></div>";
 
     print qq[<div class="inner_bo_box"><h2>Confirm credit/debit clients</h2>
@@ -285,7 +288,7 @@ if ($preview and @invalid_lines == 0) {
 sub construct_row_line {
     my %args = @_;
 
-    map {$args{$_} = encode_entities($args{$_})} keys %args;
+    map { $args{$_} = encode_entities($args{$_}) } keys %args;
     my $notes = $args{error} || $args{remark};
     my $color = $args{error} ? 'red' : 'green';
     $args{$_} ||= '&nbsp;' for keys %args;

@@ -66,8 +66,8 @@ if (open(FILE, $filename)) {
                 $i++;
             }
 
-            if (request()->param('sortby') == 6) { $thislineout .= "<!-- " . encode_entities($fields[4] - $fields[5]) . " -->"; }
-            else                                 { $thislineout .= "<!-- " . encode_entities($fields[request()->param('sortby')]) . " -->"; }
+            if   (request()->param('sortby') == 6) { $thislineout .= "<!-- " . encode_entities($fields[4] - $fields[5]) . " -->"; }
+            else                                   { $thislineout .= "<!-- " . encode_entities($fields[request()->param('sortby')]) . " -->"; }
             $thislineout .= "</TR>";
 
             if (not $viewonlylist or $viewonlylist =~ /$fields[0]/) { push @to_out, $thislineout; }
@@ -94,8 +94,8 @@ print @s_to_out;
 print "<TR>";
 my $i = 0;
 foreach my $f (@fields) {
-    if (abs($sums[$i]) > 0) { print "<TD><B><font size=2 face=verdana> " . encode_entities(commas($sums[$i])) . "</TD>"; }
-    else                    { print "<TD></TD>"; }
+    if   (abs($sums[$i]) > 0) { print "<TD><B><font size=2 face=verdana> " . encode_entities(commas($sums[$i])) . "</TD>"; }
+    else                      { print "<TD></TD>"; }
     $i++;
 }
 print "</TR>";

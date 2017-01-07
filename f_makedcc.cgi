@@ -113,8 +113,14 @@ if ($input->{'dcctype'} eq 'file_content') {
     BOM::System::AuditLog::log($message, '', $staff);
 
     print encode_entities($message);
-    print "<p>Note: " . encode_entities($input->{'clientloginid'}) . " is " . encode_entities($client->salutation) . ' ' . encode_entities($client->first_name) . ' ' . encode_entities($client->last_name);
-    print "<br><b />PS: make sure you didn't get the currency wrong! You chose <font color=red>" . encode_entities($input->{'currency'}) . "</font></b></p>";
+    print "<p>Note: "
+        . encode_entities($input->{'clientloginid'}) . " is "
+        . encode_entities($client->salutation) . ' '
+        . encode_entities($client->first_name) . ' '
+        . encode_entities($client->last_name);
+    print "<br><b />PS: make sure you didn't get the currency wrong! You chose <font color=red>"
+        . encode_entities($input->{'currency'})
+        . "</font></b></p>";
 
     # Logging
     Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")

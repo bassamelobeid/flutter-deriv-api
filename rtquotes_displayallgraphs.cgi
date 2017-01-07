@@ -70,7 +70,7 @@ print
     '<span style="align=center"><TABLE BORDER=1 CELLPADDING=1 CELLSPACING=0><TR><TD>MARKET</TD><TD><b>PROVIDER</TD><TD><b>BACKUP</TD><TD><b>2NDBACKUP</TD><TD><b>3RDBACKUP</TD></TR>';
 foreach my $underlying_symbol ('frxUSDJPY', 'FTSE', 'UKBARC', 'USINTC') {
     my $underlying = create_underlying($underlying_symbol);
-    my $providers = join "</TD><TD>", map {encode_entities($_)} @{$underlying->providers};
+    my $providers = join "</TD><TD>", map { encode_entities($_) } @{$underlying->providers};
     print '<TR><TD><b>' . encode_entities($underlying->market->name) . '</TD><TD>' . $providers . "</TD></TR>";
 }
 print '</span>';
@@ -131,17 +131,25 @@ print qq~
 		<TR>
 			<TD align=right>Draw for how many days backward ?</TD>
 			<TD>
-				<input type=text name="count" size=15 value="~ . encode_entities($count)  . qq~"/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				<input type=text name="count" size=15 value="~ . encode_entities($count) . qq~"/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 				<input type=radio name="merge" value='1' $merge_checked>Merge Graph <input type=radio name="merge" value="0">Seperate Graph<br/>
 			</TD>
 		</TR>
 		<TR>
 			<TD align=right>Upper and Lower limit :</TD>
-			<TD>From (lower limit) <input type=text name="lower" size=15 value="~ . encode_entities($lower) . qq~"/> To (upper limit) <input type=text name="upper" size=15 value="~ . encode_entities($upper) . qq~"/></TD>
+			<TD>From (lower limit) <input type=text name="lower" size=15 value="~
+    . encode_entities($lower)
+    . qq~"/> To (upper limit) <input type=text name="upper" size=15 value="~
+    . encode_entities($upper)
+    . qq~"/></TD>
 		</TR>
 		<TR>
 			<TD align=right>Time limits (hh:mm:ss) :</TD>
-			<TD>From (lower limit) <input type=text name="time_lower" size=15 value="~ . encode_entities($time_lower) . qq~"/> To (upper limit) <input type=text name="time_upper" size=15 value="~ . encode_entities($time_upper) . qq~"/></TD>
+			<TD>From (lower limit) <input type=text name="time_lower" size=15 value="~
+    . encode_entities($time_lower)
+    . qq~"/> To (upper limit) <input type=text name="time_upper" size=15 value="~
+    . encode_entities($time_upper)
+    . qq~"/></TD>
 		</TR>
 		<TR>
 			<TD align=right>Use Secondary Y axis (Applicable to first underlying only) :</TD>
@@ -308,7 +316,11 @@ elsif (scalar @overlay and not $merge) {
                     });
 
                     if (not $graph_x and not $graph_y) {
-                        print "<span style='color:#FF0000;'>No data for " . encode_entities($instrument) . " [" . encode_entities($provider) . "] on " . encode_entities($daytochart) . "</span><br/>";
+                        print "<span style='color:#FF0000;'>No data for "
+                            . encode_entities($instrument) . " ["
+                            . encode_entities($provider) . "] on "
+                            . encode_entities($daytochart)
+                            . "</span><br/>";
                         next;
                     }
 
@@ -360,10 +372,18 @@ elsif (scalar @overlay and not $merge) {
 
                         $y2 = 0;                    # only use secondary Y axis for first time
                     } else {
-                        print "<span style='color:#FF0000;'>No valid data for " . encode_entities($instrument) . "[" . encode_entities($p) . "] on " . encode_entities($daytochart) . "</span><br/>";
+                        print "<span style='color:#FF0000;'>No valid data for "
+                            . encode_entities($instrument) . "["
+                            . encode_entities($p) . "] on "
+                            . encode_entities($daytochart)
+                            . "</span><br/>";
                     }
                 } else {
-                    print "<span style='color:#FF0000;'>Can't find fullfeed file for " . encode_entities($instrument) . "[" . encode_entities($p) . "] on " . encode_entities($daytochart) . "</span><br/>";
+                    print "<span style='color:#FF0000;'>Can't find fullfeed file for "
+                        . encode_entities($instrument) . "["
+                        . encode_entities($p) . "] on "
+                        . encode_entities($daytochart)
+                        . "</span><br/>";
                 }
             }
         }
@@ -451,7 +471,11 @@ elsif (scalar @overlay and $merge) {
                     daytochart            => $daytochart,
                 });
                 if (not $graph_x and not $graph_y) {
-                    print "<span style='color:#FF0000;'>No data for " . encode_entities($market) . "[" . encode_entities($provider) . "] on " . encode_entities($daytochart) . "</span><br/>";
+                    print "<span style='color:#FF0000;'>No data for "
+                        . encode_entities($market) . "["
+                        . encode_entities($provider) . "] on "
+                        . encode_entities($daytochart)
+                        . "</span><br/>";
                     next;
                 }
 

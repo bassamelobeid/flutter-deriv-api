@@ -14,7 +14,7 @@ use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
 BOM::Backoffice::Sysinit::init();
 
-my $loginID = uc(request()->param('loginID'));
+my $loginID         = uc(request()->param('loginID'));
 my $encoded_loginID = encode_entities($loginID);
 PrintContentType();
 BrokerPresentation('Quant Query', '', '');

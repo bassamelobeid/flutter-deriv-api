@@ -26,7 +26,8 @@ $partialfname = '' if ($partialfname eq 'Partial FName');
 $partiallname = '' if ($partiallname eq 'Partial LName');
 $partialemail = '' if ($partialemail eq 'Partial email');
 
-printf "<head><title>Searching for name [%s %s] or email [%s] in clients of %s</title></head><body>", map {encode_entities($_)} ($partialfname,$partiallname, $partialemail,$broker);
+printf "<head><title>Searching for name [%s %s] or email [%s] in clients of %s</title></head><body>",
+    map { encode_entities($_) } ($partialfname, $partiallname, $partialemail, $broker);
 
 my %fields = (
     'first_name' => $partialfname,

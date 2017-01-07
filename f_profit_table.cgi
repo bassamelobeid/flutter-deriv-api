@@ -22,7 +22,7 @@ use Performance::Probability qw(get_performance_probability);
 use f_brokerincludeall;
 BOM::Backoffice::Sysinit::init();
 
-my $loginID = uc(request()->param('loginID'));
+my $loginID         = uc(request()->param('loginID'));
 my $encoded_loginID = $loginID;
 
 PrintContentType();
@@ -122,18 +122,18 @@ foreach my $contract (@{$open_contracts}) {
 BOM::Backoffice::Request::template->process(
     'backoffice/account/profit_table.html.tt',
     {
-        sold_contracts          => $sold_contracts,
-        open_contracts          => $open_contracts,
-        markets                 => [Finance::Asset::Market::Registry->instance->display_markets],
-        email                   => $client->email,
-        full_name               => $client->full_name,
-        loginid                 => $client->loginid,
-        posted_startdate        => $startdate,
-        posted_enddate          => $enddate,
-        currency                => $client->currency,
-        residence               => Brands->new(name => request()->brand)->countries_instance->countries->country_from_code($client->residence),
-        contract_details        => \&BOM::ContractInfo::get_info,
-        performance_probability => $performance_probability,
+        sold_contracts              => $sold_contracts,
+        open_contracts              => $open_contracts,
+        markets                     => [Finance::Asset::Market::Registry->instance->display_markets],
+        email                       => $client->email,
+        full_name                   => $client->full_name,
+        loginid                     => $client->loginid,
+        posted_startdate            => $startdate,
+        posted_enddate              => $enddate,
+        currency                    => $client->currency,
+        residence                   => Brands->new(name => request()->brand)->countries_instance->countries->country_from_code($client->residence),
+        contract_details            => \&BOM::ContractInfo::get_info,
+        performance_probability     => $performance_probability,
         inv_performance_probability => $inv_performance_probability,
     }) || die BOM::Backoffice::Request::template->error();
 

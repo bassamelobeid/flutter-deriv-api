@@ -135,7 +135,7 @@ if ($filen eq 'editvol') {
             print "<P> " . encode_entities($surface->validation_error) . " </P>";
 
         } elsif ($big_differences) {
-            print "<P>". encode_entities($error_message) . "</P>";
+            print "<P>" . encode_entities($error_message) . "</P>";
         } else {
             print "<P>Surface for " . encode_entities($vol_update_symbol) . " being saved</P>";
             $surface->save;
@@ -170,7 +170,11 @@ if ($filen =~ m!^vol/master(\w{3}(?:-\w{3})?)\.interest$!) {
         }
 
         if ($err_cond) {
-            print '<P><font color=red><B>ERROR with ' . encode_entities($err_cond) . ' on line  [' . encode_entities($rateline) . '].  File NOT saved.</B></font></P>';
+            print '<P><font color=red><B>ERROR with '
+                . encode_entities($err_cond)
+                . ' on line  ['
+                . encode_entities($rateline)
+                . '].  File NOT saved.</B></font></P>';
             code_exit_BO();
         } else {
             $rates->{$tenor} = $rate;
@@ -293,7 +297,9 @@ print "<p>New file size is " . encode_entities(commas(-s "$overridefilename")) .
 
 # DISPLAY diff
 print
-    "<hr><table border=0><tr><td bgcolor=#ffffce><center><b>DIFFERENCES BETWEEN OLD FILE AND NEW FILE :<br>(differences indicated by stars)</b><br><pre>" . encode_entities($diff) . "</pre></td></tr></table><hr>";
+    "<hr><table border=0><tr><td bgcolor=#ffffce><center><b>DIFFERENCES BETWEEN OLD FILE AND NEW FILE :<br>(differences indicated by stars)</b><br><pre>"
+    . encode_entities($diff)
+    . "</pre></td></tr></table><hr>";
 
 if (-e "$overridefilename.staffedit") {
     unlink "$overridefilename.staffedit";

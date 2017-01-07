@@ -18,8 +18,8 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
-my $cgi      = CGI->new;
-my $filename = $cgi->param('filename');
+my $cgi              = CGI->new;
+my $filename         = $cgi->param('filename');
 my $encoded_filename = encode_entities($filename);
 
 Bar("Download a file from BBDL");

@@ -37,8 +37,8 @@ my $loginid = $input{loginID};
 if (not $loginid) { print "<p> Empty loginID.</p>"; code_exit_BO(); }
 $loginid = trim(uc $loginid);
 my $encoded_loginid = encode_entities($loginid);
-my $self_post = request()->url_for('backoffice/f_clientloginid_edit.cgi');
-my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $loginid});
+my $self_post       = request()->url_for('backoffice/f_clientloginid_edit.cgi');
+my $self_href       = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $loginid});
 
 # given a bad-enough loginID, BrokerPresentation can die, leaving an unformatted screen..
 # let the client-check offer a chance to retry.
@@ -57,10 +57,10 @@ my $client = eval { Client::Account->new({loginid => $loginid}) } || do {
     code_exit_BO();
 };
 
-my $broker = $client->broker;
+my $broker         = $client->broker;
 my $encoded_broker = encode_entities($broker);
-my $staff  = BOM::Backoffice::Auth0::can_access(['CS']);
-my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $staff          = BOM::Backoffice::Auth0::can_access(['CS']);
+my $clerk          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 # sync authentication status to Doughflow
 if ($input{whattodo} eq 'sync_to_DF') {
@@ -268,7 +268,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
         if (my $promo_code = uc $input{promo_code}) {
             my $encoded_promo_code = encode_entities($promo_code);
-            my %pcargs = (
+            my %pcargs             = (
                 code   => $promo_code,
                 broker => $broker
             );
@@ -579,7 +579,7 @@ if ($client->landing_company->allows_payment_agents) {
 }
 
 my $statuses = join '/', map { uc $_->status_code } $client->client_status;
-my $name     = $client->first_name;
+my $name = $client->first_name;
 $name .= ' ' if $name;
 $name .= $client->last_name;
 my $client_info = sprintf "%s %s%s", $client->loginid, ($name || '?'), ($statuses ? " [$statuses]" : '');
@@ -709,7 +709,7 @@ print qq{
 my $brand_countries = Brands->new(name => request()->brand)->countries_instance->countries;
 foreach my $country_name (sort $brand_countries->all_country_names) {
     my $code = $brand_countries->code_from_country($country_name);
-    print "<option value='" . encode_entities($code) ."'>" . encode_entities($country_name) . "</option>";
+    print "<option value='" . encode_entities($code) . "'>" . encode_entities($country_name) . "</option>";
 }
 
 print qq{
@@ -727,7 +727,9 @@ if ($financial_assessment) {
     my $is_professional = $financial_assessment->is_professional ? 'yes' : 'no';
     Bar("Financial Assessment");
     print qq{<table class="collapsed">
-        <tr><td>User Data</td><td><textarea rows=10 cols=150 id="financial_assessment_score">} . encode_entities($user_data_json) . qq{</textarea></td></tr>
+        <tr><td>User Data</td><td><textarea rows=10 cols=150 id="financial_assessment_score">}
+        . encode_entities($user_data_json)
+        . qq{</textarea></td></tr>
         <tr><td></td><td><input id="format_financial_assessment_score" type="button" value="Format"/></td></tr>
         <tr><td>Is professional</td><td>$is_professional</td></tr>
         </table>
@@ -752,7 +754,15 @@ if (@$login_history == 0) {
         my $action      = $login->action;
         my $status      = $login->successful ? 'ok' : 'failed';
         my $environment = $login->environment;
-        print qq{<tr><td width='150'>} . encode_entities("$date UTC") . qq{</td><td>} . encode_entities($action) . qq{</td><td>} . encode_entities($status) . qq{</td><td>} . encode_entities($environment) . qq{</td></tr>\n};
+        print qq{<tr><td width='150'>}
+            . encode_entities("$date UTC")
+            . qq{</td><td>}
+            . encode_entities($action)
+            . qq{</td><td>}
+            . encode_entities($status)
+            . qq{</td><td>}
+            . encode_entities($environment)
+            . qq{</td></tr>\n};
     }
     print qq{</table>\n};
 }
@@ -780,7 +790,13 @@ if (@$logins == 0) {
             substr($environment, 100) = '..';
         }
         # yes this is mostly a copy+paste version from ~20 lines above, but with one fewer field
-        print qq{<tr><td>} . encode_entities("$date UTC") . qq{</td><td>} . encode_entities($status) . qq{</td><td>} . encode_entities($environment) . qq{</td></tr>\n};
+        print qq{<tr><td>}
+            . encode_entities("$date UTC")
+            . qq{</td><td>}
+            . encode_entities($status)
+            . qq{</td><td>}
+            . encode_entities($environment)
+            . qq{</td></tr>\n};
     }
     print qq{</table>};
 }

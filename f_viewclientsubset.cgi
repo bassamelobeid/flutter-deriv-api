@@ -185,7 +185,8 @@ if ($email_notification) {
     });
 
     if (not $ret) {
-        print '<p style="font-weight:bold; color:red; text-align:center; padding:1em 0;"> Notification was not sent: Error ' . encode_entities($ret) . ' </p>';
+        print '<p style="font-weight:bold; color:red; text-align:center; padding:1em 0;"> Notification was not sent: Error '
+            . encode_entities($ret) . ' </p>';
     }
 }
 
@@ -200,23 +201,19 @@ my $paging;
 
 if ($total) {
     if ($prev_page >= 1) {
-      my $link = $home_link->clone;
-      $link->query(
-                   broker => $broker,
-                   show => $show,
-                   limit => $limit,
-                   page => $prev_page,
-                   onlylarge => request()->param('onlylarge'),
-                   onlyfunded => request()->param('onlyfunded'),
-                   onlynonzerobalance=> request()->param('onlynonzerobalance'),
-                   recoverfromfraudpassword => request()->param('recoverfromfraudpassword'),
-                   recoverdays => request()->param('recoverdays'),
-                  );
-        $prev_page =
-              '<a id="prev_page" href="'
-            . $link
-            . '">Previous '
-            . encode_entities($limit) . '</a>';
+        my $link = $home_link->clone;
+        $link->query(
+            broker                   => $broker,
+            show                     => $show,
+            limit                    => $limit,
+            page                     => $prev_page,
+            onlylarge                => request()->param('onlylarge'),
+            onlyfunded               => request()->param('onlyfunded'),
+            onlynonzerobalance       => request()->param('onlynonzerobalance'),
+            recoverfromfraudpassword => request()->param('recoverfromfraudpassword'),
+            recoverdays              => request()->param('recoverdays'),
+        );
+        $prev_page = '<a id="prev_page" href="' . $link . '">Previous ' . encode_entities($limit) . '</a>';
     } else {
         $prev_page = '';
     }
@@ -224,22 +221,18 @@ if ($total) {
     if ($next_page <= $total_page) {
         my $link = $home_link->clone;
         $link->query(
-                     broker => $broker,
-                     show => $show,
-                     limit => $limit,
-                     page => $next_page,
-                     onlylarge => request()->param('onlylarge'),
-                     onlyfunded => request()->param('onlyfunded'),
-                     onlynonzerobalance=> request()->param('onlynonzerobalance'),
-                     recoverfromfraudpassword => request()->param('recoverfromfraudpassword'),
-                     recoverdays => request()->param('recoverdays'),
-                    );
+            broker                   => $broker,
+            show                     => $show,
+            limit                    => $limit,
+            page                     => $next_page,
+            onlylarge                => request()->param('onlylarge'),
+            onlyfunded               => request()->param('onlyfunded'),
+            onlynonzerobalance       => request()->param('onlynonzerobalance'),
+            recoverfromfraudpassword => request()->param('recoverfromfraudpassword'),
+            recoverdays              => request()->param('recoverdays'),
+        );
 
-        $next_page =
-              '<a id="next_page" href="'
-            . $link
-            . '">Next '
-            . encode_entities($next_total) . '</a>';
+        $next_page = '<a id="next_page" href="' . $link . '">Next ' . encode_entities($next_total) . '</a>';
     } else {
         $next_page = '';
     }

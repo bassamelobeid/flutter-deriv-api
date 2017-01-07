@@ -18,9 +18,9 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 local $\ = "\n";
-my $loginID    = uc(request()->param('loginID'));
+my $loginID         = uc(request()->param('loginID'));
 my $encoded_loginID = encode_entities($loginID);
-my $outputtype = request()->param('outputtype');
+my $outputtype      = request()->param('outputtype');
 if (not $outputtype) {
     $outputtype = 'table';
 }
@@ -32,7 +32,7 @@ if ($outputtype eq 'csv') {
     BrokerPresentation("$encoded_loginID Portfolio");
 }
 
-my $broker = request()->broker_code;
+my $broker         = request()->broker_code;
 my $encoded_broker = encode_entities($broker);
 BOM::Backoffice::Auth0::can_access(['CS']);
 

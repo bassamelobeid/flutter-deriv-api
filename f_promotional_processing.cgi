@@ -112,8 +112,8 @@ foreach my $loginid (@approved, @rejected) {
 
 print '<br/>';
 
-print '<b>Approved : </b>', join(' ', map {encode_entities($_)} @approved), '<br/><br/>';
-print '<b>Rejected : </b>', join(' ', map {encode_entities($_)} @rejected), '<br/><br/>';
+print '<b>Approved : </b>', join(' ', map { encode_entities($_) } @approved), '<br/><br/>';
+print '<b>Rejected : </b>', join(' ', map { encode_entities($_) } @rejected), '<br/><br/>';
 
 code_exit_BO();
 

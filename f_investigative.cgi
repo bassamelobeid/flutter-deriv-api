@@ -19,7 +19,10 @@ my $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::System::Con
 if (request()->param('whattodo') eq 'unsanctions') {
     Bar('UN Sanctions Query');
     if ($sanctions->is_sanctioned(request()->param('fname'), request()->param('lname'))) {
-        print "<b>" . encode_entities(request()->param('fname')) . " " . encode_entities(request()->param('lname')) . " IS IN THE UN SANCTIONS LIST!!</b>";
+        print "<b>"
+            . encode_entities(request()->param('fname')) . " "
+            . encode_entities(request()->param('lname'))
+            . " IS IN THE UN SANCTIONS LIST!!</b>";
     } else {
         print encode_entities(request()->param('fname')) . " " . encode_entities(request()->param('lname')) . " is not in the sanctions list.";
     }

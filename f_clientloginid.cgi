@@ -92,7 +92,8 @@ print "<form id='clientdetailsDCC' action='"
     . "Loginid : <input type='text' name='clientloginid' placeholder='required'>"
     . "<br><br>New email of the client: <input type='text' name='clientemail' placeholder='required'>"
     . "<br><br>Input a comment/reminder about this DCC: <input type='text' size='50' name='reminder'>"
-    . "<br><br><input type='submit' value='Make Dual Control Code (by " . encode_entities($clerk) . ")'>"
+    . "<br><br><input type='submit' value='Make Dual Control Code (by "
+    . encode_entities($clerk) . ")'>"
     . "</form>";
 
 Bar("CLOSED/DISABLED ACCOUNTS");

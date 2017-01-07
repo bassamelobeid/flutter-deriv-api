@@ -49,7 +49,12 @@ if (length($filename) >= 25) {
     if ($sftp->error) {
         $message = "<p>Upload Failed: " . $sftp->error . '</p>';
     } else {
-        $message = '<p>Successfully uploaded file[' . encode_entities($filename) . '] to server[' . ']. Your response file is ' . encode_entities($replyfile) . '</p>';
+        $message =
+              '<p>Successfully uploaded file['
+            . encode_entities($filename)
+            . '] to server['
+            . ']. Your response file is '
+            . encode_entities($replyfile) . '</p>';
     }
 
     print $message;

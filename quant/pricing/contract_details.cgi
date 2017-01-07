@@ -271,13 +271,13 @@ sub _get_pricing_parameter_from_slope_pricer {
     my ($contract, $action_type, $discounted_probability) = @_;
 
     #force createion of debug_information
-    my $ask_probability = $contract->ask_probability;
+    my $ask_probability   = $contract->ask_probability;
     my $debug_information = $contract->debug_information;
     my $pricing_parameters;
     my $contract_type     = $contract->pricing_code;
     my $risk_markup       = $contract->risk_markup->amount;
     my $commission_markup = $contract->commission_markup->amount;
-    my $base_probability = $debug_information->{$contract_type}{base_probability}{amount};
+    my $base_probability  = $debug_information->{$contract_type}{base_probability}{amount};
     my $ask_price         = $contract->ask_price;
 
     if ($action_type eq 'sell') {

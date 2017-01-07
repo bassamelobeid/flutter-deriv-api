@@ -33,9 +33,9 @@ foreach my $loginID (split(/,/, $listaccounts)) {
         next CLIENT;
     };
 
-    my $name  = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
-    my $email = $client->email;
-    my $encoded_name = encode_entities($name);
+    my $name          = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
+    my $email         = $client->email;
+    my $encoded_name  = encode_entities($name);
     my $encoded_email = encode_entities($email);
 
     my $client_db = BOM::Database::ClientDB->new({
@@ -46,8 +46,8 @@ foreach my $loginID (split(/,/, $listaccounts)) {
         die "Account stuck in previous transaction $loginID";
     }
 
-    my $curr = $client->currency;
-    my $b    = $client->default_account->balance;
+    my $curr         = $client->currency;
+    my $b            = $client->default_account->balance;
     my $encoded_curr = encode_entities($curr);
 
     if (request()->param('whattodo') eq 'Do it for real !') {

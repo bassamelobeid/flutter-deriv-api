@@ -15,7 +15,7 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
-my $login = request()->param('login');
+my $login         = request()->param('login');
 my $encoded_login = encode_entities($login);
 
 BrokerPresentation('CLIENT LIMITS FOR ' . $encoded_login);

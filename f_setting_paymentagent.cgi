@@ -19,8 +19,8 @@ my $broker = request()->broker_code;
 my $staff  = BOM::Backoffice::Auth0::can_access(['CS']);
 my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
-my $loginid  = request()->param('loginid');
-my $whattodo = request()->param('whattodo');
+my $loginid         = request()->param('loginid');
+my $whattodo        = request()->param('whattodo');
 my $encoded_loginid = encode_entities($loginid);
 
 Bar('Payment Agent Setting');

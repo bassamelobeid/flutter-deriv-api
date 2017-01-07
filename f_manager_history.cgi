@@ -14,7 +14,7 @@ use BOM::ContractInfo;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-my $loginID = uc(request()->param('loginID'));
+my $loginID         = uc(request()->param('loginID'));
 my $encoded_loginID = encode_entities($loginID);
 PrintContentType();
 BrokerPresentation($encoded_loginID . ' HISTORY', '', '');
@@ -92,7 +92,13 @@ my $senvs = $ENV{'SCRIPT_NAME'};
 $ENV{'SCRIPT_NAME'} = '';
 $ENV{'SCRIPT_NAME'} = $senvs;
 
-print encode_entities($client_name) . ' Email:' . encode_entities($client_email) . ' Country:' . encode_entities($citizen) . ' Residence:' . encode_entities($residence);
+print encode_entities($client_name)
+    . ' Email:'
+    . encode_entities($client_email)
+    . ' Country:'
+    . encode_entities($citizen)
+    . ' Residence:'
+    . encode_entities($residence);
 if ($tel) {
     print ' Tel:' . encode_entities($tel);
 }

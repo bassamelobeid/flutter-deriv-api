@@ -28,8 +28,8 @@ my $dbloc            = BOM::Platform::Runtime->instance->app_config->system->dir
 my $tmp_dir          = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
 
 my $encoded_broker = encode_entities($broker);
-my $now       = Date::Utility->new;
-my $lastmonth = $now->months_ahead(-1);
+my $now            = Date::Utility->new;
+my $lastmonth      = $now->months_ahead(-1);
 
 # Daily Turnover Report
 Bar("DAILY TURNOVER REPORT");

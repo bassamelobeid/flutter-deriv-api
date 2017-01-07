@@ -54,7 +54,12 @@ try {
             print '<tr>';
             print '<td>' . encode_entities(Date::Utility->new($_->{created_at})->datetime) . '</td>';
             my $case =
-                '<strong>ID</strong>: ' . encode_entities($_->{id}) . ' <strong>description</strong>: ' . encode_entities($_->{blurb}) . ' <strong>status</strong>: ' . encode_entities($_->{status});
+                  '<strong>ID</strong>: '
+                . encode_entities($_->{id})
+                . ' <strong>description</strong>: '
+                . encode_entities($_->{blurb})
+                . ' <strong>status</strong>: '
+                . encode_entities($_->{status});
             $case .= ' <strong>updated at</strong>: ' . encode_entities(Date::Utility->new($_->{updated_at})->datetime)   if $_->{updated_at};
             $case .= ' <strong>resolved at</strong>: ' . encode_entities(Date::Utility->new($_->{resolved_at})->datetime) if $_->{resolved_at};
             $case .= ' <strong>type</strong>: ' . encode_entities($_->{type})                                             if $_->{type};

@@ -44,17 +44,17 @@ my @body;
 my $brand = Brands->new(name => request()->brand);
 my $to = $brand->emails('alert_quants');
 
-my $encoded_loginID = encode_entities($loginID);
+my $encoded_loginID  = encode_entities($loginID);
 my $encoded_currency = encode_entities($currency);
-my $encoded_broker = encode_entities($broker);
+my $encoded_broker   = encode_entities($broker);
 
 # Make transaction on client account
 if (request()->param('whattodo') eq 'closeatzero') {
 
-    if ($currency !~ /^\w\w\w$/)    { print "Error with curr " . $encoded_currency;       code_exit_BO(); }
-    if ($price !~ /^\d*\.?\d*$/)    { print "Error with price " . encode_entities($price);     code_exit_BO(); }
-    if ($price eq "")               { print "Error : no price entered";                          code_exit_BO(); }
-    if ($loginID !~ /^$broker\d+$/) { print "Error with loginid " . $encoded_loginID; code_exit_BO(); }
+    if ($currency !~ /^\w\w\w$/)    { print "Error with curr " . $encoded_currency;        code_exit_BO(); }
+    if ($price !~ /^\d*\.?\d*$/)    { print "Error with price " . encode_entities($price); code_exit_BO(); }
+    if ($price eq "")               { print "Error : no price entered";                    code_exit_BO(); }
+    if ($loginID !~ /^$broker\d+$/) { print "Error with loginid " . $encoded_loginID;      code_exit_BO(); }
     if ($qty !~ /^\d+$/ or $qty > 50) { print "Error with qty " . encode_entities($qty); code_exit_BO(); }
 
     my $client;

@@ -21,9 +21,9 @@ use feature "state";
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
 
-my $loginid   = uc(request()->param('loginid'));
-my $startdate = request()->param('startdate');
-my $enddate   = request()->param('enddate');
+my $loginid         = uc(request()->param('loginid'));
+my $startdate       = request()->param('startdate');
+my $enddate         = request()->param('enddate');
 my $encoded_loginid = encode_entities($loginid);
 
 # get client complete transaction statements

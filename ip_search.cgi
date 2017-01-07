@@ -12,7 +12,7 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
-my $ip = request()->param('ip');
+my $ip         = request()->param('ip');
 my $encoded_ip = encode_entities($ip);
 BrokerPresentation("IP SEARCH FOR $ip");
 BOM::Backoffice::Auth0::can_access(['CS']);

@@ -130,7 +130,7 @@ print '</td>';
 print q~<td align=right>~;
 print "<form method=post action='" . request()->url_for('backoffice/quant/market_data_mgmt/update_volatilities/save_used_volatilities.cgi') . "'>";
 print "<input type=hidden name=markets value='" . encode_entities($markets) . "'>";
-print "<input type=hidden name=warndifference value='" . encode_entities($warndifference) ."'>";
+print "<input type=hidden name=warndifference value='" . encode_entities($warndifference) . "'>";
 print "<input id='confirm_volatility' type=submit  value='    CONFIRM ALL     '>";
 print "</form>";
 print '</td>';
@@ -152,7 +152,7 @@ foreach my $market (@markets) {
             print "Surface does not exist";
         }
     } else {
-        print "An error occurred: ' ". encode_entities($volatility_surfaces{$market}->{'errorused'}) . "'.";
+        print "An error occurred: ' " . encode_entities($volatility_surfaces{$market}->{'errorused'}) . "'.";
     }
     print "</TD>";
     print "</TR>";

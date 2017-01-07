@@ -8,8 +8,8 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-my $language = request()->language;
-my $show     = request()->param('show');
+my $language     = request()->language;
+my $show         = request()->param('show');
 my $encoded_show = encode_entities($show);
 PrintContentType();
 BOM::Backoffice::Auth0::can_access(['Accounts']);
