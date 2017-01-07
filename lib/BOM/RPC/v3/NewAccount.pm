@@ -90,7 +90,6 @@ sub new_account_virtual {
 
 sub verify_email {
     my $params = shift;
-    my $email_content;
 
     my $email = $params->{args}->{verify_email};
     my $type  = $params->{args}->{type};
@@ -116,13 +115,12 @@ sub verify_email {
         my $message =
             $type_call eq 'payment_withdraw'
             ? BOM::Platform::Context::localize(
-            '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment withdrawal form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>Binary.com</p>',
-            $code
-            )
+            '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment withdrawal form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
+            $code,
+            $params->{website_name})
             : BOM::Platform::Context::localize(
-            '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment agent withdrawal form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>Binary.com</p>',
-            $code
-            );
+            '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment agent withdrawal form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
+            $code, $params->{website_name});
 
         send_email({
                 from => Brands->new(name => request()->brand)->emails('support'),
@@ -141,9 +139,9 @@ sub verify_email {
                 subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
                 message => [
                     BOM::Platform::Context::localize(
-                        '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your password, please help us to verify your identity by entering the following verification token into the password reset form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>Binary.com</p>',
-                        $code
-                    )
+                        '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your password, please help us to verify your identity by entering the following verification token into the password reset form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
+                        $code,
+                        $params->{website_name})
                 ],
                 use_email_template    => 1,
                 email_content_is_html => 1,
@@ -156,9 +154,9 @@ sub verify_email {
                     subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
                     message => [
                         BOM::Platform::Context::localize(
-                            '<p style="font-weight: bold;">Thanks for signing up for a virtual account!</p><p>Enter the following verification token into the form to create an account: <p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p>Enjoy trading with us on Binary.com.</p><p style="color:#333333;font-size:15px;">With regards,<br/>Binary.com</p>',
-                            $code
-                        )
+                            '<p style="font-weight: bold;">Thanks for signing up for a virtual account!</p><p>Enter the following verification token into the form to create an account: <p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p>Enjoy trading with us on [_2].</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
+                            $code,
+                            $params->{website_name})
                     ],
                     use_email_template    => 1,
                     email_content_is_html => 1,
@@ -171,8 +169,8 @@ sub verify_email {
                     message => [
                         '<div style="line-height:200%;color:#333333;font-size:15px;">'
                             . BOM::Platform::Context::localize(
-                            '<p>Dear Valued Customer,</p><p>It appears that you have tried to register an email address that is already included in our system. If it was not you, simply ignore this email, or contact our customer support if you have any concerns.</p><p style="color:#333333;font-size:15px;">With regards,<br/>Binary.com</p>'
-                            )
+                            '<p>Dear Valued Customer,</p><p>It appears that you have tried to register an email address that is already included in our system. If it was not you, simply ignore this email, or contact our customer support if you have any concerns.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_1]</p>',
+                            $params->{website_name})
                             . '</div>'
                     ],
                     use_email_template    => 1,
@@ -205,7 +203,7 @@ sub new_account_real {
 
     my $company;
     if ($args->{residence}) {
-        my $countries_list = Brands->new(name => request()->brand)->landing_company_countries->countries_list;
+        my $countries_list = Brands->new(name => request()->brand)->countries_instance->countries_list;
         $company = $countries_list->{$args->{residence}}->{gaming_company};
         $company = $countries_list->{$args->{residence}}->{financial_company} if (not $company or $company eq 'none');
     }
@@ -325,7 +323,7 @@ sub new_account_japan {
                 message_to_client => $error_map->{'invalid'}});
     }
 
-    my $company = Brands->new(name => request()->brand)->landing_company_countries->countries_list->{'jp'}->{financial_company};
+    my $company = Brands->new(name => request()->brand)->countries_instance->countries_list->{'jp'}->{financial_company};
 
     if (not $company) {
         return BOM::RPC::v3::Utility::create_error({
