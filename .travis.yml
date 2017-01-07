@@ -17,7 +17,7 @@ before_install:
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
     - sudo mkdir -p /home/website/www/temp
-    - sudo chmod nobody:nogroup /home/website/www/temp
+    - sudo chown nobody:nogroup /home/website/www/temp
     - . /tmp/travis-scripts/setup_perl.sh
     - /tmp/travis-scripts/fixHostName.sh
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
