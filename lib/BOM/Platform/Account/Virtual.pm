@@ -29,14 +29,14 @@ sub create_account {
         return {error => 'invalid'};
     } elsif (BOM::Platform::User->new({email => $email})) {
         return {error => 'duplicate email'};
-    } elsif ($residence && Brands->new(name => request()->brand)->landing_company_countries->restricted_country($residence)) {
+    } elsif ($residence && Brands->new(name => request()->brand)->countries_instance->restricted_country($residence)) {
         return {error => 'invalid residence'};
     }
 
     my ($client, $error);
     try {
         die 'residence is empty' if (not $residence);
-        my $company_name = Brands->new(name => request()->brand)->landing_company_countries->virtual_company_for_country($residence);
+        my $company_name = Brands->new(name => request()->brand)->countries_instance->virtual_company_for_country($residence);
 
         $client = Client::Account->register_and_return_new_client({
             broker_code                   => LandingCompany::Registry::get($company_name)->broker_codes->[0],

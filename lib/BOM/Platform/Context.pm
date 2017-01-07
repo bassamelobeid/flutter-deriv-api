@@ -15,11 +15,12 @@ use warnings;
 
 use feature 'state';
 use Template;
-use Template::Stash;
 use Template::AutoFilter;
 use base qw( Exporter );
 
 our @EXPORT_OK = qw(request localize template);
+
+use Brands;
 
 use BOM::Platform::Context::Request;
 use Format::Util::Numbers;
@@ -54,9 +55,6 @@ usage,
     template, will give you an instance of I<Template> object.
        template->process("my_template.html.tt", { title => "Hello World" });
 
-    template("stash"), will give you an instance of I<Template::Stash> object. This contians all default variables defined for processing template.
-        template("stash")->update({ title => 'Hello World'});
-
 =cut
 
 # we need to find a way to get rid of this as we just
@@ -64,8 +62,7 @@ usage,
 sub template {
     my $what = shift || 'template';
     if (not $template_config->{template}) {
-        $template_config->{stash} = _configure_template_stash_for(request());
-        $template_config->{template} = _configure_template_for(request(), $template_config->{stash});
+        $template_config->{template} = _configure_template_for(request());
     }
     return $template_config->{$what};
 }
@@ -88,23 +85,10 @@ sub localize {
     return $lh->maketext(@texts);
 }
 
-sub _configure_template_stash_for {
-    my $request = shift;
-    return Template::Stash->new({
-        runtime                   => BOM::Platform::Runtime->instance,
-        language                  => $request->language,
-        request                   => $request,
-        broker_name               => 'Binary.com',
-        l                         => \&localize,
-        to_monetary_number_format => \&Format::Util::Numbers::to_monetary_number_format,
-    });
-}
-
 sub _configure_template_for {
     my $request = shift;
-    my $stash   = shift;
 
-    my @include_path = ('/home/git/regentmarkets/bom-platform/templates/');
+    my @include_path = (Brands->new(name => $request->brand)->template_dir);
 
     my $template_toolkit = Template::AutoFilter->new({
             ENCODING     => 'utf8',
@@ -113,7 +97,6 @@ sub _configure_template_for {
             PRE_CHOMP    => $Template::CHOMP_GREEDY,
             POST_CHOMP   => $Template::CHOMP_GREEDY,
             TRIM         => 1,
-            STASH        => $stash,
         }) || die "$Template::ERROR\n";
 
     return $template_toolkit;
