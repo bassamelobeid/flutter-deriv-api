@@ -30,7 +30,7 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
     - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
-
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-myaffiliates
     - /tmp/travis-scripts/redis.sh
 
 install:
