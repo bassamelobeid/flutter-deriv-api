@@ -1808,8 +1808,8 @@ sub __validate_jurisdictional_restrictions {
         );
     }
 
-    my $lc_countries = Brands->new(name => request()->brand)->landing_company_countries;
-    if ($residence && $market_name eq 'volidx' && $lc_countries->volidx_restricted_country($residence)) {
+    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+    if ($residence && $market_name eq 'volidx' && $countries_instance->volidx_restricted_country($residence)) {
         return Error::Base->cuss(
             -type => 'RandomRestrictedCountry',
             -mesg => 'Clients are not allowed to place Volatility Index contracts as their country is restricted.',
@@ -1821,7 +1821,7 @@ sub __validate_jurisdictional_restrictions {
     # For certain countries such as Belgium, we are not allow to sell financial product to them.
     if (   $residence
         && $market_name ne 'volidx'
-        && $lc_countries->financial_binaries_restricted_country($residence))
+        && $countries_instance->financial_binaries_restricted_country($residence))
     {
         return Error::Base->cuss(
             -type => 'FinancialBinariesRestrictedCountry',
