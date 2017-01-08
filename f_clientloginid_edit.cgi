@@ -699,9 +699,9 @@ print qq{
     <option value="">Please select</option>
 };
 
-my $lc_countries = Brands->new(name => request()->brand)->landing_company_countries->countries;
-foreach my $country_name (sort $lc_countries->all_country_names) {
-    my $code = $lc_countries->code_from_country($country_name);
+my $brand_countries = Brands->new(name => request()->brand)->countries_instance->countries;
+foreach my $country_name (sort $brand_countries->all_country_names) {
+    my $code = $brand_countries->code_from_country($country_name);
     print "<option value='$code'>$country_name</option>";
 }
 
