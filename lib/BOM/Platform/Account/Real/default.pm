@@ -38,7 +38,7 @@ sub validate {
         warn($msg . 'new account opening suspended');
         return {error => 'invalid'};
     }
-    if ($country and Brands->new(name => request()->brand)->landing_company_countries->restricted_country($country)) {
+    if ($country and Brands->new(name => request()->brand)->countries_instance->restricted_country($country)) {
         warn($msg . "restricted IP country [$country]");
         return {error => 'invalid'};
     }
@@ -51,7 +51,7 @@ sub validate {
 
     if ($details) {
         # sub account can have different residence then omnibus master account
-        if (Brands->new(name => request()->brand)->landing_company_countries->restricted_country($residence)
+        if (Brands->new(name => request()->brand)->countries_instance->restricted_country($residence)
             or (not $details->{sub_account_of} and $from_client->residence ne $residence))
         {
             warn($msg . "restricted residence [$residence], or mismatch with from_client residence: " . $from_client->residence);

@@ -12,7 +12,7 @@ use Encode;
 use Brands;
 
 use BOM::System::Config;
-use BOM::Platform::Context qw(request);
+use BOM::Platform::Context qw(request localize);
 
 use parent 'Exporter';
 our @EXPORT_OK = qw(send_email);
@@ -58,8 +58,6 @@ sub send_email {
     # replace all whitespace - including vertical such as CR/LF - with a single space
     $subject =~ s/\s+/ /g;
 
-    # DON'T send email on devbox except to RMG emails
-    return 1 if !BOM::System::Config::on_production() && $email !~ /(?:binary|regentmarkets|betonmarkets)\.com$/;
     return 1 if $ENV{SKIP_EMAIL};
 
     my @toemails = split(/\s*\,\s*/, $email);
@@ -70,8 +68,9 @@ sub send_email {
         }
     }
 
-    if ($fromemail eq Brands->new(name => request()->brand)->emails('support')) {
-        $fromemail = "\"Binary.com\" <$fromemail>";
+    my $brand = Brands->new(name => request()->brand);
+    if ($fromemail eq $brand->emails('support')) {
+        $fromemail = "\"" . $brand->website_name . "\" <$fromemail>";
     }
 
     my $message = join("\n", @message);
@@ -108,11 +107,11 @@ sub send_email {
         my $mail_message;
         if ($use_email_template) {
             my $vars = {
-                email_template_loginid => $template_loginid,
-                content                => $message,
+                text_email_template_loginid => localize('Your Login ID: [_1]', $template_loginid),
+                content                     => $message,
             };
             if ($language eq 'JA') {
-                $vars->{email_template_japan} = $language;
+                $vars->{japan_footer_text} = localize('{JAPAN ONLY}footer text of email template for Japan');
             }
             BOM::Platform::Context::template->process('common_email.html.tt', $vars, \$mail_message)
                 || die BOM::Platform::Context::template->error();
