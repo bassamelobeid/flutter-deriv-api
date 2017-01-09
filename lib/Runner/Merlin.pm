@@ -107,16 +107,22 @@ sub _calculate_results {
         my $base_or_num   = ($record->{numeraire} eq $record->{currency}) ? 'NUM' : 'BASE';
         my $merlin_mid    = ($record->{merlin_ask} + $record->{merlin_bid}) / 2;
         my $arb_available = ($bet->bid_probability->amount > $record->{merlin_ask} or $bet->ask_probability->amount < $record->{merlin_bid}) ? 1 : 0;
-        my $tv_diff       = abs($record->{merlin_tv} - $bet->bs_probability->amount);
-        my $bom_mid       = $bet->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope' ? $bet->pricing_engine->base_probability: $bet->pricing_engine->base_probability->amount;
-        my $mid_diff      = abs($merlin_mid - $bom_mid);
+
+        my $bs_prob = $bet->pricing_engine->can('_bs_probability') ? $bet->pricing_engine->_bs_probability : $bet->pricing_engine->bs_probability;
+        my $base_prob = $bet->pricing_engine->can('_base_probability') ? $bet->pricing_engine->_base_probability : $bet->pricing_engine->base_probability;
+
+        $bs_prob = $bs_prob->amount if ref $bs_prob;
+        $base_prob = $base_prob->amount if ref $base_prob;
+
+        my $tv_diff       = abs($record->{merlin_tv} - $bs_prob);
+        my $mid_diff      = abs($merlin_mid - $base_prob);
         my @barriers = $bet->two_barriers ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute) : ($bet->barrier->as_absolute, 'NA');
 
         my @output_array = (
             $record->{bet_num},            $record->{volcut},        $record->{cut},                      $record->{currency},
             $record->{underlying}->symbol, $bet_type,                $record->{date_start}->date_ddmmmyy, $record->{date_expiry}->date,
-            $bet->pricing_spot,            @barriers,                $record->{merlin_tv},                $bet->bs_probability->amount,
-            $tv_diff,                      $merlin_mid,              $bom_mid,                             $mid_diff,
+            $bet->pricing_spot,            @barriers,                $record->{merlin_tv},                $bet->theo_probability,
+            $tv_diff,                      $merlin_mid,              $base_prob,                             $mid_diff,
             $record->{atm_vol},            $bet->atm_vols->{fordom}, $arb_available,                      $base_or_num,
             $record->{transformed_cut});
 

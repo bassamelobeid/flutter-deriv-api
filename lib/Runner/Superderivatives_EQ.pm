@@ -7,7 +7,9 @@ use List::Util qw(max sum min);
 use File::Slurp;
 use Text::CSV;
 use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use CSVParser::Superderivatives_EQ;
+use Test::MockModule;
 
 has suite => (
     is      => 'ro',
@@ -85,6 +87,10 @@ sub price_superderivatives_bets_locally {
     my $csv       = Text::CSV->new();
     my $breakdown = {};
     my $i         = 0;
+    my $module = Test::MockModule->new('Quant::Framework::VolSurface::Moneyness');
+    my $spot_reference = 0;
+    $module->mock('spot_reference', sub { return $spot_reference; });
+
     foreach my $record (@$records) {
         my $bet_args = {
             current_spot => $record->{spot},
@@ -98,6 +104,7 @@ sub price_superderivatives_bets_locally {
             date_pricing => $record->{date_start}->epoch + 9 * 3600,
             uses_empirical_volatility => 0,
         };
+        $spot_reference = $record->{volsurface}->{spot_reference};
 
         if ($record->{barrier2}) {
             $bet_args->{low_barrier}  = $record->{barrier2};
@@ -110,9 +117,13 @@ sub price_superderivatives_bets_locally {
             quote      => $bet_args->{current_spot},
             epoch      => $bet_args->{date_start},
         );
+
         my $bet = produce_contract($bet_args);
 
-        my $bom_mid  = $bet->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope' ? $bet->pricing_engine->base_probability: $bet->pricing_engine->base_probability->amount;
+        my $base_prob = $bet->pricing_engine->can('_base_probability') ? $bet->pricing_engine->_base_probability : $bet->pricing_engine->base_probability;
+        $base_prob = $base_prob->amount if ref $base_prob;
+
+        my $bom_mid  = $base_prob;
         my $sd_mid   = $record->{sd_mid};
         my $mid_diff = abs($sd_mid - $bom_mid);
         my @barriers = $bet->two_barriers ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute) : ($bet->barrier->as_absolute, 'NA');
