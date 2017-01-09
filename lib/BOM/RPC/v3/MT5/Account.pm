@@ -74,7 +74,7 @@ sub mt5_new_account {
         # get MT company from countries.yml
         my $mt_key         = 'mt_' . $account_type . '_company';
         my $mt_company     = 'none';
-        my $countries_list = Brands->new(name => request()->brand)->landing_company_countries->countries_list;
+        my $countries_list = Brands->new(name => request()->brand)->countries_instance->countries_list;
         if (defined $countries_list->{$client->residence} && defined $countries_list->{$client->residence}->{$mt_key}) {
             $mt_company = $countries_list->{$client->residence}->{$mt_key};
         }
