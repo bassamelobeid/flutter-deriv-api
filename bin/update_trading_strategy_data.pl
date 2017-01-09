@@ -12,6 +12,7 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use YAML qw(LoadFile);
 use Path::Tiny;
 use Data::Dumper;
+use Fcntl qw(:flock);
 
 # How many ticks to request at a time
 use constant TICK_CHUNK_SIZE => 1000;
@@ -37,7 +38,7 @@ path($output_base)->mkpath;
 for my $symbol (@{$config->{underlyings}}) {
     print "Symbol $symbol\n";
     my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(
-        db_handle => Postgres::FeedDB::read_dbh,
+        db_handle => Postgres::FeedDB::read_dbh(),
         underlying => $symbol 
     );
 

@@ -415,10 +415,6 @@ sub _get_overview {
     my $bet           = $self->bet;
 
     my @pricing_attrs = ({
-            label => 'Black-Scholes price',
-            value => $bet->currency . ' ' . $bet->bs_price
-        },
-        {
             label => 'Corrected theo price',
             value => $bet->currency . ' ' . $bet->theo_price
         },
