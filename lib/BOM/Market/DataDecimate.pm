@@ -54,7 +54,7 @@ sub decimate_cache_get {
     if ($backprice) {
         my $raw_ticks = $underlying->ticks_in_between_start_end({
             start_time => $start_time,
-            end_time   => $end_time,
+            end_time   => $end_time - ($end_time % $self->sampling_frequency->seconds),
         });
 
         my @rev_ticks = reverse @$raw_ticks;
