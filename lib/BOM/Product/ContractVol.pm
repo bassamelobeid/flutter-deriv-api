@@ -3,7 +3,6 @@ package BOM::Product::Contract;    ## no critic ( RequireFilenameMatchesPackage 
 use strict;
 use warnings;
 
-
 ## ATTRIBUTES  #######################
 
 use BOM::MarketData::Fetcher::VolSurface;
