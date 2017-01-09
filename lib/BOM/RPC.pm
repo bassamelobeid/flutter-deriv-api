@@ -119,12 +119,12 @@ sub register {
             $args->{language}        = $params->{language} if ($params->{language});
             $args->{brand}           = $params->{brand} if ($params->{brand});
 
+            my $r = BOM::Platform::Context::Request->new($args);
+            BOM::Platform::Context::request($r);
+
             if (exists $params->{server_name}) {
                 $params->{website_name} = BOM::RPC::v3::Utility::website_name(delete $params->{server_name});
             }
-
-            my $r = BOM::Platform::Context::Request->new($args);
-            BOM::Platform::Context::request($r);
 
             for my $action (@before_actions) {
                 my $result;
