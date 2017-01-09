@@ -40,7 +40,7 @@ has atm_vols => (
 
 has empirical_volsurface => (
     is         => 'ro',
-    isa        => 'Maybe[BOM::MarketData::VolSurface::Empirical]',
+    isa        => 'Maybe[VolSurface::Empirical]',
     lazy_build => 1,
 );
 
