@@ -5,44 +5,30 @@ use Moose;
 require UNIVERSAL::require;
 
 use MooseX::Role::Validatable::Error;
-use Math::Function::Interpolator;
 use Time::HiRes qw(time);
 use List::Util qw(min max first);
-use List::MoreUtils qw(none all);
 use Scalar::Util qw(looks_like_number);
 use Math::Util::CalculatedValue::Validatable;
 use Date::Utility;
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use Time::Duration::Concise;
 
-use Quant::Framework::Currency;
 use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
 use Postgres::FeedDB::Spot::Tick;
-use Quant::Framework::CorrelationMatrix;
-
 use Price::Calculator;
-use Pricing::Engine::EuropeanDigitalSlope;
-use Pricing::Engine::TickExpiry;
-use Pricing::Engine::BlackScholes;
+use LandingCompany::Offerings qw(get_contract_specifics);
 
 use BOM::System::Chronicle;
-
 use BOM::Platform::Context qw(localize);
-
-use BOM::MarketData qw(create_underlying_db);
-use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
-
 use BOM::Product::Contract::Category;
 use BOM::Product::RiskProfile;
 use BOM::Product::Types;
 use BOM::Product::ContractValidator;
 use BOM::Product::ContractPricer;
-use LandingCompany::Offerings qw(get_contract_specifics);
 
 use BOM::Market::DataDecimate;
 
@@ -53,34 +39,27 @@ require BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
 require BOM::Product::Pricing::Greeks::BlackScholes;
 
 ## ATTRIBUTES  #######################
-has date_start => (
+has [qw(date_start date_pricing date_settlement effective_start)] => (
     is         => 'ro',
     isa        => 'date_object',
     lazy_build => 1,
     coerce     => 1,
 );
-
-has date_pricing => (
-    is         => 'ro',
-    isa        => 'date_object',
-    lazy_build => 1,
-    coerce     => 1,
-);
-
-has [qw(pricing_args)] => (
-    is         => 'ro',
-    isa        => 'HashRef',
-    lazy_build => 1,
-);
-
-# user supplied duration
-has duration => (is => 'ro');
 
 has date_expiry => (
     is       => 'rw',
     isa      => 'date_object',
     coerce   => 1,
     required => 1,
+);
+
+#user supplied duration
+has duration => (is => 'ro');
+
+has [qw(pricing_args)] => (
+    is         => 'ro',
+    isa        => 'HashRef',
+    lazy_build => 1,
 );
 
 #backtest - Enable optimizations for speedier back testing.  Not suitable for production.
@@ -97,7 +76,7 @@ has starts_as_forward_starting => (
     default => 0,
 );
 
-has [qw( longcode shortcode )] => (
+has [qw(longcode shortcode)] => (
     is         => 'ro',
     isa        => 'Str',
     lazy_build => 1,
@@ -143,13 +122,6 @@ has ticks_to_expiry => (
     lazy_build => 1,
 );
 
-has [qw(date_settlement effective_start)] => (
-    is         => 'ro',
-    isa        => 'date_object',
-    lazy_build => 1,
-    coerce     => 1,
-);
-
 #expiry_daily - Does this bet expire at close of the exchange?
 has [
     qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_code
@@ -158,18 +130,6 @@ has [
     is         => 'ro',
     lazy_build => 1,
     );
-
-# We can't import the Factory directly as that goes circular.
-# On the other hand, we want some extra info which only
-# becomes available here. So, require the Factory to give us
-# a coderef for how we make more of ourselves.
-# This should also make it more annoying for people to call the
-# constructor directly.. which we hope they will not do.
-has _produce_contract_ref => (
-    is       => 'ro',
-    isa      => 'CodeRef',
-    required => 1,
-);
 
 has currency => (
     is       => 'ro',
@@ -296,12 +256,6 @@ has corporate_actions => (
     lazy_build => 1,
 );
 
-has _applicable_economic_events => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_applicable_economic_events',
-);
-
 has tentative_events => (
     is         => 'ro',
     lazy_build => 1,
@@ -360,6 +314,24 @@ has 'staking_limits' => (
 has apply_market_inefficient_limit => (
     is         => 'ro',
     lazy_build => 1,
+);
+
+# We can't import the Factory directly as that goes circular.
+# On the other hand, we want some extra info which only
+# becomes available here. So, require the Factory to give us
+# a coderef for how we make more of ourselves.
+# This should also make it more annoying for people to call the
+# constructor directly.. which we hope they will not do.
+has _produce_contract_ref => (
+    is       => 'ro',
+    isa      => 'CodeRef',
+    required => 1,
+);
+
+has _applicable_economic_events => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_applicable_economic_events',
 );
 
 # This is needed to determine if a contract is newly priced

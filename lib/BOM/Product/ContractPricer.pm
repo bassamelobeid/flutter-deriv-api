@@ -3,6 +3,23 @@ package BOM::Product::Contract;    ## no critic ( RequireFilenameMatchesPackage 
 use strict;
 use warnings;
 
+use Price::Calculator;
+use Math::Util::CalculatedValue::Validatable;
+use List::MoreUtils qw(none all);
+
+use Quant::Framework::EconomicEventCalendar;
+use Quant::Framework::Currency;
+use Quant::Framework::CorrelationMatrix;
+use Pricing::Engine::EuropeanDigitalSlope;
+use Pricing::Engine::TickExpiry;
+use Pricing::Engine::BlackScholes;
+
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::Product::Pricing::Greeks;
+use BOM::System::Chronicle;
+use BOM::Product::Pricing::Greeks::BlackScholes;
+use BOM::Platform::Runtime;
 use BOM::Product::ContractVol;
 use BOM::Market::DataDecimate;
 
@@ -15,7 +32,7 @@ has [qw(mu discount_rate)] => (
     lazy_build => 1,
 );
 
-has [qw(domqqq forqqq fordom)] => (
+has [qw(rho domqqq forqqq fordom)] => (
     is         => 'ro',
     isa        => 'HashRef',
     lazy_build => 1,
@@ -25,12 +42,6 @@ has priced_with => (
     is         => 'ro',
     isa        => 'Str',
     lazy_build => 1,
-);
-
-has [qw(rho)] => (
-    is         => 'ro',
-    isa        => 'HashRef',
-    lazy_build => 1
 );
 
 # a hash reference for slow migration of pricing engine to the new interface.
