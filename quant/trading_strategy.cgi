@@ -157,7 +157,6 @@ if($cgi->param('run')) {
                 for my $type ($type_selected eq '*' ? @{$config->{types}} : $type_selected) {
                     for my $date ($date_selected eq '*' ? @dates : $date_selected) {
                         my $dataset = join '_', $underlying, $duration, $type;
-                        warn "will process dataset $dataset on $date";
                         push @tbl, eval {
                             $process_dataset->($date, $dataset)
                         } or do {
