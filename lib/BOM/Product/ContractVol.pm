@@ -3,52 +3,60 @@ package BOM::Product::Contract;    ## no critic ( RequireFilenameMatchesPackage 
 use strict;
 use warnings;
 
-## ATTRIBUTES  #######################
+use BOM::MarketData::Fetcher::VolSurface;
+use List::MoreUtils qw(none all);
 
-has [qw(pricing_vol news_adjusted_pricing_vol)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
+use Quant::Framework::VolSurface;
+use BOM::MarketData::VolSurface::Empirical;
+use BOM::Platform::Context qw(localize);
+
+## ATTRIBUTES  #######################
 
 has economic_events_for_volatility_calculation => (
     is         => 'ro',
     lazy_build => 1,
 );
 
-has [qw(atm_vols)] => (
+has [qw(pricing_vol vol_at_strike news_adjusted_pricing_vol)] => (
+    is         => 'ro',
+    isa        => 'Maybe[Num]',
+    lazy_build => 1,
+);
+
+has pricing_vol_for_two_barriers => (
+    is         => 'ro',
+    isa        => 'Maybe[HashRef]',
+    lazy_build => 1,
+);
+
+has atm_vols => (
     is         => 'ro',
     isa        => 'HashRef',
     lazy_build => 1
 );
 
-# For European::Slope engine, we need call and put vol for double barriers contract
-has pricing_vol_for_two_barriers => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_pricing_vol_for_two_barriers',
+has empirical_volsurface => (
+    is         => 'ro',
+    isa        => 'Maybe[BOM::MarketData::VolSurface::Empirical]',
+    lazy_build => 1,
+);
+
+has volsurface => (
+    is         => 'rw',
+    isa        => 'Quant::Framework::VolSurface',
+    lazy_build => 1,
+);
+
+has vol_at_strike => (
+    is         => 'rw',
+    isa        => 'Maybe[PositiveNum]',
+    lazy_build => 1,
 );
 
 has _volsurface_fetcher => (
     is         => 'ro',
     isa        => 'BOM::MarketData::Fetcher::VolSurface',
     init_arg   => undef,
-    lazy_build => 1,
-);
-
-has empirical_volsurface => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-has [qw(volsurface)] => (
-    is         => 'rw',
-    isa        => 'Quant::Framework::VolSurface',
-    lazy_build => 1,
-);
-
-has [qw(vol_at_strike)] => (
-    is         => 'rw',
-    isa        => 'Maybe[PositiveNum]',
     lazy_build => 1,
 );
 
