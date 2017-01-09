@@ -61,7 +61,7 @@ sub landing_company {
     my $params = shift;
 
     my $country  = $params->{args}->{landing_company};
-    my $configs  = Brands->new(name => request()->brand)->landing_company_countries->countries_list;
+    my $configs  = Brands->new(name => request()->brand)->countries_instance->countries_list;
     my $c_config = $configs->{$country};
     unless ($c_config) {
         ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
@@ -510,8 +510,7 @@ sub get_settings {
     if ($client->residence) {
         $country_code = $client->residence;
         $country =
-            Brands->new(name => request()->brand)
-            ->landing_company_countries->countries->localized_code2country($client->residence, $params->{language});
+            Brands->new(name => request()->brand)->countries_instance->countries->localized_code2country($client->residence, $params->{language});
     }
 
     my $client_tnc_status = $client->get_status('tnc_approval');
