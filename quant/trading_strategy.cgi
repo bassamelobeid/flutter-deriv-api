@@ -39,8 +39,10 @@ my $cgi = request()->cgi;
 
 my $config = LoadFile('/home/git/regentmarkets/bom-backoffice/config/trading_strategy_datasets.yml');
 
-my @dates = sort map $_->basename, path($base_dir)->children;
-warn "no dates" unless @dates;
+my @dates = sort map $_->basename, path($base_dir)->children or do {
+	print "<h2>No data found, please check whether the update_trading_strategy_data cronjob is enabled on this server</h2>\n";	
+	code_exit_BO();
+};
 
 my $date_selected = $cgi->param('date');
 my $price_type_selected = $cgi->param('price_type') || 'ask';
