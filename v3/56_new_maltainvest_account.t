@@ -57,6 +57,7 @@ my $mf_details = {
     income_source                        => 'Investments & Dividends',
     net_income                           => '$25,000 - $50,000',
     estimated_worth                      => '$250,001 - $500,000',
+    "occupation"                         => 'Managers'
     accept_risk                          => 1
 };
 
