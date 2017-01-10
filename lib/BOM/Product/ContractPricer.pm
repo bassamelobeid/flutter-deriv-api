@@ -337,13 +337,14 @@ sub _generate_market_data {
 
 sub _build_memory_chronicle {
     my $self = shift;
+    my $chronicle_reader = BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
 
     my $hash_ref = {};
 
-    $hash_ref->{'volatility_surfaces::'.$self->symbol} = $self->volsurface->surface;
+    $hash_ref->{'volatility_surfaces::'.$self->underlying->symbol} = $self->volsurface->surface;
+    $hash_ref->{'holidays::holidays'} = $chronicle_reader->get('holidays', 'holidays');
 
-    my $chronicle_reader = Data::Chronicle::Reader->new({cache_reader => $hash_ref});
-    return $chronicle_reader;
+    return Data::Chronicle::Reader->new({cache_reader => $hash_ref});
 }
 
 sub _build_domqqq {
