@@ -1070,7 +1070,7 @@ sub __client_withdrawal_notes {
             $withdrawal_limits->{'free_gift_turnover_limit'});
     }
 
-    return ($error_message, "Client $client is not allowed to withdraw");
+    return ($error_message, localize("Client [_1] is not allowed to withdraw.", $client->full_name));
 }
 
 ## This endpoint is only available for MLT/MF accounts
