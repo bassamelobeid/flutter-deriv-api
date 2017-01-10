@@ -226,11 +226,13 @@ sub init_redis_connections {
     my $c = shift;
     $c->redis;
     $c->redis_pricer;
+    $c->rate_limitations_load;
     return;
 }
 
 sub forget_all {
     my $c = shift;
+    $c->rate_limitations_save;
     # stop all recurring
     Binary::WebSocketAPI::v3::Wrapper::System::forget_all($c, {args => {forget_all => 1}});
     delete $c->stash->{redis};

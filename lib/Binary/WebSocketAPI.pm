@@ -118,6 +118,7 @@ sub startup {
             'authorize',
             {
                 stash_params => [qw/ ua_fingerprint client_ip user_agent /],
+                success      => \&Binary::WebSocketAPI::v3::Wrapper::Authorize::login_success,
             }
         ],
         [
