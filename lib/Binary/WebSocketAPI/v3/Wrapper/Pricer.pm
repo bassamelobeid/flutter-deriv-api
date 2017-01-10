@@ -136,24 +136,36 @@ sub proposal_open_contract {
             }
             $c->stash(last_contracts => $last_contracts);
             if ($last_contracts->{$args->{contract_id}}) {
+                # contract id is in list, but response is empty - trying to retry rpc call
                 my $retries = 5;
                 my $call_sub;
+                # preparing response sub wich will be executed within retries loop
                 my $resp_sub = sub {
                     my ($rpc_response, $response, $req_storage) = @_;
                     return $response if $rpc_response->{error};
-                    if (%{$response->{proposal_open_contract}} or not --$retries) {
+                    if (%{$response->{proposal_open_contract}}) {
+                        # got proper response, so process it in usual way
                         _process_proposal_open_contract_response($c, $response->{proposal_open_contract}, $req_storage);
                     } else {
-                        Mojo::IOLoop->timer(1, $call_sub);
+                        # again some problems..
+                        if (--$retries) {
+                            # we still have to retry, so sleep a second and perform rpc call again
+                            Mojo::IOLoop->timer(1, $call_sub);
+                        } else {
+                            # no mo retries, return empty answer
+                            return $empty_answer;
+                        }
                     }
                     return;
                 };
+                # new rpc call with response sub wich holds delay and re-call
                 $call_sub = sub {
                     my %call_params = %$req_storage;
                     $call_params{response} = $resp_sub;
                     $c->call_rpc(\%call_params);
                     return;
                 };
+                # perform rpc call again and entering in retries loop
                 $call_sub->($c, $req_storage);
                 return;
             } else {
