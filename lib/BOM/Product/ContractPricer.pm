@@ -74,6 +74,17 @@ has otm_threshold => (
     lazy_build => 1,
 );
 
+=head2 memory_chronicle
+
+A memory-backed chronicle reader instance
+
+=cut
+
+has memory_chronicle => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
 # discounted_probability - The discounted total probability, given the time value of the money at stake.
 # timeindays/timeinyears - note that for FX contracts of >=1 duration, these values will follow the market convention of integer days
 has [qw(
@@ -250,7 +261,7 @@ sub _create_new_interface_engine {
             spot                     => $self->pricing_spot,
             strikes                  => [grep { $_ } values %{$self->barriers_for_pricing}],
             date_start               => $self->effective_start,
-            chronicle_reader         => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
+            chronicle_reader         => $self->memory_chronicle,
             date_pricing             => $self->date_pricing,
             date_expiry              => $self->date_expiry,
             discount_rate            => $self->discount_rate,
@@ -323,6 +334,17 @@ sub _generate_market_data {
 }
 
 ## BUILDERS  #######################
+
+sub _build_memory_chronicle {
+    my $self = shift;
+
+    my $hash_ref = {};
+
+    $hash_ref->{'volatility_surfaces::'.$self->symbol} = $self->volsurface->surface;
+
+    my $chronicle_reader = Data::Chronicle::Reader->new({cache_reader => $hash_ref});
+    return $chronicle_reader;
+}
 
 sub _build_domqqq {
     my $self = shift;
