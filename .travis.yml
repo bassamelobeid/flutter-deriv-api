@@ -16,6 +16,8 @@ before_install:
     - /tmp/travis-scripts/setup_ssh.sh
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
+    - sudo mkdir -p /home/website/www/temp
+    - sudo chown nobody:nogroup /home/website/www/temp
     - . /tmp/travis-scripts/setup_perl.sh
     - /tmp/travis-scripts/fixHostName.sh
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
@@ -30,7 +32,7 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
     - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
-
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-myaffiliates
     - /tmp/travis-scripts/redis.sh
 
 install:
@@ -50,5 +52,6 @@ install:
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
     - make unit_test
+    - find . -iname '*.pm' -or -iname '*.cgi' | xargs -n 1 perl -c
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
