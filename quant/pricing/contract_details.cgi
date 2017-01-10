@@ -21,8 +21,8 @@ use LandingCompany::Registry;
 BOM::Backoffice::Sysinit::init();
 BOM::Backoffice::Auth0::can_access(['Quants']);
 
-my $cgi           = new CGI;
-my $broker        = $cgi->param('broker');
+my $cgi             = new CGI;
+my $broker          = $cgi->param('broker');
 my $landing_company = LandingCompany::Registry::get_by_broker($broker)->short;
 if ($cgi->param('upload_file')) {
     my $file     = $cgi->param('filetoupload');
@@ -32,19 +32,24 @@ if ($cgi->param('upload_file')) {
     my $pricing_parameters = BOM::JapanContractDetails::parse_file($filename, $landing_company);
 } elsif ($cgi->param('manual_verify_with_id')) {
     my $args;
-    $args->{transaction_id} = $cgi->param('id');
+    $args->{transaction_id}  = $cgi->param('id');
     $args->{landing_company} = $landing_company;
-    $args->{todo}           = $cgi->param('download') ? 'download' : 'price";
+    $args->{todo}            = $cgi->param('download') ? 'download' : 'price';
     my $pricing_parameters = BOM::JapanContractDetails::verify_with_id($args);
 } elsif ($cgi->param('manual_verify_with_shortcode')) {
     my $args;
     $args->{landing_company} = $landing_company;
-    $args->{shortcode} = $cgi->param('short_code');
-    $args->{contract_price} = $cgi->param('ask_price');
-    $args->{currency}  = $cgi->param('currency');
-    $args->{start_time}  = $cgi->param('start');
-    $args->{action_type} = 'buy'; #with shortcode , we only verify ask price
+    $args->{shortcode}       = $cgi->param('short_code');
+    $args->{contract_price}  = $cgi->param('price');
+    $args->{currency}        = $cgi->param('currency');
+    $args->{start_time}      = $cgi->param('start');
+    $args->{action_type}     = $cgi->param('action_type');
     my $pricing_parameters = BOM::JapanContractDetails::verify_with_shortcode($args);
+    $pricing_parameters = include_contract_details(
+        $parameters,
+        {
+            order_type  => $cgi->param('action_type'),
+            order_price => $cgi->param('price')});
 }
 
 code_exit_BO();

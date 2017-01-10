@@ -26,10 +26,11 @@
     <table>
         <tr><input  type="hidden" name="manual_verify_with_shortcode" value="1">/input></tr>
         <tr><input type="hidden" value="[% broker %]"name="broker" id="broker"/></tr>
-        <tr><td>Short Code</td><td><input value="[% short_code %]" size="20" type="text" name="short_code" id="short_code"/></td></tr>
-        <tr><td>Ask_price</td><td><input value="[% ask_price %]" size="20" type="text" name="ask_price" id="ask_price"/></td></tr>
-        <tr><td>Currency</td><td><input value="[% currency %]" size="20" type="text" name="currency" id="currency"/></td></tr>
-        <tr><td>Start time</td><td><input value="[% start %]" size="20" type="text" name="start" id="start"/><b>Input this only if you would to verify contract's price at a specific time, otherwise leave it empty and it will price at the contract's start time. </b></td></tr>
+        <tr><td>Short Code</td><td><input size="20" type="text" name="short_code" id="short_code"/></td></tr>
+        <tr><td>Contract_price</td><td><input size="20" type="text" name="price" id="price"/></td></tr>
+        <tr><td>Currency</td><td><input size="20" type="text" name="currency" id="currency"/></td></tr>
+        <tr><td>Trade Type</td><tr><select name="action_type"><option value = 'buy'>buy</option><option value = 'sell'>sell</option></select></td></tr>
+        <tr><td>Start time</td><td><input size="20" type="text" name="start" id="start"/><b>Input this only if you would to verify contract's price at a specific time, otherwise leave it empty and it will price at the contract's start time. </b></td></tr>
         <tr><td colspan=2><input type="submit" name="price" value="View in Table"/></td></tr>
         <tr><td colspan=2><input type="submit" name="download" value="Download as CSV file"/></td></tr>
     </table>

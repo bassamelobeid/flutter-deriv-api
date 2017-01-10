@@ -39,10 +39,64 @@ sub parse_file {
             action_type     => 'buy'
         });
 
-       $pricing_parameters->{$shortcode} = include_contract_details($parameters, {order_type => 'buy', order_price => $ask_price});
+        $pricing_parameters->{$shortcode} = include_contract_details(
+            $parameters,
+            {
+                order_type  => 'buy',
+                order_price => $ask_price
+            });
 
     }
     return $pricing_parameters;
+}
+
+sub verify_with_id {
+    my $args = shift;
+
+    my $id              = $args->{transaction_id};
+    my $landing_company = $args->{landing_company};
+    my $broker          = $args->{broker};
+    my $details         = BOM::Database::DataMapper::Transaction->new({
+            broker_code => $broker,
+            operation   => 'backoffice_replica',
+        })->get_details_by_transaction_ref($id);
+
+    my $client          = Client::Account::get_instance({'loginid' => $details->{loginid}});
+    my $action_type     = $details->{action_type};
+    my $requested_price = $details->{order_price};
+    my $trade_price     = $action_type eq 'buy' ? $details->{ask_price} : $details->{bid_price};
+
+    # apply slippage according to reflect the difference between traded price and recomputed price
+    my $adjusted_traded_contract_price =
+        ($traded_price == $requested_price) ? ($action_type eq 'buy' ? $traded_price - $slippage : $traded_price + $slippage) : $traded_price;
+
+    my $parameters = verify_with_shortcode({
+        broker          => $broker,
+        shortcode       => $details->{shortcode},
+        currency        => $details->{currency_code},
+        landing_company => $landing_company,
+        contract_price  => $adjusted_traded_contract_price,
+        start           => $action_type eq 'buy' ? $details->{purchase_time} : $details->{sell_time},
+        action_type     => $action_type,
+    });
+
+    my $args = (
+        loginID         => $details->{loginid},
+        trans_id        => $id,
+        order_type      => $action_type,
+        order_price     => $requested_price,
+        slippage_price  => $details->{price_slippage},
+        trade_ask_price => $details->{ask_price},
+        trade_bid_price => $details->{bid_price},
+        ref_spot        => $details->{pricing_spot},
+        ref_vol         => $details->{high_barrier_vol},
+        ref_vol2        => $details->{low_barrier_vol} // 'NA',
+    );
+
+    $parameters = include_contract_details($parameters, $args);
+
+    return $parameters;
+
 }
 
 sub verify_with_shortcode {
@@ -51,7 +105,6 @@ sub verify_with_shortcode {
     my $landing_company = $args->{landing_company};
     my $short_code      = $args->{shortcode};
     my $action_type     = $args->{action_type};
-    my $order_price     = $args->{order_price};
     my $verify_price    = $args->{contract_price};    # This is the price to be verify
 
     my $currency = $args->{currency};
@@ -96,34 +149,31 @@ sub verify_with_shortcode {
         ? _get_pricing_parameter_from_vv_pricer($traded_contract, $action_type, $discounted_probability)
         : die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
 
-    
-    $pricing_parameters->{short_code} =  $short_code;
-    $pricing_parameters->{description} =  $original_contract->longcode;
-    $pricing_parameters->{ccy} =  $contract->currency;
+    $pricing_parameters->{short_code}             = $short_code;
+    $pricing_parameters->{description}            = $original_contract->longcode;
+    $pricing_parameters->{ccy}                    = $contract->currency;
     $pricing_parameters->{payout}                 = $contract->payout;
-     $pricing_parameters->{trade_time}             = $start_time;
-     $pricing_parameters->{tick_before_trade_time} = $prev_tick;
+    $pricing_parameters->{trade_time}             = $start_time;
+    $pricing_parameters->{tick_before_trade_time} = $prev_tick;
 
     return $pricing_parameters;
 
 }
 
-sub include_contract_details{
-   my $params = shift;
-   my $args = shift;
+sub include_contract_details {
+    my $params = shift;
+    my $args   = shift;
 
-   my @required_contract_details = qw(loginID trans_id order_type order_price slippage_price trade_ask_price trade_bid_price ref_spot ref_vol ref_vol2);
+    my @required_contract_details =
+        qw(loginID trans_id order_type order_price slippage_price trade_ask_price trade_bid_price ref_spot ref_vol ref_vol2);
 
-   foreach my $key (@required_contract_details){
-     $params->{$key} = $args->{$key} // 'NA';
+    foreach my $key (@required_contract_details) {
+        $params->{$key} = $args->{$key} // 'NA';
 
-   }
+    }
 
-  return $params;
+    return $params;
 }
-
-
-
 
 sub _get_pricing_parameter_from_IH_pricer {
     my ($contract, $action_type, $discounted_probability) = @_;
