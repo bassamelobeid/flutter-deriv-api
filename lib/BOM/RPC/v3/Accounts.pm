@@ -478,9 +478,12 @@ sub reset_password {
     $user->password($new_password);
     $user->save;
 
+    my $oauth = BOM::Database::Model::OAuth->new;
     foreach my $obj (@clients) {
         $obj->password($new_password);
         $obj->save;
+
+        $oauth->revoke_tokens_by_loginid($obj->loginid);
     }
 
     BOM::System::AuditLog::log('password has been reset', $email, $args->{verification_code});
