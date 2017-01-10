@@ -492,7 +492,8 @@ sub single_output_as_excel {
     my (@keys, @value);
 
     foreach my $key (keys %{$contract}) {
-        push @keys, $key push @value, $contract->{$key};
+        push @keys, $key ;
+        push @value, $contract->{$key};
     }
 
     my @combined = (\@keys, \@value);
