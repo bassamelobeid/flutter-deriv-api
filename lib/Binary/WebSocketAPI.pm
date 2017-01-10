@@ -16,6 +16,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 
 use File::Slurp;
 use JSON::Schema;
+use JSON::XS;
 use Try::Tiny;
 use Format::Util::Strings qw( defang );
 use Digest::MD5 qw(md5_hex);
@@ -447,6 +448,49 @@ sub startup {
                 $stash->{rate_limitations} = $rl;
             };
         });
+
+    $app->helper(
+        'rate_limitations_keys' => sub {
+            my $c = shift;
+            my $login_id = $c->stash('loginid');
+            my $authorised_key = $login_id ? "rate_limits::authorised::$login_id" : undef;
+            my $non_authorised_key =
+                do {
+                    my $ip = $c->client_ip;
+                    if (! defined $ip) {
+                        warn("cannot determine client IP-address");
+                        $ip = 'unknown-IP';
+                    }
+                    my $user_agent = $c->req->headers->header('User-Agent') // 'Unknown-UA';
+                    my $client_id = md5_hex($ip . ":" . $user_agent);
+                    "rate_limits::non-authorised::$client_id";
+                };
+            return ($authorised_key, $non_authorised_key);
+        });
+
+
+    $app->helper(
+        'rate_limitations_save' => sub {
+            my $c     = shift;
+            my @redis_keys = $c->rate_limitations_keys;
+            my $key = $redis_keys[0] // $redis_keys[1];
+            my $hits = $c->stash->{rate_limitations_hits};
+            # TODO: use correct redis!
+            # blocking call
+            $c->redis->set($key => encode_json($hits));
+        });
+
+    $app->helper(
+        'rate_limitations_load' => sub {
+            my $c     = shift;
+            my @redis_keys = $c->rate_limitations_keys;
+            my $key = $redis_keys[0] // $redis_keys[1];
+            # TODO: use correct redis!
+            # blocking call
+            my $hits = $c->redis->get($key);
+            $c->stash(rate_limitations_hits => decode_json($hits));
+        });
+
 
     $app->plugin(
         'web_socket_proxy' => {
