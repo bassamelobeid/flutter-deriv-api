@@ -114,9 +114,9 @@ sub send_email {
         if ($use_email_template) {
             my $vars = {
                 text_email_template_loginid => localize('Your Login ID: [_1]', $template_loginid),
-                # Allows inline HTML, default is off - be very, very careful when setting this # 
+                # Allows inline HTML, default is off - be very, very careful when setting this #
                 email_content_is_html => $args_ref->{'email_content_is_html'},
-                content                     => $message,
+                content               => $message,
             };
             if ($language eq 'JA') {
                 $vars->{japan_footer_text} = localize('{JAPAN ONLY}footer text of email template for Japan');
