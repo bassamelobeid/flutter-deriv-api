@@ -450,6 +450,17 @@ sub generate_form {
 
 }
 
+sub output_on_display {
+    my $contract_params = shift;
+
+    BOM::Backoffice::Request::template->process(
+        'backoffice/contract_details.html.tt',
+        {
+            pricing_parameters => $contract_params,
+        }) || die BOM::Backoffice::Request::template->error;
+
+}
+
 sub batch_output_as_excel {
     my $contract  = shift;
     my $file_name = shift;
@@ -472,5 +483,25 @@ sub batch_output_as_excel {
 
     return $workbook;
 }
+
+sub single_output_as_excel {
+    my $contract  = shift;
+    my $file_name = shift;
+    my $workbook  = Spreadsheet::WriteExcel->new($file_name);
+    my $worksheet = $workbook->add_worksheet();
+    my (@keys, @value);
+
+    foreach my $key (keys %{$contract}) {
+        push @keys, $key push @value, $contract->{$key};
+    }
+
+    my @combined = (\@keys, \@value);
+
+    $worksheet->write_row('A1', \@combined);
+    $workbook->close;
+
+    return $workbook;
+}
+
 1;
 

@@ -29,12 +29,12 @@ if ($cgi->param('upload_file')) {
     my $fh       = File::Temp->new(SUFFIX => '.csv');
     my $filename = $fh->filename;
     copy($file, $filename);
+    my $output_filename = $file;
+    $output_filename =~ s/.csv/.xls/g;
     my $pricing_parameters = BOM::JapanContractDetails::parse_file($filename, $landing_company);
-    my $filename = 'batch_process.xls';
 
-    my $file = BOM::JapanContractDetails::batch_output_as_excel($pricing_parameters, $filename);
+    my $file = BOM::JapanContractDetails::batch_output_as_excel($pricing_parameters, $output_filename);
     PrintContentType_excel($file);
-
 
 } elsif ($cgi->param('manual_verify_with_id')) {
     my $args;
@@ -42,6 +42,14 @@ if ($cgi->param('upload_file')) {
     $args->{landing_company} = $landing_company;
     $args->{todo}            = $cgi->param('download') ? 'download' : 'price';
     my $pricing_parameters = BOM::JapanContractDetails::verify_with_id($args);
+    if ($cgi->param('download') eq 'download') {
+        my $file = BOM::JapanContractDetails::batch_output_as_excel($pricing_parameters, $cgi->param('id') . '.xls');
+        PrintContentType_excel($file);
+
+    } else {
+        output_on_display($pricing_parameters);
+
+    }
 } elsif ($cgi->param('manual_verify_with_shortcode')) {
     my $args;
     $args->{landing_company} = $landing_company;
@@ -56,6 +64,15 @@ if ($cgi->param('upload_file')) {
         {
             order_type  => $cgi->param('action_type'),
             order_price => $cgi->param('price')});
+
+    if ($cgi->param('download') eq 'download') {
+        my $file = BOM::JapanContractDetails::batch_output_as_excel($pricing_parameters, $cgi->param('short_code') . '.xls');
+        PrintContentType_excel($file);
+
+    } else {
+        output_on_display($pricing_parameters);
+
+    }
 }
 
 code_exit_BO();
