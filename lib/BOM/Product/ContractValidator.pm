@@ -385,13 +385,14 @@ sub _validate_trading_times {
     my $date_expiry = $self->date_expiry;
     my $date_start  = $self->date_start;
     my $volidx_flag = 1;
+    my ($markets, $lc);
 
     if (not($calendar->trades_on($date_start) and $calendar->is_open_at($date_start))) {
         my $message =
             ($self->is_forward_starting) ? localize("The market must be open at the start time.") : localize('This market is presently closed.');
         if ($args->{landing_company}) {
-            my $lc = LandingCompany::Registry::get($args->{landing_company});
-            my $markets = $lc->legal_allowed_markets if $lc;
+            $lc          = LandingCompany::Registry::get($args->{landing_company});
+            $markets     = $lc->legal_allowed_markets if $lc;
             $volidx_flag = any { $_ eq 'volidx' } @$markets;
         }
         return {
