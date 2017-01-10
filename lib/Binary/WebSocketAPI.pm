@@ -489,7 +489,7 @@ sub startup {
             # TODO: use correct redis!
             # blocking call
             my $hits_json = $c->redis->get($key);
-            my $hits = $hits_json ? decode_json($hits) : {};
+            my $hits = $hits_json ? decode_json($hits_json) : {};
             $c->stash(rate_limitations_hits => decode_json($hits));
         });
 
