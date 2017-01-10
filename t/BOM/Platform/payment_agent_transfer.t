@@ -112,12 +112,6 @@ sub transfer_from_client_to_pa {
     my $dt_mocked = Test::MockModule->new('DateTime');
     $dt_mocked->mock('day_of_week', sub { return 2 });
 
-    $client->validate_agent_payment(
-        amount   => $transfer_amount,
-        currency => $client_account->currency_code,
-        toClient => $pa_client,
-    );
-
     $client->payment_account_transfer(
         amount   => $transfer_amount,
         currency => $client_account->currency_code,
