@@ -16,6 +16,7 @@ use BOM::Database::DataMapper::Transaction;
 use BOM::Backoffice::Sysinit ();
 use LandingCompany::Registry;
 use Path::Tiny;
+use Spreadsheet::WriteExcel;
 
 sub parse_file {
     my ($file, $landing_company) = @_;
@@ -149,12 +150,14 @@ sub verify_with_shortcode {
         ? _get_pricing_parameter_from_vv_pricer($traded_contract, $action_type, $discounted_probability)
         : die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
 
-    $pricing_parameters->{short_code}             = $short_code;
-    $pricing_parameters->{description}            = $original_contract->longcode;
-    $pricing_parameters->{ccy}                    = $contract->currency;
-    $pricing_parameters->{payout}                 = $contract->payout;
-    $pricing_parameters->{trade_time}             = $start_time;
-    $pricing_parameters->{tick_before_trade_time} = $prev_tick;
+    $pricing_parameters->{contract_details} = {
+        short_code             => $short_code,
+        description            => $original_contract->longcode,
+        ccy                    => $contract->currency,
+        payout                 => $contract->payout,
+        trade_time             => $start_time,
+        tick_before_trade_time => $prev_tick,
+    };
 
     return $pricing_parameters;
 
@@ -168,7 +171,7 @@ sub include_contract_details {
         qw(loginID trans_id order_type order_price slippage_price trade_ask_price trade_bid_price ref_spot ref_vol ref_vol2);
 
     foreach my $key (@required_contract_details) {
-        $params->{$key} = $args->{$key} // 'NA';
+        $params->{contract_details}->{$key} = $args->{$key} // 'NA';
 
     }
 
@@ -447,5 +450,27 @@ sub generate_form {
 
 }
 
+sub batch_output_as_excel {
+    my $contract  = shift;
+    my $file_name = shift;
+    my $workbook  = Spreadsheet::WriteExcel->new($file_name);
+    my $worksheet = $workbook->add_worksheet();
+    my @combined;
+    foreach my $c (keys %{$contract}) {
+        my (@keys, @value);
+        foreach my $key (values %{$contract->{$c}}) {
+            push @keys,  keys %{$key};
+            push @value, values %{$key};
+        }
+
+        push @combined, \@keys;
+        push @combined, \@value;
+    }
+
+    $worksheet->write_row('A1', \@combined);
+    $workbook->close;
+
+    return $workbook;
+}
 1;
 

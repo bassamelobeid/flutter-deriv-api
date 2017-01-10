@@ -30,6 +30,12 @@ if ($cgi->param('upload_file')) {
     my $filename = $fh->filename;
     copy($file, $filename);
     my $pricing_parameters = BOM::JapanContractDetails::parse_file($filename, $landing_company);
+    my $filename = 'batch_process.xls';
+
+    my $file = BOM::JapanContractDetails::batch_output_as_excel($pricing_parameters, $filename);
+    PrintContentType_excel($file);
+
+
 } elsif ($cgi->param('manual_verify_with_id')) {
     my $args;
     $args->{transaction_id}  = $cgi->param('id');
