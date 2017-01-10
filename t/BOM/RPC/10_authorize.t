@@ -133,6 +133,15 @@ my $new_token;
 subtest 'logout' => sub {
     ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
 
+    my $res = BOM::RPC::v3::Accounts::api_token({
+            client => $test_client,
+            args   => {
+                new_token => 'Test Token Logout',
+            },
+        });
+    ok $res->{new_token}, "Api token created successfully";
+    my $logout_token = $res->{tokens}->[1]->{token};
+
     my $params = {
         email        => $email,
         client_ip    => '1.1.1.1',
@@ -161,6 +170,33 @@ subtest 'logout' => sub {
             token    => $token
         })->has_error->error_message_is('The token is invalid.', 'oauth token is invalid after logout');
 
+    my $result = $c->call_ok(
+        'authorize',
+        {
+            language => 'EN',
+            token    => $logout_token
+        })->has_no_error->result;
+
+    $history_records = $c->call_ok(
+        'login_history',
+        {
+            token => $logout_token,
+            args  => {limit => 1}})->has_no_error->result->{records};
+    is($history_records->[0]{action}, 'logout', 'the last history is logout, api_token will not create login history entry until flag is set');
+    like($history_records->[0]{environment}, qr/IP=1.1.1.1 IP_COUNTRY=ID User_AGENT= LANG=EN/, 'environment is correct');
+
+    $params->{token}      = $logout_token;
+    $params->{token_type} = 'api_token';
+
+    $c->call_ok('logout', $params)->has_no_error->result_is_deeply({status => 1});
+
+    my $history_records_new = $c->call_ok(
+        'login_history',
+        {
+            token => $logout_token,
+            args  => {limit => 1}})->has_no_error->result->{records};
+    is($history_records_new->[0]{action},      $history_records->[0]{action},      'the last history is logout, same as old one');
+    is($history_records_new->[0]{environment}, $history_records->[0]{environment}, 'environment is correct, same as old one');
 };
 
 $token = $new_token;
