@@ -272,24 +272,4 @@ sub add_brand {
     return;
 }
 
-# temporary sub added to log data so that
-# we can debug the calls received by this app
-sub log_data {
-    my ($c, $req_storage, $api_response) = @_;
-
-    my $source = $c->stash('source');
-    # log request and respone data
-    if ($source and ($source == 1353 or $source == 1417)) {
-        my $msg_type = $api_response->{msg_type} // '';
-        if ($msg_type !~ /^(?:tick|history|active_symbols|contracts_for|website_status|time|residence_list)$/ or exists $api_response->{error}) {
-            try {
-                Path::Tiny::path('/var/log/httpd/app_call.log')
-                    ->append("---- Start: " . $msg_type . "\n  -- Response --\n    " . encode_json($api_response) . "\n---- Close ----\n\n");
-            };
-        }
-    }
-
-    return;
-}
-
 1;
