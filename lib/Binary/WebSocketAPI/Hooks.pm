@@ -133,9 +133,6 @@ sub before_forward {
 
     $req_storage->{origin_args} = {%{$req_storage->{args}}};
     my $args = $req_storage->{args};
-    if (not $c->stash('connection_id')) {
-        $c->stash('connection_id' => &Binary::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string());
-    }
 
     # For authorized calls that are heavier we will limit based on loginid
     # For unauthorized calls that are less heavy we will use connection id.
