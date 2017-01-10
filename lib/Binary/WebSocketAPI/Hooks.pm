@@ -5,7 +5,6 @@ use warnings;
 
 use JSON;
 use Try::Tiny;
-use Path::Tiny;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Fcntl qw/ :flock /;
 
