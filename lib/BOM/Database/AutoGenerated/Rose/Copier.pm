@@ -5,7 +5,7 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table   => 'copiers',
+    table   => '`copiers`',
     schema  => 'betonmarkets',
 
     columns => [
@@ -13,8 +13,8 @@ __PACKAGE__->meta->setup(
         copier_id       => { type => 'varchar', length => 12, not_null => 1 },
         asset           => { type => 'varchar', length => 50 },
         trade_type      => { type => 'varchar', length => 50 },
-        min_trade_stake => { type => 'numeric', precision => 4, scale => 14 },
-        max_trade_stake => { type => 'numeric', precision => 4, scale => 14 },
+        min_trade_stake => { type => 'numeric' },
+        max_trade_stake => { type => 'numeric' },
     ],
 
     foreign_keys => [

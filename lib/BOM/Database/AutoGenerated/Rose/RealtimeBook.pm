@@ -11,7 +11,7 @@ __PACKAGE__->meta->setup(
     columns => [
         id                      => { type => 'bigint', not_null => 1, sequence => 'sequences.global_serial' },
         financial_market_bet_id => { type => 'bigint' },
-        market_price            => { type => 'numeric', precision => 4, scale => 10 },
+        market_price            => { type => 'numeric' },
         delta                   => { type => 'numeric' },
         theta                   => { type => 'numeric' },
         vega                    => { type => 'numeric' },
