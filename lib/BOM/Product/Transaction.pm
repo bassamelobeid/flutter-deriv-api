@@ -1585,7 +1585,8 @@ sub _is_valid_to_buy {
     my $contract = $self->contract;
 
     if (
-        not(  $contract->is_spread
+        not(
+              $contract->is_spread
             ? $contract->is_valid_to_buy
             : $contract->is_valid_to_buy({landing_company => $self->client->landing_company->short})))
     {
