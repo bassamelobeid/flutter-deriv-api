@@ -33,7 +33,7 @@
           },
           "question":{
             "type":"string",
-            "pattern":"^[\\w\\s/,.:;\\-()\\\\'?%{}]*$",
+            "pattern":"^[\\w\\s/,.:;\\-()\\\\'?%{}]+$",
             "description":"The question"
           },
           "answer":{
