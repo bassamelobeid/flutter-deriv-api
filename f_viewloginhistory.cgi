@@ -17,7 +17,7 @@ if (my $email_list = request()->param('email')) {
     BrokerPresentation("USER LOGIN HISTORY");
 
     foreach my $email (split(/\s+/, lc($email_list))) {
-        Bar("$email Login History");
+        Bar(encode_entities($email) . " Login History");
         my $user = BOM::Platform::User->new({email => $email});
         my $history;
         if ($user) {
