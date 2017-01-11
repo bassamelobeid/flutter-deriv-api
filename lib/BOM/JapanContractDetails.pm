@@ -32,12 +32,13 @@ sub parse_file {
 
         my $currency = $landing_company =~ /japan/ ? 'JPY' : 'USD';
         my $parameters = verify_with_shortcode({
-            broker          => $broker,
-            shortcode       => $shortcode,
-            currency        => $currency,
-            landing_company => $landing_company,
-            contract_price  => $ask_price,
-            action_type     => 'buy'
+            broker                    => $broker,
+            shortcode                 => $shortcode,
+            currency                  => $currency,
+            landing_company           => $landing_company,
+            contract_price            => $ask_price,
+            action_type               => 'buy',
+            include_opposite_contract => 1,
         });
 
         $pricing_parameters->{$shortcode} = include_contract_details(
@@ -103,12 +104,12 @@ sub verify_with_id {
 sub verify_with_shortcode {
     my $args = shift;
 
-    my $landing_company = $args->{landing_company};
-    my $short_code      = $args->{shortcode};
-    my $action_type     = $args->{action_type};
-    my $verify_price    = $args->{contract_price};    # This is the price to be verify
-
-    my $currency = $args->{currency};
+    my $landing_company           = $args->{landing_company};
+    my $short_code                = $args->{shortcode};
+    my $action_type               = $args->{action_type};
+    my $verify_price              = $args->{contract_price};              # This is the price to be verify
+    my $include_opposite_contract = $args->{include_opposite_contract};
+    my $currency                  = $args->{currency};
 
     my $original_contract = produce_contract($short_code, $currency);
     my $purchase_time = $original_contract->date_start;
@@ -141,14 +142,28 @@ sub verify_with_shortcode {
     my $traded_contract = $action_type eq 'buy' ? $contract : $contract->opposite_contract;
     my $discounted_probability = $contract->discounted_probability;
 
-    my $pricing_parameters =
-        $contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex'
-        ? _get_pricing_parameter_from_IH_pricer($traded_contract, $action_type, $discounted_probability)
-        : $contract->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'
-        ? _get_pricing_parameter_from_slope_pricer($traded_contract, $action_type, $discounted_probability)
-        : $contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated'
-        ? _get_pricing_parameter_from_vv_pricer($traded_contract, $action_type, $discounted_probability)
-        : die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
+    my $pricing_parameters = get_pricing_parameter({
+        traded_contract        => $traded_contract,
+        action_type            => $action_type,
+        discounted_probability => $discounted_probability
+    });
+    if ($include_opposite_contract == 1) {
+
+        my $opposite_contract = get_pricing_parameter({
+            traded_contract        => $contract->opposite_contract,
+            action_type            => $action_type,
+            discounted_probability => $discounted_probability
+        });
+        my $new_naming;
+        foreach my $key (keys %{$opposite_contract}) {
+            foreach my $sub_key (keys %{$opposite_contract->{$key}}) {
+                my $new_sub_key = 'opposite_contract_' . $sub_key;
+                $pricing_parameters->{opposite_contract}->{$new_sub_key} = $opposite_contract->{$key}->{$sub_key};
+
+            }
+        }
+
+    }
 
     $pricing_parameters->{contract_details} = {
         short_code             => $short_code,
@@ -158,6 +173,25 @@ sub verify_with_shortcode {
         trade_time             => $start_time,
         tick_before_trade_time => $prev_tick,
     };
+
+    return $pricing_parameters;
+
+}
+
+sub get_pricing_parameter {
+    my $args                   = shift;
+    my $traded_contract        = $args->{traded_contract};
+    my $action_type            = $args->{action_type};
+    my $discounted_probability = $args->{discounted_probability};
+
+        my $pricing_parameters =
+        $traded_contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex'
+        ? _get_pricing_parameter_from_IH_pricer($traded_contract, $action_type, $discounted_probability)
+        : $traded_contract->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'
+        ? _get_pricing_parameter_from_slope_pricer($traded_contract, $action_type, $discounted_probability)
+        : $traded_contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated'
+        ? _get_pricing_parameter_from_vv_pricer($traded_contract, $action_type, $discounted_probability)
+        : die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
 
     return $pricing_parameters;
 
@@ -469,7 +503,7 @@ sub batch_output_as_excel {
     my @combined;
     foreach my $c (keys %{$contract}) {
         my (@keys, @value);
-        foreach my $key (values %{$contract->{$c}}) {
+        foreach my $key (sort values %{$contract->{$c}}) {
             push @keys,  keys %{$key};
             push @value, values %{$key};
         }
