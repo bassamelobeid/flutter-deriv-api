@@ -354,6 +354,11 @@ sub _build_memory_chronicle {
 
     $hash_ref->{'dividends::' . $symbol} = $chronicle_reader->get('dividends', $symbol);
 
+    if ($self->underlying->market->name eq 'forex') {
+        my $implied_symbol = $self->underlying->quoted_currency_symbol . '-' . $self->underlying->rate_to_imply_from;
+        $hash_ref->{'interest_rates::' . $implied_symbol} = $chronicle_reader->get('interest_rates', $implied_symbol);
+    }
+
     return Data::Chronicle::Reader->new({cache_reader => $hash_ref});
 }
 
