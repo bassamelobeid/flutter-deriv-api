@@ -41,20 +41,33 @@ my $start = $end - (12 * 60 * 60);
 $start = $start - ($start % $interval) - $interval;
 
 foreach my $ul (@uls) {
+
+    my $decimate_key = $decimate_cache->_make_key($ul->symbol, 1);
+
+    my $last_non_zero_decimated_tick = do {
+        my $timestamp     = 0;
+        my $redis         = $decimate_cache->read_redis;
+        my $earlier_ticks = $redis->zcount($decimate_key, '-inf', $start);
+
+        if ($earlier_ticks) {
+            my @ticks = map { $decimate_cache->decoder->decode($_) } @{$redis->zrevrangebyscore($decimate_key, $end, $start, 'LIMIT', 0, 100)};
+            my $non_zero_tick = first { $_->{count} > 0 } @ticks;
+            if ($non_zero_tick) {
+                $timestamp = $non_zero_tick->{decimate_epoch};
+            }
+        }
+        $timestamp;
+    };
+    my $last_decimate_epoch = max($start, $last_non_zero_decimated_tick);
+
     my $ticks = $ul->ticks_in_between_start_end({
-        start_time => $start,
+        start_time => $last_decimate_epoch,
         end_time   => $end,
     });
 
-    my $key          = $decimate_cache->_make_key($ul->symbol, 0);
     my $decimate_key = $decimate_cache->_make_key($ul->symbol, 1);
 
-    foreach my $single_data (@$ticks) {
-        $decimate_cache->_update($decimate_cache->redis_write, $key, $single_data->{epoch}, $decimate_cache->encoder->encode($single_data));
-    }
-
     my @rev_ticks = reverse @$ticks;
-
     my $decimate_data = Data::Decimate::decimate($decimate_cache->sampling_frequency->seconds, \@rev_ticks);
 
     foreach my $single_data (@$decimate_data) {

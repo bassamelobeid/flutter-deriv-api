@@ -7,7 +7,7 @@ use Test::Trap;
 
 use BOM::Platform::Runtime;
 use Cache::RedisDB;
-use BOM::MarketData::FeedDecimate;
+use BOM::MarketData::FeedRaw;
 use BOM::Market::DataDecimate;
 use File::Slurp;
 use File::Temp;
@@ -26,7 +26,7 @@ my $dist_port = empty_port;
 my $pid = fork;
 if (!$pid) {
     # child;
-    my $client = BOM::MarketData::FeedDecimate->new(
+    my $client = BOM::MarketData::FeedRaw->new(
         feed_distributor    => "localhost:$dist_port",
         timeout             => 2,
     );
