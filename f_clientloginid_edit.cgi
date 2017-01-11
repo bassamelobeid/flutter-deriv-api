@@ -42,7 +42,7 @@ my $self_href       = request()->url_for('backoffice/f_clientloginid_edit.cgi', 
 
 # given a bad-enough loginID, BrokerPresentation can die, leaving an unformatted screen..
 # let the client-check offer a chance to retry.
-eval { BrokerPresentation("$loginid CLIENT DETAILS") };
+eval { BrokerPresentation("$encoded_loginid CLIENT DETAILS") };
 
 my $client = eval { Client::Account->new({loginid => $loginid}) } || do {
     my $err = $@;
