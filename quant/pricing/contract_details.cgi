@@ -47,7 +47,7 @@ if ($cgi->param('upload_file')) {
         PrintContentType_excel($file);
 
     } else {
-        output_on_display($pricing_parameters);
+        BOM::JapanContractDetails::output_on_display($pricing_parameters);
 
     }
 } elsif ($cgi->param('manual_verify_with_shortcode')) {
@@ -70,7 +70,7 @@ if ($cgi->param('upload_file')) {
         PrintContentType_excel($file);
 
     } else {
-        output_on_display($pricing_parameters);
+        BOM::JapanContractDetails::output_on_display($pricing_parameters);
 
     }
 }
