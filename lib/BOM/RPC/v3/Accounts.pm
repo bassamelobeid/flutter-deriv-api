@@ -315,8 +315,9 @@ sub change_password {
                     $client_ip
                 )
             ],
-            use_email_template => 1,
-            template_loginid   => $client->loginid,
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            template_loginid      => $client->loginid,
         });
 
     return {status => 1};
@@ -379,8 +380,9 @@ sub cashier_password {
                             $client_ip
                         )
                     ],
-                    'use_email_template' => 1,
-                    template_loginid     => $client->loginid,
+                    'use_email_template'    => 1,
+                    'email_content_is_html' => 1,
+                    template_loginid        => $client->loginid,
                 });
             return {status => 1};
         }
