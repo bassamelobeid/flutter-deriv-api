@@ -17,7 +17,7 @@ BOM::Backoffice::Sysinit::init();
 my $loginID         = uc(request()->param('loginID'));
 my $encoded_loginID = encode_entities($loginID);
 PrintContentType();
-BrokerPresentation($loginID . ' Profit Analysis', '', '');
+BrokerPresentation($encoded_loginID . ' Profit Analysis', '', '');
 BOM::Backoffice::Auth0::can_access(['CS']);
 
 if ($loginID !~ /^(\D+)(\d+)$/) {

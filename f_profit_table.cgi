@@ -23,7 +23,7 @@ use f_brokerincludeall;
 BOM::Backoffice::Sysinit::init();
 
 my $loginID         = uc(request()->param('loginID'));
-my $encoded_loginID = $loginID;
+my $encoded_loginID = encode_entities($loginID);
 
 PrintContentType();
 BrokerPresentation($encoded_loginID . ' Contracts Analysis', '', '');
