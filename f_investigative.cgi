@@ -38,13 +38,6 @@ print "Email, or list of emails (space separated) :<TEXTAREA name='email' rows=2
 print "<INPUT type=submit value='View User Login History'>";
 print "</FORM>";
 
-print "<hr>";
-print "<P><LI><B>CLIENT LOGIN HISTORY [Deprecated Soon!]</B> - Please use the above tool, as we no longer save login history per loginid.";
-print "<FORM ACTION=\"" . request()->url_for('backoffice/f_viewloginhistory.cgi') . "\" METHOD=POST>";
-print "To interrogate this database, input the loginID (or list of loginIDs) :<TEXTAREA name=loginID rows=2 cols=20></TEXTAREA>";
-print "<INPUT type=submit value='View Client Login History'>";
-print "</FORM>";
-
 print "<P><LI><b>Query UN Sanctions list</b><FORM ACTION=\"" . request()->url_for('backoffice/f_investigative.cgi') . "\" METHOD=POST>";
 print "<INPUT type=hidden name=whattodo value=unsanctions>";
 print "First name:<INPUT type=text size=15 maxlength=35 name=fname value='Usama'>";
