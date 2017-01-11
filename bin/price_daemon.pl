@@ -29,7 +29,7 @@ GetOptions(
 );
 
 # tune cache: up to 2s
-$ENV{QUANT_FRAMEWORK_HOLIDAY_CACHE} = $ENV{QUANT_FRAMEWORK_PATRIALTRADING_CACHE} = 2;
+$ENV{QUANT_FRAMEWORK_HOLIDAY_CACHE} = $ENV{QUANT_FRAMEWORK_PATRIALTRADING_CACHE} = 2;    ## nocritic
 my $pm = Parallel::ForkManager->new($workers);
 
 my @running_forks;
