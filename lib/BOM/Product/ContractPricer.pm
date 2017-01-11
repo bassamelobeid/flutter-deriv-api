@@ -336,24 +336,23 @@ sub _generate_market_data {
 ## BUILDERS  #######################
 
 sub _build_memory_chronicle {
-    my $self = shift;
-    my $chronicle_reader = BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
+    my $self             = shift;
+    my $chronicle_reader = BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date);
 
     my $hash_ref = {};
-    my $symbol = $self->underlying->symbol;
+    my $symbol   = $self->underlying->symbol;
 
-    # $DB::single=1 if $symbol !~ /^frx/;
-    $hash_ref->{'volatility_surfaces::'.$symbol} = $chronicle_reader->get('volatility_surfaces', $symbol);
-    $hash_ref->{'holidays::holidays'} = $chronicle_reader->get('holidays', 'holidays');
-    $hash_ref->{'correlation_matrices::'.$symbol} = $chronicle_reader->get('correlation_matrices', $symbol);
+    $hash_ref->{'volatility_surfaces::' . $symbol}  = $chronicle_reader->get('volatility_surfaces',  $symbol);
+    $hash_ref->{'holidays::holidays'}               = $chronicle_reader->get('holidays',             'holidays');
+    $hash_ref->{'correlation_matrices::' . $symbol} = $chronicle_reader->get('correlation_matrices', $symbol);
 
     my $asset_symbol = $self->underlying->asset_symbol;
-    $hash_ref->{'interest_rates::'.$asset_symbol} = $chronicle_reader->get('interest_rates', $asset_symbol);
+    $hash_ref->{'interest_rates::' . $asset_symbol} = $chronicle_reader->get('interest_rates', $asset_symbol);
 
     my $quoted_symbol = $self->underlying->quoted_currency_symbol;
-    $hash_ref->{'interest_rates::'.$quoted_symbol} = $chronicle_reader->get('interest_rates', $quoted_symbol);
+    $hash_ref->{'interest_rates::' . $quoted_symbol} = $chronicle_reader->get('interest_rates', $quoted_symbol);
 
-    $hash_ref->{'dividends::'.$symbol} = $chronicle_reader->get('dividends', $symbol);
+    $hash_ref->{'dividends::' . $symbol} = $chronicle_reader->get('dividends', $symbol);
 
     return Data::Chronicle::Reader->new({cache_reader => $hash_ref});
 }
