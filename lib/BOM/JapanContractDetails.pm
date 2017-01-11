@@ -24,7 +24,7 @@ sub parse_file {
     my @lines = Path::Tiny::path($file)->lines;
 
     my $pricing_parameters;
-    while (my $line = <@lines>) {
+    foreach my $line (@lines) {
         chomp $line;
         my @fields    = split ",", $line;
         my $shortcode = $fields[0];
@@ -492,7 +492,7 @@ sub single_output_as_excel {
     my (@keys, @value);
 
     foreach my $key (keys %{$contract}) {
-        push @keys, $key ;
+        push @keys,  $key;
         push @value, $contract->{$key};
     }
 
