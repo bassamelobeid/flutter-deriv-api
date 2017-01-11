@@ -234,6 +234,20 @@ sub _create_new_interface_engine {
 
     my %pricing_parameters;
 
+    my %contract_config = (
+        contract_type            => $self->pricing_code,
+        underlying_symbol        => $self->underlying->symbol,
+        date_start               => $self->effective_start,
+        date_pricing             => $self->date_pricing,
+        date_expiry              => $self->date_expiry,
+        payouttime_code          => $self->payouttime_code,
+        for_date                 => $self->underlying->for_date,
+        spot                     => $self->pricing_spot,
+        strikes                  => [grep { $_ } values %{$self->barriers_for_pricing}],
+        priced_with              => $self->priced_with,
+        payout_type              => $self->payout_type,
+    );
+
     if ($self->pricing_engine_name eq 'Pricing::Engine::Digits') {
         %pricing_parameters = (
             strike => $self->barrier ? $self->barrier->as_absolute : undef,
@@ -241,10 +255,7 @@ sub _create_new_interface_engine {
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
         %pricing_parameters = (
-            contract_type     => $self->pricing_code,
-            underlying_symbol => $self->underlying->symbol,
-            date_start        => $self->effective_start,
-            date_pricing      => $self->date_pricing,
+            %contract_config,
             ticks             => BOM::Market::AggTicks->new->retrieve({
                     underlying   => $self->underlying,
                     ending_epoch => $self->date_start->epoch,
@@ -254,37 +265,24 @@ sub _create_new_interface_engine {
             economic_events => _generate_market_data($self->underlying, $self->date_start)->{economic_events},
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
-        #pricing_vol can be calculated using an empirical vol. So we have to sent the raw numberc
+        #pricing_vol can be calculated using an empirical vol. So we have to sent the raw numbers
         %pricing_parameters = (
-            contract_type            => $self->pricing_code,
-            for_date                 => $self->underlying->for_date,
-            spot                     => $self->pricing_spot,
-            strikes                  => [grep { $_ } values %{$self->barriers_for_pricing}],
-            date_start               => $self->effective_start,
+            %contract_config,
             chronicle_reader         => $self->memory_chronicle,
-            date_pricing             => $self->date_pricing,
-            date_expiry              => $self->date_expiry,
-            discount_rate            => $self->discount_rate,
-            mu                       => $self->mu,
-            vol                      => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
-            payouttime_code          => $self->payouttime_code,
-            q_rate                   => $self->q_rate,
-            r_rate                   => $self->r_rate,
-            priced_with              => $self->priced_with,
-            underlying_symbol        => $self->underlying->symbol,
-            volsurface               => $self->volsurface->surface,
-            volsurface_recorded_date => $self->volsurface->recorded_date,
+            # discount_rate            => $self->discount_rate,
+            # mu                       => $self->mu,
+            # vol                      => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
+            # q_rate                   => $self->q_rate,
+            # r_rate                   => $self->r_rate,
+            # volsurface               => $self->volsurface->surface,
+            # volsurface_recorded_date => $self->volsurface->recorded_date,
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::BlackScholes') {
         %pricing_parameters = (
-            strikes         => [grep { $_ } values %{$self->barriers_for_pricing}],
-            spot            => $self->pricing_spot,
+            %contract_config,
             t               => $self->timeinyears->amount,
             discount_rate   => $self->discount_rate,
             mu              => $self->mu,
-            payouttime_code => $self->payouttime_code,
-            payout_type     => $self->payout_type,
-            contract_type   => $self->pricing_code,
             vol => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
         );
     } else {
