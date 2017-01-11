@@ -14,7 +14,7 @@ PrintContentType();
 
 my $ip         = request()->param('ip');
 my $encoded_ip = encode_entities($ip);
-BrokerPresentation("IP SEARCH FOR $ip");
+BrokerPresentation("IP SEARCH FOR $encoded_ip");
 BOM::Backoffice::Auth0::can_access(['CS']);
 my $broker = request()->broker_code;
 
