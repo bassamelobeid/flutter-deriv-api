@@ -1182,7 +1182,7 @@ subtest $method => sub {
         subject => qr/\Q$subject\E/
     );
     ok(@msgs, 'send a email to client');
-    like($msgs[0]{body}, qr/address line 1, address line 2, address city, address state, 12345, Indonesia/s, 'email content correct');
+    like($msgs[0]{body}, qr/>address line 1, address line 2, address city, address state, 12345, Indonesia/s, 'email content correct');
 
     is($c->tcall('get_settings', {token => $token1})->{email_consent}, 1, "Was able to set email consent correctly");
 };
