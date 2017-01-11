@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use YAML::XS;
-use List::Util qw(any);
+use List::Util qw(any first);
 use Try::Tiny;
 use File::ShareDir;
 use Locale::Country::Extra;
@@ -79,9 +79,11 @@ sub mt5_new_account {
         # get MT company from countries.yml
         my $mt_key         = 'mt_' . $account_type . '_company';
         my $mt_company     = 'none';
-        my $countries_list = Brands->new(name => request()->brand)->countries_instance->countries_list;
-        if (defined $countries_list->{$client->residence} && defined $countries_list->{$client->residence}->{$mt_key}) {
-            $mt_company = $countries_list->{$client->residence}->{$mt_key};
+        my $residence      = $client->residence;
+        my $brand          = Brands->new(name => request()->brand);
+        my $countries_list = $brand->countries_instance->countries_list;
+        if (defined $countries_list->{$residence} && defined $countries_list->{$residence}->{$mt_key}) {
+            $mt_company = $countries_list->{$residence}->{$mt_key};
         }
 
         if ($mt_company eq 'none') {
@@ -90,6 +92,7 @@ sub mt5_new_account {
 
         $group = 'real\\' . $mt_company;
         $group .= "_$sub_account_type" if $account_type eq 'financial';
+        $group .= "_$residence" if (first { $residence eq $_ } @{$brands->exclusive_countries});
     } else {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccountType',
