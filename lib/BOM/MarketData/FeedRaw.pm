@@ -1,4 +1,4 @@
-package BOM::MarketData::FeedDecimate;
+package BOM::MarketData::FeedRaw;
 
 use 5.010;
 use strict;
@@ -6,11 +6,11 @@ use warnings;
 
 =head1 NAME
 
-BOM::MarketData::FeedDecimate
+BOM::MarketData::FeedRaw
 
 =head1 SYNOPSIS
 
-use BOM::MarketData::FeedDecimate
+use BOM::MarketData::FeedRaw
 
 =head1 DESCRIPTION
 
@@ -34,6 +34,7 @@ use POSIX qw(:errno_h);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use ExpiryQueue qw( update_queue_for_tick );
 use Time::HiRes;
+use List::Util qw(max);
 
 use Data::Decimate qw(decimate);
 use BOM::Market::DataDecimate;
@@ -66,6 +67,43 @@ sub BUILD {
     $self->_zmq_context($ctx);
     $self->_zmq_socket($sock);
 
+    my $decimate_cache = BOM::Market::DataDecimate->new();
+
+    my @uls = map { create_underlying($_) } create_underlying_db->symbols_for_intraday_fx;
+
+#back populate
+    my $end = time;
+    my $start = $end - (30 * 60);
+
+    foreach my $ul (@uls) {
+        my $raw_key = $decimate_cache->_make_key($ul->symbol, 0);
+
+        my $last_raw_tick = do {
+            my $timestamp     = 0;
+            my $redis         = $decimate_cache->redis_read;
+            my $earlier_ticks = $redis->zcount($raw_key, '-inf', $start);
+
+            if ($earlier_ticks) {
+                my @ticks = map { $decimate_cache->decoder->decode($_) } @{$redis->zrevrangebyscore($raw_key, $end, $start, 'LIMIT', 0, 100)};
+                my $non_zero_tick = first { $_->{count} > 0 } @ticks;
+                if ($non_zero_tick) {
+                    $timestamp = $non_zero_tick->{epoch};
+                }
+            }
+            $timestamp;
+        };
+        my $last_raw_epoch = max($start, $last_raw_tick);
+
+        my $ticks = $ul->ticks_in_between_start_end({
+            start_time => $last_raw_epoch,
+            end_time   => $end,
+        });
+
+        foreach my $single_data (@$ticks) {
+            $decimate_cache->_update($decimate_cache->redis_write, $raw_key, $single_data->{epoch}, $decimate_cache->encoder->encode($single_data));
+        }
+
+    }
     return;
 }
 

@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use BOM::MarketData::FeedDecimate;
+use BOM::MarketData::FeedRaw;
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
 
 $0 = 'bom-feed-raw';
@@ -26,12 +26,12 @@ These options are available:
 EOF
 
 # defaults
-$feed_distributor    //= BOM::System::Config::node->{feed_server}->{fqdn} . ':' . 3030;
-$timeout             //= 10;
+$feed_distributor //= BOM::System::Config::node->{feed_server}->{fqdn} . ':' . 3030;
+$timeout //= 10;
 
-my $client = BOM::MarketData::FeedDecimate->new(
-    feed_distributor    => $feed_distributor,
-    timeout             => $timeout,
+my $client = BOM::MarketData::FeedRaw->new(
+    feed_distributor => $feed_distributor,
+    timeout          => $timeout,
 );
 print("Feed raw starting\n");
 my $success = 1;
