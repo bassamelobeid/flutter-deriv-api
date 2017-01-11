@@ -65,8 +65,6 @@ foreach my $ul (@uls) {
         end_time   => $end,
     });
 
-    my $decimate_key = $decimate_cache->_make_key($ul->symbol, 1);
-
     my @rev_ticks = reverse @$ticks;
     my $decimate_data = Data::Decimate::decimate($decimate_cache->sampling_frequency->seconds, \@rev_ticks);
 
