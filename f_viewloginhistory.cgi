@@ -4,6 +4,7 @@ package main;
 use strict;
 use warnings;
 
+use HTML::Entities;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
 use Client::Account;

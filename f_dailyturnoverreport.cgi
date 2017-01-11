@@ -2,6 +2,7 @@
 package main;
 use strict;
 
+use HTML::Entities;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
 use BOM::Backoffice::Request qw(request);
