@@ -34,6 +34,7 @@ use POSIX qw(:errno_h);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use ExpiryQueue qw( update_queue_for_tick );
 use Time::HiRes;
+use List::Util qw(max);
 
 use Data::Decimate qw(decimate);
 use BOM::Market::DataDecimate;
