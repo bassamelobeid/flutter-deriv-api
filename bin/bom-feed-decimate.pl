@@ -46,7 +46,7 @@ foreach my $ul (@uls) {
 
     my $last_non_zero_decimated_tick = do {
         my $timestamp     = 0;
-        my $redis         = $decimate_cache->read_redis;
+        my $redis         = $decimate_cache->redis_read;
         my $earlier_ticks = $redis->zcount($decimate_key, '-inf', $start);
 
         if ($earlier_ticks) {
@@ -82,7 +82,7 @@ foreach my $ul (@uls) {
 print "Decimating realtime data...\n";
 
 my $now               = int time;
-my $hold_time         = 2;
+my $hold_time         = 1;
 my $decimate_interval = $decimate_cache->sampling_frequency->seconds;
 my $boundary          = $now - ($now % $decimate_interval) + ($decimate_interval);
 my $next_start        = $boundary + $hold_time;

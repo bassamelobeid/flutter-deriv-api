@@ -79,7 +79,7 @@ sub BUILD {
 
         my $last_raw_tick = do {
             my $timestamp     = 0;
-            my $redis         = $decimate_cache->read_redis;
+            my $redis         = $decimate_cache->redis_read;
             my $earlier_ticks = $redis->zcount($raw_key, '-inf', $start);
 
             if ($earlier_ticks) {
