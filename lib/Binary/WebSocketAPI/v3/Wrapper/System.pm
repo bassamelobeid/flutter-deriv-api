@@ -160,22 +160,4 @@ sub _forget_feed_subscription {
     return $removed_ids;
 }
 
-# its separate, cos for proposal we need args that are used as contract parameters for buy
-# only difference from _forget_feed_subscription is return type and value
-sub forget_buy_proposal {
-    my ($c, $uuid) = @_;
-    my $subscription = $c->stash('feed_channel_type');
-    if (defined $uuid and $uuid =~ /-/ and $subscription) {
-        foreach my $channel (keys %{$subscription}) {
-            my ($symbol, $type, $req_id) = split(";", $channel);
-            if ($subscription->{$channel}->{uuid} eq $uuid) {
-                my $args = $subscription->{$channel}->{args};
-                Binary::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel_unsubscribe($c, $symbol, $type, $req_id);
-                return $args;
-            }
-        }
-    }
-    return;
-}
-
 1;
