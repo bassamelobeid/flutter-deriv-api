@@ -18,5 +18,4 @@ sub login_success {
     return;
 }
 
-
 1;
