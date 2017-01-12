@@ -728,8 +728,7 @@ if ($financial_assessment) {
     Bar("Financial Assessment");
     print qq{<table class="collapsed">
         <tr><td>User Data</td><td><textarea rows=10 cols=150 id="financial_assessment_score">}
-        . encode_entities($user_data_json)
-        . qq{</textarea></td></tr>
+        . encode_entities($user_data_json) . qq{</textarea></td></tr>
         <tr><td></td><td><input id="format_financial_assessment_score" type="button" value="Format"/></td></tr>
         <tr><td>Is professional</td><td>$is_professional</td></tr>
         </table>
@@ -744,28 +743,13 @@ my $login_history = $user->find_login_history(
     limit   => $limit
 );
 
-if (@$login_history == 0) {
-    print qq{<p>There is no login history</p>};
-} else {
-    print qq{<p color="red">Showing last $limit logins only</p>} if @$login_history > $limit;
-    print qq{<table class="collapsed">\n};
-    foreach my $login (reverse @$login_history) {
-        my $date        = $login->history_date->strftime('%F %T');
-        my $action      = $login->action;
-        my $status      = $login->successful ? 'ok' : 'failed';
-        my $environment = $login->environment;
-        print qq{<tr><td width='150'>}
-            . encode_entities("$date UTC")
-            . qq{</td><td>}
-            . encode_entities($action)
-            . qq{</td><td>}
-            . encode_entities($status)
-            . qq{</td><td>}
-            . encode_entities($environment)
-            . qq{</td></tr>\n};
-    }
-    print qq{</table>\n};
-}
+BOM::Backoffice::Request::template->process(
+    'backoffice/user_login_history.html.tt',
+    {
+        user    => $user,
+        history => $login_history,
+        limit   => $limit
+    });
 print '</div>';
 
 # to be removed soon, no more login history based on loginid

@@ -1,22 +1,26 @@
-<pre>
-[%
-# user: user or client data, to check existance
-# history: ref to the list of items
-#
-# we don't need to filter environment, as it's got auto filtered by Template::AutoFilter later
-IF user;
-    IF history;
-        FOREACH l IN history;
-            date = l.history_date;
+[% IF user %]
+    [% IF history %]
+        [% IF limit AND history.size >= limit %]
+            <p color="red">Showing last [% limit %] logins only</p>
+        [% END %]
+        <table class="collapsed">
+[%       FOREACH l IN history.reverse;
+            date = l.history_date.strftime('%F %T');
             status = l.successful ? 'ok' : 'failed';
             env = l.environment;
-            date _ " " _ l.action _ " " _ status _ " " _ env _ "\n";
-        END;
-    ELSE;
-        "No login history";
-    END;
-ELSE;
-    "User not found";
-END;
 %]
-</pre>
+            <tr>
+                <td width='150'>[% date %] UTC</td>
+                <td>[% l.action %]</td>
+                <td>[% status %]</td>
+                <td>[% env %]</td>
+            </tr>
+
+        [% END %]
+        </table>
+    [% ELSE %]
+        <p>No login history</p>
+    [% END %]
+[% ELSE %]
+    <p>User not found</p>
+[% END %]
