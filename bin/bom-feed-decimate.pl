@@ -45,7 +45,7 @@ foreach my $ul (@uls) {
     my $decimate_key = $decimate_cache->_make_key($ul->symbol, 1);
 
     my $last_non_zero_decimated_tick = $decimate_cache->get_latest_tick_epoch($ul->symbol, 1, $start, $end);
-    my $last_decimate_epoch = max($start, $last_non_zero_decimated_tick);
+    my $last_decimate_epoch = max($start, $last_non_zero_decimated_tick + 1);
 
     my $ticks = $ul->ticks_in_between_start_end({
         start_time => $last_decimate_epoch,

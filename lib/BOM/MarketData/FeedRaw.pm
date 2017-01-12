@@ -78,21 +78,8 @@ sub BUILD {
     foreach my $ul (@uls) {
         my $raw_key = $decimate_cache->_make_key($ul->symbol, 0);
 
-        my $last_raw_tick = do {
-            my $timestamp     = 0;
-            my $redis         = $decimate_cache->redis_read;
-            my $earlier_ticks = $redis->zcount($raw_key, '-inf', $start);
-
-            if ($earlier_ticks) {
-                my @ticks = map { $decimate_cache->decoder->decode($_) } @{$redis->zrevrangebyscore($raw_key, $end, $start, 'LIMIT', 0, 100)};
-                my $non_zero_tick = first { $_->{count} > 0 } @ticks;
-                if ($non_zero_tick) {
-                    $timestamp = $non_zero_tick->{epoch};
-                }
-            }
-            $timestamp;
-        };
-        my $last_raw_epoch = max($start, $last_raw_tick);
+        my $last_raw_tick = $decimate_cache->get_latest_tick_epoch($ul->symbol, 0, $start, $end);
+        my $last_raw_epoch = max($start, $last_raw_tick + 1);
 
         my $ticks = $ul->ticks_in_between_start_end({
             start_time => $last_raw_epoch,
