@@ -85,7 +85,7 @@ sub BUILD {
 
             if ($earlier_ticks) {
                 my @ticks = map { $decimate_cache->decoder->decode($_) } @{$redis->zrevrangebyscore($raw_key, $end, $start, 'LIMIT', 0, 100)};
-                my $non_zero_tick = first { $_->{count} > 0 } @ticks;
+                my $non_zero_tick = $ticks[-1];
                 if ($non_zero_tick) {
                     $timestamp = $non_zero_tick->{epoch};
                 }
