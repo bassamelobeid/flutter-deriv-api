@@ -35,6 +35,22 @@ foreach my $ds (@date_start) {
             recorded_date => Date::Utility->new($ds->epoch - 600),
         }) for qw (USD BRO);
 
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxBROUSD',
+            surface_data  => {
+                1 => {
+                    vol_spread => {50 => 0},
+                    smile => {25 => 0.1, 50 => 0.1, 75 => 0.1}
+                },
+                7 => {
+                    vol_spread => {50 => 0},
+                    smile => {25 => 0.1, 50 => 0.1, 75 => 0.1}
+                },
+            },
+            recorded_date => Date::Utility->new($ds->epoch - 600),
+        });
     my $pp = {
         bet_type     => 'CALL',
         underlying   => $u,
