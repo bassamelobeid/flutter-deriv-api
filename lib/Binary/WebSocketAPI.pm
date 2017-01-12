@@ -90,7 +90,7 @@ sub startup {
                 $c->stash(debug => 1);
             }
 
-            my $app_id    = defang($c->req->param('app_id'));
+            my $app_id    = $c->app_id;
             my $client_ip = $c->client_ip;
             my $brand     = defang($c->req->param('brand'));
 
@@ -451,10 +451,17 @@ sub startup {
         });
 
     $app->helper(
+        'app_id' => sub {
+            my $c = shift;
+            my $app_id = defang($c->req->param('app_id') // 'unknown-app');
+        });
+
+    $app->helper(
         'rate_limitations_keys' => sub {
             my $c                  = shift;
             my $login_id           = $c->stash('loginid');
-            my $authorised_key     = $login_id ? "rate_limits::authorised::$login_id" : undef;
+            my $app_id             = $c->app_id;
+            my $authorised_key     = $login_id ? "rate_limits::authorised::$app_id/$login_id" : undef;
             my $non_authorised_key = do {
                 my $ip = $c->client_ip;
                 if (!defined $ip) {
@@ -463,7 +470,7 @@ sub startup {
                 }
                 my $user_agent = $c->req->headers->header('User-Agent') // 'Unknown-UA';
                 my $client_id = md5_hex($ip . ":" . $user_agent);
-                "rate_limits::non-authorised::$client_id";
+                "rate_limits::non-authorised::$app_id/$client_id";
             };
             return ($authorised_key, $non_authorised_key);
         });
@@ -477,6 +484,7 @@ sub startup {
             # TODO: use correct redis!
             # blocking call
             $c->ws_redis->set($key => encode_json($hits));
+            $c->ws_redis->expire($key => 3600);
         });
 
     $app->helper(
