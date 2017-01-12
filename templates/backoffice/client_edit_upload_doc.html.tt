@@ -1,0 +1,46 @@
+<br />
+<form enctype="multipart/form-data" ACTION="[% self_post %]" method="POST">
+  <label for="docnationalityselect">Nationality (as per identity document, it can be different from residence)</label>
+  <select id="docnationalityselect" name="docnationality">
+    <option value="">Please select</option>
+    [% FOREACH c IN countries.all_country_names %]
+        [% cc = countries.code_from_country(c) %]
+        <option value="[% cc %]">[% c %]</option>
+    [% END %]
+  </select>
+  <br>
+[% FOR n IN [1, 2, 3, 4] %]
+ File [% n %]: 
+  <select name="doctype_[% n %]">
+    <option value="passport">Passport</option>
+    <option value="proofid">ID</option>
+    <option value="driverslicense">Drivers License</option>
+    <option value="proofaddress">Proof of Address</option>
+    <option value="bankstatement">Bank statement</option>
+    <option value="amlglobalcheck">AML Global Check</option>
+    <option value="docverification">Doc Verification (Autodoc)</option>
+    <option value="other">Other</option>
+  </select>
+  <select name=docformat_[% n %]>
+    <option>JPG</option>
+    <option>JPEG</option>
+    <option>GIF</option>
+    <option>PNG</option>
+    <option>TIF</option>
+    <option>PDF</option>
+    <option>PCX</option>
+    <option>EFX</option>
+    <option>JFX</option>
+    <option>DOC</option>
+    <option>TXT</option>
+  </select>
+  <input type="FILE" name="FILE_[% n %]">
+  Expiration date:<input type="text" size=10 name="expiration_date_[% n %]"><i> format YYYY-MM-DD </i>
+    <br>
+  [% END %]
+  <br>
+  <input type="hidden" name="whattodo" value="uploadID">
+  <input type="hidden" name="broker" value="[% broker %]">
+  <input type="hidden" name="loginID" value="[% loginid %]">
+  <input type=submit value="Upload new ID doc.">
+</form>
