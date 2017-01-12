@@ -313,12 +313,13 @@ sub _login {
                     }
 
                     send_email({
-                        from               => $brand->emails('support'),
-                        to                 => $client->email,
-                        subject            => localize('New Sign-In Activity Detected'),
-                        message            => [$message],
-                        use_email_template => 1,
-                        template_loginid   => $client->loginid,
+                        from                  => $brand->emails('support'),
+                        to                    => $client->email,
+                        subject               => localize('New Sign-In Activity Detected'),
+                        message               => [$message],
+                        use_email_template    => 1,
+                        email_content_is_html => 1,
+                        template_loginid      => $client->loginid,
                     });
                 }
             }
