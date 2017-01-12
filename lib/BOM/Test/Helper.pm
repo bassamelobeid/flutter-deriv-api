@@ -73,8 +73,7 @@ sub build_wsapi_test {
         $headers = {'Sec-WebSocket-Extensions' => 'permessage-deflate'};
     }
 
-    # nocritic
-    $ENV{BOM_TEST_WS_REDIS} = '/home/git/regentmarkets/bom-test/data/config/ws-redis.yml';
+    $ENV{BOM_TEST_WS_REDIS} = '/home/git/regentmarkets/bom-test/data/config/ws-redis.yml';    ## nocritic
     {
         my $ws_redis_cfg = LoadFile($ENV{BOM_TEST_WS_REDIS});
         my $url          = "redis://" . $ws_redis_cfg->{write}->{host} . ":" . $ws_redis_cfg->{write}->{port};
