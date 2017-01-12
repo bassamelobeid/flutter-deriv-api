@@ -3,6 +3,23 @@ package BOM::Product::Contract;    ## no critic ( RequireFilenameMatchesPackage 
 use strict;
 use warnings;
 
+use Price::Calculator;
+use Math::Util::CalculatedValue::Validatable;
+use List::MoreUtils qw(none all);
+
+use Quant::Framework::EconomicEventCalendar;
+use Quant::Framework::Currency;
+use Quant::Framework::CorrelationMatrix;
+use Pricing::Engine::EuropeanDigitalSlope;
+use Pricing::Engine::TickExpiry;
+use Pricing::Engine::BlackScholes;
+
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::Product::Pricing::Greeks;
+use BOM::System::Chronicle;
+use BOM::Product::Pricing::Greeks::BlackScholes;
+use BOM::Platform::Runtime;
 use BOM::Product::ContractVol;
 
 ## ATTRIBUTES  #######################
@@ -14,7 +31,7 @@ has [qw(mu discount_rate)] => (
     lazy_build => 1,
 );
 
-has [qw(domqqq forqqq fordom)] => (
+has [qw(rho domqqq forqqq fordom)] => (
     is         => 'ro',
     isa        => 'HashRef',
     lazy_build => 1,
@@ -24,12 +41,6 @@ has priced_with => (
     is         => 'ro',
     isa        => 'Str',
     lazy_build => 1,
-);
-
-has [qw(rho)] => (
-    is         => 'ro',
-    isa        => 'HashRef',
-    lazy_build => 1
 );
 
 # a hash reference for slow migration of pricing engine to the new interface.
@@ -59,6 +70,17 @@ An abbreviation for deep out of the money threshold. This is used to floor and c
 =cut
 
 has otm_threshold => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+=head2 memory_chronicle
+
+A memory-backed chronicle reader instance
+
+=cut
+
+has memory_chronicle => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -239,7 +261,7 @@ sub _create_new_interface_engine {
             spot                     => $self->pricing_spot,
             strikes                  => [grep { $_ } values %{$self->barriers_for_pricing}],
             date_start               => $self->effective_start,
-            chronicle_reader         => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
+            chronicle_reader         => $self->memory_chronicle,
             date_pricing             => $self->date_pricing,
             date_expiry              => $self->date_expiry,
             discount_rate            => $self->discount_rate,
@@ -312,6 +334,33 @@ sub _generate_market_data {
 }
 
 ## BUILDERS  #######################
+
+sub _build_memory_chronicle {
+    my $self             = shift;
+    my $chronicle_reader = BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date);
+
+    my $hash_ref = {};
+    my $symbol   = $self->underlying->symbol;
+
+    $hash_ref->{'volatility_surfaces::' . $symbol}  = $chronicle_reader->get('volatility_surfaces',  $symbol);
+    $hash_ref->{'holidays::holidays'}               = $chronicle_reader->get('holidays',             'holidays');
+    $hash_ref->{'correlation_matrices::' . $symbol} = $chronicle_reader->get('correlation_matrices', $symbol);
+
+    my $asset_symbol = $self->underlying->asset_symbol;
+    $hash_ref->{'interest_rates::' . $asset_symbol} = $chronicle_reader->get('interest_rates', $asset_symbol);
+
+    my $quoted_symbol = $self->underlying->quoted_currency_symbol;
+    $hash_ref->{'interest_rates::' . $quoted_symbol} = $chronicle_reader->get('interest_rates', $quoted_symbol);
+
+    $hash_ref->{'dividends::' . $symbol} = $chronicle_reader->get('dividends', $symbol);
+
+    if ($self->underlying->market->name eq 'forex') {
+        my $implied_symbol = $self->underlying->quoted_currency_symbol . '-' . $self->underlying->rate_to_imply_from;
+        $hash_ref->{'interest_rates::' . $implied_symbol} = $chronicle_reader->get('interest_rates', $implied_symbol);
+    }
+
+    return Data::Chronicle::Reader->new({cache_reader => $hash_ref});
+}
 
 sub _build_domqqq {
     my $self = shift;
