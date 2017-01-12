@@ -63,6 +63,7 @@ install:
     - /tmp/travis-scripts/setup_logs.sh
     - .  /tmp/travis-scripts/setup_perl5lib.sh
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
+    - sudo cp /home/git/regentmarkets/bom-test/data/config/ws-redis.yml /etc/rmg
     - perl /home/git/regentmarkets/bom-platform/bin/notify_pub.pl 2>&1 | grep -Ev '(connection has been closed unexpectedly)|(terminating connection due to administrator)' &
     - perl /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl  daemon -m production -l http://*:5005/jsonrpc  &
 
