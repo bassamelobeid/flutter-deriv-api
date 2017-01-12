@@ -407,8 +407,9 @@ sub cashier_password {
                             $client_ip
                         )
                     ],
-                    'use_email_template' => 1,
-                    template_loginid     => $client->loginid,
+                    'use_email_template'    => 1,
+                    'email_content_is_html' => 1,
+                    template_loginid        => $client->loginid,
                 });
 
             return $error_sub->(localize('Sorry, you have entered an incorrect cashier password'));
@@ -429,8 +430,9 @@ sub cashier_password {
                             $client_ip
                         )
                     ],
-                    'use_email_template' => 1,
-                    template_loginid     => $client->loginid,
+                    'use_email_template'    => 1,
+                    'email_content_is_html' => 1,
+                    template_loginid        => $client->loginid,
                 });
             BOM::System::AuditLog::log('cashier unlocked', $client->loginid);
             return {status => 0};
