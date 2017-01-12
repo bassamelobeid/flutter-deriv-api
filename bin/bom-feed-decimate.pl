@@ -37,7 +37,7 @@ my @uls = map { create_underlying($_) } create_underlying_db->symbols_for_intrad
 my $interval = $decimate_cache->sampling_frequency->seconds;
 
 my $end = time;
-my $start = $end - (12 * 60 * 60);
+my $start = $end - $decimate_cache->decimate_retention_interval->seconds;
 $start = $start - ($start % $interval) - $interval;
 
 foreach my $ul (@uls) {
