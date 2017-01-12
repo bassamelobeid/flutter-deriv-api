@@ -19,13 +19,14 @@ my $yyyymm        = $params{yyyymm};
 my $broker        = $params{broker};
 my $payment_types = $params{payment_type};
 my $all_types     = $params{all_payment_types};
+my $months        = $params{months} // 1;
 
 my ($yyyy, $mm) = $yyyymm =~ /^(\d{4})-(\d{2})$/;
 my $start_date = DateTime->new(
     year  => $yyyy,
     month => $mm
 );
-my $until_date = $start_date->clone->add(months => 1);
+my $until_date = $start_date->clone->add(months => $months);
 
 my ($payment_filter, $csv_name);
 if ($all_types) {
