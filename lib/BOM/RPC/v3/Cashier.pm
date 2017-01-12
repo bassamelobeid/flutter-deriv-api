@@ -488,11 +488,13 @@ sub paymentagent_list {
 sub paymentagent_transfer {
     my $params = shift;
 
-    my $source     = $params->{source};
-    my $client_fm  = $params->{client};
+    my $source    = $params->{source};
+    my $client_fm = $params->{client};
+
+    return BOM::RPC::v3::Utility::permission_error() if $client_fm->is_virtual;
+
     my $loginid_fm = $client_fm->loginid;
 
-    my $payment_agent = $client_fm->payment_agent;
     my ($website_name, $args) = @{$params}{qw/website_name args/};
     my $currency   = $args->{currency};
     my $amount     = $args->{amount};
@@ -520,7 +522,8 @@ sub paymentagent_transfer {
     };
 
     my $error_msg;
-    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    my $payment_agent = $client_fm->payment_agent;
+    my $app_config    = BOM::Platform::Runtime->instance->app_config;
     if (   $app_config->system->suspend->payments
         or $app_config->system->suspend->payment_agents
         or $app_config->system->suspend->system)
@@ -725,9 +728,10 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
 sub paymentagent_withdraw {
     my $params = shift;
 
-    my $source         = $params->{source};
-    my $client         = $params->{client};
-    my $client_loginid = $client->loginid;
+    my $source = $params->{source};
+    my $client = $params->{client};
+
+    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
 
     my ($website_name, $args) = @{$params}{qw/website_name args/};
 
@@ -748,7 +752,8 @@ sub paymentagent_withdraw {
     my $paymentagent_loginid = $args->{paymentagent_loginid};
     my $reference            = Data::UUID->new()->create_str();
 
-    my $error_sub = sub {
+    my $client_loginid = $client->loginid;
+    my $error_sub      = sub {
         my ($message_to_client, $message) = @_;
         BOM::RPC::v3::Utility::create_error({
             code              => 'PaymentAgentWithdrawError',
@@ -1070,7 +1075,7 @@ sub __client_withdrawal_notes {
             $withdrawal_limits->{'free_gift_turnover_limit'});
     }
 
-    return ($error_message, "Client $client is not allowed to withdraw");
+    return ($error_message);
 }
 
 ## This endpoint is only available for MLT/MF accounts
