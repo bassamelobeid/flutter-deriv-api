@@ -396,25 +396,23 @@ sub get_client_by_status {
     $sth->execute($show, $broker);
     my $results = $sth->fetchall_hashref('loginid');
 
-    STATUS:
     foreach my $loginID (keys %{$results}) {
         my $client = $results->{$loginID};
 
         if (request()->param('onlylarge') and $SUMMARYFILE{$loginID . '-TOTALEQUITY'} < 5) {
             delete $results->{$loginID};
-            next STATUS;
+            next;
         }
-        if (request()->param('onlyfunded') && !$client->{funded}) {
+        if (request()->param('onlyfunded') && $client->{funded} == 0) {
             delete $results->{$loginID};
-            next STATUS;
+            next;
         }
 
+        if (request()->param('onlynonzerobalance') && $client->{balance_usd} == 0) {
+            delete $results->{$loginID};
+            next;
+        }
         my $bal = $client->{balance_usd};
-        if (request()->param('onlynonzerobalance') && !$bal) {
-            delete $results->{$loginID};
-            next CLIENT;
-        }
-
         my $opencontracts = ($SUMMARYFILE{"$loginID-TOTALEQUITY"} > $bal) ? '$' . ($SUMMARYFILE{"$loginID-TOTALEQUITY"} - $bal) : '';
         $client->{equity} = $SUMMARYFILE{"$loginID-TOTALEQUITY"} . ' ' . $opencontracts;
     }
