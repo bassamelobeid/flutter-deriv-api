@@ -72,8 +72,8 @@ sub BUILD {
     my @uls = map { create_underlying($_) } create_underlying_db->symbols_for_intraday_fx;
 
 #back populate
-    my $end = time;
-    my $start = $end - (30 * 60);
+    my $end   = time;
+    my $start = $end - $decimate_cache->raw_retention_interval->seconds;
 
     foreach my $ul (@uls) {
         my $raw_key = $decimate_cache->_make_key($ul->symbol, 0);
