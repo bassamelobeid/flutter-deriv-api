@@ -8,7 +8,7 @@ use BOM::MarketData qw(create_underlying_db);
 
 use BOM::Market::DataDecimate;
 
-use List::Util qw(max);
+use List::Util qw(first max);
 use Data::Decimate qw(decimate);
 
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
