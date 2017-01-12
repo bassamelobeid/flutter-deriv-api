@@ -34,7 +34,7 @@ use POSIX qw(:errno_h);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use ExpiryQueue qw( update_queue_for_tick );
 use Time::HiRes;
-use List::Util qw(max);
+use List::Util qw(first max);
 
 use Data::Decimate qw(decimate);
 use BOM::Market::DataDecimate;
@@ -85,7 +85,7 @@ sub BUILD {
 
             if ($earlier_ticks) {
                 my @ticks = map { $decimate_cache->decoder->decode($_) } @{$redis->zrevrangebyscore($raw_key, $end, $start, 'LIMIT', 0, 100)};
-                my $non_zero_tick = $ticks[-1];
+                my $non_zero_tick = first { $_->{count} > 0 } @ticks;;
                 if ($non_zero_tick) {
                     $timestamp = $non_zero_tick->{epoch};
                 }
