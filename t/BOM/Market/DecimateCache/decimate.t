@@ -117,6 +117,9 @@ subtest "decimate_cache_insert_and_retrieve_with_missing_data" => sub {
     is $decimate_data->[2]->{quote}, '108.278', "quote is correct";
     is $decimate_data->[2]->{ask}, '108.284', "ask is correct";
     is $decimate_data->[2]->{count}, '0', "count is correct.";
+
+    my $latest_decimated_epoch = $decimate_cache->get_latest_tick_epoch('frxUSDJPY', 1, 1479203150, 1479203250);
+    is $latest_decimated_epoch, 1479203250, "latest decimated epoch is correct.";
 };
 
 sub data_from_csv {

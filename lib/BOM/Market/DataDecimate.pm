@@ -355,6 +355,32 @@ sub data_cache_insert_decimate {
     return;
 }
 
+=head2 get_latest_tick_epoch
+=cut
+
+sub get_latest_tick_epoch {
+    my ($self, $symbol, $decimated, $start, $end) = @_;
+
+    my $key = $self->_make_key($symbol, $decimated);
+
+    my $last_tick_epoch = do {
+        my $timestamp     = 0;
+        my $redis         = $self->redis_read;
+        my $earlier_ticks = $redis->zcount($key, '-inf', $start);
+
+        if ($earlier_ticks) {
+            my @ticks = map { $self->decoder->decode($_) } @{$redis->zrevrangebyscore($key, $end, $start, 'LIMIT', 0, 100)};
+            my $non_zero_tick = first { $_->{count} > 0 } @ticks;
+            if ($non_zero_tick) {
+                $timestamp = $decimated ? $non_zero_tick->{decimate_epoch} : $non_zero_tick->{epoch};
+            }
+        }
+        $timestamp;
+    };
+
+    return $last_tick_epoch;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
