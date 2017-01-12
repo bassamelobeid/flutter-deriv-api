@@ -707,12 +707,13 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
     );
 
     send_email({
-        'from'               => Brands->new(name => request()->brand)->emails('support'),
-        'to'                 => $client_to->email,
-        'subject'            => localize('Acknowledgement of Money Transfer'),
-        'message'            => [$emailcontent],
-        'use_email_template' => 1,
-        'template_loginid'   => $loginid_to
+        'from'                  => Brands->new(name => request()->brand)->emails('support'),
+        'to'                    => $client_to->email,
+        'subject'               => localize('Acknowledgement of Money Transfer'),
+        'message'               => [$emailcontent],
+        'use_email_template'    => 1,
+        'email_content_is_html' => 1,
+        'template_loginid'      => $loginid_to
     });
 
     return {
@@ -978,12 +979,13 @@ sub paymentagent_withdraw {
         localize('The [_1] team.', $website_name),
     ];
     send_email({
-        from               => Brands->new(name => request()->brand)->emails('support'),
-        to                 => $paymentagent->email,
-        subject            => localize('Acknowledgement of Withdrawal Request'),
-        message            => $emailcontent,
-        use_email_template => 1,
-        template_loginid   => $pa_client->loginid,
+        from                  => Brands->new(name => request()->brand)->emails('support'),
+        to                    => $paymentagent->email,
+        subject               => localize('Acknowledgement of Withdrawal Request'),
+        message               => $emailcontent,
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        template_loginid      => $pa_client->loginid,
     });
 
     return {
