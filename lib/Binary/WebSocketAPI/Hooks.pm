@@ -7,6 +7,7 @@ use JSON;
 use Try::Tiny;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Fcntl qw/ :flock /;
+use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
 sub start_timing {
     my ($c, $req_storage) = @_;
@@ -110,6 +111,7 @@ sub reached_limit_check {
     if ($limiting_service
         and not $c->rate_limitations->within_rate_limits($limiting_service, 'does-not-matter'))
     {
+        stats_inc("bom_websocket_api.v_3.call.ratelimit.hit.$limiting_service", {tags => ["app_id:" . $c->app_id]});
         return 1;
     }
     return;
