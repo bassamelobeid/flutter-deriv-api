@@ -509,7 +509,8 @@ sub calculate_intraday_bounceback {
     my $bounceback_safety     = max($bounceback_safety_min, $bounceback_safety_max);
 
     if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_st') {
-        $bounceback_base_intraday_trend = ($self->bet->pricing_code eq 'CALL') ? $bounceback_base_intraday_trend : $bounceback_base_intraday_trend * -1;
+        $bounceback_base_intraday_trend =
+            ($self->bet->pricing_code eq 'CALL') ? $bounceback_base_intraday_trend : $bounceback_base_intraday_trend * -1;
     }
     if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_lt') {
         $bounceback_safety = ($self->bet->pricing_code eq 'CALL') ? $bounceback_safety : $bounceback_safety * -1;
