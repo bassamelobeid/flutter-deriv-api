@@ -124,13 +124,12 @@ sub verify_with_shortcode {
     my $contract       = produce_contract($pricing_args);
     my $contract_price = $action_type eq 'buy' ? $contract->ask_price : $contract->bid_price;
     my $prev_tick      = $contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
-
-    my $diff = $verify_price - $contract_price;
+    my $diff = abs($verify_price - $contract_price) / $contract->payout;
     # If there is difference, look backward and forward to find the match price.
-    if ($diff) {
+    if  ($diff > 0.001) {
         my $new_contract;
         LOOP:
-        for my $lookback (1 .. 60, map -$_, 1 .. 60) {
+        for my $lookback (1 .. 60, map -$_, 1 .. 10) {
             $pricing_args->{date_pricing} = Date::Utility->new($contract->date_start->epoch - $lookback);
             $pricing_args->{date_start}   = Date::Utility->new($contract->date_start->epoch - $lookback);
             $new_contract                 = produce_contract($pricing_args);
