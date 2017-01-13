@@ -127,18 +127,15 @@ sub proposal_open_contract {
             # ask_price doesn't make any sense for contract that are already bought or sold
             delete $bid->{ask_price};
 
-            $response->{$id} = {
-                transaction_ids => $transaction_ids,
-                buy_price       => $fmb->{buy_price},
-                purchase_time   => Date::Utility->new($fmb->{purchase_time})->epoch,
-                account_id      => $fmb->{account_id},
-                is_sold         => $fmb->{is_sold},
-                $sell_time ? (sell_time => $sell_time) : (),
-                defined $fmb->{sell_price}
-                ? (sell_price => sprintf('%.2f', $fmb->{sell_price}))
-                : (),
-                %$bid
-            };
+            $bid->{transaction_ids} = $transaction_ids;
+            $bid->{buy_price}       = $fmb->{buy_price};
+            $bid->{purchase_time}   = Date::Utility->new($fmb->{purchase_time})->epoch;
+            $bid->{account_id}      = $fmb->{account_id};
+            $bid->{is_sold}         = $fmb->{is_sold};
+            $bid->{sell_time}       = $sell_time if $sell_time;
+            $bid->{sell_price}      = sprintf('%.2f', $fmb->{sell_price}) if defined $fmb->{sell_price};
+
+            $response->{$id} = $bid;
         }
     }
     return $response;
