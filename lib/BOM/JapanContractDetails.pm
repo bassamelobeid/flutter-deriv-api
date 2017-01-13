@@ -12,6 +12,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);
 use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Database::ClientDB;
 use Client::Account;
+use BOM::Platform::Runtime;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Backoffice::Sysinit ();
 use LandingCompany::Registry;
@@ -184,7 +185,7 @@ sub get_pricing_parameter {
     my $action_type            = $args->{action_type};
     my $discounted_probability = $args->{discounted_probability};
 
-        my $pricing_parameters =
+    my $pricing_parameters =
         $traded_contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex'
         ? _get_pricing_parameter_from_IH_pricer($traded_contract, $action_type, $discounted_probability)
         : $traded_contract->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'
