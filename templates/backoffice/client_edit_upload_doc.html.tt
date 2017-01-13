@@ -3,7 +3,7 @@
   <label for="docnationalityselect">Nationality (as per identity document, it can be different from residence)</label>
   <select id="docnationalityselect" name="docnationality">
     <option value="">Please select</option>
-    [% FOREACH c IN countries.all_country_names %]
+    [% FOREACH c IN countries.all_country_names.sort %]
         [% cc = countries.code_from_country(c) %]
         <option value="[% cc %]">[% c %]</option>
     [% END %]
