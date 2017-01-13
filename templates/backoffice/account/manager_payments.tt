@@ -91,6 +91,7 @@
             <option value="dormant_fee"         >Dormant Fee</option>
             <option value="adjustment"          >Adjustment</option>
             <option value="cash_transfer"       >Western Union</option>
+            <option value="arbitrary_payment"   >Arbitrary Markup Payment</option>
         </select>
     </td>
     <td style="text-align:center">                 <input type="checkbox" name="skip_validation" value="on" id="skip_validation1" /></td>
