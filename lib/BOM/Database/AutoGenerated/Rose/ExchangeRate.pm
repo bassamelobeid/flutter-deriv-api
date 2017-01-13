@@ -13,7 +13,7 @@ __PACKAGE__->meta->setup(
         source_currency => { type => 'character', length => 3, not_null => 1 },
         target_currency => { type => 'character', length => 3, not_null => 1 },
         date            => { type => 'timestamp' },
-        rate            => { type => 'numeric'},
+        rate            => { type => 'numeric', precision => 4, scale => 10 },
     ],
 
     primary_key_columns => [ 'id' ],

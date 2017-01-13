@@ -12,7 +12,7 @@ __PACKAGE__->meta->setup(
         id                      => { type => 'bigint', not_null => 1 },
         calculation_time        => { type => 'timestamp', default => 'now()' },
         financial_market_bet_id => { type => 'bigint' },
-        market_price            => { type => 'numeric' },
+        market_price            => { type => 'numeric', precision => 4, scale => 10 },
         delta                   => { type => 'numeric' },
         theta                   => { type => 'numeric' },
         vega                    => { type => 'numeric' },
