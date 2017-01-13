@@ -188,69 +188,20 @@ sub build_client_warning_message {
     ###############################################
     ## UNTRUSTED SECTION
     ###############################################
-    if (my $disabled = $client->get_status('disabled')) {
-        push(
-            @output,
-            {
-                clerk      => $disabled->staff_name,
-                reason     => $disabled->reason,
-                warning    => 'red',
-                section    => 'Disabled/Closed Accounts',
-                editlink   => $edit_client_with_status->('disabledlogins'),
-                removelink => $remove_client_from->('disabledlogins'),
-            });
-    }
-
-    if (my $cashier_locked = $client->get_status('cashier_locked')) {
-        push(
-            @output,
-            {
-                clerk      => $cashier_locked->staff_name,
-                reason     => $cashier_locked->reason,
-                warning    => 'red',
-                section    => 'Cashier Lock Section',
-                editlink   => $edit_client_with_status->('lockcashierlogins'),
-                removelink => $remove_client_from->('lockcashierlogins'),
-            });
-    }
-
-    if (my $unwelcome = $client->get_status('unwelcome')) {
-        push(
-            @output,
-            {
-                clerk      => $unwelcome->staff_name,
-                reason     => $unwelcome->reason,
-                warning    => 'red',
-                section    => 'Unwelcome loginIDs',
-                editlink   => $edit_client_with_status->('unwelcomelogins'),
-                removelink => $remove_client_from->('unwelcomelogins'),
-            });
-    }
-
-    if (my $withdrawal_locked = $client->get_status('withdrawal_locked')) {
-        push(
-            @output,
-            {
-                clerk      => $withdrawal_locked->staff_name,
-                reason     => $withdrawal_locked->reason,
-                warning    => 'red',
-                section    => 'Withdrawal Locked',
-                editlink   => $edit_client_with_status->('lockwithdrawal'),
-                removelink => $remove_client_from->('lockwithdrawal'),
-            });
-    }
-
-    if (my $jp_activation = $client->get_status('jp_activation_pending')) {
-        push(
-            @output,
-            {
-                clerk      => $jp_activation->staff_name,
-                reason     => $jp_activation->reason,
-                warning    => 'red',
-                section    => 'JP Activation Pending',
-                editlink   => $edit_client_with_status->('jpactivationpending'),
-                removelink => $remove_client_from->('jpactivationpending'),
-            });
+    my $statuses_info = get_untrusted_types();
+    foreach my $check (keys %$untruested_info) {
+        if (my $disabled = $client->get_status($check)) {
+            push(
+                @output,
+                {
+                    clerk      => $disabled->staff_name,
+                    reason     => $disabled->reason,
+                    warning    => 'red',
+                    section    => $statuses_info->{comments},
+                    editlink   => $edit_client_with_status->($statuses_info->{linktype}),
+                    removelink => $remove_client_from->($statuses_info->{linktype}),
+                });
+        }
     }
 
     # build the table
@@ -446,6 +397,33 @@ sub client_statement_for_backoffice {
         transactions => $transactions,
         balance      => $balance
     };
+}
+
+sub get_untrusted_types {
+    my $types = {
+        disabled => {
+            comments => 'Disabled/Closed Accounts',
+            linktype => 'disabledlogins'
+        },
+        cashier_locked => {
+            comments => 'Cashier Lock Section',
+            linktype => 'lockcashierlogins',
+        },
+        unwelcome => {
+            comments => 'Unwelcome loginIDs',
+            linktype => 'unwelcomelogins',
+        },
+        withdrawal_locked => {
+            comments => 'Withdrawal Locked',
+            linktype => 'lockwithdrawal',
+        },
+        jp_activation_pending => {
+            comments => 'JP Activation Pending',
+            linktype => 'jpactivationpending',
+        },
+
+    };
+    return $types;
 }
 
 1;
