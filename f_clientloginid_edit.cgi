@@ -542,6 +542,13 @@ print qq{<br/>
         </div>
     </form>
     </div>
+
+    <div style="float: right">
+    <form action="$history_url" method="POST">
+    <input type="hidden" name="loginID" value="$encoded_loginid">
+    <input type="submit" value="View $encoded_loginid statement">
+    </form>
+    </div>
 };
 
 if (my $statuses = build_client_warning_message($loginid)) {
