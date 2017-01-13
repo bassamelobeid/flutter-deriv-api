@@ -182,11 +182,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $recorded_date,
         rates         => $dividend->{$_}{rates},
     }) for qw( FTSE GDAXI);
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'index',
-    {
-        symbol => 'SASEIDX',
-    });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => $recorded_date});
 
 foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
@@ -241,6 +236,44 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
     }
 }
 
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxUSDSAR',
+        surface_data  => {
+            1 => {
+                vol_spread => {50 => 0},
+                smile => {25 => 0.1, 50 => 0.1, 75 => 0.1}
+            },
+            7 => {
+                vol_spread => {50 => 0},
+                smile => {25 => 0.1, 50 => 0.1, 75 => 0.1}
+            },
+        },
+        recorded_date => $recorded_date,
+    });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_moneyness',
+    {
+        symbol        => 'SASEIDX',
+        recorded_date => $recorded_date,
+        surface_data  => {
+            1 => {
+                vol_spread => {100 => 0},
+                smile => {80 => 0.1, 90 => 0.1, 95 => 0.1, 100 => 0.1, 110 => 0.1, 115 => 0.1, 120 => 0.1}
+            },
+            365 => {
+                vol_spread => {100 => 0},
+                smile => {80 => 0.1, 90 => 0.1, 95 => 0.1, 100 => 0.1, 110 => 0.1, 115 => 0.1, 120 => 0.1}
+            },
+        },
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'index',
+    {
+        symbol => 'SASEIDX',
+    });
 my $middle_east_intraday = produce_contract('CALL_SASEIDX_10_1447921800F_1447929000_S0P_0', 'USD');
 is(roundnear(1e-4, $middle_east_intraday->commission_markup->amount), 0.025, 'Commission markup for middle east is 5%');
 
