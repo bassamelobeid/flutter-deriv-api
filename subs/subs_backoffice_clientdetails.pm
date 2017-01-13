@@ -1,4 +1,5 @@
-use strict 'vars';
+use strict;
+use warnings;
 use Encode;
 
 use Format::Util::Strings qw( set_selected_item );
@@ -188,18 +189,17 @@ sub build_client_warning_message {
     ###############################################
     ## UNTRUSTED SECTION
     ###############################################
-    my $statuses_info = get_untrusted_types();
-    foreach my $check (keys %$untruested_info) {
-        if (my $disabled = $client->get_status($check)) {
+    foreach my $type (@{ get_untrusted_types() } ) {
+        if (my $disabled = $client->get_status($type->{code})) {
             push(
                 @output,
                 {
                     clerk      => $disabled->staff_name,
                     reason     => $disabled->reason,
                     warning    => 'red',
-                    section    => $statuses_info->{comments},
-                    editlink   => $edit_client_with_status->($statuses_info->{linktype}),
-                    removelink => $remove_client_from->($statuses_info->{linktype}),
+                    section    => $type->{comments},
+                    editlink   => $edit_client_with_status->($type->{linktype}),
+                    removelink => $remove_client_from->($type->{linktype}),
                 });
         }
     }
@@ -400,29 +400,31 @@ sub client_statement_for_backoffice {
 }
 
 sub get_untrusted_types {
-    my $types = {
-        disabled => {
-            comments => 'Disabled/Closed Accounts',
-            linktype => 'disabledlogins'
+    my $types = [{
+            'linktype' => 'disabledlogins',
+            'comments' => 'Disabled/Closed Accounts',
+            'code'     => 'disabled'
         },
-        cashier_locked => {
-            comments => 'Cashier Lock Section',
-            linktype => 'lockcashierlogins',
+        {
+            'linktype' => 'lockcashierlogins',
+            'comments' => 'Cashier Lock Section',
+            'code'     => 'cashier_locked'
         },
-        unwelcome => {
-            comments => 'Unwelcome loginIDs',
-            linktype => 'unwelcomelogins',
+        {
+            'linktype' => 'unwelcomelogins',
+            'comments' => 'Unwelcome loginIDs',
+            'code'     => 'unwelcome'
         },
-        withdrawal_locked => {
-            comments => 'Withdrawal Locked',
-            linktype => 'lockwithdrawal',
+        {
+            'linktype' => 'lockwithdrawal',
+            'comments' => 'Withdrawal Locked',
+            'code'     => 'withdrawal_locked'
         },
-        jp_activation_pending => {
-            comments => 'JP Activation Pending',
-            linktype => 'jpactivationpending',
-        },
-
-    };
+        {
+            'linktype' => 'jpactivationpending',
+            'comments' => 'JP Activation Pending',
+            'code'     => 'jp_activation_pending'
+        }];
     return $types;
 }
 
