@@ -38,7 +38,7 @@
             [ 'internal_transfer',  'Internal Transfer' ],
             [ 'payment_fee',        'Payment Fee' ],
             [ 'cash_transfer',      'Western Union' ],
-            [ 'arbitrary_payment',  'Arbitrary Markup Payment' ],
+            [ 'arbitrary_markup',   'Arbitrary Markup Payment' ],
         ];
     %]
 
