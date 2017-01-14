@@ -1,30 +1,38 @@
-<div id="topbar-binary"></div>
-<div id="header-binary">
-    <a href="https://www.binary.com/<%= lc($r->language) %>/home.html">
-        <img id="symbol-logo" src="https://style.binary.com/images/logo/symbol.svg" />
-        <img id="type-logo" src="https://style.binary.com/images/logo/type.svg" alt="Binary.com" />
-    </a>
+<div id="topbar" class="primary-color-dark"></div>
+<div id="header" class="dark-blue">
+    <div class="center-text">
+        <div class="logo-wrapper">
+            <a href="https://www.binary.com/<%= lc($r->language) %>/home.html" class="logo-parent">
+                <div class="logo">
+                    <div></div>
+                </div>
+                <div class="mobile-hide binary-logo-text">
+                    <div></div>
+                </div>
+            </a>
+        </div>
+    </div>
 </div>
-<div id="container-binary">
+<div class="container">
     <h1><%= l('Log in') %></h1>
     <fieldset>
         <legend><%= l('Your Details') %></legend>
         <% if (stash('error')) { %>
-            <p class='errorfield'><%= stash('error') %></p>
+        <p class='error-msg center-text'><%= stash('error') %></p>
         <% } %>
         <div id="wrapper" class="login">
             <form id="frmLogin" method="POST">
                 <div><input type="email" id="txtEmail" name="email" placeholder="<%= l('Email') %>" autocomplete="off" autofocus="autofocus" maxlength="254" /></div>
                 <div><input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" /></div>
-                <div><button type="submit" id="btnLogin" class="button" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button></div>
+                <div><button type="submit" class="button" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button></div>
                 <input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
             </form>
         </div>
-        <p class="links">
+        <p class="center-text">
             <a class="pjaxload" id="lost-password" href="https://www.binary.com/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Lost Password?') %></a> |
             <a class="pjaxload" id="create-account" href="https://www.binary.com/<%= lc($r->language) %>/home.html"><%= l('Open an Account') %></a>
         </p>
-        <div class="links" style="display:none;">
+        <div class="center-text" style="display:none;">
             <div id="oa_social_login_container"></div>
         </div>
     </fieldset>

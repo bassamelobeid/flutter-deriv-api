@@ -6,13 +6,13 @@
     </div>
     <form id="frmLogin" method="POST">
         <% if (stash('error')) { %>
-            <p class='errorfield'><%= stash('error') %></p>
+        <p class='error-msg center-text'><%= stash('error') %></p>
         <% } %>
         <div><input type="email" id="txtEmail" name="email" placeholder="<%= l('Email') %>" autocomplete="off" autofocus="autofocus" maxlength="254" /></div>
         <div><input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" /></div>
-        <div><button type="submit" id="btnLogin" class="button" name="login" value='<%= l('Log in') %>'><%= l('Log in') %></button></div>
+        <div><button type="submit" class="button" name="login" value='<%= l('Log in') %>'><%= l('Log in') %></button></div>
         <input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
-        <div class="links" style="display:none;">
+        <div class="center-text" style="display:none;">
             <div id="oa_social_login_container"></div>
         </div>
     </form>
