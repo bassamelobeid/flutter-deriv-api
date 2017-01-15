@@ -27,20 +27,26 @@ my $start_date = DateTime->new(
 );
 my $until_date = $start_date->clone->add(months => 1);
 
-my ($payment_filter, $csv_name);
+my ($payment_filter, $csv_name, $sql);
+
+my @binds = (
+    $start_date->ymd,    # b0
+    $until_date->ymd,    # b1
+    $broker,             # b2
+);
+
 if ($all_types) {
-    $payment_filter = '';
     $csv_name       = "${broker}_all_payments_$yyyymm.csv";
 } else {
     my @payment_types = ref $payment_types ? @$payment_types : ($payment_types);
-    my $payments_string = join(',', map { "'$_'" } @payment_types);
-    $payment_filter = "  and p.payment_type_code in ( $payments_string )";
+    $payment_filter = 'and p.payment_type_code in (' . join(',', ('?') x @payment_types) . ')';
+    push @binds, @payment_types;
     $csv_name       = "${broker}_payments_$yyyymm.csv";
 }
 
 PrintContentType_excel($csv_name);
 
-my $sql = <<HERE;
+my $sql = <<'START' . ($payment_filter ? <<"FILTER" : '') . <<'END';
 
     select
         cli.broker_code,
@@ -58,22 +64,18 @@ my $sql = <<HERE;
     where
         p.payment_time >= ?   -- b0
     and p.payment_time <  ?   -- b1
-    $payment_filter
     and cli.broker_code = ?   -- b2
+START
+    $payment_filter
+FILTER
     order by 1,2,3
-
-HERE
+END
 
 my $dbh = BOM::Database::ClientDB->new({
         broker_code => $broker,
     })->db->dbh;
 
 my $sth   = $dbh->prepare($sql);
-my @binds = (
-    $start_date->ymd,    # b0
-    $until_date->ymd,    # b1
-    $broker,             # b2
-);
 $sth->execute(@binds);
 
 my @headers = qw/Broker Loginid Residence Timestamp PaymentGateway PaymentType Currency Amount Remark/;
