@@ -27,7 +27,7 @@ my $start_date = DateTime->new(
 );
 my $until_date = $start_date->clone->add(months => 1);
 
-my ($payment_filter, $csv_name, $sql);
+my ($payment_filter, $csv_name);
 
 my @binds = (
     $start_date->ymd,    # b0
