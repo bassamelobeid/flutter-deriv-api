@@ -36,12 +36,12 @@ my @binds = (
 );
 
 if ($all_types) {
-    $csv_name       = "${broker}_all_payments_$yyyymm.csv";
+    $csv_name = "${broker}_all_payments_$yyyymm.csv";
 } else {
+    $csv_name = "${broker}_payments_$yyyymm.csv";
     my @payment_types = ref $payment_types ? @$payment_types : ($payment_types);
     $payment_filter = 'and p.payment_type_code in (' . join(',', ('?') x @payment_types) . ')';
     push @binds, @payment_types;
-    $csv_name       = "${broker}_payments_$yyyymm.csv";
 }
 
 PrintContentType_excel($csv_name);
@@ -75,7 +75,7 @@ my $dbh = BOM::Database::ClientDB->new({
         broker_code => $broker,
     })->db->dbh;
 
-my $sth   = $dbh->prepare($sql);
+my $sth = $dbh->prepare($sql);
 $sth->execute(@binds);
 
 my @headers = qw/Broker Loginid Residence Timestamp PaymentGateway PaymentType Currency Amount Remark/;
