@@ -15,7 +15,7 @@ package main;
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
-use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel PrintContentType_XSendfile);
+use BOM::Backoffice::PlackHelpers qw( PrintContentType);
 use BOM::Backoffice::Sysinit ();
 use LandingCompany::Registry;
 BOM::Backoffice::Sysinit::init();
@@ -36,10 +36,8 @@ if ($cgi->param('upload_file')) {
     copy($file, $filename);
     my $output_filename = $file;
     $output_filename =~ s/.csv/.xls/g;
-    my $temp_file = BOM::Platform::Runtime->instance->app_config->system->directory->tmp . "/$output_filename";
     my $pricing_parameters = BOM::JapanContractDetails::parse_file($filename, $landing_company);
-    BOM::JapanContractDetails::batch_output_as_excel($pricing_parameters, $temp_file);
-    PrintContentType_XSendfile($temp_file, 'application/octet-stream');
+    BOM::JapanContractDetails::batch_output_as_excel($pricing_parameters, $output_filename);
 
 } elsif ($cgi->param('manual_verify_with_id')) {
     my $args;
@@ -48,7 +46,7 @@ if ($cgi->param('upload_file')) {
     $args->{landing_company} = $landing_company;
     my $pricing_parameters = BOM::JapanContractDetails::verify_with_id($args);
     if ($cgi->param('download') eq 'download') {
-        my $file = BOM::JapanContractDetails::batch_output_as_excel($pricing_parameters, $id . '.xls');
+        BOM::JapanContractDetails::single_output_as_excel($pricing_parameters, $id . '.xls');
 
     } else {
         BOM::JapanContractDetails::output_on_display($pricing_parameters);
@@ -70,7 +68,7 @@ if ($cgi->param('upload_file')) {
             order_price => $cgi->param('price')});
 
     if ($cgi->param('download') eq 'download') {
-        my $file = BOM::JapanContractDetails::batch_output_as_excel($pricing_parameters, $cgi->param('short_code') . '.xls');
+        BOM::JapanContractDetails::single_output_as_excel($pricing_parameters, $cgi->param('short_code') . '.xls');
 
     } else {
         BOM::JapanContractDetails::output_on_display($pricing_parameters);

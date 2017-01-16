@@ -8,7 +8,7 @@ This package is to output contract's pricing parameters that will be used by Jap
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);
+use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel PrintContentType_XSendfile);
 use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Database::ClientDB;
 use Client::Account;
@@ -124,9 +124,9 @@ sub verify_with_shortcode {
     my $contract       = produce_contract($pricing_args);
     my $contract_price = $action_type eq 'buy' ? $contract->ask_price : $contract->bid_price;
     my $prev_tick      = $contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
-    my $diff = abs($verify_price - $contract_price) / $contract->payout;
+    my $diff           = abs($verify_price - $contract_price) / $contract->payout;
     # If there is difference, look backward and forward to find the match price.
-    if  ($diff > 0.001) {
+    if ($diff > 0.001) {
         my $new_contract;
         LOOP:
         for my $lookback (1 .. 60, map -$_, 1 .. 10) {
@@ -498,7 +498,9 @@ sub output_on_display {
 sub batch_output_as_excel {
     my $contract  = shift;
     my $file_name = shift;
-    my $workbook  = Spreadsheet::WriteExcel->new($file_name);
+    my $temp_file = BOM::Platform::Runtime->instance->app_config->system->directory->tmp . "/$file_name";
+
+    my $workbook  = Spreadsheet::WriteExcel->new($temp_file);
     my $worksheet = $workbook->add_worksheet();
     my @combined;
     foreach my $c (keys %{$contract}) {
@@ -515,13 +517,17 @@ sub batch_output_as_excel {
     $worksheet->write_row('A1', \@combined);
     $workbook->close;
 
-    return $workbook;
+    PrintContentType_XSendfile($temp_file, 'application/octet-stream');
+
+    return;
 }
 
 sub single_output_as_excel {
     my $contract  = shift;
     my $file_name = shift;
-    my $workbook  = Spreadsheet::WriteExcel->new($file_name);
+    my $temp_file = BOM::Platform::Runtime->instance->app_config->system->directory->tmp . "/$file_name";
+
+    my $workbook  = Spreadsheet::WriteExcel->new($temp_file);
     my $worksheet = $workbook->add_worksheet();
     my (@keys, @value);
 
@@ -535,7 +541,9 @@ sub single_output_as_excel {
     $worksheet->write_row('A1', \@combined);
     $workbook->close;
 
-    return $workbook;
+    PrintContentType_XSendfile($temp_file, 'application/octet-stream');
+
+    return;
 }
 
 1;
