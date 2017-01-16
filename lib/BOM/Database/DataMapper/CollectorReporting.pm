@@ -205,17 +205,11 @@ sub number_of_active_clients_of_month {
 sub get_clients_result_by_field {
     my $self = shift;
     my $args = shift;
+    my @binds;
+    my $sql = q{ SELECT * FROM accounting.get_clients_result_by_field(?, ?, ?, ?, ?, ?::date) };
 
-    my $broker        = $args->{'broker'};
-    my $field_arg_ref = $args->{'field_arg_ref'};
-
-    my $sql = q{ SELECT * FROM accounting.get_clients_result_by_field(?, ?, ?, ?) };
-
-    my $first_name = (exists $field_arg_ref->{first_name}) ? $field_arg_ref->{first_name} : '';
-    my $last_name  = (exists $field_arg_ref->{last_name})  ? $field_arg_ref->{last_name}  : '';
-    my $email      = (exists $field_arg_ref->{email})      ? $field_arg_ref->{email}      : '';
-
-    my @binds = ('%' . $first_name . '%', '%' . $last_name . '%', '%' . $email . '%', '%' . $broker . '%');
+    push @binds, '%'. ($args->{$_} // '') . '%' for (qw/first_name last_name email broker phone/);
+    push @binds, $args->{date_of_birth};
 
     my $dbh = $self->db->dbh;
     my $sth = $dbh->prepare($sql);
