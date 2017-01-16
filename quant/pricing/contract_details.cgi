@@ -26,7 +26,7 @@ use Data::Dumper;
 my %params = %{request()->params};
 
 my $cgi             = new CGI;
-my $broker          = $params{'broker'};
+my $broker          = $params{'broker'} // $cgi->param('broker');
 my $landing_company = LandingCompany::Registry::get_by_broker($broker)->short;
 
 if ($cgi->param('upload_file')) {
@@ -44,6 +44,7 @@ if ($cgi->param('upload_file')) {
     my $id = $cgi->param('id');
     $args->{transaction_id}  = $id;
     $args->{landing_company} = $landing_company;
+    $args->{broker}          = $broker;
     my $pricing_parameters = BOM::JapanContractDetails::verify_with_id($args);
     if ($cgi->param('download') eq 'download') {
         BOM::JapanContractDetails::single_output_as_excel($pricing_parameters, $id . '.xls');

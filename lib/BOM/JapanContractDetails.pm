@@ -66,12 +66,13 @@ sub verify_with_id {
     my $client          = Client::Account::get_instance({'loginid' => $details->{loginid}});
     my $action_type     = $details->{action_type};
     my $requested_price = $details->{order_price};
-    my $trade_price     = $action_type eq 'buy' ? $details->{ask_price} : $details->{bid_price};
-
+    my $ask_price = $details->{ask_price};
+    my $bid_price = $details->{bid_price};
+    my $traded_price     = $action_type eq 'buy' ? $ask_price : $bid_price;
+    my $slippage = $details->{price_slippage};
     # apply slippage according to reflect the difference between traded price and recomputed price
     my $adjusted_traded_contract_price =
         ($traded_price == $requested_price) ? ($action_type eq 'buy' ? $traded_price - $slippage : $traded_price + $slippage) : $traded_price;
-
     my $parameters = verify_with_shortcode({
         broker          => $broker,
         shortcode       => $details->{shortcode},
@@ -81,22 +82,19 @@ sub verify_with_id {
         start           => $action_type eq 'buy' ? $details->{purchase_time} : $details->{sell_time},
         action_type     => $action_type,
     });
-
-    my $args = (
+    my $args = {
         loginID         => $details->{loginid},
         trans_id        => $id,
         order_type      => $action_type,
         order_price     => $requested_price,
-        slippage_price  => $details->{price_slippage},
-        trade_ask_price => $details->{ask_price},
-        trade_bid_price => $details->{bid_price},
+        slippage_price  => $slippage,
+        trade_ask_price => $ask_price,
+        trade_bid_price => $bid_price,
         ref_spot        => $details->{pricing_spot},
         ref_vol         => $details->{high_barrier_vol},
         ref_vol2        => $details->{low_barrier_vol} // 'NA',
-    );
-
+    };
     $parameters = include_contract_details($parameters, $args);
-
     return $parameters;
 
 }
@@ -128,7 +126,7 @@ sub verify_with_shortcode {
         my $new_contract;
         LOOP:
         for my $lookback (1 .. 60, map -$_, 1 .. 10) {
-            $pricing_args->{date_pricing} = Date::Utility->new($contract->date_start->epoch - $lookback);
+         $pricing_args->{date_pricing} = Date::Utility->new($contract->date_start->epoch - $lookback);
             $pricing_args->{date_start}   = Date::Utility->new($contract->date_start->epoch - $lookback);
             $new_contract                 = produce_contract($pricing_args);
             my $new_price = $action_type eq 'buy' ? $new_contract->ask_price : $new_contract->bid_price;
@@ -196,7 +194,7 @@ sub get_pricing_parameter {
 sub include_contract_details {
     my $params = shift;
     my $args   = shift;
-    my @required_contract_details =
+   my @required_contract_details =
         qw(loginID trans_id order_type order_price slippage_price trade_ask_price trade_bid_price ref_spot ref_vol ref_vol2);
 
     foreach my $key (@required_contract_details) {
