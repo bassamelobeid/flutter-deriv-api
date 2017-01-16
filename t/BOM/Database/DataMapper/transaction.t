@@ -166,28 +166,28 @@ subtest get_daily_summary_report => sub {
     is_deeply(
         $client_ref->{'CR0012'},
         {
-            'deposits'    => 0,
-            'withdrawals' => 0,
+            'deposits'    => '0',
+            'withdrawals' => '0',
             'loginid'     => 'CR0012',
-            'balance_at'  => 0,
+            'balance_at'  => '0.000000000000',
             'account_id'  => '200419'
         });
     is_deeply(
         $client_ref->{'CR0026'},
         {
-            'deposits'    => 300,
-            'withdrawals' => 0,
+            'deposits'    => '300.000000000000',
+            'withdrawals' => '0',
             'loginid'     => 'CR0026',
-            'balance_at'  => 274.34,
+            'balance_at'  => '274.3400',
             'account_id'  => '200319'
         });
     is_deeply(
         $client_ref->{'CR0021'},
         {
-            'deposits'    => 600,
-            'withdrawals' => 0,
+            'deposits'    => '600.000000000000',
+            'withdrawals' => '0',
             'loginid'     => 'CR0021',
-            'balance_at'  => 1505,
+            'balance_at'  => '1505.000000000000',
             'account_id'  => '200359'
         });
 };
@@ -333,14 +333,14 @@ subtest 'get_profit_for_days' => sub {
         currency_code  => 'USD'
     });
 
-    is($txn_data_mapper->get_profit_for_days(), -95, 'Lifetime Profit of CR0021 for all days');
+    is($txn_data_mapper->get_profit_for_days(), '-95.000000000000', 'Lifetime Profit of CR0021 for all days');
     is(
         $txn_data_mapper->get_profit_for_days({
                 before => '2005-09-21 06:40:00',
                 after  => '2005-09-21 06:30:00'
             }
         ),
-        -133,
+        '-133.000000000000',
         'Profit for CR0021 between 2005-09-21 06:30:00 and 2005-09-21 06:40:00'
     );
 };
