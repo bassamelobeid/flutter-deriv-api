@@ -7,12 +7,13 @@
 <strong>Client Search</strong>
 <br>
 <form action="[% url %]" method="post">
-	<input type="text" size="14" name="partialfname" placeholder="Partial FName" onfocus="this.select()" value="[% first_name %]" />
-        <input type="text" size="14" name="partiallname" placeholder="Partial LName" onfocus="this.select()" value="[% last_name %]"/>
-	<input type="text" size="20" name="partialemail" placeholder="Partial email" onfocus="this.select()" value="[% email %]" />
-    <input type="text" size="20" name="broker" value="" placeholder="Broker" onfocus="this.select()" value="[% broker %]" />
-
-	<input type="submit" value="Search" />
+        <input type="text" size="14" name="partialfname" placeholder="First Name" onfocus="this.select()" value="[% params.first_name %]" />
+        <input type="text" size="14" name="partiallname" placeholder="Last Name" onfocus="this.select()" value="[% params.last_name %]"/>
+        <input type="text" size="20" name="partialemail" placeholder="Email" onfocus="this.select()" value="[% params.email %]" />
+        <input type="text" size="20" name="phone" placeholder="phone" onfocus="this.select()" value="[% params.phone %]" />
+        <input type="text" size="20" name="date_of_birth" placeholder="DOB YYYY-MM-DD" onfocus="this.select()" value="[% params.date_of_birth %]" />
+        <input type="text" size="20" name="broker" placeholder="Broker" onfocus="this.select()" value="[% broker %]" />
+        <input type="submit" value="Search" />
 </form>
 <p>Note: For best results, enter either only the Client's first name or last name</p>
 
@@ -31,6 +32,7 @@
         <th>Address</th>
         <th>Citizen</th>
         <th>Date Joined</th>
+        <th>DOB</th>
     </tr>
     [% FOR result = results %]
         <tr style="background-color: #aaffaa;">
@@ -50,6 +52,7 @@
             </td>
             <td>[% result.citizen %]</td>
             <td>[% result.date_joined %]</td>
+            <td>[% result.date_of_birth %]</td>
         </tr>
     [% END %]
 </table>

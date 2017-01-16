@@ -15,45 +15,44 @@ PrintContentType();
 
 BOM::Backoffice::Auth0::can_access(['CS']);
 
-my $broker       = request()->param('broker')       // "";
-my $partialfname = request()->param('partialfname') // "";
-my $partiallname = request()->param('partiallname') // "";
-my $partialemail = request()->param('partialemail') // "";
+my $broker        = request()->param('broker')        // "";
+my $partialfname  = request()->param('partialfname')  // "";
+my $partiallname  = request()->param('partiallname')  // "";
+my $partialemail  = request()->param('partialemail')  // "";
+my $phone         = request()->param('phone')         // "";
+my $date_of_birth = request()->param('date_of_birth') // "";
 $partialfname =~ s/[\/\\\"\$]//g;    #strip unwelcome characters
 $partiallname =~ s/[\/\\\"\$]//g;    #strip unwelcome characters
 $partialemail =~ s/[\/\\\"\$]//g;    #strip unwelcome characters
+$phone =~ s/[\/\\\"\$]//g;           #strip unwelcome characters
 $broker =~ s/[\/\\\"\$]//g;          #strip unwelcome characters
-
+$date_of_birth = '' unless ($date_of_birth =~ /^\d{4,4}\-\d{1,2}\-\d{1,2}$/);
 my %fields = (
-    'first_name' => $partialfname,
-    'last_name'  => $partiallname,
-    'email'      => $partialemail,
+    first_name    => $partialfname,
+    last_name     => $partiallname,
+    email         => $partialemail,
+    phone         => $phone,
+    date_of_birth => $date_of_birth,
 );
 my %non_empty_fields = (map { ($_, $fields{$_}) } (grep { $fields{$_} } (keys %fields)));
 my $results;
-
-use Data::Dumper;
 
 if (%non_empty_fields) {
     my $report_mapper = BOM::Database::DataMapper::CollectorReporting->new({
         broker_code => 'FOG',
         operation   => 'collector'
     });
-    warn Dumper($report_mapper);
     $results = $report_mapper->get_clients_result_by_field({
-        'broker'        => $broker,
-        'field_arg_ref' => \%non_empty_fields,
+        'broker' => $broker,
+        %non_empty_fields,
     });
 }
 
 BOM::Backoffice::Request::template->process(
     'backoffice/client_search.html.tt',
     {
-        results    => $results,
-        first_name => $partialfname,
-        last_name  => $partiallname,
-        email      => $partialemail,
-        broker     => $broker
+        results => $results,
+        params  => \%non_empty_fields,
+        broker  => $broker
     }) || die BOM::Backoffice::Request::template->error(), "\n";
-print Dumper($results);
 code_exit_BO();
