@@ -62,6 +62,6 @@
                          </tr>
                      [% END %] 
            [% END %] 
-         </table></p>
       [% END %]
+     </table></p>  
 [% END %]
