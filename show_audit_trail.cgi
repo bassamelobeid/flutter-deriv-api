@@ -115,7 +115,7 @@ for ($category) {
     }
 }
 unless (@tables) {
-    print "Unsupported audit-trail category [" . encode_entities($category) . "]";
+    print "Unsupported audit-trail category [" . $category . "]";
     code_exit_BO();
 }
 

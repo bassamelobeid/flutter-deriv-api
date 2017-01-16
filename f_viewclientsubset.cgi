@@ -243,11 +243,11 @@ if ($total) {
             . request()->url_for('backoffice/f_viewclientsubset.cgi')
             . '" method="post">'
             . '<input type="hidden" name="broker" value="'
-            . encode_entities($broker) . '" />'
+            . $broker . '" />'
             . '<input type="hidden" name="limit" value="'
             . encode_entities($limit) . '" />'
             . '<input type="hidden" name="show" value="'
-            . encode_entities($show) . '" />'
+            . $show . '" />'
             . '<input type="hidden" name="onlylarge" value="'
             . encode_entities(request()->param('onlylarge')) . '" />'
             . '<input type="hidden" name="onlyfunded" value="'
