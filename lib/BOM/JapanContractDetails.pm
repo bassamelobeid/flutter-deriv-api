@@ -92,7 +92,7 @@ sub verify_with_id {
         trade_bid_price => $bid_price,
         ref_spot        => $details->{pricing_spot},
         ref_vol         => $details->{high_barrier_vol},
-        ref_vol2        => $details->{low_barrier_vol} // 'NA',
+        (defined $details->{low_barrier_vol}) ? (ref_vol2        => $details->{low_barrier_vol} ) : (),
     };
     $parameters = include_contract_details($parameters, $args);
     return $parameters;
@@ -101,7 +101,6 @@ sub verify_with_id {
 
 sub verify_with_shortcode {
     my $args = shift;
-
     my $landing_company           = $args->{landing_company};
     my $short_code                = $args->{shortcode};
     my $action_type               = $args->{action_type};
@@ -111,7 +110,7 @@ sub verify_with_shortcode {
     my $original_contract = produce_contract($short_code, $currency);
     my $purchase_time = $original_contract->date_start;
 
-    my $start = $args->{start_time} ? Date::Utility->new($args->{start_time}) : Date::Utility->new($purchase_time);
+    my $start = $args->{start} ? Date::Utility->new($args->{start}) : Date::Utility->new($purchase_time);
 
     my $pricing_args = $original_contract->build_parameters;
     $pricing_args->{date_pricing}    = $start;
