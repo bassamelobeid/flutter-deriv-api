@@ -7,6 +7,7 @@ use Digest::MD5 qw(md5_hex);
 use Email::Valid;
 use Mojo::Util qw(url_escape);
 use List::MoreUtils qw(any firstval);
+use HTML::Entities;
 
 use Client::Account;
 use LandingCompany::Registry;
@@ -305,11 +306,11 @@ sub _login {
                         $message = localize(
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
                             $client->email, $r->client_ip,
-                            $brand->countries_instance->countries->country_from_code($country_code) // $country_code, $user_agent);
+                            $brand->countries_instance->countries->country_from_code($country_code) // $country_code, encode_entities($user_agent));
                     } else {
                         $message = localize(
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3], browser: [_4] and app: [_5]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
-                            $client->email, $r->client_ip, $country_code, $user_agent, $app->{name});
+                            $client->email, $r->client_ip, $country_code, encode_entities($user_agent), $app->{name});
                     }
 
                     send_email({
