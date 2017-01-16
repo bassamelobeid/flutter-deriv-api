@@ -92,7 +92,6 @@ sub register {
     $app->helper(
         ws_redis => sub {
             state $redis = do {
-                print("using url $ws_redis_url\n");
                 my $redis = Mojo::Redis2->new(url => $ws_redis_url);
                 $redis->on(
                     error => sub {
