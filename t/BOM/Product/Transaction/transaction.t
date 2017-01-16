@@ -25,7 +25,6 @@ use BOM::Platform::Client::IDAuthentication;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use Format::Util::Numbers qw( roundnear );
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
@@ -143,7 +142,6 @@ sub create_client {
 sub top_up {
     my ($c, $cur, $amount) = @_;
 
-    $amount = roundnear( 1e-12, $amount);
     my $fdp = $c->is_first_deposit_pending;
     my @acc = $c->account;
     if (@acc) {
