@@ -106,10 +106,8 @@ sub send_email {
 
         my $mail_message;
         if ($use_email_template) {
-            my $vars = {
-                text_email_template_loginid => localize('Your Login ID: [_1]', $template_loginid),
-                content                     => $message,
-            };
+            my $vars = {content => $message};
+            $vars->{text_email_template_loginid} = localize('Your Login ID: [_1]', $template_loginid) if $template_loginid;
             if ($language eq 'JA') {
                 $vars->{japan_footer_text} = localize('{JAPAN ONLY}footer text of email template for Japan');
             }
