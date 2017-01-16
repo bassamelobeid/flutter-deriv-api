@@ -178,7 +178,7 @@ subtest get_daily_summary_report => sub {
             'deposits'    => '300.000000000000',
             'withdrawals' => '0',
             'loginid'     => 'CR0026',
-            'balance_at'  => '274.3400',
+            'balance_at'  => '274.340000000000',
             'account_id'  => '200319'
         });
     is_deeply(
