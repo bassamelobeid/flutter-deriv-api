@@ -147,7 +147,7 @@ sub verify_with_shortcode {
     });
 
         my $opposite_contract = get_pricing_parameter({
-            traded_contract        => $contract->opposite_contract,
+            traded_contract        => $action_type eq 'buy' ? $contract->opposite_contract : $contract,
             action_type            => $action_type,
             discounted_probability => $discounted_probability
         });
@@ -217,10 +217,6 @@ sub _get_pricing_parameter_from_IH_pricer {
     if ($action_type eq 'sell') {
         $pricing_parameters->{bid_probability} = {
             discounted_probability            => $discounted_probability->amount,
-            opposite_contract_ask_probability => $contract->ask_probability->amount
-        };
-
-        $pricing_parameters->{opposite_contract_ask_probability} = {
             bs_probability    => $bs_probability,
             commission_markup => $commission_markup,
             map { $_ => $pe->$_->amount } qw(intraday_delta_correction intraday_vega_correction risk_markup),
@@ -283,10 +279,6 @@ sub _get_pricing_parameter_from_vv_pricer {
     if ($action_type eq 'sell') {
         $pricing_parameters->{bid_probability} = {
             discounted_probability            => $discounted_probability->amount,
-            opposite_contract_ask_probability => $contract->ask_probability->amount
-        };
-
-        $pricing_parameters->{opposite_contract_ask_probability} = {
             theoretical_probability => $theo_probability,
             risk_markup             => $risk_markup,
             commission_markup       => $commission_markup,
@@ -351,10 +343,6 @@ sub _get_pricing_parameter_from_slope_pricer {
     if ($action_type eq 'sell') {
         $pricing_parameters->{bid_probability} = {
             discounted_probability            => $discounted_probability->amount,
-            opposite_contract_ask_probability => $contract->ask_probability->amount
-        };
-
-        $pricing_parameters->{opposite_contract_ask_probability} = {
             theoretical_probability => $base_probability,
             risk_markup             => $risk_markup,
             commission_markup       => $commission_markup,
