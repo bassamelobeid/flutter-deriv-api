@@ -34,11 +34,11 @@ my $db = BOM::Database::ClientDB->new({
         broker_code => $broker,
     })->db;
 
-my $category    = request()->param('category');
-my $loginid     = request()->param('loginid');
-my $page        = request()->param('page') || 0;
-my $pagesize    = request()->param('pagesize') || 40;
-my $offset      = $page * $pagesize;
+my $category = encode_entities(request()->param('category') // "");
+my $loginid  = encode_entities(request()->param('loginid')  // "");
+my $page     = request()->param('page')     || 0;
+my $pagesize = request()->param('pagesize') || 40;
+my $offset   = $page * $pagesize;
 my @system_cols = qw/stamp staff_name operation remote_addr/;
 my @noshow_cols = qw/pg_userid client_port id client_addr/;
 
@@ -210,7 +210,6 @@ my $stash = {
     hdrs     => \@allhdrs,
     logs     => $logs,
     rowcount => $rowcount,
-    pagesize => $pagesize,
     pages    => $pages,
     next     => $page < $pages ? $page + 1 : $page,
     prev     => $page > 0 ? $page - 1 : $page,
