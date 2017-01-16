@@ -12,7 +12,7 @@ __PACKAGE__->meta->setup(
         id                      => { type => 'bigint', not_null => 1, sequence => 'sequences.global_serial' },
         end_of_day_balance_id   => { type => 'integer', not_null => 1 },
         financial_market_bet_id => { type => 'bigint', not_null => 1 },
-        marked_to_market_value  => { type => 'numeric', precision => 4, scale => 9 },
+        marked_to_market_value  => { type => 'numeric', precision => 12, scale => 24 },
     ],
 
     primary_key_columns => [ 'id' ],

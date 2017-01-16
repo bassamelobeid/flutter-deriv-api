@@ -17,7 +17,7 @@ __PACKAGE__->meta->setup(
         id                      => { type => 'bigint', not_null => 1 },
         account_id              => { type => 'bigint', not_null => 1 },
         transaction_time        => { type => 'timestamp', default => 'now()' },
-        amount                  => { type => 'numeric', not_null => 1, precision => 4, scale => 14 },
+        amount                  => { type => 'numeric', not_null => 1, precision => 12, scale => 24 },
         staff_loginid           => { type => 'varchar', length => 24 },
         remark                  => { type => 'varchar', length => 800 },
         referrer_type           => { type => 'varchar', length => 20, not_null => 1 },
