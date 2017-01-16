@@ -49,7 +49,8 @@ if ($cgi->param('upload_file')) {
         BOM::JapanContractDetails::single_output_as_excel($pricing_parameters, $id . '.xls');
 
     } else {
-        BOM::JapanContractDetails::output_on_display($pricing_parameters);
+         load_template($cgi->param('broker'),$pricing_parameters);
+
 
     }
 } elsif ($cgi->param('manual_verify_with_shortcode')) {
@@ -61,8 +62,8 @@ if ($cgi->param('upload_file')) {
     $args->{start_time}      = $cgi->param('start');
     $args->{action_type}     = $cgi->param('action_type');
     my $pricing_parameters = BOM::JapanContractDetails::verify_with_shortcode($args);
-    $pricing_parameters = include_contract_details(
-        $parameters,
+    $pricing_parameters = BOM::JapanContractDetails::include_contract_details(
+        $pricing_parameters,
         {
             order_type  => $cgi->param('action_type'),
             order_price => $cgi->param('price')});
@@ -71,21 +72,33 @@ if ($cgi->param('upload_file')) {
         BOM::JapanContractDetails::single_output_as_excel($pricing_parameters, $cgi->param('short_code') . '.xls');
 
     } else {
-        BOM::JapanContractDetails::output_on_display($pricing_parameters);
+        load_template($cgi->param('broker'),$pricing_parameters); 
+
 
     }
 } elsif ($params{'load_template'}) {
 
-    PrintContentType();
+       load_template($params{broker});
+
+}
+
+sub load_template {
+   my $broker = shift;
+   my $pricing_parameters = shift;
+
+     PrintContentType();
     BrokerPresentation("Price Verification Tool");
     Bar("Tools");
 
     BOM::Backoffice::Request::template->process(
         'backoffice/japan_contract_details.html.tt',
         {
-            broker     => $params{broker},
+            broker     => $broker,
+            pricing_parameters => $pricing_parameters,
             upload_url => 'contract_details.cgi',
-        }) || die BOM::Backoffice::Request::template->error;
+        }) || die BOM::Backoffice::Request
 
 }
+
+
 code_exit_BO();

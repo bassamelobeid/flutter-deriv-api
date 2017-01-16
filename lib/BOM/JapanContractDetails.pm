@@ -39,7 +39,6 @@ sub parse_file {
             landing_company           => $landing_company,
             contract_price            => $ask_price,
             action_type               => 'buy',
-            include_opposite_contract => 1,
         });
 
         $pricing_parameters->{$shortcode} = include_contract_details(
@@ -109,7 +108,6 @@ sub verify_with_shortcode {
     my $short_code                = $args->{shortcode};
     my $action_type               = $args->{action_type};
     my $verify_price              = $args->{contract_price};              # This is the price to be verify
-    my $include_opposite_contract = $args->{include_opposite_contract};
     my $currency                  = $args->{currency};
 
     my $original_contract = produce_contract($short_code, $currency);
@@ -147,7 +145,6 @@ sub verify_with_shortcode {
         action_type            => $action_type,
         discounted_probability => $discounted_probability
     });
-    if ($include_opposite_contract == 1) {
 
         my $opposite_contract = get_pricing_parameter({
             traded_contract        => $contract->opposite_contract,
@@ -163,7 +160,6 @@ sub verify_with_shortcode {
             }
         }
 
-    }
 
     $pricing_parameters->{contract_details} = {
         short_code             => $short_code,
@@ -200,7 +196,6 @@ sub get_pricing_parameter {
 sub include_contract_details {
     my $params = shift;
     my $args   = shift;
-
     my @required_contract_details =
         qw(loginID trans_id order_type order_price slippage_price trade_ask_price trade_bid_price ref_spot ref_vol ref_vol2);
 
@@ -208,7 +203,6 @@ sub include_contract_details {
         $params->{contract_details}->{$key} = $args->{$key} // 'NA';
 
     }
-
     return $params;
 }
 
@@ -467,26 +461,10 @@ sub _get_market_supplement_parameters {
     return $ms_parameter;
 }
 
-sub generate_form {
-
-    my $args = shift;
-
-    my $form;
-
-    BOM::Backoffice::Request::template->process(
-        'backoffice/japan_contract_details.html.tt',
-        {
-            broker     => $args->{broker},
-            upload_url => $args->{upload_url},
-        }) || die BOM::Backoffice::Request::template->error;
-
-    return $form;
-
-}
 
 sub output_on_display {
     my $contract_params = shift;
-
+    PrintContentType(); 
     BOM::Backoffice::Request::template->process(
         'backoffice/contract_details.html.tt',
         {
@@ -499,7 +477,6 @@ sub batch_output_as_excel {
     my $contract  = shift;
     my $file_name = shift;
     my $temp_file = BOM::Platform::Runtime->instance->app_config->system->directory->tmp . "/$file_name";
-
     my $workbook  = Spreadsheet::WriteExcel->new($temp_file);
     my $worksheet = $workbook->add_worksheet();
     my @combined;
@@ -526,16 +503,13 @@ sub single_output_as_excel {
     my $contract  = shift;
     my $file_name = shift;
     my $temp_file = BOM::Platform::Runtime->instance->app_config->system->directory->tmp . "/$file_name";
-
     my $workbook  = Spreadsheet::WriteExcel->new($temp_file);
     my $worksheet = $workbook->add_worksheet();
     my (@keys, @value);
-
     foreach my $key (keys %{$contract}) {
-        push @keys,  $key;
-        push @value, $contract->{$key};
+        push @keys,  keys %{$contract->{$key}};
+        push @value, values %{$contract->{$key}};
     }
-
     my @combined = (\@keys, \@value);
 
     $worksheet->write_row('A1', \@combined);
