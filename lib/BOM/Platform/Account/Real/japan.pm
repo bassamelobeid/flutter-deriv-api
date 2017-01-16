@@ -31,7 +31,13 @@ sub create_account {
     }
 
     my $financial_assessment = get_financial_assessment_score($financial_data);
-    if ($financial_assessment->{income_asset_score} < 3 or $financial_assessment->{trading_experience_score} < 10) {
+    if ((
+               $financial_assessment->{annual_income_score} < 2
+            or $financial_assessment->{financial_asset_score} < 2
+        )
+        or $financial_assessment->{trading_experience_score} < 10
+        )
+    {
         return {error => 'insufficient score'};
     }
     # store agreement fields in financial_assessment table
@@ -98,8 +104,8 @@ sub get_agreement {
 
 sub _get_input_to_category_mapping {
     return {
-        annual_income                               => 'income_asset_score',
-        financial_asset                             => 'income_asset_score',
+        annual_income                               => 'annual_income_score',
+        financial_asset                             => 'financial_asset_score',
         trading_experience_equities                 => 'equities_score',
         trading_experience_commodities              => 'commodities_score',
         trading_experience_foreign_currency_deposit => 'trading_experience_score',
@@ -112,7 +118,17 @@ sub _get_input_to_category_mapping {
 
 sub get_financial_input_mapping {
     my $scores = {
-        income_asset_score => {
+        financial_asset_score => {
+            'Less than 1 million JPY' => 0,
+            '1-3 million JPY'         => 2,
+            '3-5 million JPY'         => 3,
+            '5-10 million JPY'        => 4,
+            '10-30 million JPY'       => 5,
+            '30-50 million JPY'       => 6,
+            '50-100 million JPY'      => 7,
+            'Over 100 million JPY'    => 8,
+        },
+        annual_income_score => {
             'Less than 1 million JPY' => 0,
             '1-3 million JPY'         => 2,
             '3-5 million JPY'         => 3,
@@ -186,8 +202,10 @@ sub get_financial_assessment_score {
                 answer => $answer,
                 score  => $score,
             };
-            # categorize scores into: income_asset_score, trading_experience_score
-            if ($input_to_category->{$key} =~ 'income_asset_score') {
+            # categorize scores into: annual_income_score, financial_asset_score, trading_experience_score
+            if ($input_to_category->{$key} =~ 'annual_income_score') {
+                $data->{$input_to_category->{$key}} += $score;
+            } elsif ($input_to_category->{$key} =~ 'financial_asset_score') {
                 $data->{$input_to_category->{$key}} += $score;
             } else {
                 $data->{'trading_experience_score'} += $score;
