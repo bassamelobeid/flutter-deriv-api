@@ -22,13 +22,13 @@ use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-my $show = request()->param('show');
+my $show = encode_entities(request()->param('show') // "");
 if (request()->param('action') ne 'DOWNLOAD CSV') {
     PrintContentType();
-    BrokerPresentation(encode_entities("MONITOR $show"));
+    BrokerPresentation("MONITOR $show");
 }
 
-my $broker = request()->broker_code;
+my $broker = encode_entities(request()->broker_code // "");
 my $staff  = BOM::Backoffice::Auth0::can_access(['CS']);
 my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
@@ -77,7 +77,7 @@ if (request()->param('action') eq 'DOWNLOAD CSV') {
 # Alert downloading csv with auto debit balance from disabled clients
 my $on_submit_event;
 if (request()->param('recoverfromfraudpassword') eq 'l') {
-    $on_submit_event = 'onsubmit="return confirmDownloadCSV(' . request()->param('recoverdays') . ');"';
+    $on_submit_event = 'onsubmit="return confirmDownloadCSV(' . encode_entities(request()->param('recoverdays')) . ');"';
 }
 
 # Show the "DOWNLOAD CSV" button.
@@ -85,7 +85,7 @@ print '<form method="post" id="download_csv_form" action="'
     . request()->url_for('backoffice/f_viewclientsubset.cgi') . '" '
     . $on_submit_event . ' >'
     . '<input type="hidden" name="show" value="'
-    . encode_entities(request()->param('show')) . '">'
+    . $show . '">'
     . '<input type="hidden" name="onlylarge" value="'
     . encode_entities(request()->param('onlylarge')) . '">'
     . '<input type="hidden" name="onlyfunded" value="'
@@ -93,7 +93,7 @@ print '<form method="post" id="download_csv_form" action="'
     . '<input type="hidden" name="onlynonzerobalance" value="'
     . encode_entities(request()->param('onlynonzerobalance')) . '" />'
     . '<input type="hidden" name="broker" value="'
-    . encode_entities($broker) . '">'
+    . $broker . '">'
     . '<input type="submit" name="action" value="DOWNLOAD CSV" />'
     . '</form>';
 
