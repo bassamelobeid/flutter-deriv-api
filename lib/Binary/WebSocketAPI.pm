@@ -453,7 +453,7 @@ sub startup {
     $app->helper(
         'app_id' => sub {
             my $c = shift;
-            my $app_id = defang($c->req->param('app_id') // 'unknown-app');
+            return defang($c->req->param('app_id') // 'unknown-app');
         });
 
     $app->helper(
