@@ -188,7 +188,7 @@ sub _build_intraday_vega {
 
     my $idv = Math::Util::CalculatedValue::Validatable->new({
         name        => 'intraday_vega',
-        description => 'the delta to use for pricing this bet',
+        description => 'the vega to use for pricing this bet',
         set_by      => __PACKAGE__,
         base_amount => $self->_vega_formula->($self->_formula_args),
     });
@@ -514,10 +514,11 @@ sub calculate_intraday_bounceback {
     my $bounceback_safety     = max($bounceback_safety_min, $bounceback_safety_max);
 
     if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_st') {
-        $bounceback_base_intraday_trend = ($self->bet->code eq 'CALL') ? $bounceback_base_intraday_trend : $bounceback_base_intraday_trend * -1;
+        $bounceback_base_intraday_trend =
+            ($self->bet->pricing_code eq 'CALL') ? $bounceback_base_intraday_trend : $bounceback_base_intraday_trend * -1;
     }
     if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_lt') {
-        $bounceback_safety = ($self->bet->code eq 'CALL') ? $bounceback_safety : $bounceback_safety * -1;
+        $bounceback_safety = ($self->bet->pricing_code eq 'CALL') ? $bounceback_safety : $bounceback_safety * -1;
     }
 
     $bounceback_base_intraday_trend += $bounceback_safety if $self->apply_bounceback_safety;
