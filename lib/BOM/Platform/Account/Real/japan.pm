@@ -31,8 +31,12 @@ sub create_account {
     }
 
     my $financial_assessment = get_financial_assessment_score($financial_data);
-    if (($financial_assessment->{annual_income_score} < 2 and $financial_assessment->{financial_asset_score} < 2)
-        or $financial_assessment->{trading_experience_score} < 10)
+    if ((
+               $financial_assessment->{annual_income_score} < 2
+            or $financial_assessment->{financial_asset_score} < 2
+        )
+        or $financial_assessment->{trading_experience_score} < 10
+        )
     {
         return {error => 'insufficient score'};
     }
