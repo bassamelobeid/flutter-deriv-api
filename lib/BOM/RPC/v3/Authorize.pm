@@ -61,7 +61,7 @@ sub authorize {
     return {
         fullname => $client->full_name,
         loginid  => $client->loginid,
-        balance  => ($account ? BOM::RPC::v3::Utility::round_amount($client->currency_code, $client->balance) : "0.00"),
+        balance  => ($account ? BOM::RPC::v3::Utility::round_amount($account->currency_code, $account->balance) : "0.00"),
         currency => ($account ? $account->currency_code : ''),
         email    => $client->email,
         country  => $client->residence,
