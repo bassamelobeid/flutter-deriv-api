@@ -502,7 +502,7 @@ subtest $method => sub {
         'sell_time'      => Date::Utility->new($data->[1]{sell_time})->epoch,
         'buy_price'      => '100.00',
         'purchase_time'  => Date::Utility->new($data->[1]{purchase_time})->epoch,
-        'payout'         => $contract_expired->payout,
+        'payout'         => sprintf("%.2f", $contract_expired->payout),
         'app_id'         => undef
     };
     is_deeply($result->{transactions}[1], $expect0, 'result is correct');
