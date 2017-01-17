@@ -9,7 +9,7 @@
     [% END %]
   </select>
   <br>
-[% FOR n IN [1, 2, 3, 4] %]
+[% FOR n IN [1..4] %]
  File [% n %]: 
   <select name="doctype_[% n %]">
     <option value="passport">Passport</option>

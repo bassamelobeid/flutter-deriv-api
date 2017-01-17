@@ -189,7 +189,7 @@ sub build_client_warning_message {
     ###############################################
     ## UNTRUSTED SECTION
     ###############################################
-    foreach my $type (@{ get_untrusted_types() } ) {
+    foreach my $type (@{get_untrusted_types()}) {
         if (my $disabled = $client->get_status($type->{code})) {
             push(
                 @output,
