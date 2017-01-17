@@ -12,7 +12,7 @@
 <input type=text size=15 maxlength=15 name=date_to placeholder="2017-01-01" value='[% date_to %]'>
 <input type="submit" value="Search for evidences">
 </form>
-With the help of this tool you can find all other accounts, who was logging into the system from the same IPs, that the stated IP had.<br>
+With the help of this tool you can find all other accounts, who was logging into the system from the same IPs, that the stated user had.<br>
 Can be useful in finding duplicates.
 <br>
 <hr>

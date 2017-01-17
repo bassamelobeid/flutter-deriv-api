@@ -46,8 +46,8 @@ if ($ip ne '') {
     );
 } elsif ($loginid ne '') {
     BrokerPresentation("IP SEARCH FOR ");
-    $date_from = '2016-01-01';
-    $date_to = '2018-01-01';
+    $date_from        = '2016-01-01';
+    $date_to          = '2018-01-01';
     $suspected_logins = get_logins_from_same_ips($loginid, $date_from, $date_to);
 }
 
