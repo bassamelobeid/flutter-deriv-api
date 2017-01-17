@@ -312,24 +312,6 @@ sub get_financial_input_mapping {
                 '$250,001 - $500,000'   => 2,
                 '$500,001 - $1,000,000' => 3,
                 'Over $1,000,000'       => 4
-            }
-        },
-        occupation => {
-            'label'           => 'Occupation',
-            'possible_answer' => {
-                'Chief Executives, Senior Officials and Legislators'        => 0,
-                'Managers'                                                  => 0,
-                'Professionals'                                             => 0,
-                'Clerks'                                                    => 0,
-                'Personal Care, Sales and Service Workers'                  => 0,
-                'Agricultural, Forestry and Fishery Workers'                => 0,
-                'Craft, Metal, Electrical and Electronics Workers'          => 0,
-                'Plant and Machine Operators and Assemblers'                => 0,
-                'Cleaners and Helpers'                                      => 0,
-                'Mining, Construction, Manufacturing and Transport Workers' => 0,
-                'Armed Forces'                                              => 0,
-                'Government Officers'                                       => 0,
-                'Others'                                                    => 0
             }}};
     return $financial_mapping;
 }
