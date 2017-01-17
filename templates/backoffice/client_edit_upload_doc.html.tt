@@ -1,6 +1,6 @@
 <br />
 <form enctype="multipart/form-data" ACTION="[% self_post %]" method="POST">
-  <label for="docnationalityselect">Nationality (as per identity document, it can be different from residence)</label>
+  <label for="docnationalityselect">Nationality (as per identity document, it can be different from residence, updates only with passport upload)</label>
   <select id="docnationalityselect" name="docnationality">
     <option value="">Please select</option>
     [% FOREACH c IN countries.all_country_names.sort %]
