@@ -35,7 +35,7 @@ if ($cgi->param('upload_file')) {
     my $filename = $fh->filename;
     copy($file, $filename);
     my $output_filename = $file;
-    $output_filename =~ s/.csv/.xls/g;
+    $output_filename =~ s/\.csv$/.xls/;
     my $pricing_parameters = BOM::JapanContractDetails::parse_file($filename, $landing_company);
     BOM::JapanContractDetails::batch_output_as_excel($pricing_parameters, $output_filename);
 

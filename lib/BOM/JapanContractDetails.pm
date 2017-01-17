@@ -5,7 +5,8 @@ package BOM::JapanContractDetails;
 This package is to output contract's pricing parameters that will be used by Japan team to replicate the contract price with the excel template. The format is as per required by the regulator. Please do not change it without confirmation from Quants and Japan team
 
 =cut
-
+use strict;
+use warnings;
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel PrintContentType_XSendfile);
@@ -465,7 +466,7 @@ sub batch_output_as_excel {
     my $workbook  = Spreadsheet::WriteExcel->new($temp_file);
     my $worksheet = $workbook->add_worksheet();
     my @combined;
-    foreach my $c (keys %{$contract}) {
+    foreach my $c (sort keys %{$contract}) {
         my (@keys, @value);
         foreach my $key (sort values %{$contract->{$c}}) {
             push @keys,  keys %{$key};
@@ -491,7 +492,7 @@ sub single_output_as_excel {
     my $workbook  = Spreadsheet::WriteExcel->new($temp_file);
     my $worksheet = $workbook->add_worksheet();
     my (@keys, @value);
-    foreach my $key (keys %{$contract}) {
+    foreach my $key (sort keys %{$contract}) {
         push @keys,  keys %{$contract->{$key}};
         push @value, values %{$contract->{$key}};
     }
