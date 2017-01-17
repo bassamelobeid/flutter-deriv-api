@@ -36,6 +36,7 @@ No logins found for IP address [% ip %] in the last [% days %] days
 
 [% IF suspected_logins.defined %]
 [% IF suspected_logins %]
+<b>Users who has logged in from [% date_from %] to [% date_to %] fro the same ips as [% loginid %]
 <table class="collapsed">
 [% FOREACH l IN suspected_logins %]
     <tr>

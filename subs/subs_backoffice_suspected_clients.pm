@@ -10,12 +10,10 @@ use Date::Utility;
 
 sub get_logins_from_same_ips {
     my ($loginid, $from, $to) = @_;
-#    my $client = Client::Account->new({loginid => $loginid});
-#    return [] unless (defined($client));
+#    my $client = Client::Account->new({loginid => $loginid}) or return [];
 #    my $user = BOM::Platform::User->new({email => $client->email});
 #    XXX: find out how to use it here, and meanwhile:
-    my $user = BOM::Platform::User->new({email => $loginid});
-
+    my $user = BOM::Platform::User->new({email => $loginid}) or return [];
     my $start          = Date::Utility->new($from)->db_timestamp;
     my $end            = Date::Utility->new($to)->db_timestamp;
     my $suspect_logins = $user->find_login_history(history_date => {ge_le => [$start, $end]});

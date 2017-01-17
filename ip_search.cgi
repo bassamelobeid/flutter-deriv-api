@@ -20,6 +20,7 @@ my $loginid = request()->param('loginid') // '';
 my $date_from = request()->param('date_from');
 my $date_to   = request()->param('date_to');
 Bar("IP Search");
+BrokerPresentation("IP SEARCH FOR");
 BOM::Backoffice::Auth0::can_access(['CS']);
 my $broker = request()->broker_code;
 
@@ -29,7 +30,6 @@ my $suspected_logins;
 # IP search from users.login_history table
 if ($ip ne '') {
     my $encoded_ip = encode_entities($ip);
-    BrokerPresentation("IP SEARCH FOR $encoded_ip");
     if ($ip !~ /^\d+\.\d+\.\d+\.\d+$/) {
         print "Invalid IP $encoded_ip";
         code_exit_BO();
@@ -45,7 +45,6 @@ if ($ip ne '') {
         sort_by => 't1.history_date DESC'
     );
 } elsif ($loginid ne '') {
-    BrokerPresentation("IP SEARCH FOR ");
     $date_from        = '2016-01-01';
     $date_to          = '2018-01-01';
     $suspected_logins = get_logins_from_same_ips($loginid, $date_from, $date_to);
@@ -57,6 +56,7 @@ BOM::Backoffice::Request::template->process(
         logins           => $logins,
         days             => $last_login_age,
         ip               => $ip,
+        loginid         => $loginid,
         suspected_logins => $suspected_logins,
         date_from        => $date_from,
         date_to          => $date_to,
