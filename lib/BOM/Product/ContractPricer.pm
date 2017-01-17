@@ -355,7 +355,12 @@ sub _build_memory_chronicle {
     $hash_ref->{'dividends::' . $symbol} = $chronicle_reader->get('dividends', $symbol);
 
     if ($self->underlying->market->name eq 'forex') {
-        my $implied_symbol = $self->underlying->quoted_currency_symbol . '-' . $self->underlying->rate_to_imply_from;
+        my $implied_symbol;
+        if ($self->underlying->uses_implied_rate($self->underlying->quoted_currency_symbol)) {
+            $implied_symbol = $underlying->quoted_currency_symbol . '-' . $underlying->rate_to_imply_from;
+        } elsif ($self->underlying->uses_implied_rate($self->underlying->asset_symbol)) {
+            $implied_symbol =  $underlying->asset_symbol . '-' . $underlying->rate_to_imply_from;
+        }
         $hash_ref->{'interest_rates::' . $implied_symbol} = $chronicle_reader->get('interest_rates', $implied_symbol);
     }
 
