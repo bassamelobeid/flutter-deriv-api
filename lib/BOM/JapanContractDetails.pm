@@ -34,7 +34,6 @@ sub parse_file {
 
         my $currency = $landing_company =~ /japan/ ? 'JPY' : 'USD';
         my $parameters = verify_with_shortcode({
-            broker                    => $broker,
             shortcode                 => $shortcode,
             currency                  => $currency,
             landing_company           => $landing_company,
@@ -83,7 +82,7 @@ sub verify_with_id {
         start           => $action_type eq 'buy' ? $details->{purchase_time} : $details->{sell_time},
         action_type     => $action_type,
     });
-    my $args = {
+    my $contract_args = {
         loginID         => $details->{loginid},
         trans_id        => $id,
         order_type      => $action_type,
@@ -95,7 +94,7 @@ sub verify_with_id {
         ref_vol         => $details->{high_barrier_vol},
         (defined $details->{low_barrier_vol}) ? (ref_vol2        => $details->{low_barrier_vol} ) : (),
     };
-    $parameters = include_contract_details($parameters, $args);
+    $parameters = include_contract_details($parameters, $contract_args);
     return $parameters;
 
 }
@@ -164,7 +163,7 @@ sub verify_with_shortcode {
         description            => $original_contract->longcode,
         ccy                    => $contract->currency,
         payout                 => $contract->payout,
-        trade_time             => $start_time,
+        trade_time             => $start->datetime,
         tick_before_trade_time => $prev_tick,
     };
 
@@ -185,7 +184,7 @@ sub get_pricing_parameter {
         ? _get_pricing_parameter_from_slope_pricer($traded_contract, $action_type, $discounted_probability)
         : $traded_contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated'
         ? _get_pricing_parameter_from_vv_pricer($traded_contract, $action_type, $discounted_probability)
-        : die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
+        : die "Can not obtain pricing parameter for this contract with pricing engine: $traded_contract->pricing_engine_name \n";
 
     return $pricing_parameters;
 
@@ -315,9 +314,9 @@ sub _get_pricing_parameter_from_vv_pricer {
 
     };
 
-    my $risk_markup = $pe->risk_markup;
+    my $risk_markup_obj = $pe->risk_markup;
     $pricing_parameters->{risk_markup} = {
-        map { $_ => $risk_markup->peek_amount($_) // 0 }
+        map { $_ => $risk_markup_obj->peek_amount($_) // 0 }
             qw(vol_spread_markup vol_spread bet_vega spot_spread_markup bet_delta spot_spread butterfly_markup butterfly_greater_than_cutoff spread_to_markup),
 
     };
@@ -435,7 +434,7 @@ sub _get_market_supplement_parameters {
     my $pe = shift;
 
     my $ms_parameter;
-    foreach $type ('vanna', 'volga', 'vega') {
+    foreach my $type ('vanna', 'volga', 'vega') {
         my $correction    = $type . '_correction';
         my $ms_correction = $pe->$correction;
         $ms_parameter->{$type . "_correction"}      = $ms_correction->amount;
