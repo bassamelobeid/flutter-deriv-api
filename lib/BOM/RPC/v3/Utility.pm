@@ -265,7 +265,7 @@ sub get_real_acc_opening_type {
 
 sub round_amount {
     my $currency = shift;
-    my $amount   = shift || 0;
+    my $amount = shift || 0;
 
     if ($currency eq 'USD' || $currency eq 'AUD' || $currency eq 'GBP' || $currency eq 'EUR') {
         return sprintf('%.2f', $amount);
