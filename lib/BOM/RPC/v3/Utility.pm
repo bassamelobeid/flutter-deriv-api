@@ -263,4 +263,19 @@ sub get_real_acc_opening_type {
     return;
 }
 
+sub round_amount {
+    my $currency = shift;
+    my $amount   = shift || 0;
+
+    if ($currency eq 'USD' || $currency eq 'AUD' || $currency eq 'GBP' || $currency eq 'EUR') {
+        return sprintf('%.2f', $amount);
+    } elsif ($currency eq 'JPY') {
+        return sprintf('%.0f', $amount);
+    } elsif ($currency eq 'XBT') {
+        return sprintf('%.8f', $amount);
+    } else {
+        die "wrong currency for rounding [$currency]";
+    }
+}
+
 1;
