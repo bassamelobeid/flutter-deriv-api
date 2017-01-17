@@ -354,7 +354,7 @@ sub _build_memory_chronicle {
 
     $hash_ref->{'dividends::' . $symbol} = $chronicle_reader->get('dividends', $symbol);
 
-    if ($self->underlying->market->name eq 'forex') {
+    if ($self->underlying->market->name eq 'forex' and $self->underlying->submarket->name ne 'smart_fx') {
         my $implied_symbol;
         if ($self->underlying->uses_implied_rate($self->underlying->quoted_currency_symbol)) {
             $implied_symbol = $self->underlying->quoted_currency_symbol . '-' . $self->underlying->rate_to_imply_from;
