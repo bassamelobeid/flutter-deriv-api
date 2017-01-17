@@ -1,4 +1,25 @@
+<FORM ACTION="[% ip_search_url %]" METHOD=POST>
+<b>IP SEARCH</b> Enter IP Address :
+<INPUT type=text size=15 maxlength=15 name=ip value='[% ip %]'>
+<br>Ignore clients who didn't log in during last <input type=text size=6 value=10 name=lastndays> days
+<input type=submit value='Search for Email'>
+</form>
+<hr>
+<b>Get accounts logged in with the same IPs</b>
+<form action="[% ip_search_url %]" method="post">
+<input type=text size=50 maxlength=50 name=loginid value='[% loginid %]' placeholder="user@binary.com"><br>
+<input type=text size=15 maxlength=15 name=date_from placeholder="2016-01-01" value='[% date_from %]'>
+<input type=text size=15 maxlength=15 name=date_to placeholder="2017-01-01" value='[% date_to %]'>
+<input type="submit" value="Search for evidences">
+</form>
+With the help of this tool you can find all other accounts, who was logging into the system from the same IPs, that the stated IP had.<br>
+Can be useful in finding duplicates.
+<br>
+<hr>
+
+[% IF logins.defined %]
 [% IF logins %]
+<b>Emails who has logged in in last [% days %] days from [% ip %]</b><br>
 <table class="collapsed">
     [% FOREACH l IN logins %]
         <tr>
@@ -11,3 +32,24 @@
 [% ELSE %]
 No logins found for IP address [% ip %] in the last [% days %] days
 [% END %]
+[% END %]
+
+[% IF suspected_logins.defined %]
+[% IF suspected_logins %]
+<table class="collapsed">
+[% FOREACH l IN suspected_logins %]
+    <tr>
+        <td>[% l.date %]</td>
+        <td>
+            [% FOREACH id IN l.logins %]
+            [% id %]
+            [% END %]
+        </td>
+    </tr>
+[% END %]
+</table>
+[% ELSE %]
+No clients have logged in from [% date_from %] to [% date_to %] from the same ips as [% loginid %]
+[% END %]
+[% END %]
+
