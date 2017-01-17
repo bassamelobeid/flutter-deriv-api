@@ -270,7 +270,7 @@ sub round_amount {
     if ($currency eq 'USD' || $currency eq 'AUD' || $currency eq 'GBP' || $currency eq 'EUR') {
         return sprintf('%.2f', $amount);
     } elsif ($currency eq 'JPY') {
-        return sprintf('%.0f', $amount);
+        return sprintf('%.2f', $amount);
     } elsif ($currency eq 'XBT') {
         return sprintf('%.8f', $amount);
     } else {
