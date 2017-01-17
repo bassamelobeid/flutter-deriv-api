@@ -69,7 +69,7 @@ sub verify_with_id {
     my $ask_price = $details->{ask_price};
     my $bid_price = $details->{bid_price};
     my $traded_price     = $action_type eq 'buy' ? $ask_price : $bid_price;
-    my $slippage = $details->{price_slippage};
+    my $slippage = $details->{price_slippage} // 0;
     # apply slippage according to reflect the difference between traded price and recomputed price
     my $adjusted_traded_contract_price =
         ($traded_price == $requested_price) ? ($action_type eq 'buy' ? $traded_price - $slippage : $traded_price + $slippage) : $traded_price;
