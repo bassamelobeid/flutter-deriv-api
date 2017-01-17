@@ -120,7 +120,7 @@ is_deeply([
         $financial_market_bet->financial_market_bet_record->short_code,
     ],
     [
-        $account->id, 'frxUSDJPY', 200.00, 20, 40, 'Test Remark', '1291291200', '1291298400', 1, 1, 'higher_lower_bet', 'FLASHU',
+        $account->id, 'frxUSDJPY', '200.00', 20, 40, 'Test Remark', '1291291200', '1291298400', 1, 1, 'higher_lower_bet', 'FLASHU',
         'CALL_IXIC_20_8_MAR_05_22_MAR_05_2089_0',
     ],
     'correct data read back'
