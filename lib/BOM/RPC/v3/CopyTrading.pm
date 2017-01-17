@@ -21,13 +21,13 @@ sub copy_start {
         if ($args->{$stake_limit} && $args->{$stake_limit} < 0) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'InvalidStakeLimit',
-                    message_to_client => localize('Option [_1] value must be zero or positive number', $stake_limit)});
+                    message_to_client => localize('Option [_1] value must be zero or positive number.', $stake_limit)});
         }
     }
     if ($args->{max_trade_stake} && $args->{min_trade_stake} && $args->{min_trade_stake} > $args->{max_trade_stake}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidStakeLimit',
-                message_to_client => localize('Min trade stake should be lower than max trade stake')});
+                message_to_client => localize('Min trade stake should be lower than max trade stake.')});
     }
 
     my $trader_token  = $args->{copy_start};
@@ -54,12 +54,12 @@ sub copy_start {
     if ($client->broker_code ne 'CR') {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccount',
-                message_to_client => localize('Copy trading allows for real money account only.')});
+                message_to_client => localize('Copy trading is only available with real money accounts.')});
     }
     if ($client->allow_copiers) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'CopyTradingNotAllowed',
-                message_to_client => localize('Trader are not allowed copy trading.')});
+                message_to_client => localize('Traders are not allowed to copy trades.')});
     }
 
     my @trade_types = ref($args->{trade_types}) eq 'ARRAY' ? @{$args->{trade_types}} : $args->{trade_types};
@@ -67,7 +67,7 @@ sub copy_start {
     for my $type (grep { $_ } @trade_types) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidTradeType',
-                message_to_client => localize('[_1]', $type)}) unless exists $contract_types->{$type};
+                message_to_client => localize('Invalid trade type: [_1].', $type)}) unless exists $contract_types->{$type};
     }
 
     my @assets = ref($args->{assets}) eq 'ARRAY' ? @{$args->{assets}} : $args->{assets};
