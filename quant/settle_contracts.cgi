@@ -6,6 +6,7 @@ use warnings;
 use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
+use HTML::Entities;
 
 use List::Util qw( first );
 use Try::Tiny;
@@ -85,7 +86,7 @@ if (request()->param('perform_actions')) {
         }
     }
     catch {
-        print '<h1>ERROR! Could not complete ' . $_ . '</h1>';
+        print '<h1>ERROR! Could not complete ' . encode_entities($_) . '</h1>';
     };
 }
 

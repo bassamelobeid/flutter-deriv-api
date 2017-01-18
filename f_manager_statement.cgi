@@ -13,13 +13,14 @@ use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Backoffice::Request qw(request);
-
+use HTML::Entities;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 local $\ = "\n";
-my $loginID    = uc(request()->param('loginID'));
-my $outputtype = request()->param('outputtype');
+my $loginID         = uc(request()->param('loginID'));
+my $encoded_loginID = encode_entities($loginID);
+my $outputtype      = request()->param('outputtype');
 if (not $outputtype) {
     $outputtype = 'table';
 }
@@ -28,41 +29,42 @@ if ($outputtype eq 'csv') {
     print "Content-type: application/csv\n\n";
 } else {
     PrintContentType();
-    BrokerPresentation("$loginID Portfolio");
+    BrokerPresentation("$encoded_loginID Portfolio");
 }
 
-my $broker = request()->broker_code;
+my $broker         = request()->broker_code;
+my $encoded_broker = encode_entities($broker);
 BOM::Backoffice::Auth0::can_access(['CS']);
 
 if ($loginID !~ /^$broker/) {
-    print "Error : wrong loginID $loginID";
+    print "Error : wrong loginID $encoded_loginID";
     code_exit_BO();
 }
 
 my $client = Client::Account::get_instance({'loginid' => $loginID});
 if (not $client) {
-    print "<B><font color=red>ERROR : No such client $loginID.<P>";
+    print "<B><font color=red>ERROR : No such client $encoded_loginID.<P>";
     code_exit_BO();
 }
 
 my $client_email = $client->email;
 
-Bar("$loginID ($client_email) Portfolio");
+Bar("$encoded_loginID ($client_email) Portfolio");
 
 print "<form style=\"float:left\" action=\"" . request()->url_for('backoffice/f_clientloginid_edit.cgi') . "\" METHOD=POST>";
-print "<input type=hidden name=broker value=$broker>";
-print "<input type=hidden name=loginID value=$loginID>";
-print "<INPUT type=\"submit\" value=\"EDIT $loginID DETAILS\">";
+print "<input type=hidden name=broker value=$encoded_broker>";
+print "<input type=hidden name=loginID value=\"$encoded_loginID\">";
+print "<INPUT type=\"submit\" value=\"EDIT $encoded_loginID DETAILS\">";
 print "</form><form style=\"float:right\" action=\"" . request()->url_for('backoffice/f_manager_statement.cgi') . "\" method=\"POST\">
-Quick jump to see another portfolio: <input name=loginID type=text size=10 value='$broker'>";
+Quick jump to see another portfolio: <input name=loginID type=text size=10 value='$encoded_broker'>";
 print "<input type=hidden name=\"outputtype\" value=\"table\">";
-print "<input type=hidden name=\"broker\" value=\"$broker\">";
+print "<input type=hidden name=\"broker\" value=\"$encoded_broker\">";
 print "<input type=hidden name=\"l\" value=\"EN\">";
 print "<INPUT type=\"submit\" value=\"Go\"></form>
 
 <form style=\"float:left\" action=\"" . request()->url_for('backoffice/f_manager_history.cgi') . "\" method=\"POST\">
-<input type=hidden name=\"loginID\" value=\"$loginID\" />
-<input type=hidden name=\"broker\" value=\"$broker\" />
+<input type=hidden name=\"loginID\" value=\"$encoded_loginID\" />
+<input type=hidden name=\"broker\" value=\"$encoded_broker\" />
 <input type=hidden name=\"l\" value=\"EN\" />
 <input type=submit value=\"CLIENT STATEMENT\" />
 </form><div style=\"clear:both\"></div>";

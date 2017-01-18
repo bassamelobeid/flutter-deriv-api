@@ -5,6 +5,7 @@ use strict 'vars';
 use Client::Account;
 
 use Text::Trim;
+use HTML::Entities;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
@@ -45,12 +46,13 @@ if ($action_type =~ /SELECT A DATABASE TO VIEW/) {
     code_exit_BO();
 }
 
+my $encoded_clientID = encode_entities($clientID);
 if ($action_type !~ /(oklogins)/) {
     $clientID = rtrim($clientID);
     $client = Client::Account::get_instance({'loginid' => $clientID});
 
     if (not $client) {
-        print "<br /><font color=red><b>ERROR : Bad loginID ' $clientID '</b></font><br /><br />";
+        print "<br /><font color=red><b>ERROR : Bad loginID ' $encoded_clientID '</b></font><br /><br />";
         code_exit_BO();
     }
 }
@@ -64,17 +66,19 @@ if ($reason =~ /SELECT A REASON/) {
 ######################################################################
 ## BUILD MESSAGE TO PRINT TO SCREEN                                 ##
 ######################################################################
+my $encoded_reason = encode_entities($reason);
+my $encoded_clerk  = encode_entities($clerk);
 my $insert_error_msg =
-    "<br /><font color=red><b>ERROR :</font></b>&nbsp;&nbsp;<b>$clientID $reason ($clerk)</b>&nbsp;&nbsp;has not been saved<br /><br />";
+    "<br /><font color=red><b>ERROR :</font></b>&nbsp;&nbsp;<b>$encoded_clientID $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has not been saved<br /><br />";
 
 my $insert_success_msg =
-    "<br /><font color=green><b>SUCCESS :</font></b>&nbsp;&nbsp;<b>$clientID $reason ($clerk)</b>&nbsp;&nbsp;has been saved successfully<br /><br />";
+    "<br /><font color=green><b>SUCCESS :</font></b>&nbsp;&nbsp;<b>$encoded_clientID $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has been saved successfully<br /><br />";
 
 my $remove_error_msg =
-    "<br /><font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Failed to remove this client <b>$clientID</b>. Please try again.<br /><br />";
+    "<br /><font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Failed to remove this client <b>$encoded_clientID</b>. Please try again.<br /><br />";
 
 my $remove_success_msg =
-    "<br /><font color=green><b>SUCCESS :</b></font>&nbsp;&nbsp;<b>$clientID $reason ($clerk)</b>&nbsp;&nbsp;has been removed successfully<br /><br />";
+    "<br /><font color=green><b>SUCCESS :</b></font>&nbsp;&nbsp;<b>$encoded_clientID $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has been removed successfully<br /><br />";
 
 ######################################################################
 ## ALLOW OK LOGINS                                                  ##
@@ -82,6 +86,7 @@ my $remove_success_msg =
 if ($action_type eq 'oklogins') {
     LOGIN:
     foreach my $login_id (split(/\s+/, $clientID)) {
+        my $encoded_login_id = encode_entities($login_id);
         my $client = Client::Account::get_instance({'loginid' => $login_id});
         if (not $client) {
             push @invalid_logins, $login_id;
@@ -96,17 +101,17 @@ if ($action_type eq 'oklogins') {
             $printline = $client->save ? $remove_success_msg : $remove_error_msg;
         }
         # print success/fail message
-        $printline =~ s/$clientID/$login_id/g;
+        $printline =~ s/$encoded_clientID/$encoded_login_id/g;
         print $printline;
     }
 } else {
-    die " Invalid action type [$action_type]";
+    die " Invalid action type [" . encode_entities($action_type) . "]";
 }
 
 # handle invalid login
 if (@invalid_logins) {
     print '<br /><font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Failed to save these invalid login ID: <b>'
-        . join(', ', @invalid_logins)
+        . join(', ', map { encode_entities($_) } @invalid_logins)
         . '</b><br /><br />';
 }
 

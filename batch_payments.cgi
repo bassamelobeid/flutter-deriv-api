@@ -9,6 +9,7 @@ use Try::Tiny;
 use Date::Utility;
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use Brands;
+use HTML::Entities;
 
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
@@ -68,7 +69,7 @@ if ($confirm) {
             transactiontype => $transtype
         })->validate_batch_payment_control_code($control_code, scalar @payment_lines);
     if ($error) {
-        print $error->get_mesg();
+        print encode_entities($error->get_mesg());
         code_exit_BO();
     }
 }
@@ -147,7 +148,7 @@ read_csv_row_and_callback(
 
         if ($error) {
             $client_account_table .= construct_row_line(%row, error => $error);
-            push @invalid_lines, qq[<a href="#ln$line_number">Invalid line $line_number</a> : $error];
+            push @invalid_lines, qq[<a href="#ln$line_number">Invalid line $line_number</a> : ] . encode_entities($error);
             return;
         }
 
@@ -223,9 +224,10 @@ if (%summary_amount_by_currency and scalar @invalid_lines == 0) {
       <table class="summary"><caption>Currency Totals</caption><tr><th>Currency</th><th>Credits</th><th>Debits</th></tr>
     ];
     foreach my $currency (sort keys %summary_amount_by_currency) {
-        my $cr = to_monetary_number_format(roundnear(0.1, $summary_amount_by_currency{$currency}{credit}));
-        my $db = to_monetary_number_format(roundnear(0.1, $summary_amount_by_currency{$currency}{debit}));
-        $summary_table .= "<tr><th>$currency</th><td>$cr</td><td>$db</td></tr>";
+        my $c  = encode_entities($currency);
+        my $cr = encode_entities(to_monetary_number_format(roundnear(0.1, $summary_amount_by_currency{$currency}{credit})));
+        my $db = encode_entities(to_monetary_number_format(roundnear(0.1, $summary_amount_by_currency{$currency}{debit})));
+        $summary_table .= "<tr><th>$c</th><td>$cr</td><td>$db</td></tr>";
     }
     $summary_table .= '</table>';
 }
@@ -238,22 +240,25 @@ if ($preview and @invalid_lines == 0) {
         . request()->url_for("backoffice/f_makedcc.cgi")
         . "\" method=\"post\">"
         . "<input type=hidden name=\"dcctype\" value=\"file_content\">"
-        . "<input type=hidden name=\"broker\" value=\"$broker\">"
+        . "<input type=hidden name=\"broker\" value=\""
+        . encode_entities($broker) . "\">"
         . "<input type=hidden name=\"l\" value=\"EN\">"
         . '<input type="hidden" name="purpose" value="batch clients payments" />'
-        . "<input type=hidden name=\"file_location\" value=\"$payments_csv_file\">"
+        . "<input type=hidden name=\"file_location\" value=\""
+        . encode_entities($payments_csv_file) . "\">"
         . "Make sure you check the above details before you make dual control code<br>"
         . "<br>Input a comment/reminder about this DCC: <input type=text size=50 name=reminder>"
         . "Type of transaction: <select name='transtype'>"
         . "<option value='BATCHACCOUNT'>Batch Account</option><option value='BATCHDOUGHFLOW'>Batch Doughflow</option>"
         . "</select>"
-        . "<br /><input type=\"submit\" value='Make Dual Control Code (by $clerk)'>"
+        . "<br /><input type=\"submit\" value='Make Dual Control Code (by "
+        . encode_entities($clerk) . ")'>"
         . "</form></div>";
 
     print qq[<div class="inner_bo_box"><h2>Confirm credit/debit clients</h2>
         <form onsubmit="confirm('Are you sure?')">
          <input type="hidden" name="payments_csv_file" value="$payments_csv_file"/>
-         <input type="hidden" name="skip_validation" value="$skip_validation"/>
+         <input type="hidden" name="skip_validation" value="] . encode_entities($skip_validation) . qq["/>
          <table border=0 cellpadding=1 cellspacing=1><tr><td bgcolor=FFFFEE><font color=blue>
 				<b>DUAL CONTROL CODE</b>
 				Control Code: <input type=text name=DCcode required size=16>
@@ -283,6 +288,7 @@ if ($preview and @invalid_lines == 0) {
 sub construct_row_line {
     my %args = @_;
 
+    map { $args{$_} = encode_entities($args{$_}) } keys %args;
     my $notes = $args{error} || $args{remark};
     my $color = $args{error} ? 'red' : 'green';
     $args{$_} ||= '&nbsp;' for keys %args;

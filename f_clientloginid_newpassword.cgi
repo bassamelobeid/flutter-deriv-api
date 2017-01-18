@@ -3,6 +3,7 @@ package main;
 use strict 'vars';
 
 use URL::Encode qw( url_encode );
+use HTML::Entities;
 
 use Client::Account;
 use Brands;
@@ -67,17 +68,18 @@ BOM::Backoffice::Request::template->process(
 );
 
 # email link to client
-Bar('emailing change password link to ' . $loginID);
+Bar('emailing change password link to ' . encoded_loginID($loginID));
 
-print '<p class="success_message">Emailing change password link to ' . $client_name . ' at ' . $email . ' ...</p>';
+print '<p class="success_message">Emailing change password link to ' . encode_entities($client_name) . ' at ' . encode_entities($email) . ' ...</p>';
 
 my $result = send_email({
-    from               => $brand->emails('support'),
-    to                 => $email,
-    subject            => localize('New Password Request'),
-    message            => [$lost_pass_email,],
-    template_loginid   => $loginID,
-    use_email_template => 1,
+    from                  => $brand->emails('support'),
+    to                    => $email,
+    subject               => localize('New Password Request'),
+    message               => [$lost_pass_email,],
+    template_loginid      => $loginID,
+    use_email_template    => 1,
+    email_content_is_html => 1,
 });
 
 print '<p>New password issuance RESULT: ' . ($result) ? 'success' : 'fail' . '</p>';

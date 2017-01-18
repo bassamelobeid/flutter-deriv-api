@@ -5,6 +5,7 @@ use strict 'vars';
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
 use Machine::Epsilon;
+use HTML::Entities;
 
 use Brands;
 use Client::Account;
@@ -21,20 +22,21 @@ use Performance::Probability qw(get_performance_probability);
 use f_brokerincludeall;
 BOM::Backoffice::Sysinit::init();
 
-my $loginID = uc(request()->param('loginID'));
+my $loginID         = uc(request()->param('loginID'));
+my $encoded_loginID = encode_entities($loginID);
 
 PrintContentType();
-BrokerPresentation($loginID . ' Contracts Analysis', '', '');
+BrokerPresentation($encoded_loginID . ' Contracts Analysis', '', '');
 my $staff = BOM::Backoffice::Auth0::can_access(['CS']);
 
 if ($loginID !~ /^(\D+)(\d+)$/) {
-    print "Error : wrong loginID ($loginID) could not get client instance";
+    print "Error : wrong loginID ($encoded_loginID) could not get client instance";
     code_exit_BO();
 }
 
 my $client = Client::Account::get_instance({'loginid' => $loginID});
 if (not $client) {
-    print "Error : wrong loginID ($loginID) could not get client instance";
+    print "Error : wrong loginID ($encoded_loginID) could not get client instance";
     code_exit_BO();
 }
 
@@ -49,7 +51,7 @@ my $clientdb = BOM::Database::ClientDB->new({
     client_loginid => $client->loginid,
 });
 
-Bar($loginID . " - Contracts");
+Bar($encoded_loginID . " - Contracts");
 my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
     client_loginid => $client->loginid,
     currency_code  => $client->currency,
@@ -120,18 +122,18 @@ foreach my $contract (@{$open_contracts}) {
 BOM::Backoffice::Request::template->process(
     'backoffice/account/profit_table.html.tt',
     {
-        sold_contracts          => $sold_contracts,
-        open_contracts          => $open_contracts,
-        markets                 => [Finance::Asset::Market::Registry->instance->display_markets],
-        email                   => $client->email,
-        full_name               => $client->full_name,
-        loginid                 => $client->loginid,
-        posted_startdate        => $startdate,
-        posted_enddate          => $enddate,
-        currency                => $client->currency,
-        residence               => Brands->new(name => request()->brand)->countries_instance->countries->country_from_code($client->residence),
-        contract_details        => \&BOM::ContractInfo::get_info,
-        performance_probability => $performance_probability,
+        sold_contracts              => $sold_contracts,
+        open_contracts              => $open_contracts,
+        markets                     => [Finance::Asset::Market::Registry->instance->display_markets],
+        email                       => $client->email,
+        full_name                   => $client->full_name,
+        loginid                     => $client->loginid,
+        posted_startdate            => $startdate,
+        posted_enddate              => $enddate,
+        currency                    => $client->currency,
+        residence                   => Brands->new(name => request()->brand)->countries_instance->countries->country_from_code($client->residence),
+        contract_details            => \&BOM::ContractInfo::get_info,
+        performance_probability     => $performance_probability,
         inv_performance_probability => $inv_performance_probability,
     }) || die BOM::Backoffice::Request::template->error();
 

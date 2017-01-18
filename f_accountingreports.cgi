@@ -2,6 +2,7 @@
 package main;
 
 use strict 'vars';
+use HTML::Entities;
 
 use List::MoreUtils qw(any);
 use DateTime;
@@ -26,14 +27,15 @@ my $feedloc          = BOM::Platform::Runtime->instance->app_config->system->dir
 my $dbloc            = BOM::Platform::Runtime->instance->app_config->system->directory->db;
 my $tmp_dir          = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
 
-my $now       = Date::Utility->new;
-my $lastmonth = $now->months_ahead(-1);
+my $encoded_broker = encode_entities($broker);
+my $now            = Date::Utility->new;
+my $lastmonth      = $now->months_ahead(-1);
 
 # Daily Turnover Report
 Bar("DAILY TURNOVER REPORT");
 
 print "<form action=\"" . request()->url_for('backoffice/f_dailyturnoverreport.cgi') . "\" method=post>";
-print "<input type=hidden name=broker value=$broker>";
+print "<input type=hidden name=broker value=$encoded_broker>";
 print 'Month: <input type=text size=12 name=month value="' . $now->months_ahead(0) . '">';
 print "<br /><input type=\"submit\" value=\"Daily Turnover Report\"> CLICK ONLY ONCE! Be patient if slow to respond.";
 print "</form>";
@@ -94,7 +96,7 @@ if (any { $landing_company eq $_ } qw(iom malta maltainvest)) {
     print "<form action=\""
         . request()->url_for('backoffice/f_broker_hmce_numbering_output.cgi')
         . "\" method=post>"
-        . "<input type=hidden name=\"broker\" value=\"$broker\">"
+        . "<input type=hidden name=\"broker\" value=\"$encoded_broker\">"
         . "<input type=hidden name=\"output\" value=\"CSV\">"
         . "<br />Do : <select name=action_type>
                        <option>sell</option>
@@ -124,7 +126,7 @@ print " <font color=red>DO NOT RUN THIS FOR MLT DUE TO LGA REQUIREMENTS</font>";
 print "<form action=\""
     . request()->url_for('backoffice/f_rescind_freegift.cgi')
     . "\" method=post>"
-    . "<input type=hidden name=broker value=$broker>"
+    . "<input type=hidden name=broker value=$encoded_broker>"
     . "Days of inactivity: <input type=text size=8 name=inactivedays value=90> "
     . "<br />Message: <input type=text size=50 name=message value='Rescind of free gift for cause of inactivity'> "
     . "<br /><select name=whattodo><option>Simulate<option>Do it for real !</select>"
@@ -138,7 +140,7 @@ print "Paste here a list of accounts to rescind all their cash balances (separat
 print "<form action=\""
     . request()->url_for('backoffice/f_rescind_listofaccounts.cgi')
     . "\" method=post>"
-    . "<input type=hidden name=broker value=$broker>"
+    . "<input type=hidden name=broker value=$encoded_broker>"
     . "List of accounts: <input type=text size=60 name=listaccounts value='CBET1020,CBET1021'> (separate with commas)"
     . "<br />Message: <input type=text size=65 name=message value='Account closed. Please contact customer support for assistance.'> "
     . "<br /><select name=whattodo><option>Simulate<option>Do it for real !</select>"
@@ -179,7 +181,7 @@ Bar("Japan Open Contracts Report");
 print "<form action=\""
     . request()->url_for('backoffice/open_contracts_report.cgi')
     . "\" method=post>"
-    . "<input type=hidden name=broker value=$broker>"
+    . "<input type=hidden name=broker value=$encoded_broker>"
     . "DateTime: <input type=text size=30 name=datetime>  Note: In Japanese timezone, format: 2016-03-03 00:00:00"
     . "<br/>Loginid: <input type=text size=30 name=loginid> Note: Input single loginid if running report for single client. For all clients, leave this field empty."
     . "<br/><input type=submit value='Generate report'>"

@@ -7,7 +7,7 @@ use feature 'state';
 
 use Exporter qw(import export_to_level);
 
-use Template;
+use Template::AutoFilter;
 use Template::Stash;
 use Format::Util::Numbers;
 
@@ -74,7 +74,7 @@ usage,
 sub template {
     my $what = shift || 'template';
     $template_config->{stash} ||= _configure_template_stash_for(request());
-    $template_config->{template} = _configure_template_for(request(), $template_config->{stash});
+    $template_config->{template} ||= _configure_template_for(request(), $template_config->{stash});
     return $template_config->{$what};
 }
 
@@ -96,7 +96,7 @@ sub _configure_template_for {
 
     my @include_path = ('/home/git/regentmarkets/bom-backoffice/templates/');
 
-    my $template_toolkit = Template->new({
+    my $template_toolkit = Template::AutoFilter->new({
             ENCODING     => 'utf8',
             INCLUDE_PATH => join(':', @include_path),
             INTERPOLATE  => 1,
