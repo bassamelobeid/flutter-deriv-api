@@ -160,7 +160,6 @@ $t = $t->send_ok({
             "income_source"                        => "Self-Employed",
             "net_income"                           => '$25,000 - $50,000',
             "estimated_worth"                      => '$100,000 - $250,000',
-            "occupation"                           => 'Managers'
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 is($res->{msg_type}, 'set_financial_assessment');
@@ -378,7 +377,6 @@ $t = $t->send_ok({
             "income_source"                        => "Self-Employed",
             "net_income"                           => '$25,000 - $100,000',
             "estimated_worth"                      => '$100,000 - $250,000',
-            "occupation"                           => 'Managers'
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 is($res->{msg_type}, 'set_financial_assessment');
