@@ -51,7 +51,8 @@ print '<form action="'
     . '<tr><td><b>LoginID</b></td><td> : ';
 
 print '<input type=text size=15 name="loginID" value="">'
-    . ' <a href="javascript:WinPopupSearchClients();"><font class=smallfont>[Search]</font></a>'
+    . ' <a href="'. request()->url_for('backoffice/f_popupclientsearch.cgi',{broker=>$encoded_broker}).'"><font class=smallfont>[Search]</font></a>'
+    . ' <a href="javascript:WinPopupSearchClients();"><font class=smallfont>[OldSearch]</font></a>'
     . '</td></tr>';
 
 print '<tr><td>&nbsp;</td><td>' . '&nbsp;&nbsp;<input type="submit" value="EDIT CLIENT DETAILS"></td>' . '</tr>' . '</table>' . '</font>' . '</form>';
