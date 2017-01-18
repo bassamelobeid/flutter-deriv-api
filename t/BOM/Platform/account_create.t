@@ -97,7 +97,6 @@ my %financial_data = (
     income_source                        => 'Self-Employed',
     net_income                           => '$50,001 - $100,000',
     estimated_worth                      => '$250,001 - $500,000',
-    occupation                           => 'Managers'
 );
 
 subtest 'create account' => sub {

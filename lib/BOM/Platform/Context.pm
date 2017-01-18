@@ -15,6 +15,7 @@ use warnings;
 
 use feature 'state';
 use Template;
+use Template::AutoFilter;
 use base qw( Exporter );
 
 our @EXPORT_OK = qw(request localize template);
@@ -89,7 +90,7 @@ sub _configure_template_for {
 
     my @include_path = (Brands->new(name => $request->brand)->template_dir);
 
-    my $template_toolkit = Template->new({
+    my $template_toolkit = Template::AutoFilter->new({
             ENCODING     => 'utf8',
             INCLUDE_PATH => join(':', @include_path),
             INTERPOLATE  => 1,
