@@ -4,6 +4,7 @@ package main;
 use strict 'vars';
 
 use Client::Account;
+use HTML::Entities;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
@@ -57,14 +58,18 @@ foreach my $login_id (split(/\s+/, $clientID)) {
         code_exit_BO();
     }
 
+    my $encoded_login_id = encode_entities($login_id);
+    my $encoded_reason   = encode_entities($reason);
+    my $encoded_clerk    = encode_entities($clerk);
     # BUILD MESSAGE TO PRINT TO SCREEN
     my $insert_error_msg =
-        "<font color=red><b>ERROR :</font></b>&nbsp;&nbsp;<b>$login_id $reason ($clerk)</b>&nbsp;&nbsp;has not been saved to  <b>$file_name</b>";
+        "<font color=red><b>ERROR :</font></b>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has not been saved to  <b>$file_name</b>";
     my $insert_success_msg =
-        "<font color=green><b>SUCCESS :</font></b>&nbsp;&nbsp;<b>$login_id $reason ($clerk)</b>&nbsp;&nbsp;has been saved to  <b>$file_name</b>";
-    my $remove_error_msg = "<font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Failed to enable this client <b>$login_id</b>. Please try again.";
+        "<font color=green><b>SUCCESS :</font></b>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has been saved to  <b>$file_name</b>";
+    my $remove_error_msg =
+        "<font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Failed to enable this client <b>$encoded_login_id</b>. Please try again.";
     my $remove_success_msg =
-        "<font color=green><b>SUCCESS :</b></font>&nbsp;&nbsp;<b>$login_id $reason ($clerk)</b>&nbsp;&nbsp;has been removed from  <b>$file_name</b>";
+        "<font color=green><b>SUCCESS :</b></font>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has been removed from  <b>$file_name</b>";
 
     # DISABLED/CLOSED CLIENT LOGIN
     if ($client_status_type eq 'disabledlogins') {

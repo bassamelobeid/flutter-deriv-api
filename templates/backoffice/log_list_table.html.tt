@@ -24,7 +24,7 @@ table#show_log_list_table td.old_changed {
 }
 </style>
 
-<a href="[% url_to_client %]">&laquo; return to client details</a>
+<a href="[% url_to_client | none %]">&laquo; return to client details</a>
 
 <table border="1" id="show_log_list_table">
     [% INCLUDE pager %]
@@ -60,7 +60,7 @@ table#show_log_list_table td.old_changed {
                                 changed = '';
                                 changed = '_changed' IF log.log_details.old.$detail_header != log.log_details.new.$detail_header;
                             %]
-                        <td class=[% log_detail.key _ changed %]>
+                        <td class="[% log_detail.key _ changed %]">
                             &nbsp; [% log_detail.value.$detail_header %]
                         </td>
                         [% END %]
@@ -78,13 +78,13 @@ table#show_log_list_table td.old_changed {
         <tr>
             <td colspan="5">
                 [% page_url = url_to_myself _ "&number_of_rows=$number_of_rows" %]
-                <a href="[% page_url _ "&page=0" %]">|<</a>
-                <a href="[% page_url _ "&page=$prev" %]"><</a>
+                <a href="[% page_url _ "&page=0" | none %]">|<</a>
+                <a href="[% page_url _ "&page=$prev" | none %]"><</a>
                 [% FOREACH page IN [ 0..pages ] %]
-                   <a href="[% page_url _ "&page=$page" %]">[% page + 1 %]</a>
+                   <a href="[% page_url _ "&page=$page" | none %]">[% page + 1 %]</a>
                 [% END %]
-                <a href="[% page_url _ "&page=$next" %]">></a>
-                <a href="[% page_url _ "&page=$pages" %]">>|</a>
+                <a href="[% page_url _ "&page=$next" | none %]">></a>
+                <a href="[% page_url _ "&page=$pages" | none %]">>|</a>
             </td>
         </tr>
     [% END %]

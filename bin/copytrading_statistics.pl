@@ -18,14 +18,17 @@ my $k = 0.3;
 my $trader_ids = BOM::Database::ClientDB->new({
         broker_code => 'CR',
         operation   => 'backoffice_replica',
-    })->db->dbh->selectcol_arrayref(q{
+    }
+    )->db->dbh->selectcol_arrayref(
+    q{
         SELECT
             loginid
         FROM
             betonmarkets.client
         WHERE
             allow_copiers IS TRUE
-    });
+    }
+    );
 
 for my $trader_id (@$trader_ids) {
     my $last_processed_id = BOM::System::RedisReplicated::redis_read->get("COPY_TRADING_LAST_PROCESSED_ID:$trader_id") || 0;

@@ -8,6 +8,7 @@ use JSON;
 use Data::Dumper;
 use Date::Utility;
 use Try::Tiny;
+use HTML::Entities;
 
 use f_brokerincludeall;
 use BOM::Backoffice::Request qw(request);
@@ -20,14 +21,15 @@ use feature "state";
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
 
-my $loginid   = uc(request()->param('loginid'));
-my $startdate = request()->param('startdate');
-my $enddate   = request()->param('enddate');
+my $loginid         = uc(request()->param('loginid'));
+my $startdate       = request()->param('startdate');
+my $enddate         = request()->param('enddate');
+my $encoded_loginid = encode_entities($loginid);
 
 # get client complete transaction statements
 my $client = Client::Account::get_instance({'loginid' => $loginid});
 if (not $client) {
-    print "Error : wrong loginID ($loginid) could not get client instance";
+    print "Error : wrong loginID ($encoded_loginid) could not get client instance";
     code_exit_BO();
 }
 
@@ -182,7 +184,7 @@ foreach my $stamp (sort keys %{$u_db}) {
 push @audit_entries, _get_desk_com_entries($loginid, $startdate, $enddate);
 push @audit_entries, _get_desk_com_entries($loginid, $startdate, $enddate, 'deleted');
 
-print "<div style='background-color:yellow'>$loginid</div>";
+print "<div style='background-color:yellow'>$encoded_loginid</div>";
 print "<div style='background-color:white'>";
 my $old;
 foreach (sort { Date::Utility->new($a->{timestring})->epoch <=> Date::Utility->new($b->{timestring})->epoch } @audit_entries) {

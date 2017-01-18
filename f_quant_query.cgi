@@ -14,20 +14,20 @@ use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
 BOM::Backoffice::Sysinit::init();
 
-my $loginID = uc(request()->param('loginID'));
-
+my $loginID         = uc(request()->param('loginID'));
+my $encoded_loginID = encode_entities($loginID);
 PrintContentType();
 BrokerPresentation('Quant Query', '', '');
 my $staff = BOM::Backoffice::Auth0::from_cookie();
 
 if ($loginID !~ /^(\D+)(\d+)$/) {
-    print "Error : wrong eoginID ($loginID) could not get client instance";
+    print "Error : wrong loginID ($encoded_loginID) could not get client instance";
     code_exit_BO();
 }
 
 my $client = Client::Account::get_instance({'loginid' => $loginID});
 if (not $client) {
-    print "Error : wrong loginID ($loginID) could not get client instance";
+    print "Error : wrong loginID ($encoded_loginID) could not get client instance";
     code_exit_BO();
 }
 

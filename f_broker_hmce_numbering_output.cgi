@@ -2,6 +2,7 @@
 package main;
 use strict 'vars';
 
+use HTML::Entities;
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Transaction;
 use Try::Tiny;
@@ -14,7 +15,7 @@ BOM::Backoffice::Sysinit::init();
 local $\ = "\n";
 
 if (request()->param('output') ne 'CSV') {
-    die "wrong output type [" . request()->param('output') . "]";
+    die "wrong output type [" . encode_entities(request()->param('output')) . "]";
 }
 
 PrintContentType_excel(request()->param('action_type') . '_bets_for_' . request()->param('start') . ".csv");
@@ -38,7 +39,7 @@ my $bets = $txn_mapper->get_bet_transactions_for_broker({
     end         => $end
 });
 
-print "$action_type transactions\n";
+print encode_entities($action_type) . " transactions\n";
 print "transaction time,transaction id, betid, client loginid,residence,quantity,currency code, amount,bet description,is_random";
 foreach my $transaction_id (sort { $a cmp $b } keys %{$bets}) {
     my $bet              = $bets->{$transaction_id};
@@ -63,7 +64,7 @@ foreach my $transaction_id (sort { $a cmp $b } keys %{$bets}) {
         warn("shortcode[$short_code]. curr[$currency_code], $_");
     };
 
-    print "$transaction_time,$id,$bet_id,$client_loginid,$residence,$quantity,$currency_code,$amount,$long_code,$is_random";
+    print encode_entities("$transaction_time,$id,$bet_id,$client_loginid,$residence,$quantity,$currency_code,$amount,$long_code,$is_random");
 }
 
 print "Number of bets listed above : " . scalar keys %{$bets};

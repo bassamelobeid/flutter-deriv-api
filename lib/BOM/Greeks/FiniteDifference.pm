@@ -26,9 +26,9 @@ has [qw(model_greeks)] => (
 );
 
 has _method => (
-    is         => 'ro',
-    isa        => 'Str',
-    default    => 'theo_probability',
+    is      => 'ro',
+    isa     => 'Str',
+    default => 'theo_probability',
 );
 
 has [qw(original_params epsigma_prices epspot_prices eptime_prices dualep_prices)] => (

@@ -4,6 +4,7 @@ use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 use Format::Util::Numbers qw(commas);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use HTML::Entities;
 
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
@@ -49,24 +50,24 @@ if (open(FILE, $filename)) {
                     foreach my $h (@hisportfolio) {
                         if ($h =~ /^(\d+)L\s(\d*\.?\d*)\s([^_]+)\_([^_]+)\_(\d+)/) { $aggpayouts += $5; }
                     }
-                    $thislineout .= "<TD><font size=2 face=verdana>$aggpayouts</TD>";
+                    $thislineout .= "<TD><font size=2 face=verdana>" . encode_entities($aggpayouts) . "</TD>";
 
                     $f =~ s/\+/<br>/g;
                 }
                 if (($displayport) || ($i < 6)) {
-                    $thislineout .= "<TD><font size=2 face=verdana>$f</TD>";
+                    $thislineout .= "<TD><font size=2 face=verdana>" . encode_entities($f) . "</TD>";
                     if (abs($f) > 0) { $sums[$i] += $f; }
 
                     if ($i == 5) {
-                        $thislineout .= "<TD><font size=2 face=verdana>" . commas($fields[4] - $fields[5]) . "</TD>";
+                        $thislineout .= "<TD><font size=2 face=verdana>" . encode_entities(commas($fields[4] - $fields[5])) . "</TD>";
                     }    #marked-to-market profit/loss
                 }
 
                 $i++;
             }
 
-            if (request()->param('sortby') == 6) { $thislineout .= "<!-- " . ($fields[4] - $fields[5]) . " -->"; }
-            else                                 { $thislineout .= "<!-- " . $fields[request()->param('sortby')] . " -->"; }
+            if   (request()->param('sortby') == 6) { $thislineout .= "<!-- " . encode_entities($fields[4] - $fields[5]) . " -->"; }
+            else                                   { $thislineout .= "<!-- " . encode_entities($fields[request()->param('sortby')]) . " -->"; }
             $thislineout .= "</TR>";
 
             if (not $viewonlylist or $viewonlylist =~ /$fields[0]/) { push @to_out, $thislineout; }
@@ -75,7 +76,7 @@ if (open(FILE, $filename)) {
 
     close(FILE);
 } else {
-    print "Can not open $filename";
+    print "Can not open " . encode_entities($filename);
 }
 
 my @s_to_out;
@@ -93,8 +94,8 @@ print @s_to_out;
 print "<TR>";
 my $i = 0;
 foreach my $f (@fields) {
-    if (abs($sums[$i]) > 0) { print "<TD><B><font size=2 face=verdana> " . (commas($sums[$i])) . "</TD>"; }
-    else                    { print "<TD></TD>"; }
+    if   (abs($sums[$i]) > 0) { print "<TD><B><font size=2 face=verdana> " . encode_entities(commas($sums[$i])) . "</TD>"; }
+    else                      { print "<TD></TD>"; }
     $i++;
 }
 print "</TR>";
