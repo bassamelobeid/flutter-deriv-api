@@ -16,6 +16,7 @@ use LandingCompany::Offerings qw(get_offerings_with_filter);
 use List::Util qw(first);
 use Digest::MD5 qw(md5_hex);
 use Date::Utility;
+use HTML::Entities;
 
 use LandingCompany::Registry;
 use BOM::System::Config;
@@ -44,7 +45,7 @@ if ($r->param('update_limit')) {
             if (first { $value eq $_ } @{$known_values{$key}}) {
                 $ref{$key} = $value;
             } else {
-                print "Unrecognized value[" . $r->param($key) . "] for $key. Nothing is updated!!";
+                print "Unrecognized value[" . encode_entities($r->param($key)) . "] for $key. Nothing is updated!!";
                 code_exit_BO();
             }
         }

@@ -71,7 +71,6 @@ if ($cgi->param('upload_file')) {
 
     if ($cgi->param('download') eq 'download') {
         BOM::JapanContractDetails::single_output_as_excel($pricing_parameters, $cgi->param('short_code') . '.xls');
-
     } else {
         load_template($cgi->param('broker'),$pricing_parameters); 
 

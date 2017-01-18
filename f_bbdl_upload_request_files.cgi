@@ -4,6 +4,7 @@ use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
 use CGI;
+use HTML::Entities;
 
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
@@ -47,14 +48,15 @@ if ($type eq 'request') {
 
 my $temp_dir = '/tmp';
 foreach my $file (@files) {
+    my $encoded_file = encode_entities($file);
     if (length($file) >= 25) {
-        print "<font color=red>ERROR: $file exceeds 25 characters in length</font><br>";
+        print "<font color=red>ERROR: $encoded_file exceeds 25 characters in length</font><br>";
     } elsif (not -s $temp_dir . '/' . $file) {
-        print "<font color=red>ERROR: $file does not exist</font><br>";
+        print "<font color=red>ERROR: $encoded_file does not exist</font><br>";
     } elsif ($sftp->put($temp_dir . '/' . $file, $file)) {
-        print "UPLOAD $file SUCCESSFUL<br>";
+        print "UPLOAD $encoded_file SUCCESSFUL<br>";
     } else {
-        print "<font color=red>UPLOAD $file FAILURE: " . $sftp->error . '</font><br>';
+        print "<font color=red>UPLOAD $encoded_file FAILURE: " . encode_entities($sftp->error) . '</font><br>';
     }
 }
 

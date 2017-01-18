@@ -1,6 +1,7 @@
 #!/etc/rmg/bin/perl
 package main;
 use strict 'vars';
+use HTML::Entities;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
@@ -11,6 +12,7 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('BACKOFFICE ACCOUNTS');
 my $broker           = request()->broker_code;
+my $encoded_broker   = encode_entities($broker);
 my $staff            = BOM::Backoffice::Auth0::can_access(['Payments']);
 my $clerk            = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $currency_options = get_currency_options();
@@ -26,7 +28,7 @@ my $today = Date::Utility->new->date_ddmmmyy;
 if (request()->param('whattodo') eq 'showdocs') {
     my $loginid = uc(request()->param('loginID'));
     my $client = Client::Account->new({loginid => $loginid});
-    Bar("SHOW CLIENT PAYMENT DOCS FOR $loginid " . $client->full_name);
+    Bar(encode_entities("SHOW CLIENT PAYMENT DOCS FOR $loginid " . $client->full_name));
     print "ID docs:";
     print show_client_id_docs($client, show_delete => 1);
     print "<hr>Payment docs:";
@@ -38,7 +40,7 @@ Bar("QUICK CHECK OF A CLIENT ACCOUNT");
 
 print "<FORM ACTION=\"" . request()->url_for('backoffice/f_manager_history.cgi') . "\" METHOD=\"POST\"><font size=2 face=verdana><B>";
 print "Check Statement of LoginID : <input name=loginID type=text size=10 value=''>";
-print "<INPUT type=hidden name=\"broker\" value=\"$broker\">";
+print "<INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">";
 print "<INPUT type=hidden name=\"l\" value=\"EN\">";
 print "<INPUT type=\"submit\" value=Go>";
 print "</FORM>";
@@ -47,14 +49,14 @@ print "</FORM>";
 print "<FORM ACTION=\"" . request()->url_for('backoffice/f_manager_statement.cgi') . "\" METHOD=\"POST\">";
 print "Check Portfolio of LoginID : <input name=loginID type=text size=10 value=''>";
 print "<input type=hidden name=outputtype value=table>";
-print "<INPUT type=hidden name=\"broker\" value=\"$broker\">";
+print "<INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">";
 print "<INPUT type=hidden name=\"l\" value=\"EN\">";
 print "<INPUT type=\"submit\" value=\"Go\">";
 print "</FORM>";
 
 print "<FORM ACTION=\"" . request()->url_for('backoffice/f_manager.cgi') . "\" METHOD=\"POST\"><font size=2 face=verdana><B>";
 print "Show uploaded payment supporting docs of LoginID : <input name=loginID type=text size=10 value=''>";
-print "<INPUT type=hidden name=\"broker\" value=\"$broker\">";
+print "<INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">";
 print "<input type=hidden name=whattodo value=showdocs>";
 print "<INPUT type=\"submit\" value=Go> <a href='"
     . request()->url_for('backoffice/download_document.cgi', {path => "/$broker/payments"})
@@ -67,7 +69,7 @@ One staff member needs to generate a 'Dual Control Code' that is then used by th
 print "<form id=\"paymentDCC\" action=\""
     . request()->url_for('backoffice/f_makedcc.cgi')
     . "\" method=\"post\" class=\"bo_ajax_form\">"
-    . "<input type=\"hidden\" name=\"broker\" value=\"$broker\">"
+    . "<input type=\"hidden\" name=\"broker\" value=\"$encoded_broker\">"
     . "<input type=\"hidden\" name=\"l\" value=\"EN\">"
     . " Amount: <select name=\"currency\">$currency_options</select> <input type=\"text\" name=\"amount\" size=\"7\">"
     . " Type of transaction: <select name=\"transtype\">"
@@ -77,7 +79,8 @@ print "<form id=\"paymentDCC\" action=\""
     . "</select>"
     . " LoginID of the client: <input type=\"text\" size=\"12\" name=\"clientloginid\">"
     . "<br>Input a comment/reminder about this DCC: <input type=\"text\" size=\"50\" name=\"reminder\">"
-    . "<br><input type=\"submit\" value='Make Dual Control Code (by $clerk)'>"
+    . "<br><input type=\"submit\" value='Make Dual Control Code (by "
+    . encode_entities($clerk) . ")'>"
     . "</form>";
 
 my $tt = BOM::Backoffice::Request::template;

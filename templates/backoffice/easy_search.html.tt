@@ -43,7 +43,7 @@
 
 [% ELSIF client %]
 
-    <h2><a href=[%client_href%]>[%client%]</a></h2>
+    <h2><a href=[%client_href | none %]>[%client%]</a></h2>
 
     <table class="easy_search">
     <tr>
@@ -105,26 +105,29 @@
     [% 
     FOR class IN one_to_one_classes;
         hit = client.$class;
-        NEXT UNLESS hit;
-        "<h4>$class</h4>$hit";
-    END %]
+        NEXT UNLESS hit; %]
+        <h4>$class</h4>$hit
+    [% END %]
 
-    [% limit = 100;
+    [%
+    limit = 100;
     FOR child_class IN child_classes;
         mth1 = "${child_class}_count";
         mth2 = "find_$child_class";
         count = client.$mth1;
         NEXT UNLESS count;
-        hits = client.$mth2('limit',limit);
-        "<h4>$child_class</h4>";
-        "<em>.. showing only $limit of $count entries</em>" IF count >= limit;
-        "<ul>";
-        FOR hit IN hits;
-            "<li>$hit</li>";
-            LAST IF loop.count >= limit;
-        END;
-        "</ul>";
-    END %]
+        hits = client.$mth2('limit',limit); $]
+        <h4>$child_class</h4>
+        [% IF count >= limit %]
+        <em>.. showing only [% limit %] of [% count %] entries</em>
+        [% END %]
+        <ul>
+        [% FOR hit IN hits %]
+            <li>$hit</li>
+        [% LAST IF loop.count >= limit;
+        END %]
+        </ul>
+    [% END %]
 
 [% END %]
 

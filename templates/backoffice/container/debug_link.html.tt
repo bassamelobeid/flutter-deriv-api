@@ -2,11 +2,11 @@
     <div id="[% bet_id %]">
         <ul>
             [% FOREACH tab = tabs %]
-            <li><a[% IF tab.class %] class="[% tab.class %]"[% END %] href="#[% bet_id %][% tab.url %]">[% tab.label %]</a></li>
+            <li><a[% IF tab.class %] class="[% tab.class %]"[% END %] href="#[% bet_id %][% tab.url | none %]">[% tab.label %]</a></li>
             [% END %]
         </ul>
             [% FOREACH tab = tabs %]
-        <div id="[% bet_id %][% tab.url %]">[% tab.content %]</div>
+        <div id="[% bet_id %][% tab.url | none %]">[% tab.content | none %]</div>
             [% END %]
     </div>
     <script> \$(function() { \$( "#[% bet_id %]" ).tabs(); }); </script>
