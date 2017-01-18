@@ -53,7 +53,8 @@ BOM::Backoffice::Request::template->process(
     {
         results => $results,
         params  => \%non_empty_fields,
-        broker  => $broker
+        broker  => $broker,
+        url     => request()->url_for("backoffice/f_popupclientsearch.cgi"),
     }) || die BOM::Backoffice::Request::template->error(), "\n";
 
 code_exit_BO();
