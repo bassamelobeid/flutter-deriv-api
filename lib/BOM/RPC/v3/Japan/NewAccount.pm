@@ -6,6 +6,7 @@ use warnings;
 use JSON qw(from_json encode_json);
 use DateTime;
 use Date::Utility;
+use HTML::Entities qw(encode_entities);
 
 use Brands;
 use LandingCompany::Registry;
@@ -230,12 +231,13 @@ support@binary.com',
         );
 
         send_email({
-            from               => Brands->new(name => request()->brand)->emails('support'),
-            to                 => $client->email,
-            subject            => localize('Kindly send us your documents for verification.'),
-            message            => [$email_content],
-            use_email_template => 1,
-            template_loginid   => $client->loginid,
+            from                  => Brands->new(name => request()->brand)->emails('support'),
+            to                    => $client->email,
+            subject               => localize('Kindly send us your documents for verification.'),
+            message               => [$email_content],
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            template_loginid      => $client->loginid,
         });
         BOM::System::AuditLog::log('Japan Knowledge Test pass for ' . $jp_client->loginid . ' . System email sent to request for docs',
             $client->loginid);
@@ -388,9 +390,11 @@ sub set_jp_settings {
                 message_to_client => localize('Sorry, an error occurred while processing your account.')});
     }
 
-    my $message =
-        localize('Dear [_1] [_2] [_3],', BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name)
-        . "\n\n";
+    my $message = localize(
+        'Dear [_1] [_2] [_3],',
+        map { encode_entities($_) } BOM::Platform::Locale::translate_salutation($client->salutation),
+        $client->first_name, $client->last_name
+    ) . "\n\n";
 
     $message .= localize('Please note that your settings have been updated as follows:') . "\n\n";
 
@@ -398,21 +402,22 @@ sub set_jp_settings {
     foreach my $field (@updated) {
         $message .=
               "<tr><td style='text-align:left'><strong>"
-            . $field->[0]
+            . encode_entities($field->[0])
             . "</strong></td><td> : </td><td style='text-align:left'>"
-            . $field->[2]
+            . encode_entities($field->[2])
             . "</td></tr>";
     }
     $message .= "</table>";
     $message .= "\n" . localize('The [_1] team.', $website_name);
 
     send_email({
-        from               => Brands->new(name => request()->brand)->emails('support'),
-        to                 => $client->email,
-        subject            => $client->loginid . ' ' . localize('Change in account settings'),
-        message            => [$message],
-        use_email_template => 1,
-        template_loginid   => $client->loginid,
+        from                  => Brands->new(name => request()->brand)->emails('support'),
+        to                    => $client->email,
+        subject               => $client->loginid . ' ' . localize('Change in account settings'),
+        message               => [$message],
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        template_loginid      => $client->loginid,
     });
     BOM::System::AuditLog::log('Your settings have been updated successfully', $client->loginid);
 

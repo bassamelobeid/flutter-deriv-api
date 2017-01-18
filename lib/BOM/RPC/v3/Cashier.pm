@@ -700,22 +700,27 @@ sub paymentagent_transfer {
     stats_inc('business.paymentagent');
 
     # sent email notification to client
-    my $emailcontent = localize('Dear [_1] [_2] [_3],', $client_to->salutation, $client_to->first_name, $client_to->last_name,) . "\n\n" . localize(
+    my $emailcontent = localize(
+        'Dear [_1] [_2] [_3],',                  encode_entities($client_to->salutation),
+        encode_entities($client_to->first_name), encode_entities($client_to->last_name))
+        . "\n\n"
+        . localize(
         'We would like to inform you that the transfer of [_1] [_2] via [_3] has been processed.
 The funds have been credited into your account.
 
 Kind Regards,
 
-The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $website_name
-    );
+The [_4] team.', $currency, $amount, encode_entities($payment_agent->payment_agent_name), $website_name
+        );
 
     send_email({
-        'from'               => Brands->new(name => request()->brand)->emails('support'),
-        'to'                 => $client_to->email,
-        'subject'            => localize('Acknowledgement of Money Transfer'),
-        'message'            => [$emailcontent],
-        'use_email_template' => 1,
-        'template_loginid'   => $loginid_to
+        'from'                  => Brands->new(name => request()->brand)->emails('support'),
+        'to'                    => $client_to->email,
+        'subject'               => localize('Acknowledgement of Money Transfer'),
+        'message'               => [$emailcontent],
+        'use_email_template'    => 1,
+        'email_content_is_html' => 1,
+        'template_loginid'      => $loginid_to
     });
 
     return {
@@ -969,11 +974,19 @@ sub paymentagent_withdraw {
     my $client_name = $client->first_name . ' ' . $client->last_name;
     # sent email notification to Payment Agent
     my $emailcontent = [
-        localize('Dear [_1] [_2] [_3],', $pa_client->salutation, $pa_client->first_name, $pa_client->last_name),
+        localize(
+            'Dear [_1] [_2] [_3],',                  encode_entities($pa_client->salutation),
+            encode_entities($pa_client->first_name), encode_entities($pa_client->last_name)
+        ),
         '',
         localize(
             'We would like to inform you that the withdrawal request of [_1][_2] by [_3] [_4] has been processed. The funds have been credited into your account [_5] at [_6].',
-            $currency, $amount, $client_name, $client_loginid, $paymentagent_loginid, $website_name
+            $currency,
+            $amount,
+            encode_entities($client_name),
+            $client_loginid,
+            $paymentagent_loginid,
+            $website_name
         ),
         '',
         $further_instruction,
@@ -983,12 +996,13 @@ sub paymentagent_withdraw {
         localize('The [_1] team.', $website_name),
     ];
     send_email({
-        from               => Brands->new(name => request()->brand)->emails('support'),
-        to                 => $paymentagent->email,
-        subject            => localize('Acknowledgement of Withdrawal Request'),
-        message            => $emailcontent,
-        use_email_template => 1,
-        template_loginid   => $pa_client->loginid,
+        from                  => Brands->new(name => request()->brand)->emails('support'),
+        to                    => $paymentagent->email,
+        subject               => localize('Acknowledgement of Withdrawal Request'),
+        message               => $emailcontent,
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        template_loginid      => $pa_client->loginid,
     });
 
     return {
