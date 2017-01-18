@@ -87,7 +87,7 @@
         [% ELSE %]
                 <div class="grd-grid-1">[% transaction.id %]</div>
                 <div class="grd-grid-1"></div>
-                <div class="grd-grid-4">[% transaction.payment_remark | replace('\s+:\s+', ': ') %]</div>
+                <div class="grd-grid-4">[% transaction.payment_remark | replace('\s+:\s+', ': ') | html  %]</div>
                 [% IF transaction.action_type == 'deposit' %]
                         <div class="grd-grid-1 right-aligned"></div>
                         <div class="grd-grid-1 right-aligned">[% to_monetary_number_format(transaction.amount) %]</div>
