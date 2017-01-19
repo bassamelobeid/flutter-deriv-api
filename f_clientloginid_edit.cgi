@@ -735,7 +735,6 @@ BOM::Backoffice::Request::template->process(
         history => $login_history,
         limit   => $limit
     });
-print '</div>';
 
 code_exit_BO();
 
