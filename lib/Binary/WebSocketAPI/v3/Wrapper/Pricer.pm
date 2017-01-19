@@ -144,7 +144,7 @@ sub proposal_open_contract {
         my $resp_sub = sub {
             my ($rpc_response, $response, $req_storage) = @_;
             # responce contains data or rpc error - so no need to retry rpc call
-            my $valid_response = scalar(%{$response->{proposal_open_contract}}) or $rpc_response->{error};
+            my $valid_response = %{$response->{proposal_open_contract}} or $rpc_response->{error};
 
             # empty response and having some tries
             if (!$valid_response && --$retries) {
