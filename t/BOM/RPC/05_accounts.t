@@ -983,6 +983,8 @@ subtest $method => sub {
             'first_name'                     => 'bRaD',
             'email_consent'                  => '0',
             'allow_copiers'                  => '0',
+            'tax_residence'                  => undef,
+            'tax_identification_number'      => undef,
         });
 
     $params->{token} = $token1;
