@@ -208,47 +208,4 @@ subtest 'Slope' => sub {
     ok exists $expiry_range->debug_information->{risk_markup};
 };
 
-sub _surface_with_10_deltas {
-
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'volsurface_delta',
-        {
-            symbol  => 'frxEURAUD',
-            surface => {
-                7 => {
-                    smile => {
-                        10 => 0.22,
-                        25 => 0.21,
-                        50 => 0.2,
-                        75 => 0.211,
-                        90 => 0.221
-                    },
-                    vol_spread => {
-                        50 => 0.1,
-                    }
-                },
-                30 => {
-                    smile => {
-                        10 => 0.22,
-                        25 => 0.21,
-                        50 => 0.2,
-                        75 => 0.211,
-                        90 => 0.221
-                    },
-                    vol_spread => {50 => 0.1}
-                },
-                365 => {
-                    smile => {
-                        10 => 0.22,
-                        25 => 0.21,
-                        50 => 0.2,
-                        75 => 0.211,
-                        90 => 0.221
-                    },
-                    vol_spread => {50 => 0.1}
-                },
-            },
-        });
-}
-
 done_testing;
