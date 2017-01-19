@@ -21,7 +21,12 @@ my $payment_types = $params{payment_type};
 my $all_types     = $params{all_payment_types};
 my $months        = $params{months} // 1;
 
-my ($yyyy, $mm) = $yyyymm =~ /^(\d{4})-(\d{2})$/;
+# We construct the download filename from these two values, so let's make sure they're
+# sensible before proceeding.
+die "Invalid broker code" unless $broker =~ /^[A-Z]{1,6}$/;
+my ($yyyy, $mm) = $yyyymm =~ /^(\d{4})-(\d{2})$/
+    or die "Invalid yyyymm parameter";
+
 my $start_date = DateTime->new(
     year  => $yyyy,
     month => $mm
@@ -29,19 +34,25 @@ my $start_date = DateTime->new(
 my $until_date = $start_date->clone->add(months => $months);
 
 my ($payment_filter, $csv_name);
+
+my @binds = (
+    $start_date->ymd,    # b0
+    $until_date->ymd,    # b1
+    $broker,             # b2
+);
+
 if ($all_types) {
-    $payment_filter = '';
-    $csv_name       = "${broker}_all_payments_$yyyymm.csv";
+    $csv_name = "${broker}_all_payments_$yyyymm.csv";
 } else {
+    $csv_name = "${broker}_payments_$yyyymm.csv";
     my @payment_types = ref $payment_types ? @$payment_types : ($payment_types);
-    my $payments_string = join(',', map { "'$_'" } @payment_types);
-    $payment_filter = "  and p.payment_type_code in ( $payments_string )";
-    $csv_name       = "${broker}_payments_$yyyymm.csv";
+    $payment_filter = 'and p.payment_type_code in (' . join(',', ('?') x @payment_types) . ')';
+    push @binds, @payment_types;
 }
 
 PrintContentType_excel($csv_name);
 
-my $sql = <<HERE;
+my $sql = <<'START' . ($payment_filter ? <<"FILTER" : '') . <<'END';
 
     select
         cli.broker_code,
@@ -59,22 +70,18 @@ my $sql = <<HERE;
     where
         p.payment_time >= ?   -- b0
     and p.payment_time <  ?   -- b1
-    $payment_filter
     and cli.broker_code = ?   -- b2
+START
+    $payment_filter
+FILTER
     order by 1,2,3
-
-HERE
+END
 
 my $dbh = BOM::Database::ClientDB->new({
         broker_code => $broker,
     })->db->dbh;
 
-my $sth   = $dbh->prepare($sql);
-my @binds = (
-    $start_date->ymd,    # b0
-    $until_date->ymd,    # b1
-    $broker,             # b2
-);
+my $sth = $dbh->prepare($sql);
 $sth->execute(@binds);
 
 my @headers = qw/Broker Loginid Residence Timestamp PaymentGateway PaymentType Currency Amount Remark/;

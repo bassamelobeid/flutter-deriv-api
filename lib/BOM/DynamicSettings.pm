@@ -41,8 +41,8 @@ sub save_settings {
                   '<div id="error">FAILED to save global'
                 . '<br />Setting has been changed after you loaded dynamic settings page<br />'
                 . 'Old Revision '
-                . $setting_revision . '=='
-                . $submitted_revision
+                . encode_entities($setting_revision) . '=='
+                . encode_entities($submitted_revision)
                 . ' New Revision '
                 . '</div>';
         } elsif ($submitted eq 'global') {
@@ -67,11 +67,11 @@ sub save_settings {
                     try {
                         if (not $compare->Cmp) {
                             $data_set->{global}->set($s, $new_value);
-                            $message .= join('', '<div id="saved">Set ', $s, ' to ', $display_value, '</div>');
+                            $message .= join('', '<div id="saved">Set ', encode_entities($s), ' to ', encode_entities($display_value), '</div>');
                         }
                     }
                     catch {
-                        $message .= join('', '<div id="error">Invalid value, could not set ', $s, ' to ', $display_value, '</div>');
+                        $message .= join('', '<div id="error">Invalid value, could not set ', encode_entities($s), ' to ', encode_entities($display_value), '</div>');
                         $has_errors = 1;
                     };
                 }
@@ -85,7 +85,7 @@ sub save_settings {
                 $message .= '<div id="saved">Saved global settings to environment</div>';
             }
         } else {
-            $message .= "<div id=\"error\">Invalid 'submitted' value $submitted</div>";
+            $message .= "<div id=\"error\">Invalid 'submitted' value " . encode_entities($submitted) . "</div>";
         }
 
         print '<div id="message">' . $message . '</div>';
