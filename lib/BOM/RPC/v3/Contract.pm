@@ -306,6 +306,7 @@ sub get_bid {
     }
 
     try {
+        $params->{validation_params}->{landing_company} = $landing_company;
         my $is_valid_to_sell =
               $contract->is_spread
             ? $contract->is_valid_to_sell
