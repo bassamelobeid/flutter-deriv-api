@@ -35,8 +35,6 @@ unless ($broker) {
     code_exit_BO();
 }
 
-$loginID =~ /^(\D+)(\d+)$/;
-
 if ($depositswithdrawalsonly eq 'yes') {
     Bar($encoded_loginID . ' (DEPO & WITH ONLY)');
 } else {

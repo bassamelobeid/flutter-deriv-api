@@ -400,7 +400,7 @@ sub client_statement_for_backoffice {
 }
 
 sub get_untrusted_types {
-    my $types = [{
+    return [{
             'linktype' => 'disabledlogins',
             'comments' => 'Disabled/Closed Accounts',
             'code'     => 'disabled'
@@ -425,7 +425,6 @@ sub get_untrusted_types {
             'comments' => 'JP Activation Pending',
             'code'     => 'jp_activation_pending'
         }];
-    return $types;
 }
 
 1;

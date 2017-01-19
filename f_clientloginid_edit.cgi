@@ -205,8 +205,8 @@ if ($input{whattodo} eq 'uploadID') {
             system("mkdir -p $path");
         }
 
-        #we use N seconds before current time, where N is number of same type documents uploaded before
-        #XXX: maybe this logic is bad, and we need to flag it with _1 or something. I'm afraid this can affect some legacy
+        # we use N seconds after current time, where N is number of same type documents uploaded before
+        # we don't flag such files with anything different (like _1) for it not to affect any other legacy code
         my $time = time() + $used_doctypes->{$doctype}++;
 
         my $newfilename = "$path/$loginid.$doctype.$time.$docformat";

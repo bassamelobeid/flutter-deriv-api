@@ -12,9 +12,11 @@ use f_brokerincludeall;
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
+
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation("CLIENT LOGINID ADMIN");
+
 my $staff   = BOM::Backoffice::Auth0::can_access(['CS']);
 my $broker  = request()->broker_code;
 my $tmp_dir = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;

@@ -17,8 +17,8 @@ PrintContentType();
 
 my $ip      = request()->param('ip')      // '';
 my $loginid = request()->param('loginid') // '';
-my $date_from = request()->param('date_from');
-my $date_to   = request()->param('date_to');
+my $date_from = request()->param('date_from') // '2016-01-01';
+my $date_to   = request()->param('date_to')   // '2018-01-01';
 Bar("IP Search");
 BrokerPresentation("IP SEARCH FOR");
 BOM::Backoffice::Auth0::can_access(['CS']);
@@ -45,8 +45,6 @@ if ($ip ne '') {
         sort_by => 't1.history_date DESC'
     );
 } elsif ($loginid ne '') {
-    $date_from        = '2016-01-01';
-    $date_to          = '2018-01-01';
     $suspected_logins = get_logins_from_same_ips($loginid, $date_from, $date_to);
 }
 
