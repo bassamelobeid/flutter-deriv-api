@@ -45,7 +45,7 @@ A list of symbols that has flat moneyness surface.
 has symbols_for_moneyness => (
     is      => 'ro',
     default => sub {
-        ['ADSMI', 'OTC_ISEQ', 'ISEQ', 'JCI', 'OTC_JCI',];
+        ['ADSMI', 'OTC_ISEQ', 'ISEQ', 'JCI', 'OTC_JCI', 'DFMGI', 'SASEIDX', 'EGX30'];
     });
 
 =head2 run
