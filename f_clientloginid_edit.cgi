@@ -737,40 +737,6 @@ BOM::Backoffice::Request::template->process(
     });
 print '</div>';
 
-# to be removed soon, no more login history based on loginid
-Bar("$encoded_loginid Login history");
-print '<div><br/>';
-my $loglim = 200;
-my $logins = $client->find_login_history(
-    sort_by => 'login_date desc',
-    limit   => $loglim
-);
-
-if (@$logins == 0) {
-    print qq{<p>There is no login history</p>};
-} else {
-    print qq{<p color="red">Showing last $loglim logins only</p>} if @$logins > $loglim;
-    print qq{<table class="collapsed">};
-    foreach my $login (reverse @$logins) {
-        my $date        = $login->login_date->strftime('%F %T');
-        my $status      = $login->login_successful ? 'ok' : 'failed';
-        my $environment = $login->login_environment;
-        if (length($environment) > 100) {
-            substr($environment, 100) = '..';
-        }
-        # yes this is mostly a copy+paste version from ~20 lines above, but with one fewer field
-        print qq{<tr><td>}
-            . encode_entities("$date UTC")
-            . qq{</td><td>}
-            . encode_entities($status)
-            . qq{</td><td>}
-            . encode_entities($environment)
-            . qq{</td></tr>\n};
-    }
-    print qq{</table>};
-}
-print '</div>';
-
 code_exit_BO();
 
 1;
