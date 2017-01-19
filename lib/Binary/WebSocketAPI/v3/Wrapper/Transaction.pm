@@ -15,9 +15,7 @@ sub buy_store_last_contract_id {
 
     my $now = time;
     my $last_contracts = $c->stash('last_contracts') // {};
-    for (keys %$last_contracts) {
-        delete $last_contracts->{$_} if $now - $last_contracts->{$_} > 10;    # keep contract bought in last 10 sec
-    }
+    # see cleanup at Binary::WebSocketAPI::Hooks::cleanup_strored_contract_ids
     if ($api_response->{contract_id}) {
         $last_contracts->{$api_response->{contract_id}} = $now;
         $c->stash(last_contracts => $last_contracts);

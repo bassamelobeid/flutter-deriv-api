@@ -123,60 +123,59 @@ sub proposal_open_contract {
         msg_type               => 'proposal_open_contract',
         proposal_open_contract => {}};
 
-    if (!%$response) {
-        # special case: 'proposal_open_contract' with contract_id set called immediately after 'buy'
-        # could return empty response because of DB replication delay
-        # so here retries are performed
-        if ($args->{contract_id}) {
-            my $last_contracts = $c->stash('last_contracts') // {};
-            my $now = time;
-            for (keys %$last_contracts) {
-                # see Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_store_last_contract_id
-                delete $last_contracts->{$_} if $now - $last_contracts->{$_} > 10;    # keep contract bought in last 10 sec
-            }
-            $c->stash(last_contracts => $last_contracts);
-            if ($last_contracts->{$args->{contract_id}}) {
-                # contract id is in list, but response is empty - trying to retry rpc call
-                my $retries = 5;
-                my $call_sub;
-                # preparing response sub wich will be executed within retries loop
-                my $resp_sub = sub {
-                    my ($rpc_response, $response, $req_storage) = @_;
-                    return $response if $rpc_response->{error};
-                    if (%{$response->{proposal_open_contract}}) {
-                        # got proper response, so process it in usual way
-                        _process_proposal_open_contract_response($c, $response->{proposal_open_contract}, $req_storage);
-                    } else {
-                        # again some problems..
-                        if (--$retries) {
-                            # we still have to retry, so sleep a second and perform rpc call again
-                            Mojo::IOLoop->timer(1, $call_sub);
-                        } else {
-                            # no mo retries, return empty answer
-                            return $empty_answer;
-                        }
-                    }
-                    return;
-                };
-                # new rpc call with response sub wich holds delay and re-call
-                $call_sub = sub {
-                    my %call_params = %$req_storage;
-                    $call_params{response} = $resp_sub;
-                    $c->call_rpc(\%call_params);
-                    return;
-                };
-                # perform rpc call again and entering in retries loop
-                $call_sub->($c, $req_storage);
-                return;
-            } else {
-                return $empty_answer;
-            }
-        } else {
-            return $empty_answer;
-        }
+    # If we had a valid response, we can return it immediately
+    if (%$response) {
+        _process_proposal_open_contract_response($c, $response, $req_storage);
+        return;
     }
 
-    _process_proposal_open_contract_response($c, $response, $req_storage);
+    # If we're not looking for a specific contract_id, then an empty response is fine
+    return $empty_answer unless $args->{contract_id};
+
+    # special case: 'proposal_open_contract' with contract_id set called immediately after 'buy'
+    # could return empty response because of DB replication delay
+    # so here retries are performed
+    my $last_contracts = $c->stash('last_contracts') // {};
+    if ($last_contracts->{$args->{contract_id}}) {
+        # contract id is in list, but response is empty - trying to retry rpc call
+        my $retries = 5;
+        my $call_sub;
+        # preparing response sub wich will be executed within retries loop
+        my $resp_sub = sub {
+            my ($rpc_response, $response, $req_storage) = @_;
+            # responce contains data or rpc error - so no need to retry rpc call
+            my $valid_response = scalar(%{$response->{proposal_open_contract}}) or $rpc_response->{error};
+
+            # empty response and having some tries
+            if (!$valid_response && --$retries) {
+                # we still have to retry, so sleep a second and perform rpc call again
+                Mojo::IOLoop->timer(1, $call_sub);
+            }
+
+            # no need any more
+            undef $call_sub;
+
+            return $response if $rpc_response->{error};
+            # return empty answer if there is no more retries
+            return $empty_answer if !$valid_response;
+
+            # got proper response
+            _process_proposal_open_contract_response($c, $response->{proposal_open_contract}, $req_storage);
+
+            return;
+        };
+        # new rpc call with response sub wich holds delay and re-call
+        $call_sub = sub {
+            my %call_params = %$req_storage;
+            $call_params{response} = $resp_sub;
+            $c->call_rpc(\%call_params);
+            return;
+        };
+        # perform rpc call again and entering in retries loop
+        $call_sub->($c, $req_storage);
+    } else {
+        return $empty_answer;
+    }
 
     return;
 }
