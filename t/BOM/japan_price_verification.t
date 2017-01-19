@@ -6,6 +6,7 @@ use warnings;
 use Test::More;
 use Test::Deep;
 use Test::Exception;
+use Test::FailWarnings;
 use Date::Utility;
 use BOM::JapanContractDetails;
 use BOM::MarketData qw(create_underlying);
@@ -148,7 +149,7 @@ subtest 'verify_with_shortcode_IH' => sub {
     cmp_deeply(\@expected_key, \@actual_key, 'Getting expected pricing parameters');
 
     my $ask_prob;
-    foreach my $key (keys %{$pricing_parameters}->{ask_probability}) {
+    foreach my $key (keys %{$pricing_parameters->{ask_probability}}) {
         $ask_prob += $pricing_parameters->{ask_probability}->{$key};
     }
 
@@ -246,7 +247,7 @@ subtest 'verify_with_shortcode_Slope' => sub {
     cmp_deeply(\@expected_key, \@actual_key, 'Getting expected pricing parameters');
 
     my $ask_prob;
-    foreach my $key (sort keys %{$pricing_parameters}->{ask_probability}) {
+    foreach my $key (sort keys %{$pricing_parameters->{ask_probability}}) {
         $ask_prob += $pricing_parameters->{ask_probability}->{$key};
     }
 
@@ -384,7 +385,7 @@ subtest 'verify_with_shortcode_VV' => sub {
     cmp_deeply(\@expected_key, \@actual_key, 'Getting expected pricing parameters');
 
     my $ask_prob;
-    foreach my $key (sort keys %{$pricing_parameters}->{ask_probability}) {
+    foreach my $key (sort keys %{$pricing_parameters->{ask_probability}}) {
         $ask_prob += $pricing_parameters->{ask_probability}->{$key};
     }
 
