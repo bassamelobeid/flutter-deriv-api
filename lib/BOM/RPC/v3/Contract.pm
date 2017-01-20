@@ -147,7 +147,7 @@ sub _get_ask {
     return $response if $response;
 
     try {
-        if (!$contract->is_valid_to_buy) {
+        if (!($contract->is_spread ? $contract->is_valid_to_buy : $contract->is_valid_to_buy({landing_company => $p2->{landing_company}}))) {
             my ($message_to_client, $code);
 
             if (my $pve = $contract->primary_validation_error) {
@@ -306,6 +306,7 @@ sub get_bid {
     }
 
     try {
+        $params->{validation_params}->{landing_company} = $landing_company;
         my $is_valid_to_sell =
               $contract->is_spread
             ? $contract->is_valid_to_sell
