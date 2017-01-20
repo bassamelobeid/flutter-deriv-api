@@ -8,6 +8,7 @@ use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Market::AggTicks;
 
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -59,6 +60,7 @@ my $args = {
     barrier      => 'S0P',
 };
 
+BOM::Market::AggTicks->new->flush;
 
 subtest 'PUT variations' => sub {
     lives_ok {

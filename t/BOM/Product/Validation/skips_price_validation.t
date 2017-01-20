@@ -8,7 +8,7 @@ use Test::MockModule;
 use Test::FailWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Market::DataDecimate;
+use BOM::Market::AggTicks;
 use Date::Utility;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -19,13 +19,12 @@ Cache::RedisDB->flushall;
 initialize_realtime_ticks_db();
 
 note('mocking ticks to prevent warnings.');
-my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
+my $mocked = Test::MockModule->new('BOM::Market::AggTicks');
 $mocked->mock(
-    'decimate_cache_get',
+    'retrieve',
     sub {
         [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_} } (0 .. 10)];
     });
-
 note('sets time to 21:59:59, which has a payout cap at 200 for forex.');
 my $now = Date::Utility->new('2016-09-19 21:59:59');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

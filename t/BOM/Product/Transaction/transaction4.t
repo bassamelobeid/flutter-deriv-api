@@ -13,6 +13,7 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 use YAML::XS;
 use Cache::RedisDB;
+use BOM::Market::AggTicks;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase;

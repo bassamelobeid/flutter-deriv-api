@@ -7,7 +7,7 @@ use warnings;
 
 use BOM::MarketData::Fetcher::VolSurface;
 use List::MoreUtils qw(none all);
-use BOM::Market::DataDecimate;
+use BOM::Market::AggTicks;
 use VolSurface::Empirical;
 use Quant::Framework::VolSurface;
 use BOM::Platform::Context qw(localize);
@@ -284,17 +284,12 @@ sub _build_ticks_for_volatility_calculation {
     # If we price a contract with duration less that 15 minutes, we will still use a 15-minute period of ticks to calculate its volatility
     my $minimum_interval = 900;
     my $interval = Time::Duration::Concise->new(interval => max(900, $self->date_expiry->epoch - $self->effective_start->epoch) . 's');
-
-    my $backprice = ($self->underlying->for_date) ? 1 : 0;
-
-    my $ticks = BOM::Market::DataDecimate->new()->decimate_cache_get({
-        underlying  => $self->underlying,
-        start_epoch => $self->effective_start->epoch - $interval->seconds,
-        end_epoch   => $self->effective_start->epoch,
-        backprice   => $backprice,
+    return BOM::Market::AggTicks->new->retrieve({
+        underlying   => $self->underlying,
+        interval     => $interval,
+        ending_epoch => $self->effective_start->epoch,
+        fill_cache   => !$self->backtest,
     });
-
-    return $ticks;
 }
 1;
 

@@ -37,6 +37,12 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now
     }) for qw(USD JPY JPY-USD);
 
+my $mocked = Test::MockModule->new('BOM::Market::AggTicks');
+$mocked->mock(
+    'retrieve',
+    sub {
+        [map { {epoch => $_, quote => 100, symbol => 'frxUSDJPY'} } (0 .. 20)];
+    });
 
 subtest 'predefined_contracts' => sub {
     my $bet_params = {
