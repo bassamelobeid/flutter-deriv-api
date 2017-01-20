@@ -140,8 +140,8 @@ sub _validate_settlement_conditions {
 
     return if not $message;
 
-    my $refund = 'The buy price of this contract will be refunded due to missing market data.';
-    my $wait   = 'Please wait for contract settlement.';
+    my $refund = localize('The buy price of this contract will be refunded due to missing market data.');
+    my $wait   = localize('Please wait for contract settlement.');
 
     my $ref = {
         message           => $message,
