@@ -29,7 +29,7 @@
             <input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
             <div>
                 <button class="button" name="confirm_scopes" value="<%= l('Grant') %>" type="submit"><%= l('Grant') %></button>
-                <button class="button button-secondary button2" name="cancel_scopes" value="<%= l('Cancel') %>" type="submit"><%= l('Cancel') %></button>
+                <button class="button button-secondary" name="cancel_scopes" value="<%= l('Cancel') %>" type="submit"><%= l('Cancel') %></button>
             </div>
         </form>
     </div>
