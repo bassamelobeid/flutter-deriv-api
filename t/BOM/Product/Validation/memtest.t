@@ -18,20 +18,12 @@ use Date::Utility;
 use Finance::Asset;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Market::DataDecimate;
-use Cache::RedisDB;
+use BOM::Market::AggTicks;
 
 note('mocking ticks to prevent warnings.');
-my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
+my $mocked = Test::MockModule->new('BOM::Market::AggTicks');
 $mocked->mock(
-    'decimate_cache_get',
-    sub {
-        [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_, agg_epoch => $_} } (0 .. 10)];
-    });
-
-my $mocked2 = Test::MockModule->new('BOM::Market::DataDecimate');
-$mocked2->mock(
-    'data_cache_get',
+    'retrieve',
     sub {
         [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_} } (0 .. 10)];
     });
@@ -177,22 +169,6 @@ subtest 'memory cycle test' => sub {
             epoch      => $now->epoch,
             quote      => 100,
         });
-
-        my $redis     = Cache::RedisDB->redis;
-        my $undec_key = "DECIMATE_$u_symbol" . "_31m_FULL";
-        my $encoder   = Sereal::Encoder->new({
-            canonical => 1,
-        });
-        my %defaults = (
-            symbol => $u_symbol,
-            epoch  => $now->epoch,
-            quote  => 100,
-            bid    => 100,
-            ask    => 100,
-            count  => 1,
-        );
-        $redis->zadd($undec_key, $defaults{epoch}, $encoder->encode(\%defaults));
-
         foreach my $type (@contract_types) {
             foreach my $start_type (
                 get_offerings_with_filter(

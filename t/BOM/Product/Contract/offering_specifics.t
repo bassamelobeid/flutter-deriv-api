@@ -15,7 +15,7 @@ $mock->mock('get_trading_periods', sub { [] });
 use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
 use Cache::RedisDB;
-
+BOM::Market::AggTicks->new->flush();
 
 my $now = Date::Utility->new('2016-09-22');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
