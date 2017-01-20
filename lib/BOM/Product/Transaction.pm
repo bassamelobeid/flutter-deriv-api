@@ -1584,7 +1584,12 @@ sub _is_valid_to_buy {
     my $self     = shift;
     my $contract = $self->contract;
 
-    if (not $contract->is_valid_to_buy) {
+    if (
+        not(
+              $contract->is_spread
+            ? $contract->is_valid_to_buy
+            : $contract->is_valid_to_buy({landing_company => $self->client->landing_company->short})))
+    {
         return Error::Base->cuss(
             -type              => 'InvalidtoBuy',
             -mesg              => $contract->primary_validation_error->message,
