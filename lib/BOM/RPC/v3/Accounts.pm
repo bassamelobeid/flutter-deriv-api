@@ -675,6 +675,34 @@ sub set_settings {
 
     $client->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
 
+    # As per CRS/FATCA regulatory requirement we need to save this information as client status
+    # maintaining previous updates as well
+    if ((
+               $tax_residence
+            or $tax_identification_number
+        )
+        and (($client->tax_residence // '') ne $tax_residence or ($client->tax_identification_number // '') ne $tax_identification_number))
+    {
+        $client->tax_residence($tax_residence)                         if $tax_residence;
+        $client->tax_identification_number($tax_identification_number) if $tax_identification_number;
+
+        my $current_date = Date::Utility->new()->date;
+        # comma separated dates 2016-03-01,2016-12-12
+        my $data = $client->get_status('crs_tin_information');
+        if ($data) {
+            my @dates = sort { Date::Utility->new($a)->epoch <=> Date::Utility->new($b)->epoch } split ",", $data;
+            unless (grep { $current_date eq $_ } @dates) {
+                push @dates, $current_date;
+                $data = join ",", @dates;
+            }
+        } else {
+            $data = $current_date;
+        }
+
+        # update status with new date
+        $client->set_status('crs_tin_information', $data);
+    }
+
     if (not $client->save()) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InternalServerError',
