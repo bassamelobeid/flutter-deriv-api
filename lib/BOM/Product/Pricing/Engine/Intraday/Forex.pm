@@ -13,6 +13,7 @@ use Volatility::Seasonality;
 use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
 use BOM::System::Config;
+use BOM::Market::DataDecimate;
 
 sub clone {
     my ($self, $changes) = @_;
@@ -390,13 +391,17 @@ sub _build_ticks_for_trend {
 
     my $remaining_interval = Time::Duration::Concise::Localize->new(interval => $lookback_secs);
 
-    return $self->tick_source->retrieve({
-        underlying   => $bet->underlying,
-        interval     => $remaining_interval,
-        ending_epoch => $bet->date_pricing->epoch,
-        fill_cache   => !$bet->backtest,
-        aggregated   => $self->more_than_short_term_cutoff,
+    my $ticks;
+    my $backprice = ($bet->underlying->for_date) ? 1 : 0;
+    $ticks = $self->tick_source->get({
+        underlying  => $bet->underlying,
+        start_epoch => $bet->date_pricing->epoch - $remaining_interval->seconds,
+        end_epoch   => $bet->date_pricing->epoch,
+        backprice   => $backprice,
+        decimate    => $self->more_than_short_term_cutoff,
     });
+
+    return $ticks;
 }
 
 has lookback_seconds => (
