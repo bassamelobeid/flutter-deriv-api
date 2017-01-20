@@ -21,7 +21,7 @@ my $mocked_delta = Test::MockModule->new('Quant::Framework::VolSurface::Delta');
 $mocked_delta->mock('get_volatility', sub { 0.1 });
 my $mocked_money = Test::MockModule->new('Quant::Framework::VolSurface::Moneyness');
 $mocked_money->mock('get_volatility', sub { 0.1 });
-my $mocked_emp = Test::MockModule->new('BOM::MarketData::VolSurface::Empirical');
+my $mocked_emp = Test::MockModule->new('VolSurface::Empirical');
 $mocked_emp->mock('get_volatility', sub { 0.1 });
 
 my $now  = Date::Utility->new('2016-06-12 01:00:00');
