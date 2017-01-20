@@ -102,7 +102,11 @@ sub _build_symbols_to_update {
     my %skip_list =
         map { $_ => 1 } (
         @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol},
-        qw(frxBROUSD frxBROAUD frxBROEUR frxBROGBP frxXPTAUD frxXPDAUD frxAUDSAR)
+        qw(frxBROUSD frxBROAUD frxBROEUR frxBROGBP frxXPTAUD frxXPDAUD frxAUDSAR
+            frxBROUSD frxXPTAUD frxBROGBP frxXPDAUD frxBROEUR frxBROAUD frxEURAED frxBTCEUR
+            frxGBPAED frxCADJPY frxEURRUB frxBTCUSD frxAUDSAR frxUSDAED frxEURSAR frxAUDTRY
+            frxUSDILS frxGBPILS frxEURTRY frxNZDCHF frxGBPTRY frxCADCHF frxGBPSAR frxUSDRUB
+            frxAUDILS frxUSDSAR frxUSDTRY frxCHFJPY WLDUSD    WLDAUD    WLDEUR    WLDGBP)
         );
     my @symbols =
         (grep { $_ =~ /vol_points/ } (@{$self->file}))
