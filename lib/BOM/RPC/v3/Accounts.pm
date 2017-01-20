@@ -634,6 +634,14 @@ sub set_settings {
     # need to handle for $err->{status} as that come from japan settings
     return {status => 1} if ($client->is_virtual || $err->{status});
 
+    my $tax_residence             = $args->{'tax_residence'}             // '';
+    my $tax_identification_number = $args->{'tax_identification_number'} // '';
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'TINDetailsMandatory',
+            message_to_client => 'Tax related information is mandatory for legal and regulatory requirement.'
+        }) if ($client->landing_company->short eq 'maltainvest' and (not $tax_residence or not $tax_identification_number));
+
     my $now             = Date::Utility->new;
     my $address1        = $args->{'address_line_1'};
     my $address2        = $args->{'address_line_2'} // '';
@@ -666,6 +674,7 @@ sub set_settings {
     $client->phone($phone);
 
     $client->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
+
     if (not $client->save()) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InternalServerError',
