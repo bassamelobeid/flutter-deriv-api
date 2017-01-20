@@ -172,9 +172,14 @@ sub run {
             };
             next;
         }
-        my $underlying = create_underlying($symbol);
-        next if $underlying->volatility_surface_type eq 'flat';
+        my $underlying     = create_underlying($symbol);
         my $raw_volsurface = $surfaces_from_file->{$symbol};
+
+        unless (exists $raw_volsurface->{recorded_date}) {
+            "Volatility Surface data missing from provider for " . $underlying->symbol;
+            next;    # skipping it here else it will die in the next line.
+        }
+
         next
             if $raw_volsurface->{recorded_date}->epoch >= $rollover_date->epoch
             and $raw_volsurface->{recorded_date}->epoch <= $one_hour_after_rollover->epoch;
