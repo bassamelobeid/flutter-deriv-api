@@ -91,7 +91,7 @@ sub ticks_history {
                     if (exists $rpc_response->{error}) {
                         # cancel subscription if response has error
                         _feed_channel_unsubscribe($c, $args->{ticks_history}, $publish, $args->{req_id});
-                        return $c->new_error('ticks_history', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
+                        return $c->new_error('ticks_history', $rpc_response->{error}->{code}, $c->l($rpc_response->{error}->{message_to_client}));
                     }
 
                     my $channel = $args->{ticks_history} . ';' . $publish;
