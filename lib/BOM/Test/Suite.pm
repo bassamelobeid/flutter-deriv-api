@@ -369,8 +369,7 @@ sub _setup_market_data {
     my $encoder   = Sereal::Encoder->new({
         canonical => 1,
     });
-
-    my $redis = BOM::System::RedisReplicated::redis_write();
+    my $redis = Cache::RedisDB->redis;
     for my $key (sort keys %$tick_data) {
         my $ticks = $tick_data->{$key};
         $redis->zadd($key, $_->{epoch}, $encoder->encode($_)) for @$ticks;
