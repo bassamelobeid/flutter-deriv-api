@@ -1,5 +1,5 @@
 ---
-AGGTICKS_frxUSDJPY_31m_FULL:
+DECIMATE_frxUSDJPY_31m_FULL:
 - ask: '100.603'
   bid: '100.599'
   count: 1
@@ -198,7 +198,7 @@ AGGTICKS_frxUSDJPY_31m_FULL:
   epoch: '1470744000'
   quote: '100.611'
   symbol: frxUSDJPY
-AGGTICKS_frxUSDJPY_15s_AGG:
+DECIMATE_frxUSDJPY_15s_DEC:
   - agg_epoch: 1470742200
     ask: '102.216'
     bid: '102.206'
@@ -1046,7 +1046,7 @@ AGGTICKS_frxUSDJPY_15s_AGG:
     epoch: 1470744000
     quote: '102.273'
     symbol: frxUSDJPY
-AGGTICKS_frxXAUUSD_15s_AGG:
+DECIMATE_frxXAUUSD_15s_DEC:
   - agg_epoch: 1470742200
     ask: '1333.82'
     bid: '1333.37'
