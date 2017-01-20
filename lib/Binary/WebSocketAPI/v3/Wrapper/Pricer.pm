@@ -327,6 +327,8 @@ sub process_bid_event {
         # pass it as a second argument for 'send'.
         # not storing req_storage in channel cache because it contains validation code
         # same is for process_ask_event.
+        $results->{$type}->{validation_error} = $c->l($results->{$type}->{validation_error}) if ($results->{$type}->{validation_error});
+
         $c->send({json => $results}, {args => $stash_data->{args}});
     }
     return;
