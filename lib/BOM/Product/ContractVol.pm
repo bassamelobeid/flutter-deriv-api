@@ -5,50 +5,60 @@ use warnings;
 
 ## ATTRIBUTES  #######################
 
-has [qw(pricing_vol news_adjusted_pricing_vol)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
+use BOM::MarketData::Fetcher::VolSurface;
+use List::MoreUtils qw(none all);
+use BOM::Market::AggTicks;
+use VolSurface::Empirical;
+use Quant::Framework::VolSurface;
+use BOM::Platform::Context qw(localize);
+
+## ATTRIBUTES  #######################
 
 has economic_events_for_volatility_calculation => (
     is         => 'ro',
     lazy_build => 1,
 );
 
-has [qw(atm_vols)] => (
+has [qw(pricing_vol vol_at_strike news_adjusted_pricing_vol)] => (
+    is         => 'ro',
+    isa        => 'Maybe[Num]',
+    lazy_build => 1,
+);
+
+has pricing_vol_for_two_barriers => (
+    is         => 'ro',
+    isa        => 'Maybe[HashRef]',
+    lazy_build => 1,
+);
+
+has atm_vols => (
     is         => 'ro',
     isa        => 'HashRef',
     lazy_build => 1
 );
 
-# For European::Slope engine, we need call and put vol for double barriers contract
-has pricing_vol_for_two_barriers => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_pricing_vol_for_two_barriers',
+has empirical_volsurface => (
+    is         => 'ro',
+    isa        => 'Maybe[VolSurface::Empirical]',
+    lazy_build => 1,
+);
+
+has volsurface => (
+    is         => 'rw',
+    isa        => 'Quant::Framework::VolSurface',
+    lazy_build => 1,
+);
+
+has vol_at_strike => (
+    is         => 'rw',
+    isa        => 'Maybe[PositiveNum]',
+    lazy_build => 1,
 );
 
 has _volsurface_fetcher => (
     is         => 'ro',
     isa        => 'BOM::MarketData::Fetcher::VolSurface',
     init_arg   => undef,
-    lazy_build => 1,
-);
-
-has empirical_volsurface => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-has [qw(volsurface)] => (
-    is         => 'rw',
-    isa        => 'Quant::Framework::VolSurface',
-    lazy_build => 1,
-);
-
-has [qw(vol_at_strike)] => (
-    is         => 'rw',
-    isa        => 'Maybe[PositiveNum]',
     lazy_build => 1,
 );
 
@@ -124,11 +134,11 @@ sub _build_news_adjusted_pricing_vol {
     # Only recalculated if there's economic_events.
     if ($seconds_to_expiry > 10 and @$events) {
         $news_adjusted_vol = $self->empirical_volsurface->get_volatility({
-            fill_cache            => !$self->backtest,
-            current_epoch         => $effective_start->epoch,
-            seconds_to_expiration => $seconds_to_expiry,
-            economic_events       => $events,
-            include_news_impact   => 1,
+            from                          => $effective_start->epoch,
+            to                            => $self->date_expiry->epoch,
+            economic_events               => $events,
+            ticks                         => $self->ticks_for_volatility_calculation,
+            include_economic_event_impact => 1,
         });
     }
 
@@ -146,14 +156,12 @@ sub _build_pricing_vol {
         # volatility doesn't matter for less than 10 minutes ATM contracts,
         # where the intraday_delta_correction is the bounceback which is a function of trend, not volatility.
         my $uses_flat_vol = ($self->is_atm_bet and $duration_seconds < 10 * 60) ? 1 : 0;
-        $vol = $volsurface->get_volatility({
-            fill_cache            => !$self->backtest,
-            current_epoch         => $self->date_pricing->epoch,
-            seconds_to_expiration => $duration_seconds,
-            economic_events       => $self->economic_events_for_volatility_calculation,
-            uses_flat_vol         => $uses_flat_vol,
+        $vol = $uses_flat_vol ? $volsurface->long_term_volatility : $volsurface->get_volatility({
+            from            => $self->effective_start->epoch,
+            to              => $self->date_expiry->epoch,
+            economic_events => $self->economic_events_for_volatility_calculation,
+            ticks           => $self->ticks_for_volatility_calculation,
         });
-        $volatility_error = $volsurface->error if $volsurface->error;
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
             $vol = $self->volsurface->get_volatility({
@@ -257,8 +265,31 @@ sub _build_volsurface {
 
 sub _build_empirical_volsurface {
     my $self = shift;
-    return BOM::MarketData::VolSurface::Empirical->new(underlying => $self->underlying);
+    return VolSurface::Empirical->new(
+        underlying       => $self->underlying,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
+    );
 }
 
+has ticks_for_volatility_calculation => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_ticks_for_volatility_calculation {
+    my $self = shift;
+
+    # Minimum ticks interval to calculate volatility.
+    # If we price a contract with duration less that 15 minutes, we will still use a 15-minute period of ticks to calculate its volatility
+    my $minimum_interval = 900;
+    my $interval = Time::Duration::Concise->new(interval => max(900, $self->date_expiry->epoch - $self->effective_start->epoch) . 's');
+    return BOM::Market::AggTicks->new->retrieve({
+        underlying   => $self->underlying,
+        interval     => $interval,
+        ending_epoch => $self->effective_start->epoch,
+        fill_cache   => !$self->backtest,
+    });
+}
 1;
 

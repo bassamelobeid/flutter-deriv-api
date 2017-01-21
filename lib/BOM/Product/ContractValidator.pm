@@ -5,6 +5,9 @@ use warnings;
 
 use Time::HiRes;
 use Date::Utility;
+use List::Util q(any);
+
+use LandingCompany::Registry;
 
 use BOM::Platform::Runtime;
 use BOM::System::Config;
@@ -97,7 +100,7 @@ sub _confirm_validity {
     push @validation_methods, '_validate_appconfig_age';
 
     foreach my $method (@validation_methods) {
-        if (my $err = $self->$method) {
+        if (my $err = $self->$method($args)) {
             $self->add_error($err);
         }
         return 0 if ($self->primary_validation_error);
@@ -140,8 +143,8 @@ sub _validate_settlement_conditions {
 
     return if not $message;
 
-    my $refund = 'The buy price of this contract will be refunded due to missing market data.';
-    my $wait   = 'Please wait for contract settlement.';
+    my $refund = localize('The buy price of this contract will be refunded due to missing market data.');
+    my $wait   = localize('Please wait for contract settlement.');
 
     my $ref = {
         message           => $message,
@@ -374,18 +377,26 @@ sub _validate_input_parameters {
 
 sub _validate_trading_times {
     my $self = shift;
+    my $args = shift;
 
     my $underlying  = $self->underlying;
     my $calendar    = $underlying->calendar;
     my $date_expiry = $self->date_expiry;
     my $date_start  = $self->date_start;
+    my $volidx_flag = 1;
+    my ($markets, $lc);
 
     if (not($calendar->trades_on($date_start) and $calendar->is_open_at($date_start))) {
         my $message =
             ($self->is_forward_starting) ? localize("The market must be open at the start time.") : localize('This market is presently closed.');
+        if ($args->{landing_company}) {
+            $lc          = LandingCompany::Registry::get($args->{landing_company});
+            $markets     = $lc->legal_allowed_markets if $lc;
+            $volidx_flag = any { $_ eq 'volidx' } @$markets;
+        }
         return {
             message => 'underlying is closed at start ' . "[symbol: " . $underlying->symbol . "] " . "[start: " . $date_start->datetime . "]",
-            message_to_client => $message . " " . localize("Try out the Volatility Indices which are always open.")};
+            message_to_client => $message . ($volidx_flag ? " " . localize("Try out the Volatility Indices which are always open.") : "")};
     } elsif (not $calendar->trades_on($date_expiry)) {
         return ({
             message           => "Exchange is closed on expiry date [expiry: " . $date_expiry->date . "]",
