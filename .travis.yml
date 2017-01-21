@@ -9,7 +9,7 @@ services:
     - redis-server
 cache: apt
 before_install:
-    - git clone https://1994c85ce4f602fb682076e9a102261644fb3d19@github.com/regentmarkets/travis-scripts /tmp/travis-scripts-init
+    - git clone https://f63911b871b71b97bb9a52e58ec714f608a9bfb2@github.com/regentmarkets/travis-scripts /tmp/travis-scripts-init
     - /tmp/travis-scripts-init/clone_branch.sh regentmarkets/travis-scripts
     - /tmp/travis-scripts/setup_ssh.sh
     - sudo mkdir -p /home/git/binary-com
