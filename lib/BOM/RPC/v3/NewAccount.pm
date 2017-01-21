@@ -125,9 +125,10 @@ sub verify_email {
         send_email({
                 from => Brands->new(name => request()->brand)->emails('support'),
                 to   => $email,
-                subject            => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
-                message            => [$message],
-                use_email_template => 1
+                subject               => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
+                message               => [$message],
+                use_email_template    => 1,
+                email_content_is_html => 1,
             }) unless $skip_email;
     };
 
@@ -142,7 +143,8 @@ sub verify_email {
                         $code,
                         $params->{website_name})
                 ],
-                use_email_template => 1
+                use_email_template    => 1,
+                email_content_is_html => 1,
             });
     } elsif ($type eq 'account_opening') {
         unless (BOM::Platform::User->new({email => $email})) {
@@ -156,7 +158,8 @@ sub verify_email {
                             $code,
                             $params->{website_name})
                     ],
-                    use_email_template => 1
+                    use_email_template    => 1,
+                    email_content_is_html => 1,
                 });
         } else {
             send_email({
@@ -170,7 +173,8 @@ sub verify_email {
                             $params->{website_name})
                             . '</div>'
                     ],
-                    use_email_template => 1
+                    use_email_template    => 1,
+                    email_content_is_html => 1,
                 });
         }
     } elsif ($type eq 'paymentagent_withdraw') {
