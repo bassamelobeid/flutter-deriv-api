@@ -6,7 +6,7 @@ use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
     table   => 'copiers',
-    schema  => 'betonmarkets',
+    schema   => 'betonmarkets',
 
     columns => [
         trader_id       => { type => 'varchar', length => 12, not_null => 1 },
@@ -16,6 +16,8 @@ __PACKAGE__->meta->setup(
         min_trade_stake => { type => 'numeric', precision => 12, scale => 24 },
         max_trade_stake => { type => 'numeric', precision => 12, scale => 24 },
     ],
+
+    primary_key_columns => [ 'copier_id' ],
 
     foreign_keys => [
         client => {
