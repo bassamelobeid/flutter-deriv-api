@@ -242,7 +242,7 @@ sub balance {
     return {
         loginid  => $client_loginid,
         currency => $client->default_account->currency_code,
-        balance => BOM::RPC::v3::Utility::round_amount($client->default_account->currency_code, $client->default_account->balance)};
+        balance => BOM::RPC::v3::Utility::format_amount($client->default_account->currency_code, $client->default_account->balance)};
 
 }
 

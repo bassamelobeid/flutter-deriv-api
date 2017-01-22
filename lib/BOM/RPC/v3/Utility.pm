@@ -263,7 +263,7 @@ sub get_real_acc_opening_type {
     return;
 }
 
-sub round_amount {
+sub format_amount {
     my $currency = shift;
     my $amount = shift || 0;
 
