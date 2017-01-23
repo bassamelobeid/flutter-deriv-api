@@ -29,6 +29,9 @@ sub parse_file {
     my $pricing_parameters;
     foreach my $line (@lines) {
         chomp $line;
+        # Might have a trailing blank at the end, and any in the middle of the file are generally harmless too
+        next unless length $line;
+
         my @fields    = split ",", $line;
         my $shortcode = $fields[0];
         my $ask_price = $fields[2];
