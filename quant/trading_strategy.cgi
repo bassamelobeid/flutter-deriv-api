@@ -217,21 +217,24 @@ if (@tbl) {
     for my $result_for_dataset (@tbl) {
         my $stats = $statistics_table->($result_for_dataset->{statistics});
         $hdr //= $stats;
+
 	my @info = split '_', $result_for_dataset->{dataset};
+	unshift @info, join '_', splice(@info, 0, 2) if $info[0] eq 'R';
+
 	my @hdr = qw(Symbol Duration Step Type);
 	my %details = zip @hdr, @info;
+	splice(@hdr, 2, 1);
+
+	my $date = Date::Utility->new($result_for_dataset->{statistics}{start})->date;
         push @result_row,
             [
-		join("<br>", map {; "$_: $details{$_}" } @hdr) .
-		'<br>'
-                . (-s path($base_dir)->child($date_selected)->child($result_for_dataset->{dataset} . '.csv'))
-                . ' bytes',
-            map $_->[1],
-            @$stats
+		'<a href="/d/backoffice/quant/trading_strategy.cgi?run=1&date=' . $date . '&underlying=' . $details{Symbol} . '&duration=' . $details{Duration} . '%20step%20' . $details{Step} . '&type=' . $details{Type} . '">' . join(" ", map $details{$_}, grep exists $details{$_}, @hdr) . '</a>',
+	    map $_->[1],
+	    @$stats
             ];
     }
     $template_args{result_table} = {
-        header => ['Dataset', map $_->[0], @$hdr],
+        header => ['Bet', map $_->[0], @$hdr],
         body   => \@result_row,
     };
 }
