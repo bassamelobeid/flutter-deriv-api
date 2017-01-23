@@ -140,7 +140,7 @@ sub get_tmp_path_or_die {
         BOM::Backoffice::Request::request_completed();
         exit 0;
     }
-    if (! -d $d && !defined $ENV{'SKIP_TMPPATH_CHECK'} && $ENV{'SKIP_TMPPATH_CHECK'} != 1) {
+    if (not -d $d) {
         print "No such directory: $d. Maybe you're at wrong Backoffice";
         BOM::Backoffice::Request::request_completed();
         exit 0;
