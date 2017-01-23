@@ -1,6 +1,7 @@
 durations:
-  - 1h step 1m
-  - 5m step 15s
+  - 3h step 1m
+  - 1h step 30s
+  - 5m step 10s
   - 1m step 5s
   - 10t step 2t
   - 5t step 1t
