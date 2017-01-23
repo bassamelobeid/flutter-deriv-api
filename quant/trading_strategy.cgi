@@ -210,7 +210,7 @@ if (@tbl) {
     for my $result_for_dataset (@tbl) {
         my $stats = $statistics_table->($result_for_dataset->{statistics});
         $hdr //= $stats;
-        push @result_row, [$result_for_dataset->{dataset}, map $_->[1], @$stats];
+        push @result_row, [$result_for_dataset->{dataset} . '<br>' . (-s path($base_dir)->child($date)->child($result_for_dataset->{dataset} . '.csv')), map $_->[1], @$stats];
     }
     $template_args{result_table} = {
         header => ['Dataset', map $_->[0], @$hdr],
