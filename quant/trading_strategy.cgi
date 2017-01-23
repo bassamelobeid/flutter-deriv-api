@@ -212,9 +212,13 @@ if (@tbl) {
     for my $result_for_dataset (@tbl) {
         my $stats = $statistics_table->($result_for_dataset->{statistics});
         $hdr //= $stats;
+	my @info = split '_', $result_for_dataset->{dataset};
+	my @hdr = qw(Symbol Duration Step Type);
+	my %details = zip @hdr, @info;
         push @result_row,
             [
-            $result_for_dataset->{dataset} . '<br>'
+		join("<br>", map {; "$_: $details{$_} } @hdr) .
+		'<br>'
                 . (-s path($base_dir)->child($date_selected)->child($result_for_dataset->{dataset} . '.csv'))
                 . ' bytes',
             map $_->[1],
