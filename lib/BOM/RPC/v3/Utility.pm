@@ -63,30 +63,6 @@ sub create_error {
             $args->{details}               ? (details               => $args->{details})               : ()}};
 }
 
-sub currencies_config {
-    return {
-        'AUD' => {
-            fractional_digits => 2
-        },
-        'EUR' => {
-            fractional_digits => 2
-        },
-        'GBP' => {
-            fractional_digits => 2
-        },
-        'USD' => {
-            fractional_digits => 2
-        },
-        'JPY' => {
-            fractional_digits => 0
-        },
-        'XBT' => {
-            fractional_digits => 8
-        }
-    }
-
-}
-
 sub invalid_token_error {
     return create_error({
             code              => 'InvalidToken',
