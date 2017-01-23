@@ -138,10 +138,7 @@ print qq~
 		<TR>
 			<TD align=right>Upper and Lower limit :</TD>
 			<TD>From (lower limit) <input type=text name="lower" size=15 value="~
-    . encode_entities($lower)
-    . qq~"/> To (upper limit) <input type=text name="upper" size=15 value="~
-    . encode_entities($upper)
-    . qq~"/></TD>
+    . encode_entities($lower) . qq~"/> To (upper limit) <input type=text name="upper" size=15 value="~ . encode_entities($upper) . qq~"/></TD>
 		</TR>
 		<TR>
 			<TD align=right>Time limits (hh:mm:ss) :</TD>
