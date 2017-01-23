@@ -104,7 +104,7 @@ try {
                         }
                         catch {
                             warn "Failed to price with parameters " . Dumper($args) . " - $_\n";
-                        }
+                        };
                         if($step_unit eq 't') {
                             $idx += $step_amount;
                         } elsif($step_unit eq 's') {
@@ -118,5 +118,5 @@ try {
     }
 } catch {
     warn "Failed to run - $@";
-}
+};
 alarm(0);
