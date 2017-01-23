@@ -278,12 +278,10 @@ sub format_amount {
     my $currency = shift;
     my $amount = shift || 0;
 
-    if ($currency eq 'USD' || $currency eq 'AUD' || $currency eq 'GBP' || $currency eq 'EUR') {
-        return sprintf('%.2f', $amount);
-    } elsif ($currency eq 'JPY') {
-        return sprintf('%.2f', $amount);
-    } elsif ($currency eq 'XBT') {
-        return sprintf('%.8f', $amount);
+    my $digits = currencies_config()->{$currency}->{fractional_digits};
+
+    if (defined $digits) {
+        return sprintf('%.' . $digits . 'f', $amount);
     } else {
         die "wrong currency for rounding [$currency]";
     }
