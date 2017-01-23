@@ -40,8 +40,8 @@ my $cgi      = request()->cgi;
 my $config = LoadFile('/home/git/regentmarkets/bom-backoffice/config/trading_strategy_datasets.yml');
 
 my @dates = sort map $_->basename, path($base_dir)->children or do {
-	print "<h2>No data found, please check whether the update_trading_strategy_data cronjob is enabled on this server</h2>\n";	
-	code_exit_BO();
+    print "<h2>No data found, please check whether the update_trading_strategy_data cronjob is enabled on this server</h2>\n";
+    code_exit_BO();
 };
 
 my $date_selected = $cgi->param('date');
@@ -79,6 +79,7 @@ my $process_dataset = sub {
     ($stats{symbol}, $stats{duration}, $stats{step_size}) = split '_', $dataset;
     my @spots;
     my $line = 0;
+
     while (<$fh>) {
         next if $line++ % $skip;
         eval {
@@ -160,13 +161,11 @@ if ($cgi->param('run')) {
         TABLE:
         for my $underlying ($underlying_selected eq '*' ? @{$config->{underlyings}} : $underlying_selected) {
             for my $duration_line ($duration_selected eq '*' ? @{$config->{durations}} : $duration_selected) {
-		    (my $duration = $duration_line) =~ s/ step /_/;
+                (my $duration = $duration_line) =~ s/ step /_/;
                 for my $type ($type_selected eq '*' ? @{$config->{types}} : $type_selected) {
                     for my $date ($date_selected eq '*' ? @dates : $date_selected) {
                         my $dataset = join '_', $underlying, $duration, $type;
-                        push @tbl, eval {
-                            $process_dataset->($date, $dataset)
-                        } or do {
+                        push @tbl, eval { $process_dataset->($date, $dataset) } or do {
                             print "Failed to process $dataset - $@" if $@;
                             ();
                         };
@@ -213,13 +212,14 @@ if (@tbl) {
     for my $result_for_dataset (@tbl) {
         my $stats = $statistics_table->($result_for_dataset->{statistics});
         $hdr //= $stats;
-        push @result_row, [
-		$result_for_dataset->{dataset} .
-		 '<br>' .
-		 (-s path($base_dir)->child($date_selected)->child($result_for_dataset->{dataset} . '.csv')) .
-		 ' bytes',
-		 map $_->[1], @$stats
-	];
+        push @result_row,
+            [
+            $result_for_dataset->{dataset} . '<br>'
+                . (-s path($base_dir)->child($date_selected)->child($result_for_dataset->{dataset} . '.csv'))
+                . ' bytes',
+            map $_->[1],
+            @$stats
+            ];
     }
     $template_args{result_table} = {
         header => ['Dataset', map $_->[0], @$hdr],
