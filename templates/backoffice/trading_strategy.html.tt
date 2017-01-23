@@ -50,17 +50,17 @@
 [% FOREACH result IN result_table.body -%]
 <tr>
 [%  FOREACH stat IN result -%]
- <td style="text-align:center; border:1px solid;">[% stat %]</td>
+ <td style="text-align:center; border:1px solid;">[% stat | none %]</td>
 [%  END -%]
-[% sum_contracts_bought = sum_contracts_bought + result.10;
-   sum_company_profit = sum_company_profit + result.11; -%]
+[% sum_contracts_bought = sum_contracts_bought + result.11;
+   sum_company_profit = sum_company_profit + result.12; -%]
 </tr>
 [% END -%]
 <tr>
 <td colspan="11">&nbsp;</td>
 <td style="text-align:center; border:1px solid;">[% sum_contracts_bought | format('%.02f') %]</td>
 <td style="text-align:center; border:1px solid;">[% sum_company_profit | format('%.02f')  %]</td>
-<td style="text-align:center; border:1px solid;">[% (100 * sum_company_profit / sum_contracts_bought) | format('%.02f') %]</td>
+<td style="text-align:center; border:1px solid;">[% (100 * sum_company_profit / sum_contracts_bought) | format('%.02f') %]%</td>
 </tr>
  </tbody>
 </table>
@@ -70,7 +70,7 @@
 <table>
  <tbody>
 [% FOREACH stat IN statistics -%]
- <tr><th>[% stat.0 %]</th><td>[% stat.1 %]</td></tr>
+ <tr><th>[% stat.0 %]</th><td>[% stat.1 | none %]</td></tr>
 [% END -%]
 <tr>
 <th>Download dataset</th>
