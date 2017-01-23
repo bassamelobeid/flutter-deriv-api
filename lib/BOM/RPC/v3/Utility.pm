@@ -70,7 +70,7 @@ sub currencies_config {
         'EUR' => {fractional_digits => 2},
         'GBP' => {fractional_digits => 2},
         'USD' => {fractional_digits => 2},
-        'JPY' => {fractional_digits => 0},
+        'JPY' => {fractional_digits => 2},
         'XBT' => {fractional_digits => 8}};
 }
 
