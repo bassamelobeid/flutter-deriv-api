@@ -217,7 +217,7 @@ if (@tbl) {
 	my %details = zip @hdr, @info;
         push @result_row,
             [
-		join("<br>", map {; "$_: $details{$_} } @hdr) .
+		join("<br>", map {; "$_: $details{$_}" } @hdr) .
 		'<br>'
                 . (-s path($base_dir)->child($date_selected)->child($result_for_dataset->{dataset} . '.csv'))
                 . ' bytes',
