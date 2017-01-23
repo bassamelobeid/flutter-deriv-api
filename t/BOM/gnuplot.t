@@ -8,6 +8,7 @@ use feature 'say';
 use utf8;
 
 $ENV{'REMOTE_ADDR'} = defined($ENV{'REMOTE_ADDR'}) ? $ENV{'REMOTE_ADDR'} : '127.0.0.1';
+$ENV{'SKIP_TMPPATH_CHECK'} = 1;
 
 my $object1 = BOM::Backoffice::GNUPlot->new();
 
