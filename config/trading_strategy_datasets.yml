@@ -1,5 +1,4 @@
 durations:
-  - 1d step 1h
   - 1h step 1m
   - 5m step 15s
   - 1m step 5s
