@@ -158,7 +158,7 @@ my $statistics_table = sub {
 
 # When the button is pressed, we end up in here:
 my ($underlying_selected) = $cgi->param('underlying') =~ /^(\w+|\*)$/;
-my ($duration_selected)   = $cgi->param('duration') =~ /^(\w+|\*)$/;
+my ($duration_selected)   = $cgi->param('duration') =~ /^([\w ]+|\*)$/;
 my ($type_selected)       = $cgi->param('type') =~ /^(\w+|\*)$/;
 if ($cgi->param('run')) {
     if (grep { $_ eq '*' } $underlying_selected, $duration_selected, $type_selected, $date_selected) {
@@ -180,7 +180,7 @@ if ($cgi->param('run')) {
             }
         }
     } else {
-        my $dataset = join '_', $underlying_selected, $duration_selected, $type_selected;
+        my $dataset = join '_', $underlying_selected, ($duration_selected =~ s/ step /_/r), $type_selected;
         $rslt = $process_dataset->($date_selected, $dataset);
     }
 }
