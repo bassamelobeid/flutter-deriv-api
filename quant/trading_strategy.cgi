@@ -76,6 +76,7 @@ my $process_dataset = sub {
     my @hdr = qw(epoch quote buy_price value theo_price);
     my @results;
     my %stats;
+    ($stats{symbol}, $stats{duration}, $stats{step_size}) = split '_', $dataset;
     my @spots;
     my $line = 0;
     while (<$fh>) {
@@ -134,6 +135,7 @@ my $statistics_table = sub {
     my $end_epoch   = Date::Utility->new($stats->{end})->epoch;
     return [
         ['Number of datapoints',   $stats->{count}],
+        ['Step size',              $stats->{step_size}],
         ['Starting date',          Date::Utility->new($stats->{start})->datetime],
         ['Ending date',            Date::Utility->new($stats->{end})->datetime],
         ['Period',                 Time::Duration::duration($end_epoch - $start_epoch)],
