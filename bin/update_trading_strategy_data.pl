@@ -55,6 +55,14 @@ for my $symbol (@{$config->{underlyings}}) {
         for (@{$config->{durations}}) {
             my ($duration, %duration_options) = @$_;
             $duration_options{step} //= '1t';
+            my ($step_amount, $step_unit) = /(\d+)([tmhs])/ or die "unknown step type " . $duration_options{step};
+            if($step_unit eq 'm') {
+                $step_amount *= 60;
+                $step_unit = 's';
+            } elsif($step_unit eq 'h') {
+                $step_amount *= 3600;
+                $step_unit = 's';
+            }
             print "Duration $duration\n";
             for my $bet_type (@{$config->{types}}) {
                 print "Bet type $bet_type\n";
