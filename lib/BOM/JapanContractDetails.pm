@@ -5,6 +5,7 @@ package BOM::JapanContractDetails;
 This package is to output contract's pricing parameters that will be used by Japan team to replicate the contract price with the excel template. The format is as per required by the regulator. Please do not change it without confirmation from Quants and Japan team
 
 =cut
+
 use strict;
 use warnings;
 use lib qw(/home/git/regentmarkets/bom-backoffice);
@@ -34,11 +35,11 @@ sub parse_file {
 
         my $currency = $landing_company =~ /japan/ ? 'JPY' : 'USD';
         my $parameters = verify_with_shortcode({
-            shortcode                 => $shortcode,
-            currency                  => $currency,
-            landing_company           => $landing_company,
-            contract_price            => $ask_price,
-            action_type               => 'buy',
+            shortcode       => $shortcode,
+            currency        => $currency,
+            landing_company => $landing_company,
+            contract_price  => $ask_price,
+            action_type     => 'buy',
         });
 
         $pricing_parameters->{$shortcode} = include_contract_details(
@@ -66,10 +67,10 @@ sub verify_with_id {
     my $client          = Client::Account::get_instance({'loginid' => $details->{loginid}});
     my $action_type     = $details->{action_type};
     my $requested_price = $details->{order_price};
-    my $ask_price = $details->{ask_price};
-    my $bid_price = $details->{bid_price};
-    my $traded_price     = $action_type eq 'buy' ? $ask_price : $bid_price;
-    my $slippage = $details->{price_slippage} // 0;
+    my $ask_price       = $details->{ask_price};
+    my $bid_price       = $details->{bid_price};
+    my $traded_price    = $action_type eq 'buy' ? $ask_price : $bid_price;
+    my $slippage        = $details->{price_slippage} // 0;
     # apply slippage according to reflect the difference between traded price and recomputed price
     my $adjusted_traded_contract_price =
         ($traded_price == $requested_price) ? ($action_type eq 'buy' ? $traded_price - $slippage : $traded_price + $slippage) : $traded_price;
@@ -92,7 +93,7 @@ sub verify_with_id {
         trade_bid_price => $bid_price,
         ref_spot        => $details->{pricing_spot},
         ref_vol         => $details->{high_barrier_vol},
-        (defined $details->{low_barrier_vol}) ? (ref_vol2        => $details->{low_barrier_vol} ) : (),
+        (defined $details->{low_barrier_vol}) ? (ref_vol2 => $details->{low_barrier_vol}) : (),
     };
     $parameters = include_contract_details($parameters, $contract_args);
     return $parameters;
@@ -100,12 +101,12 @@ sub verify_with_id {
 }
 
 sub verify_with_shortcode {
-    my $args = shift;
-    my $landing_company           = $args->{landing_company};
-    my $short_code                = $args->{shortcode};
-    my $action_type               = $args->{action_type};
-    my $verify_price              = $args->{contract_price};              # This is the price to be verify
-    my $currency                  = $args->{currency};
+    my $args            = shift;
+    my $landing_company = $args->{landing_company};
+    my $short_code      = $args->{shortcode};
+    my $action_type     = $args->{action_type};
+    my $verify_price    = $args->{contract_price};    # This is the price to be verify
+    my $currency        = $args->{currency};
 
     my $original_contract = produce_contract($short_code, $currency);
     my $purchase_time = $original_contract->date_start;
@@ -125,7 +126,7 @@ sub verify_with_shortcode {
         my $new_contract;
         LOOP:
         for my $lookback (1 .. 60, map -$_, 1 .. 10) {
-         $pricing_args->{date_pricing} = Date::Utility->new($contract->date_start->epoch - $lookback);
+            $pricing_args->{date_pricing} = Date::Utility->new($contract->date_start->epoch - $lookback);
             $pricing_args->{date_start}   = Date::Utility->new($contract->date_start->epoch - $lookback);
             $new_contract                 = produce_contract($pricing_args);
             my $new_price = $action_type eq 'buy' ? $new_contract->ask_price : $new_contract->bid_price;
@@ -143,20 +144,19 @@ sub verify_with_shortcode {
         discounted_probability => $discounted_probability
     });
 
-        my $opposite_contract = get_pricing_parameter({
-            traded_contract        => $action_type eq 'buy' ? $contract->opposite_contract : $contract,
-            action_type            => $action_type,
-            discounted_probability => $discounted_probability
-        });
-        my $new_naming;
-        foreach my $key (keys %{$opposite_contract}) {
-            foreach my $sub_key (keys %{$opposite_contract->{$key}}) {
-                my $new_sub_key = 'opposite_contract_' . $sub_key;
-                $pricing_parameters->{opposite_contract}->{$new_sub_key} = $opposite_contract->{$key}->{$sub_key};
+    my $opposite_contract = get_pricing_parameter({
+        traded_contract => $action_type eq 'buy' ? $contract->opposite_contract : $contract,
+        action_type => $action_type,
+        discounted_probability => $discounted_probability
+    });
+    my $new_naming;
+    foreach my $key (keys %{$opposite_contract}) {
+        foreach my $sub_key (keys %{$opposite_contract->{$key}}) {
+            my $new_sub_key = 'opposite_contract_' . $sub_key;
+            $pricing_parameters->{opposite_contract}->{$new_sub_key} = $opposite_contract->{$key}->{$sub_key};
 
-            }
         }
-
+    }
 
     $pricing_parameters->{contract_details} = {
         short_code             => $short_code,
@@ -193,7 +193,7 @@ sub get_pricing_parameter {
 sub include_contract_details {
     my $params = shift;
     my $args   = shift;
-   my @required_contract_details =
+    my @required_contract_details =
         qw(loginID trans_id order_type order_price slippage_price trade_ask_price trade_bid_price ref_spot ref_vol ref_vol2);
 
     foreach my $key (@required_contract_details) {
@@ -213,9 +213,9 @@ sub _get_pricing_parameter_from_IH_pricer {
 
     if ($action_type eq 'sell') {
         $pricing_parameters->{bid_probability} = {
-            discounted_probability            => $discounted_probability->amount,
-            bs_probability    => $bs_probability,
-            commission_markup => $commission_markup,
+            discounted_probability => $discounted_probability->amount,
+            bs_probability         => $bs_probability,
+            commission_markup      => $commission_markup,
             map { $_ => $pe->$_->amount } qw(intraday_delta_correction intraday_vega_correction risk_markup),
         };
 
@@ -275,7 +275,7 @@ sub _get_pricing_parameter_from_vv_pricer {
 
     if ($action_type eq 'sell') {
         $pricing_parameters->{bid_probability} = {
-            discounted_probability            => $discounted_probability->amount,
+            discounted_probability  => $discounted_probability->amount,
             theoretical_probability => $theo_probability,
             risk_markup             => $risk_markup,
             commission_markup       => $commission_markup,
@@ -339,7 +339,7 @@ sub _get_pricing_parameter_from_slope_pricer {
 
     if ($action_type eq 'sell') {
         $pricing_parameters->{bid_probability} = {
-            discounted_probability            => $discounted_probability->amount,
+            discounted_probability  => $discounted_probability->amount,
             theoretical_probability => $base_probability,
             risk_markup             => $risk_markup,
             commission_markup       => $commission_markup,
@@ -446,10 +446,9 @@ sub _get_market_supplement_parameters {
     return $ms_parameter;
 }
 
-
 sub output_on_display {
     my $contract_params = shift;
-    PrintContentType(); 
+    PrintContentType();
     BOM::Backoffice::Request::template->process(
         'backoffice/contract_details.html.tt',
         {

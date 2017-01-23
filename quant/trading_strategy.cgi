@@ -39,8 +39,10 @@ my $cgi      = request()->cgi;
 
 my $config = LoadFile('/home/git/regentmarkets/bom-backoffice/config/trading_strategy_datasets.yml');
 
-my @dates = sort map $_->basename, path($base_dir)->children;
-warn "no dates" unless @dates;
+my @dates = sort map $_->basename, path($base_dir)->children or do {
+    print "<h2>No data found, please check whether the update_trading_strategy_data cronjob is enabled on this server</h2>\n";
+    code_exit_BO();
+};
 
 my $date_selected = $cgi->param('date');
 my $price_type_selected = $cgi->param('price_type') || 'ask';
@@ -74,8 +76,10 @@ my $process_dataset = sub {
     my @hdr = qw(epoch quote buy_price value theo_price);
     my @results;
     my %stats;
+    ($stats{symbol}, $stats{duration}, $stats{step_size}) = split '_', $dataset;
     my @spots;
     my $line = 0;
+
     while (<$fh>) {
         next if $line++ % $skip;
         eval {
@@ -132,6 +136,7 @@ my $statistics_table = sub {
     my $end_epoch   = Date::Utility->new($stats->{end})->epoch;
     return [
         ['Number of datapoints',   $stats->{count}],
+        ['Step size',              $stats->{step_size}],
         ['Starting date',          Date::Utility->new($stats->{start})->datetime],
         ['Ending date',            Date::Utility->new($stats->{end})->datetime],
         ['Period',                 Time::Duration::duration($end_epoch - $start_epoch)],
@@ -155,13 +160,13 @@ if ($cgi->param('run')) {
         $rslt = {};
         TABLE:
         for my $underlying ($underlying_selected eq '*' ? @{$config->{underlyings}} : $underlying_selected) {
-            for my $duration ($duration_selected eq '*' ? @{$config->{durations}} : $duration_selected) {
+            for my $duration_line ($duration_selected eq '*' ? @{$config->{durations}} : $duration_selected) {
+                (my $duration = $duration_line) =~ s/ step /_/;
                 for my $type ($type_selected eq '*' ? @{$config->{types}} : $type_selected) {
                     for my $date ($date_selected eq '*' ? @dates : $date_selected) {
                         my $dataset = join '_', $underlying, $duration, $type;
-                        warn "will process dataset $dataset on $date";
                         push @tbl, eval { $process_dataset->($date, $dataset) } or do {
-                            warn "Failed to process $dataset - $@" if $@;
+                            print "Failed to process $dataset - $@" if $@;
                             ();
                         };
                         last TABLE if @tbl > 300;
@@ -207,7 +212,14 @@ if (@tbl) {
     for my $result_for_dataset (@tbl) {
         my $stats = $statistics_table->($result_for_dataset->{statistics});
         $hdr //= $stats;
-        push @result_row, [$result_for_dataset->{dataset}, map $_->[1], @$stats];
+        push @result_row,
+            [
+            $result_for_dataset->{dataset} . '<br>'
+                . (-s path($base_dir)->child($date_selected)->child($result_for_dataset->{dataset} . '.csv'))
+                . ' bytes',
+            map $_->[1],
+            @$stats
+            ];
     }
     $template_args{result_table} = {
         header => ['Dataset', map $_->[0], @$hdr],

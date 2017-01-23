@@ -1,9 +1,10 @@
 durations:
-  - 5t
-  - 10t
-  - 1m
-  - 5m
-  - 1h
+  - 1d step 1h
+  - 1h step 1m
+  - 5t step 1t
+  - 10t step 2t
+  - 1m step 5s
+  - 5m step 15s
 underlyings:
   - frxUSDJPY
   - frxEURUSD
