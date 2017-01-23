@@ -65,26 +65,12 @@ sub create_error {
 
 sub currencies_config {
     return {
-        'AUD' => {
-            fractional_digits => 2
-        },
-        'EUR' => {
-            fractional_digits => 2
-        },
-        'GBP' => {
-            fractional_digits => 2
-        },
-        'USD' => {
-            fractional_digits => 2
-        },
-        'JPY' => {
-            fractional_digits => 0
-        },
-        'XBT' => {
-            fractional_digits => 8
-        }
-    }
-
+        'AUD' => {fractional_digits => 2},
+        'EUR' => {fractional_digits => 2},
+        'GBP' => {fractional_digits => 2},
+        'USD' => {fractional_digits => 2},
+        'JPY' => {fractional_digits => 0},
+        'XBT' => {fractional_digits => 8}};
 }
 
 sub invalid_token_error {
