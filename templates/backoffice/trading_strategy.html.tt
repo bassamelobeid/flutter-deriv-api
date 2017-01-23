@@ -57,7 +57,7 @@
 </tr>
 [% END -%]
 <tr>
-<td colspan="10">&nbsp;</td>
+<td colspan="11">&nbsp;</td>
 <td style="text-align:center; border:1px solid;">[% sum_contracts_bought | format('%.02f') %]</td>
 <td style="text-align:center; border:1px solid;">[% sum_company_profit | format('%.02f')  %]</td>
 <td style="text-align:center; border:1px solid;">[% (100 * sum_company_profit / sum_contracts_bought) | format('%.02f') %]</td>
