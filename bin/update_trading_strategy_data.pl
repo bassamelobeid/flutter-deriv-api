@@ -15,7 +15,7 @@ use Data::Dumper;
 use Fcntl qw(:flock);
 
 # How many ticks to request at a time
-use constant TICK_CHUNK_SIZE => 1000;
+use constant TICK_CHUNK_SIZE => 3600;
 
 ++$|;
 
