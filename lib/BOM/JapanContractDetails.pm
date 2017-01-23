@@ -29,6 +29,9 @@ sub parse_file {
     my $pricing_parameters;
     foreach my $line (@lines) {
         chomp $line;
+        # Might have a trailing blank at the end, and any in the middle of the file are generally harmless too
+        next unless length $line;
+
         my @fields    = split ",", $line;
         my $shortcode = $fields[0];
         my $ask_price = $fields[2];
@@ -103,7 +106,7 @@ sub verify_with_id {
 sub verify_with_shortcode {
     my $args            = shift;
     my $landing_company = $args->{landing_company};
-    my $short_code      = $args->{shortcode};
+    my $short_code      = $args->{shortcode} or die "No shortcode provided";
     my $action_type     = $args->{action_type};
     my $verify_price    = $args->{contract_price};    # This is the price to be verify
     my $currency        = $args->{currency};
