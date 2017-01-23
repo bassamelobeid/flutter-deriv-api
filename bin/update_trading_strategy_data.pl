@@ -58,9 +58,9 @@ try {
                 limit => TICK_CHUNK_SIZE,
             })} or last BATCH; # if we had no ticks, then we're done for this symbol
             for (@{$config->{durations}}) {
-                my ($duration, %duration_options) = @$_;
+                my ($duration, %duration_options) = split ' ', $_;
                 $duration_options{step} //= '1t';
-                my ($step_amount, $step_unit) = /(\d+)([tmhs])/ or die "unknown step type " . $duration_options{step};
+                my ($step_amount, $step_unit) = $duration_options{step} =~ /(\d+)([tmhs])/ or die "unknown step type " . $duration_options{step};
                 if($step_unit eq 'm') {
                     $step_amount *= 60;
                     $step_unit = 's';
@@ -104,12 +104,14 @@ try {
                         }
                         catch {
                             warn "Failed to price with parameters " . Dumper($args) . " - $_\n";
-                        }
+                        };
                         if($step_unit eq 't') {
                             $idx += $step_amount;
                         } elsif($step_unit eq 's') {
-                            ++$idx while $idx <= $#ticks && $step_amount <= $ticks[$idx]->{epoch}  - $tick->{epoch};
-                        }
+                            ++$idx while $idx <= $#ticks && $step_amount >= $ticks[$idx]->{epoch}  - $tick->{epoch};
+                        } else {
+							die "Invalid step unit $step_unit";
+						}
                     }
                 }
             }
@@ -117,6 +119,6 @@ try {
         }
     }
 } catch {
-    warn "Failed to run - $@";
-}
+    warn "Failed to run - $_";
+};
 alarm(0);
