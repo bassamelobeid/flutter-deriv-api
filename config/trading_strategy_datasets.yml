@@ -6,15 +6,9 @@ durations:
   - 10t step 2t
   - 5t step 1t
 underlyings:
-  - frxUSDJPY
-  - frxEURUSD
-  - frxGBPUSD
-  - frxUSDCAD
-  - HSI
-  - GDAXI
-  - SSMI
-  - FCHI
   - R_50
+  - frxUSDJPY
+  - GDAXI
 types:
   - CALL
   - PUT
