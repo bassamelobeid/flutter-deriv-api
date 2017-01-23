@@ -37,7 +37,7 @@ try {
 
     my $now = time;
 
-    my $output_base = '/var/lib/binary/trading_strategy_data/' . $target_date->date;
+    my $output_base = '/var/lib/binary/trading_strategy_data/' . Date::Utility->new($start)->date;
     path($output_base)->mkpath;
 
     for my $symbol (@{$config->{underlyings}}) {
