@@ -76,7 +76,12 @@ my $process_dataset = sub {
     my @hdr = qw(epoch quote buy_price value theo_price);
     my @results;
     my %stats;
-    ($stats{symbol}, $stats{duration}, $stats{step_size}) = split '_', $dataset;
+    {
+	my @info = split '_', $dataset;
+	unshift @info, join '_', splice(@info, 0, 2) if $info[0] eq 'R';
+	($stats{symbol}, $stats{duration}, $stats{step_size}) = @info;
+    }
+    $stats{file_size} = '(' . (-s $path) . '&nbsp;bytes)';
     my @spots;
     my $line = 0;
 
