@@ -71,7 +71,10 @@ for my $symbol (@{$config->{underlyings}}) {
                     open $fh{$key}, '>:encoding(UTF-8)', $output_base . '/' . $key . '.csv' or die $!;
                     $fh{$key}->autoflush(1);
                 }
-                for my $tick (@ticks) {
+                my $idx = 0;
+                while($idx <= $#ticks) {
+                    my $tick = $ticks[$idx];
+
                     my $args = {
                         underlying   => $symbol,
                         bet_type     => $bet_type,
@@ -96,6 +99,11 @@ for my $symbol (@{$config->{underlyings}}) {
                     }
                     catch {
                         warn "Failed to price with parameters " . Dumper($args) . " - $_\n";
+                    }
+                    if($step_unit eq 't') {
+                        $idx += $step_amount;
+                    } elsif($step_unit eq 's') {
+                        ++$idx while $idx <= $#ticks && $step_amount <= $ticks[$idx]->{epoch}  - $tick->{epoch};
                     }
                 }
             }
