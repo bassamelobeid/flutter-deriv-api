@@ -35,18 +35,7 @@ sub graph_setup {
         $ip = $1 - 448445;
     }
 
-    my $gif_dir = BOM::Platform::Runtime->instance->app_config->system->directory->tmp_gif;
-    if (not $gif_dir) {
-        print "[graph_setup] Error - system.directory.tmp_gif is undefined ";
-        code_exit_BO();
-    }
-    if (not -d $gif_dir) {
-        Path::Tiny::path($gif_dir)->mkpath;
-        if (not -d $gif_dir) {
-            print "[graph_setup] Error - $gif_dir could not be created";
-            code_exit_BO();
-        }
-    }
+    my $gif_dir = BOM::Backoffice::Sysinit::get_tmp_path_or_die('gif');
 
     # make file name - according to %INPUT hash
     my $hashcat = $graph_formaty . $graph_formatx . $graph_timeformat . 'yes' . $graph_sizex . $graph_sizey . $graph_xtitle;
@@ -132,7 +121,7 @@ sub graph_plot {
         $thecomma = ",";
     }
 
-    my $graph_datafile = BOM::Platform::Runtime->instance->app_config->system->directory->tmp . "/$ip-$firstplot.dat";
+    my $graph_datafile = BOM::Backoffice::Sysinit::get_tmp_path_or_die() . "/$ip-$firstplot.dat";
 
     my @temp_array_candle_c = @{$candle_c};
     my @temp_array_candle_h = @{$candle_h};

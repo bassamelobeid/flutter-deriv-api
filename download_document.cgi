@@ -34,7 +34,7 @@ my $full_path;
 if ($category eq '192_result') {
     $full_path = "$dbloc/f_accounts/$broker/192com_authentication/$path";
 } elsif ($category eq 'temp') {
-    $full_path = BOM::Platform::Runtime->instance->app_config->system->directory->tmp . $path;
+    $full_path = BOM::Backoffice::Sysinit::get_tmp_path_or_die() . $path;
 } else {
     $full_path = "$dbloc/clientIDscans/$path";
 }
