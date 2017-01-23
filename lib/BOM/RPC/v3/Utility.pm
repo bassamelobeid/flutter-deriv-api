@@ -14,6 +14,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
 use BOM::Platform::Token;
+use utf8;
 
 # Seconds between reloads of the rate_limitations.yml file.
 # We don't want to reload too frequently, since we may see a lot of `website_status` calls.
