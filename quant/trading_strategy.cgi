@@ -157,14 +157,15 @@ if ($cgi->param('run')) {
         $rslt = {};
         TABLE:
         for my $underlying ($underlying_selected eq '*' ? @{$config->{underlyings}} : $underlying_selected) {
-            for my $duration ($duration_selected eq '*' ? @{$config->{durations}} : $duration_selected) {
+            for my $duration_line ($duration_selected eq '*' ? @{$config->{durations}} : $duration_selected) {
+		    (my $duration = $duration_line) =~ s/ step /_/;
                 for my $type ($type_selected eq '*' ? @{$config->{types}} : $type_selected) {
                     for my $date ($date_selected eq '*' ? @dates : $date_selected) {
                         my $dataset = join '_', $underlying, $duration, $type;
                         push @tbl, eval {
                             $process_dataset->($date, $dataset)
                         } or do {
-                            warn "Failed to process $dataset - $@" if $@;
+                            print "Failed to process $dataset - $@" if $@;
                             ();
                         };
                         last TABLE if @tbl > 300;
