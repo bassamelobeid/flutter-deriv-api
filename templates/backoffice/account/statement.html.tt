@@ -8,13 +8,13 @@
 </div>
 <div id="statement_navigation" class="grd-parent grd-grid-12">
         <div class="grd-grid-2 left-aligned">
-            <a class="pjaxload button" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, startdate => transactions.first.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) %]"><span>&laquo;Newer</span></a>
+            <a class="pjaxload button" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, startdate => transactions.first.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>&laquo;Newer</span></a>
         </div>
         <div class="grd-grid-8 center-aligned">
             <b>[% transactions.first.date.datetime %] --- [% transactions.last.date.datetime %]</b>
         </div>
         <div class="grd-grid-2 right-aligned">
-                <a class="pjaxload button" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, enddate => transactions.last.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) %]"><span>Older&raquo;</span></a>
+                <a class="pjaxload button" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, enddate => transactions.last.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>Older&raquo;</span></a>
         </div>
 </div>
 [% IF transactions.size == 0 %]
@@ -38,7 +38,7 @@
         <div class="grd-grid-1">[% transaction.staff_loginid %]</div>
         [% IF transaction.financial_market_bet_id.defined %]
                 <div class="grd-grid-1">
-                        <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, shortcode => transaction.short_code , purchase_time => transaction.purchase_time, loginid => loginid}) %]">[% transaction.id %]</a>
+                        <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, shortcode => transaction.short_code , purchase_time => transaction.purchase_time, loginid => loginid}) | none %]">[% transaction.id %]</a>
                 </div>
                 <div class="grd-grid-1">
                     [% transaction.payout_price %]
@@ -61,7 +61,7 @@
         [% ELSE %]
                 <div class="grd-grid-1">[% transaction.id %]</div>
                 <div class="grd-grid-1"></div>
-                <div class="grd-grid-4">[% transaction.payment_remark | replace('\s+:\s+', ': ') %]</div>
+                <div class="grd-grid-4">[% transaction.payment_remark | replace('\s+:\s+', ': ') | html  %]</div>
                 [% IF transaction.action_type == 'deposit' %]
                         <div class="grd-grid-1 right-aligned"></div>
                         <div class="grd-grid-1 right-aligned">[% to_monetary_number_format(transaction.amount) %]</div>
@@ -77,12 +77,12 @@
 <div>
 <div id="statement_navigation" class="grd-parent grd-grid-12">
         <div class="grd-grid-2 left-aligned">
-            <a class="pjaxload button" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, startdate => transactions.first.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) %]"><span>&laquo;Newer</span></a>
+            <a class="pjaxload button" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, startdate => transactions.first.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>&laquo;Newer</span></a>
         </div>
         <div class="grd-grid-8 center-aligned">
             <b>[% transactions.first.date.datetime %] --- [% transactions.last.date.datetime %]</b>
         </div>
         <div class="grd-grid-2 right-aligned">
-                <a class="pjaxload button" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, enddate => transactions.last.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) %]"><span>Older&raquo;</span></a>
+                <a class="pjaxload button" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, enddate => transactions.last.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>Older&raquo;</span></a>
         </div>
 </div>

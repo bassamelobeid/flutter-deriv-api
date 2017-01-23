@@ -28,7 +28,7 @@ my $config = LoadFile('/home/git/regentmarkets/bom-backoffice/config/trading_str
 my $target_date = Date::Utility->today->truncate_to_day;
 
 my $start = $target_date->epoch - 86400;
-my $end =   $target_date->epoch - 1;
+my $end   = $target_date->epoch - 1;
 
 my $now = time;
 
@@ -38,8 +38,8 @@ path($output_base)->mkpath;
 for my $symbol (@{$config->{underlyings}}) {
     print "Symbol $symbol\n";
     my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(
-        db_handle => Postgres::FeedDB::read_dbh(),
-        underlying => $symbol 
+        db_handle  => Postgres::FeedDB::read_dbh(),
+        underlying => $symbol
     );
 
     my %fh;
@@ -75,17 +75,18 @@ for my $symbol (@{$config->{underlyings}}) {
                         barrier      => 'S0P',
                     };
                     try {
-                        my $contract = produce_contract($args);
+                        my $contract         = produce_contract($args);
                         my $contract_expired = produce_contract({
                             %$args,
                             date_pricing => $now,
                         });
-                        if($contract_expired->is_expired) {
+                        if ($contract_expired->is_expired) {
                             my $ask_price = $contract->ask_price;
-                            my $value = $contract_expired->value;
-                            $fh{$key}->print( join(",", (map $tick->{$_}, qw(epoch quote)), $ask_price, $value, $contract->theo_price) . "\n" );
+                            my $value     = $contract_expired->value;
+                            $fh{$key}->print(join(",", (map $tick->{$_}, qw(epoch quote)), $ask_price, $value, $contract->theo_price) . "\n");
                         }
-                    } catch {
+                    }
+                    catch {
                         warn "Failed to price with parameters " . Dumper($args) . " - $_\n";
                     }
                 }

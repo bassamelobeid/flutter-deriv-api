@@ -98,12 +98,13 @@ foreach my $loginid (@approved, @rejected) {
 
     if ($input{"${loginid}_notify"}) {
         send_email({
-            from               => Brands->new(name => request()->brand)->emails('support'),
-            to                 => $client->email,
-            subject            => $email_subject,
-            message            => [$email_content],
-            template_loginid   => $loginid,
-            use_email_template => 1,
+            from                  => Brands->new(name => request()->brand)->emails('support'),
+            to                    => $client->email,
+            subject               => $email_subject,
+            message               => [$email_content],
+            template_loginid      => $loginid,
+            email_content_is_html => 1,
+            use_email_template    => 1,
         });
         $client->add_note($email_subject, $email_content);
     }
@@ -111,8 +112,8 @@ foreach my $loginid (@approved, @rejected) {
 
 print '<br/>';
 
-print '<b>Approved : </b>', join(' ', @approved), '<br/><br/>';
-print '<b>Rejected : </b>', join(' ', @rejected), '<br/><br/>';
+print '<b>Approved : </b>', join(' ', map { encode_entities($_) } @approved), '<br/><br/>';
+print '<b>Rejected : </b>', join(' ', map { encode_entities($_) } @rejected), '<br/><br/>';
 
 code_exit_BO();
 

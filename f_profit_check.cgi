@@ -1,6 +1,7 @@
 #!/etc/rmg/bin/perl
 package main;
 use strict 'vars';
+use HTML::Entities;
 
 use Date::Utility;
 use Client::Account;
@@ -13,20 +14,20 @@ use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-my $loginID = uc(request()->param('loginID'));
-
+my $loginID         = uc(request()->param('loginID'));
+my $encoded_loginID = encode_entities($loginID);
 PrintContentType();
-BrokerPresentation($loginID . ' Profit Analysis', '', '');
+BrokerPresentation($encoded_loginID . ' Profit Analysis', '', '');
 BOM::Backoffice::Auth0::can_access(['CS']);
 
 if ($loginID !~ /^(\D+)(\d+)$/) {
-    print "Error : wrong loginID ($loginID) could not get client instance";
+    print "Error : wrong loginID ($encoded_loginID) could not get client instance";
     code_exit_BO();
 }
 
 my $client = Client::Account::get_instance({'loginid' => $loginID});
 if (not $client) {
-    print "Error : wrong loginID ($loginID) could not get client instance";
+    print "Error : wrong loginID ($encoded_loginID) could not get client instance";
     code_exit_BO();
 }
 
@@ -40,7 +41,7 @@ my $db = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,
     })->db;
 
-Bar($loginID . " - Profit between " . $startdate->datetime . " and " . $enddate->datetime);
+Bar($encoded_loginID . " - Profit between " . $startdate->datetime . " and " . $enddate->datetime);
 
 my $txn_dm = BOM::Database::DataMapper::Transaction->new({
     client_loginid => $client->loginid,

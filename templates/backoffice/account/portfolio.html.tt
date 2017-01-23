@@ -21,14 +21,14 @@
             %]
             <div class="grd-parent grd-grid-12 table-body table-body-lines">
                 <div class="grd-grid-1">
-                    <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', { shortcode => open_bet.short_code, currency => currency, purchase_time => open_bet.purchase_time, loginid => loginid}) %]">[% open_bet.buy_transaction_id %]</a>
+                    <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', { shortcode => open_bet.short_code, currency => currency, purchase_time => open_bet.purchase_time, loginid => loginid}) | none %]">[% open_bet.buy_transaction_id %]</a>
                 </div>
                 <div class="grd-grid-7">[% open_bet.description %]</div>
                 <div class="grd-grid-2 right-aligned">
-                        [% currency %] <strong>[% to_monetary_number_format(open_bet.buy_price) %]</strong>
+                        [% currency %] <strong>[% to_monetary_number_format(open_bet.buy_price) | none %]</strong>
                 </div>
                 <div class="grd-grid-2 right-aligned">
-                        [% currency %] [% to_monetary_number_format(open_bet.sale_price) %]
+                        [% currency %] [% to_monetary_number_format(open_bet.sale_price) | none %]
                 </div>
             </div>
         [% END %]
@@ -37,9 +37,9 @@
 
 <div class="grd-grid-6 grd-row-padding">
     <div class="grd-grid-6"><strong>Balance</strong> : </div>
-    <div class="grd-grid-6">[% currency %] [% to_monetary_number_format(balance) %]</div>
+    <div class="grd-grid-6">[% currency %] [% to_monetary_number_format(balance) | none %]</div>
     <div class="grd-grid-6"><strong>Cost of open positions</strong> :</div>
-    <div class="grd-grid-6">[% currency %] [% to_monetary_number_format(total_in) %]</div>
+    <div class="grd-grid-6">[% currency %] [% to_monetary_number_format(total_in) | none %]</div>
     <div class="grd-grid-6"><strong>Value of open positions</strong> : </div>
-    <div class="grd-grid-6">[% currency %] [% to_monetary_number_format(total_value_now) %]</div>
+    <div class="grd-grid-6">[% currency %] [% to_monetary_number_format(total_value_now) | none %]</div>
 </div>

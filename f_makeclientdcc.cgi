@@ -2,6 +2,7 @@
 package main;
 use strict 'vars';
 
+use HTML::Entities;
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
@@ -40,7 +41,7 @@ unless ($input->{clientloginid}) {
 
 my $client = Client::Account::get_instance({'loginid' => uc($input->{'clientloginid'})});
 if (not $client) {
-    print "ERROR: " . $input->{'clientloginid'} . " does not exist! Perhaps you made a typo?";
+    print "ERROR: " . encode_entities($input->{'clientloginid'}) . " does not exist! Perhaps you made a typo?";
     code_exit_BO();
 }
 
@@ -61,14 +62,14 @@ if ($input->{'transtype'} =~ /^UPDATECLIENT/) {
 
     BOM::System::AuditLog::log($message, '', $clerk);
 
-    print $message;
+    print encode_entities($message);
     print "<p>Note: "
-        . $input->{'clientloginid'} . " is "
-        . $client->salutation . ' '
-        . $client->first_name . ' '
-        . $client->last_name
+        . encode_entities($input->{'clientloginid'}) . " is "
+        . encode_entities($client->salutation) . ' '
+        . encode_entities($client->first_name) . ' '
+        . encode_entities($client->last_name)
         . ' current email is '
-        . $client->email;
+        . encode_entities($client->email);
 } else {
     print "Transaction type is not valid";
 }

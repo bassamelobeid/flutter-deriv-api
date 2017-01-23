@@ -6,6 +6,7 @@ use open qw[ :encoding(UTF-8) ];
 use Text::Trim;
 use Text::Diff;
 use Path::Tiny;
+use HTML::Entities;
 
 use f_brokerincludeall;
 use Date::Utility;
@@ -131,12 +132,12 @@ if ($filen eq 'editvol') {
         print @output;
 
         if (!$surface->is_valid) {
-            print "<P> " . $surface->validation_error . " </P>";
+            print "<P> " . encode_entities($surface->validation_error) . " </P>";
 
         } elsif ($big_differences) {
-            print "<P>$error_message</P>";
+            print "<P>" . encode_entities($error_message) . "</P>";
         } else {
-            print "<P>Surface for " . $vol_update_symbol . " being saved</P>";
+            print "<P>Surface for " . encode_entities($vol_update_symbol) . " being saved</P>";
             $surface->save;
         }
     }
@@ -169,7 +170,11 @@ if ($filen =~ m!^vol/master(\w{3}(?:-\w{3})?)\.interest$!) {
         }
 
         if ($err_cond) {
-            print '<P><font color=red><B>ERROR with ' . $err_cond . ' on line  [' . $rateline . '].  File NOT saved.</B></font></P>';
+            print '<P><font color=red><B>ERROR with '
+                . encode_entities($err_cond)
+                . ' on line  ['
+                . encode_entities($rateline)
+                . '].  File NOT saved.</B></font></P>';
             code_exit_BO();
         } else {
             $rates->{$tenor} = $rate;
@@ -282,17 +287,19 @@ BOM::System::AuditLog::log("$broker $clerk $ENV{'REMOTE_ADDR'} $overridefilename
 print "<b><p>FILE was saved as follows :</p></b><br>";
 my $shorttext = substr($text, 0, 1000);
 
-print "<pre>" . $shorttext;
+print "<pre>" . encode_entities($shorttext);
 if (length $shorttext != length $text) {
     print "....etc.......";
 }
 print "</pre>";
 
-print "<p>New file size is " . (commas(-s "$overridefilename")) . " bytes</p><hr/>";
+print "<p>New file size is " . encode_entities(commas(-s "$overridefilename")) . " bytes</p><hr/>";
 
 # DISPLAY diff
 print
-    "<hr><table border=0><tr><td bgcolor=#ffffce><center><b>DIFFERENCES BETWEEN OLD FILE AND NEW FILE :<br>(differences indicated by stars)</b><br><pre>$diff</pre></td></tr></table><hr>";
+    "<hr><table border=0><tr><td bgcolor=#ffffce><center><b>DIFFERENCES BETWEEN OLD FILE AND NEW FILE :<br>(differences indicated by stars)</b><br><pre>"
+    . encode_entities($diff)
+    . "</pre></td></tr></table><hr>";
 
 if (-e "$overridefilename.staffedit") {
     unlink "$overridefilename.staffedit";

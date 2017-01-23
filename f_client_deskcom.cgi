@@ -8,6 +8,7 @@ use JSON;
 use Date::Utility;
 use Try::Tiny;
 use Data::Dumper;
+use HTML::Entities;
 
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
@@ -31,7 +32,7 @@ if (request()->param('created')) {
 
 my $client = Client::Account::get_instance({'loginid' => $loginid});
 if (not $client) {
-    print "Error : wrong loginID ($loginid) could not get client instance";
+    print "Error : wrong loginID (" . encode_entities($loginid) . ") could not get client instance";
     code_exit_BO();
 }
 
@@ -51,13 +52,18 @@ try {
             @{$response->{_embedded}->{entries}})
         {
             print '<tr>';
-            print '<td>' . Date::Utility->new($_->{created_at})->datetime . '</td>';
+            print '<td>' . encode_entities(Date::Utility->new($_->{created_at})->datetime) . '</td>';
             my $case =
-                '<strong>ID</strong>: ' . $_->{id} . ' <strong>description</strong>: ' . $_->{blurb} . ' <strong>status</strong>: ' . $_->{status};
-            $case .= ' <strong>updated at</strong>: ' . Date::Utility->new($_->{updated_at})->datetime   if $_->{updated_at};
-            $case .= ' <strong>resolved at</strong>: ' . Date::Utility->new($_->{resolved_at})->datetime if $_->{resolved_at};
-            $case .= ' <strong>type</strong>: ' . $_->{type}                                             if $_->{type};
-            $case .= ' <strong>subject</strong>: ' . $_->{subject}                                       if $_->{subject};
+                  '<strong>ID</strong>: '
+                . encode_entities($_->{id})
+                . ' <strong>description</strong>: '
+                . encode_entities($_->{blurb})
+                . ' <strong>status</strong>: '
+                . encode_entities($_->{status});
+            $case .= ' <strong>updated at</strong>: ' . encode_entities(Date::Utility->new($_->{updated_at})->datetime)   if $_->{updated_at};
+            $case .= ' <strong>resolved at</strong>: ' . encode_entities(Date::Utility->new($_->{resolved_at})->datetime) if $_->{resolved_at};
+            $case .= ' <strong>type</strong>: ' . encode_entities($_->{type})                                             if $_->{type};
+            $case .= ' <strong>subject</strong>: ' . encode_entities($_->{subject})                                       if $_->{subject};
             print '<td>' . $case . '</td>';
             print '</tr>';
         }
@@ -67,6 +73,6 @@ try {
     }
 }
 catch {
-    print "Desk.com response is " . Dumper($response) . "</br></br>";
-    print "Error is " . $_;
+    print "Desk.com response is " . encode_entities(Dumper($response)) . "</br></br>";
+    print "Error is " . encode_entities($_);
 };

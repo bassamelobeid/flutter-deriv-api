@@ -1,7 +1,7 @@
 #!/etc/rmg/bin/perl
 package main;
 use strict 'vars';
-
+use HTML::Entities;
 use lib qw(/home/git/regentmarkets/bom-backoffice /home/git/regentmarkets/bom/cgi/oop);
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -119,7 +119,7 @@ if ($save_economic_event) {
     }
     catch {
 
-        print 'Error: ' . $_;
+        print 'Error: ' . encode_entities($_);
     };
 }
 

@@ -42,7 +42,7 @@
 				}
 				result.text('Saving.....').css('color','black');
 				\$.ajax({
-					url: "[%ee_upload_url%]",
+					url: "[%ee_upload_url | none %]",
 					data: {
 						id: id,
 						blankout: el.find('.blankout').val(),
