@@ -140,7 +140,7 @@ my $statistics_table = sub {
     my $start_epoch = Date::Utility->new($stats->{start})->epoch;
     my $end_epoch   = Date::Utility->new($stats->{end})->epoch;
     return [
-        ['Number of datapoints',   $stats->{count}],
+        ['# of bets',   $stats->{count} . '<br>' . $stats->{file_size}],
         ['Step size',              $stats->{step_size}],
         ['Starting date',          Date::Utility->new($stats->{start})->datetime],
         ['Ending date',            Date::Utility->new($stats->{end})->datetime],
