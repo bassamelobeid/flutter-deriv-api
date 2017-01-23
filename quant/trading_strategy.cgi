@@ -77,9 +77,9 @@ my $process_dataset = sub {
     my @results;
     my %stats;
     {
-	my @info = split '_', $dataset;
-	unshift @info, join '_', splice(@info, 0, 2) if $info[0] eq 'R';
-	($stats{symbol}, $stats{duration}, $stats{step_size}) = @info;
+        my @info = split '_', $dataset;
+        unshift @info, join '_', splice(@info, 0, 2) if $info[0] eq 'R';
+        ($stats{symbol}, $stats{duration}, $stats{step_size}) = @info;
     }
     $stats{file_size} = '(' . (-s $path) . '&nbsp;bytes)';
     my @spots;
@@ -140,7 +140,7 @@ my $statistics_table = sub {
     my $start_epoch = Date::Utility->new($stats->{start})->epoch;
     my $end_epoch   = Date::Utility->new($stats->{end})->epoch;
     return [
-        ['# of bets',   $stats->{count} . '<br>' . $stats->{file_size}],
+        ['# of bets',              $stats->{count} . '<br>' . $stats->{file_size}],
         ['Step size',              $stats->{step_size}],
         ['Starting date',          Date::Utility->new($stats->{start})->datetime],
         ['Ending date',            Date::Utility->new($stats->{end})->datetime],
@@ -218,19 +218,29 @@ if (@tbl) {
         my $stats = $statistics_table->($result_for_dataset->{statistics});
         $hdr //= $stats;
 
-	my @info = split '_', $result_for_dataset->{dataset};
-	unshift @info, join '_', splice(@info, 0, 2) if $info[0] eq 'R';
+        my @info = split '_', $result_for_dataset->{dataset};
+        unshift @info, join '_', splice(@info, 0, 2) if $info[0] eq 'R';
 
-	my @hdr = qw(Symbol Duration Step Type);
-	my %details = zip @hdr, @info;
-	splice(@hdr, 2, 1);
+        my @hdr = qw(Symbol Duration Step Type);
+        my %details = zip @hdr, @info;
+        splice(@hdr, 2, 1);
 
-	my $date = Date::Utility->new($result_for_dataset->{statistics}{start})->date;
+        my $date = Date::Utility->new($result_for_dataset->{statistics}{start})->date;
         push @result_row,
             [
-		'<a href="/d/backoffice/quant/trading_strategy.cgi?run=1&date=' . $date . '&underlying=' . $details{Symbol} . '&duration=' . $details{Duration} . '%20step%20' . $details{Step} . '&type=' . $details{Type} . '">' . join(" ", map $details{$_}, grep exists $details{$_}, @hdr) . '</a>',
-	    map $_->[1],
-	    @$stats
+            '<a href="/d/backoffice/quant/trading_strategy.cgi?run=1&date='
+                . $date
+                . '&underlying='
+                . $details{Symbol}
+                . '&duration='
+                . $details{Duration}
+                . '%20step%20'
+                . $details{Step}
+                . '&type='
+                . $details{Type} . '">'
+                . join(" ", map $details{$_}, grep exists $details{$_}, @hdr) . '</a>',
+            map $_->[1],
+            @$stats
             ];
     }
     $template_args{result_table} = {

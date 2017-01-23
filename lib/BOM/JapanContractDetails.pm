@@ -108,7 +108,7 @@ sub verify_with_shortcode {
     my $landing_company = $args->{landing_company};
     my $short_code      = $args->{shortcode} or die "No shortcode provided";
     my $action_type     = $args->{action_type};
-    my $verify_price    = $args->{contract_price};    # This is the price to be verify
+    my $verify_price    = $args->{contract_price};                             # This is the price to be verify
     my $currency        = $args->{currency};
 
     my $original_contract = produce_contract($short_code, $currency);
