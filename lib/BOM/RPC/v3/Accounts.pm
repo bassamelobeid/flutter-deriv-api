@@ -651,7 +651,7 @@ sub set_settings {
     my $phone           = $args->{'phone'} // '';
 
     my $cil_message;
-    if (   $address1 ne $client->address_1
+    if (   ($address1 and $address1 ne $client->address_1)
         or $address2 ne $client->address_2
         or $addressTown ne $client->city
         or $addressState ne $client->state
@@ -663,7 +663,7 @@ sub set_settings {
             . '] updated his/her address from ['
             . join(' ', $client->address_1, $client->address_2, $client->city, $client->state, $client->postcode)
             . '] to ['
-            . join(' ', $address1, $address2, $addressTown, $addressState, $addressPostcode) . ']';
+            . join(' ', ($address1 // ''), $address2, $addressTown, $addressState, $addressPostcode) . ']';
     }
 
     $client->address_1($address1);
