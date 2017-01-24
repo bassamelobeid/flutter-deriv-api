@@ -11,8 +11,6 @@ use Client::Account;
 use Client::Account::Payments;
 use BOM::Platform::Client::IDAuthentication;
 
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-
 my $client_details = {
     broker_code     => 'CR',
     residence       => 'au',
