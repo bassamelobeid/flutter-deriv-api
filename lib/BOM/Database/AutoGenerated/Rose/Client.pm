@@ -49,7 +49,7 @@ __PACKAGE__->meta->setup(
         aml_risk_classification                  => { type => 'enum', check_in => [ 'low', 'standard', 'high', 'manual override - low', 'manual override - standard', 'manual override - high' ], db_type => 'aml_risk_type', default => 'low' },
         allow_omnibus                            => { type => 'boolean' },
         sub_account_of                           => { type => 'varchar', length => 12 },
-        allow_copiers                            => { type => 'boolean' },
+        allow_copiers                            => { type => 'boolean', default => 'false' },
         tax_residence                            => { type => 'varchar', length => 50 },
         tax_identification_number                => { type => 'varchar', length => 255 },
     ],
