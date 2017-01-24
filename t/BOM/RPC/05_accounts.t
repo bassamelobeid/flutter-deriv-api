@@ -1149,8 +1149,18 @@ subtest $method => sub {
         phone            => '2345678',
     );
     $params->{args} = {%full_args};
-    delete $params->{args}{address_line_1};
 
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Tax related information is mandatory for legal and regulatory requirement.',
+        'Correct tax error message'
+    );
+
+    $full_args{tax_residence}             = 'de';
+    $full_args{tax_identification_number} = '111-222-333';
+
+    $params->{args} = {%full_args};
+    delete $params->{args}{address_line_1};
     {
         my $warn_string;
         local $SIG{'__WARN__'} = sub { $warn_string = shift; };
