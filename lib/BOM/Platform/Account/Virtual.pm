@@ -36,7 +36,8 @@ sub create_account {
     my ($client, $error);
     try {
         # default to virtual if residence is not set
-        my $company_name = $residence ? Brands->new(name => request()->brand)->countries_instance->virtual_company_for_country($residence) : 'virtual';
+        my $company_name =
+            $residence ? Brands->new(name => request()->brand)->countries_instance->virtual_company_for_country($residence) : 'virtual';
 
         $client = Client::Account->register_and_return_new_client({
             broker_code                   => LandingCompany::Registry::get($company_name)->broker_codes->[0],
