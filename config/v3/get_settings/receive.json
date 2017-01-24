@@ -86,7 +86,7 @@
         },
         "tax_identification_number": {
           "type": ["string", "null"],
-          "pattern": "^[\\w-]{1,20}$",
+          "pattern": "^[\\w-]{0,20}$",
           "description": "Tax identification number. Only applicable for real money account."
         },
         "jp_account_status": {
