@@ -19,6 +19,7 @@ my $yyyymm        = $params{yyyymm};
 my $broker        = $params{broker};
 my $payment_types = $params{payment_type};
 my $all_types     = $params{all_payment_types};
+my $months        = $params{months} // 1;
 
 # We construct the download filename from these two values, so let's make sure they're
 # sensible before proceeding.
@@ -30,7 +31,7 @@ my $start_date = DateTime->new(
     year  => $yyyy,
     month => $mm
 );
-my $until_date = $start_date->clone->add(months => 1);
+my $until_date = $start_date->clone->add(months => $months);
 
 my ($payment_filter, $csv_name);
 
