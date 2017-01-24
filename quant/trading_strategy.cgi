@@ -46,7 +46,7 @@ my @dates = sort map $_->basename, path($base_dir)->children or do {
     code_exit_BO();
 };
 
-my $date_selected = $cgi->param('date');
+my @date_selected = $cgi->param('date');
 my $price_type_selected = $cgi->param('price_type') || 'ask';
 
 my %strategies = map { ; $_ => 1 } Finance::TradingStrategy->available_strategies;
@@ -62,79 +62,85 @@ my $rslt;
 my @tbl;
 
 my $process_dataset = sub {
-    my ($date, $dataset) = @_;
-    my $path = path($base_dir)->child($date)->child($dataset . '.csv');
-    warn "date path not found: " . path($base_dir)->child($date) unless path($base_dir)->child($date)->exists;
-    return unless $path->exists;
-
-    my $strategy = Finance::TradingStrategy->new(
-        strategy => $strategy_name,
-        count    => $count,
-    );
-
-    $strategy_description = $strategy->description;
-    my $fh  = $path->openr_utf8 or die "Could not open dataset $path - $!";
-    my $sum = 0;
-    my @hdr = qw(epoch quote buy_price value theo_price);
+    my ($date_selected, $dataset) = @_;
+    $date_selected = [ $date_selected ] unless ref $date_selected;
     my @results;
     my %stats;
-    {
-        my @info = split '_', $dataset;
-        unshift @info, join '_', splice(@info, 0, 2) if $info[0] eq 'R';
-        ($stats{symbol}, $stats{duration}, $stats{step_size}) = @info;
-    }
-    $stats{file_size} = '(' . (-s $path) . '&nbsp;bytes)';
     my @spots;
-    my $line = 0;
+    my $sum = 0;
+    DATE:
+    for my $date (@$date_selected) {
+        my $path = path($base_dir)->child($date)->child($dataset . '.csv');
+        warn "date path not found: " . path($base_dir)->child($date) unless path($base_dir)->child($date)->exists;
+print "path is $path\n";
+        next DATE unless $path->exists;
 
-    while (<$fh>) {
-        next if $line++ % $skip;
-        eval {
-            my @market_data = split /\s*,\s*/;
-            my %market_data = zip @hdr, @market_data;
-            $market_data{buy_price} = $market_data{theo_price} if $price_type_selected eq 'theo';
-            push @spots, $market_data{quote};
-            # Each ->execute returns true (buy) or false (ignore), we calculate client profit from each one and maintain a sum
-            my $should_buy = $strategy->execute(%market_data);
-            $sum +=
-                $should_buy
-                ? ($market_data{value} - $market_data{buy_price})
-                : 0;
-            push @results, $sum;
-            ++$stats{count};
-            ++$stats{trades} if $should_buy;
-            if ($market_data{value} > 0.001) {
-                ++$stats{'winners'};
-            } else {
-                ++$stats{'losers'};
-            }
-            $stats{bought_buy_price}{sum} += $market_data{buy_price} if $should_buy;
-            $stats{buy_price}{sum}        += $market_data{buy_price};
-            $stats{payout}{mean}          += $market_data{value};
+        my $strategy = Finance::TradingStrategy->new(
+                strategy => $strategy_name,
+                count    => $count,
+                );
 
-            $stats{start} ||= Date::Utility->new($market_data{epoch});
-            $stats{end} ||= $stats{start} or die 'no start info? epoch was ' . $market_data{epoch};
-            $stats{end} = Date::Utility->new($market_data{epoch}) if $market_data{epoch} > $stats{end}->epoch;
-            1;
-        } or do {
-            warn "Error processing $path:$line - (data $_) $@";
-            1;
-        };
+        $strategy_description = $strategy->description;
+        my $fh  = $path->openr_utf8 or die "Could not open dataset $path - $!";
+        my @hdr = qw(epoch quote buy_price value theo_price);
+        {
+            my @info = split '_', $dataset;
+            unshift @info, join '_', splice(@info, 0, 2) if $info[0] eq 'R';
+            ($stats{symbol}, $stats{duration}, $stats{step_size}) = @info;
+        }
+        $stats{file_size} = '(' . (-s $path) . '&nbsp;bytes)';
+        my $line = 0;
+
+        while (<$fh>) {
+            next if $line++ % $skip;
+            eval {
+                my @market_data = split /\s*,\s*/;
+                my %market_data = zip @hdr, @market_data;
+                $market_data{buy_price} = $market_data{theo_price} if $price_type_selected eq 'theo';
+                push @spots, $market_data{quote};
+# Each ->execute returns true (buy) or false (ignore), we calculate client profit from each one and maintain a sum
+                my $should_buy = $strategy->execute(%market_data);
+                $sum +=
+                    $should_buy
+                    ? ($market_data{value} - $market_data{buy_price})
+                    : 0;
+                push @results, $sum;
+                ++$stats{count};
+                ++$stats{trades} if $should_buy;
+                if ($market_data{value} > 0.001) {
+                    ++$stats{'winners'};
+                } else {
+                    ++$stats{'losers'};
+                }
+                $stats{bought_buy_price}{sum} += $market_data{buy_price} if $should_buy;
+                $stats{buy_price}{sum}        += $market_data{buy_price};
+                $stats{payout}{mean}          += $market_data{value};
+
+                $stats{start} ||= Date::Utility->new($market_data{epoch});
+                $stats{end} ||= $stats{start} or die 'no start info? epoch was ' . $market_data{epoch};
+                $stats{end} = Date::Utility->new($market_data{epoch}) if $market_data{epoch} > $stats{end}->epoch;
+                1;
+            } or do {
+                warn "Error processing $path:$line - (data $_) $@";
+                1;
+            };
+        }
     }
     if ($stats{count}) {
         my $lf  = Statistics::LineFit->new;
         my $min = min @results;
         my $max = max @results;
-        $lf->setData([1 .. $line], [map { ; ($_ - $min) / ($max - $min) } @results]) or warn "invalid ->setData";
+        $lf->setData([1 .. $#results], [map { ; ($_ - $min) / ($max - $min) } @results]) or warn "invalid ->setData";
         $stats{regression}           = $lf->meanSqError;
         $stats{buy_price}{mean}      = $stats{buy_price}{sum} / $stats{count};
         $stats{sum_contracts_bought} = $sum;
         $stats{profit_margin} =
             $stats{bought_buy_price}{sum}
-            ? sprintf '%.2f%%', -100.0 * $sum / $stats{bought_buy_price}{sum}
-            : 'N/A';
+        ? sprintf '%.2f%%', -100.0 * $sum / $stats{bought_buy_price}{sum}
+        : 'N/A';
         $stats{payout}{mean} /= $stats{count};
     }
+print "will have a total of " . (0 + @results) . " results<br>";
     return {
         result_list => \@results,
         spot_list   => \@spots,
@@ -171,14 +177,16 @@ my ($underlying_selected) = $cgi->param('underlying') =~ /^(\w+|\*)$/;
 my ($duration_selected)   = $cgi->param('duration') =~ /^([\w ]+|\*)$/;
 my ($type_selected)       = $cgi->param('type') =~ /^(\w+|\*)$/;
 if ($cgi->param('run')) {
-    if (grep { $_ eq '*' } $underlying_selected, $duration_selected, $type_selected, $date_selected) {
+    if (grep { $_ eq '*' } $underlying_selected, $duration_selected, $type_selected, @date_selected) {
+print "we have a table request";
+        @date_selected = @dates if grep { $_ eq '*' } @date_selected;
         $rslt = {};
         TABLE:
         for my $underlying ($underlying_selected eq '*' ? @{$config->{underlyings}} : $underlying_selected) {
             for my $duration_line ($duration_selected eq '*' ? @{$config->{durations}} : $duration_selected) {
                 (my $duration = $duration_line) =~ s/ step /_/;
                 for my $type ($type_selected eq '*' ? @{$config->{types}} : $type_selected) {
-                    for my $date ($date_selected eq '*' ? @dates : $date_selected) {
+                    for my $date (@date_selected) {
                         my $dataset = join '_', $underlying, $duration, $type;
                         push @tbl, eval { $process_dataset->($date, $dataset) } or do {
                             print "Failed to process $dataset - $@" if $@;
@@ -190,8 +198,10 @@ if ($cgi->param('run')) {
             }
         }
     } else {
+print "we have a graph request";
+        @date_selected = @dates if grep { $_ eq '*' } @date_selected;
         my $dataset = join '_', $underlying_selected, ($duration_selected =~ s/ step /_/r), $type_selected;
-        $rslt = $process_dataset->($date_selected, $dataset);
+        $rslt = $process_dataset->(\@date_selected, $dataset);
     }
 }
 
@@ -203,7 +213,7 @@ my %template_args = (
         type       => ['*', @{$config->{types}}],
     },
     selected_parameter => {
-        date       => $date_selected,
+        date       => [ @date_selected ],
         underlying => $underlying_selected,
         duration   => $duration_selected,
         type       => $type_selected,
@@ -218,7 +228,7 @@ my %template_args = (
     spot_list        => $rslt->{spot_list},
     dataset          => $rslt->{dataset},
     dataset_base_dir => '/trading_strategy_data',
-    date             => $date_selected,
+    date             => $date_selected[0],
 );
 
 if (@tbl) {
