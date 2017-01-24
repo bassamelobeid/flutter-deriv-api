@@ -1120,6 +1120,7 @@ subtest $method => sub {
     # in normal case the vr client's residence should not be null, so I update is as '' to simulate null
     $test_client_vr->residence('');
     $test_client_vr->save();
+    ok $test_client_vr->is_virtual;
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', "vr client can only update residence");
     # here I mocked function 'save' to simulate the db failure.
     $mocked_client->mock('save', sub { return undef });
@@ -1149,12 +1150,7 @@ subtest $method => sub {
     $params->{args} = {%full_args};
     delete $params->{args}{address_line_1};
 
-    {
-        my $warn_string;
-        local $SIG{'__WARN__'} = sub { $warn_string = shift; };
-        ok($c->call_response($method, $params)->is_error, 'has error because address line 1 cannot be null');
-        like($warn_string, qr/ERROR:  null value in column "address_line_1" violates not-null/, 'address line 1 cannot be null');
-    }
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Input validation failed: address_line_1', "has error because address line 1 cannot be null");
 
     $params->{args} = {%full_args};
     $mocked_client->mock('save', sub { return undef });
