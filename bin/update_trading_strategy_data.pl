@@ -69,12 +69,14 @@ try {
             underlying => $symbol
         );
 
-        if(my @ticks = reverse @{
-            $api->ticks_start_end_with_limit_for_charting({
-                start_time => $start,
-                end_time   => $end,
-                limit      => ($end - $start),
-            })}) {
+        if (
+            my @ticks = reverse @{
+                $api->ticks_start_end_with_limit_for_charting({
+                        start_time => $start,
+                        end_time   => $end,
+                        limit      => ($end - $start),
+                    })})
+        {
 
             $duration_options{step} //= '1t';
             my ($step_amount, $step_unit) = $duration_options{step} =~ /(\d+)([tmhs])/ or die "unknown step type " . $duration_options{step};
@@ -107,9 +109,9 @@ try {
                 try {
                     my $contract         = produce_contract($args);
                     my $contract_expired = produce_contract({
-                            %$args,
-                            date_pricing => $now,
-                        });
+                        %$args,
+                        date_pricing => $now,
+                    });
                     if ($contract_expired->is_expired) {
                         my $ask_price = $contract->ask_price;
                         my $value     = $contract_expired->value;

@@ -15,8 +15,8 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
-my $ip      = request()->param('ip')      // '';
-my $loginid = request()->param('loginid') // '';
+my $ip        = request()->param('ip')        // '';
+my $loginid   = request()->param('loginid')   // '';
 my $date_from = request()->param('date_from') // '2016-01-01';
 my $date_to   = request()->param('date_to')   // '2018-01-01';
 Bar("IP Search");
@@ -54,7 +54,7 @@ BOM::Backoffice::Request::template->process(
         logins           => $logins,
         days             => $last_login_age,
         ip               => $ip,
-        loginid         => $loginid,
+        loginid          => $loginid,
         suspected_logins => $suspected_logins,
         date_from        => $date_from,
         date_to          => $date_to,

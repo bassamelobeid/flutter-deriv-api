@@ -115,19 +115,19 @@ my $process_dataset = sub {
             $stats{start} ||= Date::Utility->new($market_data{epoch});
             $stats{end} ||= $stats{start} or die 'no start info? epoch was ' . $market_data{epoch};
             $stats{end} = Date::Utility->new($market_data{epoch}) if $market_data{epoch} > $stats{end}->epoch;
-	    1;
+            1;
         } or do {
             warn "Error processing $path:$line - (data $_) $@";
             1;
         };
     }
     if ($stats{count}) {
-        my $lf = Statistics::LineFit->new;
+        my $lf  = Statistics::LineFit->new;
         my $min = min @results;
         my $max = max @results;
-        $lf->setData([1..$line], [ map {; ($_ - $min) / ($max - $min) } @results ]) or warn "invalid ->setData";
-        $stats{regression} = $lf->meanSqError;
-        $stats{buy_price}{mean} = $stats{buy_price}{sum} / $stats{count};
+        $lf->setData([1 .. $line], [map { ; ($_ - $min) / ($max - $min) } @results]) or warn "invalid ->setData";
+        $stats{regression}           = $lf->meanSqError;
+        $stats{buy_price}{mean}      = $stats{buy_price}{sum} / $stats{count};
         $stats{sum_contracts_bought} = $sum;
         $stats{profit_margin} =
             $stats{bought_buy_price}{sum}
@@ -159,8 +159,8 @@ my $statistics_table = sub {
         ['Number of winning bets', $stats->{winners}],
         ['Number of losing bets',  $stats->{losers}],
         ['Bets bought',            $stats->{trades}],
-        ['Sum contracts bought',  sprintf '%.02f', $stats->{bought_buy_price}{sum} // 0],
-        ['Company profit',        sprintf '%.02f', -($stats->{sum_contracts_bought} // 0)],
+        ['Sum contracts bought',   sprintf '%.02f', $stats->{bought_buy_price}{sum} // 0],
+        ['Company profit',         sprintf '%.02f', -($stats->{sum_contracts_bought} // 0)],
         ['Company profit margin', $stats->{profit_margin} // 0],
         ['Normalised Least Squares', sprintf '%.04f', 100.0 * $stats->{regression} // 0],
     ];
