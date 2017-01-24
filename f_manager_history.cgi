@@ -1,6 +1,7 @@
 #!/etc/rmg/bin/perl
 package main;
-use strict 'vars';
+use strict;
+use warnings;
 
 use Locale::Country;
 use f_brokerincludeall;
@@ -14,29 +15,27 @@ use BOM::ContractInfo;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-my $loginID         = uc(request()->param('loginID'));
-my $encoded_loginID = encode_entities($loginID);
 PrintContentType();
-BrokerPresentation($encoded_loginID . ' HISTORY', '', '');
 BOM::Backoffice::Auth0::can_access(['CS']);
 
+my $loginID = uc(request()->param('loginID') // '');
+$loginID =~ s/\s//g;
+my $encoded_loginID         = encode_entities($loginID);
+my $depositswithdrawalsonly = request()->param('depositswithdrawalsonly') // '';
+my $startdate               = request()->param('startdate');
+my $enddate                 = request()->param('enddate');
 my $broker;
 if ($loginID =~ /^([A-Z]+)/) {
     $broker = $1;
 }
 
-$loginID =~ s/\s//g;
-if ($loginID !~ /^$broker/) {
+BrokerPresentation($encoded_loginID . ' HISTORY', '', '');
+unless ($broker) {
     print 'Error : wrong loginID ' . $encoded_loginID;
     code_exit_BO();
 }
 
-my $startdate = request()->param('startdate');
-my $enddate   = request()->param('enddate');
-
-$loginID =~ /^(\D+)(\d+)$/;
-
-if (request()->param('depositswithdrawalsonly') eq 'yes') {
+if ($depositswithdrawalsonly eq 'yes') {
     Bar($encoded_loginID . ' (DEPO & WITH ONLY)');
 } else {
     Bar($encoded_loginID);
@@ -62,48 +61,6 @@ my $residence    = Locale::Country::code2country($client->residence);
 my $client_name  = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
 my $client_email = $client->email;
 
-print '<form action="'
-    . request()->url_for('backoffice/f_clientloginid_edit.cgi')
-    . '" method=post>'
-    . '<input type=hidden name=broker value="'
-    . encode_entities($broker) . '">'
-    . '<input type=hidden name=loginID value="'
-    . encode_entities($loginID) . '">'
-    . '<input type=submit value="View/edit '
-    . encode_entities($loginID)
-    . ' details">'
-    . '</form>';
-
-print '<table width=100%>' . '<tr>'
-    . '<form  action="'
-    . request()->url_for('backoffice/f_manager_history.cgi')
-    . '" method=post>'
-    . '<td align=right> Quick jump to see another statement: <input name=loginID type=text size=15 value="'
-    . encode_entities($loginID) . '">'
-    . '<input type=hidden name=broker value="'
-    . encode_entities($broker) . '">'
-    . '<input type=hidden name=l value=EN>'
-    . '<input type=submit value=view>'
-    . '<input type=checkbox value=yes name=depositswithdrawalsonly>Deposits and Withdrawals only' . '</td>'
-    . '</form>' . '</tr>'
-    . '</table><hr>';
-
-my $senvs = $ENV{'SCRIPT_NAME'};
-$ENV{'SCRIPT_NAME'} = '';
-$ENV{'SCRIPT_NAME'} = $senvs;
-
-print encode_entities($client_name)
-    . ' Email:'
-    . encode_entities($client_email)
-    . ' Country:'
-    . encode_entities($citizen)
-    . ' Residence:'
-    . encode_entities($residence);
-if ($tel) {
-    print ' Tel:' . encode_entities($tel);
-}
-print '<br />';
-
 my $statement = client_statement_for_backoffice({
     client   => $client,
     before   => $enddate,
@@ -118,8 +75,20 @@ BOM::Backoffice::Request::template->process(
         balance                 => $statement->{balance},
         currency                => $currency,
         loginid                 => $client->loginid,
-        depositswithdrawalsonly => request()->param('depositswithdrawalsonly'),
+        broker                  => $broker,
+        depositswithdrawalsonly => $depositswithdrawalsonly,
         contract_details        => \&BOM::ContractInfo::get_info,
+        clientedit_url          => request()->url_for('backoffice/f_clientloginid_edit.cgi'),
+        self_post               => request()->url_for('backoffice/f_manager_history.cgi'),
+        client                  => {
+            name      => $client_name,
+            email     => $client_email,
+            country   => $citizen,
+            residence => $residence,
+            tel       => $tel
+        },
+        startdate => $startdate,
+        enddate   => $enddate,
     },
 ) || die BOM::Backoffice::Request::template->error();
 
