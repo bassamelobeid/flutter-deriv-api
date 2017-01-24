@@ -36,7 +36,7 @@ if (not $client) {
 }
 
 my $curl_url =
-      BOM::System::Config::third_party->{desk}->{url}
+      BOM::System::Config::third_party->{desk}->{api_uri}
     . "cases/search?q=custom_loginid:$loginid+created:$created -u "
     . BOM::System::Config::third_party->{desk}->{username} . ":"
     . BOM::System::Config::third_party->{desk}->{password}

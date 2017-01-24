@@ -240,7 +240,7 @@ sub _get_desk_com_entries {
     my $color = 'black';
     # add desk.com cases not deleted
     my $curl_url =
-          BOM::System::Config::third_party->{desk}->{url}
+          BOM::System::Config::third_party->{desk}->{api_uri}
         . "cases/search?q=custom_loginid:$loginid+created:"
         . _get_desk_created_string($startdate, $enddate);
     if ($status) {
