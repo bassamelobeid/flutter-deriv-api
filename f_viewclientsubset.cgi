@@ -16,7 +16,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use open qw[ :encoding(UTF-8) ];
-use BOM::Backoffice;
+use BOM::Backoffice::Config;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);
 
 use f_brokerincludeall;
@@ -480,7 +480,7 @@ sub RecoverFromClientAccount {
 
     my $acc_balance = $client->currency . $bal;
 
-    my $log = BOM::Backoffice::config->{log}->{withdraw_broker};
+    my $log = BOM::Backoffice::Config::config->{log}->{withdraw_broker};
     $log =~ s/%BROKERCODE%/$broker/g;
     Path::Tiny::path($log)
         ->append_utf8(Date::Utility->new->datetime . " $loginID balance $acc_balance withdrawn by $clerk");

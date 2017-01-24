@@ -15,7 +15,7 @@ use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Database::ClientDB;
 use Client::Account;
 use BOM::Platform::Runtime;
-use BOM::Backoffice qw/get_tmp_path_or_die/;
+use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Backoffice::Sysinit ();
 use LandingCompany::Registry;

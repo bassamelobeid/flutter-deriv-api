@@ -8,7 +8,7 @@ use Guard;
 use File::Copy;
 use Path::Tiny;
 use Plack::App::CGIBin::Streaming;
-use BOM::Backoffice;
+use BOM::Backoffice::Config;
 use BOM::Backoffice::Cookie;
 use BOM::Backoffice::Request::Base;
 use BOM::Backoffice::Request qw(request localize);
@@ -118,7 +118,7 @@ sub log_bo_access {
     $staffname ||= 'unauthenticated';
     my $s = $0;
     $s =~ s/^\/home\/website\/www//;
-    my $log = BOM::Backoffice::config->{log}->{staff};
+    my $log = BOM::Backoffice::Config::config->{log}->{staff};
     $log =~ s/%STAFFNAME%/$staffname/g;
     if ((-s $log or 0) > 750000) {
         File::Copy::move($log, "$log.1");

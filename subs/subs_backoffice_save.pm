@@ -1,6 +1,6 @@
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
-use BOM::Backoffice;
+use BOM::Backoffice::Config;
 
 #####################################################################
 # Purpose    : Save difference to difflog
@@ -58,7 +58,7 @@ sub save_log_staff_difflog {
 
     local *DATA;
 
-    my $log_dir = BOM::Backoffice::config->{log}->{staff_dir};
+    my $log_dir = BOM::Backoffice::Config::config->{log}->{staff_dir};
     if (not -d $log_dir) {
         system("mkdir $log_dir");
     }
@@ -101,7 +101,7 @@ sub save_log_save_complete_log {
 
     local *DATA;
 
-    my $log = BOM::Backoffice::config->{log}->{fsave_complete};
+    my $log = BOM::Backoffice::Config::config->{log}->{fsave_complete};
 
     if ((-s $log) > 3000000) {
         system("mv $log $log.1");

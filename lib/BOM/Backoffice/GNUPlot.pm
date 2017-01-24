@@ -2,7 +2,7 @@ package BOM::Backoffice::GNUPlot;
 use strict;
 use warnings;
 use Time::HiRes ('gettimeofday');
-use BOM::Backoffice qw/get_tmp_path_or_die/;
+use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
 
 use open qw[ :encoding(UTF-8) ];
 

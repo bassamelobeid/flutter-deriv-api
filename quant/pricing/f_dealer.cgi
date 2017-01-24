@@ -18,7 +18,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Platform::Email qw(send_email);
-use BOM::Backoffice;
+use BOM::Backoffice::Config;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
@@ -99,7 +99,7 @@ if (request()->param('whattodo') eq 'closeatzero') {
     }
 
     # Logging
-    Path::Tiny::path(BOM::Backoffice::config->{log}->{deposit})
+    Path::Tiny::path(BOM::Backoffice::Config::config->{log}->{deposit})
         ->append_utf8($now->datetime
             . "GMT $ttype($buysell) $qty @ $currency$price $bet_ref $loginID clerk=$clerk fellow="
             . request()->param('DCstaff')

@@ -6,7 +6,7 @@ use POSIX;
 use Path::Tiny;
 use BOM::Backoffice::GNUPlot;
 use Date::Utility;
-use BOM::Backoffice qw/get_tmp_path_or_die/;
+use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Request qw(request);

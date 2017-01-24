@@ -6,7 +6,7 @@ use open qw[ :encoding(UTF-8) ];
 use HTML::Entities;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_XSendfile/;
 use BOM::Backoffice::Sysinit ();
-use BOM::Backoffice qw/get_tmp_path_or_die/;
+use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
 
 use Client::Account;
 

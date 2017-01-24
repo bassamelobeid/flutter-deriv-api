@@ -1,4 +1,4 @@
-package BOM::Backoffice;
+package BOM::Backoffice::Config;
 
 use warnings;
 use strict;
@@ -8,7 +8,6 @@ use YAML::XS;
 use BOM::Backoffice::Request;
 use Exporter 'import';
 our @EXPORT_OK = qw(get_tmp_path_or_die);
-
 
 sub config {
     state $config = YAML::XS::LoadFile('/etc/rmg/backoffice.yml');
@@ -20,17 +19,17 @@ sub config {
 #
 sub get_tmp_path_or_die {
 
-    my $d = BOM::Backoffice::config->{directory}->{tmp};
+    my $d = config->{directory}->{tmp};
     if ($_[0] and $_[0] eq 'gif') {
-        $d = BOM::Backoffice::config->{directory}->{tmp_gif};
+        $d = config->{directory}->{tmp_gif};
     }
-    $d = $ENV{'TEST_TMPDIR'} if(defined $ENV{'TEST_TMPDIR'});
-    if (not $d or $d eq '') {
+    $d = $ENV{'TEST_TMPDIR'} if defined $ENV{'TEST_TMPDIR'};
+    unless ($d) {
         print "backoffice.yml directory.tmp undefined";
         BOM::Backoffice::Request::request_completed();
         exit 0;
     }
-    if (not -d $d) {
+    unless (-d $d) {
         print "No such directory: $d. Maybe you're at wrong Backoffice";
         BOM::Backoffice::Request::request_completed();
         exit 0;
@@ -40,4 +39,3 @@ sub get_tmp_path_or_die {
 }
 
 1;
-
