@@ -268,6 +268,7 @@ for my $k (qw(dataset strategy)) {
     $template_args{$k . '_selected'} = $param if $param;
 }
 
-BOM::Backoffice::Request::template->process('backoffice/trading_strategy.html.tt', \%template_args);
+my $tt = BOM::Backoffice::Request::template;
+$tt->process('backoffice/trading_strategy.html.tt', \%template_args) or warn $tt->error;
 
 code_exit_BO();
