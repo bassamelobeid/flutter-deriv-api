@@ -11,7 +11,7 @@ __PACKAGE__->meta->setup(
     columns => [
         id               => { type => 'bigint', not_null => 1, sequence => 'sequences.global_serial' },
         calculation_time => { type => 'timestamp' },
-        market_value     => { type => 'numeric', precision => 12, scale => 24 },
+        market_value     => { type => 'numeric' },
         delta            => { type => 'numeric' },
         theta            => { type => 'numeric' },
         vega             => { type => 'numeric' },

@@ -13,8 +13,8 @@ __PACKAGE__->meta->setup(
         copier_id       => { type => 'varchar', length => 12, not_null => 1 },
         asset           => { type => 'varchar', length => 50 },
         trade_type      => { type => 'varchar', length => 50 },
-        min_trade_stake => { type => 'numeric', precision => 12, scale => 24 },
-        max_trade_stake => { type => 'numeric', precision => 12, scale => 24 },
+        min_trade_stake => { type => 'numeric' },
+        max_trade_stake => { type => 'numeric' },
     ],
 
     primary_key_columns => [ 'copier_id' ],

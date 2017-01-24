@@ -11,7 +11,7 @@ __PACKAGE__->meta->setup(
     columns => [
         id                   => { type => 'bigint', not_null => 1, sequence => 'sequences.payment_serial' },
         payment_time         => { type => 'timestamp', default => 'now()' },
-        amount               => { type => 'numeric', not_null => 1, precision => 12, scale => 24 },
+        amount               => { type => 'numeric', not_null => 1 },
         payment_gateway_code => { type => 'varchar', length => 50, not_null => 1 },
         payment_type_code    => { type => 'varchar', length => 50, not_null => 1 },
         status               => { type => 'varchar', length => 20, not_null => 1 },
