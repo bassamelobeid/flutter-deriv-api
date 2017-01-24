@@ -129,7 +129,7 @@ my $process_dataset = sub {
         my $lf  = Statistics::LineFit->new;
         my $min = min @results;
         my $max = max @results;
-        $lf->setData([1 .. $#results], [map { ; ($_ - $min) / ($max - $min) } @results]) or warn "invalid ->setData";
+        $lf->setData([1 .. @results], [map { ; ($_ - $min) / ($max - $min) } @results]) or warn "invalid ->setData";
         $stats{regression}           = $lf->meanSqError;
         $stats{buy_price}{mean}      = $stats{buy_price}{sum} / $stats{count};
         $stats{sum_contracts_bought} = $sum;
