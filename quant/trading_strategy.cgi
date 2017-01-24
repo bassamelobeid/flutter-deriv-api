@@ -15,6 +15,7 @@ use List::MoreUtils qw(zip);
 use lib '/home/git/regentmarkets/perl-Finance-TradingStrategy/lib';
 use Finance::TradingStrategy;
 use Finance::TradingStrategy::BuyAndHold;
+use Statistics::LineFit;
 
 use Time::Duration ();
 
@@ -109,6 +110,7 @@ my $process_dataset = sub {
             $stats{bought_buy_price}{sum} += $market_data{buy_price} if $should_buy;
             $stats{buy_price}{sum}        += $market_data{buy_price};
             $stats{payout}{mean}          += $market_data{value};
+
             $stats{start} ||= Date::Utility->new($market_data{epoch});
             $stats{end} ||= $stats{start} or die 'no start info? epoch was ' . $market_data{epoch};
             $stats{end} = Date::Utility->new($market_data{epoch}) if $market_data{epoch} > $stats{end}->epoch;
@@ -119,6 +121,10 @@ my $process_dataset = sub {
         };
     }
     if ($stats{count}) {
+	    my $lf = Statistics::LineFit->new;
+print "Had total of " . (0+ @results) . " for $path\n";
+	    $lf->setData([1..$line], \@results);
+	    $stats{regresssion} = $lf->meanSqError;
         $stats{buy_price}{mean} = $stats{buy_price}{sum} / $stats{count};
         $stats{sum_contracts_bought} = $sum;
         $stats{profit_margin} =
@@ -154,6 +160,7 @@ my $statistics_table = sub {
         ['Sum contracts bought',  sprintf '%.02f', $stats->{bought_buy_price}{sum} // 0],
         ['Company profit',        sprintf '%.02f', -($stats->{sum_contracts_bought} // 0)],
         ['Company profit margin', $stats->{profit_margin} // 0],
+        ['Regression',            $stats->{regression} // 0],
     ];
 };
 
