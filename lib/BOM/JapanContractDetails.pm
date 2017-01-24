@@ -15,6 +15,7 @@ use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Database::ClientDB;
 use Client::Account;
 use BOM::Platform::Runtime;
+use BOM::Backoffice qw/get_tmp_path_or_die/;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Backoffice::Sysinit ();
 use LandingCompany::Registry;
@@ -460,7 +461,7 @@ sub output_on_display {
 sub batch_output_as_excel {
     my $contract  = shift;
     my $file_name = shift;
-    my $temp_file = BOM::Backoffice::Sysinit::get_tmp_path_or_die() . "/$file_name";
+    my $temp_file = get_tmp_path_or_die() . "/$file_name";
     my $workbook  = Spreadsheet::WriteExcel->new($temp_file);
     my $worksheet = $workbook->add_worksheet();
     my @combined;
@@ -486,7 +487,7 @@ sub batch_output_as_excel {
 sub single_output_as_excel {
     my $contract  = shift;
     my $file_name = shift;
-    my $temp_file = BOM::Backoffice::Sysinit::get_tmp_path_or_die() . "/$file_name";
+    my $temp_file = get_tmp_path_or_die() . "/$file_name";
     my $workbook  = Spreadsheet::WriteExcel->new($temp_file);
     my $worksheet = $workbook->add_worksheet();
     my (@keys, @value);

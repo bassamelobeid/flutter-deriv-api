@@ -11,7 +11,6 @@ use Plack::App::CGIBin::Streaming;
 use BOM::Backoffice::Cookie;
 use BOM::Backoffice::Request::Base;
 use BOM::Backoffice::Request qw(request localize);
-use BOM::Platform::Runtime;
 use Try::Tiny::Except ();    # should be preloaded as early as possible
                              # this statement here is merely a comment.
 
@@ -124,29 +123,6 @@ sub log_bo_access {
     Path::Tiny::path("/var/log/fixedodds/staff-$staffname.log")->append_utf8(Date::Utility->new->datetime . " $s $l\n");
 
     return;
-}
-
-#
-# Here we handle situation caused by BO installations on multiple nodes with different functionalities
-#
-sub get_tmp_path_or_die {
-
-    my $d = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
-    if ($_[0] and $_[0] eq 'gif') {
-        $d = BOM::Platform::Runtime->instance->app_config->system->directory->tmp_gif;
-    }
-    if (not $d) {
-        print "system.directory.tmp undefined";
-        BOM::Backoffice::Request::request_completed();
-        exit 0;
-    }
-    if (not -d $d) {
-        print "No such directory: $d. Maybe you're at wrong Backoffice";
-        BOM::Backoffice::Request::request_completed();
-        exit 0;
-    }
-
-    return $d;
 }
 
 1;
