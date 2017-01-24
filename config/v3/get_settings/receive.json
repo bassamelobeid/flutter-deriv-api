@@ -79,6 +79,16 @@
           "pattern": "^(0|1)$",
           "description": "Boolean value 1 or 0, indicating permission to allow others to follow your trades. Note: not applicable for Virtual account. Only allow for real money account."
         },
+        "tax_residence": {
+          "type": ["string", "null"],
+          "pattern": "^[a-z]{0,2}(?:,[a-z]{2})*$",
+          "description": "Residence for tax purpose. Comma separated iso country code if multiple jurisdiction. Only applicable for real money account."
+        },
+        "tax_identification_number": {
+          "type": ["string", "null"],
+          "pattern": "^[\w-]{1,20}$",
+          "description": "Tax identification number. Only applicable for real money account."
+        },
         "jp_account_status": {
           "type": "object",
           "title": "Japan real money account status",
