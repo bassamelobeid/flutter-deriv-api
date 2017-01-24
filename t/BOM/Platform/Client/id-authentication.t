@@ -6,6 +6,7 @@ use File::Spec;
 use JSON qw(decode_json);
 
 use Client::Account;
+use BOM::Test::Data::Utility::UnitTestDatabase;
 
 use BOM::Platform::Client::IDAuthentication;
 {

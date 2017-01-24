@@ -5,6 +5,8 @@ use Test::More qw(no_plan);
 use Test::Exception;
 use Client::Account;
 
+use BOM::Test::Data::Utility::UnitTestDatabase;
+
 my $CR2002  = Client::Account->new({loginid => 'CR2002'});
 my $MX0012  = Client::Account->new({loginid => 'MX0012'});
 my $MLT0012 = Client::Account->new({loginid => 'MLT0012'});

@@ -3,9 +3,11 @@ use warnings;
 
 use Test::More qw(no_plan);
 use Test::MockObject::Extends;
-use BOM::Platform::Client::DoughFlowClient;
 use Date::Utility;
 use DateTime;
+
+use BOM::Platform::Client::DoughFlowClient;
+use BOM::Test::Data::Utility::UnitTestDatabase;
 
 my $client_details1 = {
     'loginid'         => 'CR5089',
