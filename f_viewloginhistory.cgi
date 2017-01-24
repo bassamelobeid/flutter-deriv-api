@@ -37,6 +37,4 @@ if (my $email_list = request()->param('email')) {
             });
     }
 }
-use BOM::Backoffice qw/get_tmp_path_or_die/;
-print get_tmp_path_or_die();
 code_exit_BO();

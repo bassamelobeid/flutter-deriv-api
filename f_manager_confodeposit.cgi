@@ -19,6 +19,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
 use BOM::System::AuditLog;
 use BOM::ContractInfo;
+use BOM::Backoffice;
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Runtime;
 BOM::Backoffice::Sysinit::init();
@@ -234,7 +235,7 @@ my $now = Date::Utility->new;
 # Logging
 my $msg = $now->datetime . " $ttype $curr$amount $loginID clerk=$clerk (DCcode=$DCcode) $ENV{REMOTE_ADDR}";
 BOM::System::AuditLog::log($msg, $loginID, $clerk);
-Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")->append_utf8($msg);
+Path::Tiny::path(BOM::Backoffice::config->{log}->{deposit})->append_utf8($msg);
 
 # Print confirmation
 Bar("$ttype confirmed");
