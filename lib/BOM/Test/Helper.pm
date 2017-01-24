@@ -32,7 +32,7 @@ use RedisDB;
 use YAML::XS qw/LoadFile DumpFile/;
 
 use Exporter qw/import/;
-our @EXPORT_OK = qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_client reconnect/;
+our @EXPORT_OK = qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_client reconnect launch_redis/;
 
 my $version = 'v3';
 die 'unknown version' unless $version;
@@ -53,17 +53,8 @@ sub build_mojo_test {
     return Test::Mojo->new($app);
 }
 
-sub build_wsapi_test {
-    my $args    = shift || {};
-    my $headers = shift || {};
-    my $callback = shift;
-
-    # We use 1 by default for these tests, unless a value is provided.
-    # undef means "leave it out", used for a few tests that need to check
-    # that we handle missing app_id correctly.
-    $args->{app_id} = 1 unless exists $args->{app_id};
-    delete $args->{app_id} unless defined $args->{app_id};
-
+sub launch_redis {
+    my $t            = shift;
     my $redis_port   = empty_port;
     my $redis_server = Mojo::Redis2::Server->new;
     $redis_server->start(port => $redis_port);
@@ -82,6 +73,21 @@ sub build_wsapi_test {
     DumpFile($ws_redis_path, $ws_redis_config);
     $ENV{BOM_TEST_WS_REDIS} = "$ws_redis_path";    ## no critic
 
+    return ($tmp_dir, $redis_server);
+}
+
+sub build_wsapi_test {
+    my $args    = shift || {};
+    my $headers = shift || {};
+    my $callback = shift;
+
+    # We use 1 by default for these tests, unless a value is provided.
+    # undef means "leave it out", used for a few tests that need to check
+    # that we handle missing app_id correctly.
+    $args->{app_id} = 1 unless exists $args->{app_id};
+    delete $args->{app_id} unless defined $args->{app_id};
+
+    my ($tmp_dir, $redis_server) = launch_redis;
     my $t = build_mojo_test('Binary::WebSocketAPI', $args);
 
     my @query_params;
