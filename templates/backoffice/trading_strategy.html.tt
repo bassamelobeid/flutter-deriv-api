@@ -33,6 +33,7 @@
 <input name="skip" value="[% skip %]">
 
 <input name="run" type="submit" value="Run">
+<input name="reset" type="reset" value="Reset">
 
 [% IF result_table.size -%]
 <h2>Results for all datasets with strategy [% strategy_selected || 'unknown' %]</h2>
