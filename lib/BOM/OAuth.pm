@@ -66,6 +66,7 @@ sub startup {
     # $r->any('/access_token')->to('O#access_token');
 
     $r->any('/oneall/callback')->to('OneAll#callback');
+    $r->any('/oneall/redirect')->to('OneAll#redirect');
 }
 
 1;

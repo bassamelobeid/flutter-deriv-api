@@ -54,6 +54,16 @@ sub callback {
     return $c->redirect_to($redirect_uri);
 }
 
+# simple redirect since .html does not support POST from oneall
+sub redirect {
+    my $c = shift;
+
+    my $dir = $c->param('dir') || 'https://www.binary.com/en/user/security/connections.html';
+    my $connection_token = $c->param('connection_token') // '';
+
+    return $c->redirect_to($dir . '?connection_token=' . $connection_token);
+}
+
 sub __get_email {
     my ($provider_data) = @_;
 
