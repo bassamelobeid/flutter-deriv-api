@@ -10,7 +10,7 @@ use Try::Tiny;
 use Data::Dumper;
 
 use f_brokerincludeall;
-use BOM::Platform::Runtime;
+use BOM::System::Config;
 use BOM::Platform::Client;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
@@ -36,10 +36,10 @@ if (not $client) {
 }
 
 my $curl_url =
-      BOM::Platform::Runtime->instance->app_config->system->desk_com->desk_url
+      BOM::System::Config::third_party->{desk}->{url}
     . "cases/search?q=custom_loginid:$loginid+created:$created -u "
-    . BOM::Platform::Runtime->instance->app_config->system->desk_com->account_username . ":"
-    . BOM::Platform::Runtime->instance->app_config->system->desk_com->account_password
+    . BOM::System::Config::third_party->{desk}->{username} . ":"
+    . BOM::System::Config::third_party->{desk}->{password}
     . " -d 'sort_field=created_at&sort_direction=asc' -G -H 'Accept: application/json'";
 
 my $response = `curl $curl_url`;
