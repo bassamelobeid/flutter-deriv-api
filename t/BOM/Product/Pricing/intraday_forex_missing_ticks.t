@@ -1,0 +1,271 @@
+use strict;
+use warnings;
+
+use Test::Most tests => 4;
+use File::Spec;
+use YAML::XS qw(LoadFile);
+use LandingCompany::Offerings qw(get_offerings_with_filter);
+use BOM::Market::AggTicks;
+use Date::Utility;
+use BOM::Product::ContractFactory qw( produce_contract );
+
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+
+use Text::CSV;
+use BOM::Market::DataDecimate;
+
+use List::Util qw(first max);
+use Data::Decimate qw(decimate);
+
+use Test::BOM::UnitTestPrice;
+use BOM::Test::Data::Utility::UnitTestRedis;
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
+
+#my $at = BOM::Market::AggTicks->new;
+#$at->flush;
+
+BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
+#BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
+
+my $expected   = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/intraday_forex_config.yml');
+my $date_start = Date::Utility->new(1352345145);
+note('Pricing on ' . $date_start->datetime);
+my $date_pricing    = $date_start;
+my $date_expiry     = $date_start->plus_time_interval('1000s');
+my $underlying      = create_underlying('frxUSDJPY', $date_pricing);
+my $barrier         = 'S3P';
+my $barrier_low     = 'S-3P';
+my $payout          = 100;
+my $payout_currency = 'GBP';
+my $duration        = 3600;
+
+my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
+
+my $missing_ticks = data_from_csv('t/BOM/Product/Pricing/missing_ticks.csv');
+
+
+BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
+foreach my $single_data (@$missing_ticks) {
+  print "###:" . $single_data->{symbol} . "," . $single_data->{epoch} . "," . $single_data->{quote} . "\n";
+
+#1352344500 till +60*10
+  next if ($single_data->{epoch} >= 1352344500 and $single_data->{epoch} <= 600);
+
+   BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'frxUSDJPY',
+            epoch      => $single_data->{epoch} + 10000,
+            quote      => $single_data->{quote},
+        });
+}
+
+my $start = $date_start->epoch - 7200;
+$start = $start - $start % 15;
+my $first_agg = $start - 15;
+
+my $hist_ticks = $underlying->ticks_in_between_start_end({
+        start_time => $first_agg,
+        end_time   => $date_start->epoch,
+    });
+
+my @rev_ticks = reverse @$hist_ticks;
+
+my $decimate_cache = BOM::Market::DataDecimate->new();
+my $decimate_data = Data::Decimate::decimate($decimate_cache->sampling_frequency->seconds, \@rev_ticks);
+
+my $decimate_key = $decimate_cache->_make_key('frxUSDJPY', 1);
+
+foreach my $single_data (@$decimate_data) {
+        $decimate_cache->_update(
+            $decimate_cache->redis_write,
+            $decimate_key,
+            $single_data->{decimate_epoch},
+            $decimate_cache->encoder->encode($single_data));
+}
+
+my $agg_t = $decimate_cache->decimate_cache_get({
+	underlying => $underlying,
+        start_epoch => $start,
+        end_epoch  => $date_start->epoch,
+        backprice => 0,
+});
+
+foreach my $single_data (@$agg_t) {
+       my $agg_epoch = $single_data->{decimate_epoch};
+       if($agg_epoch) {
+       print "### : " . $single_data->{symbol} . "," . $single_data->{epoch} . "," . $agg_epoch . "," . ",count=$single_data->{count}\n";
+#         if($agg_epoch==1352344500-15) $prev_tick = $single_data;
+       }else {
+	print ">>> : " . $single_data->{symbol} . "," . $single_data->{epoch} . "," . ",count=$single_data->{count}\n";
+       }
+}
+
+my $recorded_date = $date_start->truncate_to_day;
+Test::BOM::UnitTestPrice::create_pricing_data($underlying->symbol, $payout_currency, $recorded_date);
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol        => 'JPY-USD',
+        recorded_date => $date_pricing,
+    });
+
+my %equal = (
+    CALLE => 1,
+    PUTE  => 1,
+);
+my @ct = grep { !$equal{$_} } get_offerings_with_filter(
+    $offerings_cfg,
+    'contract_type',
+    {
+        underlying_symbol => $underlying->symbol,
+        expiry_type       => 'intraday',
+        start_type        => 'spot'
+    });
+my $vol = 0.15062438755219;
+subtest 'prices without economic events' => sub {
+
+    foreach my $contract_type (@ct) {
+        my @barriers = @{
+            Test::BOM::UnitTestPrice::get_barrier_range({
+                    type       => 'single',
+                    underlying => $underlying,
+                    duration   => $duration,
+                    spot       => $underlying->spot,
+                    volatility => $vol,
+                })};
+        foreach my $barrier (@barriers) {
+            lives_ok {
+                my $c = produce_contract({
+                    bet_type     => $contract_type,
+                    underlying   => $underlying,
+                    date_start   => $date_start,
+                    date_pricing => $date_pricing,
+                    duration     => $duration . 's',
+                    currency     => $payout_currency,
+                    payout       => $payout,
+                    %$barrier,
+                });
+                isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
+                is $c->theo_probability->amount, $expected->{$c->shortcode}, 'correct ask probability [' . $c->shortcode . ']';
+            }
+            'survived';
+        }
+    }
+};
+
+subtest 'atm prices without economic events' => sub {
+    foreach my $contract_type (qw(CALL PUT)) {
+        foreach my $duration (map { $_ * 60 } (2, 5, 10, 15)) {
+            lives_ok {
+                my $c = produce_contract({
+                    bet_type     => $contract_type,
+                    underlying   => $underlying,
+                    date_start   => $date_start,
+                    date_pricing => $date_pricing,
+                    duration     => $duration . 's',
+                    currency     => $payout_currency,
+                    payout       => $payout,
+                    barrier      => 'S0P',
+                });
+                isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
+                is $c->theo_probability->amount, $expected->{$c->shortcode}, 'correct ask probability [event_' . $c->shortcode . ']';
+            }
+            'survived';
+        }
+    }
+};
+
+subtest 'prices with economic events' => sub {
+    my $event_date = $date_start->minus_time_interval('15m');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'economic_events',
+        {
+            recorded_date => $event_date,
+            events        => [{
+                    symbol       => 'USD',
+                    impact       => 5,
+                    release_date => $event_date->epoch,
+                    event_name   => 'Construction Spending m/m'
+                }]});
+    foreach my $contract_type (@ct) {
+        my @barriers = @{
+            Test::BOM::UnitTestPrice::get_barrier_range({
+                    type       => 'single',
+                    underlying => $underlying,
+                    duration   => $duration,
+                    spot       => $underlying->spot,
+                    volatility => $vol,
+                })};
+        foreach my $barrier (@barriers) {
+            lives_ok {
+                my $c = produce_contract({
+                    bet_type     => $contract_type,
+                    underlying   => $underlying,
+                    date_start   => $date_start,
+                    date_pricing => $date_pricing,
+                    duration     => $duration . 's',
+                    currency     => $payout_currency,
+                    payout       => $payout,
+                    %$barrier,
+                });
+                isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
+                is $c->theo_probability->amount, $expected->{'event_' . $c->shortcode}, 'correct ask probability [event_' . $c->shortcode . ']';
+            }
+            'survived';
+        }
+    }
+};
+
+subtest 'atm prices with economic events' => sub {
+    foreach my $contract_type (qw(CALL PUT)) {
+        foreach my $duration (map { $_ * 60 } (2, 5, 10, 15)) {
+            lives_ok {
+                my $c = produce_contract({
+                    bet_type     => $contract_type,
+                    underlying   => $underlying,
+                    date_start   => $date_start,
+                    date_pricing => $date_pricing,
+                    duration     => $duration . 's',
+                    currency     => $payout_currency,
+                    payout       => $payout,
+                    barrier      => 'S0P',
+                });
+                isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
+                is $c->theo_probability->amount, $expected->{'event_' . $c->shortcode}, 'correct ask probability [event_' . $c->shortcode . ']';
+            }
+            'survived';
+        }
+    }
+};
+
+sub data_from_csv {
+    my $filename = shift;
+
+    open(my $fh, '<:utf8', $filename) or die "Can't open $filename: $!";
+
+    my $header = '';
+    while (<$fh>) {
+        if (/^symbol,/x) {
+            $header = $_;
+            last;
+        }
+    }
+
+    my $csv = Text::CSV->new or die "Text::CSV error: " . Text::CSV->error_diag;
+
+    $csv->parse($header);
+    $csv->column_names([$csv->fields]);
+
+    my @datas;
+    while (my $row = $csv->getline_hr($fh)) {
+        push @datas, $row;
+    }
+
+    $csv->eof or $csv->error_diag;
+    close $fh;
+
+    return \@datas;
+}
