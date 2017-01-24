@@ -600,7 +600,20 @@ sub set_settings {
         }
 
         $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && $client->broker_code ne 'CR';
+
+        my $missed_field;
+        if ($missed_field = (grep { !defined $args->{$_} } qw/address_line_1 address_city address_state address_postcode/)[0]) {
+            $err = BOM::RPC::v3::Utility::create_error({
+                    code              => 'InputValidationFailed',
+                    message_to_client => localize("Input validation failed: [_1]", $missed_field),
+                    details           => {
+                        $missed_field => "is missing and it is required",
+                    },
+                });
+        }
     }
+
+    return $err if $err->{error};
 
     if (
         $allow_copiers
@@ -610,12 +623,10 @@ sub set_settings {
                 )->get_traders({copier_id => $client->loginid})
                 || []})
     {
-        $err = BOM::RPC::v3::Utility::create_error({
+        return BOM::RPC::v3::Utility::create_error({
                 code              => 'AllowCopiersError',
                 message_to_client => localize("Copier can't be a trader.")});
     }
-
-    return $err if $err->{error};
 
     # email consent is per user whereas other settings are per client
     # so need to save it separately
