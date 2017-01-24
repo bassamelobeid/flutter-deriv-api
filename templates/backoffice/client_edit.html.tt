@@ -461,6 +461,12 @@ table#client_edit td{
             <td>Client acknowledges financial risk?</td>
         </tr>
     [% END %]
+    [% FOREACH version = csr_tin_information %]
+        <tr>
+            <td class="label"><input type="checkbox" checked disabled="disabled"/></td>
+            <td>[% version %]</td>
+        </tr>
+    [% END %]
     <tr>
         <td class="small_header" colspan="2">#Omnibus</td>
     </tr>
