@@ -11,6 +11,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use List::MoreUtils qw(zip);
+use List::Util qw(min max);
 
 use lib '/home/git/regentmarkets/perl-Finance-TradingStrategy/lib';
 use Finance::TradingStrategy;
@@ -121,10 +122,11 @@ my $process_dataset = sub {
         };
     }
     if ($stats{count}) {
-	    my $lf = Statistics::LineFit->new;
-print "Had total of " . (0+ @results) . " for $path\n";
-	    $lf->setData([1..$line], \@results);
-	    $stats{regresssion} = $lf->meanSqError;
+        my $lf = Statistics::LineFit->new;
+        my $min = min @results;
+        my $max = max @results;
+        $lf->setData([1..$line], [ map {; ($_ - $min) / ($max - $min) } @results ]) or warn "invalid ->setData";
+        $stats{regression} = $lf->meanSqError;
         $stats{buy_price}{mean} = $stats{buy_price}{sum} / $stats{count};
         $stats{sum_contracts_bought} = $sum;
         $stats{profit_margin} =
@@ -160,7 +162,7 @@ my $statistics_table = sub {
         ['Sum contracts bought',  sprintf '%.02f', $stats->{bought_buy_price}{sum} // 0],
         ['Company profit',        sprintf '%.02f', -($stats->{sum_contracts_bought} // 0)],
         ['Company profit margin', $stats->{profit_margin} // 0],
-        ['Regression',            $stats->{regression} // 0],
+        ['Normalised Least Squares',            sprintf '%.04f', $stats->{regression} // 0],
     ];
 };
 
