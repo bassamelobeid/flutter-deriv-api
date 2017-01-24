@@ -64,10 +64,8 @@ sub mt5_new_account {
             $group = 'demo\\' . $brand->name . '_virtual';
         }
     } elsif ($account_type eq 'gaming' or $account_type eq 'financial') {
-        # 5 Sept 2016: only CR and champion fully authenticated client can open MT real a/c
-        if ($client->landing_company->short ne 'costarica' or $client->landing_company->short ne 'champion') {
-            return BOM::RPC::v3::Utility::permission_error();
-        }
+        # 5 Sept 2016: only CR and Champion fully authenticated client can open MT real a/c
+        return BOM::RPC::v3::Utility::permission_error() if ($client->landing_company->short !~ '^(?:costarica|champion)$');
 
         if ($account_type eq 'financial') {
             return BOM::RPC::v3::Utility::permission_error() unless $client->client_fully_authenticated;
