@@ -253,19 +253,3 @@ system:
           description: "Temp directory for website operation"
           isa: Str
           default: "/home/tmpramdrive"
-    desk_com:
-      description: "All configuration related to the Desk.com API"
-      isa: section
-      contains:
-        desk_url:
-          description: "Desk.com URL to post info"
-          isa: Str
-          default: "https://binary.desk.com/api/v2/"
-        account_username:
-          description: "Username for Desk.com account"
-          isa: Str
-          default: joanna@regentmarkets.com
-        account_password:
-          description: "Password for Desk.com account"
-          isa: Str
-          default: R3kU3rsM5WH7
