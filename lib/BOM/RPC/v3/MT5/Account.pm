@@ -54,17 +54,18 @@ sub mt5_new_account {
     my $args             = $params->{args};
     my $account_type     = delete $args->{account_type};
     my $sub_account_type = delete $args->{sub_account_type} // '';
+    my $brand            = Brands->new(name => request()->brand);
 
     my $group;
     if ($account_type eq 'demo') {
         if ($client and $client->residence eq 'jp') {
             $group = 'demo\japan-virtual';
         } else {
-            $group = 'demo\virtual';
+            $group = 'demo\\' . $brand->name . '_virtual';
         }
     } elsif ($account_type eq 'gaming' or $account_type eq 'financial') {
-        # 5 Sept 2016: only CR fully authenticated client can open MT real a/c
-        unless ($client->landing_company->short eq 'costarica') {
+        # 5 Sept 2016: only CR and champion fully authenticated client can open MT real a/c
+        if ($client->landing_company->short ne 'costarica' or $client->landing_company->short ne 'champion') {
             return BOM::RPC::v3::Utility::permission_error();
         }
 
@@ -80,7 +81,6 @@ sub mt5_new_account {
         my $mt_key         = 'mt_' . $account_type . '_company';
         my $mt_company     = 'none';
         my $residence      = $client->residence;
-        my $brand          = Brands->new(name => request()->brand);
         my $countries_list = $brand->countries_instance->countries_list;
         if (defined $countries_list->{$residence} && defined $countries_list->{$residence}->{$mt_key}) {
             $mt_company = $countries_list->{$residence}->{$mt_key};
