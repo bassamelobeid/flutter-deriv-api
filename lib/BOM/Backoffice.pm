@@ -24,6 +24,7 @@ sub get_tmp_path_or_die {
     if ($_[0] and $_[0] eq 'gif') {
         $d = BOM::Backoffice::config->{directory}->{tmp_gif};
     }
+    $d = $ENV{'TEST_TMPDIR'} if(defined $ENV{'TEST_TMPDIR'});
     if (not $d or $d eq '') {
         print "backoffice.yml directory.tmp undefined";
         BOM::Backoffice::Request::request_completed();
