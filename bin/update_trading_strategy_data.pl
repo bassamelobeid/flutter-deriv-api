@@ -3,7 +3,7 @@ use warnings;
 
 no indirect;
 use Try::Tiny;
-use List::Util qw(sum);
+use List::Util qw(sum shuffle);
 
 use Postgres::FeedDB;
 use Postgres::FeedDB::Spot::DatabaseAPI;
@@ -49,13 +49,12 @@ try {
     # Gather data and create jobs
     my @jobs;
     for my $symbol (@{$config->{underlyings}}) {
-        for (@{$config->{durations}}) {
+        for my $duration (@{$config->{durations}}) {
             for my $bet_type (@{$config->{types}}) {
                 push @jobs, join "\0", $symbol, $duration, $bet_type;
             }
         }
     }
-    @jobs = shuffle @jobs;
 
     my $pm = Parallel::ForkManager->new(WORKERS);
     JOB:
@@ -114,7 +113,7 @@ try {
                     if ($contract_expired->is_expired) {
                         my $ask_price = $contract->ask_price;
                         my $value     = $contract_expired->value;
-                        $fh{$key}->print(join(",", (map $tick->{$_}, qw(epoch quote)), $ask_price, $value, $contract->theo_price) . "\n");
+                        $fh->print(join(",", (map $tick->{$_}, qw(epoch quote)), $ask_price, $value, $contract->theo_price) . "\n");
                     }
                 }
                 catch {
