@@ -30,7 +30,9 @@ try {
 
     my $config = LoadFile('/home/git/regentmarkets/bom-backoffice/config/trading_strategy_datasets.yml');
 
-    my $target_date = Date::Utility->today->truncate_to_day;
+    # If given a parameter, we'll use that to calculate data for that day - but since we look at the 24h leading up to
+    # that day, we need to add 1d first.
+    my $target_date = (@ARGV ? Date::Utility->new(shift @ARGV)->plus_time_interval('1d') : Date::Utility->today)->truncate_to_day;
 
     my $start = $target_date->epoch - 86400;
     my $end   = $target_date->epoch - 1;
