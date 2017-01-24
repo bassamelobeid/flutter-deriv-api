@@ -208,7 +208,7 @@ sub get_clients_result_by_field {
     my @binds;
     my $sql = q{ SELECT * FROM accounting.get_clients_result_by_field(?, ?, ?, ?, ?, ?::date) };
 
-    push @binds, '%'. ($args->{$_} // '') . '%' for (qw/first_name last_name email broker phone/);
+    push @binds, map '%'. ($args->{$_} // '') . '%', (qw/first_name last_name email broker phone/);
     push @binds, $args->{date_of_birth};
 
     my $dbh = $self->db->dbh;
