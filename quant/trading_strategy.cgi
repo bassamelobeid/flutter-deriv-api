@@ -228,7 +228,7 @@ if (@tbl) {
         my $date = Date::Utility->new($result_for_dataset->{statistics}{start})->date;
         push @result_row,
             [
-            '<a href="/d/backoffice/quant/trading_strategy.cgi?date='
+            '<a target="blank" href="/d/backoffice/quant/trading_strategy.cgi?date='
                 . $date
                 . '&underlying='
                 . $details{Symbol}
