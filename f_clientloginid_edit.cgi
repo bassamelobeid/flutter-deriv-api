@@ -558,11 +558,11 @@ if (my $statuses = build_client_warning_message($loginid)) {
 BOM::Backoffice::Request::template->process(
     'backoffice/account/untrusted_form.html.tt',
     {
-        edit_url                  => request()->url_for('backoffice/untrusted_client_edit.cgi'),
-        reasons                   => [get_untrusted_client_reason()],
-        broker                    => $broker,
-        clientid                  => $loginid,
-        actions                   => get_untrusted_types(),
+        edit_url => request()->url_for('backoffice/untrusted_client_edit.cgi'),
+        reasons  => [get_untrusted_client_reason()],
+        broker   => $broker,
+        clientid => $loginid,
+        actions  => get_untrusted_types(),
     }) || die BOM::Backoffice::Request::template->error();
 
 # Show Self-Exclusion link if this client has self-exclusion settings.
