@@ -1,20 +1,14 @@
 durations:
-  - 1d step 1h
-  - 1h step 1m
-  - 5t step 1t
-  - 10t step 2t
+  - 3h step 4m
+  - 1h step 2m
+  - 5m step 10s
   - 1m step 5s
-  - 5m step 15s
+  - 10t step 2t
+  - 5t step 1t
 underlyings:
-  - frxUSDJPY
-  - frxEURUSD
-  - frxGBPUSD
-  - frxUSDCAD
-  - HSI
-  - GDAXI
-  - SSMI
-  - FCHI
   - R_50
+  - frxUSDJPY
+  - GDAXI
 types:
   - CALL
   - PUT
