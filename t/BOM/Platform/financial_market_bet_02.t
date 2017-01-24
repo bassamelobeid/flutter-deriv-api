@@ -379,7 +379,7 @@ dies_ok {
 'exception thrown';
 is_deeply $@,
     [
-    BI003 => 'ERROR:  insufficient balance, need: 0.010000000000, #open_bets: 0, pot_payout: 0',
+    BI003 => 'ERROR:  insufficient balance, need: 0.010, #open_bets: 0, pot_payout: 0',
     ],
     'insufficient balance';
 
