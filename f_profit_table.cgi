@@ -5,14 +5,16 @@ use strict 'vars';
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
 use Machine::Epsilon;
+use HTML::Entities;
 
-use BOM::Platform::Countries;
-use BOM::Platform::Client;
+use Brands;
+use Client::Account;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Market::Registry;
+use Finance::Asset::Market::Registry;
 use BOM::ContractInfo;
 
 use Performance::Probability qw(get_performance_probability);
@@ -20,20 +22,21 @@ use Performance::Probability qw(get_performance_probability);
 use f_brokerincludeall;
 BOM::Backoffice::Sysinit::init();
 
-my $loginID = uc(request()->param('loginID'));
+my $loginID         = uc(request()->param('loginID'));
+my $encoded_loginID = encode_entities($loginID);
 
 PrintContentType();
-BrokerPresentation($loginID . ' Contracts Analysis', '', '');
+BrokerPresentation($encoded_loginID . ' Contracts Analysis', '', '');
 my $staff = BOM::Backoffice::Auth0::can_access(['CS']);
 
 if ($loginID !~ /^(\D+)(\d+)$/) {
-    print "Error : wrong loginID ($loginID) could not get client instance";
+    print "Error : wrong loginID ($encoded_loginID) could not get client instance";
     code_exit_BO();
 }
 
-my $client = BOM::Platform::Client::get_instance({'loginid' => $loginID});
+my $client = Client::Account::get_instance({'loginid' => $loginID});
 if (not $client) {
-    print "Error : wrong loginID ($loginID) could not get client instance";
+    print "Error : wrong loginID ($encoded_loginID) could not get client instance";
     code_exit_BO();
 }
 
@@ -45,10 +48,10 @@ if ($enddate) {
 }
 
 my $clientdb = BOM::Database::ClientDB->new({
-        client_loginid => $client->loginid,
-    });
+    client_loginid => $client->loginid,
+});
 
-Bar($loginID . " - Contracts");
+Bar($encoded_loginID . " - Contracts");
 my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
     client_loginid => $client->loginid,
     currency_code  => $client->currency,
@@ -116,22 +119,22 @@ foreach my $contract (@{$open_contracts}) {
     $contract->{purchase_date} = Date::Utility->new($contract->{purchase_time});
 }
 
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/account/profit_table.html.tt',
     {
         sold_contracts              => $sold_contracts,
         open_contracts              => $open_contracts,
-        markets                     => [BOM::Market::Registry->instance->display_markets],
+        markets                     => [Finance::Asset::Market::Registry->instance->display_markets],
         email                       => $client->email,
         full_name                   => $client->full_name,
         loginid                     => $client->loginid,
         posted_startdate            => $startdate,
         posted_enddate              => $enddate,
         currency                    => $client->currency,
-        residence                   => BOM::Platform::Countries->instance->countries->country_from_code($client->residence),
+        residence                   => Brands->new(name => request()->brand)->countries_instance->countries->country_from_code($client->residence),
         contract_details            => \&BOM::ContractInfo::get_info,
         performance_probability     => $performance_probability,
         inv_performance_probability => $inv_performance_probability,
-    }) || die BOM::Platform::Context::template->error();
+    }) || die BOM::Backoffice::Request::template->error();
 
 code_exit_BO();

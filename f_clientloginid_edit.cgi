@@ -8,10 +8,12 @@ use Text::Trim;
 use File::Copy;
 use Locale::Country 'code2country';
 use Data::Dumper;
+use HTML::Entities;
 
+use Brands;
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
-use BOM::Platform::Context;
+use BOM::Backoffice::Request qw(request);
 use BOM::Platform::User;
 use BOM::Platform::Client::IDAuthentication;
 use BOM::Platform::Client::Utility;
@@ -24,7 +26,6 @@ use BOM::Database::Model::HandoffToken;
 use BOM::Database::ClientDB;
 use BOM::System::Config;
 use BOM::Backoffice::FormAccounts;
-use BOM::Platform::Countries;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -35,30 +36,31 @@ my $dbloc   = BOM::Platform::Runtime->instance->app_config->system->directory->d
 my $loginid = $input{loginID};
 if (not $loginid) { print "<p> Empty loginID.</p>"; code_exit_BO(); }
 $loginid = trim(uc $loginid);
-
-my $self_post = request()->url_for('backoffice/f_clientloginid_edit.cgi');
-my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $loginid});
+my $encoded_loginid = encode_entities($loginid);
+my $self_post       = request()->url_for('backoffice/f_clientloginid_edit.cgi');
+my $self_href       = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $loginid});
 
 # given a bad-enough loginID, BrokerPresentation can die, leaving an unformatted screen..
 # let the client-check offer a chance to retry.
-eval { BrokerPresentation("$loginid CLIENT DETAILS") };
+eval { BrokerPresentation("$encoded_loginid CLIENT DETAILS") };
 
-my $client = eval { BOM::Platform::Client->new({loginid => $loginid}) } || do {
+my $client = eval { Client::Account->new({loginid => $loginid}) } || do {
     my $err = $@;
-    print "<p>ERROR: Client [$loginid] not found.</p>";
+    print "<p>ERROR: Client [$encoded_loginid] not found.</p>";
     if ($err) {
         warn("Error: $err");
         print "<p>(Support: details in errorlog)</p>";
     }
     print qq[<form action="$self_post" method="post">
-                Try Again: <input type="text" name="loginID" value="$loginid"></input>
+                Try Again: <input type="text" name="loginID" value="$encoded_loginid"></input>
               </form>];
     code_exit_BO();
 };
 
-my $broker = $client->broker;
-my $staff  = BOM::Backoffice::Auth0::can_access(['CS']);
-my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $broker         = $client->broker;
+my $encoded_broker = encode_entities($broker);
+my $staff          = BOM::Backoffice::Auth0::can_access(['CS']);
+my $clerk          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 # sync authentication status to Doughflow
 if ($input{whattodo} eq 'sync_to_DF') {
@@ -67,14 +69,14 @@ if ($input{whattodo} eq 'sync_to_DF') {
     my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $loginid});
     my $currency = $df_client->doughflow_currency;
     if (not $currency) {
-        BOM::Platform::Context::template->process(
+        BOM::Backoffice::Request::template->process(
             'backoffice/client_edit_msg.tt',
             {
                 message  => 'ERROR: Client never deposited before, no sync to Doughflow is allowed !!',
                 error    => 1,
                 self_url => $self_href,
             },
-        ) || die BOM::Platform::Context::template->error();
+        ) || die BOM::Backoffice::Request::template->error();
         code_exit_BO();
     }
 
@@ -113,14 +115,14 @@ if ($input{whattodo} eq 'sync_to_DF') {
                 Password       => $handoff_token->key,
             }));
     if ($result->{'_content'} ne 'OK') {
-        BOM::Platform::Context::template->process(
+        BOM::Backoffice::Request::template->process(
             'backoffice/client_edit_msg.tt',
             {
                 message  => "FAILED syncing client authentication status to Doughflow, ERROR: $result->{_content}",
                 error    => 1,
                 self_url => $self_href,
             },
-        ) || die BOM::Platform::Context::template->error();
+        ) || die BOM::Backoffice::Request::template->error();
         code_exit_BO();
     }
 
@@ -137,13 +139,13 @@ if ($input{whattodo} eq 'sync_to_DF') {
         . $df_client->Profile;
     BOM::System::AuditLog::log($msg, $loginid, $clerk);
 
-    BOM::Platform::Context::template->process(
+    BOM::Backoffice::Request::template->process(
         'backoffice/client_edit_msg.tt',
         {
             message  => "Successfully syncing client authentication status to Doughflow",
             self_url => $self_href,
         },
-    ) || die BOM::Platform::Context::template->error();
+    ) || die BOM::Backoffice::Request::template->error();
     code_exit_BO();
 }
 
@@ -233,7 +235,8 @@ if (my $check_str = $input{do_id_check}) {
     for ($check_str) {
         $result = /ProveID/ ? $id_auth->_fetch_proveid() : die("unknown IDAuthentication method $_");
     }
-    print qq[<p><b>"$check_str" completed</b></p>
+    my $encoded_check_str = encode_entities($check_str);
+    print qq[<p><b>"$encoded_check_str" completed</b></p>
              <p><a href="$self_href">&laquo;Return to Client Details<a/></p>];
     code_exit_BO();
 }
@@ -264,13 +267,13 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
 
         if (my $promo_code = uc $input{promo_code}) {
-
-            my %pcargs = (
+            my $encoded_promo_code = encode_entities($promo_code);
+            my %pcargs             = (
                 code   => $promo_code,
                 broker => $broker
             );
             if (!BOM::Database::AutoGenerated::Rose::PromoCode->new(%pcargs)->load(speculative => 1)) {
-                print "<p style=\"color:red; font-weight:bold;\">ERROR: invalid promocode $promo_code</p>";
+                print "<p style=\"color:red; font-weight:bold;\">ERROR: invalid promocode $encoded_promo_code</p>";
                 code_exit_BO;
             }
             # add or update client promo code
@@ -444,7 +447,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     }
 
     if (not $client->save) {
-        print "<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $loginid</p></p>";
+        print "<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid</p></p>";
         code_exit_BO();
     }
 
@@ -471,37 +474,40 @@ my $client_broker = $client->broker;
 my $len = length($number);
 for (1 .. $attempts) {
     $prev_loginid = sprintf "$client_broker%0*d", $len, $number - $_;
-    last if $prev_client = BOM::Platform::Client->new({loginid => $prev_loginid});
+    last if $prev_client = Client::Account->new({loginid => $prev_loginid});
 }
 for (1 .. $attempts) {
     $next_loginid = sprintf "$client_broker%0*d", $len, $number + $_;
-    last if $next_client = BOM::Platform::Client->new({loginid => $next_loginid});
+    last if $next_client = Client::Account->new({loginid => $next_loginid});
 }
+
+my $encoded_prev_loginid = encode_entities($prev_loginid);
+my $encoded_next_loginid = encode_entities($next_loginid);
 
 if ($prev_client) {
     print qq{
         <div class="flat">
             <form action="$self_post" method="post">
-                <input type="hidden" name="loginID" value="$prev_loginid">
-                <input type="submit" value="Previous Client ($prev_client)">
+                <input type="hidden" name="loginID" value="$encoded_prev_loginid">
+                <input type="submit" value="Previous Client ($encoded_prev_loginid)">
             </form>
         </div>
     }
 } else {
-    print qq{<div class="flat">(No Client down to $prev_loginid)</div>};
+    print qq{<div class="flat">(No Client down to $encoded_prev_loginid)</div>};
 }
 
 if ($next_client) {
     print qq{
         <div class="flat">
             <form action="$self_post" method="post">
-                <input type="hidden" name="loginID" value="$next_loginid">
-                <input type="submit" value="Next client ($next_client)">
+                <input type="hidden" name="loginID" value="$encoded_next_loginid">
+                <input type="submit" value="Next client ($encoded_next_loginid)">
             </form>
         </div>
     }
 } else {
-    print qq{<div class="flat">(No client up to $next_loginid)</div>};
+    print qq{<div class="flat">(No client up to $encoded_next_loginid)</div>};
 }
 
 # view client's statement/portfolio/profit table
@@ -510,7 +516,7 @@ my $statmnt_url = request()->url_for('backoffice/f_manager_statement.cgi');
 print qq{<br/>
     <div class="flat">
     <form id="jumpToClient" action="$self_post" method="POST">
-        View client files: <input type="text" size="12" maxlength="15" name="loginID" value="$loginid">&nbsp;&nbsp;
+        View client files: <input type="text" size="12" maxlength="15" name="loginID" value="$encoded_loginid">&nbsp;&nbsp;
         <select name="jumpto" id="jumpToSelect"
                 onchange="SetSelectOptionVisibility(this.options[this.selectedIndex].innerHTML)">
             <option value="$self_post"  >Details</option>
@@ -518,7 +524,7 @@ print qq{<br/>
             <option value="$statmnt_url">Portfolio</option>
         </select>
         &nbsp;&nbsp;<input type="submit" value="View">
-        <input type="hidden" name="broker" value="$broker">
+        <input type="hidden" name="broker" value="$encoded_broker">
         <input type="hidden" name="currency" value="default">
         <div class="flat" id="StatementOption" style="display:none">
             <input type="checkbox" value="yes" name="depositswithdrawalsonly">Deposits and Withdrawals only
@@ -528,14 +534,14 @@ print qq{<br/>
 };
 
 if (my $statuses = build_client_warning_message($loginid)) {
-    Bar("$loginid STATUSES");
+    Bar("$encoded_loginid STATUSES");
     print $statuses;
 }
 
 # Show Self-Exclusion link if this client has self-exclusion settings.
 if ($client->self_exclusion) {
-    Bar("$loginid SELF-EXCLUSION SETTINGS");
-    print "$loginid has enabled <a id='self-exclusion' href=\""
+    Bar("$encoded_loginid SELF-EXCLUSION SETTINGS");
+    print "$encoded_loginid has enabled <a id='self-exclusion' href=\""
         . request()->url_for(
         'backoffice/f_setting_selfexclusion.cgi',
         {
@@ -544,7 +550,7 @@ if ($client->self_exclusion) {
         }) . "\">self-exclusion</a> settings.";
 }
 
-Bar("$loginid PAYMENT AGENT DETAILS");
+Bar("$encoded_loginid PAYMENT AGENT DETAILS");
 
 # Show Payment-Agent details if this client is also a Payment Agent.
 my $payment_agent = $client->payment_agent;
@@ -553,7 +559,7 @@ if ($payment_agent) {
 
     foreach my $column ($payment_agent->meta->columns) {
         my $value = $payment_agent->$column;
-        print "<tr><td>$column</td><td>=</td><td>$value</td></tr>";
+        print "<tr><td>$column</td><td>=</td><td>" . encode_entities($value) . "</td></tr>";
     }
 
     print '</table>';
@@ -567,12 +573,17 @@ if ($client->landing_company->allows_payment_agents) {
             broker   => $broker,
             loginid  => $loginid,
             whattodo => $payment_agent ? "show" : "create"
-        }) . "\">$loginid payment agent details</a></p>";
+        }) . "\">$encoded_loginid payment agent details</a></p>";
 } else {
     print '<p>Payment Agents are not available for this account.</p>';
 }
 
-Bar("CLIENT $client");
+my $statuses = join '/', map { uc $_->status_code } $client->client_status;
+my $name = $client->first_name;
+$name .= ' ' if $name;
+$name .= $client->last_name;
+my $client_info = sprintf "%s %s%s", $client->loginid, ($name || '?'), ($statuses ? " [$statuses]" : '');
+Bar("CLIENT " . encode_entities($client_info));
 
 my ($link_acc, $link_loginid);
 if ($client->comment =~ /move UK clients to \w+ \(from (\w+)\)/) {
@@ -590,7 +601,7 @@ if ($link_acc) {
             broker  => $1,
             loginID => $link_loginid
         });
-    $link_acc .= "<a href='$link_href'>$link_loginid</a></p></br>";
+    $link_acc .= "<a href='$link_href'>" . encode_entities($link_loginid) . "</a></p></br>";
     print $link_acc;
 }
 
@@ -611,12 +622,12 @@ if (@siblings > 1 or @mt_logins > 0) {
                 broker  => $sibling->broker_code,
                 loginID => $sibling_id,
             });
-        print "<li><a href='$link_href'>$sibling_id</a></li>";
+        print "<li><a href='$link_href'>" . encode_entities($sibling_id) . "</a></li>";
     }
 
     # show MT5 a/c
     foreach my $mt_ac (@mt_logins) {
-        print "<li>$mt_ac</li>";
+        print "<li>" . encode_entities($mt_ac) . "</li>";
     }
 
     print "</ul>";
@@ -628,12 +639,12 @@ my $log_args = {
     loginid  => $loginid
 };
 my $new_log_href = request()->url_for('backoffice/show_audit_trail.cgi', $log_args);
-print qq{<p>Click for <a href="$new_log_href">history of changes</a> to $loginid</p>};
+print qq{<p>Click for <a href="$new_log_href">history of changes</a> to $encoded_loginid</p>};
 
 print qq[<form action="$self_post" method="POST">
     <input type="submit" value="Save Client Details">
-    <input type="hidden" name="broker" value="$broker">
-    <input type="hidden" name="loginID" value="$loginid">];
+    <input type="hidden" name="broker" value="$encoded_broker">
+    <input type="hidden" name="loginID" value="$encoded_loginid">];
 
 print_client_details($client, $staff);
 
@@ -645,12 +656,17 @@ if (not $client->is_virtual) {
         <p>Click to sync client authentication status to Doughflow: </p>
         <form action="$self_post" method="post">
             <input type="hidden" name="whattodo" value="sync_to_DF">
-            <input type="hidden" name="broker" value="$broker">
-            <input type="hidden" name="loginID" value="$loginid">
+            <input type="hidden" name="broker" value="$encoded_broker">
+            <input type="hidden" name="loginID" value="$encoded_loginid">
             <input type="submit" value="Sync now !!">
         </form>
     };
 }
+
+Bar("Email Consent");
+print '<br/>';
+print 'Email consent for marketing: ' . ($user->email_consent ? 'Yes' : 'No');
+print '<br/><br/>';
 
 #upload new ID doc
 Bar("Upload new ID document");
@@ -680,9 +696,9 @@ print qq{
     <option>TXT</option>
   </select>
   <input type="FILE" name="FILE">
-  <input type=hidden name=whattodo value=uploadID>
-  <input type=hidden name=broker value=$broker>
-  <input type=hidden name=loginID value=$loginid>
+  <input type="hidden" name="whattodo" value="uploadID">
+  <input type="hidden" name="broker" value="$encoded_broker">
+  <input type="hidden" name="loginID" value="$encoded_loginid">
   <br/>
   <br/>
   <label for="docnationalityselect">Nationality (as per identity document, it can be different from residence)</label>
@@ -690,9 +706,10 @@ print qq{
     <option value="">Please select</option>
 };
 
-foreach my $country_name (sort BOM::Platform::Countries->instance->countries->all_country_names) {
-    my $code = BOM::Platform::Countries->instance->countries->code_from_country($country_name);
-    print "<option value='$code'>$country_name</option>";
+my $brand_countries = Brands->new(name => request()->brand)->countries_instance->countries;
+foreach my $country_name (sort $brand_countries->all_country_names) {
+    my $code = $brand_countries->code_from_country($country_name);
+    print "<option value='" . encode_entities($code) . "'>" . encode_entities($country_name) . "</option>";
 }
 
 print qq{
@@ -710,7 +727,8 @@ if ($financial_assessment) {
     my $is_professional = $financial_assessment->is_professional ? 'yes' : 'no';
     Bar("Financial Assessment");
     print qq{<table class="collapsed">
-        <tr><td>User Data</td><td><textarea rows=10 cols=150 id="financial_assessment_score">$user_data_json</textarea></td></tr>
+        <tr><td>User Data</td><td><textarea rows=10 cols=150 id="financial_assessment_score">}
+        . encode_entities($user_data_json) . qq{</textarea></td></tr>
         <tr><td></td><td><input id="format_financial_assessment_score" type="button" value="Format"/></td></tr>
         <tr><td>Is professional</td><td>$is_professional</td></tr>
         </table>
@@ -729,20 +747,28 @@ if (@$login_history == 0) {
     print qq{<p>There is no login history</p>};
 } else {
     print qq{<p color="red">Showing last $limit logins only</p>} if @$login_history > $limit;
-    print qq{<table class="collapsed">};
+    print qq{<table class="collapsed">\n};
     foreach my $login (reverse @$login_history) {
         my $date        = $login->history_date->strftime('%F %T');
         my $action      = $login->action;
         my $status      = $login->successful ? 'ok' : 'failed';
         my $environment = $login->environment;
-        print qq{<tr><td width='150'>$date UTC</td><td>$action</td><td>$status</td><td>$environment</td></tr>};
+        print qq{<tr><td width='150'>}
+            . encode_entities("$date UTC")
+            . qq{</td><td>}
+            . encode_entities($action)
+            . qq{</td><td>}
+            . encode_entities($status)
+            . qq{</td><td>}
+            . encode_entities($environment)
+            . qq{</td></tr>\n};
     }
-    print qq{</table>};
+    print qq{</table>\n};
 }
 print '</div>';
 
 # to be removed soon, no more login history based on loginid
-Bar("$loginid Login history");
+Bar("$encoded_loginid Login history");
 print '<div><br/>';
 my $loglim = 200;
 my $logins = $client->find_login_history(
@@ -762,7 +788,14 @@ if (@$logins == 0) {
         if (length($environment) > 100) {
             substr($environment, 100) = '..';
         }
-        print qq{<tr><td>$date UTC</td><td>$status</td><td>$environment</td></tr>};
+        # yes this is mostly a copy+paste version from ~20 lines above, but with one fewer field
+        print qq{<tr><td>}
+            . encode_entities("$date UTC")
+            . qq{</td><td>}
+            . encode_entities($status)
+            . qq{</td><td>}
+            . encode_entities($environment)
+            . qq{</td></tr>\n};
     }
     print qq{</table>};
 }

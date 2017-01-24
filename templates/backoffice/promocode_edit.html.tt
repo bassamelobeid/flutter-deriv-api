@@ -18,7 +18,7 @@ input.upper {
 }
 </style>
 
-<link rel="stylesheet" type="text/css" href="[% request.url_for('css/external/select2/select2.css', undef, undef, {internal_static => 1}) %]" media="screen" />
+<link rel="stylesheet" type="text/css" href="[% request.url_for('css/external/select2/select2.css', undef, undef, {internal_static => 1}) | none %]" media="screen" />
 <script>
 \$(document).ready(function() {
     \$('#country_list').select2();
@@ -26,13 +26,13 @@ input.upper {
 });
 </script>
 
-<a href=[% request.url_for('backoffice/f_promotional.cgi', broker => request.broker_code) %]>[Back to marketing tools]</a><br /><br />
+<a href=[% request.url_for('backoffice/f_promotional.cgi', broker => request.broker_code) | none %]>[Back to marketing tools]</a><br /><br />
 
 [% FOR message IN messages %]
     <div class="message">[% message %]</div>
 [% END %]
 
-<form action="[% request.url_for('backoffice/promocode_edit.cgi') %]" method="post">
+<form action="[% request.url_for('backoffice/promocode_edit.cgi') | none %]" method="post">
     <input type="submit" name="save" value="Save Promocode Details" />
     <input type="hidden" name="broker" value="[% request.broker_code %]" />
 

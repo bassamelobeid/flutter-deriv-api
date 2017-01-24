@@ -2,11 +2,13 @@
 package main;
 
 use strict 'vars';
+use HTML::Entities;
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Display::VolatilitySurface;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -20,7 +22,7 @@ BrokerPresentation("", "");
 
 foreach my $symbol (@markets) {
     local $/ = "\n";
-    my $underlying = BOM::Market::Underlying->new($symbol);
+    my $underlying = create_underlying($symbol);
     # when we are updating surface, fetch New York 10 for FX
     my $args = {
         underlying => $underlying,
@@ -33,13 +35,13 @@ foreach my $symbol (@markets) {
     print "<TR>";
     print "<TD>";
     print '<form action="' . request()->url_for('backoffice/f_save.cgi') . '" method="post" onsubmit="return setSymbolValue(this);" name="editform">';
-    print '<input type="hidden" name="underlying" value="' . $symbol . '">';
+    print '<input type="hidden" name="underlying" value="' . encode_entities($symbol) . '">';
     print "<textarea name='info_text' rows=15 cols=75>";
     print join "\n", $display->rmg_text_format;
     print "</textarea>";
 
     if ($existing_vol_surface->type eq 'moneyness') {
-        print 'Spot reference: <input type="text" name="spot_reference" value="' . $existing_vol_surface->spot_reference . '">';
+        print 'Spot reference: <input type="text" name="spot_reference" value="' . encode_entities($existing_vol_surface->spot_reference) . '">';
     }
     print '<input type="submit" value="Save">';
 

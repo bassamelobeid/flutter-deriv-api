@@ -10,6 +10,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_XML );
 use BOM::JavascriptConfig;
 
 use f_brokerincludeall;
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -20,7 +21,7 @@ BOM::Backoffice::Auth0::can_access(['CS']);
 my $loginID       = request()->param('loginID');
 my $search_option = request()->param('search_option');
 
-my $client = BOM::Platform::Client->new({loginid => $loginID}) || die "could not get client for $loginID";
+my $client = Client::Account->new({loginid => $loginID}) || die "could not get client for $loginID";
 
 my $report = BOM::Platform::ProveID->new(
     client        => $client,
@@ -50,7 +51,7 @@ if (request()->param('raw')) {
       </head>
        <body>
       ~;
-    BOM::Platform::Context::template->process('backoffice/view-192-response-yaml.html.tt', {yamlized => $yamlized});
+    BOM::Backoffice::Request::template->process('backoffice/view-192-response-yaml.html.tt', {yamlized => $yamlized});
     print qq~
        </body>
       </html>

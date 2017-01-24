@@ -5,6 +5,7 @@ use open qw[ :encoding(UTF-8) ];
 
 use CGI;
 use File::Slurp;
+use HTML::Entities;
 
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
@@ -16,9 +17,9 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
-my $cgi       = CGI->new;
-my $filename  = $cgi->param('filename');
-my $content   = $cgi->param('bbdl_file_content');
+my $cgi      = CGI->new;
+my $filename = $cgi->param('filename');
+my $content  = $cgi->param('bbdl_file_content');
 
 Bar("Upload a file to BBDL");
 
@@ -48,7 +49,12 @@ if (length($filename) >= 25) {
     if ($sftp->error) {
         $message = "<p>Upload Failed: " . $sftp->error . '</p>';
     } else {
-        $message = '<p>Successfully uploaded file[' . $filename . '] to server[' . ']. Your response file is ' . $replyfile . '</p>';
+        $message =
+              '<p>Successfully uploaded file['
+            . encode_entities($filename)
+            . '] to server['
+            . ']. Your response file is '
+            . encode_entities($replyfile) . '</p>';
     }
 
     print $message;

@@ -5,11 +5,12 @@ use strict;
 use warnings;
 
 use Scalar::Util 'looks_like_number';
-use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use JSON;
+use Brands;
 
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::Backoffice::Request qw(request);
 use f_brokerincludeall;
-use BOM::Platform::Countries;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -32,7 +33,7 @@ if (my $code = $input{promocode}) {
 Bar($pc ? "EDIT PROMOTIONAL CODE" : "ADD PROMOTIONAL CODE");
 
 my @messages;
-my $countries_instance = BOM::Platform::Countries->instance;
+my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
 
 if ($input{save}) {
     @messages = _validation_errors(%input);
@@ -78,15 +79,15 @@ my $stash = {
     messages           => \@messages,
     countries_instance => $countries_instance
 };
-BOM::Platform::Context::template->process('backoffice/promocode_edit.html.tt', $stash)
-    || die("in promocode_edit: " . BOM::Platform::Context::template->error());
+BOM::Backoffice::Request::template->process('backoffice/promocode_edit.html.tt', $stash)
+    || die("in promocode_edit: " . BOM::Backoffice::Request::template->error());
 
 code_exit_BO();
 
 sub _validation_errors {
     my %input = @_;
     my @errors;
-    for (qw/country description/) {
+    for (qw/country description amount/) {
         $input{$_} || push @errors, "Field '$_' must be supplied";
     }
     # some of these are stored as json thus aren't checked by the orm or the database..
@@ -100,6 +101,7 @@ sub _validation_errors {
         if $input{min_turnover} && $input{promo_code_type} ne 'FREE_BET';
     push @errors, "MINUMUM DEPOSIT is only for GET_X_WHEN_DEPOSIT_Y promotions"
         if $input{min_deposit} && $input{promo_code_type} ne 'GET_X_WHEN_DEPOSIT_Y';
+    push @errors, "Amount must be integer and in between 0 and 999" if ($input{amount} and $input{amount} !~ /^[1-9](?:[0-9]){0,2}$/);
     return @errors;
 }
 

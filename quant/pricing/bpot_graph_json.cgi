@@ -35,14 +35,13 @@ my $bet =
 unless ($bet) {
     PrintContentType();
 
-    print "Error with shortcode '" . request()->param('shortcode')
-        . "' and currency '" . request()->param('currency') . "'";
+    print "Error with shortcode '" . request()->param('shortcode') . "' and currency '" . request()->param('currency') . "'";
     code_exit_BO();
 }
 
 my $timestep = Time::Duration::Concise::Localize->new(interval => request()->param('timestep') || '24s');
-my $start    = Date::Utility->new(request()->param('start') || time());
-my $end      = Date::Utility->new(request()->param('end') || time());
+my $start    = Date::Utility->new(request()->param('start')                                    || time());
+my $end      = Date::Utility->new(request()->param('end')                                      || time());
 
 my ($barrier, $barrier2);
 if ($bet->two_barriers) {
@@ -60,7 +59,6 @@ my %prices = (
     theo_probability => [],
     ask_probability  => [],
     bid_probability  => [],
-    bs_probability   => [],
     pricing_iv       => [],
     pricing_mu       => [],
 );
@@ -85,9 +83,9 @@ while ($graph_more) {
         }
         my $date_string = $when->time_hhmmss;
         $date_string .= ' ' . $when->date_ddmmmyy if ($show_date);
-        push @times, $date_string;
+        push @times,  $date_string;
         push @epochs, $when->epoch;
-        push @spots, $bet->current_spot;
+        push @spots,  $bet->current_spot;
         foreach my $attr (keys %prices) {
             my $amount;
             if ($attr eq 'pricing_iv') {
@@ -119,15 +117,14 @@ while ($graph_more) {
 
 my $data = {
     underlying_name => $bet->underlying->display_name,
-    times      => \@epochs,
-    time_title => 'Time (' . $timestep->as_concise_string . ' steps)',
-    data => {
+    times           => \@epochs,
+    time_title      => 'Time (' . $timestep->as_concise_string . ' steps)',
+    data            => {
         'Spot'        => \@spots,
         'Barriers(s)' => \@barriers,
         'Barriers2'   => \@barriers2,
         'Ask value'   => $prices{ask_probability},
         'Bid value'   => $prices{bid_probability},
-        'BS value'    => $prices{bs_probability},
         'Bet value'   => $prices{theo_probability},
         'Pricing IV'  => $prices{pricing_iv},
         'Pricing mu'  => $prices{pricing_mu},

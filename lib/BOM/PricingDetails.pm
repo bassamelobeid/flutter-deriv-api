@@ -19,8 +19,9 @@ use List::MoreUtils qw(uniq);
 use Try::Tiny;
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Context;
-use BOM::Market::Underlying;
+use BOM::Backoffice::Request;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use Date::Utility;
 use Format::Util::Numbers qw( roundnear );
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
@@ -143,14 +144,14 @@ sub debug_link {
     }
 
     my $debug_link;
-    BOM::Platform::Context::template->process(
+    BOM::Backoffice::Request::template->process(
         'backoffice/container/debug_link.html.tt',
         {
             bet_id => $bet->id,
             tabs   => $tabs_content
         },
         \$debug_link
-    ) || die BOM::Platform::Context::template->error;
+    ) || die BOM::Backoffice::Request::template->error;
 
     return $debug_link;
 }
@@ -187,14 +188,14 @@ sub _get_rates {
     }
 
     my $rates_content;
-    BOM::Platform::Context::template->process(
+    BOM::Backoffice::Request::template->process(
         'backoffice/container/full_table_from_arrayrefs.html.tt',
         {
             headers => $headers,
             rows    => $rows,
         },
         \$rates_content
-    ) || die BOM::Platform::Context::template->error;
+    ) || die BOM::Backoffice::Request::template->error;
 
     return $rates_content;
 }
@@ -205,7 +206,10 @@ sub _get_moneyness_surface {
     my $dates = [];
     my $bet   = $self->bet;
     try {
-        $dates = $self->_fetch_historical_surface_date({back_to => 20, symbol => $bet->underlying->symbol});
+        $dates = $self->_fetch_historical_surface_date({
+            back_to => 20,
+            symbol  => $bet->underlying->symbol
+        });
     }
     catch {
         warn("caught error in _get_moneyness_surface: $_");
@@ -230,14 +234,14 @@ sub _fetch_historical_surface_date {
     my $back_to = $args->{back_to} || 1;
     my $symbol = $args->{symbol} or die "Must pass in symbol to fetch surface dates.";
 
-    my $reader = BOM::System::Chronicle::get_chronicle_reader(1);
-    my $vdoc = $reader->get('volatility_surfaces', $symbol);
+    my $reader       = BOM::System::Chronicle::get_chronicle_reader(1);
+    my $vdoc         = $reader->get('volatility_surfaces', $symbol);
     my $current_date = $vdoc->{date};
 
     my @dates = ($current_date);
 
     for (2 .. $back_to) {
-        $vdoc = $reader->get_for('volatility_surfaces', $symbol, Date::Utility->new($current_date)->epoch - 1); 
+        $vdoc = $reader->get_for('volatility_surfaces', $symbol, Date::Utility->new($current_date)->epoch - 1);
         last if not $vdoc or not keys %{$vdoc};
         $current_date = $vdoc->{date};
         push @dates, $current_date;
@@ -254,7 +258,13 @@ sub _get_volsurface {
     # If we do, just carry on; we don't need to show these dates.
     my $dates = [];
     try {
-        $dates = $self->_fetch_historical_surface_date({back_to => 20, $bet->underlying->symbol});
+        $dates = $self->_fetch_historical_surface_date({
+            back_to => 20,
+            symbol  => $bet->underlying->symbol
+        });
+    }
+    catch {
+        warn "Failed to fetch historical surface data (usually just a timeout): $_";
     };
 
     my $tabs;
@@ -274,14 +284,14 @@ sub _get_volsurface {
         };
 
     my $vol_content;
-    BOM::Platform::Context::template->process(
+    BOM::Backoffice::Request::template->process(
         'backoffice/price_debug/vol_tab.html.tt',
         {
             bet_id => $bet->id,
             tabs   => $tabs,
         },
         \$vol_content
-    ) || die BOM::Platform::Context::template->error;
+    ) || die BOM::Backoffice::Request::template->error;
 
     return $vol_content;
 }
@@ -292,14 +302,14 @@ sub _get_price {
     my $probability = $args->{prob};
 
     my $price_content;
-    BOM::Platform::Context::template->process(
+    BOM::Backoffice::Request::template->process(
         'backoffice/container/tree_builder.html.tt',
         {
             id      => $id,
             content => $self->_debug_prob(['reset', $probability])
         },
         \$price_content
-    ) || die BOM::Platform::Context::template->error;
+    ) || die BOM::Backoffice::Request::template->error;
 
     return $price_content;
 }
@@ -385,7 +395,7 @@ sub _get_greeks {
     my $is_quanto     = $bet->priced_with;
     my $greeks_header = ['Greek Name', 'Analytical Greek (1 unit)', 'FD Greek (1 unit)', "Greek * $payout $base_curr", "Greek * $payout $num_curr"];
     my $greeks_content;
-    BOM::Platform::Context::template->process(
+    BOM::Backoffice::Request::template->process(
         'backoffice/container/four_column_table.html.tt',
         {
             title     => 'Bet Display Greeks',
@@ -394,7 +404,7 @@ sub _get_greeks {
             is_quanto => $is_quanto,
         },
         \$greeks_content
-    ) || die BOM::Platform::Context::template->error;
+    ) || die BOM::Backoffice::Request::template->error;
 
     return $greeks_content;
 }
@@ -405,10 +415,6 @@ sub _get_overview {
     my $bet           = $self->bet;
 
     my @pricing_attrs = ({
-            label => 'Black-Scholes price',
-            value => $bet->currency . ' ' . $bet->bs_price
-        },
-        {
             label => 'Corrected theo price',
             value => $bet->currency . ' ' . $bet->theo_price
         },
@@ -464,7 +470,7 @@ sub _get_overview {
         },
         {
             label => 'Barrier adjustment',
-            value => roundnear(0.0001, $bet->barriers_for_pricing->{barrier1} - $barrier_to_compare->as_absolute),
+            value => (defined $barrier_to_compare ? roundnear(0.0001, $bet->barriers_for_pricing->{barrier1} - $barrier_to_compare->as_absolute) : 0),
         },
     );
 
@@ -475,7 +481,7 @@ sub _get_overview {
         to    => $bet->date_expiry,
     });
     my ($delta_strike1, $delta_strike2) = (0, 0);
-    if ($bet->category_code ne 'digits') {
+    if (not($bet->category_code eq 'digits' or $bet->category_code eq 'asian')) {
         if ($bet->two_barriers) {
             $delta_strike1 = 100 * get_delta_for_strike({
                 strike           => $bet->high_barrier->as_absolute,
@@ -569,13 +575,13 @@ sub _get_overview {
     );
 
     my $overview;
-    BOM::Platform::Context::template->process(
+    BOM::Backoffice::Request::template->process(
         'backoffice/container/multiple_tables.html.tt',
         {
             tables => [@tables],
         },
         \$overview
-    ) || die BOM::Platform::Context::template->error;
+    ) || die BOM::Backoffice::Request::template->error;
 
     return $overview;
 }

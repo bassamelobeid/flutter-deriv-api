@@ -11,13 +11,13 @@ use Auth::DuoWeb;
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw( http_redirect PrintContentType );
-use BOM::Platform::Context qw(request);
+use BOM::Backoffice::Request qw(request);
 use BOM::StaffPages;
 use BOM::System::Config;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-if (not $ENV{'HTTP_USER_AGENT'} =~ /Chrome\/(\d+\.\d+\.\d+)\./ or $1 lt '51.0.2704') {
+if (not $ENV{'HTTP_USER_AGENT'} =~ /Chrome\/(\d+\.\d+\.\d+)\./ or $1 lt '55.0.2883') {
     print "Only newest Chrome browser is supported in backoffice.";
     code_exit_BO();
 }
@@ -36,14 +36,14 @@ if (request()->param('sig_response')) {
 
 if ($try_to_login and my $staff = BOM::Backoffice::Auth0::login(request()->param('access_token'))) {
     my $bo_cookies = BOM::Backoffice::Cookie::build_cookies({
-            staff       => $staff->{nickname},
-            auth_token  => request()->param('access_token'),
-        });
+        staff      => $staff->{nickname},
+        auth_token => request()->param('access_token'),
+    });
 
-    PrintContentType({ 'cookies' => $bo_cookies });
+    PrintContentType({'cookies' => $bo_cookies});
 } elsif (request()->param('whattodo') eq 'logout') {
     my $expire_cookies = BOM::Backoffice::Cookie::expire_cookies();
-    PrintContentType({ 'cookies' => $expire_cookies });
+    PrintContentType({'cookies' => $expire_cookies});
 
     BOM::Backoffice::Auth0::logout();
     print '<script>window.location = "' . request()->url_for('backoffice/login.cgi') . '"</script>';

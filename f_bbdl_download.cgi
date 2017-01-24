@@ -6,6 +6,7 @@ use open qw[ :encoding(UTF-8) ];
 use CGI;
 use File::Copy;
 use File::Slurp;
+use HTML::Entities;
 
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
@@ -17,8 +18,9 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
-my $cgi       = CGI->new;
-my $filename  = $cgi->param('filename');
+my $cgi              = CGI->new;
+my $filename         = $cgi->param('filename');
+my $encoded_filename = encode_entities($filename);
 
 Bar("Download a file from BBDL");
 
@@ -42,7 +44,7 @@ if ($file_stat) {
     my $mtime    = $mod_time->datetime . ' = ' . (time - $mod_time->epoch) . 'seconds ago';
     my $size     = $file_stat->size;
 
-    $message .= '<p>File[' . $filename . '] found with size[' . $size . '] modified[' . $mtime . ']</p>';
+    $message .= '<p>File[' . $encoded_filename . '] found with size[' . $size . '] modified[' . $mtime . ']</p>';
 }
 
 $sftp->get($filename, "$temp_dir/$filename");
@@ -65,9 +67,9 @@ if ($sftp->error) {
         my @file   = read_file($temp_dir . '/' . $filename . '.txt');
         my $rand   = $$ . $^T;
         my $bo_url = request()->url_for($temp_dir . '/' . $filename . '.txt', {rand => $rand});
-        $message .= "<p><a href=$bo_url>$filename.txt</a> (with " . scalar(@file) . " lines)</p>";
+        $message .= "<p><a href=$bo_url>$encoded_filename.txt</a> (with " . scalar(@file) . " lines)</p>";
     } else {
-        $message .= '<p>Sorry, could not find file[' . $filename . '] in directory[' . $temp_dir . ']</p>';
+        $message .= '<p>Sorry, could not find file[' . $encoded_filename . '] in directory[' . $temp_dir . ']</p>';
     }
 }
 

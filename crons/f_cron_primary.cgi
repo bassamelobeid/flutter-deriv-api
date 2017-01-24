@@ -12,7 +12,7 @@ use BOM::Backoffice::Sysinit ();
 
 use subs::subs_backoffice_removeexpired;
 use subs::subs_backoffice_reports;
-use BOM::Platform::LandingCompany::Registry;
+use LandingCompany::Registry;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -22,10 +22,10 @@ my $wday = $now->day_of_week;
 
 if ($hour == 22 and $wday == 6) {
 
-    foreach my $bc (BOM::Platform::LandingCompany::Registry::all_broker_codes) {
-        if ($bc =~ /^VRT/) {next;}
-        if (BOM::Platform::LandingCompany::Registry::get_by_broker($bc)->country eq 'Malta') { next; }    #due to LGA regulations
-        if ($bc eq 'MLT') { next; }                                                                                    #double check to be 100% sure!
+    foreach my $bc (LandingCompany::Registry::all_broker_codes) {
+        if ($bc =~ /^VR/)                                                     { next; }
+        if (LandingCompany::Registry::get_by_broker($bc)->country eq 'Malta') { next; }    #due to LGA regulations
+        if ($bc eq 'MLT')                                                     { next; }    #double check to be 100% sure!
         Rescind_FreeGifts($bc, 180, 'Do it for real !');
     }
 

@@ -17,7 +17,7 @@ use DateTime::Format::Mail;
 use Try::Tiny;
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(request);
+use BOM::Backoffice::Request qw(request);
 use base qw( Exporter );
 
 our @EXPORT_OK = qw(

@@ -41,8 +41,8 @@ sub save_settings {
                   '<div id="error">FAILED to save global'
                 . '<br />Setting has been changed after you loaded dynamic settings page<br />'
                 . 'Old Revision '
-                . $setting_revision . '=='
-                . $submitted_revision
+                . encode_entities($setting_revision) . '=='
+                . encode_entities($submitted_revision)
                 . ' New Revision '
                 . '</div>';
         } elsif ($submitted eq 'global') {
@@ -67,11 +67,13 @@ sub save_settings {
                     try {
                         if (not $compare->Cmp) {
                             $data_set->{global}->set($s, $new_value);
-                            $message .= join('', '<div id="saved">Set ', $s, ' to ', $display_value, '</div>');
+                            $message .= join('', '<div id="saved">Set ', encode_entities($s), ' to ', encode_entities($display_value), '</div>');
                         }
                     }
                     catch {
-                        $message .= join('', '<div id="error">Invalid value, could not set ', $s, ' to ', $display_value, '</div>');
+                        $message .= join('',
+                            '<div id="error">Invalid value, could not set ',
+                            encode_entities($s), ' to ', encode_entities($display_value), '</div>');
                         $has_errors = 1;
                     };
                 }
@@ -85,7 +87,7 @@ sub save_settings {
                 $message .= '<div id="saved">Saved global settings to environment</div>';
             }
         } else {
-            $message .= "<div id=\"error\">Invalid 'submitted' value $submitted</div>";
+            $message .= "<div id=\"error\">Invalid 'submitted' value " . encode_entities($submitted) . "</div>";
         }
 
         print '<div id="message">' . $message . '</div>';
@@ -171,13 +173,18 @@ sub get_settings_by_group {
                 system.suspend.all_logins
                 system.suspend.logins
                 system.suspend.system
+                system.suspend.mt5
                 )
         ],
         quant => [qw(
                 quants.commission.adjustment.global_scaling
+                quants.commission.adjustment.per_market_scaling.forex
+                quants.commission.adjustment.per_market_scaling.indices
+                quants.commission.adjustment.per_market_scaling.commodities
+                quants.commission.adjustment.per_market_scaling.stocks
+                quants.commission.adjustment.per_market_scaling.volidx
                 quants.markets.disabled
-                quants.markets.disable_iv
-                quants.features.suspend_claim_types
+                quants.features.suspend_contract_types
                 quants.underlyings.disable_autoupdate_vol
                 quants.underlyings.disabled_due_to_corporate_actions
                 quants.underlyings.suspend_buy
@@ -194,19 +201,7 @@ sub get_settings_by_group {
                 payments.payment_limits
                 payments.doughflow.location
                 payments.doughflow.passcode
-                payments.email
-                )
-        ],
-        marketing => [qw(
-                marketing.email
-                marketing.myaffiliates_email
-                )
-        ],
-        cs => [qw(
-                cs.email
-                )
-        ],
-    };
+                )]};
 
     my $settings;
 

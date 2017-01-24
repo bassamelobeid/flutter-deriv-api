@@ -6,12 +6,14 @@ use open qw[ :encoding(UTF-8) ];
 use Text::Trim;
 use Text::Diff;
 use Path::Tiny;
+use HTML::Entities;
 
 use f_brokerincludeall;
 use Date::Utility;
 use BOM::System::Config;
 use Format::Util::Numbers qw( commas );
 use Quant::Framework::InterestRate;
+use BOM::Backoffice::Request qw(request);
 use Quant::Framework::ImpliedRate;
 use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Moneyness;
@@ -20,6 +22,7 @@ use BOM::MarketData::Display::VolatilitySurface;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::MarketData qw(create_underlying);
 use BOM::Backoffice::Sysinit ();
 use BOM::System::AuditLog;
 BOM::Backoffice::Sysinit::init();
@@ -63,7 +66,7 @@ $text =~ s/\n\r/\n/g;
 my @lines = split(/\n/, $text);
 
 if ($filen eq 'editvol') {
-    my $underlying = BOM::Market::Underlying->new($vol_update_symbol);
+    my $underlying = create_underlying($vol_update_symbol);
     my $market     = $underlying->market->name;
     my $model =
         ($underlying->volatility_surface_type eq 'moneyness')
@@ -100,11 +103,11 @@ if ($filen eq 'editvol') {
         };
     }
     my %surface_args = (
-        underlying_config    => $underlying->config,
+        underlying       => $underlying,
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-        surface       => $surface_data,
-        recorded_date => Date::Utility->new,
+        surface          => $surface_data,
+        recorded_date    => Date::Utility->new,
         (request()->param('spot_reference') ? (spot_reference => request()->param('spot_reference')) : ()),
     );
     my $existing_surface_args = {
@@ -129,12 +132,12 @@ if ($filen eq 'editvol') {
         print @output;
 
         if (!$surface->is_valid) {
-            print "<P> " . $surface->validation_error . " </P>";
+            print "<P> " . encode_entities($surface->validation_error) . " </P>";
 
         } elsif ($big_differences) {
-            print "<P>$error_message</P>";
+            print "<P>" . encode_entities($error_message) . "</P>";
         } else {
-            print "<P>Surface for " . $vol_update_symbol . " being saved</P>";
+            print "<P>Surface for " . encode_entities($vol_update_symbol) . " being saved</P>";
             $surface->save;
         }
     }
@@ -167,7 +170,11 @@ if ($filen =~ m!^vol/master(\w{3}(?:-\w{3})?)\.interest$!) {
         }
 
         if ($err_cond) {
-            print '<P><font color=red><B>ERROR with ' . $err_cond . ' on line  [' . $rateline . '].  File NOT saved.</B></font></P>';
+            print '<P><font color=red><B>ERROR with '
+                . encode_entities($err_cond)
+                . ' on line  ['
+                . encode_entities($rateline)
+                . '].  File NOT saved.</B></font></P>';
             code_exit_BO();
         } else {
             $rates->{$tenor} = $rate;
@@ -180,7 +187,7 @@ if ($filen =~ m!^vol/master(\w{3}(?:-\w{3})?)\.interest$!) {
     my $rates_obj = $class->new(
         symbol           => $symbol,
         rates            => $rates,
-        date             => Date::Utility->new,
+        recorded_date    => Date::Utility->new,
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     );
@@ -230,9 +237,10 @@ if (    -e $overridefilename
 #internal audit warnings
 if ($filen eq 'f_broker/promocodes.txt' and not BOM::System::Config::on_qa and $diff) {
     warn("promocodes.txt EDITED BY $clerk");
+    my $brand = Brands->new(name => request()->brand);
     send_email({
-            from    => BOM::Platform::Runtime->instance->app_config->system->email,
-            to      => BOM::Platform::Runtime->instance->app_config->compliance->email,
+            from    => $brand->emails('system'),
+            to      => $brand->emails('compliance'),
             subject => "Promotional Codes edited by $clerk",
             message => ["$ENV{'REMOTE_ADDR'}\n$ENV{'HTTP_USER_AGENT'} \nDIFF=\n$diff", '================', 'NEW FILE=', @lines]});
 }
@@ -279,17 +287,19 @@ BOM::System::AuditLog::log("$broker $clerk $ENV{'REMOTE_ADDR'} $overridefilename
 print "<b><p>FILE was saved as follows :</p></b><br>";
 my $shorttext = substr($text, 0, 1000);
 
-print "<pre>" . $shorttext;
+print "<pre>" . encode_entities($shorttext);
 if (length $shorttext != length $text) {
     print "....etc.......";
 }
 print "</pre>";
 
-print "<p>New file size is " . (commas(-s "$overridefilename")) . " bytes</p><hr/>";
+print "<p>New file size is " . encode_entities(commas(-s "$overridefilename")) . " bytes</p><hr/>";
 
 # DISPLAY diff
 print
-    "<hr><table border=0><tr><td bgcolor=#ffffce><center><b>DIFFERENCES BETWEEN OLD FILE AND NEW FILE :<br>(differences indicated by stars)</b><br><pre>$diff</pre></td></tr></table><hr>";
+    "<hr><table border=0><tr><td bgcolor=#ffffce><center><b>DIFFERENCES BETWEEN OLD FILE AND NEW FILE :<br>(differences indicated by stars)</b><br><pre>"
+    . encode_entities($diff)
+    . "</pre></td></tr></table><hr>";
 
 if (-e "$overridefilename.staffedit") {
     unlink "$overridefilename.staffedit";

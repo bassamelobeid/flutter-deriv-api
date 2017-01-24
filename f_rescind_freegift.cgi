@@ -5,6 +5,7 @@ use strict 'vars';
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
 use subs::subs_backoffice_removeexpired;
+use HTML::Entities;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -24,7 +25,7 @@ if ($inactivedays < 90) {
 }
 
 print '<p>Starting...</p><pre>';
-print "$_<br/>" for Rescind_FreeGifts($broker, $inactivedays, $whattodo, $message, $clerk);
+print encode_entities($_) . "<br/>" for Rescind_FreeGifts($broker, $inactivedays, $whattodo, $message, $clerk);
 print '</pre><p>...done.</p>';
 
 code_exit_BO();

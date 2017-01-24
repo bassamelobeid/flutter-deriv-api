@@ -4,11 +4,12 @@ use Moose;
 
 use Date::Utility;
 use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(request template);
+use BOM::Backoffice::Request qw(request template);
 use Format::Util::Numbers qw( roundnear );
 use VolSurface::Utils qw( get_1vol_butterfly );
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use BOM::Backoffice::GNUPlot;
 use List::Util qw(uniq);
 use Try::Tiny;
@@ -50,7 +51,7 @@ sub rmg_table_format {
     foreach my $date (@{$dates}) {
         my $surface_date   = Date::Utility->new($date);
         my $new_volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({
-            underlying => BOM::Market::Underlying->new($volsurface->symbol, $volsurface->for_date),
+            underlying => create_underlying($volsurface->symbol, $volsurface->for_date),
             for_date   => $surface_date
         });
         # We are working on a new calibration method.
@@ -74,7 +75,7 @@ sub rmg_table_format {
     my @surface;
     my @days       = @{$volsurface->original_term_for_smile};
     my @tenors     = map { $volsurface->surface->{$_}->{tenor} || 'n/a' } @days;
-    my $underlying = BOM::Market::Underlying->new($volsurface->symbol, $volsurface->for_date);
+    my $underlying = create_underlying($volsurface->symbol, $volsurface->for_date);
 
     if ($volsurface->type eq 'moneyness') {
         push @headers, qw(tenor date forward_vol RR 2vBF 1vBF skew kurtosis);
@@ -244,7 +245,7 @@ sub get_forward_vol {
     my %weights;
     for (my $i = 1; $i <= $days[scalar(@days) - 1]; $i++) {
         my $date = Date::Utility->new({epoch => ($volsurface->recorded_date->epoch + $i * 86400)});
-        $weights{$i} = BOM::Market::Underlying->new($volsurface->symbol, $volsurface->for_date)->_builder->build_trading_calendar->weight_on($date);
+        $weights{$i} = create_underlying($volsurface->symbol, $volsurface->for_date)->_builder->build_trading_calendar->weight_on($date);
     }
 
     my $forward_vols;
@@ -454,9 +455,9 @@ sub print_comparison_between_volsurface {
     $ref_surface_source ||= "USED";
     $surface_source     ||= "NEW";
 
-    my @new_days = @{$surface->original_term_for_smile};
+    my @new_days      = @{$surface->original_term_for_smile};
     my @existing_days = @{$ref_surface->original_term_for_smile};
-    my @days = uniq(@new_days, @existing_days);
+    my @days          = uniq(@new_days, @existing_days);
 
     my @column_names;
     my $vol_type = $surface->type;
@@ -493,8 +494,8 @@ sub print_comparison_between_volsurface {
         push @output, "<TH>$days[$i]</TH>";
         foreach my $col_point (sort { $a <=> $b } @surface_vol_point) {
 
-            my $vol = roundnear( 0.0001, $surface->get_surface_volatility($days[$i], $col_point));
-            my $ref_vol = roundnear( 0.0001, $ref_surface->get_surface_volatility($days[$i], $col_point));
+            my $vol = roundnear(0.0001, $surface->get_surface_volatility($days[$i], $col_point));
+            my $ref_vol = roundnear(0.0001, $ref_surface->get_surface_volatility($days[$i], $col_point));
 
             if (defined $vol and defined $ref_vol) {
                 my $vol_picture =
@@ -526,7 +527,7 @@ sub print_comparison_between_volsurface {
 
                 push @output, qq~<TD align="center" bgcolor="$bgcolor">$vol($surface_source) $html_picture_tag $ref_vol($ref_surface_source)</TD>~;
             } else {
-                my $which_vol = defined$vol ? $vol : $ref_vol;
+                my $which_vol = defined $vol ? $vol : $ref_vol;
                 push @output, qq~<TD align="center">$which_vol($surface_source)</TD>~;
             }
         }
@@ -573,7 +574,7 @@ sub calculate_moneyness_vol_for_display {
     my $self = shift;
 
     my $volsurface = $self->surface;
-    my $underlying = BOM::Market::Underlying->new($volsurface->symbol, $volsurface->for_date);
+    my $underlying = create_underlying($volsurface->symbol, $volsurface->for_date);
     my $fv         = $self->get_forward_vol();
     my @surface;
 

@@ -28,6 +28,7 @@ SELECT
 
     (b.start_time AT TIME ZONE 'UTC' AT TIME ZONE 'JST')::TEXT as trading_start_time,
     (b.expiry_time AT TIME ZONE 'UTC' AT TIME ZONE 'JST')::TEXT  as trading_end_time,
+    (qv.trading_period_start AT TIME ZONE 'UTC' AT TIME ZONE 'JST')::TEXT  as trading_period_start_time,
 
     CASE
         WHEN b.bet_type = 'CALLE'           THEN 'Ladder Higher'
@@ -47,7 +48,7 @@ SELECT
 
     regexp_replace(b.underlying_symbol, 'frx', '') as currency_pair,
 
-    round(b.payout_price / 1000, 2) as lot,
+    1 as lot,
     'buy' as buy_sell,
 
     CASE
@@ -75,6 +76,8 @@ FROM
         ON b.id = tn.financial_market_bet_id
     LEFT JOIN bet.range_bet r
         ON b.id = r.financial_market_bet_id
+    LEFT JOIN data_collection.quants_bet_variables qv
+        ON t.id = qv.transaction_id
 WHERE
     t.action_type = 'buy'
     AND (t.transaction_time AT TIME ZONE 'UTC' AT TIME ZONE 'JST') < ?
@@ -118,6 +121,7 @@ my @fields = qw(
     bet_id
     trading_start_time
     trading_end_time
+    trading_period_start_time
     bet_type
     currency_pair
     lot
@@ -143,5 +147,5 @@ foreach my $ref (@$open_contracts) {
 close $fh;
 
 PrintContentType_XSendfile($filename, 'application/octet-stream');
-BOM::Backoffice::Sysinit::code_exit();
+code_exit_BO();
 

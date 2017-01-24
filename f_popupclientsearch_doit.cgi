@@ -6,6 +6,7 @@ use Try::Tiny;
 use f_brokerincludeall;
 use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -25,7 +26,8 @@ $partialfname = '' if ($partialfname eq 'Partial FName');
 $partiallname = '' if ($partiallname eq 'Partial LName');
 $partialemail = '' if ($partialemail eq 'Partial email');
 
-print "<head><title>Searching for name [$partialfname $partiallname] or email [$partialemail] in clients of $broker</title></head><body>";
+printf "<head><title>Searching for name [%s %s] or email [%s] in clients of %s</title></head><body>",
+    map { encode_entities($_) } ($partialfname, $partiallname, $partialemail, $broker);
 
 my %fields = (
     'first_name' => $partialfname,
@@ -55,8 +57,8 @@ if (not scalar @{$results}) {
     code_exit_BO();
 }
 
-BOM::Platform::Context::template->process('backoffice/client_search_result.html.tt', {results => $results})
-    || die BOM::Platform::Context::template->error(), "\n";
+BOM::Backoffice::Request::template->process('backoffice/client_search_result.html.tt', {results => $results})
+    || die BOM::Backoffice::Request::template->error(), "\n";
 
 print "<P><center><A HREF='javascript:history.go(-1);'>Back</a>";
 

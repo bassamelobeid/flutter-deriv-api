@@ -5,7 +5,7 @@ use warnings;
 
 use Quant::Framework::Holiday;
 use Quant::Framework::PartialTrading;
-use BOM::Platform::Context;
+use BOM::Backoffice::Request;
 use Try::Tiny;
 use Text::CSV::Slurp;
 use Date::Utility;
@@ -99,11 +99,13 @@ sub _include_metal_holidays_and_early_closes {
     my $new_year    = Date::Utility->new(($year + 1) . "-01-01")->epoch;
     my $us_holidays = $data->{NYSE};
 
+    # From the study we did, gold is illiquid after European market close on those US holiday, so we set early close on those day.
+    # On Good Friday, since both US and European market are closed, the gold's feed tend to be very spare, so we decide to keep it as holiday. Other provider such as Panda and Idata also mark this day as holiday
     $data->{METAL} = {
         $christmas => 'Christmas Day',
         $new_year  => "New Year\'s Day",
         map { $_ => 'Good Friday' } grep { $us_holidays->{$_} =~ /Good Friday/ } keys %{$us_holidays}};
-    $early_closes_data->{METAL} = $us_holidays;
+    $early_closes_data->{METAL} = {map { $_ => $us_holidays->{$_} } grep { $us_holidays->{$_} !~ /Good Friday/ } keys %{$us_holidays}};
     return;
 }
 
@@ -112,14 +114,14 @@ sub generate_holiday_upload_form {
 
     my $form;
 
-    BOM::Platform::Context::template->process(
+    BOM::Backoffice::Request::template->process(
         'backoffice/holiday_upload_form.html.tt',
         {
             broker     => $args->{broker},
             upload_url => $args->{upload_url},
         },
         \$form
-    ) || die BOM::Platform::Context::template->error();
+    ) || die BOM::Backoffice::Request::template->error();
 
     return $form;
 }
@@ -169,7 +171,7 @@ sub _save_early_closes_calendar {
 
         foreach my $date (keys %{$data->{$exchange_name}}) {
 
-            my $epoch    = Date::Utility->new($date)->epoch;
+            my $epoch = Date::Utility->new($date)->epoch;
 
             my $description =
                   $calendar->is_in_dst_at($epoch)

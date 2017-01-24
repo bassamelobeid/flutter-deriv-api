@@ -5,12 +5,11 @@ BEGIN {
     push @INC, "/home/git/regentmarkets/bom-backoffice/lib";
 }
 
-
 use strict;
 
 use BOM::Backoffice::Sysinit ();
 use BOM::Database::DataMapper::CollectorReporting;
-use BOM::Platform::Client;
+use Client::Account;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -41,7 +40,7 @@ foreach my $client_hash (@{$client_dup_list}) {
     $dup_unique->{$client_str} = 1;
 
     my $loginid           = $client_hash->{new_loginid};
-    my $client            = BOM::Platform::Client::get_instance({loginid => $loginid});
+    my $client            = Client::Account::get_instance({loginid => $loginid});
     my @duplicate_clients = map {
         my ($lid, $status) = split '/', $_, 2;
         $lid eq $loginid     ? ()

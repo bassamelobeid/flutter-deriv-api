@@ -11,7 +11,7 @@
 </style>
 
     <h4>Clients Report</h4>
-    <form action="[%request.url_for('backoffice/monthly_client_report.cgi')%]" method="post">
+    <form action="[% request.url_for('backoffice/monthly_client_report.cgi') | none %]" method="post">
         <input type="hidden" name="broker" value="[%request.broker_code%]"/>
         <select name="crdr">
             <option value="debit">All Debits and Contract-Buys</option>
@@ -38,12 +38,13 @@
             [ 'internal_transfer',  'Internal Transfer' ],
             [ 'payment_fee',        'Payment Fee' ],
             [ 'cash_transfer',      'Western Union' ],
+            [ 'arbitrary_markup',   'Arbitrary Markup Payment' ],
         ];
     %]
 
     <h4>Payments Report</h4>
     Select any of these payment types..
-    <form action="[%request.url_for('backoffice/monthly_payments_report.cgi')%]" method="post">
+    <form action="[%request.url_for('backoffice/monthly_payments_report.cgi') | none %]" method="post">
         <input type="hidden" name="broker" value="[%request.broker_code%]"/>
         [% FOR pt IN payment_types %]
             <div class="brick">

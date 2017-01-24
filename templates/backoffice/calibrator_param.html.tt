@@ -9,7 +9,7 @@
 </div>
 
 <div class="content">
-    <form id="[% underlying %]_update" action="[% save_action_url %]" method="POST">
+    <form id="[% underlying %]_update" action="[% save_action_url | none %]" method="POST">
         <div class="heading">
             <p><a href="#" class="more">+</a> Implied Surface On Couch (surface recorded time: [% params.$underlying.implied_volsurface.recorded_datetime %])</p>
         </div>

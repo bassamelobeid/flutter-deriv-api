@@ -6,21 +6,24 @@ use warnings;
 use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
+use HTML::Entities;
 
 use List::Util qw( first );
 use Try::Tiny;
 use Mail::Sender;
+
+use Client::Account;
 
 use Cache::RedisDB;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Platform::Runtime;
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Cookie;
 BOM::Backoffice::Sysinit::init();
-use BOM::Platform::Context qw(request);
 
 PrintContentType();
 BrokerPresentation('Manually Settle Contracts');
@@ -70,7 +73,7 @@ if (request()->param('perform_actions')) {
 
             if ($action eq 'cancel') {
                 # For cancelled bets, now adjust their account for the purchase price
-                my $client = BOM::Platform::Client::get_instance({'loginid' => $bet_info->{loginid}});
+                my $client = Client::Account::get_instance({'loginid' => $bet_info->{loginid}});
                 my $remark = 'Adjustment contract purchase ref ' . $bet_info->{ref};
                 $client->payment_legacy_payment(
                     currency     => $bet_info->{currency},
@@ -83,14 +86,14 @@ if (request()->param('perform_actions')) {
         }
     }
     catch {
-        print '<h1>ERROR! Could not complete ' . $_ . '</h1>';
+        print '<h1>ERROR! Could not complete ' . encode_entities($_) . '</h1>';
     };
 }
 
 my $cancel_info = {};
 $cancel_info->{unsettled}   = current_unsaleable($broker_db);
 $cancel_info->{broker_code} = request()->param('broker');
-BOM::Platform::Context::template->process('backoffice/settle_contracts.html.tt', $cancel_info);
+BOM::Backoffice::Request::template->process('backoffice/settle_contracts.html.tt', $cancel_info);
 
 code_exit_BO();
 

@@ -1,7 +1,7 @@
 #!/etc/rmg/bin/perl
 package main;
 use strict 'vars';
-
+use HTML::Entities;
 use lib qw(/home/git/regentmarkets/bom-backoffice /home/git/regentmarkets/bom/cgi/oop);
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -22,7 +22,7 @@ use ForexFactory;
 use BOM::System::Config;
 use BOM::Platform::Runtime;
 use Date::Utility;
-use BOM::Platform::Context;
+use BOM::Backoffice::Request qw(request);
 use Quant::Framework::CorrelationMatrix;
 my $broker = request()->broker_code;
 BOM::Backoffice::Auth0::can_access(['Quants']);
@@ -119,7 +119,7 @@ if ($save_economic_event) {
     }
     catch {
 
-        print 'Error: ' . $_;
+        print 'Error: ' . encode_entities($_);
     };
 }
 

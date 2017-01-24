@@ -6,7 +6,7 @@
         <td>Currency:</td>
         <td>Impact:</td>
         <td></td>
-        <td></td>
+        <td colspan="2">Tentative Event Shift:(0.25 for BOJ)</td> 
         <td></td>
     </tr>
     [% FOREACH row = events %]
@@ -17,6 +17,7 @@
         <td>[% row.symbol %]</td>
         <td>[% row.impact %]</td>
         <td>[% row.event_name %]</td>
+        <td><input class="tentative_event_shift" type="text" style='width: 30px' value="[% row.tentative_event_shift %]">&nbsp;% 
         <td><button onclick=
         "updateEvent('[% row.id %]');">Update</button></td>
         <td class="result"></td>
@@ -41,11 +42,12 @@
 				}
 				result.text('Saving.....').css('color','black');
 				\$.ajax({
-					url: "[%ee_upload_url%]",
+					url: "[%ee_upload_url | none %]",
 					data: {
 						id: id,
 						blankout: el.find('.blankout').val(),
-						blankout_end: el.find('.blankout_end').val()
+						blankout_end: el.find('.blankout_end').val(),
+						tentative_event_shift: el.find('.tentative_event_shift').val()
 					},
 					success: function(data){
 						if(data==1){
