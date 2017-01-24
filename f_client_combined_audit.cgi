@@ -14,7 +14,7 @@ use BOM::Platform::Context;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::System::Config;
-use BOM::Platform::Client;
+use Client::Account;
 use feature "state";
 
 BOM::Backoffice::Sysinit::init();

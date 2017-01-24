@@ -11,7 +11,7 @@ use Data::Dumper;
 
 use f_brokerincludeall;
 use BOM::System::Config;
-use BOM::Platform::Client;
+use Client::Account;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 
