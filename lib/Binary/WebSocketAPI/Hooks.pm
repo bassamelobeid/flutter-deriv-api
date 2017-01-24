@@ -17,6 +17,16 @@ sub start_timing {
     return;
 }
 
+sub cleanup_strored_contract_ids {
+    my ($c, $req_storage) = @_;
+    my $last_contracts = $c->stash('last_contracts') // {};
+    my $now = time;
+    # see Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_store_last_contract_id
+    # keep contract bought in last 60 sec, update stash only if contract list changed
+    $c->stash(last_contracts => $last_contracts) if delete @{$last_contracts}{grep { ($now - $last_contracts->{$_}) > 60 } keys %$last_contracts};
+    return;
+}
+
 sub log_call_timing {
     my ($c, $req_storage) = @_;
     DataDog::DogStatsd::Helper::stats_timing(

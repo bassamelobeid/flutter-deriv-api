@@ -10,6 +10,19 @@ use List::Util qw(first);
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 
+sub buy_store_last_contract_id {
+    my ($c, $api_response, $req_storage) = @_;
+
+    my $now = time;
+    my $last_contracts = $c->stash('last_contracts') // {};
+    # see cleanup at Binary::WebSocketAPI::Hooks::cleanup_strored_contract_ids
+    if ($api_response->{contract_id}) {
+        $last_contracts->{$api_response->{contract_id}} = $now;
+        $c->stash(last_contracts => $last_contracts);
+    }
+    return;
+}
+
 sub buy_get_contract_params {
     my ($c, $req_storage) = @_;
     my $args = $req_storage->{args};
