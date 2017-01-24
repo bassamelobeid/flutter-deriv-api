@@ -1120,7 +1120,6 @@ subtest $method => sub {
     # in normal case the vr client's residence should not be null, so I update is as '' to simulate null
     $test_client_vr->residence('');
     $test_client_vr->save();
-    ok $test_client_vr->is_virtual;
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', "vr client can only update residence");
     # here I mocked function 'save' to simulate the db failure.
     $mocked_client->mock('save', sub { return undef });
@@ -1138,7 +1137,6 @@ subtest $method => sub {
 
     # test real account
     $params->{token} = $token1;
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'real account cannot update residence');
     my %full_args = (
         address_line_1   => 'address line 1',
         address_line_2   => 'address line 2',
@@ -1147,6 +1145,9 @@ subtest $method => sub {
         address_postcode => '12345',
         phone            => '2345678',
     );
+    $params->{args} = {%{$params->{args}}, %full_args};
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'real account cannot update residence');
+
     $params->{args} = {%full_args};
     delete $params->{args}{address_line_1};
 
