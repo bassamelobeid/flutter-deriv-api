@@ -581,11 +581,13 @@ sub _get_intraday_window {
     my $calendar       = $args->{calendar};
     my $now            = $args->{now};
     my $is_early_close = $calendar->closes_early_on($now);
+
     # If it is early close on the day before, it should start at 00GMT.
     my $start_at_00 = ($date_start->day_of_week == 1 or $calendar->closes_early_on($date_start->minus_time_interval('1d'))) && $date_start->hour == 0;
     my $early_date_start = $start_at_00 ? $date_start : $date_start->minus_time_interval('15m');
     my $date_expiry = $date_start->hour == 22 ? $date_start->plus_time_interval('1h59m59s') : $date_start->plus_time_interval($duration);
-    if (($now->is_before($date_expiry)) or (defined $is_early_close and $is_early_close->is_after($date_expiry))) {
+
+    if ((defined $is_early_close and $is_early_close->is_after($date_expiry))or ($now->is_before($date_expiry))) {
         return {
             date_start => {
                 date  => $early_date_start->datetime,
