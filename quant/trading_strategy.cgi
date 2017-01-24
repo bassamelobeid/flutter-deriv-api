@@ -72,7 +72,6 @@ my $process_dataset = sub {
     for my $date (@$date_selected) {
         my $path = path($base_dir)->child($date)->child($dataset . '.csv');
         warn "date path not found: " . path($base_dir)->child($date) unless path($base_dir)->child($date)->exists;
-print "path is $path\n";
         next DATE unless $path->exists;
 
         my $strategy = Finance::TradingStrategy->new(
@@ -140,7 +139,6 @@ print "path is $path\n";
         : 'N/A';
         $stats{payout}{mean} /= $stats{count};
     }
-print "will have a total of " . (0 + @results) . " results<br>";
     return {
         result_list => \@results,
         spot_list   => \@spots,
@@ -178,7 +176,6 @@ my ($duration_selected)   = $cgi->param('duration') =~ /^([\w ]+|\*)$/;
 my ($type_selected)       = $cgi->param('type') =~ /^(\w+|\*)$/;
 if ($cgi->param('run')) {
     if (grep { $_ eq '*' } $underlying_selected, $duration_selected, $type_selected, @date_selected) {
-print "we have a table request";
         @date_selected = @dates if grep { $_ eq '*' } @date_selected;
         $rslt = {};
         TABLE:
@@ -198,7 +195,6 @@ print "we have a table request";
             }
         }
     } else {
-print "we have a graph request";
         @date_selected = @dates if grep { $_ eq '*' } @date_selected;
         my $dataset = join '_', $underlying_selected, ($duration_selected =~ s/ step /_/r), $type_selected;
         $rslt = $process_dataset->(\@date_selected, $dataset);
