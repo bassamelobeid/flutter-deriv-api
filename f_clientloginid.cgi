@@ -1,7 +1,9 @@
 #!/etc/rmg/bin/perl
 package main;
 
-use strict 'vars';
+use strict;
+use warnings;
+
 use open qw[ :encoding(UTF-8) ];
 use Format::Util::Strings qw( set_selected_item );
 use HTML::Entities;
@@ -10,10 +12,11 @@ use f_brokerincludeall;
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
-BOM::Backoffice::Sysinit::init();
 
+BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation("CLIENT LOGINID ADMIN");
+
 my $staff   = BOM::Backoffice::Auth0::can_access(['CS']);
 my $broker  = request()->broker_code;
 my $tmp_dir = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
@@ -50,7 +53,10 @@ print '<form action="'
     . '<tr><td><b>LoginID</b></td><td> : ';
 
 print '<input type=text size=15 name="loginID" value="">'
-    . ' <a href="javascript:WinPopupSearchClients();"><font class=smallfont>[Search]</font></a>'
+    . ' <a href="'
+    . request()->url_for('backoffice/f_popupclientsearch.cgi', {broker => $encoded_broker})
+    . '"><font class=smallfont>[Search]</font></a>'
+    . ' <a href="javascript:WinPopupSearchClients();"><font class=smallfont>[OldSearch]</font></a>'
     . '</td></tr>';
 
 print '<tr><td>&nbsp;</td><td>' . '&nbsp;&nbsp;<input type="submit" value="EDIT CLIENT DETAILS"></td>' . '</tr>' . '</table>' . '</font>' . '</form>';
@@ -112,38 +118,17 @@ if (request()->param('editlink') and $client_login and request()->param('untrust
         . "</b> file. "
         . "<br />To change the reason, kindly select from the dropdown selection list below and click 'Go'.<br /><br /></font>";
 }
-
-print "<form action=\""
-    . request()->url_for('backoffice/untrusted_client_edit.cgi')
-    . "\" method=post>"
-    . "Login ID&nbsp; : <input type=\"text\" size=\"45\" name=\"login_id\" value=\""
-    . (uc $client_login) . "\">"
-    . "<br />Action&nbsp;&nbsp;&nbsp;&nbsp; : "
-    . set_selected_item(
-    request()->param('untrusted_action_type'),
-    "<select name=\"untrusted_action_type\">"
-        . "<option>--------------------SELECT AN ACTION--------------------</option>"
-        . "<option value=\"disabledlogins\">$untrusted_disabled_action</option>"
-        . "<option value=\"lockcashierlogins\">$untrusted_cashier_action</option>"
-        . "<option value=\"unwelcomelogins\">$untrusted_unwelcome_action</option>"
-        . "<option value=\"lockwithdrawal\">$untrusted_withdrawal_action</option>"
-        . "<option value=\"jpactivationpending\">$jp_activation_pending_action</option>"
-        . "</select>"
-    );
-
-print "<br />Reason&nbsp;&nbsp;&nbsp; : <select id=\"untrusted_reasonlist\" name=\"untrusted_reason\">"
-    . "<option>--------------------SELECT A REASON--------------------</option>";
-foreach my $untrusted_reason (get_untrusted_client_reason()) {
-    print "<option value=\"$untrusted_reason\">$untrusted_reason</option>";
-}
-
-print "</select>";
-print "<br />Please specify here (optional) : <input type=\"text\" size=\"92\" name=\"additional_info\">";
-
-print "<input type=\"hidden\" name=\"broker\" value=\"$encoded_broker\">"
-    . "<input type=\"hidden\" name=\"untrusted_action\" value=\"insert_data\">"
-    . "<br /><input type=\"submit\" value=\"Go\">"
-    . "</form>";
+BOM::Backoffice::Request::template->process(
+    'backoffice/account/untrusted_form.html.tt',
+    {
+        selected_untrusted_action => request()->param('untrusted_action_type'),
+        edit_url                  => request()->url_for('backoffice/untrusted_client_edit.cgi'),
+        reasons                   => [get_untrusted_client_reason()],
+        broker                    => $broker,
+        clientid                  => $client_login,
+        actions                   => get_untrusted_types(),
+        show_login                => 1,
+    }) || die BOM::Backoffice::Request::template->error();
 
 # display log differences for untrusted client section
 print "<hr><b>View changes to this untrusted client section.</b><br />"

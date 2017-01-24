@@ -20,18 +20,20 @@ if (my $email_list = request()->param('email')) {
     foreach my $email (split(/\s+/, lc($email_list))) {
         Bar(encode_entities($email) . " Login History");
         my $user = BOM::Platform::User->new({email => $email});
+        my $limit = 100;
         my $history;
         if ($user) {
             $history = $user->find_login_history(
                 sort_by => 'history_date desc',
-                limit   => 100
+                limit   => $limit
             );
         }
         BOM::Backoffice::Request::template->process(
             'backoffice/user_login_history.html.tt',
             {
                 user    => $user,
-                history => $history
+                history => $history,
+                limit   => $limit
             });
     }
 }

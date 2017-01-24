@@ -49,12 +49,12 @@ print "</OL>";
 
 Bar("IP related");
 
-print "<FORM ACTION=\"" . request()->url_for('backoffice/ip_search.cgi') . "\" METHOD=POST>";
-print "<b>IP SEARCH</b> Enter IP Address : ";
-print "<INPUT type=text size=15 maxlength=15 name=ip value='$ENV{'REMOTE_ADDR'}'>";
-print "<br>Ignore clients who didn't log in during last <input type=text size=6 value=10 name=lastndays> days ";
-print "<input type=submit value='Search for Email'>";
-print "</form>";
+BOM::Backoffice::Request::template->process(
+    'backoffice/ip_search.html.tt',
+    {
+        ip_search_url => request()->url_for('backoffice/ip_search.cgi'),
+        ip            => $ENV{REMOTE_ADDR},
+    }) || die BOM::Backoffice::Request::template->error();
 
 code_exit_BO();
 

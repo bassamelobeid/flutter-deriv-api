@@ -1,0 +1,64 @@
+<head>
+    <title>Client Search</title>
+</head>
+
+<body>
+<center><font size="2" face="verdana">
+<strong>Client Search</strong>
+<br>
+<form action="[% url %]" method="post">
+        <input type="text" size="14" name="partialfname" placeholder="First Name" onfocus="this.select()" value="[% params.first_name %]" />
+        <input type="text" size="14" name="partiallname" placeholder="Last Name" onfocus="this.select()" value="[% params.last_name %]"/>
+        <input type="text" size="20" name="partialemail" placeholder="Email" onfocus="this.select()" value="[% params.email %]" />
+        <input type="text" size="20" name="phone" placeholder="phone" onfocus="this.select()" value="[% params.phone %]" />
+        <input type="text" size="20" name="date_of_birth" placeholder="DOB YYYY-MM-DD" onfocus="this.select()" value="[% params.date_of_birth %]" />
+        <input type="text" size="20" name="broker" placeholder="Broker" onfocus="this.select()" value="[% broker %]" />
+        <input type="submit" value="Search" />
+</form>
+<p>Note: For best results, enter either only the Client's first name or last name</p>
+
+
+[% IF results.size %]
+<table border="0" cellpadding="1" cellspacing="1" width="90%" style="text-align:left; padding:0.5em 0;">
+    <tr style="background-color:#ffffce";>
+        <th align="left" >Login ID</th>
+        <th>Salutation</th>
+        <th>First Name</th>
+        <th>Last Name</th>
+        <th>Email</th>
+        <th>Account Status</th>
+        <th>Last Login</th>
+        <th>Phone</th>
+        <th>Address</th>
+        <th>Citizen</th>
+        <th>Date Joined</th>
+        <th>DOB</th>
+    </tr>
+    [% FOR result = results %]
+        <tr style="background-color: #aaffaa;">
+            <td align="left" ><a href="[% request.url_for( 'backoffice/f_clientloginid_edit.cgi', {loginID => result.loginid}) %]">[% result.loginid %]</td>
+            <td>[% result.salutation %]</td>
+            <td>[% result.first_name %]</td>
+            <td>[% result.last_name %]</td>
+            <td>[% result.email %]</td>
+            <td>[% result.status_code %]</td>
+            <td align="center">[% result.last_login || '---' %] </td>
+            <td>[% result.phone %]</td>
+            <td>
+                [% IF result.address_line_1 %] [% result.address_line_1 %] </br> [% END %]
+                [% IF result.address_line_2 %] [% result.address_line_2 %] </br> [% END %]
+                [% IF result.address_city %] [% result.address_city %] </br> [% END %]
+                [% IF result.address_state %] [% result.address_state %] [% END %]
+            </td>
+            <td>[% result.citizen %]</td>
+            <td>[% result.date_joined %]</td>
+            <td>[% result.date_of_birth %]</td>
+        </tr>
+    [% END %]
+</table>
+[% ELSE %]
+<p>No match</p>
+[% END %]
+
+</center>
+</body>
