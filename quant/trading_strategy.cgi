@@ -246,14 +246,14 @@ if (@tbl) {
                 . $details{Duration}
                 . '%20step%20'
                 . $details{Step}
-                . '&type='
-                . $details{Type} . '">'
                 . '&count='
                 . $count
                 . '&skip='
                 . $skip
                 . '&strategy='
                 . $strategy_name
+                . '&type='
+                . $details{Type} . '">'
                 . join(" ", map $details{$_}, grep exists $details{$_}, @hdr) . '</a>',
             map $_->[1],
             @$stats
