@@ -2,14 +2,14 @@
 package main;
 use strict 'vars';
 
-use BOM::Platform::Runtime;
-use BOM::Platform::Context;
 use JSON;
 
+use Brands;
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale;
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -32,7 +32,7 @@ my $tac_url = request()->url_for('/terms-and-conditions', {selected_tab => 'prom
 CLIENT:
 foreach my $loginid (@approved, @rejected) {
 
-    my $client      = BOM::Platform::Client->new({loginid => $loginid}) || die "bad loginid $loginid";
+    my $client      = Client::Account->new({loginid => $loginid}) || die "bad loginid $loginid";
     my $approved    = $input{"${loginid}_promo"} eq 'A';
     my $client_name = ucfirst join(' ', (BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name));
     my $email_subject = localize("Your bonus request - [_1]", $loginid);
@@ -62,20 +62,20 @@ foreach my $loginid (@approved, @rejected) {
             );
         }
 
-        BOM::Platform::Context::template->process(
+        BOM::Backoffice::Request::template->process(
             'email/bonus_approve.html.tt',
             {
                 name          => $client_name,
                 currency      => $currency,
                 amount        => $amount,
-                support_email => BOM::Platform::Runtime->instance->app_config->cs->email,
+                support_email => Brands->new(name => request()->brand)->emails('support'),
                 tac_url       => $tac_url,
                 website_name  => 'Binary.com',
             },
             \$email_content
             )
             || die "approving promocode for $client: "
-            . BOM::Platform::Context::template->error
+            . BOM::Backoffice::Request::template->error
 
     } else {
         # reject client
@@ -85,7 +85,7 @@ foreach my $loginid (@approved, @rejected) {
             $client->save();
         }
 
-        BOM::Platform::Context::template->process(
+        BOM::Backoffice::Request::template->process(
             'email/bonus_reject.html.tt',
             {
                 name         => $client_name,
@@ -93,17 +93,18 @@ foreach my $loginid (@approved, @rejected) {
                 website_name => 'Binary.com',
             },
             \$email_content
-        ) || die "rejecting promocode for $client: " . BOM::Platform::Context::template->error;
+        ) || die "rejecting promocode for $client: " . BOM::Backoffice::Request::template->error;
     }
 
     if ($input{"${loginid}_notify"}) {
         send_email({
-            from               => BOM::Platform::Runtime->instance->app_config->cs->email,
-            to                 => $client->email,
-            subject            => $email_subject,
-            message            => [$email_content],
-            template_loginid   => $loginid,
-            use_email_template => 1,
+            from                  => Brands->new(name => request()->brand)->emails('support'),
+            to                    => $client->email,
+            subject               => $email_subject,
+            message               => [$email_content],
+            template_loginid      => $loginid,
+            email_content_is_html => 1,
+            use_email_template    => 1,
         });
         $client->add_note($email_subject, $email_content);
     }
@@ -111,8 +112,8 @@ foreach my $loginid (@approved, @rejected) {
 
 print '<br/>';
 
-print '<b>Approved : </b>', join(' ', @approved), '<br/><br/>';
-print '<b>Rejected : </b>', join(' ', @rejected), '<br/><br/>';
+print '<b>Approved : </b>', join(' ', map { encode_entities($_) } @approved), '<br/><br/>';
+print '<b>Rejected : </b>', join(' ', map { encode_entities($_) } @rejected), '<br/><br/>';
 
 code_exit_BO();
 

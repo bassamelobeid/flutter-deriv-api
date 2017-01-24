@@ -1,34 +1,38 @@
 language: perl
 perl:
     - "5.14.2-thr"
+matrix:
+    fast_finish: true
 env:
     - PERL5LIB=/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/cpan/local/lib/perl5:/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi:/home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib
 addons:
-    postgresql: "9.3"
+    postgresql: "9.4"
 services:
     - redis-server
 cache: apt
 before_install:
-    - git clone https://d34c443afcc0c115c07590c76f7e3886190b3a76@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - git clone https://1994c85ce4f602fb682076e9a102261644fb3d19@github.com/regentmarkets/travis-scripts /tmp/travis-scripts-init
+    - /tmp/travis-scripts-init/clone_branch.sh regentmarkets/travis-scripts
     - /tmp/travis-scripts/setup_ssh.sh
-    - git clone git://github.com/binary-com/helpers ~/travis-perl-helpers
-    - AUTHOR_TESTING=0 source ~/travis-perl-helpers/init
-    - PREBUILT_REPO="git@github.com:binary-com/test-perl.git" build-perl
-    - sudo mkdir -p /etc/rmg; sudo ln -s $(dirname $(which perl)) /etc/rmg/bin
+    - sudo mkdir -p /home/git/binary-com
+    - sudo mkdir -p /home/git/regentmarkets
+    - sudo mkdir -p /home/website/www/temp
+    - sudo chown nobody:nogroup /home/website/www/temp
+    - . /tmp/travis-scripts/setup_perl.sh
     - /tmp/travis-scripts/fixHostName.sh
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
     - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
 
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
+    - /tmp/travis-scripts/setup_cpan.sh
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
     - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
-
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-myaffiliates
     - /tmp/travis-scripts/redis.sh
 
 install:
@@ -37,16 +41,17 @@ install:
 
     - /tmp/travis-scripts/remove_postgresdb_config.sh
     - /tmp/travis-scripts/setup_clientdb.sh
-    - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/home/git/regentmarkets/bom-platform/lib -I/home/git/regentmarkets/bom-postgres/lib /home/git/regentmarkets/bom-postgres/bin/dbmigration.pl --yes --hostname="localhost" --port="5432" --username=postgres --database=regentmarkets --dbset=collector'
+    - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E /etc/rmg/bin/perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/home/git/regentmarkets/bom-platform/lib -I/home/git/regentmarkets/bom-postgres/lib /home/git/regentmarkets/bom-postgres/bin/dbmigration.pl --yes --hostname="localhost" --port="5432" --username=postgres --database=regentmarkets --dbset=collector'
     - /tmp/travis-scripts/setup_feeddb.sh
     - /tmp/travis-scripts/setup_chronicledb.sh
     - export PAYMENTAPI_LOG_FILE=/tmp/paymentapi.log
     - /tmp/travis-scripts/setup_authdb.sh
     - /tmp/travis-scripts/setup_usersdb.sh
     - . /tmp/travis-scripts/setup_perl5lib.sh
-
+    - /tmp/travis-scripts/setup_postfix.sh
 script:
+    - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
     - make unit_test
-
+    - find . -iname '*.pm' -or -iname '*.cgi' | xargs -n 1 perl -c
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh

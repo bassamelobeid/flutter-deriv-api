@@ -15,204 +15,88 @@ package main;
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
-use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Product::Pricing::Engine::Intraday::Forex;
-use BOM::Database::ClientDB;
-use BOM::Database::DataMapper::Transaction;
-use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);
+use BOM::Backoffice::PlackHelpers qw( PrintContentType);
 use BOM::Backoffice::Sysinit ();
+use LandingCompany::Registry;
 BOM::Backoffice::Sysinit::init();
 BOM::Backoffice::Auth0::can_access(['Quants']);
+use BOM::Platform::Runtime;
+use BOM::JapanContractDetails;
+use Data::Dumper;
 my %params = %{request()->params};
-my ($pricing_parameters, @contract_details, $start);
 
-my $broker = $params{broker} // request()->broker_code;
-my $id = $params{id} ? $params{id} : '';
+my $cgi             = new CGI;
+my $broker          = $params{'broker'} // $cgi->param('broker');
+my $landing_company = LandingCompany::Registry::get_by_broker($broker)->short;
 
-if ($broker and $id) {
-    my $details = BOM::Database::DataMapper::Transaction->new({
-            broker_code => $broker,
-            operation   => 'backoffice_replica',
-        })->get_details_by_transaction_ref($id);
+if ($cgi->param('upload_file')) {
+    my $file     = $cgi->param('filetoupload');
+    my $fh       = File::Temp->new(SUFFIX => '.csv');
+    my $filename = $fh->filename;
+    copy($file, $filename);
+    my $output_filename = $file;
+    $output_filename =~ s/\.csv$/.xls/;
+    my $pricing_parameters = BOM::JapanContractDetails::parse_file($filename, $landing_company);
+    BOM::JapanContractDetails::batch_output_as_excel($pricing_parameters, $output_filename);
 
-    my $original_contract = produce_contract($details->{shortcode}, $details->{currency_code});
+} elsif ($cgi->param('manual_verify_with_id')) {
+    my $args;
+    my $id = $cgi->param('id');
+    $args->{transaction_id}  = $id;
+    $args->{landing_company} = $landing_company;
+    $args->{broker}          = $broker;
+    my $pricing_parameters = BOM::JapanContractDetails::verify_with_id($args);
+    if ($cgi->param('download') eq 'download') {
+        BOM::JapanContractDetails::single_output_as_excel($pricing_parameters, $id . '.xls');
 
-    $start = $params{start} ? Date::Utility->new($params{start}) : $original_contract->date_start;
-    my $pricing_args = $original_contract->build_parameters;
-    $pricing_args->{date_pricing} = $start;
-    my $contract = produce_contract($pricing_args);
-
-    $pricing_parameters =
-          $contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex' ? _get_pricing_parameter_from_IH_pricer($contract)
-        : $contract->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'          ? _get_pricing_parameter_from_slope_pricer($contract)
-        :   die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
-
-    @contract_details = (
-        login_id    => $details->{loginid},
-        trans_id    => $id,
-        short_code  => $contract->shortcode,
-        payout      => $contract->payout,
-        description => $contract->longcode,
-        ccy         => $details->{currency_code},
-        ask_price   => $details->{ask_price},
-        bid_price   => $details->{bid_price} // 'NA. (unsold)',
-    );
-}
-my $display = $params{download} ? 'download' : 'display';
-if ($display eq 'download') {
-    output_as_csv($pricing_parameters, \@contract_details);
-    return;
-}
-
-PrintContentType();
-BrokerPresentation("Contract's details");
-Bar("Contract's Parameters");
-
-sub output_as_csv {
-    my $param            = shift;
-    my $contract_details = shift;
-    my $loginid          = $contract_details->[1];
-    my $trans_id         = $contract_details->[3];
-    my $csv_name         = $loginid . '_' . $trans_id . '.csv';
-    PrintContentType_excel($csv_name);
-    my $size = scalar @$contract_details;
-    for (my $i = 0; $i <= $size; $i = $i + 2) {
-        print uc($contract_details->[$i]) . " " . $contract_details->[$i + 1] . "\n";
-    }
-    foreach my $key (keys %{$param}) {
-        print uc($key) . "\n";
-        foreach my $subkey (keys %{$param->{$key}}) {
-            if ($key ne 'numeraire_probability') {
-                print "$subkey " . $param->{$key}->{$subkey} . "\n";
-            }
-            {
-                foreach my $subsubkey (keys %{$param->{$key}->{$subkey}}) {
-                    print "$subkey $subsubkey " . $param->{$key}->{$subkey}->{$subsubkey} . "\n";
-                }
-            }
-        }
-        print "\n";
-    }
-
-}
-
-sub _get_pricing_parameter_from_IH_pricer {
-    my $contract = shift;
-    my $pricing_parameters;
-    my $pe                = $contract->pricing_engine;
-    my $bs_probability    = $pe->formula->($pe->_formula_args);
-    my $commission_markup = $contract->commission_markup->amount;
-
-    $pricing_parameters->{ask_probability} = {
-        bs_probability    => $bs_probability,
-        commission_markup => $commission_markup,
-        map { $_ => $pe->$_->amount } qw(intraday_delta_correction intraday_vega_correction risk_markup),
-    };
-
-    my @bs_keys = ('S', 'K', 't', 'discount_rate', 'mu', 'vol');
-    my @formula_args = $pe->_formula_args;
-    $pricing_parameters->{bs_probability} = {
-        payout => $contract->payout,
-        map { $bs_keys[$_] => $formula_args[$_] } 0 .. $#bs_keys
-    };
-
-    $pricing_parameters->{intraday_vega_correction} = {
-        historical_vol_mean_reversion => BOM::System::Config::quants->{commission}->{intraday}->{historical_vol_meanrev},
-        map { $_ => $pe->$_->amount } qw(intraday_vega long_term_prediction),
-    };
-
-    my $intraday_delta_correction = $pe->intraday_delta_correction;
-    $pricing_parameters->{intraday_delta_correction} = {
-          short_term_delta_correction => $contract->get_time_to_expiry->minutes < 10 ? $pe->_get_short_term_delta_correction
-        : $contract->get_time_to_expiry->minutes > 20 ? 0
-        : $intraday_delta_correction->peek_amount('delta_correction_short_term_value'),
-        long_term_delta_correction => $contract->get_time_to_expiry->minutes > 20 ? $pe->_get_long_term_delta_correction
-        : $contract->get_time_to_expiry->minutes < 10 ? 0
-        :                                               $intraday_delta_correction->peek_amount('delta_correction_long_term_value'),
-    };
-
-    $pricing_parameters->{commission_markup} = {
-        base_commission       => $contract->base_commission,
-        commission_multiplier => $contract->commission_multiplier($contract->payout),
-    };
-
-    my $risk_markup = $pe->risk_markup;
-    $pricing_parameters->{risk_markup} = {
-        intraday_historical_iv_risk => $risk_markup->peek_amount('intraday_historical_iv_risk') // 0,
-        quiet_period_markup         => $risk_markup->peek_amount('quiet_period_markup')         // 0,
-        eod_market_risk_markup      => $pe->eod_market_risk_markup->amount                      // 0,
-        economic_events_markup      => $pe->economic_events_markup->amount,
-    };
-
-    return $pricing_parameters;
-
-}
-
-sub _get_pricing_parameter_from_slope_pricer {
-    my $contract          = shift;
-    my $ask_probability   = $contract->ask_probability;
-    my $pe                = $contract->pricing_engine;
-    my $debug_information = $pe->debug_information;
-    my $pricing_parameters;
-    my $contract_type     = $pe->contract_type;
-    my $risk_markup       = $contract->risk_markup->amount;
-    my $commission_markup = $contract->commission_markup->amount;
-
-    $pricing_parameters->{ask_probability} = {
-        theoretical_probability => $pe->base_probability,
-        risk_markup             => $risk_markup,
-        commission_markup       => $commission_markup,
-    };
-
-    my $theo_param = $debug_information->{$contract_type}{base_probability}{parameters};
-
-    if ($contract->priced_with ne 'base') {
-        $pricing_parameters->{bs_probability}   = _get_bs_probability_parameters($theo_param->{bs_probability}{parameters});
-        $pricing_parameters->{slope_adjustment} = {
-            weight => $contract_type eq 'CALL' ? -1 : 1,
-            slope => $theo_param->{slope_adjustment}{parameters}{slope},
-            vanilla_vega => $theo_param->{slope_adjustment}{parameters}{vanilla_vega}{amount},
-        };
     } else {
-        $pricing_parameters->{bs_probability} =
-            _get_bs_probability_parameters($theo_param->{numeraire_probability}{parameters}{bs_probability}{parameters});
-        my $slope_param = $theo_param->{numeraire_probability}{parameters}{slope_adjustment}{parameters};
-        $pricing_parameters->{slope_adjustment} = {
-            weight => $contract_type eq 'CALL' ? -1 : 1,
-            slope => $slope_param->{slope},
-            vanilla_vega => $slope_param->{vanilla_vega}{amount},
-        };
+        load_template($cgi->param('broker'), $pricing_parameters);
 
     }
-    $pricing_parameters->{bs_probability}->{payout} = $contract->payout;
-    $pricing_parameters->{risk_markup} = $debug_information->{risk_markup}{parameters};
+} elsif ($cgi->param('manual_verify_with_shortcode')) {
+    my $args;
+    $args->{landing_company} = $landing_company;
+    $args->{shortcode}       = $cgi->param('short_code');
+    $args->{contract_price}  = $cgi->param('price');
+    $args->{currency}        = $cgi->param('currency');
+    $args->{start_time}      = $cgi->param('start');
+    $args->{action_type}     = $cgi->param('action_type');
+    my $pricing_parameters = BOM::JapanContractDetails::verify_with_shortcode($args);
+    $pricing_parameters = BOM::JapanContractDetails::include_contract_details(
+        $pricing_parameters,
+        {
+            order_type  => $cgi->param('action_type'),
+            order_price => $cgi->param('price')});
 
-    $pricing_parameters->{commission_markup} = {
-        base_commission       => $contract->base_commission,
-        commission_multiplier => $contract->commission_multiplier($contract->payout),
-    };
+    if ($cgi->param('download') eq 'download') {
+        BOM::JapanContractDetails::single_output_as_excel($pricing_parameters, $cgi->param('short_code') . '.xls');
+    } else {
+        load_template($cgi->param('broker'), $pricing_parameters);
 
-    return $pricing_parameters;
+    }
+} elsif ($params{'load_template'}) {
+
+    load_template($params{broker});
+
 }
 
-sub _get_bs_probability_parameters {
-    my $prob         = shift;
-    my $bs_parameter = {
-        'K' => $prob->{strikes}[0],
-        "S" => $prob->{spot},
-        't' => $prob->{_timeinyears},
-        map { $_ => $prob->{$_} } qw(discount_rate mu vol),
-    };
-    return $bs_parameter;
+sub load_template {
+    my $broker             = shift;
+    my $pricing_parameters = shift;
+
+    PrintContentType();
+    BrokerPresentation("Price Verification Tool");
+    Bar("Tools");
+
+    BOM::Backoffice::Request::template->process(
+        'backoffice/japan_contract_details.html.tt',
+        {
+            broker             => $broker,
+            pricing_parameters => $pricing_parameters,
+            upload_url         => 'contract_details.cgi',
+        })
+        || die BOM::Backoffice::Request
+
 }
-BOM::Platform::Context::template->process(
-    'backoffice/contract_details.html.tt',
-    {
-        broker             => $broker,
-        id                 => $id,
-        contract_details   => {@contract_details},
-        start              => $start ? $start->datetime : '',
-        pricing_parameters => $pricing_parameters,
-    }) || die BOM::Platform::Context::template->error;
+
 code_exit_BO();
-

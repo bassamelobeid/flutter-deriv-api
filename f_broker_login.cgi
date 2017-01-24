@@ -4,7 +4,7 @@ package main;
 #official globals
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
-use BOM::Market::Registry;
+use Finance::Asset::Market::Registry;
 
 use f_brokerincludeall;
 use BOM::System::Config;
@@ -13,12 +13,10 @@ use Format::Util::Strings qw( set_selected_item );
 use BOM::Backoffice::Auth0;
 use BOM::StaffPages;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Market::Registry;
-use BOM::Platform::LandingCompany;
+use LandingCompany;
 
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
-
 
 if (not BOM::Backoffice::Auth0::from_cookie()) {
     PrintContentType();
@@ -41,7 +39,7 @@ if ((grep { $_ eq 'binary_role_master_server' } @{BOM::System::Config::node()->{
 
 print "<center>";
 
-my $allbrokercodes = '<option>' . join("<option>", BOM::Platform::LandingCompany::Registry::all_broker_codes);
+my $allbrokercodes = '<option>' . join("<option>", LandingCompany::Registry::all_broker_codes);
 
 my $brokerselection = "Broker code : <select name=broker>" . set_selected_item($broker, $allbrokercodes) . "</select>";
 
@@ -49,7 +47,7 @@ if (request()->param('only')) {
     $brokerselection = "Broker code : <select name=broker><option>" . request()->param('only') . "</select>";
 }
 
-my @all_markets = BOM::Market::Registry->instance->all_market_names;
+my @all_markets = Finance::Asset::Market::Registry->instance->all_market_names;
 
 # TRANSaction REPORTS
 if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
@@ -189,11 +187,18 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
 				<td class="whitelabel" colspan="2">QUANT TOOLS</td>
 			</tr>
 			<tr>
-				<td align="center" colspan="2">
-					<p><b>RISK DASHBOARD</b></p>
+				<td align="center">
+					<p><b>RISK DASHBOARD test</b></p>
 					<form action="~ . request()->url_for('backoffice/quant/risk_dashboard.cgi') . qq~" method="post"><font size=2>
 						<input type="submit" value="RISK DASHBOARD">
 					</font></form>
+                </td>
+				<td align="center">
+					<p><b>TRADING STRATEGIES</b></p>
+					<form action="~ . request()->url_for('backoffice/quant/trading_strategy.cgi') . qq~" method="post"><font size=2>
+						<input type="submit" value="TRADING STRATEGIES">
+					</font></form>
+                </td>
 			</tr>
 			<tr>
 				</td>
@@ -221,7 +226,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
 				</td>
 				<td align="center" width="50%">
 					<p><b>BET PRICE OVER TIME</b></p>
-					<form action="~ . request()->url_for('backoffice/quant/pricing/bpot.cgi') . qq~" method="post"><font size=2>
+					<form action="~ . request()->url_for('backoffice/quant/pricing/bpot.cgi', {broker => $broker}) . qq~" method="post"><font size=2>
 						<input type="submit" value="BET PRICE OVER TIME">
 					</font></form>
 				</td>
@@ -229,7 +234,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
 			 <tr>	
                                 <td align="center" width="50%">
 					<p><b>RETRIEVE CONTRACT DETAILS</b></p>
-					<form action="~ . request()->url_for('backoffice/quant/pricing/contract_details.cgi') . qq~" method="post"><font size=2>
+					<form action="~ . request()->url_for('backoffice/quant/pricing/contract_details.cgi', {load_template => 1}) . qq~" method="post"><font size=2>
 						<b>$brokerselection</b>
                                                 <input type="submit" value="RETRIEVE CONTRACT DETAILS">
 					</font></form>
@@ -281,12 +286,10 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
 					<form action="~ . request()->url_for('backoffice/f_dynamic_settings.cgi') . qq~" method="get"><font size=2>
                         <b>Group: </b><select name=group>
                             <option value=shutdown_suspend>Shutdown/Suspend</option>
-                            <option value=cs>CS</option>
                             <option value=quant>Quant</option>
                             <option value=it>IT</option>
                             <option value=others>Others</option>
                             <option value=payments>Payments</option>
-                            <option value=marketing>Marketing</option>
                         </select>
 						<input type=hidden name=broker value=FOG>
 						<input type=hidden name=page value=global>

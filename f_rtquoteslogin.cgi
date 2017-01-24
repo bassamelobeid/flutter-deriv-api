@@ -6,10 +6,11 @@ use open qw[ :encoding(UTF-8) ];
 
 use HTML::Entities;
 use f_brokerincludeall;
-use BOM::Market::UnderlyingDB;
-use BOM::Market::Registry;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+use Finance::Asset::Market::Registry;
 use Proc::Killall;
-use BOM::Market::Registry;
 use Try::Tiny;
 use Path::Tiny;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -19,16 +20,27 @@ use Date::Utility;
 use List::Util qw/reduce/;
 
 BOM::Backoffice::Sysinit::init();
+$Quant::Framework::Underlying::FORCE_REALTIME_FEED = 1;
 
 my $fullfeed_re = qr/^\d\d?-\w{3}-\d\d.fullfeed(?!\.zip)/;
 
+my $_quotes_cache;
+
 sub last_quote {
     my $dir = shift;
-    my $recent = reduce { $a->[1] < $b->[1] ? $a : $b } map {[$_, -M $_]} $dir->children($fullfeed_re);
+
+    # check in cache
+    return @{$_quotes_cache->{$dir}} if $_quotes_cache->{$dir};
+
+    my $recent = reduce { $a->[1] < $b->[1] ? $a : $b } map { [$_, -M $_] } $dir->children($fullfeed_re);
     $recent = $recent->[0] // die("Cannot find last quote file in $dir");
     my $bw = File::ReadBackwards->new($recent)
         or die "can't read $recent: $!";
-    return ($recent, $bw->readline);
+
+    my $line = $bw->readline;
+    # fill cache
+    $_quotes_cache->{$dir} = [$recent, $line];
+    return ($recent, $line);
 }
 
 sub parse_quote {
@@ -58,14 +70,14 @@ BrokerPresentation('REALTIME QUOTES');
 my $broker = request()->broker_code;
 BOM::Backoffice::Auth0::can_access(['Quants']);
 
-my @all_markets = BOM::Market::Registry->instance->all_market_names;
+my @all_markets = Finance::Asset::Market::Registry->instance->all_market_names;
 push @all_markets, 'futures';    # this is added to check for futures feed
 my $feedloc = BOM::Platform::Runtime->instance->app_config->system->directory->feed;
 my $dbloc   = BOM::Platform::Runtime->instance->app_config->system->directory->db;
 my $tmp_dir = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
 
 my $now          = Date::Utility->new;
-my @providerlist = qw(idata random telekurs sd tenfore bloomberg olsen synthetic combined panda);
+my @providerlist = qw(idata random telekurs sd bloomberg olsen synthetic combined panda);
 
 Bar("Compare providers");
 
@@ -76,7 +88,9 @@ print "<LI><font color=F09999>Shadow tick file over 180 seconds</font>";
 print "<LI><font color=FF0000>More than 0.2\% away from combined quote (0.4\% for stocks)</font>";
 print "</UL>";
 
-my @instrumentlist = sort BOM::Market::UnderlyingDB->instance->get_symbols_for(
+my $ul_db = create_underlying_db();
+
+my @instrumentlist = sort $ul_db->get_symbols_for(
     market => [@all_markets],
 );
 
@@ -96,7 +110,7 @@ print "</tr>";
 my $all = request()->param('what');
 foreach my $i (@instrumentlist) {
 
-    my $underlying = BOM::Market::Underlying->new($i);
+    my $underlying = create_underlying($i);
 
     next unless $all or $underlying->calendar->is_open;
 
@@ -147,7 +161,6 @@ foreach my $i (@instrumentlist) {
         elsif ($age > 180)       { print "<td bgcolor=FF8888>$price<br><b>$age secs.</b></td>"; }
         else {
             #compare it to combined feed
-            my $spot = $underlying->spot;
             if (abs($spot - $price) > abs($price) * $MAXDIFF)    #0.2% diff
             {
                 print "<td bgcolor=#FF0000>!$price!<br>TS $age secs</td>";

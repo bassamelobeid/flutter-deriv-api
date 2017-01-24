@@ -1,4 +1,6 @@
-use strict 'vars';
+use strict;
+use warnings;
+
 use open qw[ :encoding(UTF-8) ];
 use POSIX;
 use Path::Tiny;
@@ -6,9 +8,10 @@ use BOM::Backoffice::GNUPlot;
 use Date::Utility;
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(request);
-use Quant::Framework::Spot::DatabaseAPI;
-use BOM::Market::Underlying;
+use BOM::Backoffice::Request qw(request);
+use Postgres::FeedDB::Spot::DatabaseAPI;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use BOM::Charting;
 
 use String::UTF8::MD5;
@@ -35,13 +38,13 @@ sub graph_setup {
     my $gif_dir = BOM::Platform::Runtime->instance->app_config->system->directory->tmp_gif;
     if (not $gif_dir) {
         print "[graph_setup] Error - system.directory.tmp_gif is undefined ";
-        BOM::Backoffice::Sysinit::code_exit();
+        code_exit_BO();
     }
     if (not -d $gif_dir) {
         Path::Tiny::path($gif_dir)->mkpath;
         if (not -d $gif_dir) {
             print "[graph_setup] Error - $gif_dir could not be created";
-            BOM::Backoffice::Sysinit::code_exit();
+            code_exit_BO();
         }
     }
 
@@ -239,7 +242,7 @@ sub doPlot {
         $underlying_symbol = $1;
     }
 
-    my $underlying = BOM::Market::Underlying->new($underlying_symbol);
+    my $underlying = create_underlying($underlying_symbol);
     my $pip_size   = $underlying->pip_size;
 
     # get data from history server
@@ -367,9 +370,9 @@ sub doDailyPlot {
     my (@graph_x, @graph_y);
     my $firsty = "";
 
-    my $underlying = BOM::Market::Underlying->new($underlying_symbol);
+    my $underlying = create_underlying($underlying_symbol);
 
-    my $ohlcs = Quant::Framework::Spot::DatabaseAPI->new($underlying->config->spot_db_args)->ohlc_daily_until_now_for_charting({
+    my $ohlcs = Postgres::FeedDB::Spot::DatabaseAPI->new($underlying->config->spot_db_args)->ohlc_daily_until_now_for_charting({
         limit => 99999,
     });
 

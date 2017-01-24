@@ -7,17 +7,19 @@ with 'App::Base::Script';
 
 use Try::Tiny;
 use IO::File;
+use File::ShareDir;
 use Module::Load::Conditional qw( can_load );
 use Locale::Maketext::Extract;
-
-use BOM::Market::Registry;
-use BOM::Market::SubMarket::Registry;
-use BOM::Product::Offerings qw(get_offerings_with_filter);
-use BOM::Market::Underlying;
-use BOM::Market::UnderlyingDB;
 use YAML::XS qw(LoadFile);
 
-my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_types.yml');
+use Finance::Asset::Market::Registry;
+use Finance::Asset::SubMarket::Registry;
+use BOM::Platform::Runtime;
+use LandingCompany::Offerings qw(get_offerings_with_filter get_all_contract_types);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::Product::Contract::Category;
 
 has file_container => (
     is         => 'ro',
@@ -69,15 +71,77 @@ sub script_run {
     $self->add_underlyings;
     $self->add_contract_categories;
     $self->add_contract_types;
+    $self->add_japan_settings;
 
     return 0;
+}
+
+sub add_japan_settings {
+    my $self = shift;
+
+    # After client settings update, system email client & CS for changes. These translate old & new settings in email
+    # use in BOM::RPC::v3::Japan::NewAccount::set_jp_settings
+
+    my @texts = (
+        # Occupation
+        '{JAPAN ONLY}Office worker',
+        '{JAPAN ONLY}Director',
+        '{JAPAN ONLY}Public worker',
+        '{JAPAN ONLY}Self-employed',
+        '{JAPAN ONLY}Housewife / Househusband',
+        '{JAPAN ONLY}Contract / Temporary / Part Time',
+        '{JAPAN ONLY}Student',
+        '{JAPAN ONLY}Unemployed',
+        '{JAPAN ONLY}Others',
+
+        # Income
+        '{JAPAN ONLY}Less than 1 million JPY',
+        '{JAPAN ONLY}1-3 million JPY',
+        '{JAPAN ONLY}3-5 million JPY',
+        '{JAPAN ONLY}5-10 million JPY',
+        '{JAPAN ONLY}10-30 million JPY',
+        '{JAPAN ONLY}30-50 million JPY',
+        '{JAPAN ONLY}50-100 million JPY',
+        '{JAPAN ONLY}Over 100 million JPY',
+
+        # Trading Experience
+        '{JAPAN ONLY}No experience',
+        '{JAPAN ONLY}Less than 6 months',
+        '{JAPAN ONLY}6 months to 1 year',
+        '{JAPAN ONLY}1-3 years',
+        '{JAPAN ONLY}3-5 years',
+        '{JAPAN ONLY}Over 5 years',
+
+        # purpose of trading
+        '{JAPAN ONLY}Targeting short-term profits',
+        '{JAPAN ONLY}Targeting medium-term / long-term profits',
+        '{JAPAN ONLY}Both the above',
+        '{JAPAN ONLY}Hedging',
+
+        # asset hedge
+        '{JAPAN ONLY}Foreign currency deposit',
+        '{JAPAN ONLY}Margin FX',
+        '{JAPAN ONLY}Other'
+    );
+
+    my $fh = $self->pot_append_fh;
+    foreach my $txt (@texts) {
+        my $msgid = $self->msg_id($txt);
+        if ($self->is_id_unique($msgid)) {
+            print $fh "\n";
+            print $fh $msgid . "\n";
+            print $fh "msgstr \"\"\n";
+        }
+    }
+
+    return;
 }
 
 sub add_underlyings {
     my $self = shift;
 
-    my @underlyings = map { BOM::Market::Underlying->new($_) } BOM::Market::UnderlyingDB->get_symbols_for(
-        market           => [BOM::Market::Registry->all_market_names],
+    my @underlyings = map { create_underlying($_) } create_underlying_db()->get_symbols_for(
+        market           => [Finance::Asset::Market::Registry->all_market_names],
         exclude_disabled => 1
     );
 
@@ -104,7 +168,7 @@ sub add_contract_types {
 
     my $fh = $self->pot_append_fh;
 
-    my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_types.yml');
+    my $contract_type_config = get_all_contract_types();
 
     foreach my $contract_type (keys %{$contract_type_config}) {
         next if ($contract_type eq 'INVALID');
@@ -153,7 +217,8 @@ sub add_contract_categories {
     my $self = shift;
 
     my $fh = $self->pot_append_fh;
-    my @all_categories = map { BOM::Product::Contract::Category->new($_) } get_offerings_with_filter('contract_category');
+    my @all_categories = map { BOM::Product::Contract::Category->new($_) }
+        get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'contract_category');
     foreach my $contract_category (@all_categories) {
         if ($contract_category->display_name) {
             my $msgid = $self->msg_id($contract_category->display_name);
@@ -181,7 +246,7 @@ sub add_markets {
 
     my $fh = $self->pot_append_fh;
 
-    foreach my $market (BOM::Market::Registry->all) {
+    foreach my $market (Finance::Asset::Market::Registry->all) {
         if ($market->display_name) {
             my $msgid = $self->msg_id($market->display_name);
             if ($self->is_id_unique($msgid)) {
@@ -208,7 +273,7 @@ sub add_submarkets {
 
     my $fh = $self->pot_append_fh;
 
-    foreach my $submarket (BOM::Market::SubMarket::Registry->all) {
+    foreach my $submarket (Finance::Asset::SubMarket::Registry->all) {
         if ($submarket->display_name) {
             my $msgid = $self->msg_id($submarket->display_name);
             if ($self->is_id_unique($msgid)) {

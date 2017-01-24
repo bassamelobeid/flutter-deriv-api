@@ -18,6 +18,7 @@ use open qw[ :encoding(UTF-8) ];
 use CGI;
 use JSON qw( from_json to_json );
 use URL::Encode qw( url_decode );
+use BOM::MarketData qw(create_underlying);
 
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType_JSON );
@@ -27,7 +28,7 @@ BOM::Backoffice::Sysinit::init();
 # Our very own %input processing logic seems to strip
 # out characters from my URL encoded JSON, breaking it.
 my $cgi           = CGI->new;
-my $underlying    = BOM::Market::Underlying->new($cgi->param('symbol'));
+my $underlying    = create_underlying($cgi->param('symbol'));
 my $recorded_date = Date::Utility->new($cgi->param('recorded_epoch'));
 my $type          = $cgi->param('type');
 my $spot          = $cgi->param('spot');
@@ -40,7 +41,7 @@ my $class = 'Quant::Framework::VolSurface::' . ($type eq 'moneyness' ? 'Moneynes
 my $surface;
 
 $surface = $class->new(
-    underlying_config     => $underlying->config,
+    underlying     => $underlying,
     surface        => $surface_data,
     recorded_date  => $recorded_date,
     spot_reference => $spot,

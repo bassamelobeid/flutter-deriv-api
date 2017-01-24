@@ -48,6 +48,7 @@ use strict;
 use warnings;
 
 use List::MoreUtils qw( uniq );
+use HTML::Entities;
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
@@ -55,43 +56,39 @@ use Quant::Framework::VolSurface::Delta;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::MarketData::Display::VolatilitySurface;
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::Market::UnderlyingDB;
-use BOM::Market::Registry;
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use Finance::Asset::Market::Registry;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
-my @all_markets = BOM::Market::Registry->instance->all_market_names();
+my @all_markets = Finance::Asset::Market::Registry->instance->all_market_names();
 my @update_markets;
 foreach my $market (@all_markets) {
     push @update_markets, $market if request()->param('update_$market');
 }
 
-my $update_including_vrt             = request()->param('update_including_vrt');
 my $update_including_intraday_double = request()->param('update_including_intraday_double');
 my $markets                          = request()->param('markets');
 
 # To give a warning when difference between old and new vol is too big
 my $warndifference = 0.1;
 
-my $broker = $update_including_vrt ? 'VRT' : 'FOG';
-
 my @markets;
 push @markets, split /\s+/, $markets if $markets;
 if ($update_including_intraday_double) {
     push @markets,
-        BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        create_underlying_db->get_symbols_for(
         market            => \@update_markets,
         contract_category => 'ANY',
-        broker            => 'VRT',
         );
 } else {
     push @markets,
-        BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        create_underlying_db->get_symbols_for(
         market            => \@update_markets,
         contract_category => 'IV',
-        broker            => $broker,
         );
 }
 
@@ -101,7 +98,7 @@ my $dm = BOM::MarketData::Fetcher::VolSurface->new;
 my %volatility_surfaces;
 foreach my $market (@markets) {
 
-    my $underlying = BOM::Market::Underlying->new($market);
+    my $underlying = create_underlying($market);
     # when we are updating surface, fetch New York 10 for FX
     my $args = {
         underlying => $underlying,
@@ -132,8 +129,8 @@ print get_update_volatilities_form({
 print '</td>';
 print q~<td align=right>~;
 print "<form method=post action='" . request()->url_for('backoffice/quant/market_data_mgmt/update_volatilities/save_used_volatilities.cgi') . "'>";
-print "<input type=hidden name=markets value='$markets'>";
-print "<input type=hidden name=warndifference value='$warndifference'>";
+print "<input type=hidden name=markets value='" . encode_entities($markets) . "'>";
+print "<input type=hidden name=warndifference value='" . encode_entities($warndifference) . "'>";
 print "<input id='confirm_volatility' type=submit  value='    CONFIRM ALL     '>";
 print "</form>";
 print '</td>';
@@ -155,7 +152,7 @@ foreach my $market (@markets) {
             print "Surface does not exist";
         }
     } else {
-        print "An error occurred: '$volatility_surfaces{$market}->{'errorused'}'.";
+        print "An error occurred: ' " . encode_entities($volatility_surfaces{$market}->{'errorused'}) . "'.";
     }
     print "</TD>";
     print "</TR>";

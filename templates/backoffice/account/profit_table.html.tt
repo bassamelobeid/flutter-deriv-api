@@ -4,9 +4,9 @@
 
 [%- MACRO display_amount(amount) BLOCK -%]
         [% IF amount >= 0 %]
-                <span class="profit">[% to_monetary_number_format(amount) %]</span>
+                <span class="profit">[% to_monetary_number_format(amount) | none %]</span>
         [% ELSE %]
-                <span class="loss">[% to_monetary_number_format(amount) %]</span>
+                <span class="loss">[% to_monetary_number_format(amount) | none%]</span>
         [% END %]
 [%- END -%]
 
@@ -21,23 +21,23 @@
     <div class="grd-parent grd-grid-12 table-body table-body-lines grd-row-padding">
         <div class="grd-grid-1">[% contract.purchase_date.datetime %]</div>
         <div class="grd-grid-1">
-            <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, shortcode => contract.short_code, purchase_time => contract.purchase_date.datetime }) %]">[% ident %]</a>
+            <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, shortcode => contract.short_code, purchase_time => contract.purchase_date.datetime, loginid => loginid}) | none %]">[% ident %]</a>
             <br/><label class="investigate"><input type="checkbox" name="investigate_list" value='[% ident %]:::[% contract.info.description FILTER truncate(70) %]:::[% contract.purchase_date.datetime %]'>QQ</label>
         </div>
         <div class="grd-grid-1">[% contract.payout_price %]</div>
         <div class="grd-grid-3">[% contract.info.description %]</div>
         <div class="grd-grid-1 right-aligned">
-            [% to_monetary_number_format(contract.buy_price) %]
+            [% to_monetary_number_format(contract.buy_price) | none %]
         </div>
         <div class="grd-grid-2">[% contract.sale_date.datetime %]</div>
         <div class="grd-grid-1 right-aligned">
-            [% to_monetary_number_format(sale_price(contract)) %]
+            [% to_monetary_number_format(sale_price(contract)) | none %]
         </div>
         <div class="grd-grid-1 right-aligned">
-            [% display_amount(sale_price(contract) - contract.buy_price) %]
+            [% display_amount(sale_price(contract) - contract.buy_price) | none %]
         </div>
         <div class="grd-grid-1 right-aligned">
-                [% display_amount(contract.cumulative_pl) %]
+                [% display_amount(contract.cumulative_pl) | none %]
         </div>
     </div>
 [%- END -%]
@@ -48,7 +48,7 @@
 [%- MACRO navigator BLOCK -%]
 <div id="statement-table" class="grd-parent grd-grid-12 grd-row-padding">
     <div class="grd-grid-6 left-aligned">
-        <FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') %]" METHOD="POST">
+        <FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') | none %]" METHOD="POST">
                 <INPUT name=enddate type=hidden value="[% startdate %]" />
                 <INPUT type=hidden name="loginID" value="[% loginid %]" />
                 <INPUT type=hidden name="broker" value="[% request.broker_code %]" />
@@ -57,7 +57,7 @@
         </FORM>
     </div>
     <div class="grd-grid-6 right-aligned">
-        <FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') %]" METHOD="POST">
+        <FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') | none %]" METHOD="POST">
                 <INPUT name=startdate type=hidden value="[% enddate %]" />
                 <INPUT type=hidden name="loginID" value="[% loginid %]" />
                 <INPUT type=hidden name="broker" value="[% request.broker_code %]" />
@@ -75,7 +75,7 @@
 #limit_entry caption { caption-side: bottom; font-size: small;  }
 .investigate { background-color: #ffa; font-weight: bold; }
 </style>
-<FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') %]" METHOD="POST">
+<FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') | none %]" METHOD="POST">
         Sold Contracts Between <INPUT name=startdate type=text size=20 value="[% startdate %]" />
         and <INPUT name=enddate type=text size=20 value="[% enddate %]" />
         <INPUT type=hidden name="loginID" value="[% loginid %]" />
@@ -87,13 +87,13 @@
 </FORM>
 
 [% IF performance_probability %]
-        <p>Performance Probability: [% display_performance_probability(performance_probability) %] percentile or [% inv_performance_probability %] </p>
+        <p>Performance Probability: [% display_performance_probability(performance_probability) | none %] percentile or [% inv_performance_probability %] </p>
 [% END %]
 
 <div id="statement-table" class="grd-parent grd-grid-12 table-header grd-row-padding">
 <p><b>[% full_name %]</b>, [% email %] from [% residence %]</p>
 </div>
-[% navigator %]
+[% navigator | none %]
 [% IF sold_contracts.size == 0 %]
         <p>[% l('There are no contracts during this period') %]</p>
 [% ELSE %]
@@ -116,17 +116,17 @@
         <div class="grd-grid-1 right-aligned"></div>
     </div>
 
-    <form action="[% request.url_for('backoffice/f_quant_query.cgi') %]" method="post">
+    <form action="[% request.url_for('backoffice/f_quant_query.cgi') | none %]" method="post">
         [% FOREACH contract IN sold_contracts %]
             [%
-                    display_contract(contract);
+                    display_contract(contract) | none
             %]
         [% END %]
         <input type="hidden" name="loginID" value="[% loginid %]"/>
         <input type=hidden name="broker" value="[% request.broker_code %]" />
         <input type="submit" name="QQ" value="Quant Query" class="investigate">
     </form>
-    [% navigator %]
+    [% navigator | none %]
 [% END %]
 
 [% cumulative_pl = 0;
@@ -149,10 +149,10 @@ END %]
         <div class="grd-grid-1 right-aligned">Profit/Loss</div>
         <div class="grd-grid-1 right-aligned"></div>
     </div>
-    <form action="[% request.url_for('backoffice/f_quant_query.cgi') %]" method="post">
+    <form action="[% request.url_for('backoffice/f_quant_query.cgi') | none %]" method="post">
         [% FOREACH contract IN open_contracts %]
             [%
-                display_contract(contract);
+                display_contract(contract) | none;
             %]
         [% END %]
         <input type="hidden" name="loginID" value="[% loginid %]"/>

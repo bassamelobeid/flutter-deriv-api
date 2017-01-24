@@ -8,15 +8,16 @@ use strict;
 use warnings;
 use Getopt::Long;
 
+use Brands;
 use Date::Utility;
 use BOM::System::Config;
 use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Request qw(request);
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Runtime;
 use BOM::DailySummaryReport;
-use BOM::Platform::LandingCompany;
-use BOM::Platform::LandingCompany::Registry;
-
+use LandingCompany;
+use LandingCompany::Registry;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -35,8 +36,8 @@ if (!$optres) {
 # By default we run all brokers and currencies for today.
 $for_date ||= Date::Utility->new->date_yyyymmdd;
 
-my @brokercodes = ($brokercodes) ? split(/,/, $brokercodes) : BOM::Platform::LandingCompany::Registry::all_broker_codes;
-my @currencies  = ($currencies)  ? split(/,/, $currencies)  : BOM::Platform::LandingCompany::Registry->new()->all_currencies;
+my @brokercodes = ($brokercodes) ? split(/,/, $brokercodes) : LandingCompany::Registry::all_broker_codes;
+my @currencies  = ($currencies)  ? split(/,/, $currencies)  : LandingCompany::Registry->new()->all_currencies;
 
 # This report will now only be run on the master server
 exit 0 unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::System::Config::node()->{node}->{roles}}));
@@ -56,9 +57,10 @@ foreach my $broker (keys %{$total_pl}) {
         push @mail_msg, "$broker, $currency, $total_pl->{$broker}->{$currency}";
     }
 }
+my $brand = Brands->new(name => request()->brand);
 send_email({
-    'from'    => 'system@binary.com',
-    'to'      => BOM::Platform::Runtime->instance->app_config->accounting->email,
+    'from'    => $brand->emails('system'),
+    'to'      => $brand->emails('accounting'),
     'subject' => 'Daily Outstanding Bets Profit / Lost [' . $run_for->date . ']',
     'message' => \@mail_msg,
 });

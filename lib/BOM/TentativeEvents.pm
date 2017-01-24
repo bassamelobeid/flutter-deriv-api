@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use BOM::System::Chronicle;
+use BOM::Backoffice::Request;
 use Quant::Framework::EconomicEventCalendar;
 
 sub _get_tentative_events {
@@ -32,14 +33,14 @@ sub generate_tentative_events_form {
         $event;
         } keys %$events;
     my $form = '';
-    BOM::Platform::Context::template->process(
+    BOM::Backoffice::Request::template->process(
         'backoffice/economic_tentative_event_forms.html.tt',
         {
             ee_upload_url => $args->{upload_url},
             events        => \@events
         },
         $form
-    ) || die BOM::Platform::Context::template->error;
+    ) || die BOM::Backoffice::Request::template->error;
 
     return $form;
 }
@@ -70,8 +71,9 @@ sub update_event {
 
     my $existing = $events->{$params->{id}};
     my $rd       = Date::Utility->new($existing->{estimated_release_date});
-    $existing->{blankout}     = $rd->plus_time_interval("$b1[0]h$b1[1]m")->epoch;
-    $existing->{blankout_end} = $rd->plus_time_interval("$b2[0]h$b2[1]m")->epoch;
+    $existing->{blankout}              = $rd->plus_time_interval("$b1[0]h$b1[1]m")->epoch;
+    $existing->{blankout_end}          = $rd->plus_time_interval("$b2[0]h$b2[1]m")->epoch;
+    $existing->{tentative_event_shift} = $params->{tentative_event_shift};
 
     my $diff = $existing->{blankout_end} - $existing->{blankout};
     return "Blackout start and Blackout end must be 2 hours apart. E.g. 5pm - 7pm" if ($diff != 7200);

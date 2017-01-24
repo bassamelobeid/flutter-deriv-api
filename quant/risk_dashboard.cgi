@@ -9,6 +9,7 @@ use f_brokerincludeall;
 use Format::Util::Numbers qw( to_monetary_number_format );
 use BOM::RiskReporting::Dashboard;
 use BOM::Platform::Runtime;
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -48,13 +49,13 @@ $report->{titlfy} = sub {
     return $title;
 };
 $report->{aff_titlfy} = sub {
-    my $href = shift;
+    my $href     = shift;
     my $username = $href->{username};
-    my $email = $href->{email};
+    my $email    = $href->{email};
 
-    return ($email and $username) ? $username . ' (' . $email . ')'  : ($username // $email) ;
+    return ($email and $username) ? $username . ' (' . $email . ')' : ($username // $email);
 };
 
-BOM::Platform::Context::template->process('backoffice/risk_dashboard.html.tt', $report);
+BOM::Backoffice::Request::template->process('backoffice/risk_dashboard.html.tt', $report);
 
 code_exit_BO();

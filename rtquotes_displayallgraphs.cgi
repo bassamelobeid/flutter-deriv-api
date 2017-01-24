@@ -3,11 +3,13 @@ package main;
 
 use strict;
 use f_brokerincludeall;
-use BOM::Market::UnderlyingDB;
+use BOM::MarketData qw(create_underlying_db);
 use BOM::Backoffice::GNUPlot;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use subs::subs_graphs;
+use BOM::MarketData qw(create_underlying);
+use HTML::Entities;
 
 use String::UTF8::MD5;
 
@@ -67,9 +69,9 @@ my $use_y2_checked       = $use_y2          ? 'checked' : '';
 print
     '<span style="align=center"><TABLE BORDER=1 CELLPADDING=1 CELLSPACING=0><TR><TD>MARKET</TD><TD><b>PROVIDER</TD><TD><b>BACKUP</TD><TD><b>2NDBACKUP</TD><TD><b>3RDBACKUP</TD></TR>';
 foreach my $underlying_symbol ('frxUSDJPY', 'FTSE', 'UKBARC', 'USINTC') {
-    my $underlying = BOM::Market::Underlying->new($underlying_symbol);
-    my $providers = join "</TD><TD>", @{$underlying->providers};
-    print '<TR><TD><b>' . $underlying->market->name . '</TD><TD>' . $providers . "</TD></TR>";
+    my $underlying = create_underlying($underlying_symbol);
+    my $providers = join "</TD><TD>", map { encode_entities($_) } @{$underlying->providers};
+    print '<TR><TD><b>' . encode_entities($underlying->market->name) . '</TD><TD>' . $providers . "</TD></TR>";
 }
 print '</span>';
 
@@ -86,7 +88,7 @@ print qq~
 		</TR>
 		<TR>
 			<TD align=right>Market (example: forex | indices | stocks | futures) :</TD>
-			<TD><input type=text name="market" size=60 value="$market"/></TD>
+			<TD><input type=text name="market" size=60 value="~ . encode_entities($market) . qq~"/></TD>
 		</TR>
 		<TR>
 			<TD>&nbsp;</TD>
@@ -97,7 +99,7 @@ print qq~
 		</TR>
 		<TR>
 			<TD align=right>Market (only for daily chart) :</TD>
-			<TD><input type=text name="daily" size=60 value="$daily"/></TD>
+			<TD><input type=text name="daily" size=60 value="~ . encode_entities($daily) . qq~"/></TD>
 		</TR>
 		<TR>
 			<TD>&nbsp;</TD>
@@ -112,11 +114,11 @@ print qq~
 		</TR>
 		<TR>
 			<TD align=right>Market (example: frxUSDJPY frxGBPJPY frxXAUUSD) :</TD>
-			<TD><input type=text name="overlay" size=120 value="$overlay"/></TD>
+			<TD><input type=text name="overlay" size=120 value="~ . encode_entities($overlay) . qq~"/></TD>
 		</TR>
 		<TR>
 			<TD align=right>Provider (example: telekurs idata combined) :</TD>
-			<TD><input type=text name="source" size=120 value="$source"/></TD>
+			<TD><input type=text name="source" size=120 value="~ . encode_entities($source) . qq~"/></TD>
 		</TR>
 		<TR>
 			<TD align=right>Use all providers for each market :</TD>
@@ -124,22 +126,27 @@ print qq~
 		</TR>
 		<TR>
 			<TD align=right>Start from how many days ago ?</TD>
-			<TD><input type=text name="yday" size=15 value="$yday"/></TD>
+			<TD><input type=text name="yday" size=15 value="~ . encode_entities($yday) . qq~"/></TD>
 		</TR>
 		<TR>
 			<TD align=right>Draw for how many days backward ?</TD>
 			<TD>
-				<input type=text name="count" size=15 value="$count"/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				<input type=text name="count" size=15 value="~ . encode_entities($count) . qq~"/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 				<input type=radio name="merge" value='1' $merge_checked>Merge Graph <input type=radio name="merge" value="0">Seperate Graph<br/>
 			</TD>
 		</TR>
 		<TR>
 			<TD align=right>Upper and Lower limit :</TD>
-			<TD>From (lower limit) <input type=text name="lower" size=15 value="$lower"/> To (upper limit) <input type=text name="upper" size=15 value="$upper"/></TD>
+			<TD>From (lower limit) <input type=text name="lower" size=15 value="~
+    . encode_entities($lower) . qq~"/> To (upper limit) <input type=text name="upper" size=15 value="~ . encode_entities($upper) . qq~"/></TD>
 		</TR>
 		<TR>
 			<TD align=right>Time limits (hh:mm:ss) :</TD>
-			<TD>From (lower limit) <input type=text name="time_lower" size=15 value="$time_lower"/> To (upper limit) <input type=text name="time_upper" size=15 value="$time_upper"/></TD>
+			<TD>From (lower limit) <input type=text name="time_lower" size=15 value="~
+    . encode_entities($time_lower)
+    . qq~"/> To (upper limit) <input type=text name="time_upper" size=15 value="~
+    . encode_entities($time_upper)
+    . qq~"/></TD>
 		</TR>
 		<TR>
 			<TD align=right>Use Secondary Y axis (Applicable to first underlying only) :</TD>
@@ -156,7 +163,7 @@ print qq~
 my $override_findfullfeed;
 # DAILY CHART
 if ($daily) {
-    Bar("Daily Graph for $daily");
+    Bar(encode_entities("Daily Graph for $daily"));
 
     #link to intraday charts
     print "Other Intraday Charts : <a href=\""
@@ -239,7 +246,7 @@ if ($daily) {
 
 # OVERLAY TWO OR MORE MARKETS (INTRADAY) - show intraday-graph separately
 elsif (scalar @overlay and not $merge) {
-    Bar("Intraday Graph for $overlay");
+    Bar(encode_entities("Intraday Graph for $overlay"));
 
     my $now = Date::Utility->new;
     for (my $i = 0; $i < $count; $i++) {
@@ -272,11 +279,11 @@ elsif (scalar @overlay and not $merge) {
             my $instrument = $overlay[$j];
             my $provider = $source[$j] || 'combined';
             next if (not $instrument);
-            my $underlying = BOM::Market::Underlying->new($instrument);
+            my $underlying = create_underlying($instrument);
 
             my @providerlist;
             if ($all_provider) {
-                @providerlist = qw(idata random telekurs sd tenfore bloomberg olsen test combined panda);
+                @providerlist = qw(idata random telekurs olsen test combined panda);
             } else {
                 push @providerlist, $provider;
             }
@@ -288,7 +295,8 @@ elsif (scalar @overlay and not $merge) {
                     $override_findfullfeed = $p;
                 }
 
-                my $fffile = $underlying->fullfeed_file($daytochart, $override_findfullfeed);
+                my $ul_info = BOM::Market::Info->new(underlying => $underlying);
+                my $fffile = $ul_info->fullfeed_file($daytochart, $override_findfullfeed);
 
                 if (-e $fffile) {
                     $msg .= `wc -l $fffile` . '<br>';
@@ -305,7 +313,11 @@ elsif (scalar @overlay and not $merge) {
                     });
 
                     if (not $graph_x and not $graph_y) {
-                        print "<span style='color:#FF0000;'>No data for $instrument [$provider] on $daytochart</span><br/>";
+                        print "<span style='color:#FF0000;'>No data for "
+                            . encode_entities($instrument) . " ["
+                            . encode_entities($provider) . "] on "
+                            . encode_entities($daytochart)
+                            . "</span><br/>";
                         next;
                     }
 
@@ -357,10 +369,18 @@ elsif (scalar @overlay and not $merge) {
 
                         $y2 = 0;                    # only use secondary Y axis for first time
                     } else {
-                        print "<span style='color:#FF0000;'>No valid data for $instrument [$p] on $daytochart</span><br/>";
+                        print "<span style='color:#FF0000;'>No valid data for "
+                            . encode_entities($instrument) . "["
+                            . encode_entities($p) . "] on "
+                            . encode_entities($daytochart)
+                            . "</span><br/>";
                     }
                 } else {
-                    print "<span style='color:#FF0000;'>Can't find fullfeed file for $instrument [$p] on $daytochart</span><br/>";
+                    print "<span style='color:#FF0000;'>Can't find fullfeed file for "
+                        . encode_entities($instrument) . "["
+                        . encode_entities($p) . "] on "
+                        . encode_entities($daytochart)
+                        . "</span><br/>";
                 }
             }
         }
@@ -375,7 +395,7 @@ elsif (scalar @overlay and not $merge) {
 }
 # OVERLAY TWO OR MORE MARKETS (INTRADAY) - merge intraday-graph into single graph
 elsif (scalar @overlay and $merge) {
-    Bar("Intraday Graph (Merge) for $overlay");
+    Bar(encode_entities("Intraday Graph (Merge) for $overlay"));
 
     my $graphs_gnuplot = BOM::Backoffice::GNUPlot->new({
         'top_title'        => "Merge Intraday Chart - $overlay",
@@ -400,12 +420,12 @@ elsif (scalar @overlay and $merge) {
         my $provider = $source[$i] || 'combined';
 
         next if (not $market);
-        my $underlying = BOM::Market::Underlying->new($market);
+        my $underlying = create_underlying($market);
 
         my @providerlist;
         if ($all_provider) {
             # put combined last so we can see it on top
-            @providerlist = qw(idata random telekurs sd tenfore bloomberg olsen test combined panda);
+            @providerlist = qw(idata random telekurs olsen test combined panda);
         } else {
             push @providerlist, $provider;
         }
@@ -428,10 +448,10 @@ elsif (scalar @overlay and $merge) {
 
                 if (not -e $fffile) {
                     print '<span style="color:red;">Can\'t find fullfeed file for instrument['
-                        . $market . '] ['
-                        . $p
+                        . encode_entities($market) . '] ['
+                        . encode_entities($p)
                         . '] on ['
-                        . $daytochart
+                        . encode_entities($daytochart)
                         . ']</span><br/>';
                     next;
                 }
@@ -448,7 +468,11 @@ elsif (scalar @overlay and $merge) {
                     daytochart            => $daytochart,
                 });
                 if (not $graph_x and not $graph_y) {
-                    print "<span style='color:#FF0000;'>No data for $market [$provider] on $daytochart</span><br/>";
+                    print "<span style='color:#FF0000;'>No data for "
+                        . encode_entities($market) . "["
+                        . encode_entities($provider) . "] on "
+                        . encode_entities($daytochart)
+                        . "</span><br/>";
                     next;
                 }
 
@@ -503,19 +527,19 @@ elsif (scalar @overlay and $merge) {
 }
 # GRAPH ALL MARKETS
 else {
-    Bar("Market Chart for $market");
+    Bar(encode_entities("Market Chart for $market"));
 
     print "<center>&nbsp;<br>";
 
     my $yesterday = Date::Utility->new($now->epoch - 86400)->date_ddmmmyy;
 
     foreach my $forexitem (
-        BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        create_underlying_db->get_symbols_for(
             market            => $market,
             contract_category => 'ANY',
         ))
     {
-        my $underlying = BOM::Market::Underlying->new($forexitem);
+        my $underlying = create_underlying($forexitem);
         print "<table cellpadding=0 cellspacing=0 border=1 width=100%><tr><td><font size=1>";
         my $daytochart   = $yesterday;
         my $graph_xtitle = "$forexitem $daytochart (YESTERDAY)";
@@ -590,7 +614,7 @@ else {
         });
 
         if (scalar @{$ohlcs} > 0) {
-            print "<b>$forexitem</b><br/>";
+            print "<b>" . encode_entities($forexitem) . "</b><br/>";
             foreach my $ohlc (reverse @{$ohlcs}) {
                 print join(' ', Date::Utility->new($ohlc->epoch)->date_ddmmmyy, $ohlc->open, $ohlc->high, $ohlc->low, $ohlc->close) . '<br/>';
             }

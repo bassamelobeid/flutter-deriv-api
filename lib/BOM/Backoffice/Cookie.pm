@@ -5,31 +5,32 @@ use strict;
 
 use CGI::Cookie;
 use CGI::Util;
-use BOM::Platform::Context qw(request);
-
+use BOM::Backoffice::Request qw(request);
 
 sub build_cookies {
     my $args = shift;
 
-    my $staff = $args->{staff};
+    my $staff      = $args->{staff};
     my $auth_token = $args->{auth_token};
 
     my $staff_cookie = CGI::cookie(
-        -name    => 'staff',
-        -value   => $staff,
-        -expires => '+30d',
-        -secure  => 1,
-        -domain  => request()->cookie_domain,
-        -path    => '/',
+        -name     => 'staff',
+        -value    => $staff,
+        -expires  => '+30d',
+        -secure   => 1,
+        -httponly => 1,
+        -domain   => request()->cookie_domain,
+        -path     => '/',
     );
 
     my $token_cookie = CGI::cookie(
-        -name    => 'auth_token',
-        -value   => $auth_token,
-        -expires => '+30d',
-        -secure  => 1,
-        -domain  => request()->cookie_domain,
-        -path    => '/',
+        -name     => 'auth_token',
+        -value    => $auth_token,
+        -expires  => '+30d',
+        -secure   => 1,
+        -httponly => 1,
+        -domain   => request()->cookie_domain,
+        -path     => '/',
     );
 
     return [$staff_cookie, $token_cookie];
@@ -38,19 +39,21 @@ sub build_cookies {
 sub expire_cookies {
     # expire cookies, by setting "expires" in the past
     my $staff_cookie = CGI::cookie(
-        -name    => 'staff',
-        -expires => '-1d',
-        -secure  => 1,
-        -domain  => request()->cookie_domain,
-        -path    => '/',
+        -name     => 'staff',
+        -expires  => '-1d',
+        -secure   => 1,
+        -httponly => 1,
+        -domain   => request()->cookie_domain,
+        -path     => '/',
     );
 
     my $token_cookie = CGI::cookie(
-        -name    => 'auth_token',
-        -expires => '-1d',
-        -secure  => 1,
-        -domain  => request()->cookie_domain,
-        -path    => '/',
+        -name     => 'auth_token',
+        -expires  => '-1d',
+        -secure   => 1,
+        -httponly => 1,
+        -domain   => request()->cookie_domain,
+        -path     => '/',
     );
 
     return [$staff_cookie, $token_cookie];

@@ -25,7 +25,7 @@
 
 <h3>Confirm a client DEBIT OR CREDIT</h3>
 
-<form action="[%request.url_for('backoffice/f_manager_confodeposit.cgi')%]" method="POST" class="bo_form_with_files">
+<form action="[%request.url_for('backoffice/f_manager_confodeposit.cgi') | none %]" method="POST" class="bo_form_with_files">
 
 <p>
 <input type="radio" name="ttype" value="CREDIT" id="mdc_credit" checked="1" /><label for="mdc_credit">CREDIT this Client</label>
@@ -91,6 +91,7 @@
             <option value="dormant_fee"         >Dormant Fee</option>
             <option value="adjustment"          >Adjustment</option>
             <option value="cash_transfer"       >Western Union</option>
+            <option value="arbitrary_markup"    >Arbitrary Markup Payment</option>
         </select>
     </td>
     <td style="text-align:center">                 <input type="checkbox" name="skip_validation" value="on" id="skip_validation1" /></td>

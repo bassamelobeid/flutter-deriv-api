@@ -4,17 +4,20 @@ use strict 'vars';
 
 use Locale::Country;
 use f_brokerincludeall;
+use HTML::Entities;
+use Client::Account;
+
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Context;
+use BOM::Backoffice::Request qw(request);
 use BOM::ContractInfo;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-my $loginID = uc(request()->param('loginID'));
-
+my $loginID         = uc(request()->param('loginID'));
+my $encoded_loginID = encode_entities($loginID);
 PrintContentType();
-BrokerPresentation($loginID . ' HISTORY', '', '');
+BrokerPresentation($encoded_loginID . ' HISTORY', '', '');
 BOM::Backoffice::Auth0::can_access(['CS']);
 
 my $broker;
@@ -24,7 +27,7 @@ if ($loginID =~ /^([A-Z]+)/) {
 
 $loginID =~ s/\s//g;
 if ($loginID !~ /^$broker/) {
-    print 'Error : wrong loginID ' . $loginID;
+    print 'Error : wrong loginID ' . $encoded_loginID;
     code_exit_BO();
 }
 
@@ -34,14 +37,14 @@ my $enddate   = request()->param('enddate');
 $loginID =~ /^(\D+)(\d+)$/;
 
 if (request()->param('depositswithdrawalsonly') eq 'yes') {
-    Bar($loginID . ' (DEPO & WITH ONLY)');
+    Bar($encoded_loginID . ' (DEPO & WITH ONLY)');
 } else {
-    Bar($loginID);
+    Bar($encoded_loginID);
 }
 
-my $client = BOM::Platform::Client::get_instance({'loginid' => $loginID});
+my $client = Client::Account::get_instance({'loginid' => $loginID});
 if (not $client) {
-    print "Error : wrong loginID ($loginID) could not get client instance";
+    print "Error : wrong loginID ($encoded_loginID) could not get client instance";
     code_exit_BO();
 }
 
@@ -51,7 +54,7 @@ if (not $currency or $currency eq 'default') {
 }
 
 # print other untrusted section warning in backoffice
-print build_client_warning_message($client->loginid) . '<br />';
+print build_client_warning_message(encode_entities($client->loginid)) . '<br />';
 
 my $tel          = $client->phone;
 my $citizen      = Locale::Country::code2country($client->citizen);
@@ -62,12 +65,12 @@ my $client_email = $client->email;
 print '<form action="'
     . request()->url_for('backoffice/f_clientloginid_edit.cgi')
     . '" method=post>'
-    . '<input type=hidden name=broker value='
-    . $broker . '>'
-    . '<input type=hidden name=loginID value='
-    . $loginID . '>'
+    . '<input type=hidden name=broker value="'
+    . encode_entities($broker) . '">'
+    . '<input type=hidden name=loginID value="'
+    . encode_entities($loginID) . '">'
     . '<input type=submit value="View/edit '
-    . $loginID
+    . encode_entities($loginID)
     . ' details">'
     . '</form>';
 
@@ -75,10 +78,10 @@ print '<table width=100%>' . '<tr>'
     . '<form  action="'
     . request()->url_for('backoffice/f_manager_history.cgi')
     . '" method=post>'
-    . '<td align=right> Quick jump to see another statement: <input name=loginID type=text size=15 value='
-    . $loginID . '>'
-    . '<input type=hidden name=broker value='
-    . $broker . '>'
+    . '<td align=right> Quick jump to see another statement: <input name=loginID type=text size=15 value="'
+    . encode_entities($loginID) . '">'
+    . '<input type=hidden name=broker value="'
+    . encode_entities($broker) . '">'
     . '<input type=hidden name=l value=EN>'
     . '<input type=submit value=view>'
     . '<input type=checkbox value=yes name=depositswithdrawalsonly>Deposits and Withdrawals only' . '</td>'
@@ -89,9 +92,15 @@ my $senvs = $ENV{'SCRIPT_NAME'};
 $ENV{'SCRIPT_NAME'} = '';
 $ENV{'SCRIPT_NAME'} = $senvs;
 
-print $client_name . ' Email:' . $client_email . ' Country:' . $citizen . ' Residence:' . $residence;
+print encode_entities($client_name)
+    . ' Email:'
+    . encode_entities($client_email)
+    . ' Country:'
+    . encode_entities($citizen)
+    . ' Residence:'
+    . encode_entities($residence);
 if ($tel) {
-    print ' Tel:' . $tel;
+    print ' Tel:' . encode_entities($tel);
 }
 print '<br />';
 
@@ -102,7 +111,7 @@ my $statement = client_statement_for_backoffice({
     currency => $currency,
 });
 
-BOM::Platform::Context::template->process(
+BOM::Backoffice::Request::template->process(
     'backoffice/account/statement.html.tt',
     {
         transactions            => $statement->{transactions},
@@ -112,7 +121,7 @@ BOM::Platform::Context::template->process(
         depositswithdrawalsonly => request()->param('depositswithdrawalsonly'),
         contract_details        => \&BOM::ContractInfo::get_info,
     },
-) || die BOM::Platform::Context::template->error();
+) || die BOM::Backoffice::Request::template->error();
 
 code_exit_BO();
 

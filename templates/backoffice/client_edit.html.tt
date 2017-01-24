@@ -47,7 +47,7 @@ table#client_edit td{
 <table border="0" width="100%" id="client_edit">
     <tr>
         <td class="label">Email</td>
-        <td>: <b>[% client.email %]</b> (To edit client's email, <a href="[% request.url_for('backoffice/client_email.cgi', { email => client.email }) %]">click here</a>)</td>
+        <td>: <b>[% client.email %]</b> (To edit client's email, <a href="[% request.url_for('backoffice/client_email.cgi', { email => client.email }) | none %]">click here</a>)</td>
     </tr>
     <tr>
         <td class="label">BROKER</td>
@@ -94,9 +94,9 @@ table#client_edit td{
     <tr>
         <td class="label">Date of Birth</td>
         <td>: 
-            <select name="dob_day">[% dob_day_options %]</select>
-            <select name="dob_month">[% dob_month_options %]</select>
-            <select name="dob_year">[% dob_year_options %]</select>
+            <select name="dob_day">[% dob_day_options | none %]</select>
+            <select name="dob_month">[% dob_month_options | none %]</select>
+            <select name="dob_year">[% dob_year_options | none %]</select>
         </td>
     </tr>
     <tr>
@@ -146,7 +146,7 @@ table#client_edit td{
     </tr>
     <tr>
         <td class="label">State/Province</td>
-        <td>: <select name="state">[% state_options %]</select> [% client.state %]</td>
+        <td>: <select name="state">[% state_options | none %]</select> [% client.state %]</td>
     </tr>
     <tr>
         <td class="label">Postcode</td>
@@ -239,9 +239,9 @@ table#client_edit td{
                 IF show_uploaded_documents;
                 THEN;
                     'Expiry date format: dd-mon-yyyy or enter "clear" to clear it';
-                    show_uploaded_documents;
+                    show_uploaded_documents | none;
                 ELSE;
-                    "There are no uploaded documents for $client - $client.full_name";
+                    "There are no uploaded documents for $client.loginid - $client.full_name";
                 END
             %]
 
@@ -259,13 +259,13 @@ table#client_edit td{
                         args.raw = 1; href_xml = request.url_for(raw_url, args );
                 %]
                         An Experian <span class="lspace">[% option %]</span> request <span class="lspace">has</span> been done.
-                        <a class="lspace" target="_blank" href="[% href_rpt %]">[Report]</a>
-                        <a class="lspace" target="_blank" href="[% href_xml %]">[XML]</a>
+                        <a class="lspace" target="_blank" href="[% href_rpt | none %]">[Report]</a>
+                        <a class="lspace" target="_blank" href="[% href_xml | none %]">[XML]</a>
                 [%
                         IF auth_request.has_downloaded_pdf;
                             pdf_args.path = "pdf/${client.loginid}.${option}.pdf";
                 %]
-                            <a class="lspace" target="_blank" href="[% request.url_for(doc_url, pdf_args) %]">[PDF]</a>
+                            <a class="lspace" target="_blank" href="[% request.url_for(doc_url, pdf_args) | none %]">[PDF]</a>
                         [% END %]
                     [% ELSE %]
                         An Experian <span class="lspace">[% option %]</span> request <span class="lspace">has NOT</span> been done.
@@ -363,13 +363,13 @@ table#client_edit td{
     </tr>
     <tr>
        [% maybe_disabled = promo_code_access ? '' : 'disabled' %]
-       [% maybe_auth_msg = promo_code_access ? '' : '<font color=red><b>[Staff authorization required]</b></font>' %]
+       [% maybe_auth_msg = promo_code_access ? '' : '[Staff authorization required]' %]
 
         <td class="label">Promotional code</td>
         <td>:
             <input type="text" name="promo_code" [% maybe_disabled %] value="[% client.promo_code %]" size="20" />
             [% client.client_promo_code.promotion %]
-            [% maybe_auth_msg %]
+            [% IF maybe_auth_msg %]<font color="red"><b>[% maybe_auth_msg %]</b></font>[% END %]
         </td>
     </tr>
     <tr>
@@ -401,12 +401,14 @@ table#client_edit td{
                     [% END %]
                 [% END %]
             </select>
-            [% maybe_auth_msg %]
+            [% IF maybe_auth_msg %]<font color="red"><b>[% maybe_auth_msg %]</b></font>[% END %]
         </td>
     </tr>
     <tr>
         <td class="label">Apply date</td>
-        <td>: [% client.promo_code_apply_date %] [% maybe_auth_msg %] </td>
+        <td>: [% client.promo_code_apply_date %] [% maybe_auth_msg %]
+            [% IF maybe_auth_msg %]<font color="red"><b>[% maybe_auth_msg %]</b></font>[% END %]
+        </td>
     </tr>
     <tr>
         <td class="small_header" colspan="2">#Marketing</td>
@@ -451,6 +453,12 @@ table#client_edit td{
         <tr>
             <td class="label"><input type="checkbox" [% IF tnc_approval_status %]checked[% END %] disabled="disabled"/></td>
             <td>Client acknowledges T&C [% client_tnc_version %]</td>
+        </tr>
+    [% END %]
+    [% IF show_risk_approval %]
+        <tr>
+            <td class="label"><input type="checkbox" [% IF financial_risk_status %]checked[% END %] disabled="disabled"/></td>
+            <td>Client acknowledges financial risk?</td>
         </tr>
     [% END %]
     <tr>

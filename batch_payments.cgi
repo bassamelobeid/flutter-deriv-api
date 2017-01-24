@@ -8,27 +8,34 @@ use Path::Tiny;
 use Try::Tiny;
 use Date::Utility;
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
+use Brands;
+use HTML::Entities;
 
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
-use BOM::Database::DataMapper::Client;
+use BOM::Database::ClientDB;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Context;
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::DualControl;
 use BOM::System::AuditLog;
 use BOM::Backoffice::Sysinit ();
+use BOM::Platform::Runtime;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Batch Credit/Debit to Clients Accounts');
 
-my $cgi               = new CGI;
+if (BOM::Platform::Runtime->instance->app_config->system->suspend->system) {
+    print "ERROR: Sytem is suspended";
+    code_exit_BO();
+}
+
+my $cgi               = CGI->new;
 my $broker            = request()->broker_code;
 my $clerk             = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $confirm           = $cgi->param('confirm');
 my $preview           = $cgi->param('preview');
-my $payments_csv_fh   = $cgi->upload('payments_csv');
 my $payments_csv_file = $cgi->param('payments_csv_file') || sprintf '/tmp/batch_payments_%d.csv', rand(1_000_000);
 my $skip_validation   = $cgi->param('skip_validation') || 0;
 my $format            = $confirm || $preview || die "either preview or confirm";
@@ -37,7 +44,9 @@ my $now               = Date::Utility->new;
 Bar('Batch Credit/Debit to Clients Accounts');
 
 if ($preview) {
-    open my $fh, ">$payments_csv_file" or die "writing upload: $!";
+    my $payments_csv_fh = $cgi->upload('payments_csv');
+    binmode $payments_csv_fh, ':encoding(UTF-8)';
+    open my $fh, '>:encoding(UTF-8)', $payments_csv_file or die "writing upload: $!";
     while (<$payments_csv_fh>) {
         s/\s*$//;    # remove various combos of unix/windows rec-separators
         printf $fh "$_\n";
@@ -45,7 +54,7 @@ if ($preview) {
     close $fh;
 }
 
-my @payment_lines = Path::Tiny::path($payments_csv_file)->lines;
+my @payment_lines = Path::Tiny::path($payments_csv_file)->lines_utf8;
 
 my ($transtype, $control_code);
 if ($confirm) {
@@ -60,7 +69,7 @@ if ($confirm) {
             transactiontype => $transtype
         })->validate_batch_payment_control_code($control_code, scalar @payment_lines);
     if ($error) {
-        print $error->get_mesg();
+        print encode_entities($error->get_mesg());
         code_exit_BO();
     }
 }
@@ -98,7 +107,7 @@ read_csv_row_and_callback(
             $action !~ /^(debit|credit)$/ and $error = "Invalid transaction type [$action]", last;
             $amount !~ /^\d+\.?\d?\d?$/ || $amount == 0 and $error = "Invalid amount [$amount]", last;
             !$statement_comment and $error = 'Statement comment can not be empty', last;
-            $client = eval { BOM::Platform::Client->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
+            $client = eval { Client::Account->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
             my $signed_amount = $action eq 'debit' ? $amount * -1 : $amount;
 
             unless ($skip_validation) {
@@ -139,16 +148,16 @@ read_csv_row_and_callback(
 
         if ($error) {
             $client_account_table .= construct_row_line(%row, error => $error);
-            push @invalid_lines, qq[<a href="#ln$line_number">Invalid line $line_number</a> : $error];
+            push @invalid_lines, qq[<a href="#ln$line_number">Invalid line $line_number</a> : ] . encode_entities($error);
             return;
         }
 
         if (not $preview and $confirm and @invalid_lines == 0) {
-            my $client_data_mapper = BOM::Database::DataMapper::Client->new({
+            my $client_db = BOM::Database::ClientDB->new({
                 client_loginid => $login_id,
             });
 
-            if (not $client_data_mapper->freeze) {
+            if (not $client_db->freeze) {
                 die "Account stuck in previous transaction $login_id";
             }
             my $signed_amount = $amount;
@@ -166,11 +175,17 @@ read_csv_row_and_callback(
                     ($skip_validation ? (skip_validation => 1) : ()),
                 );
             } or $err = $@;
-            $client_data_mapper->unfreeze;
+            $client_db->unfreeze;
 
             if ($err) {
                 $client_account_table .= construct_row_line(%row, error => "Transaction Error: $err");
                 return;
+            } elsif ($action eq 'credit') {
+                # need to set this for batch payment in case of credit only
+                try {
+                    $client->payment_agent_withdrawal_expiration_date(Date::Utility->today->date_yyyymmdd);
+                    $client->save;
+                };
             }
             $row{remark} = sprintf "OK transaction reference id: %d", $trx->id;
 
@@ -209,9 +224,10 @@ if (%summary_amount_by_currency and scalar @invalid_lines == 0) {
       <table class="summary"><caption>Currency Totals</caption><tr><th>Currency</th><th>Credits</th><th>Debits</th></tr>
     ];
     foreach my $currency (sort keys %summary_amount_by_currency) {
-        my $cr = to_monetary_number_format(roundnear(0.1, $summary_amount_by_currency{$currency}{credit}));
-        my $db = to_monetary_number_format(roundnear(0.1, $summary_amount_by_currency{$currency}{debit}));
-        $summary_table .= "<tr><th>$currency</th><td>$cr</td><td>$db</td></tr>";
+        my $c  = encode_entities($currency);
+        my $cr = encode_entities(to_monetary_number_format(roundnear(0.1, $summary_amount_by_currency{$currency}{credit})));
+        my $db = encode_entities(to_monetary_number_format(roundnear(0.1, $summary_amount_by_currency{$currency}{debit})));
+        $summary_table .= "<tr><th>$c</th><td>$cr</td><td>$db</td></tr>";
     }
     $summary_table .= '</table>';
 }
@@ -224,22 +240,25 @@ if ($preview and @invalid_lines == 0) {
         . request()->url_for("backoffice/f_makedcc.cgi")
         . "\" method=\"post\">"
         . "<input type=hidden name=\"dcctype\" value=\"file_content\">"
-        . "<input type=hidden name=\"broker\" value=\"$broker\">"
+        . "<input type=hidden name=\"broker\" value=\""
+        . encode_entities($broker) . "\">"
         . "<input type=hidden name=\"l\" value=\"EN\">"
         . '<input type="hidden" name="purpose" value="batch clients payments" />'
-        . "<input type=hidden name=\"file_location\" value=\"$payments_csv_file\">"
+        . "<input type=hidden name=\"file_location\" value=\""
+        . encode_entities($payments_csv_file) . "\">"
         . "Make sure you check the above details before you make dual control code<br>"
         . "<br>Input a comment/reminder about this DCC: <input type=text size=50 name=reminder>"
         . "Type of transaction: <select name='transtype'>"
         . "<option value='BATCHACCOUNT'>Batch Account</option><option value='BATCHDOUGHFLOW'>Batch Doughflow</option>"
         . "</select>"
-        . "<br /><input type=\"submit\" value='Make Dual Control Code (by $clerk)'>"
+        . "<br /><input type=\"submit\" value='Make Dual Control Code (by "
+        . encode_entities($clerk) . ")'>"
         . "</form></div>";
 
     print qq[<div class="inner_bo_box"><h2>Confirm credit/debit clients</h2>
         <form onsubmit="confirm('Are you sure?')">
          <input type="hidden" name="payments_csv_file" value="$payments_csv_file"/>
-         <input type="hidden" name="skip_validation" value="$skip_validation"/>
+         <input type="hidden" name="skip_validation" value="] . encode_entities($skip_validation) . qq["/>
          <table border=0 cellpadding=1 cellspacing=1><tr><td bgcolor=FFFFEE><font color=blue>
 				<b>DUAL CONTROL CODE</b>
 				Control Code: <input type=text name=DCcode required size=16>
@@ -257,9 +276,10 @@ if ($preview and @invalid_lines == 0) {
     BOM::System::AuditLog::log($msg, '', $clerk);
     Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")->append_utf8($msg);
 
+    my $brand = Brands->new(name => request()->brand);
     send_email({
-        'from'    => BOM::Platform::Runtime->instance->app_config->cs->email,
-        'to'      => BOM::Platform::Runtime->instance->app_config->accounting->email,
+        'from'    => $brand->emails('support'),
+        'to'      => $brand->emails('accounting'),
         'subject' => 'Batch debit/credit client account on ' . Date::Utility->new->date_ddmmmyy,
         'message' => \@clients_has_been_processed,
     });
@@ -268,6 +288,7 @@ if ($preview and @invalid_lines == 0) {
 sub construct_row_line {
     my %args = @_;
 
+    map { $args{$_} = encode_entities($args{$_}) } keys %args;
     my $notes = $args{error} || $args{remark};
     my $color = $args{error} ? 'red' : 'green';
     $args{$_} ||= '&nbsp;' for keys %args;

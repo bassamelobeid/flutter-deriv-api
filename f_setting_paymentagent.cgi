@@ -3,10 +3,11 @@ package main;
 use strict 'vars';
 
 use Try::Tiny;
+use HTML::Entities;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Runtime;
-use BOM::Platform::Client::PaymentAgent;
+use Client::Account::PaymentAgent;
 use BOM::Backoffice::Form;
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
@@ -18,13 +19,14 @@ my $broker = request()->broker_code;
 my $staff  = BOM::Backoffice::Auth0::can_access(['CS']);
 my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
-my $loginid  = request()->param('loginid');
-my $whattodo = request()->param('whattodo');
+my $loginid         = request()->param('loginid');
+my $whattodo        = request()->param('whattodo');
+my $encoded_loginid = encode_entities($loginid);
 
 Bar('Payment Agent Setting');
 
 if ($whattodo eq 'create') {
-    my $client = BOM::Platform::Client->new({loginid => $loginid});
+    my $client = Client::Account->new({loginid => $loginid});
 
     if ($client->client_fully_authenticated) {
         my ($pa, $error);
@@ -49,7 +51,7 @@ if ($whattodo eq 'create') {
 }
 
 if ($whattodo eq 'show') {
-    my $pa = BOM::Platform::Client::PaymentAgent->new({loginid => $loginid});
+    my $pa = Client::Account::PaymentAgent->new({loginid => $loginid});
     my $payment_agent_registration_form = BOM::Backoffice::Form::get_payment_agent_registration_form($loginid, $broker);
 
     my $input_fields = {
@@ -81,9 +83,9 @@ if ($whattodo eq 'show') {
 
     code_exit_BO();
 } elsif ($whattodo eq 'apply') {
-    my $pa = BOM::Platform::Client::PaymentAgent->new({loginid => $loginid});
+    my $pa = Client::Account::PaymentAgent->new({loginid => $loginid});
     unless ($pa) {
-        my $client = BOM::Platform::Client->new({loginid => $loginid});
+        my $client = Client::Account->new({loginid => $loginid});
         # if its new so we need to set it
         $pa = $client->set_payment_agent unless $pa;
     }
@@ -109,7 +111,7 @@ if ($whattodo eq 'show') {
 
     $pa->save || die "failed to save payment_agent!";
 
-    print "<p style=\"color:green; font-weight:bold;\">Successfully updated payment agent details for [$loginid]</p>";
+    print "<p style=\"color:green; font-weight:bold;\">Successfully updated payment agent details for [$encoded_loginid]</p>";
 
     my $auditt_href = request()->url_for(
         "backoffice/show_audit_trail.cgi",
@@ -126,7 +128,7 @@ if ($whattodo eq 'show') {
             loginID => $loginid
         });
 
-    print qq(<a href="$auditt_href">&laquo; Show payment-agent audit trail for $loginid</a><br/><br/>);
+    print qq(<a href="$auditt_href">&laquo; Show payment-agent audit trail for $encoded_loginid</a><br/><br/>);
     print qq(<a href="$return_href">&laquo; Return to client details<a/>);
 
     code_exit_BO();

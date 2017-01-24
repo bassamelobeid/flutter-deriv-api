@@ -11,6 +11,8 @@ use BOM::Platform::Runtime;
 
 use BOM::RiskReporting::Dashboard;
 use BOM::RiskReporting::MarkedToModel;
+no indirect;
+use Try::Tiny;
 
 has rest_period => (
     is         => 'ro',
@@ -30,9 +32,19 @@ sub daemon_run {
     my $self = shift;
 
     while (1) {
-        BOM::RiskReporting::MarkedToModel->new->generate;
+        try {
+            BOM::RiskReporting::MarkedToModel->new->generate;
+        }
+        catch {
+            warn "Failure in BOM::RiskReporting::MarkedToModel: $_\n";
+        };
         $self->rest;
-        BOM::RiskReporting::Dashboard->new->generate;
+        try {
+            BOM::RiskReporting::Dashboard->new->generate;
+        }
+        catch {
+            warn "Failure in BOM::RiskReporting::Dashboard: $_\n";
+        };
         $self->rest;
     }
 

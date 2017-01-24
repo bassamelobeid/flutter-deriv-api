@@ -3,12 +3,12 @@ use Encode;
 
 use Format::Util::Strings qw( set_selected_item );
 use Date::Utility;
+use Brands;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
 use BOM::Platform::Client::Utility ();
-use BOM::Database::DAO::Client;
-use BOM::Platform::Context qw(request);
+use BOM::Backoffice::Request qw(request);
 use BOM::Platform::Locale;
 use BOM::Backoffice::FormAccounts;
 
@@ -52,9 +52,10 @@ sub print_client_details {
 
     my @countries;
     my $country_codes = {};
-    foreach my $country_name (sort BOM::Platform::Countries->instance->countries->all_country_names) {
+    my $countries_instance = Brands->new(name => request()->brand)->countries_instance->countries;
+    foreach my $country_name (sort $countries_instance->all_country_names) {
         push @countries, $country_name;
-        $country_codes->{$country_name} = BOM::Platform::Countries->instance->countries->code_from_country($country_name);
+        $country_codes->{$country_name} = $countries_instance->code_from_country($country_name);
     }
 
     my ($proveID, $show_uploaded_documents);
@@ -68,7 +69,7 @@ sub print_client_details {
     }
 
     # COMMUNICATION ADDRESSES
-    my $client_phone_country = BOM::Platform::Countries->instance->countries->code_from_phone($client->phone);
+    my $client_phone_country = $countries_instance->code_from_phone($client->phone);
     if (not $client_phone_country) {
         $client_phone_country = 'Unknown';
     }
@@ -114,13 +115,15 @@ sub print_client_details {
         show_funds_message      => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
         ukgc_funds_status       => $client->get_status('ukgc_funds_protection'),
         show_tnc_status => ($client->is_virtual) ? 0 : 1,
-        tnc_approval_status => $tnc_status,
-        client_tnc_version  => $tnc_status ? $tnc_status->reason : '',
-        show_allow_omnibus  => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of) ? 1 : 0
+        tnc_approval_status   => $tnc_status,
+        show_risk_approval    => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,
+        financial_risk_status => $client->get_status('financial_risk_approval'),
+        client_tnc_version    => $tnc_status ? $tnc_status->reason : '',
+        show_allow_omnibus    => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of) ? 1 : 0
     };
 
-    BOM::Platform::Context::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
-        || die BOM::Platform::Context::template->error();
+    BOM::Backoffice::Request::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
+        || die "Error:" . BOM::Backoffice::Request::template->error();
 }
 
 ## build_client_statement_form #######################################
@@ -151,7 +154,7 @@ sub build_client_statement_form {
 ######################################################################
 sub build_client_warning_message {
     my $login_id = shift;
-    my $client   = BOM::Platform::Client->new({'loginid' => $login_id}) || return "<p>The Client's details can not be found [$login_id]</p>";
+    my $client   = Client::Account->new({'loginid' => $login_id}) || return "<p>The Client's details can not be found [$login_id]</p>";
     my $broker   = $client->broker;
     my @output;
 

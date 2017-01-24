@@ -3,10 +3,13 @@ package main;
 use strict 'vars';
 
 use URL::Encode qw( url_encode );
+use HTML::Entities;
+
+use Client::Account;
+use Brands;
 
 use f_brokerincludeall;
-use BOM::Platform::Runtime;
-use BOM::Platform::Context;
+use BOM::Backoffice::Request qw(request localize);
 use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
@@ -27,7 +30,7 @@ if (not $loginID) {
     code_exit_BO();
 }
 
-my $client      = BOM::Platform::Client::get_instance({'loginid' => $loginID}) || die "[f_clientloginid_newpassword cgi] bad client $loginID";
+my $client      = Client::Account::get_instance({'loginid' => $loginID}) || die "[f_clientloginid_newpassword cgi] bad client $loginID";
 my $email       = $client->email;
 my $client_name = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
 
@@ -47,34 +50,36 @@ my $token = BOM::Platform::Token->new({
 
 # don't want to touch url_for for this only, need this change else reset password url will have backoffice.binary.com if send from production
 if (BOM::System::Config::on_production) {
-    $link = 'https://www.binary.com/' . lc $lang . '/user/reset_passwordws.html' ;
+    $link = 'https://www.binary.com/' . lc $lang . '/user/reset_passwordws.html';
 } else {
     $link = request()->url_for('/user/reset_passwordws');
 }
 
 my $lost_pass_email;
-BOM::Platform::Context::template->process(
+my $brand = Brands->new(name => request()->brand);
+BOM::Backoffice::Request::template->process(
     "email/lost_password.html.tt",
     {
         'link'     => $link,
         'token'    => $token,
-        'helpdesk' => BOM::Platform::Runtime->instance->app_config->cs->email,
+        'helpdesk' => $brand->emails('support')
     },
     \$lost_pass_email
 );
 
 # email link to client
-Bar('emailing change password link to ' . $loginID);
+Bar('emailing change password link to ' . encoded_loginID($loginID));
 
-print '<p class="success_message">Emailing change password link to ' . $client_name . ' at ' . $email . ' ...</p>';
+print '<p class="success_message">Emailing change password link to ' . encode_entities($client_name) . ' at ' . encode_entities($email) . ' ...</p>';
 
 my $result = send_email({
-    from               => BOM::Platform::Runtime->instance->app_config->cs->email,
-    to                 => $email,
-    subject            => localize('New Password Request'),
-    message            => [$lost_pass_email,],
-    template_loginid   => $loginID,
-    use_email_template => 1,
+    from                  => $brand->emails('support'),
+    to                    => $email,
+    subject               => localize('New Password Request'),
+    message               => [$lost_pass_email,],
+    template_loginid      => $loginID,
+    use_email_template    => 1,
+    email_content_is_html => 1,
 });
 
 print '<p>New password issuance RESULT: ' . ($result) ? 'success' : 'fail' . '</p>';

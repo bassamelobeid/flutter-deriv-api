@@ -6,8 +6,8 @@ use warnings;
 use Crypt::NamedKeys;
 use Date::Utility;
 use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(request);
-use BOM::Market::Underlying;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 use Try::Tiny;
 
 # for Light chart / chart director
@@ -111,7 +111,7 @@ sub processHistoricalFeed {
         return \@error;
     }
 
-    my $underlying = BOM::Market::Underlying->new($underlying_symbol);
+    my $underlying = create_underlying($underlying_symbol);
     my $now        = Date::Utility->new;
 
     # Check license for requested historical summary of symbol
@@ -243,7 +243,7 @@ sub getHistoricalFeedFromDB {
     my $licenseTime  = $arg_ref->{'licenseTime'};
 
     my @return_data;
-    my $underlying = BOM::Market::Underlying->new($symbol);
+    my $underlying = create_underlying($symbol);
 
     # Data to be returned when requested.
     my $ticks_data = getDataFromDB({
@@ -438,38 +438,6 @@ sub _quote_interval_change {
             . $change_class
             . '"></span></td>';
     }
-}
-
-sub _get_price_changes_html {
-    my $args       = shift;
-    my $prices     = $args->{prices};
-    my $underlying = $args->{underlying};
-
-    my $licence_type = $underlying->feed_license;
-
-    my $changes_html;
-    my $license = 1;
-    my $delay_seconds = ($licence_type eq 'delayed') ? 60 * $underlying->delay_amount : 0;
-    my $previous_price;
-    foreach my $datum (@{$prices}) {
-        my $epoch = $datum->{epoch};
-        # if the end of the interval is within the delay amount
-        # (the 'time_interval' represents the end of the period)
-        # then we cannot show the data
-        $license = 0
-            if ($license
-            and $delay_seconds
-            and (time - $epoch <= $delay_seconds));
-
-        my $price = $datum->{quote};
-
-        if ($previous_price) {
-            $changes_html->{$epoch} = _quote_interval_change($previous_price, $price, $underlying, $license);
-        }
-        $previous_price = $price;
-    }
-
-    return $changes_html;
 }
 
 1;

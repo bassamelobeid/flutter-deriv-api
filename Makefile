@@ -10,11 +10,11 @@ tidy:
 	find . -name '*.tidyup' -delete
 
 unit_test:
-	/etc/rmg/bin/prove --timer -l -I./t -r t/
+	/etc/rmg/bin/prove --timer -l -I./t -r --exec '/etc/rmg/bin/perl -MTest::FailWarnings=-allow_deps,1' t/
 
 i18n:
 	xgettext.pl -P haml=haml -P perl=pl,pm -P tt2=tt,tt2 \
-		--output=messages.pot --output-dir=/home/git/binary-com/translations-websockets-api/src/locales   --directory=/home/git/regentmarkets/bom-backoffice/   --directory=/home/git/regentmarkets/bom-platform/ --directory=/home/git/regentmarkets/bom/ --directory=/home/git/regentmarkets/bom-websocket-api/ --directory=/home/git/regentmarkets/bom-rpc/ --directory=/home/git/regentmarkets/bom-oauth/
+		--output=messages.pot --output-dir=/home/git/binary-com/translations-websockets-api/src/locales   --directory=/home/git/regentmarkets/bom-backoffice/   --directory=/home/git/regentmarkets/bom-platform/ --directory=/home/git/regentmarkets/bom/ --directory=/home/git/regentmarkets/binary-websocket-api/ --directory=/home/git/regentmarkets/bom-rpc/ --directory=/home/git/regentmarkets/bom-oauth/ --directory=/home/git/regentmarkets/bom-epg
 	perl -I /home/git/regentmarkets/bom-platform/lib /home/git/regentmarkets/bom-backoffice/bin/extra_translations.pl  /home/git/binary-com/translations-websockets-api/src/locales/messages.pot
 	for i in $(shell ls /home/git/binary-com/translations-websockets-api/src/locales/*.po); do \
 		msgmerge --previous --backup none --no-wrap --update $$i /home/git/binary-com/translations-websockets-api/src/locales/messages.pot ; \

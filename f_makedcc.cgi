@@ -5,6 +5,9 @@ use strict 'vars';
 use Format::Util::Strings qw( defang );
 use Path::Tiny;
 use Cache::RedisDB;
+use HTML::Entities;
+
+use Client::Account;
 
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -27,10 +30,10 @@ my $input             = request()->params;
 
 my ($client, $message);
 if ($input->{'dcctype'} ne 'file_content') {
-    $client = BOM::Platform::Client::get_instance({'loginid' => uc($input->{'clientloginid'})});
+    $client = Client::Account::get_instance({'loginid' => uc($input->{'clientloginid'})});
 
     if (not $client) {
-        print "ERROR: " . $input->{'clientloginid'} . " does not exist! Perhaps you made a typo?";
+        print "ERROR: " . encode_entities($input->{'clientloginid'}) . " does not exist! Perhaps you made a typo?";
         code_exit_BO();
     }
 
@@ -74,7 +77,7 @@ if ($input->{'dcctype'} eq 'file_content') {
         . $input->{'purpose'}
         . " is: $code This code is valid for 1 hour (from $current_timestamp) only.";
 
-    print $message;
+    print encode_entities($message);
 
     BOM::System::AuditLog::log($message);
 
@@ -109,9 +112,15 @@ if ($input->{'dcctype'} eq 'file_content') {
 
     BOM::System::AuditLog::log($message, '', $staff);
 
-    print $message;
-    print "<p>Note: " . $input->{'clientloginid'} . " is " . $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
-    print "<br><b />PS: make sure you didn't get the currency wrong! You chose <font color=red>" . $input->{'currency'} . "</font></b></p>";
+    print encode_entities($message);
+    print "<p>Note: "
+        . encode_entities($input->{'clientloginid'}) . " is "
+        . encode_entities($client->salutation) . ' '
+        . encode_entities($client->first_name) . ' '
+        . encode_entities($client->last_name);
+    print "<br><b />PS: make sure you didn't get the currency wrong! You chose <font color=red>"
+        . encode_entities($input->{'currency'})
+        . "</font></b></p>";
 
     # Logging
     Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")

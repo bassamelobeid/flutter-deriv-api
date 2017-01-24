@@ -4,6 +4,7 @@ package main;
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 use Format::Util::Strings qw( set_selected_item );
+use HTML::Entities;
 
 use f_brokerincludeall;
 use BOM::Platform::Locale;
@@ -26,6 +27,7 @@ if ($broker eq 'FOG') {
     }
 }
 
+my $encoded_broker = encode_entities($broker);
 # Check staff authorization
 my $now       = Date::Utility->new;
 my $today     = $now->date_ddmmmyy;
@@ -43,7 +45,7 @@ print '<form action="'
     . '" method=post>'
     . '<font size=2>'
     . '<input type=hidden name=broker value='
-    . $broker . '>'
+    . $encoded_broker . '>'
     . '<table>'
     . '<tr><td><b>LoginID</b></td><td> : ';
 
@@ -51,18 +53,14 @@ print '<input type=text size=15 name="loginID" value="">'
     . ' <a href="javascript:WinPopupSearchClients();"><font class=smallfont>[Search]</font></a>'
     . '</td></tr>';
 
-print '<tr><td>&nbsp;</td><td>'
-    . '&nbsp;&nbsp;<input type="submit" value="EDIT CLIENT DETAILS"></td>' . '</tr>'
-    . '</table>'
-    . '</font>'
-    . '</form>';
+print '<tr><td>&nbsp;</td><td>' . '&nbsp;&nbsp;<input type="submit" value="EDIT CLIENT DETAILS"></td>' . '</tr>' . '</table>' . '</font>' . '</form>';
 
 # issued new password
 print '<hr><form class="bo_ajax_form" action="'
     . request()->url_for('backoffice/f_clientloginid_newpassword.cgi')
     . '" method=post>'
     . '<input type=hidden name=broker value='
-    . $broker . '>'
+    . $encoded_broker . '>'
     . '<b>LoginID : </b>';
 print "<input type=text size=15 name='show' onChange='CheckLoginIDformat(this)' value=''>";
 print '&nbsp;&nbsp;<input type="submit" value="Send Account recovery email to client\'s registered email address"></b>' . '</form>';
@@ -77,7 +75,7 @@ Bar("IMPERSONATE CLIENT");
 print '<form action="' . request()->url_for('backoffice/client_impersonate.cgi') . '" method="post">';
 print '<b>Enter client loginid: </b>';
 print '<input type=text size=30 name="impersonate_loginid"><br>';
-print "<input type='hidden' name='broker' value='$broker'>";
+print "<input type='hidden' name='broker' value='$encoded_broker'>";
 print '<input type="submit" value="Impersonate"></b></form>';
 
 Bar("MAKE DUAL CONTROL CODE");
@@ -86,7 +84,7 @@ print
 print "<form id='clientdetailsDCC' action='"
     . request()->url_for('backoffice/f_makeclientdcc.cgi')
     . "' method='post' class='bo_ajax_form'>"
-    . "<input type='hidden' name='broker' value='$broker'>"
+    . "<input type='hidden' name='broker' value='$encoded_broker'>"
     . "<input type='hidden' name='l' value='EN'>"
     . " Type of transaction: <select name='transtype'>"
     . "<option value='UPDATECLIENTDETAILS'>Update client details</option>"
@@ -94,7 +92,8 @@ print "<form id='clientdetailsDCC' action='"
     . "Loginid : <input type='text' name='clientloginid' placeholder='required'>"
     . "<br><br>New email of the client: <input type='text' name='clientemail' placeholder='required'>"
     . "<br><br>Input a comment/reminder about this DCC: <input type='text' size='50' name='reminder'>"
-    . "<br><br><input type='submit' value='Make Dual Control Code (by $clerk)'>"
+    . "<br><br><input type='submit' value='Make Dual Control Code (by "
+    . encode_entities($clerk) . ")'>"
     . "</form>";
 
 Bar("CLOSED/DISABLED ACCOUNTS");
@@ -108,7 +107,7 @@ my $file_path                    = BOM::Platform::Runtime->instance->app_config-
 
 # if redirect from client details page
 if (request()->param('editlink') and $client_login and request()->param('untrusted_action_type')) {
-    print "<font color=blue>This line has already exist in <b>$broker."
+    print "<font color=blue>This line has already exist in <b>$encoded_broker."
         . request()->param('untrusted_action_type')
         . "</b> file. "
         . "<br />To change the reason, kindly select from the dropdown selection list below and click 'Go'.<br /><br /></font>";
@@ -141,7 +140,7 @@ foreach my $untrusted_reason (get_untrusted_client_reason()) {
 print "</select>";
 print "<br />Please specify here (optional) : <input type=\"text\" size=\"92\" name=\"additional_info\">";
 
-print "<input type=\"hidden\" name=\"broker\" value=\"$broker\">"
+print "<input type=\"hidden\" name=\"broker\" value=\"$encoded_broker\">"
     . "<input type=\"hidden\" name=\"untrusted_action\" value=\"insert_data\">"
     . "<br /><input type=\"submit\" value=\"Go\">"
     . "</form>";
@@ -204,7 +203,7 @@ print '<hr><b>To view all disabled accounts and their a/c details</b><br />'
     . "<form action=\""
     . request()->url_for('backoffice/f_viewclientsubset.cgi')
     . "\" method=\"post\">"
-    . "<input type=\"hidden\" name=\"broker\" value=\"$broker\">"
+    . "<input type=\"hidden\" name=\"broker\" value=\"$encoded_broker\">"
     . "<input type=\"hidden\" name=\"show\" value=\"disabled\">"
     . '<br /><input type="checkbox" value="1" checked name="onlylarge"> Only those with more than $5 equity';
 
@@ -224,7 +223,7 @@ print "Kindly select status to monitor clients on.";
 print "<br /><br /><form action=\""
     . request()->url_for('backoffice/f_viewclientsubset.cgi')
     . "\" method=post>"
-    . "<input type=hidden name=broker value=$broker>"
+    . "<input type=hidden name=broker value=$encoded_broker>"
     . "Select list : <select name=show>"
     . "<option value='age_verification'>Age Verified</option>"
     . "<option value='disabled'>Disabled/Closed Accounts</option>"
@@ -236,33 +235,6 @@ print "<br /><br /><form action=\""
     . '<br /><input type=checkbox value="1" name=onlynonzerobalance>Only nonzero balance'
     . "<br /><input type=submit value='Monitor Clients on this list'>"
     . "</form>";
-
-# Locked accounts
-Bar("List of locked accounts");
-print "<a href='"
-    . request()->url_for('backoffice/transaction_locked_client.cgi', {broker => $broker})
-    . "'>List of clients who are locked in transaction</a>";
-
-# Client Self Exclusion Report
-Bar('Client Self Exclusion Report');
-
-print 'View all Clients that currently have self exclusion settings set on their account.<br /><br />';
-
-print "<form action=\"" . request()->url_for('backoffice/self_exclusion_report.cgi') . "\" method=post>";
-print "<input type=hidden name=\"broker\" value=\"$broker\">";
-print "<input type=\"submit\" value=\"Go\">";
-print '</form>';
-
-# Expired ID documents
-Bar('Expired Identity Documents');
-
-print 'View all Clients who are AUTHENTICATED but have expired identity documents.<br /><br />';
-
-print "<form action=\"" . request()->url_for('backoffice/f_expired_documents_report.cgi') . "\" method=post>";
-print "<input type=hidden name=\"broker\" value=\"$broker\">";
-print "Expired before <input type=\"text\" style=\"width:100px\" maxlength=\"15\" name=\"date\" value=\"$today\"> ";
-print "<input type=\"submit\" value=\"Go\">";
-print '</form>';
 
 Bar('Client complete audit log');
 print 'View client sequential combined activity<br/><br/>';

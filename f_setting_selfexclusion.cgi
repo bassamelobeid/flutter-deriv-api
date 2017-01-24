@@ -4,6 +4,9 @@ use strict 'vars';
 
 use Scalar::Util qw(looks_like_number);
 use Date::Utility;
+use HTML::Entities;
+
+use Client::Account;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Form;
@@ -20,13 +23,13 @@ my $loginid = request()->param('loginid');
 Bar("Setting Client Self Exclusion");
 
 # Not available for Virtual Accounts
-if ($loginid =~ /^VRT/) {
+if ($loginid =~ /^VR/) {
     print '<h1>' . localize('Self-Exclusion Facilities') . '</h1>';
     print '<p class="aligncenter">' . localize('We\'re sorry but the Self Exclusion facility is not available for Virtual Accounts.') . '</p>';
     code_exit_BO();
 }
 
-my $client = BOM::Platform::Client::get_instance({'loginid' => $loginid})
+my $client = Client::Account::get_instance({'loginid' => $loginid})
     || die "[$0] Could not get the client object instance for client [$loginid]";
 
 my $broker = $client->broker;
@@ -37,7 +40,9 @@ my $self_exclusion_form = BOM::Backoffice::Form::get_self_exclusion_form({
 });
 
 my $page =
-    '<h2> The Client [loginid: ' . $loginid . '] self-exclusion settings are as follows. You may change it by editing the corresponding value.</h2>';
+      '<h2> The Client [loginid: '
+    . encode_entities($loginid)
+    . '] self-exclusion settings are as follows. You may change it by editing the corresponding value.</h2>';
 
 #to generate existing limits
 if (my $self_exclusion = $client->get_self_exclusion) {
@@ -81,7 +86,11 @@ if (my $self_exclusion = $client->get_self_exclusion) {
         $page .= '<li>' . localize('Website exclusion is currently set to <strong>[_1].</strong>', $self_exclusion->exclude_until) . '</li>';
     }
     if ($self_exclusion->timeout_until) {
-        $page .= '<li>' . localize('Website Timeout until is currently set to <strong>[_1].</strong>', Date::Utility->new($self_exclusion->timeout_until)->datetime_yyyymmdd_hhmmss) . '</li>';
+        $page .= '<li>'
+            . localize(
+            'Website Timeout until is currently set to <strong>[_1].</strong>',
+            Date::Utility->new($self_exclusion->timeout_until)->datetime_yyyymmdd_hhmmss
+            ) . '</li>';
     }
     $page .= '</ul>';
 }

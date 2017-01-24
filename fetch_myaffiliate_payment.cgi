@@ -5,14 +5,15 @@ use strict 'vars';
 use Getopt::Long;
 use Text::CSV;
 use IO::File;
+use Try::Tiny;
+use Fcntl qw/:flock O_RDWR O_CREAT/;
+use Brands;
 use BOM::MyAffiliates::PaymentToAccountManager;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Context qw(request);
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
-use Fcntl qw/:flock O_RDWR O_CREAT/;
-use Try::Tiny;
 
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
@@ -50,8 +51,7 @@ if (not defined $pid) {
     if ($?) {
         print "An error has occurred -- child comes back with $?";
     } else {
-        print "Fetch Myaffiliates payment triggered, info will be emailed soon to "
-            . BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email;
+        print "Fetch Myaffiliates payment triggered, info will be emailed soon to " . Brands->new(name => request()->brand)->emails('affiliates');
     }
 } else {
     # 1st, break parent/child relationship
@@ -92,9 +92,10 @@ if (not defined $pid) {
                 'NOTE: There are reported ERRORS. Please CHECK AND FIX the erroneous transactions in MyAffiliates then work with SWAT to rerun the cronjob.';
         }
 
+        my $brand = Brands->new(name => request()->brand);
         send_email({
-            from       => BOM::Platform::Runtime->instance->app_config->system->email,
-            to         => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
+            from       => $brand->emails('system'),
+            to         => $brand->emails('affiliates'),
             subject    => 'Fetch Myaffiliates payment info: (' . $from->date_yyyymmdd . ' - ' . $to->date_yyyymmdd . ')',
             message    => \@message,
             attachment => \@csv_file_locs,

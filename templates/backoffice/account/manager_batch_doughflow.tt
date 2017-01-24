@@ -19,7 +19,7 @@
 </table>
 
 <br/>
-<form method="POST" action="[%request.url_for('backoffice/batch_payments.cgi')%]" enctype="multipart/form-data">
+<form method="POST" action="[%request.url_for('backoffice/batch_payments.cgi') | none %]" enctype="multipart/form-data">
 
     Use this CSV <input type="file" value="" required name="payments_csv" />
     <label for="skip_validation4" >Override Status Checks?</label>
