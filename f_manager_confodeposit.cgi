@@ -244,14 +244,13 @@ my $new_bal = $acc->load && $acc->balance;
 if ($ttype eq 'TRANSFER') {
     my $toAcc = $toClient->default_account->load;
     my $toBal = $toAcc->balance;
-    $success_message = qq[Transfer $curr$amount from $client to $toClient confirmed.<br/>
-                        For $client new account balance is $curr$new_bal.<br/>
-                        For $toClient new account balance is $curr$toBal.<br/>];
+    $success_message = qq[Transfer $curr$amount from $encoded_loginID to $encoded_toLoginID confirmed.<br/>
+                        For $encoded_loginID new account balance is $curr$new_bal.<br/>
+                        For $encoded_toLoginID new account balance is $curr$toBal.<br/>];
 } else {
-    $success_message = qq[$client $ttype $curr$amount confirmed.<br/>
+    $success_message = qq[$encoded_loginID $ttype $curr$amount confirmed.<br/>
                          New account balance is $curr$new_bal.<br/>];
 }
-$success_message = encode_entities($success_message);
 print qq[<p class="success_message">$success_message</p>];
 
 Bar("Today's entries for $encoded_loginID");
