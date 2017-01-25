@@ -34,6 +34,7 @@ if(my $download = $cgi->param('download')) {
 
     my $path = path($base_dir)->child($date)->child($dataset . '.csv');
     print "<pre>";
+    print "epoch,spot,ask_price,buy_price,theo_price\n";
     print for $path->lines_utf8;
     print "</pre>";
     code_exit_BO();
