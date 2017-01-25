@@ -72,7 +72,7 @@ before_script:
 
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
-    - if [ "$TEST_SUITE" == "" ]  ; then true; else TRAVIS_DATADOG_API_KEY=378b0f4047537f8e7ced5de5f6d5fec2 make $TEST_SUITE; fi |head -n 100000
+    - if [ "$TEST_SUITE" == "" ]  ; then true; else TRAVIS_DATADOG_API_KEY=378b0f4047537f8e7ced5de5f6d5fec2 make $TEST_SUITE; fi |tee
 
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
