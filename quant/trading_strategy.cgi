@@ -26,6 +26,19 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
+my $base_dir = '/var/lib/binary/trading_strategy_data/';
+
+my $cgi      = request()->cgi;
+if(my $download = $cgi->param('download')) {
+    my ($date, $dataset) = $download =~ m{^(\d{4}-\d{2}-\d{2})/([0-9a-zA-Z_]{4,20})$} or die 'invalid file';
+
+    my $path = path($base_dir)->child($date)->child($dataset . '.csv');
+    print "<pre>";
+    print for $path->lines_utf8;
+    print "</pre>";
+    code_exit_BO();
+}
+
 BrokerPresentation('Trading strategy tests');
 
 Bar('Trading strategy');
@@ -35,9 +48,6 @@ if (BOM::System::Config::on_production() && $hostname !~ /^collector01/) {
     print "<h2>This must be run on collector01</h2>\n";
     code_exit_BO();
 }
-
-my $base_dir = '/var/lib/binary/trading_strategy_data/';
-my $cgi      = request()->cgi;
 
 my $config = LoadFile('/home/git/regentmarkets/bom-backoffice/config/trading_strategy_datasets.yml');
 
