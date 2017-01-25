@@ -29,11 +29,6 @@ note('Pricing on ' . $date_start->datetime);
 my $date_pricing    = $date_start;
 my $date_expiry     = $date_start->plus_time_interval('1000s');
 my $underlying      = create_underlying('frxUSDJPY', $date_pricing);
-my $barrier         = 'S3P';
-my $barrier_low     = 'S-3P';
-my $payout          = 100;
-my $payout_currency = 'GBP';
-my $duration        = 3600;
 
 my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
 
@@ -41,7 +36,6 @@ my $missing_ticks = data_from_csv('t/BOM/Product/Pricing/missing_ticks.csv');
 
 my @rev_ticks;
 foreach my $single_data (@$missing_ticks) {
-#    print "###:" . $single_data->{symbol} . "," . $single_data->{epoch} . "," . $single_data->{quote} . "\n";
 
 #1352344320
     next if ($single_data->{epoch} >= 1352344320 and $single_data->{epoch} <= 1352344320 + 60);
@@ -59,9 +53,8 @@ subtest "intraday_forex_data_with_missing_ticks" => sub {
 
     foreach my $single_data (@$decimate_data) {
         my $dec_epoch = $single_data->{decimate_epoch};
-        if ($dec_epoch >= 1352344515 and $dec_epoch <= 1352345100) {
-#        print "### : " . $single_data->{symbol} . "," . $single_data->{epoch} . "," . $dec_epoch . "," . ",count=$single_data->{count}\n";
-            is $single_data->{count}, '1479203101', "count should be 0";
+        if (($dec_epoch >= 1352344515 and $dec_epoch <= 1352345100) or ($dec_epoch >= 1352344335 and $dec_epoch <= 1352344380)) {
+            is $single_data->{count}, '0', "count should be 0";
 
         }
     }
