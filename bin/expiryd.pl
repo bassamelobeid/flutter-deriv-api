@@ -1,79 +1,59 @@
-#!/etc/rmg/bin/perl -w
+#!/etc/rmg/bin/perl
 
-package BOM::Product::Expiryd;
+use strict;
+use warnings;
 
-use Moose;
-with 'App::Base::Daemon';
-
-has pids => (
-    is      => 'rw',
-    isa     => 'ArrayRef',
-    default => sub{[]},
-);
-
-has shutting_down => (
-    is      => 'rw',
-    isa     => 'Num',
-    default => 0,
-);
-
-use ExpiryQueue qw( dequeue_expired_contract get_queue_id);
-use List::Util qw(max);
 use Cache::RedisDB;
+use ExpiryQueue qw( dequeue_expired_contract get_queue_id);
+use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
+use List::Util qw(max);
 use Time::HiRes;
 use Try::Tiny;
 
 use Client::Account;
 use BOM::Product::Transaction;
 
-sub documentation {
-    return qq/This daemon sells off expired contracts in soft real-time./;
-}
+STDOUT->autoflush(1);
 
-sub options {
-    return [{
-            name          => "threads",
-            documentation => "Number of processes to spawn",
-            option_type   => "integer",
-            default       => 5,
-        },
-    ];
-}
+GetOptions(
+    't|threads_number=i' => \my $threads_number,
+    'h|help'             => \my $help,
+);
 
-sub daemon_run {
-    my $self = shift;
+my $show_help = $help;
+die <<"EOF" if ($show_help);
+This daemon sells off expired contracts in soft real-time.
+usage: $0 OPTIONS
 
-    for (my $i = 1; $i < $self->getOption('threads'); $i++) {
-        my $pid;
-        select undef, undef, undef, 0.2 until defined ($pid = fork);
-        if ($pid) {
-            push @{$self->pids}, $pid;
-        } else {
-            @{$self->pids} = ();
-            $self->_daemon_run;
-            CORE::exit 1;
-        }
-    }
+These options are available:
+  -t, --threads_number      Number of processes to spawn. Default value is 5
+  -h, --help                Show this message.
+EOF
 
-    $self->_daemon_run;
-}
+$threads_number //= 5;
+
+my @pids;
+
+$SIG{INT} = $SIG{TERM} = sub {
+    print("Terminating $$\n");
+    kill TERM => @pids if (@pids);
+    exit(0);
+};
 
 sub _daemon_run {
-    my $self = shift;
-
-    warn("Starting as PID $$.");
+    print("Starting as PID $$\n");
     my $redis = Cache::RedisDB->redis;
     while (1) {
-        my $now = time;
-        my $next_time = $now + 1; # we want this to execute every second
-        my $iterator = dequeue_expired_contract();
+        my $now       = time;
+        my $next_time = $now + 1;                     # we want this to execute every second
+        my $iterator  = dequeue_expired_contract();
         # Outer `while` to live through possible redis disconnects/restarts
-        while (my $info = $iterator->()) {    # Blocking for next available.
+        while (my $info = $iterator->()) {            # Blocking for next available.
             try {
                 my $contract_id = $info->{contract_id};
                 my $client = Client::Account->new({loginid => $info->{held_by}});
                 if ($info->{in_currency} ne $client->currency) {
-                    warn('Skip on currency mismatch for contract '
+                    warn(     'Skip on currency mismatch for contract '
                             . $contract_id
                             . '. Expected: '
                             . $info->{in_currency}
@@ -85,7 +65,7 @@ sub _daemon_run {
                 # but for now we will ignore it.
                 my $is_sold = BOM::Product::Transaction::sell_expired_contracts({
                         client       => $client,
-                        source       => 2,             # app id for `Binary.com expiryd.pl` in auth db => oauth.apps table
+                        source       => 2,               # app id for `Binary.com expiryd.pl` in auth db => oauth.apps table
                         contract_ids => [$contract_id]});
 
                 if (not $is_sold or $is_sold->{number_of_sold_bets} == 0) {
@@ -98,26 +78,24 @@ sub _daemon_run {
                 }
             };    # No catch, let MtM pick up the pieces.
         }
-        Time::HiRes::sleep(max(0,$next_time - Time::HiRes::time));
+        Time::HiRes::sleep(max(0, $next_time - Time::HiRes::time));
     }
 }
 
-sub handle_shutdown {
-    my $self = shift;
-    return if $self->shutting_down;
-    $self->shutting_down(1);
-    warn("PID $$ is shutting down.");
-    kill TERM => @{$self->pids}; # for children this list is empty
-    return 0;
+print "parent $$ launching child processes\n";
+
+for (my $i = 1; $i < $threads_number; $i++) {
+    my $pid;
+    select undef, undef, undef, 0.2 until defined($pid = fork);
+    if ($pid) {
+        push @pids, $pid;
+    } else {
+        @pids = ();
+        @{$self->pids} = ();
+        _daemon_run();
+    }
 }
 
-no Moose;
-__PACKAGE__->meta->make_immutable;
+print "parent $$ starts processing by himself";
+_daemon_run();
 
-package main;
-use strict;
-
-exit BOM::Product::Expiryd->new({
-        user  => 'nobody',
-        group => 'nogroup',
-    })->run;
