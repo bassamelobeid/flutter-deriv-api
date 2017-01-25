@@ -1,10 +1,13 @@
 #!/etc/rmg/bin/perl
 package main;
-use strict 'vars';
+use strict;
+use warnings;
+use Try::Tiny;
 
 use f_brokerincludeall;
-use BOM::Platform::Runtime;
+use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -12,24 +15,46 @@ PrintContentType();
 
 BOM::Backoffice::Auth0::can_access(['CS']);
 
-print qq~
-<head>
-    <title>Client Search</title>
-</head>
-<body>
-<center><font size="2" face="verdana">
-<strong>Client Search</strong>
-<br />
-<form action="~ . request()->url_for('backoffice/f_popupclientsearch_doit.cgi') . qq~" method="post">
-	<input type="text" size="10" name="partialfname" value="Partial FName" onfocus="this.select()" />
-        <input type="text" size="10" name="partiallname" value="Partial LName" onfocus="this.select()" />
-	<input type="text" size="20" name="partialemail" value="Partial email" onfocus="this.select()" />
-    <input type="text" size="20" name="broker" value="" onfocus="this.select()" />
+my $broker        = request()->param('broker')        // "";
+my $partialfname  = request()->param('partialfname')  // "";
+my $partiallname  = request()->param('partiallname')  // "";
+my $partialemail  = request()->param('partialemail')  // "";
+my $phone         = request()->param('phone')         // "";
+my $date_of_birth = request()->param('date_of_birth') // "";
+$partialfname =~ s/[\/\\\"\$]//g;    #strip unwelcome characters
+$partiallname =~ s/[\/\\\"\$]//g;    #strip unwelcome characters
+$partialemail =~ s/[\/\\\"\$]//g;    #strip unwelcome characters
+$phone =~ s/[\/\\\"\$]//g;           #strip unwelcome characters
+$broker =~ s/[\/\\\"\$]//g;          #strip unwelcome characters
+$date_of_birth = '' unless ($date_of_birth =~ /^\d{4,4}\-\d{1,2}\-\d{1,2}$/);
+my %fields = (
+    first_name    => $partialfname,
+    last_name     => $partiallname,
+    email         => $partialemail,
+    phone         => $phone,
+    date_of_birth => $date_of_birth,
+);
+my %non_empty_fields = (map { ($_, $fields{$_}) } (grep { $fields{$_} } (keys %fields)));
+my $results;
 
-	<input type="submit" value="Search" />
-</form>
-<p>Note: For best results, enter either only the Client's first name or last name</p>
+if (%non_empty_fields) {
+    my $report_mapper = BOM::Database::DataMapper::CollectorReporting->new({
+        broker_code => 'FOG',
+        operation   => 'collector'
+    });
+    $results = $report_mapper->get_clients_result_by_field({
+        'broker' => $broker,
+        %non_empty_fields,
+    });
+}
 
-</body>~;
+BOM::Backoffice::Request::template->process(
+    'backoffice/client_search.html.tt',
+    {
+        results => $results,
+        params  => \%non_empty_fields,
+        broker  => $broker,
+        url     => request()->url_for("backoffice/f_popupclientsearch.cgi"),
+    }) || die BOM::Backoffice::Request::template->error(), "\n";
 
 code_exit_BO();

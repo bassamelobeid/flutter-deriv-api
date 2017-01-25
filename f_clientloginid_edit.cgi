@@ -152,76 +152,87 @@ if ($input{whattodo} eq 'sync_to_DF') {
 # UPLOAD NEW ID DOC.
 if ($input{whattodo} eq 'uploadID') {
 
-    local $CGI::POST_MAX        = 1024 * 100 * 4;    # max 400K posts
-    local $CGI::DISABLE_UPLOADS = 0;                 # enable uploads
+    local $CGI::POST_MAX        = 1024 * 1600;    # max 1600K posts
+    local $CGI::DISABLE_UPLOADS = 0;              # enable uploads
 
-    my $cgi             = new CGI;
-    my $doctype         = $cgi->param('doctype');
-    my $filetoupload    = $cgi->param('FILE');
-    my $docformat       = $cgi->param('docformat');
-    my $expiration_date = $cgi->param('expiration_date');
-    my $broker_code     = $cgi->param('broker');
-    my $docnationality  = $cgi->param('docnationality');
+    my $cgi            = new CGI;
+    my $broker_code    = $cgi->param('broker');
+    my $docnationality = $cgi->param('docnationality');
+    my $result         = "";
+    my $used_doctypes  = {};                              #we need to keep list of used doctypes to provide for them uniq filenames
+    foreach my $i (1 .. 4) {
+        my $doctype         = $cgi->param('doctype_' . $i);
+        my $filetoupload    = $cgi->param('FILE_' . $i);
+        my $docformat       = $cgi->param('docformat_' . $i);
+        my $expiration_date = $cgi->param('expiration_date_' . $i);
 
-    if (not $filetoupload) {
-        print "<br /><p style=\"color:red; font-weight:bold;\">Error: You did not browse for a file to upload.</p><br />";
-        code_exit_BO();
-    }
-
-    if ($doctype =~ /passport|proofid|driverslicense/ && $expiration_date !~ /\d{4}-\d{2}-\d{2}/) {
-        print "<br /><p style=\"color:red; font-weight:bold;\">Error: Missing or invalid date format entered - </p><br />";
-        code_exit_BO();
-    }
-
-    if ($expiration_date ne '') {
-        my ($current_date, $submitted_date);
-        $current_date   = Date::Utility->new();
-        $submitted_date = Date::Utility->new($expiration_date);
-
-        if ($submitted_date->is_before($current_date) || $submitted_date->is_same_as($current_date)) {
-            print "<br /><p style=\"color:red; font-weight:bold;\">Error: Expiration date should be greater than current date </p><br />";
-            code_exit_BO();
+        if (not $filetoupload) {
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: You did not browse for a file to upload.</p><br />"
+                if ($i == 1);
+            next;
         }
 
-    }
-
-    if ($doctype eq 'passport') {
-        if ($docnationality && $docnationality =~ /[a-z]{2}/) {
-            $client->citizen($docnationality);
-        } else {
-            print "<br /><p style=\"color:red; font-weight:bold;\">Error: Please select correct nationality</p><br />";
-            code_exit_BO();
+        if ($doctype =~ /passport|proofid|driverslicense/ && $expiration_date !~ /\d{4}-\d{2}-\d{2}/) {
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Missing or invalid date format entered - </p><br />";
+            next;
         }
+
+        if ($expiration_date ne '') {
+            my ($current_date, $submitted_date);
+            $current_date   = Date::Utility->new();
+            $submitted_date = Date::Utility->new($expiration_date);
+
+            if ($submitted_date->is_before($current_date) || $submitted_date->is_same_as($current_date)) {
+                $result .=
+                    "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Expiration date should be greater than current date </p><br />";
+                next;
+            }
+
+        }
+
+        if ($doctype eq 'passport') {
+            if ($docnationality && $docnationality =~ /[a-z]{2}/) {
+                $client->citizen($docnationality);
+            } else {
+                $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: Please select correct nationality</p><br />";
+                next;
+            }
+        }
+
+        my $path = "$dbloc/clientIDscans/$broker";
+
+        if (not -d $path) {
+            system("mkdir -p $path");
+        }
+
+        # we use N seconds after current time, where N is number of same type documents uploaded before
+        # we don't flag such files with anything different (like _1) for it not to affect any other legacy code
+        my $time = time() + $used_doctypes->{$doctype}++;
+
+        my $newfilename = "$path/$loginid.$doctype.$time.$docformat";
+        copy($filetoupload, $newfilename) or die "[$0] could not copy uploaded file to $newfilename: $!";
+        my $filesize = (stat $newfilename)[7];
+
+        my $upload_submission = {
+            document_type              => $doctype,
+            document_format            => $docformat,
+            document_path              => $newfilename,
+            authentication_method_code => 'ID_DOCUMENT',
+            expiration_date            => $expiration_date
+        };
+
+        #needed because CR based submissions don't return a result when an empty string is submitted in expiration_date;
+        if ($expiration_date eq '') {
+            delete $upload_submission->{'expiration_date'};
+        }
+
+        $client->add_client_authentication_document($upload_submission);
+
+        $client->save;
+
+        $result .= "<br /><p style=\"color:green; font-weight:bold;\">Ok! File $i: $newfilename is uploaded (filesize $filesize).</p><br />";
     }
-
-    my $newfilename = "$dbloc/clientIDscans/$broker/$loginid.$doctype." . (time()) . ".$docformat";
-
-    if (not -d "$dbloc/clientIDscans/$broker") {
-        system("mkdir -p $dbloc/clientIDscans/$broker");
-    }
-
-    copy($filetoupload, $newfilename) or die "[$0] could not copy uploaded file to $newfilename: $!";
-    my $filesize = (stat $newfilename)[7];
-
-    my $upload_submission = {
-        document_type              => $doctype,
-        document_format            => $docformat,
-        document_path              => $newfilename,
-        authentication_method_code => 'ID_DOCUMENT',
-        expiration_date            => $expiration_date
-    };
-
-    #needed because CR based submissions don't return a result when an empty string is submitted in expiration_date;
-    if ($expiration_date eq '') {
-        delete $upload_submission->{'expiration_date'};
-    }
-
-    $client->add_client_authentication_document($upload_submission);
-
-    $client->save;
-
-    print "<br /><p style=\"color:green; font-weight:bold;\">Ok! File $newfilename is uploaded (filesize $filesize).</p><br />";
-
+    print $result;
     code_exit_BO();
 }
 
@@ -531,12 +542,28 @@ print qq{<br/>
         </div>
     </form>
     </div>
+
+    <div style="float: right">
+    <form action="$history_url" method="POST">
+    <input type="hidden" name="loginID" value="$encoded_loginid">
+    <input type="submit" value="View $encoded_loginid statement">
+    </form>
+    </div>
 };
 
+Bar("$encoded_loginid STATUSES");
 if (my $statuses = build_client_warning_message($loginid)) {
-    Bar("$encoded_loginid STATUSES");
     print $statuses;
 }
+BOM::Backoffice::Request::template->process(
+    'backoffice/account/untrusted_form.html.tt',
+    {
+        edit_url => request()->url_for('backoffice/untrusted_client_edit.cgi'),
+        reasons  => [get_untrusted_client_reason()],
+        broker   => $broker,
+        clientid => $loginid,
+        actions  => get_untrusted_types(),
+    }) || die BOM::Backoffice::Request::template->error();
 
 # Show Self-Exclusion link if this client has self-exclusion settings.
 if ($client->self_exclusion) {
@@ -670,56 +697,14 @@ print '<br/><br/>';
 
 #upload new ID doc
 Bar("Upload new ID document");
-print qq{
-<br /><form enctype="multipart/form-data" ACTION="$self_post" method="POST">
-  <select name="doctype">
-    <option value="passport">Passport</option>
-    <option value="proofid">ID</option>
-    <option value="driverslicense">Drivers License</option>
-    <option value="proofaddress">Proof of Address</option>
-    <option value="bankstatement">Bank statement</option>
-    <option value="amlglobalcheck">AML Global Check</option>
-    <option value="docverification">Doc Verification (Autodoc)</option>
-    <option value="other">Other</option>
-  </select>
-  <select name=docformat>
-    <option>JPG</option>
-    <option>JPEG</option>
-    <option>GIF</option>
-    <option>PNG</option>
-    <option>TIF</option>
-    <option>PDF</option>
-    <option>PCX</option>
-    <option>EFX</option>
-    <option>JFX</option>
-    <option>DOC</option>
-    <option>TXT</option>
-  </select>
-  <input type="FILE" name="FILE">
-  <input type="hidden" name="whattodo" value="uploadID">
-  <input type="hidden" name="broker" value="$encoded_broker">
-  <input type="hidden" name="loginID" value="$encoded_loginid">
-  <br/>
-  <br/>
-  <label for="docnationalityselect">Nationality (as per identity document, it can be different from residence)</label>
-  <select id="docnationalityselect" name="docnationality">
-    <option value="">Please select</option>
-};
-
-my $brand_countries = Brands->new(name => request()->brand)->countries_instance->countries;
-foreach my $country_name (sort $brand_countries->all_country_names) {
-    my $code = $brand_countries->code_from_country($country_name);
-    print "<option value='" . encode_entities($code) . "'>" . encode_entities($country_name) . "</option>";
-}
-
-print qq{
-  </select>
-  <br/>
-  <br/>
-  Expiration date:<input type="text" size=10 name="expiration_date"><i> format YYYY-MM-DD </i>
-  <input type=submit value="Upload new ID doc.">
-</form>
-};
+BOM::Backoffice::Request::template->process(
+    'backoffice/client_edit_upload_doc.html.tt',
+    {
+        self_post => $self_post,
+        broker    => $encoded_broker,
+        loginid   => $encoded_loginid,
+        countries => Brands->new(name => request()->brand)->countries_instance->countries,
+    });
 
 my $financial_assessment = $client->financial_assessment();
 if ($financial_assessment) {
@@ -728,8 +713,7 @@ if ($financial_assessment) {
     Bar("Financial Assessment");
     print qq{<table class="collapsed">
         <tr><td>User Data</td><td><textarea rows=10 cols=150 id="financial_assessment_score">}
-        . encode_entities($user_data_json)
-        . qq{</textarea></td></tr>
+        . encode_entities($user_data_json) . qq{</textarea></td></tr>
         <tr><td></td><td><input id="format_financial_assessment_score" type="button" value="Format"/></td></tr>
         <tr><td>Is professional</td><td>$is_professional</td></tr>
         </table>
@@ -744,63 +728,13 @@ my $login_history = $user->find_login_history(
     limit   => $limit
 );
 
-if (@$login_history == 0) {
-    print qq{<p>There is no login history</p>};
-} else {
-    print qq{<p color="red">Showing last $limit logins only</p>} if @$login_history > $limit;
-    print qq{<table class="collapsed">\n};
-    foreach my $login (reverse @$login_history) {
-        my $date        = $login->history_date->strftime('%F %T');
-        my $action      = $login->action;
-        my $status      = $login->successful ? 'ok' : 'failed';
-        my $environment = $login->environment;
-        print qq{<tr><td width='150'>}
-            . encode_entities("$date UTC")
-            . qq{</td><td>}
-            . encode_entities($action)
-            . qq{</td><td>}
-            . encode_entities($status)
-            . qq{</td><td>}
-            . encode_entities($environment)
-            . qq{</td></tr>\n};
-    }
-    print qq{</table>\n};
-}
-print '</div>';
-
-# to be removed soon, no more login history based on loginid
-Bar("$encoded_loginid Login history");
-print '<div><br/>';
-my $loglim = 200;
-my $logins = $client->find_login_history(
-    sort_by => 'login_date desc',
-    limit   => $loglim
-);
-
-if (@$logins == 0) {
-    print qq{<p>There is no login history</p>};
-} else {
-    print qq{<p color="red">Showing last $loglim logins only</p>} if @$logins > $loglim;
-    print qq{<table class="collapsed">};
-    foreach my $login (reverse @$logins) {
-        my $date        = $login->login_date->strftime('%F %T');
-        my $status      = $login->login_successful ? 'ok' : 'failed';
-        my $environment = $login->login_environment;
-        if (length($environment) > 100) {
-            substr($environment, 100) = '..';
-        }
-        # yes this is mostly a copy+paste version from ~20 lines above, but with one fewer field
-        print qq{<tr><td>}
-            . encode_entities("$date UTC")
-            . qq{</td><td>}
-            . encode_entities($status)
-            . qq{</td><td>}
-            . encode_entities($environment)
-            . qq{</td></tr>\n};
-    }
-    print qq{</table>};
-}
-print '</div>';
+BOM::Backoffice::Request::template->process(
+    'backoffice/user_login_history.html.tt',
+    {
+        user    => $user,
+        history => $login_history,
+        limit   => $limit
+    });
 
 code_exit_BO();
 
