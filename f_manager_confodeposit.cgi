@@ -163,7 +163,7 @@ unless ($params{skip_validation}) {
         }
     };
     if (my $err = $@) {
-        print qq[<p style="color:#F00">$cli Failed. $err</p>];
+        print qq[<p style="color:#F00">$encoded_loginID Failed. $err</p>];
         code_exit_BO();
     } else {
         printf qq[<p style="color:#070">Done. %s will be ok.</p>], encode_entities($ttype);
