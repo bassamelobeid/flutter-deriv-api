@@ -31,6 +31,7 @@ unless (request()->param('from') and request()->param('to')) {
 
 my $from = Date::Utility->new(request()->param('from'));
 my $to   = Date::Utility->new(request()->param('to'));
+my $tmp_dir = get_tmp_path_or_die();
 
 my $lf = '/var/run/bom-daemon/fetch_myaffiliate_payment.lock';
 
@@ -84,7 +85,7 @@ if (not defined $pid) {
         my @csv_file_locs = BOM::MyAffiliates::PaymentToAccountManager->new(
             from    => $from,
             to      => $to,
-            tmp_dir => get_tmp_path_or_die();
+            tmp_dir => $tmp_dir,
         )->get_csv_file_locs;
 
         my @message = ('"To BOM Account" affiliate payment CSVs are attached for review and upload into the affiliate payment backoffice tool.');
