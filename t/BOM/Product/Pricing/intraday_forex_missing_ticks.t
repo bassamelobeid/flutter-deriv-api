@@ -20,7 +20,7 @@ use Data::Decimate qw(decimate);
 
 use Test::BOM::UnitTestPrice;
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+#use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 #my $at = BOM::Market::AggTicks->new;
@@ -46,30 +46,34 @@ my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
 my $missing_ticks = data_from_csv('t/BOM/Product/Pricing/missing_ticks.csv');
 
 
-BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
+#BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
+
+my @rev_ticks;
 foreach my $single_data (@$missing_ticks) {
   print "###:" . $single_data->{symbol} . "," . $single_data->{epoch} . "," . $single_data->{quote} . "\n";
 
+#1352344320
+  next if ($single_data->{epoch} >= 1352344320 and $single_data->{epoch} <= 1352344320 + 60);
 #1352344500 till +60*10
-  next if ($single_data->{epoch} >= 1352344500 and $single_data->{epoch} <= 600);
-
-   BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => 'frxUSDJPY',
-            epoch      => $single_data->{epoch} + 10000,
-            quote      => $single_data->{quote},
-        });
+  next if ($single_data->{epoch} >= 1352344500 and $single_data->{epoch} <= 1352344500 + 600);
+  push @rev_ticks, $single_data;
+#   BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+#            underlying => 'frxUSDJPY',
+#            epoch      => $single_data->{epoch} + 10000,
+#            quote      => $single_data->{quote},
+#        });
 }
 
 my $start = $date_start->epoch - 7200;
 $start = $start - $start % 15;
 my $first_agg = $start - 15;
 
-my $hist_ticks = $underlying->ticks_in_between_start_end({
-        start_time => $first_agg,
-        end_time   => $date_start->epoch,
-    });
+#my $hist_ticks = $underlying->ticks_in_between_start_end({
+#        start_time => $first_agg,
+#        end_time   => $date_start->epoch,
+#    });
 
-my @rev_ticks = reverse @$hist_ticks;
+my @rev_ticks2 = reverse @rev_ticks;
 
 my $decimate_cache = BOM::Market::DataDecimate->new();
 my $decimate_data = Data::Decimate::decimate($decimate_cache->sampling_frequency->seconds, \@rev_ticks);
@@ -77,11 +81,15 @@ my $decimate_data = Data::Decimate::decimate($decimate_cache->sampling_frequency
 my $decimate_key = $decimate_cache->_make_key('frxUSDJPY', 1);
 
 foreach my $single_data (@$decimate_data) {
-        $decimate_cache->_update(
-            $decimate_cache->redis_write,
-            $decimate_key,
-            $single_data->{decimate_epoch},
-            $decimate_cache->encoder->encode($single_data));
+#        $decimate_cache->_update(
+#            $decimate_cache->redis_write,
+#            $decimate_key,
+#            $single_data->{decimate_epoch},
+#            $decimate_cache->encoder->encode($single_data));
+my $agg_epoch = $single_data->{decimate_epoch};
+       if($agg_epoch) {
+       print "### : " . $single_data->{symbol} . "," . $single_data->{epoch} . "," . $agg_epoch . "," . ",count=$single_data->{count}\n";
+}
 }
 
 my $agg_t = $decimate_cache->decimate_cache_get({
@@ -91,15 +99,15 @@ my $agg_t = $decimate_cache->decimate_cache_get({
         backprice => 0,
 });
 
-foreach my $single_data (@$agg_t) {
-       my $agg_epoch = $single_data->{decimate_epoch};
-       if($agg_epoch) {
-       print "### : " . $single_data->{symbol} . "," . $single_data->{epoch} . "," . $agg_epoch . "," . ",count=$single_data->{count}\n";
+#foreach my $single_data (@$agg_t) {
+#       my $agg_epoch = $single_data->{decimate_epoch};
+#       if($agg_epoch) {
+#       print "### : " . $single_data->{symbol} . "," . $single_data->{epoch} . "," . $agg_epoch . "," . ",count=$single_data->{count}\n";
 #         if($agg_epoch==1352344500-15) $prev_tick = $single_data;
-       }else {
-	print ">>> : " . $single_data->{symbol} . "," . $single_data->{epoch} . "," . ",count=$single_data->{count}\n";
-       }
-}
+#       }else {
+#	print ">>> : " . $single_data->{symbol} . "," . $single_data->{epoch} . "," . ",count=$single_data->{count}\n";
+#       }
+#}
 
 my $recorded_date = $date_start->truncate_to_day;
 
