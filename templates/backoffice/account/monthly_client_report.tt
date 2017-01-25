@@ -38,6 +38,7 @@
             [ 'internal_transfer',  'Internal Transfer' ],
             [ 'payment_fee',        'Payment Fee' ],
             [ 'cash_transfer',      'Western Union' ],
+            [ 'arbitrary_markup',   'Arbitrary Markup Payment' ],
         ];
     %]
 
@@ -57,6 +58,11 @@
         </div>
         <br/><br/>
         Run Month: <input size="8" name="yyyymm" value="$yyyymm"/> e.g. 2014-12
+, duration: <select name="months">
+[% FOR i IN [1..6]%]
+    <option value="[% i %]">[% i %]</option>
+[% END %]
+</select> months
         &nbsp;&nbsp;&nbsp;
         <input type="submit" value="Download CSV File"/>
         All Currencies for Broker code [%request.broker_code%] will be included.

@@ -1,3 +1,29 @@
+<form action="[% clientedit_url %]" method=post>
+<input type=hidden name=broker value="[% broker %]">
+<input type=hidden name=loginID value="[% loginid %]">
+<input type=submit value="View/edit [% loginid %] details">
+</form>
+
+<table width=100%><tr>
+<form  action="[% self_post %]" method=post>
+<td align=right> Quick jump to see another statement:
+<input name=loginID type=text size=15 value="[% loginid %]">
+<input name=startdate type=text size=15 value="[% startdate %]" placeholder="2016-12-20">
+<input name=enddate type=text size=15 value="[% enddate %]" placeholder="2017-01-20">
+<input type=hidden name=broker value="[% broker %]">
+<input type=hidden name=l value=EN>
+<input type=submit value=view>
+<input type=checkbox value=yes name=depositswithdrawalsonly>Deposits and Withdrawals only
+</td>
+</form></tr>
+</table>
+<hr>
+
+
+[% client.name %] Email: [% client.email %] Country: [% client.country %] Residence: [% client.residence %] Tel: [% client.tel %]
+<br>
+
+
 <div class="grd-parent grd-grid-12 table-header grd-row-padding">
         <div class="grd-grid-10">
             <b>Balance on [% balance.date.date %]</b>

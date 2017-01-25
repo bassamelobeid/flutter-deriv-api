@@ -71,7 +71,9 @@ sub save_settings {
                         }
                     }
                     catch {
-                        $message .= join('', '<div id="error">Invalid value, could not set ', encode_entities($s), ' to ', encode_entities($display_value), '</div>');
+                        $message .= join('',
+                            '<div id="error">Invalid value, could not set ',
+                            encode_entities($s), ' to ', encode_entities($display_value), '</div>');
                         $has_errors = 1;
                     };
                 }
