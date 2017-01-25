@@ -132,7 +132,7 @@ subtest "decimate_cache_insert_and_retrieve_with_missing_data" => sub {
         end_epoch   => 1479203250 + 2000,
     });
 
-    is $mkt_close_dec_data->[-1]->{decimate_epoch}, '1479203250', "decimate_epoch is correct for market close";
+    is $mkt_close_dec_data->[0]->{decimate_epoch}, '1479203250', "decimate_epoch is correct for market close";
 };
 
 sub data_from_csv {
