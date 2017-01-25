@@ -85,17 +85,18 @@ sub cashier {
 
     my $landing_company = $client->landing_company;
     if ($landing_company->short eq 'maltainvest') {
+        # $c->authenticate()
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'ASK_AUTHENTICATE',
-                message_to_client => localize('Client is not fully authenticated.')}) unless $client->client_fully_authenticated;
+                message_to_client => localize('Client is not fully authenticated.'),
+            }) unless $client->client_fully_authenticated;
 
-        return BOM::RPC::v3::Utility::create_error({
+        if (not $client->get_status('financial_risk_approval')) {
+            return BOM::RPC::v3::Utility::create_error({
                 code              => 'ASK_FINANCIAL_RISK_APPROVAL',
-                message_to_client => localize('Financial Risk approval is required.')}) unless $client->get_status('financial_risk_approval');
-
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'ASK_TIN_INFORMATION',
-                message_to_client => localize('Tax information is required.')}) unless $client->get_status('crs_tin_information');
+                message_to_client => localize('Financial Risk approval is required.'),
+            });
+        }
     }
 
     if ($client->residence eq 'gb' and not $client->get_status('ukgc_funds_protection')) {
