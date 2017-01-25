@@ -66,7 +66,9 @@ sub run {
         BOM::Test::Data::Utility::UnitTestMarketData->import(qw(:init));
         BOM::Test::Data::Utility::UnitTestDatabase->import(qw(:init));
         BOM::Test::Data::Utility::AuthTestDatabase->import(qw(:init));
-        system(qw(sudo date -s), '2016-08-09 11:59:00') and die "Failed to set date, do we have sudo access? $!";
+	my @res = qx/sudo date -s '2016-08-09 11:59:00' +'%F %T'/;
+	die "Failed to set date, do we have sudo access? (return code = $?)"
+	    unless $res[0] eq "2016-08-09 11:59:00\n";
 
         initialize_realtime_ticks_db();
         build_test_R_50_data();
@@ -124,7 +126,9 @@ sub run {
         # Note that we have seen problems when resetting the time backwards:
         # symptoms include account balance going negative when buying
         # a contract.
-        system(qw(sudo date -s), '@' . $reset_time) and die "Failed to set date, do we have sudo access? $!";
+	my @res = qx/sudo date -s \@$reset_time +%s/;
+	die "Failed to set date, do we have sudo access? (return code = $?)"
+	    unless $res[0] eq "$reset_time\n";
         ++$reset_time;
 
         ++$counter;    # slightly more informative name, for use in log messages at the end of the loop
