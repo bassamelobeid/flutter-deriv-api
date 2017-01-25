@@ -10,6 +10,7 @@ use Fcntl qw/:flock O_RDWR O_CREAT/;
 use Brands;
 use BOM::MyAffiliates::PaymentToAccountManager;
 use BOM::Platform::Email qw(send_email);
+use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
@@ -81,8 +82,9 @@ if (not defined $pid) {
 
     try {
         my @csv_file_locs = BOM::MyAffiliates::PaymentToAccountManager->new(
-            from => $from,
-            to   => $to
+            from    => $from,
+            to      => $to,
+            tmp_dir => get_tmp_path_or_die();
         )->get_csv_file_locs;
 
         my @message = ('"To BOM Account" affiliate payment CSVs are attached for review and upload into the affiliate payment backoffice tool.');
