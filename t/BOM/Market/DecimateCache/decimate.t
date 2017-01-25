@@ -97,7 +97,7 @@ subtest "decimate_cache_insert_and_retrieve_with_missing_data" => sub {
 
     is scalar(@$data_out), '128', "retrieved 128 datas from cache";
 
-    for (my $i = 1479203115; $i <= 1479203250; $i=$i+15) {
+    for (my $i = 1479203115; $i <= 1479203250+15; $i=$i+15) {
         $decimate_cache->data_cache_insert_decimate('frxUSDJPY', $i);
     }
 
