@@ -524,6 +524,7 @@ if ($next_client) {
 # view client's statement/portfolio/profit table
 my $history_url = request()->url_for('backoffice/f_manager_history.cgi');
 my $statmnt_url = request()->url_for('backoffice/f_manager_statement.cgi');
+my $impersonate_url = request()->url_for('backoffice/client_impersonate.cgi');
 print qq{<br/>
     <div class="flat">
     <form id="jumpToClient" action="$self_post" method="POST">
@@ -549,6 +550,13 @@ print qq{<br/>
     <input type="submit" value="View $encoded_loginid statement">
     </form>
     </div>
+<div  style="float: right">
+<form action="$impersonate_url" method="post">
+<input type='hidden' size=30 name="impersonate_loginid" value="$encoded_loginid">
+<input type='hidden' name='broker' value='$encoded_broker'>
+<input type="submit" value="Impersonate"></form>
+
+</div>
 };
 
 Bar("$encoded_loginid STATUSES");
