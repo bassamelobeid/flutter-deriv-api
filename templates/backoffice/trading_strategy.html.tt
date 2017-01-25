@@ -3,9 +3,9 @@
 [% FOREACH parameter IN ['Date', 'Underlying', 'Duration', 'Type' ] -%]
 [% name = parameter | lower -%]
 <label for="[% name %]">[% parameter %]</label>
-<select name="[% name %]">
+<select name="[% name %]"[% IF parameter == 'Date' -%] multiple="multiple"[% END %]>
 [%  FOR item IN parameter_list.item(name) -%]
- <option value="[% item %]"[% IF selected_parameter.$name == item %] selected="selected"[% END %]>[% item %]</option>
+ <option value="[% item %]"[% IF selected_parameter.$name == item %] selected="selected"[% END %][% IF parameter == 'Date'; FOREACH date IN selected_parameter.date; IF item == date %] selected="selected"[% END; END; END %]>[% item %]</option>
 [%  END -%]
 </select>
 [%  IF parameter == 'Date' -%]
@@ -33,6 +33,7 @@
 <input name="skip" value="[% skip %]">
 
 <input name="run" type="submit" value="Run">
+<input name="reset" type="reset" value="Reset">
 
 [% IF result_table.size -%]
 <h2>Results for all datasets with strategy [% strategy_selected || 'unknown' %]</h2>
@@ -75,7 +76,7 @@
 <tr>
 <th>Download dataset</th>
 <td>
- <a href="[% dataset_base_dir %]/[% date %]/[% dataset %].csv">Download [% dataset %]</a>
+ <a target="_blank" href="?download=[% date %]/[% dataset %]">Download [% dataset %]</a>
 </td>
 </tr>
  </tbody>
