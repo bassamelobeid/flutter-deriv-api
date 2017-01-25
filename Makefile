@@ -21,11 +21,8 @@ unit_test_product_all:
 unit_test_validation:
 	@$(PROVE) -r t/BOM/Product/Validation
 
-intraday_missing_ticks:
-	@$(PROVE) -v $$(ls -1d t/BOM/Product/Pricing/intraday_forex_missing_ticks.t)
-
 unit_test_pricing:
-	@$(PROVE) -rv $$(ls -1d t/BOM/Product/Pricing*)
+	@$(PROVE) -r $$(ls -1d t/BOM/Product/Pricing*)
 
 unit_test_intraday:
 	@$(PROVE) -r t/BOM/Product/Pricing/Engine/IntradayHistorical
