@@ -34,6 +34,7 @@ if(my $download = $cgi->param('download')) {
 
     my $path = path($base_dir)->child($date)->child($dataset . '.csv');
     print "<pre>";
+    print "epoch,spot,ask_price,expiry_price,theo_price\n";
     print for $path->lines_utf8;
     print "</pre>";
     code_exit_BO();
@@ -44,8 +45,8 @@ BrokerPresentation('Trading strategy tests');
 Bar('Trading strategy');
 
 my $hostname = Sys::Hostname::hostname();
-if (BOM::System::Config::on_production() && $hostname !~ /^collector01/) {
-    print "<h2>This must be run on collector01</h2>\n";
+if (BOM::System::Config::on_production() && $hostname !~ /^backoffice/) {
+    print '<h2>This must be run on <a href="https://backoffice.binary.com/d/backoffice/quant/trading_strategy.cgi">backoffice.binary.com</a></h2>';
     code_exit_BO();
 }
 
