@@ -44,8 +44,8 @@ BrokerPresentation('Trading strategy tests');
 Bar('Trading strategy');
 
 my $hostname = Sys::Hostname::hostname();
-if (BOM::System::Config::on_production() && $hostname !~ /^collector01/) {
-    print "<h2>This must be run on collector01</h2>\n";
+if (BOM::System::Config::on_production() && $hostname !~ /^backoffice/) {
+    print '<h2>This must be run on <a href="https://backoffice.binary.com/d/backoffice/quant/trading_strategy.cgi">backoffice.binary.com</a></h2>';
     code_exit_BO();
 }
 
