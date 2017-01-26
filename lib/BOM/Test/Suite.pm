@@ -57,12 +57,13 @@ sub set_date {
     # We have had various problems in Travis with this date step failing,
     # so we want to capture any output we can that might indicate what's
     # happening
+    my @cmd = (qw(sudo date -s), $date->datetime_yyyymmdd_hhmmss, '+%F %T');
     my ($stdout, $stderr, $exitcode) = capture {
-        system qw(sudo date -s), $date->datetime_yyyymmdd_hhmmss, '+%F %T';
+        system @cmd;
     };
     $stdout //= '';
     $stderr //= '';
-    die "Failed to set date, do we have sudo access? (return code = $exitcode, stdout = $stdout, stderr = $stderr)"
+    die "Failed to set date using this command:\n@cmd\nDo we have sudo access? (return code = $exitcode, stdout = $stdout, stderr = $stderr)"
         unless $stdout eq $date->datetime_yyyymmdd_hhmmss . "\n";
     return;
 }
