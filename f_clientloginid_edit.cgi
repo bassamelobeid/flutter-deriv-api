@@ -359,10 +359,11 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             next CLIENT_KEY;
         }
         if (my ($id) = $key =~ /^comments_([0-9]+)$/) {
-            my $val = $input{$key} || next CLIENT_KEY;
+            my $val = $input{$key};
             my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
-            next CLIENT_KEY unless $doc;
             my $comments = substr(encode_entities($val), 0, 255);
+            next CLIENT_KEY unless $doc;
+            next CLIENT_KEY if $comments eq $doc->comments();
             unless (eval { $doc->comments($comments); 1 }) {
                 my $err = $@;
                 print qq{<p style="color:red">ERROR: Could not set comments for doc $id: $err</p>};
@@ -376,7 +377,12 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             my $val = $input{$key} || next CLIENT_KEY;
             my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
             next CLIENT_KEY unless $doc;
-            my $date = $val eq 'clear' ? undef : Date::Utility->new($val)->date_yyyymmdd;
+            my $date;
+            if($val ne 'clear') {
+                $date = Date::Utility->new($val);
+                next CLIENT_KEY if $date->is_same_as(Date::Utility->new($doc->expiration_date));
+                $date = $date->date_yyyymmdd;
+            }
             unless (eval { $doc->expiration_date($date); 1 }) {
                 my $err = $@;
                 print qq{<p style="color:red">ERROR: Could not set expiry date for doc $id: $err</p>};
