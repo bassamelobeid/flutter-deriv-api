@@ -460,7 +460,12 @@ sub _validate_start_and_expiry_date {
     foreach my $blackout (@blackout_checks) {
         my ($epochs, $periods, $message_to_client) = @{$blackout}[0 .. 2];
         foreach my $period (@$periods) {
-            if (first { $_ >= $period->[0] and $_ < $period->[1] } @$epochs) {
+            my $start_epoch = $period->[0];
+            my $end_epoch   = $period->[1];
+
+            $end_epoch++ if ($message_to_client =~ /expire/);
+
+            if (first { $_ >= $start_epoch and $_ < $end_epoch } @$epochs) {
                 my $start = Date::Utility->new($period->[0]);
                 my $end   = Date::Utility->new($period->[1]);
                 if ($start->day_of_year == $end->day_of_year) {
@@ -673,7 +678,7 @@ sub _build_date_expiry_blackouts {
     if ($self->is_intraday) {
         my $end_of_trading = $underlying->calendar->closing_on($self->date_start);
         if ($end_of_trading and my $expiry_blackout = $underlying->eod_blackout_expiry) {
-            push @periods, [$end_of_trading->minus_time_interval($expiry_blackout)->epoch, $end_of_trading->epoch + 1];
+            push @periods, [$end_of_trading->minus_time_interval($expiry_blackout)->epoch, $end_of_trading->epoch];
         }
     } elsif ($self->expiry_daily and $underlying->market->equity and not $self->is_atm_bet) {
         my $start_of_period = BOM::System::Config::quants->{bet_limits}->{holiday_blackout_start};
