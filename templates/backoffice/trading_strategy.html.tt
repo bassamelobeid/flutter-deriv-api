@@ -76,7 +76,7 @@
 <tr>
 <th>Download dataset</th>
 <td>
- <a href="[% dataset_base_dir %]/[% date %]/[% dataset %].csv">Download [% dataset %]</a>
+ <a target="_blank" href="?download=[% date %]/[% dataset %]">Download [% dataset %]</a>
 </td>
 </tr>
  </tbody>

@@ -26,18 +26,29 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
+my $base_dir = '/var/lib/binary/trading_strategy_data/';
+
+my $cgi      = request()->cgi;
+if(my $download = $cgi->param('download')) {
+    my ($date, $dataset) = $download =~ m{^(\d{4}-\d{2}-\d{2})/([0-9a-zA-Z_]{4,20})$} or die 'invalid file';
+
+    my $path = path($base_dir)->child($date)->child($dataset . '.csv');
+    print "<pre>";
+    print "epoch,spot,ask_price,expiry_price,theo_price\n";
+    print for $path->lines_utf8;
+    print "</pre>";
+    code_exit_BO();
+}
+
 BrokerPresentation('Trading strategy tests');
 
 Bar('Trading strategy');
 
 my $hostname = Sys::Hostname::hostname();
-if (BOM::System::Config::on_production() && $hostname !~ /^collector01/) {
-    print "<h2>This must be run on collector01</h2>\n";
+if (BOM::System::Config::on_production() && $hostname !~ /^backoffice/) {
+    print '<h2>This must be run on <a href="https://backoffice.binary.com/d/backoffice/quant/trading_strategy.cgi">backoffice.binary.com</a></h2>';
     code_exit_BO();
 }
-
-my $base_dir = '/var/lib/binary/trading_strategy_data/';
-my $cgi      = request()->cgi;
 
 my $config = LoadFile('/home/git/regentmarkets/bom-backoffice/config/trading_strategy_datasets.yml');
 
@@ -113,6 +124,10 @@ my $process_dataset = sub {
                 }
                 $stats{bought_buy_price}{sum} += $market_data{buy_price} if $should_buy;
                 $stats{buy_price}{sum}        += $market_data{buy_price};
+                $stats{buy_price}{min} //= $market_data{buy_price};
+                $stats{buy_price}{max} //= $market_data{buy_price};
+                $stats{buy_price}{min}         = min $stats{buy_price}{min}, $market_data{buy_price};
+                $stats{buy_price}{max}         = max $stats{buy_price}{max}, $market_data{buy_price};
                 $stats{payout}{mean}          += $market_data{value};
 
                 $stats{start} ||= Date::Utility->new($market_data{epoch});
@@ -158,7 +173,7 @@ my $statistics_table = sub {
         ['Starting date',          Date::Utility->new($stats->{start})->datetime],
         ['Ending date',            Date::Utility->new($stats->{end})->datetime],
         ['Period',                 Time::Duration::duration($end_epoch - $start_epoch)],
-        ['Average buy price',      to_monetary_number_format($stats->{buy_price}{mean})],
+        ['Average buy price',      to_monetary_number_format($stats->{buy_price}{mean}) . '<br>' . ('(' . to_monetary_number_format($stats->{buy_price}{min}) . '/' . to_monetary_number_format($stats->{buy_price}{max}) . ')')],
         ['Average payout',         to_monetary_number_format($stats->{payout}{mean})],
         ['Number of winning bets', $stats->{winners}],
         ['Number of losing bets',  $stats->{losers}],

@@ -60,8 +60,9 @@ try {
     JOB:
     for my $job (@jobs) {
         my $pid = $pm->start and next JOB;
+	my $start_time = Time::HiRes::time;
         my ($symbol, $duration_step, $bet_type) = split "\0", $job;
-        print "$pid working on " . ($job =~ s/\0/ /gr) . " from $start..$end\n";
+        print "$$ working on " . ($job =~ s/\0/ /gr) . " from $start..$end\n";
         my ($duration, %duration_options) = split ' ', $duration_step;
 
         my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(
@@ -130,6 +131,7 @@ try {
                 }
             }
         }
+        printf "%d working on %s took %.2fms\n", $$, ($job =~ s/\0/ /gr), (1000.0 * (Time::HiRes::time - $start_time));
         $pm->finish;
     }
 }
