@@ -64,6 +64,7 @@ sub set_date {
     $stderr //= '';
     die "Failed to set date, do we have sudo access? (return code = $exitcode, stdout = $stdout, stderr = $stderr)"
         unless $stdout eq $date->datetime_yyyymmdd_hhmmss . "\n";
+    return;
 }
 
 sub run {
