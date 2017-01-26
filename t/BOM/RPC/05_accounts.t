@@ -496,13 +496,13 @@ subtest $method => sub {
     my $args    = {};
     my $data    = $fmb_dm->get_sold_bets_of_account($args);
     my $expect0 = {
-        'sell_price'     => '100',
+        'sell_price'     => '100.00',
         'contract_id'    => $txn->contract_id,
         'transaction_id' => $txn->transaction_id,
         'sell_time'      => Date::Utility->new($data->[1]{sell_time})->epoch,
-        'buy_price'      => '100',
+        'buy_price'      => '100.00',
         'purchase_time'  => Date::Utility->new($data->[1]{purchase_time})->epoch,
-        'payout'         => $contract_expired->payout,
+        'payout'         => sprintf("%.2f", $contract_expired->payout),
         'app_id'         => undef
     };
     is_deeply($result->{transactions}[1], $expect0, 'result is correct');

@@ -242,7 +242,8 @@ sub balance {
     return {
         loginid  => $client_loginid,
         currency => $client->default_account->currency_code,
-        balance => sprintf('%.2f', $client->default_account->balance)};
+        balance => BOM::RPC::v3::Utility::format_amount($client->default_account->currency_code, $client->default_account->balance)};
+
 }
 
 sub get_account_status {
@@ -550,7 +551,7 @@ sub get_settings {
                 address_state                  => $client->state,
                 address_postcode               => $client->postcode,
                 phone                          => $client->phone,
-                allow_copiers                  => $client->allow_copiers,
+                allow_copiers                  => $client->allow_copiers // 0,
                 is_authenticated_payment_agent => ($client->payment_agent and $client->payment_agent->is_authenticated) ? 1 : 0,
                 $client_tnc_status ? (client_tnc_status => $client_tnc_status->reason) : (),
             )
