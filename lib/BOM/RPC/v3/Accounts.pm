@@ -603,7 +603,7 @@ sub set_settings {
         $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && $client->broker_code ne 'CR';
 
         my $missed_field;
-        if ($missed_field = (grep { !defined $args->{$_} } qw/address_line_1 address_city address_state address_postcode/)[0]) {
+        if ($missed_field = (grep { !defined $args->{$_} } qw/address_line_1 address_city/)[0]) {
             $err = BOM::RPC::v3::Utility::create_error({
                     code              => 'InputValidationFailed',
                     message_to_client => localize("Input validation failed: [_1]", $missed_field),
@@ -671,8 +671,8 @@ sub set_settings {
     $client->address_1($address1);
     $client->address_2($address2);
     $client->city($addressTown);
-    $client->state($addressState);    # FIXME validate
-    $client->postcode($addressPostcode);
+    $client->state($addressState)       if defined $args->{'address_state'};
+    $client->postcode($addressPostcode) if defined $args->{'address_postcode'};
     $client->phone($phone);
 
     $client->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
