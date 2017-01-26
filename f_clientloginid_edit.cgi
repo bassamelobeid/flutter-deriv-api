@@ -230,10 +230,9 @@ if ($input{whattodo} eq 'uploadID') {
 
         $client->save;
 
-        $result .= "<br /><p style=\"color:green; font-weight:bold;\">Ok! File $i: $newfilename is uploaded (filesize $filesize).</p><br />";
+        $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Ok! File $i: $newfilename is uploaded (filesize $filesize).</p><br />";
     }
     print $result;
-    code_exit_BO();
 }
 
 # PERFORM ON-DEMAND ID CHECKS
@@ -462,10 +461,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         code_exit_BO();
     }
 
-    print '<p><b>SUCCESS!</b></p>';
-    print qq[<a href="$self_href">&laquo;Return to Client Details<a/>];
-
-    code_exit_BO();
+    print "<p style=\"color:#eeee00; font-weight:bold;\">Client details saved</p>";
 }
 
 Bar("NAVIGATION");
