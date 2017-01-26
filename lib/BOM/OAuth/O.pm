@@ -189,7 +189,7 @@ sub _login {
 
     my ($user, $client, $last_login, $err);
 
-    my ($email, $password) = ($c->param('email'), $c->param('password'));
+    my ($email, $password, $brand) = ($c->param('email'), $c->param('password'), $c->stash('brand'));
     LOGIN:
     {
         if ($oneall_user_id) {
@@ -237,7 +237,14 @@ sub _login {
             $client = firstval { !exists $result->{self_excluded}->{$_->loginid} } (@clients);
         }
 
-        if (grep { $client->loginid =~ /^$_/ } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins}) {
+        my $lc = $client->landing_company;
+        if (grep { $brand->name ne $_ } @{$lc->allowed_for_brands}) {
+            $err = localize('This account is unavailable. For any questions please contact Customer Support.');
+        } elsif (
+            grep {
+                $client->loginid =~ /^$_/
+            } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins})
+        {
             $err = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
         } elsif ($client->get_status('disabled')) {
             $err = localize('This account is unavailable. For any questions please contact Customer Support.');
@@ -246,7 +253,6 @@ sub _login {
         }
     }
 
-    my $brand = $c->stash('brand');
     if ($err) {
         $c->render(
             template  => _get_login_template_name($app->{id}, $brand->name),
@@ -305,8 +311,10 @@ sub _login {
                     if ($app->{id} eq '1') {
                         $message = localize(
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
-                            $client->email, $r->client_ip,
-                            $brand->countries_instance->countries->country_from_code($country_code) // $country_code, encode_entities($user_agent));
+                            $client->email,
+                            $r->client_ip,
+                            $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
+                            encode_entities($user_agent));
                     } else {
                         $message = localize(
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3], browser: [_4] and app: [_5]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
