@@ -80,7 +80,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 subtest 'verify_with_shortcode_IH' => sub {
     my $expected_parameters = {
         'intraday_vega_correction' => {
-            'intraday_vega'                 => '0.223923209094351',
+            'intraday_vega'                 => '0.223516163808827',
             'historical_vol_mean_reversion' => '0.10',
             'long_term_prediction'          => '0.0797330542931892'
         },
@@ -91,36 +91,36 @@ subtest 'verify_with_shortcode_IH' => sub {
             'opposite_contract_t'                               => '2.85388127853881e-05',
             'opposite_contract_intraday_historical_iv_risk'     => 0,
             'opposite_contract_short_term_kurtosis_risk_markup' => 0,
-            'opposite_contract_intraday_delta_correction'       => '-0.008495817668548',
-            'opposite_contract_intraday_vega'                   => '-0.223923209094351',
+            'opposite_contract_intraday_delta_correction'       => '-0.00845557256594666',
+            'opposite_contract_intraday_vega'                   => '-0.223516163808827',
             'opposite_contract_discount_rate'                   => 0,
-            'opposite_contract_vol'                             => '0.111581127892088',
+            'opposite_contract_vol'                             => '0.111682401463366',
             'opposite_contract_mu'                              => 0,
-            'opposite_contract_short_term_delta_correction'     => '-0.013202192712293',
+            'opposite_contract_short_term_delta_correction'     => '-0.0131432219167099',
             'opposite_contract_commission_multiplier'           => '1',
             'opposite_contract_payout'                          => '1000',
-            'opposite_contract_intraday_vega_correction'        => '-0.0017854081388225',
+            'opposite_contract_intraday_vega_correction'        => '-0.00178216264243746',
             'opposite_contract_quiet_period_markup'             => 0,
             'opposite_contract_economic_events_markup'          => 0,
             'opposite_contract_S'                               => '79.817',
-            'opposite_contract_bs_probability'                  => '0.525256701751486',
+            'opposite_contract_bs_probability'                  => '0.525234044869198',
             'opposite_contract_risk_markup'                     => 0,
-            'opposite_contract_long_term_delta_correction'      => '-0.00378944262480296',
+            'opposite_contract_long_term_delta_correction'      => '-0.00376792321518338',
             'opposite_contract_historical_vol_mean_reversion'   => '0.10',
             'opposite_contract_base_commission'                 => '0.035',
             'opposite_contract_commission_markup'               => '0.035',
             'opposite_contract_K'                               => '79.820'
         },
         'ask_probability' => {
-            'intraday_vega_correction'  => '0.0017854081388225',
+            'intraday_vega_correction'  => '0.00178216264243746',
             'risk_markup'               => 0,
-            'bs_probability'            => '0.474743298248514',
-            'intraday_delta_correction' => '0.00849581766854803',
+            'bs_probability'            => '0.474765955130802',
+            'intraday_delta_correction' => '0.00845557256594663',
             'commission_markup'         => '0.035'
         },
         'bs_probability' => {
             'S'             => '79.817',
-            'vol'           => '0.111581127892088',
+            'vol'           => '0.111682401463366',
             'K'             => '79.820',
             'mu'            => 0,
             'discount_rate' => 0,
@@ -136,8 +136,8 @@ subtest 'verify_with_shortcode_IH' => sub {
             'intraday_historical_iv_risk'     => 0
         },
         'intraday_delta_correction' => {
-            'short_term_delta_correction' => '0.013202192712293',
-            'long_term_delta_correction'  => '0.00378944262480302'
+            'short_term_delta_correction' => '0.0131432219167099',
+            'long_term_delta_correction'  => '0.00376792321518332'
         },
         'commission_markup' => {
             'base_commission'       => '0.035',
