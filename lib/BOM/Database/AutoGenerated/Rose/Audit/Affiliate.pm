@@ -17,7 +17,7 @@ __PACKAGE__->meta->setup(
         client_loginid                  => { type => 'varchar', length => 12, not_null => 1 },
         affiliate_type                  => { type => 'varchar', length => 100, not_null => 1 },
         approved                        => { type => 'boolean', default => 'false', not_null => 1 },
-        company_loss_since_last_payment => { type => 'numeric', default => '0', not_null => 1, precision => 2, scale => 9 },
+        company_loss_since_last_payment => { type => 'numeric', default => '0', not_null => 1 },
         currency_code                   => { type => 'varchar', default => 'USD', length => 3, not_null => 1 },
         apply_max_earning_restriction   => { type => 'boolean', default => 'true', not_null => 1 },
         apply_date                      => { type => 'timestamp', default => 'now()' },

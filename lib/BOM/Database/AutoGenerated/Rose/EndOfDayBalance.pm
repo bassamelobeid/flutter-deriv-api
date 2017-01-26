@@ -12,7 +12,7 @@ __PACKAGE__->meta->setup(
         id             => { type => 'bigint', not_null => 1, sequence => 'sequences.global_serial' },
         account_id     => { type => 'bigint', not_null => 1 },
         effective_date => { type => 'timestamp', not_null => 1 },
-        balance        => { type => 'numeric', not_null => 1, precision => 4, scale => 14 },
+        balance        => { type => 'numeric', not_null => 1 },
     ],
 
     primary_key_columns => [ 'id' ],
