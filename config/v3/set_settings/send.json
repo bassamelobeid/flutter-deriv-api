@@ -27,12 +27,12 @@
     "address_state":{
       "type":"string",
       "pattern": "^[\\p{L}\\p{Nd}\\s'.,-]{0,35}$",
-      "description": "Note: not applicable for virtual account. Required field for real money account."
+      "description": "Note: not applicable for virtual account. Optional field for real money account."
     },
     "address_postcode":{
       "type":"string",
       "pattern": "^[^+]{0,20}$",
-      "description": "Note: not applicable for virtual account. Required field for real money account."
+      "description": "Note: not applicable for virtual account. Optional field for real money account."
     },
     "phone":{
       "type": ["string", "null"],
