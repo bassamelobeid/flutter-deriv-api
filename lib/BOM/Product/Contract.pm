@@ -30,6 +30,8 @@ use BOM::Product::Types;
 use BOM::Product::ContractValidator;
 use BOM::Product::ContractPricer;
 
+use BOM::Market::DataDecimate;
+
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
 require BOM::Product::Pricing::Engine::Intraday::Index;

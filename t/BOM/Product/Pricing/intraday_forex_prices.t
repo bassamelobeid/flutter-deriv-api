@@ -5,7 +5,6 @@ use Test::Most tests => 4;
 use File::Spec;
 use YAML::XS qw(LoadFile);
 use LandingCompany::Offerings qw(get_offerings_with_filter);
-use BOM::Market::AggTicks;
 use Date::Utility;
 use BOM::Product::ContractFactory qw( produce_contract );
 
@@ -18,8 +17,9 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
-my $at = BOM::Market::AggTicks->new;
-$at->flush;
+use BOM::System::RedisReplicated;
+use BOM::Market::DataDecimate;
+use Data::Decimate qw(decimate);
 
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
@@ -38,11 +38,36 @@ my $duration        = 3600;
 
 my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
 
-$at->fill_from_historical_feed({
-    underlying   => $underlying,
-    ending_epoch => $date_start->epoch,
-    interval     => Time::Duration::Concise->new('interval' => '1h'),
-});
+my $start = $date_start->epoch - 7200;
+$start = $start - $start % 15;
+my $first_agg = $start - 15;
+
+my $hist_ticks = $underlying->ticks_in_between_start_end({
+        start_time => $first_agg,
+        end_time   => $date_start->epoch,
+    });
+
+my @tmp_ticks = reverse @$hist_ticks;
+
+my $decimate_cache = BOM::Market::DataDecimate->new;
+
+my $key          = $decimate_cache->_make_key('frxUSDJPY', 0);
+my $decimate_key = $decimate_cache->_make_key('frxUSDJPY', 1);
+
+foreach my $single_data (@tmp_ticks) {
+       $decimate_cache->_update($decimate_cache->redis_write, $key, $single_data->{epoch}, $decimate_cache->encoder->encode($single_data));
+}
+
+my $decimate_data = Data::Decimate::decimate($decimate_cache->sampling_frequency->seconds, \@tmp_ticks);
+
+foreach my $single_data (@$decimate_data) {
+            $decimate_cache->_update(
+                $decimate_cache->redis_write,
+                $decimate_key,
+                $single_data->{decimate_epoch},
+                $decimate_cache->encoder->encode($single_data));
+}
+
 my $recorded_date = $date_start->truncate_to_day;
 Test::BOM::UnitTestPrice::create_pricing_data($underlying->symbol, $payout_currency, $recorded_date);
 
