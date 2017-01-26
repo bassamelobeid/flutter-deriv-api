@@ -184,6 +184,7 @@ my $contract_type_config = LoadFile(File::ShareDir::dist_file('LandingCompany', 
             if (defined $input_params{amount} && first { $_ eq $input_params{amount_type} } (@available_amount_types)) {
                 if ($input_params{amount_type} eq 'payout') {
                     $input_params{payout} = $input_params{amount};
+                    delete $input_params{ask_price};                          #hash reference reuse.
                 } elsif ($input_params{amount_type} eq 'stake') {
                     $input_params{ask_price} = $input_params{amount};
                 }
