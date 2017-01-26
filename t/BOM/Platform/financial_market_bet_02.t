@@ -379,7 +379,7 @@ dies_ok {
 'exception thrown';
 is_deeply $@,
     [
-    BI003 => 'ERROR:  insufficient balance, need: 0.0100, #open_bets: 0, pot_payout: 0',
+    BI003 => 'ERROR:  insufficient balance, need: 0.01, #open_bets: 0, pot_payout: 0',
     ],
     'insufficient balance';
 
@@ -1656,8 +1656,8 @@ subtest 'batch_buy', sub {
             is $txn->{account_id}, $acc->id, 'txn account id matches';
             is $txn->{referrer_type}, 'financial_market_bet', 'txn referrer_type is financial_market_bet';
             is $txn->{financial_market_bet_id}, $fmb->{id}, 'txn fmb id matches';
-            is $txn->{amount},        '-20.0000',  'txn amount';
-            is $txn->{balance_after}, '4980.0000', 'txn balance_after';
+            is $txn->{amount}, '-20.00',  'txn amount';
+            is $txn->{balance_after}, '4980.00', 'txn balance_after';
             is $txn->{staff_loginid}, '#CL001',    'txn staff_loginid';
 
             my $note = $notifications{$txn->{id}};
@@ -1701,8 +1701,8 @@ subtest 'batch_buy', sub {
             is $txn->{account_id}, $acc->id, 'txn account id matches';
             is $txn->{referrer_type}, 'financial_market_bet', 'txn referrer_type is financial_market_bet';
             is $txn->{financial_market_bet_id}, $fmb->{id}, 'txn fmb id matches';
-            is $txn->{amount},        '-20.0000',  'txn amount';
-            is $txn->{balance_after}, '9980.0000', 'txn balance_after';
+            is $txn->{amount}, '-20.00',  'txn amount';
+            is $txn->{balance_after}, '9980.00', 'txn balance_after';
             is $txn->{staff_loginid}, '#CL001',    'txn staff_loginid';
 
             my $note = $notifications{$txn->{id}};
