@@ -671,7 +671,7 @@ sub set_settings {
     $client->address_1($address1);
     $client->address_2($address2);
     $client->city($addressTown);
-    $client->state($addressState)       if defined $args->{'address_state'};
+    $client->state($addressState) if defined $args->{'address_state'};            # FIXME validate
     $client->postcode($addressPostcode) if defined $args->{'address_postcode'};
     $client->phone($phone);
 
