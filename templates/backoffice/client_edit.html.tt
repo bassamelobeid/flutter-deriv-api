@@ -173,6 +173,20 @@ table#client_edit td{
         </td>
     </tr>
     <tr>
+        <td class="small_header" colspan="2">#TAX INFORMATION</td>
+    </tr>
+    <tr>
+        <td class="label">Tax Residence</td>
+        <td>:[% client.tax_residence %]
+    </tr>
+    <tr>
+        <td class="label">Tax Identification Number</td>
+        <td>:[% client.tax_identification_number %]
+    </tr>
+    <tr>
+        <td class="small_header" colspan="2">#KYC/IDENTITY VERIFICATION</td>
+    </tr>
+    <tr>
         <td class="small_header" colspan="2">#KYC/IDENTITY VERIFICATION</td>
     </tr>
     <tr>
