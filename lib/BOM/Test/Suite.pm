@@ -11,6 +11,7 @@ use YAML::XS qw(LoadFile);
 use Scalar::Util;
 use Carp;
 use File::Spec;
+use Capture::Tiny qw(capture);
 
 use Cache::RedisDB;
 use Sereal::Encoder;
@@ -48,6 +49,25 @@ sub read_file {
 
 my $ticks_inserted;
 
+# Change system date/time. Accepts anything that Date::Utility
+# can handle - epoch time, 'YYYY-mm-dd HH:MM:SS', etc.
+sub set_date {
+    my ($target_date) = @_;
+    my $date = Date::Utility->new($target_date);
+    # We have had various problems in Travis with this date step failing,
+    # so we want to capture any output we can that might indicate what's
+    # happening
+    my @cmd = (qw(sudo date -s), $date->datetime_yyyymmdd_hhmmss, '+%F %T');
+    my ($stdout, $stderr, $exitcode) = capture {
+        system @cmd;
+    };
+    $stdout //= '';
+    $stderr //= '';
+    die "Failed to set date using this command:\n@cmd\nDo we have sudo access? (return code = $exitcode, stdout = $stdout, stderr = $stderr)"
+        unless $stdout eq $date->datetime_yyyymmdd_hhmmss . "\n";
+    return;
+}
+
 sub run {
     my ($class, $args) = @_;
 
@@ -66,9 +86,7 @@ sub run {
         BOM::Test::Data::Utility::UnitTestMarketData->import(qw(:init));
         BOM::Test::Data::Utility::UnitTestDatabase->import(qw(:init));
         BOM::Test::Data::Utility::AuthTestDatabase->import(qw(:init));
-        my @res = qx/sudo date -s '2016-08-09 11:59:00' +'%F %T'/;
-        die "Failed to set date, do we have sudo access? (return code = $?)"
-            unless $res[0] eq "2016-08-09 11:59:00\n";
+        set_date('2016-08-09 11:59:00');
 
         initialize_realtime_ticks_db();
         build_test_R_50_data();
@@ -126,10 +144,7 @@ sub run {
         # Note that we have seen problems when resetting the time backwards:
         # symptoms include account balance going negative when buying
         # a contract.
-        my @res = qx/sudo date -s \@$reset_time +%s/;
-        die "Failed to set date, do we have sudo access? (return code = $?)"
-            unless $res[0] eq "$reset_time\n";
-        ++$reset_time;
+        set_date($reset_time++);
 
         ++$counter;    # slightly more informative name, for use in log messages at the end of the loop
         chomp $line;
