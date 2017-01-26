@@ -14,6 +14,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
 use BOM::Platform::Token;
+use utf8;
 
 # Seconds between reloads of the rate_limitations.yml file.
 # We don't want to reload too frequently, since we may see a lot of `website_status` calls.
@@ -61,6 +62,16 @@ sub create_error {
             $args->{continue_price_stream} ? (continue_price_stream => $args->{continue_price_stream}) : (),
             $args->{message}               ? (message               => $args->{message})               : (),
             $args->{details}               ? (details               => $args->{details})               : ()}};
+}
+
+sub currencies_config {
+    return {
+        'AUD' => {fractional_digits => 2},
+        'EUR' => {fractional_digits => 2},
+        'GBP' => {fractional_digits => 2},
+        'USD' => {fractional_digits => 2},
+        'JPY' => {fractional_digits => 2},
+        'XBT' => {fractional_digits => 8}};
 }
 
 sub invalid_token_error {
@@ -261,6 +272,19 @@ sub get_real_acc_opening_type {
         return $financial_company if ($financial_company eq 'maltainvest');
     }
     return;
+}
+
+sub format_amount {
+    my $currency = shift;
+    my $amount = shift || 0;
+
+    my $digits = currencies_config()->{$currency}->{fractional_digits};
+
+    if (defined $digits) {
+        return sprintf('%.' . $digits . 'f', $amount);
+    } else {
+        die "wrong currency for rounding [$currency]";
+    }
 }
 
 1;
