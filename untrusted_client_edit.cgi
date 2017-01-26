@@ -42,7 +42,7 @@ LOGIN:
 foreach my $login_id (split(/\s+/, $clientID)) {
     my $client = Client::Account::get_instance({'loginid' => $login_id});
     if (not $client) {
-        push @invalid_logins, $login_id;
+        push @invalid_logins, encode_entities($login_id);
         next LOGIN;
     }
 
@@ -58,9 +58,12 @@ foreach my $login_id (split(/\s+/, $clientID)) {
         code_exit_BO();
     }
 
-    my $encoded_login_id = encode_entities($login_id);
-    my $encoded_reason   = encode_entities($reason);
-    my $encoded_clerk    = encode_entities($clerk);
+    my $encoded_login_id =
+          '<a href="'
+        . request()->url_for("backoffice/f_clientloginid_edit.cgi", {loginID => encode_entities($login_id)}) . '">'
+        . encode_entities($login_id) . '</a>';
+    my $encoded_reason = encode_entities($reason);
+    my $encoded_clerk  = encode_entities($clerk);
     # BUILD MESSAGE TO PRINT TO SCREEN
     my $insert_error_msg =
         "<font color=red><b>ERROR :</font></b>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has not been saved to  <b>$file_name</b>";

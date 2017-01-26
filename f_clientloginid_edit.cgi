@@ -378,7 +378,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
             next CLIENT_KEY unless $doc;
             my $date;
-            if($val ne 'clear') {
+            if ($val ne 'clear') {
                 $date = Date::Utility->new($val);
                 next CLIENT_KEY if $date->is_same_as(Date::Utility->new($doc->expiration_date));
                 $date = $date->date_yyyymmdd;
