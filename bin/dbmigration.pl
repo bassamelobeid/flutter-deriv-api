@@ -10,6 +10,8 @@ use File::Slurp;
 
 with 'App::Base::Script';
 
+my $home_git = $ENV{HOME_GIT_DIR} // '/home/git';
+
 sub cli_template {
     return "$0 [options]";
 }
@@ -99,30 +101,30 @@ sub script_run {
 
     my $database = 'regentmarkets';
     my $port     = 5432;
-    my $dir      = '/home/git/regentmarkets/bom-postgres-clientdb/config/sql/';
+    my $dir      = $home_git . '/regentmarkets/bom-postgres-clientdb/config/sql/';
 
     my $dbset = $self->getOption('dbset');
     if ($dbset eq 'rmg') {
-        $dir = '/home/git/regentmarkets/bom-postgres-clientdb/config/sql/';
+        $dir = $home_git . '/regentmarkets/bom-postgres-clientdb/config/sql/';
     } elsif ($dbset eq 'collector') {
-        $dir = '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/';
+        $dir = $home_git . '/regentmarkets/bom-postgres-collectordb/config/sql/';
 
         # version table = dbix_migration_collector
         $tablename_extension = 'collector';
     } elsif ($dbset eq 'chronicle') {
-        $dir      = '/home/git/regentmarkets/bom-postgres-chronicledb/config/sql/';
+        $dir      = $home_git . '/regentmarkets/bom-postgres-chronicledb/config/sql/';
         $port     = '5437';
         $database = 'chronicle';
     } elsif ($dbset eq 'feed') {
-        $dir      = '/home/git/regentmarkets/bom-postgres-feeddb/config/sql/';
+        $dir      = $home_git . '/regentmarkets/bom-postgres-feeddb/config/sql/';
         $port     = '5433';
         $database = 'feed';
     } elsif ($dbset eq 'auth') {
-        $dir      = '/home/git/regentmarkets/bom-postgres-authdb/config/sql/';
+        $dir      = $home_git . '/regentmarkets/bom-postgres-authdb/config/sql/';
         $port     = '5435';
         $database = 'auth';
     } elsif ($dbset eq 'users') {
-        $dir      = '/home/git/regentmarkets/bom-postgres-userdb/config/sql';
+        $dir      = $home_git . '/regentmarkets/bom-postgres-userdb/config/sql';
         $port     = '5436';
         $database = 'users';
     }
