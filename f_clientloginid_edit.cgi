@@ -165,6 +165,7 @@ if ($input{whattodo} eq 'uploadID') {
         my $filetoupload    = $cgi->param('FILE_' . $i);
         my $docformat       = $cgi->param('docformat_' . $i);
         my $expiration_date = $cgi->param('expiration_date_' . $i);
+        my $comments        = substr(encode_entities($cgi->param('comments_' . $i)), 0, 255);
 
         if (not $filetoupload) {
             $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: You did not browse for a file to upload.</p><br />"
@@ -218,7 +219,8 @@ if ($input{whattodo} eq 'uploadID') {
             document_format            => $docformat,
             document_path              => $newfilename,
             authentication_method_code => 'ID_DOCUMENT',
-            expiration_date            => $expiration_date
+            expiration_date            => $expiration_date,
+            comments                   => $comments,
         };
 
         #needed because CR based submissions don't return a result when an empty string is submitted in expiration_date;
@@ -354,6 +356,20 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         }
         if ($key eq 'residence') {
             $client->residence($input{$key});
+            next CLIENT_KEY;
+        }
+        if (my ($id) = $key =~ /^comments_([0-9]+)$/) {
+            my $val = $input{$key} || next CLIENT_KEY;
+            my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
+            next CLIENT_KEY unless $doc;
+            my $comments = substr(encode_entities($val), 0, 255);
+            unless (eval { $doc->comments($comments); 1 }) {
+                my $err = $@;
+                print qq{<p style="color:red">ERROR: Could not set comments for doc $id: $err</p>};
+                code_exit_BO();
+            }
+            $doc->db($client->set_db('write'));
+            $doc->save;
             next CLIENT_KEY;
         }
         if (my ($id) = $key =~ /^expiration_date_([0-9]+)$/) {
@@ -518,8 +534,8 @@ if ($next_client) {
 }
 
 # view client's statement/portfolio/profit table
-my $history_url = request()->url_for('backoffice/f_manager_history.cgi');
-my $statmnt_url = request()->url_for('backoffice/f_manager_statement.cgi');
+my $history_url     = request()->url_for('backoffice/f_manager_history.cgi');
+my $statmnt_url     = request()->url_for('backoffice/f_manager_statement.cgi');
 my $impersonate_url = request()->url_for('backoffice/client_impersonate.cgi');
 print qq{<br/>
     <div class="flat">
@@ -562,11 +578,11 @@ if (my $statuses = build_client_warning_message($loginid)) {
 BOM::Backoffice::Request::template->process(
     'backoffice/account/untrusted_form.html.tt',
     {
-        edit_url                  => request()->url_for('backoffice/untrusted_client_edit.cgi'),
-        reasons                   => [get_untrusted_client_reason()],
-        broker                    => $broker,
-        clientid                  => $loginid,
-        actions                   => get_untrusted_types(),
+        edit_url => request()->url_for('backoffice/untrusted_client_edit.cgi'),
+        reasons  => [get_untrusted_client_reason()],
+        broker   => $broker,
+        clientid => $loginid,
+        actions  => get_untrusted_types(),
     }) || die BOM::Backoffice::Request::template->error();
 
 # Show Self-Exclusion link if this client has self-exclusion settings.
