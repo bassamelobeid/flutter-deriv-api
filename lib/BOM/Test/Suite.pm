@@ -67,9 +67,9 @@ sub run {
         BOM::Test::Data::Utility::UnitTestMarketData->import(qw(:init));
         BOM::Test::Data::Utility::UnitTestDatabase->import(qw(:init));
         BOM::Test::Data::Utility::AuthTestDatabase->import(qw(:init));
-        { # We have had various problems in Travis with this date step failing,
-          # so we want to capture any output we can that might indicate what's
-          # happening
+        {    # We have had various problems in Travis with this date step failing,
+                # so we want to capture any output we can that might indicate what's
+                # happening
             my ($stdout, $stderr, $exitcode) = capture {
                 system qw(sudo date -s), '2016-08-09 11:59:00', '+%F %T';
             };
