@@ -16,8 +16,7 @@ my ($client_account, $pa_account);
 my ($clientdb,         $amount_data);
 my ($total_withdrawal, $withdrawal_count);
 
-my $transfer_amount = 2000.2525;
-my $transfer_amount_2dp = sprintf('%.2f', $transfer_amount);
+my $transfer_amount = 2000.25;
 
 subtest 'Initialization' => sub {
     plan tests => 1;
@@ -90,7 +89,7 @@ subtest 'Client withdraw money via payment agent' => sub {
     }
     'Client get_today_payment_agent_withdrawal_sum_count';
 
-    cmp_ok($total_withdrawal, 'eq', $transfer_amount_2dp, 'Client withdrawal amount, 2 digits rounded');
+    cmp_ok($total_withdrawal, 'eq', $transfer_amount, 'Client withdrawal amount, 2 digits rounded');
     cmp_ok($withdrawal_count, '==', 1, 'Client withdrawal count');
 
     throws_ok {
