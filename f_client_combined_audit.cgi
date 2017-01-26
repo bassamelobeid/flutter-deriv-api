@@ -14,7 +14,7 @@ use f_brokerincludeall;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
-use BOM::Platform::Runtime;
+use BOM::System::Config;
 use Client::Account;
 use feature "state";
 
@@ -242,7 +242,7 @@ sub _get_desk_com_entries {
     my $color = 'black';
     # add desk.com cases not deleted
     my $curl_url =
-          BOM::Platform::Runtime->instance->app_config->system->desk_com->desk_url
+          BOM::System::Config::third_party->{desk}->{api_uri}
         . "cases/search?q=custom_loginid:$loginid+created:"
         . _get_desk_created_string($startdate, $enddate);
     if ($status) {
@@ -250,8 +250,8 @@ sub _get_desk_com_entries {
         $color = 'red';
     }
     $curl_url .= " -u "
-        . BOM::Platform::Runtime->instance->app_config->system->desk_com->account_username . ":"
-        . BOM::Platform::Runtime->instance->app_config->system->desk_com->account_password
+        . BOM::System::Config::third_party->{desk}->{username} . ":"
+        . BOM::System::Config::third_party->{desk}->{password}
         . " -d 'sort_field=created_at&sort_direction=asc' -G -H 'Accept: application/json'";
 
     my $response     = `curl $curl_url`;
