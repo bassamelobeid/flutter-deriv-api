@@ -8,7 +8,7 @@ use Test::MockModule;
 use Test::FailWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Market::AggTicks;
+use BOM::Market::DataDecimate;
 use Date::Utility;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -49,11 +49,18 @@ my $bet_params = {
     duration     => '2m',
 };
 
-my $mocked = Test::MockModule->new('BOM::Market::AggTicks');
+my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
 $mocked->mock(
-    'retrieve',
+    'tick_cache_get',
     sub {
         [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_} } (0 .. 10)];
+    });
+
+my $mocked2 = Test::MockModule->new('BOM::Market::DataDecimate');
+$mocked2->mock(
+    'decimate_cache_get',
+    sub {
+        [map { {quote => 100, symbol => 'frxUSDJPY', decimate_epoch => $_, epoch => $_} } (0 .. 10)];
     });
 
 subtest 'inefficient period' => sub {
@@ -77,13 +84,29 @@ subtest 'inefficient period' => sub {
 
     note('set duration to five ticks.');
     $bet_params->{duration} = '5t';
-    my $mock = Test::MockModule->new('BOM::Market::AggTicks');
+    my $mock = Test::MockModule->new('BOM::Market::DataDecimate');
     $mock->mock(
-        'retrieve',
+        'decimate_cache_get',
         sub {
             my $dp = $bet_params->{date_pricing}->epoch;
             [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp + 19)];
         });
+
+    my $mock2 = Test::MockModule->new('BOM::Market::DataDecimate');
+    $mock2->mock(
+        'tick_cache_get',
+        sub {
+            my $dp = $bet_params->{date_pricing}->epoch;
+            [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp + 19)];
+        });
+
+    $mock2->mock(
+        'tick_cache_get_num_ticks',
+        sub {
+            my $dp = $bet_params->{date_pricing}->epoch;
+            [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp + 19)];
+        });
+    
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy,       'valid to buy';
     ok $c->market_is_inefficient, 'market inefficient flag triggered for tick expiry';
