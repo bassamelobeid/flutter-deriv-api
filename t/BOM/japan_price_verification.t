@@ -10,14 +10,15 @@ use Test::FailWarnings;
 use Date::Utility;
 use BOM::JapanContractDetails;
 use BOM::MarketData qw(create_underlying);
+use BOM::Market::DataDecimate;
+use BOM::System::RedisReplicated;
+use Data::Decimate qw(decimate);
+
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Market::AggTicks;
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Format::Util::Numbers qw(roundnear);
-my $at = BOM::Market::AggTicks->new;
-$at->flush;
 
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
@@ -25,11 +26,42 @@ BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump
 my $underlying = create_underlying('frxUSDJPY');
 my $now        = Date::Utility->new(1352345145);
 
-$at->fill_from_historical_feed({
-    underlying   => $underlying,
-    ending_epoch => $now->epoch,
-    interval     => Time::Duration::Concise->new('interval' => '1h'),
-});
+#$at->fill_from_historical_feed({
+#    underlying   => $underlying,
+#    ending_epoch => $now->epoch,
+#    interval     => Time::Duration::Concise->new('interval' => '1h'),
+#});
+
+my $start = $now->epoch - 7200;
+$start = $start - $start % 15;
+my $first_agg = $start - 15;
+
+my $hist_ticks = $underlying->ticks_in_between_start_end({
+        start_time => $first_agg,
+        end_time   => $now->epoch,
+    });
+
+my @tmp_ticks = reverse @$hist_ticks;
+
+my $decimate_cache = BOM::Market::DataDecimate->new;
+
+my $key          = $decimate_cache->_make_key('frxUSDJPY', 0);
+my $decimate_key = $decimate_cache->_make_key('frxUSDJPY', 1);
+
+foreach my $single_data (@tmp_ticks) {
+       $decimate_cache->_update($decimate_cache->redis_write, $key, $single_data->{epoch}, $decimate_cache->encoder->encode($single_data));
+}
+
+my $decimate_data = Data::Decimate::decimate($decimate_cache->sampling_frequency->seconds, \@tmp_ticks);
+
+foreach my $single_data (@$decimate_data) {
+            $decimate_cache->_update(
+                $decimate_cache->redis_write,
+                $decimate_key,
+                $single_data->{decimate_epoch},
+                $decimate_cache->encoder->encode($single_data));
+}
+
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
