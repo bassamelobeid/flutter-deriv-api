@@ -137,7 +137,7 @@ sub mt5_new_account {
     my $balance = 0;
     # funds in Virtual money
     if ($account_type eq 'demo') {
-        $balance = 5000;
+        $balance = 10000;
         $status  = BOM::MT5::User::deposit({
             login   => $mt5_login,
             amount  => $balance,
