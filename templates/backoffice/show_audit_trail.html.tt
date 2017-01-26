@@ -5,6 +5,7 @@
 <style type="text/css">
     table#show_log_list_table td {
         background: #eeeedd;
+        white-space: nowrap;
     }
     table#show_log_list_table td div{
         height: 16px;
@@ -37,8 +38,8 @@
                 SET class = class _ " first" IF loop.first;
                 SET class = class _ " changed" IF log.changes.$hdr;
                 SET classdec = class ? "class=\"$class\"" : '' %]
-                <td><div [%classdec%] title="[%value%]">
-                    &nbsp;[% value %]
+                <td><div [% classdec | none %] title="[%value%]">
+                    [% value %]
                 </div></td>
             [% END %]
         </tr>
