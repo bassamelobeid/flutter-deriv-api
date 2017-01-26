@@ -673,7 +673,7 @@ sub _build_date_expiry_blackouts {
     if ($self->is_intraday) {
         my $end_of_trading = $underlying->calendar->closing_on($self->date_start);
         if ($end_of_trading and my $expiry_blackout = $underlying->eod_blackout_expiry) {
-            push @periods, [$end_of_trading->minus_time_interval($expiry_blackout)->epoch, $end_of_trading->epoch];
+            push @periods, [$end_of_trading->minus_time_interval($expiry_blackout)->epoch, $end_of_trading->epoch + 1];
         }
     } elsif ($self->expiry_daily and $underlying->market->equity and not $self->is_atm_bet) {
         my $start_of_period = BOM::System::Config::quants->{bet_limits}->{holiday_blackout_start};
