@@ -26,7 +26,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump
 my $underlying = create_underlying('frxUSDJPY');
 my $now        = Date::Utility->new(1352345145);
 
-my $start = $now->epoch - 7200;
+my $start = $now->epoch - 3600;
 $start = $start - $start % 15;
 my $first_agg = $start - 15;
 
