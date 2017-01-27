@@ -13,13 +13,15 @@ use YAML qw(LoadFile);
 use Path::Tiny;
 use Data::Dumper;
 use Fcntl qw(:flock);
+use Sys::Info;
 use Parallel::ForkManager;
 
 # How many ticks to request at a time
 use constant TICK_CHUNK_SIZE => 86400;
 
-# Number of forks to create
-use constant WORKERS => 4;
+# Number of forks to create - as of 2017-01, QA systems have 4 CPUs, backoffice 8,
+# so we want to adapt to what's available
+use constant WORKERS => floor(Sys::Info->new->device("CPU")->count / 2) || 1;
 
 ++$|;
 
