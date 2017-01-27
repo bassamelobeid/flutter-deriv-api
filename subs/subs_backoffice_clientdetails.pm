@@ -96,7 +96,7 @@ sub print_client_details {
 
     my @crs_tin_array = ();
     if (my $crs_tin_status = $client->get_status('crs_tin_information')) {
-        my @dates = sort { Date::Utility->new($a)->epoch <=> Date::Utility->new($b)->epoch } split ",", $crs_tin_status;
+        my @dates = sort { Date::Utility->new($a)->epoch <=> Date::Utility->new($b)->epoch } split ",", $crs_tin_status->reason;
         for my $i (0 .. $#dates) {
             push @crs_tin_array, "Client submitted the TIN information Version " . ($i + 1) . " on " . $dates[$i];
         }
