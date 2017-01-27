@@ -198,14 +198,12 @@ if ($cgi->param('run')) {
             for my $duration_line ($duration_selected eq '*' ? @{$config->{durations}} : $duration_selected) {
                 (my $duration = $duration_line) =~ s/ step /_/;
                 for my $type ($type_selected eq '*' ? @{$config->{types}} : $type_selected) {
-                    for my $date (@date_selected) {
-                        my $dataset = join '_', $underlying, $duration, $type;
-                        push @tbl, eval { $process_dataset->($date, $dataset) } or do {
-                            print "Failed to process $dataset - $@" if $@;
-                            ();
-                        };
-                        last TABLE if @tbl > 300;
-                    }
+                    my $dataset = join '_', $underlying, $duration, $type;
+                    push @tbl, eval { $process_dataset->([ @date_selected ], $dataset) } or do {
+                        print "Failed to process $dataset - $@" if $@;
+                        ();
+                    };
+                    last TABLE if @tbl > 300;
                 }
             }
         }
