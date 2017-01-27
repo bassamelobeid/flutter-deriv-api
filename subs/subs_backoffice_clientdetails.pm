@@ -321,7 +321,7 @@ sub show_client_id_docs {
             ($file_name) = $document_file =~ m[clientIDscans/\w+/(.+)$];
             $download_file = $client->broker . "/$file_name";
             my $date = $doc->expiration_date || '';
-            $date = Date::Utility->new($date)->date_ddmmmyyyy if $date;
+            $date = Date::Utility->new($date)->date_yyyymmdd if $date;
             my $comments = $doc->comments;
             $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$doc_id" value="$date">};
             $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$doc_id" value="$comments">};
