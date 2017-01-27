@@ -689,9 +689,9 @@ sub set_settings {
 
         my $current_date = Date::Utility->new()->date;
         # comma separated dates 2016-03-01,2016-12-12
-        my $data = $client->get_status('crs_tin_information');
-        if ($data) {
-            my @dates = sort { Date::Utility->new($a)->epoch <=> Date::Utility->new($b)->epoch } split ",", $data;
+        my $data;
+        if (my $crs_tin_status = $client->get_status('crs_tin_information')) {
+            my @dates = sort { Date::Utility->new($a)->epoch <=> Date::Utility->new($b)->epoch } split ",", $crs_tin_status->reason;
             unless (grep { $current_date eq $_ } @dates) {
                 push @dates, $current_date;
                 $data = join ",", @dates;
