@@ -700,7 +700,7 @@ sub set_settings {
         }
 
         # update status with new date
-        $client->set_status('crs_tin_information', $data);
+        $client->set_status('crs_tin_information', 'system', $data);
     }
 
     if (not $client->save()) {
