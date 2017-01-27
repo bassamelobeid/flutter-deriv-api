@@ -27,10 +27,6 @@ sub authorize {
     my $client = Client::Account->new({loginid => $loginid});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client;
 
-    my $lc = $client->landing_company;
-    # check for not allowing cross brand tokens
-    return BOM::RPC::v3::Utility::invalid_token_error() unless (grep { request()->brand->name eq $_ } @{$lc->allowed_for_brands});
-
     if ($client->get_status('disabled')) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'AccountDisabled',
@@ -69,8 +65,8 @@ sub authorize {
         currency => ($account ? $account->currency_code : ''),
         email    => $client->email,
         country  => $client->residence,
-        landing_company_name     => $lc->short,
-        landing_company_fullname => $lc->name,
+        landing_company_name     => $client->landing_company->short,
+        landing_company_fullname => $client->landing_company->name,
         scopes                   => $scopes,
         is_virtual               => ($client->is_virtual ? 1 : 0),
         stash                    => {
@@ -82,7 +78,7 @@ sub authorize {
             account_id           => ($account ? $account->id : ''),
             country              => $client->residence,
             currency             => ($account ? $account->currency_code : ''),
-            landing_company_name => $lc->short,
+            landing_company_name => $client->landing_company->short,
             is_virtual           => ($client->is_virtual ? 1 : 0),
         },
     };
