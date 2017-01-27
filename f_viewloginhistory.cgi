@@ -37,5 +37,4 @@ if (my $email_list = request()->param('email')) {
             });
     }
 }
-
 code_exit_BO();
