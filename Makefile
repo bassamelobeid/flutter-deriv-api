@@ -25,3 +25,7 @@ tidy:
 	find . -name '*.p?.bak' -delete
 	. /etc/profile.d/perl5.sh;find lib t -name '*.p[lm]' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
 	find . -name '*.tidyup' -delete
+
+orm_files:
+	perl -MBOM::Test::Data::Utility::UnitTestDatabase=:init -e0
+	PGPORT=5432 bin/rose_generation regentmarkets --all

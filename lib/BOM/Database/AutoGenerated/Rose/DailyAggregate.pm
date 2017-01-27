@@ -15,7 +15,9 @@ __PACKAGE__->meta->setup(
         loss       => { type => 'numeric' },
     ],
 
-    primary_key_columns => [ 'day', 'account_id' ],
+    primary_key_columns => [ 'account_id', 'day' ],
+
+    unique_key => [ 'day', 'account_id' ],
 );
 
 1;
