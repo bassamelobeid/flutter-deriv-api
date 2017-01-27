@@ -10,14 +10,15 @@ use Test::FailWarnings;
 use Date::Utility;
 use BOM::JapanContractDetails;
 use BOM::MarketData qw(create_underlying);
+use BOM::Market::DataDecimate;
+use BOM::System::RedisReplicated;
+use Data::Decimate qw(decimate);
+
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Market::AggTicks;
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Format::Util::Numbers qw(roundnear);
-my $at = BOM::Market::AggTicks->new;
-$at->flush;
 
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
@@ -25,11 +26,36 @@ BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump
 my $underlying = create_underlying('frxUSDJPY');
 my $now        = Date::Utility->new(1352345145);
 
-$at->fill_from_historical_feed({
-    underlying   => $underlying,
-    ending_epoch => $now->epoch,
-    interval     => Time::Duration::Concise->new('interval' => '1h'),
-});
+my $start = $now->epoch - 3600;
+$start = $start - $start % 15;
+my $first_agg = $start - 15;
+
+my $hist_ticks = $underlying->ticks_in_between_start_end({
+        start_time => $first_agg,
+        end_time   => $now->epoch,
+    });
+
+my @tmp_ticks = reverse @$hist_ticks;
+
+my $decimate_cache = BOM::Market::DataDecimate->new;
+
+my $key          = $decimate_cache->_make_key('frxUSDJPY', 0);
+my $decimate_key = $decimate_cache->_make_key('frxUSDJPY', 1);
+
+foreach my $single_data (@tmp_ticks) {
+       $decimate_cache->_update($decimate_cache->redis_write, $key, $single_data->{epoch}, $decimate_cache->encoder->encode($single_data));
+}
+
+my $decimate_data = Data::Decimate::decimate($decimate_cache->sampling_frequency->seconds, \@tmp_ticks);
+
+foreach my $single_data (@$decimate_data) {
+            $decimate_cache->_update(
+                $decimate_cache->redis_write,
+                $decimate_key,
+                $single_data->{decimate_epoch},
+                $decimate_cache->encoder->encode($single_data));
+}
+
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
@@ -48,47 +74,47 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 subtest 'verify_with_shortcode_IH' => sub {
     my $expected_parameters = {
         'intraday_vega_correction' => {
-            'intraday_vega'                 => '0.223923209094351',
+            'intraday_vega'                 => '0.223516163808827',
             'historical_vol_mean_reversion' => '0.10',
             'long_term_prediction'          => '0.0797330542931892'
         },
         'opposite_contract' => {
             'opposite_contract_intraday_eod_markup'             => 0,
-            'opposite_contract_vol_spread_markup'               => '0',
+            'opposite_contract_vol_spread_markup'               => '0.000143148712425076',
             'opposite_contract_long_term_prediction'            => '0.0797330542931892',
             'opposite_contract_t'                               => '2.85388127853881e-05',
             'opposite_contract_intraday_historical_iv_risk'     => 0,
             'opposite_contract_short_term_kurtosis_risk_markup' => 0,
-            'opposite_contract_intraday_delta_correction'       => '-0.008495817668548',
-            'opposite_contract_intraday_vega'                   => '-0.223923209094351',
+            'opposite_contract_intraday_delta_correction'       => '-0.00845557256594666',
+            'opposite_contract_intraday_vega'                   => '-0.223516163808827',
             'opposite_contract_discount_rate'                   => 0,
-            'opposite_contract_vol'                             => '0.111581127892088',
+            'opposite_contract_vol'                             => '0.111682401463366',
             'opposite_contract_mu'                              => 0,
-            'opposite_contract_short_term_delta_correction'     => '-0.013202192712293',
+            'opposite_contract_short_term_delta_correction'     => '-0.0131432219167099',
             'opposite_contract_commission_multiplier'           => '1',
             'opposite_contract_payout'                          => '1000',
-            'opposite_contract_intraday_vega_correction'        => '-0.0017854081388225',
+            'opposite_contract_intraday_vega_correction'        => '-0.00178216264243746',
             'opposite_contract_quiet_period_markup'             => 0,
             'opposite_contract_economic_events_markup'          => 0,
             'opposite_contract_S'                               => '79.817',
-            'opposite_contract_bs_probability'                  => '0.525256701751486',
-            'opposite_contract_risk_markup'                     => 0,
-            'opposite_contract_long_term_delta_correction'      => '-0.00378944262480296',
+            'opposite_contract_bs_probability'                  => '0.525234044869198',
+            'opposite_contract_risk_markup'                     => '0.000143148712425076',
+            'opposite_contract_long_term_delta_correction'      => '-0.00376792321518338',
             'opposite_contract_historical_vol_mean_reversion'   => '0.10',
             'opposite_contract_base_commission'                 => '0.035',
             'opposite_contract_commission_markup'               => '0.035',
             'opposite_contract_K'                               => '79.820'
         },
         'ask_probability' => {
-            'intraday_vega_correction'  => '0.0017854081388225',
-            'risk_markup'               => 0,
-            'bs_probability'            => '0.474743298248514',
-            'intraday_delta_correction' => '0.00849581766854803',
+            'intraday_vega_correction'  => '0.00178216264243746',
+            'risk_markup'               => '0.000143148712425076',
+            'bs_probability'            => '0.474765955130802',
+            'intraday_delta_correction' => '0.00845557256594663',
             'commission_markup'         => '0.035'
         },
         'bs_probability' => {
             'S'             => '79.817',
-            'vol'           => '0.111581127892088',
+            'vol'           => '0.111682401463366',
             'K'             => '79.820',
             'mu'            => 0,
             'discount_rate' => 0,
@@ -98,14 +124,14 @@ subtest 'verify_with_shortcode_IH' => sub {
         'risk_markup' => {
             'quiet_period_markup'             => 0,
             'short_term_kurtosis_risk_markup' => 0,
-            'vol_spread_markup'               => '0',
+            'vol_spread_markup'               => '0.000143148712425076',
             'intraday_eod_markup'             => 0,
             'economic_events_markup'          => 0,
             'intraday_historical_iv_risk'     => 0
         },
         'intraday_delta_correction' => {
-            'short_term_delta_correction' => '0.013202192712293',
-            'long_term_delta_correction'  => '0.00378944262480302'
+            'short_term_delta_correction' => '0.0131432219167099',
+            'long_term_delta_correction'  => '0.00376792321518332'
         },
         'commission_markup' => {
             'base_commission'       => '0.035',
