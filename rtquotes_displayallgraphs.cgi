@@ -4,6 +4,7 @@ package main;
 use strict;
 use f_brokerincludeall;
 use BOM::MarketData qw(create_underlying_db);
+use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
 use BOM::Backoffice::GNUPlot;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
@@ -50,7 +51,7 @@ foreach my $hashkey (keys %{request()->params}) {
 $hashcat = String::UTF8::MD5::md5($hashcat);
 $hashcat .= int(rand 100);
 my $fileextention       = "gif";
-my $graph_outputfile    = BOM::Platform::Runtime->instance->app_config->system->directory->tmp_gif . "/$hashcat.$fileextention";
+my $graph_outputfile    = get_tmp_path_or_die('gif') . "/$hashcat.$fileextention";
 my $graph_outputfile_ht = request()->url_for("temp/$hashcat.$fileextention");
 
 my $now           = Date::Utility->new;

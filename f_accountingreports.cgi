@@ -25,7 +25,6 @@ my $all_currencies   = request()->available_currencies;
 my $currency_options = get_currency_options();
 my $feedloc          = BOM::Platform::Runtime->instance->app_config->system->directory->feed;
 my $dbloc            = BOM::Platform::Runtime->instance->app_config->system->directory->db;
-my $tmp_dir          = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
 
 my $encoded_broker = encode_entities($broker);
 my $now            = Date::Utility->new;
