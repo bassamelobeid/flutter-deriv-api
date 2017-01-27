@@ -41,7 +41,7 @@ my $page     = request()->param('page')     || 0;
 my $pagesize = request()->param('pagesize') || 40;
 my $offset   = $page * $pagesize;
 my @system_cols = qw/stamp staff_name operation remote_addr/;
-my @noshow_cols = qw/pg_userid client_port id client_addr/;
+my @noshow_cols = qw/pg_userid client_port id client_addr client_loginid document_format/;
 
 my $myself_args = {
     broker   => $broker,
@@ -206,7 +206,7 @@ if ($loginid) {    # don't page for single login report
 my @allhdrs;
 
 if (@logs) {
-    @allhdrs = (@system_cols, 'table', sort keys %hdrs);
+    @allhdrs = (@system_cols, 'table', @{_sort_headers(\%hdrs)});
 } else {
     @allhdrs = ('no data found');
 }
@@ -222,6 +222,7 @@ my $stash = {
     pagesize => $pagesize,
     url_to_myself => request()->url_for("backoffice/show_audit_trail.cgi", $myself_args),
     url_to_client => request()->url_for("backoffice/$return_cgi",          $return_args),
+    hidden_cols => {map { $_ => 1 } (qw/client_password secret_answer secret_question date_joined document_path/)},
 };
 
 Bar($title_bar);
@@ -229,3 +230,13 @@ Bar($title_bar);
 BOM::Backoffice::Request::template->process('backoffice/show_audit_trail.html.tt', $stash) || die BOM::Backoffice::Request::template->error();
 
 code_exit_BO();
+
+sub _sort_headers {
+    my ($h)           = @_;
+    my $counter_end   = 200;
+    my $counter_begin = -100;
+    $h->{$_} = $counter_end++
+        for (qw/address_city address_line_1 address_line_2 address_postcode address_state allow_copiers allow_login allow_omnibus/);
+    $h->{$_} = $counter_begin++ for (qw/reason payment_agent_withdrawal_expiration_date document_type expiration_date/);
+    return [sort { $h->{$a} <=> $h->{$b} || $a cmp $b } keys %$h];
+}
