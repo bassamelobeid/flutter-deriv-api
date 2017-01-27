@@ -43,7 +43,6 @@ __PACKAGE__->meta->setup(
         myaffiliates_token                       => { type => 'varchar', length => 32 },
         myaffiliates_token_registered            => { type => 'boolean', default => 'false', not_null => 1 },
         checked_affiliate_exposures              => { type => 'boolean', default => 'false', not_null => 1 },
-        allow_copiers                            => { type => 'boolean', default => 'false' },
         custom_max_acbal                         => { type => 'integer' },
         custom_max_daily_turnover                => { type => 'integer' },
         custom_max_payout                        => { type => 'integer' },
@@ -56,6 +55,7 @@ __PACKAGE__->meta->setup(
         aml_risk_classification                  => { type => 'enum', check_in => [ 'low', 'standard', 'high', 'manual override - low', 'manual override - standard', 'manual override - high' ], db_type => 'aml_risk_type', default => 'low' },
         allow_omnibus                            => { type => 'boolean' },
         sub_account_of                           => { type => 'varchar', length => 12 },
+        allow_copiers                            => { type => 'boolean' },
     ],
 
     primary_key_columns => [ 'custom_max_payout' ],
