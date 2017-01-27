@@ -34,9 +34,9 @@ has ['from', 'to'] => (
 );
 
 has 'tmp_dir' => (
-    is         => 'ro',
-    isa        => 'Str',
-    lazy_build => 1,
+    is      => 'ro',
+    isa     => 'Str',
+    default => '/tmp',
 );
 
 # Returns an array of paths to files on the server where the payment CSV files
@@ -201,10 +201,6 @@ sub _get_month_from_transaction {
     }
 
     return $month_str;
-}
-
-sub _build_tmp_dir {
-    return BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
 }
 
 no Moose;
