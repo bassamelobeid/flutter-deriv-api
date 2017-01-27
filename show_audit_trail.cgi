@@ -232,9 +232,9 @@ BOM::Backoffice::Request::template->process('backoffice/show_audit_trail.html.tt
 code_exit_BO();
 
 sub _sort_headers {
-    my ($h)           = @_;
+    my $h             = shift;
     my $counter_end   = 200;
-    my $counter_begin = -100;
+    my $counter_begin = -200;
     $h->{$_} = $counter_end++
         for (
         qw/address_city address_line_1 address_line_2 address_postcode address_state allow_copiers allow_login allow_omnibus broker_code cashier_setting_password checked_affiliate_exposures citizen client_password/
