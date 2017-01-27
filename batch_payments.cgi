@@ -19,6 +19,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::DualControl;
 use BOM::System::AuditLog;
+use BOM::Backoffice::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Runtime;
 BOM::Backoffice::Sysinit::init();
@@ -274,7 +275,7 @@ if ($preview and @invalid_lines == 0) {
 
     my $msg = $now->datetime . " $transtype batch transactions done by clerk=$clerk (DCcode=$control_code) $ENV{REMOTE_ADDR}";
     BOM::System::AuditLog::log($msg, '', $clerk);
-    Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")->append_utf8($msg);
+    Path::Tiny::path(BOM::Backoffice::Config::config->{log}->{deposit})->append_utf8($msg);
 
     my $brand = Brands->new(name => request()->brand);
     send_email({

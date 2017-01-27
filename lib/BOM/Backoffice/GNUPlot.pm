@@ -2,6 +2,7 @@ package BOM::Backoffice::GNUPlot;
 use strict;
 use warnings;
 use Time::HiRes ('gettimeofday');
+use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
 
 use open qw[ :encoding(UTF-8) ];
 
@@ -83,7 +84,7 @@ sub set_graph_tmpfile {
 
     my $hashcat = time . int(rand 100);
 
-    $self->{'output_file'} = '/home/tmpramdrive/chart_image_caches/' . $hashcat . '.' . $self->{'output_type'};
+    $self->{'output_file'} = get_tmp_path_or_die() . '/chart_image_caches/' . $hashcat . '.' . $self->{'output_type'};
     return;
 }
 
@@ -175,7 +176,7 @@ sub set_data_properties {
 
     if ($data ne 'same') {
         $self->{'plot_num'}++;
-        $self->{'graph_datafile'} = '/home/tmpramdrive/' . $self->{'user_ip'} . '-' . $self->{'plot_num'} . '.dat';
+        $self->{'graph_datafile'} = get_tmp_path_or_die() . '/' . $self->{'user_ip'} . '-' . $self->{'plot_num'} . '.dat';
 
         $data =~ s/\n$//g;
 
@@ -248,7 +249,8 @@ sub plot {
 }
 
 sub gnuplot_command {
-    return "/home/tmpramdrive/gnuplot/gnuplot 1>/dev/null 2>> /home/tmpramdrive/gnuploterrors.log";
+    my $d = get_tmp_path_or_die();
+    return "$d/gnuplot/gnuplot 1>/dev/null 2>> $d/gnuploterrors.log";
 }
 
 1;

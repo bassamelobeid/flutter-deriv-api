@@ -74,7 +74,6 @@ my @all_markets = Finance::Asset::Market::Registry->instance->all_market_names;
 push @all_markets, 'futures';    # this is added to check for futures feed
 my $feedloc = BOM::Platform::Runtime->instance->app_config->system->directory->feed;
 my $dbloc   = BOM::Platform::Runtime->instance->app_config->system->directory->db;
-my $tmp_dir = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
 
 my $now          = Date::Utility->new;
 my @providerlist = qw(idata random telekurs sd bloomberg olsen synthetic combined panda);
