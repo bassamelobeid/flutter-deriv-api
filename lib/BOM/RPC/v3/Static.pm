@@ -59,7 +59,8 @@ sub website_status {
         terms_conditions_version => BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version,
         api_call_limits          => BOM::RPC::v3::Utility::site_limits,
         clients_country          => $params->{country_code},
-        supported_languages      => BOM::Platform::Runtime->instance->app_config->cgi->supported_languages
+        supported_languages      => BOM::Platform::Runtime->instance->app_config->cgi->supported_languages,
+        currencies_config        => BOM::RPC::v3::Utility::currencies_config,
     };
 }
 

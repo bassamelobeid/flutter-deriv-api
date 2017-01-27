@@ -8,6 +8,7 @@ addons:
 services:
     - redis-server
 cache: apt
+sudo: required
 env:
     - TEST_SUITE=test SH=bash
     - TEST_SUITE=suite_schema SH=bash
