@@ -8,18 +8,22 @@ use List::Util qw(sum shuffle);
 use Postgres::FeedDB;
 use Postgres::FeedDB::Spot::DatabaseAPI;
 use BOM::Product::ContractFactory qw(produce_contract);
+use DBIx::TransactionManager::Distributed qw(txn);
 
 use YAML qw(LoadFile);
 use Path::Tiny;
 use Data::Dumper;
 use Fcntl qw(:flock);
+use Sys::Info;
+use POSIX qw(floor);
 use Parallel::ForkManager;
 
 # How many ticks to request at a time
 use constant TICK_CHUNK_SIZE => 86400;
 
-# Number of forks to create
-use constant WORKERS => 4;
+# Number of forks to create - as of 2017-01, QA systems have 4 CPUs, backoffice 8,
+# so we want to adapt to what's available
+use constant WORKERS => floor(Sys::Info->new->device("CPU")->count / 2) || 1;
 
 ++$|;
 
@@ -60,7 +64,7 @@ try {
     JOB:
     for my $job (@jobs) {
         my $pid = $pm->start and next JOB;
-	my $start_time = Time::HiRes::time;
+    my $start_time = Time::HiRes::time;
         my ($symbol, $duration_step, $bet_type) = split "\0", $job;
         print "$$ working on " . ($job =~ s/\0/ /gr) . " from $start..$end\n";
         my ($duration, %duration_options) = split ' ', $duration_step;
@@ -108,16 +112,18 @@ try {
                     barrier      => 'S0P',
                 };
                 try {
-                    my $contract         = produce_contract($args);
-                    my $contract_expired = produce_contract({
-                        %$args,
-                        date_pricing => $now,
-                    });
-                    if ($contract_expired->is_expired) {
-                        my $ask_price = $contract->ask_price;
-                        my $value     = $contract_expired->value;
-                        $fh->print(join(",", (map $tick->{$_}, qw(epoch quote)), $ask_price, $value, $contract->theo_price) . "\n");
-                    }
+                    txn {
+                        my $contract         = produce_contract($args);
+                        my $contract_expired = produce_contract({
+                            %$args,
+                            date_pricing => $now,
+                        });
+                        if ($contract_expired->is_expired) {
+                            my $ask_price = $contract->ask_price;
+                            my $value     = $contract_expired->value;
+                            $fh->print(join(",", (map $tick->{$_}, qw(epoch quote)), $ask_price, $value, $contract->theo_price) . "\n");
+                        }
+                    } qw(feed chronicle);
                 }
                 catch {
                     warn "Failed to price with parameters " . Dumper($args) . " - $_\n";
@@ -134,8 +140,7 @@ try {
         printf "%d working on %s took %.2fms\n", $$, ($job =~ s/\0/ /gr), (1000.0 * (Time::HiRes::time - $start_time));
         $pm->finish;
     }
-}
-catch {
+} catch {
     warn "Failed to run - $_";
 };
 alarm(0);
