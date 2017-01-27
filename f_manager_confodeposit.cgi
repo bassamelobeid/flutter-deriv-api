@@ -306,12 +306,13 @@ if ($toemail && $informclient) {
     my $support_email = $brand->emails('support');
 
     my $result = send_email({
-        from               => $support_email,
-        to                 => $email,
-        subject            => $subject,
-        message            => [$email_body],
-        use_email_template => 1,
-        template_loginid   => $loginID,
+        from                  => $support_email,
+        to                    => $email,
+        subject               => $subject,
+        message               => [$email_body],
+        use_email_template    => 1,
+        template_loginid      => $loginID,
+        email_content_is_html => 1,
     });
 
     $client->add_note($subject, $email_body);
