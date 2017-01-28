@@ -14,6 +14,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::System::AuditLog;
 use BOM::DualControl;
+use BOM::Backoffice::Config;
 use BOM::Backoffice::Cookie;
 BOM::Backoffice::Sysinit::init();
 
@@ -82,7 +83,7 @@ if ($input->{'dcctype'} eq 'file_content') {
     BOM::System::AuditLog::log($message);
 
     # Logging
-    Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")
+    Path::Tiny::path(BOM::Backoffice::Config::config->{log}->{deposit})
         ->append_utf8($now->datetime
             . "GMT $staff MAKES DUAL CONTROL CODE FOR "
             . $input->{'transtype'}
@@ -123,7 +124,7 @@ if ($input->{'dcctype'} eq 'file_content') {
         . "</font></b></p>";
 
     # Logging
-    Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")
+    Path::Tiny::path(BOM::Backoffice::Config::config->{log}->{deposit})
         ->append_utf8($now->datetime
             . "GMT $staff MAKES DUAL CONTROL CODE FOR "
             . $input->{'transtype'}

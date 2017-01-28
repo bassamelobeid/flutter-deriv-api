@@ -6,6 +6,7 @@ use open qw[ :encoding(UTF-8) ];
 use HTML::Entities;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_XSendfile/;
 use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
 
 use Client::Account;
 
@@ -34,7 +35,7 @@ my $full_path;
 if ($category eq '192_result') {
     $full_path = "$dbloc/f_accounts/$broker/192com_authentication/$path";
 } elsif ($category eq 'temp') {
-    $full_path = BOM::Platform::Runtime->instance->app_config->system->directory->tmp . $path;
+    $full_path = get_tmp_path_or_die() . $path;
 } else {
     $full_path = "$dbloc/clientIDscans/$path";
 }
