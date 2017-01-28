@@ -19,6 +19,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
 use BOM::System::AuditLog;
 use BOM::ContractInfo;
+use BOM::Backoffice::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Runtime;
 BOM::Backoffice::Sysinit::init();
@@ -234,7 +235,7 @@ my $now = Date::Utility->new;
 # Logging
 my $msg = $now->datetime . " $ttype $curr$amount $loginID clerk=$clerk (DCcode=$DCcode) $ENV{REMOTE_ADDR}";
 BOM::System::AuditLog::log($msg, $loginID, $clerk);
-Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")->append_utf8($msg);
+Path::Tiny::path(BOM::Backoffice::Config::config->{log}->{deposit})->append_utf8($msg);
 
 # Print confirmation
 Bar("$ttype confirmed");
@@ -305,12 +306,13 @@ if ($toemail && $informclient) {
     my $support_email = $brand->emails('support');
 
     my $result = send_email({
-        from               => $support_email,
-        to                 => $email,
-        subject            => $subject,
-        message            => [$email_body],
-        use_email_template => 1,
-        template_loginid   => $loginID,
+        from                  => $support_email,
+        to                    => $email,
+        subject               => $subject,
+        message               => [$email_body],
+        use_email_template    => 1,
+        template_loginid      => $loginID,
+        email_content_is_html => 1,
     });
 
     $client->add_note($subject, $email_body);

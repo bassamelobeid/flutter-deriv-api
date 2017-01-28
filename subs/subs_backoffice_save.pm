@@ -1,5 +1,6 @@
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
+use BOM::Backoffice::Config;
 
 #####################################################################
 # Purpose    : Save difference to difflog
@@ -57,14 +58,15 @@ sub save_log_staff_difflog {
 
     local *DATA;
 
-    if (not -d "/var/log/fixedodds/staff/") {
-        system("mkdir /var/log/fixedodds/staff/");
+    my $log_dir = BOM::Backoffice::Config::config->{log}->{staff_dir};
+    if (not -d $log_dir) {
+        system("mkdir $log_dir");
     }
-    if (-s "/var/log/fixedodds/staff/$staff.difflog" > 500000) {
-        system("mv /var/log/fixedodds/staff/$staff.difflog /var/log/fixedodds/staff/$staff.difflog.1");
+    if (-s "$log_dir/$staff.difflog" > 500000) {
+        system("mv $log_dir/$staff.difflog $log_dir/$staff.difflog.1");
     }
 
-    if (open(DATA, ">>/var/log/fixedodds/staff/$staff.difflog")) {
+    if (open(DATA, ">>$log_dir/$staff.difflog")) {
         flock(DATA, 2);
         local $\ = "\n";
         print DATA "\n=============================================================";
@@ -72,10 +74,10 @@ sub save_log_staff_difflog {
         print DATA "=============================================================";
         print DATA $diff;
         unless (close DATA) {
-            warn("Error: cannot close /var/log/fixedodds/staff/$staff.difflog after append $!");
+            warn("Error: cannot close $log_dir/$staff.difflog after append $!");
         }
     } else {
-        warn("Error: cannot open /var/log/fixedodds/staff/$staff.difflog to append $!");
+        warn("Error: cannot open $log_dir/$staff.difflog to append $!");
     }
 
 }
@@ -99,11 +101,13 @@ sub save_log_save_complete_log {
 
     local *DATA;
 
-    if ((-s "/var/log/fixedodds/fsave.completelog") > 3000000) {
-        system("mv /var/log/fixedodds/fsave.completelog /var/log/fixedodds/fsave.completelog.1");
+    my $log = BOM::Backoffice::Config::config->{log}->{fsave_complete};
+
+    if ((-s $log) > 3000000) {
+        system("mv $log $log.1");
     }
 
-    if (open(DATA, ">>/var/log/fixedodds/fsave.completelog")) {
+    if (open(DATA, ">>$log")) {
         flock(DATA, 2);
         local $\ = "\n";
         print DATA "\n=============================================================";
@@ -111,10 +115,10 @@ sub save_log_save_complete_log {
         print DATA "=============================================================";
         print DATA $diff;
         unless (close DATA) {
-            warn("Error: cannot close /var/log/fixedodds/fsave.completelog after append $!");
+            warn("Error: cannot close $log after append $!");
         }
     } else {
-        warn("Error: cannot open /var/log/fixedodds/fsave.completelog to append $!");
+        warn("Error: cannot open $log to append $!");
     }
 
 }

@@ -8,6 +8,7 @@ use Guard;
 use File::Copy;
 use Path::Tiny;
 use Plack::App::CGIBin::Streaming;
+use BOM::Backoffice::Config;
 use BOM::Backoffice::Cookie;
 use BOM::Backoffice::Request::Base;
 use BOM::Backoffice::Request qw(request localize);
@@ -117,10 +118,12 @@ sub log_bo_access {
     $staffname ||= 'unauthenticated';
     my $s = $0;
     $s =~ s/^\/home\/website\/www//;
-    if ((-s "/var/log/fixedodds/staff-$staffname.log" or 0) > 750000) {
-        File::Copy::move("/var/log/fixedodds/staff-$staffname.log", "/var/log/fixedodds/staff-$staffname.log.1");
+    my $log = BOM::Backoffice::Config::config->{log}->{staff};
+    $log =~ s/%STAFFNAME%/$staffname/g;
+    if ((-s $log or 0) > 750000) {
+        File::Copy::move($log, "$log.1");
     }
-    Path::Tiny::path("/var/log/fixedodds/staff-$staffname.log")->append_utf8(Date::Utility->new->datetime . " $s $l\n");
+    Path::Tiny::path($log)->append_utf8(Date::Utility->new->datetime . " $s $l\n");
 
     return;
 }
