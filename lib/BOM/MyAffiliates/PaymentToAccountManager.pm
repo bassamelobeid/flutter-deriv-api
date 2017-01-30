@@ -33,6 +33,12 @@ has ['from', 'to'] => (
     required => 1,
 );
 
+has 'tmp_dir' => (
+    is      => 'ro',
+    isa     => 'Str',
+    default => '/tmp',
+);
+
 # Returns an array of paths to files on the server where the payment CSV files
 # are located. Can then be passed to our mailing code for emailing out etc.
 # Also returns paths to files containing error reports.
@@ -144,13 +150,7 @@ sub _get_file_loc {
 
     my $file_extension = ($report_name =~ /^(?:LOGIN_EXTRACTION_ERRORS|PARSE_ERRORS)$/) ? 'txt' : 'csv';
 
-    return
-          BOM::Platform::Runtime->instance->app_config->system->directory->tmp
-        . '/affiliate_payment_'
-        . $report_name . '_'
-        . $from_string . '_'
-        . $to_string . '.'
-        . $file_extension;
+    return $self->tmp_dir . '/affiliate_payment_' . $report_name . '_' . $from_string . '_' . $to_string . '.' . $file_extension;
 }
 
 sub _get_csv_line_from_txn {
