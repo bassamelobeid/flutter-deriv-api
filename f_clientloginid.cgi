@@ -19,7 +19,6 @@ BrokerPresentation("CLIENT LOGINID ADMIN");
 
 my $staff   = BOM::Backoffice::Auth0::can_access(['CS']);
 my $broker  = request()->broker_code;
-my $tmp_dir = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
 my $clerk   = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 if ($broker eq 'FOG') {

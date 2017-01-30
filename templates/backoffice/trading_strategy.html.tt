@@ -49,7 +49,7 @@
 [% sum_contracts_bought = 0;
    sum_company_profit = 0; -%]
 [% FOREACH result IN result_table.body -%]
-<tr>
+<tr[% IF result.1 < 5000 %] style="color:#777;"[% ELSIF result.14 > 1.0 %] style="color:#f00;"[% END %]>
 [%  FOREACH stat IN result -%]
  <td style="text-align:center; border:1px solid;">[% stat | none %]</td>
 [%  END -%]
