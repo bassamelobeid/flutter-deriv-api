@@ -11,7 +11,7 @@ use JSON qw(decode_json);
 use BOM::Test::Data::Utility::UnitTestRedis;
 
 use BOM::MarketData qw(create_underlying);
-use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
+#use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
 
 use BOM::Market::DataDecimate;
 use Text::CSV;
@@ -97,7 +97,7 @@ subtest "decimate_cache_insert_and_retrieve_with_missing_data" => sub {
 
     is scalar(@$data_out), '128', "retrieved 128 datas from cache";
 
-    for (my $i = 1479203115; $i <= 1479203250; $i=$i+15) {
+    for (my $i = 1479203115; $i <= 1479203250+15; $i=$i+15) {
         $decimate_cache->data_cache_insert_decimate('frxUSDJPY', $i);
     }
 
@@ -120,6 +120,19 @@ subtest "decimate_cache_insert_and_retrieve_with_missing_data" => sub {
 
     my $latest_decimated_epoch = $decimate_cache->get_latest_tick_epoch('frxUSDJPY', 1, 1479203150, 1479203250);
     is $latest_decimated_epoch, 1479203250, "latest decimated epoch is correct.";
+
+#simulate market close
+    for (my $i = 1479203250 + 15; $i <= 1479203250 + 2000; $i=$i+15) {
+        $decimate_cache->data_cache_insert_decimate('frxUSDJPY', $i);
+    }
+
+    my $mkt_close_dec_data = $decimate_cache->_get_decimate_from_cache({
+        symbol      => 'frxUSDJPY',
+        start_epoch => 1479203101,
+        end_epoch   => 1479203250 + 2000,
+    });
+
+    is $mkt_close_dec_data->[-1]->{decimate_epoch}, '1479205110', "decimate_epoch is correct for market close";
 };
 
 sub data_from_csv {
