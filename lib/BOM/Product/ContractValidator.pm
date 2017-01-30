@@ -446,8 +446,10 @@ sub _validate_trading_times {
 sub _validate_start_and_expiry_date {
     my $self = shift;
 
-    my $start_epoch     = $self->effective_start->epoch;
-    my $end_epoch       = $self->date_expiry->epoch;
+    my $start_epoch = $self->effective_start->epoch;
+    my $end_epoch   = $self->date_expiry->epoch;
+    #Note: Please don't change the message for expiry blackout (specifically, the 'expire' word) unless you have
+    #updated the check in this method which updates end_epoch
     my @blackout_checks = (
         [[$start_epoch], $self->date_start_blackouts,  "Trading is not available from [_2] to [_3]"],
         [[$end_epoch],   $self->date_expiry_blackouts, "Contract may not expire between [_2] and [_3]"],
@@ -459,7 +461,12 @@ sub _validate_start_and_expiry_date {
     foreach my $blackout (@blackout_checks) {
         my ($epochs, $periods, $message_to_client) = @{$blackout}[0 .. 2];
         foreach my $period (@$periods) {
-            if (first { $_ >= $period->[0] and $_ < $period->[1] } @$epochs) {
+            my $start_epoch = $period->[0];
+            my $end_epoch   = $period->[1];
+
+            $end_epoch++ if ($message_to_client =~ /expire/);
+
+            if (first { $_ >= $start_epoch and $_ < $end_epoch } @$epochs) {
                 my $start = Date::Utility->new($period->[0]);
                 my $end   = Date::Utility->new($period->[1]);
                 if ($start->day_of_year == $end->day_of_year) {
