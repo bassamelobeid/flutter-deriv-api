@@ -524,7 +524,7 @@ sub startup {
             max_connections   => 100000,
             max_response_size => 600000,                                                # change and test this if we ever increase ticks history count
             opened_connection => \&Binary::WebSocketAPI::Hooks::init_redis_connections,
-            finish_connection => \&Binary::WebSocketAPI::Hooks::forget_all,
+            finish_connection => \&Binary::WebSocketAPI::Hooks::on_finish_connection,
 
             # helper config
             url => \&Binary::WebSocketAPI::Hooks::get_rpc_url,                          # make url for manually called actions

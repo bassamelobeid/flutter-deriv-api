@@ -242,7 +242,7 @@ sub init_redis_connections {
     return;
 }
 
-sub forget_all {
+sub on_finish_connection {
     my $c = shift;
     $c->rate_limitations_save;
     # stop all recurring
