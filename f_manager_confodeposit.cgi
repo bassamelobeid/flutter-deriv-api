@@ -19,6 +19,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
 use BOM::System::AuditLog;
 use BOM::ContractInfo;
+use BOM::Backoffice::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Runtime;
 BOM::Backoffice::Sysinit::init();
@@ -162,7 +163,7 @@ unless ($params{skip_validation}) {
         }
     };
     if (my $err = $@) {
-        print qq[<p style="color:#F00">$cli Failed. $err</p>];
+        print qq[<p style="color:#F00">$encoded_loginID Failed. $err</p>];
         code_exit_BO();
     } else {
         printf qq[<p style="color:#070">Done. %s will be ok.</p>], encode_entities($ttype);
@@ -234,7 +235,7 @@ my $now = Date::Utility->new;
 # Logging
 my $msg = $now->datetime . " $ttype $curr$amount $loginID clerk=$clerk (DCcode=$DCcode) $ENV{REMOTE_ADDR}";
 BOM::System::AuditLog::log($msg, $loginID, $clerk);
-Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")->append_utf8($msg);
+Path::Tiny::path(BOM::Backoffice::Config::config->{log}->{deposit})->append_utf8($msg);
 
 # Print confirmation
 Bar("$ttype confirmed");
@@ -243,14 +244,13 @@ my $new_bal = $acc->load && $acc->balance;
 if ($ttype eq 'TRANSFER') {
     my $toAcc = $toClient->default_account->load;
     my $toBal = $toAcc->balance;
-    $success_message = qq[Transfer $curr$amount from $client to $toClient confirmed.<br/>
-                        For $client new account balance is $curr$new_bal.<br/>
-                        For $toClient new account balance is $curr$toBal.<br/>];
+    $success_message = qq[Transfer $curr$amount from $encoded_loginID to $encoded_toLoginID confirmed.<br/>
+                        For $encoded_loginID new account balance is $curr$new_bal.<br/>
+                        For $encoded_toLoginID new account balance is $curr$toBal.<br/>];
 } else {
-    $success_message = qq[$client $ttype $curr$amount confirmed.<br/>
+    $success_message = qq[$encoded_loginID $ttype $curr$amount confirmed.<br/>
                          New account balance is $curr$new_bal.<br/>];
 }
-$success_message = encode_entities($success_message);
 print qq[<p class="success_message">$success_message</p>];
 
 Bar("Today's entries for $encoded_loginID");
@@ -305,12 +305,13 @@ if ($toemail && $informclient) {
     my $support_email = $brand->emails('support');
 
     my $result = send_email({
-        from               => $support_email,
-        to                 => $email,
-        subject            => $subject,
-        message            => [$email_body],
-        use_email_template => 1,
-        template_loginid   => $loginID,
+        from                  => $support_email,
+        to                    => $email,
+        subject               => $subject,
+        message               => [$email_body],
+        use_email_template    => 1,
+        template_loginid      => $loginID,
+        email_content_is_html => 1,
     });
 
     $client->add_note($subject, $email_body);

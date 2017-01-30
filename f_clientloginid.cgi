@@ -19,7 +19,6 @@ BrokerPresentation("CLIENT LOGINID ADMIN");
 
 my $staff   = BOM::Backoffice::Auth0::can_access(['CS']);
 my $broker  = request()->broker_code;
-my $tmp_dir = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
 my $clerk   = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 if ($broker eq 'FOG') {
@@ -53,7 +52,9 @@ print '<form action="'
     . '<tr><td><b>LoginID</b></td><td> : ';
 
 print '<input type=text size=15 name="loginID" value="">'
-    . ' <a href="'. request()->url_for('backoffice/f_popupclientsearch.cgi',{broker=>$encoded_broker}).'"><font class=smallfont>[Search]</font></a>'
+    . ' <a href="'
+    . request()->url_for('backoffice/f_popupclientsearch.cgi', {broker => $encoded_broker})
+    . '"><font class=smallfont>[Search]</font></a>'
     . ' <a href="javascript:WinPopupSearchClients();"><font class=smallfont>[OldSearch]</font></a>'
     . '</td></tr>';
 
@@ -121,12 +122,12 @@ BOM::Backoffice::Request::template->process(
     {
         selected_untrusted_action => request()->param('untrusted_action_type'),
         edit_url                  => request()->url_for('backoffice/untrusted_client_edit.cgi'),
-        reasons                   => [ get_untrusted_client_reason() ],
+        reasons                   => [get_untrusted_client_reason()],
         broker                    => $broker,
         clientid                  => $client_login,
         actions                   => get_untrusted_types(),
-        show_login => 1,
-        })|| die BOM::Backoffice::Request::template->error();
+        show_login                => 1,
+    }) || die BOM::Backoffice::Request::template->error();
 
 # display log differences for untrusted client section
 print "<hr><b>View changes to this untrusted client section.</b><br />"

@@ -68,7 +68,7 @@ BOM::Backoffice::Request::template->process(
 );
 
 # email link to client
-Bar('emailing change password link to ' . encoded_loginID($loginID));
+Bar('emailing change password link to ' . encode_entities($loginID));
 
 print '<p class="success_message">Emailing change password link to ' . encode_entities($client_name) . ' at ' . encode_entities($email) . ' ...</p>';
 
