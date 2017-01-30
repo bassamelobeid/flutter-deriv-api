@@ -91,7 +91,6 @@ for (my $i = 1; $i < $threads_number; $i++) {
         push @pids, $pid;
     } else {
         @pids = ();
-        @{$self->pids} = ();
         _daemon_run();
     }
 }

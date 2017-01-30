@@ -230,7 +230,7 @@ sub check_one_result {
         $err++ unless is $m->{txn}->{account_id}, $acc->id, 'txn account_id';
         $err++ unless is $m->{fmb}->{account_id}, $acc->id, 'fmb account_id';
         $err++ unless is $m->{txn}->{financial_market_bet_id}, $m->{fmb}->{id}, 'txn financial_market_bet_id';
-        $err++ unless is $m->{txn}->{balance_after}, $balance_after, 'balance_after';
+        $err++ unless is $m->{txn}->{balance_after}, sprintf('%.2f', $balance_after), 'balance_after';
         note explain $m if $err;
     };
 }
@@ -296,9 +296,9 @@ subtest 'batch-buy success', sub {
 
         is $error, undef, 'successful batch_buy';
         my $m = $txn->multiple;
-        check_one_result 'result for client #1', $cl1, $acc1, $m->[2], '4950.0000';
-        check_one_result 'result for client #2', $cl2, $acc2, $m->[0], '4950.0000';
-        check_one_result 'result for client #3', $cl2, $acc2, $m->[3], '4900.0000';
+        check_one_result 'result for client #1', $cl1, $acc1, $m->[2], 4950;
+        check_one_result 'result for client #2', $cl2, $acc2, $m->[0], 4950;
+        check_one_result 'result for client #3', $cl2, $acc2, $m->[3], 4900;
 
         my $expected_status = {
             active_queues  => 2,    # TICK_COUNT and SETTLEMENT_EPOCH
@@ -472,8 +472,8 @@ subtest 'single contract fails in database', sub {
 
         is $error, undef, 'successful batch_buy';
         my $m = $txn->multiple;
-        check_one_result 'result for client #1', $cl1, $acc1, $m->[2], '4950.0000';
-        check_one_result 'result for client #2', $cl2, $acc2, $m->[0], '40.0000';
+        check_one_result 'result for client #1', $cl1, $acc1, $m->[2], 4950;
+        check_one_result 'result for client #2', $cl2, $acc2, $m->[0], 40;
         subtest 'result for client #3', sub {
             ok !exists($m->[3]->{fmb}), 'fmb does not exist';
             ok !exists($m->[3]->{txn}), 'txn does not exist';
@@ -549,7 +549,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
         is $error, undef, 'successful batch_buy';
         my $m = $txn->multiple;
         for (my $i = 0; $i < @cl; $i++) {
-            check_one_result 'result for client ' . $m->[$i]->{loginid}, $cl[$i], $acc[$i], $m->[$i], '4950.0000';
+            check_one_result 'result for client ' . $m->[$i]->{loginid}, $cl[$i], $acc[$i], $m->[$i], 4950;
         }
 
         my $expected_status = {
