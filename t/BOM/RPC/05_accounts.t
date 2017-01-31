@@ -1042,7 +1042,8 @@ subtest $method => sub {
         "education_level"                      => "Secondary",
         "income_source"                        => "Self-Employed",
         "net_income"                           => '$25,000 - $50,000',
-        "estimated_worth"                      => '$100,000 - $250,000'
+        "estimated_worth"                      => '$100,000 - $250,000',
+        "occupation"                           => 'Managers'
     };
 
     my $res = $c->tcall(
