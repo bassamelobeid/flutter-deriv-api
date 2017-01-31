@@ -119,7 +119,7 @@
     "tax_residence": {
       "type": ["string", "null"],
       "pattern": "^[a-z]{0,2}(?:,[a-z]{2})*$",
-      "description": "Residence for tax purpose. Comma separated iso country code if multiple jurisdiction. Only applicable for real money account. Required for maltainvest landing company."
+      "description": "Residence for tax purpose. Comma separated iso country code if multiple jurisdictions. Only applicable for real money account. Required for maltainvest landing company."
     },
     "tax_identification_number": {
       "type": ["string", "null"],
