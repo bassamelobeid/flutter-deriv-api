@@ -117,7 +117,7 @@ sub log_bo_access {
     my $staffname = BOM::Backoffice::Cookie::get_staff();
     $staffname ||= 'unauthenticated';
     my $s = $0;
-    $s =~ s/^\/home\/website\/www//;
+    $s =~ s{^\Q/home/website/www}{};
     my $log = BOM::Backoffice::Config::config->{log}->{staff};
     $log =~ s/%STAFFNAME%/$staffname/g;
     if ((-s $log or 0) > 750000) {

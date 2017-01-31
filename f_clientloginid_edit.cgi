@@ -165,6 +165,7 @@ if ($input{whattodo} eq 'uploadID') {
         my $filetoupload    = $cgi->param('FILE_' . $i);
         my $docformat       = $cgi->param('docformat_' . $i);
         my $expiration_date = $cgi->param('expiration_date_' . $i);
+        my $comments        = substr(encode_entities($cgi->param('comments_' . $i)), 0, 255);
 
         if (not $filetoupload) {
             $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: You did not browse for a file to upload.</p><br />"
@@ -218,7 +219,8 @@ if ($input{whattodo} eq 'uploadID') {
             document_format            => $docformat,
             document_path              => $newfilename,
             authentication_method_code => 'ID_DOCUMENT',
-            expiration_date            => $expiration_date
+            expiration_date            => $expiration_date,
+            comments                   => $comments,
         };
 
         #needed because CR based submissions don't return a result when an empty string is submitted in expiration_date;
@@ -230,10 +232,9 @@ if ($input{whattodo} eq 'uploadID') {
 
         $client->save;
 
-        $result .= "<br /><p style=\"color:green; font-weight:bold;\">Ok! File $i: $newfilename is uploaded (filesize $filesize).</p><br />";
+        $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Ok! File $i: $newfilename is uploaded (filesize $filesize).</p><br />";
     }
     print $result;
-    code_exit_BO();
 }
 
 # PERFORM ON-DEMAND ID CHECKS
@@ -357,11 +358,31 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->residence($input{$key});
             next CLIENT_KEY;
         }
+        if (my ($id) = $key =~ /^comments_([0-9]+)$/) {
+            my $val = $input{$key};
+            my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
+            my $comments = substr(encode_entities($val), 0, 255);
+            next CLIENT_KEY unless $doc;
+            next CLIENT_KEY if $comments eq $doc->comments();
+            unless (eval { $doc->comments($comments); 1 }) {
+                my $err = $@;
+                print qq{<p style="color:red">ERROR: Could not set comments for doc $id: $err</p>};
+                code_exit_BO();
+            }
+            $doc->db($client->set_db('write'));
+            $doc->save;
+            next CLIENT_KEY;
+        }
         if (my ($id) = $key =~ /^expiration_date_([0-9]+)$/) {
             my $val = $input{$key} || next CLIENT_KEY;
             my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
             next CLIENT_KEY unless $doc;
-            my $date = $val eq 'clear' ? undef : Date::Utility->new($val)->date_yyyymmdd;
+            my $date;
+            if ($val ne 'clear') {
+                $date = Date::Utility->new($val);
+                next CLIENT_KEY if $date->is_same_as(Date::Utility->new($doc->expiration_date));
+                $date = $date->date_yyyymmdd;
+            }
             unless (eval { $doc->expiration_date($date); 1 }) {
                 my $err = $@;
                 print qq{<p style="color:red">ERROR: Could not set expiry date for doc $id: $err</p>};
@@ -462,10 +483,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         code_exit_BO();
     }
 
-    print '<p><b>SUCCESS!</b></p>';
-    print qq[<a href="$self_href">&laquo;Return to Client Details<a/>];
-
-    code_exit_BO();
+    print "<p style=\"color:#eeee00; font-weight:bold;\">Client details saved</p>";
 }
 
 Bar("NAVIGATION");
@@ -522,8 +540,9 @@ if ($next_client) {
 }
 
 # view client's statement/portfolio/profit table
-my $history_url = request()->url_for('backoffice/f_manager_history.cgi');
-my $statmnt_url = request()->url_for('backoffice/f_manager_statement.cgi');
+my $history_url     = request()->url_for('backoffice/f_manager_history.cgi');
+my $statmnt_url     = request()->url_for('backoffice/f_manager_statement.cgi');
+my $impersonate_url = request()->url_for('backoffice/client_impersonate.cgi');
 print qq{<br/>
     <div class="flat">
     <form id="jumpToClient" action="$self_post" method="POST">
@@ -549,6 +568,13 @@ print qq{<br/>
     <input type="submit" value="View $encoded_loginid statement">
     </form>
     </div>
+<div  style="float: right">
+<form action="$impersonate_url" method="post">
+<input type='hidden' size=30 name="impersonate_loginid" value="$encoded_loginid">
+<input type='hidden' name='broker' value='$encoded_broker'>
+<input type="submit" value="Impersonate"></form>
+
+</div>
 };
 
 Bar("$encoded_loginid STATUSES");

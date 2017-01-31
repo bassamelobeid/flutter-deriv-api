@@ -35,7 +35,8 @@
     <option>TXT</option>
   </select>
   <input type="FILE" name="FILE_[% n %]">
-  Expiration date:<input type="text" size=10 name="expiration_date_[% n %]"><i> format YYYY-MM-DD </i>
+  Expiration date:<input type="text" size=11 name="expiration_date_[% n %]" placeholder="YYYY-MM-DD">
+  Comments:<input type="text" size=20 name="comments_[% n %]" placeholder="optional, up to 255 characters">
     <br>
   [% END %]
   <br>
