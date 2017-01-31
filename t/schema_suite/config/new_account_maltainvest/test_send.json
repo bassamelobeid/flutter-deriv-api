@@ -31,6 +31,7 @@
         "income_source": "Salaried Employee",
         "net_income": "Less than $25,000",
         "estimated_worth": "$250,001 - $500,000",
+        "occupation": "Managers",
         "accept_risk": "[_4]"
     }
 }
