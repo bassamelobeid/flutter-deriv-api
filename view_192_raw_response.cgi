@@ -42,8 +42,6 @@ if (request()->param('raw')) {
         <link  href="[% request.url_for('css/external/shThemeDefault.css', undef, undef, {internal_static => 1}) %]" rel="stylesheet" type="text/css" />
       ~;
 
-    print '<script type="text/javascript" src="' . BOM::JavascriptConfig->instance->binary_js . '"></script>';
-
     foreach my $js_file (BOM::JavascriptConfig->instance->bo_js_files_for($0)) {
         print '<script type="text/javascript" src="' . $js_file . '"></script>';
     }

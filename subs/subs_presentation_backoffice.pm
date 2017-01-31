@@ -31,9 +31,7 @@ sub BrokerPresentation {
     print '<link rel="stylesheet" type="text/css" href="' . request()->url_for('css/style.css',         undef, undef, {internal_static => 1}) . '"/>';
     print '<link rel="stylesheet" type="text/css" href="' . request()->url_for('css/sell_popup.css',    undef, undef, {internal_static => 1}) . '"/>';
     print '<link rel="stylesheet" type="text/css" href="' . request()->url_for('css/external/grid.css', undef, undef, {internal_static => 1}) . '"/>';
-    print '<link rel="stylesheet" type="text/css" href="' . request()->url_for('css/jquery-ui.custom.css') . '"/>';
-
-    print '<script type="text/javascript" src="' . BOM::JavascriptConfig->instance->binary_js . '"></script>';
+    print '<link rel="stylesheet" type="text/css" href="' . request()->url_for('css/external/jquery-ui.custom.css') . '"/>';
 
     foreach my $js_file (BOM::JavascriptConfig->instance->bo_js_files_for($0)) {
         print '<script type="text/javascript" src="' . $js_file . '"></script>';
