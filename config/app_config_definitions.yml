@@ -245,11 +245,3 @@ system:
           isa: Str
           default: "/feed"
           global: 1
-        tmp_gif:
-          description: "Directory where we store temporary gif files"
-          isa: Str
-          default: "/home/website/www/temp"
-        tmp:
-          description: "Temp directory for website operation"
-          isa: Str
-          default: "/home/tmpramdrive"
