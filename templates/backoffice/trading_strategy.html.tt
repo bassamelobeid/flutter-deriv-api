@@ -69,19 +69,21 @@
  </tbody>
 </table>
 [% ELSIF result_list.size -%]
-<h2>Results for [% dataset || 'unknown dataset' %] with strategy [% strategy_selected || 'unknown' %]</h2>
+<h2>Results for [% dataset.join(',') %] with strategy [% strategy_selected || 'unknown' %]</h2>
 <p>[% description %]</p>
 <table>
  <tbody>
 [% FOREACH stat IN statistics -%]
  <tr><th>[% stat.0 %]</th><td>[% stat.1 | none %]</td></tr>
 [% END -%]
+[% IF dataset.size == 1 -%]
 <tr>
 <th>Download dataset</th>
 <td>
- <a target="_blank" href="?download=[% date %]/[% dataset %]">Download [% dataset %]</a>
+ <a target="_blank" href="?download=[% date %]/[% dataset.0 %]">Download [% dataset.0 %]</a>
 </td>
 </tr>
+[% END -%]
  </tbody>
 </table>
 <div id="chart"> <svg style="height: 32em"> </svg> </div>
