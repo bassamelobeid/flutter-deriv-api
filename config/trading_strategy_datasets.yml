@@ -13,3 +13,4 @@ underlyings:
 types:
   - CALL
   - PUT
+  - CALLE
