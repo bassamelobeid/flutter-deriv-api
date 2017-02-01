@@ -2,7 +2,7 @@
 <label for="exposure_spark">MtM (Days Hence)</label>
 <div id="markettree"></div>
 <script type="text/javascript">
-    var sparkline_info = [% sparks %];
+    var sparkline_info = [% sparks | none %];
     var line_config = {
         type: 'line',
         lineColor: '#606060',
@@ -14,7 +14,7 @@
         highlightLineColor: '#000000',
         spotRadius: 1.25
     };
-      var treemap_info = [% treemap %];
+      var treemap_info = [% treemap | none %];
       var data  = treemap_info.data;
       var labels = treemap_info.labels;
       var labelToTitle = function (coordinates, index) {
