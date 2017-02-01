@@ -545,35 +545,26 @@ my $statmnt_url     = request()->url_for('backoffice/f_manager_statement.cgi');
 my $impersonate_url = request()->url_for('backoffice/client_impersonate.cgi');
 print qq{<br/>
     <div class="flat">
-    <form id="jumpToClient" action="$self_post" method="POST">
-        View client files: <input type="text" size="12" maxlength="15" name="loginID" value="$encoded_loginid">&nbsp;&nbsp;
-        <select name="jumpto" id="jumpToSelect"
-                onchange="SetSelectOptionVisibility(this.options[this.selectedIndex].innerHTML)">
-            <option value="$self_post"  >Details</option>
-            <option value="$history_url">Statement</option>
-            <option value="$statmnt_url">Portfolio</option>
-        </select>
-        &nbsp;&nbsp;<input type="submit" value="View">
+    <form action="$statmnt_url" method="POST">
+        <input type="text" size="12" maxlength="15" name="loginID" value="$encoded_loginid">
+        <input type="submit" value="View $encoded_loginid Portfolio">
         <input type="hidden" name="broker" value="$encoded_broker">
         <input type="hidden" name="currency" value="default">
-        <div class="flat" id="StatementOption" style="display:none">
-            <input type="checkbox" value="yes" name="depositswithdrawalsonly">Deposits and Withdrawals only
-        </div>
     </form>
     </div>
-
-    <div style="float: right">
+    <div class="flat">
     <form action="$history_url" method="POST">
     <input type="hidden" name="loginID" value="$encoded_loginid">
     <input type="submit" value="View $encoded_loginid statement">
+    <input type="checkbox" value="yes" name="depositswithdrawalsonly">Deposits and Withdrawals only
     </form>
     </div>
+
 <div  style="float: right">
 <form action="$impersonate_url" method="post">
 <input type='hidden' size=30 name="impersonate_loginid" value="$encoded_loginid">
 <input type='hidden' name='broker' value='$encoded_broker'>
 <input type="submit" value="Impersonate"></form>
-
 </div>
 };
 
