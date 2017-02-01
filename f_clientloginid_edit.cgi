@@ -545,8 +545,13 @@ my $statmnt_url     = request()->url_for('backoffice/f_manager_statement.cgi');
 my $impersonate_url = request()->url_for('backoffice/client_impersonate.cgi');
 print qq{<br/>
     <div class="flat">
+    <form action="$self_post" method="POST">
+        <input type="text" size="15" maxlength="15" name="loginID" value="$encoded_loginid">
+    </form>
+    </div>
+    <div class="flat">
     <form action="$statmnt_url" method="POST">
-        <input type="text" size="12" maxlength="15" name="loginID" value="$encoded_loginid">
+        <input type="hidden" name="loginID" value="$encoded_loginid">
         <input type="submit" value="View $encoded_loginid Portfolio">
         <input type="hidden" name="broker" value="$encoded_broker">
         <input type="hidden" name="currency" value="default">
