@@ -4,6 +4,8 @@ package main;
 use strict;
 use warnings;
 
+no indirect;
+
 use f_brokerincludeall;
 use Format::Util::Numbers qw( to_monetary_number_format );
 use BOM::Platform::Runtime;
@@ -12,6 +14,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use List::MoreUtils qw(zip);
 use List::Util qw(min max);
+use List::UtilsBy qw(nsort_by);
 
 use lib '/home/git/regentmarkets/perl-Finance-TradingStrategy/lib';
 use Finance::TradingStrategy;
@@ -73,35 +76,46 @@ my $rslt;
 my @tbl;
 
 my $process_dataset = sub {
-    my ($date_selected, $dataset) = @_;
+    my ($date_selected, $dataset_selected) = @_;
     $date_selected = [ $date_selected ] unless ref $date_selected;
+    $dataset_selected = [ $dataset_selected ] unless ref $dataset_selected;
     my @results;
     my %stats;
+    $stats{file_size} = 0;
     my @spots;
     my $sum = 0;
     DATE:
     for my $date (@$date_selected) {
-        my $path = path($base_dir)->child($date)->child($dataset . '.csv');
         warn "date path not found: " . path($base_dir)->child($date) unless path($base_dir)->child($date)->exists;
-        next DATE unless $path->exists;
+
+        # Pull in all data first
+        my @data;
+        TYPE:
+        for my $dataset (@$dataset_selected) {
+            warn "Trying dataset $dataset\n";
+            my $path = path($base_dir)->child($date)->child($dataset . '.csv');
+            next DATE unless $path->exists;
+            push @data, $path->lines_utf8;
+            $stats{file_size} += -s $path;
+        }
+
+        # Ensure our graphs are ordered by epoch timestamp
+        @data = nsort_by { (split /,/)[0] } @data;
 
         my $strategy = Finance::TradingStrategy->new(
-                strategy => $strategy_name,
-                count    => $count,
-                );
-
+            strategy => $strategy_name,
+            count    => $count,
+        );
         $strategy_description = $strategy->description;
-        my $fh  = $path->openr_utf8 or die "Could not open dataset $path - $!";
         my @hdr = qw(epoch quote buy_price value theo_price);
         {
-            my @info = split '_', $dataset;
+            my @info = split '_', $dataset_selected->[0];
             unshift @info, join '_', splice(@info, 0, 2) if $info[0] eq 'R';
             ($stats{symbol}, $stats{duration}, $stats{step_size}) = @info;
         }
-        $stats{file_size} = '(' . (-s $path) . '&nbsp;bytes)';
         my $line = 0;
 
-        while (<$fh>) {
+        for(@data) {
             next if $line++ % $skip;
             eval {
                 my @market_data = split /\s*,\s*/;
@@ -135,11 +149,12 @@ my $process_dataset = sub {
                 $stats{end} = Date::Utility->new($market_data{epoch}) if $market_data{epoch} > $stats{end}->epoch;
                 1;
             } or do {
-                warn "Error processing $path:$line - (data $_) $@";
+                warn "Error processing $line - (data $_) $@";
                 1;
             };
         }
     }
+    $stats{file_size} = '(' . $stats{file_size} . '&nbsp;bytes)';
     if ($stats{count}) {
         my $lf  = Statistics::LineFit->new;
         my $min = min @results;
@@ -158,7 +173,7 @@ my $process_dataset = sub {
         result_list => \@results,
         spot_list   => \@spots,
         statistics  => \%stats,
-        dataset     => $dataset,
+        dataset     => $dataset_selected,
     };
 };
 
@@ -188,16 +203,17 @@ my $statistics_table = sub {
 # When the button is pressed, we end up in here:
 my ($underlying_selected) = $cgi->param('underlying') =~ /^(\w+|\*)$/;
 my ($duration_selected)   = $cgi->param('duration') =~ /^([\w ]+|\*)$/;
-my ($type_selected)       = $cgi->param('type') =~ /^(\w+|\*)$/;
+my (@type_selected)       = grep /^(\w+|\*)$/, $cgi->param('type');
 if ($cgi->param('run')) {
-    if (grep { $_ eq '*' } $underlying_selected, $duration_selected, $type_selected, @date_selected) {
+    if (grep { $_ eq '*' } $underlying_selected, $duration_selected, @type_selected, @date_selected) {
         @date_selected = @dates if grep { $_ eq '*' } @date_selected;
+        @type_selected = @{$config->{types}} if grep { $_ eq '*' } @type_selected;
         $rslt = {};
         TABLE:
         for my $underlying ($underlying_selected eq '*' ? @{$config->{underlyings}} : $underlying_selected) {
             for my $duration_line ($duration_selected eq '*' ? @{$config->{durations}} : $duration_selected) {
                 (my $duration = $duration_line) =~ s/ step /_/;
-                for my $type ($type_selected eq '*' ? @{$config->{types}} : $type_selected) {
+                for my $type (@type_selected) {
                     my $dataset = join '_', $underlying, $duration, $type;
                     push @tbl, eval { $process_dataset->([ @date_selected ], $dataset) } or do {
                         print "Failed to process $dataset - $@" if $@;
@@ -209,7 +225,8 @@ if ($cgi->param('run')) {
         }
     } else {
         @date_selected = @dates if grep { $_ eq '*' } @date_selected;
-        my $dataset = join '_', $underlying_selected, ($duration_selected =~ s/ step /_/r), $type_selected;
+        @type_selected = @{$config->{types}} if grep { $_ eq '*' } @type_selected;
+        my $dataset = [ map {; join '_', $underlying_selected, ($duration_selected =~ s/ step /_/r), $_ } @type_selected ];
         $rslt = $process_dataset->(\@date_selected, $dataset);
     }
 }
@@ -225,7 +242,7 @@ my %template_args = (
         date       => [ @date_selected ],
         underlying => $underlying_selected,
         duration   => $duration_selected,
-        type       => $type_selected,
+        type       => [ @type_selected ],
         price_type => $price_type_selected,
     },
     count            => $count,
