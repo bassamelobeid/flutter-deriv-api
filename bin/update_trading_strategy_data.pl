@@ -31,6 +31,7 @@ open my $unique_lock, '<', $0 or die $!;
 die "Another copy of $0 is already running - we expect to run daily, is the script taking more than 24h to complete?"
     unless flock $unique_lock, LOCK_EX | LOCK_NB;
 
+my $script_start_time = Time::HiRes::time;
 try {
     # Bail out if we take more than a day...
     alarm((24 * 60 * 60) - 10);
@@ -137,10 +138,16 @@ try {
                 }
             }
         }
-        printf "%d working on %s took %.2fms\n", $$, ($job =~ s/\0/ /gr), (1000.0 * (Time::HiRes::time - $start_time));
+        my $elapsed = (1000.0 * (Time::HiRes::time - $start_time);
+        printf "%d working on %s took %.2fms\n", $$, ($job =~ s/\0/ /gr), $elapsed);
         $pm->finish;
     }
 } catch {
     warn "Failed to run - $_";
 };
 alarm(0);
+{
+    my $elapsed = Time::HiRes::time - $script_start_time;
+    printf "Took %.1f hours to run\n", $elapsed / 3600;
+}
+
