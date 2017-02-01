@@ -741,10 +741,9 @@ sub paymentagent_withdraw {
     my ($website_name, $args) = @{$params}{qw/website_name args/};
 
     # expire token only when its not dry run
-    unless ( $args->{dry_run}) {
+    unless ($args->{dry_run}) {
         my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $client->email, 'paymentagent_withdraw')->{error};
-	if ( $err )
-        {
+        if ($err) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => $err->{code},
                     message_to_client => $err->{message_to_client}});
