@@ -22,6 +22,7 @@ __PACKAGE__->meta->setup(
         authentication_method_code => { type => 'varchar', length => 50, not_null => 1 },
         expiration_date            => { type => 'date' },
         remote_addr                => { type => 'scalar' },
+        comments                   => { type => 'varchar', default => '', length => 255, not_null => 1 },
     ],
 
     primary_key_columns => [ 'id' ],
