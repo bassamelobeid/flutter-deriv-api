@@ -8,6 +8,7 @@ durations:
 underlyings:
   - R_50
   - frxUSDJPY
+  - frxEURUSD
   - GDAXI
 types:
   - CALL
