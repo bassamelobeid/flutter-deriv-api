@@ -138,8 +138,8 @@ try {
                 }
             }
         }
-        my $elapsed = (1000.0 * (Time::HiRes::time - $start_time);
-        printf "%d working on %s took %.2fms\n", $$, ($job =~ s/\0/ /gr), $elapsed);
+        my $elapsed = 1000.0 * (Time::HiRes::time - $start_time);
+        printf "%d working on %s took %.2fms\n", $$, ($job =~ s/\0/ /gr), $elapsed;
         $pm->finish;
     }
 } catch {
