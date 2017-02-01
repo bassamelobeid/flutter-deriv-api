@@ -44,6 +44,11 @@
       "description": "Must be 'jp' (Japan).",
       "required": 1
     },
+    "birth_place": {
+      "type" : "string",
+      "pattern": "^[a-z]{2}$",
+      "description": "Place of birth, 2-letter country code."
+    },
     "address_line_1": {
       "type" : "string",
       "pattern": "^[\\p{L}\\p{Nd}\\s'.,@\/-]{1,70}$",
