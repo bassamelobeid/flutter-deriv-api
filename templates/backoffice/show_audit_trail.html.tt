@@ -3,8 +3,12 @@
 %]
 
 <style type="text/css">
+    .hidden {
+        display: none;
+    }
     table#show_log_list_table td {
         background: #eeeedd;
+        white-space: nowrap;
     }
     table#show_log_list_table td div{
         height: 16px;
@@ -18,9 +22,18 @@
         background: #ffaaaa;
     }
 </style>
-
-<a href="[% url_to_client | none %]">&laquo; return to client details</a>
-<br>
+<script>
+function showHidden(){
+    var x = document.getElementsByClassName("hidden");
+    var i;
+    for (i = 0; i < x.length; i++) {
+            x[i].classList.remove('hidden');
+    }
+    return false;
+}
+</script>
+<a href="[% url_to_client | none %]">&laquo; return to client details</a><br>
+Note: some columns are hidden. <button onclick="showHidden()">Show them</button>, if you need.<br>
 [% INCLUDE pager %]
 <table id="show_log_list_table">
     <tr>
@@ -36,9 +49,10 @@
                 SET class = '';
                 SET class = class _ " first" IF loop.first;
                 SET class = class _ " changed" IF log.changes.$hdr;
+                SET class = class _ " hidden" IF hidden_cols.$hdr;
                 SET classdec = class ? "class=\"$class\"" : '' %]
-                <td><div [%classdec%] title="[%value%]">
-                    &nbsp;[% value %]
+                <td><div [% classdec | none %] title="[%value%]">
+                    [% value %]
                 </div></td>
             [% END %]
         </tr>

@@ -117,7 +117,8 @@ sub _build_brand {
 sub _build_available_currencies {
     my $self = shift;
 
-    return LandingCompany::Registry::get_by_broker($self->broker_code)->legal_allowed_currencies;
+    my $landing_company = LandingCompany::Registry::get_by_broker($self->broker_code) or die sprintf "Invalid landing company for broker code [%s]", $self->broker_code;
+    return $landing_company->legal_allowed_currencies;
 }
 
 sub _build_http_method {
