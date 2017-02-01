@@ -37,7 +37,7 @@
     "phone":{
       "type": ["string", "null"],
       "pattern": "^\\+?[0-9\\s-]{0,35}$",
-      "description": "Note: not applicable for virtual account. Optional field for real money account."
+      "description": "Note: not applicable for virtual account. Required field for real money account."
     },
     "residence": {
       "type": ["string", "null"],
