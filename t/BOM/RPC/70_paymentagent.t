@@ -57,7 +57,7 @@ my $client_token    = $m->create_token($client->loginid, 'pa test');
 my $pa_client_token = $m->create_token($pa_client->loginid, 'pa test');
 
 my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
-$mock_utility->mock('is_verification_token_valid', sub { return 1 });
+$mock_utility->mock('is_verification_token_valid', sub { return {status => 1} });
 
 # paymentagent_list
 my $res = BOM::RPC::v3::Cashier::paymentagent_list({
