@@ -554,6 +554,7 @@ sub get_settings {
                 allow_copiers                  => $client->allow_copiers // 0,
                 is_authenticated_payment_agent => ($client->payment_agent and $client->payment_agent->is_authenticated) ? 1 : 0,
                 $client_tnc_status ? (client_tnc_status => $client_tnc_status->reason) : (),
+                place_of_birth            => $client->place_of_birth,
                 tax_residence             => $client->tax_residence,
                 tax_identification_number => $client->tax_identification_number,
             )
