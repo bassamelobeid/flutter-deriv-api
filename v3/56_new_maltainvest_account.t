@@ -28,6 +28,7 @@ my %client_details = (
     first_name       => 'first\'name',
     date_of_birth    => '1990-12-30',
     residence        => 'nl',
+    "birth_place"    => "de",
     address_line_1   => 'Jalan Usahawan',
     address_line_2   => 'Enterpreneur Center',
     address_city     => 'Cyberjaya',
