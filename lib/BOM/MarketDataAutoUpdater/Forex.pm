@@ -169,6 +169,7 @@ sub run {
             next;
         }
         my $underlying = create_underlying($symbol);
+        # Forex contracts with flat smiles are updated with a different module (MarketDataAutoUpdater/Flat.pm)
         next if $underlying->flat_smile;
         my $raw_volsurface = $surfaces_from_file->{$symbol};
 
