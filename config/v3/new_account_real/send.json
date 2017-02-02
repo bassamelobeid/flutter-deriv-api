@@ -39,7 +39,7 @@
       "description": "2-letter country code, possible value receive from residence_list call.",
       "required": "1"
     },
-    "birth_place": {
+    "place_of_birth": {
       "type" : "string",
       "pattern": "^[a-z]{2}$",
       "description": "Place of birth, 2-letter country code."
