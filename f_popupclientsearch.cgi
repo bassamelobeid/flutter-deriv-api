@@ -34,25 +34,23 @@ my %fields = (
     phone         => $phone,
     date_of_birth => $date_of_birth,
 );
-my %non_empty_fields = (map { ($_, $fields{$_}) } (grep { $fields{$_} } (keys %fields)));
+my $non_empty_fields = {map { ($_, $fields{$_}) } (grep { $fields{$_} } (keys %fields))};
 my $results;
 
-if (%non_empty_fields) {
+if (%$non_empty_fields) {
     my $report_mapper = BOM::Database::DataMapper::CollectorReporting->new({
         broker_code => 'FOG',
         operation   => 'collector'
     });
-    $results = $report_mapper->get_clients_result_by_field({
-        'broker' => $broker,
-        %non_empty_fields,
-    });
+    $non_empty_fields->{broker} = uc($broker);
+    $results = $report_mapper->get_clients_result_by_field($non_empty_fields);
 }
 
 BOM::Backoffice::Request::template->process(
     'backoffice/client_search.html.tt',
     {
         results => $results,
-        params  => \%non_empty_fields,
+        params  => $non_empty_fields,
         broker  => $broker,
         url     => request()->url_for("backoffice/f_popupclientsearch.cgi"),
     }) || die BOM::Backoffice::Request::template->error(), "\n";
