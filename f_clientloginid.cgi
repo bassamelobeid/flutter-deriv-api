@@ -53,7 +53,7 @@ print '<form action="'
 
 print '<input type=text size=15 name="loginID" value="">'
     . ' <a href="'
-    . request()->url_for('backoffice/f_popupclientsearch.cgi', {broker => $encoded_broker})
+    . request()->url_for('backoffice/f_popupclientsearch.cgi')
     . '"><font class=smallfont>[Search]</font></a>'
     . ' <a href="javascript:WinPopupSearchClients();"><font class=smallfont>[OldSearch]</font></a>'
     . '</td></tr>';
