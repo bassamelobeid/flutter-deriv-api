@@ -87,9 +87,12 @@ subtest 'MLT upgrade to MF account' => sub {
     };
 
     subtest 'upgrade to MF' => sub {
-        my ($res, $call_params) = call_mocked_client($t, $mf_details);
-        $t = $t->send_ok({json => $mf_details})->message_ok;
-        is $call_params->{token}, $token;
+        my %details = (%client_details, %$mf_details);
+        delete $details{new_account_real};
+        note explain %details;
+        $t = $t->send_ok({json => \%details})->message_ok;
+        my $res = decode_json($t->message->[1]);
+        not explain $res;
         is($res->{msg_type}, 'new_account_maltainvest');
         ok($res->{new_account_maltainvest});
         test_schema('new_account_maltainvest', $res);
@@ -174,7 +177,9 @@ subtest 'CR / MX client cannot upgrade to MF' => sub {
         };
 
         subtest 'no MF upgrade for MX' => sub {
-            $t = $t->send_ok({json => $mf_details})->message_ok;
+            my %details = (%client_details, %$mf_details);
+            delete $details{new_account_real};
+            $t = $t->send_ok({json => \%details})->message_ok;
             my $res = decode_json($t->message->[1]);
 
             is($res->{msg_type}, 'new_account_maltainvest');
