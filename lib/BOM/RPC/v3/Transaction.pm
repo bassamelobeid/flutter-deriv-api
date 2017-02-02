@@ -29,7 +29,6 @@ sub buy {
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
     $contract_parameters->{landing_company} = $client->landing_company->short;
     my $amount_type = $contract_parameters->{amount_type};
-
     my ($contract, $response);
 
     try {
@@ -53,10 +52,13 @@ sub buy {
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
     };
     return $response if $response;
+
+    # For spread, there is no amount type
+    my $price = (defined $amount_type and $amount_type eq 'stake') ? $contract_parameters->{amount} : $args->{price};
     my $trx = BOM::Product::Transaction->new({
             client   => $client,
             contract => $contract,
-            price    => ($args->{price} || 0),
+            price    => $price,
             (defined $payout)      ? (payout      => $payout)      : (),
             (defined $amount_type) ? (amount_type => $amount_type) : (),
             purchase_date => $purchase_date,
