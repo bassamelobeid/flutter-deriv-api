@@ -358,8 +358,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->residence($input{$key});
             next CLIENT_KEY;
         }
-        if ($key eq 'birth_place') {
-            $client->birth_place($input{$key});
+        if ($key eq 'place_of_birth') {
+            $client->place_of_birth($input{$key});
             next CLIENT_KEY;
         }
         if (my ($id) = $key =~ /^comments_([0-9]+)$/) {

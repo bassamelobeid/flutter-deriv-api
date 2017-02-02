@@ -175,15 +175,15 @@ table#client_edit td{
     <tr>
         <td class="label">Birth Place</td>
         <td>:
-            <select name="birth_place">
-                [% IF client.birth_place == "" %]
+            <select name="place_of_birth">
+                [% IF client.place_of_birth == "" %]
                     <option value="" selected="selected">Select place of birth</option>
                 [% ELSE %]
                     <option value="">Select place of birth</option>
                 [% END %]
 
             [% FOREACH country = countries %]
-                [% IF country_codes.$country == client.birth_place %]
+                [% IF country_codes.$country == client.place_of_birth %]
                    <option value="[% country_codes.$country %]" selected="selected">[% country %]</option>
                 [% ELSE %]
                    <option value="[% country_codes.$country %]">[% country %]</option>
