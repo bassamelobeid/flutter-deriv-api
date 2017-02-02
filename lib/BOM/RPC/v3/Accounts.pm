@@ -650,6 +650,7 @@ sub set_settings {
     my $addressState    = $args->{'address_state'};
     my $addressPostcode = $args->{'address_postcode'};
     my $phone           = $args->{'phone'} // '';
+    my $birth_place     = $args->{place_of_birth} // '';
 
     my $cil_message;
     if (   ($address1 and $address1 ne $client->address_1)
@@ -673,6 +674,7 @@ sub set_settings {
     $client->state($addressState);    # FIXME validate
     $client->postcode($addressPostcode);
     $client->phone($phone);
+    $client->place_of_birth($birth_place);
 
     $client->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
 
