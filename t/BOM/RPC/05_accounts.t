@@ -983,6 +983,7 @@ subtest $method => sub {
             'first_name'                     => 'bRaD',
             'email_consent'                  => '0',
             'allow_copiers'                  => '0',
+            'place_of_birth'                 => undef,
             'tax_residence'                  => undef,
             'tax_identification_number'      => undef,
         });
