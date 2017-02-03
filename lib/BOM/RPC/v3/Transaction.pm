@@ -53,8 +53,17 @@ sub buy {
     };
     return $response if $response;
 
-    # For spread, there is no amount type
-    my $price = (defined $amount_type and $amount_type eq 'stake') ? $contract_parameters->{amount} : $args->{price};
+    my $price = $args->{price};
+    if (defined $amount_type and $amount_type eq 'stake'){
+        if ($price > $contract_parameters->{amount}){
+           $response = BOM::RPC::v3::Utility::create_error({
+                code              => 'ContractCreationFailure',
+                message_to_client => BOM::Platform::Context::localize('Contract's maximum price is exceed the stake amount')});
+           return $response if $response;
+        }
+        $price = $contract_parameters->{amount};
+    }
+
     my $trx = BOM::Product::Transaction->new({
             client   => $client,
             contract => $contract,
