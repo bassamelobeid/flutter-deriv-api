@@ -156,7 +156,12 @@ sub _build_surfaces_from_file {
     my $self = shift;
     my @volsurface;
     foreach my $file (@{$self->file}) {
-        my $surface = Bloomberg::VolSurfaces->new->parse_data_for($file);
+        my $surface;
+        if ($file =~ /vol_points/) {
+            $surface = Bloomberg::VolSurfaces->new->parse_data_for($file, $self->tenor_file);
+        } else {
+            $surface = Bloomberg::VolSurfaces->new->parse_data_for($file);
+        }
         foreach my $underlying (keys %{$surface}) {
             if (scalar keys %{$surface->{$underlying}->{surface}} == 2) {
                 $surface->{$underlying}->{surface} = _append_to_existing_surface($surface->{$underlying}->{surface}, $underlying);
