@@ -78,6 +78,38 @@ sub _build_file {
     return \@files;
 }
 
+has tenor_file => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_tenor_file {
+    my $self = shift;
+
+    my $now          = Date::Utility->new;
+    my $loc          = '/feed/BBDL';
+    my $on           = Date::Utility->new($now->epoch);
+    my $previous_day = $on->minus_time_interval('1d')->date_yyyymmdd;
+    while (not -d $loc . '/' . $on->date_yyyymmdd) {
+        $on = Date::Utility->new($on->epoch - 86400);
+        if ($on->year <= 2011) {
+            die('Requested date pre-dates vol surface history.');
+        }
+    }
+    my $day             = $on->date_yyyymmdd;
+    my @filenames       = sort { $b cmp $a } File::Find::Rule->file()->name('*.csv')->in($loc . '/' . $day);
+    my @tenor_filenames = grep { $_ !~ /quantovol/ and $_ !~ /points/ } @filenames;
+
+    my $tenor_file = first {
+        my ($h, $m, $s) = ($_ =~ /(\d{2})(\d{2})(\d{2})_vol_tenors\.csv$/);
+        my $date = Date::Utility->new("$day $h:$m:$s");
+        return $date->epoch <= $now->epoch;
+    }
+    @tenor_filenames;
+
+    return $tenor_file;
+}
+
 has symbols_to_update => (
     is         => 'ro',
     lazy_build => 1,
