@@ -67,7 +67,7 @@ sub buy {
     my $trx = BOM::Product::Transaction->new({
             client   => $client,
             contract => $contract,
-            price    => $price,
+            price    => ($price || 0),
             (defined $payout)      ? (payout      => $payout)      : (),
             (defined $amount_type) ? (amount_type => $amount_type) : (),
             purchase_date => $purchase_date,
