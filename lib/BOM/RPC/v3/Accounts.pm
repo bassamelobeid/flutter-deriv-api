@@ -651,7 +651,7 @@ sub set_settings {
     my $addressState    = $args->{'address_state'};
     my $addressPostcode = $args->{'address_postcode'};
     my $phone           = $args->{'phone'} // '';
-    my $birth_place     = $args->{place_of_birth} // '';
+    my $birth_place     = $args->{place_of_birth};
 
     my $cil_message;
     if (   ($address1 and $address1 ne $client->address_1)
