@@ -5,9 +5,12 @@ use warnings;
 
 use parent qw(Mojolicious::Plugin);
 
+no indirect;
+
 use Mojo::IOLoop;
 use Future;
 use Future::Mojo;
+use Try::Tiny;
 
 use JSON::XS;
 use Scalar::Util qw(blessed);
@@ -46,7 +49,11 @@ sub register {
                 my ($command, @args) = split /[ =]/, $1;
                 if(is_valid_command($command)) {
                     warn "Executing command: $command @args\n";
-                    my $rslt = $self->$command(@args);
+                    my $rslt = try {
+                        $self->$command(@args);
+                    } catch {
+                        Future->fail($_, introspection => $command, @args)
+                    };
                     # Allow deferred results
                     $rslt = Future->done($rslt) unless blessed($rslt) && $rslt->isa('Future');
                     retain_future(
