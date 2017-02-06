@@ -17,7 +17,7 @@ use Test::FailWarnings;
 
 use Mojo::UserAgent;
 
-my $dir_path = __DIR__;
+my $dir_path       = __DIR__;
 my $test_conf_path = $dir_path . '/loadtest.conf';
 my @times;
 for my $iteration (1 .. 10) {
