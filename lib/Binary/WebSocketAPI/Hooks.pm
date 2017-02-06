@@ -5,6 +5,7 @@ use warnings;
 
 use JSON;
 use Try::Tiny;
+use Path::Tiny;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Fcntl qw/ :flock /;
 
@@ -139,13 +140,6 @@ sub _set_defaults {
 
 sub before_forward {
     my ($c, $req_storage) = @_;
-
-    # check for app_id, throw error if its not there
-    unless ($c->stash('source')) {
-        warn 'No app id, ip is ' . $c->stash('client_ip') . ' country is ' . $c->stash('country_code');
-        return $c->new_error($req_storage->{name}, 'AccessForbidden',
-            $c->l('App id is mandatory to access our api. Please register your application.'));
-    }
 
     $req_storage->{origin_args} = {%{$req_storage->{args}}};
     my $args = $req_storage->{args};
@@ -285,6 +279,22 @@ sub add_app_id {
 sub add_brand {
     my ($c, $req_storage) = @_;
     $req_storage->{call_params}->{brand} = $c->stash('brand');
+    return;
+}
+
+sub check_app_id {
+    my ($c, $req_storage) = @_;
+
+    # check for app_id, throw error if its not there
+    unless ($c->stash('source')) {
+        try {
+            Path::Tiny::path('/var/log/httpd/missing_app_id.log')
+                ->append('No app id, ip is ' . $c->stash('client_ip') . ' country is ' . $c->stash('country_code'));
+        };
+        return $c->new_error($req_storage->{name}, 'AccessForbidden',
+            $c->l('App id is mandatory to access our api. Please register your application.'));
+    }
+
     return;
 }
 
