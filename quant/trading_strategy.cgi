@@ -170,6 +170,15 @@ my $process_dataset = sub {
         : 'N/A';
         $stats{payout}{mean} /= $stats{count};
     }
+    if(@spots > 50_000) {
+        my $spot_skip = 1 + int(@spots / 50_000);
+        my @output_spots;
+        for(my $idx = 0; $idx < @spots; ++$idx) {
+            push @output_spots, $spots[$idx] unless $idx % $spot_skip;
+        }
+        @spots = @output_spots;
+    }
+
     return {
         result_list => \@results,
         spot_list   => \@spots,
