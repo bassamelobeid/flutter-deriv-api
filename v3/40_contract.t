@@ -311,7 +311,7 @@ $proposal_id = $proposal_1->{proposal}->{id};
 $t           = $t->send_ok({
         json => {
             buy   => $proposal_id,
-            price => 100,
+            price => 100000,
         }});
 
 $t->message_ok;
