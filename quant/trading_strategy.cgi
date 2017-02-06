@@ -143,6 +143,7 @@ my $process_dataset = sub {
                 $stats{buy_price}{min}         = min $stats{buy_price}{min}, $market_data{buy_price};
                 $stats{buy_price}{max}         = max $stats{buy_price}{max}, $market_data{buy_price};
                 $stats{payout}{mean}          += $market_data{value};
+                $stats{payout}{sum}           += $market_data{value};
 
                 $stats{start} ||= Date::Utility->new($market_data{epoch});
                 $stats{end} ||= $stats{start} or die 'no start info? epoch was ' . $market_data{epoch};
@@ -193,6 +194,7 @@ my $statistics_table = sub {
         ['Number of winning bets', $stats->{winners}],
         ['Number of losing bets',  $stats->{losers}],
         ['Bets bought',            $stats->{trades}],
+        ['Sum of payouts',         $stats->{payout}{sum}],
         ['Sum contracts bought',   sprintf '%.02f', $stats->{bought_buy_price}{sum} // 0],
         ['Company profit',         sprintf '%.02f', -($stats->{sum_contracts_bought} // 0)],
         ['Company profit margin', $stats->{profit_margin} // 0],
