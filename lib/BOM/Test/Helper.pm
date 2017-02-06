@@ -53,8 +53,8 @@ sub build_wsapi_test {
     # We use 1 by default for these tests, unless a value is provided.
     # undef means "leave it out", used for a few tests that need to check
     # that we handle missing app_id correctly.
+    # as now app id is mandatory so assign it if not present
     $args->{app_id} = 1 unless exists $args->{app_id};
-    delete $args->{app_id} unless defined $args->{app_id};
 
     my $t = build_mojo_test('Binary::WebSocketAPI', $args);
 
