@@ -172,11 +172,16 @@ my $process_dataset = sub {
     }
     if(@spots > 50_000) {
         my $spot_skip = 1 + int(@spots / 50_000);
-        my @output_spots;
-        for(my $idx = 0; $idx < @spots; ++$idx) {
-            push @output_spots, $spots[$idx] unless $idx % $spot_skip;
+        {
+            my @output_spots;
+            my @output_results;
+            for(my $idx = 0; $idx < @spots; $idx += $spot_skip) {
+                push @output_spots, $spots[$idx];
+                push @output_results, $results[$idx];
+            }
+            @spots = @output_spots;
+            @results = @output_results;
         }
-        @spots = @output_spots;
     }
 
     return {
