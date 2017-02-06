@@ -115,7 +115,7 @@ sub _do_proveid {
 sub _request_id_authentication {
     my $self   = shift;
     my $client = $self->client;
-    my $status = 'cashier_locked';
+    my $status = 'unwelcome';
 
     $client->set_status($status, 'system', 'Experian id authentication failed on first deposit');
     $client->save;
