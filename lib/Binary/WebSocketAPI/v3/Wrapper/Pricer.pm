@@ -323,6 +323,18 @@ sub _create_pricer_channel {
     {
         $c->redis_pricer->set($redis_channel, 1);
         $c->stash('redis_pricer')->subscribe([$redis_channel], sub { });
+
+        my $count = $c->stash->{redis_pricer_count} || 0;
+
+        $c->stash->{redis_pricer_count} = ++$count;
+
+        $c->app->log->warn("[$$],"
+                . ($c->stash->{source}       || '') . ","
+                . ($c->stash->{client_ip}    || '') . ","
+                . ($c->stash->{country_code} || '') . ","
+                . ($c->stash->{loginid}      || '')
+                . ",$count")
+            if -f '/etc/rmg/debug';
     }
 
     $pricing_channel->{$redis_channel}->{$subchannel}->{uuid}          = $uuid;

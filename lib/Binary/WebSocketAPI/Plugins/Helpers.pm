@@ -189,7 +189,8 @@ sub register {
 
                         Binary::WebSocketAPI::v3::Wrapper::Pricer::process_pricing_events($c, $msg, $channel);
                     });
-                $c->stash->{redis_pricer} = $redis_pricer;
+                $c->stash->{redis_pricer}       = $redis_pricer;
+                $c->stash->{redis_pricer_count} = 0;
             }
             return $c->stash->{redis_pricer};
         });
