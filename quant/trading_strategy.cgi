@@ -92,7 +92,6 @@ my $process_dataset = sub {
         my @data;
         TYPE:
         for my $dataset (@$dataset_selected) {
-            warn "Trying dataset $dataset\n";
             my $path = path($base_dir)->child($date)->child($dataset . '.csv');
             next DATE unless $path->exists;
             push @data, $path->lines_utf8;
