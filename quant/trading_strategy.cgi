@@ -173,7 +173,7 @@ my $process_dataset = sub {
         result_list => \@results,
         spot_list   => \@spots,
         statistics  => \%stats,
-        dataset     => $dataset_selected,
+        dataset     => join(' ', @$dataset_selected),
     };
 };
 
