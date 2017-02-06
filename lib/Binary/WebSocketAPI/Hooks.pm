@@ -140,6 +140,13 @@ sub _set_defaults {
 sub before_forward {
     my ($c, $req_storage) = @_;
 
+    # check for app_id, throw error if its not there
+    unless ($c->stash('source')) {
+        warn 'No app id, ip is ' . $c->stash('client_ip') . ' country is ' . $c->stash('country_code');
+        return $c->new_error($req_storage->{name}, 'AccessForbidden',
+            $c->l('App id is mandatory to access our api. Please register your application.'));
+    }
+
     $req_storage->{origin_args} = {%{$req_storage->{args}}};
     my $args = $req_storage->{args};
     if (not $c->stash('connection_id')) {
