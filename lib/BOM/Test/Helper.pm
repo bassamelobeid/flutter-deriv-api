@@ -64,7 +64,7 @@ sub build_wsapi_test {
     $args->{app_id} = 1 unless exists $args->{app_id};
     delete $args->{app_id} unless defined $args->{app_id};
 
-    my $redis_port = empty_port
+    my $redis_port   = empty_port;
     my $redis_server = Mojo::Redis2::Server->new;
     $redis_server->start(port => $redis_port);
     my $tmp_dir = tempdir(CLEANUP => 1);
