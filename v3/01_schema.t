@@ -5,12 +5,13 @@ use JSON;
 use File::Slurp;
 use File::Basename;
 use Data::Dumper;
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Finance::Asset;
 #we need this import here so the market-data db will be fresh for the test
-use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use Date::Utility;
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::FeedTestDatabase;
+use BOM::Test::Helper qw/launch_redis/;
 use BOM::System::RedisReplicated;
 
 initialize_realtime_ticks_db();
@@ -33,6 +34,8 @@ sub _create_tick {    #creates R_50 tick in redis channel FEED::R_50
 }
 
 my $svr = $ENV{BOM_WEBSOCKETS_SVR} || '';
+# need to keep them until the end of test
+my ($tmp_dir, $redis_server) = launch_redis();
 my $t = $svr ? Test::Mojo->new : Test::Mojo->new('Binary::WebSocketAPI');
 
 $t->websocket_ok("$svr/websockets/v3");
