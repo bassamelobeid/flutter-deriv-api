@@ -22,7 +22,7 @@ sub create_account {
     my $details = $args->{details};
 
     my $email     = lc $details->{email};
-    my $password  = BOM::System::Password::hashpw($details->{client_password});
+    my $password  = $details->{client_password} ? BOM::System::Password::hashpw($details->{client_password}) : '';
     my $residence = $details->{residence};
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
