@@ -80,7 +80,7 @@ sub _collect_vol_ages {
     my @symbols = grep { !$skip_list{$_} } (@offer_underlyings, @quanto_currencies);
     foreach my $symbol (@symbols) {
         my $underlying = create_underlying($symbol);
-        next if $underlying->volatility_surface_type eq 'flat';
+        next if $underlying->flat_smile;
         my $dm              = BOM::MarketData::Fetcher::VolSurface->new;
         my $surface_in_used = $dm->fetch_surface({underlying => $underlying});
         my $vol_age         = (time - $surface_in_used->recorded_date->epoch) / 3600;
@@ -123,7 +123,7 @@ sub _collect_rates_ages {
 
     foreach my $symbol (@symbols) {
         my $u = create_underlying($symbol);
-        next if $u->volatility_surface_type eq 'flat';
+        next if $u->flat_smile;
         next if not $u->forward_feed;
         my $imply_symbol      = $u->rate_to_imply;
         my $imply_from_symbol = $u->rate_to_imply_from;
