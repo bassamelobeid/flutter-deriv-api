@@ -47,6 +47,11 @@ sub register {
             # One command per line
             while($buffer =~ s/^(.*)$CRLF//) {
                 my ($command, @args) = split /[ =]/, $1;
+                my $write_to_log = 0;
+                if($command eq 'log') {
+                    $write_to_log = 1;
+                    $command = shift @args;
+                }
                 if(is_valid_command($command)) {
                     warn "Executing command: $command @args\n";
                     my $rslt = try {
@@ -61,9 +66,17 @@ sub register {
                             $rslt,
                             Future::Mojo->new_timer(MAX_REQUEST_SECONDS),
                         )->then(sub {
-                            $stream->write('OK - ' . encode_json(shift) . $CRLF);
+                            my ($resp) = @_;
+                            my $output = encode_json($resp);
+                            warn "$command (@args) - $output\n" if $write_to_log;
+                            $stream->write("OK - $output$CRLF");
+                            Future->done
                         }, sub {
-                            $stream->write('ERR - ' . encode_json(shift) . $CRLF);
+                            my ($resp) = @_;
+                            my $output = encode_json($resp);
+                            warn "$command (@args) failed - $output\n";
+                            $stream->write("ERR - $output$CRLF");
+                            Future->done
                         })
                     )
                 } else {
