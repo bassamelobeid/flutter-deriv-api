@@ -55,7 +55,7 @@ sub register {
                 if(is_valid_command($command)) {
                     warn "Executing command: $command @args\n";
                     my $rslt = try {
-                        $self->$command(@args);
+                        $self->$command($app, @args);
                     } catch {
                         Future->fail($_, introspection => $command, @args)
                     };
