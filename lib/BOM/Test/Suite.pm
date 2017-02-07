@@ -70,6 +70,7 @@ sub set_date {
     die "Failed to set date using this command:\n@cmd\nDo we have sudo access? (return code = $exitcode, stdout = $stdout, stderr = $stderr)"
         unless $stdout eq $date->datetime_yyyymmdd_hhmmss . "\n";
 =cut
+
     return;
 }
 
