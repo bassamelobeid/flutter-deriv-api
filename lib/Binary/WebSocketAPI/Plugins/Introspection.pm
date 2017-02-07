@@ -151,6 +151,7 @@ sub command {
             *$name = $code;
         }
     }
+    return;
 }
 
 =head2 is_valid_command
@@ -160,7 +161,7 @@ against commands like 'DESTROY' or 'BEGIN'.
 
 =cut
 
-sub is_valid_command { exists $COMMANDS{shift()} }
+sub is_valid_command { return exists $COMMANDS{shift()} }
 
 =head1 COMMANDS
 
