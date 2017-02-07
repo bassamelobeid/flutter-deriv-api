@@ -414,7 +414,7 @@ subtest $method => sub {
         $user->save;
 
         $params->{args}->{annual_income}                  = '1-3 million JPY';
-        $params->{args}->{financial_asset}                  = '1-3 million JPY';
+        $params->{args}->{financial_asset}                = '1-3 million JPY';
         $params->{args}->{trading_experience_public_bond} = 'Less than 6 months';
         $params->{args}->{trading_experience_margin_fx}   = '6 months to 1 year';
 

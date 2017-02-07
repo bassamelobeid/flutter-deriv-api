@@ -117,7 +117,15 @@ subtest 'JP set_settings' => sub {
         client_ip    => '127.0.0.1',
         user_agent   => 'sdssasd',
         language     => 'ja',
-        args         => {jp_settings => {occupation => 'Financial Director'}}};
+        args         => {
+            jp_settings      => {occupation => 'Financial Director'},
+            address_line_1   => 'address line 1',
+            address_line_2   => 'address line 2',
+            address_city     => 'address city',
+            address_state    => 'address state',
+            address_postcode => '12345',
+            phone            => '2345678',
+        }};
     $res = BOM::RPC::v3::Accounts::set_settings($params);
     ok $res->{status}, 'Settings updated accordingly';
 };
