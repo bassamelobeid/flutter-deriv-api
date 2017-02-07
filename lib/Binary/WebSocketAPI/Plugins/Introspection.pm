@@ -200,17 +200,20 @@ We also want to add this information, but it's not yet available:
 =cut
 
 command connections => sub {
-    my ($app) = @_;
-    Future->done(
-        map +{
-            app_id          => $_->stash->{source},
-            lang            => $_->l,
-            landing_company => $_->landing_company_name,
-            ip              => $_->stash->{client_ip},
-            country         => $_->country_code,
-            client          => $_->stash->{loginid},
-        } sort values %{$app->active_connections}
-    )
+    my ($self, $app) = @_;
+    Future->done({
+        connections => [
+            map +{
+                app_id          => $_->stash->{source},
+                landing_company => $_->landing_company_name,
+                ip              => $_->stash->{client_ip},
+                country         => $_->country_code,
+                client          => $_->stash->{loginid},
+            }, grep defined, sort values %{$app->active_connections}
+        ],
+        # Report any invalid (disconnected but not cleaned up) entries
+        invalid => 0 + (grep !defined, values %{$app->active_connections})
+    })
 };
 
 =head2 subscriptions
