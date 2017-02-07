@@ -89,6 +89,7 @@ sub start_server {
                 });
         });
     $app->log->info("Introspection listening on :" . Mojo::IOLoop->acceptor($id)->port);
+    return;
 }
 
 =head2 register
@@ -121,6 +122,7 @@ sub register {
             });
     };
     $code->();
+    return;
 }
 
 # All registered commands - each hash slot should contain a true value, the

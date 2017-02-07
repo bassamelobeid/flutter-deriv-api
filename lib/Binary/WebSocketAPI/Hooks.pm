@@ -289,6 +289,7 @@ sub on_client_connect {
     warn "Client connect request but $c is already in active connection list" if exists $c->app->active_connections->{$c};
     Scalar::Util::weaken($c->app->active_connections->{$c} = $c);
     init_redis_connections($c);
+    return;
 }
 
 sub on_client_disconnect {
@@ -296,6 +297,7 @@ sub on_client_disconnect {
     warn "Client disconnect request but $c is not in active connection list" unless exists $c->app->active_connections->{$c};
     forget_all($c);
     delete $c->app->active_connections->{$c};
+    return;
 }
 
 1;
