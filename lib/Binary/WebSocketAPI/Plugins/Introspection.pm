@@ -223,7 +223,7 @@ command connections => sub {
                         ip              => $_->stash->{client_ip},
                         country         => $_->country_code,
                         client          => $_->stash->{loginid},
-                        count           => scalar keys ($_->stash->{pricing_channel} || []),
+                        count           => scalar keys($_->stash->{pricing_channel} || []),
                         }
                     }
                     grep {
