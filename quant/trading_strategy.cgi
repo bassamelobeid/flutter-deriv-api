@@ -92,7 +92,6 @@ my $process_dataset = sub {
         my @data;
         TYPE:
         for my $dataset (@$dataset_selected) {
-            warn "Trying dataset $dataset\n";
             my $path = path($base_dir)->child($date)->child($dataset . '.csv');
             next DATE unless $path->exists;
             push @data, $path->lines_utf8;
@@ -143,6 +142,7 @@ my $process_dataset = sub {
                 $stats{buy_price}{min}         = min $stats{buy_price}{min}, $market_data{buy_price};
                 $stats{buy_price}{max}         = max $stats{buy_price}{max}, $market_data{buy_price};
                 $stats{payout}{mean}          += $market_data{value};
+                $stats{payout}{sum}           += $market_data{value};
 
                 $stats{start} ||= Date::Utility->new($market_data{epoch});
                 $stats{end} ||= $stats{start} or die 'no start info? epoch was ' . $market_data{epoch};
@@ -169,11 +169,25 @@ my $process_dataset = sub {
         : 'N/A';
         $stats{payout}{mean} /= $stats{count};
     }
+    if(@spots > 50_000) {
+        my $spot_skip = 1 + int(@spots / 50_000);
+        {
+            my @output_spots;
+            my @output_results;
+            for(my $idx = 0; $idx < @spots; $idx += $spot_skip) {
+                push @output_spots, $spots[$idx];
+                push @output_results, $results[$idx];
+            }
+            @spots = @output_spots;
+            @results = @output_results;
+        }
+    }
+
     return {
         result_list => \@results,
         spot_list   => \@spots,
         statistics  => \%stats,
-        dataset     => $dataset_selected,
+        dataset     => join(' ', @$dataset_selected),
     };
 };
 
@@ -193,6 +207,7 @@ my $statistics_table = sub {
         ['Number of winning bets', $stats->{winners}],
         ['Number of losing bets',  $stats->{losers}],
         ['Bets bought',            $stats->{trades}],
+        ['Sum of payouts',         sprintf '%.02f', $stats->{payout}{sum}],
         ['Sum contracts bought',   sprintf '%.02f', $stats->{bought_buy_price}{sum} // 0],
         ['Company profit',         sprintf '%.02f', -($stats->{sum_contracts_bought} // 0)],
         ['Company profit margin', $stats->{profit_margin} // 0],

@@ -36,7 +36,6 @@
 <input name="skip" value="[% skip %]">
 
 <input name="run" type="submit" value="Run">
-<input name="reset" type="reset" value="Reset">
 
 [% IF result_table.size -%]
 <h2>Results for all datasets with strategy [% strategy_selected || 'unknown' %]</h2>
@@ -74,7 +73,7 @@
 <table>
  <tbody>
 [% FOREACH stat IN statistics -%]
- <tr><th>[% stat.0 %]</th><td>[% stat.1 | none %]</td></tr>
+ <tr><th style="text-align:right;padding-right:1em;">[% stat.0 %]</th><td>[% stat.1 | none %]</td></tr>
 [% END -%]
 [% IF dataset.size == 1 -%]
 <tr>
