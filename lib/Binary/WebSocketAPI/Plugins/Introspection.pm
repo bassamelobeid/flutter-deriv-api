@@ -139,14 +139,17 @@ parameters to pass to the coderef.
 sub command {
     my ($name, $code, %args) = @_;
     {
-        no strict 'refs';
         die "Already registered $name" if exists $COMMANDS{$name};
         die "Not registered but already ->can($name)" if __PACKAGE__->can($name);
         $COMMANDS{$name} = 1;
-        *$name = sub {
+        my $code = sub {
             my $self = shift;
-            $self->$code(%args, @_);
-            }
+            return $self->$code(%args, @_);
+            };
+        {
+            no strict 'refs';
+            *$name = $code;
+        }
     }
 }
 
