@@ -22,9 +22,10 @@ sub register {
     $app->helper(server_name => sub { return [split(/\./, Sys::Hostname::hostname)]->[0] });
 
     # Weakrefs to active $c instances
-    $app->helper(active_connections => sub {
-        state $connections = {}
-    });
+    $app->helper(
+        active_connections => sub {
+            state $connections = {};
+        });
 
     $app->helper(
         l => sub {

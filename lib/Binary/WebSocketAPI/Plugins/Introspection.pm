@@ -31,59 +31,63 @@ taken by something else and we have no SO_REUSEPORT on our current kernel.
 =cut
 
 sub start_server {
-	my ($self, $app, $conf) = @_;
+    my ($self, $app, $conf) = @_;
     my $id = Mojo::IOLoop->server({
-		port => $conf->{port},
-    } => sub {
-		my ($loop, $stream) = @_;
+            port => $conf->{port},
+        } => sub {
+            my ($loop, $stream) = @_;
 
-		# Client has connected, wait for commands and send responses back
-		my $buffer = '';
-		$stream->on(read => sub {
-		    my ($stream, $bytes) = @_;
+            # Client has connected, wait for commands and send responses back
+            my $buffer = '';
+            $stream->on(
+                read => sub {
+                    my ($stream, $bytes) = @_;
 
-		    $buffer .= $bytes;
-		    # One command per line
-		    while($buffer =~ s/^([^\x0D\x0A]+)\x0D?\x0A//) {
-			my ($command, @args) = split /[ =]/, $1;
-			my $write_to_log = 0;
-			if($command eq 'log') {
-			    $write_to_log = 1;
-			    $command = shift @args;
-			}
-			if(is_valid_command($command)) {
-			    my $rslt = try {
-                    $self->$command($app, @args);
-			    } catch {
-                    Future->fail($_, introspection => $command, @args)
-			    };
-			    # Allow deferred results
-			    $rslt = Future->done($rslt) unless blessed($rslt) && $rslt->isa('Future');
-			    retain_future(
-                    Future->needs_any(
-                        $rslt,
-                        Future::Mojo->new_timer(MAX_REQUEST_SECONDS)->then(sub { Future->fail('Timeout') }),
-                    )->then(sub {
-                        my ($resp) = @_;
-                        my $output = encode_json($resp);
-                        warn "$command (@args) - $output\n" if $write_to_log;
-                        $stream->write("OK - $output$CRLF");
-                        Future->done
-                    }, sub {
-                        my ($resp) = @_;
-                        my $output = encode_json($resp);
-                        warn "$command (@args) failed - $output\n";
-                        $stream->write("ERR - $output$CRLF");
-                        Future->done
-                    })
-			    )
-			} else {
-			    warn "Invalid command: $command @args\n";
-			    $stream->write(sprintf "Invalid command [%s]", $command);
-			}
-		    }
-		});
-    });
+                    $buffer .= $bytes;
+                    # One command per line
+                    while ($buffer =~ s/^([^\x0D\x0A]+)\x0D?\x0A//) {
+                        my ($command, @args) = split /[ =]/, $1;
+                        my $write_to_log = 0;
+                        if ($command eq 'log') {
+                            $write_to_log = 1;
+                            $command      = shift @args;
+                        }
+                        if (is_valid_command($command)) {
+                            my $rslt = try {
+                                $self->$command($app, @args);
+                            }
+                            catch {
+                                Future->fail(
+                                    $_,
+                                    introspection => $command,
+                                    @args
+                                    )
+                            };
+                            # Allow deferred results
+                            $rslt = Future->done($rslt) unless blessed($rslt) && $rslt->isa('Future');
+                            retain_future(
+                                Future->needs_any($rslt, Future::Mojo->new_timer(MAX_REQUEST_SECONDS)->then(sub { Future->fail('Timeout') }),)->then(
+                                    sub {
+                                        my ($resp) = @_;
+                                        my $output = encode_json($resp);
+                                        warn "$command (@args) - $output\n" if $write_to_log;
+                                        $stream->write("OK - $output$CRLF");
+                                        Future->done;
+                                    },
+                                    sub {
+                                        my ($resp) = @_;
+                                        my $output = encode_json($resp);
+                                        warn "$command (@args) failed - $output\n";
+                                        $stream->write("ERR - $output$CRLF");
+                                        Future->done;
+                                    }));
+                        } else {
+                            warn "Invalid command: $command @args\n";
+                            $stream->write(sprintf "Invalid command [%s]", $command);
+                        }
+                    }
+                });
+        });
     $app->log->info("Introspection listening on :" . Mojo::IOLoop->acceptor($id)->port);
 }
 
@@ -103,16 +107,18 @@ sub register {
     my $retries = 100;
     my $code;
     $code = sub {
-        Mojo::IOLoop->timer(2 => sub {
-            try {
-                $self->start_server($app, $conf);
-            } catch {
-                return unless $code;
-                return $code->() if $retries--;
-                warn "Unable to start introspection server after 100 retries - $@";
-                undef $code;
-            }
-        });
+        Mojo::IOLoop->timer(
+            2 => sub {
+                try {
+                    $self->start_server($app, $conf);
+                }
+                catch {
+                    return unless $code;
+                    return $code->() if $retries--;
+                    warn "Unable to start introspection server after 100 retries - $@";
+                    undef $code;
+                }
+            });
     };
     $code->();
 }
@@ -138,10 +144,9 @@ sub command {
         *$name = sub {
             my $self = shift;
             $self->$code(%args, @_);
-        }
+            }
     }
 }
-
 
 =head2 is_valid_command
 
@@ -203,18 +208,19 @@ We also want to add this information, but it's not yet available:
 command connections => sub {
     my ($self, $app) = @_;
     Future->done({
-        connections => [
-            map +{
-                app_id          => $_->stash->{source},
-                landing_company => $_->landing_company_name,
-                ip              => $_->stash->{client_ip},
-                country         => $_->country_code,
-                client          => $_->stash->{loginid},
-            }, grep defined, sort values %{$app->active_connections}
-        ],
-        # Report any invalid (disconnected but not cleaned up) entries
-        invalid => 0 + (grep !defined, values %{$app->active_connections})
-    })
+            connections => [
+                map +{
+                    app_id          => $_->stash->{source},
+                    landing_company => $_->landing_company_name,
+                    ip              => $_->stash->{client_ip},
+                    country         => $_->country_code,
+                    client          => $_->stash->{loginid},
+                },
+                grep defined,
+                sort values %{$app->active_connections}
+            ],
+            # Report any invalid (disconnected but not cleaned up) entries
+            invalid => 0 + (grep !defined, values %{$app->active_connections})});
 };
 
 =head2 subscriptions
@@ -224,7 +230,7 @@ Returns a list of all subscribed Redis channels. Placeholder, not yet implemente
 =cut
 
 command subscriptions => sub {
-    Future->fail('unimplemented')
+    Future->fail('unimplemented');
 };
 
 =head2 stats
@@ -246,7 +252,7 @@ Returns a summary of current stats. Placeholder, not yet implemented.
 =cut
 
 command stats => sub {
-    Future->fail('unimplemented')
+    Future->fail('unimplemented');
 };
 
 =head2 dumpmem
@@ -265,10 +271,10 @@ command dumpmem => sub {
     Devel::MAT::Dumper::dump($filename);
     my $elapsed = 1000.0 * (Time::HiRes::time - $start);
     Future->done({
-        file => $filename,
+        file    => $filename,
         elapsed => $elapsed,
-        size => -s $filename,
-    })
+        size    => -s $filename,
+    });
 };
 
 =head2 help
@@ -279,8 +285,8 @@ Returns a list of available commands.
 
 command help => sub {
     Future->done({
-        commands => [ sort keys %COMMANDS ],
-    })
+        commands => [sort keys %COMMANDS],
+    });
 };
 
 1;
