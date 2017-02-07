@@ -127,4 +127,116 @@ sub is_valid_command { exists $COMMANDS{shift()} }
 
 =cut
 
+=head2 connections
+
+Returns a list of active connections.
+
+For each connection, we have the following information:
+
+=over 4
+
+=item * IP
+
+=item * Country
+
+=item * Language
+
+=item * App ID
+
+=item * Landing company
+
+=item * Client ID
+
+=back
+
+We also want to add this information, but it's not yet available:
+
+=over 4
+
+=item * Last request
+
+=item * Last message sent
+
+=item * Requests received
+
+=item * Messages sent
+
+=item * Idle time
+
+=item * Session time
+
+=item * Active subscriptions
+
+=back
+
+=cut
+
+command connections => sub {
+    my ($app) = @_;
+    Future->done(
+        map +{
+            app_id          => $_->stash->{source},
+            lang            => $_->l,
+            landing_company => $_->landing_company_name,
+            ip              => $_->stash->{client_ip},
+            country         => $_->country_code,
+            client          => $_->stash->{loginid},
+        } sort values %{$app->active_connections}
+    )
+};
+
+=head2 subscriptions
+
+Returns a list of all subscribed Redis channels. Placeholder, not yet implemented.
+
+=cut
+
+command subscriptions => sub {
+    Future->fail('unimplemented')
+};
+
+=head2 stats
+
+Returns a summary of current stats. Placeholder, not yet implemented.
+
+=over 4
+
+=item * Client count
+
+=item * Subscription count
+
+=item * Uptime
+
+=item * Memory usage
+
+=back
+
+=cut
+
+command stats => sub {
+    Future->fail('unimplemented')
+};
+
+=head2 dumpmem
+
+Writes a dumpfile using L<Devel::MAT::Dumper>. This can be
+viewed with the C<pmat-*> tools, or using the GUI tool from
+L<App::Devel::MAT::Explorer::GTK>.
+
+=cut
+
+command dumpmem => sub {
+    require Devel::MAT::Dumper;
+    my $filename = '/var/lib/binary/websockets/' . strftime('%Y-%m-%d-%H%M%S', gmtime) . '-dump-$$.pmat';
+    warn "Writing memory dump to [$filename] for $$\n";
+    my $start = Time::HiRes::time;
+    Devel::MAT::Dumper::dump($filename);
+    my $elapsed = 1000.0 * (Time::HiRes::time - $start);
+    Future->done({
+        file => $filename,
+        elapsed => $elapsed,
+        size => -s $filename,
+    })
+};
+
 1;
