@@ -145,7 +145,7 @@ sub command {
         my $code = sub {
             my $self = shift;
             return $self->$code(%args, @_);
-            };
+        };
         {
             no strict 'refs';
             *$name = $code;
@@ -215,15 +215,20 @@ command connections => sub {
     my ($self, $app) = @_;
     Future->done({
             connections => [
-                map {; +{
-                    app_id          => $_->stash->{source},
-                    landing_company => $_->landing_company_name,
-                    ip              => $_->stash->{client_ip},
-                    country         => $_->country_code,
-                    client          => $_->stash->{loginid},
-                } }
-                grep { defined }
-                sort values %{$app->active_connections}
+                map {
+                    ;
+                    +{
+                        app_id          => $_->stash->{source},
+                        landing_company => $_->landing_company_name,
+                        ip              => $_->stash->{client_ip},
+                        country         => $_->country_code,
+                        client          => $_->stash->{loginid},
+                        }
+                    }
+                    grep {
+                    defined
+                    }
+                    sort values %{$app->active_connections}
             ],
             # Report any invalid (disconnected but not cleaned up) entries
             invalid => 0 + (grep { !defined } values %{$app->active_connections})});
