@@ -462,6 +462,12 @@ sub reset_password {
             code              => "InternalServerError",
             message_to_client => localize("Sorry, an error occurred while processing your account.")}) unless $user and @clients = $user->clients;
 
+    # do not allow social based clients to reset password
+    return BOM::RPC::v3::Utility::create_error({
+            code              => "SocialBased",
+            message_to_client => localize("Sorry, your account does not allow passwords. Please contact customer support for more information.")}
+    ) unless $user->password;
+
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
     my $client = $clients[0];
 
