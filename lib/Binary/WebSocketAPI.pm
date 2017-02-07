@@ -5,6 +5,7 @@ use Mojo::Redis2;
 use Mojo::IOLoop;
 
 use Binary::WebSocketAPI::Hooks;
+use Binary::WebSocketAPI::Plugins::Introspection;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Binary::WebSocketAPI::v3::Wrapper::Transaction;
 use Binary::WebSocketAPI::v3::Wrapper::Authorize;
@@ -23,6 +24,9 @@ use RateLimitations::Pluggable;
 use Time::Duration::Concise;
 use Scalar::Util qw(weaken);
 use YAML::XS qw(LoadFile);
+
+# FIXME This needs to come from config, requires chef changes
+use constant INTROSPECTION_PORT => 8801;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -70,6 +74,10 @@ sub startup {
     apply_usergroup $app->config->{hypnotoad}, sub {
         $log->info(@_);
     };
+    $app->plugin(
+        'Binary::WebSocketAPI::Plugins::Introspection' => {
+            port => 0,
+        });
 
     $app->hook(
         before_dispatch => sub {
@@ -468,8 +476,8 @@ sub startup {
             stream_timeout    => 120,
             max_connections   => 100000,
             max_response_size => 600000,                                                # change and test this if we ever increase ticks history count
-            opened_connection => \&Binary::WebSocketAPI::Hooks::init_redis_connections,
-            finish_connection => \&Binary::WebSocketAPI::Hooks::forget_all,
+            opened_connection => \&Binary::WebSocketAPI::Hooks::on_client_connect,
+            finish_connection => \&Binary::WebSocketAPI::Hooks::on_client_disconnect,
 
             # helper config
             url => \&Binary::WebSocketAPI::Hooks::get_rpc_url,                          # make url for manually called actions
