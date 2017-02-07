@@ -57,7 +57,7 @@ sub buy {
     if (defined $amount_type and $amount_type eq 'stake') {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
-                message_to_client => BOM::Platform::Context::localize("Contract's stake amount is more than the maximum purchase price")}
+                message_to_client => BOM::Platform::Context::localize("Contract's stake amount is more than the maximum purchase price.")}
         ) if ($price < $contract_parameters->{amount});
         $price = $contract_parameters->{amount};
     }
@@ -204,7 +204,7 @@ sub buy_contract_for_multiple_accounts {
         if (defined $amount_type and $amount_type eq 'stake') {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'ContractCreationFailure',
-                    message_to_client => BOM::Platform::Context::localize("Contract's stake amount is more than the maximum purchase price")}
+                    message_to_client => BOM::Platform::Context::localize("Contract's stake amount is more than the maximum purchase price.")}
             ) if ($price < $contract_parameters->{amount});
 
             $price = $contract_parameters->{amount};
