@@ -176,7 +176,8 @@ sub _build_brand {
         # webtrader.champion-fx.com -> champion, visit this regex
         # when we add new brand
         ($domain) = ($domain =~ /\.([a-z]+).*?\./);
-        return $domain;
+        # for qa return binary
+        return ($domain =~ /^binaryqa/ ? 'binary' : $domain);
     }
 
     return "binary";
