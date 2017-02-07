@@ -134,11 +134,7 @@ sub _build_symbols_to_update {
     my %skip_list =
         map { $_ => 1 } (
         @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol},
-        qw(frxBROUSD frxBROAUD frxBROEUR frxBROGBP frxXPTAUD frxXPDAUD frxAUDSAR
-            frxBROUSD frxXPTAUD frxBROGBP frxXPDAUD frxBROEUR frxBROAUD frxEURAED frxBTCEUR
-            frxGBPAED frxCADJPY frxEURRUB frxBTCUSD frxAUDSAR frxUSDAED frxEURSAR frxAUDTRY
-            frxUSDILS frxGBPILS frxEURTRY frxNZDCHF frxGBPTRY frxCADCHF frxGBPSAR frxUSDRUB
-            frxAUDILS frxUSDSAR frxUSDTRY frxCHFJPY WLDUSD    WLDAUD    WLDEUR    WLDGBP)
+        qw(frxBROUSD frxBROAUD frxBROEUR frxBROGBP frxXPTAUD frxXPDAUD frxAUDSAR)
         );
     my @symbols =
         (grep { $_ =~ /vol_points/ } (@{$self->file}))
@@ -209,11 +205,13 @@ sub run {
             };
             next;
         }
-        my $underlying     = create_underlying($symbol);
+        my $underlying = create_underlying($symbol);
+        # Forex contracts with flat smiles are updated with a different module (MarketDataAutoUpdater/Flat.pm)
+        next if $underlying->flat_smile;
         my $raw_volsurface = $surfaces_from_file->{$symbol};
 
         unless (exists $raw_volsurface->{recorded_date}) {
-            "Volatility Surface data missing from provider for " . $underlying->symbol;
+            warn "Volatility Surface data missing from provider for " . $underlying->symbol;
             next;    # skipping it here else it will die in the next line.
         }
 

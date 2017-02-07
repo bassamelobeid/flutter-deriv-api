@@ -13,11 +13,12 @@ For cleaner pricing engines code, we should not have to handle exception for ins
 =cut
 
 use Moose;
+use Finance::Asset::Market::Registry;
 use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Moneyness;
 use Date::Utility;
 use BOM::System::Chronicle;
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData qw(create_underlying create_underlying_db);
 
 =head2 symbols_for_delta
 
@@ -26,15 +27,15 @@ A list of symbols that has flat delta surface.
 =cut
 
 has symbols_for_delta => (
-    is      => 'ro',
-    default => sub {
-        [
-            'frxBROUSD', 'frxXPTAUD', 'frxBROGBP', 'frxXPDAUD', 'frxBROEUR', 'frxBROAUD', 'frxEURAED', 'frxBTCEUR',
-            'frxGBPAED', 'frxCADJPY', 'frxEURRUB', 'frxBTCUSD', 'frxAUDSAR', 'frxUSDAED', 'frxEURSAR', 'frxAUDTRY',
-            'frxUSDILS', 'frxGBPILS', 'frxEURTRY', 'frxNZDCHF', 'frxGBPTRY', 'frxCADCHF', 'frxGBPSAR', 'frxUSDRUB',
-            'frxAUDILS', 'frxUSDSAR', 'frxUSDTRY', 'frxCHFJPY', 'WLDUSD',    'WLDAUD',    'WLDEUR',    'WLDGBP',
-        ];
-    });
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_symbols_for_delta {
+    my $self = shift;
+
+    return [map { $_->symbol } grep { $_->volatility_surface_type eq 'delta' } @{$self->all_symbols}];
+}
 
 =head2 symbols_for_moneyness
 
@@ -43,10 +44,27 @@ A list of symbols that has flat moneyness surface.
 =cut
 
 has symbols_for_moneyness => (
-    is      => 'ro',
-    default => sub {
-        ['ADSMI', 'OTC_ISEQ', 'ISEQ', 'JCI', 'OTC_JCI', 'DFMGI', 'SASEIDX', 'EGX30'];
-    });
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_symbols_for_moneyness {
+    my $self = shift;
+
+    return [map { $_->symbol } grep { $_->volatility_surface_type eq 'moneyness' } @{$self->all_symbols}];
+}
+
+has all_symbols => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_all_symbols {
+    my $self = shift;
+
+    my @markets = Finance::Asset::Market::Registry->instance->all_market_names();
+    return [grep { $_->flat_smile } map { create_underlying($_) } create_underlying_db->get_symbols_for(market => [@markets])];
+}
 
 =head2 run
 
