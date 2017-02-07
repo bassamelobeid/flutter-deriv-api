@@ -22,21 +22,23 @@ $email_mocked->mock('send_email', sub { return 1 });
 my $t = build_wsapi_test();
 
 my %client_details = (
-    new_account_real => 1,
-    salutation       => 'Ms',
-    last_name        => 'last-name',
-    first_name       => 'first\'name',
-    date_of_birth    => '1990-12-30',
-    residence        => 'nl',
-    "place_of_birth" => "de",
-    address_line_1   => 'Jalan Usahawan',
-    address_line_2   => 'Enterpreneur Center',
-    address_city     => 'Cyberjaya',
-    address_state    => 'Selangor',
-    address_postcode => '47120',
-    phone            => '+603 34567890',
-    secret_question  => 'Favourite dish',
-    secret_answer    => 'nasi lemak,teh tarik',
+    new_account_real          => 1,
+    salutation                => 'Ms',
+    last_name                 => 'last-name',
+    first_name                => 'first\'name',
+    date_of_birth             => '1990-12-30',
+    residence                 => 'nl',
+    place_of_birth            => 'de',
+    address_line_1            => 'Jalan Usahawan',
+    address_line_2            => 'Enterpreneur Center',
+    address_city              => 'Cyberjaya',
+    address_state             => 'Selangor',
+    address_postcode          => '47120',
+    phone                     => '+603 34567890',
+    secret_question           => 'Favourite dish',
+    secret_answer             => 'nasi lemak,teh tarik',
+    tax_residence             => 'de,nl',
+    tax_identification_number => '111-222-333'
 );
 
 my $mf_details = {
@@ -131,6 +133,9 @@ subtest 'VR upgrade to MF - Germany' => sub {
 
         my $client = Client::Account->new({loginid => $loginid});
         isnt($client->financial_assessment->data, undef, 'has financial assessment');
+
+        is($client->place_of_birth, 'de',    'correct place of birth');
+        is($client->tax_residence,  'de,nl', 'correct tax residence');
     };
 };
 
