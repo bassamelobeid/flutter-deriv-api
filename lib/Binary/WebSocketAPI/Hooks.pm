@@ -281,4 +281,19 @@ sub add_brand {
     return;
 }
 
+sub on_client_connect {
+    my ($c) = @_;
+    # We use a weakref in case the disconnect is never called
+    warn "Client connect request but $c is already in active connection list" if exists $c->app->active_connections->{$c};
+    Scalar::Util::weaken($c->app->active_connections->{$c} = $c);
+    init_redis_connections($c);
+}
+
+sub on_client_disconnect {
+    my ($c) = @_;
+    warn "Client disconnect request but $c is not in active connection list" unless exists $c->app->active_connections->{$c};
+    forget_all($c);
+    Scalar::Util::weaken(delete $c->app->active_connections->{$c});
+}
+
 1;
