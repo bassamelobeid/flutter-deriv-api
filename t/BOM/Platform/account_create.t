@@ -158,16 +158,15 @@ subtest 'create account' => sub {
         client_password => $vr_client->password,
         email           => $t_vr_details{email});
 
-    # create virtual without residence
+    # create virtual without residence and password
     lives_ok {
         my $vr_acc_n = BOM::Platform::Account::Virtual::create_account({
                 details => {
-                    email           => 'foo+noresidence@binary.com',
-                    client_password => 'foobar',
+                    email => 'foo+noresidence@binary.com',
                 }});
         my ($vr_client_n, $user_n) = @{$vr_acc}{'client', 'user'};
     }
-    'create VR acc without residence';
+    'create VR acc without residence and password';
 
     # real acc
     lives_ok {
