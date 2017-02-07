@@ -263,6 +263,10 @@ sub get_account_status {
     # we need to send only low, standard, high as manual override is for internal purpose
     $risk_classification =~ s/manual override - //;
 
+    # differentiate between social and password based accounts
+    my $user = BOM::Platform::User->new({email => $client->email});
+    push @status, 'has_password' if $user->password;
+
     return {
         status              => \@status,
         risk_classification => $risk_classification
