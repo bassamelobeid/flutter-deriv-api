@@ -18,8 +18,6 @@ use Variable::Disposition qw(retain_future);
 
 use Socket qw(:crlf);
 
-# FIXME This needs to come from config, requires chef changes
-use constant INTROSPECTION_PORT => 8801;
 # How many seconds to allow per command - anything that takes more than a few milliseconds
 # is probably a bad idea, please do not rely on this for any meaningful protection
 use constant MAX_REQUEST_SECONDS => 5;
@@ -34,7 +32,7 @@ sub register {
     my ($self, $app, $conf) = @_;
 
     Mojo::IOLoop->server({
-        port => INTROSPECTION_PORT
+        port => $conf->{port},
     } => sub {
         my ($loop, $stream) = @_;
 

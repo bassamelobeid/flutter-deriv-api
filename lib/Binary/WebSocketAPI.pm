@@ -5,6 +5,7 @@ use Mojo::Redis2;
 use Mojo::IOLoop;
 
 use Binary::WebSocketAPI::Hooks;
+use Binary::WebSocketAPI::Plugins::Introspection;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Binary::WebSocketAPI::v3::Wrapper::Transaction;
 use Binary::WebSocketAPI::v3::Wrapper::Authorize;
@@ -23,6 +24,9 @@ use RateLimitations::Pluggable;
 use Time::Duration::Concise;
 use Scalar::Util qw(weaken);
 use YAML::XS qw(LoadFile);
+
+# FIXME This needs to come from config, requires chef changes
+use constant INTROSPECTION_PORT => 8801;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -70,6 +74,9 @@ sub startup {
     apply_usergroup $app->config->{hypnotoad}, sub {
         $log->info(@_);
     };
+    $app->plugin('Introspection' => {
+        port => INTROSPECTION_PORT
+    });
 
     $app->hook(
         before_dispatch => sub {
