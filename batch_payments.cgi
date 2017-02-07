@@ -50,7 +50,7 @@ if ($preview) {
     open my $fh, '>:encoding(UTF-8)', $payments_csv_file or die "writing upload: $!";
     while (<$payments_csv_fh>) {
         s/\s*$//;    # remove various combos of unix/windows rec-separators
-        printf $fh "$_\n";
+        $fh->print("$_\n");
     }
     close $fh;
 }
@@ -129,7 +129,7 @@ read_csv_row_and_callback(
                         comment => $statement_comment
                     }))
             {
-                $error = "Same transaction found in client account. Check [transaciton id: $duplicate_record]";
+                $error = "Same transaction found in client account. Check [transaction id: $duplicate_record]";
                 last;
             }
         }
