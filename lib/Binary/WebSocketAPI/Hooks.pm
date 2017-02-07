@@ -293,7 +293,7 @@ sub on_client_disconnect {
     my ($c) = @_;
     warn "Client disconnect request but $c is not in active connection list" unless exists $c->app->active_connections->{$c};
     forget_all($c);
-    Scalar::Util::weaken(delete $c->app->active_connections->{$c});
+    delete $c->app->active_connections->{$c};
 }
 
 1;
