@@ -239,4 +239,16 @@ command dumpmem => sub {
     })
 };
 
+=head2 help
+
+Returns a list of available commands.
+
+=cut
+
+command help => sub {
+    Future->done({
+        commands => [ sort keys %COMMANDS ],
+    })
+};
+
 1;
