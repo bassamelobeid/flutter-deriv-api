@@ -58,7 +58,7 @@ sub set_date {
     # so we want to capture any output we can that might indicate what's
     # happening
     #my @cmd = (qw(/usr/bin/sudo -- /bin/date -s), '@' . $date->epoch);
-    my @cmd = (qw(/usr/bin/sudo -- /bin/date), '@' . $date->epoch);
+    my @cmd = (qw(/usr/bin/sudo -- /bin/date -s), '@' . $date->epoch);
 
     my $attempts     = 0;
     my $max_attempts = 10;
