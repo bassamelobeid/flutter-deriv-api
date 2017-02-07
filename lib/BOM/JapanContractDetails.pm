@@ -483,7 +483,7 @@ sub batch_output_as_excel {
     $workbook->close;
 
     PrintContentType_XSendfile($temp_file, 'application/octet-stream');
-
+    unlink $temp_file;
     return;
 }
 
@@ -504,7 +504,7 @@ sub single_output_as_excel {
     $workbook->close;
 
     PrintContentType_XSendfile($temp_file, 'application/octet-stream');
-
+    unlink $temp_file;
     return;
 }
 
