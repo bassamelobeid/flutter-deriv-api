@@ -22,68 +22,98 @@ use Socket qw(:crlf);
 # is probably a bad idea, please do not rely on this for any meaningful protection
 use constant MAX_REQUEST_SECONDS => 5;
 
+=head2 start_server
+
+Tries to start the introspection endpoint. May fail on hot restart, since the port will be
+taken by something else and we have no SO_REUSEPORT on our current kernel.
+
+=cut
+
+sub start_server {
+	my ($self, $app, $conf) = @_;
+    my $id = Mojo::IOLoop->server({
+		port => $conf->{port},
+    } => sub {
+		my ($loop, $stream) = @_;
+
+		# Client has connected, wait for commands and send responses back
+		my $buffer = '';
+		$stream->on(read => sub {
+		    my ($stream, $bytes) = @_;
+
+		    $buffer .= $bytes;
+		    # One command per line
+		    while($buffer =~ s/^([^\x0D\x0A]+)\x0D?\x0A//) {
+			my ($command, @args) = split /[ =]/, $1;
+			my $write_to_log = 0;
+			if($command eq 'log') {
+			    $write_to_log = 1;
+			    $command = shift @args;
+			}
+			if(is_valid_command($command)) {
+			    my $rslt = try {
+                    $self->$command($app, @args);
+			    } catch {
+                    Future->fail($_, introspection => $command, @args)
+			    };
+			    # Allow deferred results
+			    $rslt = Future->done($rslt) unless blessed($rslt) && $rslt->isa('Future');
+			    retain_future(
+                    Future->needs_any(
+                        $rslt,
+                        Future::Mojo->new_timer(MAX_REQUEST_SECONDS)->then(sub { Future->fail('Timeout') }),
+                    )->then(sub {
+                        my ($resp) = @_;
+                        my $output = encode_json($resp);
+                        warn "$command (@args) - $output\n" if $write_to_log;
+                        $stream->write("OK - $output$CRLF");
+                        Future->done
+                    }, sub {
+                        my ($resp) = @_;
+                        my $output = encode_json($resp);
+                        warn "$command (@args) failed - $output\n";
+                        $stream->write("ERR - $output$CRLF");
+                        Future->done
+                    })
+			    )
+			} else {
+			    warn "Invalid command: $command @args\n";
+			    $stream->write(sprintf "Invalid command [%s]", $command);
+			}
+		    }
+		});
+    });
+    warn "Introspection listening on :" . Mojo::IOLoop->acceptor($id)->port . "\n";
+}
+
 =head2 register
 
 Registers the plugin by creating an introspection TCP server endpoint.
+
+This will keep on trying every 2 seconds for 100 retries: this is because
+we don't have a reliable way to reuse the port, and listening on a random
+port would not be as convenient.
 
 =cut
 
 sub register {
     my ($self, $app, $conf) = @_;
 
-    Mojo::IOLoop->server({
-        port => $conf->{port},
-    } => sub {
-        my ($loop, $stream) = @_;
-
-        # Client has connected, wait for commands and send responses back
-        my $buffer = ''
-        $stream->on(read => sub {
-            my ($stream, $bytes) = @_;
-
-            my $buffer .= $bytes;
-            # One command per line
-            while($buffer =~ s/^(.*)$CRLF//) {
-                my ($command, @args) = split /[ =]/, $1;
-                my $write_to_log = 0;
-                if($command eq 'log') {
-                    $write_to_log = 1;
-                    $command = shift @args;
-                }
-                if(is_valid_command($command)) {
-                    warn "Executing command: $command @args\n";
-                    my $rslt = try {
-                        $self->$command($app, @args);
-                    } catch {
-                        Future->fail($_, introspection => $command, @args)
-                    };
-                    # Allow deferred results
-                    $rslt = Future->done($rslt) unless blessed($rslt) && $rslt->isa('Future');
-                    retain_future(
-                        Future->needs_any(
-                            $rslt,
-                            Future::Mojo->new_timer(MAX_REQUEST_SECONDS),
-                        )->then(sub {
-                            my ($resp) = @_;
-                            my $output = encode_json($resp);
-                            warn "$command (@args) - $output\n" if $write_to_log;
-                            $stream->write("OK - $output$CRLF");
-                            Future->done
-                        }, sub {
-                            my ($resp) = @_;
-                            my $output = encode_json($resp);
-                            warn "$command (@args) failed - $output\n";
-                            $stream->write("ERR - $output$CRLF");
-                            Future->done
-                        })
-                    )
-                } else {
-                    warn "Invalid command: $command @args\n";
-                    $stream->write(sprintf "Invalid command [%s]", $command);
-                }
+    my $retries = 100;
+    my $code;
+    $code = sub {
+        Mojo::IOLoop->timer(2 => sub {
+            try {
+                $self->start_server($app, $conf);
+            } catch {
+                return unless $code;
+                return $code->() if $retries--;
+                warn "Unable to start introspection server after 20 retries - $@";
+                undef $code;
             }
         });
-    });
+    };
+    $code->();
 }
 
 # All registered commands - each hash slot should contain a true value, the
