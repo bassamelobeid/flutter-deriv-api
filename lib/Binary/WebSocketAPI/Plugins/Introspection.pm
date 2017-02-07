@@ -214,18 +214,18 @@ command connections => sub {
     my ($self, $app) = @_;
     Future->done({
             connections => [
-                map +{
+                map {; +{
                     app_id          => $_->stash->{source},
                     landing_company => $_->landing_company_name,
                     ip              => $_->stash->{client_ip},
                     country         => $_->country_code,
                     client          => $_->stash->{loginid},
-                },
-                grep defined,
+                } }
+                grep { defined }
                 sort values %{$app->active_connections}
             ],
             # Report any invalid (disconnected but not cleaned up) entries
-            invalid => 0 + (grep !defined, values %{$app->active_connections})});
+            invalid => 0 + (grep { !defined } values %{$app->active_connections})});
 };
 
 =head2 subscriptions
