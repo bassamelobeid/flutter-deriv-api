@@ -126,6 +126,9 @@ sub startup {
                 success      => \&Binary::WebSocketAPI::v3::Wrapper::Authorize::logout_success,
             },
         ],
+
+        ['broadcast_notifications', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::notification}],
+
         ['trading_times'],
         [
             'asset_index',

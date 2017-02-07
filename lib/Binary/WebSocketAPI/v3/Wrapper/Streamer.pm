@@ -16,6 +16,71 @@ use Time::HiRes qw(gettimeofday);
 use utf8;
 use Try::Tiny;
 
+sub notification {
+    my ($c, $req_storage) = @_;
+
+    my $args = $req_storage->{args};
+
+    ### TODO: to config
+    my $channel_name = "NOTIFY::broadcast::channel";
+    my $redis        = $c->ws_redis_write;
+
+    if ($args->{broadcast_notifications} == 0) {
+        $redis->unsubscribe([$channel_name]) if $redis;
+        return;
+    }
+
+    $redis->subscribe(
+        [$channel_name],
+        sub {
+            my ($self, $err) = @_;
+
+            my $shared_info = $c->redis_connections($channel_name);
+
+            $shared_info->{'c'} = $c;
+            $shared_info->{echo} = $args;
+
+            my $slave_redis = $c->ws_redis_read;
+            ### to config
+            my $current_state = $slave_redis->get("NOTIFY::broadcast::state")
+                if $slave_redis;
+            $current_state = eval { decode_json($current_state) }
+                if $current_state && !ref $current_state;
+            $current_state //= {
+                site_status => 'up',
+                message     => ''
+            };
+
+            return $c->send({json => $current_state}, $req_storage);
+        });
+    return;
+}
+
+sub send_notification {
+    my ($shared, $message, $channel) = @_;
+
+    return if !$shared || !ref $shared || !$shared->{c} || !ref $shared->{c};
+
+    unless ($shared->{c}->tx) {
+        my $redis = $shared->{c}->ws_redis_write;
+
+        $redis->unsubscribe([$channel]) if $redis && $channel;
+        return;
+    }
+
+    my $slave_redis = $shared->{c}->ws_redis_read;
+    my $is_on_key   = "NOTIFY::broadcast::is_on";    ### TODO: to config
+    return unless $slave_redis->get($is_on_key);     ### Need 1 for continuing
+
+    $message = eval { decode_json $message} unless ref $message eq 'HASH';
+    $message //= {};
+    $message->{echo_req} = $shared->{echo};
+
+    # TODO: Need to set afterwork with checking json by scheme
+    $shared->{c}->send({json => $message});
+    return;
+}
+
 sub ticks {
     my ($c, $req_storage) = @_;
 
