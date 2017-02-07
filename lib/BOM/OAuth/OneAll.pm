@@ -41,7 +41,12 @@ sub callback {
         my $user  = try {
             BOM::Platform::User->new({email => $email})
         };
-        unless ($user) {
+        if ($user) {
+            if ($user->password) {
+                $c->session(_oneall_error => localize('Please log in using your email and password.'));
+                return $c->redirect_to($redirect_uri);
+            }
+        } else {
             # create user based on email by fly
             $user = $c->__create_virtual_user($email);
         }
