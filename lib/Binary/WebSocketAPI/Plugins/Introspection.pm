@@ -11,6 +11,7 @@ use Mojo::IOLoop;
 use Future;
 use Future::Mojo;
 use Try::Tiny;
+use POSIX qw(strftime);
 
 use JSON::XS;
 use Scalar::Util qw(blessed);
@@ -258,7 +259,7 @@ L<App::Devel::MAT::Explorer::GTK>.
 
 command dumpmem => sub {
     require Devel::MAT::Dumper;
-    my $filename = '/var/lib/binary/websockets/' . strftime('%Y-%m-%d-%H%M%S', gmtime) . '-dump-$$.pmat';
+    my $filename = '/var/lib/binary/websockets/' . strftime('%Y-%m-%d-%H%M%S', gmtime) . '-dump-' . $$ . '.pmat';
     warn "Writing memory dump to [$filename] for $$\n";
     my $start = Time::HiRes::time;
     Devel::MAT::Dumper::dump($filename);
