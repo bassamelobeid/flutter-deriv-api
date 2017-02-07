@@ -27,9 +27,9 @@ sub authorize {
     my $client = Client::Account->new({loginid => $loginid});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client;
 
-    my $lc = $client->landing_company;
+    my ($lc, $brand_name) = ($client->landing_company, request()->brand);
     # check for not allowing cross brand tokens
-    return BOM::RPC::v3::Utility::invalid_token_error() unless (grep { request()->brand->name eq $_ } @{$lc->allowed_for_brands});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless (grep { $brand_name eq $_ } @{$lc->allowed_for_brands});
 
     if ($client->get_status('disabled')) {
         return BOM::RPC::v3::Utility::create_error({
