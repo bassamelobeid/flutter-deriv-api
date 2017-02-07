@@ -109,7 +109,7 @@ sub register {
             } catch {
                 return unless $code;
                 return $code->() if $retries--;
-                warn "Unable to start introspection server after 20 retries - $@";
+                warn "Unable to start introspection server after 100 retries - $@";
                 undef $code;
             }
         });
