@@ -57,25 +57,19 @@ sub set_date {
     # We have had various problems in Travis with this date step failing,
     # so we want to capture any output we can that might indicate what's
     # happening
-    #my @cmd = (qw(/usr/bin/sudo -- /bin/date -s), '@' . $date->epoch);
-    my @cmd = (qw(/usr/bin/sudo -- /bin/date -s), '@' . $date->epoch);
+    my @cmd = (qw(sudo date -s), $date->datetime_yyyymmdd_hhmmss, '+%F %T');
+    system @cmd;
+    # ignore errors due to sigpipe?
 
-    my $attempts     = 0;
-    my $max_attempts = 10;
-    # autoflush stdouts;
-    $| = 1;
-    {
+=ignore
+    my ($stdout, $stderr, $exitcode) = capture {
         system @cmd;
-        if ($? == -1) {
-            die "failed to execute: $!\n";
-        } elsif ($? & 127) {
-            die "child died with signal %d, %s coredump\n", ($? & 127), ($? & 128) ? 'with' : 'without';
-        } else {
-            my $exit_code = $? >> 8;
-            die "child " . join(" ", @cmd) . " exited with value $exit_code, expected 0\n",
-                if ($exit_code != 0);
-        }
-    }
+    };
+    $stdout //= '';
+    $stderr //= '';
+    die "Failed to set date using this command:\n@cmd\nDo we have sudo access? (return code = $exitcode, stdout = $stdout, stderr = $stderr)"
+        unless $stdout eq $date->datetime_yyyymmdd_hhmmss . "\n";
+=cut
     return;
 }
 
