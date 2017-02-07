@@ -88,13 +88,36 @@ sub _validate_tnc {
     return $params;
 }
 
+#
+# for MLT and MX we don't allow trading without confirmed age
+#
+
+sub _check_age_verified {
+    my $params = shift;
+
+    # we shouldn't get to this error, so we can die it directly
+    my $client = $params->{client} // die "client should be authed before calling this action";
+    return $params
+        if $client->is_virtual;
+    if (($client->landing_company->short eq 'malta' or $client->landing_company->short eq 'iom')
+        and !$client->get_status('age_verification'))
+    {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'ASK_TNC_APPROVAL',
+            message_to_client => localize('Dont like you.'),
+        });
+    }
+    return $params;
+}
+
 sub register {
     my ($method, $code, $before_actions) = @_;
 
     # check actions at register time
     my %actions = (
-        auth         => \&_auth,
-        validate_tnc => \&_validate_tnc,
+        auth               => \&_auth,
+        validate_tnc       => \&_validate_tnc,
+        check_age_verified => \&_check_age_verified,
     );
     my @before_actions;
     for my $hook (@$before_actions) {
@@ -199,9 +222,12 @@ sub startup {
         ['ticks_history', \&BOM::RPC::v3::TickStreamer::ticks_history],
         ['ticks',         \&BOM::RPC::v3::TickStreamer::ticks],
 
-        ['buy',                                \&BOM::RPC::v3::Transaction::buy,                                [qw(auth validate_tnc)]],
-        ['buy_contract_for_multiple_accounts', \&BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts, [qw(auth validate_tnc)]],
-        ['sell',                               \&BOM::RPC::v3::Transaction::sell,                               [qw(auth validate_tnc)]],
+        ['buy', \&BOM::RPC::v3::Transaction::buy, [qw(auth validate_tnc check_age_verified)]],
+        [
+            'buy_contract_for_multiple_accounts', \&BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts,
+            [qw(auth validate_tnc check_age_verified)]
+        ],
+        ['sell', \&BOM::RPC::v3::Transaction::sell, [qw(auth validate_tnc check_age_verified)]],
 
         ['trading_times',         \&BOM::RPC::v3::MarketDiscovery::trading_times],
         ['asset_index',           \&BOM::RPC::v3::MarketDiscovery::asset_index],
