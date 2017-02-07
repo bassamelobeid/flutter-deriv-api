@@ -84,7 +84,7 @@ sub start_server {
 		    }
 		});
     });
-    warn "Introspection listening on :" . Mojo::IOLoop->acceptor($id)->port . "\n";
+    $app->log->info("Introspection listening on :" . Mojo::IOLoop->acceptor($id)->port);
 }
 
 =head2 register
