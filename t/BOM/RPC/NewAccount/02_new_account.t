@@ -7,6 +7,7 @@ use Test::MockModule;
 use Test::FailWarnings;
 use Test::Warn;
 
+use Date::Utility;
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use POSIX qw/ ceil /;
@@ -327,8 +328,10 @@ subtest $method => sub {
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^MF\d+/, 'new MF loginid';
 
-        ok(Client::Account->new({loginid => $new_loginid})->get_status('financial_risk_approval'),
-            'For mf accounts we will set financial risk approval status');
+        my $cl = Client::Account->new({loginid => $new_loginid});
+        ok($cl->get_status('financial_risk_approval'), 'For mf accounts we will set financial risk approval status');
+
+        is $cl->get_status('crs_tin_information')->reason, Date::Utility->new()->date, "CRS date is set for account opening date";
 
         my ($resp_loginid, $t, $uaf) = BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token});
         is $resp_loginid, $new_loginid, 'correct oauth token';
