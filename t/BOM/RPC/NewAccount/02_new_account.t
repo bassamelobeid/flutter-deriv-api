@@ -299,6 +299,15 @@ subtest $method => sub {
         $params->{args}->{first_name}  = $client_details->{first_name};
         $params->{args}->{residence}   = 'de';
         $params->{args}->{accept_risk} = 1;
+
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
+            ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details');
+
+        $params->{args}->{place_of_birth}            = "de";
+        $params->{args}->{tax_residence}             = "de,nl";
+        $params->{args}->{tax_identification_number} = "111222";
+
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('email unverified', 'It should return error if email unverified')
             ->error_message_is('Your email address is unverified.', 'It should return error if email unverified');
