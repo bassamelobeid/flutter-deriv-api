@@ -248,6 +248,7 @@ sub forget_all {
     Binary::WebSocketAPI::v3::Wrapper::System::forget_all($c, {args => {forget_all => 1}});
     delete $c->stash->{redis};
     delete $c->stash->{redis_pricer};
+
     return;
 }
 
@@ -278,6 +279,23 @@ sub add_app_id {
 sub add_brand {
     my ($c, $req_storage) = @_;
     $req_storage->{call_params}->{brand} = $c->stash('brand');
+    return;
+}
+
+sub on_client_connect {
+    my ($c) = @_;
+    # We use a weakref in case the disconnect is never called
+    warn "Client connect request but $c is already in active connection list" if exists $c->app->active_connections->{$c};
+    Scalar::Util::weaken($c->app->active_connections->{$c} = $c);
+    init_redis_connections($c);
+    return;
+}
+
+sub on_client_disconnect {
+    my ($c) = @_;
+    warn "Client disconnect request but $c is not in active connection list" unless exists $c->app->active_connections->{$c};
+    forget_all($c);
+    delete $c->app->active_connections->{$c};
     return;
 }
 
