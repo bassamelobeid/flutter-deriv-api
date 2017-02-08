@@ -50,6 +50,9 @@ __PACKAGE__->meta->setup(
         allow_omnibus                            => { type => 'boolean' },
         sub_account_of                           => { type => 'varchar', length => 12 },
         allow_copiers                            => { type => 'boolean' },
+        place_of_birth                           => { type => 'varchar', length => 100 },
+        tax_residence                            => { type => 'varchar', length => 100 },
+        tax_identification_number                => { type => 'varchar', length => 255 },
     ],
 
     primary_key_columns => [ 'loginid' ],
