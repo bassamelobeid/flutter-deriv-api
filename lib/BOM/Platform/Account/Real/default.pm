@@ -393,7 +393,8 @@ sub validate_account_details {
         if (not $client->is_virtual) {
             $value ||= $client->$key;
         }
-        $details->{$key} = $value || '';
+        # we need to store null for these fields not blank if not defined
+        $details->{$key} = (grep { $key eq $_ } qw /place_of_birth tax_residence tax_identification_number/) ? $value : $value // '';
 
         # Japan real a/c has NO salutation
         # mf account fields place_of_birth tax_residence tax_identification_number are marked as optional as of now
@@ -405,12 +406,12 @@ sub validate_account_details {
 
     # it's not a standard way, we need to refactor this sub later to
     # to remove reference to database columns name from code
-    #if ($broker eq 'MF') {
-    #    foreach my $field (qw /place_of_birth tax_residence tax_identification_number/) {
-    #        return {error => 'InsufficientAccountDetails'} unless $args->{$field};
-    #        $details->{$field} = $args->{$field};
-    #    }
-    #}
+    # if ($broker eq 'MF') {
+    #     foreach my $field (qw /place_of_birth tax_residence tax_identification_number/) {
+    #         return {error => 'InsufficientAccountDetails'} unless $args->{$field};
+    #         $details->{$field} = $args->{$field};
+    #     }
+    # }
     return {details => $details};
 }
 
