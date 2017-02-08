@@ -23,6 +23,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale;
 use BOM::Platform::User;
 use BOM::Platform::Account::Real::default;
+use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Token;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
@@ -701,19 +702,7 @@ sub set_settings {
         $client->tax_residence($tax_residence)                         if $tax_residence;
         $client->tax_identification_number($tax_identification_number) if $tax_identification_number;
 
-        my $current_date = Date::Utility->new()->date;
-        # comma separated dates 2016-03-01,2016-12-12
-        my $data;
-        if (my $crs_tin_status = $client->get_status('crs_tin_information')) {
-            my @dates = sort { Date::Utility->new($a)->epoch <=> Date::Utility->new($b)->epoch } split ",", $crs_tin_status->reason;
-            push @dates, $current_date;
-            $data = join ",", @dates;
-        } else {
-            $data = $current_date;
-        }
-
-        # update status with new date
-        $client->set_status('crs_tin_information', 'system', $data);
+        BOM::Platform::Account::Real::maltainvest::set_crs_tin_status($client);
     }
 
     if (not $client->save()) {
