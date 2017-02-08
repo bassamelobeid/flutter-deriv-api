@@ -21,6 +21,12 @@ sub register {
 
     $app->helper(server_name => sub { return [split(/\./, Sys::Hostname::hostname)]->[0] });
 
+    # Weakrefs to active $c instances
+    $app->helper(
+        active_connections => sub {
+            state $connections = {};
+        });
+
     $app->helper(
         l => sub {
             my $c = shift;
@@ -165,8 +171,7 @@ sub register {
 
                         Binary::WebSocketAPI::v3::Wrapper::Pricer::process_pricing_events($c, $msg, $channel);
                     });
-                $c->stash->{redis_pricer}       = $redis_pricer;
-                $c->stash->{redis_pricer_count} = 0;
+                $c->stash->{redis_pricer} = $redis_pricer;
             }
             return $c->stash->{redis_pricer};
         });
