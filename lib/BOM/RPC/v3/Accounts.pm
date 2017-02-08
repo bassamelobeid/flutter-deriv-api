@@ -601,7 +601,20 @@ sub set_settings {
         }
 
         $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && $client->broker_code ne 'CR';
+
+        my $missed_field;
+        if ($missed_field = (grep { !$args->{$_} } qw/address_line_1 address_city phone/)[0]) {
+            $err = BOM::RPC::v3::Utility::create_error({
+                    code              => 'InputValidationFailed',
+                    message_to_client => localize("Input validation failed: [_1]", $missed_field),
+                    details           => {
+                        $missed_field => "is missing and it is required",
+                    },
+                });
+        }
     }
+
+    return $err if $err->{error};
 
     if (
         $allow_copiers
@@ -611,12 +624,10 @@ sub set_settings {
                 )->get_traders({copier_id => $client->loginid})
                 || []})
     {
-        $err = BOM::RPC::v3::Utility::create_error({
+        return BOM::RPC::v3::Utility::create_error({
                 code              => 'AllowCopiersError',
                 message_to_client => localize("Copier can't be a trader.")});
     }
-
-    return $err if $err->{error};
 
     # email consent is per user whereas other settings are per client
     # so need to save it separately
@@ -660,8 +671,8 @@ sub set_settings {
     $client->address_1($address1);
     $client->address_2($address2);
     $client->city($addressTown);
-    $client->state($addressState);    # FIXME validate
-    $client->postcode($addressPostcode);
+    $client->state($addressState) if defined $args->{'address_state'};            # FIXME validate
+    $client->postcode($addressPostcode) if defined $args->{'address_postcode'};
     $client->phone($phone);
 
     $client->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
