@@ -1160,8 +1160,8 @@ subtest $method => sub {
     #        'Correct tax error message'
     #    );
 
-    # $full_args{tax_residence}             = 'de';
-    # $full_args{tax_identification_number} = '111-222-333';
+    $full_args{tax_residence}             = 'de';
+    $full_args{tax_identification_number} = '111-222-333';
 
     $params->{args} = {%full_args};
     delete $params->{args}{address_line_1};
