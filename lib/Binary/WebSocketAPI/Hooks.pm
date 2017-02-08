@@ -249,7 +249,6 @@ sub forget_all {
     Binary::WebSocketAPI::v3::Wrapper::System::forget_all($c, {args => {forget_all => 1}});
     delete $c->stash->{redis};
     delete $c->stash->{redis_pricer};
-    delete $c->stash->{redis_pricer_count};
 
     return;
 }
@@ -296,7 +295,23 @@ sub check_app_id {
         return $c->new_error($req_storage->{name}, 'AccessForbidden',
             $c->l('App id is mandatory to access our api. Please register your application.'));
     }
+    return;
+}
 
+sub on_client_connect {
+    my ($c) = @_;
+    # We use a weakref in case the disconnect is never called
+    warn "Client connect request but $c is already in active connection list" if exists $c->app->active_connections->{$c};
+    Scalar::Util::weaken($c->app->active_connections->{$c} = $c);
+    init_redis_connections($c);
+    return;
+}
+
+sub on_client_disconnect {
+    my ($c) = @_;
+    warn "Client disconnect request but $c is not in active connection list" unless exists $c->app->active_connections->{$c};
+    forget_all($c);
+    delete $c->app->active_connections->{$c};
     return;
 }
 
