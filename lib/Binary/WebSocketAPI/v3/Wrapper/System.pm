@@ -122,6 +122,7 @@ sub _forget_all_pricing_subscriptions {
             my $redis_channel = $pricing_channel->{uuid}->{$uuid}->{redis_channel};
             if ($pricing_channel->{$redis_channel}) {
                 $c->stash('redis_pricer')->unsubscribe([$redis_channel]);
+
                 delete $pricing_channel->{$redis_channel};
             }
             delete $pricing_channel->{uuid}->{$uuid};
