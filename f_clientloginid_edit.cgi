@@ -358,6 +358,10 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->residence($input{$key});
             next CLIENT_KEY;
         }
+        if ($key eq 'place_of_birth') {
+            $client->place_of_birth($input{$key});
+            next CLIENT_KEY;
+        }
         if (my ($id) = $key =~ /^comments_([0-9]+)$/) {
             my $val = $input{$key};
             my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
