@@ -37,7 +37,7 @@ sub callback {
     my $user_id       = $user_connect->get_user_id_by_connect($provider_data);
 
     unless ($user_id) {
-        my $email = __get_email($provider_data);
+        my $email = _get_email($provider_data);
         my $user  = try {
             BOM::Platform::User->new({email => $email})
         };
@@ -70,7 +70,7 @@ sub redirect {
     return $c->redirect_to($dir . '?connection_token=' . $connection_token);
 }
 
-sub __get_email {
+sub _get_email {
     my ($provider_data) = @_;
 
     # for Google
