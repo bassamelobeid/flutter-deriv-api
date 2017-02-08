@@ -651,10 +651,10 @@ sub set_settings {
     my $tax_residence             = $args->{'tax_residence'}             // '';
     my $tax_identification_number = $args->{'tax_identification_number'} // '';
 
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'TINDetailsMandatory',
-            message_to_client => 'Tax related information is mandatory for legal and regulatory requirement.'
-        }) if ($client->landing_company->short eq 'maltainvest' and (not $tax_residence or not $tax_identification_number));
+    #    return BOM::RPC::v3::Utility::create_error({
+    #            code              => 'TINDetailsMandatory',
+    #            message_to_client => 'Tax related information is mandatory for legal and regulatory requirement.'
+    #        }) if ($client->landing_company->short eq 'maltainvest' and (not $tax_residence or not $tax_identification_number));
 
     my $now             = Date::Utility->new;
     my $address1        = $args->{'address_line_1'};
@@ -691,19 +691,19 @@ sub set_settings {
 
     $client->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
 
-    #    # As per CRS/FATCA regulatory requirement we need to save this information as client status
-    #    # maintaining previous updates as well
-    #    if ((
-    #               $tax_residence
-    #            or $tax_identification_number
-    #        )
-    #        and (($client->tax_residence // '') ne $tax_residence or ($client->tax_identification_number // '') ne $tax_identification_number))
-    #    {
-    #        $client->tax_residence($tax_residence)                         if $tax_residence;
-    #        $client->tax_identification_number($tax_identification_number) if $tax_identification_number;
-    #
-    #        BOM::Platform::Account::Real::maltainvest::set_crs_tin_status($client);
-    #    }
+    # As per CRS/FATCA regulatory requirement we need to save this information as client status
+    # maintaining previous updates as well
+    if ((
+               $tax_residence
+            or $tax_identification_number
+        )
+        and (($client->tax_residence // '') ne $tax_residence or ($client->tax_identification_number // '') ne $tax_identification_number))
+    {
+        $client->tax_residence($tax_residence)                         if $tax_residence;
+        $client->tax_identification_number($tax_identification_number) if $tax_identification_number;
+
+        BOM::Platform::Account::Real::maltainvest::set_crs_tin_status($client);
+    }
 
     if (not $client->save()) {
         return BOM::RPC::v3::Utility::create_error({
