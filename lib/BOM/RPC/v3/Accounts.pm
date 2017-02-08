@@ -691,19 +691,19 @@ sub set_settings {
 
     $client->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
 
-    # As per CRS/FATCA regulatory requirement we need to save this information as client status
-    # maintaining previous updates as well
-    if ((
-               $tax_residence
-            or $tax_identification_number
-        )
-        and (($client->tax_residence // '') ne $tax_residence or ($client->tax_identification_number // '') ne $tax_identification_number))
-    {
-        $client->tax_residence($tax_residence)                         if $tax_residence;
-        $client->tax_identification_number($tax_identification_number) if $tax_identification_number;
-
-        BOM::Platform::Account::Real::maltainvest::set_crs_tin_status($client);
-    }
+    #    # As per CRS/FATCA regulatory requirement we need to save this information as client status
+    #    # maintaining previous updates as well
+    #    if ((
+    #               $tax_residence
+    #            or $tax_identification_number
+    #        )
+    #        and (($client->tax_residence // '') ne $tax_residence or ($client->tax_identification_number // '') ne $tax_identification_number))
+    #    {
+    #        $client->tax_residence($tax_residence)                         if $tax_residence;
+    #        $client->tax_identification_number($tax_identification_number) if $tax_identification_number;
+    #
+    #        BOM::Platform::Account::Real::maltainvest::set_crs_tin_status($client);
+    #    }
 
     if (not $client->save()) {
         return BOM::RPC::v3::Utility::create_error({
