@@ -461,8 +461,9 @@ sub startup {
 
     $app->helper(
         'app_id' => sub {
-            my $c = shift;
-            return defang($c->req->param('app_id') // 'unknown-app');
+            my $c               = shift;
+            my $possible_app_id = $c->req->param('app_id');
+            return ($possible_app_id && $possible_app_id =~ /(\d{1,10})/) ? $1 : 0;
         });
 
     $app->helper(
