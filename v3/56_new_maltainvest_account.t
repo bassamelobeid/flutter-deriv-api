@@ -22,20 +22,23 @@ $email_mocked->mock('send_email', sub { return 1 });
 my $t = build_wsapi_test();
 
 my %client_details = (
-    new_account_real => 1,
-    salutation       => 'Ms',
-    last_name        => 'last-name',
-    first_name       => 'first\'name',
-    date_of_birth    => '1990-12-30',
-    residence        => 'nl',
-    address_line_1   => 'Jalan Usahawan',
-    address_line_2   => 'Enterpreneur Center',
-    address_city     => 'Cyberjaya',
-    address_state    => 'Selangor',
-    address_postcode => '47120',
-    phone            => '+603 34567890',
-    secret_question  => 'Favourite dish',
-    secret_answer    => 'nasi lemak,teh tarik',
+    new_account_real          => 1,
+    salutation                => 'Ms',
+    last_name                 => 'last-name',
+    first_name                => 'first\'name',
+    date_of_birth             => '1990-12-30',
+    residence                 => 'nl',
+    place_of_birth            => 'de',
+    address_line_1            => 'Jalan Usahawan',
+    address_line_2            => 'Enterpreneur Center',
+    address_city              => 'Cyberjaya',
+    address_state             => 'Selangor',
+    address_postcode          => '47120',
+    phone                     => '+603 34567890',
+    secret_question           => 'Favourite dish',
+    secret_answer             => 'nasi lemak,teh tarik',
+    tax_residence             => 'de,nl',
+    tax_identification_number => '111-222-333'
 );
 
 my $mf_details = {
@@ -86,9 +89,12 @@ subtest 'MLT upgrade to MF account' => sub {
     };
 
     subtest 'upgrade to MF' => sub {
-        my ($res, $call_params) = call_mocked_client($t, $mf_details);
-        $t = $t->send_ok({json => $mf_details})->message_ok;
-        is $call_params->{token}, $token;
+        my %details = (%client_details, %$mf_details);
+        delete $details{new_account_real};
+        note explain %details;
+        $t = $t->send_ok({json => \%details})->message_ok;
+        my $res = decode_json($t->message->[1]);
+        not explain $res;
         is($res->{msg_type}, 'new_account_maltainvest');
         ok($res->{new_account_maltainvest});
         test_schema('new_account_maltainvest', $res);
@@ -127,6 +133,9 @@ subtest 'VR upgrade to MF - Germany' => sub {
 
         my $client = Client::Account->new({loginid => $loginid});
         isnt($client->financial_assessment->data, undef, 'has financial assessment');
+
+        is($client->place_of_birth, 'de',    'correct place of birth');
+        is($client->tax_residence,  'de,nl', 'correct tax residence');
     };
 };
 
@@ -173,7 +182,9 @@ subtest 'CR / MX client cannot upgrade to MF' => sub {
         };
 
         subtest 'no MF upgrade for MX' => sub {
-            $t = $t->send_ok({json => $mf_details})->message_ok;
+            my %details = (%client_details, %$mf_details);
+            delete $details{new_account_real};
+            $t = $t->send_ok({json => \%details})->message_ok;
             my $res = decode_json($t->message->[1]);
 
             is($res->{msg_type}, 'new_account_maltainvest');
