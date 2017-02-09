@@ -458,7 +458,7 @@ sub startup {
         });
 
     $app->helper(
-        'rate_limitations_keys' => sub {
+        'rate_limitations_key' => sub {
             my $c                  = shift;
             my $login_id           = $c->stash('loginid');
             my $app_id             = $c->app_id;
@@ -473,15 +473,14 @@ sub startup {
                 my $client_id = md5_hex($ip . ":" . $user_agent);
                 "rate_limits::non-authorised::$app_id/$client_id";
             };
-            return ($authorised_key, $non_authorised_key);
+            return $authorised_key // $non_authorised_key;
         });
 
     $app->helper(
         'rate_limitations_save' => sub {
-            my $c          = shift;
-            my @redis_keys = $c->rate_limitations_keys;
-            my $key        = $redis_keys[0] // $redis_keys[1];
-            my $hits       = $c->stash->{rate_limitations_hits};
+            my $c    = shift;
+            my $key  = $c->rate_limitations_key;
+            my $hits = $c->stash->{rate_limitations_hits};
             # blocking call
             $c->ws_redis_master->set(
                 $key => encode_json($hits),
@@ -491,9 +490,8 @@ sub startup {
 
     $app->helper(
         'rate_limitations_load' => sub {
-            my $c          = shift;
-            my @redis_keys = $c->rate_limitations_keys;
-            my $key        = $redis_keys[0] // $redis_keys[1];
+            my $c   = shift;
+            my $key = $c->rate_limitations_key;
             # blocking call
             my $hits_json = $c->ws_redis_slave->get($key);
             my $hits = $hits_json ? decode_json($hits_json) : {};
