@@ -260,7 +260,7 @@ sub _get_pricing_parameter_from_IH_pricer {
     my $risk_markup = $pe->risk_markup;
     $pricing_parameters->{risk_markup} = {
         map { $_ => $risk_markup->peek_amount($_) // 0 }
-            qw(economic_events_markup intraday_historical_iv_risk quiet_period_markup vol_spread_markup intraday_eod_markup short_term_kurtosis_risk_markup),
+            qw(economic_events_markup economic_events_volatility_risk_markup economic_events_spot_risk_markup intraday_historical_iv_risk quiet_period_markup vol_spread_markup intraday_eod_markup short_term_kurtosis_risk_markup),
 
     };
 
@@ -483,7 +483,6 @@ sub batch_output_as_excel {
     $workbook->close;
 
     PrintContentType_XSendfile($temp_file, 'application/octet-stream');
-
     return;
 }
 
@@ -504,7 +503,6 @@ sub single_output_as_excel {
     $workbook->close;
 
     PrintContentType_XSendfile($temp_file, 'application/octet-stream');
-
     return;
 }
 
