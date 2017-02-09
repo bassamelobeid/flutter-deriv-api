@@ -154,7 +154,7 @@ table#client_edit td{
     </tr>
     <tr>
         <td class="label">Residence</td>
-        <td>: 
+        <td>:
             <select name="residence">
                 [% IF client.residence == "" %]
                     <option value="" selected="selected">Select Residence</option>
@@ -171,6 +171,40 @@ table#client_edit td{
             [% END %]
             </select>
         </td>
+    </tr>
+    <tr>
+        <td class="label">Birth Place</td>
+        <td>:
+            <select name="place_of_birth">
+                [% IF client.place_of_birth == "" %]
+                    <option value="" selected="selected">Select place of birth</option>
+                [% ELSE %]
+                    <option value="">Select place of birth</option>
+                [% END %]
+
+            [% FOREACH country = countries %]
+                [% IF country_codes.$country == client.place_of_birth %]
+                   <option value="[% country_codes.$country %]" selected="selected">[% country %]</option>
+                [% ELSE %]
+                   <option value="[% country_codes.$country %]">[% country %]</option>
+                [% END %]
+            [% END %]
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td class="small_header" colspan="2">#TAX INFORMATION</td>
+    </tr>
+    <tr>
+        <td class="label">Tax Residence</td>
+        <td>:[% client.tax_residence %]
+    </tr>
+    <tr>
+        <td class="label">Tax Identification Number</td>
+        <td>:[% client.tax_identification_number %]
+    </tr>
+    <tr>
+        <td class="small_header" colspan="2">#KYC/IDENTITY VERIFICATION</td>
     </tr>
     <tr>
         <td class="small_header" colspan="2">#KYC/IDENTITY VERIFICATION</td>
@@ -459,6 +493,12 @@ table#client_edit td{
         <tr>
             <td class="label"><input type="checkbox" [% IF financial_risk_status %]checked[% END %] disabled="disabled"/></td>
             <td>Client acknowledges financial risk?</td>
+        </tr>
+    [% END %]
+    [% FOREACH version = csr_tin_information %]
+        <tr>
+            <td class="label"><input type="checkbox" checked disabled="disabled"/></td>
+            <td>[% version %]</td>
         </tr>
     [% END %]
     <tr>

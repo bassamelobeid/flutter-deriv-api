@@ -94,6 +94,14 @@ sub print_client_details {
     $stateoptions .= qq|<option value="$_->{value}">$_->{text}</option>| for @$stateoptionlist;
     my $tnc_status = $client->get_status('tnc_approval');
 
+    my @crs_tin_array = ();
+    if (my $crs_tin_status = $client->get_status('crs_tin_information')) {
+        my @dates = sort { Date::Utility->new($a)->epoch <=> Date::Utility->new($b)->epoch } split ",", $crs_tin_status->reason;
+        for my $i (0 .. $#dates) {
+            push @crs_tin_array, "Client submitted the TIN information Version " . ($i + 1) . " on " . $dates[$i];
+        }
+    }
+
     my $template_param = {
         client                  => $client,
         self_exclusion_enabled  => $self_exclusion_enabled,
@@ -120,7 +128,8 @@ sub print_client_details {
         show_risk_approval    => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,
         financial_risk_status => $client->get_status('financial_risk_approval'),
         client_tnc_version    => $tnc_status ? $tnc_status->reason : '',
-        show_allow_omnibus    => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of) ? 1 : 0
+        show_allow_omnibus    => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of) ? 1 : 0,
+        csr_tin_information   => \@crs_tin_array
     };
 
     BOM::Backoffice::Request::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
