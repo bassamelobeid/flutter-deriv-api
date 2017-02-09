@@ -489,10 +489,13 @@ sub startup {
             my $c    = shift;
             my $key  = $c->rate_limitations_key;
             my $hits = $c->stash->{rate_limitations_hits};
-            # blocking call
+            return;
             $c->ws_redis_master->set(
                 $key => encode_json($hits),
-                EX   => 3600
+                EX   => 3600,
+                sub {
+                    # OK, do nothing
+                },
             );
         });
 
@@ -501,9 +504,16 @@ sub startup {
             my $c   = shift;
             my $key = $c->rate_limitations_key;
             # blocking call
-            my $hits_json = $c->ws_redis_slave->get($key);
-            my $hits = $hits_json ? decode_json($hits_json) : {};
-            $c->stash(rate_limitations_hits => $hits);
+            my $hits_json = $c->ws_redis_slave->get(
+                $key,
+                sub {
+                    my ($redis, $hits_json) = @_;
+                    #use Data::Dumper;
+#                print("json:" . Dumper($hits_json) . "\n");
+                    #my $hits = $hits_json ? decode_json($hits_json) : {};
+                    my $hits = {};
+                    $c->stash(rate_limitations_hits => $hits);
+                });
         });
 
     $app->plugin(
