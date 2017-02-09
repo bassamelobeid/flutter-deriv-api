@@ -87,6 +87,15 @@
                     "type": "integer",
                     "pattern": "^(0|1)$",
                     "required": "1"
+                },
+                "place_of_birth": {
+                    "type": "null"
+                },
+                "tax_residence": {
+                    "type": "null"
+                },
+                "tax_identification_number": {
+                    "type": "null"
                 }
             },
             "required": "1"
