@@ -3,7 +3,7 @@ package BOM::RPC::v3::Contract;
 use strict;
 use warnings;
 no indirect;
-
+use Data::Dumper;
 use Try::Tiny;
 use List::MoreUtils qw(none);
 use Data::Dumper;
@@ -146,6 +146,22 @@ sub _get_ask {
     };
     return $response if $response;
 
+    my $market_name = $contract->market->name;
+    my $base_commission_scaling =
+        BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market_name;
+    my $contract_parameters = {
+        %$p2,
+        !$contract->is_spread
+        ? (
+            app_markup_percentage => $contract->app_markup_percentage,
+            staking_limits        => $contract->staking_limits,
+            deep_otm_threshold    => $contract->otm_threshold,
+            )
+        : (),
+        underlying_base_commission => $contract->underlying->base_commission,
+        base_commission_scaling    => $base_commission_scaling,
+    };
+
     try {
         if (!($contract->is_spread ? $contract->is_valid_to_buy : $contract->is_valid_to_buy({landing_company => $p2->{landing_company}}))) {
             my ($message_to_client, $code);
@@ -195,6 +211,8 @@ sub _get_ask {
                         },
                     });
             }
+            $response->{contract_parameters} = $contract_parameters if $code eq 'ContractBuyValidationError';
+            print "Error response: ".Dumper($response);
         } else {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
             my $trading_window_start = $p2->{trading_period_start} // '';
@@ -213,9 +231,6 @@ sub _get_ask {
             }
 
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
-            my $market_name = $contract->market->name;
-            my $base_commission_scaling =
-                BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market_name;
 
             $response = {
                 longcode            => $contract->longcode,
@@ -224,18 +239,7 @@ sub _get_ask {
                 display_value       => $display_value,
                 spot_time           => $contract->current_tick->epoch,
                 date_start          => $contract->date_start->epoch,
-                contract_parameters => {
-                    %$p2,
-                    !$contract->is_spread
-                    ? (
-                        app_markup_percentage => $contract->app_markup_percentage,
-                        staking_limits        => $contract->staking_limits,
-                        deep_otm_threshold    => $contract->otm_threshold,
-                        )
-                    : (),
-                    underlying_base_commission => $contract->underlying->base_commission,
-                    base_commission_scaling    => $base_commission_scaling,
-                },
+                contract_parameters => $contract_parameters,
             };
 
             # only required for non-spead contracts
