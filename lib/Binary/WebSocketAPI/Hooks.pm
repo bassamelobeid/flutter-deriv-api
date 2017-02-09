@@ -238,19 +238,6 @@ sub init_redis_connections {
     my $c = shift;
     $c->redis;
     $c->redis_pricer;
-    $c->rate_limitations_load;
-    return;
-}
-
-sub on_finish_connection {
-    my $c = shift;
-    $c->rate_limitations_save;
-    # stop all recurring
-    Binary::WebSocketAPI::v3::Wrapper::System::forget_all($c, {args => {forget_all => 1}});
-    delete $c->stash->{redis};
-    delete $c->stash->{redis_pricer};
-    delete $c->stash->{redis_pricer_count};
-
     return;
 }
 
@@ -281,6 +268,25 @@ sub add_app_id {
 sub add_brand {
     my ($c, $req_storage) = @_;
     $req_storage->{call_params}->{brand} = $c->stash('brand');
+    return;
+}
+
+sub on_client_connect {
+    my ($c) = @_;
+    # We use a weakref in case the disconnect is never called
+    warn "Client connect request but $c is already in active connection list" if exists $c->app->active_connections->{$c};
+    Scalar::Util::weaken($c->app->active_connections->{$c} = $c);
+    init_redis_connections($c);
+    $c->rate_limitations_load;
+    return;
+}
+
+sub on_client_disconnect {
+    my ($c) = @_;
+    warn "Client disconnect request but $c is not in active connection list" unless exists $c->app->active_connections->{$c};
+    forget_all($c);
+    delete $c->app->active_connections->{$c};
+    $c->rate_limitations_save;
     return;
 }
 

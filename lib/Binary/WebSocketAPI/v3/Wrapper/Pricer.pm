@@ -83,9 +83,11 @@ sub proposal_array {
                         $cache = {
                             error                 => 1,
                             app_markup_percentage => $c->stash('app_markup_percentage'),
+                            payout                => $response->{error}{details}{payout},
                         };
                     } else {
                         $cache = {
+                            # this looks like a typo because by looking at the logic, we should be using $response->{payout}. But it is not!
                             payout              => $rpc_response->{payout},
                             longcode            => $response->{longcode},
                             contract_parameters => delete $response->{contract_parameters}};
@@ -323,18 +325,6 @@ sub _create_pricer_channel {
     {
         $c->redis_pricer->set($redis_channel, 1);
         $c->stash('redis_pricer')->subscribe([$redis_channel], sub { });
-
-        my $count = $c->stash->{redis_pricer_count} || 0;
-
-        $c->stash->{redis_pricer_count} = ++$count;
-
-        $c->app->log->warn("[$$],"
-                . ($c->stash->{source}       || '') . ","
-                . ($c->stash->{client_ip}    || '') . ","
-                . ($c->stash->{country_code} || '') . ","
-                . ($c->stash->{loginid}      || '')
-                . ",$count")
-            if -f '/etc/rmg/debug';
     }
 
     $pricing_channel->{$redis_channel}->{$subchannel}->{uuid}          = $uuid;
@@ -478,6 +468,7 @@ sub _process_ask_proposal_array_event {
                     # so we set cache as the first correct value
                     $cache->{longcode}                                   = $response->{longcode};
                     $cache->{contract_parameters}                        = $response->{contract_parameters};
+                    $cache->{contract_parameters}{amount}                = $cache->{payout};
                     $cache->{contract_parameters}{app_markup_percentage} = delete $cache->{app_markup_percentage};
                     delete $cache->{error};
                 }
