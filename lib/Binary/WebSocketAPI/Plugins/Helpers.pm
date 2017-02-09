@@ -87,7 +87,6 @@ sub register {
         "redis://" . ($password ? "x:$password\@" : "") . "$host:$port";
     };
     my $chronicle_redis_url = $redis_url->($chronicle_cfg->{read});
-    my $ws_redis_url        = $redis_url->($ws_redis_cfg->{write});
 
     my @redises = ([ws_redis_master => $redis_url->($ws_redis_cfg->{write})], [ws_redis_slave => $redis_url->($ws_redis_cfg->{read})],);
 
