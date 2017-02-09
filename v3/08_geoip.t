@@ -10,9 +10,11 @@ use Encode;
 
 subtest 'country information is returned in website_status' => sub {
     for my $country (qw(my jp ru cr)) {
-        my $t = build_wsapi_test(undef, {
-            'CF-IPCOUNTRY' => $country,
-        });
+        my $t = build_wsapi_test(
+            undef,
+            {
+                'CF-IPCOUNTRY' => $country,
+            });
         $t = $t->send_ok({json => {website_status => 1}})->message_ok;
         my $res = decode_json($t->message->[1]);
         is($res->{website_status}{clients_country}, $country, 'have correct country for ' . $country);
@@ -21,9 +23,11 @@ subtest 'country information is returned in website_status' => sub {
     done_testing;
 };
 subtest 'country code Malaysia' => sub {
-    my $t = build_wsapi_test(undef, {
-        'CF-IPCOUNTRY' => 'my',
-    });
+    my $t = build_wsapi_test(
+        undef,
+        {
+            'CF-IPCOUNTRY' => 'my',
+        });
     $t = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
     my $res = decode_json($t->message->[1]);
     cmp_deeply($res->{payout_currencies}, bag(qw(USD EUR GBP AUD)), 'payout currencies are correct') or note explain $res;
@@ -31,9 +35,11 @@ subtest 'country code Malaysia' => sub {
     done_testing;
 };
 subtest 'country code Japan' => sub {
-    my $t = build_wsapi_test(undef, {
-        'CF-IPCOUNTRY' => 'jp',
-    });
+    my $t = build_wsapi_test(
+        undef,
+        {
+            'CF-IPCOUNTRY' => 'jp',
+        });
     $t = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
     my $res = decode_json($t->message->[1]);
     cmp_deeply($res->{payout_currencies}, bag(qw(JPY)), 'payout currencies are correct') or note explain $res;
