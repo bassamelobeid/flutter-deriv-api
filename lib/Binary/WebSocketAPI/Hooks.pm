@@ -241,6 +241,16 @@ sub init_redis_connections {
     return;
 }
 
+sub forget_all {
+    my $c = shift;
+    # stop all recurring
+    Binary::WebSocketAPI::v3::Wrapper::System::forget_all($c, {args => {forget_all => 1}});
+    delete $c->stash->{redis};
+    delete $c->stash->{redis_pricer};
+
+    return;
+}
+
 sub error_check {
     my ($c, $req_storage, $rpc_response) = @_;
     my $result = $rpc_response->result;
