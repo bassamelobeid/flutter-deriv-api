@@ -54,6 +54,9 @@ ok(Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'profit_table', 0));
 my $c2 = $t->app->build_controller;
 ok(not Binary::WebSocketAPI::Hooks::reached_limit_check($c2, 'profit_table', 0));
 
+# rate-limits are loaded/saved asynchronously, so, let's wait a bit
+Mojo::IOLoop->one_tick for(1 .. 2);
+
 my $res;
 for (my $i = 0; $i < 4; $i++) {
     $t->send_ok({
