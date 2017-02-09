@@ -10,7 +10,6 @@ services:
 cache: apt
 sudo: required
 
-
 env:
     matrix:
         - TEST_SUITE=v3_1
@@ -55,7 +54,6 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
     - /tmp/travis-scripts/clone_branch.sh binary-com/websocket-bench
     - /tmp/travis-scripts/redis.sh
-
 
 install:
     - sudo ln -s $PWD /home/git/regentmarkets/binary-websocket-api
