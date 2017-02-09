@@ -42,7 +42,8 @@ sub notification {
 
             my $slave_redis = $c->ws_redis_read;
             ### to config
-            my $current_state = $slave_redis->get("NOTIFY::broadcast::state")
+            my $current_state = undef;
+            $current_state = $slave_redis->get("NOTIFY::broadcast::state")
                 if $slave_redis;
             $current_state = eval { decode_json($current_state) }
                 if $current_state && !ref $current_state;
