@@ -201,8 +201,7 @@ subtest 'Validate legal allowed contract types' => sub {
         client   => $cr,
         contract => $c,
     });
-    $error = $transaction->_validate_jurisdictional_restrictions;
-    is $error->{'-type'}, 'NotLegalContractCategory', 'error for CALLE for CR account';
+    ok !$transaction->_validate_jurisdictional_restrictions;
 };
 
 subtest 'Validate Jurisdiction Restriction' => sub {
