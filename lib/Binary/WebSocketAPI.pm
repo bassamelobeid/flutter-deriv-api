@@ -509,10 +509,7 @@ sub startup {
                 $key,
                 sub {
                     my ($redis, $hits_json) = @_;
-                    #use Data::Dumper;
-#                print("json:" . Dumper($hits_json) . "\n");
-                    #my $hits = $hits_json ? decode_json($hits_json) : {};
-                    my $hits = {};
+                    my $hits = $hits_json ? decode_json($hits_json) : {};
                     $c->stash(rate_limitations_hits => $hits);
                 });
         });
