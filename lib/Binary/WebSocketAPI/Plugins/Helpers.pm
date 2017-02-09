@@ -106,7 +106,6 @@ sub register {
                         error => sub {
                             my ($self, $err) = @_;
                             $app->log->warn("redis error: $err");
-                            warn("redis error: $err");
                         });
                     $redis;
                 };
