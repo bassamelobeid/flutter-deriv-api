@@ -5,8 +5,8 @@ use Carp;
 use File::Spec;
 use JSON qw(decode_json);
 
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use Client::Account;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 use BOM::Platform::Client::IDAuthentication;
 {

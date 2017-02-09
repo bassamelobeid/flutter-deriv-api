@@ -1656,9 +1656,9 @@ subtest 'batch_buy', sub {
             is $txn->{account_id}, $acc->id, 'txn account id matches';
             is $txn->{referrer_type}, 'financial_market_bet', 'txn referrer_type is financial_market_bet';
             is $txn->{financial_market_bet_id}, $fmb->{id}, 'txn fmb id matches';
-            is $txn->{amount}, '-20.00',  'txn amount';
+            is $txn->{amount},        '-20.00',  'txn amount';
             is $txn->{balance_after}, '4980.00', 'txn balance_after';
-            is $txn->{staff_loginid}, '#CL001',    'txn staff_loginid';
+            is $txn->{staff_loginid}, '#CL001',  'txn staff_loginid';
 
             my $note = $notifications{$txn->{id}};
             isnt $note, undef, 'found notification';
@@ -1701,9 +1701,9 @@ subtest 'batch_buy', sub {
             is $txn->{account_id}, $acc->id, 'txn account id matches';
             is $txn->{referrer_type}, 'financial_market_bet', 'txn referrer_type is financial_market_bet';
             is $txn->{financial_market_bet_id}, $fmb->{id}, 'txn fmb id matches';
-            is $txn->{amount}, '-20.00',  'txn amount';
+            is $txn->{amount},        '-20.00',  'txn amount';
             is $txn->{balance_after}, '9980.00', 'txn balance_after';
-            is $txn->{staff_loginid}, '#CL001',    'txn staff_loginid';
+            is $txn->{staff_loginid}, '#CL001',  'txn staff_loginid';
 
             my $note = $notifications{$txn->{id}};
             isnt $note, undef, 'found notification';
