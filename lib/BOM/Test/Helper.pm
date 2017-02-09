@@ -2,6 +2,12 @@ package BOM::Test::Helper;
 
 use strict;
 use warnings;
+
+BEGIN {
+    # Avoid MOJO_LOG_LEVEL = fatal set by Test::Mojo
+    $ENV{HARNESS_IS_VERBOSE} = 1;    ## no critic
+}
+
 use Test::More;
 use Test::Mojo;
 
@@ -89,6 +95,7 @@ sub build_wsapi_test {
 
     my ($tmp_dir, $redis_server) = launch_redis;
     my $t = build_mojo_test('Binary::WebSocketAPI', $args);
+    $t->app->log(Mojo::Log->new(level => 'debug'));
 
     my @query_params;
     my $url = "/websockets/$version";
