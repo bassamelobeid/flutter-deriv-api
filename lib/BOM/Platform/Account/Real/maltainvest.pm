@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use JSON qw(encode_json);
+use Date::Utility;
 
 use Brands;
 use BOM::Platform::Account::Real::default;
@@ -59,6 +60,8 @@ sub create_account {
         details => $details,
     });
 
+    set_crs_tin_status($client, 1);
+
     BOM::Platform::Account::Real::default::add_details_to_desk($client, $details);
 
     if ($financial_assessment->{total_score} > 59) {
@@ -72,6 +75,29 @@ sub create_account {
         });
     }
     return $status;
+}
+
+# As per CRS/FATCA regulatory requirement we need to save this information as client status
+# maintaining previous updates as well
+sub set_crs_tin_status {
+    my ($client, $is_save) = @_;
+
+    my $current_date = Date::Utility->new()->date;
+    # comma separated dates 2016-03-01,2016-12-12
+    my $data;
+    if (my $crs_tin_status = $client->get_status('crs_tin_information')) {
+        my @dates = sort { Date::Utility->new($a)->epoch <=> Date::Utility->new($b)->epoch } split ",", $crs_tin_status->reason;
+        push @dates, $current_date;
+        $data = join ",", @dates;
+    } else {
+        $data = $current_date;
+    }
+
+    # update status with new date
+    $client->set_status('crs_tin_information', 'system', $data);
+    $client->save if $is_save;
+
+    return;
 }
 
 1;
