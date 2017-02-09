@@ -15,6 +15,7 @@ use Locale::Maketext::ManyPluralForms {
     '_auto'   => 1,
     '_decode' => 1,
 };
+use Data::Dumper;
 
 sub register {
     my ($self, $app) = @_;
@@ -175,6 +176,39 @@ sub register {
             }
             return $c->stash->{redis_pricer};
         });
+    $app->helper(
+        proposal_array_collector => sub {
+            my $c = shift;
+            if (not $c->stash('proposal_array_collector_running')) {
+# collect proposal_array
+                print "Starting requrring...\n";
+                Mojo::IOLoop->recurring(1, sub {
+                    my @proposals;
+                    my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
+                    for my $pa_uuid (keys %{$proposal_array_subscriptions}) {
+                        print "pa_uuid : $pa_uuid\n";
+                        for my $uuid (@{$proposal_array_subscriptions->{$pa_uuid}{seq}}) {
+                            print "uuid: $uuid\n";
+                            push @proposals, pop @{$proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid}} || {} ;
+                            $proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid} = [];
+                        }
+                        #print "props to pack back: ".Dumper(\@proposals);
+                        my $results = {
+                            proposal_array => { proposals => [map {delete $_->{msg_type}; $_} @proposals] },
+                            id => $pa_uuid,
+                            echo_req => $proposal_array_subscriptions->{$pa_uuid}{args},
+                            msg_type => 'proposal_array',
+                        };
+                        print "WOW!: ".Dumper($results);
+                        $c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}});
+                    }
+
+
+                });
+
+                $c->stash->{proposal_array_collector_running} = 1;
+            }
+    });
 
     return;
 }

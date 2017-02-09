@@ -82,12 +82,48 @@ Issues a separate RPC request for each barrier, then collates the results
 in a single response back to the client.
 
 =cut
-
+use Data::Dumper;
 sub proposal_array {
     my ($c, $req_storage) = @_;
+    my $msg_type = 'proposal_array';
+    my $uuid;
+    #print "in proposal_array \n".Dumper($req_storage);
+
+    if ($req_storage->{args}{subscribe}) {
+        $uuid = &Binary::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string();
+        $c->stash(proposal_array_subscriptions => { $uuid => {args => $req_storage->{args}, proposals=>{}, seq=>[]} });
+        print "Sub created\n";
+    }
+
+    my $create_price_channel = sub {
+            my ($c, $rpc_response, $req_storage) = @_;
+            #print "from ]sub: ".Dumper($req_storage->{args});
+            #print "from ]sub: ".Dumper($rpc_response->{contract_parameters});
+            my $cache = {
+                longcode                    => $rpc_response->{longcode},
+                contract_parameters         => delete $rpc_response->{contract_parameters},
+                payout                      => $rpc_response->{payout},
+                proposal_array_subscription => $uuid, # does not matters if there will not be any subscription
+            };
+            $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
+            #print "Starting gen uuid\n";
+            $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
+            print "msg gone: ".$req_storage->{uuid}."\n";
+            if ($req_storage->{uuid}) { # we are in subscr mode, so remember the sequence of streams
+                print "HWA!\n";
+                my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions');
+                if ($proposal_array_subscriptions->{$uuid}) {
+                print "HWA 2!\n";
+                    push @{$proposal_array_subscriptions->{$uuid}{seq}}, $req_storage->{uuid};
+                    $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
+                }
+            }
+    };
+
 
     # Process a few RPC calls at a time.
     my $retained;
+
     $retained = Future->needs_any(
         # Upper limit on total time taken - we don't really
         # care how long individual requests take, but we do
@@ -98,13 +134,17 @@ sub proposal_array {
             return +{ error => $c->l('Request timed out') }
         }),
         Future::Utils::fmap {
-            my $barrier = shift;
+            my $barriers = shift;
+            print "in fmap\n".Dumper($barriers) ;
 
             # Shallow copy of $args since we want to override a few top-level keys for the RPC calls
-            my $args = %{ $req_storage->{args} };
+            my $args = { %{ $req_storage->{args} } };
 
             $args->{barrier} = $barriers->{barrier};
-            @{$args}{keys %$barriers} = values %$barriers;
+            $args->{barrier2} = $barriers->{barrier2} if $barriers->{barrier2};
+            delete $args->{barriers};
+            #print "args: ".Dumper($args);
+            #@{$args}{keys %$barriers} = values %$barriers;
             my $f = Future::Mojo->new;
             $c->call_rpc({
                 args        => $args,
@@ -115,20 +155,17 @@ sub proposal_array {
                     app_markup_percentage => $c->stash('app_markup_percentage'),
                     landing_company       => $c->landing_company_name,
                 },
+                error => sub {
+                    $create_price_channel->(@_);
+                },
                 success => sub {
-                    my ($c, $rpc_response, $req_storage) = @_;
-                    my $cache = {
-                        longcode            => $rpc_response->{longcode},
-                        contract_parameters => delete $rpc_response->{contract_parameters},
-                        payout              => $rpc_response->{payout},
-                    };
-                    $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
-                    $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
+                    $create_price_channel->(@_);
                 },
                 response => sub {
                     my ($rpc_response, $api_response, $req_storage) = @_;
                     if($rpc_response->{error}) {
-                        $f->fail($api_response);
+                        print "before f-done1\n";
+                        $f->done($api_response);
                         return;
                     }
 
@@ -138,29 +175,38 @@ sub proposal_array {
                     } else {
                         $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
                     }
+                    print "before f-done2\n\n\n";
                     $f->done($api_response);
                     return;
                 },
             });
             $f;
-        } foreach => [ @{$args->{barriers}} ],
+        } foreach => [ @{$req_storage->{args}->{barriers}} ],
           concurrent => PARALLEL_RPC_COUNT
     )->on_ready(sub {
         my $f = shift;
+        print "ON READY!!!!\n";
         try {
-            # If any of the requests failed, this will throw
+            # should not throw 'cos we do not $future->fail
             my @result = $f->get;
+            delete @{$_}{qw(msg_type passthrough)} for @result;
+            print "Collect res from on_ready: ".Dumper(\@result);
             # Return a single result back to the client.
             $c->send({
-                json => {
-                    proposals => \@result
+                json => { 
+                    echo_req => $req_storage->{args},
+                    proposal_array => {
+                        proposals => \@result
+                    },
+                    $uuid ? (id => $uuid) : (),
+                    msg_type => $msg_type, 
                 }
             });
         } catch {
             warn "Failed - $_";
             $c->send({
                 json => $c->wsp_error(
-                    $msg_type,
+                    $msg_type, 
                     'ProposalArrayFailure',
                     'Sorry, an error occurred while processing your request.'
                 )
@@ -317,6 +363,8 @@ sub _pricing_channel_for_ask {
     my ($c, $args, $cache) = @_;
     my $price_daemon_cmd = 'price';
 
+    print "inicial args for _serial".Dumper($args);
+
     my %args_hash = %{$args};
 
     if ($args_hash{basis}) {
@@ -459,17 +507,15 @@ sub process_bid_event {
 sub process_ask_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
 
-    if (exists($response->{proposals})) {    #proposal_array
-        _process_ask_proposal_array_event(@_);
-    } else {                                 #proposal
-        _process_ask_proposal_event(@_);
-    }
+    _process_ask_proposal_event(@_);
     return;
 }
 
 sub _process_ask_proposal_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
     my $type = 'proposal';
+
+
 
     my $theo_probability = delete $response->{theo_probability};
     foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
@@ -483,6 +529,7 @@ sub _process_ask_proposal_event {
                 my $err = $c->new_error($type, $ref->{code}, $ref->{message_to_client});
                 $err->{error}->{details} = $ref->{details} if exists $ref->{details};
                 $results = $err;
+                #print "ERROR: ".Dumper($results);
             } else {
                 $results = {
                     msg_type => $type,
@@ -500,70 +547,31 @@ sub _process_ask_proposal_event {
                 method => $type,
             };
         }
-        delete @{$results->{$type}}{qw(contract_parameters rpc_time)};
-        $c->send({json => $results}, {args => $stash_data->{args}});
-    }
-    return;
-}
-
-sub _process_ask_proposal_array_event {
-    my ($c, $response, $redis_channel, $pricing_channel) = @_;
-    my $type      = 'proposal_array';
-    my $responses = $response->{proposals};
-    foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
-        my $caches = $stash_data->{cache};
-        my @results;
-        for my $i (0 .. $#$responses) {
-            my $response         = clone($responses->[$i]);
-            my $cache            = $caches->[$i];
-            my $theo_probability = delete $response->{theo_probability};
-            my $results;
-
-            unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
-                if (exists($cache->{error})) {
-                    # There is error when we ask proposal array
-                    # but now the error is gone
-                    # so we set cache as the first correct value
-                    $cache->{longcode}                                   = $response->{longcode};
-                    $cache->{contract_parameters}                        = $response->{contract_parameters};
-                    $cache->{contract_parameters}{app_markup_percentage} = delete $cache->{app_markup_percentage};
-                    delete $cache->{error};
-                }
-                $cache->{contract_parameters}->{longcode} = $cache->{longcode};
-                my $adjusted_results = _price_stream_results_adjustment($c, $stash_data->{args}, $cache, $response, $theo_probability);
-                if (my $ref = $adjusted_results->{error}) {
-                    my $err = $c->new_error($type, $ref->{code}, $ref->{message_to_client});
-                    $err->{error}->{details} = $ref->{details} if exists $ref->{details};
-                    my $barriers = $stash_data->{args}{barriers}[$i];
-                    @{$err->{error}{details}}{keys %$barriers} = values %$barriers;
-                    $results = $err;
-                } else {
-                    $results = {
-                        %$adjusted_results,
-                        longcode => $cache->{longcode},
-                    };
-                }
+        delete @{$results->{$type}}{qw(contract_parameters rpc_time)} if $results->{$type};
+        #print "stash_data: ".Dumper($stash_data);
+        if ($stash_data->{cache}{proposal_array_subscription}) {
+            $c->proposal_array_collector;
+            my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
+            #print Dumper $proposal_array_subscriptions;
+            #print $stash_data->{cache}{proposal_array_subscription}."\n";
+            #print Dumper($proposal_array_subscriptions->{$stash_data->{cache}{proposal_array_subscription}})."\n";
+            if (ref $proposal_array_subscriptions->{$stash_data->{cache}{proposal_array_subscription}} eq 'HASH') {
+                #print "TO BE STORED: ".Dumper($results);
+                push @{$proposal_array_subscriptions->{$stash_data->{cache}{proposal_array_subscription}}{proposals}{$stash_data->{uuid}}}, $results;
+                $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
+                #print "STORED!!!! ".Dumper($proposal_array_subscriptions);
+            } else {
+                print "FORGET?????\n";
+                Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid});
+                # clean stash ?
             }
-            delete @{$results}{qw(msg_type contract_parameters)};
-            push @results, $results;
+        } else {
+            $c->send({json => $results}, {args => $stash_data->{args}});
         }
-
-        my $send_result = {
-            msg_type => $type,
-            $type    => {
-                proposals => \@results,
-                id        => $stash_data->{uuid},
-            }};
-        if ($c->stash('debug')) {
-            $send_result->{debug} = {
-                time   => $response->{rpc_time},
-                method => $type,
-            };
-        }
-        $c->send({json => $send_result}, {args => $stash_data->{args}});
     }
     return;
 }
+
 
 sub _price_stream_results_adjustment {
     my $c                     = shift;
@@ -578,7 +586,7 @@ sub _price_stream_results_adjustment {
 
     # log the instances when pricing server doesn't return theo probability
     unless (defined $resp_theo_probability) {
-        warn 'missing theo probability from pricer. Contract parameter dump ' . Data::Dumper->Dumper($contract_parameters);
+        warn 'missing theo probability from pricer. Contract parameter dump ' . Dumper($contract_parameters);
         stats_inc('price_adjustment.missing_theo_probability');
     }
 
