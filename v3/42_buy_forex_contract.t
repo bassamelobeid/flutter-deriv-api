@@ -104,7 +104,7 @@ SKIP: {
             "contract_type" => "CALL",
             "currency"      => "USD",
             "symbol"        => "frxUSDJPY",
-            "duration"      => "2",
+            "duration"      => "7",
             "duration_unit" => "d",
         );
 
@@ -262,7 +262,7 @@ SKIP: {
             "contract_type" => "CALL",
             "currency"      => "USD",
             "symbol"        => "frxUSDJPY",
-            "duration"      => "2",
+            "duration"      => "7",
             "duration_unit" => "d",
         );
 
