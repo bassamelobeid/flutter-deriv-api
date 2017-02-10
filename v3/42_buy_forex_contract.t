@@ -187,6 +187,48 @@ SKIP: {
         $t = $t->send_ok({
                 json => {
                     buy        => 1,
+                    price      => 0,
+                    parameters => {%contract},
+                }});
+
+        $t->message_ok;
+        $res = decode_json($t->message->[1]);
+        like(
+            $res->{error}{message},
+            qr/The underlying market has moved too much since you priced the contract. The contract price has changed/,
+            'Buy contract with proposal id: price moved error'
+        );
+
+        $t = $t->send_ok({
+                json => {
+                    buy        => 1,
+                    price      => $buy_price * 0.8,
+                    parameters => {%contract},
+                }});
+
+        $t->message_ok;
+        $res = decode_json($t->message->[1]);
+        like(
+            $res->{error}{message},
+            qr/The underlying market has moved too much since you priced the contract. The contract price has changed/,
+            'Buy contract with proposal id: price moved error'
+        );
+
+        $t = $t->send_ok({
+                json => {
+                    buy        => 1,
+                    price      => $buy_price * 1.1,
+                    parameters => {%contract},
+                }});
+
+        $t->message_ok;
+        $res = decode_json($t->message->[1]);
+        is $res->{buy}->{payout}, 100, 'Buy contract with defined contract parameters : The payout is matching with defined amount 100';
+        ok $res->{buy}->{buy_price} < $buy_price * 1.1, 'Buy contract with defined contract parameters : Buy price at better price';
+
+        $t = $t->send_ok({
+                json => {
+                    buy        => 1,
                     price      => 10000,
                     parameters => {%contract},
                 },
@@ -194,8 +236,7 @@ SKIP: {
         $t->message_ok;
         $res = decode_json($t->message->[1]);
         is $res->{buy}->{payout}, 100, 'Buy contract with defined contract parameters : The payout is matching with defined amount 100';
-        ok $res->{buy}->{buy_price} < 100,
-            'Buy contract with defined contract parameters : Exceucted at better price. Buy price is less than 100';
+        ok $res->{buy}->{buy_price} < 100, 'Buy contract with defined contract parameters : Exceucted at better price. Buy price is less than 100';
 
         $t = $t->send_ok({
                 json => {
@@ -324,6 +365,47 @@ SKIP: {
             qr/Contract's stake amount is more than the maximum purchase price/,
             'Buy with defined contract parameters: Stake amount is more than purchase price'
         );
+        $t = $t->send_ok({
+                json => {
+                    buy        => 1,
+                    price      => 0,
+                    parameters => {%contract},
+                }});
+
+        $t->message_ok;
+        $res = decode_json($t->message->[1]);
+        like(
+            $res->{error}{message},
+            qr/The underlying market has moved too much since you priced the contract. The contract price has changed/,
+            'Buy contract with proposal id: price moved error'
+        );
+
+        $t = $t->send_ok({
+                json => {
+                    buy        => 1,
+                    price      => $buy_price * 0.8,
+                    parameters => {%contract},
+                }});
+
+        $t->message_ok;
+        $res = decode_json($t->message->[1]);
+        like(
+            $res->{error}{message},
+            qr/The underlying market has moved too much since you priced the contract. The contract price has changed/,
+            'Buy contract with proposal id: price moved error'
+        );
+
+        $t = $t->send_ok({
+                json => {
+                    buy        => 1,
+                    price      => $buy_price * 1.1,
+                    parameters => {%contract},
+                }});
+
+        $t->message_ok;
+        $res = decode_json($t->message->[1]);
+        is $res->{buy}->{payout}, 100, 'Buy contract with defined contract parameters : The payout is matching with defined amount 100';
+        ok $res->{buy}->{buy_price} < $buy_price * 1.1, 'Buy contract with defined contract parameters : Buy price at better price';
 
         $t->finish_ok;
     };
