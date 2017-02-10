@@ -96,11 +96,7 @@ sub _forget_pricing_subscription {
                     delete $pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd}->{$uuid};
                 }
             }
-
-            if (scalar keys %{$pricing_channel->{$channel}} == 0) {
-                $c->stash('redis_pricer')->unsubscribe([$channel]);
-                delete $pricing_channel->{$channel};
-            }
+	    delete $pricing_channel->{$channel}{subscription};
         }
         $c->stash('pricing_channel' => $pricing_channel);
     }
@@ -121,8 +117,6 @@ sub _forget_all_pricing_subscriptions {
         foreach my $uuid (@$removed_ids) {
             my $redis_channel = $pricing_channel->{uuid}->{$uuid}->{redis_channel};
             if ($pricing_channel->{$redis_channel}) {
-                $c->stash('redis_pricer')->unsubscribe([$redis_channel]);
-
                 delete $pricing_channel->{$redis_channel};
             }
             delete $pricing_channel->{uuid}->{$uuid};

@@ -6,6 +6,8 @@ use JSON;
 use Data::Dumper;
 use Format::Util::Numbers qw(roundnear);
 use Binary::WebSocketAPI::v3::Wrapper::System;
+use Binary::WebSocketAPI::v3::Instance::Redis qw|pricer_write|;
+use Binary::WebSocketAPI::v3::Instance::Subscription;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use Time::HiRes qw(gettimeofday tv_interval);
@@ -322,9 +324,8 @@ sub _create_pricer_channel {
         and $args->{subscribe} == 1
         and not exists $pricing_channel->{$redis_channel}
         and not $skip_redis_subscr)
-    {
-        $c->redis_pricer->set($redis_channel, 1);
-        $c->stash('redis_pricer')->subscribe([$redis_channel], sub { });
+      {
+	$pricing_channel->{uuid}{$uuid}{subscription} //= Binary::WebSocketAPI::v3::Instance::Subscription->new($redis_channel, $uuid, $c );
     }
 
     $pricing_channel->{$redis_channel}->{$subchannel}->{uuid}          = $uuid;
