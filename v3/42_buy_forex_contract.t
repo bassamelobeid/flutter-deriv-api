@@ -376,8 +376,8 @@ SKIP: {
         $res = decode_json($t->message->[1]);
         like(
             $res->{error}{message},
-            qr/The underlying market has moved too much since you priced the contract. The contract price has changed/,
-            'Buy contract with proposal id: price moved error'
+            qr/Contract's stake amount is more than the maximum purchase price./,
+            'Buy contract with proposal id: zero price error'
         );
 
         $t = $t->send_ok({
@@ -391,8 +391,8 @@ SKIP: {
         $res = decode_json($t->message->[1]);
         like(
             $res->{error}{message},
-            qr/The underlying market has moved too much since you priced the contract. The contract price has changed/,
-            'Buy contract with proposal id: price moved error'
+            qr/Contract's stake amount is more than the maximum purchase price./,
+            'Buy contract with proposal id: buy price is 20% lower than calculated buy price'
         );
 
         $t = $t->send_ok({
@@ -404,7 +404,7 @@ SKIP: {
 
         $t->message_ok;
         $res = decode_json($t->message->[1]);
-        is $res->{buy}->{payout}, 100, 'Buy contract with defined contract parameters : The payout is matching with defined amount 100';
+        ok $res->{buy}->{payout} > 100, 'Buy contract with defined contract parameters : The payout is greather than buy price 100 from contract parameters';
         ok $res->{buy}->{buy_price} < $buy_price * 1.1, 'Buy contract with defined contract parameters : Buy price at better price';
 
         $t->finish_ok;
