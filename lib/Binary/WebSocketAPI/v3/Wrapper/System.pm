@@ -66,12 +66,14 @@ sub _forget_all_proposal_array {
 
 sub forget_one {
     my ($c, $id, $reason) = @_;
+    print "FORGET ONE!!!!!!!!!!!!!!!!!!!!\n";
 
     my %removed_ids;
     if ($id && ($id =~ /-/)) {
         @removed_ids{@{_forget_feed_subscription($c, $id)}} = ();
         @removed_ids{@{_forget_transaction_subscription($c, $id)}} = ();
         @removed_ids{@{_forget_pricing_subscription($c, $id)}} = ();
+        @removed_ids{@{_forget_proposal_array($c, $id)}} = ();
     }
 
     return scalar keys %removed_ids;
@@ -105,6 +107,22 @@ sub _forget_transaction_subscription {
         }
     }
     return $removed_ids;
+}
+
+sub _forget_proposal_array {
+    my ($c, $id) = @_;
+    my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
+    print "_forget_proposal_array: ".Dumper($proposal_array_subscriptions);
+    if ($proposal_array_subscriptions->{$id}) {
+        for my $uuid (keys %{$proposal_array_subscriptions->{$id}{proposals}}) {
+            print "forgeting $uuid\n";
+            _forget_pricing_subscription($c, $uuid);
+        }
+        delete $proposal_array_subscriptions->{$id};
+        $c->stash(proposal_array_subscriptions=>$proposal_array_subscriptions);
+        return [$id];
+    }
+    return [];
 }
 
 sub _forget_pricing_subscription {
