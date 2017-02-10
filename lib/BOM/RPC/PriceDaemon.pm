@@ -65,7 +65,7 @@ sub run {
     my $current_pricing_epoch = time;
     QUEUE:
     for my $queue (@{$args{queues}}) {
-        if(my $key = $redis->brpop($queue, 0)) {
+        while(my $key = $redis->brpop($queue, 0)) {
             my $tv_now = [Time::HiRes::gettimeofday];
             DataDog::DogStatsd::Helper::stats_timing(
                 'pricer_daemon.idle.time',
@@ -135,7 +135,6 @@ sub run {
                 $current_pricing_epoch = time;
             }
             $tv = $tv_now;
-            next QUEUE;
         }
     }
 }
