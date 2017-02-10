@@ -20,17 +20,22 @@ Returns a set of available contracts for a particular contract which included pr
 =cut
 
 sub available_contracts_for_symbol {
-    my $args       = shift;
-    my $symbol     = $args->{symbol} || die 'no symbol';
-    my $underlying = create_underlying($symbol, $args->{date});
-    my $now        = $args->{date} || Date::Utility->new;
+    my $args            = shift;
+    my $symbol          = $args->{symbol} || die 'no symbol';
+    my $underlying      = create_underlying($symbol, $args->{date});
+    my $now             = $args->{date} || Date::Utility->new;
+    my $landing_company = $args->{landing_company};
 
     my $calendar = $underlying->calendar;
     my ($open, $close, $offerings);
     if ($calendar->trades_on($now)) {
         $open      = $calendar->opening_on($now)->epoch;
         $close     = $calendar->closing_on($now)->epoch;
-        $offerings = get_predefined_offerings($underlying->symbol, $underlying->for_date);
+        $offerings = get_predefined_offerings({
+            symbol          => $underlying->symbol,
+            date            => $underlying->for_date,
+            landing_company => $landing_company,
+        });
     }
 
     return {

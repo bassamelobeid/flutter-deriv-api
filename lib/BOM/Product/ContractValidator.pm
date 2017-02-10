@@ -291,23 +291,22 @@ sub _validate_price {
 sub _validate_barrier_type {
     my $self = shift;
 
-    my $intraday = $self->is_intraday;
-    my $barrier_type = $intraday ? 'relative' : 'absolute';
-
     return if ($self->tick_expiry or $self->is_spread);
 
     # The barrier for atm bet is always SOP which is relative
     return if ($self->is_atm_bet and defined $self->barrier and $self->barrier->barrier_type eq 'relative');
 
-    foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
+    # intraday non ATM barrier could be absolute or relative
+    return if $self->is_intraday;
 
-        if (defined $self->$barrier and $self->$barrier->barrier_type ne $barrier_type) {
+    foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
+        # For multiday, the barrier must be absolute.
+        # For intraday, the barrier can be absolute or relative.
+        if (defined $self->$barrier and $self->$barrier->barrier_type ne 'absolute') {
 
             return {
-                message           => 'barrier should be ' . $barrier_type,
-                message_to_client => $intraday
-                ? localize('Contracts less than 24 hours in duration would need a relative barrier. (barriers which need +/-)')
-                : localize('Contracts more than 24 hours in duration would need an absolute barrier.'),
+                message           => 'barrier should be absolute for multi-day contracts',
+                message_to_client => localize('Contracts more than 24 hours in duration would need an absolute barrier.'),
             };
         }
     }

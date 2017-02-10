@@ -38,8 +38,9 @@ sub _build_predefined_contracts {
     my @contracts =
         grep { $_->{contract_type} eq $self->code } @{
         available_contracts_for_symbol({
-                symbol => $self->underlying->symbol,
-                date   => $self->underlying->for_date
+                symbol          => $self->underlying->symbol,
+                date            => $self->underlying->for_date,
+                landing_company => $landing_company,
             }
         )->{available}};
 

@@ -38,8 +38,8 @@ subtest 'get_offerings_flyby' => sub {
         is(
             scalar get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, 'iom')
                 ->query('"contract_category" IS "callput" AND "underlying_symbol" IS "frxUSDJPY"'),
-            12,
-            '12 callput options on frxUSDJPY'
+            18,
+            '18 callput options on frxUSDJPY'
         );
         is(scalar $fb->query('"exchange_name" IS "RANDOM" -> "underlying_symbol"'), 7, 'Six underlyings trade on the RANDOM exchange');
         is(scalar $fb->query('"market" IS "volidx" -> "underlying_symbol"'),        7, '...out of 6 total random market symbols.');
@@ -66,19 +66,19 @@ subtest 'get_offerings_with_filter' => sub {
     };
     my $to = 'contract_type';
 
-    eq_or_diff([sort(get_offerings_with_filter($config, $to, $filtration))], [sort qw(CALL PUT)], 'Full filter match');
+    eq_or_diff([sort(get_offerings_with_filter($config, $to, $filtration))], [sort qw(CALLE CALL PUT)], 'Full filter match');
     delete $filtration->{start_type};
-    eq_or_diff([sort(get_offerings_with_filter($config, $to, $filtration))], [sort qw(CALL PUT)], '... same without start_type');
+    eq_or_diff([sort(get_offerings_with_filter($config, $to, $filtration))], [sort qw(CALLE CALL PUT)], '... same without start_type');
     delete $filtration->{contract_category};
     eq_or_diff(
         [sort(get_offerings_with_filter($config, $to, $filtration))],
-        [sort qw(CALL PUT EXPIRYRANGE EXPIRYMISS ONETOUCH NOTOUCH RANGE SPREADD SPREADU UPORDOWN)],
+        [sort qw(CALL CALLE PUT EXPIRYRANGE EXPIRYRANGEE EXPIRYMISS ONETOUCH NOTOUCH RANGE SPREADD SPREADU UPORDOWN)],
         '... explodes without a contract category'
     );
     $filtration->{expiry_type} = 'tick';
     eq_or_diff(
         [sort(get_offerings_with_filter($config, $to, $filtration))],
-        [sort qw(CALL PUT ASIAND ASIANU DIGITMATCH DIGITDIFF DIGITODD DIGITEVEN DIGITOVER DIGITUNDER)],
+        [sort qw(CALL CALLE PUT ASIAND ASIANU DIGITMATCH DIGITDIFF DIGITODD DIGITEVEN DIGITOVER DIGITUNDER)],
         '... and switches up for tick expiries.'
     );
 
