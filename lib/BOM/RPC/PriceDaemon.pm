@@ -63,7 +63,6 @@ sub run {
     my $tv                    = [Time::HiRes::gettimeofday];
     my $stat_count            = {};
     my $current_pricing_epoch = time;
-    QUEUE:
     for my $queue (@{$args{queues}}) {
         while(my $key = $redis->brpop($queue, 0)) {
             my $tv_now = [Time::HiRes::gettimeofday];
