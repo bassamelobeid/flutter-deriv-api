@@ -22,21 +22,21 @@ my $config = {
 $config->{pricer_write}{afterwork} = sub {
     warn "WRITE PRICER AFTERWORK";
     shift->on(
-	message => sub {
-	    my ($self, $msg, $channel) = @_;
-	    Binary::WebSocketAPI::v3::Wrapper::Streamer::send_notification($self->{shared_info}, $msg, $channel);
-	});
+        message => sub {
+            my ($self, $msg, $channel) = @_;
+            Binary::WebSocketAPI::v3::Wrapper::Streamer::send_notification($self->{shared_info}, $msg, $channel);
+    });
 };
 
 $config->{ws_write}{afterwork} = sub {
     warn "WRITE WS AFTERWORK";
     shift->on(
-	message => sub {
-	    my ($self, $msg, $channel) = @_;
-	    warn "GOT MESSAGE: " . Dumper $msg;
-#	    my $shared_info = $app->redis_connections($channel);
-	    Binary::WebSocketAPI::v3::Wrapper::Streamer::send_notification($self->{shared_info}, $msg, $channel);
-	});
+        message => sub {
+            my ($self, $msg, $channel) = @_;
+            warn "GOT MESSAGE: " . Dumper $msg;
+#           my $shared_info = $app->redis_connections($channel);
+            Binary::WebSocketAPI::v3::Wrapper::Streamer::send_notification($self->{shared_info}, $msg, $channel);
+    });
 };
 
 my $instances = {
@@ -54,23 +54,23 @@ sub new {
 
     my $self = $class->SUPER::new( url => $redis_url );
     $self->on(
-	error => sub {
-	    my ($self, $err) = @_;
-	    warn("Redis $name error: $err");
-	  });
+        error => sub {
+            my ($self, $err) = @_;
+            warn("Redis $name error: $err");
+    });
     ### Temporary trick
     if ( $name eq 'pricer_write' ) {
-      $self->on(
-		message => sub {
-		  my ($self, $msg, $channel) = @_;
-		  if ( $self->{shared_info}{$channel} ) {
-		    foreach my $uuid ( keys %{$self->{shared_info}{$channel}} ) {
-		      ### Is memory leak here?
-		      my $c = $self->{shared_info}{$channel}{$uuid};
-		      Binary::WebSocketAPI::v3::Wrapper::Pricer::process_pricing_events($c, $msg, $channel) if ref $c;
-		    }
-		  }
-		});
+        $self->on(
+            message => sub {
+                my ($self, $msg, $channel) = @_;
+                if ( $self->{shared_info}{$channel} ) {
+                    foreach my $uuid ( keys %{$self->{shared_info}{$channel}} ) {
+                         ### Is memory leak here?
+                         my $c = $self->{shared_info}{$channel}{$uuid};
+                         Binary::WebSocketAPI::v3::Wrapper::Pricer::process_pricing_events($c, $msg, $channel) if ref $c;
+                    }
+                  }
+        });
     }
     $self->{shared_info} = {};
 #    $cf->{afterwork}->($self) if $cf->{afterwork};
