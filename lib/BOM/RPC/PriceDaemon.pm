@@ -90,7 +90,7 @@ sub run {
             # If incomplete or invalid keys somehow got into pricer,
             # delete them here.
             unless (_validate_params($params)) {
-                warn "Invalid parameters: " . Data::Dumper->Dumper($params);
+                warn "Invalid parameters: $next";
                 $redis->del($key->[1], $next);
                 next;
             }
