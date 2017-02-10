@@ -56,15 +56,16 @@ sub process_job {
 }
 
 sub run {
-    my ($self) = @_;
+    my ($self, %args) = @_;
     my $redis = BOM::System::RedisReplicated::redis_pricer;
 
     my $tv_appconfig          = [0, 0];
     my $tv                    = [Time::HiRes::gettimeofday];
     my $stat_count            = {};
     my $current_pricing_epoch = time;
-    for my $queue ($self->queue_names) {
-        while (my $key = $redis->brpop($queue, 0)) {
+    QUEUE:
+    for my $queue (@{$args{queues}}) {
+        if(my $key = $redis->brpop($queue, 0)) {
             my $tv_now = [Time::HiRes::gettimeofday];
             DataDog::DogStatsd::Helper::stats_timing(
                 'pricer_daemon.idle.time',
@@ -134,6 +135,7 @@ sub run {
                 $current_pricing_epoch = time;
             }
             $tv = $tv_now;
+            next QUEUE;
         }
     }
 }
