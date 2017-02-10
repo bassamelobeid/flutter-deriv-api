@@ -27,7 +27,9 @@ my %required_params = (
 
 GetOptions(
     "workers=i" => \$workers,
+    "queues=s"  => \my $queues,
 );
+$queues ||= 'pricer_jobs';
 
 # tune cache: up to 2s
 $ENV{QUANT_FRAMEWORK_HOLIDAY_CACHE} = $ENV{QUANT_FRAMEWORK_PATRIALTRADING_CACHE} = 2;    ## nocritic
@@ -58,7 +60,7 @@ sub signal_handler {
 while (1) {
     $pm->start and next;
     my $daemon = BOM::RPC::PriceDaemon->new;
-    $daemon->run;
+    $daemon->run(queues => [ split /,/, $queues ]);
     $pm->finish;
 }
 
