@@ -211,8 +211,12 @@ sub _get_ask {
                         },
                     });
             }
-            $response->{contract_parameters} = $contract_parameters if $code eq 'ContractBuyValidationError';
-            print "Error response: ".Dumper($response);
+            if ($code eq 'ContractBuyValidationError') {
+                $response->{contract_parameters} = $contract_parameters;
+                $response->{longcode} = $contract->longcode;
+            }
+            #print "Error response: ".Dumper($response);
+            print "Longcode: ".$contract->longcode."\n";
         } else {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
             my $trading_window_start = $p2->{trading_period_start} // '';
