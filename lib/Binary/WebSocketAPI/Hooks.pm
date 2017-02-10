@@ -7,6 +7,7 @@ use JSON;
 use Try::Tiny;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Fcntl qw/ :flock /;
+use Mojo::IOLoop;
 
 sub start_timing {
     my ($c, $req_storage) = @_;
@@ -248,6 +249,10 @@ sub forget_all {
     #Binary::WebSocketAPI::v3::Wrapper::System::forget_all($c, {args => {forget_all => 1}});
     delete $c->stash->{redis};
     delete $c->stash->{redis_pricer};
+    if (my $id = $c->stash('proposal_array_collector_running')) {
+        Mojo::IOLoop->remove($id);
+        delete $c->stash->{proposal_array_collector_running};
+    }
 
     return;
 }

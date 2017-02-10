@@ -87,12 +87,18 @@ sub proposal_array {
     my ($c, $req_storage) = @_;
     my $msg_type = 'proposal_array';
     my $uuid;
+    my $barriers_order = {};
     #print "in proposal_array \n".Dumper($req_storage);
 
     if ($req_storage->{args}{subscribe}) {
         $uuid = &Binary::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string();
         $c->stash(proposal_array_subscriptions => { $uuid => {args => $req_storage->{args}, proposals=>{}, seq=>[]} });
         print "Sub created\n";
+        my $position = 0;
+        for my $barrier ( @{$req_storage->{args}->{barriers}} ) {
+            $barriers_order->{$barrier->{barrier}.($barrier->{barrier2}||'')} = $position++;
+        }
+        print "ORDUNG!:::".Dumper($barriers_order);
     }
 
     my $create_price_channel = sub {
@@ -106,15 +112,18 @@ sub proposal_array {
                 proposal_array_subscription => $uuid, # does not matters if there will not be any subscription
             };
             $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
-            #print "Starting gen uuid\n";
+            print "Cache creating chan: ".Dumper($cache);
             $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
             print "msg gone: ".$req_storage->{uuid}."\n";
             if ($req_storage->{uuid}) { # we are in subscr mode, so remember the sequence of streams
                 print "HWA!\n";
                 my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions');
                 if ($proposal_array_subscriptions->{$uuid}) {
-                print "HWA 2!\n";
-                    push @{$proposal_array_subscriptions->{$uuid}{seq}}, $req_storage->{uuid};
+                print "HWA 2! <<<<<<<<<<<<<<<<<<<\n";
+                    #push @{$proposal_array_subscriptions->{$uuid}{seq}}, $req_storage->{uuid};
+                    my $idx = $req_storage->{args}{barrier}.($req_storage->{args}{barrier2}||'');
+                    print "idx : $idx\n";
+                    ${$proposal_array_subscriptions->{$uuid}{seq}}[$barriers_order->{$idx}] = $req_storage->{uuid};
                     $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
                 }
             }

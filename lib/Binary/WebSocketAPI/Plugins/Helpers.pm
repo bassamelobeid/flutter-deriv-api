@@ -182,7 +182,7 @@ sub register {
             if (not $c->stash('proposal_array_collector_running')) {
 # collect proposal_array
                 print "Starting requrring...\n";
-                Mojo::IOLoop->recurring(1, sub {
+                my $proposal_array_collector_running = Mojo::IOLoop->recurring(3, sub {
                     my @proposals;
                     my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
                     for my $pa_uuid (keys %{$proposal_array_subscriptions}) {
@@ -206,7 +206,7 @@ sub register {
 
                 });
 
-                $c->stash->{proposal_array_collector_running} = 1;
+                $c->stash->{proposal_array_collector_running} = $proposal_array_collector_running;
             }
     });
 

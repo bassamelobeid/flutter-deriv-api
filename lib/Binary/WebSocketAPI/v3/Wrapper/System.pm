@@ -50,6 +50,7 @@ sub _forget_all_proposal_array {
 
     my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
     my $pa_keys = [keys %$proposal_array_subscriptions];
+    print "pa_keys: ".Dumper($pa_keys);
     for my $pa_key (@$pa_keys) {
         print "Deleting $pa_key...\n";
         for my $uuid (keys %{$proposal_array_subscriptions->{$pa_key}{proposals}}) {
