@@ -58,19 +58,15 @@ sub set_date {
     # so we want to capture any output we can that might indicate what's
     # happening
     my @cmd = (qw(sudo date -s), $date->datetime_yyyymmdd_hhmmss, '+%F %T');
-    system @cmd;
-    # ignore errors due to sigpipe?
-
-=ignore
+    diag "Running date command (time=" . time . "): @cmd";
     my ($stdout, $stderr, $exitcode) = capture {
         system @cmd;
     };
     $stdout //= '';
     $stderr //= '';
+    diag "Completed date command (time=" . time . "): @cmd";
     die "Failed to set date using this command:\n@cmd\nDo we have sudo access? (return code = $exitcode, stdout = $stdout, stderr = $stderr)"
         unless $stdout eq $date->datetime_yyyymmdd_hhmmss . "\n";
-=cut
-
     return;
 }
 
