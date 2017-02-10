@@ -41,7 +41,7 @@
         },
         "legal_allowed_markets": {
             "type": "array",
-            "minItems": 5,
+            "minItems": 4,
             "required": "1",
             "items": {
                 "type": "string",
