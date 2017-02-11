@@ -155,7 +155,7 @@ sub _get_underlying {
 
     my $cmd = $params->{price_daemon_cmd};
 
-    return unless $cmd;
+    return undef unless $cmd;
 
     if ($cmd eq 'price') {
         unless (exists $params->{symbol}) {
