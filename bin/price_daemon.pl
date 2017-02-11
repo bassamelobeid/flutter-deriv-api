@@ -7,7 +7,7 @@ use BOM::System::RedisReplicated;
 use Getopt::Long;
 use DataDog::DogStatsd::Helper;
 use BOM::RPC::v3::Contract;
-use sigtrap qw/handler signal_handler normal-signals/;
+use sigtrap handler => 'signal_handler', 'normal-signals';
 use BOM::MarketData qw(create_underlying);
 use BOM::Product::ContractFactory::Parser qw(shortcode_to_parameters);
 use Data::Dumper;
