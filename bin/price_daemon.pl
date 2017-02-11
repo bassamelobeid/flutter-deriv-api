@@ -21,10 +21,11 @@ my %required_params = (
 );
 
 GetOptions(
-    "workers=i" => \$workers,
+    "workers=i" => \my $workers,
     "queues=s"  => \my $queues,
 );
 $queues ||= 'pricer_jobs';
+$workers ||= max(1, Sys::Info->new->device("CPU")->count);
 
 # tune cache: up to 2s
 $ENV{QUANT_FRAMEWORK_HOLIDAY_CACHE} = $ENV{QUANT_FRAMEWORK_PATRIALTRADING_CACHE} = 2;    ## nocritic
