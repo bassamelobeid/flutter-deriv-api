@@ -1,22 +1,17 @@
 #!/etc/rmg/bin/perl
 use strict;
 use warnings;
-use Parallel::ForkManager;
-use JSON::XS;
-use BOM::System::RedisReplicated;
-use Getopt::Long;
-use DataDog::DogStatsd::Helper;
-use BOM::RPC::v3::Contract;
+
 use sigtrap handler => 'signal_handler', 'normal-signals';
-use BOM::MarketData qw(create_underlying);
-use BOM::Product::ContractFactory::Parser qw(shortcode_to_parameters);
-use Data::Dumper;
+
 use LWP::Simple;
-use BOM::Platform::Runtime;
+use Getopt::Long;
+
+use Parallel::ForkManager;
+
 use BOM::RPC::PriceDaemon;
-use DBIx::TransactionManager::Distributed qw(txn);
-use List::Util qw(first);
-use Time::HiRes ();
+use Sys::Info;
+use List::Util qw(max);
 
 my $internal_ip     = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 my $workers         = 4;

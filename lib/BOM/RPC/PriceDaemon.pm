@@ -3,6 +3,18 @@ package BOM::RPC::PriceDaemon;
 use strict;
 use warnings;
 
+use DBIx::TransactionManager::Distributed qw(txn);
+use List::Util qw(first);
+use Time::HiRes ();
+use BOM::Platform::Runtime;
+use BOM::MarketData qw(create_underlying);
+use BOM::Product::ContractFactory::Parser qw(shortcode_to_parameters);
+use Data::Dumper;
+use JSON::XS;
+use BOM::System::RedisReplicated;
+use DataDog::DogStatsd::Helper;
+use BOM::RPC::v3::Contract;
+
 sub process_job {
     my ($self, $redis, $next, $params) = @_;
 
