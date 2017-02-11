@@ -32,6 +32,10 @@ $ENV{QUANT_FRAMEWORK_HOLIDAY_CACHE} = $ENV{QUANT_FRAMEWORK_PATRIALTRADING_CACHE}
 my $pm = Parallel::ForkManager->new($workers);
 
 my @running_forks;
+sub signal_handler {
+    kill KILL => @running_forks;
+    exit 0;
+}
 
 $pm->run_on_start(
     sub {
@@ -47,11 +51,6 @@ $pm->run_on_finish(
         DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.forks.count', (scalar @running_forks), {tags => ['tag:' . $internal_ip]});
         warn "Fork [$pid] ended with exit code [$exit_code]\n";
     });
-
-sub signal_handler {
-    kill KILL => @running_forks;
-    exit 0;
-}
 
 while (1) {
     $pm->start and next;
