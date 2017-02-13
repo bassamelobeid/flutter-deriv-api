@@ -16,10 +16,11 @@ sub forget {
     };
 }
 use Data::Dumper;
+
 sub forget_all {
     my ($c, $req_storage) = @_;
     print "AAAAAAAAAA\n";
-    print $req_storage->{args}->{forget_all}."\n===================\n";
+    print $req_storage->{args}->{forget_all} . "\n===================\n";
     print Dumper($req_storage);
 
     my %removed_ids;
@@ -50,7 +51,7 @@ sub _forget_all_proposal_array {
 
     my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
     my $pa_keys = [keys %$proposal_array_subscriptions];
-    print "pa_keys: ".Dumper($pa_keys);
+    print "pa_keys: " . Dumper($pa_keys);
     for my $pa_key (@$pa_keys) {
         print "Deleting $pa_key...\n";
         for my $uuid (keys %{$proposal_array_subscriptions->{$pa_key}{proposals}}) {
@@ -59,7 +60,7 @@ sub _forget_all_proposal_array {
         }
         delete $proposal_array_subscriptions->{$pa_key};
     }
-    $c->stash(proposal_array_subscriptions=>$proposal_array_subscriptions);
+    $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
 
     return $pa_keys;
 }
@@ -112,14 +113,14 @@ sub _forget_transaction_subscription {
 sub _forget_proposal_array {
     my ($c, $id) = @_;
     my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
-    print "_forget_proposal_array: ".Dumper($proposal_array_subscriptions);
+    print "_forget_proposal_array: " . Dumper($proposal_array_subscriptions);
     if ($proposal_array_subscriptions->{$id}) {
         for my $uuid (keys %{$proposal_array_subscriptions->{$id}{proposals}}) {
             print "forgeting $uuid\n";
             _forget_pricing_subscription($c, $uuid);
         }
         delete $proposal_array_subscriptions->{$id};
-        $c->stash(proposal_array_subscriptions=>$proposal_array_subscriptions);
+        $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
         return [$id];
     }
     return [];

@@ -182,33 +182,34 @@ sub register {
             if (not $c->stash('proposal_array_collector_running')) {
 # collect proposal_array
                 print "Starting requrring...\n";
-                my $proposal_array_collector_running = Mojo::IOLoop->recurring(3, sub {
-                    my @proposals;
-                    my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
-                    for my $pa_uuid (keys %{$proposal_array_subscriptions}) {
-                        print "pa_uuid : $pa_uuid\n";
-                        for my $uuid (@{$proposal_array_subscriptions->{$pa_uuid}{seq}}) {
-                            print "uuid: $uuid\n";
-                            push @proposals, pop @{$proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid}} || {} ;
-                            $proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid} = [];
+                my $proposal_array_collector_running = Mojo::IOLoop->recurring(
+                    3,
+                    sub {
+                        my @proposals;
+                        my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
+                        for my $pa_uuid (keys %{$proposal_array_subscriptions}) {
+                            print "pa_uuid : $pa_uuid\n";
+                            for my $uuid (@{$proposal_array_subscriptions->{$pa_uuid}{seq}}) {
+                                print "uuid: $uuid\n";
+                                push @proposals, pop @{$proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid}} || {};
+                                $proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid} = [];
+                            }
+                            #print "props to pack back: ".Dumper(\@proposals);
+                            my $results = {
+                                proposal_array => {proposals => [map { delete $_->{msg_type}; $_ } @proposals]},
+                                id             => $pa_uuid,
+                                echo_req       => $proposal_array_subscriptions->{$pa_uuid}{args},
+                                msg_type       => 'proposal_array',
+                            };
+                            print "WOW!: " . Dumper($results);
+                            $c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}});
                         }
-                        #print "props to pack back: ".Dumper(\@proposals);
-                        my $results = {
-                            proposal_array => { proposals => [map {delete $_->{msg_type}; $_} @proposals] },
-                            id => $pa_uuid,
-                            echo_req => $proposal_array_subscriptions->{$pa_uuid}{args},
-                            msg_type => 'proposal_array',
-                        };
-                        print "WOW!: ".Dumper($results);
-                        $c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}});
-                    }
 
-
-                });
+                    });
 
                 $c->stash->{proposal_array_collector_running} = $proposal_array_collector_running;
             }
-    });
+        });
 
     return;
 }

@@ -18,7 +18,7 @@ use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Format::Util::Numbers qw(to_monetary_number_format);
 use Price::Calculator;
 use Clone::PP qw(clone);
-use Future::Mojo ();
+use Future::Mojo  ();
 use Future::Utils ();
 
 # Number of RPC requests a single active websocket call
@@ -82,7 +82,9 @@ Issues a separate RPC request for each barrier, then collates the results
 in a single response back to the client.
 
 =cut
+
 use Data::Dumper;
+
 sub proposal_array {
     my ($c, $req_storage) = @_;
     my $msg_type = 'proposal_array';
@@ -92,41 +94,46 @@ sub proposal_array {
 
     if ($req_storage->{args}{subscribe}) {
         $uuid = &Binary::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string();
-        $c->stash(proposal_array_subscriptions => { $uuid => {args => $req_storage->{args}, proposals=>{}, seq=>[]} });
+        $c->stash(
+            proposal_array_subscriptions => {
+                $uuid => {
+                    args      => $req_storage->{args},
+                    proposals => {},
+                    seq       => []}});
         print "Sub created\n";
         my $position = 0;
-        for my $barrier ( @{$req_storage->{args}->{barriers}} ) {
-            $barriers_order->{$barrier->{barrier}.($barrier->{barrier2}||'')} = $position++;
+        for my $barrier (@{$req_storage->{args}->{barriers}}) {
+            $barriers_order->{$barrier->{barrier} . ($barrier->{barrier2} || '')} = $position++;
         }
-        print "ORDUNG!:::".Dumper($barriers_order);
+        print "ORDUNG!:::" . Dumper($barriers_order);
     }
 
     my $create_price_channel = sub {
-            my ($c, $rpc_response, $req_storage) = @_;
-            #print "from ]sub: ".Dumper($req_storage->{args});
-            #print "from ]sub: ".Dumper($rpc_response->{contract_parameters});
-            my $cache = {
-                longcode                    => $rpc_response->{longcode},
-                contract_parameters         => delete $rpc_response->{contract_parameters},
-                payout                      => $rpc_response->{payout},
-                proposal_array_subscription => $uuid, # does not matters if there will not be any subscription
-            };
-            $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
-            print "Cache creating chan: ".Dumper($cache);
-            $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
-            print "msg gone: ".$req_storage->{uuid}."\n";
-            if ($req_storage->{uuid}) { # we are in subscr mode, so remember the sequence of streams
-                print "HWA!\n";
-                my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions');
-                if ($proposal_array_subscriptions->{$uuid}) {
+        my ($c, $rpc_response, $req_storage) = @_;
+        #print "from ]sub: ".Dumper($req_storage->{args});
+        #print "from ]sub: ".Dumper($rpc_response->{contract_parameters});
+        my $cache = {
+            longcode                    => $rpc_response->{longcode},
+            contract_parameters         => delete $rpc_response->{contract_parameters},
+            payout                      => $rpc_response->{payout},
+            proposal_array_subscription => $uuid,                                         # does not matters if there will not be any subscription
+        };
+        $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
+        print "Cache creating chan: " . Dumper($cache);
+        $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
+        print "msg gone: " . $req_storage->{uuid} . "\n";
+        if ($req_storage->{uuid}) {                                                       # we are in subscr mode, so remember the sequence of streams
+            print "HWA!\n";
+            my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions');
+            if ($proposal_array_subscriptions->{$uuid}) {
                 print "HWA 2! <<<<<<<<<<<<<<<<<<<\n";
-                    #push @{$proposal_array_subscriptions->{$uuid}{seq}}, $req_storage->{uuid};
-                    my $idx = $req_storage->{args}{barrier}.($req_storage->{args}{barrier2}||'');
-                    print "idx : $idx\n";
-                    ${$proposal_array_subscriptions->{$uuid}{seq}}[$barriers_order->{$idx}] = $req_storage->{uuid};
-                    $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
-                }
+                #push @{$proposal_array_subscriptions->{$uuid}{seq}}, $req_storage->{uuid};
+                my $idx = $req_storage->{args}{barrier} . ($req_storage->{args}{barrier2} || '');
+                print "idx : $idx\n";
+                ${$proposal_array_subscriptions->{$uuid}{seq}}[$barriers_order->{$idx}] = $req_storage->{uuid};
+                $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
             }
+        }
     };
 
     # Process a few RPC calls at a time.
@@ -136,17 +143,17 @@ sub proposal_array {
         # Upper limit on total time taken - we don't really
         # care how long individual requests take, but we do
         # expect all the calls to complete in a reasonable time
-        Future::Mojo->new_timer(
-            PARALLEL_RPC_TIMEOUT
-        )->transform(done => sub {
-            return +{ error => $c->l('Request timed out') }
-        }),
+        Future::Mojo->new_timer(PARALLEL_RPC_TIMEOUT)->transform(
+            done => sub {
+                return +{error => $c->l('Request timed out')};
+            }
+        ),
         Future::Utils::fmap {
             my $barriers = shift;
-            print "in fmap\n".Dumper($barriers) ;
+            print "in fmap\n" . Dumper($barriers);
 
             # Shallow copy of $args since we want to override a few top-level keys for the RPC calls
-            my $args = { %{ $req_storage->{args} } };
+            my $args = {%{$req_storage->{args}}};
 
             $args->{barrier} = $barriers->{barrier};
             $args->{barrier2} = $barriers->{barrier2} if $barriers->{barrier2};
@@ -155,74 +162,68 @@ sub proposal_array {
             #@{$args}{keys %$barriers} = values %$barriers;
             my $f = Future::Mojo->new;
             $c->call_rpc({
-                args        => $args,
-                method      => 'send_ask',
-                msg_type    => 'proposal',
-                call_params => {
-                    language              => $c->stash('language'),
-                    app_markup_percentage => $c->stash('app_markup_percentage'),
-                    landing_company       => $c->landing_company_name,
-                },
-                error => sub {
-                    $create_price_channel->(@_);
-                },
-                success => sub {
-                    $create_price_channel->(@_);
-                },
-                response => sub {
-                    my ($rpc_response, $api_response, $req_storage) = @_;
-                    if($rpc_response->{error}) {
-                        print "before f-done1\n";
+                    args        => $args,
+                    method      => 'send_ask',
+                    msg_type    => 'proposal',
+                    call_params => {
+                        language              => $c->stash('language'),
+                        app_markup_percentage => $c->stash('app_markup_percentage'),
+                        landing_company       => $c->landing_company_name,
+                    },
+                    error => sub {
+                        $create_price_channel->(@_);
+                    },
+                    success => sub {
+                        $create_price_channel->(@_);
+                    },
+                    response => sub {
+                        my ($rpc_response, $api_response, $req_storage) = @_;
+                        if ($rpc_response->{error}) {
+                            print "before f-done1\n";
+                            $f->done($api_response);
+                            return;
+                        }
+
+                        $api_response->{passthrough} = $req_storage->{args}->{passthrough};
+                        if (my $uuid = $req_storage->{uuid}) {
+                            $api_response->{proposal}->{id} = $uuid;
+                        } else {
+                            $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
+                        }
+                        print "before f-done2\n\n\n";
                         $f->done($api_response);
                         return;
-                    }
-
-                    $api_response->{passthrough} = $req_storage->{args}->{passthrough};
-                    if (my $uuid = $req_storage->{uuid}) {
-                        $api_response->{proposal}->{id} = $uuid;
-                    } else {
-                        $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
-                    }
-                    print "before f-done2\n\n\n";
-                    $f->done($api_response);
-                    return;
-                },
-            });
-            $f;
-        } foreach => [ @{$req_storage->{args}->{barriers}} ],
-          concurrent => PARALLEL_RPC_COUNT
-    )->on_ready(sub {
-        my $f = shift;
-        print "ON READY!!!!\n";
-        try {
-            # should not throw 'cos we do not $future->fail
-            my @result = $f->get;
-            delete @{$_}{qw(msg_type passthrough)} for @result;
-            print "Collect res from on_ready: ".Dumper(\@result);
-            # Return a single result back to the client.
-            $c->send({
-                json => { 
-                    echo_req => $req_storage->{args},
-                    proposal_array => {
-                        proposals => \@result
                     },
-                    $uuid ? (id => $uuid) : (),
-                    msg_type => $msg_type, 
-                }
-            });
-        } catch {
-            warn "Failed - $_";
-            $c->send({
-                json => $c->wsp_error(
-                    $msg_type, 
-                    'ProposalArrayFailure',
-                    'Sorry, an error occurred while processing your request.'
-                )
-            });
-        };
-        # Capture this to keep the Future alive until it's done
-        undef $retained;
-    });
+                });
+            $f;
+        }
+        foreach    => [@{$req_storage->{args}->{barriers}}],
+        concurrent => PARALLEL_RPC_COUNT
+        )->on_ready(
+        sub {
+            my $f = shift;
+            print "ON READY!!!!\n";
+            try {
+                # should not throw 'cos we do not $future->fail
+                my @result = $f->get;
+                delete @{$_}{qw(msg_type passthrough)} for @result;
+                print "Collect res from on_ready: " . Dumper(\@result);
+                # Return a single result back to the client.
+                $c->send({
+                        json => {
+                            echo_req => $req_storage->{args},
+                            proposal_array => {proposals => \@result},
+                            $uuid ? (id => $uuid) : (),
+                            msg_type => $msg_type,
+                        }});
+            }
+            catch {
+                warn "Failed - $_";
+                $c->send({json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')});
+            };
+            # Capture this to keep the Future alive until it's done
+            undef $retained;
+        });
 
     # Send nothing back to the client yet. We'll push a response
     # once the RPC calls complete or time out
@@ -371,7 +372,7 @@ sub _pricing_channel_for_ask {
     my ($c, $args, $cache) = @_;
     my $price_daemon_cmd = 'price';
 
-    print "inicial args for _serial".Dumper($args);
+    print "inicial args for _serial" . Dumper($args);
 
     my %args_hash = %{$args};
 
@@ -570,7 +571,6 @@ sub process_ask_event {
     }
     return;
 }
-
 
 sub _price_stream_results_adjustment {
     my $c                     = shift;
