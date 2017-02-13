@@ -52,6 +52,11 @@ sub from_mojo {
 
     $args->{domain_name} = $request->url->to_abs->host;
 
+    # set brand if passed in url
+    if (my $brand = $request->params->to_hash->{brand}) {
+        $args->{brand} = $brand;
+    }
+
     my $client_country = lc($request->headers->header('CF-IPCOUNTRY') || 'aq');
     $client_country = 'aq' if ($client_country eq 'xx');
     $args->{country_code} = $client_country;
