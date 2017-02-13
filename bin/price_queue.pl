@@ -51,3 +51,4 @@ while (1) {
     $redis->del('pricer_jobs_jp');
     $redis->lpush('pricer_jobs_jp', @jp_keys) if @jp_keys;
 }
+

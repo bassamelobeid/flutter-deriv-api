@@ -19,8 +19,12 @@ use Date::Utility;
 use POSIX qw(floor);
 use Time::HiRes qw(clock_nanosleep CLOCK_REALTIME TIMER_ABSTIME);
 
+# How long each Redis key should persist for - we'll refresh the list
+# when the key(s) expire
+use constant JOB_QUEUE_TTL => 60;
+
 use Log::Any qw($log);
-use Log::Any::Adapter qw(Stderr);
+use Log::Any::Adapter qw(Stderr), log_level => 'info';
 
 while(1) {
     my $start = Time::HiRes::time;
@@ -38,12 +42,12 @@ while(1) {
     my @jobs;
     my $skipped = 0;
     for my $symbol (@symbols) {
+        my $symbol_start = Time::HiRes::time;
         my $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol({
             symbol => $symbol
         });
         $now = Time::HiRes::time;
-        $log->debugf("Retrieved contracts for %s - %.2fms", $symbol, 1000 * ($now - $start));
-        $start = $now;
+        $log->debugf("Retrieved contracts for %s - %.2fms", $symbol, 1000 * ($now - $symbol_start));
 
         for my $contract_parameters (@{$contracts_for->{available}}) {
             # Expired entries 
@@ -84,10 +88,17 @@ while(1) {
             }
         }
     }
+    DataDog::DogStatsd::Helper::stats_timing("pricer_queue.japan.jobs", 0 + @jobs);
     $log->debugf("Total of %d jobs to process, %d skipped", 0 + @jobs, $skipped);
     my $redis = BOM::System::RedisReplicated::redis_pricer;
-warn "redis = $redis\n";
-    $redis->setex("PRICER_KEYS::" . encode_json($_), 10, 1) for @jobs;
+    # We set TTL to slightly higher (one full pricing interval) than the refresh time, in case there's any
+    # delay on starting the next cycle
+    $redis->setex("PRICER_KEYS::" . encode_json($_), 1 + JOB_QUEUE_TTL, "1") for @jobs;
+
+    # Using a timing metric here so we can get min/max/avg
+    DataDog::DogStatsd::Helper::stats_timing("pricer_queue.japan.jobs.count", 0 + @jobs);
+    DataDog::DogStatsd::Helper::stats_timing("pricer_queue.japan.jobs.gather_time", 1000 * ($now - $start));
+
     # Sleep to start of next minute
     {
         my $now = Time::HiRes::time;
