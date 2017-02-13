@@ -67,13 +67,10 @@ sub mt5_new_account {
         # 5 Sept 2016: only CR and Champion fully authenticated client can open MT real a/c
         return BOM::RPC::v3::Utility::permission_error() if ($client->landing_company->short !~ '^(?:costarica|champion)$');
 
-        if ($account_type eq 'financial') {
-            return BOM::RPC::v3::Utility::permission_error() unless $client->client_fully_authenticated;
-
-            BOM::RPC::v3::Utility::create_error({
-                    code              => 'InvalidSubAccountType',
-                    message_to_client => localize('Invalid sub account type.')}) unless ($mt5_account_type =~ /^(?:cent|standard|stp)$/);
-        }
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidSubAccountType',
+                message_to_client => localize('Invalid sub account type.')}
+        ) if ($account_type eq 'financial' and $mt5_account_type !~ /^(?:cent|standard|stp)$/);
 
         # get MT company from countries.yml
         my $mt_key         = 'mt_' . $account_type . '_company';
