@@ -19,7 +19,7 @@ GetOptions(
     "workers=i" => \my $workers,
     "queues=s"  => \my $queues,
 );
-$queues ||= 'pricer_jobs';
+$queues ||= 'pricer_jobs,pricer_jobs_jp';
 $workers ||= max(1, Sys::Info->new->device("CPU")->count);
 
 my @running_forks;
