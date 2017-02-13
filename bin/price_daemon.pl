@@ -54,7 +54,9 @@ $pm->run_on_finish(
 
 while (1) {
     $pm->start and next;
-    my $daemon = BOM::RPC::PriceDaemon->new;
+    my $daemon = BOM::RPC::PriceDaemon->new(
+        tags => [ 'tag:' . $internal_ip ]
+    );
     $daemon->run(queues => [ split /,/, $queues ]);
     $pm->finish;
 }
