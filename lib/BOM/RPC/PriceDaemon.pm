@@ -77,78 +77,78 @@ sub run {
     my $tv                    = [Time::HiRes::gettimeofday];
     my $stat_count            = {};
     my $current_pricing_epoch = time;
-    for my $queue (@{$args{queues}}) {
-        while(my $key = $redis->brpop($queue, 0)) {
-            my $tv_now = [Time::HiRes::gettimeofday];
-            DataDog::DogStatsd::Helper::stats_timing(
-                'pricer_daemon.idle.time',
-                1000 * Time::HiRes::tv_interval($tv, $tv_now),
-                {tags => $self->tags});
-            $tv = $tv_now;
+    while(my $key = $redis->brpop(@{$args{queues}}, 0)) {
+        # Remember that we had some jobs
+        my $tv_now = [Time::HiRes::gettimeofday];
+        DataDog::DogStatsd::Helper::stats_timing(
+            'pricer_daemon.idle.time',
+            1000 * Time::HiRes::tv_interval($tv, $tv_now),
+            {tags => $self->tags});
+        $tv = $tv_now;
 
-            if (Time::HiRes::tv_interval($tv_appconfig, $tv_now) >= 15) {
-                my $rev = BOM::Platform::Runtime->instance->app_config->check_for_update;
-                # Will return empty if we didn't need to update, so make sure we apply actual
-                # version before our check here
-                $rev ||= BOM::Platform::Runtime->instance->app_config->current_revision;
-                my $age = Time::HiRes::time - $rev;
-                warn "Config age is >90s - $age\n" if $age > 90;
-                $tv_appconfig = $tv_now;
-            }
-
-            my $next = $key->[1];
-            next unless $next =~ s/^PRICER_KEYS:://;
-            my $payload = JSON::XS::decode_json($next);
-            my $params  = {@{$payload}};
-
-            # If incomplete or invalid keys somehow got into pricer,
-            # delete them here.
-            unless ($self->_validate_params($params)) {
-                warn "Invalid parameters: $next";
-                $redis->del($key->[1], $next);
-                next;
-            }
-
-            my $response = txn {
-                $self->process_job($redis, $next, $params);
-            }
-            qw(feed chronicle) or next;
-
-            warn "Pricing time too long: "
-                . $response->{rpc_time} . ': '
-                . join(', ', map $_ . " = " . ($params->{$_} // '"undef"'), sort keys %$params) . "\n"
-                if $response->{rpc_time} > 1000;
-
-            my $subscribers_count = $redis->publish($key->[1], encode_json($response));
-            # if None was subscribed, so delete the job
-            if ($subscribers_count == 0) {
-                $redis->del($key->[1], $next);
-            }
-
-            $tv_now = [Time::HiRes::gettimeofday];
-
-            DataDog::DogStatsd::Helper::stats_count('pricer_daemon.queue.subscribers', $subscribers_count, {tags => $self->tags});
-            DataDog::DogStatsd::Helper::stats_timing(
-                'pricer_daemon.process.time',
-                1000 * Time::HiRes::tv_interval($tv, $tv_now),
-                {tags => $self->tags});
-            my $end_time = Time::HiRes::time;
-            DataDog::DogStatsd::Helper::stats_timing(
-                'pricer_daemon.process.end_time',
-                1000 * ($end_time - int($end_time)),
-                {tags => $self->tags});
-            $stat_count->{$params->{price_daemon_cmd}}++;
-            if ($current_pricing_epoch != time) {
-
-                for my $key (keys %$stat_count) {
-                    DataDog::DogStatsd::Helper::stats_gauge("pricer_daemon.$key.count_per_second", $stat_count->{$key},
-                        {tags => $self->tags});
-                }
-                $stat_count            = {};
-                $current_pricing_epoch = time;
-            }
-            $tv = $tv_now;
+        if (Time::HiRes::tv_interval($tv_appconfig, $tv_now) >= 15) {
+            my $rev = BOM::Platform::Runtime->instance->app_config->check_for_update;
+            # Will return empty if we didn't need to update, so make sure we apply actual
+            # version before our check here
+            $rev ||= BOM::Platform::Runtime->instance->app_config->current_revision;
+            my $age = Time::HiRes::time - $rev;
+            warn "Config age is >90s - $age\n" if $age > 90;
+            $tv_appconfig = $tv_now;
         }
+
+        warn "Job from queue " . $key->[0] . "\n";
+        my $next = $key->[1];
+        next unless $next =~ s/^PRICER_KEYS:://;
+        my $payload = JSON::XS::decode_json($next);
+        my $params  = {@{$payload}};
+
+        # If incomplete or invalid keys somehow got into pricer,
+        # delete them here.
+        unless ($self->_validate_params($params)) {
+            warn "Invalid parameters: $next";
+            $redis->del($key->[1], $next);
+            next;
+        }
+
+        my $response = txn {
+            $self->process_job($redis, $next, $params);
+        }
+        qw(feed chronicle) or next;
+
+        warn "Pricing time too long: "
+            . $response->{rpc_time} . ': '
+            . join(', ', map $_ . " = " . ($params->{$_} // '"undef"'), sort keys %$params) . "\n"
+            if $response->{rpc_time} > 1000;
+
+        my $subscribers_count = $redis->publish($key->[1], encode_json($response));
+        # if None was subscribed, so delete the job
+        if ($subscribers_count == 0) {
+            $redis->del($key->[1], $next);
+        }
+
+        $tv_now = [Time::HiRes::gettimeofday];
+
+        DataDog::DogStatsd::Helper::stats_count('pricer_daemon.queue.subscribers', $subscribers_count, {tags => $self->tags});
+        DataDog::DogStatsd::Helper::stats_timing(
+            'pricer_daemon.process.time',
+            1000 * Time::HiRes::tv_interval($tv, $tv_now),
+            {tags => $self->tags});
+        my $end_time = Time::HiRes::time;
+        DataDog::DogStatsd::Helper::stats_timing(
+            'pricer_daemon.process.end_time',
+            1000 * ($end_time - int($end_time)),
+            {tags => $self->tags});
+        $stat_count->{$params->{price_daemon_cmd}}++;
+        if ($current_pricing_epoch != time) {
+
+            for my $key (keys %$stat_count) {
+                DataDog::DogStatsd::Helper::stats_gauge("pricer_daemon.$key.count_per_second", $stat_count->{$key},
+                    {tags => $self->tags});
+            }
+            $stat_count            = {};
+            $current_pricing_epoch = time;
+        }
+        $tv = $tv_now;
     }
 }
 
