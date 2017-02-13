@@ -96,7 +96,7 @@ sub _forget_pricing_subscription {
                     delete $pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd}->{$uuid};
                 }
             }
-	    delete $pricing_channel->{$channel}{subscription};
+            delete $pricing_channel->{$channel}{subscription};
         }
         $c->stash('pricing_channel' => $pricing_channel);
     }

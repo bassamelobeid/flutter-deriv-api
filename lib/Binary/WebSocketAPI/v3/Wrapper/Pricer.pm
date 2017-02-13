@@ -324,8 +324,8 @@ sub _create_pricer_channel {
         and $args->{subscribe} == 1
         and not exists $pricing_channel->{$redis_channel}
         and not $skip_redis_subscr)
-      {
-        $pricing_channel->{uuid}{$uuid}{subscription} //= Binary::WebSocketAPI::v3::Instance::Subscription->new($redis_channel, $uuid, $c );
+    {
+        $pricing_channel->{uuid}{$uuid}{subscription} //= Binary::WebSocketAPI::v3::Instance::Subscription->new($redis_channel, $uuid, $c);
     }
 
     $pricing_channel->{$redis_channel}->{$subchannel}->{uuid}          = $uuid;
