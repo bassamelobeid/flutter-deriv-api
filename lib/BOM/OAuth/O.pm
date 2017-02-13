@@ -8,6 +8,7 @@ use Email::Valid;
 use Mojo::Util qw(url_escape);
 use List::MoreUtils qw(any firstval);
 use HTML::Entities;
+use Format::Util::Strings qw( defang );
 
 use Client::Account;
 use LandingCompany::Registry;
@@ -25,7 +26,7 @@ sub _oauth_model {
 sub authorize {
     my $c = shift;
 
-    my ($app_id, $state, $response_type) = map { $c->param($_) // undef } qw/ app_id state response_type /;
+    my ($app_id, $state, $response_type) = map { defang($c->param($_)) // undef } qw/ app_id state response_type /;
 
     # $response_type ||= 'code';    # default to Authorization Code
     $response_type = 'token';    # only support token
@@ -58,7 +59,7 @@ sub authorize {
     my $client;
     if (    $c->req->method eq 'POST'
         and ($c->csrf_token eq ($c->param('csrftoken') // ''))
-        and $c->param('login'))
+        and defang($c->param('login')))
     {
         $client = $c->_login($app) or return;
         $c->session('_is_logined', 1);
@@ -127,9 +128,9 @@ sub authorize {
     my $is_all_approved = 0;
     if (    $c->req->method eq 'POST'
         and ($c->csrf_token eq ($c->param('csrftoken') // ''))
-        and ($c->param('cancel_scopes') || $c->param('confirm_scopes')))
+        and (defang($c->param('cancel_scopes')) || deang($c->param('confirm_scopes'))))
     {
-        if ($c->param('confirm_scopes')) {
+        if (defang($c->param('confirm_scopes'))) {
             ## approval on all loginids
             foreach my $c1 ($user->clients) {
                 $is_all_approved = $oauth_model->confirm_scope($app_id, $c1->loginid);
@@ -201,7 +202,7 @@ sub _login {
 
     my ($user, $client, $last_login, $err);
 
-    my ($email, $password) = map { $c->param($_) } qw/ email password /;
+    my ($email, $password) = map { defang($c->param($_)) // undef } qw/ email password /;
     my $brand = $c->stash('brand');
     LOGIN:
     {
