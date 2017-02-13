@@ -129,7 +129,6 @@ sub proposal_array {
             }
     };
 
-
     # Process a few RPC calls at a time.
     my $retained;
 
@@ -515,16 +514,7 @@ sub process_bid_event {
 
 sub process_ask_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
-
-    _process_ask_proposal_event(@_);
-    return;
-}
-
-sub _process_ask_proposal_event {
-    my ($c, $response, $redis_channel, $pricing_channel) = @_;
     my $type = 'proposal';
-
-
 
     my $theo_probability = delete $response->{theo_probability};
     foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
