@@ -183,7 +183,6 @@ sub _get_ask {
                     ? $contract->payout
                     : $contract->ask_price;
                 $response = BOM::RPC::v3::Utility::create_error({
-                        continue_price_stream => $contract->continue_price_stream,
                         message_to_client     => $message_to_client,
                         code                  => $code,
                         details               => {
@@ -198,7 +197,6 @@ sub _get_ask {
 
             } else {
                 $response = BOM::RPC::v3::Utility::create_error({
-                        continue_price_stream => $contract->continue_price_stream,
                         message_to_client     => $message_to_client,
                         code                  => $code,
                         details               => {
