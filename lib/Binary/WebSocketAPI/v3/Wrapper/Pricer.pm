@@ -707,10 +707,9 @@ sub _create_error_message {
     my ($c, $type, $response, $stash_data) = @_;
     my ($err_code, $err_message, $err_details);
 
+    Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{cache}{proposal_array_subscription} || $stash_data->{uuid});
+
     my $error = $response->{error} || {};
-    if (not($error->{continue_price_stream}) and $stash_data->{uuid}) {
-        Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid});
-    }
 
     if ($response->{error}) {
         $err_code    = $response->{error}->{code};
