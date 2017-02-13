@@ -22,7 +22,7 @@
           "enum": ["demo", "gaming", "financial"],
           "description": "Account type."
         },
-        "sub_account_type": {
+        "mt5_account_type": {
           "enum": ["cent", "standard", "stp"],
           "description": "Sub account type, present only when account type is financial."
         },
