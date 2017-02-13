@@ -91,7 +91,7 @@ sub mt5_new_account {
 
         $group = 'real\\' . $mt_company;
         $group .= "_$mt5_account_type" if $account_type eq 'financial';
-        $group .= "_$residence" if (first { $residence eq $_ } @{$brand->exclusive_countries});
+        $group .= "_$residence" if (first { $residence eq $_ } @{$brand->countries_with_own_mt5_group});
     } else {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccountType',
