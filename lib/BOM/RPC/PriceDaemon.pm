@@ -93,7 +93,6 @@ sub run {
             $tv_appconfig = $tv_now;
         }
 
-        warn "Job from queue " . $key->[0] . "\n";
         my $next = $key->[1];
         next unless $next =~ s/^PRICER_KEYS:://;
         my $payload = JSON::XS::decode_json($next);
@@ -126,7 +125,7 @@ sub run {
         $tv_now = [Time::HiRes::gettimeofday];
 
         DataDog::DogStatsd::Helper::stats_count('pricer_daemon.queue.subscribers', $subscribers_count, {tags => $self->tags});
-        DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.time', 1000 * Time::HiRes::tv_interval($tv, $tv_now), {tags => $self->tags});
+        DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.time', 1000 * Time::HiRes::tv_interval($tv, $tv_now), {tags => [ @{$self->tags}, 'tag:' . $key->[0] ]});
         my $end_time = Time::HiRes::time;
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.end_time', 1000 * ($end_time - int($end_time)), {tags => $self->tags});
         $stat_count->{$params->{price_daemon_cmd}}++;
