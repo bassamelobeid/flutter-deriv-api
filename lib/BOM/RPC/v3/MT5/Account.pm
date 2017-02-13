@@ -53,7 +53,7 @@ sub mt5_new_account {
     my $client           = $params->{client};
     my $args             = $params->{args};
     my $account_type     = delete $args->{account_type};
-    my $sub_account_type = delete $args->{sub_account_type} // '';
+    my $mt5_account_type = delete $args->{mt5_account_type} // '';
     my $brand            = Brands->new(name => request()->brand);
 
     my $group;
@@ -72,7 +72,7 @@ sub mt5_new_account {
 
             BOM::RPC::v3::Utility::create_error({
                     code              => 'InvalidSubAccountType',
-                    message_to_client => localize('Invalid sub account type.')}) unless ($sub_account_type =~ /^(?:cent|standard|stp)$/);
+                    message_to_client => localize('Invalid sub account type.')}) unless ($mt5_account_type =~ /^(?:cent|standard|stp)$/);
         }
 
         # get MT company from countries.yml
@@ -89,7 +89,7 @@ sub mt5_new_account {
         }
 
         $group = 'real\\' . $mt_company;
-        $group .= "_$sub_account_type" if $account_type eq 'financial';
+        $group .= "_$mt5_account_type" if $account_type eq 'financial';
         $group .= "_$residence" if (first { $residence eq $_ } @{$brand->exclusive_countries});
     } else {
         return BOM::RPC::v3::Utility::create_error({
@@ -155,7 +155,7 @@ sub mt5_new_account {
         login        => $mt5_login,
         balance      => $balance,
         account_type => $account_type,
-        ($sub_account_type) ? (sub_account_type => $sub_account_type) : ()};
+        ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()};
 }
 
 sub _check_logins {
