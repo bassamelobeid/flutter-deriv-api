@@ -38,12 +38,7 @@ set_absolute_time($now->epoch);
 
 my $blackout_start = $now->minus_time_interval('1h');
 my $blackout_end   = $now->plus_time_interval('1h');
-
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'economic_events',
-    {
-        recorded_date => $now,
-        events        => [{
+my $events = [{
                 symbol                => 'USD',
                 release_date          => $now->epoch,
                 blankout              => $blackout_start->epoch,
@@ -63,8 +58,18 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 event_name            => 'Test tentative',
                 impact                => 5,
             }
-        ],
+        ];
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'economic_events',
+    {
+        recorded_date => $now,
+        events        => $events,
     });
+
+Volatility::Seasonality->new(
+    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
+    chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
+)->generate_economic_event_seasonality({underlying_symbol => 'frxEURUSD', economic_events => $events});
 
 my $contract_args = {
     underlying   => 'frxEURUSD',
