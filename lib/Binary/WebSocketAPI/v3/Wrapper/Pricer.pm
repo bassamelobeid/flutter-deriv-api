@@ -209,13 +209,17 @@ sub proposal_array {
                 delete @{$_}{qw(msg_type passthrough)} for @result;
                 print "Collect res from on_ready: " . Dumper(\@result);
                 # Return a single result back to the client.
-                $c->send({
+                my $res = {
                         json => {
                             echo_req => $req_storage->{args},
-                            proposal_array => {proposals => \@result},
-                            $uuid ? (id => $uuid) : (),
+                            proposal_array => {
+                                proposals => \@result,
+                                $uuid ? (id => $uuid) : (),
+                            },
                             msg_type => $msg_type,
-                        }});
+                        }};
+                print "SEND!!!!! (rpc firs resp) :".Dumper($res);        
+                $c->send($res);
             }
             catch {
                 warn "Failed - $_";
