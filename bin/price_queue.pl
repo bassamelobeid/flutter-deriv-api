@@ -38,7 +38,7 @@ while (1) {
 
     # Separate out JP prices, they're handled by different servers and we expect a near-constant load for them
     my @jp_keys = extract_by {
-        /currency,JPY/
+        /"landing_company","japan/
     } @keys;
 
     DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.size', 0 + @keys, {tags => ['tag:' . $internal_ip]});
