@@ -111,6 +111,18 @@ sub authorize {
     my $loginid = $client->loginid;
     my $user = BOM::Platform::User->new({email => $client->email}) or die "no user for email " . $client->email;
 
+    my $lc = $client->landing_company;
+    if (grep { $brand_name ne $_ } @{$lc->allowed_for_brands}) {
+        return $c->render(
+            template  => _get_login_template_name($app_id, $brand_name),
+            layout    => $brand_name,
+            app       => $app,
+            error     => localize('This account is unavailable. For any questions please contact Customer Support.'),
+            r         => $c->stash('request'),
+            csrftoken => $c->csrf_token,
+        );
+    }
+
     ## confirm scopes
     my $is_all_approved = 0;
     if (    $c->req->method eq 'POST'
@@ -189,7 +201,8 @@ sub _login {
 
     my ($user, $client, $last_login, $err);
 
-    my ($email, $password, $brand) = ($c->param('email'), $c->param('password'), $c->stash('brand'));
+    my ($email, $password) = map { $c->param($_) } qw/ email password /;
+    my $brand = $c->stash('brand');
     LOGIN:
     {
         if ($oneall_user_id) {
