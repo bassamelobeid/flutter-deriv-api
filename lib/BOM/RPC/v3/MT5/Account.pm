@@ -68,6 +68,10 @@ sub mt5_new_account {
         return BOM::RPC::v3::Utility::permission_error() if ($client->landing_company->short !~ '^(?:costarica|champion)$');
 
         return BOM::RPC::v3::Utility::create_error({
+                code              => 'FinancialAssessmentMandatory',
+                message_to_client => localize('Please complete financial assessment.')}) unless $client->financial_assessment();
+
+        return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidSubAccountType',
                 message_to_client => localize('Invalid sub account type.')}
         ) if ($account_type eq 'financial' and $mt5_account_type !~ /^(?:cent|standard|stp)$/);
@@ -461,6 +465,8 @@ sub mt5_withdrawal {
     if (not _mt5_is_real_account($to_client, $fm_mt5)) {
         return BOM::RPC::v3::Utility::permission_error();
     }
+
+    return $error_sub->(localize('Client is not fully authenticated.')) unless $client->client_fully_authenticated;
 
     if ($to_client->currency ne 'USD') {
         return $error_sub->(localize('Your account [_1] has a different currency [_2] than USD.', $to_loginid, $to_client->currency));
