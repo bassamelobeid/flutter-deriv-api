@@ -15,7 +15,7 @@ use BOM::System::RedisReplicated;
 use DataDog::DogStatsd::Helper;
 use BOM::RPC::v3::Contract;
 
-sub new { bless {@_[1 .. $#_]}, $_[0] }
+sub new { return bless {@_[1 .. $#_]}, $_[0] }
 
 sub process_job {
     my ($self, $redis, $next, $params) = @_;
@@ -114,7 +114,7 @@ sub run {
 
         warn "Pricing time too long: "
             . $response->{rpc_time} . ': '
-            . join(', ', map $_ . " = " . ($params->{$_} // '"undef"'), sort keys %$params) . "\n"
+            . join(', ', map {; $_ . " = " . ($params->{$_} // '"undef"') } sort keys %$params) . "\n"
             if $response->{rpc_time} > 1000;
 
         my $subscribers_count = $redis->publish($key->[1], encode_json($response));
@@ -140,6 +140,7 @@ sub run {
         }
         $tv = $tv_now;
     }
+    return undef;
 }
 
 sub _get_underlying {
@@ -184,7 +185,7 @@ sub _validate_params {
     return 1;
 }
 
-sub tags { shift->{tags} }
+sub tags { return shift->{tags} }
 
 1;
 
