@@ -10,13 +10,13 @@ use parent qw( Mojo::Redis2 );
 
 ### TODO: Doing something with it
 my $pricer_cf = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml');
-my $ws_cf  = YAML::XS::LoadFile('/etc/rmg/ws-redis.yml');
+#my $ws_cf  = YAML::XS::LoadFile('/etc/rmg/ws-redis.yml');
 
 my $config = {
     pricer_write => $pricer_cf->{write},
     pricer_read  => $pricer_cf->{read},
-    ws_write => $ws_cf->{write},
-    ws_read  => $ws_cf->{read},
+#    ws_write => $ws_cf->{write},
+#    ws_read  => $ws_cf->{read},
 };
 
 $config->{pricer_write}{afterwork} = sub {
@@ -28,6 +28,8 @@ $config->{pricer_write}{afterwork} = sub {
     });
 };
 
+=pod
+
 $config->{ws_write}{afterwork} = sub {
     warn "WRITE WS AFTERWORK";
     shift->on(
@@ -38,6 +40,8 @@ $config->{ws_write}{afterwork} = sub {
             Binary::WebSocketAPI::v3::Wrapper::Streamer::send_notification($self->{shared_info}, $msg, $channel);
     });
 };
+
+=cut
 
 my $instances = {
     pricer_write => undef,
