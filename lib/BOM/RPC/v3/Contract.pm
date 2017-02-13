@@ -146,10 +146,9 @@ sub _get_ask {
     };
     return $response if $response;
 
-    my $market_name = $contract->market->name;
-    my $base_commission_scaling =
-        BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market_name;
-    my $contract_parameters = {
+    my $market_name             = $contract->market->name;
+    my $base_commission_scaling = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market_name;
+    my $contract_parameters     = {
         %$p2,
         !$contract->is_spread
         ? (
@@ -183,9 +182,9 @@ sub _get_ask {
                     ? $contract->payout
                     : $contract->ask_price;
                 $response = BOM::RPC::v3::Utility::create_error({
-                        message_to_client     => $message_to_client,
-                        code                  => $code,
-                        details               => {
+                        message_to_client => $message_to_client,
+                        code              => $code,
+                        details           => {
                             display_value => (
                                   $contract->is_spread
                                 ? $contract->buy_level
@@ -197,9 +196,9 @@ sub _get_ask {
 
             } else {
                 $response = BOM::RPC::v3::Utility::create_error({
-                        message_to_client     => $message_to_client,
-                        code                  => $code,
-                        details               => {
+                        message_to_client => $message_to_client,
+                        code              => $code,
+                        details           => {
                             display_value => (
                                   $contract->is_spread
                                 ? $contract->buy_level
@@ -211,10 +210,10 @@ sub _get_ask {
             }
             if ($code eq 'ContractBuyValidationError') {
                 $response->{contract_parameters} = $contract_parameters;
-                $response->{longcode} = $contract->longcode;
+                $response->{longcode}            = $contract->longcode;
             }
             #print "Error response: ".Dumper($response);
-            print "Longcode: ".$contract->longcode."\n";
+            print "Longcode: " . $contract->longcode . "\n";
         } else {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
             my $trading_window_start = $p2->{trading_period_start} // '';
