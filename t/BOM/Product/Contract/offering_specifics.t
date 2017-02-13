@@ -15,7 +15,7 @@ $mock->mock('get_trading_periods', sub { [] });
 use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
 use Cache::RedisDB;
-BOM::Market::AggTicks->new->flush();
+
 
 my $now = Date::Utility->new('2016-09-22');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -74,8 +74,7 @@ subtest '2-minute non ATM callput' => sub {
         duration => '15m',
         barrier  => '101.1'
     });
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    like $c->primary_validation_error->message, qr/barrier should be relative/, 'throws error barrier type not correct';
+    ok $c->is_valid_to_buy, 'not valid to buy';
     $c = produce_contract({
         %$bet_params,
         duration => '15m',

@@ -192,4 +192,32 @@ subtest 'invalid barrier for tick expiry' => sub {
     ok $c->is_valid_to_sell, 'valid to sell for asian';
 };
 
+subtest 'invalid barrier type' => sub {
+    my $bet_params = {
+        date_start   => $now,
+        date_pricing => $now,
+        underlying   => 'R_100',
+        bet_type     => 'CALL',
+        duration     => '1d',
+        barrier      => 'S0P',
+        currency     => 'USD',
+        payout       => 10,
+        current_tick => $fake_tick,
+    };
+    my $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid multi-day ATM contract with relative barrier.';
+    $bet_params->{barrier} = 'S10P';
+    $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'invalid multi-day non ATM contract with relative barrier.';
+    like(
+        $c->primary_validation_error->{message},
+        qr/barrier should be absolute for multi-day contracts/,
+        'multi-day non ATM barrier must be absolute'
+    );
+    $bet_params->{duration} = '1h';
+    $bet_params->{barrier}  = 100;
+    $c                      = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid intraday non ATM contract with absolute barrier.';
+};
+
 done_testing();

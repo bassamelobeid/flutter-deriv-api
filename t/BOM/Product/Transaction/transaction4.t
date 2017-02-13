@@ -13,7 +13,6 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 use YAML::XS;
 use Cache::RedisDB;
-use BOM::Market::AggTicks;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase;
@@ -202,8 +201,7 @@ subtest 'Validate legal allowed contract types' => sub {
         client   => $cr,
         contract => $c,
     });
-    $error = $transaction->_validate_jurisdictional_restrictions;
-    is $error->{'-type'}, 'NotLegalContractCategory', 'error for CALLE for CR account';
+    ok !$transaction->_validate_jurisdictional_restrictions;
 };
 
 subtest 'Validate Jurisdiction Restriction' => sub {

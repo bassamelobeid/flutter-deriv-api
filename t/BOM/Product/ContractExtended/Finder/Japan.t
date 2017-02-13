@@ -15,6 +15,21 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Date::Utility;
 
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'partial_trading',
+    {
+        type          => 'early_closes',
+        recorded_date => Date::Utility->new('2015-01-01'),
+        # dummy early close
+        calendar => {
+            '25-Nov-2015' => {
+                '18h00m' => ['FOREX'],
+            },
+        },
+    });
+
+
 BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD JPY AUD CAD EUR);
 subtest "predefined contracts for symbol" => sub {
@@ -266,6 +281,26 @@ subtest "check_intraday trading_period_JPY" => sub {
                 } ('2015-11-24 23:59:59', '2015-11-25 02:00:00',)
             ],
         },
+
+
+        '2015-11-25 00:00:00' => {
+            combination => 1,
+            date_start  => [Date::Utility->new('2015-11-24 23:45:00')->epoch],
+            date_expiry =>  [Date::Utility->new('2015-11-25 02:00:00')->epoch
+            ],
+        },
+
+        '2015-11-25 21:45:00' => { combination => 0,},
+
+
+        '2015-11-2600:00:00' => { 
+            combination => 1,
+            date_start  => [Date::Utility->new('2015-11-26 00:00:00')->epoch],
+            date_expiry =>  [Date::Utility->new('2015-11-26 02:00:00')->epoch
+            ],
+        },
+        
+
         # Friday
         '2015-11-27 00:00:00' => {
             combination => 1,

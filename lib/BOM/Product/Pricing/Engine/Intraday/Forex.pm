@@ -13,6 +13,7 @@ use Volatility::Seasonality;
 use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
 use BOM::System::Config;
+use BOM::Market::DataDecimate;
 
 sub clone {
     my ($self, $changes) = @_;
@@ -187,7 +188,7 @@ sub _build_intraday_vega {
 
     my $idv = Math::Util::CalculatedValue::Validatable->new({
         name        => 'intraday_vega',
-        description => 'the delta to use for pricing this bet',
+        description => 'the vega to use for pricing this bet',
         set_by      => __PACKAGE__,
         base_amount => $self->_vega_formula->($self->_formula_args),
     });
@@ -390,13 +391,17 @@ sub _build_ticks_for_trend {
 
     my $remaining_interval = Time::Duration::Concise::Localize->new(interval => $lookback_secs);
 
-    return $self->tick_source->retrieve({
-        underlying   => $bet->underlying,
-        interval     => $remaining_interval,
-        ending_epoch => $bet->date_pricing->epoch,
-        fill_cache   => !$bet->backtest,
-        aggregated   => $self->more_than_short_term_cutoff,
+    my $ticks;
+    my $backprice = ($bet->underlying->for_date) ? 1 : 0;
+    $ticks = $self->tick_source->get({
+        underlying  => $bet->underlying,
+        start_epoch => $bet->date_pricing->epoch - $remaining_interval->seconds,
+        end_epoch   => $bet->date_pricing->epoch,
+        backprice   => $backprice,
+        decimate    => $self->more_than_short_term_cutoff,
     });
+
+    return $ticks;
 }
 
 has lookback_seconds => (
@@ -509,10 +514,11 @@ sub calculate_intraday_bounceback {
     my $bounceback_safety     = max($bounceback_safety_min, $bounceback_safety_max);
 
     if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_st') {
-        $bounceback_base_intraday_trend = ($self->bet->code eq 'CALL') ? $bounceback_base_intraday_trend : $bounceback_base_intraday_trend * -1;
+        $bounceback_base_intraday_trend =
+            ($self->bet->pricing_code eq 'CALL') ? $bounceback_base_intraday_trend : $bounceback_base_intraday_trend * -1;
     }
     if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_lt') {
-        $bounceback_safety = ($self->bet->code eq 'CALL') ? $bounceback_safety : $bounceback_safety * -1;
+        $bounceback_safety = ($self->bet->pricing_code eq 'CALL') ? $bounceback_safety : $bounceback_safety * -1;
     }
 
     $bounceback_base_intraday_trend += $bounceback_safety if $self->apply_bounceback_safety;

@@ -1570,10 +1570,6 @@ sub _validate_trade_pricing_adjustment {
                     amount      => $final_value,
                 });
             $self->contract($new_contract);
-
-            #Since we reset the payout and recreate new contract with the new payout, the $self->price need to set to the new contract ask price.
-            # Users sometimes pass a price even when the basis is stake, so make sure we use the correct ask price instead of the number the user provided
-            $self->price($self->contract->ask_price);
         }
     }
 
@@ -1584,7 +1580,12 @@ sub _is_valid_to_buy {
     my $self     = shift;
     my $contract = $self->contract;
 
-    if (not $contract->is_valid_to_buy) {
+    if (
+        not(
+              $contract->is_spread
+            ? $contract->is_valid_to_buy
+            : $contract->is_valid_to_buy({landing_company => $self->client->landing_company->short})))
+    {
         return Error::Base->cuss(
             -type              => 'InvalidtoBuy',
             -mesg              => $contract->primary_validation_error->message,

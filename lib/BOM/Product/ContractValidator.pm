@@ -5,6 +5,9 @@ use warnings;
 
 use Time::HiRes;
 use Date::Utility;
+use List::Util q(any);
+
+use LandingCompany::Registry;
 
 use BOM::Platform::Runtime;
 use BOM::System::Config;
@@ -97,7 +100,7 @@ sub _confirm_validity {
     push @validation_methods, '_validate_appconfig_age';
 
     foreach my $method (@validation_methods) {
-        if (my $err = $self->$method) {
+        if (my $err = $self->$method($args)) {
             $self->add_error($err);
         }
         return 0 if ($self->primary_validation_error);
@@ -140,8 +143,8 @@ sub _validate_settlement_conditions {
 
     return if not $message;
 
-    my $refund = 'The buy price of this contract will be refunded due to missing market data.';
-    my $wait   = 'Please wait for contract settlement.';
+    my $refund = localize('The buy price of this contract will be refunded due to missing market data.');
+    my $wait   = localize('Please wait for contract settlement.');
 
     my $ref = {
         message           => $message,
@@ -288,23 +291,22 @@ sub _validate_price {
 sub _validate_barrier_type {
     my $self = shift;
 
-    my $intraday = $self->is_intraday;
-    my $barrier_type = $intraday ? 'relative' : 'absolute';
-
     return if ($self->tick_expiry or $self->is_spread);
 
     # The barrier for atm bet is always SOP which is relative
     return if ($self->is_atm_bet and defined $self->barrier and $self->barrier->barrier_type eq 'relative');
 
-    foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
+    # intraday non ATM barrier could be absolute or relative
+    return if $self->is_intraday;
 
-        if (defined $self->$barrier and $self->$barrier->barrier_type ne $barrier_type) {
+    foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
+        # For multiday, the barrier must be absolute.
+        # For intraday, the barrier can be absolute or relative.
+        if (defined $self->$barrier and $self->$barrier->barrier_type ne 'absolute') {
 
             return {
-                message           => 'barrier should be ' . $barrier_type,
-                message_to_client => $intraday
-                ? localize('Contracts less than 24 hours in duration would need a relative barrier. (barriers which need +/-)')
-                : localize('Contracts more than 24 hours in duration would need an absolute barrier.'),
+                message           => 'barrier should be absolute for multi-day contracts',
+                message_to_client => localize('Contracts more than 24 hours in duration would need an absolute barrier.'),
             };
         }
     }
@@ -375,18 +377,26 @@ sub _validate_input_parameters {
 
 sub _validate_trading_times {
     my $self = shift;
+    my $args = shift;
 
     my $underlying  = $self->underlying;
     my $calendar    = $underlying->calendar;
     my $date_expiry = $self->date_expiry;
     my $date_start  = $self->date_start;
+    my $volidx_flag = 1;
+    my ($markets, $lc);
 
     if (not($calendar->trades_on($date_start) and $calendar->is_open_at($date_start))) {
         my $message =
             ($self->is_forward_starting) ? localize("The market must be open at the start time.") : localize('This market is presently closed.');
+        if ($args->{landing_company}) {
+            $lc          = LandingCompany::Registry::get($args->{landing_company});
+            $markets     = $lc->legal_allowed_markets if $lc;
+            $volidx_flag = any { $_ eq 'volidx' } @$markets;
+        }
         return {
             message => 'underlying is closed at start ' . "[symbol: " . $underlying->symbol . "] " . "[start: " . $date_start->datetime . "]",
-            message_to_client => $message . " " . localize("Try out the Volatility Indices which are always open.")};
+            message_to_client => $message . ($volidx_flag ? " " . localize("Try out the Volatility Indices which are always open.") : "")};
     } elsif (not $calendar->trades_on($date_expiry)) {
         return ({
             message           => "Exchange is closed on expiry date [expiry: " . $date_expiry->date . "]",
@@ -436,8 +446,10 @@ sub _validate_trading_times {
 sub _validate_start_and_expiry_date {
     my $self = shift;
 
-    my $start_epoch     = $self->effective_start->epoch;
-    my $end_epoch       = $self->date_expiry->epoch;
+    my $start_epoch = $self->effective_start->epoch;
+    my $end_epoch   = $self->date_expiry->epoch;
+    #Note: Please don't change the message for expiry blackout (specifically, the 'expire' word) unless you have
+    #updated the check in this method which updates end_epoch
     my @blackout_checks = (
         [[$start_epoch], $self->date_start_blackouts,  "Trading is not available from [_2] to [_3]"],
         [[$end_epoch],   $self->date_expiry_blackouts, "Contract may not expire between [_2] and [_3]"],
@@ -449,7 +461,12 @@ sub _validate_start_and_expiry_date {
     foreach my $blackout (@blackout_checks) {
         my ($epochs, $periods, $message_to_client) = @{$blackout}[0 .. 2];
         foreach my $period (@$periods) {
-            if (first { $_ >= $period->[0] and $_ < $period->[1] } @$epochs) {
+            my $start_epoch = $period->[0];
+            my $end_epoch   = $period->[1];
+
+            $end_epoch++ if ($message_to_client =~ /expire/);
+
+            if (first { $_ >= $start_epoch and $_ < $end_epoch } @$epochs) {
                 my $start = Date::Utility->new($period->[0]);
                 my $end   = Date::Utility->new($period->[1]);
                 if ($start->day_of_year == $end->day_of_year) {
