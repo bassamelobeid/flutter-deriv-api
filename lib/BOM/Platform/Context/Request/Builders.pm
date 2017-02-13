@@ -3,6 +3,7 @@ package BOM::Platform::Context::Request::Builders;
 use Moose::Role;
 use CGI::Cookie;
 use Data::Validate::IP;
+use Format::Util::Strings qw( defang );
 
 use BOM::Platform::Context::Request;
 
@@ -53,7 +54,7 @@ sub from_mojo {
     $args->{domain_name} = $request->url->to_abs->host;
 
     # set brand if passed in url
-    if (my $brand = $request->params->to_hash->{brand}) {
+    if (my $brand = defang($request->params->to_hash->{brand})) {
         $args->{brand} = $brand;
     }
 
