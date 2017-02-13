@@ -113,7 +113,7 @@ sub run {
 
         warn "Pricing time too long: "
             . $response->{rpc_time} . ': '
-            . join(', ', map {; $_ . " = " . ($params->{$_} // '"undef"') } sort keys %$params) . "\n"
+            . join(', ', map { ; $_ . " = " . ($params->{$_} // '"undef"') } sort keys %$params) . "\n"
             if $response->{rpc_time} > 1000;
 
         my $subscribers_count = $redis->publish($key->[1], encode_json($response));
@@ -125,7 +125,10 @@ sub run {
         $tv_now = [Time::HiRes::gettimeofday];
 
         DataDog::DogStatsd::Helper::stats_count('pricer_daemon.queue.subscribers', $subscribers_count, {tags => $self->tags});
-        DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.time', 1000 * Time::HiRes::tv_interval($tv, $tv_now), {tags => [ @{$self->tags}, 'tag:' . $key->[0] ]});
+        DataDog::DogStatsd::Helper::stats_timing(
+            'pricer_daemon.process.time',
+            1000 * Time::HiRes::tv_interval($tv, $tv_now),
+            {tags => [@{$self->tags}, 'tag:' . $key->[0]]});
         my $end_time = Time::HiRes::time;
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.end_time', 1000 * ($end_time - int($end_time)), {tags => $self->tags});
         $stat_count->{$params->{price_daemon_cmd}}++;
