@@ -58,7 +58,7 @@ sub authorize {
 
     my $client;
     if (    $c->req->method eq 'POST'
-        and ($c->csrf_token eq ($c->param('csrftoken') // ''))
+        and ($c->csrf_token eq (defang($c->param('csrftoken')) // ''))
         and defang($c->param('login')))
     {
         $client = $c->_login($app) or return;
@@ -127,7 +127,7 @@ sub authorize {
     ## confirm scopes
     my $is_all_approved = 0;
     if (    $c->req->method eq 'POST'
-        and ($c->csrf_token eq ($c->param('csrftoken') // ''))
+        and ($c->csrf_token eq (defang($c->param('csrftoken')) // ''))
         and (defang($c->param('cancel_scopes')) || deang($c->param('confirm_scopes'))))
     {
         if (defang($c->param('confirm_scopes'))) {
