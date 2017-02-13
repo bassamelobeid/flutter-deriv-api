@@ -47,7 +47,7 @@ if (request()->param('deleteit') eq 'yes') {
     BrokerPresentation('DELETE DOCUMENT');
     my $msg;
     if (-s $full_path) {
-        my $loginid = request()->param('loginid');
+        my $loginid = encode_entities(request()->param('loginid'));
         my $doc_id  = request()->param('doc_id');
         my $client  = Client::Account::get_instance({loginid => $loginid});
         if ($client) {
@@ -63,11 +63,16 @@ if (request()->param('deleteit') eq 'yes') {
             } else {
                 $msg = "ERROR: could not find $encoded_path record in db";
             }
+            $msg .=
+                  '<p>Go back to client details <a href="'
+                . request()->url_for("backoffice/f_clientloginid_edit.cgi", {loginID => $loginid}) . '">'
+                . $loginid . '</p>';
+
         } else {
-            $msg = "ERROR: with client login " . encode_entities($loginid);
+            $msg = "ERROR: with client login " . $loginid;
         }
     } else {
-        $msg = "ERROR: " . encode_entities($full_path) . " does not exist or is empty!";
+        $msg = "ERROR: " . $full_path . " does not exist or is empty!";
     }
     print "<p>$msg</p>";
     code_exit_BO();
