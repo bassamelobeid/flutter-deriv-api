@@ -15,7 +15,7 @@ use BOM::System::RedisReplicated;
 use DataDog::DogStatsd::Helper;
 use BOM::RPC::v3::Contract;
 
-sub new { bless { @_[1..$#_] }, $_[0] }
+sub new { bless {@_[1 .. $#_]}, $_[0] }
 
 sub process_job {
     my ($self, $redis, $next, $params) = @_;
@@ -63,7 +63,7 @@ sub process_job {
     $redis->set($next, $current_time);
     $redis->expire($next, 300);
 
-    DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.call", {tags => $self->tags });
+    DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.call", {tags => $self->tags});
     DataDog::DogStatsd::Helper::stats_timing("pricer_daemon.$price_daemon_cmd.time", $response->{rpc_time}, {tags => $self->tags});
     $response->{price_daemon_cmd} = $price_daemon_cmd;
     return $response;
@@ -77,13 +77,10 @@ sub run {
     my $tv                    = [Time::HiRes::gettimeofday];
     my $stat_count            = {};
     my $current_pricing_epoch = time;
-    while(my $key = $redis->brpop(@{$args{queues}}, 0)) {
+    while (my $key = $redis->brpop(@{$args{queues}}, 0)) {
         # Remember that we had some jobs
         my $tv_now = [Time::HiRes::gettimeofday];
-        DataDog::DogStatsd::Helper::stats_timing(
-            'pricer_daemon.idle.time',
-            1000 * Time::HiRes::tv_interval($tv, $tv_now),
-            {tags => $self->tags});
+        DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.idle.time', 1000 * Time::HiRes::tv_interval($tv, $tv_now), {tags => $self->tags});
         $tv = $tv_now;
 
         if (Time::HiRes::tv_interval($tv_appconfig, $tv_now) >= 15) {
@@ -129,21 +126,14 @@ sub run {
         $tv_now = [Time::HiRes::gettimeofday];
 
         DataDog::DogStatsd::Helper::stats_count('pricer_daemon.queue.subscribers', $subscribers_count, {tags => $self->tags});
-        DataDog::DogStatsd::Helper::stats_timing(
-            'pricer_daemon.process.time',
-            1000 * Time::HiRes::tv_interval($tv, $tv_now),
-            {tags => $self->tags});
+        DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.time', 1000 * Time::HiRes::tv_interval($tv, $tv_now), {tags => $self->tags});
         my $end_time = Time::HiRes::time;
-        DataDog::DogStatsd::Helper::stats_timing(
-            'pricer_daemon.process.end_time',
-            1000 * ($end_time - int($end_time)),
-            {tags => $self->tags});
+        DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.end_time', 1000 * ($end_time - int($end_time)), {tags => $self->tags});
         $stat_count->{$params->{price_daemon_cmd}}++;
         if ($current_pricing_epoch != time) {
 
             for my $key (keys %$stat_count) {
-                DataDog::DogStatsd::Helper::stats_gauge("pricer_daemon.$key.count_per_second", $stat_count->{$key},
-                    {tags => $self->tags});
+                DataDog::DogStatsd::Helper::stats_gauge("pricer_daemon.$key.count_per_second", $stat_count->{$key}, {tags => $self->tags});
             }
             $stat_count            = {};
             $current_pricing_epoch = time;
