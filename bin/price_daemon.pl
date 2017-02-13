@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-use sigtrap handler => 'signal_handler', 'normal-signals';
+use sigtrap;
 
 use LWP::Simple;
 use Getopt::Long;
@@ -12,14 +12,9 @@ use Parallel::ForkManager;
 use BOM::RPC::PriceDaemon;
 use Sys::Info;
 use List::Util qw(max);
+use DataDog::DogStatsd::Helper;
 
 my $internal_ip     = get("http://169.254.169.254/latest/meta-data/local-ipv4");
-my $workers         = 4;
-my %required_params = (
-    price => [qw(contract_type currency symbol)],
-    bid   => [qw(contract_id short_code currency landing_company)],
-);
-
 GetOptions(
     "workers=i" => \my $workers,
     "queues=s"  => \my $queues,
@@ -27,15 +22,16 @@ GetOptions(
 $queues ||= 'pricer_jobs';
 $workers ||= max(1, Sys::Info->new->device("CPU")->count);
 
-# tune cache: up to 2s
-$ENV{QUANT_FRAMEWORK_HOLIDAY_CACHE} = $ENV{QUANT_FRAMEWORK_PATRIALTRADING_CACHE} = 2;    ## nocritic
-my $pm = Parallel::ForkManager->new($workers);
-
 my @running_forks;
 sub signal_handler {
     kill KILL => @running_forks;
     exit 0;
 }
+sigtrap->import(handler => 'signal_handler', 'normal-signals');
+
+# tune cache: up to 2s
+$ENV{QUANT_FRAMEWORK_HOLIDAY_CACHE} = $ENV{QUANT_FRAMEWORK_PATRIALTRADING_CACHE} = 2;    ## nocritic
+my $pm = Parallel::ForkManager->new($workers);
 
 $pm->run_on_start(
     sub {
