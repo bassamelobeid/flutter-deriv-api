@@ -15,6 +15,8 @@ use BOM::System::RedisReplicated;
 use DataDog::DogStatsd::Helper;
 use BOM::RPC::v3::Contract;
 
+sub new { bless { @_[1..$#_] }, $_[0] }
+
 sub process_job {
     my ($self, $redis, $next, $params) = @_;
 
