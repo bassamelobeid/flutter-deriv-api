@@ -90,8 +90,8 @@ sub build_wsapi_test {
     # We use 1 by default for these tests, unless a value is provided.
     # undef means "leave it out", used for a few tests that need to check
     # that we handle missing app_id correctly.
+    # as now app id is mandatory so assign it if not present
     $args->{app_id} = 1 unless exists $args->{app_id};
-    delete $args->{app_id} unless defined $args->{app_id};
 
     my ($tmp_dir, $redis_server) = launch_redis;
     my $t = build_mojo_test('Binary::WebSocketAPI', $args);
@@ -120,9 +120,18 @@ sub build_wsapi_test {
 }
 
 sub reconnect {
-    my ($t) = @_;
+    my ($t, $args) = @_;
     $t->reset_session;
     my $url = "/websockets/$version";
+
+    $args->{app_id} = 1 unless exists $args->{app_id};
+
+    my @query_params;
+    push @query_params, 'l=' . $args->{language}    if $args->{language};
+    push @query_params, 'debug=' . $args->{debug}   if $args->{debug};
+    push @query_params, 'app_id=' . $args->{app_id} if $args->{app_id};
+    $url .= "?" . join('&', @query_params) if @query_params;
+
     $t->websocket_ok($url => {});
     return;
 }

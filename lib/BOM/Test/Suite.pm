@@ -141,12 +141,13 @@ sub run {
     my $reset_time = time + 20;
     my $counter    = 0;
     foreach my $line (@lines) {
-        # we are setting the time one second ahead 12:00:00 for every
-        # test to ensure time sensitive tests (pricing tests) always start at a consistent time.
+        # we are setting the time two seconds ahead for every step to ensure time
+        # sensitive tests (pricing tests) always start at a consistent time.
         # Note that we have seen problems when resetting the time backwards:
         # symptoms include account balance going negative when buying
         # a contract.
-        set_date($reset_time++);
+        set_date($reset_time);
+        $reset_time += 2;
 
         ++$counter;    # slightly more informative name, for use in log messages at the end of the loop
         chomp $line;
