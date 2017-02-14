@@ -74,8 +74,7 @@ subtest '2-minute non ATM callput' => sub {
         duration => '15m',
         barrier  => '101.1'
     });
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    like $c->primary_validation_error->message, qr/barrier should be relative/, 'throws error barrier type not correct';
+    ok $c->is_valid_to_buy, 'not valid to buy';
     $c = produce_contract({
         %$bet_params,
         duration => '15m',

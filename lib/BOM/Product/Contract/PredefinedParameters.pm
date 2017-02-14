@@ -19,6 +19,17 @@ use BOM::MarketData qw(create_underlying);
 use BOM::System::RedisReplicated;
 use BOM::Platform::Runtime;
 
+my %supported_contract_types = (
+    CALLE        => 1,
+    PUT          => 1,
+    EXPIRYMISS   => 1,
+    EXPIRYRANGEE => 1,
+    RANGE        => 1,
+    UPORDOWN     => 1,
+    ONETOUCH     => 1,
+    NOTOUCH      => 1,
+);
+
 my $cache_namespace = 'predefined_parameters';
 
 =head2 get_predefined_offerings
@@ -29,15 +40,17 @@ Each offering has the following additional keys:
  - expired_barriers
  - trading_period
 
-->get_predefined_offerings('frxUSDJPY'); # get latest predefined offerings
-->get_predefined_offerings('frxUSDJPY', $date); # historical predefined offerings
+->get_predefined_offerings({symbol => 'frxUSDJPY'}); # get latest predefined offerings
+->get_predefined_offerings({symbol => 'frxUSDJPY', date => $date}); # historical predefined offerings
+->get_predefined_offerings({symbol => 'frxUSDJPY', date => $date, landing_company => 'costarica'}); # specific landing_company
 
 =cut
 
 sub get_predefined_offerings {
-    my ($symbol, $date) = @_;
+    my $args = shift;
 
-    my @offerings = _get_offerings($symbol);
+    my ($symbol, $date, $landing_company) = @{$args}{'symbol', 'date', 'landing_company'};
+    my @offerings = _get_offerings($symbol, $landing_company);
     my $underlying = create_underlying($symbol, $date);
     $date //= Date::Utility->new;
 
@@ -213,11 +226,14 @@ sub next_generation_epoch {
 }
 
 sub _flyby {
-    return get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, 'japan');
+    my $landing_company = shift;
+
+    $landing_company //= 'costarica';
+    return get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $landing_company);
 }
 
 sub supported_symbols {
-    return _flyby()->values_for_key('underlying_symbol');
+    return _flyby()->query({submarket => 'major_pairs'}, ['underlying_symbol']);
 }
 
 # we perform three things here:
@@ -636,9 +652,9 @@ sub _get_trade_date_of_daily_window {
 }
 
 sub _get_offerings {
-    my $symbol = shift;
+    my ($symbol, $landing_company) = @_;
 
-    my $flyby = _flyby();
+    my $flyby = _flyby($landing_company);
 
     my %similar_args = (
         underlying_symbol => $symbol,
@@ -668,6 +684,7 @@ sub _get_offerings {
             %similar_args,
         });
 
-    return map { $_->{barriers} = BOM::Product::Contract::Category->new($_->{contract_category})->two_barriers ? 2 : 1; $_ } @offerings;
+    return map { $_->{barriers} = BOM::Product::Contract::Category->new($_->{contract_category})->two_barriers ? 2 : 1; $_ }
+        grep { $supported_contract_types{$_->{contract_type}} } @offerings;
 }
 1;

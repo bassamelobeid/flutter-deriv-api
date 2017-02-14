@@ -20,6 +20,27 @@ use BOM::Platform::Context qw(localize);
 use base qw( Exporter );
 our @EXPORT_OK = qw(available_contracts_for_symbol);
 
+my %supported_contract_types = (
+    ASIANU      => 1,
+    ASIAND      => 1,
+    CALL        => 1,
+    PUT         => 1,
+    DIGITDIFF   => 1,
+    DIGITMATCH  => 1,
+    DIGITOVER   => 1,
+    DIGITUNDER  => 1,
+    DIGITEVEN   => 1,
+    DIGITODD    => 1,
+    EXPIRYMISS  => 1,
+    EXPIRYRANGE => 1,
+    RANGE       => 1,
+    UPORDOWN    => 1,
+    ONETOUCH    => 1,
+    NOTOUCH     => 1,
+    SPREADU     => 1,
+    SPREADD     => 1,
+);
+
 sub available_contracts_for_symbol {
     my $args            = shift;
     my $symbol          = $args->{symbol} || die 'no symbol';
@@ -35,7 +56,7 @@ sub available_contracts_for_symbol {
     }
 
     my $flyby = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $landing_company);
-    my @offerings = $flyby->query({underlying_symbol => $symbol});
+    my @offerings = grep { $supported_contract_types{$_->{contract_type}} } $flyby->query({underlying_symbol => $symbol});
 
     for my $o (@offerings) {
         my $cc = $o->{contract_category};
