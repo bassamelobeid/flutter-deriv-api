@@ -80,7 +80,7 @@ sub run {
     while (my $key = $redis->brpop(@{$args{queues}}, 0)) {
         # Remember that we had some jobs
         my $tv_now = [Time::HiRes::gettimeofday];
-        my $queue = $key->[0];
+        my $queue  = $key->[0];
         # Apply this for the duration of the current price only
         local $self->{current_queue} = $queue;
 
@@ -129,10 +129,7 @@ sub run {
         $tv_now = [Time::HiRes::gettimeofday];
 
         DataDog::DogStatsd::Helper::stats_count('pricer_daemon.queue.subscribers', $subscribers_count, {tags => $self->tags});
-        DataDog::DogStatsd::Helper::stats_timing(
-            'pricer_daemon.process.time',
-            1000 * Time::HiRes::tv_interval($tv, $tv_now),
-            {tags => $self->tags});
+        DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.time', 1000 * Time::HiRes::tv_interval($tv, $tv_now), {tags => $self->tags});
         my $end_time = Time::HiRes::time;
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.end_time', 1000 * ($end_time - int($end_time)), {tags => $self->tags});
         $stat_count->{$params->{price_daemon_cmd}}++;
@@ -198,7 +195,7 @@ The name of the queue we're currently processing. May be undef.
 =cut
 
 sub current_queue {
-    return shift->{current_queue}
+    return shift->{current_queue};
 }
 
 =head2 tags
@@ -209,7 +206,7 @@ Returns an arrayref of datadog tags. Takes an optional list of additional tags t
 
 sub tags {
     my ($self, @tags) = @_;
-    return [ @{$self->{tags}}, map {; "tag:$_" } $self->current_queue // (), @tags ]
+    return [@{$self->{tags}}, map { ; "tag:$_" } $self->current_queue // (), @tags];
 }
 
 1;
