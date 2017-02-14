@@ -47,8 +47,12 @@ subtest "Request $method" => sub {
     ok !grep { $_->{contract_type} =~ /^(CALL|PUT|EXPIRYMISS|EXPIRYRANGE)E$/ } @{$result->{available}};
 
     generate_trading_periods('frxUSDJPY');
-    update_predefined_highlow({symbol => 'frxUSDJPY', price => 100, epoch => time});
-    $params[1]{args}{product_type}        = 'multi_barrier';
+    update_predefined_highlow({
+        symbol => 'frxUSDJPY',
+        price  => 100,
+        epoch  => time
+    });
+    $params[1]{args}{product_type}  = 'multi_barrier';
     $params[1]{args}{contracts_for} = 'frxUSDJPY';
     $result                         = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
     is_deeply [sort keys %{$result}],

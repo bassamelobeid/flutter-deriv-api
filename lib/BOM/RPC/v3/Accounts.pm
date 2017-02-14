@@ -264,6 +264,10 @@ sub get_account_status {
     # we need to send only low, standard, high as manual override is for internal purpose
     $risk_classification =~ s/manual override - //;
 
+    # differentiate between social and password based accounts
+    my $user = BOM::Platform::User->new({email => $client->email});
+    push @status, 'has_password' if $user->password;
+
     return {
         status              => \@status,
         risk_classification => $risk_classification
@@ -458,6 +462,12 @@ sub reset_password {
     return BOM::RPC::v3::Utility::create_error({
             code              => "InternalServerError",
             message_to_client => localize("Sorry, an error occurred while processing your account.")}) unless $user and @clients = $user->clients;
+
+    # do not allow social based clients to reset password
+    return BOM::RPC::v3::Utility::create_error({
+            code              => "SocialBased",
+            message_to_client => localize("Sorry, your account does not allow passwords. Please contact customer support for more information.")}
+    ) unless $user->password;
 
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
     my $client = $clients[0];
@@ -1264,62 +1274,6 @@ sub reality_check {
     $summary->{open_contract_count} = $data->{open_cnt}      // 0;
 
     return $summary;
-}
-
-sub connect_add {
-    my $params = shift;
-
-    my $connection_token = $params->{args}->{connection_token};
-    my $oneall           = WWW::OneAll->new(
-        subdomain   => 'binary',
-        public_key  => BOM::System::Config::third_party->{oneall}->{public_key},
-        private_key => BOM::System::Config::third_party->{oneall}->{private_key},
-    );
-    my $data = $oneall->connection($connection_token) or die $oneall->errstr;
-
-    if ($data->{response}->{result}->{status}->{code} != 200) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'ConnectAdd',
-                message_to_client => localize('Failed to get user identity.')});
-    }
-
-    my $client = $params->{client};
-    my $user = BOM::Platform::User->new({email => $client->email});
-
-    my $provider_data = $data->{response}->{result}->{data};
-    my $user_connect  = BOM::Database::Model::UserConnect->new;
-    my $res           = $user_connect->insert_connect($user->id, $provider_data);
-    if ($res->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'ConnectAdd',
-                message_to_client => $res->{error}});
-    }
-
-    return {status => 1};
-}
-
-sub connect_del {
-    my $params = shift;
-
-    my $client = $params->{client};
-    my $user = BOM::Platform::User->new({email => $client->email});
-
-    my $user_connect = BOM::Database::Model::UserConnect->new;
-    my $res = $user_connect->remove_connect($user->id, $params->{args}->{provider});
-
-    return {status => $res ? 1 : 0};
-}
-
-sub connect_list {
-    my $params = shift;
-
-    my $client = $params->{client};
-    my $user = BOM::Platform::User->new({email => $client->email});
-
-    my $user_connect = BOM::Database::Model::UserConnect->new;
-    my @providers    = $user_connect->get_connects_by_user_id($user->id);
-
-    return \@providers;
 }
 
 1;
