@@ -207,9 +207,6 @@ table#client_edit td{
         <td class="small_header" colspan="2">#KYC/IDENTITY VERIFICATION</td>
     </tr>
     <tr>
-        <td class="small_header" colspan="2">#KYC/IDENTITY VERIFICATION</td>
-    </tr>
-    <tr>
         <td class="label">AML Risk Classification</td>
         [%
             risk_classification_options = [
@@ -402,7 +399,7 @@ table#client_edit td{
         <td class="label">Promotional code</td>
         <td>:
             <input type="text" name="promo_code" [% maybe_disabled %] value="[% client.promo_code %]" size="20" />
-            [% client.client_promo_code.promotion %]
+            Description: [% client.client_promo_code.promotion.description %] (<a href="[% request.url_for('backoffice/promocode_edit.cgi', {promocode=>client.promo_code}) %]">edit</a>)
             [% IF maybe_auth_msg %]<font color="red"><b>[% maybe_auth_msg %]</b></font>[% END %]
         </td>
     </tr>
