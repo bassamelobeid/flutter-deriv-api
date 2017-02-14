@@ -131,12 +131,13 @@ sub cashier {
     }
 
     my $error = '';
+    my $brand = Brands->new(name => request()->brand);
     if ($action eq 'deposit' and $client->get_status('unwelcome')) {
         $error = localize('Your account is restricted to withdrawals only.');
     } elsif ($client->documents_expired) {
         $error = localize(
             'Your identity documents have passed their expiration date. Kindly send a scan of a valid ID to <a href="mailto:[_1]">[_1]</a> to unlock your cashier.',
-            Brands->new(name => request()->brand)->emails('support'));
+            $brand->emails('support'));
     } elsif ($client->get_status('cashier_locked')) {
         $error = localize('Your cashier is locked');
     } elsif ($client->get_status('disabled')) {
@@ -211,7 +212,7 @@ sub cashier {
         SSL_verify_mode => SSL_VERIFY_NONE
     );    #temporarily disable host verification as full ssl certificate chain is not available in doughflow.
 
-    my $doughflow_loc     = BOM::System::Config::third_party->{doughflow}->{location};
+    my $doughflow_loc     = BOM::System::Config::third_party->{doughflow}->{$brand->name};
     my $doughflow_pass    = BOM::System::Config::third_party->{doughflow}->{passcode};
     my $url               = $doughflow_loc . '/CreateCustomer.asp';
     my $sportsbook        = get_sportsbook($df_client->broker, $currency);
