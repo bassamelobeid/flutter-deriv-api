@@ -93,19 +93,26 @@ sub proposal_array {
     #print "in proposal_array \n".Dumper($req_storage);
 
     if ($req_storage->{args}{subscribe}) {
-        $uuid = &Binary::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string();
-        $c->stash(
-            proposal_array_subscriptions => {
-                $uuid => {
-                    args      => $req_storage->{args},
-                    proposals => {},
-                    seq       => []}});
-        print "Sub created\n";
-        my $position = 0;
-        for my $barrier (@{$req_storage->{args}->{barriers}}) {
-            $barriers_order->{$barrier->{barrier} . ($barrier->{barrier2} || '')} = $position++;
+        #$uuid = &Binary::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string();
+        if ($uuid = _pricing_channel_for_ask($c, $req_storage->{args}, {})) {
+            my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
+            $proposal_array_subscriptions->{$uuid} = {
+                args      => $req_storage->{args},
+                proposals => {},
+                seq       => []};
+            $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
+            print "Sub created\n";
+            my $position = 0;
+            for my $barrier (@{$req_storage->{args}->{barriers}}) {
+                $barriers_order->{$barrier->{barrier} . ($barrier->{barrier2} || '')} = $position++;
+            }
+            print "ORDUNG!:::" . Dumper($barriers_order);
+        } else {
+            print "Subscriptuon canceled, no uuid\n";
+            my $error = $c->new_error('proposal_array', 'AlreadySubscribed', $c->l('You are already subscribed to proposal_array.'));
+            $c->send({json => $error}, $req_storage);
+            return;
         }
-        print "ORDUNG!:::" . Dumper($barriers_order);
     }
 
     my $create_price_channel = sub {
@@ -210,15 +217,15 @@ sub proposal_array {
                 print "Collect res from on_ready: " . Dumper(\@result);
                 # Return a single result back to the client.
                 my $res = {
-                        json => {
-                            echo_req => $req_storage->{args},
-                            proposal_array => {
-                                proposals => \@result,
-                                $uuid ? (id => $uuid) : (),
-                            },
-                            msg_type => $msg_type,
-                        }};
-                print "SEND!!!!! (rpc firs resp) :".Dumper($res);        
+                    json => {
+                        echo_req       => $req_storage->{args},
+                        proposal_array => {
+                            proposals => \@result,
+                            $uuid ? (id => $uuid) : (),
+                        },
+                        msg_type => $msg_type,
+                    }};
+                print "SEND!!!!! (rpc firs resp) :" . Dumper($res);
                 $c->send($res);
             }
             catch {

@@ -197,11 +197,11 @@ sub register {
                             #print "props to pack back: ".Dumper(\@proposals);
                             my $results = {
                                 proposal_array => {
-                                    proposals  => [map { delete $_->{msg_type}; $_ } @proposals]
-                                    id         => $pa_uuid,
-                                    },
-                                echo_req       => $proposal_array_subscriptions->{$pa_uuid}{args},
-                                msg_type       => 'proposal_array',
+                                    proposals => [map { delete $_->{msg_type}; $_ } @proposals],
+                                    id => $pa_uuid,
+                                },
+                                echo_req => $proposal_array_subscriptions->{$pa_uuid}{args},
+                                msg_type => 'proposal_array',
                             };
                             print "WOW!: " . Dumper($results);
                             $c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}});
