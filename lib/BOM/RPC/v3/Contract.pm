@@ -8,6 +8,7 @@ use Try::Tiny;
 use List::MoreUtils qw(none);
 use JSON::XS qw/encode_json/;
 use Date::Utility;
+use Data::Dumper;
 
 use BOM::System::Config;
 use BOM::RPC::v3::Utility;
@@ -22,7 +23,7 @@ use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Format::Util::Numbers qw(roundnear);
 use Time::HiRes;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
-use Data::Dumper;
+
 use feature "state";
 
 sub validate_symbol {
@@ -289,9 +290,11 @@ sub get_bid {
         $bet_params->{app_markup_percentage} = $app_markup_percentage // 0;
         $bet_params->{landing_company}       = $landing_company;
         $contract                            = produce_contract($bet_params);
+        warn Dumper($bet_params);
+        warn encode_json($bet_params);
     }
     catch {
-        warn __PACKAGE__ . " get_bid produce_contract failed, parameters: " . Dumper($bet_params);
+        warn __PACKAGE__ . " get_bid produce_contract failed, parameters: " . encode_json($bet_params);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'GetProposalFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
