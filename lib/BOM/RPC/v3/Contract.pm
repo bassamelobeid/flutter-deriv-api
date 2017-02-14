@@ -290,11 +290,9 @@ sub get_bid {
         $bet_params->{app_markup_percentage} = $app_markup_percentage // 0;
         $bet_params->{landing_company}       = $landing_company;
         $contract                            = produce_contract($bet_params);
-        warn Dumper($bet_params);
-        warn encode_json($bet_params);
     }
     catch {
-        warn __PACKAGE__ . " get_bid produce_contract failed, parameters: " . encode_json($bet_params);
+        warn __PACKAGE__ . " get_bid produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($bet_params);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'GetProposalFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
