@@ -304,10 +304,6 @@ sub startup {
         ['app_delete',   {require_auth => 'admin'}],
         ['oauth_apps',   {require_auth => 'read'}],
 
-        ['connect_add',  {require_auth => 'admin'}],
-        ['connect_del',  {require_auth => 'admin'}],
-        ['connect_list', {require_auth => 'admin'}],
-
         ['topup_virtual',     {require_auth => 'trade'}],
         ['get_limits',        {require_auth => 'read'}],
         ['paymentagent_list', {stash_params => [qw/ token /]}],
