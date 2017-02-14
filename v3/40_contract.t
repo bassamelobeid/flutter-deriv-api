@@ -311,16 +311,12 @@ $proposal_id = $proposal_1->{proposal}->{id};
 $t           = $t->send_ok({
         json => {
             buy   => $proposal_id,
-            price => 100,
+            price => 100000,
         }});
 
 $t->message_ok;
-my $response_2 = decode_json($t->message->[1]);
-like(
-    $response_2->{error}{message},
-    qr/The underlying market has moved too much since you priced the contract. The contract payout has changed/,
-    'price moved error'
-);
+$res = decode_json($t->message->[1]);
+is $res->{buy}->{buy_price}, 1000 ;
 
 $t->finish_ok;
 
