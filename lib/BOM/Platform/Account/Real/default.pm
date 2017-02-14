@@ -322,7 +322,7 @@ sub get_financial_input_mapping {
                 "Assets Saving"  => 0,
                 "Hedging"        => 0,
             }
-        }
+        },
         occupation => {
             'label'           => 'Occupation',
             'possible_answer' => {
