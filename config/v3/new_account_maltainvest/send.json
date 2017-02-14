@@ -163,6 +163,17 @@
       "description": "Other financial instruments trading frequency",
       "required": 1
     },
+    "account_opening_reason": {
+      "type": "string",
+      "description": "Purpose and reason for requesting the account opening",
+      "required":"1",
+      "enum": [
+        "Speculative",
+        "Income Earning",
+        "Assets Saving",
+        "Hedging"
+      ]
+    },
     "employment_industry": {
       "enum": [ "Construction", "Education", "Finance", "Health", "Tourism", "Other" ],
       "description": "Industry of Employment",

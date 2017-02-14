@@ -18,6 +18,17 @@
           "type": "integer",
           "description": "Total score based on client's answer for financial assessment"
         },
+        "account_opening_reason": {
+          "type": "string",
+          "description": "Purpose and reason for requesting the account opening",
+          "required":"1",
+          "enum": [
+            "Speculative",
+            "Income Earning",
+            "Assets Saving",
+            "Hedging"
+          ]
+        },
         "forex_trading_frequency": {
           "type": "string",
           "description": "Forex trading frequency"
