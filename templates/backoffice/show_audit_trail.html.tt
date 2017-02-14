@@ -15,11 +15,11 @@
         overflow: hidden;
         padding: 1px;
     }
-    table#show_log_list_table td div.first {
-        white-space: nowrap;
-    }
     table#show_log_list_table td div.changed {
         background: #ffaaaa;
+    }
+    table#show_log_list_table td div.unavailable {
+        background: #999999;
     }
 </style>
 <script>
@@ -47,9 +47,9 @@ Note: some columns are hidden. <button onclick="showHidden()">Show them</button>
                 SET value = log.data.$hdr;
                 SET value = '' IF value == 'now()'; # default timestamp vals.  tacky; need to fix this at source!
                 SET class = '';
-                SET class = class _ " first" IF loop.first;
                 SET class = class _ " changed" IF log.changes.$hdr;
                 SET class = class _ " hidden" IF hidden_cols.$hdr;
+                SET class = class _ " unavailable" IF !log.data.exists(hdr);
                 SET classdec = class ? "class=\"$class\"" : '' %]
                 <td><div [% classdec | none %] title="[%value%]">
                     [% value %]
