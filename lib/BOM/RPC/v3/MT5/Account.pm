@@ -8,9 +8,13 @@ use List::Util qw(any);
 use Try::Tiny;
 use File::ShareDir;
 use Locale::Country::Extra;
+
 use Brands;
+use WebService::MyAffiliates;
+
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Cashier;
+use BOM::System::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::User;
 use BOM::MT5::User;
@@ -82,6 +86,9 @@ sub mt5_new_account {
         if ($mt_company eq 'none') {
             return BOM::RPC::v3::Utility::permission_error();
         }
+
+        # populate mt5 agent account associated with affiliate token
+        $args->{agent} = _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
 
         $group = 'real\\' . $mt_company;
     } else {
@@ -528,6 +535,27 @@ sub _is_mt5_suspended {
                 message_to_client => localize('MT5 API calls are suspended.')});
     }
     return undef;
+}
+
+sub _get_mt5_account_from_affiliate_token {
+    my $token = shift;
+
+    if ($token) {
+        my $aff = WebService::MyAffiliates->new(
+            user => BOM::System::Config::third_party->{myaffiliates}->{user},
+            pass => BOM::System::Config::third_party->{myaffiliates}->{pass},
+            host => BOM::System::Config::third_party->{myaffiliates}->{host});
+
+        my $user = $aff->get_user($aff->get_affiliate_id_from_token($token) // '') or return;
+
+        my $affiliate_variables = $user->{USER_VARIABLES}->{VARIABLE};
+        $affiliate_variables = [$affiliate_variables] unless ref($affiliate_variables) eq 'ARRAY';
+
+        my ($mt5_account) = grep { $_->{NAME} eq 'mt5_account' } @$affiliate_variables;
+        return $mt5_account->{VALUE} if $mt5_account;
+    }
+
+    return;
 }
 
 1;
