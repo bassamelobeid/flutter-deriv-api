@@ -286,7 +286,7 @@ sub add_brand {
 sub check_app_id {
     my ($c, $req_storage) = @_;
 
-    # check for app_id, throw error if its not there
+    # check for app_id, throw error if it's not there
     unless (defined $c->stash('source')) {
         try {
             Path::Tiny::path('/var/log/httpd/missing_app_id.log')
