@@ -17,6 +17,10 @@ if ( $#ARGV < 1 ) {
 }
 
 my %params = @ARGV;
+
+$params{"-o"} //= 1;
+$params{"-s"} //= 'up';
+
 delete $params{"-o"} unless $params{"-o"} == 1    || $params{"-o"} == 0;
 delete $params{"-s"} unless $params{"-s"} eq 'up' || $params{"-s"} eq 'down';
 
