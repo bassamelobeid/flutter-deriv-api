@@ -269,10 +269,6 @@ sub startup {
         ['app_delete',   \&BOM::RPC::v3::App::delete,     [qw(auth)]],
         ['oauth_apps',   \&BOM::RPC::v3::App::oauth_apps, [qw(auth)]],
 
-        ['connect_add',  \&BOM::RPC::v3::Accounts::connect_add,  [qw(auth)]],
-        ['connect_del',  \&BOM::RPC::v3::Accounts::connect_del,  [qw(auth)]],
-        ['connect_list', \&BOM::RPC::v3::Accounts::connect_list, [qw(auth)]],
-
         ['mt5_login_list',      \&BOM::RPC::v3::MT5::Account::mt5_login_list,      [qw(auth)]],
         ['mt5_new_account',     \&BOM::RPC::v3::MT5::Account::mt5_new_account,     [qw(auth)]],
         ['mt5_get_settings',    \&BOM::RPC::v3::MT5::Account::mt5_get_settings,    [qw(auth)]],

@@ -71,18 +71,6 @@ subtest $method => sub {
         email       => $email,
         created_for => 'account_opening'
     )->token;
-
-    warnings_like {
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('invalid', 'If could not be created account it should return error')
-            ->error_message_is('Sorry, account opening is unavailable.', 'If could not be created account it should return error_message');
-    }
-    [qr/^Virtual: register_and_return_new_client err/], "Expected warn about error virtual account opening";
-
-    $params->{args}->{verification_code} = BOM::Platform::Token->new(
-        email       => $email,
-        created_for => 'account_opening'
-    )->token;
     $params->{args}->{residence}    = 'id';
     $params->{args}->{utm_source}   = 'google.com';
     $params->{args}->{utm_medium}   = 'email';
