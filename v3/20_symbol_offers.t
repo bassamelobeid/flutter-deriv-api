@@ -69,7 +69,7 @@ if (not $now->is_a_weekend) {
     $t = $t->send_ok({
             json => {
                 contracts_for => 'frxUSDJPY',
-                region        => 'japan'
+                product_type  => 'multi_barrier'
             }})->message_ok;
     my $contracts_for_japan = decode_json($t->message->[1]);
     ok($contracts_for_japan->{contracts_for});
