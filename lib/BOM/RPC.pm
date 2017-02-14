@@ -100,7 +100,7 @@ sub _check_age_verified {
     return $params
         if $client->is_virtual;
     if (($client->landing_company->short eq 'malta' or $client->landing_company->short eq 'iom')
-        and !$client->get_status('age_verification'))
+        and not $client->get_status('age_verification'))
     {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'ASK_TNC_APPROVAL',
