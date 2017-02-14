@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Scalar::Util qw(looks_like_number);
+use Array::Utils qw(array_minus);
 
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 
@@ -126,6 +127,14 @@ sub _forget_proposal_array {
     return [];
 }
 
+sub _get_proposal_array_proposal_ids {
+    my $c                            = shift;
+    my $ret                          = [];
+    my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
+    push @$ret, keys %{$proposal_array_subscriptions->{$_}{proposals}} for (keys %$proposal_array_subscriptions);
+    return $ret;
+}
+
 sub _forget_pricing_subscription {
     my ($c, $uuid) = @_;
     my $removed_ids     = [];
@@ -164,6 +173,8 @@ sub _forget_all_pricing_subscriptions {
     my $pricing_channel = $c->stash('pricing_channel');
     if ($pricing_channel) {
         @$removed_ids = keys %{$pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd}};
+        my $proposal_array_proposal_ids = _get_proposal_array_proposal_ids($c);
+        @$removed_ids = array_minus(@$removed_ids, @$proposal_array_proposal_ids);
         foreach my $uuid (@$removed_ids) {
             my $redis_channel = $pricing_channel->{uuid}->{$uuid}->{redis_channel};
             if ($pricing_channel->{$redis_channel}) {
@@ -172,8 +183,8 @@ sub _forget_all_pricing_subscriptions {
                 delete $pricing_channel->{$redis_channel};
             }
             delete $pricing_channel->{uuid}->{$uuid};
+            delete $pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd}->{$uuid};
         }
-        delete $pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd};
         $c->stash('pricing_channel' => $pricing_channel);
     }
     return $removed_ids;
