@@ -26,6 +26,7 @@ use constant JOB_QUEUE_TTL => 60;
 use Log::Any qw($log);
 use Log::Any::Adapter qw(Stderr), log_level => 'info';
 
+my $redis = BOM::System::RedisReplicated::redis_pricer;
 while(1) {
     my $start = Time::HiRes::time;
     # Get a full list of symbols since some may have been updated/disabled
@@ -90,7 +91,6 @@ while(1) {
     }
     DataDog::DogStatsd::Helper::stats_timing("pricer_queue.japan.jobs", 0 + @jobs);
     $log->debugf("Total of %d jobs to process, %d skipped", 0 + @jobs, $skipped);
-    my $redis = BOM::System::RedisReplicated::redis_pricer;
     # We set TTL to slightly higher (one full pricing interval) than the refresh time, in case there's any
     # delay on starting the next cycle
     $redis->setex("PRICER_KEYS::" . encode_json($_), 1 + JOB_QUEUE_TTL, "1") for @jobs;
