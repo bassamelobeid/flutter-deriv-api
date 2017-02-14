@@ -80,6 +80,10 @@ sub run {
     while (my $key = $redis->brpop(@{$args{queues}}, 0)) {
         # Remember that we had some jobs
         my $tv_now = [Time::HiRes::gettimeofday];
+        my $queue = $key->[0];
+        # Apply this for the duration of the current price only
+        local $self->{current_queue} = $queue;
+
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.idle.time', 1000 * Time::HiRes::tv_interval($tv, $tv_now), {tags => $self->tags});
         $tv = $tv_now;
 
