@@ -623,20 +623,20 @@ subtest $method => sub {
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => [],
+            status              => ['has_password'],
             risk_classification => 'low'
         },
-        'status empty'
+        'status only has_password'
     );
     $test_client->set_status('tnc_approval', 'test staff', 1);
     $test_client->save();
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => [],
+            status              => ['has_password'],
             risk_classification => 'low'
         },
-        'tnc_approval is excluded, still status is empty'
+        'tnc_approval is excluded, still status only has has_password'
     );
 
     $test_client->set_authentication('ID_DOCUMENT')->status('pass');
@@ -644,7 +644,7 @@ subtest $method => sub {
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => ['authenticated'],
+            status              => ['authenticated', 'has_password'],
             risk_classification => 'low'
         },
         'ok, authenticated'
@@ -983,6 +983,9 @@ subtest $method => sub {
             'first_name'                     => 'bRaD',
             'email_consent'                  => '0',
             'allow_copiers'                  => '0',
+            'place_of_birth'                 => undef,
+            'tax_residence'                  => undef,
+            'tax_identification_number'      => undef,
         });
 
     $params->{token} = $token1;
@@ -1148,6 +1151,17 @@ subtest $method => sub {
     );
     $params->{args} = {%{$params->{args}}, %full_args};
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'real account cannot update residence');
+
+    $params->{args} = {%full_args};
+
+    #    is(
+    #        $c->tcall($method, $params)->{error}{message_to_client},
+    #        'Tax related information is mandatory for legal and regulatory requirement.',
+    #        'Correct tax error message'
+    #    );
+
+    $full_args{tax_residence}             = 'de';
+    $full_args{tax_identification_number} = '111-222-333';
 
     $params->{args} = {%full_args};
     delete $params->{args}{address_line_1};

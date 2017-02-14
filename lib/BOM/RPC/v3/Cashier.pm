@@ -85,18 +85,17 @@ sub cashier {
 
     my $landing_company = $client->landing_company;
     if ($landing_company->short eq 'maltainvest') {
-        # $c->authenticate()
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'ASK_AUTHENTICATE',
-                message_to_client => localize('Client is not fully authenticated.'),
-            }) unless $client->client_fully_authenticated;
+                message_to_client => localize('Client is not fully authenticated.')}) unless $client->client_fully_authenticated;
 
-        if (not $client->get_status('financial_risk_approval')) {
-            return BOM::RPC::v3::Utility::create_error({
+        return BOM::RPC::v3::Utility::create_error({
                 code              => 'ASK_FINANCIAL_RISK_APPROVAL',
-                message_to_client => localize('Financial Risk approval is required.'),
-            });
-        }
+                message_to_client => localize('Financial Risk approval is required.')}) unless $client->get_status('financial_risk_approval');
+
+        #        return BOM::RPC::v3::Utility::create_error({
+        #                code              => 'ASK_TIN_INFORMATION',
+        #                message_to_client => localize('Tax information is required.')}) unless $client->get_status('crs_tin_information');
     }
 
     if ($client->residence eq 'gb' and not $client->get_status('ukgc_funds_protection')) {
@@ -132,12 +131,13 @@ sub cashier {
     }
 
     my $error = '';
+    my $brand = Brands->new(name => request()->brand);
     if ($action eq 'deposit' and $client->get_status('unwelcome')) {
         $error = localize('Your account is restricted to withdrawals only.');
     } elsif ($client->documents_expired) {
         $error = localize(
             'Your identity documents have passed their expiration date. Kindly send a scan of a valid ID to <a href="mailto:[_1]">[_1]</a> to unlock your cashier.',
-            Brands->new(name => request()->brand)->emails('support'));
+            $brand->emails('support'));
     } elsif ($client->get_status('cashier_locked')) {
         $error = localize('Your cashier is locked');
     } elsif ($client->get_status('disabled')) {
@@ -212,7 +212,7 @@ sub cashier {
         SSL_verify_mode => SSL_VERIFY_NONE
     );    #temporarily disable host verification as full ssl certificate chain is not available in doughflow.
 
-    my $doughflow_loc     = BOM::System::Config::third_party->{doughflow}->{location};
+    my $doughflow_loc     = BOM::System::Config::third_party->{doughflow}->{$brand->name};
     my $doughflow_pass    = BOM::System::Config::third_party->{doughflow}->{passcode};
     my $url               = $doughflow_loc . '/CreateCustomer.asp';
     my $sportsbook        = get_sportsbook($df_client->broker, $currency);

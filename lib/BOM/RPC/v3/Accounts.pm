@@ -23,6 +23,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale;
 use BOM::Platform::User;
 use BOM::Platform::Account::Real::default;
+use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Token;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
@@ -263,6 +264,10 @@ sub get_account_status {
     # we need to send only low, standard, high as manual override is for internal purpose
     $risk_classification =~ s/manual override - //;
 
+    # differentiate between social and password based accounts
+    my $user = BOM::Platform::User->new({email => $client->email});
+    push @status, 'has_password' if $user->password;
+
     return {
         status              => \@status,
         risk_classification => $risk_classification
@@ -458,6 +463,12 @@ sub reset_password {
             code              => "InternalServerError",
             message_to_client => localize("Sorry, an error occurred while processing your account.")}) unless $user and @clients = $user->clients;
 
+    # do not allow social based clients to reset password
+    return BOM::RPC::v3::Utility::create_error({
+            code              => "SocialBased",
+            message_to_client => localize("Sorry, your account does not allow passwords. Please contact customer support for more information.")}
+    ) unless $user->password;
+
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
     my $client = $clients[0];
 
@@ -554,6 +565,9 @@ sub get_settings {
                 allow_copiers                  => $client->allow_copiers // 0,
                 is_authenticated_payment_agent => ($client->payment_agent and $client->payment_agent->is_authenticated) ? 1 : 0,
                 $client_tnc_status ? (client_tnc_status => $client_tnc_status->reason) : (),
+                place_of_birth            => $client->place_of_birth,
+                tax_residence             => $client->tax_residence,
+                tax_identification_number => $client->tax_identification_number,
             )
         ),
         $jp_account_status ? (jp_account_status => $jp_account_status) : (),
@@ -644,6 +658,14 @@ sub set_settings {
     # need to handle for $err->{status} as that come from japan settings
     return {status => 1} if ($client->is_virtual || $err->{status});
 
+    my $tax_residence             = $args->{'tax_residence'}             // '';
+    my $tax_identification_number = $args->{'tax_identification_number'} // '';
+
+    #    return BOM::RPC::v3::Utility::create_error({
+    #            code              => 'TINDetailsMandatory',
+    #            message_to_client => 'Tax related information is mandatory for legal and regulatory requirement.'
+    #        }) if ($client->landing_company->short eq 'maltainvest' and (not $tax_residence or not $tax_identification_number));
+
     my $now             = Date::Utility->new;
     my $address1        = $args->{'address_line_1'};
     my $address2        = $args->{'address_line_2'} // '';
@@ -651,9 +673,10 @@ sub set_settings {
     my $addressState    = $args->{'address_state'};
     my $addressPostcode = $args->{'address_postcode'};
     my $phone           = $args->{'phone'} // '';
+    my $birth_place     = $args->{place_of_birth};
 
     my $cil_message;
-    if (   $address1 ne $client->address_1
+    if (   ($address1 and $address1 ne $client->address_1)
         or $address2 ne $client->address_2
         or $addressTown ne $client->city
         or $addressState ne $client->state
@@ -665,7 +688,7 @@ sub set_settings {
             . '] updated his/her address from ['
             . join(' ', $client->address_1, $client->address_2, $client->city, $client->state, $client->postcode)
             . '] to ['
-            . join(' ', $address1, $address2, $addressTown, $addressState, $addressPostcode) . ']';
+            . join(' ', ($address1 // ''), $address2, $addressTown, $addressState, $addressPostcode) . ']';
     }
 
     $client->address_1($address1);
@@ -674,8 +697,24 @@ sub set_settings {
     $client->state($addressState) if defined $args->{'address_state'};            # FIXME validate
     $client->postcode($addressPostcode) if defined $args->{'address_postcode'};
     $client->phone($phone);
+    $client->place_of_birth($birth_place);
 
     $client->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
+
+    # As per CRS/FATCA regulatory requirement we need to save this information as client status
+    # maintaining previous updates as well
+    if ((
+               $tax_residence
+            or $tax_identification_number
+        )
+        and (($client->tax_residence // '') ne $tax_residence or ($client->tax_identification_number // '') ne $tax_identification_number))
+    {
+        $client->tax_residence($tax_residence)                         if $tax_residence;
+        $client->tax_identification_number($tax_identification_number) if $tax_identification_number;
+
+        BOM::Platform::Account::Real::maltainvest::set_crs_tin_status($client);
+    }
+
     if (not $client->save()) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InternalServerError',
@@ -1235,62 +1274,6 @@ sub reality_check {
     $summary->{open_contract_count} = $data->{open_cnt}      // 0;
 
     return $summary;
-}
-
-sub connect_add {
-    my $params = shift;
-
-    my $connection_token = $params->{args}->{connection_token};
-    my $oneall           = WWW::OneAll->new(
-        subdomain   => 'binary',
-        public_key  => BOM::System::Config::third_party->{oneall}->{public_key},
-        private_key => BOM::System::Config::third_party->{oneall}->{private_key},
-    );
-    my $data = $oneall->connection($connection_token) or die $oneall->errstr;
-
-    if ($data->{response}->{result}->{status}->{code} != 200) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'ConnectAdd',
-                message_to_client => localize('Failed to get user identity.')});
-    }
-
-    my $client = $params->{client};
-    my $user = BOM::Platform::User->new({email => $client->email});
-
-    my $provider_data = $data->{response}->{result}->{data};
-    my $user_connect  = BOM::Database::Model::UserConnect->new;
-    my $res           = $user_connect->insert_connect($user->id, $provider_data);
-    if ($res->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'ConnectAdd',
-                message_to_client => $res->{error}});
-    }
-
-    return {status => 1};
-}
-
-sub connect_del {
-    my $params = shift;
-
-    my $client = $params->{client};
-    my $user = BOM::Platform::User->new({email => $client->email});
-
-    my $user_connect = BOM::Database::Model::UserConnect->new;
-    my $res = $user_connect->remove_connect($user->id, $params->{args}->{provider});
-
-    return {status => $res ? 1 : 0};
-}
-
-sub connect_list {
-    my $params = shift;
-
-    my $client = $params->{client};
-    my $user = BOM::Platform::User->new({email => $client->email});
-
-    my $user_connect = BOM::Database::Model::UserConnect->new;
-    my @providers    = $user_connect->get_connects_by_user_id($user->id);
-
-    return \@providers;
 }
 
 1;
