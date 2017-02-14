@@ -53,7 +53,7 @@ $res = decode_json($t->message->[1]);
 
 is $res->{error}->{code}, 'AlreadySubscribed', 'Correct error for already subscribed with same req_id';
 
-$t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
+$t->send_ok({json => {forget_all => 'proposal_array'}})->message_ok;
 $res = decode_json($t->message->[1]);
 is scalar @{$res->{forget_all}}, 2, 'Correct number of subscription forget';
 
