@@ -542,9 +542,11 @@ sub _get_mt5_account_from_affiliate_token {
 
     if ($token) {
         my $aff = WebService::MyAffiliates->new(
-            user => BOM::System::Config::third_party->{myaffiliates}->{user},
-            pass => BOM::System::Config::third_party->{myaffiliates}->{pass},
-            host => BOM::System::Config::third_party->{myaffiliates}->{host});
+            user    => BOM::System::Config::third_party->{myaffiliates}->{user},
+            pass    => BOM::System::Config::third_party->{myaffiliates}->{pass},
+            host    => BOM::System::Config::third_party->{myaffiliates}->{host},
+            timeout => 10
+        );
 
         my $user = $aff->get_user($aff->get_affiliate_id_from_token($token) // '') or return;
 
