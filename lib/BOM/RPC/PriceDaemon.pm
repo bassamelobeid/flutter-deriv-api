@@ -9,8 +9,7 @@ use Time::HiRes ();
 use BOM::Platform::Runtime;
 use BOM::MarketData qw(create_underlying);
 use BOM::Product::ContractFactory::Parser qw(shortcode_to_parameters);
-use Data::Dumper;
-use JSON::XS;
+use JSON::XS qw/encode_json decode_json/;
 use BOM::System::RedisReplicated;
 use DataDog::DogStatsd::Helper;
 use BOM::RPC::v3::Contract;
@@ -27,7 +26,7 @@ sub process_job {
     my $underlying = $self->_get_underlying($params) or return undef;
 
     if (!ref($underlying)) {
-        warn "Have legacy underlying - $underlying with params " . Dumper($params) . "\n";
+        warn "Have legacy underlying - $underlying with params " . encode_json($params) . "\n";
         DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => $self->tags});
         return undef;
     }
@@ -95,7 +94,7 @@ sub run {
 
         my $next = $key->[1];
         next unless $next =~ s/^PRICER_KEYS:://;
-        my $payload = JSON::XS::decode_json($next);
+        my $payload = decode_json($next);
         my $params  = {@{$payload}};
 
         # If incomplete or invalid keys somehow got into pricer,
