@@ -307,10 +307,6 @@ sub startup {
         ['app_delete',   {require_auth => 'admin'}],
         ['oauth_apps',   {require_auth => 'read'}],
 
-        ['connect_add',  {require_auth => 'admin'}],
-        ['connect_del',  {require_auth => 'admin'}],
-        ['connect_list', {require_auth => 'admin'}],
-
         ['topup_virtual',     {require_auth => 'trade'}],
         ['get_limits',        {require_auth => 'read'}],
         ['paymentagent_list', {stash_params => [qw/ token /]}],
@@ -468,8 +464,11 @@ sub startup {
             actions => $actions,
 
             # action hooks
-            before_forward => [\&Binary::WebSocketAPI::Hooks::before_forward, \&Binary::WebSocketAPI::Hooks::get_rpc_url],
-            before_call    => [
+            before_forward => [
+                \&Binary::WebSocketAPI::Hooks::check_app_id, \&Binary::WebSocketAPI::Hooks::before_forward,
+                \&Binary::WebSocketAPI::Hooks::get_rpc_url
+            ],
+            before_call => [
                 \&Binary::WebSocketAPI::Hooks::add_app_id,   \&Binary::WebSocketAPI::Hooks::add_brand,
                 \&Binary::WebSocketAPI::Hooks::start_timing, \&Binary::WebSocketAPI::Hooks::cleanup_strored_contract_ids
             ],
