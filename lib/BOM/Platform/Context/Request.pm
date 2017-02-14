@@ -172,11 +172,14 @@ sub _build_client_ip {
 sub _build_brand {
     my $self = shift;
 
-    if (my $domain = $self->domain_name) {
+    if (my $brand = $self->param('brand')) {
+        return $brand;
+    } elsif (my $domain = $self->domain_name) {
         # webtrader.champion-fx.com -> champion, visit this regex
         # when we add new brand
         ($domain) = ($domain =~ /\.([a-z]+).*?\./);
-        return $domain;
+        # for qa return binary
+        return ($domain =~ /^binaryqa/ ? 'binary' : $domain);
     }
 
     return "binary";
