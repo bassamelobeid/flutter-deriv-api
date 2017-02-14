@@ -8,6 +8,7 @@ use Email::Valid;
 use Mojo::Util qw(url_escape);
 use List::MoreUtils qw(any firstval);
 use HTML::Entities;
+use Format::Util::Strings qw( defang );
 
 use Client::Account;
 use LandingCompany::Registry;
@@ -25,7 +26,7 @@ sub _oauth_model {
 sub authorize {
     my $c = shift;
 
-    my ($app_id, $state, $response_type) = map { $c->param($_) // undef } qw/ app_id state response_type /;
+    my ($app_id, $state, $response_type) = map { defang($c->param($_)) // undef } qw/ app_id state response_type /;
 
     # $response_type ||= 'code';    # default to Authorization Code
     $response_type = 'token';    # only support token
@@ -57,8 +58,8 @@ sub authorize {
 
     my $client;
     if (    $c->req->method eq 'POST'
-        and ($c->csrf_token eq ($c->param('csrftoken') // ''))
-        and $c->param('login'))
+        and ($c->csrf_token eq (defang($c->param('csrftoken')) // ''))
+        and defang($c->param('login')))
     {
         $client = $c->_login($app) or return;
         $c->session('_is_logined', 1);
@@ -111,13 +112,25 @@ sub authorize {
     my $loginid = $client->loginid;
     my $user = BOM::Platform::User->new({email => $client->email}) or die "no user for email " . $client->email;
 
+    my $lc = $client->landing_company;
+    if (grep { $brand_name ne $_ } @{$lc->allowed_for_brands}) {
+        return $c->render(
+            template  => _get_login_template_name($app_id, $brand_name),
+            layout    => $brand_name,
+            app       => $app,
+            error     => localize('This account is unavailable. For any questions please contact Customer Support.'),
+            r         => $c->stash('request'),
+            csrftoken => $c->csrf_token,
+        );
+    }
+
     ## confirm scopes
     my $is_all_approved = 0;
     if (    $c->req->method eq 'POST'
-        and ($c->csrf_token eq ($c->param('csrftoken') // ''))
-        and ($c->param('cancel_scopes') || $c->param('confirm_scopes')))
+        and ($c->csrf_token eq (defang($c->param('csrftoken')) // ''))
+        and (defang($c->param('cancel_scopes')) || defang($c->param('confirm_scopes'))))
     {
-        if ($c->param('confirm_scopes')) {
+        if (defang($c->param('confirm_scopes'))) {
             ## approval on all loginids
             foreach my $c1 ($user->clients) {
                 $is_all_approved = $oauth_model->confirm_scope($app_id, $c1->loginid);
@@ -189,7 +202,8 @@ sub _login {
 
     my ($user, $client, $last_login, $err);
 
-    my ($email, $password) = ($c->param('email'), $c->param('password'));
+    my ($email, $password) = map { defang($c->param($_)) // undef } qw/ email password /;
+    my $brand = $c->stash('brand');
     LOGIN:
     {
         if ($oneall_user_id) {
@@ -237,7 +251,14 @@ sub _login {
             $client = firstval { !exists $result->{self_excluded}->{$_->loginid} } (@clients);
         }
 
-        if (grep { $client->loginid =~ /^$_/ } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins}) {
+        my $lc = $client->landing_company;
+        if (grep { $brand->name ne $_ } @{$lc->allowed_for_brands}) {
+            $err = localize('This account is unavailable. For any questions please contact Customer Support.');
+        } elsif (
+            grep {
+                $client->loginid =~ /^$_/
+            } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins})
+        {
             $err = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
         } elsif ($client->get_status('disabled')) {
             $err = localize('This account is unavailable. For any questions please contact Customer Support.');
@@ -246,7 +267,6 @@ sub _login {
         }
     }
 
-    my $brand = $c->stash('brand');
     if ($err) {
         $c->render(
             template  => _get_login_template_name($app->{id}, $brand->name),
