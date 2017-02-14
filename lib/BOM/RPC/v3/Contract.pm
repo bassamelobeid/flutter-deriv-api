@@ -8,7 +8,6 @@ use Try::Tiny;
 use List::MoreUtils qw(none);
 use JSON::XS;
 use Date::Utility;
-use Data::Dumper;
 
 use BOM::System::Config;
 use BOM::RPC::v3::Utility;
