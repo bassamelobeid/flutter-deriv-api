@@ -23,6 +23,9 @@ use Time::HiRes qw(clock_nanosleep CLOCK_REALTIME TIMER_ABSTIME);
 # when the key(s) expire
 use constant JOB_QUEUE_TTL => 60;
 
+# Number of keys to set per Redis call, used to reduce network latency overhead
+use constant JOBS_PER_BATCH => 30;
+
 use Log::Any qw($log);
 use Log::Any::Adapter qw(Stderr), log_level => 'info';
 
@@ -84,16 +87,20 @@ while(1) {
                     );
                     $log->debugf("Contract parameters will be %s", \@pricing_queue_args);
                     # my $contract = produce_contract(@contract_parameters);
-                    push @jobs, \@pricing_queue_args;
+                    push @jobs, "PRICER_KEYS::" . encode_json(\@pricing_queue_args);
                 }
             }
         }
     }
     DataDog::DogStatsd::Helper::stats_timing("pricer_queue.japan.jobs", 0 + @jobs);
     $log->debugf("Total of %d jobs to process, %d skipped", 0 + @jobs, $skipped);
-    # We set TTL to slightly higher (one full pricing interval) than the refresh time, in case there's any
-    # delay on starting the next cycle
-    $redis->setex("PRICER_KEYS::" . encode_json($_), 1 + JOB_QUEUE_TTL, "1") for @jobs;
+
+    { # Attempt to group the Redis operations to reduce network overhead
+        my @copy = @jobs;
+        while(my @batch = splice @copy, 0, JOBS_PER_BATCH) {
+            $redis->mset(map {; $_ => "1" } @batch);
+        }
+    }
 
     # Using a timing metric here so we can get min/max/avg
     DataDog::DogStatsd::Helper::stats_timing("pricer_queue.japan.jobs.count", 0 + @jobs);
