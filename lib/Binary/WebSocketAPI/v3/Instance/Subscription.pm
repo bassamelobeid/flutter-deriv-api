@@ -2,34 +2,44 @@ package Binary::WebSocketAPI::v3::Instance::Subscription;
 
 use strict;
 use warnings;
+use Moo;
 use Data::Dumper;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| pricer_write |;
 use JSON::XS qw| encode_json |;
 use Scalar::Util qw| weaken |;
 
-my ($worker_pid, $instance) = (0, undef);
+has channel_name => (
+    is       => 'ro',
+    required => 1
+);
+has uuid => (
+    is       => 'ro',
+    required => 1
+);
+has redis_server => (is => 'lazy');
 
-sub new {
-    my $class        = shift;
-    my $channel_name = shift;
-    my $uuid         = shift;
-    my $c            = shift;
+sub _build_redis_server {
+    return pricer_write;
+}
 
-    return unless $channel_name;
+### Now we cannot share subscriptions between clients until move subchannels logic out
+sub subscribe {
+    my ($self, $c) = @_;
 
-    my $self = bless {channel_name => $channel_name}, $class;
+    ### For pricer_queue daemon
+    $self->redis_server->set($self->channel_name, 1);
 
-    pricer_write->set($channel_name, 1);
-
-    pricer_write->{shared_info}{$channel_name}{$uuid} = $c;
-    Scalar::Util::weaken(pricer_write->{shared_info}{$channel_name}{$uuid});
-    pricer_write->subscribe([$channel_name], sub { });
+    $self->redis_server->{shared_info}{$self->channel_name}{$self->uuid} = $c;
+    Scalar::Util::weaken($self->redis_server->{shared_info}{$self->channel_name}{$self->uuid});
+    $self->redis_server->subscribe([$self->channel_name], sub { });
 
     return $self;
 }
 
-sub DESTROY {
-    pricer_write->unsubscribe([shift->{channel_name}]);
+sub DEMOLISH {
+    my $self = shift;
+
+    $self->redis_server->unsubscribe([$self->channel_name]);
     return;
 }
 

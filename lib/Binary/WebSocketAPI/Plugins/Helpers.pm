@@ -9,6 +9,8 @@ use Sys::Hostname;
 use YAML::XS;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
+use Binary::WebSocketAPI::v3::Instance::Redis qw| pricer_write |;
+
 use Locale::Maketext::ManyPluralForms {
     'EN'      => ['Gettext' => '/home/git/binary-com/translations-websockets-api/src/en.po'],
     '*'       => ['Gettext' => '/home/git/binary-com/translations-websockets-api/src/locales/*.po'],
@@ -150,29 +152,8 @@ sub register {
     $app->helper(
         redis_pricer => sub {
             my $c = shift;
-
-            if (not $c->stash->{redis_pricer}) {
-                state $url_pricers = do {
-                    my $cf = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write};
-                    my $url = Mojo::URL->new("redis://$cf->{host}:$cf->{port}");
-                    $url->userinfo('dummy:' . $cf->{password}) if $cf->{password};
-                    $url;
-                };
-
-                my $redis_pricer = Mojo::Redis2->new(url => $url_pricers);
-                $redis_pricer->on(
-                    error => sub {
-                        my ($self, $err) = @_;
-                        warn("error: $err");
-                    });
-                $redis_pricer->on(
-                    message => sub {
-                        my ($self, $msg, $channel) = @_;
-
-                        Binary::WebSocketAPI::v3::Wrapper::Pricer::process_pricing_events($c, $msg, $channel);
-                    });
-                $c->stash->{redis_pricer} = $redis_pricer;
-            }
+            ### Instance::Redis
+            $c->stash->{redis_pricer} = pricer_write();
             return $c->stash->{redis_pricer};
         });
 

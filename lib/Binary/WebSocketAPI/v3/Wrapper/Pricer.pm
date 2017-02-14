@@ -6,7 +6,6 @@ use JSON;
 use Data::Dumper;
 use Format::Util::Numbers qw(roundnear);
 use Binary::WebSocketAPI::v3::Wrapper::System;
-use Binary::WebSocketAPI::v3::Instance::Redis qw|pricer_write|;
 use Binary::WebSocketAPI::v3::Instance::Subscription;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
@@ -325,7 +324,10 @@ sub _create_pricer_channel {
         and not exists $pricing_channel->{$redis_channel}
         and not $skip_redis_subscr)
     {
-        $pricing_channel->{uuid}{$uuid}{subscription} //= Binary::WebSocketAPI::v3::Instance::Subscription->new($redis_channel, $uuid, $c);
+        $pricing_channel->{uuid}{$uuid}{subscription} //= Binary::WebSocketAPI::v3::Instance::Subscription->new({
+                channel_name => $redis_channel,
+                uuid         => $uuid
+            })->subscribe($c);
     }
 
     $pricing_channel->{$redis_channel}->{$subchannel}->{uuid}          = $uuid;
