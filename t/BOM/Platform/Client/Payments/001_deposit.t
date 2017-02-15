@@ -98,10 +98,10 @@ $mlt_client = Client::Account->register_and_return_new_client({
 });
 $mlt_client->set_default_account('EUR');
 
-ok(!$mlt_client->get_status('cashier_locked'), 'MLT client not cashier_locked prior to first-deposit');
+ok(!$mlt_client->get_status('unwelcome'), 'MLT client not unwelcome prior to first-deposit');
 $mlt_client->payment_doughflow(%deposit, currency => 'EUR');
 BOM::Platform::Client::IDAuthentication->new(client => $mlt_client)->run_authentication;
-ok($mlt_client->get_status('cashier_locked'), 'MLT client now cashier_locked after first-deposit');
+ok($mlt_client->get_status('unwelcome'), 'MLT client now unwelcome after first-deposit');
 
 my $mx_client = Client::Account->register_and_return_new_client({
     %$client_details,

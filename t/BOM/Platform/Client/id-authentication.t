@@ -118,10 +118,10 @@ subtest 'When auth not required' => sub {
             };
             my @notif = @{$v->notified};
             is @notif, 1, 'sent one notification';
-            like $notif[0][0], qr/SET TO CASHIER_LOCKED PENDING EMAIL REQUEST FOR ID/, 'notification is correct';
+            like $notif[0][0], qr/SET TO UNWELCOME PENDING EMAIL REQUEST FOR ID/, 'notification is correct';
             ok !$v->client->client_fully_authenticated, 'client should not be fully authenticated';
             ok !$v->client->get_status('age_verification'), 'client should not be age verified';
-            ok $v->client->get_status('cashier_locked'), 'client is now cashier_locked';
+            ok $v->client->get_status('unwelcome'), 'client is now unwelcome';
         };
         subtest 'for MX' => sub {
             my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
