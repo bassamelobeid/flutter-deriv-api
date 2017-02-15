@@ -404,11 +404,52 @@ SKIP: {
 
         $t->message_ok;
         $res = decode_json($t->message->[1]);
-        ok $res->{buy}->{payout} > 100, 'Buy contract with defined contract parameters : The payout is greather than buy price 100 from contract parameters';
+        ok $res->{buy}->{payout} > 100,
+            'Buy contract with defined contract parameters : The payout is greather than buy price 100 from contract parameters';
         ok $res->{buy}->{buy_price} < $buy_price * 1.1, 'Buy contract with defined contract parameters : Buy price at better price';
 
-        $t->finish_ok;
     };
+    subtest 'check the buy responses' => sub {
 
+        my %contract = (
+            "amount"        => "500",
+            "basis"         => "stake",
+            "contract_type" => "CALL",
+            "currency"      => "USD",
+            "symbol"        => "frxUSDJPY",
+            "duration"      => "10",
+            "duration_unit" => "m",
+        );
+
+        $t = $t->send_ok({
+                json => {
+                    "proposal" => 1,
+                    %contract
+                }});
+        $t->message_ok;
+        my $proposal_1  = decode_json($t->message->[1]);
+        my $proposal_id = $proposal_1->{proposal}->{id};
+        my $buy_price   = $proposal_1->{proposal}->{ask_price};
+        $t = $t->send_ok({
+                json => {
+                    buy   => $proposal_id,
+                    price => $buy_price,
+                }});
+
+        $t->message_ok;
+        my $res         = decode_json($t->message->[1]);
+        my $contract_id = $res->{buy}->{contract_id};
+        my $payout      = $res->{buy}->{payout};
+        $t = $t->send_ok({
+                json => {
+                    "proposal_open_contract" => 1,
+                    "contract_id"            => $contract_id,
+                }});
+        $t->message_ok;
+        my $contract_details = decode_json($t->message->[1]);
+        is $contract_details->{proposal_open_contract}->{payout}, $payout,
+            'Payout from buy api is matching with the payout from actual payout from proposal open contract';
+        $t->finish_ok;
+        }
 }
 done_testing();
