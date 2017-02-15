@@ -20,13 +20,11 @@
         },
         "account_opening_reason": {
           "type": "string",
-          "description": "Purpose and reason for requesting the account opening",
-          "enum": [
-            "Speculative",
-            "Income Earning",
-            "Assets Saving",
-            "Hedging"
-          ]
+          "description": "Purpose and reason for requesting the account opening"
+        },
+        "account_turnover": {
+          "type":"string",
+          "description": "The anticipated account turnover"
         },
         "forex_trading_frequency": {
           "type": "string",
