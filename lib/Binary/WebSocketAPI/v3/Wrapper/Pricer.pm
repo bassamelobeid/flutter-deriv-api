@@ -92,7 +92,7 @@ sub proposal_array {
     my $barriers_order = {};
     #print "in proposal_array \n".Dumper($req_storage);
 
-    if ($req_storage->{args}{subscribe}) {
+    #if ($req_storage->{args}{subscribe}) {
         #$uuid = &Binary::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string();
         if ($uuid = _pricing_channel_for_ask($c, $req_storage->{args}, {})) {
             my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
@@ -113,7 +113,7 @@ sub proposal_array {
             $c->send({json => $error}, $req_storage);
             return;
         }
-    }
+    #}
 
     my $create_price_channel = sub {
         my ($c, $rpc_response, $req_storage) = @_;
@@ -129,13 +129,13 @@ sub proposal_array {
         print "Cache creating chan: " . Dumper($cache);
         $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
         print "msg gone: " . $req_storage->{uuid} . "\n";
-        if ($uuid) {                                                       # we are in subscr mode, so remember the sequence of streams
+        if ($req_storage->{args}{subscribe}) {   # we are in subscr mode, so remember the sequence of streams
             print "HWA!\n";
             my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions');
             if ($proposal_array_subscriptions->{$uuid}) {
                 print "HWA 2! <<<<<<<<<<<<<<<<<<<\n";
                 #push @{$proposal_array_subscriptions->{$uuid}{seq}}, $req_storage->{uuid};
-                my $idx = $req_storage->{args}{barrier} . ($req_storage->{args}{barrier2} || '');
+                my $idx = $req_storage->{args}{barrier} . ($req_storage->{args}{barrier2} // '');
                 print "idx : $idx\n";
                 ${$proposal_array_subscriptions->{$uuid}{seq}}[$barriers_order->{$idx}] = $req_storage->{uuid};
                 $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
@@ -163,7 +163,7 @@ sub proposal_array {
             my $args = {%{$req_storage->{args}}};
 
             $args->{barrier} = $barriers->{barrier};
-            $args->{barrier2} = $barriers->{barrier2} if $barriers->{barrier2};
+            $args->{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
             delete $args->{barriers};
             #print "args: ".Dumper($args);
             #@{$args}{keys %$barriers} = values %$barriers;
@@ -214,12 +214,21 @@ sub proposal_array {
                 # should not throw 'cos we do not $future->fail
                 my @result = $f->get;
                 delete @{$_}{qw(msg_type passthrough)} for @result;
+                print "============== BARRIERS: ===============\n";
                 for my $i (0..$#{$req_storage->{args}->{barriers}}) {
-                    if (! $result[$i]->{error} && keys %{$result[$i]->{proposal}}) {
-                        $result[$i]->{proposal}{barrier} = ${$req_storage->{args}->{barriers}}[$i]->{barrier};
-                        $result[$i]->{proposal}{barrier2} = ${$req_storage->{args}->{barriers}}[$i]->{barrier2} if ${$req_storage->{args}->{barriers}}[$i]->{barrier2};
+                    if (keys %{$result[$i]}) {
+                        print "in if 1\n";
+                        if ($result[$i]->{error}) {
+                            print "in error: ".Dumper(${$req_storage->{args}->{barriers}}[$i]);
+                            $result[$i]->{error}{details}{barrier} = ${$req_storage->{args}->{barriers}}[$i]->{barrier};
+                            $result[$i]->{error}{details}{barrier2} = ${$req_storage->{args}->{barriers}}[$i]->{barrier2} if exists ${$req_storage->{args}->{barriers}}[$i]->{barrier2};
+                        } else {
+                            $result[$i]->{proposal}{barrier} = ${$req_storage->{args}->{barriers}}[$i]->{barrier};
+                            $result[$i]->{proposal}{barrier2} = ${$req_storage->{args}->{barriers}}[$i]->{barrier2} if exists ${$req_storage->{args}->{barriers}}[$i]->{barrier2};
+                        }
                     }
                 }
+                print "============== END BARRIERS: ===============\n";
                 print "Collect res from on_ready: " . Dumper(\@result);
                 # Return a single result back to the client.
                 my $res = {

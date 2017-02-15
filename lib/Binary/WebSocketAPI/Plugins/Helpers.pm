@@ -194,9 +194,14 @@ sub register {
                                 my $uuid = $proposal_array_subscriptions->{$pa_uuid}{seq}->[$i];
                                 my $barriers = $proposal_array_subscriptions->{$pa_uuid}{args}{barriers}->[$i];
                                 my $proposal = pop @{$proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid}} // {};
-                                if (keys %$proposal && ! $proposal->{error}) {
-                                    $proposal->{proposal}{barrier} = $barriers->{barrier};
-                                    $proposal->{proposal}{barrier2} = $barriers->{barrier2} if $barriers->{barrier2};
+                                if (keys %$proposal) {
+                                    if ($proposal->{error}) {
+                                        $proposal->{error}{details}{barrier} = $barriers->{barrier};
+                                        $proposal->{error}{details}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
+                                    } else {
+                                        $proposal->{proposal}{barrier} = $barriers->{barrier};
+                                        $proposal->{proposal}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
+                                    }
                                 }
                                 print "uuid: $uuid\n";
                                 push @proposals, $proposal;
