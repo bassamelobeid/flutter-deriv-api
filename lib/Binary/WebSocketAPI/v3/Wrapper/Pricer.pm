@@ -93,26 +93,26 @@ sub proposal_array {
     #print "in proposal_array \n".Dumper($req_storage);
 
     #if ($req_storage->{args}{subscribe}) {
-        #$uuid = &Binary::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string();
-        if ($uuid = _pricing_channel_for_ask($c, $req_storage->{args}, {})) {
-            my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
-            $proposal_array_subscriptions->{$uuid} = {
-                args      => $req_storage->{args},
-                proposals => {},
-                seq       => []};
-            $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
-            print "Sub created\n";
-            my $position = 0;
-            for my $barrier (@{$req_storage->{args}->{barriers}}) {
-                $barriers_order->{$barrier->{barrier} . ($barrier->{barrier2} || '')} = $position++;
-            }
-            print "ORDUNG!:::" . Dumper($barriers_order);
-        } else {
-            print "Subscriptuon canceled, no uuid\n";
-            my $error = $c->new_error('proposal_array', 'AlreadySubscribed', $c->l('You are already subscribed to proposal_array.'));
-            $c->send({json => $error}, $req_storage);
-            return;
+    #$uuid = &Binary::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string();
+    if ($uuid = _pricing_channel_for_ask($c, $req_storage->{args}, {})) {
+        my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
+        $proposal_array_subscriptions->{$uuid} = {
+            args      => $req_storage->{args},
+            proposals => {},
+            seq       => []};
+        $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
+        print "Sub created\n";
+        my $position = 0;
+        for my $barrier (@{$req_storage->{args}->{barriers}}) {
+            $barriers_order->{$barrier->{barrier} . ($barrier->{barrier2} || '')} = $position++;
         }
+        print "ORDUNG!:::" . Dumper($barriers_order);
+    } else {
+        print "Subscriptuon canceled, no uuid\n";
+        my $error = $c->new_error('proposal_array', 'AlreadySubscribed', $c->l('You are already subscribed to proposal_array.'));
+        $c->send({json => $error}, $req_storage);
+        return;
+    }
     #}
 
     my $create_price_channel = sub {
@@ -129,7 +129,7 @@ sub proposal_array {
         print "Cache creating chan: " . Dumper($cache);
         $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
         print "msg gone: " . $req_storage->{uuid} . "\n";
-        if ($req_storage->{args}{subscribe}) {   # we are in subscr mode, so remember the sequence of streams
+        if ($req_storage->{args}{subscribe}) {                                            # we are in subscr mode, so remember the sequence of streams
             print "HWA!\n";
             my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions');
             if ($proposal_array_subscriptions->{$uuid}) {
@@ -215,16 +215,18 @@ sub proposal_array {
                 my @result = $f->get;
                 delete @{$_}{qw(msg_type passthrough)} for @result;
                 print "============== BARRIERS: ===============\n";
-                for my $i (0..$#{$req_storage->{args}->{barriers}}) {
+                for my $i (0 .. $#{$req_storage->{args}->{barriers}}) {
                     if (keys %{$result[$i]}) {
                         print "in if 1\n";
                         if ($result[$i]->{error}) {
-                            print "in error: ".Dumper(${$req_storage->{args}->{barriers}}[$i]);
-                            $result[$i]->{error}{details}{barrier} = ${$req_storage->{args}->{barriers}}[$i]->{barrier};
-                            $result[$i]->{error}{details}{barrier2} = ${$req_storage->{args}->{barriers}}[$i]->{barrier2} if exists ${$req_storage->{args}->{barriers}}[$i]->{barrier2};
+                            print "in error: " . Dumper(${$req_storage->{args}->{barriers}}[$i]);
+                            $result[$i]->{error}{details}{barrier}  = ${$req_storage->{args}->{barriers}}[$i]->{barrier};
+                            $result[$i]->{error}{details}{barrier2} = ${$req_storage->{args}->{barriers}}[$i]->{barrier2}
+                                if exists ${$req_storage->{args}->{barriers}}[$i]->{barrier2};
                         } else {
-                            $result[$i]->{proposal}{barrier} = ${$req_storage->{args}->{barriers}}[$i]->{barrier};
-                            $result[$i]->{proposal}{barrier2} = ${$req_storage->{args}->{barriers}}[$i]->{barrier2} if exists ${$req_storage->{args}->{barriers}}[$i]->{barrier2};
+                            $result[$i]->{proposal}{barrier}  = ${$req_storage->{args}->{barriers}}[$i]->{barrier};
+                            $result[$i]->{proposal}{barrier2} = ${$req_storage->{args}->{barriers}}[$i]->{barrier2}
+                                if exists ${$req_storage->{args}->{barriers}}[$i]->{barrier2};
                         }
                     }
                 }
@@ -235,7 +237,7 @@ sub proposal_array {
                     json => {
                         echo_req       => $req_storage->{args},
                         proposal_array => {
-                            proposals => [map {$_->{proposal} || $_} @result],
+                            proposals => [map { $_->{proposal} || $_ } @result],
                             $uuid ? (id => $uuid) : (),
                         },
                         msg_type => $msg_type,
