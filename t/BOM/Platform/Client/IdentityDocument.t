@@ -3,8 +3,9 @@ use warnings;
 
 use Test::More qw(no_plan);
 use Test::Exception;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use Client::Account;
+
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $CR2002  = Client::Account->new({loginid => 'CR2002'});
 my $MX0012  = Client::Account->new({loginid => 'MX0012'});
