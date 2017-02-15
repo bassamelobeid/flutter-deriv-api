@@ -546,11 +546,12 @@ sub _get_mt5_account_from_affiliate_token {
             pass    => BOM::System::Config::third_party->{myaffiliates}->{pass},
             host    => BOM::System::Config::third_party->{myaffiliates}->{host},
             timeout => 10
-        );
+        ) or return;
 
-        my $user = $aff->get_user($aff->get_affiliate_id_from_token($token) // '') or return;
+        my $user_id = $aff->get_affiliate_id_from_token($token) or return;
+        my $user = $aff->get_user($user_id) or return;
 
-        my $affiliate_variables = $user->{USER_VARIABLES}->{VARIABLE};
+        my $affiliate_variables = $user->{USER_VARIABLES}->{VARIABLE} or return;
         $affiliate_variables = [$affiliate_variables] unless ref($affiliate_variables) eq 'ARRAY';
 
         my ($mt5_account) = grep { $_->{NAME} eq 'mt5_account' } @$affiliate_variables;
