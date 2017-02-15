@@ -4,8 +4,6 @@ use warnings;
 
 use feature qw(say);
 
-use Data::Dumper;
-
 use BOM::Platform::Runtime;
 use LandingCompany::Offerings qw(get_offerings_with_filter);
 

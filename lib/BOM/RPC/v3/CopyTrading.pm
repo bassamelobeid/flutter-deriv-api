@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use Try::Tiny;
-use Data::Dumper;
 
 use Client::Account;
 use BOM::Database::ClientDB;
