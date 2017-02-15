@@ -1087,8 +1087,8 @@ In case of an unexpected error, the exception is re-thrown unmodified.
 );
 
 sub _recover {
-    my $self  = shift;
-    my $err   = shift;
+    my $self = shift;
+    my $err  = shift;
 
     if (ref($err) eq 'ARRAY') {    # special BINARY code
         my $ref = $known_errors{$err->[0]};
