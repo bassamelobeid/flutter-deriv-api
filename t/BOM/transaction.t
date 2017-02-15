@@ -1643,16 +1643,10 @@ subtest 'max_payout_open_bets validation: selling bets on the way', sub {
             $txn->buy;
         };
 
-        is $error, undef, 'no error';
+        is $error->get_type, 'OpenPositionPayoutLimit', 'error is OpenPositionPayoutLimit';
 
-        # check if the expired contract has been sold
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn_id_buy_expired_contract;
-
-        is $fmb->{is_sold},    1, 'previously unsold contract is now sold';
-        is $fmb->{is_expired}, 1, '... and expired';
-
-        cmp_ok $txn->contract_id,    '>', 0, 'txn->contract_id > 0';
-        cmp_ok $txn->transaction_id, '>', 0, 'txn->transaction_id > 0';
+        is $fmb->{is_sold}, 0, 'have expired but unsold contract in DB';
     }
     'survived';
 };
