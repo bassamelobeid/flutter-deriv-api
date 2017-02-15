@@ -15,14 +15,13 @@
         },
         "account_opening_reason": {
           "type": "string",
-          "description": "Purpose and reason for requesting the account opening",
-          "required":"1",
-          "enum": [
-            "Speculative",
-            "Income Earning",
-            "Assets Saving",
-            "Hedging"
-          ]
+          "pattern": "^Speculative$",
+          "required":"1"
+        },
+        "account_turnover": {
+          "type": "string",
+          "pattern": "^Less than \\$25\\,000$",
+          "required": "1"
         },
         "forex_trading_frequency": {
           "type": "string",
