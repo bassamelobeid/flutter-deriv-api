@@ -5,8 +5,6 @@ use warnings;
 
 no indirect;
 use Try::Tiny;
-use JSON;
-use Data::Dumper;
 use Format::Util::Numbers qw(roundnear);
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
@@ -337,7 +335,7 @@ sub _process_proposal_open_contract_response {
             my %copy_req = %$req_storage;
             delete @copy_req{qw(in_validator out_validator)};
             $copy_req{loginid} = $c->stash('loginid') if $c->stash('loginid');
-            warn "undef shortcode req_storage " . Dumper(\%copy_req);
+            warn "undef shortcode req_storage " . encode_json(\%copy_req);
             my $error =
                 $c->new_error('proposal_open_contract', 'GetProposalFailure', $c->l('Sorry, an error occurred while processing your request.'));
             $c->send({json => $error}, $req_storage);
@@ -613,7 +611,7 @@ sub _price_stream_results_adjustment {
 
     # log the instances when pricing server doesn't return theo probability
     unless (defined $resp_theo_probability) {
-        warn 'missing theo probability from pricer. Contract parameter dump ' . Dumper($contract_parameters);
+        warn 'missing theo probability from pricer. Contract parameter dump ' . encode_json($contract_parameters);
         stats_inc('price_adjustment.missing_theo_probability');
     }
 
