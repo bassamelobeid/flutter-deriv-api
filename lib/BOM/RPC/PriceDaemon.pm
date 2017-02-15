@@ -9,8 +9,7 @@ use Time::HiRes ();
 use BOM::Platform::Runtime;
 use BOM::MarketData qw(create_underlying);
 use BOM::Product::ContractFactory::Parser qw(shortcode_to_parameters);
-use Data::Dumper;
-use JSON::XS;
+use JSON::XS qw/encode_json decode_json/;
 use BOM::System::RedisReplicated;
 use DataDog::DogStatsd::Helper;
 use BOM::RPC::v3::Contract;
@@ -27,7 +26,7 @@ sub process_job {
     my $underlying = $self->_get_underlying($params) or return undef;
 
     if (!ref($underlying)) {
-        warn "Have legacy underlying - $underlying with params " . Dumper($params) . "\n";
+        warn "Have legacy underlying - $underlying with params " . encode_json($params) . "\n";
         DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => $self->tags});
         return undef;
     }
@@ -80,6 +79,10 @@ sub run {
     while (my $key = $redis->brpop(@{$args{queues}}, 0)) {
         # Remember that we had some jobs
         my $tv_now = [Time::HiRes::gettimeofday];
+        my $queue  = $key->[0];
+        # Apply this for the duration of the current price only
+        local $self->{current_queue} = $queue;
+
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.idle.time', 1000 * Time::HiRes::tv_interval($tv, $tv_now), {tags => $self->tags});
         $tv = $tv_now;
 
@@ -95,7 +98,7 @@ sub run {
 
         my $next = $key->[1];
         next unless $next =~ s/^PRICER_KEYS:://;
-        my $payload = JSON::XS::decode_json($next);
+        my $payload = decode_json($next);
         my $params  = {@{$payload}};
 
         # If incomplete or invalid keys somehow got into pricer,
@@ -125,10 +128,7 @@ sub run {
         $tv_now = [Time::HiRes::gettimeofday];
 
         DataDog::DogStatsd::Helper::stats_count('pricer_daemon.queue.subscribers', $subscribers_count, {tags => $self->tags});
-        DataDog::DogStatsd::Helper::stats_timing(
-            'pricer_daemon.process.time',
-            1000 * Time::HiRes::tv_interval($tv, $tv_now),
-            {tags => [@{$self->tags}, 'tag:' . $key->[0]]});
+        DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.time', 1000 * Time::HiRes::tv_interval($tv, $tv_now), {tags => $self->tags});
         my $end_time = Time::HiRes::time;
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.end_time', 1000 * ($end_time - int($end_time)), {tags => $self->tags});
         $stat_count->{$params->{price_daemon_cmd}}++;
@@ -187,7 +187,26 @@ sub _validate_params {
     return 1;
 }
 
-sub tags { return shift->{tags} }
+=head2 current_queue
+
+The name of the queue we're currently processing. May be undef.
+
+=cut
+
+sub current_queue {
+    return shift->{current_queue};
+}
+
+=head2 tags
+
+Returns an arrayref of datadog tags. Takes an optional list of additional tags to apply.
+
+=cut
+
+sub tags {
+    my ($self, @tags) = @_;
+    return [@{$self->{tags}}, map { ; "tag:$_" } $self->current_queue // (), @tags];
+}
 
 1;
 
