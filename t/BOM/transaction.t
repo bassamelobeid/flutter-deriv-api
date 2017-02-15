@@ -1374,7 +1374,6 @@ subtest 'max_open_bets validation: selling bets on the way', sub {
 
         is $error->get_type, 'OpenPositionLimit', 'error is OpenPositionLimit';
 
-        $txn_id_buy_expired_contract = $exp_txn->transaction_id;
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn_id_buy_expired_contract;
         is $fmb->{is_sold}, 0, 'have expired but unsold contract in DB';
     }
