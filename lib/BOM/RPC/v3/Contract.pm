@@ -209,11 +209,17 @@ sub _get_ask {
                     });
             }
             if ($code eq 'ContractBuyValidationError') {
+                my $longcode = '';
+                print "Trying to get longcode.....\n";
+                try {
+                    $longcode = $contract->longcode;
+                };
+                print "Got longcode: $longcode\n";
                 $response->{contract_parameters} = $contract_parameters;
-                $response->{longcode}            = $contract->longcode;
+                $response->{longcode}            = $longcode;
             }
             #print "Error response: ".Dumper($response);
-            print "Longcode: " . $contract->longcode . "\n";
+            #print "Longcode: " . $longcode . "\n";
         } else {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
             my $trading_window_start = $p2->{trading_period_start} // '';
