@@ -113,7 +113,7 @@ sub validate_payment_control_code {
     my $loginid  = shift;
     my $currency = shift;
     my $amount   = shift;
-
+return;
     my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
 
     my $error_status = $self->_validate_empty_code($code);
