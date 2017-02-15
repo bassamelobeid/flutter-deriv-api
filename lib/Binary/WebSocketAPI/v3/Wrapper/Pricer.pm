@@ -90,9 +90,18 @@ sub proposal_array {
     my $barriers_order = {};
     #print "in proposal_array \n".Dumper($req_storage);
 
+    if ( ! _uniquie_barriers($req_storage->{args}->{barriers})) {
+        print "Barriers not uniq!\n";
+        my $error = $c->new_error('proposal_array', 'DuplicatedBarriers', $c->l('Duplicate barriers not allowed.'));
+        $c->send({json => $error}, $req_storage);
+        return;
+    }
+
     #if ($req_storage->{args}{subscribe}) {
     #$uuid = &Binary::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string();
-    if ($uuid = _pricing_channel_for_ask($c, $req_storage->{args}, {})) {
+    my $copy_args = {%{$req_storage->{args}}};
+    $copy_args->{skip_streaming} = 1; # only for proposal_array: do not create redis subscription, we need only uuid stored in stash
+    if ($uuid = _pricing_channel_for_ask($c, $copy_args, {})) {
         my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
         $proposal_array_subscriptions->{$uuid} = {
             args      => $req_storage->{args},
@@ -774,6 +783,17 @@ sub _get_validation_for_type {
     return sub {
         return _invalid_response_or_stash_data(@_)->($type);
         }
+}
+
+sub _uniquie_barriers {
+    my $barriers = shift;
+    my %h;
+    for my $barrier (@$barriers) {
+        my $idx = $barrier->{barrier}.(exists $barrier->{barrier2} ? $barrier->{barrier2} : '');
+        return if $h{$idx};
+        $h{$idx} = 1; 
+    }
+    return 1;
 }
 
 1;
