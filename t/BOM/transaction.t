@@ -1293,7 +1293,7 @@ subtest 'max_open_bets validation', sub {
 };
 
 subtest 'max_open_bets validation: selling bets on the way', sub {
-    plan tests => 16;
+    plan tests => 9;
     lives_ok {
         my $cl = create_client;
 
@@ -1565,7 +1565,7 @@ subtest 'max_payout_open_bets validation', sub {
 };
 
 subtest 'max_payout_open_bets validation: selling bets on the way', sub {
-    plan tests => 11;
+    plan tests => 8;
     lives_ok {
         my $cl = create_client;
 
@@ -1750,7 +1750,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
 };
 
 subtest 'max_payout_per_symbol_and_bet_type validation: selling bets on the way', sub {
-    plan tests => 11;
+    plan tests => 8;
     lives_ok {
         my $cl = create_client;
 
