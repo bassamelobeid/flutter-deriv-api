@@ -616,7 +616,7 @@ subtest 'sell a spread bet' => sub {
             is $trx->{amount} + 0, $contract->bid_price, 'amount';
             # bought two contracts at 10 and 20 USD.
             is $trx->{balance_after} + 0, 5000 - 30 + $contract->bid_price, 'balance_after';
-            is $trx->{financial_market_bet_id}, $sell_spread_id, 'financial_market_bet_id';
+            is $trx->{financil_market_bet_id}, $sell_spread_id, 'financial_market_bet_id';
             is $trx->{payment_id},    undef,                  'payment_id';
             is $trx->{quantity},      1,                      'quantity';
             is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
@@ -1070,22 +1070,9 @@ subtest 'insufficient balance: buy bet for 100.01 with a balance of 100', sub {
 
                 is $error->get_type, 'InsufficientBalance', 'error is InsufficientBalance';
 
-                # check if the expired contract has been sold
-                ($trx, $fmb, $chld, $qv1, $qv2, my $trx2) = get_transaction_from_db higher_lower_bet => $txn_id_buy_expired_contract;
-
-                ok !$fmb->{is_sold}, 'previously unsold contract is not sold';
-
-                # now check the buy transaction itself
-                ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
-
-                is $trx->{source}, 31, 'source';
-                is $txn->contract_id, $fmb->{id}, 'txn->contract_id';
-                cmp_ok $txn->contract_id, '>', 0, 'txn->contract_id > 0';
-                is $txn->transaction_id, $trx->{id}, 'txn->transaction_id';
-                cmp_ok $txn->transaction_id, '>', 0, 'txn->transaction_id > 0';
-                is $txn->balance_after, $trx->{balance_after}, 'txn->balance_after';
-                is $txn->balance_after + 0, 100 + 100 - 100.01,
-                    'txn->balance_after == 99.99 (100 (balance) + 100 (unsold bet) - 100.01 (bought bet))';
+                # check if the expired contract still has not been sold
+                ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn_id_buy_expired_contract;
+                is $fmb->{is_sold}, 0, 'have expired but unsold contract in DB';
             };
         }
     }
