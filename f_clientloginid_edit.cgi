@@ -245,7 +245,7 @@ if (my $check_str = $input{do_id_check}) {
         force_recheck => 1
     );
     for ($check_str) {
-        $result = /ProveID/ ? $id_auth->_fetch_proveid() : die("unknown IDAuthentication method $_");
+        $result = /ProveID/ ? $id_auth->_do_proveid() : die("unknown IDAuthentication method $_");
     }
     my $encoded_check_str = encode_entities($check_str);
     print qq[<p><b>"$encoded_check_str" completed</b></p>
