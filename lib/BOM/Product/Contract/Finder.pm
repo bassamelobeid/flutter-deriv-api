@@ -63,7 +63,7 @@ sub available_contracts_for_symbol {
         my $bc = $o->{barrier_category};
 
         my $cat = BOM::Product::Contract::Category->new($cc);
-        $o->{contract_category_display} = localize($cat->display_name);
+        $o->{contract_category_display} = $cat->translated_display_name;
         $o->{contract_display}          = localize($o->{contract_display});
 
         if ($o->{start_type} eq 'forward') {
