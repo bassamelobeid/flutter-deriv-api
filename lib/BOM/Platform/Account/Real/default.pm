@@ -323,6 +323,16 @@ sub get_financial_input_mapping {
                 "Hedging"        => 0,
             }
         },
+        account_turnover => {
+            'label'            => 'The anticipated account turnover',
+            'possible_answers' => {
+                'Less than $25,000'   => 0,
+                '$25,000 - $50,000'   => 0,
+                '$50,001 - $100,000'  => 0,
+                '$100,001 - $500,000' => 0,
+                'Over $500,000'       => 0
+            }
+        },
         occupation => {
             'label'           => 'Occupation',
             'possible_answer' => {
