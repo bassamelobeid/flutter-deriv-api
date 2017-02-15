@@ -6,7 +6,7 @@ no indirect;
 
 use Try::Tiny;
 use List::MoreUtils qw(none);
-use Data::Dumper;
+use JSON::XS;
 use Date::Utility;
 
 use BOM::System::Config;
@@ -129,7 +129,7 @@ sub _get_ask {
         die unless pre_validate_start_expire_dates($p2);
     }
     catch {
-        warn __PACKAGE__ . " _get_ask pre_validate_start_expire_dates failed, parameters: " . Dumper($p2);
+        warn __PACKAGE__ . " _get_ask pre_validate_start_expire_dates failed, parameters: " . JSON::XS->new->allow_blessed->encode($p2);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
@@ -139,7 +139,7 @@ sub _get_ask {
         $contract = produce_contract($p2);
     }
     catch {
-        warn __PACKAGE__ . " _get_ask produce_contract failed, parameters: " . Dumper($p2);
+        warn __PACKAGE__ . " _get_ask produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($p2);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
@@ -291,7 +291,7 @@ sub get_bid {
         $contract                            = produce_contract($bet_params);
     }
     catch {
-        warn __PACKAGE__ . " get_bid produce_contract failed, parameters: " . Dumper($bet_params);
+        warn __PACKAGE__ . " get_bid produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($bet_params);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'GetProposalFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
@@ -575,7 +575,7 @@ sub get_contract_details {
         $contract                            = produce_contract($bet_params);
     }
     catch {
-        warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . Dumper($bet_params);
+        warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($bet_params);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'GetContractDetails',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});

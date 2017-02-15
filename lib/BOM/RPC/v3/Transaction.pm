@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Try::Tiny;
-use Data::Dumper;
+use JSON::XS qw/encode_json/;
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
@@ -36,7 +36,7 @@ sub buy {
             unless BOM::RPC::v3::Contract::pre_validate_start_expire_dates($contract_parameters);
     }
     catch {
-        warn __PACKAGE__ . " buy pre_validate_start_expire_dates failed, parameters: " . Dumper($contract_parameters);
+        warn __PACKAGE__ . " buy pre_validate_start_expire_dates failed, parameters: " . encode_json($contract_parameters);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
@@ -46,7 +46,7 @@ sub buy {
         $contract = produce_contract($contract_parameters);
     }
     catch {
-        warn __PACKAGE__ . " buy produce_contract failed, parameters: " . Dumper($contract_parameters);
+        warn __PACKAGE__ . " buy produce_contract failed, parameters: " . encode_json($contract_parameters);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
@@ -183,7 +183,7 @@ sub buy_contract_for_multiple_accounts {
         catch {
             warn __PACKAGE__
                 . " buy_contract_for_multiple_accounts pre_validate_start_expire_dates failed, parameters: "
-                . Dumper($contract_parameters);
+                . encode_json($contract_parameters);
             $response = BOM::RPC::v3::Utility::create_error({
                     code              => 'ContractCreationFailure',
                     message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
@@ -194,7 +194,7 @@ sub buy_contract_for_multiple_accounts {
             $contract = produce_contract($contract_parameters);
         }
         catch {
-            warn __PACKAGE__ . " buy_contract_for_multiple_accounts produce_contract failed, parameters: " . Dumper($contract_parameters);
+            warn __PACKAGE__ . " buy_contract_for_multiple_accounts produce_contract failed, parameters: " . encode_json($contract_parameters);
             $response = BOM::RPC::v3::Utility::create_error({
                     code              => 'ContractCreationFailure',
                     message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
