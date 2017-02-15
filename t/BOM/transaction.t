@@ -1068,15 +1068,12 @@ subtest 'insufficient balance: buy bet for 100.01 with a balance of 100', sub {
                 });
                 $error = $txn->buy;
 
-                is $error, undef, 'no error';
+                is $error->get_type, 'InsufficientBalance', 'error is InsufficientBalance';
 
                 # check if the expired contract has been sold
                 ($trx, $fmb, $chld, $qv1, $qv2, my $trx2) = get_transaction_from_db higher_lower_bet => $txn_id_buy_expired_contract;
 
-                is $fmb->{is_sold},    1,     'previously unsold contract is now sold';
-                is $fmb->{is_expired}, 1,     '... and expired';
-                is $trx->{source},     undef, 'source';
-                is $trx2->{source},    31,    'source';
+                ok !$fmb->{is_sold}, 'previously unsold contract is not sold';
 
                 # now check the buy transaction itself
                 ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
