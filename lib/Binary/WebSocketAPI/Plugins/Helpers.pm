@@ -201,7 +201,7 @@ sub register {
                                     }
                                 }
                                 push @proposals, $proposal;
-                                $proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid} = [];
+                                $proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid} = [($proposal)]; #keep last and send it if no new in 1 sec
                             }
                             my $results = {
                                 proposal_array => {
