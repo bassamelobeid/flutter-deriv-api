@@ -471,7 +471,7 @@ sub startup {
             my $non_authorised_key = do {
                 my $ip = $c->client_ip;
                 if (!defined $ip) {
-                    warn("cannot determine client IP-address");
+                    $app->log->warn("cannot determine client IP-address");
                     $ip = 'unknown-IP';
                 }
                 my $user_agent = $c->req->headers->header('User-Agent') // 'Unknown-UA';
