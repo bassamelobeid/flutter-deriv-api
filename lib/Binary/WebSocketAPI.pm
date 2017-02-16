@@ -490,7 +490,10 @@ sub startup {
                 $key => encode_json($hits),
                 EX   => 3600,
                 sub {
-                    # OK, do nothing
+                    my ($redis, $err) = @_;
+                    if ($err) {
+                        $app->log->error("rate_limitations_save error: $err");
+                    }
                 },
             );
         });
@@ -502,7 +505,10 @@ sub startup {
             my $hits_json = $c->ws_redis_slave->get(
                 $key,
                 sub {
-                    my ($redis, $hits_json) = @_;
+                    my ($redis, $err, $hits_json) = @_;
+                    if ($err) {
+                        $app->log->error("rate_limitations_load error: $err");
+                    }
                     my $hits = $hits_json ? decode_json($hits_json) : {};
                     $c->stash(rate_limitations_hits => $hits);
                 });

@@ -22,6 +22,9 @@ sub logout_success {
 
 sub login_success {
     my ($c, $rpc_response) = @_;
+
+    # rpc response is not yet populated into stash
+    $c->stash(loginid => $rpc_response->{loginid});
     $c->rate_limitations_load;
 
     # persist actual limits every 15m for logged-in users

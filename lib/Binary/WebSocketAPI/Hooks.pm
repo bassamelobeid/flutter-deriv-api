@@ -123,6 +123,7 @@ sub reached_limit_check {
         and not $c->rate_limitations->within_rate_limits($limiting_service, 'does-not-matter'))
     {
         stats_inc("bom_websocket_api.v_3.call.ratelimit.hit.$limiting_service", {tags => ["app_id:" . $c->app_id]});
+        $c->rate_limitations_save;
         return 1;
     }
     return;
