@@ -112,7 +112,7 @@ sub verify_with_shortcode {
     my $short_code      = $args->{shortcode} or die "No shortcode provided";
     my $action_type     = $args->{action_type};
     my $verify_ask      = $args->{ask_price};                                  # This is the price to be verify
-    my $verify_bid      = $args->{bid_price};
+    my $verify_bid      = $args->{bid_price} // undef;
     my $currency        = $args->{currency};
 
     my $original_contract = produce_contract($short_code, $currency);
@@ -132,6 +132,8 @@ sub verify_with_shortcode {
     my $parameters;
     for (0, 1) {
         my ($c, $price_to_verify) = $contracts[$_]->[0 .. 1];
+
+        next unless defined $price_to_verify;
 
         my $recalculated_price = $action_type eq 'buy' ? $c->ask_price : $c->bid_price;
         my $diff = abs($price_to_verify - $recalculated_price) / $c->payout;
