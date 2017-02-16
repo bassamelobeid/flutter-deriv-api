@@ -139,6 +139,7 @@ sub _build_news_adjusted_pricing_vol {
             economic_events               => $events,
             ticks                         => $self->ticks_for_volatility_calculation,
             include_economic_event_impact => 1,
+            backprice                     => ($self->underlying->for_date ? 1 : 0),
         });
     }
 
