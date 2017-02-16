@@ -130,8 +130,9 @@ sub verify_with_shortcode {
     my @contracts         = ([$contract, $verify_ask], [$opposite_contract, $verify_bid]);
 
     my $parameters;
-    for (0, 1) {
-        my ($c, $price_to_verify) = $contracts[$_]->[0 .. 1];
+    foreach my $ind (0, 1) {
+        my $c               = $contracts[$ind]->[0];
+        my $price_to_verify = $contracts[$ind]->[1];
 
         next unless defined $price_to_verify;
 
@@ -149,7 +150,7 @@ sub verify_with_shortcode {
                 my $new_price = $action_type eq 'buy' ? $new_contract->ask_price : $new_contract->bid_price;
                 last LOOP if (abs($new_price - $price_to_verify) / $new_contract->payout <= 0.001);
             }
-            $contracts[$_]->[0] = $new_contract;
+            $contracts[$ind]->[0] = $new_contract;
         }
     }
 
