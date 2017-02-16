@@ -33,18 +33,19 @@ BOM::Backoffice::Auth0::can_access(['Quants']);
 
 Bar("Bet Parameters");
 
+my ($loginid, $broker) = map { request()->param($_) } qw(loginid broker);
+
+my $landing_company;
+if ($broker) {
+    $landing_company = LandingCompany::Registry::get_by_broker($broker)->short;
+} elsif ($loginid) {
+    my $client = Client::Account::get_instance({'loginid' => $loginid});
+    $landing_company = $client->landing_company->short;
+}
+
 my $bet = do {
     my $contract_object = '';
-    my ($loginid, $shortcode, $currency, $broker) = map { request()->param($_) } qw(loginid shortcode currency broker);
-
-    my $landing_company;
-
-    if ($broker) {
-        $landing_company = LandingCompany::Registry::get_by_broker($broker)->short;
-    } elsif ($loginid) {
-        my $client = Client::Account::get_instance({'loginid' => $loginid});
-        $landing_company = $client->landing_company->short;
-    }
+    my ($shortcode, $currency) = map { request()->param($_) } qw(shortcode currency);
 
     if ($landing_company and $shortcode and $currency) {
 
@@ -73,7 +74,12 @@ if ($bet) {
     $timestep = Time::Duration::Concise::Localize->new(interval => int($duration / 100))
         if ($duration / $timestep->seconds > 100);    # Don't let them go crazy asking for hundreds of points.
 
-    my $start_bet = make_similar_contract($bet, {priced_at => $start});
+    my $start_bet = make_similar_contract(
+        $bet,
+        {
+            priced_at       => 'start',
+            landing_company => $landing_company
+        });
     $debug_link = BOM::PricingDetails->new({bet => $start_bet})->debug_link;
 }
 
