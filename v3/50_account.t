@@ -156,7 +156,7 @@ test_schema('get_limits', $res);
 my $args = {
     "set_financial_assessment"             => 1,
     "account_opening_reason"               => "Speculative",
-    "account_turnover"                     => "Less than $25,000",
+    "account_turnover"                     => 'Less than $25,000',
     "forex_trading_experience"             => "Over 3 years",
     "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
     "indices_trading_experience"           => "1-2 years",
