@@ -16,12 +16,10 @@
         "account_opening_reason": {
           "type": "string",
           "pattern": "^Speculative$",
-          "required":"1"
         },
         "account_turnover": {
           "type": "string",
           "pattern": "^Less than \\$25\\,000$",
-          "required": "1"
         },
         "forex_trading_frequency": {
           "type": "string",
