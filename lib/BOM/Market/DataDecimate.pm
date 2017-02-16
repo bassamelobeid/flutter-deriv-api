@@ -52,6 +52,8 @@ sub decimate_cache_get {
 
     my $ticks;
     if ($backprice) {
+        my $capped_end = $end_time - $self->decimate_retention_interval->seconds;
+        $start_time = max($capped_end, $start_time);
         my $raw_ticks = $underlying->ticks_in_between_start_end({
             start_time => $start_time,
             end_time   => $end_time - ($end_time % $self->sampling_frequency->seconds),
@@ -79,6 +81,8 @@ sub tick_cache_get {
 
     my $ticks;
     if ($backprice) {
+        my $capped_end = $end_time - $self->raw_retention_interval->seconds;
+        $start_time = max($capped_end, $start_time);
         my $raw_ticks = $underlying->ticks_in_between_start_end({
             start_time => $start_time,
             end_time   => $end_time,
