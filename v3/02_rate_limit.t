@@ -15,6 +15,10 @@ use JSON;
 
 my $t = build_wsapi_test();
 my $c = $t->app->build_controller;
+
+# stub
+$t->app->helper(app_id => sub { 1 });
+
 # no limit for ping or time
 for (1 .. 500) {
     ok(not Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'ping', 0));
