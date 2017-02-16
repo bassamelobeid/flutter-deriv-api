@@ -15,7 +15,6 @@ use Locale::Maketext::ManyPluralForms {
     '_auto'   => 1,
     '_decode' => 1,
 };
-use Data::Dumper;
 
 sub register {
     my ($self, $app) = @_;
@@ -180,15 +179,13 @@ sub register {
         proposal_array_collector => sub {
             my $c = shift;
             if (not $c->stash('proposal_array_collector_running')) {
-# collect proposal_array
-                print "Starting requrring...\n";
+                # send proposal_array stream messages collected from apropriate proposal streams
                 my $proposal_array_collector_running = Mojo::IOLoop->recurring(
-                    3,
+                    1,
                     sub {
                         my @proposals;
                         my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
                         for my $pa_uuid (keys %{$proposal_array_subscriptions}) {
-                            print "pa_uuid : $pa_uuid\n";
                             for my $i (0 .. $#{$proposal_array_subscriptions->{$pa_uuid}{seq}}) {
                                 #for my $uuid (@{$proposal_array_subscriptions->{$pa_uuid}{seq}}) {
                                 my $uuid     = $proposal_array_subscriptions->{$pa_uuid}{seq}->[$i];
@@ -203,11 +200,9 @@ sub register {
                                         $proposal->{proposal}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
                                     }
                                 }
-                                print "uuid: $uuid\n";
                                 push @proposals, $proposal;
                                 $proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid} = [];
                             }
-                            #print "props to pack back: ".Dumper(\@proposals);
                             my $results = {
                                 proposal_array => {
                                     proposals => [map { $_->{proposal} || $_ } @proposals],
@@ -216,7 +211,6 @@ sub register {
                                 echo_req => $proposal_array_subscriptions->{$pa_uuid}{args},
                                 msg_type => 'proposal_array',
                             };
-                            print "WOW!: " . Dumper($results);
                             $c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}});
                         }
 

@@ -81,24 +81,18 @@ in a single response back to the client.
 
 =cut
 
-use Data::Dumper;
-
 sub proposal_array {
     my ($c, $req_storage) = @_;
     my $msg_type = 'proposal_array';
     my $uuid;
     my $barriers_order = {};
-    #print "in proposal_array \n".Dumper($req_storage);
 
     if (!_uniquie_barriers($req_storage->{args}->{barriers})) {
-        print "Barriers not uniq!\n";
         my $error = $c->new_error('proposal_array', 'DuplicatedBarriers', $c->l('Duplicate barriers not allowed.'));
         $c->send({json => $error}, $req_storage);
         return;
     }
 
-    #if ($req_storage->{args}{subscribe}) {
-    #$uuid = &Binary::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string();
     my $copy_args = {%{$req_storage->{args}}};
     $copy_args->{skip_streaming} = 1;    # only for proposal_array: do not create redis subscription, we need only uuid stored in stash
     if ($uuid = _pricing_channel_for_ask($c, $copy_args, {})) {
@@ -108,24 +102,18 @@ sub proposal_array {
             proposals => {},
             seq       => []};
         $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
-        print "Sub created\n";
         my $position = 0;
         for my $barrier (@{$req_storage->{args}->{barriers}}) {
             $barriers_order->{$barrier->{barrier} . ($barrier->{barrier2} || '')} = $position++;
         }
-        print "ORDUNG!:::" . Dumper($barriers_order);
     } else {
-        print "Subscriptuon canceled, no uuid\n";
         my $error = $c->new_error('proposal_array', 'AlreadySubscribed', $c->l('You are already subscribed to proposal_array.'));
         $c->send({json => $error}, $req_storage);
         return;
     }
-    #}
 
     my $create_price_channel = sub {
         my ($c, $rpc_response, $req_storage) = @_;
-        #print "from ]sub: ".Dumper($req_storage->{args});
-        #print "from ]sub: ".Dumper($rpc_response->{contract_parameters});
         my $cache = {
             longcode                    => $rpc_response->{longcode},
             contract_parameters         => delete $rpc_response->{contract_parameters},
@@ -133,17 +121,11 @@ sub proposal_array {
             proposal_array_subscription => $uuid,                                         # does not matters if there will not be any subscription
         };
         $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
-        print "Cache creating chan: " . Dumper($cache);
         $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
-        print "msg gone: " . $req_storage->{uuid} . "\n";
         if ($req_storage->{args}{subscribe}) {                                            # we are in subscr mode, so remember the sequence of streams
-            print "HWA!\n";
             my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions');
             if ($proposal_array_subscriptions->{$uuid}) {
-                print "HWA 2! <<<<<<<<<<<<<<<<<<<\n";
-                #push @{$proposal_array_subscriptions->{$uuid}{seq}}, $req_storage->{uuid};
                 my $idx = $req_storage->{args}{barrier} . ($req_storage->{args}{barrier2} // '');
-                print "idx : $idx\n";
                 ${$proposal_array_subscriptions->{$uuid}{seq}}[$barriers_order->{$idx}] = $req_storage->{uuid};
                 $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
             }
@@ -164,7 +146,6 @@ sub proposal_array {
         ),
         Future::Utils::fmap {
             my $barriers = shift;
-            print "in fmap\n" . Dumper($barriers);
 
             # Shallow copy of $args since we want to override a few top-level keys for the RPC calls
             my $args = {%{$req_storage->{args}}};
@@ -172,8 +153,6 @@ sub proposal_array {
             $args->{barrier} = $barriers->{barrier};
             $args->{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
             delete $args->{barriers};
-            #print "args: ".Dumper($args);
-            #@{$args}{keys %$barriers} = values %$barriers;
             my $f = Future::Mojo->new;
             $c->call_rpc({
                     args        => $args,
@@ -193,7 +172,6 @@ sub proposal_array {
                     response => sub {
                         my ($rpc_response, $api_response, $req_storage) = @_;
                         if ($rpc_response->{error}) {
-                            print "before f-done1\n";
                             $f->done($api_response);
                             return;
                         }
@@ -204,7 +182,6 @@ sub proposal_array {
                         } else {
                             $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
                         }
-                        print "before f-done2\n\n\n";
                         $f->done($api_response);
                         return;
                     },
@@ -216,17 +193,13 @@ sub proposal_array {
         )->on_ready(
         sub {
             my $f = shift;
-            print "ON READY!!!!\n";
             try {
                 # should not throw 'cos we do not $future->fail
                 my @result = $f->get;
                 delete @{$_}{qw(msg_type passthrough)} for @result;
-                print "============== BARRIERS: ===============\n";
                 for my $i (0 .. $#{$req_storage->{args}->{barriers}}) {
                     if (keys %{$result[$i]}) {
-                        print "in if 1\n";
                         if ($result[$i]->{error}) {
-                            print "in error: " . Dumper(${$req_storage->{args}->{barriers}}[$i]);
                             $result[$i]->{error}{details}{barrier}  = ${$req_storage->{args}->{barriers}}[$i]->{barrier};
                             $result[$i]->{error}{details}{barrier2} = ${$req_storage->{args}->{barriers}}[$i]->{barrier2}
                                 if exists ${$req_storage->{args}->{barriers}}[$i]->{barrier2};
@@ -237,8 +210,6 @@ sub proposal_array {
                         }
                     }
                 }
-                print "============== END BARRIERS: ===============\n";
-                print "Collect res from on_ready: " . Dumper(\@result);
                 # Return a single result back to the client.
                 my $res = {
                     json => {
@@ -249,7 +220,6 @@ sub proposal_array {
                         },
                         msg_type => $msg_type,
                     }};
-                print "SEND!!!!! (rpc firs resp) :" . Dumper($res);
                 $c->send($res);
             }
             catch {
@@ -264,6 +234,7 @@ sub proposal_array {
     # once the RPC calls complete or time out
     return;
 }
+use Data::Dumper;
 
 sub proposal_open_contract {
     my ($c, $response, $req_storage) = @_;
@@ -406,8 +377,6 @@ sub _serialized_args {
 sub _pricing_channel_for_ask {
     my ($c, $args, $cache) = @_;
     my $price_daemon_cmd = 'price';
-
-    print "inicial args for _serial" . Dumper($args);
 
     my %args_hash = %{$args};
 
@@ -564,7 +533,6 @@ sub process_ask_event {
                 my $err = $c->new_error($type, $ref->{code}, $ref->{message_to_client});
                 $err->{error}->{details} = $ref->{details} if exists $ref->{details};
                 $results = $err;
-                #print "ERROR: ".Dumper($results);
             } else {
                 $results = {
                     msg_type => $type,
@@ -583,20 +551,13 @@ sub process_ask_event {
             };
         }
         delete @{$results->{$type}}{qw(contract_parameters rpc_time)} if $results->{$type};
-        #print "stash_data: ".Dumper($stash_data);
         if ($stash_data->{cache}{proposal_array_subscription}) {
             $c->proposal_array_collector;
             my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
-            #print Dumper $proposal_array_subscriptions;
-            #print $stash_data->{cache}{proposal_array_subscription}."\n";
-            #print Dumper($proposal_array_subscriptions->{$stash_data->{cache}{proposal_array_subscription}})."\n";
             if (ref $proposal_array_subscriptions->{$stash_data->{cache}{proposal_array_subscription}} eq 'HASH') {
-                #print "TO BE STORED: ".Dumper($results);
                 push @{$proposal_array_subscriptions->{$stash_data->{cache}{proposal_array_subscription}}{proposals}{$stash_data->{uuid}}}, $results;
                 $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
-                #print "STORED!!!! ".Dumper($proposal_array_subscriptions);
             } else {
-                print "FORGET?????\n";
                 Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid});
                 # clean stash ?
             }

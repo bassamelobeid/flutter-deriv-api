@@ -16,13 +16,9 @@ sub forget {
         forget => forget_one($c, $req_storage->{args}->{forget}) ? 1 : 0,
     };
 }
-use Data::Dumper;
 
 sub forget_all {
     my ($c, $req_storage) = @_;
-    print "AAAAAAAAAA\n";
-    print $req_storage->{args}->{forget_all} . "\n===================\n";
-    print Dumper($req_storage);
 
     my %removed_ids;
     if (my $type = $req_storage->{args}->{forget_all}) {
@@ -36,7 +32,6 @@ sub forget_all {
             @removed_ids{@{_forget_feed_subscription($c, $type)}} = ();
         }
         if ($type eq 'proposal_array') {
-            print "BBBBBBBBBB\n";
             @removed_ids{@{_forget_all_proposal_array($c)}} = ();
         }
     }
@@ -48,17 +43,11 @@ sub forget_all {
 
 sub _forget_all_proposal_array {
     my $c = shift;
-    print "IIIIIIINNNNN _forget_all_proposal_array\n";
 
     my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
     my $pa_keys = [keys %$proposal_array_subscriptions];
-    print "pa_keys: " . Dumper($pa_keys);
     for my $pa_key (@$pa_keys) {
-        print "Deleting $pa_key...\n";
-        for my $uuid (keys %{$proposal_array_subscriptions->{$pa_key}{proposals}}) {
-            print "forgeting $uuid\n";
-            forget_one($c, $uuid);
-        }
+        forget_one($c, $_) for keys %{$proposal_array_subscriptions->{$pa_key}{proposals}};
         delete $proposal_array_subscriptions->{$pa_key};
     }
     $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
@@ -68,7 +57,6 @@ sub _forget_all_proposal_array {
 
 sub forget_one {
     my ($c, $id, $reason) = @_;
-    print "FORGET ONE!!!!!!!!!!!!!!!!!!!!\n";
 
     my %removed_ids;
     if ($id && ($id =~ /-/)) {
@@ -114,12 +102,8 @@ sub _forget_transaction_subscription {
 sub _forget_proposal_array {
     my ($c, $id) = @_;
     my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
-    print "_forget_proposal_array: " . Dumper($proposal_array_subscriptions);
     if ($proposal_array_subscriptions->{$id}) {
-        for my $uuid (keys %{$proposal_array_subscriptions->{$id}{proposals}}) {
-            print "forgeting $uuid\n";
-            _forget_pricing_subscription($c, $uuid);
-        }
+        _forget_pricing_subscription($c, $_) for keys %{$proposal_array_subscriptions->{$id}{proposals}};
         delete $proposal_array_subscriptions->{$id};
         $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
         return [$id];
