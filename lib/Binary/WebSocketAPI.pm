@@ -466,7 +466,7 @@ sub startup {
             # that code should never be executed, but if it is, that means
             # bug in code, as we assume APP_ID pressense, in calls, which bypass
             # JSON-validation
-            warn("undefined app_id, using fallback value 0");
+            $app->log->warn("undefined app_id, using fallback value 0");
             return 0;
         });
 
