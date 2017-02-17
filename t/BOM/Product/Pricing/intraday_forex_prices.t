@@ -16,6 +16,8 @@ use Test::BOM::UnitTestPrice;
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
+use Volatility::Seasonality;
+use BOM::System::Chronicle;
 
 use BOM::System::RedisReplicated;
 use BOM::Market::DataDecimate;
@@ -146,16 +148,23 @@ subtest 'atm prices without economic events' => sub {
 
 subtest 'prices with economic events' => sub {
     my $event_date = $date_start->minus_time_interval('15m');
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'economic_events',
-        {
-            recorded_date => $event_date,
-            events        => [{
+    my $event = [{
                     symbol       => 'USD',
                     impact       => 5,
                     release_date => $event_date->epoch,
                     event_name   => 'Construction Spending m/m'
-                }]});
+                }];
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'economic_events',
+        {
+            recorded_date => $event_date,
+            events        => $event,
+        });
+    Volatility::Seasonality->new(
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
+    )->generate_economic_event_seasonality({underlying_symbol => $underlying->symbol, economic_events => $event});
+
     foreach my $contract_type (@ct) {
         my @barriers = @{
             Test::BOM::UnitTestPrice::get_barrier_range({
