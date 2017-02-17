@@ -332,6 +332,7 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         "streaming_params" => {add_theo_probability => 1},
     };
     my $result;
+    is($result, undef, "undefined as expected");
     #like(
     #    warning {
     #        $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
@@ -359,6 +360,7 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         'date_start'       => '1476676000',
         "streaming_params" => {add_theo_probability => 1},
     };
+    is($result, undef, "undefined as expected");
     #like(
     #    warning {
     #        $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
@@ -386,6 +388,7 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         'date_start'       => '1476670200',
         "streaming_params" => {add_theo_probability => 1},
     };
+    is($result, undef, "undefined as expected");
     #like(
     #    warning {
     #        $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
@@ -469,6 +472,14 @@ subtest 'send_ask_when_date_expiry_smaller_than_date_start' => sub {
 
             "streaming_params" => {add_theo_probability => 1},
         }};
+    is($result, undef, "undefined as expected");
+    $expected = {
+        error => {
+            'code'              => 'ContractCreationFailure',
+            'message_to_client' => 'Cannot create contract',
+        }};
+
+    cmp_deeply($result, $expected, 'errors send_ask_when_date_expiry_smaller_than_date_start');
     #like(
     #    warning {
     #        $c->call_ok('send_ask', $params)->has_error->error_code_is('ContractCreationFailure')->error_message_is('Cannot create contract');
