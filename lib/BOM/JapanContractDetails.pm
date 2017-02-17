@@ -148,6 +148,7 @@ sub verify_with_shortcode {
             for my $lookback (1 .. 60, map -$_, 1 .. 10) {
                 my $new_pricing_date = Date::Utility->new($c->date_start->epoch - $lookback);
                 $built_parameters->{date_pricing} = $built_parameters->{date_start} = $new_pricing_date;
+                $built_parameters->{landing_company} = $landing_company;
                 $new_contract = produce_contract($built_parameters);
                 my $new_price = $action_type eq 'buy' ? $new_contract->ask_price : $new_contract->bid_price;
                 last LOOP if (abs($new_price - $price_to_verify) / $new_contract->payout <= 0.001);
