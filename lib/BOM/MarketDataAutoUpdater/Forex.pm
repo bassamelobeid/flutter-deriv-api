@@ -32,6 +32,11 @@ has file => (
     lazy_build => 1,
 );
 
+has tenor_file => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
 sub _build_file {
     my $self = shift;
 
@@ -54,6 +59,16 @@ sub _build_file {
         return $date->epoch <= $now->epoch;
     }
     @non_quanto_filename;
+
+    my @tenor_filenames = grep { $_ !~ /quantovol/ and $_ !~ /points/ } @filenames;
+    my $tenor_file = first {
+        my ($h, $m, $s) = ($_ =~ /(\d{2})(\d{2})(\d{2})_vol_tenors\.csv$/);
+        my $date = Date::Utility->new("$day $h:$m:$s");
+        return $date->epoch <= $now->epoch;
+    }
+    @tenor_filenames;
+
+    $self->_tenor_file($tenor_file);
 
     #  On weekend, we only subscribe the volsurface file at 23:40GMT. So anytime before this, there is no file available
     # On weekday, the first response file of the day is at 00:45GMT, hence at the first 45 minutes of the day, there is no file
@@ -83,32 +98,32 @@ has tenor_file => (
     lazy_build => 1,
 );
 
-sub _build_tenor_file {
-    my $self = shift;
+#sub _build_tenor_file {
+#    my $self = shift;
 
-    my $now          = Date::Utility->new;
-    my $loc          = '/feed/BBDL';
-    my $on           = Date::Utility->new($now->epoch);
-    my $previous_day = $on->minus_time_interval('1d')->date_yyyymmdd;
-    while (not -d $loc . '/' . $on->date_yyyymmdd) {
-        $on = Date::Utility->new($on->epoch - 86400);
-        if ($on->year <= 2011) {
-            die('Requested date pre-dates vol surface history.');
-        }
-    }
-    my $day             = $on->date_yyyymmdd;
-    my @filenames       = sort { $b cmp $a } File::Find::Rule->file()->name('*.csv')->in($loc . '/' . $day);
-    my @tenor_filenames = grep { $_ !~ /quantovol/ and $_ !~ /points/ } @filenames;
+#    my $now          = Date::Utility->new;
+#    my $loc          = '/feed/BBDL';
+#    my $on           = Date::Utility->new($now->epoch);
+#    my $previous_day = $on->minus_time_interval('1d')->date_yyyymmdd;
+#    while (not -d $loc . '/' . $on->date_yyyymmdd) {
+#        $on = Date::Utility->new($on->epoch - 86400);
+#        if ($on->year <= 2011) {
+#            die('Requested date pre-dates vol surface history.');
+#        }
+#    }
+#    my $day             = $on->date_yyyymmdd;
+#    my @filenames       = sort { $b cmp $a } File::Find::Rule->file()->name('*.csv')->in($loc . '/' . $day);
+#    my @tenor_filenames = grep { $_ !~ /quantovol/ and $_ !~ /points/ } @filenames;
 
-    my $tenor_file = first {
-        my ($h, $m, $s) = ($_ =~ /(\d{2})(\d{2})(\d{2})_vol_tenors\.csv$/);
-        my $date = Date::Utility->new("$day $h:$m:$s");
-        return $date->epoch <= $now->epoch;
-    }
-    @tenor_filenames;
+#    my $tenor_file = first {
+#        my ($h, $m, $s) = ($_ =~ /(\d{2})(\d{2})(\d{2})_vol_tenors\.csv$/);
+#        my $date = Date::Utility->new("$day $h:$m:$s");
+#        return $date->epoch <= $now->epoch;
+#    }
+#    @tenor_filenames;
 
-    return $tenor_file;
-}
+#    return $tenor_file;
+#}
 
 has symbols_to_update => (
     is         => 'ro',
