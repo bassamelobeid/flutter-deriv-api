@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Try::Tiny;
-use Data::Dumper;
+use JSON::XS qw/encode_json/;
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
@@ -29,7 +29,6 @@ sub buy {
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
     $contract_parameters->{landing_company} = $client->landing_company->short;
     my $amount_type = $contract_parameters->{amount_type};
-
     my ($contract, $response);
 
     try {
@@ -37,7 +36,7 @@ sub buy {
             unless BOM::RPC::v3::Contract::pre_validate_start_expire_dates($contract_parameters);
     }
     catch {
-        warn __PACKAGE__ . " buy pre_validate_start_expire_dates failed, parameters: " . Dumper($contract_parameters);
+        warn __PACKAGE__ . " buy pre_validate_start_expire_dates failed, parameters: " . encode_json($contract_parameters);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
@@ -47,16 +46,26 @@ sub buy {
         $contract = produce_contract($contract_parameters);
     }
     catch {
-        warn __PACKAGE__ . " buy produce_contract failed, parameters: " . Dumper($contract_parameters);
+        warn __PACKAGE__ . " buy produce_contract failed, parameters: " . encode_json($contract_parameters);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
     };
     return $response if $response;
+
+    my $price = $args->{price};
+    if (defined $amount_type and $amount_type eq 'stake') {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'ContractCreationFailure',
+                message_to_client => BOM::Platform::Context::localize("Contract's stake amount is more than the maximum purchase price.")}
+        ) if ($price < $contract_parameters->{amount});
+        $price = $contract_parameters->{amount};
+    }
+
     my $trx = BOM::Product::Transaction->new({
             client   => $client,
             contract => $contract,
-            price    => ($args->{price} || 0),
+            price    => ($price || 0),
             (defined $payout)      ? (payout      => $payout)      : (),
             (defined $amount_type) ? (amount_type => $amount_type) : (),
             purchase_date => $purchase_date,
@@ -174,7 +183,7 @@ sub buy_contract_for_multiple_accounts {
         catch {
             warn __PACKAGE__
                 . " buy_contract_for_multiple_accounts pre_validate_start_expire_dates failed, parameters: "
-                . Dumper($contract_parameters);
+                . encode_json($contract_parameters);
             $response = BOM::RPC::v3::Utility::create_error({
                     code              => 'ContractCreationFailure',
                     message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
@@ -185,18 +194,27 @@ sub buy_contract_for_multiple_accounts {
             $contract = produce_contract($contract_parameters);
         }
         catch {
-            warn __PACKAGE__ . " buy_contract_for_multiple_accounts produce_contract failed, parameters: " . Dumper($contract_parameters);
+            warn __PACKAGE__ . " buy_contract_for_multiple_accounts produce_contract failed, parameters: " . encode_json($contract_parameters);
             $response = BOM::RPC::v3::Utility::create_error({
                     code              => 'ContractCreationFailure',
                     message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
         };
         return $response if $response;
+        my $price = $args->{price};
+        if (defined $amount_type and $amount_type eq 'stake') {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'ContractCreationFailure',
+                    message_to_client => BOM::Platform::Context::localize("Contract's stake amount is more than the maximum purchase price.")}
+            ) if ($price < $contract_parameters->{amount});
+
+            $price = $contract_parameters->{amount};
+        }
 
         my $trx = BOM::Product::Transaction->new({
             client   => $client,
             multiple => \@result,
             contract => $contract,
-            price    => ($args->{price} || 0),
+            price    => ($price || 0),
             (defined $payout)      ? (payout      => $payout)      : (),
             (defined $amount_type) ? (amount_type => $amount_type) : (),
             purchase_date => $purchase_date,

@@ -623,20 +623,20 @@ subtest $method => sub {
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => [],
+            status              => ['has_password'],
             risk_classification => 'low'
         },
-        'status empty'
+        'status only has_password'
     );
     $test_client->set_status('tnc_approval', 'test staff', 1);
     $test_client->save();
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => [],
+            status              => ['has_password'],
             risk_classification => 'low'
         },
-        'tnc_approval is excluded, still status is empty'
+        'tnc_approval is excluded, still status only has has_password'
     );
 
     $test_client->set_authentication('ID_DOCUMENT')->status('pass');
@@ -644,7 +644,7 @@ subtest $method => sub {
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => ['authenticated'],
+            status              => ['authenticated', 'has_password'],
             risk_classification => 'low'
         },
         'ok, authenticated'
@@ -983,6 +983,9 @@ subtest $method => sub {
             'first_name'                     => 'bRaD',
             'email_consent'                  => '0',
             'allow_copiers'                  => '0',
+            'place_of_birth'                 => undef,
+            'tax_residence'                  => undef,
+            'tax_identification_number'      => undef,
         });
 
     $params->{token} = $token1;
@@ -1138,7 +1141,6 @@ subtest $method => sub {
 
     # test real account
     $params->{token} = $token1;
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'real account cannot update residence');
     my %full_args = (
         address_line_1   => 'address line 1',
         address_line_2   => 'address line 2',
@@ -1147,15 +1149,28 @@ subtest $method => sub {
         address_postcode => '12345',
         phone            => '2345678',
     );
+    $params->{args} = {%{$params->{args}}, %full_args};
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'real account cannot update residence');
+
+    $params->{args} = {%full_args};
+
+    #    is(
+    #        $c->tcall($method, $params)->{error}{message_to_client},
+    #        'Tax related information is mandatory for legal and regulatory requirement.',
+    #        'Correct tax error message'
+    #    );
+
+    $full_args{tax_residence}             = 'de';
+    $full_args{tax_identification_number} = '111-222-333';
+
     $params->{args} = {%full_args};
     delete $params->{args}{address_line_1};
 
-    {
-        my $warn_string;
-        local $SIG{'__WARN__'} = sub { $warn_string = shift; };
-        ok($c->call_response($method, $params)->is_error, 'has error because address line 1 cannot be null');
-        like($warn_string, qr/ERROR:  null value in column "address_line_1" violates not-null/, 'address line 1 cannot be null');
-    }
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Input validation failed: address_line_1',
+        "has error because address line 1 cannot be null"
+    );
 
     $params->{args} = {%full_args};
     $mocked_client->mock('save', sub { return undef });
