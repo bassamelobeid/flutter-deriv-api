@@ -110,7 +110,7 @@ sub verify_with_shortcode {
     my $args            = shift;
     my $landing_company = $args->{landing_company};
     my $short_code      = $args->{shortcode} or die "No shortcode provided";
-    my $action_type     = $args->{action_type};
+    my $action_type     = lc $args->{action_type};
     my $verify_ask      = $args->{ask_price};                                  # This is the price to be verify
     my $verify_bid      = $args->{bid_price} // undef;
     my $currency        = $args->{currency};
