@@ -743,9 +743,9 @@ sub set_settings {
 
     push @updated_fields,
         (
-        [localize('Place of birth'),            Locale::Country::code2country($client->place_of_birth)],
-        [localize('Tax residence'),             Locale::Country::code2country($client->tax_residence)],
-        [localize('Tax identification number'), $client->tax_identification_number],
+        [localize('Place of birth'), $client->place_of_birth ? Locale::Country::code2country($client->place_of_birth) : ''],
+        [localize('Tax residence'),  $client->tax_residence  ? Locale::Country::code2country($client->tax_residence)  : ''],
+        [localize('Tax identification number'), $client->tax_identification_number || ''],
         );
     push @updated_fields,
         [
