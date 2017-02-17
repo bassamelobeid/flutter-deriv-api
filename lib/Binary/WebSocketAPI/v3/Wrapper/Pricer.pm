@@ -548,14 +548,14 @@ sub process_ask_event {
         }
         delete @{$results->{$type}}{qw(contract_parameters rpc_time)} if $results->{$type};
         if ($stash_data->{cache}{proposal_array_subscription}) {
-            $c->proposal_array_collector;
+            $c->proposal_array_collector;    # start 1 sec proposal_array sender if not started yet
+                                             # see lib/Binary/WebSocketAPI/Plugins/Helpers.pm line ~ 178
             my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
             if (ref $proposal_array_subscriptions->{$stash_data->{cache}{proposal_array_subscription}} eq 'HASH') {
                 push @{$proposal_array_subscriptions->{$stash_data->{cache}{proposal_array_subscription}}{proposals}{$stash_data->{uuid}}}, $results;
                 $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
             } else {
                 Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid});
-                # clean stash ?
             }
         } else {
             $c->send({json => $results}, {args => $stash_data->{args}});
@@ -747,8 +747,7 @@ sub _uniquie_barriers {
     my %h;
     for my $barrier (@$barriers) {
         my $idx = $barrier->{barrier} . (exists $barrier->{barrier2} ? $barrier->{barrier2} : '');
-        return if $h{$idx};
-        $h{$idx} = 1;
+        return if $h{$idx}++;
     }
     return 1;
 }
