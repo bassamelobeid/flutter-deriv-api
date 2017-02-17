@@ -15,6 +15,7 @@ use BOM::MarketData::Fetcher::VolSurface;
 use LandingCompany::Offerings qw(get_offerings_flyby);
 use BOM::Product::Contract::Category;
 use BOM::Product::Contract::Strike;
+use BOM::Platform::Context qw(localize);
 
 use base qw( Exporter );
 our @EXPORT_OK = qw(available_contracts_for_symbol);
@@ -62,7 +63,8 @@ sub available_contracts_for_symbol {
         my $bc = $o->{barrier_category};
 
         my $cat = BOM::Product::Contract::Category->new($cc);
-        $o->{contract_category_display} = $cat->display_name;
+        $o->{contract_category_display} = $cat->translated_display_name;
+        $o->{contract_display}          = localize($o->{contract_display});
 
         if ($o->{start_type} eq 'forward') {
             my @trade_dates;
