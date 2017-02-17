@@ -740,6 +740,13 @@ sub set_settings {
         [localize('Country of Residence'), $residence_country],
         [localize('Address'),              join(', ', (map { $client->$_ } qw(address_1 address_2 city state postcode)), $residence_country)],
         [localize('Telephone'),            $client->phone]);
+
+    push @updated_fields,
+        (
+        [localize('Place of birth'),            Locale::Country::code2country($client->place_of_birth)],
+        [localize('Tax residence'),             Locale::Country::code2country($client->tax_residence)],
+        [localize('Tax identification number'), $client->tax_identification_number],
+        );
     push @updated_fields,
         [
         localize('Receive news and special offers'),
@@ -751,9 +758,9 @@ sub set_settings {
     $message .= "<table>";
     foreach my $updated_field (@updated_fields) {
         $message .=
-              "<tr><td style='text-align:left'><strong>"
+              "<tr style='vertical-align:top'><td style='text-align:left'><strong>"
             . encode_entities($updated_field->[0])
-            . "</strong></td><td>:</td><td style='text-align:left'>"
+            . "</strong></td><td>:&nbsp;</td><td style='text-align:left'>"
             . encode_entities($updated_field->[1])
             . "</td></tr>";
     }
