@@ -93,11 +93,6 @@ sub _build_file {
     return \@files;
 }
 
-has tenor_file => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 #sub _build_tenor_file {
 #    my $self = shift;
 
