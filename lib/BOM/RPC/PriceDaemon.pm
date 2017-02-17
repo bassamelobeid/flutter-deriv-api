@@ -45,6 +45,7 @@ sub process_job {
     if ($price_daemon_cmd eq 'price') {
         $params->{streaming_params}->{add_theo_probability} = 1;
         $response = BOM::RPC::v3::Contract::send_ask({args => $params});
+        delete @$response{qw(longcode contract_parameters)};    # stored in stash after first call
     } elsif ($price_daemon_cmd eq 'bid') {
         $params->{validation_params}->{skip_barrier_validation} = 1;
         $response = BOM::RPC::v3::Contract::send_bid($params);
