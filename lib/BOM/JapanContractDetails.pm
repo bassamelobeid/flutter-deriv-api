@@ -145,12 +145,21 @@ sub verify_with_shortcode {
             my $built_parameters = $c->build_parameters;
             my $new_contract;
             LOOP:
-            for my $lookback (1 .. 60, map -$_, 1 .. 10) {
-                my $new_pricing_date = Date::Utility->new($c->date_start->epoch - $lookback);
-                $built_parameters->{date_pricing} = $built_parameters->{date_start} = $new_pricing_date;
+            for my $lookback (1 .. 5, map -$_, 1 .. 5) {
                 $built_parameters->{landing_company} = $landing_company;
+                my $new_pricing_date = Date::Utility->new($c->date_start->epoch - $lookback);
+                # try to price with previous spot
+                my $prev_spot = $c->underlying->tick_at($new_pricing_date->epoch, {allow_inconsistent => 1})->quote;
+                $built_parameters->{pricing_spot} = $prev_spot;
                 $new_contract = produce_contract($built_parameters);
                 my $new_price = $action_type eq 'buy' ? $new_contract->ask_price : $new_contract->bid_price;
+                last LOOP if (abs($new_price - $price_to_verify) / $new_contract->payout <= 0.001);
+                # delete the previous spot
+                delete $built_parameters->{pricing_spot};
+                # now move the pricing time
+                $built_parameters->{date_pricing} = $built_parameters->{date_start} = $new_pricing_date;
+                $new_contract = produce_contract($built_parameters);
+                $new_price = $action_type eq 'buy' ? $new_contract->ask_price : $new_contract->bid_price;
                 last LOOP if (abs($new_price - $price_to_verify) / $new_contract->payout <= 0.001);
             }
             $contracts[$ind]->[0] = $new_contract;
