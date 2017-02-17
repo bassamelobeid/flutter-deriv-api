@@ -503,6 +503,7 @@ sub reset_password {
                 )
             ],
             use_email_template => 1,
+            email_content_is_html => 1,
             template_loginid   => $client->loginid,
         });
 
