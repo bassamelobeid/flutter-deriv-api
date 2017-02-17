@@ -277,13 +277,13 @@ sub _create_new_interface_engine {
         %pricing_parameters = (
             %contract_config,
             chronicle_reader         => $self->memory_chronicle,
-            # discount_rate            => $self->discount_rate,
-            # mu                       => $self->mu,
-            # vol                      => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
-            # q_rate                   => $self->q_rate,
-            # r_rate                   => $self->r_rate,
-            # volsurface               => $self->volsurface->surface,
-            # volsurface_recorded_date => $self->volsurface->recorded_date,
+            discount_rate            => $self->discount_rate,
+            mu                       => $self->mu,
+            vol                      => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
+            q_rate                   => $self->q_rate,
+            r_rate                   => $self->r_rate,
+            volsurface               => $self->volsurface->surface,
+            volsurface_recorded_date => $self->volsurface->recorded_date,
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::BlackScholes') {
         %pricing_parameters = (
