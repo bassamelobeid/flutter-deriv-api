@@ -208,6 +208,9 @@ sub _get_ask {
                         },
                     });
             }
+            # proposal_array streaming could get error on a first calls
+            # but later could produce valid contract dependant on volatility moves
+            # so we need to store contract_parameters and longcode to use them later
             if ($code eq 'ContractBuyValidationError') {
                 my $longcode = '';
                 try {
