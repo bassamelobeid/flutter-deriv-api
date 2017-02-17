@@ -126,11 +126,12 @@ sub verify_with_shortcode {
     $pricing_args->{landing_company} = $landing_company;
 
     my $contract          = produce_contract($pricing_args);
-    my $opposite_contract = $contract->opposite_contract;
-    my @contracts         = ([$contract, $verify_ask], [$opposite_contract, $verify_bid]);
+    my @contracts         = ([$contract, $verify_ask]);
+    # due to complexity in $action_type, this is a hacky fix.
+    push @contracts, [$contract->opposite_contract, $contract->discounted_probability->amount * $contract->payout - $verify_bid]) if defined $verify_bid;
 
     my $parameters;
-    foreach my $ind (0, 1) {
+    foreach my $ind (0 .. $#contracts) {
         my $c               = $contracts[$ind]->[0];
         my $price_to_verify = $contracts[$ind]->[1];
 
