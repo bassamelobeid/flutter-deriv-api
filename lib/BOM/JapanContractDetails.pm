@@ -167,7 +167,7 @@ sub verify_with_shortcode {
     });
 
     my $opposite_parameters = get_pricing_parameter({
-        traded_contract => $action_type eq 'buy' ? $verified_opposite : $verified_opposite->opposite_contract,
+        traded_contract => $action_type eq 'buy' ? $verified_opposite : $verified_contract,
         action_type => $action_type,
         discounted_probability => $discounted_probability
     });
