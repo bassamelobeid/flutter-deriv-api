@@ -120,6 +120,7 @@ sub proposal_array {
             payout                      => $rpc_response->{payout},
             proposal_array_subscription => $uuid,                                         # does not matters if there will not be any subscription
         };
+        $rpc_response->{error}{details}{longcode} = $rpc_response->{longcode} if $rpc_response->{error};
         $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
         $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
         if ($req_storage->{args}{subscribe}) {                                            # we are in subscr mode, so remember the sequence of streams
@@ -163,12 +164,8 @@ sub proposal_array {
                         app_markup_percentage => $c->stash('app_markup_percentage'),
                         landing_company       => $c->landing_company_name,
                     },
-                    error => sub {
-                        $create_price_channel->(@_);
-                    },
-                    success => sub {
-                        $create_price_channel->(@_);
-                    },
+                    error    => $create_price_channel,
+                    success  => $create_price_channel,
                     response => sub {
                         my ($rpc_response, $api_response, $req_storage) = @_;
                         if ($rpc_response->{error}) {
@@ -234,7 +231,6 @@ sub proposal_array {
     # once the RPC calls complete or time out
     return;
 }
-use Data::Dumper;
 
 sub proposal_open_contract {
     my ($c, $response, $req_storage) = @_;

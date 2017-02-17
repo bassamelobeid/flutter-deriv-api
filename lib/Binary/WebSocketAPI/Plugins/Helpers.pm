@@ -187,22 +187,21 @@ sub register {
                         my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
                         for my $pa_uuid (keys %{$proposal_array_subscriptions}) {
                             for my $i (0 .. $#{$proposal_array_subscriptions->{$pa_uuid}{seq}}) {
-                                #for my $uuid (@{$proposal_array_subscriptions->{$pa_uuid}{seq}}) {
                                 my $uuid     = $proposal_array_subscriptions->{$pa_uuid}{seq}->[$i];
                                 my $barriers = $proposal_array_subscriptions->{$pa_uuid}{args}{barriers}->[$i];
                                 my $proposal = pop @{$proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid}} // {};
-                                if (keys %$proposal) {
-                                    if ($proposal->{error}) {
-                                        $proposal->{error}{details}{barrier} = $barriers->{barrier};
-                                        $proposal->{error}{details}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
-                                    } else {
-                                        $proposal->{proposal}{barrier} = $barriers->{barrier};
-                                        $proposal->{proposal}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
-                                    }
+                                return unless keys %$proposal;    # wait untill all streams got a message
+                                if ($proposal->{error}) {
+                                    $proposal->{error}{details}{barrier} = $barriers->{barrier};
+                                    $proposal->{error}{details}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
+                                } else {
+                                    $proposal->{proposal}{barrier} = $barriers->{barrier};
+                                    $proposal->{proposal}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
                                 }
                                 push @proposals, $proposal;
                                 $proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid} = [($proposal)]; #keep last and send it if no new in 1 sec
                             }
+                            delete @{$_}{qw(msg_type)} for @proposals;
                             my $results = {
                                 proposal_array => {
                                     proposals => [map { $_->{proposal} || $_ } @proposals],
