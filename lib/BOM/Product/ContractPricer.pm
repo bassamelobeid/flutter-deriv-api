@@ -236,17 +236,17 @@ sub _create_new_interface_engine {
     my %pricing_parameters;
 
     my %contract_config = (
-        contract_type            => $self->pricing_code,
-        underlying_symbol        => $self->underlying->symbol,
-        date_start               => $self->effective_start,
-        date_pricing             => $self->date_pricing,
-        date_expiry              => $self->date_expiry,
-        payouttime_code          => $self->payouttime_code,
-        for_date                 => $self->underlying->for_date,
-        spot                     => $self->pricing_spot,
-        strikes                  => [grep { $_ } values %{$self->barriers_for_pricing}],
-        priced_with              => $self->priced_with,
-        payout_type              => $self->payout_type,
+        contract_type     => $self->pricing_code,
+        underlying_symbol => $self->underlying->symbol,
+        date_start        => $self->effective_start,
+        date_pricing      => $self->date_pricing,
+        date_expiry       => $self->date_expiry,
+        payouttime_code   => $self->payouttime_code,
+        for_date          => $self->underlying->for_date,
+        spot              => $self->pricing_spot,
+        strikes           => [grep { $_ } values %{$self->barriers_for_pricing}],
+        priced_with       => $self->priced_with,
+        payout_type       => $self->payout_type,
     );
 
     if ($self->pricing_engine_name eq 'Pricing::Engine::Digits') {
@@ -270,7 +270,10 @@ sub _create_new_interface_engine {
 
                 }
             ),
-            economic_events => _generate_market_data($self->underlying, $self->date_start)->{economic_events},
+            economic_events => _generate_market_data(
+                $self->underlying,
+                $self->date_start
+            )->{economic_events},
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
         #pricing_vol can be calculated using an empirical vol. So we have to sent the raw numbers
@@ -288,10 +291,10 @@ sub _create_new_interface_engine {
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::BlackScholes') {
         %pricing_parameters = (
             %contract_config,
-            t               => $self->timeinyears->amount,
-            discount_rate   => $self->discount_rate,
-            mu              => $self->mu,
-            vol => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
+            t             => $self->timeinyears->amount,
+            discount_rate => $self->discount_rate,
+            mu            => $self->mu,
+            vol           => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
         );
     } else {
         die "Unknown pricing engine: " . $self->pricing_engine_name;
