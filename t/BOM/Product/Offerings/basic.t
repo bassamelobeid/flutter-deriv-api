@@ -8,7 +8,9 @@ use Cache::RedisDB;
 
 use BOM::Platform::Runtime;
 use BOM::Test::Data::Utility::UnitTestRedis;
-use LandingCompany::Offerings qw( get_offerings_flyby get_offerings_with_filter get_permitted_expiries get_contract_specifics );
+use LandingCompany::Offerings qw( get_offerings_flyby get_offerings_with_filter get_permitted_expiries get_contract_specifics reinitialise_offerings);
+
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 subtest 'get_offerings_flyby' => sub {
     my $fb;
@@ -44,11 +46,6 @@ subtest 'get_offerings_flyby' => sub {
         is(scalar $fb->query('"exchange_name" IS "RANDOM" -> "underlying_symbol"'), 7, 'Six underlyings trade on the RANDOM exchange');
         is(scalar $fb->query('"market" IS "volidx" -> "underlying_symbol"'),        7, '...out of 6 total random market symbols.');
     };
-
-    my $cache_key = LandingCompany::Offerings::_get_config_key(BOM::Platform::Runtime->instance->get_offerings_config);
-
-    my $cache_obj = Cache::RedisDB->get('OFFERINGS_costarica', $cache_key);
-    isa_ok $cache_obj, 'FlyBy', 'got flyby object for costarica as its default';
 };
 
 subtest 'get_offerings_with_filter' => sub {
