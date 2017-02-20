@@ -514,10 +514,12 @@ subtest 'all methods on a selection of underlyings' => sub {
             underlying       => create_underlying('DJI'),
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader()})->closing_on(Date::Utility->new('2016-04-05'));
     foreach my $pair (qw(frxUSDJPY frxEURUSD frxAUDUSD)) {
-        my $worm = create_underlying($pair, $eod->minus_time_interval('1s'));
-        is($worm->is_in_quiet_period, 0, $worm->symbol . ' not in a quiet period before New York closes');
-        $worm = create_underlying($pair, $eod->plus_time_interval('1s'));
-        ok($worm->is_in_quiet_period, $worm->symbol . ' is quiet after New York closes');
+        my $date = $eod->minus_time_interval('1s');
+        my $worm = create_underlying($pair, $date);
+        is($worm->is_in_quiet_period($date), 0, $worm->symbol . ' not in a quiet period before New York closes');
+        $date = $eod->plus_time_interval('1s');
+        $worm = create_underlying($pair, $date);
+        ok($worm->is_in_quiet_periodi($date), $worm->symbol . ' is quiet after New York closes');
     }
 
     Quant::Framework::Utils::Test::create_doc(
