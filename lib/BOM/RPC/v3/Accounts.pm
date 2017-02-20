@@ -713,6 +713,14 @@ sub set_settings {
         $client->tax_identification_number($tax_identification_number) if $tax_identification_number;
 
         BOM::Platform::Account::Real::maltainvest::set_crs_tin_status($client);
+    } elsif (
+        $client->landing_company->short ne 'maltainvest'
+        && (   defined $tax_residence
+            || defined $tax_identification_number))
+    {
+        ### Allow to clean tax info for Non-MF
+        $client->tax_residence('')             if $tax_residence eq '';
+        $client->tax_identification_number('') if $tax_identification_number eq '';
     }
 
     if (not $client->save()) {
