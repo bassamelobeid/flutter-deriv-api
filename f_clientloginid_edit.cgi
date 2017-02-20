@@ -95,7 +95,7 @@ if ($input{whattodo} eq 'sync_to_DF') {
     );
     $handoff_token->save;
 
-    my $doughflow_loc  = BOM::System::Config::third_party->{doughflow}->{location};
+    my $doughflow_loc  = BOM::System::Config::third_party->{doughflow}->{request()->brand};
     my $doughflow_pass = BOM::System::Config::third_party->{doughflow}->{passcode};
     my $url            = $doughflow_loc . '/CreateCustomer.asp';
 
