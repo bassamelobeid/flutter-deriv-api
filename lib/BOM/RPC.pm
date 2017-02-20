@@ -100,8 +100,7 @@ sub _check_trade_status {
     my $client = $params->{client} // die "client should be authed before calling this action";
     return $params
         if $client->is_virtual;
-    unless ( $client->allow_trade )
-    {
+    unless ($client->allow_trade) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'ASK_TNC_APPROVAL',
             message_to_client => localize('Please contact support'),
