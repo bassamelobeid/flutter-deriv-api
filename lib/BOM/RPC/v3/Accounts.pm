@@ -513,8 +513,9 @@ sub reset_password {
                     $email
                 )
             ],
-            use_email_template => 1,
-            template_loginid   => $client->loginid,
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            template_loginid      => $client->loginid,
         });
 
     return {status => 1};
