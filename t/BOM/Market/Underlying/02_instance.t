@@ -519,7 +519,7 @@ subtest 'all methods on a selection of underlyings' => sub {
         is($worm->is_in_quiet_period($date), 0, $worm->symbol . ' not in a quiet period before New York closes');
         $date = $eod->plus_time_interval('1s');
         $worm = create_underlying($pair, $date);
-        ok($worm->is_in_quiet_periodi($date), $worm->symbol . ' is quiet after New York closes');
+        ok($worm->is_in_quiet_period($date), $worm->symbol . ' is quiet after New York closes');
     }
 
     Quant::Framework::Utils::Test::create_doc(
