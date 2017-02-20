@@ -105,7 +105,7 @@ sub _do_proveid {
     }
     # failed to authenticate
     else {
-        $set_status->('unwelcome', 'PROVEID_AUTH_FAILED', 'Failed to authenticate this user via PROVE ID through Experian');
+        # unwelcome status will be set up there
         return $self->_request_id_authentication;
     }
 
@@ -117,8 +117,8 @@ sub _request_id_authentication {
     my $client = $self->client;
     my $status = 'cashier_locked';
 
-    # special case for MLT: forbid them to trade before age_veryfied. cashier_locked enables to trade
-    $status = "unwelcome" if $client->landing_company->short eq 'malta';
+    # special case for MLT/MX: forbid them to trade before age_verified. cashier_locked enables to trade
+    $status = "unwelcome" if $client->landing_company->short eq 'malta' or $client->landing_company->short eq 'iom';
 
     $client->set_status($status, 'system', 'Experian id authentication failed on first deposit');
     $client->save;
