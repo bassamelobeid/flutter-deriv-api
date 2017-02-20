@@ -119,8 +119,7 @@ sub cashier {
         });
     }
 
-    if (   $client->landing_company->country ne 'Costa Rica'
-        && $client->landing_company->country ne 'Isle of Man'
+    if (   $client->landing_company->country eq 'Japan'
         && !$client->get_status('age_verification')
         && !$client->has_valid_documents)
     {
