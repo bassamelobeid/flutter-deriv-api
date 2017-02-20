@@ -741,11 +741,13 @@ sub set_settings {
         [localize('Address'),              join(', ', (map { $client->$_ } qw(address_1 address_2 city state postcode)), $residence_country)],
         [localize('Telephone'),            $client->phone]);
 
+    my $tr_tax_residence = join ', ', map { Locale::Country::code2country($_) } split /,/, ($client->tax_residence || '');
+
     push @updated_fields,
         (
         [localize('Place of birth'), $client->place_of_birth ? Locale::Country::code2country($client->place_of_birth) : ''],
-        [localize('Tax residence'),  $client->tax_residence  ? Locale::Country::code2country($client->tax_residence)  : ''],
-        [localize('Tax identification number'), $client->tax_identification_number || ''],
+        [localize("Tax residence"), $tr_tax_residence],
+        [localize('Tax identification number'), ($client->tax_identification_number || '')],
         );
     push @updated_fields,
         [
@@ -758,13 +760,13 @@ sub set_settings {
     $message .= "<table>";
     foreach my $updated_field (@updated_fields) {
         $message .=
-              "<tr style='vertical-align:top'><td style='text-align:left'><strong>"
+              '<tr><td style="vertical-align:top; text-align:left;"><strong>'
             . encode_entities($updated_field->[0])
-            . "</strong></td><td>:&nbsp;</td><td style='text-align:left'>"
+            . '</strong></td><td style="vertical-align:top;">:&nbsp;</td><td style="vertical-align:top;text-align:left;">'
             . encode_entities($updated_field->[1])
-            . "</td></tr>";
+            . '</td></tr>';
     }
-    $message .= "</table>";
+    $message .= '</table>';
     $message .= "\n" . localize('The [_1] team.', $website_name);
 
     send_email({
