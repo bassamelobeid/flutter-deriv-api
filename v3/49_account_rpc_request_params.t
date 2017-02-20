@@ -144,6 +144,8 @@ $t = $t->send_ok({
         json => {
             "set_financial_assessment"             => 1,
             "forex_trading_experience"             => "Over 3 years",
+            "account_opening_reason"               => "Speculative",
+            "account_turnover"                     => 'Less than $25,000',
             "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
             "indices_trading_experience"           => "1-2 years",
             "indices_trading_frequency"            => "40 transactions or more in the past 12 months",
@@ -361,6 +363,8 @@ is($res->{msg_type}, 'reality_check');
 $t = $t->send_ok({
         json => {
             "set_financial_assessment"             => 1,
+            "account_opening_reason"               => "Speculative",
+            "account_turnover"                     => "Less than $25,000",
             "forex_trading_experience"             => "Over 3 years",
             "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
             "indices_trading_experience"           => "1-2 years",
