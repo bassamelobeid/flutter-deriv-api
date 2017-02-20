@@ -6,6 +6,7 @@ use Test::FailWarnings;
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
+use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -15,6 +16,8 @@ use BOM::MarketData::Types;
 
 use BOM::Product::ContractFactory qw( produce_contract );
 use Cache::RedisDB;
+
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'correlation_matrix',

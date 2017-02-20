@@ -9,17 +9,21 @@ use DateTime;
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
-use BOM::Product::ContractFactory qw(produce_contract);
+use LandingCompany::Offerings qw(reinitialise_offerings);
 use Date::Utility;
 use Postgres::FeedDB::Spot::Tick;
+
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Product::ContractFactory qw( produce_contract );
-
+use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Platform::Runtime;
+
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
 my $mocked = Test::MockModule->new('BOM::Product::Contract');
@@ -149,6 +153,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 my $orig_suspended = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_contract_types;
 ok(BOM::Platform::Runtime->instance->app_config->quants->features->suspend_contract_types(['RANGE']), 'Suspended RANGE bet purchases!');
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 subtest 'valid bet passing and stuff' => sub {
 
@@ -216,11 +221,15 @@ subtest 'invalid underlying is a weak foundation' => sub {
     };
 
     BOM::Platform::Runtime->instance->app_config->system->suspend->trading(1);    # Cheese it, it's the cops!
+    reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
+
     my $bet = produce_contract($bet_params);
 
     my $expected_reasons = [qr/^All trading suspended/];
     test_error_list('buy', $bet, $expected_reasons);
     BOM::Platform::Runtime->instance->app_config->system->suspend->trading(0);    # Resume betting!
+    reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
+
 
     my $old_tick = Postgres::FeedDB::Spot::Tick->new({
         symbol => $bet->underlying->symbol,
@@ -238,9 +247,12 @@ subtest 'invalid underlying is a weak foundation' => sub {
     $bet_params->{current_tick} = $tick;
     $bet = produce_contract($bet_params);
     ok(BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades(['frxAUDUSD']), 'Suspending trading on this underlying.');
+    reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
+
     $expected_reasons = [qr/^Underlying.*suspended/];
     test_error_list('buy', $bet, $expected_reasons);
     ok(BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades($orig_trades), 'Restoring trading to original state..');
+    reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 };
 
 subtest 'invalid bet payout hobbling around' => sub {

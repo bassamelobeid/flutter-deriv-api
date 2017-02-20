@@ -3,18 +3,23 @@
 use Test::More;
 use Test::FailWarnings;
 
+use Date::Utility;
+use LandingCompany::Offerings qw(reinitialise_offerings);
+
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use Date::Utility;
-
 use BOM::Platform::Runtime;
+
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+
 use Test::MockModule;
 use Postgres::FeedDB::Spot::Tick;
 use Quant::Framework::VolSurface::Delta;
+
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $now = Date::Utility->new('2016-03-18 01:00:00');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
