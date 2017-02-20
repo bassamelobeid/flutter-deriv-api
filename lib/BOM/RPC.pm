@@ -74,7 +74,7 @@ sub _validate_tnc {
     my $params = shift;
 
     # we shouldn't get to this error, so we can die it directly
-    my $client = $params->{client} // die "client should be authed before calling this action";
+    my $client = $params->{client} // die "client should be authenticated before calling this action";
     return $params if $client->is_virtual;
 
     my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
@@ -97,13 +97,13 @@ sub _check_trade_status {
     my $params = shift;
 
     # we shouldn't get to this error, so we can die it directly
-    my $client = $params->{client} // die "client should be authed before calling this action";
+    my $client = $params->{client} // die "client should be authenticated before calling this action";
     return $params
         if $client->is_virtual;
     unless ($client->allow_trade) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'ASK_TNC_APPROVAL',
-            message_to_client => localize('Please contact support'),
+            message_to_client => localize('Please contact customer support for more information.'),
         });
     }
     return $params;
