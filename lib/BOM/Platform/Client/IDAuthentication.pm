@@ -117,6 +117,7 @@ sub _request_id_authentication {
     my $client = $self->client;
     my $status = 'cashier_locked';
 
+    # special case for MLT: forbid them to trade before age_veryfied. cashier_locked enables to trade
     $status = "unwelcome" if $client->landing_company->short eq 'malta';
 
     $client->set_status($status, 'system', 'Experian id authentication failed on first deposit');
