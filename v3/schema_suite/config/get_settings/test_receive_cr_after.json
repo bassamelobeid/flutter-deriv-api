@@ -92,10 +92,10 @@
                     "type": "null"
                 },
                 "tax_residence": {
-                    "type": "null"
+                    "type": ""
                 },
                 "tax_identification_number": {
-                    "type": "null"
+                    "type": ""
                 }
             },
             "required": "1"
