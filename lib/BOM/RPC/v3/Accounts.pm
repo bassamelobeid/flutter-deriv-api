@@ -513,8 +513,9 @@ sub reset_password {
                     $email
                 )
             ],
-            use_email_template => 1,
-            template_loginid   => $client->loginid,
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            template_loginid      => $client->loginid,
         });
 
     return {status => 1};
@@ -747,6 +748,15 @@ sub set_settings {
         [localize('Country of Residence'), $residence_country],
         [localize('Address'),              join(', ', (map { $client->$_ } qw(address_1 address_2 city state postcode)), $residence_country)],
         [localize('Telephone'),            $client->phone]);
+
+    my $tr_tax_residence = join ', ', map { Locale::Country::code2country($_) } split /,/, ($client->tax_residence || '');
+
+    push @updated_fields,
+        (
+        [localize('Place of birth'), $client->place_of_birth ? Locale::Country::code2country($client->place_of_birth) : ''],
+        [localize("Tax residence"), $tr_tax_residence],
+        [localize('Tax identification number'), ($client->tax_identification_number || '')],
+        );
     push @updated_fields,
         [
         localize('Receive news and special offers'),
@@ -758,13 +768,13 @@ sub set_settings {
     $message .= "<table>";
     foreach my $updated_field (@updated_fields) {
         $message .=
-              "<tr><td style='text-align:left'><strong>"
+              '<tr><td style="vertical-align:top; text-align:left;"><strong>'
             . encode_entities($updated_field->[0])
-            . "</strong></td><td>:</td><td style='text-align:left'>"
+            . '</strong></td><td style="vertical-align:top;">:&nbsp;</td><td style="vertical-align:top;text-align:left;">'
             . encode_entities($updated_field->[1])
-            . "</td></tr>";
+            . '</td></tr>';
     }
-    $message .= "</table>";
+    $message .= '</table>';
     $message .= "\n" . localize('The [_1] team.', $website_name);
 
     send_email({
