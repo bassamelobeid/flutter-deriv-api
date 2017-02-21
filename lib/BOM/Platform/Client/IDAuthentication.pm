@@ -57,6 +57,7 @@ sub _do_proveid {
     my $client = $self->client;
 
     my $prove_id_result = $self->_fetch_proveid || {};
+    my $skip_request_for_id;
 
     my $set_status = sub {
         my ($status, $reason, $description) = @_;
@@ -69,6 +70,7 @@ sub _do_proveid {
     if ($prove_id_result->{deceased} or $prove_id_result->{fraud}) {
         my $key = $prove_id_result->{deceased} ? "deceased" : "fraud";
         $set_status->('disabled', 'PROVE ID INDICATES ' . uc($key), "Client was flagged as $key by Experian Prove ID check");
+        $skip_request_for_id = 1;
     }
     # we have a match, but result is DENY
     elsif ( $prove_id_result->{deny}
@@ -86,24 +88,21 @@ sub _do_proveid {
         } else {
             $set_status->('unwelcome', 'EXPERIAN PROVE ID RETURNED DENY', join(', ', @{$prove_id_result->{matches}}));
         }
+        $skip_request_for_id = 1;
     }
     # County Court Judgement => unwelcome client
     elsif ($prove_id_result->{CCJ}) {
         $set_status->('unwelcome', 'PROVE ID INDICATES CCJ', 'Client was flagged as CCJ by Experian Prove ID check');
+        $skip_request_for_id = 1;
     }
     # result is AGE VERIFIED ONLY
-    elsif ($prove_id_result->{age_verified}) {
-        $set_status->('age_verification', 'EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION', 'could only get enough score for age verification.');
+    if ($prove_id_result->{age_verified}) {
+        $set_status->('age_verification', 'EXPERIAN PROVE ID KYC PASSED AGE VERIFICATION', 'could only get enough score for age verification.');
+        $skip_request_for_id = 1;
     }
-    # no verifications => unwelcome client
-    elsif (exists $prove_id_result->{num_verifications} and $prove_id_result->{num_verifications} eq 0) {
-        $set_status->('unwelcome', 'PROVE ID INDICATES NO VERIFICATIONS', 'proveid indicates no verifications');
-    }
-    # failed to authenticate
-    else {
-        # unwelcome status will be set up there
-        return $self->_request_id_authentication;
-    }
+
+    # unwelcome status will be set up there
+    return $self->_request_id_authentication unless ($skip_request_for_id);
 
     return;
 }
