@@ -36,13 +36,15 @@ sub parse_file {
         my @fields    = split ",", $line;
         my $shortcode = $fields[0];
         my $ask_price = $fields[2];
+        my $bid_price = $fields[3];
 
         my $currency = $landing_company =~ /japan/ ? 'JPY' : 'USD';
         my $parameters = verify_with_shortcode({
             shortcode       => $shortcode,
             currency        => $currency,
             landing_company => $landing_company,
-            contract_price  => $ask_price,
+            ask_price       => $ask_price,
+            bid_price       => $bid_price,
             action_type     => 'buy',
         });
 
@@ -83,7 +85,7 @@ sub verify_with_id {
         shortcode       => $details->{shortcode},
         currency        => $details->{currency_code},
         landing_company => $landing_company,
-        contract_price  => $adjusted_traded_contract_price,
+        ask_price       => $adjusted_traded_contract_price,
         start           => $action_type eq 'buy' ? $details->{purchase_time} : $details->{sell_time},
         action_type     => $action_type,
     });
@@ -108,8 +110,9 @@ sub verify_with_shortcode {
     my $args            = shift;
     my $landing_company = $args->{landing_company};
     my $short_code      = $args->{shortcode} or die "No shortcode provided";
-    my $action_type     = $args->{action_type};
-    my $verify_price    = $args->{contract_price};                             # This is the price to be verify
+    my $action_type     = lc $args->{action_type};
+    my $verify_ask      = $args->{ask_price};                                  # This is the price to be verify
+    my $verify_bid      = $args->{bid_price} // undef;
     my $currency        = $args->{currency};
 
     my $original_contract = produce_contract($short_code, $currency);
@@ -118,29 +121,54 @@ sub verify_with_shortcode {
     my $start = $args->{start} ? Date::Utility->new($args->{start}) : Date::Utility->new($purchase_time);
 
     my $pricing_args = $original_contract->build_parameters;
+    my $prev_tick = $original_contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
     $pricing_args->{date_pricing}    = $start;
     $pricing_args->{landing_company} = $landing_company;
 
-    my $contract       = produce_contract($pricing_args);
-    my $contract_price = $action_type eq 'buy' ? $contract->ask_price : $contract->bid_price;
-    my $prev_tick      = $contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
-    my $diff           = abs($verify_price - $contract_price) / $contract->payout;
-    # If there is difference, look backward and forward to find the match price.
-    if ($diff > 0.001) {
-        my $new_contract;
-        LOOP:
-        for my $lookback (1 .. 60, map -$_, 1 .. 10) {
-            $pricing_args->{date_pricing} = Date::Utility->new($contract->date_start->epoch - $lookback);
-            $pricing_args->{date_start}   = Date::Utility->new($contract->date_start->epoch - $lookback);
-            $new_contract                 = produce_contract($pricing_args);
-            my $new_price = $action_type eq 'buy' ? $new_contract->ask_price : $new_contract->bid_price;
-            last LOOP if (abs($new_price - $verify_price) / $new_contract->payout <= 0.001);
+    my $contract = produce_contract($pricing_args);
+    # due to complexity in $action_type, this is a hacky fix.
+    my @contracts = (
+        [$contract, $verify_ask],
+        [$contract->opposite_contract, ($verify_bid ? $contract->discounted_probability->amount * $contract->payout - $verify_bid : undef)]);
+
+    my $parameters;
+    foreach my $ind (0 .. $#contracts) {
+        my $c               = $contracts[$ind]->[0];
+        my $price_to_verify = $contracts[$ind]->[1];
+
+        next unless defined $price_to_verify;
+
+        my $recalculated_price = $action_type eq 'buy' ? $c->ask_price : $c->bid_price;
+        my $diff = abs($price_to_verify - $recalculated_price) / $c->payout;
+        # If there is difference, look backward and forward to find the match price.
+        if ($diff > 0.001) {
+            my $built_parameters = $c->build_parameters;
+            my $new_contract;
+            LOOP:
+            for my $lookback (1 .. 5, map -$_, 1 .. 5) {
+                $built_parameters->{landing_company} = $landing_company;
+                my $new_pricing_date = Date::Utility->new($c->date_start->epoch - $lookback);
+                # try to price with previous spot
+                my $prev_spot = $c->underlying->tick_at($new_pricing_date->epoch, {allow_inconsistent => 1})->quote;
+                $built_parameters->{pricing_spot} = $prev_spot;
+                $new_contract = produce_contract($built_parameters);
+                my $new_price = $action_type eq 'buy' ? $new_contract->ask_price : $new_contract->bid_price;
+                last LOOP if (abs($new_price - $price_to_verify) / $new_contract->payout <= 0.001);
+                # delete the previous spot
+                delete $built_parameters->{pricing_spot};
+                # now move the pricing time
+                $built_parameters->{date_pricing} = $built_parameters->{date_start} = $new_pricing_date;
+                $new_contract = produce_contract($built_parameters);
+                $new_price = $action_type eq 'buy' ? $new_contract->ask_price : $new_contract->bid_price;
+                last LOOP if (abs($new_price - $price_to_verify) / $new_contract->payout <= 0.001);
+            }
+            $contracts[$ind]->[0] = $new_contract;
         }
-        $contract = $new_contract;
     }
 
-    my $traded_contract = $action_type eq 'buy' ? $contract : $contract->opposite_contract;
-    my $discounted_probability = $contract->discounted_probability;
+    my ($verified_contract, $verified_opposite) = map { $contracts[$_]->[0] } (0 .. $#contracts);
+    my $traded_contract = $action_type eq 'buy' ? $verified_contract : $verified_contract->opposite_contract;
+    my $discounted_probability = $verified_contract->discounted_probability;
 
     my $pricing_parameters = get_pricing_parameter({
         traded_contract        => $traded_contract,
@@ -148,16 +176,16 @@ sub verify_with_shortcode {
         discounted_probability => $discounted_probability
     });
 
-    my $opposite_contract = get_pricing_parameter({
-        traded_contract => $action_type eq 'buy' ? $contract->opposite_contract : $contract,
+    my $opposite_parameters = get_pricing_parameter({
+        traded_contract => $action_type eq 'buy' ? $verified_opposite : $verified_contract,
         action_type => $action_type,
         discounted_probability => $discounted_probability
     });
     my $new_naming;
-    foreach my $key (keys %{$opposite_contract}) {
-        foreach my $sub_key (keys %{$opposite_contract->{$key}}) {
+    foreach my $key (keys %{$opposite_parameters}) {
+        foreach my $sub_key (keys %{$opposite_parameters->{$key}}) {
             my $new_sub_key = 'opposite_contract_' . $sub_key;
-            $pricing_parameters->{opposite_contract}->{$new_sub_key} = $opposite_contract->{$key}->{$sub_key};
+            $pricing_parameters->{opposite_contract}->{$new_sub_key} = $opposite_parameters->{$key}->{$sub_key};
 
         }
     }
@@ -165,8 +193,8 @@ sub verify_with_shortcode {
     $pricing_parameters->{contract_details} = {
         short_code             => $short_code,
         description            => $original_contract->longcode,
-        ccy                    => $contract->currency,
-        payout                 => $contract->payout,
+        ccy                    => $original_contract->currency,
+        payout                 => $original_contract->payout,
         trade_time             => $start->datetime,
         tick_before_trade_time => $prev_tick,
     };
