@@ -175,48 +175,48 @@ sub register {
             }
             return $c->stash->{redis_pricer};
         });
+
     $app->helper(
         proposal_array_collector => sub {
             my $c = shift;
-            if (not $c->stash('proposal_array_collector_running')) {
-                # send proposal_array stream messages collected from apropriate proposal streams
-                my $proposal_array_collector_running = Mojo::IOLoop->recurring(
-                    1,
-                    sub {
-                        my @proposals;
-                        my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
-                        for my $pa_uuid (keys %{$proposal_array_subscriptions}) {
-                            for my $i (0 .. $#{$proposal_array_subscriptions->{$pa_uuid}{seq}}) {
-                                my $uuid     = $proposal_array_subscriptions->{$pa_uuid}{seq}->[$i];
-                                my $barriers = $proposal_array_subscriptions->{$pa_uuid}{args}{barriers}->[$i];
-                                my $proposal = pop @{$proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid}} // {};
-                                return unless keys %$proposal;    # wait untill all streams got a message
-                                if ($proposal->{error}) {
-                                    $proposal->{error}{details}{barrier} = $barriers->{barrier};
-                                    $proposal->{error}{details}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
-                                } else {
-                                    $proposal->{proposal}{barrier} = $barriers->{barrier};
-                                    $proposal->{proposal}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
-                                }
-                                push @proposals, $proposal;
-                                $proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid} = [($proposal)]; #keep last and send it if no new in 1 sec
+            return if $c->stash('proposal_array_collector_running');
+            # send proposal_array stream messages collected from apropriate proposal streams
+            my $proposal_array_collector_running = Mojo::IOLoop->recurring(
+                1,
+                sub {
+                    my @proposals;
+                    my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
+                    for my $pa_uuid (keys %{$proposal_array_subscriptions}) {
+                        for my $i (0 .. $#{$proposal_array_subscriptions->{$pa_uuid}{seq}}) {
+                            my $uuid     = $proposal_array_subscriptions->{$pa_uuid}{seq}->[$i];
+                            my $barriers = $proposal_array_subscriptions->{$pa_uuid}{args}{barriers}->[$i];
+                            my $proposal = pop @{$proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid}} // {};
+                            return unless keys %$proposal;    # wait untill all streams got a message
+                            if ($proposal->{error}) {
+                                $proposal->{error}{details}{barrier} = $barriers->{barrier};
+                                $proposal->{error}{details}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
+                            } else {
+                                $proposal->{proposal}{barrier} = $barriers->{barrier};
+                                $proposal->{proposal}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
                             }
-                            delete @{$_}{qw(msg_type)} for @proposals;
-                            my $results = {
-                                proposal_array => {
-                                    proposals => [map { $_->{proposal} || $_ } @proposals],
-                                    id => $pa_uuid,
-                                },
-                                echo_req => $proposal_array_subscriptions->{$pa_uuid}{args},
-                                msg_type => 'proposal_array',
-                            };
-                            $c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}});
+                            push @proposals, $proposal;
+                            $proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid} = [$proposal]; #keep last and send it if no new in 1 sec
                         }
+                        delete @{$_}{qw(msg_type)} for @proposals;
+                        my $results = {
+                            proposal_array => {
+                                proposals => [map { $_->{proposal} || $_ } @proposals],
+                                id => $pa_uuid,
+                            },
+                            echo_req => $proposal_array_subscriptions->{$pa_uuid}{args},
+                            msg_type => 'proposal_array',
+                        };
+                        $c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}});
+                    }
 
-                    });
+                });
 
-                $c->stash->{proposal_array_collector_running} = $proposal_array_collector_running;
-            }
+            $c->stash->{proposal_array_collector_running} = $proposal_array_collector_running;
         });
 
     return;

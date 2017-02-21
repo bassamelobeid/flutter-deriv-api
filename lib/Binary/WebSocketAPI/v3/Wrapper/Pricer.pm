@@ -260,7 +260,7 @@ sub proposal_open_contract {
         # preparing response sub wich will be executed within retries loop
         my $resp_sub = sub {
             my ($rpc_response, $response, $req_storage) = @_;
-            # responce contains data or rpc error - so no need to retry rpc call
+            # response contains data or rpc error - so no need to retry rpc call
             my $valid_response = %{$response->{proposal_open_contract}} || $rpc_response->{error};
 
             # empty response and having some tries
