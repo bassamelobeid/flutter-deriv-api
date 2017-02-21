@@ -670,7 +670,7 @@ sub set_settings {
     my $address1        = $args->{'address_line_1'};
     my $address2        = $args->{'address_line_2'} // '';
     my $addressTown     = $args->{'address_city'};
-    my $addressState    = $args->{'address_state'};
+    my $addressState    = $args->{'address_state'} // '';
     my $addressPostcode = $args->{'address_postcode'};
     my $phone           = $args->{'phone'} // '';
     my $birth_place     = $args->{place_of_birth};
@@ -713,14 +713,13 @@ sub set_settings {
         $client->tax_identification_number($tax_identification_number) if $tax_identification_number;
 
         BOM::Platform::Account::Real::maltainvest::set_crs_tin_status($client);
-    } elsif (
-        $client->landing_company->short ne 'maltainvest'
-        && (   defined $tax_residence
-            || defined $tax_identification_number))
-    {
+    }
+    if (
+        (defined $tax_residence || defined $tax_identification_number)
+            && $client->landing_company->short ne 'maltainvest' ) {
         ### Allow to clean tax info for Non-MF
-        $client->tax_residence('')             if $tax_residence eq '';
-        $client->tax_identification_number('') if $tax_identification_number eq '';
+        $client->tax_residence('')             if defined $tax_residence;
+        $client->tax_identification_number('') if defined $tax_identification_number;
     }
 
     if (not $client->save()) {
