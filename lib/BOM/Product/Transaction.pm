@@ -912,7 +912,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $limit = to_monetary_number_format($client->get_limit_for_daily_turnover, 1);
 
         my $error_message =
-            BOM::Platform::Context::localize('Purchase of this contract would cause you to exceed your daily turnover limit of [_1][_2].',
+            BOM::Platform::Context::localize('Purchasing this contract will cause you to exceed your daily turnover limit of [_1][_2].',
             $currency, $limit);
         if (not $client->client_fully_authenticated) {
             $error_message .= ' ' . BOM::Platform::Context::localize('If you wish to raise these limits, please authenticate your account.');
@@ -996,7 +996,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -type              => 'PotentialPayoutLimitForSameContractExceeded',
             -mesg              => "Client has exceeded potential payout limit for open contracts with the same symbol and bet_type",
             -message_to_client => BOM::Platform::Context::localize(
-                'Purchase of this contract would cause you to exceed our payout limit for open contracts of this type. To continue please consider to sell a few contracts at the market or trade in different contract types.'
+                'Purchasing this contract will cause you to exceed our payout limit for open contracts of this type. To continue, please sell some of your open contracts or trade in different contract types.'
             ),
         );
     },
@@ -1093,7 +1093,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $limit = to_monetary_number_format($client->get_limit_for_7day_turnover, 1);
 
         my $error_message =
-            BOM::Platform::Context::localize('Purchase of this contract would cause you to exceed your 7-day turnover limit of [_1][_2].',
+            BOM::Platform::Context::localize('Purchasing this contract will cause you to exceed your 7-day turnover limit of [_1][_2].',
             $currency, $limit);
 
         return Error::Base->cuss(
@@ -1134,7 +1134,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $limit = to_monetary_number_format($client->get_limit_for_30day_turnover, 1);
 
         my $error_message =
-            BOM::Platform::Context::localize('Purchase of this contract would cause you to exceed your 30-day turnover limit of [_1][_2].',
+            BOM::Platform::Context::localize('Purchasing this contract will cause you to exceed your 30-day turnover limit of [_1][_2].',
             $currency, $limit);
 
         return Error::Base->cuss(
