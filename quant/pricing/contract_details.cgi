@@ -57,7 +57,7 @@ if ($cgi->param('upload_file')) {
     my $args;
     $args->{landing_company} = $landing_company;
     $args->{shortcode}       = $cgi->param('short_code');
-    $args->{contract_price}  = $cgi->param('price');
+    $args->{ask_price}       = $cgi->param('price');
     $args->{currency}        = $cgi->param('currency');
     $args->{start_time}      = $cgi->param('start');
     $args->{action_type}     = $cgi->param('action_type');
