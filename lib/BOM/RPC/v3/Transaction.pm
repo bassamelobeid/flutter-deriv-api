@@ -91,7 +91,7 @@ sub buy {
         start_time     => $contract->date_start->epoch,
         longcode       => $contract->longcode,
         shortcode      => $contract->shortcode,
-        payout         => $contract->payout
+        payout         => $trx->payout
     };
 
     if ($contract->is_spread) {
