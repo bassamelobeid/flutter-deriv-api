@@ -21,6 +21,8 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use LandingCompany::Offerings qw(reinitialise_offerings);
+
 
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
@@ -28,6 +30,8 @@ use BOM::MarketData::Types;
 
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
+
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_})

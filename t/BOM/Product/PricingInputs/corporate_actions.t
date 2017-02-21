@@ -15,11 +15,13 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use Quant::Framework::CorporateAction;
 use Quant::Framework::StorageAccessor;
 use Quant::Framework::Utils::Test;
 
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
 my $storage_accessor = Quant::Framework::StorageAccessor->new(

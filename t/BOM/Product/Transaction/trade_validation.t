@@ -16,6 +16,8 @@ use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Math::Util::CalculatedValue::Validatable;
+use LandingCompany::Offerings qw(reinitialise_offerings);
+
 
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
@@ -24,6 +26,7 @@ use BOM::MarketData::Types;
 use Test::MockTime qw(set_absolute_time);
 use Test::MockModule;
 
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine
