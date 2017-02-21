@@ -314,6 +314,25 @@ sub get_financial_input_mapping {
                 'Over $1,000,000'       => 4
             }
         },
+        account_opening_reason => {
+            'label'           => 'Purpose and reason for requesting the account opening',
+            'possible_answer' => {
+                "Speculative"    => 0,
+                "Income Earning" => 0,
+                "Assets Saving"  => 0,
+                "Hedging"        => 0,
+            }
+        },
+        account_turnover => {
+            'label'            => 'The anticipated account turnover',
+            'possible_answers' => {
+                'Less than $25,000'   => 0,
+                '$25,000 - $50,000'   => 0,
+                '$50,001 - $100,000'  => 0,
+                '$100,001 - $500,000' => 0,
+                'Over $500,000'       => 0
+            }
+        },
         occupation => {
             'label'           => 'Occupation',
             'possible_answer' => {
