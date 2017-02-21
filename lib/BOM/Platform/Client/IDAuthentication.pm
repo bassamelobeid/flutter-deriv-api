@@ -91,10 +91,6 @@ sub _do_proveid {
     elsif ($prove_id_result->{CCJ}) {
         $set_status->('unwelcome', 'PROVE ID INDICATES CCJ', 'Client was flagged as CCJ by Experian Prove ID check');
     }
-    # result is FULLY AUTHENTICATED => age verified as IOM GSC no longer accept Experian to authenticate clients
-    elsif ($prove_id_result->{fully_authenticated}) {
-        $set_status->('age_verification', 'EXPERIAN PROVE ID KYC PASSED ON FIRST DEPOSIT', 'passed PROVE ID KYC and is age verified');
-    }
     # result is AGE VERIFIED ONLY
     elsif ($prove_id_result->{age_verified}) {
         $set_status->('age_verification', 'EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION', 'could only get enough score for age verification.');
