@@ -480,7 +480,7 @@ subtest 'single contract fails in database', sub {
 };
 
 subtest 'batch-buy multiple databases and datadog', sub {
-    plan tests => 27;
+    plan tests => 23;
     lives_ok {
         my $clm = create_client 'VRTC';    # manager
         my @cl;
