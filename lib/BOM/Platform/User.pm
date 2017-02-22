@@ -4,9 +4,8 @@ package BOM::Platform::User;
 use strict;
 use warnings;
 
-use Date::Utility;
 use Try::Tiny;
-use DataDog::DogStatsd::Helper qw(stats_inc);
+use Date::Utility;
 
 use Client::Account;
 
@@ -115,13 +114,11 @@ sub login {
     $self->save;
 
     if ($error) {
-        stats_inc("business.log_in.failure");
         return {error => $error};
     }
 
     $cfl->delete if $cfl;    # delete client failed login
     BOM::System::AuditLog::log('successful login', $self->email);
-    stats_inc("business.log_in.success");
 
     my $success = {success => 1};
 

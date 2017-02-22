@@ -4,14 +4,13 @@ use strict;
 use warnings;
 
 use Try::Tiny;
-use DataDog::DogStatsd::Helper qw(stats_inc);
 
 use Brands;
 use Client::Account;
+use LandingCompany::Registry;
 
 use BOM::System::Password;
 use BOM::Platform::Runtime;
-use LandingCompany::Registry;
 use BOM::Platform::User;
 use BOM::Platform::Token;
 use BOM::Platform::Account;
@@ -91,8 +90,6 @@ sub create_account {
     $user->add_loginid({loginid => $client->loginid});
     $user->save;
     $client->deposit_virtual_funds($source, localize('Virtual money credit to account'));
-
-    stats_inc("business.new_account.virtual");
 
     return {
         client => $client,
