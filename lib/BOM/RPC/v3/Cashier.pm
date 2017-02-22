@@ -11,7 +11,6 @@ use Path::Tiny;
 use DateTime;
 use Date::Utility;
 use Try::Tiny;
-use DataDog::DogStatsd::Helper qw(stats_inc stats_count);
 use Format::Util::Numbers qw(roundnear);
 use String::UTF8::MD5;
 use LWP::UserAgent;
