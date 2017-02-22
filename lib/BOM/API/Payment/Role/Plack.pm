@@ -5,7 +5,6 @@ package BOM::API::Payment::Role::Plack;
 use Moo::Role;
 use Plack::Request;
 use Scalar::Util qw( looks_like_number );
-use Data::Dumper;
 use XML::Simple;
 
 has 'env' => (
