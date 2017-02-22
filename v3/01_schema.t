@@ -5,12 +5,15 @@ use JSON;
 use File::Slurp;
 use File::Basename;
 use Data::Dumper;
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Finance::Asset;
 # we need this import here so the market-data db will be fresh for the test
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
+
 use Date::Utility;
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::FeedTestDatabase;
+use BOM::Test::Helper qw/launch_redis/;
 use BOM::System::RedisReplicated;
 use BOM::Test::Helper qw/build_wsapi_test/;
 
