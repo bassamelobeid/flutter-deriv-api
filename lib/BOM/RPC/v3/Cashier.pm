@@ -23,7 +23,7 @@ use Client::Account;
 use LandingCompany::Registry;
 use Client::Account::PaymentAgent;
 
-use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency in_USD);
+use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 
 use BOM::Platform::User;
 use BOM::Platform::Client::DoughFlowClient;
@@ -695,9 +695,6 @@ sub paymentagent_transfer {
                 $error);
         }
     }
-
-    stats_count('business.usd_deposit.paymentagent', int(in_USD($amount, $currency) * 100));
-    stats_inc('business.paymentagent');
 
     # sent email notification to client
     my $emailcontent = localize(
