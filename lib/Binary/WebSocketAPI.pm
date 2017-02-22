@@ -17,6 +17,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 
 use File::Slurp;
 use JSON::Schema;
+use JSON::XS;
 use Try::Tiny;
 use Format::Util::Strings qw( defang );
 use Digest::MD5 qw(md5_hex);
@@ -97,6 +98,7 @@ sub startup {
                 $c->stash(debug => 1);
             }
 
+            # we cannot use $c->app_id, as it falls back
             my $app_id    = defang($c->req->param('app_id'));
             my $client_ip = $c->client_ip;
             my $brand     = defang($c->req->param('brand'));
@@ -125,6 +127,7 @@ sub startup {
             'authorize',
             {
                 stash_params => [qw/ ua_fingerprint client_ip user_agent /],
+                success      => \&Binary::WebSocketAPI::v3::Wrapper::Authorize::login_success,
             }
         ],
         [
@@ -454,6 +457,72 @@ sub startup {
                 );
                 $stash->{rate_limitations} = $rl;
             };
+        });
+
+    $app->helper(
+        'app_id' => sub {
+            my $c               = shift;
+            my $possible_app_id = $c->req->param('app_id');
+            if ($possible_app_id && $possible_app_id =~ /(\d{1,10})/) {
+                return $1;
+            }
+            # that code should never be executed, but if it is, that means
+            # bug in code, as we assume APP_ID pressense, in calls, which bypass
+            # JSON-validation
+            $app->log->warn("undefined app_id, using fallback value 0");
+            return 0;
+        });
+
+    $app->helper(
+        'rate_limitations_key' => sub {
+            my $c                  = shift;
+            my $login_id           = $c->stash('loginid');
+            my $app_id             = $c->app_id;
+            my $authorised_key     = $login_id ? "rate_limits::authorised::$app_id/$login_id" : undef;
+            my $non_authorised_key = do {
+                my $ip = $c->client_ip;
+                if (!defined $ip) {
+                    $app->log->warn("cannot determine client IP-address");
+                    $ip = 'unknown-IP';
+                }
+                my $user_agent = $c->req->headers->header('User-Agent') // 'Unknown-UA';
+                my $client_id = md5_hex($ip . ":" . $user_agent);
+                "rate_limits::non-authorised::$app_id/$client_id";
+            };
+            return $authorised_key // $non_authorised_key;
+        });
+
+    $app->helper(
+        'rate_limitations_save' => sub {
+            my $c    = shift;
+            my $key  = $c->rate_limitations_key;
+            my $hits = $c->stash->{rate_limitations_hits};
+            $c->ws_redis_master->set(
+                $key => encode_json($hits),
+                EX   => 3600,
+                sub {
+                    my ($redis, $err) = @_;
+                    if ($err) {
+                        $app->log->error("rate_limitations_save error: $err");
+                    }
+                },
+            );
+        });
+
+    $app->helper(
+        'rate_limitations_load' => sub {
+            my $c         = shift;
+            my $key       = $c->rate_limitations_key;
+            my $hits_json = $c->ws_redis_slave->get(
+                $key,
+                sub {
+                    my ($redis, $err, $hits_json) = @_;
+                    if ($err) {
+                        $app->log->error("rate_limitations_load error: $err");
+                    }
+                    my $hits = $hits_json ? decode_json($hits_json) : {};
+                    $c->stash(rate_limitations_hits => $hits);
+                });
         });
 
     $app->plugin(

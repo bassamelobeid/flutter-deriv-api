@@ -8,6 +8,7 @@ use Try::Tiny;
 use Path::Tiny;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Fcntl qw/ :flock /;
+use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
 sub start_timing {
     my ($c, $req_storage) = @_;
@@ -121,6 +122,8 @@ sub reached_limit_check {
     if ($limiting_service
         and not $c->rate_limitations->within_rate_limits($limiting_service, 'does-not-matter'))
     {
+        stats_inc("bom_websocket_api.v_3.call.ratelimit.hit.$limiting_service", {tags => ["app_id:" . $c->app_id]});
+        $c->rate_limitations_save;
         return 1;
     }
     return;
@@ -143,9 +146,6 @@ sub before_forward {
 
     $req_storage->{origin_args} = {%{$req_storage->{args}}};
     my $args = $req_storage->{args};
-    if (not $c->stash('connection_id')) {
-        $c->stash('connection_id' => &Binary::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string());
-    }
 
     # For authorized calls that are heavier we will limit based on loginid
     # For unauthorized calls that are less heavy we will use connection id.
@@ -304,6 +304,7 @@ sub on_client_connect {
     warn "Client connect request but $c is already in active connection list" if exists $c->app->active_connections->{$c};
     Scalar::Util::weaken($c->app->active_connections->{$c} = $c);
     init_redis_connections($c);
+    $c->rate_limitations_load;
     return;
 }
 
@@ -312,6 +313,11 @@ sub on_client_disconnect {
     warn "Client disconnect request but $c is not in active connection list" unless exists $c->app->active_connections->{$c};
     forget_all($c);
     delete $c->app->active_connections->{$c};
+    $c->rate_limitations_save;
+
+    my $timer_id = $c->stash->{rate_limitations_timer};
+    Mojo::IOLoop->remove($timer_id) if $timer_id;
+
     return;
 }
 
