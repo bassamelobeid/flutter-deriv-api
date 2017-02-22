@@ -216,7 +216,7 @@ sub _mt5_is_real_account {
         args   => {login => $mt_login},
     });
 
-    return ($settings->{group} // '') =~ /^real\\/;
+    return $settings if ($settings->{group} // '') =~ /^real\\/;
 }
 
 sub mt5_set_settings {
@@ -469,11 +469,17 @@ sub mt5_withdrawal {
     if ($to_client->is_virtual) {
         return BOM::RPC::v3::Utility::permission_error();
     }
-    if (not _mt5_is_real_account($to_client, $fm_mt5)) {
+    my $settings;
+    unless ($settings = _mt5_is_real_account($to_client, $fm_mt5)) {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    return $error_sub->(localize('Client is not fully authenticated.')) unless $client->client_fully_authenticated;
+    # check for fully authenticated only if it's not gaming account
+    # as of now we only support gaming for binary brand, in future if we
+    # support for champion please revisit this
+    if (not($settings->{group} // '') =~ /^real\\costarica$/ and not $client->client_fully_authenticated) {
+        return $error_sub->(localize('Client is not fully authenticated.'));
+    }
 
     if ($to_client->currency ne 'USD') {
         return $error_sub->(localize('Your account [_1] has a different currency [_2] than USD.', $to_loginid, $to_client->currency));
