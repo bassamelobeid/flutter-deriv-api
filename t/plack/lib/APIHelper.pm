@@ -53,7 +53,6 @@ sub request {
     $headers->{'X-BOM-DoughFlow-Authorization'} ||= __df_auth_header();
 
     my $req = HTTP::Request->new($method, $uri, HTTP::Headers->new(%$headers));
-    # printf STDERR 'req is %s', Dumper($req);
     __request($req);
 }
 
@@ -77,7 +76,6 @@ sub auth_request {
     $headers->{Authorization} = 'Basic ' . encode_base64($user . ':' . $pass, '');
 
     my $req = HTTP::Request->new($method, $uri, HTTP::Headers->new(%$headers));
-    # printf STDERR 'req is %s', Dumper($req);
     __request($req);
 }
 
