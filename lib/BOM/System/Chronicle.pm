@@ -104,8 +104,9 @@ sub get_chronicle_writer {
     state $redis = BOM::System::RedisReplicated::redis_write();
 
     $writer_instance //= Data::Chronicle::Writer->new(
-        cache_writer => $redis,
-        db_handle    => _dbh(),
+        publish_on_set => 1,
+        cache_writer   => $redis,
+        db_handle      => _dbh(),
     );
 
     return $writer_instance;
