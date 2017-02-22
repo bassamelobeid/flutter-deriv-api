@@ -143,7 +143,7 @@ sub shortcode_to_parameters {
         currency   => $currency,
     };
 
-    return $legacy_params if (not exists $AVAILABLE_CONTRACTS{$test_bet_name} or $shortcode =~ /_\d+H\d+/);
+    return $legacy_params if (not exists get_all_contract_types()->{$test_bet_name} or $shortcode =~ /_\d+H\d+/);
 
     if ($shortcode =~ /^(SPREADU|SPREADD)_([\w\d]+)_(\d*.?\d*)_(\d+)_(\d*.?\d*)_(\d*.?\d*)_(DOLLAR|POINT)/) {
         return {
