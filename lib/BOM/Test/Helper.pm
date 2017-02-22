@@ -17,6 +17,7 @@ use File::Slurp;
 use Data::Dumper;
 use Date::Utility;
 
+use BOM::Test;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -25,12 +26,19 @@ use BOM::System::Password;
 use BOM::Platform::User;
 use Net::EmptyPort qw/empty_port/;
 
+use Mojo::Redis2::Server;
+use File::Temp qw/ tempdir /;
+use Path::Tiny;
+
 use Test::MockModule;
 use Test::MockObject;
 use MojoX::JSON::RPC::Client;
 
+use RedisDB;
+use YAML::XS qw/LoadFile DumpFile/;
+
 use Exporter qw/import/;
-our @EXPORT_OK = qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_client reconnect/;
+our @EXPORT_OK = qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_client reconnect launch_redis/;
 
 my $version = 'v3';
 die 'unknown version' unless $version;
@@ -51,6 +59,29 @@ sub build_mojo_test {
     return Test::Mojo->new($app);
 }
 
+sub launch_redis {
+    my $t            = shift;
+    my $redis_port   = empty_port;
+    my $redis_server = Mojo::Redis2::Server->new;
+    $redis_server->start(port => $redis_port);
+    my $tmp_dir = tempdir(CLEANUP => 1);
+    my $ws_redis_path = path($tmp_dir, "ws-redis.yml");
+    my $ws_redis_config = {
+        write => {
+            host => '127.0.0.1',
+            port => $redis_port,
+        },
+        read => {
+            host => '127.0.0.1',
+            port => $redis_port,
+        },
+    };
+    DumpFile($ws_redis_path, $ws_redis_config);
+    $ENV{BOM_TEST_WS_REDIS} = "$ws_redis_path";    ## no critic
+
+    return ($tmp_dir, $redis_server);
+}
+
 sub build_wsapi_test {
     my $args    = shift || {};
     my $headers = shift || {};
@@ -62,6 +93,7 @@ sub build_wsapi_test {
     # as now app id is mandatory so assign it if not present
     $args->{app_id} = 1 unless exists $args->{app_id};
 
+    my ($tmp_dir, $redis_server) = launch_redis;
     my $t = build_mojo_test('Binary::WebSocketAPI', $args);
     $t->app->log(Mojo::Log->new(level => 'debug'));
 
@@ -78,6 +110,12 @@ sub build_wsapi_test {
 
     $t->websocket_ok($url => $headers);
     $t->tx->on(json => $callback) if $callback;
+
+    # keep them until $t be destroyed
+    $t->{_bom} = {
+        tmp_dir      => $tmp_dir,
+        redis_server => $redis_server,
+    };
     return $t;
 }
 
