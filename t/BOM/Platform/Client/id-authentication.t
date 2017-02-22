@@ -221,7 +221,7 @@ subtest 'proveid' => sub {
         };
         my @notif = @{$v->notified};
         is @notif, 1, 'sent one notification';
-        like $notif[0][0], qr/PROVEID_AUTH_FAILED/, 'notification is correct';
+        like $notif[0][0], qr/UNWELCOME PENDING EMAIL/, 'notification is correct';
         ok !$v->client->client_fully_authenticated, 'client not fully authenticated';
         ok !$v->client->get_status('age_verification'), 'client not age verified';
         ok $v->client->get_status('unwelcome'), 'client now unwelcome';
@@ -239,7 +239,7 @@ subtest 'proveid' => sub {
         $v->run_authentication;
         my @notif = @{$v->notified};
         is @notif, 1, 'sent one notification';
-        like $notif[0][0], qr/PASSED ONLY AGE VERIFICATION/, 'notification is correct';
+        like $notif[0][0], qr/PASSED AGE VERIFICATION/, 'notification is correct';
         ok !$v->client->client_fully_authenticated, 'client not fully authenticated';
         ok $v->client->get_status('age_verification'), 'client is age verified';
         ok !$v->client->get_status('cashier_locked'), 'cashier not locked';
@@ -260,12 +260,11 @@ subtest 'proveid' => sub {
             $v->run_authentication;
         };
         my @notif = @{$v->notified};
-        is @notif, 2, 'sent two notification';
-        like $notif[0][0], qr/PROVEID_AUTH_FAILED/, 'first notification is correct';
-        like $notif[1][0], qr/SET TO CASHIER_LOCKED PENDING EMAIL REQUEST FOR ID/, 'notification is correct';
+        is @notif, 1, 'sent one notification';
+        like $notif[0][0], qr/SET TO UNWELCOME PENDING EMAIL REQUEST FOR ID/, 'notification is correct';
         ok !$v->client->client_fully_authenticated, 'client not fully authenticated';
         ok !$v->client->get_status('age_verification'), 'client not age verified';
-        ok $v->client->get_status('cashier_locked'), 'client now cashier_locked';
+        ok $v->client->get_status('unwelcome'), 'client now unwelcome';
     };
 };
 
