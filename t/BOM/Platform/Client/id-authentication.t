@@ -224,7 +224,7 @@ subtest 'proveid' => sub {
         like $notif[0][0], qr/PROVEID_AUTH_FAILED/, 'notification is correct';
         ok !$v->client->client_fully_authenticated, 'client not fully authenticated';
         ok !$v->client->get_status('age_verification'), 'client not age verified';
-        ok $v->client->get_status('unwelcome', 'client now unwelcome';
+        ok $v->client->get_status('unwelcome'), 'client now unwelcome';
     };
 
     subtest 'age verified' => sub {
