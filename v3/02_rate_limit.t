@@ -15,6 +15,10 @@ use JSON;
 
 my $t = build_wsapi_test();
 my $c = $t->app->build_controller;
+
+# stub
+$t->app->helper(app_id => sub { 1 });
+
 # no limit for ping or time
 for (1 .. 500) {
     ok(not Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'ping', 0));
@@ -53,6 +57,9 @@ ok(Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'profit_table', 0));
 # for new controller/user we'll have new stash, hence check should pass
 my $c2 = $t->app->build_controller;
 ok(not Binary::WebSocketAPI::Hooks::reached_limit_check($c2, 'profit_table', 0));
+
+# rate-limits are loaded/saved asynchronously, so, let's wait a bit
+Mojo::IOLoop->one_tick for(1 .. 1);
 
 my $res;
 for (my $i = 0; $i < 4; $i++) {
