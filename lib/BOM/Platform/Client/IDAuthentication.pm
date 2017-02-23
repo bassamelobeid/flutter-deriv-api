@@ -72,9 +72,8 @@ sub _do_proveid {
         $set_status->('disabled', 'PROVE ID INDICATES ' . uc($key), "Client was flagged as $key by Experian Prove ID check");
         $skip_request_for_id = 1;
     }
-    # we have a match, but result is DENY
-    elsif ( $prove_id_result->{deny}
-        and defined $prove_id_result->{matches}
+    # we have a match, handle it
+    elsif (defined $prove_id_result->{matches}
         and (scalar @{$prove_id_result->{matches}} > 0))
     {
         my $type;
@@ -86,7 +85,7 @@ sub _do_proveid {
         elsif ((($type) = grep { /(PEP|Directors)/ } @{$prove_id_result->{matches}})) {
             $set_status->('unwelcome', "$type match", "$type match");
         } else {
-            $set_status->('unwelcome', 'EXPERIAN PROVE ID RETURNED DENY', join(', ', @{$prove_id_result->{matches}}));
+            $set_status->('unwelcome', 'EXPERIAN PROVE ID RETURNED MATCH', join(', ', @{$prove_id_result->{matches}}));
         }
         $skip_request_for_id = 1;
     }
@@ -97,12 +96,12 @@ sub _do_proveid {
     }
     # result is AGE VERIFIED ONLY
     if ($prove_id_result->{age_verified}) {
-        $set_status->('age_verification', 'EXPERIAN PROVE ID KYC PASSED AGE VERIFICATION', 'could only get enough score for age verification.');
+        $set_status->('age_verification', 'EXPERIAN PROVE ID KYC PASSED AGE VERIFICATION', 'could get enough score for age verification.');
         $skip_request_for_id = 1;
     }
 
     # unwelcome status will be set up there
-    return $self->_request_id_authentication unless ($skip_request_for_id);
+    return $self->_request_id_authentication unless $skip_request_for_id;
 
     return;
 }
