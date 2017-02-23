@@ -195,14 +195,15 @@ subtest 'proveid' => sub {
         my $v = IDAuthentication->new(client => $c);
 
         Test::MockObject::Extends->new($v);
-        $v->mock(-_fetch_proveid, sub { return {age_verified => 1, matches => ['YADA']} });
+        $v->mock(-_fetch_proveid, sub { return {age_verified => 1, matches => ['PEP']} });
         $v->run_authentication;
         my @notif = @{$v->notified};
-        is @notif, 1, 'sent one notification';
+        is @notif, 2, 'sent two notifications';
+        like $notif[0][1], qr/PEP matched/, 'notification is correct';
         like $notif[0][0], qr/PASSED AGE VERIFICATION/, 'notification is correct';
         ok !$v->client->client_fully_authenticated, 'client not fully authenticated';
         ok $v->client->get_status('age_verification'), 'client is age verified';
-        ok !$v->client->get_status('cashier_locked'), 'cashier not locked';
+        ok $v->client->get_status('unwelcome'), 'client is now unwelcome';
     };
 
     subtest 'director' => sub {
