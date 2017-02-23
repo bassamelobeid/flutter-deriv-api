@@ -504,9 +504,7 @@ sub startup {
                 EX   => 3600,
                 sub {
                     my ($redis, $err) = @_;
-                    if ($err) {
-                        $app->log->error("rate_limitations_save error: $err");
-                    }
+                    warn "rate_limitations_save error: $err" if $err;
                 },
             );
         });
