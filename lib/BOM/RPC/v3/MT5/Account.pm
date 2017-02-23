@@ -218,6 +218,7 @@ sub _mt5_is_real_account {
     });
 
     return $settings if ($settings->{group} // '') =~ /^real\\/;
+    return;
 }
 
 sub mt5_set_settings {
