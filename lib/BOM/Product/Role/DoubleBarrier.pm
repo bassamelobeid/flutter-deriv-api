@@ -141,7 +141,7 @@ sub _validate_barrier {
                     . "[min: "
                     . $min_allowed . "]",
                 severity          => 1,
-                message_to_client => localize('Barrier must be at least ' . $min_allowed . ' pips away from the spot.'),
+                message_to_client => localize('Barrier must be at least [plural,_1,%d pip,%d pips] away from the spot.', $min_allowed),
             };
         }
     }
