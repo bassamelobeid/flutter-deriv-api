@@ -3,6 +3,7 @@ package BOM::RPC::v3::MT5::Account;
 use strict;
 use warnings;
 
+use Guard;
 use YAML::XS;
 use List::Util qw(any first);
 use Try::Tiny;
@@ -367,6 +368,9 @@ sub mt5_deposit {
         return $error_sub->(localize('If this error persists, please contact customer support.'),
             "Account stuck in previous transaction $fm_loginid");
     }
+    scope_guard {
+        $fm_client_db->unfreeze;
+    };
 
     # From the point of view of our system, we're withdrawing
     # money to deposit into MT5
@@ -382,9 +386,6 @@ sub mt5_deposit {
     };
 
     if ($withdraw_error) {
-        # should be save to unlock account
-        $fm_client_db->unfreeze;
-
         return $error_sub->(
             BOM::RPC::v3::Cashier::__client_withdrawal_notes({
                     client => $fm_client,
@@ -426,7 +427,6 @@ sub mt5_deposit {
         return $error_sub->($status->{error});
     }
 
-    $fm_client_db->unfreeze;
     return {
         status                => 1,
         binary_transaction_id => $txn->id
@@ -477,7 +477,7 @@ sub mt5_withdrawal {
     # check for fully authenticated only if it's not gaming account
     # as of now we only support gaming for binary brand, in future if we
     # support for champion please revisit this
-    if (not($settings->{group} // '') =~ /^real\\costarica$/ and not $client->client_fully_authenticated) {
+    if (($settings->{group} // '') !~ /^real\\costarica$/ and not $client->client_fully_authenticated) {
         return $error_sub->(localize('Client is not fully authenticated.'));
     }
 
@@ -499,9 +499,11 @@ sub mt5_withdrawal {
         return $error_sub->(localize('If this error persists, please contact customer support.'),
             "Account stuck in previous transaction $to_loginid");
     }
+    scope_guard {
+        $to_client_db->unfreeze;
+    };
 
     my $comment = "Transfer from MT5 account $fm_mt5 to $to_loginid.";
-
     # withdraw from MT5 a/c
     my $status = BOM::MT5::User::withdrawal({
         login   => $fm_mt5,
@@ -535,7 +537,6 @@ sub mt5_withdrawal {
     $account->save(cascade => 1);
     $payment->save(cascade => 1);
 
-    $to_client_db->unfreeze;
     return {
         status                => 1,
         binary_transaction_id => $txn->id
