@@ -214,17 +214,19 @@ sub _validate_feed {
     my $underlying = $self->underlying;
 
     if (not $self->current_tick) {
+        warn "No current_tick for " . $underlying->symbol;
         return {
             message           => "No realtime data [symbol: " . $underlying->symbol . "]",
-            message_to_client => localize('Trading on this market is suspended due to missing market data.'),
+            message_to_client => localize('Trading on this market is suspended due to missing market (tick) data.'),
         };
     } elsif ($self->calendar->is_open_at($self->date_pricing)
         and $self->date_pricing->epoch - $underlying->max_suspend_trading_feed_delay->seconds > $self->current_tick->epoch)
     {
         # only throw errors for quote too old, if the exchange is open at pricing time
+        warn "Quote too old for " . $underlying->symbol;
         return {
             message           => "Quote too old [symbol: " . $underlying->symbol . "]",
-            message_to_client => localize('Trading on this market is suspended due to missing market data.'),
+            message_to_client => localize('Trading on this market is suspended due to missing market (old) data.'),
         };
     }
 
@@ -559,15 +561,15 @@ sub _validate_lifetime {
 sub _validate_volsurface {
     my $self = shift;
 
-    my $volsurface        = $self->volsurface;
-    my $now               = $self->date_pricing;
-    my $message_to_client = localize('Trading is suspended due to missing market data.');
-    my $surface_age       = ($now->epoch - $volsurface->recorded_date->epoch) / 3600;
+    my $volsurface  = $self->volsurface;
+    my $now         = $self->date_pricing;
+    my $surface_age = ($now->epoch - $volsurface->recorded_date->epoch) / 3600;
 
     if ($volsurface->validation_error) {
+        warn "Volsurface validation error for " . $self->underlying->symbol;
         return {
             message           => "Volsurface has smile flags [symbol: " . $self->underlying->symbol . "]",
-            message_to_client => $message_to_client,
+            message_to_client => localize('Trading is suspended due to missing market (volatility) data.'),
         };
     }
 
@@ -587,6 +589,7 @@ sub _validate_volsurface {
     }
 
     if ($exceeded) {
+        warn "volsurface too old - " . $self->underlying->symbol . " " . "[age: " . $surface_age . "h] " . "[max: " . $exceeded . "]";
         return {
             message => 'volsurface too old '
                 . "[symbol: "
@@ -595,11 +598,18 @@ sub _validate_volsurface {
                 . $surface_age . "h] "
                 . "[max: "
                 . $exceeded . "]",
-            message_to_client => $message_to_client,
+            message_to_client => localize('Trading is suspended due to missing market (out-of-date volatility) data'),
         };
     }
 
     if ($volsurface->type eq 'moneyness' and my $current_spot = $self->current_spot) {
+        warn 'spot too far from surface reference '
+            . "[symbol: "
+            . $self->underlying->symbol . "] "
+            . "[spot: "
+            . $current_spot . "] "
+            . "[surface reference: "
+            . $volsurface->spot_reference . "]";
         if (abs($volsurface->spot_reference - $current_spot) / $current_spot * 100 > 5) {
             return {
                 message => 'spot too far from surface reference '
@@ -609,7 +619,7 @@ sub _validate_volsurface {
                     . $current_spot . "] "
                     . "[surface reference: "
                     . $volsurface->spot_reference . "]",
-                message_to_client => $message_to_client,
+                message_to_client => localize('Trading is suspended due to missing market (spot too far) data'),
             };
         }
     }

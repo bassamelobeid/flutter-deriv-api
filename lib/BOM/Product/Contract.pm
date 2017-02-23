@@ -643,6 +643,7 @@ sub _build_basis_tick {
     if ($self->pricing_new) {
         $basis_tick = $self->current_tick;
         $potential_error = $self->starts_as_forward_starting ? $waiting_for_entry_tick : $missing_market_data;
+        warn "No basis tick for " . $self->underlying->symbol if ($potential_error eq $missing_market_data && !$basis_tick);
     } else {
         $basis_tick      = $self->entry_tick;
         $potential_error = $waiting_for_entry_tick;
@@ -878,15 +879,18 @@ sub _build_dividend_adjustment {
 
     my $dividend_recorded_date = $dividend_adjustment->{recorded_date};
 
-    if (scalar @corporate_actions and (first { Date::Utility->new($_->{effective_date})->is_after($dividend_recorded_date) } @corporate_actions)) {
+    if (scalar @corporate_actions
+        and (my $action = first { Date::Utility->new($_->{effective_date})->is_after($dividend_recorded_date) } @corporate_actions))
+    {
 
+        warn "Missing dividend data: corp actions are " . join(',', @corporate_actions) . " and found date for action " . $action;
         $self->add_error({
             message => 'Dividend is not updated  after corporate action'
                 . "[dividend recorded date : "
                 . $dividend_recorded_date->datetime . "] "
                 . "[symbol: "
                 . $self->underlying->symbol . "]",
-            message_to_client => localize('Trading on this market is suspended due to missing market data.'),
+            message_to_client => localize('Trading on this market is suspended due to missing market (dividend) data.'),
         });
 
     }
