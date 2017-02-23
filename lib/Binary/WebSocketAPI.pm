@@ -1,5 +1,10 @@
 package Binary::WebSocketAPI;
 
+use strict;
+use warnings;
+
+no indirect;
+
 use Mojo::Base 'Mojolicious';
 use Mojo::Redis2;
 use Mojo::IOLoop;
