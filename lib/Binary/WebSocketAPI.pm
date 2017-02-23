@@ -513,15 +513,26 @@ sub startup {
         'rate_limitations_load' => sub {
             my $c         = shift;
             my $key       = $c->rate_limitations_key;
+            Scalar::Util::weaken(my $weak_c = $c);
             my $hits_json = $c->ws_redis_slave->get(
                 $key,
                 sub {
                     my ($redis, $err, $hits_json) = @_;
                     if ($err) {
-                        $app->log->error("rate_limitations_load error: $err");
+                        warn "rate_limitations_load error: $err";
+                        return;
                     }
-                    my $hits = $hits_json ? decode_json($hits_json) : {};
-                    $c->stash(rate_limitations_hits => $hits);
+                    unless($weak_c) {
+                        warn 'No longer have context in rate limits load, probable client disconnect, bailing out';
+                        return;
+                    }
+                    try {
+                        my $hits = $hits_json ? decode_json($hits_json) : {};
+                        $weak_c->stash(rate_limitations_hits => $hits);
+                    } catch {
+                        warn "Failed to decode and stash rate limit data: $_";
+                    };
+                    return;
                 });
         });
 
