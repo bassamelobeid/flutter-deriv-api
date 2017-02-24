@@ -45,7 +45,6 @@ has [qw(long_term_prediction)] => (
     lazy_build => 1,
 );
 
-
 has [qw(pricing_vol news_adjusted_pricing_vol)] => (
     is         => 'rw',
     lazy_build => 1,
