@@ -522,7 +522,7 @@ sub startup {
                         warn "rate_limitations_load error: $err";
                         return;
                     }
-                    unless($weak_c) {
+                    unless($weak_c && $weak_c->tx) {
                         warn 'No longer have context in rate limits load, probable client disconnect, bailing out';
                         return;
                     }
