@@ -35,7 +35,7 @@ if ($cgi->param('upload_file')) {
     my $filename = $fh->filename;
     copy($file, $filename);
     my $output_filename = $file;
-    $output_filename =~ s/\.csv$/.xls/;
+    $output_filename =~ s/\.csv$/.xlsx/;
     my $pricing_parameters = BOM::JapanContractDetails::parse_file($filename, $landing_company);
     BOM::JapanContractDetails::batch_output_as_excel($pricing_parameters, $output_filename);
 
@@ -47,7 +47,7 @@ if ($cgi->param('upload_file')) {
     $args->{broker}          = $broker;
     my $pricing_parameters = BOM::JapanContractDetails::verify_with_id($args);
     if ($cgi->param('download') eq 'download') {
-        BOM::JapanContractDetails::single_output_as_excel($pricing_parameters, $id . '.xls');
+        BOM::JapanContractDetails::single_output_as_excel($pricing_parameters, $id . '.xlsx');
 
     } else {
         load_template($cgi->param('broker'), $pricing_parameters);
@@ -69,7 +69,7 @@ if ($cgi->param('upload_file')) {
             order_price => $cgi->param('price')});
 
     if ($cgi->param('download') eq 'download') {
-        BOM::JapanContractDetails::single_output_as_excel($pricing_parameters, $cgi->param('short_code') . '.xls');
+        BOM::JapanContractDetails::single_output_as_excel($pricing_parameters, $cgi->param('short_code') . '.xlsx');
     } else {
         load_template($cgi->param('broker'), $pricing_parameters);
 

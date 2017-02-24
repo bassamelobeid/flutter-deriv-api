@@ -20,8 +20,7 @@ use BOM::Database::DataMapper::Transaction;
 use BOM::Backoffice::Sysinit ();
 use LandingCompany::Registry;
 use Path::Tiny;
-use Spreadsheet::WriteExcel;
-
+use Excel::Writer::XLSX;
 sub parse_file {
     my ($file, $landing_company) = @_;
 
@@ -32,7 +31,6 @@ sub parse_file {
         chomp $line;
         # Might have a trailing blank at the end, and any in the middle of the file are generally harmless too
         next unless length $line;
-
         my @fields    = split ",", $line;
         my $shortcode = $fields[0];
         my $ask_price = $fields[2];
@@ -493,7 +491,7 @@ sub batch_output_as_excel {
     my $contract  = shift;
     my $file_name = shift;
     my $temp_file = get_tmp_path_or_die() . "/$file_name";
-    my $workbook  = Spreadsheet::WriteExcel->new($temp_file);
+    my $workbook  = Excel::Writer::XLSX->new($temp_file);
     my $worksheet = $workbook->add_worksheet();
     my @combined;
     foreach my $c (sort keys %{$contract}) {
@@ -518,7 +516,7 @@ sub single_output_as_excel {
     my $contract  = shift;
     my $file_name = shift;
     my $temp_file = get_tmp_path_or_die() . "/$file_name";
-    my $workbook  = Spreadsheet::WriteExcel->new($temp_file);
+    my $workbook  = Excel::Writer::XLSX->new($temp_file);
     my $worksheet = $workbook->add_worksheet();
     my (@keys, @value);
     foreach my $key (sort keys %{$contract}) {
