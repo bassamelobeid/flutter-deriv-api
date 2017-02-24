@@ -30,7 +30,6 @@ sub cleanup_strored_contract_ids {
 
 sub log_call_timing {
     my ($c, $req_storage) = @_;
-    my $app_name =;
     my $tags = ["rpc:$req_storage->{method}", "app_name:" . ($c->stash('app_name') || ''), "app_id:" . ($c->stash('source') || ''),];
     DataDog::DogStatsd::Helper::stats_timing(
         'bom_websocket_api.v_3.rpc.call.timing',
