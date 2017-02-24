@@ -36,8 +36,6 @@ Convert an FMB into parameters suitable for creating a BOM::Product::Contract
 
 =cut
 
-my %AVAILABLE_CONTRACTS = map { $_ => 1 } keys %{get_all_contract_types()};
-
 sub financial_market_bet_to_parameters {
     my $fmb      = shift;
     my $currency = shift;
