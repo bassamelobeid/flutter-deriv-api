@@ -364,7 +364,7 @@ sub _build_memory_chronicle {
         } elsif ($self->underlying->uses_implied_rate($self->underlying->asset_symbol)) {
             $implied_symbol = $self->underlying->asset_symbol . '-' . $self->underlying->rate_to_imply_from;
         }
-        $hash_ref->{'interest_rates::' . $implied_symbol} = $chronicle_reader->get('interest_rates', $implied_symbol);
+        $hash_ref->{'interest_rates::' . $implied_symbol} = $chronicle_reader->get('interest_rates', $implied_symbol) if $implied_symbol;
     }
 
     return Data::Chronicle::Reader->new({cache_reader => $hash_ref});
