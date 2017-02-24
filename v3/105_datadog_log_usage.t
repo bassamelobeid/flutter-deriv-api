@@ -65,7 +65,7 @@ is $timing->[1]->[0], 'bom_websocket_api.v_3.rpc.call.timing.connection';
 ok $timing->[1]->[1], 'Should log timing';
 is $timing->[1]->[2]->{tags}->[0], 'rpc:send_ask', 'Should set tag with rpc method name';
 
-my $token = BOM::Database::Model::AccessToken->new->create_token("CR0021", 'Test', 'trade');
+my $token = BOM::Database::Model::AccessToken->new->create_token("CR0021", 'Test', ['trade']);
 $t       = $t->send_ok({json => {authorize => $token}})->message_ok;
 $res     = decode_json($t->message->[1]);
 @$timing = ();
