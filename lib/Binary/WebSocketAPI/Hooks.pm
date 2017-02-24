@@ -30,12 +30,18 @@ sub cleanup_strored_contract_ids {
 
 sub log_call_timing {
     my ($c, $req_storage) = @_;
+    my $app_name = ;
+    my $tags = [
+        "rpc:$req_storage->{method}",
+        "app_name:" . ($c->stash('app_name') || ''),
+        "app_id:" . ($c->stash('source') || ''),
+    ];
     DataDog::DogStatsd::Helper::stats_timing(
         'bom_websocket_api.v_3.rpc.call.timing',
         1000 * Time::HiRes::tv_interval($req_storage->{tv}),
-        {tags => ["rpc:$req_storage->{method}"]});
-    my $app_name = $c->stash('app_name') || '';
-    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => ["rpc:$req_storage->{method}", "app_name:$app_name", "app_id:" . ($c->stash('source') || '')]});
+        {tags => $tags}
+    );
+    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => $tags});
     return;
 }
 
