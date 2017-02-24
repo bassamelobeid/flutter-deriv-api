@@ -22,7 +22,7 @@ Some general utility subroutines related to bet parameters.
 =cut
 
 use Date::Utility;
-use LandingCompany::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Offerings qw(get_all_contract_types);
 use BOM::Platform::Runtime;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -35,12 +35,6 @@ use List::MoreUtils qw(uniq);
 Convert an FMB into parameters suitable for creating a BOM::Product::Contract
 
 =cut
-
-my @available_contracts =
-    map { get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'contract_type', {landing_company => $_->short}) }
-    LandingCompany::Registry->new->all;
-
-my %AVAILABLE_CONTRACTS = map { $_ => 1 } uniq(@available_contracts);
 
 sub financial_market_bet_to_parameters {
     my $fmb      = shift;
@@ -147,7 +141,7 @@ sub shortcode_to_parameters {
         currency   => $currency,
     };
 
-    return $legacy_params if (not exists $AVAILABLE_CONTRACTS{$test_bet_name} or $shortcode =~ /_\d+H\d+/);
+    return $legacy_params if (not exists get_all_contract_types()->{$test_bet_name} or $shortcode =~ /_\d+H\d+/);
 
     if ($shortcode =~ /^(SPREADU|SPREADD)_([\w\d]+)_(\d*.?\d*)_(\d+)_(\d*.?\d*)_(\d*.?\d*)_(DOLLAR|POINT)/) {
         return {
