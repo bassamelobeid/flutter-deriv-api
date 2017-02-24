@@ -22,17 +22,17 @@ sub __parse_array {
 my @token_scopes = ('read', 'trade', 'payments', 'admin');
 my %available_scopes = map { $_ => 1 } @token_scopes;
 sub __filter_valid_scopes {
-    my (@s) = @_;
-    return grep { $available_scopes{$_} } @s;
+    my $s = shift;
+    return [grep { $available_scopes{$_} } @$s];
 }
 
 sub create_token {
-    my ($self, $loginid, $display_name, @scopes) = @_;
+    my ($self, $loginid, $display_name, $scopes, $ip) = @_;
 
-    @scopes = __filter_valid_scopes(@scopes);
+    $scopes = __filter_valid_scopes($scopes);
 
     my $dbh = $self->dbh;
-    my ($token) = $dbh->selectrow_array("SELECT auth.create_token(15, ?, ?, ?)", undef, $loginid, $display_name, \@scopes);
+    my ($token) = $dbh->selectrow_array("SELECT auth.create_token(15, ?, ?, ?, ?)", undef, $loginid, $display_name, $scopes, $ip);
 
     return $token;
 }
@@ -65,7 +65,7 @@ sub get_tokens_by_loginid {
     my @tokens;
     my $sth = $self->dbh->prepare("
         SELECT
-            token, display_name, scopes, last_used::timestamp(0)
+            token, display_name, scopes, last_used::timestamp(0), valid_for_ip
         FROM auth.access_token WHERE client_loginid = ? ORDER BY display_name
     ");
     $sth->execute($loginid);
