@@ -700,7 +700,6 @@ sub _build_pricing_engine {
 
     my $pricing_engine = $self->pricing_engine_name->new({
         bet                     => $self,
-        apply_bounceback_safety => !$self->for_sale,
         inefficient_period      => $self->market_is_inefficient,
         $self->priced_with_intraday_model ? (economic_events => $self->economic_events_for_volatility_calculation) : (),
     });
