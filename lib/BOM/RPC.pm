@@ -102,7 +102,7 @@ sub _check_trade_status {
         if $client->is_virtual;
     unless ($client->allow_trade) {
         return BOM::RPC::v3::Utility::create_error({
-            code              => 'ASK_TNC_APPROVAL',
+            code              => 'PLEASE_CONTACT_SUPPORT',
             message_to_client => localize('Please contact customer support for more information.'),
         });
     }
