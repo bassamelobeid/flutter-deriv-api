@@ -504,6 +504,11 @@ sub startup {
                 EX   => 3600,
                 sub {
                     my ($redis, $err) = @_;
+		    # In global destruction, the Redis connection may be dropped partway
+		    # through the operation. Since the information we're storing isn't
+		    # critical, we accept this, but see this card as well:
+		    # https://trello.com/c/199pqtnM/4609-clean-up-redis-disconnect-handling-in-websockets-code
+		    return if ${^GLOBAL_PHASE} eq 'DESTRUCT';
                     warn "rate_limitations_save error: $err" if $err;
                 },
             );
@@ -518,6 +523,9 @@ sub startup {
                 $key,
                 sub {
                     my ($redis, $err, $hits_json) = @_;
+		    # As with save: on global destruct, a partial load may be cancelled.
+		    # https://trello.com/c/199pqtnM/4609-clean-up-redis-disconnect-handling-in-websockets-code
+		    return if ${^GLOBAL_PHASE} eq 'DESTRUCT';
                     if ($err) {
                         warn "rate_limitations_load error: $err";
                         return;
