@@ -68,7 +68,7 @@ sub _build_file {
     }
     @tenor_filenames;
 
-    $self->_tenor_file($tenor_file);
+    $self->tenor_file($tenor_file);
 
     #  On weekend, we only subscribe the volsurface file at 23:40GMT. So anytime before this, there is no file available
     # On weekday, the first response file of the day is at 00:45GMT, hence at the first 45 minutes of the day, there is no file
