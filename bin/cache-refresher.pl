@@ -4,8 +4,8 @@ use warnings;
 use 5.010;
 
 # Yes, nothing is imported from BOM-*
-use AnyEvent;
-use AnyEvent::Redis;
+use Mojo::IOLoop;
+use Mojo::Redis2;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 use YAML::XS qw/LoadFile/;
 use JSON::XS;
@@ -26,19 +26,13 @@ sub extract_offerings_config {
 
 my $chronicle_config = LoadFile('/etc/rmg/chronicle.yml');
 
-my $cv_finish = AE::cv;
-my $redis     = AnyEvent::Redis->new(
-    host     => $chronicle_config->{read}->{host},
-    port     => $chronicle_config->{read}->{port},
-    encoding => 'utf8',
-    on_error => sub {
-        warn @_;
-        $cv_finish->send;
-    },
-);
+my $host  = $chronicle_config->{read}->{host};
+my $port  = $chronicle_config->{read}->{port};
+my $url   = "redis://$host:$port";
+my $redis = Mojo::Redis2->new(url => $url);
 
 print "loading current settings from redis\n";
-my $settings = $redis->get('app_settings::binary')->recv;
+my $settings = $redis->get('app_settings::binary');
 $settings = decode_json($settings);
 
 print "settings loaded, refreshing offerings due to $0 start\n";
@@ -47,12 +41,17 @@ reinitialise_offerings($offerings_config);
 my $offering_config_digest = LandingCompany::Offerings::_get_config_key($offerings_config);
 print "offerings has been refreshed, digest = $offering_config_digest\n";
 
-my $cv = $redis->subscribe(
-    "app_settings::binary",
-    sub {
+$redis->on(
+    error => sub {
+        my ($redis, $err) = @_;
+        warn "redis error: $err";
+        Mojo::IOLoop->stop;
+    });
+
+$redis->on(
+    message => sub {
+        my ($reids, $message, $channel) = @_;
         print("received new config\n");
-        my ($message, $channel) = @_;
-        return unless $message;
 
         my $data   = decode_json($message);
         my $config = extract_offerings_config($data);
@@ -69,5 +68,11 @@ my $cv = $redis->subscribe(
         return;
     });
 
-$cv_finish->recv;
+$redis->subscribe(
+    ["app_settings::binary"],
+    sub {
+        print("Subscribed\n");
+    });
 
+Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
+print("Exiting\n");
