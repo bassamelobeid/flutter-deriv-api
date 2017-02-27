@@ -26,19 +26,18 @@ sub get_token_details {
 
     return unless $token;
 
-    my ($loginid, $creation_time, $epoch, $ua_fingerprint, @scopes);
+    my ($loginid, $creation_time, $epoch, $ua_fingerprint, $scopes);
     if (length $token == 15) {    # access token
         my $m = BOM::Database::Model::AccessToken->new;
-        ($loginid, $creation_time) = $m->get_loginid_by_token($token);
+        ($loginid, $creation_time, $scopes) = @{$m->get_token_details($token)}{qw/loginid creation_time scopes/};
         return unless $loginid;
         $epoch = Date::Utility->new($creation_time)->epoch if $creation_time;
-        @scopes = $m->get_scopes_by_access_token($token);
     } elsif (length $token == 32 && $token =~ /^a1-/) {
         my $m = BOM::Database::Model::OAuth->new;
-        ($loginid, $creation_time, $ua_fingerprint) = $m->get_loginid_by_access_token($token);
+        ($loginid, $creation_time, $ua_fingerprint, $scopes) =
+            @{$m->get_loginid_by_access_token($token)}{qw/loginid creation_time ua_fingerprint scopes/};
         return unless $loginid;
         $epoch = Date::Utility->new($creation_time)->epoch if $creation_time;
-        @scopes = $m->get_scopes_by_access_token($token);
     } else {
         # invalid token type
         return;
@@ -46,7 +45,7 @@ sub get_token_details {
 
     return {
         loginid        => $loginid,
-        scopes         => \@scopes,
+        scopes         => $scopes,
         epoch          => $epoch,
         ua_fingerprint => $ua_fingerprint,
     };
