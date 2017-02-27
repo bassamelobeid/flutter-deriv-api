@@ -276,6 +276,12 @@ sub startup {
             }
         ],
         [
+            'sell_by_shortcode',
+            {
+                require_auth   => 'trade',
+            }
+        ],
+        [
             'transaction',
             {
                 require_auth   => 'read',
