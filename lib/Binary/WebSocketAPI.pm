@@ -278,7 +278,7 @@ sub startup {
         [
             'sell_by_shortcode',
             {
-                require_auth   => 'trade',
+                require_auth => 'trade',
             }
         ],
         [
