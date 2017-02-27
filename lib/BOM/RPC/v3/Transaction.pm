@@ -262,7 +262,7 @@ sub buy_contract_for_multiple_accounts {
 sub _check_token_list {
     my $tokens = shift;
 
-    my ( $err, $result,  $success ) = ( undef, [], 0 );
+    my ($err, $result, $success) = (undef, [], 0);
 
     for my $t (@$tokens) {
         my $token_details = BOM::RPC::v3::Utility::get_token_details($t);
@@ -302,7 +302,10 @@ sub _check_token_list {
             };
     }
 
-    return { success => $success, result => $result };
+    return {
+        success => $success,
+        result  => $result
+    };
 }
 
 sub sell_by_shortcode {
@@ -320,11 +323,10 @@ sub sell_by_shortcode {
             code              => 'TooManyTokens',
             message_to_client => localize('Up to 100 tokens are allowed.')}) if scalar @$tokens > 100;
 
+    my $token_list_res = _check_token_list($tokens);
 
-    my $token_list_res = _check_token_list( $tokens );
-
-    my @result =  @{$token_list_res->{result}};
-    if ( $token_list_res->{success} ) {
+    my @result = @{$token_list_res->{result}};
+    if ($token_list_res->{success}) {
         my $contract_parameters = shortcode_to_parameters($shortcode, $client->currency);
         $contract_parameters->{landing_company} = $client->landing_company->short;
 
@@ -339,7 +341,6 @@ sub sell_by_shortcode {
             source   => $source,
         });
 
-
         if (my $err = $trx->sell_by_shortcode) {
             return BOM::RPC::v3::Utility::create_error({
                 code              => $err->get_type,
@@ -350,11 +351,12 @@ sub sell_by_shortcode {
 
         my $data_to_return = [];
         foreach my $row (@result) {
-            push @{$data_to_return}, +{
+            push @{$data_to_return},
+                +{
                 transaction_id => $row->{tnx}{id},
                 balance_after  => sprintf('%.2f', $row->{tnx}{balance_after}),
                 sold_for       => abs($row->{tnx}{amount}),
-            };
+                };
         }
         return $data_to_return;
     }
