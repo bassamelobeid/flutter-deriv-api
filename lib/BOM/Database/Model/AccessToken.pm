@@ -37,6 +37,15 @@ sub create_token {
     return $token;
 }
 
+sub get_token_details {
+    my ($self, $token) = @_;
+
+    return $self->dbh->selectrow_array(<<'SQL', undef, $token);
+SELECT loginid, creation_time, scopes, display_name, last_used, valid_for_ip
+  FROM auth.get_loginid_by_access_token($1)
+SQL
+}
+
 sub get_loginid_by_token {
     my ($self, $token) = @_;
 

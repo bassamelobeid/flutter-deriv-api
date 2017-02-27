@@ -83,6 +83,17 @@ sub store_access_token_only {
     return ($access_token, $expires_in);
 }
 
+sub get_token_details {
+    my ($self, $token) = @_;
+
+    my $expires_in = '60 days';
+
+    return $self->dbh->selectrow_array(<<'SQL', undef, $token, $expires_in);
+SELECT loginid, creation_time, ua_fingerprint, scopes
+  FROM oauth.get_token_details($1, $2::INTERVAL)
+SQL
+}
+
 sub get_loginid_by_access_token {
     my ($self, $token) = @_;
 
