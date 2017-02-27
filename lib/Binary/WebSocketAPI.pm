@@ -1,5 +1,10 @@
 package Binary::WebSocketAPI;
 
+use strict;
+use warnings;
+
+no indirect;
+
 use Mojo::Base 'Mojolicious';
 use Mojo::Redis2;
 use Mojo::IOLoop;
@@ -499,26 +504,44 @@ sub startup {
                 EX   => 3600,
                 sub {
                     my ($redis, $err) = @_;
-                    if ($err) {
-                        $app->log->error("rate_limitations_save error: $err");
-                    }
+                    # In global destruction, the Redis connection may be dropped partway
+                    # through the operation. Since the information we're storing isn't
+                    # critical, we accept this, but see this card as well:
+                    # https://trello.com/c/199pqtnM/4609-clean-up-redis-disconnect-handling-in-websockets-code
+                    return if ${^GLOBAL_PHASE} eq 'DESTRUCT';
+                    warn "rate_limitations_save error: $err" if $err;
                 },
             );
         });
 
     $app->helper(
         'rate_limitations_load' => sub {
-            my $c         = shift;
-            my $key       = $c->rate_limitations_key;
+            my $c   = shift;
+            my $key = $c->rate_limitations_key;
+            Scalar::Util::weaken(my $weak_c = $c);
             my $hits_json = $c->ws_redis_slave->get(
                 $key,
                 sub {
                     my ($redis, $err, $hits_json) = @_;
+                    # As with save: on global destruct, a partial load may be cancelled.
+                    # https://trello.com/c/199pqtnM/4609-clean-up-redis-disconnect-handling-in-websockets-code
+                    return if ${^GLOBAL_PHASE} eq 'DESTRUCT';
                     if ($err) {
-                        $app->log->error("rate_limitations_load error: $err");
+                        warn "rate_limitations_load error: $err";
+                        return;
                     }
-                    my $hits = $hits_json ? decode_json($hits_json) : {};
-                    $c->stash(rate_limitations_hits => $hits);
+                    unless ($weak_c && $weak_c->tx) {
+                        warn 'No longer have context in rate limits load, probable client disconnect, bailing out';
+                        return;
+                    }
+                    try {
+                        my $hits = $hits_json ? decode_json($hits_json) : {};
+                        $weak_c->stash(rate_limitations_hits => $hits);
+                    }
+                    catch {
+                        warn "Failed to decode and stash rate limit data: $_";
+                    };
+                    return;
                 });
         });
 
