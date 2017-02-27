@@ -7,7 +7,6 @@ use Date::Utility;
 use Try::Tiny;
 use Locale::Country;
 use List::MoreUtils qw(any);
-use DataDog::DogStatsd::Helper qw(stats_inc);
 use Data::Validate::Sanctions;
 
 use Brands;
@@ -169,9 +168,6 @@ sub after_register_client {
             'residence: ' . Locale::Country::code2country($client->residence));
         $client->add_note("MX Client [$client_loginid] - first name or last name less than 3 characters", "$notemsg\n");
     }
-
-    stats_inc("business.new_account.real");
-    stats_inc("business.new_account.real." . $client->broker);
 
     return {
         client => $client,
