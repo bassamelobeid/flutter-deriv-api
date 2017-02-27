@@ -176,6 +176,8 @@ subtest "2nd try: dummy tokens => success", sub {
     is $forget->{forget}, 0, 'buying a proposal deletes the stream';
 };
 
+my $tokens_for_sell = [];
+my $shortcode_for_sell = undef;
 subtest "3rd try: the real thing => success", sub {
     # Here we trust that the function in bom-rpc works correctly. We
     # are not going to test all possible variations. In particular,
@@ -192,10 +194,17 @@ subtest "3rd try: the real thing => success", sub {
                 tokens                             => \@tokens,
             }});
     my $res = filter_proposal;
+    use Data::Dumper;
+warn Dumper $res;
     isa_ok $res->{buy_contract_for_multiple_accounts}, 'HASH';
 
     # note explain $res;
     test_schema('buy_contract_for_multiple_accounts', $res);
+
+    $tokens_for_sell = [map {$_->{token}} grep {$_->{shortcode}} @{$res->{buy_contract_for_multiple_accounts}{result}}];
+    $shortcode_for_sell = [map {$_->{shortcode}} grep {$_->{shortcode}} @{$res->{buy_contract_for_multiple_accounts}{result}}]->[0];
+    warn Dumper $tokens_for_sell;
+    warn $shortcode;
 
     $t = $t->send_ok({json => {forget => $proposal_id}})->message_ok;
     my $forget = decode_json($t->message->[1]);
@@ -210,7 +219,7 @@ subtest "3rd try: the real thing => success", sub {
             }});
     my $stmt = filter_proposal;
     # note explain $stmt;
-
+warn Dumper $stmt;
     is_deeply([
             sort { $a->[0] <=> $b->[0] }
             map { [$_->{contract_id}, $_->{transaction_id}, -$_->{amount}] } @{$stmt->{statement}->{transactions}}
@@ -222,6 +231,55 @@ subtest "3rd try: the real thing => success", sub {
         ],
         'got all 3 contracts via statement call'
     );
+};
+sleep 5;
+
+subtest "2nd try to sell: dummy tokens => success", sub {
+    $t = $t->send_ok({
+            json => {
+                sell_by_shortcode => 1,
+                shortcode         => $shortcode_for_sell,
+                price             => 2.42,
+                tokens            => ['DUMMY0', 'DUMMY1'],
+            }});
+    $t   = $t->message_ok;
+    my $res = decode_json($t->message->[1]);
+    note explain $res;
+    isa_ok $res->{sell_by_shortcode}, 'ARRAY';
+
+    is_deeply $res->{sell_by_shortcode},
+        [{
+            'code'              => 'InvalidToken',
+            'error'             => 'Invalid token',
+            'token'             => 'DUMMY0'
+        },
+         {
+             'code'             => 'InvalidToken',
+             'error'            => 'Invalid token',
+             'token'            => 'DUMMY1'
+         }
+     ],
+     'got expected result';
+
+    test_schema('sell_by_shortcode', $res);
+};
+
+subtest "sell contracts by shortcode => successful", sub {
+    $t = $t->send_ok({
+        json => {
+            sell_by_shortcode => 1,
+            shortcode         => $shortcode_for_sell,
+            price             => 2.42,
+            tokens            => $tokens_for_sell,
+        }});
+    $t   = $t->message_ok;
+    $res = decode_json($t->message->[1]);
+
+    isa_ok $res->{sell_by_shortcode}, 'ARRAY';
+    isa_ok $res->{sell_by_shortcode}->[0], 'HASH';
+
+    test_schema('sell_by_shortcode', $res);
+
 };
 
 $t->finish_ok;
