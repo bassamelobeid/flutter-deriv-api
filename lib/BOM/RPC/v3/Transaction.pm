@@ -259,6 +259,109 @@ sub buy_contract_for_multiple_accounts {
     return +{result => \@result};
 }
 
+sub _check_token_list {
+    my $tokens = shift;
+
+    my ( $err, $result,  $success ) = ( undef, [], 0 );
+
+    for my $t (@$tokens) {
+        my $token_details = BOM::RPC::v3::Utility::get_token_details($t);
+        my $loginid;
+
+        if (    $token_details
+            and $loginid = $token_details->{loginid}
+            and grep({ /^trade$/ } @{$token_details->{scopes}}))
+        {
+            push @$result,
+                +{
+                token   => $t,
+                loginid => $loginid,
+                };
+            $success = 1;
+            next;
+        }
+
+        if ($loginid) {
+
+            # here we got a valid token but with insufficient privileges
+            push @$result,
+                +{
+                token => $t,
+                code  => 'PermissionDenied',
+                error => BOM::Platform::Context::localize('Permission denied, requires [_1] scope.', 'trade'),
+                };
+            next;
+
+        }
+
+        push @$result,
+            +{
+            token => $t,
+            code  => 'InvalidToken',
+            error => BOM::Platform::Context::localize('Invalid token'),
+            };
+    }
+
+    return { success => $success, result => $result };
+}
+
+sub sell_by_shortcode {
+    my $params = shift;
+
+    my $client = $params->{client} // die "client should be authed when get here";
+
+    my ($source, $args) = ($params->{source}, $params->{args});
+
+    my $shortcode = $args->{shortcode};
+
+    my $tokens = $args->{tokens} // [];
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'TooManyTokens',
+            message_to_client => localize('Up to 100 tokens are allowed.')}) if scalar @$tokens > 100;
+
+
+    my $token_list_res = _check_token_list( $tokens );
+
+    my @result =  @{$token_list_res->{result}};
+    if ( $token_list_res->{success} ) {
+        my $contract_parameters = shortcode_to_parameters($shortcode, $client->currency);
+        $contract_parameters->{landing_company} = $client->landing_company->short;
+
+        my $amount_type = $contract_parameters->{amount_type};
+        my $contract    = produce_contract($contract_parameters);
+
+        my $trx = BOM::Product::Transaction->new({
+            client   => $client,
+            multiple => \@result,
+            contract => $contract,
+            price    => ($args->{price} // 0),
+            source   => $source,
+        });
+
+
+        if (my $err = $trx->sell_by_shortcode) {
+            return BOM::RPC::v3::Utility::create_error({
+                code              => $err->get_type,
+                message_to_client => $err->{-message_to_client},
+                message           => "Contract-Multi-Sell Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}"
+            });
+        }
+
+        my $data_to_return = [];
+        foreach my $row (@result) {
+            push @{$data_to_return}, +{
+                transaction_id => $row->{tnx}{id},
+                balance_after  => sprintf('%.2f', $row->{tnx}{balance_after}),
+                sold_for       => abs($row->{tnx}{amount}),
+            };
+        }
+        return $data_to_return;
+    }
+
+    return \@result;
+}
+
 sub sell {
     my $params = shift;
 
