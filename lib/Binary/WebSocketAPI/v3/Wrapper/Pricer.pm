@@ -104,7 +104,7 @@ sub proposal_array {
         $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
         my $position = 0;
         for my $barrier (@{$req_storage->{args}->{barriers}}) {
-            $barriers_order->{$barrier->{barrier} . ($barrier->{barrier2} || '')} = $position++;
+            $barriers_order->{$barrier->{barrier} . ($barrier->{barrier2} // '')} = $position++;
         }
     } else {
         my $error = $c->new_error('proposal_array', 'AlreadySubscribed', $c->l('You are already subscribed to proposal_array.'));
@@ -746,7 +746,7 @@ sub _uniquie_barriers {
     my $barriers = shift;
     my %h;
     for my $barrier (@$barriers) {
-        my $idx = $barrier->{barrier} . (exists $barrier->{barrier2} ? $barrier->{barrier2} : '');
+        my $idx = $barrier->{barrier} . ($barrier->{barrier2} // '');
         return if $h{$idx}++;
     }
     return 1;
