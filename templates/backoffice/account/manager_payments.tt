@@ -102,8 +102,8 @@
             <option value="RBSI 5880-58269864">RBSI 5880-58269864</option>
             <option value="RBSI 5880-58321386">RBSI 5880-58321386</option>
             <option value="RBSI 5880-58442434">RBSI 5880-58442434</option>
-            <option value="BOV 40020743077"   >BOV 40020743077</option>
-            <option value="BOV 40013160133"   >BOV 40013160133</option>
+            <option value="WB21 1902057146"   >WB21 1902057146</option>
+            <option value="WB21 1902531831"   >WB21 1902531831</option>
         </select>
     </td>
     <td class="all_payment_types "><input type="text" name="payment_processor" insist/></td>
