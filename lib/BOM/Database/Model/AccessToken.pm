@@ -40,10 +40,13 @@ sub create_token {
 sub get_token_details {
     my ($self, $token) = @_;
 
-    return $self->dbh->selectrow_array(<<'SQL', undef, $token);
+    my $details = $self->dbh->selectrow_hashref(<<'SQL', undef, $token);
 SELECT loginid, creation_time, scopes, display_name, last_used, valid_for_ip
   FROM auth.get_loginid_by_access_token($1)
 SQL
+    $details->{scopes} = __parse_array($details->{scopes});
+
+    return $details;
 }
 
 sub get_loginid_by_token {

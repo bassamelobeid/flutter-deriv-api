@@ -88,10 +88,13 @@ sub get_token_details {
 
     my $expires_in = '60 days';
 
-    return $self->dbh->selectrow_array(<<'SQL', undef, $token, $expires_in);
+    my $details = $self->dbh->selectrow_hashref(<<'SQL', undef, $token, $expires_in);
 SELECT loginid, creation_time, ua_fingerprint, scopes
   FROM oauth.get_token_details($1, $2::INTERVAL)
 SQL
+    $details->{scopes} = __parse_array($details->{scopes});
+
+    return $details;
 }
 
 sub get_loginid_by_access_token {
