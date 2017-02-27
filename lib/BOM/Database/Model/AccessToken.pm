@@ -42,7 +42,7 @@ sub get_token_details {
 
     my $details = $self->dbh->selectrow_hashref(<<'SQL', undef, $token);
 SELECT loginid, creation_time, scopes, display_name, last_used, valid_for_ip
-  FROM auth.get_loginid_by_access_token($1)
+  FROM auth.get_token_details($1)
 SQL
     $details->{scopes} = __parse_array($details->{scopes});
 
