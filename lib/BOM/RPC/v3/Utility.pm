@@ -35,7 +35,7 @@ sub get_token_details {
     } elsif (length $token == 32 && $token =~ /^a1-/) {
         my $m = BOM::Database::Model::OAuth->new;
         ($loginid, $creation_time, $ua_fingerprint, $scopes) =
-            @{$m->get_loginid_by_access_token($token)}{qw/loginid creation_time ua_fingerprint scopes/};
+            @{$m->get_token_details($token)}{qw/loginid creation_time ua_fingerprint scopes/};
         return unless $loginid;
         $epoch = Date::Utility->new($creation_time)->epoch if $creation_time;
     } else {
