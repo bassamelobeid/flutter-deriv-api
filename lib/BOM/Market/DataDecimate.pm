@@ -17,7 +17,7 @@ A wrapper to let us use Redis to get decimated tick data.
 use 5.010;
 use Moose;
 
-use BOM::System::RedisReplicated;
+use BOM::Platform::RedisReplicated;
 
 use List::Util qw( first min max );
 use Quant::Framework::Underlying;
@@ -202,14 +202,14 @@ sub _build_encoder {
 has 'redis_read' => (
     is      => 'ro',
     default => sub {
-        BOM::System::RedisReplicated::redis_read();
+        BOM::Platform::RedisReplicated::redis_read();
     },
 );
 
 has 'redis_write' => (
     is      => 'ro',
     default => sub {
-        BOM::System::RedisReplicated::redis_write();
+        BOM::Platform::RedisReplicated::redis_write();
     },
 );
 
