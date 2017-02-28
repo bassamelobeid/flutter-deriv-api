@@ -30,8 +30,8 @@ sub script_run {
     my %report;
 
     my $storage_accessor = Quant::Framework::StorageAccessor->new(
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
     );
     my $now = Date::Utility->new;
 
