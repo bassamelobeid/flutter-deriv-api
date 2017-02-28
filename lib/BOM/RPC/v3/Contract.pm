@@ -212,10 +212,7 @@ sub _get_ask {
             # but later could produce valid contract dependant on volatility moves
             # so we need to store contract_parameters and longcode to use them later
             if ($code eq 'ContractBuyValidationError') {
-                my $longcode = '';
-                try {
-                    $longcode = $contract->longcode;
-                };
+                my $longcode = eval { $contract->longcode } || ''; # if we can't get the longcode that's fine, we still want to return the original error
                 $response->{contract_parameters} = $contract_parameters;
                 $response->{longcode}            = $longcode;
             }
