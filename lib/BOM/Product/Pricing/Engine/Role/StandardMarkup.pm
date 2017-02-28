@@ -18,7 +18,7 @@ use List::Util qw(first);
 use Math::Function::Interpolator;
 
 use BOM::Product::Pricing::Greeks::BlackScholes;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
 
@@ -308,7 +308,7 @@ sub _build_forward_starting_markup {
             name        => 'is_forward_starting',
             description => 'Adjustment because this is a forward-starting option',
             set_by      => 'quants.commission.adjustment.forward_start_factor',
-            base_amount => (BOM::System::Config::quants->{commission}->{adjustment}->{forward_start_factor} / 100),
+            base_amount => (BOM::Platform::Config::quants->{commission}->{adjustment}->{forward_start_factor} / 100),
         });
         $fs->include_adjustment('reset', $is_fs);
     }
