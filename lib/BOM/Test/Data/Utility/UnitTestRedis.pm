@@ -25,8 +25,8 @@ sub initialize_realtime_ticks_db {
     for my $symbol (keys %ticks) {
         my $args = {};
         $args->{symbol}           = $symbol;
-        $args->{chronicle_reader} = BOM::System::Chronicle::get_chronicle_reader();
-        $args->{chronicle_writer} = BOM::System::Chronicle::get_chronicle_writer();
+        $args->{chronicle_reader} = BOM::Platform::Chronicle::get_chronicle_reader();
+        $args->{chronicle_writer} = BOM::Platform::Chronicle::get_chronicle_writer();
 
         my $ul = Quant::Framework::Underlying->new($args);
 
