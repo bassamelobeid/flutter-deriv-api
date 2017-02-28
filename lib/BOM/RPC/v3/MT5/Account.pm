@@ -61,6 +61,11 @@ sub mt5_new_account {
     my $mt5_account_type = delete $args->{mt5_account_type} // '';
     my $brand            = Brands->new(name => request()->brand);
 
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'MT5SamePassword',
+            message_to_client => localize('Investor password cannot be same as main password.')}
+    ) if (($args->{mainPassword} // '') eq ($args->{investPassword} // ''));
+
     my $group;
     if ($account_type eq 'demo') {
         if ($client and $client->residence eq 'jp') {
