@@ -15,7 +15,7 @@ use strict;
 use warnings;
 
 use BOM::Platform::Runtime;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use LandingCompany::Registry;
 
 use base qw( Exporter );
@@ -28,7 +28,7 @@ sub get_sportsbook {
     my ($broker, $currency) = @_;
     my $sportsbook;
 
-    if (not BOM::System::Config::on_production()) {
+    if (not BOM::Platform::Config::on_production()) {
         return 'test';
     }
 
