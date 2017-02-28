@@ -4,8 +4,8 @@ use strict;
 use warnings;
 
 use BOM::Platform::Runtime;
-use BOM::System::Config;
-use BOM::System::RedisReplicated;
+use BOM::Plarform::Config;
+use BOM::Plarform::RedisReplicated;
 use base 'Experian::IDAuth';
 
 =head1 NOTES
@@ -30,12 +30,12 @@ sub _throttle {
     my $loginid = shift;
     my $key     = 'PROVEID::THROTTLE::' . $loginid;
 
-    if (BOM::System::RedisReplicated::redis_read()->get($key)) {
+    if (BOM::Plarform::RedisReplicated::redis_read()->get($key)) {
         die 'Too many ProveID requests for ' . $loginid;
     }
 
-    BOM::System::RedisReplicated::redis_write()->set($key, 1);
-    BOM::System::RedisReplicated::redis_write()->expire($key, 3600);
+    BOM::Plarform::RedisReplicated::redis_write()->set($key, 1);
+    BOM::Plarform::RedisReplicated::redis_write()->expire($key, 3600);
 
     return 1;
 }
@@ -56,8 +56,8 @@ sub defaults {
 
     return (
         $self->SUPER::defaults,
-        username      => BOM::System::Config::third_party->{proveid}->{username},
-        password      => BOM::System::Config::third_party->{proveid}->{password},
+        username      => BOM::Plarform::Config::third_party->{proveid}->{username},
+        password      => BOM::Plarform::Config::third_party->{proveid}->{password},
         folder        => $folder,
         residence     => $client->residence,
         postcode      => $client->postcode || '',

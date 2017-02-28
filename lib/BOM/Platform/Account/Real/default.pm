@@ -14,7 +14,7 @@ use Client::Account;
 use Client::Account::Desk;
 
 use BOM::Database::ClientDB;
-use BOM::System::Config;
+use BOM::Plarform::Config;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(request);
@@ -138,7 +138,7 @@ sub after_register_client {
 
     my $client_loginid = $client->loginid;
     my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
-    state $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::System::Config::sanction_file);
+    state $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::Plarform::Config::sanction_file);
     if ($sanctions->is_sanctioned($client->first_name, $client->last_name)) {
         $client->set_status('disabled', 'system', 'client disabled as marked as UNTERR');
         $client->save;
@@ -177,14 +177,14 @@ sub after_register_client {
 sub add_details_to_desk {
     my ($client, $details) = @_;
 
-    if (BOM::System::Config::on_production()) {
+    if (BOM::Plarform::Config::on_production()) {
         try {
             my $desk_api = Client::Account::Desk->new({
-                desk_url     => BOM::System::Config::third_party->{desk}->{api_uri},
-                api_key      => BOM::System::Config::third_party->{desk}->{api_key},
-                secret_key   => BOM::System::Config::third_party->{desk}->{api_key_secret},
-                token        => BOM::System::Config::third_party->{desk}->{access_token},
-                token_secret => BOM::System::Config::third_party->{desk}->{access_token_secret},
+                desk_url     => BOM::Plarform::Config::third_party->{desk}->{api_uri},
+                api_key      => BOM::Plarform::Config::third_party->{desk}->{api_key},
+                secret_key   => BOM::Plarform::Config::third_party->{desk}->{api_key_secret},
+                token        => BOM::Plarform::Config::third_party->{desk}->{access_token},
+                token_secret => BOM::Plarform::Config::third_party->{desk}->{access_token_secret},
             });
 
             $details->{loginid}  = $client->loginid;

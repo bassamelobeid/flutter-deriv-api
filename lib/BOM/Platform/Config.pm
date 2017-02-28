@@ -1,4 +1,4 @@
-package BOM::System::Config;
+package BOM::Plarform::Config;
 
 use strict;
 use warnings;
@@ -12,7 +12,7 @@ sub node {
 }
 
 sub role {
-    return (any { $_ eq shift } @{BOM::System::Config::node()->{node}->{roles}});
+    return (any { $_ eq shift } @{BOM::Plarform::Config::node()->{node}->{roles}});
 }
 
 sub feed_listener {

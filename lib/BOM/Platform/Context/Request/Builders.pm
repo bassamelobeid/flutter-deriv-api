@@ -43,7 +43,7 @@ sub from_mojo {
 
     return unless ($request);
 
-    # put back some ENV b/c we use it in our other modules like BOM::System::AuditLog
+    # put back some ENV b/c we use it in our other modules like BOM::Plarform::AuditLog
 
     ## no critic (Variables::RequireLocalizedPunctuationVars)
     %ENV = (%ENV, %{$request->env});

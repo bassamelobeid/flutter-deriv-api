@@ -12,7 +12,7 @@ use Encode;
 
 use Brands;
 
-use BOM::System::Config;
+use BOM::Plarform::Config;
 use BOM::Platform::Context qw(request localize);
 
 use base 'Exporter';

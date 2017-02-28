@@ -13,11 +13,11 @@ use Cache::RedisDB;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
-use BOM::System::Password;
+use BOM::Plarform::Password;
 
 my $email    = 'abc@binary.com';
 my $password = 'jskjd8292922';
-my $hash_pwd = BOM::System::Password::hashpw($password);
+my $hash_pwd = BOM::Plarform::Password::hashpw($password);
 
 my ($vr_1, $cr_1);
 my ($client_vr, $client_cr, $client_cr_new);

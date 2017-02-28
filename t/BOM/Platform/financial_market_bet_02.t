@@ -11,7 +11,7 @@ use Client::Account;
 
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::ClientDB;
-use BOM::System::Password;
+use BOM::Plarform::Password;
 use BOM::Platform::Client::Utility;
 use BOM::Database::Model::FinancialMarketBet::Factory;
 use BOM::Platform::Client::IDAuthentication;
@@ -27,7 +27,7 @@ sub db {
 sub create_client {
     return Client::Account->register_and_return_new_client({
         broker_code      => 'CR',
-        client_password  => BOM::System::Password::hashpw('12345678'),
+        client_password  => BOM::Plarform::Password::hashpw('12345678'),
         salutation       => 'Mr',
         last_name        => 'Doe',
         first_name       => 'John' . time . '.' . int(rand 1000000000),

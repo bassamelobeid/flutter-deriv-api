@@ -1,8 +1,8 @@
-package BOM::System::RedisReplicated;
+package BOM::Plarform::RedisReplicated;
 
 =head1 NAME
 
-BOM::System::RedisReplicated - Provides read/write pair of redis client
+BOM::Plarform::RedisReplicated - Provides read/write pair of redis client
 
 =cut
 

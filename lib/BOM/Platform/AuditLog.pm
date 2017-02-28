@@ -1,4 +1,4 @@
-package BOM::System::AuditLog;
+package BOM::Plarform::AuditLog;
 
 use strict;
 use warnings;
