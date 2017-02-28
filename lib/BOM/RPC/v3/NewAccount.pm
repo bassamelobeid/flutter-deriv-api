@@ -20,7 +20,7 @@ use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Account::Real::subaccount;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (localize request);
@@ -78,7 +78,7 @@ sub new_account_virtual {
     });
     $user->save;
 
-    BOM::System::AuditLog::log("successful login", "$email");
+    BOM::Platform::AuditLog::log("successful login", "$email");
     return {
         client_id   => $client->loginid,
         email       => $email,
@@ -245,7 +245,7 @@ sub new_account_real {
     });
     $user->save;
 
-    BOM::System::AuditLog::log("successful login", "$client->email");
+    BOM::Platform::AuditLog::log("successful login", "$client->email");
     return {
         client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
@@ -302,7 +302,7 @@ sub new_account_maltainvest {
     });
     $user->save;
 
-    BOM::System::AuditLog::log("successful login", "$client->email");
+    BOM::Platform::AuditLog::log("successful login", "$client->email");
     return {
         client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
@@ -373,7 +373,7 @@ sub new_account_japan {
     });
     $user->save;
 
-    BOM::System::AuditLog::log("successful login", "$client->email");
+    BOM::Platform::AuditLog::log("successful login", "$client->email");
     return {
         client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,

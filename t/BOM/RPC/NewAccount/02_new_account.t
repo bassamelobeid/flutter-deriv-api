@@ -127,7 +127,7 @@ subtest $method => sub {
 
             # Make virtual client with user
             my $password = 'jskjd8292922';
-            my $hash_pwd = BOM::System::Password::hashpw($password);
+            my $hash_pwd = BOM::Platform::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
             $user  = BOM::Platform::User->create(
                 email    => $email,
@@ -221,7 +221,7 @@ subtest $method => sub {
     subtest 'Initialization' => sub {
         lives_ok {
             my $password = 'jskjd8292922';
-            my $hash_pwd = BOM::System::Password::hashpw($password);
+            my $hash_pwd = BOM::Platform::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
             $user  = BOM::Platform::User->create(
                 email    => $email,
@@ -349,7 +349,7 @@ subtest $method => sub {
     subtest 'Initialization' => sub {
         lives_ok {
             my $password = 'jskjd8292922';
-            my $hash_pwd = BOM::System::Password::hashpw($password);
+            my $hash_pwd = BOM::Platform::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
             $user  = BOM::Platform::User->create(
                 email    => $email,
