@@ -1,10 +1,10 @@
 #!/etc/rmg/bin/perl
 
-package BOM::Platform::Script::MarketDataStatisticCollector;
+package BOM::Market::MarketDataStatisticCollector;
 
 =head1 NAME
 
-BOM::Platform::Script::MarketDataStatisticCollector
+BOM::Market::MarketDataStatisticCollector
 
 =head1 DESCRIPTION
 
@@ -264,4 +264,4 @@ __PACKAGE__->meta->make_immutable;
 package main;
 use strict;
 
-exit BOM::Platform::Script::MarketDataStatisticCollector->new->run;
+exit BOM::Market::MarketDataStatisticCollector->new->run;
