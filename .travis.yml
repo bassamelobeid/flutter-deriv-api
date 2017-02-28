@@ -51,7 +51,7 @@ install:
 
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
-    - make $TEST_SUITE; RC=$?; sudo service binary_pgbouncer status; exit $RC
+    - (make $TEST_SUITE; RC=$?; sudo service binary_pgbouncer status; exit $RC)
 
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
