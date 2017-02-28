@@ -12,11 +12,11 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
 use Client::Account;
 use BOM::Database::Model::OAuth;
-use BOM::System::Password;
+use BOM::Platform::Password;
 
 my $email       = 'dummy@binary.com';
 my $password    = 'jskjd8292922';
-my $hash_pwd    = BOM::System::Password::hashpw($password);
+my $hash_pwd    = BOM::Platform::Password::hashpw($password);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
