@@ -10,7 +10,7 @@ use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use File::Temp;
 use Date::Utility;
 
-use BOM::System::RedisReplicated;
+use BOM::Platform::RedisReplicated;
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
@@ -24,7 +24,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 sub _create_tick {    #creates R_50 tick in redis channel FEED::R_50
     my ($i, $symbol) = @_;
     $i ||= 700;
-    BOM::System::RedisReplicated::redis_write->publish("FEED::$symbol",
+    BOM::Platform::RedisReplicated::redis_write->publish("FEED::$symbol",
               "$symbol;"
             . Date::Utility->new->epoch . ';'
             . $i
