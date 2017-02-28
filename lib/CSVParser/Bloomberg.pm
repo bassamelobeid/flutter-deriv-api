@@ -714,8 +714,8 @@ sub get_volsurface {
         print_precision => undef,
         cutoff          => $cutoff,
         deltas          => [25, 50, 75],
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
     );
 
     return $surface;
