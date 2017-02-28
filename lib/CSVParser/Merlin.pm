@@ -174,8 +174,8 @@ sub _build_records {
 
         $record{surface} = Quant::Framework::VolSurface::Delta->new(
             underlying       => $record{underlying},
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
             recorded_date   => $surface_date,
             surface         => $surface_data,
             print_precision => undef,

@@ -11,7 +11,7 @@ use Quant::Framework::VolSurface::Moneyness;
 use SetupDatasetTestFixture;
 use Date::Utility;
 use Scalar::Util qw(looks_like_number);
-use BOM::System::Chronicle;
+use BOM::Platform::Chronicle;
 
 has file => (
     is       => 'ro',
@@ -50,8 +50,8 @@ sub _build_records {
 
     my $surface = Quant::Framework::VolSurface::Moneyness->new(
         underlying       => $underlying,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         surface          => $surface_data,
         recorded_date    => Date::Utility->new($date_start),
         spot_reference   => $spot,
@@ -138,8 +138,8 @@ sub _setup_quanto_rate {
         rates            => \%applicable_rates,
         recorded_date    => $date->datetime_iso8601,
         type             => 'market',
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
     );
 
     $rate->save;
@@ -162,8 +162,8 @@ sub _setup_quanto_volsurface {
     my $volsurface = Quant::Framework::VolSurface::Delta->new(
         surface       => \%surface_data,
         underlying       => $underlying,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         recorded_date => $date,
     );
 

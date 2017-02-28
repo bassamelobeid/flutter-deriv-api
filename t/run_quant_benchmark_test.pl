@@ -54,7 +54,7 @@ sub _benchmark_testing_setup {
                 $rates{$tenor} = $rate;
             }
 
-            BOM::System::Chronicle::set(
+            BOM::Platform::Chronicle::set(
                 'interest_rates',
                 $symbol,
                 {
@@ -72,7 +72,7 @@ sub _benchmark_testing_setup {
     close $data;
 
 
-    BOM::System::Chronicle::set('partial_trading', 'late_opens', {}, Date::Utility->new("2010-01-01"));
+    BOM::Platform::Chronicle::set('partial_trading', 'late_opens', {}, Date::Utility->new("2010-01-01"));
 
 
     return 1;
