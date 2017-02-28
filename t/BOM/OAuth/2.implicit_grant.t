@@ -3,7 +3,7 @@ use warnings;
 use Test::More;
 use Test::Mojo;
 use Test::MockModule;
-use BOM::System::Password;
+use BOM::Platform::Password;
 use BOM::Platform::User;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -32,7 +32,7 @@ my $app_id = do {
 my $email    = 'abc@binary.com';
 my $password = 'jskjd8292922';
 {
-    my $hash_pwd  = BOM::System::Password::hashpw($password);
+    my $hash_pwd  = BOM::Platform::Password::hashpw($password);
     my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
     });

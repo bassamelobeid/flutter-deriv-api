@@ -4,7 +4,7 @@ use Mojo::Base 'Mojolicious';
 
 use Brands;
 
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::Platform::Context;
 use BOM::Platform::Context::Request;
 use BOM::Database::Rose::DB;
@@ -25,7 +25,7 @@ sub startup {
     $app->plugin(charset => {charset => 'utf-8'});
     $app->plugin('DefaultHelpers');
     $app->plugin('ClientIP');
-    $app->secrets([BOM::System::Config::aes_keys->{web_secret}{1}]);
+    $app->secrets([BOM::Platform::Config::aes_keys->{web_secret}{1}]);
 
     $app->helper(
         l => sub {
