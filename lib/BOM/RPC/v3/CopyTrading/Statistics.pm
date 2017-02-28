@@ -164,9 +164,9 @@ sub copytrading_statistics {
     # trades profitable && total trades count
     my $win_trades  = BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_PROFITABLE:$trader_id:win")  || 0;
     my $loss_trades = BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_PROFITABLE:$trader_id:loss") || 0;
-    $result_hash->{total_trades}      = $win_trades + $loss_trades;
+    $result_hash->{total_trades} = $win_trades + $loss_trades;
     $result_hash->{trades_profitable} = sprintf("%.4f", $win_trades / ($result_hash->{total_trades} || 1));
-    $result_hash->{avg_profit}        = sprintf("%.4f", BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:win") || 0);
+    $result_hash->{avg_profit} = sprintf("%.4f", BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:win") || 0);
     $result_hash->{avg_loss} = sprintf("%.4f", BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:loss") || 0);
 
     # trades_breakdown
