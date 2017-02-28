@@ -13,7 +13,7 @@ use LandingCompany::Offerings qw(reinitialise_offerings);
 use BOM::JapanContractDetails;
 use BOM::MarketData qw(create_underlying);
 use BOM::Market::DataDecimate;
-use BOM::System::RedisReplicated;
+use BOM::Platform::RedisReplicated;
 use Data::Decimate qw(decimate);
 
 use BOM::Product::ContractFactory qw(produce_contract);

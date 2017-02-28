@@ -7,7 +7,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 
 use f_brokerincludeall;
 
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::Platform::Runtime;
 use HTML::Entities;
 use Data::Compare;
@@ -54,7 +54,7 @@ if (scalar @{$settings_list;} == 0) {
 
 my $submitted = request()->param('submitted');
 
-if (not(grep { $_ eq 'binary_role_master_server' } @{BOM::System::Config::node()->{node}->{roles}})) {
+if (not(grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}})) {
     print "<div id=\"message\"><div id=\"error\">This server is not Dynamic Settings Master and your changes won't be saved.</div></div><br />";
 } else {
     BOM::DynamicSettings::save_settings({

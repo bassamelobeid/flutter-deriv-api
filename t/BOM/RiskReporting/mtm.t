@@ -148,7 +148,7 @@ subtest 'realtime report generation' => sub {
             return $result;
         });
     #mock on_production to test email
-    my $mocked_system = Test::MockModule->new('BOM::System::Config');
+    my $mocked_system = Test::MockModule->new('BOM::Platform::Config');
     $mocked_system->mock('on_production', sub { 1 });
 
     my $results;

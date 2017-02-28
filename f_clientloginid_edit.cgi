@@ -24,7 +24,7 @@ use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Doughflow qw( get_sportsbook );
 use BOM::Database::Model::HandoffToken;
 use BOM::Database::ClientDB;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::Backoffice::FormAccounts;
 
 BOM::Backoffice::Sysinit::init();
@@ -95,8 +95,8 @@ if ($input{whattodo} eq 'sync_to_DF') {
     );
     $handoff_token->save;
 
-    my $doughflow_loc  = BOM::System::Config::third_party->{doughflow}->{request()->brand};
-    my $doughflow_pass = BOM::System::Config::third_party->{doughflow}->{passcode};
+    my $doughflow_loc  = BOM::Platform::Config::third_party->{doughflow}->{request()->brand};
+    my $doughflow_pass = BOM::Platform::Config::third_party->{doughflow}->{passcode};
     my $url            = $doughflow_loc . '/CreateCustomer.asp';
 
     # hit DF's CreateCustomer API
@@ -137,7 +137,7 @@ if ($input{whattodo} eq 'sync_to_DF') {
         . $df_client->CustName
         . ', Profile: '
         . $df_client->Profile;
-    BOM::System::AuditLog::log($msg, $loginid, $clerk);
+    BOM::Platform::AuditLog::log($msg, $loginid, $clerk);
 
     BOM::Backoffice::Request::template->process(
         'backoffice/client_edit_msg.tt',

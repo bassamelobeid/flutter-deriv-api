@@ -18,7 +18,7 @@ use Client::Account;
 use BOM::DailySummaryReport;
 use BOM::Platform::Runtime;
 use BOM::Database::Helper::FinancialMarketBet;
-use BOM::System::Password;
+use BOM::Platform::Password;
 use BOM::Platform::Client::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -310,7 +310,7 @@ sub create_client {
     my $broker = shift;
     return Client::Account->register_and_return_new_client({
         broker_code      => $broker,
-        client_password  => BOM::System::Password::hashpw('12345678'),
+        client_password  => BOM::Platform::Password::hashpw('12345678'),
         salutation       => 'Ms',
         last_name        => 'Doe',
         first_name       => 'Jane' . time . '.' . int(rand 1000000000),

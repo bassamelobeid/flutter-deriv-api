@@ -3,14 +3,14 @@ package BOM::TentativeEvents;
 use strict;
 use warnings;
 
-use BOM::System::Chronicle;
+use BOM::Platform::Chronicle;
 use BOM::Backoffice::Request;
 use Quant::Framework::EconomicEventCalendar;
 
 sub _get_tentative_events {
 
     my $tentative_events = Quant::Framework::EconomicEventCalendar->new({
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
         }
         )->get_tentative_events
         || {};
@@ -71,17 +71,20 @@ sub update_event {
 
     my $existing = $events->{$params->{id}};
     my $rd       = Date::Utility->new($existing->{estimated_release_date});
+    my $shift = $params->{tentative_event_shift};
+    $shift = 0 if not $shift or $shift eq '';
+
     $existing->{blankout}              = $rd->plus_time_interval("$b1[0]h$b1[1]m")->epoch;
     $existing->{blankout_end}          = $rd->plus_time_interval("$b2[0]h$b2[1]m")->epoch;
-    $existing->{tentative_event_shift} = $params->{tentative_event_shift};
+    $existing->{tentative_event_shift} = $shift;
 
     my $diff = $existing->{blankout_end} - $existing->{blankout};
     return "Blackout start and Blackout end must be 2 hours apart. E.g. 5pm - 7pm" if ($diff != 7200);
 
     my $update = Quant::Framework::EconomicEventCalendar->new({
             recorded_date    => Date::Utility->new(),
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         })->update($existing);
     return $update ? 1 : 0;
 }

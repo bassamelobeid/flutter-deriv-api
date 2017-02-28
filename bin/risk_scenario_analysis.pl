@@ -1,10 +1,10 @@
 #!/etc/rmg/bin/perl
 
-package BOM::System::Script::RiskScenarioAnalysis;
+package BOM::Backoffice::RiskScenarioAnalysis;
 
 =head1 NAME
 
-BOM::System::Script::RiskScenarioAnalysis
+BOM::Backoffice::RiskScenarioAnalysis
 
 =head1 DESCRIPTION
 
@@ -43,5 +43,5 @@ __PACKAGE__->meta->make_immutable;
 package main;
 use strict;
 
-exit BOM::System::Script::RiskScenarioAnalysis->new->run;
+exit BOM::Backoffice::RiskScenarioAnalysis->new->run;
 
