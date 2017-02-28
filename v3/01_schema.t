@@ -14,7 +14,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Test::Helper qw/launch_redis/;
-use BOM::System::RedisReplicated;
+use BOM::Platform::RedisReplicated;
 use BOM::Test::Helper qw/build_wsapi_test/;
 
 initialize_realtime_ticks_db();
@@ -28,7 +28,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 
 sub _create_tick {    #creates R_50 tick in redis channel FEED::R_50
     my $i = shift || 700;
-    BOM::System::RedisReplicated::redis_write->publish('FEED::R_50',
+    BOM::Platform::RedisReplicated::redis_write->publish('FEED::R_50',
               'R_50;'
             . Date::Utility->new->epoch . ';'
             . $i

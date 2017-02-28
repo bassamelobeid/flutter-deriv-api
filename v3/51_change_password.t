@@ -12,7 +12,7 @@ use BOM::Database::Model::AccessToken;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::System::Password;
+use BOM::Platform::Password;
 use BOM::Platform::User;
 use Client::Account;
 
@@ -20,7 +20,7 @@ my $t = build_wsapi_test();
 
 my $email    = 'abc@binary.com';
 my $password = 'jskjP8292922';
-my $hash_pwd = BOM::System::Password::hashpw($password);
+my $hash_pwd = BOM::Platform::Password::hashpw($password);
 
 my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
@@ -58,7 +58,7 @@ is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $vr_1;
 
 my $new_password = 'jskjD8292923';
-my $new_hash_pwd = BOM::System::Password::hashpw($new_password);
+my $new_hash_pwd = BOM::Platform::Password::hashpw($new_password);
 
 # change password wrongly
 $t = $t->send_ok({
