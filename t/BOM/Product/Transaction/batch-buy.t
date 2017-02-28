@@ -59,18 +59,6 @@ sub check_datadog {
     }
 }
 
-{
-    my %exch = (
-        USD => 2,
-        EUR => 3,
-    );
-    no warnings 'redefine';
-    *BOM::Product::Transaction::in_USD = sub {    # for testing datadog
-        my ($amount, $currency) = @_;
-        return $amount * $exch{$currency};
-    };
-}
-
 my $now = Date::Utility->new;
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine
 #Because the code to prepare market data is called for all pricings in Contract
@@ -492,7 +480,7 @@ subtest 'single contract fails in database', sub {
 };
 
 subtest 'batch-buy multiple databases and datadog', sub {
-    plan tests => 27;
+    plan tests => 23;
     lives_ok {
         my $clm = create_client 'VRTC';    # manager
         my @cl;
@@ -636,50 +624,6 @@ subtest 'batch-buy multiple databases and datadog', sub {
                 ]}];
         check_datadog count => [
             "transaction.buy.success" => 2,
-            {
-                tags => [
-                    qw/ broker:mf
-                        virtual:no
-                        rmgenv:production
-                        contract_class:higher_lower_bet
-                        amount_type:payout
-                        expiry_type:duration /
-                ]}];
-        check_datadog count => [
-            "business.turnover_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'),
-            {
-                tags => [
-                    qw/ broker:cr
-                        virtual:no
-                        rmgenv:production
-                        contract_class:higher_lower_bet
-                        amount_type:payout
-                        expiry_type:duration /
-                ]}];
-        check_datadog count => [
-            "business.turnover_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'),
-            {
-                tags => [
-                    qw/ broker:mf
-                        virtual:no
-                        rmgenv:production
-                        contract_class:higher_lower_bet
-                        amount_type:payout
-                        expiry_type:duration /
-                ]}];
-        check_datadog count => [
-            "business.buy_minus_sell_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'),
-            {
-                tags => [
-                    qw/ broker:cr
-                        virtual:no
-                        rmgenv:production
-                        contract_class:higher_lower_bet
-                        amount_type:payout
-                        expiry_type:duration /
-                ]}];
-        check_datadog count => [
-            "business.buy_minus_sell_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'),
             {
                 tags => [
                     qw/ broker:mf
