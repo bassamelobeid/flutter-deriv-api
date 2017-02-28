@@ -13,7 +13,6 @@ use BOM::System::Password;
 use BOM::Platform::Runtime;
 use BOM::Platform::User;
 use BOM::Platform::Token;
-use BOM::Platform::Account;
 use BOM::Platform::Context qw(localize request);
 
 sub create_account {

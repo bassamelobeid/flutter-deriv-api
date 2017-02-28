@@ -6,7 +6,6 @@ use Test::More;
 use Test::MockModule;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Runtime;
-use BOM::Platform::Account;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::System::Config;

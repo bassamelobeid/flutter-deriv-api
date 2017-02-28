@@ -18,7 +18,6 @@ use BOM::System::Config;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(request);
-use BOM::Platform::Account;
 
 sub validate {
     my $args = shift;
