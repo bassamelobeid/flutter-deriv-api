@@ -5,7 +5,7 @@ use warnings;
 
 use Date::Utility;
 
-use BOM::System::AuditLog;
+use BOM::Platform::AuditLog;
 use BOM::RPC::v3::Utility;
 use Client::Account;
 use BOM::Platform::User;
@@ -117,7 +117,7 @@ sub logout {
                         action      => 'logout',
                     });
                     $user->save;
-                    BOM::System::AuditLog::log("user logout", join(',', $email, $loginid // ''));
+                    BOM::Platform::AuditLog::log("user logout", join(',', $email, $loginid // ''));
                 }
             }
         }

@@ -25,7 +25,7 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 my $test_loginid = $test_client->loginid;
 my $user         = BOM::Platform::User->create(
     email    => $test_client->email,
-    password => BOM::System::Password::hashpw('jskjd8292922'));
+    password => BOM::Platform::Password::hashpw('jskjd8292922'));
 $user->save;
 $user->add_loginid({loginid => $test_loginid});
 $user->save;

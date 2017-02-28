@@ -15,9 +15,9 @@ use BOM::Platform::Locale;
 use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::Platform::Context qw (localize request);
-use BOM::System::AuditLog;
+use BOM::Platform::AuditLog;
 use BOM::Database::Helper::QuestionsAnswered;
 
 sub get_jp_account_status {
@@ -239,7 +239,7 @@ support@binary.com',
             email_content_is_html => 1,
             template_loginid      => $client->loginid,
         });
-        BOM::System::AuditLog::log('Japan Knowledge Test pass for ' . $jp_client->loginid . ' . System email sent to request for docs',
+        BOM::Platform::AuditLog::log('Japan Knowledge Test pass for ' . $jp_client->loginid . ' . System email sent to request for docs',
             $client->loginid);
     }
 
@@ -419,7 +419,7 @@ sub set_jp_settings {
         email_content_is_html => 1,
         template_loginid      => $client->loginid,
     });
-    BOM::System::AuditLog::log('Your settings have been updated successfully', $client->loginid);
+    BOM::Platform::AuditLog::log('Your settings have been updated successfully', $client->loginid);
 
     my $cs_msg = localize('Please note that client [_1] settings has been updated as below:', $client->loginid) . "\n\n";
     foreach my $field (@updated) {

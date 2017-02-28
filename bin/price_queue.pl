@@ -1,7 +1,7 @@
 #!/etc/rmg/bin/perl
 use strict;
 use warnings;
-use BOM::System::RedisReplicated;
+use BOM::Platform::RedisReplicated;
 use DataDog::DogStatsd::Helper;
 use List::MoreUtils qw(uniq);
 use Time::HiRes;
@@ -9,7 +9,7 @@ use LWP::Simple;
 use List::UtilsBy qw(extract_by);
 
 my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4");
-my $redis = BOM::System::RedisReplicated::redis_pricer;
+my $redis = BOM::Platform::RedisReplicated::redis_pricer;
 
 sub _sleep_to_next_second {
     my $t = Time::HiRes::time();

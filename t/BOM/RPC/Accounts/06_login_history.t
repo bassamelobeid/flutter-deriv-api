@@ -8,7 +8,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
 use BOM::Database::Model::OAuth;
-use BOM::System::Password;
+use BOM::Platform::Password;
 use utf8;
 use Data::Dumper;
 
@@ -20,7 +20,7 @@ my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 my $email       = 'raunak@binary.com';
 my $password    = 'jskjd8292922';
-my $hash_pwd    = BOM::System::Password::hashpw($password);
+my $hash_pwd    = BOM::Platform::Password::hashpw($password);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });

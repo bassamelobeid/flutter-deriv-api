@@ -9,7 +9,7 @@ use List::MoreUtils qw(none);
 use JSON::XS;
 use Date::Utility;
 
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::RPC::v3::Utility;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;

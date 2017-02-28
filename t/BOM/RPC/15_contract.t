@@ -24,7 +24,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::System::RedisReplicated;
+use BOM::Platform::RedisReplicated;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Database::Model::OAuth;
 
@@ -33,8 +33,8 @@ my $now   = Date::Utility->new('2005-09-21 06:46:00');
 my $email = 'test@binary.com';
 
 my $storage_accessor = Quant::Framework::StorageAccessor->new(
-    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-    chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+    chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+    chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
 );
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({

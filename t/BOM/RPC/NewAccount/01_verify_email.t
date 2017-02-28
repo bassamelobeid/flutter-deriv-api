@@ -7,7 +7,7 @@ use Test::MockModule;
 
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
-use BOM::System::Password;
+use BOM::Platform::Password;
 
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
@@ -40,7 +40,7 @@ $mailbox->init;
 subtest 'Initialization' => sub {
     lives_ok {
         my $password = 'jskjd8292922';
-        my $hash_pwd = BOM::System::Password::hashpw($password);
+        my $hash_pwd = BOM::Platform::Password::hashpw($password);
 
         $email = 'exists_email' . rand(999) . '@binary.com';
 

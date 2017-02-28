@@ -14,7 +14,7 @@ use BOM::Platform::Token;
 my $email_vr = 'abv@binary.com';
 my $email_cr = 'abc@binary.com';
 my $password = 'jskjd8292922';
-my $hash_pwd = BOM::System::Password::hashpw($password);
+my $hash_pwd = BOM::Platform::Password::hashpw($password);
 my $dob      = '1990-07-09';
 
 my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
