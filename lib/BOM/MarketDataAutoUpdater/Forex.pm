@@ -185,8 +185,8 @@ sub run {
             underlying       => $underlying,
             recorded_date    => $raw_volsurface->{recorded_date},
             surface          => $raw_volsurface->{surface},
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         });
 
         if (defined $volsurface and $volsurface->is_valid and $self->passes_additional_check($volsurface)) {

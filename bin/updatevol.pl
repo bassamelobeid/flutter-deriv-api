@@ -3,7 +3,7 @@ package BOM::MarketDataAutoUpdater::UpdateVol;
 
 =head1 NAME
 
-BOM::System::Script::UpdateVol;
+BOM::Platform::Script::UpdateVol;
 
 =head1 DESCRIPTION
 

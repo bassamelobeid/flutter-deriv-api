@@ -17,7 +17,7 @@ use Finance::Asset::Market::Registry;
 use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Moneyness;
 use Date::Utility;
-use BOM::System::Chronicle;
+use BOM::Platform::Chronicle;
 use BOM::MarketData qw(create_underlying create_underlying_db);
 
 =head2 symbols_for_delta
@@ -77,7 +77,7 @@ sub run {
 
     my $now    = Date::Utility->new;
     my @tenors = qw(1 7 40 90 180 360);
-    my ($chronicle_r, $chronicle_w) = (BOM::System::Chronicle::get_chronicle_reader, BOM::System::Chronicle::get_chronicle_writer);
+    my ($chronicle_r, $chronicle_w) = (BOM::Platform::Chronicle::get_chronicle_reader, BOM::Platform::Chronicle::get_chronicle_writer);
 
     foreach my $symbol (@{$self->symbols_for_delta}) {
         my $surface_data = {map { $_ => {vol_spread => _get_volspread('delta'), smile => _get_smile('delta')} } @tenors};
