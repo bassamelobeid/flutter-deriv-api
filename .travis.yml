@@ -1,8 +1,6 @@
 language: perl
 perl:
     - "5.14.2-thr"
-matrix:
-    fast_finish: true
 env:
     - TEST_SUITE=unit_test_database_datamapper
     - TEST_SUITE=unit_test_database_model
