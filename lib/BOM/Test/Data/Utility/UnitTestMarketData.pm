@@ -24,8 +24,8 @@ use YAML::XS;
 
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::System::Chronicle;
-use BOM::System::RedisReplicated;
+use BOM::Platform::Chronicle;
+use BOM::Platform::RedisReplicated;
 use BOM::Test;
 
 use Quant::Framework::VolSurface::Delta;
@@ -51,8 +51,8 @@ sub _initialize_symbol_dividend {
 
     my $dv = Quant::Framework::Asset->new(
         symbol           => $symbol,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
     );
 
     $dv->document($document);
@@ -61,9 +61,9 @@ sub _initialize_symbol_dividend {
 
 sub _init {
     #delete chronicle data too (Redis and Pg)
-    BOM::System::RedisReplicated::redis_write()->flushall;
-    BOM::System::Chronicle::_dbh()->do('delete from chronicle;') if BOM::System::Chronicle::_dbh();
-    BOM::System::Chronicle::set(
+    BOM::Platform::RedisReplicated::redis_write()->flushall;
+    BOM::Platform::Chronicle::_dbh()->do('delete from chronicle;') if BOM::Platform::Chronicle::_dbh();
+    BOM::Platform::Chronicle::set(
         'app_settings',
         'binary',
         {
@@ -125,13 +125,13 @@ sub _init {
     _initialize_symbol_dividend "RDBULL", -35;
     _initialize_symbol_dividend "RDBEAR", 20;
 
-    BOM::System::Chronicle::set(
+    BOM::Platform::Chronicle::set(
         'interest_rates',
         'JPY-USD',
         JSON::from_json(
             "{\"symbol\":\"JPY-USD\",\"rates\":{\"365\":\"2.339\",\"180\":\"2.498\",\"90\":\"2.599\",\"30\":\"2.599\",\"7\":\"2.686\"},\"date\":\"2016-01-26T17:00:03Z\",\"type\":\"market\"}"
         ));
-    BOM::System::Chronicle::set('economic_events', 'economic_events', {events => []});
+    BOM::Platform::Chronicle::set('economic_events', 'economic_events', {events => []});
 
     return 1;
 }
@@ -152,8 +152,8 @@ sub create_doc {
     if (grep { $_ eq $yaml_db }
         qw{currency randomindex stock index holiday economic_events partial_trading asset correlation_matrix volsurface_moneyness volsurface_delta})
     {
-        $data_mod->{chronicle_reader} = BOM::System::Chronicle::get_chronicle_reader();
-        $data_mod->{chronicle_writer} = BOM::System::Chronicle::get_chronicle_writer();
+        $data_mod->{chronicle_reader} = BOM::Platform::Chronicle::get_chronicle_reader();
+        $data_mod->{chronicle_writer} = BOM::Platform::Chronicle::get_chronicle_writer();
 
         if ($yaml_db eq 'volsurface_delta' or $yaml_db eq 'volsurface_moneyness') {
             if (exists($data_mod->{symbol}) and not exists($data_mod->{underlying})) {
