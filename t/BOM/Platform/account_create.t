@@ -16,13 +16,12 @@ use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Runtime;
-use BOM::Platform::Account;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::System::Config;
+use BOM::Platform::Config;
 
 my $on_production = 1;
-my $config_mocked = Test::MockModule->new('BOM::System::Config');
+my $config_mocked = Test::MockModule->new('BOM::Platform::Config');
 $config_mocked->mock('on_production', sub { return $on_production });
 
 my $vr_acc;
