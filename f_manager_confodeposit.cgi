@@ -17,7 +17,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
-use BOM::System::AuditLog;
+use BOM::Platform::AuditLog;
 use BOM::ContractInfo;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Sysinit ();
@@ -234,7 +234,7 @@ $client_pa_exp->save;
 my $now = Date::Utility->new;
 # Logging
 my $msg = $now->datetime . " $ttype $curr$amount $loginID clerk=$clerk (DCcode=$DCcode) $ENV{REMOTE_ADDR}";
-BOM::System::AuditLog::log($msg, $loginID, $clerk);
+BOM::Platform::AuditLog::log($msg, $loginID, $clerk);
 Path::Tiny::path(BOM::Backoffice::Config::config->{log}->{deposit})->append_utf8($msg);
 
 # Print confirmation

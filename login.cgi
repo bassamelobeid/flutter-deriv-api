@@ -13,7 +13,7 @@ use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw( http_redirect PrintContentType );
 use BOM::Backoffice::Request qw(request);
 use BOM::StaffPages;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -27,8 +27,8 @@ my $passwd = request()->param('pass');
 
 if (request()->param('sig_response')) {
     my $email = Auth::DuoWeb::verify_response(
-        BOM::System::Config::third_party->{duosecurity}->{ikey}, BOM::System::Config::third_party->{duosecurity}->{skey},
-        BOM::System::Config::third_party->{duosecurity}->{akey}, request()->param('sig_response'),
+        BOM::Platform::Config::third_party->{duosecurity}->{ikey}, BOM::Platform::Config::third_party->{duosecurity}->{skey},
+        BOM::Platform::Config::third_party->{duosecurity}->{akey}, request()->param('sig_response'),
     );
 
     $try_to_login = ($email eq request()->param('email'));

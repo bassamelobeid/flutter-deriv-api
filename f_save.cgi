@@ -10,7 +10,7 @@ use HTML::Entities;
 
 use f_brokerincludeall;
 use Date::Utility;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use Format::Util::Numbers qw( commas );
 use Quant::Framework::InterestRate;
 use BOM::Backoffice::Request qw(request);
@@ -24,7 +24,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::MarketData qw(create_underlying);
 use BOM::Backoffice::Sysinit ();
-use BOM::System::AuditLog;
+use BOM::Platform::AuditLog;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -51,7 +51,7 @@ if ($ok == 0) {
     code_exit_BO();
 }
 
-unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::System::Config::node()->{node}->{roles}})) {
+unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}})) {
     print "Sorry, files cannot be saved on this server because it is not the Master Server.";
     code_exit_BO();
 }
@@ -104,8 +104,8 @@ if ($filen eq 'editvol') {
     }
     my %surface_args = (
         underlying       => $underlying,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         surface          => $surface_data,
         recorded_date    => Date::Utility->new,
         (request()->param('spot_reference') ? (spot_reference => request()->param('spot_reference')) : ()),
@@ -188,8 +188,8 @@ if ($filen =~ m!^vol/master(\w{3}(?:-\w{3})?)\.interest$!) {
         symbol           => $symbol,
         rates            => $rates,
         recorded_date    => Date::Utility->new,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
     );
     $rates_obj->save;
 }
@@ -225,7 +225,7 @@ my $fage = (-M $overridefilename) * 24 * 60 * 60;
 # a feed file
 if (    -e $overridefilename
     and $fage < 30
-    and not BOM::System::Config::on_qa
+    and not BOM::Platform::Config::on_qa
     and $overridefilename !~ /\/combined\//)
 {
     print "<P><font color=red>Problem!! The file has been saved by someone else within the last $fage seconds.
@@ -235,7 +235,7 @@ if (    -e $overridefilename
 }
 
 #internal audit warnings
-if ($filen eq 'f_broker/promocodes.txt' and not BOM::System::Config::on_qa and $diff) {
+if ($filen eq 'f_broker/promocodes.txt' and not BOM::Platform::Config::on_qa and $diff) {
     warn("promocodes.txt EDITED BY $clerk");
     my $brand = Brands->new(name => request()->brand);
     send_email({
@@ -281,7 +281,7 @@ save_log_save_complete_log({
     'diff'             => $diff,
 });
 
-BOM::System::AuditLog::log("$broker $clerk $ENV{'REMOTE_ADDR'} $overridefilename newsize=" . (-s $overridefilename), '', $clerk);
+BOM::Platform::AuditLog::log("$broker $clerk $ENV{'REMOTE_ADDR'} $overridefilename newsize=" . (-s $overridefilename), '', $clerk);
 
 # DISPLAY SAVED FILE
 print "<b><p>FILE was saved as follows :</p></b><br>";
@@ -314,7 +314,7 @@ unless ($diff eq '0') {
         $message = "FILE $filen CHANGED ON SERVER BY $clerk\n\nDIFFERENCES BETWEEN OLD FILE AND NEW FILE :\n$diff\n";
     }
 }
-if ($message and not BOM::System::Config::on_qa) {
+if ($message and not BOM::Platform::Config::on_qa) {
     warn("FILECHANGED : File $filen edited by $clerk : $message");
 }
 

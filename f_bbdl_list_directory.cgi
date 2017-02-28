@@ -7,7 +7,7 @@ use CGI;
 
 use f_brokerincludeall;
 
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
 use Bloomberg::FileDownloader;
@@ -24,7 +24,7 @@ my $bbdl = Bloomberg::FileDownloader->new();
 
 Bar("BBDL Directory Listing");
 #don't allow from devserver, to avoid uploading wrong files
-if (not BOM::System::Config::on_production()) {
+if (not BOM::Platform::Config::on_production()) {
     print "<font color=red>Sorry, you cannot connect to Bloomberg's ftp from a development server. Please use a live server.</font>";
     code_exit_BO();
 }

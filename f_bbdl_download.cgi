@@ -10,7 +10,7 @@ use HTML::Entities;
 
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use Bloomberg::FileDownloader;
 use BOM::Backoffice::Sysinit ();
@@ -25,7 +25,7 @@ my $encoded_filename = encode_entities($filename);
 Bar("Download a file from BBDL");
 
 #don't allow from devserver, to avoid uploading wrong files
-if (not BOM::System::Config::on_production()) {
+if (not BOM::Platform::Config::on_production()) {
     print "<font color=red>Sorry, you cannot upload files from a development server. Please use a live server.</font>";
     code_exit_BO();
 }

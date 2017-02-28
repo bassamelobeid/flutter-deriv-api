@@ -29,7 +29,7 @@ use VolSurface::Utils qw( get_delta_for_strike get_strike_for_spot_delta get_1vo
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
 use BOM::Greeks::FiniteDifference;
-use BOM::System::Chronicle;
+use BOM::Platform::Chronicle;
 
 use BOM::MarketData::Display::VolatilitySurface;
 use BOM::DisplayGreeks;
@@ -234,7 +234,7 @@ sub _fetch_historical_surface_date {
     my $back_to = $args->{back_to} || 1;
     my $symbol = $args->{symbol} or die "Must pass in symbol to fetch surface dates.";
 
-    my $reader       = BOM::System::Chronicle::get_chronicle_reader(1);
+    my $reader       = BOM::Platform::Chronicle::get_chronicle_reader(1);
     my $vdoc         = $reader->get('volatility_surfaces', $symbol);
     my $current_date = $vdoc->{date};
 

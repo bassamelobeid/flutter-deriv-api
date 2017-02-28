@@ -29,7 +29,7 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Time::Duration::Concise::Localize;
 use BOM::Database::DataMapper::CollectorReporting;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use Bloomberg::UnderlyingConfig;
 use Text::CSV;
 use BOM::Database::DataMapper::FinancialMarketBet;
@@ -200,7 +200,7 @@ sub sell_expired_contracts {
     my %map_to_bb = reverse Bloomberg::UnderlyingConfig::bloomberg_to_binary();
     my $csv       = Text::CSV->new;
 
-    my $rmgenv = BOM::System::Config::env;
+    my $rmgenv = BOM::Platform::Config::env;
     for my $client_id (@client_loginids) {
         my $fmb_infos = $open_bets_ref->{$client_id};
         my $client = Client::Account::get_instance({'loginid' => $client_id});
@@ -286,7 +286,7 @@ sub sell_expired_contracts {
                 );
         }
 
-        if (BOM::System::Config::on_production()) {
+        if (BOM::Platform::Config::on_production()) {
             my $sender = Mail::Sender->new({
                 smtp    => 'localhost',
                 from    => '"Autosell" <autosell@regentmarkets.com>',
