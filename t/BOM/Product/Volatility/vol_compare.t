@@ -64,8 +64,8 @@ sub price_contract {
         {
             symbol           => $_,
             recorded_date    => $date_start,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         }) for (qw/JPY USD JPY-USD/);
 
     my $c = produce_contract({
