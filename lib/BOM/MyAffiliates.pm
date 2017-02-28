@@ -3,7 +3,7 @@ package BOM::MyAffiliates;
 use strict;
 use warnings;
 use base 'WebService::MyAffiliates';
-use BOM::System::Config;
+use BOM::Platform::Config;
 
 use List::Util qw( first );
 use Scalar::Util qw( looks_like_number );
@@ -14,9 +14,9 @@ sub new {
     my $class = shift;
     my %args = @_ % 2 ? %{$_[0]} : @_;
 
-    $args{user} = BOM::System::Config::third_party->{myaffiliates}->{user};
-    $args{pass} = BOM::System::Config::third_party->{myaffiliates}->{pass};
-    $args{host} = BOM::System::Config::third_party->{myaffiliates}->{host};
+    $args{user} = BOM::Platform::Config::third_party->{myaffiliates}->{user};
+    $args{pass} = BOM::Platform::Config::third_party->{myaffiliates}->{pass};
+    $args{host} = BOM::Platform::Config::third_party->{myaffiliates}->{host};
 
     return $class->SUPER::new(%args);
 }

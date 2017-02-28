@@ -3,7 +3,7 @@ package BOM::MyAffiliatesApp;
 use Mojo::Base 'Mojolicious';
 
 use Date::Utility;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::Platform::Runtime;
 
 sub startup {
