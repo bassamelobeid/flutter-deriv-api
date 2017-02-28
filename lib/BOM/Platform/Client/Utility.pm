@@ -7,7 +7,7 @@ use Crypt::CBC;
 use Encode::Detect::Detector;
 use Encode;
 use Crypt::NamedKeys;
-use BOM::Plarform::Config;
+use BOM::Platform::Config;
 
 sub encrypt_secret_answer {
     my $secret_answer = shift;
@@ -20,9 +20,9 @@ sub decrypt_secret_answer {
         return Crypt::NamedKeys->new(keyname => 'client_secret_answer')->decrypt_payload(value => $secret_answer);
     } elsif ($secret_answer =~ s/^::ecp::(\S+)$/$1/) {    # legacy blowfish
         my $cipher = Crypt::CBC->new({
-            'key'    => BOM::Plarform::Config::aes_keys->{client_secret_answer}->{1},
+            'key'    => BOM::Platform::Config::aes_keys->{client_secret_answer}->{1},
             'cipher' => 'Blowfish',
-            'iv'     => BOM::Plarform::Config::aes_keys->{client_secret_iv}->{1},
+            'iv'     => BOM::Platform::Config::aes_keys->{client_secret_iv}->{1},
             'header' => 'randomiv',
         });
 

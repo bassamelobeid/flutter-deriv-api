@@ -1,8 +1,8 @@
-package BOM::Plarform::Chronicle;
+package BOM::Platform::Chronicle;
 
 =head1 NAME
 
-BOM::Plarform::Chronicle - Provides efficient data storage for volatile and time-based data
+BOM::Platform::Chronicle - Provides efficient data storage for volatile and time-based data
 
 =head1 DESCRIPTION
 
@@ -60,10 +60,10 @@ Given a category, name and timestamp returns version of data under "category::na
  my $d = get_some_data();
 
  #store data into Chronicle
- BOM::Plarform::Chronicle::set("vol_surface", "frxUSDJPY", $d);
+ BOM::Platform::Chronicle::set("vol_surface", "frxUSDJPY", $d);
 
  #retrieve latest data stored for "vol_surface" and "frxUSDJPY"
- my $dt = BOM::Plarform::Chronicle::set("vol_surface", "frxUSDJPY");
+ my $dt = BOM::Platform::Chronicle::set("vol_surface", "frxUSDJPY");
 
  #find vol_surface for frxUSDJPY as of a specific date
  my $some_old_data = get_for("vol_surface", "frxUSDJPY", $epoch1);
@@ -86,7 +86,7 @@ use JSON;
 use DBI;
 use DateTime;
 use Date::Utility;
-use BOM::Plarform::RedisReplicated;
+use BOM::Platform::RedisReplicated;
 use DBIx::TransactionManager::Distributed;
 
 use Data::Chronicle::Reader;
@@ -101,7 +101,7 @@ my $live_instance;
 # NOTE - if you add other instances, see L</_dbh_changed>
 
 sub get_chronicle_writer {
-    state $redis = BOM::Plarform::RedisReplicated::redis_write();
+    state $redis = BOM::Platform::RedisReplicated::redis_write();
 
     $writer_instance //= Data::Chronicle::Writer->new(
         cache_writer => $redis,
@@ -114,7 +114,7 @@ sub get_chronicle_writer {
 sub get_chronicle_reader {
     #if for_date is specified, then this chronicle_reader will be used for historical data fetching, so it needs a database connection
     my $for_date = shift;
-    state $redis = BOM::Plarform::RedisReplicated::redis_read();
+    state $redis = BOM::Platform::RedisReplicated::redis_read();
 
     if ($for_date) {
         $historical_instance //= Data::Chronicle::Reader->new(
@@ -153,7 +153,7 @@ sub set {
     $value = JSON::to_json($value);
 
     my $key = $category . '::' . $name;
-    BOM::Plarform::RedisReplicated::redis_write()->set($key, $value);
+    BOM::Platform::RedisReplicated::redis_write()->set($key, $value);
     _archive($category, $name, $value, $rec_date) if _dbh();
 
     return 1;
@@ -170,7 +170,7 @@ sub get {
     my $name     = shift;
 
     my $key         = $category . '::' . $name;
-    my $cached_data = BOM::Plarform::RedisReplicated::redis_read()->get($key);
+    my $cached_data = BOM::Platform::RedisReplicated::redis_read()->get($key);
 
     return JSON::from_json($cached_data) if defined $cached_data;
     # FIXME assuming scalar context here, very dangerous - audit all callers
@@ -323,7 +323,7 @@ sub _config {
 
 sub _redis_write {
     warn "Chronicle::_redis_write is deprecated. Please, use RedisReplicated::redis_write";
-    return BOM::Plarform::RedisReplicated::redis_write;
+    return BOM::Platform::RedisReplicated::redis_write;
 }
 
 1;

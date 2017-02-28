@@ -6,7 +6,7 @@ use namespace::autoclean;
 
 use Brands;
 use Client::Account;
-use BOM::Plarform::Config;
+use BOM::Platform::Config;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::ProveID;
@@ -156,7 +156,7 @@ EOM
 sub _notify {
     my ($self, $id, $msg) = @_;
 
-    return unless BOM::Plarform::Config::on_production();
+    return unless BOM::Platform::Config::on_production();
 
     my $client = $self->client;
     $client->add_note($id, $client->loginid . ' ' . $msg);
@@ -166,7 +166,7 @@ sub _notify {
 sub _fetch_proveid {
     my $self = shift;
 
-    return unless BOM::Plarform::Config::on_production();
+    return unless BOM::Platform::Config::on_production();
 
     my $premise = $self->client->address_1;
     if ($premise =~ /^(\d+)/) {

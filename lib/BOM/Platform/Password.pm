@@ -1,11 +1,11 @@
 
 =head1 NAME
 
-BOM::Plarform::Password - Password hashing module for BOM
+BOM::Platform::Password - Password hashing module for BOM
 
 =cut
 
-package BOM::Plarform::Password;
+package BOM::Platform::Password;
 use Crypt::ScryptKDF;
 use Crypt::Salt;
 use Digest::SHA;
@@ -26,11 +26,11 @@ sub ALGO_VERSION { return 1; }
 
  To create a password hash for db storage:
 
- my $pwhash = BOM::Plarform::Password::hashpw($password);
+ my $pwhash = BOM::Platform::Password::hashpw($password);
 
  To verify a password hash:
 
- my $matched = BOM::Plarform::Password::checkpw($password, $pwhash)
+ my $matched = BOM::Platform::Password::checkpw($password, $pwhash)
 
 =head1 DESCRIPTION
 
