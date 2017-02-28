@@ -468,7 +468,7 @@ sub startup {
         'app_id' => sub {
             my $c               = shift;
             my $possible_app_id = $c->req->param('app_id');
-            if ($possible_app_id && $possible_app_id =~ /(\d{1,10})/) {
+            if (defined($possible_app_id) && $possible_app_id =~ /(\d{1,10})/) {
                 return $1;
             }
             # that code should never be executed, but if it is, that means
