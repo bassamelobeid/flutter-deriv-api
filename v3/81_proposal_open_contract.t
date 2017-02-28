@@ -14,7 +14,7 @@ use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
-use BOM::System::RedisReplicated;
+use BOM::Platform::RedisReplicated;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Platform::Runtime;
 
@@ -77,7 +77,7 @@ $t = $t->send_ok({
             "duration"      => "2",
             "duration_unit" => "m"
         }});
-BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
+BOM::Platform::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
 $t->message_ok;
 my $proposal = decode_json($t->message->[1]);
 
@@ -171,7 +171,7 @@ my $msg = {
     currency_code           => 'USD',
 };
 my $json = JSON::to_json($msg);
-BOM::System::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $json);
+BOM::Platform::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $json);
 
 $t   = $t->message_ok;
 $res = decode_json($t->message->[1]);
@@ -219,7 +219,7 @@ $t = $t->send_ok({
             "duration"      => "2",
             "duration_unit" => "m"
         }});
-BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
+BOM::Platform::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
 $t->message_ok;
 $proposal = decode_json($t->message->[1]);
 

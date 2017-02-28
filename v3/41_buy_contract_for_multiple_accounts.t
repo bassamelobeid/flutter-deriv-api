@@ -12,7 +12,7 @@ use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
-use BOM::System::RedisReplicated;
+use BOM::Platform::RedisReplicated;
 use BOM::Platform::Runtime;
 
 build_test_R_50_data();
@@ -65,7 +65,7 @@ is $authorize->{authorize}->{loginid}, $loginid, 'login result: loginid';
 my ($price, $proposal_id);
 
 sub get_proposal {
-    #BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
+    #BOM::Platform::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
 
     my %contractParameters = (
         "amount"        => "5",
