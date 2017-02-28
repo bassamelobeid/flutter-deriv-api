@@ -15,7 +15,7 @@ use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use JSON;
 use Path::Tiny;
-use BOM::System::Chronicle;
+use BOM::Platform::Chronicle;
 use Try::Tiny;
 use List::Util qw(first uniq);
 
@@ -49,16 +49,16 @@ sub script_run {
         Quant::Framework::EconomicEventCalendar->new({
                 events           => $events_received,
                 recorded_date    => Date::Utility->new(),
-                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-                chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+                chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+                chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
             })->save;
 
         print "stored " . (scalar @$events_received) . " events ($tentative_count are tentative events) in chronicle...\n";
 
         my @underlying_symbols = create_underlying_db->symbols_for_intraday_fx;
         my $qfs                = Volatility::Seasonality->new(
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         );
 
         # we will not need that many economic events for seasonality.

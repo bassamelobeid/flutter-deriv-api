@@ -60,8 +60,8 @@ sub script_run {
         my %world_rate;
         for my $term (sort {$a <=> $b} keys %{Quant::Framework::InterestRate->new({
             symbol => 'USD',
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
             })->rates}) {
 	    my %rates = map {$_->symbol => $_->interest_rate_for($term/365) - $_->dividend_rate_for($term/365)} @source;
 	    my @rates_array = map {$neg{$_->symbol} ? -$rates{$_->symbol} : $rates{$_->symbol}} @source;
@@ -71,8 +71,8 @@ sub script_run {
           symbol          => $symbol,
           rates             => \%world_rate,
           recorded_date       => $date,
-          chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-          chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+          chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+          chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         });
         $ir->save;
     }
