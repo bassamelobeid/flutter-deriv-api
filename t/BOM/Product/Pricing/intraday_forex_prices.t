@@ -17,9 +17,9 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Volatility::Seasonality;
-use BOM::System::Chronicle;
+use BOM::Platform::Chronicle;
 
-use BOM::System::RedisReplicated;
+use BOM::Platform::RedisReplicated;
 use BOM::Market::DataDecimate;
 use Data::Decimate qw(decimate);
 
@@ -161,8 +161,8 @@ subtest 'prices with economic events' => sub {
             events        => $event,
         });
     Volatility::Seasonality->new(
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
     )->generate_economic_event_seasonality({underlying_symbol => $underlying->symbol, economic_events => $event});
 
     foreach my $contract_type (@ct) {
