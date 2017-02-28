@@ -1,10 +1,10 @@
 #!/etc/rmg/bin/perl
 
-package BOM::System::Script::MarketDataStatisticCollector;
+package BOM::Platform::Script::MarketDataStatisticCollector;
 
 =head1 NAME
 
-BOM::System::Script::MarketDataStatisticCollector
+BOM::Platform::Script::MarketDataStatisticCollector
 
 =head1 DESCRIPTION
 
@@ -134,8 +134,8 @@ sub _collect_rates_ages {
     foreach my $implied_symbol_to_update (@implied_symbols_to_update) {
         my $rates_in_used = Quant::Framework::ImpliedRate->new(
             symbol           => $implied_symbol_to_update,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         );
         my $rates_age = (time - $rates_in_used->recorded_date->epoch) / 3600;
         stats_gauge('interest_rate_age', $rates_age, {tags => ['tag:' . $implied_symbol_to_update]});
@@ -149,8 +149,8 @@ sub _collect_rates_ages {
         }
         my $currency_in_used = Quant::Framework::InterestRate->new(
             symbol           => $currency_symbol_to_update,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         );
         my $currency_rate_age = (time - $currency_in_used->recorded_date->epoch) / 3600;
 
@@ -164,8 +164,8 @@ sub _collect_rates_ages {
     foreach my $smart_fx (@smart_fx) {
         my $smart_fx_in_used = Quant::Framework::InterestRate->new(
             symbol           => $smart_fx,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         );
         my $smart_fx_age = (time - $smart_fx_in_used->recorded_date->epoch) / 3600;
 
@@ -179,7 +179,7 @@ sub _collect_correlation_ages {
 
     my $latest_correlation_matrix_age = time - Quant::Framework::CorrelationMatrix->new({
             symbol           => 'indices',
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader()})->recorded_date->epoch;
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader()})->recorded_date->epoch;
     stats_gauge('correlation_matrix.age', $latest_correlation_matrix_age);
     return;
 
@@ -216,8 +216,8 @@ sub _collect_dividend_ages {
     foreach my $index (@offer_indices) {
         my $dividend_in_used = Quant::Framework::Asset->new(
             symbol           => $index,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer());
 
         my $dividend_age = (time - $dividend_in_used->recorded_date->epoch) / 3600;
         stats_gauge('dividend_rate_age', $dividend_age, {tags => ['tag:' . $index]});
@@ -264,4 +264,4 @@ __PACKAGE__->meta->make_immutable;
 package main;
 use strict;
 
-exit BOM::System::Script::MarketDataStatisticCollector->new->run;
+exit BOM::Platform::Script::MarketDataStatisticCollector->new->run;

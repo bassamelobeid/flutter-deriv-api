@@ -34,8 +34,8 @@ subtest 'Saving delta then moneyness.' => sub {
     my $delta_surface = Quant::Framework::VolSurface::Delta->new({
             deltas           => [75, 50, 25],
             underlying       => $forex,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
             recorded_date    => $now,
             surface          => {
                 1 => {
@@ -62,8 +62,8 @@ subtest 'Saving delta then moneyness.' => sub {
     my $moneyness_surface = Quant::Framework::VolSurface::Moneyness->new({
             moneynesses      => [99, 100, 101],
             underlying       => $indices,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
             recorded_date    => $now,
             surface          => {
                 7 => {
@@ -114,8 +114,8 @@ subtest 'Consecutive saves.' => sub {
         {
             recorded_date    => $now->minus_time_interval('3h'),
             underlying       => $underlying,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
         });
     my @recorded_dates = ($surface->recorded_date);    # keep track of all saved surface recorded_dates
 
@@ -126,8 +126,8 @@ subtest 'Consecutive saves.' => sub {
             {
                 recorded_date    => $recorded_date,
                 underlying       => $underlying,
-                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
-                chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
+                chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
+                chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
             });
         unshift @recorded_dates, $recorded_date;
     }
