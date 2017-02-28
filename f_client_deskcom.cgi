@@ -11,7 +11,7 @@ use Data::Dumper;
 use HTML::Entities;
 
 use f_brokerincludeall;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use Client::Account;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
@@ -37,10 +37,10 @@ if (not $client) {
 }
 
 my $curl_url =
-      BOM::System::Config::third_party->{desk}->{api_uri}
+      BOM::Platform::Config::third_party->{desk}->{api_uri}
     . "cases/search?q=custom_loginid:$loginid+created:$created -u "
-    . BOM::System::Config::third_party->{desk}->{username} . ":"
-    . BOM::System::Config::third_party->{desk}->{password}
+    . BOM::Platform::Config::third_party->{desk}->{username} . ":"
+    . BOM::Platform::Config::third_party->{desk}->{password}
     . " -d 'sort_field=created_at&sort_direction=asc' -G -H 'Accept: application/json'";
 
 my $response = `curl $curl_url`;

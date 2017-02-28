@@ -10,7 +10,7 @@ use Getopt::Long;
 
 use Brands;
 use Date::Utility;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Request qw(request);
 use BOM::Platform::Email qw(send_email);
@@ -40,7 +40,7 @@ my @brokercodes = ($brokercodes) ? split(/,/, $brokercodes) : LandingCompany::Re
 my @currencies  = ($currencies)  ? split(/,/, $currencies)  : LandingCompany::Registry->new()->all_currencies;
 
 # This report will now only be run on the master server
-exit 0 unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::System::Config::node()->{node}->{roles}}));
+exit 0 unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}}));
 
 my $run_for = Date::Utility->new($for_date);
 

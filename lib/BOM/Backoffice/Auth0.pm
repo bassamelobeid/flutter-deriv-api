@@ -4,9 +4,9 @@ use strict;
 use Mojo::UserAgent;
 use JSON;
 use BOM::Platform::Runtime;
-use BOM::System::Config;
-use BOM::System::AuditLog;
-use BOM::System::RedisReplicated;
+use BOM::Platform::Config;
+use BOM::Platform::AuditLog;
+use BOM::Platform::RedisReplicated;
 
 sub user_by_access_token {
     my $access_token = shift;
@@ -17,7 +17,7 @@ sub user_by_access_token {
     my $default_headers = {
         'authorization' => 'Bearer ' . $access_token,
     };
-    my $tx = $ua->get(BOM::System::Config::third_party->{auth0}->{api_uri} . "/userinfo" => $default_headers);
+    my $tx = $ua->get(BOM::Platform::Config::third_party->{auth0}->{api_uri} . "/userinfo" => $default_headers);
     my ($error, $code) = $tx->error;
     if ($error) {
         return;
@@ -31,8 +31,8 @@ sub login {
     my $user = BOM::Backoffice::Auth0::user_by_access_token($access_token);
     if ($user) {
         $user->{token} = $access_token;
-        BOM::System::RedisReplicated::redis_write->set("BINARYBOLOGIN::" . $user->{nickname}, JSON->new->utf8->encode($user));
-        BOM::System::RedisReplicated::redis_write->expire("BINARYBOLOGIN::" . $user->{nickname}, 24 * 3600);
+        BOM::Platform::RedisReplicated::redis_write->set("BINARYBOLOGIN::" . $user->{nickname}, JSON->new->utf8->encode($user));
+        BOM::Platform::RedisReplicated::redis_write->expire("BINARYBOLOGIN::" . $user->{nickname}, 24 * 3600);
 
         return $user;
     }
@@ -43,7 +43,7 @@ sub from_cookie {
     my $staff = BOM::Backoffice::Cookie::get_staff();
 
     my $user;
-    if ($staff and $user = BOM::System::RedisReplicated::redis_read->get("BINARYBOLOGIN::" . $staff)) {
+    if ($staff and $user = BOM::Platform::RedisReplicated::redis_read->get("BINARYBOLOGIN::" . $staff)) {
         return JSON->new->utf8->decode($user);
     }
     return;
@@ -52,7 +52,7 @@ sub from_cookie {
 sub logout {
     my $staff = BOM::Backoffice::Cookie::get_staff();
 
-    if ($staff and BOM::System::RedisReplicated::redis_write->del("BINARYBOLOGIN::" . $staff)) {
+    if ($staff and BOM::Platform::RedisReplicated::redis_write->del("BINARYBOLOGIN::" . $staff)) {
         print 'you are logged out.';
     }
     print 'no login found.';
@@ -75,21 +75,21 @@ sub has_authorisation {
     my $auth_token = BOM::Backoffice::Cookie::get_auth_token();
     return unless ($staff and $auth_token);
 
-    my $cache = BOM::System::RedisReplicated::redis_read->get("BINARYBOLOGIN::" . $staff);
+    my $cache = BOM::Platform::RedisReplicated::redis_read->get("BINARYBOLOGIN::" . $staff);
     my $user;
     if ($cache and $user = JSON->new->utf8->decode($cache) and $user->{token} = $auth_token) {
-        BOM::System::RedisReplicated::redis_write->expire("BINARYBOLOGIN::" . $staff, 24 * 3600);
-        if (not $groups or not BOM::System::Config::on_production()) {
+        BOM::Platform::RedisReplicated::redis_write->expire("BINARYBOLOGIN::" . $staff, 24 * 3600);
+        if (not $groups or not BOM::Platform::Config::on_production()) {
             return 1;
         }
         foreach my $g (@{$user->{groups}}) {
             if (grep { /^$g$/ } @{$groups}) {
-                BOM::System::AuditLog::log('successful request for ' . join(',', @{$groups}), '', $staff);
+                BOM::Platform::AuditLog::log('successful request for ' . join(',', @{$groups}), '', $staff);
                 return 1;
             }
         }
     }
-    BOM::System::AuditLog::log('failed request for ' . join(',', @{$groups}), '', $staff);
+    BOM::Platform::AuditLog::log('failed request for ' . join(',', @{$groups}), '', $staff);
     return;
 }
 
