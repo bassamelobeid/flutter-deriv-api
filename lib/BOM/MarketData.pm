@@ -4,7 +4,7 @@ use 5.010;
 use strict;
 use warnings;
 
-use BOM::System::Chronicle;
+use BOM::Platform::Chronicle;
 use BOM::Platform::Runtime;
 use LandingCompany::Offerings qw(get_offerings_flyby);
 
@@ -26,8 +26,8 @@ sub create_underlying {
 
     $for_date = $args->{for_date} if (exists $args->{for_date}) and not $for_date;
 
-    $args->{chronicle_reader} = BOM::System::Chronicle::get_chronicle_reader($for_date);
-    $args->{chronicle_writer} = BOM::System::Chronicle::get_chronicle_writer();
+    $args->{chronicle_reader} = BOM::Platform::Chronicle::get_chronicle_reader($for_date);
+    $args->{chronicle_writer} = BOM::Platform::Chronicle::get_chronicle_writer();
 
     my $result = Quant::Framework::Underlying->new($args, $for_date);
 
@@ -38,8 +38,8 @@ sub create_underlying_db {
     my $quant_config = BOM::Platform::Runtime->instance->app_config->quants->underlyings;
     my $result       = LandingCompany::UnderlyingDB->instance;
 
-    $result->chronicle_reader(BOM::System::Chronicle::get_chronicle_reader);
-    $result->chronicle_writer(BOM::System::Chronicle::get_chronicle_writer);
+    $result->chronicle_reader(BOM::Platform::Chronicle::get_chronicle_reader);
+    $result->chronicle_writer(BOM::Platform::Chronicle::get_chronicle_writer);
     $result->quant_config($quant_config);
     $result->offerings_flyby(get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config));
 

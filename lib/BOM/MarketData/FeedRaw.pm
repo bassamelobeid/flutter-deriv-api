@@ -26,7 +26,7 @@ use ZMQ::LibZMQ3;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::MarketData qw(create_underlying_db);
-use BOM::System::Config;
+use BOM::Platform::Config;
 use Try::Tiny;
 use BOM::Platform::Runtime;
 use YAML::XS 0.35;

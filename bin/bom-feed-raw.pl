@@ -20,13 +20,13 @@ die <<"EOF" if ($show_help);
 usage: $0 OPTIONS
 
 These options are available:
-  -d, --feed-distributor        Feed distributor host:port (default: BOM::System::Config::node->{feed_server}->{fqdn})
+  -d, --feed-distributor        Feed distributor host:port (default: BOM::Platform::Config::node->{feed_server}->{fqdn})
   -t, --timeout                 Exit if there were no ticks for the specified interval in seconds (default: 10)
   -h, --help                    Show this message.
 EOF
 
 # defaults
-$feed_distributor //= BOM::System::Config::node->{feed_server}->{fqdn} . ':' . 3030;
+$feed_distributor //= BOM::Platform::Config::node->{feed_server}->{fqdn} . ':' . 3030;
 $timeout //= 10;
 
 my $client = BOM::MarketData::FeedRaw->new(

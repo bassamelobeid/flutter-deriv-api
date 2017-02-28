@@ -5,7 +5,7 @@ use Test::Most;
 use Test::FailWarnings;
 use Data::Chronicle::Mock;
 
-use BOM::System::Chronicle;
+use BOM::Platform::Chronicle;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::Test::Data::Utility::UnitTestMarketData;
@@ -72,7 +72,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(AUD GBP EUR USD HKD);
 
-my $chronicle_r = BOM::System::Chronicle::get_chronicle_reader($date);
+my $chronicle_r = BOM::Platform::Chronicle::get_chronicle_reader($date);
 
 my $ul_LSE = create_underlying('FTSE');
 my $LSE    = Quant::Framework::TradingCalendar->new({

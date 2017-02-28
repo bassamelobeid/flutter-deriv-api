@@ -12,7 +12,7 @@ use Postgres::FeedDB;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use Finance::Asset::Market::Registry;
-use BOM::System::RedisReplicated;
+use BOM::Platform::RedisReplicated;
 
 update_crossing_underlyings();
 while (1) {
@@ -42,7 +42,7 @@ sub _publish {
     my $payload = shift;
     my ($symbol, $epoch, @quotes) = split(';', $payload);
 
-    BOM::System::RedisReplicated::redis_write->publish('FEED::' . $symbol,
+    BOM::Platform::RedisReplicated::redis_write->publish('FEED::' . $symbol,
         join(';', $symbol, $epoch, pip_size($symbol, @quotes))
     );
 }
