@@ -30,7 +30,7 @@ use Log::Any qw($log);
 use Log::Any::Adapter qw(Stderr), log_level => 'info';
 
 my $appconfig_age = 0;
-my $redis = BOM::System::RedisReplicated::redis_pricer;
+my $redis = BOM::Platform::RedisReplicated::redis_pricer;
 while(1) {
     my $start = Time::HiRes::time;
 
