@@ -57,4 +57,11 @@ $t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
 $res = decode_json($t->message->[1]);
 is scalar @{$res->{forget_all}}, 2, 'Correct number of subscription forget';
 
+#testing wrong amount value
+$req->{amount} = "100.";
+delete($req->{req_id}); #can be kept as it is.
+$t->send_ok({json => $req})->message_ok;
+$res = decode_json($t->message->[1]);
+is $res->{proposal_array}->{proposals}->[0]->{error}->{code}, 'ContractCreationFailure', 'Correct error failed to create contract';
+
 done_testing;
