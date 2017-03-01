@@ -15,7 +15,7 @@ use WebService::MyAffiliates;
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Cashier;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::User;
 use BOM::MT5::User;
@@ -566,9 +566,9 @@ sub _get_mt5_account_from_affiliate_token {
 
     if ($token) {
         my $aff = WebService::MyAffiliates->new(
-            user    => BOM::System::Config::third_party->{myaffiliates}->{user},
-            pass    => BOM::System::Config::third_party->{myaffiliates}->{pass},
-            host    => BOM::System::Config::third_party->{myaffiliates}->{host},
+            user    => BOM::Platform::Config::third_party->{myaffiliates}->{user},
+            pass    => BOM::Platform::Config::third_party->{myaffiliates}->{pass},
+            host    => BOM::Platform::Config::third_party->{myaffiliates}->{host},
             timeout => 10
         ) or return;
 

@@ -56,7 +56,7 @@ subtest 'check_landing_company' => sub {
 
     $user = BOM::Platform::User->create(
         email    => $email,
-        password => BOM::System::Password::hashpw('jskjd8292922'));
+        password => BOM::Platform::Password::hashpw('jskjd8292922'));
     $user->email_verified(1);
     $user->save;
 
@@ -102,7 +102,7 @@ subtest $method => sub {
 
             $user = BOM::Platform::User->create(
                 email    => $email,
-                password => BOM::System::Password::hashpw('jskjd8292922'));
+                password => BOM::Platform::Password::hashpw('jskjd8292922'));
             $user->email_verified(1);
             $user->save;
 
@@ -220,7 +220,7 @@ subtest 'Sub account transfer' => sub {
 
         $user = BOM::Platform::User->create(
             email    => $email,
-            password => BOM::System::Password::hashpw('jskjd8292922'));
+            password => BOM::Platform::Password::hashpw('jskjd8292922'));
         $user->email_verified(1);
 
         $user->add_loginid({loginid => $client_cr->loginid});
