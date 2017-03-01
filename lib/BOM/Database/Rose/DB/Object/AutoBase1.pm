@@ -76,14 +76,13 @@ sub _set_staff {
     my $db   = $self->db;
     # db->type here is the "operation". We will not audit operation values such as 'collector'.
     # db names are like costarica-backoffice_replica costarica-replica costarica-write
+    # There can be multiple updates per one session, and every audit trigger will clear the table.
+    # so we need to populate this table again before every change
     if ($db->database =~ /^\w+-\w+$/ && $db->type eq 'write') {
-        $self->{_staff} ||= do {
-            my $staff = $ENV{AUDIT_STAFF_NAME} || 'system';
-            my $ip    = $ENV{AUDIT_STAFF_IP} || '127.0.0.1';
+        my $staff = $ENV{AUDIT_STAFF_NAME} || 'system';
+        my $ip    = $ENV{AUDIT_STAFF_IP}   || '127.0.0.1';
 
-            $db->dbh->do('select audit.set_staff(?,?)', undef, $staff, $ip);
-            $staff;
-        };
+        $db->dbh->do('select audit.set_staff(?,?)', undef, $staff, $ip);
     }
     return;
 }
