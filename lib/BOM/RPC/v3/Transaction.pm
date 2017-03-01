@@ -290,11 +290,7 @@ sub sell_contract_for_multiple_accounts {
 
     return +{result => $token_list_res->{result}} unless $token_list_res->{success};
 
-    ### TODO: produce contract in one action
-    my $contract_parameters = shortcode_to_parameters($shortcode, $client->currency);
-    $contract_parameters->{landing_company} = $client->landing_company->short;
-
-    my $contract = produce_contract($contract_parameters);
+    my $contract = produce_contract($shortcode, $client->currency);
 
     my $trx = BOM::Product::Transaction->new({
         client   => $client,
@@ -314,13 +310,20 @@ sub sell_contract_for_multiple_accounts {
 
     my $data_to_return = [];
     foreach my $row (@{$token_list_res->{result}}) {
-        push @{$data_to_return},
-            +{
-            transaction_id => $row->{tnx}{id},
-            balance_after  => sprintf('%.2f', $row->{tnx}{balance_after}),
-            sold_for       => abs($row->{tnx}{amount}),
+        my $new = {};
+        if (exists $row->{code}) {
+            @{$new}{qw/token code message_to_client/} =
+                @{$row}{qw/token code error/};
+        } else {
+            $new = +{
+                transaction_id => $row->{tnx}{id},
+                balance_after  => sprintf('%.2f', $row->{tnx}{balance_after}),
+                sold_for       => abs($row->{tnx}{amount}),
             };
+        }
+        push @{$data_to_return}, $new;
     }
+
     return +{result => $data_to_return};
 }
 
