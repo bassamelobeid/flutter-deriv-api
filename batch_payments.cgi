@@ -18,7 +18,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::DualControl;
-use BOM::System::AuditLog;
+use BOM::Platform::AuditLog;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Runtime;
@@ -274,7 +274,7 @@ if ($preview and @invalid_lines == 0) {
     unshift @clients_has_been_processed, 'These clients have been debited/credited using the backoffice batch debit/credit tool by ' . $clerk;
 
     my $msg = $now->datetime . " $transtype batch transactions done by clerk=$clerk (DCcode=$control_code) $ENV{REMOTE_ADDR}";
-    BOM::System::AuditLog::log($msg, '', $clerk);
+    BOM::Platform::AuditLog::log($msg, '', $clerk);
     Path::Tiny::path(BOM::Backoffice::Config::config->{log}->{deposit})->append_utf8($msg);
 
     my $brand = Brands->new(name => request()->brand);

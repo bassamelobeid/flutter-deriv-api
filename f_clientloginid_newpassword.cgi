@@ -14,7 +14,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Token;
-use BOM::System::Config;
+use BOM::Platform::Config;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -49,7 +49,7 @@ my $token = BOM::Platform::Token->new({
     })->token;
 
 # don't want to touch url_for for this only, need this change else reset password url will have backoffice.binary.com if send from production
-if (BOM::System::Config::on_production) {
+if (BOM::Platform::Config::on_production) {
     $link = 'https://www.binary.com/' . lc $lang . '/user/reset_passwordws.html';
 } else {
     $link = request()->url_for('/user/reset_passwordws');

@@ -3,13 +3,13 @@ package BOM::StaffPages;
 use MooseX::Singleton;
 use Data::Dumper;
 use BOM::Backoffice::Request;
-use BOM::System::Config;
+use BOM::Platform::Config;
 
 sub login {
     my $self     = shift;
     my $bet      = shift;
     my $params   = {};
-    my $clientId = BOM::System::Config::third_party->{auth0}->{client_id};
+    my $clientId = BOM::Platform::Config::third_party->{auth0}->{client_id};
 
     $params->{submit}   = BOM::Backoffice::Request::request()->url_for('backoffice/second_step_auth.cgi');
     $params->{bet}      = $bet;

@@ -8,14 +8,14 @@ use Data::Validate::Sanctions;
 use Path::Tiny;
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
-use BOM::System::Config;
+use BOM::Platform::Config;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('INVESTIGATIVE TOOLS');
 BOM::Backoffice::Auth0::can_access(['CS']);
 my $broker = request()->broker_code;
-my $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::System::Config::sanction_file);
+my $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::Platform::Config::sanction_file);
 if (request()->param('whattodo') eq 'unsanctions') {
     Bar('UN Sanctions Query');
     if ($sanctions->is_sanctioned(request()->param('fname'), request()->param('lname'))) {
