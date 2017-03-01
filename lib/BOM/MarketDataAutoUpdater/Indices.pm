@@ -131,8 +131,8 @@ sub run {
                 underlying       => $underlying,
                 recorded_date    => $raw_volsurface->{recorded_date},
                 spot_reference   => $raw_volsurface->{spot_reference},
-                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-                chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+                chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+                chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
                 surface          => $raw_volsurface->{surface},
             });
             if ($volsurface->is_valid) {

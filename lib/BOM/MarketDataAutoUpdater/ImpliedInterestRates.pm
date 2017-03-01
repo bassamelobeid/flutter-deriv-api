@@ -9,7 +9,7 @@ use Text::CSV::Slurp;
 use Format::Util::Numbers qw(roundnear);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::System::Chronicle;
+use BOM::Platform::Chronicle;
 use Bloomberg::FileDownloader;
 use BOM::Platform::Runtime;
 use Bloomberg::UnderlyingConfig;
@@ -72,8 +72,8 @@ sub run {
         my $implied_symbol                = $currency_to_imply_symbol . '-' . $currency_to_imply_from_symbol;
         my $currency_to_imply             = Quant::Framework::Currency->new({
             symbol           => $currency_to_imply_symbol,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         });
         # According to Bloomberg,
         # a) Implied rate for asset currency:
@@ -180,8 +180,8 @@ sub run {
             symbol           => $implied_symbol,
             rates            => $implied_rates,
             recorded_date    => Date::Utility->new,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         );
 
         $implied->save;
