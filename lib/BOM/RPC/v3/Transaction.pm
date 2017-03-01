@@ -116,120 +116,83 @@ sub buy_contract_for_multiple_accounts {
 # for the same case. Hence, 'trade' is passed as parameter.
     my $msg2 = BOM::Platform::Context::localize('Permission denied, requires [_1] scope.', 'trade');
 
-    $params->{args}->{tokens} //= [];
+    my $tokens = $params->{args}{tokens} // [];
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'TooManyTokens',
-            message_to_client => localize('Up to 100 tokens are allowed.')}) if @{$params->{args}->{tokens}} > 100;
+            message_to_client => localize('Up to 100 tokens are allowed.')}) if scalar @$tokens > 100;
 
-    for my $t (@{$params->{args}->{tokens}}) {
-        my $token_details = BOM::RPC::v3::Utility::get_token_details($t);
-        my $loginid;
+    my $token_list_res = _check_token_list($tokens);
 
-        if (    $token_details
-            and $loginid = $token_details->{loginid}
-            and grep({ /^trade$/ } @{$token_details->{scopes}}))
-        {
-            push @result,
-                +{
-                token   => $t,
-                loginid => $loginid,
-                };
-            $found_at_least_one = 1;
-            next;
-        }
-
-        if ($loginid) {
-
-            # here we got a valid token but with insufficient privileges
-            push @result,
-                +{
-                token => $t,
-                code  => 'PermissionDenied',
-                error => $msg2,
-                };
-            next;
-
-        }
-
-        push @result,
-            +{
-            token => $t,
-            code  => 'InvalidToken',
-            error => $msg1,
-            };
-    }
+    return +{result => $token_list_res->{result}} unless $token_list_res->{success};
 
     my ($contract, $response);
-    if ($found_at_least_one) {
+    # NOTE: we rely here on BOM::Product::Transaction to perform all the
+    #       client validations like client_status and self_exclusion.
 
-        # NOTE: we rely here on BOM::Transaction to perform all the
-        #       client validations like client_status and self_exclusion.
+    my $source              = $params->{source};
+    my $contract_parameters = $params->{contract_parameters};
+    my $args                = $params->{args};
+    my $payout              = $params->{payout};
 
-        my $source              = $params->{source};
-        my $contract_parameters = $params->{contract_parameters};
-        my $args                = $params->{args};
-        my $payout              = $params->{payout};
+    my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
+    $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
+    $contract_parameters->{landing_company} = $client->landing_company->short;
+    my $amount_type = $contract_parameters->{amount_type};
 
-        my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
-        $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
-        $contract_parameters->{landing_company} = $client->landing_company->short;
-        my $amount_type = $contract_parameters->{amount_type};
+    try {
+        die
+            unless BOM::RPC::v3::Contract::pre_validate_start_expire_dates($contract_parameters);
+    }
+    catch {
+        warn __PACKAGE__
+            . " buy_contract_for_multiple_accounts pre_validate_start_expire_dates failed, parameters: "
+            . encode_json($contract_parameters);
+        $response = BOM::RPC::v3::Utility::create_error({
+                code              => 'ContractCreationFailure',
+                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+    };
+    return $response if $response;
 
-        try {
-            die
-                unless BOM::RPC::v3::Contract::pre_validate_start_expire_dates($contract_parameters);
-        }
-        catch {
-            warn __PACKAGE__
-                . " buy_contract_for_multiple_accounts pre_validate_start_expire_dates failed, parameters: "
-                . encode_json($contract_parameters);
-            $response = BOM::RPC::v3::Utility::create_error({
-                    code              => 'ContractCreationFailure',
-                    message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
-        };
-        return $response if $response;
+    try {
+        $contract = produce_contract($contract_parameters);
+    }
+    catch {
+        warn __PACKAGE__ . " buy_contract_for_multiple_accounts produce_contract failed, parameters: " . encode_json($contract_parameters);
+        $response = BOM::RPC::v3::Utility::create_error({
+                code              => 'ContractCreationFailure',
+                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+    };
+    return $response if $response;
+    my $price = $args->{price};
+    if (defined $amount_type and $amount_type eq 'stake') {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'ContractCreationFailure',
+                message_to_client => BOM::Platform::Context::localize("Contract's stake amount is more than the maximum purchase price.")}
+        ) if ($price < $contract_parameters->{amount});
 
-        try {
-            $contract = produce_contract($contract_parameters);
-        }
-        catch {
-            warn __PACKAGE__ . " buy_contract_for_multiple_accounts produce_contract failed, parameters: " . encode_json($contract_parameters);
-            $response = BOM::RPC::v3::Utility::create_error({
-                    code              => 'ContractCreationFailure',
-                    message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
-        };
-        return $response if $response;
-        my $price = $args->{price};
-        if (defined $amount_type and $amount_type eq 'stake') {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'ContractCreationFailure',
-                    message_to_client => BOM::Platform::Context::localize("Contract's stake amount is more than the maximum purchase price.")}
-            ) if ($price < $contract_parameters->{amount});
-
-            $price = $contract_parameters->{amount};
-        }
-
-        my $trx = BOM::Transaction->new({
-            client   => $client,
-            multiple => \@result,
-            contract => $contract,
-            price    => ($price || 0),
-            (defined $payout)      ? (payout      => $payout)      : (),
-            (defined $amount_type) ? (amount_type => $amount_type) : (),
-            purchase_date => $purchase_date,
-            source        => $source,
-        });
-
-        if (my $err = $trx->batch_buy) {
-            return BOM::RPC::v3::Utility::create_error({
-                code              => $err->get_type,
-                message_to_client => $err->{-message_to_client},
-            });
-        }
+        $price = $contract_parameters->{amount};
     }
 
-    for my $el (@result) {
+    my $trx = BOM::Product::Transaction->new({
+        client   => $client,
+        multiple => $token_list_res->{result},
+        contract => $contract,
+        price    => ($price || 0),
+        (defined $payout)      ? (payout      => $payout)      : (),
+        (defined $amount_type) ? (amount_type => $amount_type) : (),
+        purchase_date => $purchase_date,
+        source        => $source,
+    });
+
+    if (my $err = $trx->batch_buy) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => $err->get_type,
+            message_to_client => $err->{-message_to_client},
+        });
+    }
+
+    for my $el (@{$token_list_res->{result}}) {
         my $new = {};
         if (exists $el->{code}) {
             @{$new}{qw/token code message_to_client/} =
@@ -256,7 +219,7 @@ sub buy_contract_for_multiple_accounts {
         $el = $new;
     }
 
-    return +{result => \@result};
+    return +{result => $token_list_res->{result}};
 }
 
 sub _check_token_list {
@@ -286,9 +249,9 @@ sub _check_token_list {
             # here we got a valid token but with insufficient privileges
             push @$result,
                 +{
-                token => $t,
-                code  => 'PermissionDenied',
-                error => BOM::Platform::Context::localize('Permission denied, requires [_1] scope.', 'trade'),
+                token             => $t,
+                code              => 'PermissionDenied',
+                message_to_client => BOM::Platform::Context::localize('Permission denied, requires [_1] scope.', 'trade'),
                 };
             next;
 
@@ -296,9 +259,9 @@ sub _check_token_list {
 
         push @$result,
             +{
-            token => $t,
-            code  => 'InvalidToken',
-            error => BOM::Platform::Context::localize('Invalid token'),
+            token             => $t,
+            code              => 'InvalidToken',
+            message_to_client => BOM::Platform::Context::localize('Invalid token'),
             };
     }
 
@@ -308,7 +271,7 @@ sub _check_token_list {
     };
 }
 
-sub sell_by_shortcode {
+sub sell_contract_for_multiple_accounts {
     my $params = shift;
 
     my $client = $params->{client} // die "client should be authed when get here";
@@ -325,43 +288,40 @@ sub sell_by_shortcode {
 
     my $token_list_res = _check_token_list($tokens);
 
-    my @result = @{$token_list_res->{result}};
-    if ($token_list_res->{success}) {
-        my $contract_parameters = shortcode_to_parameters($shortcode, $client->currency);
-        $contract_parameters->{landing_company} = $client->landing_company->short;
+    return +{result => $token_list_res->{result}} unless $token_list_res->{success};
 
-        my $amount_type = $contract_parameters->{amount_type};
-        my $contract    = produce_contract($contract_parameters);
+    ### TODO: produce contract in one action
+    my $contract_parameters = shortcode_to_parameters($shortcode, $client->currency);
+    $contract_parameters->{landing_company} = $client->landing_company->short;
 
-        my $trx = BOM::Product::Transaction->new({
-            client   => $client,
-            multiple => \@result,
-            contract => $contract,
-            price    => ($args->{price} // 0),
-            source   => $source,
+    my $contract = produce_contract($contract_parameters);
+
+    my $trx = BOM::Product::Transaction->new({
+        client   => $client,
+        multiple => $token_list_res->{result},
+        contract => $contract,
+        price    => ($args->{price} // 0),
+        source   => $source,
+    });
+
+    if (my $err = $trx->sell_by_shortcode) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => $err->get_type,
+            message_to_client => $err->{-message_to_client},
+            message           => "Contract-Multi-Sell Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}"
         });
-
-        if (my $err = $trx->sell_by_shortcode) {
-            return BOM::RPC::v3::Utility::create_error({
-                code              => $err->get_type,
-                message_to_client => $err->{-message_to_client},
-                message           => "Contract-Multi-Sell Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}"
-            });
-        }
-
-        my $data_to_return = [];
-        foreach my $row (@result) {
-            push @{$data_to_return},
-                +{
-                transaction_id => $row->{tnx}{id},
-                balance_after  => sprintf('%.2f', $row->{tnx}{balance_after}),
-                sold_for       => abs($row->{tnx}{amount}),
-                };
-        }
-        return $data_to_return;
     }
 
-    return \@result;
+    my $data_to_return = [];
+    foreach my $row (@{$token_list_res->{result}}) {
+        push @{$data_to_return},
+            +{
+            transaction_id => $row->{tnx}{id},
+            balance_after  => sprintf('%.2f', $row->{tnx}{balance_after}),
+            sold_for       => abs($row->{tnx}{amount}),
+            };
+    }
+    return +{result => $data_to_return};
 }
 
 sub sell {
