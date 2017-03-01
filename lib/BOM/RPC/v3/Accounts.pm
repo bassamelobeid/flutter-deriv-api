@@ -27,8 +27,8 @@ use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Token;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
-use BOM::System::Config;
-use BOM::System::Password;
+use BOM::Platform::Config;
+use BOM::Platform::Password;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::Model::AccessToken;
@@ -302,7 +302,7 @@ sub change_password {
         return $pass_error;
     }
 
-    my $new_password = BOM::System::Password::hashpw($args->{new_password});
+    my $new_password = BOM::Platform::Password::hashpw($args->{new_password});
     $user->password($new_password);
     $user->save;
 
@@ -314,7 +314,7 @@ sub change_password {
         $oauth->revoke_tokens_by_loginid($c1->loginid);
     }
 
-    BOM::System::AuditLog::log('password has been changed', $client->email);
+    BOM::Platform::AuditLog::log('password has been changed', $client->email);
     send_email({
             from    => Brands->new(name => request()->brand)->emails('support'),
             to      => $client->email,
@@ -368,7 +368,7 @@ sub cashier_password {
         }
 
         my $user = BOM::Platform::User->new({email => $client->email});
-        if (BOM::System::Password::checkpw($lock_password, $user->password)) {
+        if (BOM::Platform::Password::checkpw($lock_password, $user->password)) {
             return $error_sub->(localize('Please use a different password than your login password.'));
         }
 
@@ -376,7 +376,7 @@ sub cashier_password {
             return $pass_error;
         }
 
-        $client->cashier_setting_password(BOM::System::Password::hashpw($lock_password));
+        $client->cashier_setting_password(BOM::Platform::Password::hashpw($lock_password));
         if (not $client->save()) {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
         } else {
@@ -405,8 +405,8 @@ sub cashier_password {
 
         my $cashier_password = $client->cashier_setting_password;
         my $salt = substr($cashier_password, 0, 2);
-        if (!BOM::System::Password::checkpw($unlock_password, $cashier_password)) {
-            BOM::System::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
+        if (!BOM::Platform::Password::checkpw($unlock_password, $cashier_password)) {
+            BOM::Platform::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
             send_email({
                     'from'    => Brands->new(name => request()->brand)->emails('support'),
                     'to'      => $client->email,
@@ -445,7 +445,7 @@ sub cashier_password {
                     'email_content_is_html' => 1,
                     template_loginid        => $client->loginid,
                 });
-            BOM::System::AuditLog::log('cashier unlocked', $client->loginid);
+            BOM::Platform::AuditLog::log('cashier unlocked', $client->loginid);
             return {status => 0};
         }
     }
@@ -495,7 +495,7 @@ sub reset_password {
         return $pass_error;
     }
 
-    my $new_password = BOM::System::Password::hashpw($args->{new_password});
+    my $new_password = BOM::Platform::Password::hashpw($args->{new_password});
     $user->password($new_password);
     $user->save;
 
@@ -507,7 +507,7 @@ sub reset_password {
         $oauth->revoke_tokens_by_loginid($obj->loginid);
     }
 
-    BOM::System::AuditLog::log('password has been reset', $email, $args->{verification_code});
+    BOM::Platform::AuditLog::log('password has been reset', $email, $args->{verification_code});
     send_email({
             from    => Brands->new(name => request()->brand)->emails('support'),
             to      => $email,
@@ -791,7 +791,7 @@ sub set_settings {
         email_content_is_html => 1,
         template_loginid      => $client->loginid,
     });
-    BOM::System::AuditLog::log('Your settings have been updated successfully', $client->loginid);
+    BOM::Platform::AuditLog::log('Your settings have been updated successfully', $client->loginid);
 
     return {status => 1};
 }
@@ -1046,7 +1046,7 @@ sub api_token {
         # send notification to cancel streaming, if we add more streaming
         # for authenticated calls in future, we need to add here as well
         if (defined $params->{account_id}) {
-            BOM::System::RedisReplicated::redis_write()->publish(
+            BOM::Platform::RedisReplicated::redis_write()->publish(
                 'TXNUPDATE::transaction_' . $params->{account_id},
                 JSON::to_json({
                         error => {

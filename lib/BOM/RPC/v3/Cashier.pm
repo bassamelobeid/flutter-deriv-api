@@ -30,8 +30,8 @@ use BOM::Platform::Doughflow qw( get_sportsbook get_doughflow_language_code_for 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw(send_email);
-use BOM::System::Config;
-use BOM::System::AuditLog;
+use BOM::Platform::Config;
+use BOM::Platform::AuditLog;
 use BOM::Product::RiskProfile;
 use BOM::RPC::v3::Utility;
 
@@ -210,8 +210,8 @@ sub cashier {
         SSL_verify_mode => SSL_VERIFY_NONE
     );    #temporarily disable host verification as full ssl certificate chain is not available in doughflow.
 
-    my $doughflow_loc     = BOM::System::Config::third_party->{doughflow}->{$brand->name};
-    my $doughflow_pass    = BOM::System::Config::third_party->{doughflow}->{passcode};
+    my $doughflow_loc     = BOM::Platform::Config::third_party->{doughflow}->{$brand->name};
+    my $doughflow_pass    = BOM::Platform::Config::third_party->{doughflow}->{passcode};
     my $url               = $doughflow_loc . '/CreateCustomer.asp';
     my $sportsbook        = get_sportsbook($df_client->broker, $currency);
     my $handoff_token_key = _get_handoff_token_key($df_client->loginid);
@@ -309,7 +309,7 @@ sub cashier {
         . $secret
         . '&Action='
         . $action;
-    BOM::System::AuditLog::log('redirecting to doughflow', $df_client->loginid);
+    BOM::Platform::AuditLog::log('redirecting to doughflow', $df_client->loginid);
     return $url;
 }
 
@@ -342,7 +342,7 @@ sub _get_handoff_token_key {
 sub _get_epg_url {
     my ($loginid, $website_name, $currency, $action, $language) = @_;
 
-    BOM::System::AuditLog::log('redirecting to epg');
+    BOM::Platform::AuditLog::log('redirecting to epg');
 
     $language = uc($language // 'EN');
 
@@ -377,7 +377,7 @@ sub get_limits {
         account_balance => $client->get_limit_for_account_balance,
         payout          => $client->get_limit_for_payout,
         payout_per_symbol_and_contract_type =>
-            BOM::System::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$client->currency},
+            BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$client->currency},
         open_positions => $client->get_limit_for_open_positions,
     };
 
@@ -1200,7 +1200,7 @@ sub transfer_between_accounts {
         }
     }
 
-    BOM::System::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
+    BOM::Platform::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
     # error subs
     my $error_unfreeze_msg_sub = sub {
@@ -1211,7 +1211,7 @@ sub transfer_between_accounts {
                 })->unfreeze;
         }
 
-        BOM::System::AuditLog::log("Account Transfer FAILED, $err");
+        BOM::Platform::AuditLog::log("Account Transfer FAILED, $err");
 
         $client_message ||= localize('An error occurred while processing request. If this error persists, please contact customer support');
         return $error_sub->($client_message);
@@ -1324,7 +1324,7 @@ sub transfer_between_accounts {
         return $error_unfreeze_sub->($err);
     }
 
-    BOM::System::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
+    BOM::Platform::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
     $fm_client_db->unfreeze;
     $to_client_db->unfreeze;

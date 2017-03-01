@@ -10,7 +10,7 @@ use BOM::Platform::Runtime;
 use BOM::MarketData qw(create_underlying);
 use BOM::Product::ContractFactory::Parser qw(shortcode_to_parameters);
 use JSON::XS qw/encode_json decode_json/;
-use BOM::System::RedisReplicated;
+use BOM::Platform::RedisReplicated;
 use DataDog::DogStatsd::Helper;
 use BOM::RPC::v3::Contract;
 
@@ -70,7 +70,7 @@ sub process_job {
 
 sub run {
     my ($self, %args) = @_;
-    my $redis = BOM::System::RedisReplicated::redis_pricer;
+    my $redis = BOM::Platform::RedisReplicated::redis_pricer;
 
     my $tv_appconfig          = [0, 0];
     my $tv                    = [Time::HiRes::gettimeofday];
