@@ -94,10 +94,8 @@ $res = BOM::RPC::v3::Accounts::api_token({
         },
         client_ip => '1.1.1.1',
     });
-note explain $res;
 is scalar(@{$res->{tokens}}), 2, '2nd token created';
 $test_token = $res->{tokens}->[1]->{token};
-warn "Test token is $test_token";
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $params = {
