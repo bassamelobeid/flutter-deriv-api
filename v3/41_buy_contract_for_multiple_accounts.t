@@ -237,49 +237,50 @@ sleep 5;
 subtest "2nd try to sell: dummy tokens => success", sub {
     $t = $t->send_ok({
             json => {
-                sell_by_shortcode => 1,
-                shortcode         => $shortcode_for_sell,
-                price             => 2.42,
-                tokens            => ['DUMMY0', 'DUMMY1'],
+                sell_contract_for_multiple_accounts => 1,
+                shortcode                           => $shortcode_for_sell,
+                price                               => 2.42,
+                tokens                              => ['DUMMY0', 'DUMMY1'],
             }});
     $t   = $t->message_ok;
     my $res = decode_json($t->message->[1]);
     note explain $res;
-    isa_ok $res->{sell_by_shortcode}, 'ARRAY';
+    isa_ok $res->{sell_contract_for_multiple_accounts},              'HASH';
+    isa_ok $res->{sell_contract_for_multiple_accounts}{result},      'ARRAY';
+    isa_ok $res->{sell_contract_for_multiple_accounts}{result}->[0], 'HASH';
 
-    is_deeply $res->{sell_by_shortcode},
+    is_deeply $res->{sell_contract_for_multiple_accounts}{result},
         [{
             'code'              => 'InvalidToken',
-            'error'             => 'Invalid token',
+            'message_to_client' => 'Invalid token',
             'token'             => 'DUMMY0'
         },
          {
-             'code'             => 'InvalidToken',
-             'error'            => 'Invalid token',
-             'token'            => 'DUMMY1'
+             'code'              => 'InvalidToken',
+             'message_to_client' => 'Invalid token',
+             'token'             => 'DUMMY1'
          }
      ],
      'got expected result';
 
-    test_schema('sell_by_shortcode', $res);
+    test_schema('sell_contract_for_multiple_accounts', $res);
 };
 
-subtest "sell contracts by shortcode => successful", sub {
+subtest "sell_contract_for_multiple_accounts => successful", sub {
     $t = $t->send_ok({
         json => {
-            sell_by_shortcode => 1,
-            shortcode         => $shortcode_for_sell,
-            price             => 2.42,
-            tokens            => $tokens_for_sell,
+            sell_contract_for_multiple_accounts => 1,
+            shortcode                           => $shortcode_for_sell,
+            price                               => 2.42,
+            tokens                              => $tokens_for_sell,
         }});
     $t   = $t->message_ok;
     $res = decode_json($t->message->[1]);
 
-    isa_ok $res->{sell_by_shortcode}, 'ARRAY';
-    isa_ok $res->{sell_by_shortcode}->[0], 'HASH';
+    isa_ok $res->{sell_contract_for_multiple_accounts}{result},      'ARRAY';
+    isa_ok $res->{sell_contract_for_multiple_accounts}{result}->[0], 'HASH';
 
-    test_schema('sell_by_shortcode', $res);
-
+    test_schema('sell_contract_for_multiple_accounts', $res);
 };
 
 $t->finish_ok;
