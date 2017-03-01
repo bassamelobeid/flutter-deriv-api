@@ -61,6 +61,7 @@ subtest 'test everything' => sub {
                 payout       => 100,
                 %barriers
             });
+            next unless exists $expected->{$c->shortcode};
             is $c->pricing_engine_name, $expected->{$c->shortcode}, "correct pricing engine select for " . $c->shortcode;
         }
     }
