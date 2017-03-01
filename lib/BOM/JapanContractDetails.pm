@@ -264,7 +264,7 @@ sub _get_pricing_parameter_from_IH_pricer {
     };
 
     $pricing_parameters->{intraday_vega_correction} = {
-        historical_vol_mean_reversion => BOM::System::Config::quants->{commission}->{intraday}->{historical_vol_meanrev},
+        historical_vol_mean_reversion => BOM::Platform::Config::quants->{commission}->{intraday}->{historical_vol_meanrev},
         map { $_ => $pe->$_->amount } qw(intraday_vega long_term_prediction),
     };
 

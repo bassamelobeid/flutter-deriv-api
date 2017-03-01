@@ -22,13 +22,13 @@ sub save_calendar {
         $updated = Quant::Framework::Holiday->new(
             recorded_date    => $recorded_date,
             calendar         => $calendar,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         )->save;
     } else {
         $updated = Quant::Framework::PartialTrading->new(
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
             recorded_date    => $recorded_date,
             type             => $calendar_type,
             calendar         => $calendar,
@@ -162,7 +162,7 @@ sub _save_early_closes_calendar {
     foreach my $exchange_name (keys %$data) {
         my $calendar = Quant::Framework::TradingCalendar->new({
                 symbol           => $exchange_name,
-                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader()});
+                chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader()});
         my $partial_trading = $calendar->market_times->{partial_trading};
         if (not $partial_trading) {
             print "$exchange_name does not have partial trading configuration but it has early closes. Please check. \n";
@@ -182,8 +182,8 @@ sub _save_early_closes_calendar {
     }
 
     my $updated = Quant::Framework::PartialTrading->new(
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         recorded_date    => Date::Utility->new,
         type             => 'early_closes',
         calendar         => $calendar_data,

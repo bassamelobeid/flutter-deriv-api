@@ -20,7 +20,7 @@ use BOM::Backoffice::Sysinit ();
 use BOM::Database::ClientDB;
 use BOM::Database::UserDB;
 use BOM::DualControl;
-use BOM::System::AuditLog;
+use BOM::Platform::AuditLog;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -106,7 +106,7 @@ if ($email ne $new_email) {
         . " updated user $email to $new_email by clerk=$clerk (DCcode="
         . $input{DCcode}
         . ") $ENV{REMOTE_ADDR}";
-    BOM::System::AuditLog::log($msg, $new_email, $clerk);
+    BOM::Platform::AuditLog::log($msg, $new_email, $clerk);
 
     BOM::Backoffice::Request::template->process(
         'backoffice/client_email.html.tt',

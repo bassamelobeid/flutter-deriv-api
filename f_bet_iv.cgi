@@ -5,7 +5,7 @@ use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use subs::subs_dividend_from_excel_file;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
@@ -40,7 +40,7 @@ print '<p>BLOOMBERG DATA LICENSE (BBDL) is an FTP service where we can make requ
  <br>Note1: to view currently scheduled batch files, upload the JYSscheduled.req request file.
  Then wait a minute and download scheduled.out . </p>';
 
-unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::System::Config::node()->{node}->{roles}})) {
+unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}})) {
     print
         "<font color=red><b>WARNING! You are not on the Master Live Server. Suggest you use these tools on the Master Live Server instead.</b></font><P>";
 }

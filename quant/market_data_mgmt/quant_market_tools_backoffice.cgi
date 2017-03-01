@@ -9,17 +9,17 @@ use SuperDerivatives::Correlation qw( upload_and_process_correlations );
 use subs::subs_dividend_from_excel_file;
 use BOM::Backoffice::Sysinit ();
 use Quant::Framework::EconomicEventCalendar;
-use BOM::System::Chronicle;
+use BOM::Platform::Chronicle;
 use Try::Tiny;
 BOM::Backoffice::Sysinit::init();
-use BOM::System::Config;
+use BOM::Platform::Config;
 
 PrintContentType();
 BrokerPresentation("QUANT BACKOFFICE");
 
 use Mail::Sender;
 use ForexFactory;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::Platform::Runtime;
 use Date::Utility;
 use BOM::Backoffice::Request qw(request);
@@ -29,7 +29,7 @@ BOM::Backoffice::Auth0::can_access(['Quants']);
 
 if ($broker !~ /^\w+$/) { die "Bad broker code $broker in $0"; }
 
-unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::System::Config::node()->{node}->{roles}})) {
+unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}})) {
     code_exit_BO();
 }
 
@@ -62,8 +62,8 @@ if (request()->param('whattodo') eq 'process_superderivatives_correlations') {
     my ($data, @to_print) = upload_and_process_correlations($filetoupload);
     my $correlation_matrix = Quant::Framework::CorrelationMatrix->new({
         symbol           => 'indices',
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         chronicle_write  => 1,
         recorded_date    => Date::Utility->new
     });
@@ -86,7 +86,7 @@ my $estimated_release_date = request()->param('estimated_release_date');
 
 if ($save_economic_event) {
     try {
-        my $ref         = BOM::System::Chronicle::get_chronicle_reader()->get('economic_events', 'economic_events');
+        my $ref         = BOM::Platform::Chronicle::get_chronicle_reader()->get('economic_events', 'economic_events');
         my @events      = @{$ref->{events}};
         my $event_param = {
             event_name => $event_name,
@@ -110,8 +110,8 @@ if ($save_economic_event) {
         Quant::Framework::EconomicEventCalendar->new({
                 events           => $ref->{events},
                 recorded_date    => Date::Utility->new,
-                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-                chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+                chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+                chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
             })->save;
 
         print 'Econmic Announcement saved!</br></br>';
