@@ -87,7 +87,8 @@ subtest $method => sub {
     ok $user->gclid_url =~ '^FQdb3wodOkkGBgCMrlnPq42q8C$', 'gclid value returned as expected';
     is $user->email_consent, undef, 'email consent not passed during account creation so its undef';
 
-    my ($resp_loginid, $t, $uaf) = BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token});
+    my ($resp_loginid, $t, $uaf) =
+        @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
     is $resp_loginid, $new_loginid, 'correct oauth token';
 
     my $vr_email = 'new_email' . rand(999) . '@binary.com';
@@ -201,7 +202,8 @@ subtest $method => sub {
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
 
-        my ($resp_loginid, $t, $uaf) = BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token});
+        my ($resp_loginid, $t, $uaf) =
+            @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
         is $resp_loginid, $new_loginid, 'correct oauth token';
     };
 
@@ -330,7 +332,8 @@ subtest $method => sub {
 
         is $cl->get_status('crs_tin_information')->reason, Date::Utility->new()->date, "CRS date is set for account opening date";
 
-        my ($resp_loginid, $t, $uaf) = BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token});
+        my ($resp_loginid, $t, $uaf) =
+            @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
         is $resp_loginid, $new_loginid, 'correct oauth token';
     };
 };
@@ -448,7 +451,8 @@ subtest $method => sub {
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^JP\d+/, 'new JP loginid';
 
-        my ($resp_loginid, $t, $uaf) = BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token});
+        my ($resp_loginid, $t, $uaf) =
+            @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
         is $resp_loginid, $new_loginid, 'correct oauth token';
     };
 };
