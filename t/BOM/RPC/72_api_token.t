@@ -84,4 +84,32 @@ ok !$test_token->{last_used}, 'last_used is null';
 my @scopes = BOM::Database::Model::AccessToken->new->get_scopes_by_access_token($test_token->{token});
 is_deeply([sort @scopes], ['read', 'trade'], 'right scopes');
 
+## check for valid ip
+$res = BOM::RPC::v3::Accounts::api_token({
+        client => $client,
+        args   => {
+            new_token                 => 'Test1',
+            new_token_scopes          => ['read', 'trade'],
+            valid_for_current_ip_only => 1,
+        },
+        client_ip => '1.1.1.1',
+    });
+note explain $res;
+is scalar(@{$res->{tokens}}), 2, '2nd token created';
+$test_token = $res->{tokens}->[1]->{token};
+warn "Test token is $test_token";
+
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $params = {
+    language   => 'EN',
+    token      => $test_token,
+    token_type => 'api_token',
+    client_ip  => '1.1.1.1'
+};
+$c->call_ok('authorize', $params)->has_no_error;
+
+$params->{client_ip} = '1.2.1.1';
+$c->call_ok('authorize', $params)
+    ->has_error->error_message_is('Token is not valid for current ip address.', 'check invalid token as ip is different from registered one');
+
 done_testing();
