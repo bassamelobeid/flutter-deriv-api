@@ -88,19 +88,43 @@ sub _validate_tnc {
     return $params;
 }
 
+sub _compliance_checks {
+    my $params = shift;
+
+    # we shouldn't get to this error, so we can die it directly
+    my $client = $params->{client} // die "client should be authed before calling this action";
+
+    # checks are not applicable for virtual, costarica and champion clients
+    return $params
+        if ($client->is_virtual
+        or $client->landing_company->short =~ /^(?:costarica|champion)$/);
+
+    # as per compliance for high risk client we need to check
+    # if financial assessment details are completed or not
+    if (($client->aml_risk_classification // '') eq 'high' and not $client->financial_assessment()) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'FinancialAssessmentRequired',
+            message_to_client => localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
+        });
+    }
+
+    return $params;
+}
+
 sub register {
     my ($method, $code, $before_actions) = @_;
 
     # check actions at register time
     my %actions = (
-        auth         => \&_auth,
-        validate_tnc => \&_validate_tnc,
+        auth              => \&_auth,
+        validate_tnc      => \&_validate_tnc,
+        compliance_checks => \&_compliance_checks
     );
-    my @before_actions;
+    my @local_before_actions;
     for my $hook (@$before_actions) {
         # it shouldn't happen, so we die it directly
         die "Error: no such hook $hook" unless exists($actions{$hook});
-        push @before_actions, $actions{$hook};
+        push @local_before_actions, $actions{$hook};
     }
     return MojoX::JSON::RPC::Service->new->register(
         $method,
@@ -126,7 +150,7 @@ sub register {
                 $params->{website_name} = BOM::RPC::v3::Utility::website_name(delete $params->{server_name});
             }
 
-            for my $action (@before_actions) {
+            for my $action (@local_before_actions) {
                 my $result;
                 try {
                     $result = $action->($params);
