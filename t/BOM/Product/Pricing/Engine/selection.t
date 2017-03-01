@@ -39,6 +39,7 @@ subtest 'test everything' => sub {
     foreach my $symbol (get_offerings_with_filter($offerings_cfg, 'underlying_symbol')) {
         foreach my $ref (@{available_contracts_for_symbol({symbol => $symbol})->{available}}) {
             next if $ref->{contract_category} eq 'spreads';
+            next unless exists $expected->{$c->shortcode};
             my %barriers;
             if ($ref->{contract_category} eq 'digits') {
                 %barriers = (barrier => 1);
