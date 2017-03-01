@@ -7,7 +7,7 @@ use BOM::Database::Model::AccessToken;
 # since bom-postgres do not rely on bom-market
 BEGIN {
     $INC{'BOM/Market/Underlying.pm'} = 1;
-    $INC{'BOM/Market/AggTicks.pm'} = 1;
+    $INC{'BOM/Market/AggTicks.pm'}   = 1;
 }
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -30,10 +30,10 @@ is $client_loginid, $test_loginid;
 
 my $tokens = $m->get_tokens_by_loginid($test_loginid);
 is scalar @$tokens, 1;
-is $tokens->[0]->{token}, $token;
+is $tokens->[0]->{token},        $token;
 is $tokens->[0]->{display_name}, 'Test Token';
 is_deeply [sort @{$tokens->[0]->{scopes}}], ['admin', 'payments', 'read'];
-ok $tokens->[0]->{last_used} =~ /^[\d\-]{10}\s+[\d\:]{8}$/; # update on get_token_details
+ok $tokens->[0]->{last_used} =~ /^[\d\-]{10}\s+[\d\:]{8}$/;    # update on get_token_details
 my $token_cnt = $m->get_token_count_by_loginid($test_loginid);
 is $token_cnt, 1;
 
@@ -41,7 +41,7 @@ my $ok = $m->remove_by_token($token, $test_loginid);
 ok $ok;
 
 $client_loginid = $m->get_token_details($token)->{loginid};
-is $client_loginid, undef; # it should be undef since removed
+is $client_loginid, undef;                                     # it should be undef since removed
 
 $m->create_token($test_loginid, 'Test Token');
 $tokens = $m->get_tokens_by_loginid($test_loginid);
