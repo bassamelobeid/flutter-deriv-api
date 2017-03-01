@@ -49,15 +49,6 @@ SQL
     return $details;
 }
 
-sub get_loginid_by_token {
-    my ($self, $token) = @_;
-
-    return $self->dbh->selectrow_array(<<'SQL', undef, $token);
-SELECT loginid, creation_time
-  FROM auth.get_loginid_by_access_token($1)
-SQL
-}
-
 sub get_scopes_by_access_token {
     my ($self, $access_token) = @_;
 
