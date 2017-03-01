@@ -27,8 +27,8 @@ use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Token;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
-use BOM::System::Config;
-use BOM::System::Password;
+use BOM::Platform::Config;
+use BOM::Platform::Password;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::Model::AccessToken;
@@ -297,7 +297,7 @@ sub change_password {
         return $pass_error;
     }
 
-    my $new_password = BOM::System::Password::hashpw($args->{new_password});
+    my $new_password = BOM::Platform::Password::hashpw($args->{new_password});
     $user->password($new_password);
     $user->save;
 
@@ -309,7 +309,7 @@ sub change_password {
         $oauth->revoke_tokens_by_loginid($c1->loginid);
     }
 
-    BOM::System::AuditLog::log('password has been changed', $client->email);
+    BOM::Platform::AuditLog::log('password has been changed', $client->email);
     send_email({
             from    => Brands->new(name => request()->brand)->emails('support'),
             to      => $client->email,
@@ -363,7 +363,7 @@ sub cashier_password {
         }
 
         my $user = BOM::Platform::User->new({email => $client->email});
-        if (BOM::System::Password::checkpw($lock_password, $user->password)) {
+        if (BOM::Platform::Password::checkpw($lock_password, $user->password)) {
             return $error_sub->(localize('Please use a different password than your login password.'));
         }
 
@@ -371,7 +371,7 @@ sub cashier_password {
             return $pass_error;
         }
 
-        $client->cashier_setting_password(BOM::System::Password::hashpw($lock_password));
+        $client->cashier_setting_password(BOM::Platform::Password::hashpw($lock_password));
         if (not $client->save()) {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
         } else {
@@ -400,8 +400,8 @@ sub cashier_password {
 
         my $cashier_password = $client->cashier_setting_password;
         my $salt = substr($cashier_password, 0, 2);
-        if (!BOM::System::Password::checkpw($unlock_password, $cashier_password)) {
-            BOM::System::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
+        if (!BOM::Platform::Password::checkpw($unlock_password, $cashier_password)) {
+            BOM::Platform::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
             send_email({
                     'from'    => Brands->new(name => request()->brand)->emails('support'),
                     'to'      => $client->email,
@@ -440,7 +440,7 @@ sub cashier_password {
                     'email_content_is_html' => 1,
                     template_loginid        => $client->loginid,
                 });
-            BOM::System::AuditLog::log('cashier unlocked', $client->loginid);
+            BOM::Platform::AuditLog::log('cashier unlocked', $client->loginid);
             return {status => 0};
         }
     }
@@ -490,7 +490,7 @@ sub reset_password {
         return $pass_error;
     }
 
-    my $new_password = BOM::System::Password::hashpw($args->{new_password});
+    my $new_password = BOM::Platform::Password::hashpw($args->{new_password});
     $user->password($new_password);
     $user->save;
 
@@ -502,7 +502,7 @@ sub reset_password {
         $oauth->revoke_tokens_by_loginid($obj->loginid);
     }
 
-    BOM::System::AuditLog::log('password has been reset', $email, $args->{verification_code});
+    BOM::Platform::AuditLog::log('password has been reset', $email, $args->{verification_code});
     send_email({
             from    => Brands->new(name => request()->brand)->emails('support'),
             to      => $email,
@@ -513,8 +513,9 @@ sub reset_password {
                     $email
                 )
             ],
-            use_email_template => 1,
-            template_loginid   => $client->loginid,
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            template_loginid      => $client->loginid,
         });
 
     return {status => 1};
@@ -670,7 +671,7 @@ sub set_settings {
     my $address1        = $args->{'address_line_1'};
     my $address2        = $args->{'address_line_2'} // '';
     my $addressTown     = $args->{'address_city'};
-    my $addressState    = $args->{'address_state'};
+    my $addressState    = $args->{'address_state'} // '';
     my $addressPostcode = $args->{'address_postcode'};
     my $phone           = $args->{'phone'} // '';
     my $birth_place     = $args->{place_of_birth};
@@ -694,7 +695,7 @@ sub set_settings {
     $client->address_1($address1);
     $client->address_2($address2);
     $client->city($addressTown);
-    $client->state($addressState) if defined $args->{'address_state'};            # FIXME validate
+    $client->state($addressState) if defined $addressState;                       # FIXME validate
     $client->postcode($addressPostcode) if defined $args->{'address_postcode'};
     $client->phone($phone);
     $client->place_of_birth($birth_place);
@@ -713,6 +714,13 @@ sub set_settings {
         $client->tax_identification_number($tax_identification_number) if $tax_identification_number;
 
         BOM::Platform::Account::Real::maltainvest::set_crs_tin_status($client);
+    }
+    if ((defined $tax_residence || defined $tax_identification_number)
+        && $client->landing_company->short ne 'maltainvest')
+    {
+        ### Allow to clean tax info for Non-MF
+        $client->tax_residence('')             if defined $tax_residence;
+        $client->tax_identification_number('') if defined $tax_identification_number;
     }
 
     if (not $client->save()) {
@@ -740,6 +748,15 @@ sub set_settings {
         [localize('Country of Residence'), $residence_country],
         [localize('Address'),              join(', ', (map { $client->$_ } qw(address_1 address_2 city state postcode)), $residence_country)],
         [localize('Telephone'),            $client->phone]);
+
+    my $tr_tax_residence = join ', ', map { Locale::Country::code2country($_) } split /,/, ($client->tax_residence || '');
+
+    push @updated_fields,
+        (
+        [localize('Place of birth'), $client->place_of_birth ? Locale::Country::code2country($client->place_of_birth) : ''],
+        [localize("Tax residence"), $tr_tax_residence],
+        [localize('Tax identification number'), ($client->tax_identification_number || '')],
+        );
     push @updated_fields,
         [
         localize('Receive news and special offers'),
@@ -751,13 +768,13 @@ sub set_settings {
     $message .= "<table>";
     foreach my $updated_field (@updated_fields) {
         $message .=
-              "<tr><td style='text-align:left'><strong>"
+              '<tr><td style="vertical-align:top; text-align:left;"><strong>'
             . encode_entities($updated_field->[0])
-            . "</strong></td><td>:</td><td style='text-align:left'>"
+            . '</strong></td><td style="vertical-align:top;">:&nbsp;</td><td style="vertical-align:top;text-align:left;">'
             . encode_entities($updated_field->[1])
-            . "</td></tr>";
+            . '</td></tr>';
     }
-    $message .= "</table>";
+    $message .= '</table>';
     $message .= "\n" . localize('The [_1] team.', $website_name);
 
     send_email({
@@ -769,7 +786,7 @@ sub set_settings {
         email_content_is_html => 1,
         template_loginid      => $client->loginid,
     });
-    BOM::System::AuditLog::log('Your settings have been updated successfully', $client->loginid);
+    BOM::Platform::AuditLog::log('Your settings have been updated successfully', $client->loginid);
 
     return {status => 1};
 }
@@ -1024,7 +1041,7 @@ sub api_token {
         # send notification to cancel streaming, if we add more streaming
         # for authenticated calls in future, we need to add here as well
         if (defined $params->{account_id}) {
-            BOM::System::RedisReplicated::redis_write()->publish(
+            BOM::Platform::RedisReplicated::redis_write()->publish(
                 'TXNUPDATE::transaction_' . $params->{account_id},
                 JSON::to_json({
                         error => {
