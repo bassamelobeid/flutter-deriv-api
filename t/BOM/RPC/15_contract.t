@@ -332,15 +332,6 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         "streaming_params" => {add_theo_probability => 1},
     };
     my $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
-    #print Dumper(\$result);
-    #is($result, undef, "undefined as expected");
-    #like(
-    #    warning {
-    #        $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
-    #    },
-    #    qr/_get_ask pre_validate_start_expire_dates failed/,
-    #    "Expected warning"
-    #);
     my $expected = {
         error => {
             'code'              => 'ContractCreationFailure',
@@ -362,15 +353,6 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         "streaming_params" => {add_theo_probability => 1},
     };
     $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
-    #is($result, undef, "undefined as expected");
-    #print Dumper(\$result);
-    #like(
-    #    warning {
-    #        $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
-    #    },
-    #    qr/_get_ask pre_validate_start_expire_dates failed/,
-    #    "Expected warning"
-    #);
     $expected = {
         error => {
             'code'              => 'ContractCreationFailure',
@@ -392,14 +374,6 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         "streaming_params" => {add_theo_probability => 1},
     };
     $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
-    #is($result, undef, "undefined as expected");
-    #like(
-    #    warning {
-    #        $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
-    #    },
-    #    qr/_get_ask pre_validate_start_expire_dates failed/,
-    #    "Expected warning"
-    #);
     $expected = {
         error => {
             'code'              => 'ContractCreationFailure',
@@ -478,14 +452,6 @@ subtest 'send_ask_when_date_expiry_smaller_than_date_start' => sub {
         }};
     $c->call_ok('send_ask', $params)->has_error->error_code_is('ContractCreationFailure')->error_message_is('Cannot create contract');
     
-    #like(
-    #    warning {
-    #        $c->call_ok('send_ask', $params)->has_error->error_code_is('ContractCreationFailure')->error_message_is('Cannot create contract');
-    #    },
-    #    qr/_get_ask pre_validate_start_expire_dates failed/,
-    #    "Expected warning"
-    #);
-
 };
 
 subtest 'send_multiple_ask' => sub {
