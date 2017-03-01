@@ -198,9 +198,9 @@ subtest 'landing_companies_specific' => sub {
     $client_mf->set_status('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
     $client_mf->save;
 
-    #    $rpc_ct->call_ok($method, $params)
-    #        ->has_no_system_error->has_error->error_code_is('ASK_TIN_INFORMATION', 'tax information is required for malatainvest')
-    #        ->error_message_is('Tax information is required.', 'tax information is required for malatainvest');
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('ASK_TIN_INFORMATION', 'tax information is required for malatainvest')
+        ->error_message_is('Tax information is required.', 'tax information is required for malatainvest');
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
 
