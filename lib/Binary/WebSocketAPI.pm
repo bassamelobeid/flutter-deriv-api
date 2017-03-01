@@ -276,7 +276,7 @@ sub startup {
             }
         ],
         [
-            'sell_by_shortcode',
+            'sell_contract_for_multiple_accounts',
             {
                 require_auth => 'trade',
             }
