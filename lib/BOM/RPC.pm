@@ -223,9 +223,12 @@ sub startup {
         ['ticks_history', \&BOM::RPC::v3::TickStreamer::ticks_history],
         ['ticks',         \&BOM::RPC::v3::TickStreamer::ticks],
 
-        ['buy',                                \&BOM::RPC::v3::Transaction::buy,                                [qw(auth validate_tnc)]],
-        ['buy_contract_for_multiple_accounts', \&BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts, [qw(auth validate_tnc)]],
-        ['sell',                               \&BOM::RPC::v3::Transaction::sell,                               [qw(auth validate_tnc)]],
+        ['buy', \&BOM::RPC::v3::Transaction::buy, [qw(auth validate_tnc compliance_checks)]],
+        [
+            'buy_contract_for_multiple_accounts', \&BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts,
+            [qw(auth validate_tnc compliance_checks)]
+        ],
+        ['sell', \&BOM::RPC::v3::Transaction::sell, [qw(auth validate_tnc compliance_checks)]],
 
         ['trading_times',         \&BOM::RPC::v3::MarketDiscovery::trading_times],
         ['asset_index',           \&BOM::RPC::v3::MarketDiscovery::asset_index],
@@ -242,7 +245,7 @@ sub startup {
         ['paymentagent_withdraw',     \&BOM::RPC::v3::Cashier::paymentagent_withdraw, [qw(auth)]],
         ['paymentagent_transfer',     \&BOM::RPC::v3::Cashier::paymentagent_transfer, [qw(auth)]],
         ['transfer_between_accounts', \&BOM::RPC::v3::Cashier::transfer_between_accounts, [qw(auth)]],
-        ['cashier',                   \&BOM::RPC::v3::Cashier::cashier, [qw(auth validate_tnc)]],
+        ['cashier',                   \&BOM::RPC::v3::Cashier::cashier, [qw(auth validate_tnc compliance_checks)]],
         ['topup_virtual',             \&BOM::RPC::v3::Cashier::topup_virtual, [qw(auth)]],
 
         ['payout_currencies',       \&BOM::RPC::v3::Accounts::payout_currencies],
