@@ -432,7 +432,16 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             next CLIENT_KEY;
         }
         if ($key eq 'secret_answer') {
-            $client->secret_answer(BOM::Platform::Client::Utility::encrypt_secret_answer($input{$key}));
+            # algorithm provide different encrypted string from the same text based on some randomness
+            # so we update this encrypted field only on value change - we don't want our trigger log trash
+
+            my $secret_answer = BOM::Platform::Client::Utility::decrypt_secret_answer($client->secret_answer);
+            $secret_answer = Encode::decode("UTF-8", $secret_answer)
+                unless (Encode::is_utf8($secret_answer));
+
+            $client->secret_answer(BOM::Platform::Client::Utility::encrypt_secret_answer($input{$key}))
+                if ($input{$key} ne $secret_answer);
+
             next CLIENT_KEY;
         }
         if ($key eq 'ip_security') {
