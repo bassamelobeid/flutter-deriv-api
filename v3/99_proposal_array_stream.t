@@ -62,6 +62,6 @@ $req->{amount} = "100.";
 delete($req->{req_id}); #can be kept as it is.
 $t->send_ok({json => $req})->message_ok;
 $res = decode_json($t->message->[1]);
-is $res->{proposal_array}->{proposals}->[0]->{error}->{code}, 'ContractCreationFailure', 'Correct error failed to create contract';
+is $res->{error}->{code}, 'InputValidationFailed', 'Correct error Failed validation';
 
 done_testing;

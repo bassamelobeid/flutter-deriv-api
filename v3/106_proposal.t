@@ -44,6 +44,6 @@ ok $res->{proposal}->{id}, 'Should return id';
 $req->{amount} = "100.";
 $t->send_ok({json => $req})->message_ok;
 $res = decode_json($t->message->[1]);
-is $res->{error}->{code}, 'ContractCreationFailure', 'Correct failed contract creation';
+is $res->{error}->{code}, 'InputValidationFailed', 'Correct failed due to input validation';
 
 done_testing;
