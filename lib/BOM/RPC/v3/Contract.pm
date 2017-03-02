@@ -590,8 +590,8 @@ sub get_contract_details {
     };
 
     if ($contract->two_barriers) {
-        $reponse->{high_barrier} = $contract->high_barrier->supplied_barrier;
-        $reponse->{low_barrier}  = $contract->low_barrier->supplied_barrier;
+        $response->{high_barrier} = $contract->high_barrier->supplied_barrier;
+        $response->{low_barrier}  = $contract->low_barrier->supplied_barrier;
     } else {
         $response->{barrier} = $contract->barrier ? $contract->barrier->supplied_barrier : undef;
     }
