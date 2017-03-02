@@ -589,13 +589,11 @@ sub get_contract_details {
         date_expiry  => $contract->date_expiry->epoch
     };
 
-    if ($contract->entry_tick) {
-        if ($contract->two_barriers) {
-            $reponse->{high_barrier} = $contract->high_barrier->as_absolute;
-            $reponse->{low_barrier}  = $contract->low_barrier->as_absolute;
-        } else {
-            $response->{barrier} = $contract->barrier ? $contract->barrier->as_absolute : undef;
-        }
+    if ($contract->two_barriers) {
+        $reponse->{high_barrier} = $contract->high_barrier->supplied_barrier;
+        $reponse->{low_barrier}  = $contract->low_barrier->supplied_barrier;
+    } else {
+        $response->{barrier} = $contract->barrier ? $contract->barrier->supplied_barrier : undef;
     }
 
     return $response;
