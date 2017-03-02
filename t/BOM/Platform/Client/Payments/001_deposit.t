@@ -40,22 +40,10 @@ my $mlt_client = Client::Account->register_and_return_new_client({
 });
 $mlt_client->set_default_account('EUR');
 
-ok(!$mlt_client->get_status('cashier_locked'), 'MLT client not cashier_locked prior to first-deposit');
+ok(!$mlt_client->get_status('unwelcome'), 'MLT client not unwelcome prior to first-deposit');
 $mlt_client->payment_free_gift(%deposit, currency => 'EUR');
 BOM::Platform::Client::IDAuthentication->new(client => $mlt_client)->run_authentication;
-ok($mlt_client->get_status('cashier_locked'), 'MLT client now cashier_locked after first-deposit');
-
-$mlt_client = Client::Account->register_and_return_new_client({
-    %$client_details,
-    broker_code => 'MLT',
-    residence   => 'it'
-});
-$mlt_client->set_default_account('EUR');
-
-ok(!$mlt_client->get_status('cashier_locked'), 'MLT client not cashier_locked prior to first-deposit');
-$mlt_client->payment_doughflow(%deposit, currency => 'EUR');
-BOM::Platform::Client::IDAuthentication->new(client => $mlt_client)->run_authentication;
-ok($mlt_client->get_status('cashier_locked'), 'MLT client now cashier_locked after first-deposit');
+ok($mlt_client->get_status('unwelcome'), 'MLT client now unwelcome after first-deposit');
 
 my $mx_client = Client::Account->register_and_return_new_client({
     %$client_details,
@@ -64,10 +52,10 @@ my $mx_client = Client::Account->register_and_return_new_client({
 });
 $mx_client->set_default_account('USD');
 
-ok(!$mx_client->get_status('cashier_locked'), 'MX client not cashier_locked prior to first-deposit');
+ok(!$mx_client->get_status('unwelcome'), 'MX client not unwelcome prior to first-deposit');
 $mx_client->payment_free_gift(%deposit, currency => 'USD');
 BOM::Platform::Client::IDAuthentication->new(client => $mx_client)->run_authentication;
-ok($mx_client->get_status('cashier_locked'), 'MX client now cashier_locked after first-deposit');
+ok($mx_client->get_status('unwelcome'), 'MX client now unwelcome after first-deposit');
 
 done_testing();
 
