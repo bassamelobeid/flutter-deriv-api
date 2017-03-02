@@ -13,22 +13,22 @@ use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
 use Format::Util::Numbers qw(commas roundnear to_monetary_number_format);
 use Try::Tiny;
 use YAML::XS qw(LoadFile);
+use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count);
 
 use Brands;
 use Client::Account;
 use LandingCompany::Registry;
 use Finance::Asset::Market::Types;
+use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Runtime;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
-use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
 use BOM::Database::DataMapper::FinancialMarketBet;
-use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count);
 use BOM::Database::ClientDB;
 use BOM::Database::Model::Account;
 use BOM::Database::Model::DataCollection::QuantsBetVariables;
@@ -233,7 +233,7 @@ sub stats_start {
 
     my $broker    = lc($client->broker_code);
     my $virtual   = $client->is_virtual ? 'yes' : 'no';
-    my $rmgenv    = BOM::System::Config::env;
+    my $rmgenv    = BOM::Platform::Config::env;
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
     my $tags      = {tags => ["broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "contract_class:$bet_class",]};
 
@@ -316,26 +316,9 @@ sub stats_stop {
             my $tags = {tags => ["broker:" . lc($broker), "virtual:" . ($broker =~ /^VR/ ? "yes" : "no"), @tags]};
             stats_count("transaction.buy.attempt", $xd->{attempt}, $tags);
             stats_count("transaction.buy.success", $xd->{success}, $tags);
-
-            next if $broker =~ /^VR/ or $data->{rmgenv} ne 'production';
-
-            my $usd_amount = $xd->{success} * int(in_USD($self->price, $self->contract->currency) * 100);
-            stats_count('business.turnover_usd',       $usd_amount, $tags);
-            stats_count('business.buy_minus_sell_usd', $usd_amount, $tags);
         }
         return;
     }
-
-    if ($data->{rmgenv} eq 'production' and $data->{virtual} eq 'no') {
-        my $usd_amount = int(in_USD($self->price, $self->contract->currency) * 100);
-        if ($what eq 'buy') {
-            stats_count('business.turnover_usd',       $usd_amount, $tags);
-            stats_count('business.buy_minus_sell_usd', $usd_amount, $tags);
-        } elsif ($what eq 'sell') {
-            stats_count('business.buy_minus_sell_usd', -$usd_amount, $tags);
-        }
-    }
-
     return;
 }
 
@@ -345,7 +328,7 @@ sub calculate_limits {
 
     my %limits;
 
-    my $static_config = BOM::System::Config::quants;
+    my $static_config = BOM::Platform::Config::quants;
 
     my $contract = $self->contract;
     my $currency = $contract->currency;
@@ -1691,7 +1674,7 @@ sub ___validate_stake_limit {
 
     my $stake_limit =
         $landing_company->short eq 'maltainvest'
-        ? BOM::System::Config::quants->{bet_limits}->{min_stake}->{maltainvest}->{$currency}
+        ? BOM::Platform::Config::quants->{bet_limits}->{min_stake}->{maltainvest}->{$currency}
         : $contract->staking_limits->{min};    # minimum is always a stake check
 
     if ($contract->ask_price < $stake_limit) {
@@ -1748,7 +1731,7 @@ sub __validate_payout_limit {
             );
         }
 
-        my $custom_limit = BOM::System::Config::quants->{risk_profile}{$custom_profile}{payout}{$contract->currency};
+        my $custom_limit = BOM::Platform::Config::quants->{risk_profile}{$custom_profile}{payout}{$contract->currency};
         if (defined $custom_limit and (my $payout = $self->payout) > $custom_limit) {
             return Error::Base->cuss(
                 -type              => 'PayoutLimitExceeded',
@@ -2030,7 +2013,7 @@ sub sell_expired_contracts {
 
     my $broker    = lc($client->broker_code);
     my $virtual   = $client->is_virtual ? 'yes' : 'no';
-    my $rmgenv    = BOM::System::Config::env;
+    my $rmgenv    = BOM::Platform::Config::env;
     my $sell_type = (defined $source and exists $source_to_sell_type{$source}) ? $source_to_sell_type{$source} : 'expired';
     my @tags      = ("broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "sell_type:$sell_type");
 
@@ -2098,10 +2081,6 @@ sub sell_expired_contracts {
     }
     for my $class (keys %stats_success) {
         stats_count("transaction.sell.success", $stats_success{$class}->[0], {tags => [@tags, "contract_class:$class"]});
-        if ($rmgenv eq 'production' and $virtual eq 'no') {
-            my $usd_amount = int(in_USD($stats_success{$class}->[1], $currency) * 100);
-            stats_count('business.buy_minus_sell_usd', -$usd_amount, {tags => [@tags, "contract_class:$class"]});
-        }
     }
 
     $result->{skip_contract}       = $skip_contract;

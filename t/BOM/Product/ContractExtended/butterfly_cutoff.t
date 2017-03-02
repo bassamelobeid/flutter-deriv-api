@@ -147,8 +147,8 @@ sub _sample_surface {
 
     my $surface = Quant::Framework::VolSurface::Delta->new(
         underlying       => $underlying,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
         recorded_date    => $bet_start,
         deltas           => [25, 50, 75],
         surface          => {

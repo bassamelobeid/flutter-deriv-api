@@ -14,7 +14,7 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use Cache::RedisDB;
-use BOM::System::RedisReplicated;
+use BOM::Platform::RedisReplicated;
 
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
@@ -58,7 +58,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => 0.9936,
 });
 
-my $redis = BOM::System::RedisReplicated::redis_write();
+my $redis = BOM::Platform::RedisReplicated::redis_write();
 my $undec_key   = "DECIMATE_frxAUDCAD" . "_31m_FULL";
 my $encoder = Sereal::Encoder->new({
         canonical => 1,
