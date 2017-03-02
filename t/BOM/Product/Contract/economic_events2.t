@@ -11,7 +11,7 @@ use Date::Utility;
 use Postgres::FeedDB::Spot::Tick;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::System::Chronicle;
+use BOM::Platform::Chronicle;
 initialize_realtime_ticks_db();
 
 use BOM::Product::ContractFactory qw( produce_contract );
@@ -66,8 +66,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 );
 
 my $vs = Volatility::Seasonality->new(
-    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
-    chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
+    chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
+    chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
 );
 
 foreach my $u (qw(frxUSDJPY frxGBPUSD frxGBPJPY)) {

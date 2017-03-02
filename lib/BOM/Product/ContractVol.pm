@@ -268,8 +268,8 @@ sub _build_empirical_volsurface {
     my $self = shift;
     return VolSurface::Empirical->new(
         underlying       => $self->underlying,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
     );
 }
 
@@ -285,13 +285,15 @@ sub _build_ticks_for_volatility_calculation {
     # If we price a contract with duration less that 15 minutes, we will still use a 15-minute period of ticks to calculate its volatility
     my $minimum_interval = 900;
     my $interval = Time::Duration::Concise->new(interval => max(900, $self->date_expiry->epoch - $self->effective_start->epoch) . 's');
+    # to avoid race condition in spot for volatility calculation, we request for ticks one second before the contract pricing time.
+    my $volatility_request_time = $self->effective_start->minus_time_interval('1s');
 
     my $backprice = ($self->underlying->for_date) ? 1 : 0;
 
     my $ticks = BOM::Market::DataDecimate->new()->decimate_cache_get({
         underlying  => $self->underlying,
-        start_epoch => $self->effective_start->epoch - $interval->seconds,
-        end_epoch   => $self->effective_start->epoch,
+        start_epoch => $volatility_request_time->epoch - $interval->seconds,
+        end_epoch   => $volatility_request_time->epoch,
         backprice   => $backprice,
     });
 

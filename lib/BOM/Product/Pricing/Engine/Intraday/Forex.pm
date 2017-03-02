@@ -12,7 +12,7 @@ use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use Volatility::Seasonality;
 use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::Market::DataDecimate;
 
 sub clone {
@@ -708,7 +708,7 @@ sub _build_risk_markup {
     }
     my $open_at_start = $bet->underlying->calendar->is_open_at($bet->date_start);
 
-    if ($open_at_start and $bet->underlying->is_in_quiet_period) {
+    if ($open_at_start and $bet->underlying->is_in_quiet_period($bet->date_pricing)) {
         my $quiet_period_markup = Math::Util::CalculatedValue::Validatable->new({
             name        => 'quiet_period_markup',
             description => 'Intraday::Forex markup factor for underlyings in the quiet period',
@@ -813,7 +813,7 @@ has [qw(_vega_formula _delta_formula)] => (
 sub _build_intraday_vega_correction {
     my $self = shift;
 
-    my $vmr = BOM::System::Config::quants->{commission}->{intraday}->{historical_vol_meanrev};
+    my $vmr = BOM::Platform::Config::quants->{commission}->{intraday}->{historical_vol_meanrev};
     my $vc  = Math::Util::CalculatedValue::Validatable->new({
         name        => 'vega_correction',
         description => 'correction for uncertianty of vol',

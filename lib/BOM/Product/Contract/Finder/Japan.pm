@@ -7,7 +7,7 @@ use Date::Utility;
 use LandingCompany::Offerings qw(get_offerings_flyby);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::System::Chronicle;
+use BOM::Platform::Chronicle;
 use Exporter qw( import );
 our @EXPORT_OK = qw(available_contracts_for_symbol);
 

@@ -9,7 +9,7 @@ use Test::More;    # tests => 4;
 use Test::Exception;
 use Guard;
 use Client::Account;
-use BOM::System::Password;
+use BOM::Platform::Password;
 use BOM::Platform::Client::Utility;
 
 use ExpiryQueue ();
@@ -41,7 +41,7 @@ $datadog_mock->mock(count     => sub { shift; push @datadog_actions, to_json + {
 
 {
     no warnings 'redefine';
-    *BOM::System::Config::env = sub { return 'production' };    # for testing datadog
+    *BOM::Platform::Config::env = sub { return 'production' };    # for testing datadog
 }
 
 sub reset_datadog {
@@ -57,18 +57,6 @@ sub check_datadog {
     } else {
         ok + (!!grep { $_ eq $item } @datadog_actions), "found datadog action: $item";
     }
-}
-
-{
-    my %exch = (
-        USD => 2,
-        EUR => 3,
-    );
-    no warnings 'redefine';
-    *BOM::Product::Transaction::in_USD = sub {    # for testing datadog
-        my ($amount, $currency) = @_;
-        return $amount * $exch{$currency};
-    };
 }
 
 my $now = Date::Utility->new;
@@ -156,7 +144,7 @@ sub create_client {
     my $broker = shift || 'CR';
     return Client::Account->register_and_return_new_client({
         broker_code      => $broker,
-        client_password  => BOM::System::Password::hashpw('12345678'),
+        client_password  => BOM::Platform::Password::hashpw('12345678'),
         salutation       => 'Ms',
         last_name        => 'Doe',
         first_name       => 'Jane' . time . '.' . int(rand 1000000000),
@@ -492,7 +480,7 @@ subtest 'single contract fails in database', sub {
 };
 
 subtest 'batch-buy multiple databases and datadog', sub {
-    plan tests => 27;
+    plan tests => 23;
     lives_ok {
         my $clm = create_client 'VRTC';    # manager
         my @cl;
@@ -636,50 +624,6 @@ subtest 'batch-buy multiple databases and datadog', sub {
                 ]}];
         check_datadog count => [
             "transaction.buy.success" => 2,
-            {
-                tags => [
-                    qw/ broker:mf
-                        virtual:no
-                        rmgenv:production
-                        contract_class:higher_lower_bet
-                        amount_type:payout
-                        expiry_type:duration /
-                ]}];
-        check_datadog count => [
-            "business.turnover_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'),
-            {
-                tags => [
-                    qw/ broker:cr
-                        virtual:no
-                        rmgenv:production
-                        contract_class:higher_lower_bet
-                        amount_type:payout
-                        expiry_type:duration /
-                ]}];
-        check_datadog count => [
-            "business.turnover_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'),
-            {
-                tags => [
-                    qw/ broker:mf
-                        virtual:no
-                        rmgenv:production
-                        contract_class:higher_lower_bet
-                        amount_type:payout
-                        expiry_type:duration /
-                ]}];
-        check_datadog count => [
-            "business.buy_minus_sell_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'),
-            {
-                tags => [
-                    qw/ broker:cr
-                        virtual:no
-                        rmgenv:production
-                        contract_class:higher_lower_bet
-                        amount_type:payout
-                        expiry_type:duration /
-                ]}];
-        check_datadog count => [
-            "business.buy_minus_sell_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'),
             {
                 tags => [
                     qw/ broker:mf
