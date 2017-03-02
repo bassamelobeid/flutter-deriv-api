@@ -11,8 +11,10 @@ use Date::Utility;
 use Quant::Framework::Utils::Test;
 use Quant::Framework::StorageAccessor;
 use Quant::Framework::CorporateAction;
+use LandingCompany::Offerings qw(reinitialise_offerings);
 
 my $now = Date::Utility->new;
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $storage_accessor = Quant::Framework::StorageAccessor->new(
     chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
