@@ -827,7 +827,8 @@ subtest $method => sub {
         'shortcode'       => 'CALL_FRXAUDCAD_196.72_1127288260_1127288662_S0P_0',
         'underlying'      => 'frxAUDCAD',
         is_valid_to_sell  => 0,
-        validation_error  => 'This contract has been sold.'
+        validation_error  => 'This contract has been sold.',
+        barrier           => 'S0P',
     };
     foreach my $key (keys %$expected_result) {
         cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
