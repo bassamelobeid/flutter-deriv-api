@@ -63,7 +63,7 @@ subtest 'expiry miss' => sub {
         is roundnear(0.001, $call->{amount}), 0.585, 'correct tv for CALL';
         is roundnear(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.184, 'correct vol for call';
         is roundnear(0.001, $put->{amount}), 0.057, 'correct tv for PUT';
-        is roundnear(0.001, $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.5, 'correct vol for put';
+        is roundnear(0.001, $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.25, 'correct vol for put';
     }
     'generic';
 
