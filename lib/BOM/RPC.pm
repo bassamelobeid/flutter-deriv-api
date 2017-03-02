@@ -74,7 +74,7 @@ sub _validate_tnc {
     my $params = shift;
 
     # we shouldn't get to this error, so we can die it directly
-    my $client = $params->{client} // die "client should be authed before calling this action";
+    my $client = $params->{client} // die "client should be authenticated before calling this action";
     return $params if $client->is_virtual;
 
     my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
@@ -88,13 +88,35 @@ sub _validate_tnc {
     return $params;
 }
 
+#
+# don't allow to trade for unwelcome_clients
+# and for MLT and MX we don't allow trading without confirmed age
+#
+
+sub _check_trade_status {
+    my $params = shift;
+
+    # we shouldn't get to this error, so we can die it directly
+    my $client = $params->{client} // die "client should be authenticated before calling this action";
+    return $params
+        if $client->is_virtual;
+    unless ($client->allow_trade) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'PleaseContactSupport',
+            message_to_client => localize('Please contact customer support for more information.'),
+        });
+    }
+    return $params;
+}
+
 sub register {
     my ($method, $code, $before_actions) = @_;
 
     # check actions at register time
     my %actions = (
-        auth         => \&_auth,
-        validate_tnc => \&_validate_tnc,
+        auth               => \&_auth,
+        validate_tnc       => \&_validate_tnc,
+        check_trade_status => \&_check_trade_status,
     );
     my @before_actions;
     for my $hook (@$before_actions) {
@@ -199,9 +221,12 @@ sub startup {
         ['ticks_history', \&BOM::RPC::v3::TickStreamer::ticks_history],
         ['ticks',         \&BOM::RPC::v3::TickStreamer::ticks],
 
-        ['buy',                                \&BOM::RPC::v3::Transaction::buy,                                [qw(auth validate_tnc)]],
-        ['buy_contract_for_multiple_accounts', \&BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts, [qw(auth validate_tnc)]],
-        ['sell',                               \&BOM::RPC::v3::Transaction::sell,                               [qw(auth validate_tnc)]],
+        ['buy', \&BOM::RPC::v3::Transaction::buy, [qw(auth validate_tnc check_trade_status)]],
+        [
+            'buy_contract_for_multiple_accounts', \&BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts,
+            [qw(auth validate_tnc check_trade_status)]
+        ],
+        ['sell', \&BOM::RPC::v3::Transaction::sell, [qw(auth validate_tnc check_trade_status)]],
 
         ['trading_times',         \&BOM::RPC::v3::MarketDiscovery::trading_times],
         ['asset_index',           \&BOM::RPC::v3::MarketDiscovery::asset_index],
