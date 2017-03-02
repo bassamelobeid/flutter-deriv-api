@@ -15,8 +15,10 @@ use ZMQ::Constants qw(ZMQ_PUB);
 use ZMQ::LibZMQ3;
 use YAML::XS 0.35;
 use Net::EmptyPort qw(empty_port);
+use LandingCompany::Offerings qw(reinitialise_offerings);
 
 BOM::Platform::Runtime->instance->app_config;
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $test_pid = $$;
 my $dir      = File::Temp->newdir;
