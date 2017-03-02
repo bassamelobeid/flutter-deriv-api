@@ -75,7 +75,7 @@ sub mt5_new_account {
         }
     } elsif ($account_type eq 'gaming' or $account_type eq 'financial') {
         # 5 Sept 2016: only CR and Champion fully authenticated client can open MT real a/c
-        return BOM::RPC::v3::Utility::permission_error() if ($client->landing_company->short !~ '^(?:costarica|champion)$');
+        return BOM::RPC::v3::Utility::permission_error() if ($client->landing_company->short !~ /^(?:costarica|champion)$/);
 
         if ($account_type eq 'financial') {
             return BOM::RPC::v3::Utility::create_error({
