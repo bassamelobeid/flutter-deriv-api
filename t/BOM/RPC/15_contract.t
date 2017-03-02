@@ -700,6 +700,7 @@ subtest $method => sub {
             'longcode'     => "Win payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.",
             'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
+            'barrier'      => 'S0P',
         },
         'result is ok'
     );
