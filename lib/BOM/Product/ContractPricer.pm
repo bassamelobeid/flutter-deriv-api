@@ -256,13 +256,14 @@ sub _create_new_interface_engine {
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
         my $backprice = ($self->underlying->for_date) ? 1 : 0;
+        my $apply_equal_tick_discount = ($self->code eq 'CALLE' or $self->code eq 'PUTE') ? 0 : 1;
         %pricing_parameters = (
-
-            contract_type     => $self->pricing_code,
-            underlying_symbol => $self->underlying->symbol,
-            date_start        => $self->effective_start,
-            date_pricing      => $self->date_pricing,
-            ticks             => BOM::Market::DataDecimate->new()->tick_cache_get_num_ticks({
+            apply_equal_tick_discount => $apply_equal_tick_discount,
+            contract_type             => $self->pricing_code,
+            underlying_symbol         => $self->underlying->symbol,
+            date_start                => $self->effective_start,
+            date_pricing              => $self->date_pricing,
+            ticks                     => BOM::Market::DataDecimate->new()->tick_cache_get_num_ticks({
                     underlying => $self->underlying,
                     end_epoch  => $self->date_start->epoch,
                     num        => 20,
