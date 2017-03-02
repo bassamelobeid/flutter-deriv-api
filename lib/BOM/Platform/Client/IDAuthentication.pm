@@ -57,6 +57,7 @@ sub _do_proveid {
     my $client = $self->client;
 
     my $prove_id_result = $self->_fetch_proveid || {};
+    my $skip_request_for_id;
 
     my $set_status = sub {
         my ($status, $reason, $description) = @_;
@@ -69,10 +70,10 @@ sub _do_proveid {
     if ($prove_id_result->{deceased} or $prove_id_result->{fraud}) {
         my $key = $prove_id_result->{deceased} ? "deceased" : "fraud";
         $set_status->('disabled', 'PROVE ID INDICATES ' . uc($key), "Client was flagged as $key by Experian Prove ID check");
+        $skip_request_for_id = 1;
     }
-    # we have a match, but result is DENY
-    elsif ( $prove_id_result->{deny}
-        and defined $prove_id_result->{matches}
+    # we have a match, handle it
+    elsif (defined $prove_id_result->{matches}
         and (scalar @{$prove_id_result->{matches}} > 0))
     {
         my $type;
@@ -84,30 +85,23 @@ sub _do_proveid {
         elsif ((($type) = grep { /(PEP|Directors)/ } @{$prove_id_result->{matches}})) {
             $set_status->('unwelcome', "$type match", "$type match");
         } else {
-            $set_status->('unwelcome', 'EXPERIAN PROVE ID RETURNED DENY', join(', ', @{$prove_id_result->{matches}}));
+            $set_status->('unwelcome', 'EXPERIAN PROVE ID RETURNED MATCH', join(', ', @{$prove_id_result->{matches}}));
         }
+        $skip_request_for_id = 1;
     }
     # County Court Judgement => unwelcome client
     elsif ($prove_id_result->{CCJ}) {
         $set_status->('unwelcome', 'PROVE ID INDICATES CCJ', 'Client was flagged as CCJ by Experian Prove ID check');
-    }
-    # result is FULLY AUTHENTICATED => age verified as IOM GSC no longer accept Experian to authenticate clients
-    elsif ($prove_id_result->{fully_authenticated}) {
-        $set_status->('age_verification', 'EXPERIAN PROVE ID KYC PASSED ON FIRST DEPOSIT', 'passed PROVE ID KYC and is age verified');
+        $skip_request_for_id = 1;
     }
     # result is AGE VERIFIED ONLY
-    elsif ($prove_id_result->{age_verified}) {
-        $set_status->('age_verification', 'EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION', 'could only get enough score for age verification.');
+    if ($prove_id_result->{age_verified}) {
+        $set_status->('age_verification', 'EXPERIAN PROVE ID KYC PASSED AGE VERIFICATION', 'could get enough score for age verification.');
+        $skip_request_for_id = 1;
     }
-    # no verifications => unwelcome client
-    elsif (exists $prove_id_result->{num_verifications} and $prove_id_result->{num_verifications} eq 0) {
-        $set_status->('unwelcome', 'PROVE ID INDICATES NO VERIFICATIONS', 'proveid indicates no verifications');
-    }
-    # failed to authenticate
-    else {
-        $set_status->('unwelcome', 'PROVEID_AUTH_FAILED', 'Failed to authenticate this user via PROVE ID through Experian');
-        return $self->_request_id_authentication;
-    }
+
+    # unwelcome status will be set up there
+    return $self->_request_id_authentication unless $skip_request_for_id;
 
     return;
 }
@@ -116,6 +110,9 @@ sub _request_id_authentication {
     my $self   = shift;
     my $client = $self->client;
     my $status = 'cashier_locked';
+
+    # special case for MLT/MX: forbid them to trade before age_verified. cashier_locked enables to trade
+    $status = "unwelcome" if $client->landing_company->short eq 'malta' or $client->landing_company->short eq 'iom';
 
     $client->set_status($status, 'system', 'Experian id authentication failed on first deposit');
     $client->save;
