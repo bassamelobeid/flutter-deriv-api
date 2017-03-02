@@ -9,7 +9,7 @@ use Test::Exception;
 use Guard;
 use Crypt::NamedKeys;
 use Client::Account;
-use BOM::System::Password;
+use BOM::Platform::Password;
 use BOM::Platform::Client::Utility;
 
 use Date::Utility;
@@ -121,7 +121,7 @@ sub create_client {
 
     return Client::Account->register_and_return_new_client({
         broker_code      => $broker,
-        client_password  => BOM::System::Password::hashpw('12345678'),
+        client_password  => BOM::Platform::Password::hashpw('12345678'),
         salutation       => 'Ms',
         last_name        => 'Doe',
         first_name       => 'Jane' . time . '.' . int(rand 1000000000),
@@ -1723,7 +1723,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
             my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 1000.00"; 1000.00 });
             note "change quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit->{USD}} to 29.99";
-            local BOM::System::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
+            local BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
 
             is +BOM::Product::Transaction->new({
                     client      => $cl,
@@ -1757,7 +1757,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
         # retry with a slightly higher limit should succeed
         $error = do {
             note "change quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} to 30";
-            local BOM::System::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 30;
+            local BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 30;
 
             my $contract_r100 = produce_contract({
                 underlying   => $underlying_r100,
@@ -1819,7 +1819,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation: selling bets on the way'
         my $txn_id_buy_expired_contract;
         my $error = do {
             note "change quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} to 29.99";
-            local BOM::System::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
+            local BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
 
             is +BOM::Product::Transaction->new({
                     client      => $cl,

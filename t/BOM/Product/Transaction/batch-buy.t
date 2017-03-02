@@ -9,7 +9,7 @@ use Test::More;    # tests => 4;
 use Test::Exception;
 use Guard;
 use Client::Account;
-use BOM::System::Password;
+use BOM::Platform::Password;
 use BOM::Platform::Client::Utility;
 
 use ExpiryQueue ();
@@ -41,7 +41,7 @@ $datadog_mock->mock(count     => sub { shift; push @datadog_actions, to_json + {
 
 {
     no warnings 'redefine';
-    *BOM::System::Config::env = sub { return 'production' };    # for testing datadog
+    *BOM::Platform::Config::env = sub { return 'production' };    # for testing datadog
 }
 
 sub reset_datadog {
@@ -144,7 +144,7 @@ sub create_client {
     my $broker = shift || 'CR';
     return Client::Account->register_and_return_new_client({
         broker_code      => $broker,
-        client_password  => BOM::System::Password::hashpw('12345678'),
+        client_password  => BOM::Platform::Password::hashpw('12345678'),
         salutation       => 'Ms',
         last_name        => 'Doe',
         first_name       => 'Jane' . time . '.' . int(rand 1000000000),

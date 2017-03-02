@@ -10,7 +10,7 @@ use List::Util q(any);
 use LandingCompany::Registry;
 
 use BOM::Platform::Runtime;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::Platform::Context qw(localize);
 
 has missing_market_data => (
@@ -674,8 +674,8 @@ sub _build_date_expiry_blackouts {
             push @periods, [$end_of_trading->minus_time_interval($expiry_blackout)->epoch, $end_of_trading->epoch];
         }
     } elsif ($self->expiry_daily and $underlying->market->equity and not $self->is_atm_bet) {
-        my $start_of_period = BOM::System::Config::quants->{bet_limits}->{holiday_blackout_start};
-        my $end_of_period   = BOM::System::Config::quants->{bet_limits}->{holiday_blackout_end};
+        my $start_of_period = BOM::Platform::Config::quants->{bet_limits}->{holiday_blackout_start};
+        my $end_of_period   = BOM::Platform::Config::quants->{bet_limits}->{holiday_blackout_end};
         if ($self->date_start->day_of_year >= $start_of_period or $self->date_start->day_of_year <= $end_of_period) {
             my $year = $self->date_start->day_of_year > $start_of_period ? $date_start->year : $date_start->year - 1;
             my $end_blackout = Date::Utility->new($year . '-12-31')->plus_time_interval($end_of_period . 'd23h59m59s');

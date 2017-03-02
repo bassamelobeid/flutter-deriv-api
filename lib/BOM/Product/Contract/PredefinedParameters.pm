@@ -16,7 +16,7 @@ use LandingCompany::Offerings qw(get_offerings_flyby);
 
 use BOM::Product::Contract::Category;
 use BOM::MarketData qw(create_underlying);
-use BOM::System::RedisReplicated;
+use BOM::Platform::RedisReplicated;
 use BOM::Platform::Runtime;
 
 my %supported_contract_types = (
@@ -84,7 +84,7 @@ sub get_trading_periods {
     return generate_trading_periods($underlying->symbol, $underlying->for_date) if $underlying->for_date;
 
     my $key = join '_', ('trading_period', $underlying->symbol, $date->date, $date->hour);
-    my $cache = BOM::System::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
+    my $cache = BOM::Platform::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
 
     return from_json($cache) if ($cache);
 
@@ -140,7 +140,7 @@ sub generate_trading_periods {
 
     my $next = next_generation_epoch($date);
     my $ttl = max(1, $next - $date->epoch);
-    BOM::System::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json([grep { defined } @trading_periods]), 'EX', $ttl);
+    BOM::Platform::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json([grep { defined } @trading_periods]), 'EX', $ttl);
 
     return \@trading_periods;
 }
@@ -163,7 +163,7 @@ sub update_predefined_highlow {
 
     foreach my $period (@periods) {
         my $key = join '_', ('highlow', $underlying->symbol, $period->{date_start}->{epoch}, $period->{date_expiry}->{epoch});
-        my $cache = BOM::System::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
+        my $cache = BOM::Platform::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
         my ($new_high, $new_low);
 
         if ($cache) {
@@ -181,7 +181,7 @@ sub update_predefined_highlow {
         }
         my $ttl = max(1, $period->{date_expiry}->{epoch} - $now);
         # not using chronicle here because we don't want to save historical highlow data
-        BOM::System::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json([$new_high, $new_low]), 'EX', $ttl);
+        BOM::Platform::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json([$new_high, $new_low]), 'EX', $ttl);
     }
 
     return 1;
@@ -200,7 +200,7 @@ sub _get_predefined_highlow {
     }
 
     my $highlow_key = join '_', ('highlow', $underlying->symbol, $period->{date_start}->{epoch}, $period->{date_expiry}->{epoch});
-    my $cache = BOM::System::RedisReplicated::redis_read->get($cache_namespace . '::' . $highlow_key);
+    my $cache = BOM::Platform::RedisReplicated::redis_read->get($cache_namespace . '::' . $highlow_key);
 
     return @{from_json($cache)} if ($cache);
     return ();
@@ -356,7 +356,7 @@ sub _calculate_barriers {
 
     my ($underlying, $trading_period) = @{$args}{qw(underlying trading_periods)};
     my $key = join '_', ('barriers', $underlying->symbol, $trading_period->{date_start}->{epoch}, $trading_period->{date_expiry}->{epoch});
-    my $cache = BOM::System::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
+    my $cache = BOM::Platform::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
 
     return from_json($cache) if $cache;
 
@@ -386,7 +386,7 @@ sub _calculate_barriers {
     $barriers{50} = $spot_at_start;
 
     my $ttl = max(1, $trading_period->{date_expiry}->{epoch} - $trading_period->{date_start}->{epoch});
-    BOM::System::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json(\%barriers), 'EX', $ttl);
+    BOM::Platform::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json(\%barriers), 'EX', $ttl);
 
     return \%barriers;
 }

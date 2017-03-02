@@ -23,7 +23,7 @@ use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Runtime;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
@@ -233,7 +233,7 @@ sub stats_start {
 
     my $broker    = lc($client->broker_code);
     my $virtual   = $client->is_virtual ? 'yes' : 'no';
-    my $rmgenv    = BOM::System::Config::env;
+    my $rmgenv    = BOM::Platform::Config::env;
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
     my $tags      = {tags => ["broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "contract_class:$bet_class",]};
 
@@ -328,7 +328,7 @@ sub calculate_limits {
 
     my %limits;
 
-    my $static_config = BOM::System::Config::quants;
+    my $static_config = BOM::Platform::Config::quants;
 
     my $contract = $self->contract;
     my $currency = $contract->currency;
@@ -1674,7 +1674,7 @@ sub ___validate_stake_limit {
 
     my $stake_limit =
         $landing_company->short eq 'maltainvest'
-        ? BOM::System::Config::quants->{bet_limits}->{min_stake}->{maltainvest}->{$currency}
+        ? BOM::Platform::Config::quants->{bet_limits}->{min_stake}->{maltainvest}->{$currency}
         : $contract->staking_limits->{min};    # minimum is always a stake check
 
     if ($contract->ask_price < $stake_limit) {
@@ -1731,7 +1731,7 @@ sub __validate_payout_limit {
             );
         }
 
-        my $custom_limit = BOM::System::Config::quants->{risk_profile}{$custom_profile}{payout}{$contract->currency};
+        my $custom_limit = BOM::Platform::Config::quants->{risk_profile}{$custom_profile}{payout}{$contract->currency};
         if (defined $custom_limit and (my $payout = $self->payout) > $custom_limit) {
             return Error::Base->cuss(
                 -type              => 'PayoutLimitExceeded',
@@ -2013,7 +2013,7 @@ sub sell_expired_contracts {
 
     my $broker    = lc($client->broker_code);
     my $virtual   = $client->is_virtual ? 'yes' : 'no';
-    my $rmgenv    = BOM::System::Config::env;
+    my $rmgenv    = BOM::Platform::Config::env;
     my $sell_type = (defined $source and exists $source_to_sell_type{$source}) ? $source_to_sell_type{$source} : 'expired';
     my @tags      = ("broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "sell_type:$sell_type");
 
