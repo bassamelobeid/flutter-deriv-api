@@ -4,15 +4,14 @@ package BOM::Platform::User;
 use strict;
 use warnings;
 
-use Date::Utility;
 use Try::Tiny;
-use DataDog::DogStatsd::Helper qw(stats_inc);
+use Date::Utility;
 
 use Client::Account;
 
 use BOM::Database::UserDB;
-use BOM::System::Password;
-use BOM::System::AuditLog;
+use BOM::Platform::Password;
+use BOM::Platform::AuditLog;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize);
 
@@ -66,14 +65,14 @@ sub login {
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins) {
 
         $error = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
-        BOM::System::AuditLog::log('system suspend all login', $self->email);
+        BOM::Platform::AuditLog::log('system suspend all login', $self->email);
 
     } elsif ($cfl = $self->failed_login and $cfl->fail_count > 5 and $cfl->last_attempt->epoch > time - 300) {
 
         $error = localize('Sorry, you have already had too many unsuccessful attempts. Please try again in 5 minutes.');
-        BOM::System::AuditLog::log('failed login > 5 times', $self->email);
+        BOM::Platform::AuditLog::log('failed login > 5 times', $self->email);
 
-    } elsif (not $is_social_login and not BOM::System::Password::checkpw($args{password}, $self->password)) {
+    } elsif (not $is_social_login and not BOM::Platform::Password::checkpw($args{password}, $self->password)) {
 
         my $fail_count = $cfl ? $cfl->fail_count : 0;
         $self->failed_login({
@@ -83,10 +82,10 @@ sub login {
         $self->save;
 
         $error = localize('Incorrect email or password.');
-        BOM::System::AuditLog::log('incorrect email or password', $self->email);
+        BOM::Platform::AuditLog::log('incorrect email or password', $self->email);
     } elsif (not @clients = $self->clients) {
         $error = localize('This account is unavailable. For any questions please contact Customer Support.');
-        BOM::System::AuditLog::log('Account disabled', $self->email);
+        BOM::Platform::AuditLog::log('Account disabled', $self->email);
     } elsif (
         @self_excluded = grep {
             $_->get_self_exclusion_until_dt
@@ -104,7 +103,7 @@ sub login {
             Date::Utility->new($tmp_a)->epoch <=> Date::Utility->new($tmp_b)->epoch
         } @self_excluded;
         $error = localize('Sorry, you have excluded yourself until [_1].', $client->get_self_exclusion_until_dt);
-        BOM::System::AuditLog::log('Account self excluded', $self->email);
+        BOM::Platform::AuditLog::log('Account self excluded', $self->email);
     }
 
     $self->add_login_history({
@@ -115,13 +114,11 @@ sub login {
     $self->save;
 
     if ($error) {
-        stats_inc("business.log_in.failure");
         return {error => $error};
     }
 
     $cfl->delete if $cfl;    # delete client failed login
-    BOM::System::AuditLog::log('successful login', $self->email);
-    stats_inc("business.log_in.success");
+    BOM::Platform::AuditLog::log('successful login', $self->email);
 
     my $success = {success => 1};
 

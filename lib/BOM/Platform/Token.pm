@@ -17,7 +17,7 @@ use JSON;
 use Array::Utils qw (array_minus);
 use Digest::MD5 qw(md5_hex);
 
-use BOM::System::RedisReplicated;
+use BOM::Platform::RedisReplicated;
 
 use strict;
 use warnings;
@@ -40,7 +40,7 @@ sub new {                                    ## no critic RequireArgUnpack
 
     my $self = ref $_[0] ? $_[0] : {@_};
     if ($self->{token}) {
-        $self = eval { JSON::from_json(BOM::System::RedisReplicated::redis_read()->get('VERIFICATION_TOKEN::' . $self->{token})) } || {};
+        $self = eval { JSON::from_json(BOM::Platform::RedisReplicated::redis_read()->get('VERIFICATION_TOKEN::' . $self->{token})) } || {};
         return bless {}, $package unless $self->{token};
         return bless $self, $package;
     }
@@ -60,15 +60,15 @@ sub new {                                    ## no critic RequireArgUnpack
     )->string_from(join('', 'a' .. 'z', 'A' .. 'Z', '0' .. '9'), 48);
 
     my $key = md5_hex($self->{created_for} . $self->{email});
-    if (my $token = BOM::System::RedisReplicated::redis_write()->get('VERIFICATION_TOKEN_INDEX::' . $key)) {
-        BOM::System::RedisReplicated::redis_write()->del('VERIFICATION_TOKEN::' . $token);
+    if (my $token = BOM::Platform::RedisReplicated::redis_write()->get('VERIFICATION_TOKEN_INDEX::' . $key)) {
+        BOM::Platform::RedisReplicated::redis_write()->del('VERIFICATION_TOKEN::' . $token);
     }
 
     $self->{expires_in} ||= 3600;
-    BOM::System::RedisReplicated::redis_write()->set('VERIFICATION_TOKEN::' . $self->{token}, JSON::to_json($self));
-    BOM::System::RedisReplicated::redis_write()->expire('VERIFICATION_TOKEN::' . $self->{token}, $self->{expires_in});
-    BOM::System::RedisReplicated::redis_write()->set('VERIFICATION_TOKEN_INDEX::' . $key, $self->{token});
-    BOM::System::RedisReplicated::redis_write()->expire('VERIFICATION_TOKEN_INDEX::' . $key, $self->{expires_in});
+    BOM::Platform::RedisReplicated::redis_write()->set('VERIFICATION_TOKEN::' . $self->{token}, JSON::to_json($self));
+    BOM::Platform::RedisReplicated::redis_write()->expire('VERIFICATION_TOKEN::' . $self->{token}, $self->{expires_in});
+    BOM::Platform::RedisReplicated::redis_write()->set('VERIFICATION_TOKEN_INDEX::' . $key, $self->{token});
+    BOM::Platform::RedisReplicated::redis_write()->expire('VERIFICATION_TOKEN_INDEX::' . $key, $self->{expires_in});
     return bless $self, $package;
 }
 
@@ -95,8 +95,8 @@ Deletes from redis
 sub delete_token {    ## no critic
     my $self = shift;
     return unless $self->{token};
-    BOM::System::RedisReplicated::redis_write()->del('VERIFICATION_TOKEN::' . $self->{token});
-    BOM::System::RedisReplicated::redis_write()->del('VERIFICATION_TOKEN_INDEX::' . md5_hex($self->{created_for} . $self->{email}))
+    BOM::Platform::RedisReplicated::redis_write()->del('VERIFICATION_TOKEN::' . $self->{token});
+    BOM::Platform::RedisReplicated::redis_write()->del('VERIFICATION_TOKEN_INDEX::' . md5_hex($self->{created_for} . $self->{email}))
         if ($self->{created_for} and $self->{email});
 }
 
