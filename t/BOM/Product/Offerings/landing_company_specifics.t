@@ -177,7 +177,6 @@ subtest 'legal allowed underlyings' => sub {
         DEAIR
         INMARUTI
         INRIL
-        INTATAMOTORS
         INTATASTEEL
         INBHARTIARTL
         OTC_IXIC
@@ -213,7 +212,6 @@ subtest 'legal allowed underlyings' => sub {
         frxXPDUSD
         frxGBPUSD
         WLDGBP
-        DJI
         FCHI
         frxGBPNZD
         frxXAGUSD
