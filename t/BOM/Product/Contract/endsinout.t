@@ -51,7 +51,7 @@ subtest 'expiry miss' => sub {
         is $c->code,         'EXPIRYMISS';
         is $c->pricing_code, 'EXPIRYMISS';
         is $c->sentiment,    'high_vol';
-        is $c->ask_price,    '6.8';
+        is $c->ask_price,    '6.84';
         ok !$c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
         is_deeply $c->supported_start_types, ['spot'];
@@ -61,9 +61,9 @@ subtest 'expiry miss' => sub {
         my $call = $c->debug_information->{CALL}{base_probability};
         my $put  = $c->debug_information->{PUT}{base_probability};
         is roundnear(0.001, $call->{amount}), 0.585, 'correct tv for CALL';
-        is roundnear(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.176, 'correct vol for call';
-        is roundnear(0.001, $put->{amount}), 0.053, 'correct tv for PUT';
-        is roundnear(0.001, $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.244, 'correct vol for put';
+        is roundnear(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.184, 'correct vol for call';
+        is roundnear(0.001, $put->{amount}), 0.057, 'correct tv for PUT';
+        is roundnear(0.001, $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.5, 'correct vol for put';
     }
     'generic';
 
@@ -112,7 +112,7 @@ subtest 'expiry range' => sub {
         isa_ok $c, 'BOM::Product::Contract::Expiryrange';
         is $c->code,         'EXPIRYRANGE';
         is $c->pricing_code, 'EXPIRYRANGE';
-        is $c->ask_price,    '4.24';
+        is $c->ask_price,    '4.17';
         ok $c->sentiment,    'low_vol';
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
         is_deeply $c->supported_start_types, ['spot'];
@@ -121,10 +121,10 @@ subtest 'expiry range' => sub {
         $c->ask_probability;
         my $call = $c->debug_information->{CALL}{base_probability};
         my $put  = $c->debug_information->{PUT}{base_probability};
-        is roundnear(0.001, $call->{amount}), 0.566, 'correct tv for CALL';
-        is roundnear(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.175, 'correct vol for call';
-        is roundnear(0.001, $put->{amount}), 0.053, 'correct tv for PUT';
-        is roundnear(0.001, $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.244, 'correct vol for put';
+        is roundnear(0.001, $call->{amount}), 0.567, 'correct tv for CALL';
+        is roundnear(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.183, 'correct vol for call';
+        is roundnear(0.001, $put->{amount}), 0.057, 'correct tv for PUT';
+        is roundnear(0.001, $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.25, 'correct vol for put';
 
     }
     'generic';
