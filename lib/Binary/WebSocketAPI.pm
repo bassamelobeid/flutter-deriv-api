@@ -19,6 +19,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Accounts;
 use Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery;
 use Binary::WebSocketAPI::v3::Wrapper::Cashier;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
+use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections |;
 
 use File::Slurp;
 use JSON::Schema;
@@ -59,6 +60,8 @@ sub apply_usergroup {
 
 sub startup {
     my $app = shift;
+
+    check_connections(); ### Raise and check redis connections
 
     Mojo::IOLoop->singleton->reactor->on(
         error => sub {

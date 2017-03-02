@@ -17,6 +17,7 @@ my $instances = {
 
 sub create {
     my $name = shift;
+
     my $cf        = $config->{$name};
     my $redis_url = Mojo::URL->new("redis://$cf->{host}:$cf->{port}");
 
@@ -29,6 +30,20 @@ sub create {
             warn("Redis $name error: $err");
         });
     return $server;
+}
+
+sub check_connections {
+    local $@;
+    foreach my $server_name ( keys %$config ) {
+        my $server = eval{__PACKAGE__->$server_name()};
+        if ( $@ ) {
+            die "$server_name is not available:" . $@;
+        }
+        eval{$server->ping();1;} or do {
+            die "Redis server $server_name does not work! Host: ".$server->url->host. ", port: ".$server->url->port . "\nREASON: " .$@;
+        }
+    }
+    return 1;
 }
 
 sub pricer_write {
@@ -51,6 +66,6 @@ sub pricer_write {
     return $instances->{$name};
 }
 
-our @EXPORT_OK = keys %$config;
+our @EXPORT_OK = ( keys %$config, 'check_connections');
 
 1;
