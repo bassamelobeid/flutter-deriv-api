@@ -16,7 +16,7 @@ use Try::Tiny;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
-use BOM::System::RedisReplicated;
+use BOM::Platform::RedisReplicated;
 use BOM::Database::DataMapper::FinancialMarketBet;
 
 build_test_R_50_data();
@@ -56,5 +56,12 @@ is $res->{error}->{code}, 'AlreadySubscribed', 'Correct error for already subscr
 $t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
 $res = decode_json($t->message->[1]);
 is scalar @{$res->{forget_all}}, 2, 'Correct number of subscription forget';
+
+#testing wrong amount value
+$req->{amount} = "100.";
+delete($req->{req_id}); #can be kept as it is.
+$t->send_ok({json => $req})->message_ok;
+$res = decode_json($t->message->[1]);
+is $res->{error}->{code}, 'InputValidationFailed', 'Correct error Failed validation';
 
 done_testing;

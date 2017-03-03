@@ -11,7 +11,7 @@ use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
-use BOM::System::RedisReplicated;
+use BOM::Platform::RedisReplicated;
 use BOM::Platform::Runtime;
 
 build_test_R_50_data();
