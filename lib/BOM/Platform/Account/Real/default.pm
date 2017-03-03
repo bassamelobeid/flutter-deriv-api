@@ -421,7 +421,7 @@ sub validate_account_details {
 
     # it's not a standard way, we need to refactor this sub later to
     # to remove reference to database columns name from code
-    if ($broker eq 'MF') {
+    if ($client->landing_company->short eq 'maltainvest') {
         foreach my $field (qw /place_of_birth tax_residence tax_identification_number/) {
             return {error => 'InsufficientAccountDetails'} unless $args->{$field};
             $details->{$field} = $args->{$field};

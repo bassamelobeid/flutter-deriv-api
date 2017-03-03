@@ -203,7 +203,7 @@ subtest 'proveid' => sub {
         like $notif[1][0], qr/PASSED AGE VERIFICATION/, 'notification is correct';
         ok !$v->client->client_fully_authenticated, 'client not fully authenticated';
         ok $v->client->get_status('age_verification'), 'client is age verified';
-        ok $v->client->get_status('unwelcome'), 'client is now unwelcome';
+        ok $v->client->get_status('unwelcome'),        'client is now unwelcome';
     };
 
     subtest 'director' => sub {
