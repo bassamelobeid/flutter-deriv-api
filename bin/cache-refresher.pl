@@ -1,4 +1,12 @@
 #!/etc/rmg/bin/perl
+
+# This script is used to listen published redis event on
+# 'app_settings::binary' channel, re-calculate heavy cache data
+# (offerings at now) and set it in redis.
+#
+# This is needed to prevent every individual script to do
+# recalculate cache and update it in redis.
+
 use strict;
 use warnings;
 use 5.010;
