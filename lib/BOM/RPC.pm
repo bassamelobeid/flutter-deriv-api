@@ -74,7 +74,7 @@ sub _validate_tnc {
     my $params = shift;
 
     # we shouldn't get to this error, so we can die it directly
-    my $client = $params->{client} // die "client should be authed before calling this action";
+    my $client = $params->{client} // die "client should be authenticated before calling this action";
     return $params if $client->is_virtual;
 
     my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
@@ -108,6 +108,21 @@ sub _compliance_checks {
         });
     }
 
+# don't allow to trade for unwelcome_clients
+# and for MLT and MX we don't allow trading without confirmed age
+sub _check_trade_status {
+    my $params = shift;
+
+    # we shouldn't get to this error, so we can die it directly
+    my $client = $params->{client} // die "client should be authenticated before calling this action";
+    return $params
+        if $client->is_virtual;
+    unless ($client->allow_trade) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'PleaseContactSupport',
+            message_to_client => localize('Please contact customer support for more information.'),
+        });
+    }
     return $params;
 }
 
@@ -116,9 +131,10 @@ sub register {
 
     # check actions at register time
     my %actions = (
-        auth              => \&_auth,
-        validate_tnc      => \&_validate_tnc,
-        compliance_checks => \&_compliance_checks
+        auth               => \&_auth,
+        validate_tnc       => \&_validate_tnc,
+        check_trade_status => \&_check_trade_status,
+        compliance_checks  => \&_compliance_checks
     );
     my @local_before_actions;
     for my $hook (@$before_actions) {
@@ -226,9 +242,9 @@ sub startup {
         ['buy', \&BOM::RPC::v3::Transaction::buy, [qw(auth validate_tnc compliance_checks)]],
         [
             'buy_contract_for_multiple_accounts', \&BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts,
-            [qw(auth validate_tnc compliance_checks)]
+            [qw(auth validate_tnc check_trade_status compliance_checks)]
         ],
-        ['sell', \&BOM::RPC::v3::Transaction::sell, [qw(auth validate_tnc compliance_checks)]],
+        ['sell', \&BOM::RPC::v3::Transaction::sell, [qw(auth validate_tnc check_trade_status compliance_checks)]],
 
         ['trading_times',         \&BOM::RPC::v3::MarketDiscovery::trading_times],
         ['asset_index',           \&BOM::RPC::v3::MarketDiscovery::asset_index],
