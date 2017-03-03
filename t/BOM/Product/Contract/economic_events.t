@@ -49,7 +49,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol           => 'USD',
         release_date     => $now,
         recorded_date    => Date::Utility->new(),
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
     },
 );
 

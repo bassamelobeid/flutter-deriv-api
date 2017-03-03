@@ -17,7 +17,7 @@ use Pricing::Engine::BlackScholes;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::Product::Pricing::Greeks;
-use BOM::System::Chronicle;
+use BOM::Platform::Chronicle;
 use BOM::Product::Pricing::Greeks::BlackScholes;
 use BOM::Platform::Runtime;
 use BOM::Product::ContractVol;
@@ -327,7 +327,7 @@ sub _generate_market_data {
     );
 
     my $ee = Quant::Framework::EconomicEventCalendar->new({
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($for_date),
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($for_date),
         }
         )->get_latest_events_for_period({
             from => $date_start->minus_time_interval('10m'),
@@ -346,7 +346,7 @@ sub _generate_market_data {
 
 sub _build_memory_chronicle {
     my $self             = shift;
-    my $chronicle_reader = BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date);
+    my $chronicle_reader = BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date);
 
     my $hash_ref = {};
     my $symbol   = $self->underlying->symbol;
@@ -514,8 +514,8 @@ sub _build_discount_rate {
     my %args = (
         symbol => $self->currency,
         $self->underlying->for_date ? (for_date => $self->underlying->for_date) : (),
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
     );
     my $curr_obj = Quant::Framework::Currency->new(%args);
 
@@ -581,7 +581,7 @@ sub _build_rho {
         my $construct_args = {
             symbol           => $self->underlying->market->name,
             for_date         => $self->underlying->for_date,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
         };
         my $rho_data = Quant::Framework::CorrelationMatrix->new($construct_args);
 
