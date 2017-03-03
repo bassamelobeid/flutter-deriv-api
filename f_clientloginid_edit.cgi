@@ -24,7 +24,7 @@ use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Doughflow qw( get_sportsbook );
 use BOM::Database::Model::HandoffToken;
 use BOM::Database::ClientDB;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::Backoffice::FormAccounts;
 
 BOM::Backoffice::Sysinit::init();
@@ -95,8 +95,8 @@ if ($input{whattodo} eq 'sync_to_DF') {
     );
     $handoff_token->save;
 
-    my $doughflow_loc  = BOM::System::Config::third_party->{doughflow}->{request()->brand};
-    my $doughflow_pass = BOM::System::Config::third_party->{doughflow}->{passcode};
+    my $doughflow_loc  = BOM::Platform::Config::third_party->{doughflow}->{request()->brand};
+    my $doughflow_pass = BOM::Platform::Config::third_party->{doughflow}->{passcode};
     my $url            = $doughflow_loc . '/CreateCustomer.asp';
 
     # hit DF's CreateCustomer API
@@ -137,7 +137,7 @@ if ($input{whattodo} eq 'sync_to_DF') {
         . $df_client->CustName
         . ', Profile: '
         . $df_client->Profile;
-    BOM::System::AuditLog::log($msg, $loginid, $clerk);
+    BOM::Platform::AuditLog::log($msg, $loginid, $clerk);
 
     BOM::Backoffice::Request::template->process(
         'backoffice/client_edit_msg.tt',
@@ -245,7 +245,7 @@ if (my $check_str = $input{do_id_check}) {
         force_recheck => 1
     );
     for ($check_str) {
-        $result = /ProveID/ ? $id_auth->_fetch_proveid() : die("unknown IDAuthentication method $_");
+        $result = /ProveID/ ? $id_auth->_do_proveid() : die("unknown IDAuthentication method $_");
     }
     my $encoded_check_str = encode_entities($check_str);
     print qq[<p><b>"$encoded_check_str" completed</b></p>
@@ -432,7 +432,16 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             next CLIENT_KEY;
         }
         if ($key eq 'secret_answer') {
-            $client->secret_answer(BOM::Platform::Client::Utility::encrypt_secret_answer($input{$key}));
+            # algorithm provide different encrypted string from the same text based on some randomness
+            # so we update this encrypted field only on value change - we don't want our trigger log trash
+
+            my $secret_answer = BOM::Platform::Client::Utility::decrypt_secret_answer($client->secret_answer);
+            $secret_answer = Encode::decode("UTF-8", $secret_answer)
+                unless (Encode::is_utf8($secret_answer));
+
+            $client->secret_answer(BOM::Platform::Client::Utility::encrypt_secret_answer($input{$key}))
+                if ($input{$key} ne $secret_answer);
+
             next CLIENT_KEY;
         }
         if ($key eq 'ip_security') {

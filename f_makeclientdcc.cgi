@@ -7,7 +7,7 @@ use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Cookie;
-use BOM::System::AuditLog;
+use BOM::Platform::AuditLog;
 use BOM::DualControl;
 BOM::Backoffice::Sysinit::init();
 
@@ -60,7 +60,7 @@ if ($input->{'transtype'} =~ /^UPDATECLIENT/) {
         . $input->{'clientemail'}
         . " is: $code This code is valid for 1 hour (from $current_timestamp) only.";
 
-    BOM::System::AuditLog::log($message, '', $clerk);
+    BOM::Platform::AuditLog::log($message, '', $clerk);
 
     print encode_entities($message);
     print "<p>Note: "

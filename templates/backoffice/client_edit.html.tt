@@ -275,7 +275,9 @@ table#client_edit td{
                     "There are no uploaded documents for $client.loginid - $client.full_name";
                 END
             %]
-
+[%
+IF client.landing_company.short == "iom"
+%]
             <br/>
             [%
                 raw_url  = 'backoffice/view_192_raw_response.cgi';
@@ -305,7 +307,8 @@ table#client_edit td{
                 [%  END %]
                 <input type="submit" name="do_id_check" value="Submit a new ProveID request"/>
             <br/>
-        <td>
+[% END %]
+        </td>
     </tr>
     <tr>
         <td class="label">Age Verified</td>

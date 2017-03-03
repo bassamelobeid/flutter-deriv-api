@@ -19,7 +19,7 @@ use Date::Utility;
 use HTML::Entities;
 
 use LandingCompany::Registry;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -29,7 +29,7 @@ BOM::Backoffice::Auth0::can_access(['Quants']);
 
 my $staff          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $r              = request();
-my $limit_profile  = BOM::System::Config::quants->{risk_profile};
+my $limit_profile  = BOM::Platform::Config::quants->{risk_profile};
 my %known_profiles = map { $_ => 1 } keys %$limit_profile;
 
 if ($r->param('update_limit')) {
@@ -119,7 +119,7 @@ if ($r->param('delete_client')) {
 
 Bar("Limit Definitions");
 
-my $limit_defs          = BOM::System::Config::quants->{risk_profile};
+my $limit_defs          = BOM::Platform::Config::quants->{risk_profile};
 my $current_definitions = BOM::Product::RiskProfile::get_current_profile_definitions();
 
 BOM::Backoffice::Request::template->process(

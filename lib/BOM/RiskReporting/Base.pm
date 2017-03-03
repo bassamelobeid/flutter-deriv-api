@@ -16,7 +16,7 @@ BOM::RiskReport::Base->new->generate;
 use strict;
 use warnings;
 
-use BOM::System::Config;
+use BOM::Platform::Config;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use LandingCompany::Registry;
 
@@ -87,7 +87,7 @@ sub _build_live_open_bets {
 
 before generate => sub {
     exit 0
-        unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::System::Config::node()->{node}->{roles}}));
+        unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}}));
 };
 
 sub generate {
