@@ -107,6 +107,7 @@ sub _compliance_checks {
             message_to_client => localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
         });
     }
+}
 
 # don't allow to trade for unwelcome_clients
 # and for MLT and MX we don't allow trading without confirmed age

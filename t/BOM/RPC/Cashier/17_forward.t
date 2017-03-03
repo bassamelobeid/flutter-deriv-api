@@ -189,8 +189,10 @@ subtest 'landing_companies_specific' => sub {
     $client_mf->save;
 
     $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired', 'MF client with High risk should have completed financial assessment')
-        ->error_message_is('Please complete the financial assessment form to lift your withdrawal and trading limits.', 'MF client with High risk should have completed financial assessment');
+        ->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired',
+        'MF client with High risk should have completed financial assessment')
+        ->error_message_is('Please complete the financial assessment form to lift your withdrawal and trading limits.',
+        'MF client with High risk should have completed financial assessment');
 
     $client_mf->aml_risk_classification('low');
     $client_mf->save;
