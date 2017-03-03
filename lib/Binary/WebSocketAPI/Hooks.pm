@@ -249,10 +249,6 @@ sub forget_all {
     # stop all recurring
     delete $c->stash->{redis};
     delete $c->stash->{redis_pricer};
-    if (my $id = $c->stash('proposal_array_collector_running')) {
-        Mojo::IOLoop->remove($id);
-        delete $c->stash->{proposal_array_collector_running};
-    }
 
     return;
 }

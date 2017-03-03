@@ -7,6 +7,8 @@ use warnings;
 use feature "state";
 use Sys::Hostname;
 use YAML::XS;
+use Guard;
+use Scalar::Util ();
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Locale::Maketext::ManyPluralForms {
@@ -201,13 +203,13 @@ sub register {
     $app->helper(
         proposal_array_collector => sub {
             my $c = shift;
-            return if $c->stash('proposal_array_collector_running');
+            Scalar::Util::weaken(my $weak_c = $c);
             # send proposal_array stream messages collected from apropriate proposal streams
-            my $proposal_array_collector_running = Mojo::IOLoop->recurring(
+            my $proposal_array_loop_id_keeper = Mojo::IOLoop->recurring(
                 1,
                 sub {
                     my @proposals;
-                    my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
+                    my $proposal_array_subscriptions = $weak_c->stash('proposal_array_subscriptions') // {};
                     for my $pa_uuid (keys %{$proposal_array_subscriptions}) {
                         for my $i (0 .. $#{$proposal_array_subscriptions->{$pa_uuid}{seq}}) {
                             my $uuid     = $proposal_array_subscriptions->{$pa_uuid}{seq}->[$i];
@@ -222,7 +224,7 @@ sub register {
                                 $proposal->{proposal}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
                             }
                             push @proposals, $proposal;
-                            $proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid} = [$proposal];    #keep last and send it if no new in 1 sec
+                            $proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid} = [$proposal];    # keep last and send it if no new in 1 sec
                         }
                         delete @{$_}{qw(msg_type)} for @proposals;
                         my $results = {
@@ -233,12 +235,12 @@ sub register {
                             echo_req => $proposal_array_subscriptions->{$pa_uuid}{args},
                             msg_type => 'proposal_array',
                         };
-                        $c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}});
+                        $weak_c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}}) if $weak_c->tx;
                     }
 
                 });
 
-            $c->stash->{proposal_array_collector_running} = $proposal_array_collector_running;
+            $weak_c->stash(proposal_array_collector_running_guard => guard { Mojo::IOLoop->remove($proposal_array_loop_id_keeper); });
         });
 
     return;
