@@ -151,7 +151,7 @@ subtest 'shortcodes' => sub {
             produce_contract('PUTE_FRXUSDJPY_10_' . $now->plus_time_interval('10m')->epoch . 'F_' . $now->plus_time_interval('20m')->epoch . '_S0P_0',
             'USD');
         isa_ok $c, 'BOM::Product::Contract::Pute';
-        ok $c->is_forward_starting;
+        ok $c->starts_as_forward_starting;
     }
     'builds forward starting Pute from shortcode';
     lives_ok {
