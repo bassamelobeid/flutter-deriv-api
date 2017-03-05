@@ -69,7 +69,7 @@ sub mt5_new_account {
     my $group;
     if ($account_type eq 'demo') {
         if ($client and $client->residence eq 'jp') {
-            $group = 'demo\japan-virtual';
+            $group = 'demo\japan_virtual';
         } else {
             $group = 'demo\\' . $brand->name . '_virtual';
         }
