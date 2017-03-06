@@ -1156,7 +1156,7 @@ subtest $method => sub {
 
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
-        'Tax related information is mandatory for legal and regulatory requirement.',
+        'Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.',
         'Correct tax error message'
     );
 

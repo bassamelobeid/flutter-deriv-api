@@ -94,7 +94,9 @@ sub cashier {
 
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'ASK_TIN_INFORMATION',
-                message_to_client => localize('Tax information is required.')}) unless $client->get_status('crs_tin_information');
+                message_to_client => localize(
+                    'Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.')}
+        ) unless $client->get_status('crs_tin_information');
     }
 
     if ($client->residence eq 'gb' and not $client->get_status('ukgc_funds_protection')) {
