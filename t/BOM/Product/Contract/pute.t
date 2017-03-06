@@ -65,6 +65,7 @@ subtest 'call variations' => sub {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Pute';
         is $c->code,        'PUTE';
+        is $c->other_side_code, 'CALL';
         ok $c->is_intraday, 'is intraday';
         ok !$c->expiry_daily, 'not expiry daily';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
