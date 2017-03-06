@@ -107,6 +107,8 @@ sub _compliance_checks {
             message_to_client => localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
         });
     }
+
+    return $params;
 }
 
 # don't allow to trade for unwelcome_clients
