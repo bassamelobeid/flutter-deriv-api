@@ -8,7 +8,6 @@ use Try::Tiny;
 use List::MoreUtils qw(none);
 use JSON::XS;
 use Date::Utility;
-use Data::Dumper;
 
 use BOM::Platform::Config;
 use BOM::RPC::v3::Utility;
@@ -209,7 +208,6 @@ sub _get_ask {
                         },
                     });
             }
-            print "RPC: first resp:".Dumper($response);
             # proposal_array streaming could get error on a first calls
             # but later could produce valid contract dependant on volatility moves
             # so we need to store contract_parameters and longcode to use them later
@@ -273,7 +271,6 @@ sub _get_ask {
         });
     };
 
-    #print "returning: ".Dumper($response);
     return $response;
 }
 
@@ -531,7 +528,6 @@ sub send_ask {
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
     map { exists($response->{$_}) && ($response->{$_} .= '') } qw(ask_price barrier date_start display_value payout spot spot_time);
-    print "send_ask returning: ".Dumper($response);
     return $response;
 }
 
