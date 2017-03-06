@@ -523,6 +523,9 @@ sub process_transaction_updates {
                                             $details->{$type}->{symbol}       = $rpc_response->{symbol};
                                             $details->{$type}->{display_name} = $rpc_response->{display_name};
                                             $details->{$type}->{date_expiry}  = $rpc_response->{date_expiry};
+                                            $details->{$type}->{barrier}      = $rpc_response->{barrier} if exists $rpc_response->{barrier};
+                                            $details->{$type}->{high_barrier} = $rpc_response->{high_barrier} if $rpc_response->{high_barrier};
+                                            $details->{$type}->{low_barrier}  = $rpc_response->{low_barrier} if $rpc_response->{low_barrier};
                                             return $details;
                                         }
                                     },
