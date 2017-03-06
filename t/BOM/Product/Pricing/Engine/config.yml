@@ -1342,7 +1342,7 @@ expected_result:
       price_engine: Pricing::Engine::EuropeanDigitalSlope
       risk_markup: 0.0060816898639056
       spot: 102.471
-      theo_prob: 0.5053
+      theo_prob: 0.5052
       total_markup: 0.0288
     EXPIRYRANGE:
       ask_prob: 0.577
@@ -1353,7 +1353,7 @@ expected_result:
       price_engine: Pricing::Engine::EuropeanDigitalSlope
       risk_markup: 0.0295
       spot: 102.454
-      theo_prob: 0.5808
+      theo_prob: 0.5809
       total_markup: 0.0489
     NOTOUCH:
       ask_prob: 0.3544

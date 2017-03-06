@@ -196,10 +196,10 @@ subtest 'put_call_parity_vv_non_japan' => sub {
             $p->{date_pricing} = $c1->date_start;
             my $c = produce_contract($p);
             isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
-            my $call_theo_prob  = $c->pricing_engine->base_probability->amount;
-            my $put_theo_prob   = $c->opposite_contract->pricing_engine->base_probability->amount;
-            my $discounted_prob = $c->discounted_probability->amount;
-            is roundnear(0.01, $call_theo_prob + $put_theo_prob), $discounted_prob,
+            my $contract_theo_prob          = $c->pricing_engine->base_probability->amount;
+            my $opposite_contract_theo_prob = $c->opposite_contract->pricing_engine->base_probability->amount;
+            my $discounted_prob             = $c->discounted_probability->amount;
+            is roundnear(0.01, $contract_theo_prob + $opposite_contract_theo_prob), $discounted_prob,
                 "put call parity hold for " . $c->shortcode . " with payout currency $currency";
         }
     }
@@ -222,10 +222,10 @@ subtest 'put_call_parity_vv_japan' => sub {
         $p->{landing_company} = 'japan';
         my $c = produce_contract($p);
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
-        my $call_theo_prob  = $c->pricing_engine->base_probability->amount;
-        my $put_theo_prob   = $c->opposite_contract->pricing_engine->base_probability->amount;
-        my $discounted_prob = $c->discounted_probability->amount;
-        is roundnear(0.01, $call_theo_prob + $put_theo_prob), $discounted_prob, "put call parity hold for " . $c->shortcode;
+        my $contract_theo_prob          = $c->pricing_engine->base_probability->amount;
+        my $opposite_contract_theo_prob = $c->opposite_contract->pricing_engine->base_probability->amount;
+        my $discounted_prob             = $c->discounted_probability->amount;
+        is roundnear(0.01, $contract_theo_prob + $opposite_contract_theo_prob), $discounted_prob, "put call parity hold for " . $c->shortcode;
 
     }
 };
