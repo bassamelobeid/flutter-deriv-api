@@ -77,14 +77,16 @@ subtest 'put_call_parity_IH_non_japan' => sub {
 
     foreach my $shortcode (@shortcode) {
 
-        my $c1 = produce_contract($shortcode, 'USD');
-        my $p = $c1->build_parameters;
-        $p->{date_pricing} = $c1->date_start;
-        my $c = produce_contract($p);
-        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-        my $call_theo_prob = $c->pricing_engine->base_probability->amount;
-        my $put_theo_prob  = $c->opposite_contract->pricing_engine->base_probability->amount;
-        is $call_theo_prob + $put_theo_prob, '1', "put call parity hold for " . $c->shortcode;
+        foreach my $currency ('AUD', 'USD') {
+            my $c1 = produce_contract($shortcode, $currency);
+            my $p = $c1->build_parameters;
+            $p->{date_pricing} = $c1->date_start;
+            my $c = produce_contract($p);
+            isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
+            my $call_theo_prob = $c->pricing_engine->base_probability->amount;
+            my $put_theo_prob  = $c->opposite_contract->pricing_engine->base_probability->amount;
+            is $call_theo_prob + $put_theo_prob, '1', "put call parity hold for " . $c->shortcode . " with payout currency $currency";
+        }
     }
 };
 
@@ -126,23 +128,25 @@ subtest 'put_call_parity_slope_non_japan' => sub {
 
     foreach my $shortcode (@shortcode) {
 
-        my $c1 = produce_contract($shortcode, 'USD');
-        my $p = $c1->build_parameters;
-        $p->{date_pricing} = $c1->date_start;
-        my $c = produce_contract($p);
-        isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
-        my $c_type        = $c->pricing_code;
-        my $opposite_type = $c->opposite_contract->pricing_code;
-        $c->ask_price;
-        $c->bid_price;
-        my $call_theo_prob =
-            $c_type eq 'EXPIRYRANGE' ? $c->pricing_engine->_base_probability : $c->debug_information->{$c_type}{base_probability}{amount};
-        my $put_theo_prob =
-              $c_type eq 'EXPIRYRANGE'
-            ? $c->opposite_contract->pricing_engine->_base_probability
-            : $c->opposite_contract->debug_information->{$opposite_type}{base_probability}{amount};
-        my $discounted_prob = $c->discounted_probability->amount;
-        is $call_theo_prob + $put_theo_prob, $discounted_prob, "put call parity hold for " . $c->shortcode;
+        foreach my $currency ('AUD', 'USD') {
+            my $c1 = produce_contract($shortcode, $currency);
+            my $p = $c1->build_parameters;
+            $p->{date_pricing} = $c1->date_start;
+            my $c = produce_contract($p);
+            isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
+            my $c_type        = $c->pricing_code;
+            my $opposite_type = $c->opposite_contract->pricing_code;
+            $c->ask_price;
+            $c->bid_price;
+            my $call_theo_prob =
+                $c_type eq 'EXPIRYRANGE' ? $c->pricing_engine->_base_probability : $c->debug_information->{$c_type}{base_probability}{amount};
+            my $put_theo_prob =
+                  $c_type eq 'EXPIRYRANGE'
+                ? $c->opposite_contract->pricing_engine->_base_probability
+                : $c->opposite_contract->debug_information->{$opposite_type}{base_probability}{amount};
+            my $discounted_prob = $c->discounted_probability->amount;
+            is $call_theo_prob + $put_theo_prob, $discounted_prob, "put call parity hold for " . $c->shortcode . " with payout currency $currency";
+        }
     }
 };
 
@@ -186,16 +190,18 @@ subtest 'put_call_parity_vv_non_japan' => sub {
     );
 
     foreach my $shortcode (@shortcode) {
-
-        my $c1 = produce_contract($shortcode, 'USD');
-        my $p = $c1->build_parameters;
-        $p->{date_pricing} = $c1->date_start;
-        my $c = produce_contract($p);
-        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
-        my $call_theo_prob  = $c->pricing_engine->base_probability->amount;
-        my $put_theo_prob   = $c->opposite_contract->pricing_engine->base_probability->amount;
-        my $discounted_prob = $c->discounted_probability->amount;
-        is $call_theo_prob + $put_theo_prob, $discounted_prob, "put call parity hold for " . $c->shortcode;
+        foreach my $currency ('AUD', 'USD') {
+            my $c1 = produce_contract($shortcode, $currency);
+            my $p = $c1->build_parameters;
+            $p->{date_pricing} = $c1->date_start;
+            my $c = produce_contract($p);
+            isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
+            my $call_theo_prob  = $c->pricing_engine->base_probability->amount;
+            my $put_theo_prob   = $c->opposite_contract->pricing_engine->base_probability->amount;
+            my $discounted_prob = $c->discounted_probability->amount;
+            is roundnear(0.01, $call_theo_prob + $put_theo_prob), $discounted_prob,
+                "put call parity hold for " . $c->shortcode . " with payout currency $currency";
+        }
     }
 };
 
@@ -219,7 +225,7 @@ subtest 'put_call_parity_vv_japan' => sub {
         my $call_theo_prob  = $c->pricing_engine->base_probability->amount;
         my $put_theo_prob   = $c->opposite_contract->pricing_engine->base_probability->amount;
         my $discounted_prob = $c->discounted_probability->amount;
-        is $call_theo_prob + $put_theo_prob, $discounted_prob, "put call parity hold for " . $c->shortcode;
+        is roundnear(0.01, $call_theo_prob + $put_theo_prob), $discounted_prob, "put call parity hold for " . $c->shortcode;
 
     }
 };
