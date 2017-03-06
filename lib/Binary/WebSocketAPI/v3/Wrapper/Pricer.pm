@@ -2,7 +2,6 @@ package Binary::WebSocketAPI::v3::Wrapper::Pricer;
 
 use strict;
 use warnings;
-use Data::Dumper;
 
 no indirect;
 use Try::Tiny;
@@ -169,8 +168,6 @@ sub proposal_array {
                     success  => $create_price_channel,
                     response => sub {
                         my ($rpc_response, $api_response, $req_storage) = @_;
-                        #print "in response callbacK: rpc_response: ".Dumper($rpc_response);
-                        print "in response callbacK: api_response: ".Dumper($api_response);
                         if ($rpc_response->{error}) {
                             $f->done($api_response);
                             return;
@@ -200,7 +197,6 @@ sub proposal_array {
                 for my $i (0 .. $#{$req_storage->{args}->{barriers}}) {
                     if (keys %{$result[$i]}) {
                         if ($result[$i]->{error}) {
-                            print "ERROR!!!!!!!!!!!! ".Dumper($result[$i]);
                             $result[$i]->{error}{details}{barrier}  = ${$req_storage->{args}->{barriers}}[$i]->{barrier};
                             $result[$i]->{error}{details}{barrier2} = ${$req_storage->{args}->{barriers}}[$i]->{barrier2}
                                 if exists ${$req_storage->{args}->{barriers}}[$i]->{barrier2};
