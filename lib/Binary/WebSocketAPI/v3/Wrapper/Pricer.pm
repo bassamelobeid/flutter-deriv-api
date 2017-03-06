@@ -458,7 +458,6 @@ sub _create_pricer_channel {
 
 sub process_pricing_events {
     my ($c, $message, $channel_name) = @_;
-    print "========================================================= pricing event\n";
 
     return if not $message or not $c->tx;
     my $pricing_channel = $c->stash('pricing_channel');
