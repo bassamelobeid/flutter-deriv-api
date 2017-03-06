@@ -73,7 +73,7 @@ sub _validate_barrier {
                 . "[actual: "
                 . $pip_move . "]",
             severity          => 1,
-            message_to_client => localize('Barrier must be at least ' . $self->minimum_allowable_move . ' pips away from the spot.'),
+            message_to_client => localize('Barrier must be at least [plural,_1,%d pip,%d pips] away from the spot.', $self->minimum_allowable_move),
         };
     } elsif (defined $barrier and $barrier->supplied_barrier eq '0' and not $self->is_intraday) {
         return {
