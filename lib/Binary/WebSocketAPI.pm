@@ -104,7 +104,12 @@ sub startup {
             }
 
             # we cannot use $c->app_id, as it falls back
-            my $app_id    = defang($c->req->param('app_id'));
+            my $app_id = defang($c->req->param('app_id'));
+            $c->render(
+                json   => {error => 'InvalidAppID'},
+                status => 401
+            ) if (not $app_id or $app_id !~ /^[1-9]{1,10}$/);
+
             my $client_ip = $c->client_ip;
             my $brand     = defang($c->req->param('brand'));
 
