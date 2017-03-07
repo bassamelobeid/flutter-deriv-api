@@ -95,10 +95,9 @@ sub _compliance_checks {
     my $client = $params->{client} // die "client should be authed before calling this action";
 
     # checks are not applicable for virtual, costarica and champion clients
-    my $landing_company = $client->landing_company->short;
     return $params
         if ($client->is_virtual
-        or $landing_company =~ /^(?:costarica|champion)$/);
+        or $client->landing_company->short =~ /^(?:costarica|champion)$/);
 
     # as per compliance for high risk client we need to check
     # if financial assessment details are completed or not
@@ -109,7 +108,16 @@ sub _compliance_checks {
         });
     }
 
-    if ($landing_company eq 'maltainvest' and not $client->get_status('crs_tin_information')) {
+    return $params;
+}
+
+sub _check_tax_information {
+    my $params = shift;
+
+    # we shouldn't get to this error, so we can die it directly
+    my $client = $params->{client} // die "client should be authed before calling this action";
+
+    if ($client->landing_company->short eq 'maltainvest' and not $client->get_status('crs_tin_information')) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'TINDetailsMandatory',
                 message_to_client => localize(
@@ -142,10 +150,11 @@ sub register {
 
     # check actions at register time
     my %actions = (
-        auth               => \&_auth,
-        validate_tnc       => \&_validate_tnc,
-        check_trade_status => \&_check_trade_status,
-        compliance_checks  => \&_compliance_checks
+        auth                  => \&_auth,
+        validate_tnc          => \&_validate_tnc,
+        check_trade_status    => \&_check_trade_status,
+        compliance_checks     => \&_compliance_checks,
+        check_tax_information => \&_check_tax_information,
     );
     my @local_before_actions;
     for my $hook (@$before_actions) {
@@ -250,12 +259,13 @@ sub startup {
         ['ticks_history', \&BOM::RPC::v3::TickStreamer::ticks_history],
         ['ticks',         \&BOM::RPC::v3::TickStreamer::ticks],
 
-        ['buy', \&BOM::RPC::v3::Transaction::buy, [qw(auth validate_tnc compliance_checks)]],
+        ['buy', \&BOM::RPC::v3::Transaction::buy, [qw(auth validate_tnc compliance_checks check_tax_information)]],
         [
-            'buy_contract_for_multiple_accounts', \&BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts,
-            [qw(auth validate_tnc check_trade_status compliance_checks)]
+            'buy_contract_for_multiple_accounts',
+            \&BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts,
+            [qw(auth validate_tnc check_trade_status compliance_checks check_tax_information)]
         ],
-        ['sell', \&BOM::RPC::v3::Transaction::sell, [qw(auth validate_tnc check_trade_status compliance_checks)]],
+        ['sell', \&BOM::RPC::v3::Transaction::sell, [qw(auth validate_tnc check_trade_status compliance_checks check_tax_information)]],
 
         ['trading_times',         \&BOM::RPC::v3::MarketDiscovery::trading_times],
         ['asset_index',           \&BOM::RPC::v3::MarketDiscovery::asset_index],
