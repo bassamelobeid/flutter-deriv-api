@@ -200,8 +200,8 @@ sub get_client_profiles {
     my ($self, $loginid, $landing_company_short) = @_;
 
     if ($loginid && $landing_company_short) {
-        my $ptr     = \BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles;    # use a pointer to avoid copying
-        $custom_limits_compiled = from_json($custom_limits_txt = $$ptr)                                 # copy and compile
+        my $ptr = \BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles;    # use a pointer to avoid copying
+        $custom_limits_compiled = from_json($custom_limits_txt = $$ptr)                             # copy and compile
             unless $$ptr eq $custom_limits_txt;
 
         my @client_limits = do {
