@@ -1,10 +1,10 @@
 #!/etc/rmg/bin/perl
 
-package BOM::Product::ExpiryQueueStatisticCollector;
+package BOM::Transaction::ExpiryQueueStatisticCollector;
 
 =head1 NAME
 
-BOM::Product::ExpiryQueueStatisticCollector
+BOM::Transaction::ExpiryQueueStatisticCollector
 
 =head1 DESCRIPTION
 
@@ -42,4 +42,4 @@ __PACKAGE__->meta->make_immutable;
 package main;
 use strict;
 
-exit BOM::Product::ExpiryQueueStatisticCollector->new->run;
+exit BOM::Transaction::ExpiryQueueStatisticCollector->new->run;
