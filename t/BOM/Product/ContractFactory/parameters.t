@@ -13,7 +13,6 @@ use Date::Utility;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
-use BOM::Test::Data::Utility::UnitTestDatabase qw( :init );
 
 use Postgres::FeedDB::Spot::Tick;
 use BOM::Product::ContractFactory qw( produce_contract );
