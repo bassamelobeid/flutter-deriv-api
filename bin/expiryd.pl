@@ -11,7 +11,7 @@ use Time::HiRes;
 use Try::Tiny;
 
 use Client::Account;
-use BOM::Product::Transaction;
+use BOM::Transaction;
 
 STDOUT->autoflush(1);
 
@@ -63,7 +63,7 @@ sub _daemon_run {
                 }
                 # This returns a result which might be useful for reporting
                 # but for now we will ignore it.
-                my $is_sold = BOM::Product::Transaction::sell_expired_contracts({
+                my $is_sold = BOM::Transaction::sell_expired_contracts({
                         client       => $client,
                         source       => 2,               # app id for `Binary.com expiryd.pl` in auth db => oauth.apps table
                         contract_ids => [$contract_id]});

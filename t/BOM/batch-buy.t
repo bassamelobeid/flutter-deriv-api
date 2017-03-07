@@ -14,7 +14,7 @@ use BOM::Platform::Client::Utility;
 
 use ExpiryQueue ();
 
-use BOM::Product::Transaction;
+use BOM::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -258,7 +258,7 @@ subtest 'batch-buy success', sub {
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $clm,
             contract    => $contract,
             price       => 50.00,
@@ -271,7 +271,7 @@ subtest 'batch-buy success', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -318,7 +318,7 @@ subtest 'batch-buy success 2', sub {
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $clm,
             contract    => $contract,
             price       => 50.00,
@@ -331,7 +331,7 @@ subtest 'batch-buy success 2', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -374,7 +374,7 @@ subtest 'contract already started', sub {
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client        => $clm,
             purchase_date => Date::Utility::today->plus_time_interval('3d'),
             contract      => $contract,
@@ -388,7 +388,7 @@ subtest 'contract already started', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -434,7 +434,7 @@ subtest 'single contract fails in database', sub {
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $clm,
             contract    => $contract,
             price       => 50.00,
@@ -447,7 +447,7 @@ subtest 'single contract fails in database', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -509,7 +509,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $clm,
             contract    => $contract,
             price       => 50.00,
@@ -522,7 +522,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });

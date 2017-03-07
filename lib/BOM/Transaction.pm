@@ -1,4 +1,4 @@
-package BOM::Product::Transaction;
+package BOM::Transaction;
 
 use Moose;
 use Data::Dumper;

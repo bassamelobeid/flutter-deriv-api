@@ -15,7 +15,7 @@ use Client::Account;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Product::Transaction;
+use BOM::Transaction;
 
 my $now = Date::Utility->new;
 initialize_realtime_ticks_db();
@@ -67,7 +67,7 @@ subtest 'check duplicate sell with Model' => sub {
         # buy
         local $ENV{REQUEST_STARTTIME} = '2011-07-14 08:24:46';
 
-        $txn_buy = BOM::Product::Transaction->new({
+        $txn_buy = BOM::Transaction->new({
             contract    => $contract,
             amount_type => 'payout',
             client      => $client,
@@ -81,7 +81,7 @@ subtest 'check duplicate sell with Model' => sub {
 
     lives_ok {
         # sell
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             contract    => $contract,
             client      => $client,
             amount_type => 'payout',
@@ -123,7 +123,7 @@ subtest 'check duplicate sell with legacy line' => sub {
         # buy
         local $ENV{REQUEST_STARTTIME} = '2011-07-28 06:30:39';
 
-        $txn_buy = BOM::Product::Transaction->new({
+        $txn_buy = BOM::Transaction->new({
             contract    => $contract,
             client      => $client,
             amount_type => 'payout',
@@ -158,7 +158,7 @@ subtest 'check duplicate sell with legacy line' => sub {
     'Successfully sold the bet with Model';
 
     # sell with Transaction::buy_sell_contract
-    my $txn = BOM::Product::Transaction->new({
+    my $txn = BOM::Transaction->new({
         contract    => $contract,
         client      => $client,
         price       => 0,
@@ -177,7 +177,7 @@ subtest 'check buy bet without quants bet params' => sub {
         # buy
         local $ENV{REQUEST_STARTTIME} = '2011-09-08 07:23:53';
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             contract    => produce_contract('UPORDOWN_FRXUSDJPY_5_1315466633_12_SEP_11_771000_762300', 'USD'),
             client      => $client,
             price       => 1.2,

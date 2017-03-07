@@ -15,7 +15,7 @@ use BOM::Platform::Client::Utility;
 
 use BOM::Platform::Client::IDAuthentication;
 
-use BOM::Product::Transaction;
+use BOM::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -232,7 +232,7 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract,
             price       => 50.00,
@@ -244,7 +244,7 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -266,7 +266,7 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
 
-            $txn = BOM::Product::Transaction->new({
+            $txn = BOM::Transaction->new({
                 client      => $cl,
                 contract    => $contract,
                 price       => 50.00,
@@ -294,7 +294,7 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -305,7 +305,7 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
 
             $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
-            $txn = BOM::Product::Transaction->new({
+            $txn = BOM::Transaction->new({
                 client      => $cl,
                 contract    => $contract,
                 price       => 50.00,
@@ -346,7 +346,7 @@ subtest 'asian_daily_turnover_limit', sub {
             current_tick => $tick,
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract,
             price       => 50.00,
@@ -358,7 +358,7 @@ subtest 'asian_daily_turnover_limit', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -379,7 +379,7 @@ subtest 'asian_daily_turnover_limit', sub {
             is $txn->buy, undef, 'bought 2nd contract';
 
             # create a new transaction object to get pristine (undef) contract_id and the like
-            $txn = BOM::Product::Transaction->new({
+            $txn = BOM::Transaction->new({
                 client      => $cl,
                 contract    => $contract,
                 price       => 50.00,
@@ -408,7 +408,7 @@ subtest 'asian_daily_turnover_limit', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -419,7 +419,7 @@ subtest 'asian_daily_turnover_limit', sub {
 
             $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
-            $txn = BOM::Product::Transaction->new({
+            $txn = BOM::Transaction->new({
                 client      => $cl,
                 contract    => $contract,
                 price       => 50.00,
@@ -461,7 +461,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
             price         => 50.00,
@@ -479,7 +479,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
                     'BOM::Product::Pricing::Engine::Intraday::Index';
                 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -503,7 +503,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             is $txn->buy, undef, 'bought 2nd contract';
 
             # create a new transaction object to get pristine (undef) contract_id and the like
-            $txn = BOM::Product::Transaction->new({
+            $txn = BOM::Transaction->new({
                 client        => $cl,
                 contract      => $contract,
                 price         => 50.00,
@@ -538,7 +538,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
                 'Pricing::Engine::EuropeanDigitalSlope';
             });
 
-        my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+        my $mock_transaction = Test::MockModule->new('BOM::Transaction');
         # _validate_trade_pricing_adjustment() is tested in trade_validation.t
         $mock_transaction->mock(
             _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -555,7 +555,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             current_tick => $tick,
             barrier      => 'S0P',
         });
-        $txn = BOM::Product::Transaction->new({
+        $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $daily_contract,
             price         => 50.00,
@@ -576,7 +576,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
                     'BOM::Product::Pricing::Engine::Intraday::Index';
                 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -587,7 +587,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             BOM::Platform::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 150.00;
             $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
-            $txn = BOM::Product::Transaction->new({
+            $txn = BOM::Transaction->new({
                 client        => $cl,
                 contract      => $contract,
                 price         => 50.00,
@@ -626,7 +626,7 @@ subtest 'smartfx_turnover_limit', sub {
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
             price         => 50.00,
@@ -638,7 +638,7 @@ subtest 'smartfx_turnover_limit', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -652,7 +652,7 @@ subtest 'smartfx_turnover_limit', sub {
             is $txn->buy, undef, 'bought 2nd contract';
 
             # create a new transaction object to get pristine (undef) contract_id and the like
-            $txn = BOM::Product::Transaction->new({
+            $txn = BOM::Transaction->new({
                 client        => $cl,
                 contract      => $contract,
                 price         => 50.00,
@@ -682,7 +682,7 @@ subtest 'smartfx_turnover_limit', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -694,7 +694,7 @@ subtest 'smartfx_turnover_limit', sub {
 
             $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
-            $txn = BOM::Product::Transaction->new({
+            $txn = BOM::Transaction->new({
                 client        => $cl,
                 contract      => $contract,
                 price         => 50.00,
@@ -742,7 +742,7 @@ subtest 'spreads', sub {
             current_tick     => $current_tick,
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
             price         => 20.00,
@@ -753,7 +753,7 @@ subtest 'spreads', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -780,7 +780,7 @@ subtest 'spreads', sub {
                 date_pricing     => $now,
                 current_tick     => $current_tick,
             });
-            $txn = BOM::Product::Transaction->new({
+            $txn = BOM::Transaction->new({
                 client        => $cl,
                 contract      => $contract,
                 price         => 20.00,
@@ -807,7 +807,7 @@ subtest 'spreads', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -819,7 +819,7 @@ subtest 'spreads', sub {
 
             $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
-            $txn = BOM::Product::Transaction->new({
+            $txn = BOM::Transaction->new({
                 client        => $cl,
                 contract      => $contract,
                 price         => 20,
@@ -861,7 +861,7 @@ subtest 'custom client limit' => sub {
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract,
             price       => 50.00,
@@ -873,7 +873,7 @@ subtest 'custom client limit' => sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -949,7 +949,7 @@ subtest 'non atm turnover checks' => sub {
             barrier      => 'S10P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract,
             price       => 50.00,
@@ -961,7 +961,7 @@ subtest 'non atm turnover checks' => sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -994,7 +994,7 @@ subtest 'non atm turnover checks' => sub {
                 current_tick => $tick,
                 barrier      => 'S0P',
             });
-            $txn = BOM::Product::Transaction->new({
+            $txn = BOM::Transaction->new({
                 client        => $cl,
                 contract      => $atm_contract,
                 price         => 50.00,
@@ -1004,7 +1004,7 @@ subtest 'non atm turnover checks' => sub {
             });
             is $txn->buy, undef, 'bought atm tick expiry';
             # create a new transaction object to get pristine (undef) contract_id and the like
-            $txn = BOM::Product::Transaction->new({
+            $txn = BOM::Transaction->new({
                 client        => $cl,
                 contract      => $contract,
                 price         => 50.00,
@@ -1035,7 +1035,7 @@ subtest 'non atm turnover checks' => sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -1047,7 +1047,7 @@ subtest 'non atm turnover checks' => sub {
 
             $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
-            $txn = BOM::Product::Transaction->new({
+            $txn = BOM::Transaction->new({
                 client        => $cl,
                 contract      => $contract,
                 price         => 50.00,

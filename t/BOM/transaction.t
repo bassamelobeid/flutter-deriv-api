@@ -13,7 +13,7 @@ use BOM::Platform::Password;
 use BOM::Platform::Client::Utility;
 
 use Date::Utility;
-use BOM::Product::Transaction;
+use BOM::Transaction;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -332,7 +332,7 @@ subtest 'buy a spread bet' => sub {
         current_tick     => $tick_r100,
         stop_type        => 'point',
     });
-    my $txn = BOM::Product::Transaction->new({
+    my $txn = BOM::Transaction->new({
         client   => $new_client,
         contract => $c,
         price    => 19.00,
@@ -431,7 +431,7 @@ subtest 'buy a spread bet' => sub {
         current_tick     => $tick_r100,
         stop_type        => 'dollar',
     });
-    $txn = BOM::Product::Transaction->new({
+    $txn = BOM::Transaction->new({
         client   => $new_client,
         contract => $c,
         price    => 10,
@@ -529,7 +529,7 @@ subtest 'buy a spread bet' => sub {
         current_tick     => $tick_r100,
         stop_type        => 'point',
     });
-    $txn = BOM::Product::Transaction->new({
+    $txn = BOM::Transaction->new({
         client   => $new_client,
         contract => $c,
         price    => 10,
@@ -556,7 +556,7 @@ subtest 'buy a spread bet' => sub {
         current_tick     => $tick_r100,
         stop_type        => 'point',
     });
-    $txn = BOM::Product::Transaction->new({
+    $txn = BOM::Transaction->new({
         client   => $new_client,
         contract => $c,
         price    => 10,
@@ -594,7 +594,7 @@ subtest 'sell a spread bet' => sub {
 
         note 'bid price: ' . $contract->bid_price;
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $new_client,
             contract    => $contract,
             contract_id => $sell_spread_id,
@@ -664,7 +664,7 @@ subtest 'sell a spread bet' => sub {
             stop_type        => 'point',
         });
 
-        $txn = BOM::Product::Transaction->new({
+        $txn = BOM::Transaction->new({
             client   => $new_client,
             contract => $contract,
             price    => 19.00,
@@ -686,7 +686,7 @@ subtest 'sell a spread bet' => sub {
             stop_type        => 'point',
         });
 
-        $txn = BOM::Product::Transaction->new({
+        $txn = BOM::Transaction->new({
             client      => $new_client,
             contract    => $contract,
             contract_id => $sell_spread_id,
@@ -710,7 +710,7 @@ subtest 'sell a spread bet' => sub {
             stop_type        => 'point',
         });
 
-        $txn = BOM::Product::Transaction->new({
+        $txn = BOM::Transaction->new({
             client   => $new_client,
             contract => $contract,
             price    => 10,
@@ -733,7 +733,7 @@ subtest 'sell a spread bet' => sub {
             stop_type        => 'point',
         });
 
-        $txn = BOM::Product::Transaction->new({
+        $txn = BOM::Transaction->new({
             client      => $new_client,
             contract    => $contract,
             contract_id => $sell_spread_id,
@@ -763,7 +763,7 @@ subtest 'buy a bet', sub {
                 barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract,
             price       => 514.00,
@@ -887,10 +887,10 @@ subtest 'sell a bet', sub {
 
         note 'bid price: ' . $contract->bid_price;
 
-        my $mocked = Test::MockModule->new('BOM::Product::Transaction');
+        my $mocked = Test::MockModule->new('BOM::Transaction');
         $mocked->mock('_validate_trade_pricing_adjustment', sub { });
         $mocked->mock('price',                              sub { $contract->bid_price });
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract,
             contract_id => $fmb->{id},
@@ -1000,7 +1000,7 @@ subtest 'insufficient balance: buy bet for 100.01 with a balance of 100', sub {
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract,
             price       => 100.01,
@@ -1036,7 +1036,7 @@ subtest 'insufficient balance: buy bet for 100.01 with a balance of 100', sub {
                     barrier      => 'S0P',
                 });
 
-                my $txn = BOM::Product::Transaction->new({
+                my $txn = BOM::Transaction->new({
                     client        => $cl,
                     contract      => $contract_expired,
                     price         => 100,
@@ -1058,7 +1058,7 @@ subtest 'insufficient balance: buy bet for 100.01 with a balance of 100', sub {
                 ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn_id_buy_expired_contract;
                 is $fmb->{is_sold}, 0, 'have expired but unsold contract in DB';
 
-                $txn = BOM::Product::Transaction->new({
+                $txn = BOM::Transaction->new({
                     client      => $cl,
                     contract    => $contract,
                     price       => 100.01,
@@ -1116,7 +1116,7 @@ subtest 'exactly sufficient balance: buy bet for 100 with balance of 100', sub {
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract,
             price       => 100.00,
@@ -1159,7 +1159,7 @@ subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract,
             price       => 100.00,
@@ -1211,7 +1211,7 @@ subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract,
             price       => 100.00,
@@ -1262,7 +1262,7 @@ subtest 'max_open_bets validation', sub {
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract,
             price       => 1.00,
@@ -1274,7 +1274,7 @@ subtest 'max_open_bets validation', sub {
             my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_open_positions => sub { note "mocked Client->get_limit_for_open_positions returning 2"; 2 });
 
-            is +BOM::Product::Transaction->new({
+            is +BOM::Transaction->new({
                     client      => $cl,
                     contract    => $contract,
                     price       => 1.00,
@@ -1282,7 +1282,7 @@ subtest 'max_open_bets validation', sub {
                     amount_type => 'stake',
                 })->buy, undef, '1st bet bought';
 
-            is +BOM::Product::Transaction->new({
+            is +BOM::Transaction->new({
                     client      => $cl,
                     contract    => $contract,
                     price       => 1.00,
@@ -1331,7 +1331,7 @@ subtest 'max_open_bets validation: selling bets on the way', sub {
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract,
             price       => 1.00,
@@ -1344,7 +1344,7 @@ subtest 'max_open_bets validation: selling bets on the way', sub {
             my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_open_positions => sub { note "mocked Client->get_limit_for_open_positions returning 2"; 2 });
 
-            is +BOM::Product::Transaction->new({
+            is +BOM::Transaction->new({
                     client      => $cl,
                     contract    => $contract,
                     price       => 1.00,
@@ -1365,7 +1365,7 @@ subtest 'max_open_bets validation: selling bets on the way', sub {
                 barrier      => 'S0P',
             });
 
-            my $exp_txn = BOM::Product::Transaction->new({
+            my $exp_txn = BOM::Transaction->new({
                 client        => $cl,
                 contract      => $contract_expired,
                 price         => 1,
@@ -1433,7 +1433,7 @@ subtest 'max_payout_open_bets validation', sub {
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract,
             price       => 5.20,
@@ -1445,7 +1445,7 @@ subtest 'max_payout_open_bets validation', sub {
             my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 29.99"; 29.99 });
 
-            is +BOM::Product::Transaction->new({
+            is +BOM::Transaction->new({
                     client      => $cl,
                     contract    => $contract,
                     price       => 5.20,
@@ -1453,7 +1453,7 @@ subtest 'max_payout_open_bets validation', sub {
                     amount_type => 'payout',
                 })->buy, undef, '1st bet bought';
 
-            is +BOM::Product::Transaction->new({
+            is +BOM::Transaction->new({
                     client      => $cl,
                     contract    => $contract,
                     price       => 5.20,
@@ -1518,7 +1518,7 @@ subtest 'max_payout_open_bets validation', sub {
         # Since we are buying two contracts first before we buy this,
         # I am passing in purchase_time as contract->date_start.
         # We are getting false positive failure of 'ContractAlreadyStarted' on this way too often.
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
             price         => 5.37,
@@ -1530,7 +1530,7 @@ subtest 'max_payout_open_bets validation', sub {
         my $error = do {
             my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 29.99"; 29.99 });
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
 
             if ($now->is_a_weekend or ($now->day_of_week == 5 and $contract->date_expiry->is_after($now->truncate_to_day->plus_time_interval('21h'))))
             {
@@ -1540,7 +1540,7 @@ subtest 'max_payout_open_bets validation', sub {
                 $mock_transaction->mock(_is_valid_to_buy       => sub { note "mocked Transaction->_is_valid_to_buy returning nothing";       () });
 
             }
-            is +BOM::Product::Transaction->new({
+            is +BOM::Transaction->new({
                     client        => $cl,
                     contract      => $contract,
                     price         => 5.37,
@@ -1549,7 +1549,7 @@ subtest 'max_payout_open_bets validation', sub {
                     purchase_date => $contract->date_start,
                 })->buy, undef, '1st bet bought';
 
-            is +BOM::Product::Transaction->new({
+            is +BOM::Transaction->new({
                     client        => $cl,
                     contract      => $contract,
                     price         => 5.37,
@@ -1578,7 +1578,7 @@ subtest 'max_payout_open_bets validation', sub {
         $error = do {
             my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 30.00"; 30.00 });
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
 
             if ($now->is_a_weekend) {
                 $mock_transaction->mock(_is_valid_to_buy => sub { note "mocked Transaction->_is_valid_to_buy returning nothing"; () });
@@ -1617,7 +1617,7 @@ subtest 'max_payout_open_bets validation: selling bets on the way', sub {
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract,
             price       => 5.20,
@@ -1630,7 +1630,7 @@ subtest 'max_payout_open_bets validation: selling bets on the way', sub {
             my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 29.99"; 29.99 });
 
-            is +BOM::Product::Transaction->new({
+            is +BOM::Transaction->new({
                     client      => $cl,
                     contract    => $contract,
                     price       => 5.20,
@@ -1651,7 +1651,7 @@ subtest 'max_payout_open_bets validation: selling bets on the way', sub {
                 barrier      => 'S0P',
             });
 
-            my $exp_txn = BOM::Product::Transaction->new({
+            my $exp_txn = BOM::Transaction->new({
                 client        => $cl,
                 contract      => $contract_expired,
                 price         => 5.20,
@@ -1710,7 +1710,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract,
             price       => 5.20,
@@ -1725,7 +1725,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
             note "change quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit->{USD}} to 29.99";
             local BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
 
-            is +BOM::Product::Transaction->new({
+            is +BOM::Transaction->new({
                     client      => $cl,
                     contract    => $contract,
                     price       => 5.20,
@@ -1733,7 +1733,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
                     amount_type => 'payout',
                 })->buy, undef, '1st bet bought';
 
-            is +BOM::Product::Transaction->new({
+            is +BOM::Transaction->new({
                     client      => $cl,
                     contract    => $contract,
                     price       => 5.20,
@@ -1769,7 +1769,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
                 barrier      => 'S0P',
             });
 
-            is +BOM::Product::Transaction->new({
+            is +BOM::Transaction->new({
                     client      => $cl,
                     contract    => $contract_r100,
                     price       => 5.20,
@@ -1808,7 +1808,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation: selling bets on the way'
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract,
             price       => 5.20,
@@ -1821,7 +1821,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation: selling bets on the way'
             note "change quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} to 29.99";
             local BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
 
-            is +BOM::Product::Transaction->new({
+            is +BOM::Transaction->new({
                     client      => $cl,
                     contract    => $contract,
                     price       => 5.20,
@@ -1842,7 +1842,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation: selling bets on the way'
                 barrier      => 'S0P',
             });
 
-            my $exp_txn = BOM::Product::Transaction->new({
+            my $exp_txn = BOM::Transaction->new({
                 client        => $cl,
                 contract      => $contract_expired,
                 price         => 5.20,
@@ -1911,7 +1911,7 @@ subtest 'max_turnover validation', sub {
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract_up,
             price       => 5.20,
@@ -1925,7 +1925,7 @@ subtest 'max_turnover validation', sub {
                     sub { note "mocked Client->get_limit_for_daily_turnover returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
             $mock_client->mock(client_fully_authenticated => sub { note "mocked Client->client_fully_authenticated returning false"; undef });
 
-            is +BOM::Product::Transaction->new({
+            is +BOM::Transaction->new({
                     client      => $cl,
                     contract    => $contract_up,
                     price       => 5.20,
@@ -1933,7 +1933,7 @@ subtest 'max_turnover validation', sub {
                     amount_type => 'payout',
                 })->buy, undef, 'FLASHU bet bought';
 
-            is +BOM::Product::Transaction->new({
+            is +BOM::Transaction->new({
                     client      => $cl,
                     contract    => $contract_down,
                     price       => 5.20,
@@ -2056,7 +2056,7 @@ subtest 'max_7day_turnover validation', sub {
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract_up,
             price       => 5.20,
@@ -2070,7 +2070,7 @@ subtest 'max_7day_turnover validation', sub {
                 get_limit_for_7day_turnover => sub { note "mocked Client->get_limit_for_7day_turnover returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 }
             );
 
-            is +BOM::Product::Transaction->new({
+            is +BOM::Transaction->new({
                     client      => $cl,
                     contract    => $contract_up,
                     price       => 5.20,
@@ -2078,7 +2078,7 @@ subtest 'max_7day_turnover validation', sub {
                     amount_type => 'payout',
                 })->buy, undef, 'FLASHU bet bought';
 
-            is +BOM::Product::Transaction->new({
+            is +BOM::Transaction->new({
                     client      => $cl,
                     contract    => $contract_down,
                     price       => 5.20,
@@ -2148,7 +2148,7 @@ subtest 'max_30day_turnover validation', sub {
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract_up,
             price       => 5.20,
@@ -2161,7 +2161,7 @@ subtest 'max_30day_turnover validation', sub {
             $mock_client->mock(get_limit_for_30day_turnover =>
                     sub { note "mocked Client->get_limit_for_30day_turnover returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
 
-            is +BOM::Product::Transaction->new({
+            is +BOM::Transaction->new({
                     client      => $cl,
                     contract    => $contract_up,
                     price       => 5.20,
@@ -2169,7 +2169,7 @@ subtest 'max_30day_turnover validation', sub {
                     amount_type => 'payout',
                 })->buy, undef, 'FLASHU bet bought';
 
-            is +BOM::Product::Transaction->new({
+            is +BOM::Transaction->new({
                     client      => $cl,
                     contract    => $contract_down,
                     price       => 5.20,
@@ -2241,7 +2241,7 @@ subtest 'max_losses validation', sub {
             date_pricing => Date::Utility->new(time + 10),
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract_up,
             price       => 5.20,
@@ -2253,7 +2253,7 @@ subtest 'max_losses validation', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -2262,7 +2262,7 @@ subtest 'max_losses validation', sub {
             $mock_client->mock(
                 get_limit_for_daily_losses => sub { note "mocked Client->get_limit_for_daily_losses returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
 
-            my $t = BOM::Product::Transaction->new({
+            my $t = BOM::Transaction->new({
                 client      => $cl,
                 contract    => $contract_up,
                 price       => 5.20,
@@ -2270,7 +2270,7 @@ subtest 'max_losses validation', sub {
                 amount_type => 'payout',
             });
             is $t->buy, undef, 'FLASHU bet bought';
-            $t = BOM::Product::Transaction->new({
+            $t = BOM::Transaction->new({
                 client      => $cl,
                 contract    => $contract_up,
                 contract_id => $t->contract_id,
@@ -2278,7 +2278,7 @@ subtest 'max_losses validation', sub {
             });
             is $t->sell(skip_validation => 1), undef, 'FLASHU bet sold';
 
-            $t = BOM::Product::Transaction->new({
+            $t = BOM::Transaction->new({
                 client      => $cl,
                 contract    => $contract_down,
                 price       => 5.20,
@@ -2286,7 +2286,7 @@ subtest 'max_losses validation', sub {
                 amount_type => 'payout',
             });
             is $t->buy, undef, 'FLASHD bet bought';
-            $t = BOM::Product::Transaction->new({
+            $t = BOM::Transaction->new({
                 client      => $cl,
                 contract    => $contract_down,
                 contract_id => $t->contract_id,
@@ -2314,7 +2314,7 @@ subtest 'max_losses validation', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -2366,7 +2366,7 @@ subtest 'max_7day_losses validation', sub {
             date_pricing => Date::Utility->new(time + 10),
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract_up,
             price       => 5.20,
@@ -2378,7 +2378,7 @@ subtest 'max_7day_losses validation', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -2387,7 +2387,7 @@ subtest 'max_7day_losses validation', sub {
             $mock_client->mock(
                 get_limit_for_7day_losses => sub { note "mocked Client->get_limit_for_7day_losses returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
 
-            my $t = BOM::Product::Transaction->new({
+            my $t = BOM::Transaction->new({
                 client      => $cl,
                 contract    => $contract_up,
                 price       => 5.20,
@@ -2395,7 +2395,7 @@ subtest 'max_7day_losses validation', sub {
                 amount_type => 'payout',
             });
             is $t->buy, undef, 'FLASHU bet bought';
-            $t = BOM::Product::Transaction->new({
+            $t = BOM::Transaction->new({
                 client      => $cl,
                 contract    => $contract_up,
                 contract_id => $t->contract_id,
@@ -2403,7 +2403,7 @@ subtest 'max_7day_losses validation', sub {
             });
             is $t->sell(skip_validation => 1), undef, 'FLASHU bet sold';
 
-            $t = BOM::Product::Transaction->new({
+            $t = BOM::Transaction->new({
                 client      => $cl,
                 contract    => $contract_down,
                 price       => 5.20,
@@ -2411,7 +2411,7 @@ subtest 'max_7day_losses validation', sub {
                 amount_type => 'payout',
             });
             is $t->buy, undef, 'FLASHD bet bought';
-            $t = BOM::Product::Transaction->new({
+            $t = BOM::Transaction->new({
                 client      => $cl,
                 contract    => $contract_down,
                 contract_id => $t->contract_id,
@@ -2439,7 +2439,7 @@ subtest 'max_7day_losses validation', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -2491,7 +2491,7 @@ subtest 'max_30day_losses validation', sub {
             date_pricing => Date::Utility->new(time + 10),
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract_up,
             price       => 5.20,
@@ -2503,7 +2503,7 @@ subtest 'max_30day_losses validation', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -2512,7 +2512,7 @@ subtest 'max_30day_losses validation', sub {
             $mock_client->mock(
                 get_limit_for_30day_losses => sub { note "mocked Client->get_limit_for_30day_losses returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
 
-            my $t = BOM::Product::Transaction->new({
+            my $t = BOM::Transaction->new({
                 client      => $cl,
                 contract    => $contract_up,
                 price       => 5.20,
@@ -2520,7 +2520,7 @@ subtest 'max_30day_losses validation', sub {
                 amount_type => 'payout',
             });
             is $t->buy, undef, 'FLASHU bet bought';
-            $t = BOM::Product::Transaction->new({
+            $t = BOM::Transaction->new({
                 client      => $cl,
                 contract    => $contract_up,
                 contract_id => $t->contract_id,
@@ -2528,7 +2528,7 @@ subtest 'max_30day_losses validation', sub {
             });
             is $t->sell(skip_validation => 1), undef, 'FLASHU bet sold';
 
-            $t = BOM::Product::Transaction->new({
+            $t = BOM::Transaction->new({
                 client      => $cl,
                 contract    => $contract_down,
                 price       => 5.20,
@@ -2536,7 +2536,7 @@ subtest 'max_30day_losses validation', sub {
                 amount_type => 'payout',
             });
             is $t->buy, undef, 'FLASHD bet bought';
-            $t = BOM::Product::Transaction->new({
+            $t = BOM::Transaction->new({
                 client      => $cl,
                 contract    => $contract_down,
                 contract_id => $t->contract_id,
@@ -2564,7 +2564,7 @@ subtest 'max_30day_losses validation', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
@@ -2606,7 +2606,7 @@ subtest 'sell_expired_contracts', sub {
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Product::Transaction->new({
+        my $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract_expired,
             price         => 100,
@@ -2637,7 +2637,7 @@ subtest 'sell_expired_contracts', sub {
             barrier      => 'S0P',
         });
 
-        $txn = BOM::Product::Transaction->new({
+        $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
             price         => 100,
@@ -2659,7 +2659,7 @@ subtest 'sell_expired_contracts', sub {
         is $acc_usd->balance + 0, 0, 'USD balance is down to 0';
 
         # First sell some particular ones by id.
-        my $res = BOM::Product::Transaction::sell_expired_contracts + {
+        my $res = BOM::Transaction::sell_expired_contracts + {
             client       => $cl,
             source       => 29,
             contract_ids => [@expired_fmbids[0 .. 1]],
@@ -2674,7 +2674,7 @@ subtest 'sell_expired_contracts', sub {
             },
             'sold the two requested contracts';
 
-        $res = BOM::Product::Transaction::sell_expired_contracts + {
+        $res = BOM::Transaction::sell_expired_contracts + {
             client => $cl,
             source => 29
         };
@@ -2763,7 +2763,7 @@ subtest 'transaction slippage' => sub {
         });
 
         # we just want to _validate_trade_pricing_adjustment
-        my $mocked = Test::MockModule->new('BOM::Product::Transaction');
+        my $mocked = Test::MockModule->new('BOM::Transaction');
         $mocked->mock($_ => sub { '' })
             for (
             qw/
@@ -2783,7 +2783,7 @@ subtest 'transaction slippage' => sub {
         $mocked->mock('limits', sub { {} });
 
         my $price = $contract->ask_price - ($allowed_move * $contract->payout / 2);
-        my $transaction = BOM::Product::Transaction->new({
+        my $transaction = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
             action        => 'BUY',
@@ -2827,7 +2827,7 @@ subtest 'transaction slippage' => sub {
         my $price = $contract->bid_price + ($allowed_move * $contract->payout - 0.1);
 
         # we just want to _validate_trade_pricing_adjustment
-        my $mocked = Test::MockModule->new('BOM::Product::Transaction');
+        my $mocked = Test::MockModule->new('BOM::Transaction');
         $mocked->mock($_ => sub { '' })
             for (
             qw/
@@ -2841,7 +2841,7 @@ subtest 'transaction slippage' => sub {
         # no limits
         $mocked->mock('limits', sub { {} });
 
-        my $transaction = BOM::Product::Transaction->new({
+        my $transaction = BOM::Transaction->new({
             client      => $cl,
             contract    => $contract,
             contract_id => $fmb_id,

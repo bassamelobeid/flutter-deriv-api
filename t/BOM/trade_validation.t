@@ -12,7 +12,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use Client::Account;
-use BOM::Product::Transaction;
+use BOM::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Math::Util::CalculatedValue::Validatable;
@@ -113,7 +113,7 @@ subtest 'IOM withdrawal limit' => sub {
 
     my $error;
     lives_ok {
-        my $transaction = BOM::Product::Transaction->new({
+        my $transaction = BOM::Transaction->new({
             client   => $client,
             contract => $contract,
         });
@@ -130,7 +130,7 @@ subtest 'IOM withdrawal limit' => sub {
     );
 
     lives_ok {
-        my $transaction = BOM::Product::Transaction->new({
+        my $transaction = BOM::Transaction->new({
             client   => $client,
             contract => $contract,
         });
@@ -163,7 +163,7 @@ subtest 'Is contract valid to buy' => sub {
         barrier     => 'S0P',
     });
 
-    my $transaction = BOM::Product::Transaction->new({
+    my $transaction = BOM::Transaction->new({
         client   => $client,
         contract => $contract1,
     });
@@ -201,7 +201,7 @@ subtest 'Is contract valid to sell' => sub {
         barrier     => 'S0P',
     });
 
-    my $transaction = BOM::Product::Transaction->new({
+    my $transaction = BOM::Transaction->new({
         client   => $client,
         contract => $contract1,
     });
@@ -213,7 +213,7 @@ subtest 'Is contract valid to sell' => sub {
     $mock_contract->mock('_validate_start_and_expiry_date', sub { undef });
 
     $contract1 = make_similar_contract($contract1, {date_expiry => $now->epoch + 10});
-    $transaction = BOM::Product::Transaction->new({
+    $transaction = BOM::Transaction->new({
         client   => $client,
         contract => $contract1,
     });
@@ -247,7 +247,7 @@ subtest 'contract date pricing Validation' => sub {
 
     my $error;
     lives_ok {
-        my $transaction = BOM::Product::Transaction->new({
+        my $transaction = BOM::Transaction->new({
             client   => $client,
             contract => $contract,
         });
@@ -284,7 +284,7 @@ subtest 'valid currency test' => sub {
             date_pricing => Date::Utility->new($now->epoch - 100),
         });
 
-        my $transaction = BOM::Product::Transaction->new({
+        my $transaction = BOM::Transaction->new({
             client   => $client,
             contract => $contract,
         });
@@ -316,7 +316,7 @@ subtest 'valid currency test' => sub {
             date_pricing => Date::Utility->new($now->epoch - 100),
         });
 
-        my $transaction = BOM::Product::Transaction->new({
+        my $transaction = BOM::Transaction->new({
             client   => $client,
             contract => $contract,
         });
@@ -353,7 +353,7 @@ subtest 'valid currency test' => sub {
             date_pricing => Date::Utility->new($now->epoch - 100),
         });
 
-        my $transaction = BOM::Product::Transaction->new({
+        my $transaction = BOM::Transaction->new({
             client   => $client,
             contract => $contract,
         });
@@ -423,7 +423,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
         });
 
         my $price = $contract->ask_price - ($allowed_move * $contract->payout) + 0.1;
-        my $transaction = BOM::Product::Transaction->new({
+        my $transaction = BOM::Transaction->new({
             client   => $client,
             contract => $contract,
             action   => 'BUY',
@@ -489,7 +489,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
         # amount_type = payout, price increase > allowed move
         my $requested_price = $contract->ask_price - ($allowed_move * $contract->payout + 0.1);
-        my $transaction = BOM::Product::Transaction->new({
+        my $transaction = BOM::Transaction->new({
             client   => $client,
             contract => $contract,
             action   => 'BUY',
@@ -509,7 +509,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
         # amount_type = payout, price increase < allowed move
         my $price = $contract->ask_price - ($allowed_move * $contract->payout / 2);
-        $transaction = BOM::Product::Transaction->new({
+        $transaction = BOM::Transaction->new({
             client   => $client,
             contract => $contract,
             action   => 'BUY',
@@ -526,7 +526,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
         # amount_type = payout, price decrease => better execution price
         $price = $contract->ask_price + ($allowed_move * $contract->payout * 2);
-        $transaction = BOM::Product::Transaction->new({
+        $transaction = BOM::Transaction->new({
             client   => $client,
             contract => $contract,
             action   => 'BUY',
@@ -542,7 +542,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
         # sale back slippage check
         $requested_price = $contract->bid_price + ($allowed_move * $contract->payout + 0.1);
-        $transaction = BOM::Product::Transaction->new({
+        $transaction = BOM::Transaction->new({
             client   => $client,
             contract => $contract,
             action   => 'SELL',
@@ -562,7 +562,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
         # amount_type = payout, price increase < allowed move
         $price = $contract->bid_price - ($allowed_move * $contract->payout / 2);
-        $transaction = BOM::Product::Transaction->new({
+        $transaction = BOM::Transaction->new({
             client   => $client,
             contract => $contract,
             action   => 'SELL',
@@ -578,7 +578,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
         # amount_type = payout, price increase > allowable move => better execution price
         $price = $contract->bid_price - ($allowed_move * $contract->payout * 2);
-        $transaction = BOM::Product::Transaction->new({
+        $transaction = BOM::Transaction->new({
             client   => $client,
             contract => $contract,
             action   => 'SELL',
@@ -639,7 +639,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
         });
 
         # amount_type = stake, payout decrease > allowed move
-        my $transaction = BOM::Product::Transaction->new({
+        my $transaction = BOM::Transaction->new({
             client      => $client,
             contract    => $contract,
             action      => 'BUY',
@@ -667,7 +667,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
         $mock_contract->mock('payout',          sub { 10 / $ask_cv->amount });
         $mock_contract->mock('ask_price',       sub { $ask_cv->amount * 100 });
         # amount_type = stake, payout decrease within range of allowed move
-        $transaction = BOM::Product::Transaction->new({
+        $transaction = BOM::Transaction->new({
             client      => $client,
             contract    => $contract,
             action      => 'BUY',
@@ -692,7 +692,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
         $mock_contract->mock('ask_price',       sub { $ask_cv->amount * 100 });
         $mock_contract->mock('payout',          sub { 10 / $ask_cv->amount });
 
-        $transaction = BOM::Product::Transaction->new({
+        $transaction = BOM::Transaction->new({
             client      => $client,
             contract    => $contract,
             action      => 'BUY',
@@ -717,7 +717,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
         $mock_contract->mock('ask_price',       sub { $ask_cv->amount * 100 });
         $mock_contract->mock('payout',          sub { roundnear(0.001, 10 / $ask_cv->amount) });
 
-        $transaction = BOM::Product::Transaction->new({
+        $transaction = BOM::Transaction->new({
             client      => $client,
             contract    => $contract,
             action      => 'BUY',
@@ -784,7 +784,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
         });
 
         my $price = $contract->bid_price - ($allowed_move * $contract->payout) + 0.1;
-        my $transaction = BOM::Product::Transaction->new({
+        my $transaction = BOM::Transaction->new({
             client   => $client,
             contract => $contract,
             action   => 'SELL',
@@ -841,7 +841,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
 
         # amount_type = payout, sell price increase > allowed move
         my $requested_price = $contract->bid_price + ($allowed_move * $contract->payout + 0.1);
-        my $transaction = BOM::Product::Transaction->new({
+        my $transaction = BOM::Transaction->new({
             client   => $client,
             contract => $contract,
             action   => 'SELL',
@@ -860,7 +860,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
         is $transaction->recomputed_price, $contract->bid_price, 'correct recomputed price';
         # amount_type = payout, sell price decrease < allowed move
         my $price = $contract->bid_price + ($allowed_move * $contract->payout - 0.1);
-        $transaction = BOM::Product::Transaction->new({
+        $transaction = BOM::Transaction->new({
             client   => $client,
             contract => $contract,
             action   => 'SELL',
@@ -875,7 +875,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
         is $transaction->recomputed_price, $contract->bid_price, 'correct recomputed price';
         # amount_type = payout, sell price increase => better execution price
         $price = $contract->bid_price - ($allowed_move * $contract->payout * 2);
-        $transaction = BOM::Product::Transaction->new({
+        $transaction = BOM::Transaction->new({
             client   => $client,
             contract => $contract,
             action   => 'SELL',
@@ -905,7 +905,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
             barrier      => 'S0P',
         });
 
-        my $transaction = BOM::Product::Transaction->new({
+        my $transaction = BOM::Transaction->new({
             client   => $client,
             contract => $contract,
             action   => 'SELL',
@@ -950,7 +950,7 @@ subtest 'Purchase Sell Contract' => sub {
         barrier      => 'S0P',
     });
 
-    my $bpt = BOM::Product::Transaction->new({
+    my $bpt = BOM::Transaction->new({
         client   => $client,
         contract => $contract,
         price    => $contract->ask_price,
@@ -987,9 +987,9 @@ subtest 'Purchase Sell Contract' => sub {
         exit_tick    => $current_tick,
         barrier      => 'S0P',
     });
-    my $mocked = Test::MockModule->new('BOM::Product::Transaction');
+    my $mocked = Test::MockModule->new('BOM::Transaction');
     $mocked->mock('_validate_sell_pricing_adjustment', sub { });
-    $error = BOM::Product::Transaction->new({
+    $error = BOM::Transaction->new({
             client      => $client,
             contract    => $contract,
             price       => $contract->bid_price,
@@ -1014,7 +1014,7 @@ subtest 'validate stake limit' => sub {
     });
     Test::MockObject::Extends->new($contract);
     $contract->mock('ask_price', sub { 0.5 });
-    my $transaction = BOM::Product::Transaction->new({
+    my $transaction = BOM::Transaction->new({
         client      => $client,
         contract    => $contract,
         action      => 'BUY',
@@ -1031,7 +1031,7 @@ subtest 'validate stake limit' => sub {
     'error out on 0.49 stake for non MF borker';
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
     $contract->mock('ask_price', sub { 5 });
-    $transaction = BOM::Product::Transaction->new({
+    $transaction = BOM::Transaction->new({
         client      => $client,
         contract    => $contract,
         action      => 'BUY',

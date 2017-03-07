@@ -8,7 +8,7 @@ use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase;
-use BOM::Product::Transaction;
+use BOM::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::MarketData qw(create_underlying);
@@ -56,7 +56,7 @@ subtest 'validate client error message' => sub {
 
     my $cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 
-    my $transaction = BOM::Product::Transaction->new({
+    my $transaction = BOM::Transaction->new({
         client   => $cr,
         contract => $contract
     });
@@ -81,7 +81,7 @@ subtest 'validate client error message' => sub {
     });
     my $mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
 
-    $transaction = BOM::Product::Transaction->new({
+    $transaction = BOM::Transaction->new({
         client   => $mf,
         contract => $contract
     });

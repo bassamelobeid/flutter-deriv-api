@@ -15,7 +15,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
 use Client::Account;
-use BOM::Product::Transaction;
+use BOM::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -108,7 +108,7 @@ my $tick = Postgres::FeedDB::Spot::Tick->new($tick_params);
 $p->{date_pricing} = $start_time;
 $p->{current_tick} = $tick;
 $contract          = produce_contract($p);
-my $transaction = BOM::Product::Transaction->new({
+my $transaction = BOM::Transaction->new({
     price         => $contract->ask_price,
     amount_type   => $p->{amount_type},
     client        => $new_client,
@@ -132,7 +132,7 @@ $p_2->{date_pricing} = $start_time_2;
 $p_2->{current_tick} = $tick_2;
 $contract_2          = produce_contract($p_2);
 
-my $transaction_2 = BOM::Product::Transaction->new({
+my $transaction_2 = BOM::Transaction->new({
     price         => $contract_2->ask_price,
     client        => $new_client,
     contract      => $contract_2,
@@ -156,7 +156,7 @@ my $tick_3 = Postgres::FeedDB::Spot::Tick->new($tick_params_3);
 $p_3->{date_pricing} = $start_time_3;
 $p_3->{current_tick} = $tick_3;
 $contract_3          = produce_contract($p_3);
-my $transaction_3 = BOM::Product::Transaction->new({
+my $transaction_3 = BOM::Transaction->new({
     price         => $contract_3->ask_price,
     client        => $new_client,
     amount_type   => $p_3->{amount_type},
@@ -178,7 +178,7 @@ my $tick_4 = Postgres::FeedDB::Spot::Tick->new($tick_params_4);
 $p_4->{date_pricing} = $start_time_4;
 $p_4->{current_tick} = $tick_4;
 $contract_4          = produce_contract($p_4);
-my $transaction_4 = BOM::Product::Transaction->new({
+my $transaction_4 = BOM::Transaction->new({
     price         => $contract_4->ask_price,
     client        => $new_client,
     amount_type   => $p_4->{amount_type},
@@ -240,7 +240,7 @@ $mock->mock('_validate_input_parameters', sub { () });
 $mock->mock('_validate_volsurface',       sub { () });
 $contract_5 = produce_contract($p_5);
 set_absolute_time($start_time_5);
-my $transaction_5 = BOM::Product::Transaction->new({
+my $transaction_5 = BOM::Transaction->new({
     price         => 70,
     client        => $new_client,
     contract      => $contract_5,
@@ -266,7 +266,7 @@ $p_6->{date_pricing} = $start_time_6;
 $p_6->{current_tick} = $tick_6;
 $contract_6          = produce_contract($p_6);
 local $ENV{REQUEST_STARTTIME} = $start_time_6;
-my $transaction_6 = BOM::Product::Transaction->new({
+my $transaction_6 = BOM::Transaction->new({
     price         => 51.88,
     client        => $new_client,
     contract      => $contract_6,
