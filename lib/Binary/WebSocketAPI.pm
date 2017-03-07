@@ -472,7 +472,7 @@ sub startup {
             if (defined($possible_app_id) && $possible_app_id =~ /^(?!0)[0-9]{1,19}$/) {
                 return $possible_app_id;
             }
-            return;
+            return undef;
         });
 
     $app->helper(
