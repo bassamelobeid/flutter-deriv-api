@@ -1,19 +1,19 @@
+use strict;
+use warnings;
+use utf8;
+
 use Test::More tests => 20;
 use BOM::Platform::Password;
 use Digest::SHA;
 use Crypt::ScryptKDF;
 
-## Tests for checking passwords
-
 # crypted passwords -- LEGACY CASHIER LOCKING PASSWORDS
-
 ok(BOM::Platform::Password::checkpw('foo',    crypt('foo',    '12')), 'crypt foo, correct');
 ok(BOM::Platform::Password::checkpw('secret', crypt('secret', 'X/')), 'crypt secret correct');
 ok(!BOM::Platform::Password::checkpw('foo',    crypt('bar',    '12')), 'crypt foo, incorrect');
 ok(!BOM::Platform::Password::checkpw('secret', crypt('foobar', 'X/')), 'crypt secret, incorrect');
 
 # sha256 unsalted passwords -- LEGACY ACCOUNT PASSWORDS
-
 ok(BOM::Platform::Password::checkpw('foo',    Digest::SHA::sha256_hex('foo')),    'sha foo correct');
 ok(BOM::Platform::Password::checkpw('secret', Digest::SHA::sha256_hex('secret')), 'sha secret correct');
 ok(!BOM::Platform::Password::checkpw('foo',    Digest::SHA::sha256_hex('bar')),    'sha foo incorrect');
