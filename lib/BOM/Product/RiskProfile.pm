@@ -197,10 +197,9 @@ my $custom_limits_txt      = '';
 my $custom_limits_compiled = {};
 
 sub get_client_profiles {
-    my ($self, $client) = @_;
+    my ($self, $loginid, $landing_company_short) = @_;
 
-    if ($client) {
-        my $loginid = $client->loginid;
+    if ($loginid && $landing_company_short) {
         my $ptr     = \BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles;    # use a pointer to avoid copying
         $custom_limits_compiled = from_json($custom_limits_txt = $$ptr)                                 # copy and compile
             unless $$ptr eq $custom_limits_txt;
@@ -215,11 +214,10 @@ sub get_client_profiles {
         };
 
         my @landing_company_limits = ();
-        my $lcn                    = $client->landing_company->short;
         foreach my $custom (values %{$self->raw_custom_profiles}) {
             next unless exists $custom->{landing_company};
-            next if $lcn ne $custom->{landing_company};
-            push @landing_company_limits, $custom if $self->_match_conditions($custom, {landing_company => $lcn});
+            next if $landing_company_short ne $custom->{landing_company};
+            push @landing_company_limits, $custom if $self->_match_conditions($custom, {landing_company => $landing_company_short});
         }
 
         return (@client_limits, @landing_company_limits);

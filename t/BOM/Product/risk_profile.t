@@ -5,7 +5,6 @@ use warnings;
 
 use Test::More tests => 7;
 use Test::Exception;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Product::RiskProfile;
 use BOM::Platform::Runtime;
 
@@ -71,8 +70,7 @@ subtest 'get_risk_profile' => sub {
     $limit = $rp->custom_profiles;
     is scalar(@$limit), 1, 'only one profile';
     $rp = BOM::Product::RiskProfile->new(%args, landing_company => 'japan');
-    my $jp = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'JP'});
-    my @cp = $rp->get_client_profiles($jp);
+    my @cp = $rp->get_client_profiles('JP1110', 'japan');
     is $rp->get_risk_profile(\@cp), 'no_business', 'no_business overrides default medium_risk profile when landing_company matches';
     $limit = $rp->custom_profiles;
     is scalar(@$limit), 1, 'only one profile from custom';
@@ -90,20 +88,12 @@ subtest 'get_risk_profile' => sub {
 
 subtest 'custom client profile' => sub {
     note("set volatility index to no business for client XYZ");
-    my $cr_valid = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        loginid     => 'CR1'
-    });
-    my $cr_invalid = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        loginid     => 'CR2'
-    });
     BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(
         '{"CR1": {"reason": "test XYZ", "custom_limits": {"xxx": {"market": "volidx", "risk_profile": "no_business", "name": "test custom"}}}}');
     my $rp    = BOM::Product::RiskProfile->new(%args);
-    my @cl_pr = $rp->get_client_profiles($cr_invalid);
+    my @cl_pr = $rp->get_client_profiles('CR2', 'costarica');
     ok !@cl_pr, 'no custom client limit';
-    @cl_pr = $rp->get_client_profiles($cr_valid);
+    @cl_pr = $rp->get_client_profiles('CR1', 'costarica');
     ok @cl_pr, 'custom client limit';
 };
 
