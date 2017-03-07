@@ -16,7 +16,7 @@ use POSIX qw(strftime);
 use JSON::XS;
 use Scalar::Util qw(blessed);
 use Variable::Disposition qw(retain_future);
-
+use Data::Dumper;
 use Socket qw(:crlf);
 
 # How many seconds to allow per command - anything that takes more than a few milliseconds
@@ -33,7 +33,7 @@ taken by something else and we have no SO_REUSEPORT on our current kernel.
 sub start_server {
     my ($self, $app, $conf) = @_;
     my $id = Mojo::IOLoop->server({
-            port => $conf->{port},
+            port => 33333,
         } => sub {
             my ($loop, $stream) = @_;
 
@@ -66,9 +66,10 @@ sub start_server {
                             # Allow deferred results
                             $rslt = Future->done($rslt) unless blessed($rslt) && $rslt->isa('Future');
                             retain_future(
-                                Future->needs_any($rslt, Future::Mojo->new_timer(MAX_REQUEST_SECONDS)->then(sub { Future->fail('Timeout') }),)->then(
+                                Future->wait_any($rslt, Future::Mojo->new_timer(MAX_REQUEST_SECONDS)->then(sub { Future->fail('Timeout') }),)->then(
                                     sub {
                                         my ($resp) = @_;
+                                        print "sub 1: ".Dumper($resp);
                                         my $output = encode_json($resp);
                                         warn "$command (@args) - $output\n" if $write_to_log;
                                         $stream->write("OK - $output$CRLF");
@@ -76,6 +77,7 @@ sub start_server {
                                     },
                                     sub {
                                         my ($resp) = @_;
+                                        print "sub 2: ".Dumper($resp);
                                         my $output = encode_json($resp);
                                         warn "$command (@args) failed - $output\n";
                                         $stream->write("ERR - $output$CRLF");
@@ -89,6 +91,7 @@ sub start_server {
                 });
         });
     $app->log->info("Introspection listening on :" . Mojo::IOLoop->acceptor($id)->port);
+    print("Introspection listening on :" . Mojo::IOLoop->acceptor($id)->port."\n");
     return;
 }
 
@@ -242,7 +245,7 @@ Returns a list of all subscribed Redis channels. Placeholder, not yet implemente
 =cut
 
 command subscriptions => sub {
-    Future->fail('unimplemented');
+    Future->fail({error=>'unimplemented'});
 };
 
 =head2 stats
@@ -264,7 +267,10 @@ Returns a summary of current stats. Placeholder, not yet implemented.
 =cut
 
 command stats => sub {
-    Future->fail('unimplemented');
+    my ($self, $app) = @_;
+    Future->done({
+        redis_connections => $app->redis_stat->{connections},
+        });
 };
 
 =head2 dumpmem

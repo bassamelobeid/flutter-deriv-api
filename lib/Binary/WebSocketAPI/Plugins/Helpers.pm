@@ -7,6 +7,8 @@ use warnings;
 use feature "state";
 use Sys::Hostname;
 use YAML::XS;
+use Guard;
+use Scalar::Util;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Locale::Maketext::ManyPluralForms {
@@ -25,6 +27,11 @@ sub register {
     $app->helper(
         active_connections => sub {
             state $connections = {};
+        });
+
+    $app->helper(
+        redis_stat=> sub {
+            state $redis_stat = {};
         });
 
     $app->helper(
@@ -100,8 +107,10 @@ sub register {
         my ($helper_name, $redis_url) = @$redis_info;
         $app->helper(
             $helper_name => sub {
+                my $c = shift;
                 state $redis = do {
                     my $redis = Mojo::Redis2->new(url => $redis_url);
+                    $c->app->redis_stat->{connections}++;
                     $redis->on(
                         error => sub {
                             my ($self, $err) = @_;
@@ -117,8 +126,10 @@ sub register {
     # the same worker
     $app->helper(
         shared_redis => sub {
+            my $c = shift;
             state $redis = do {
                 my $redis = Mojo::Redis2->new(url => $chronicle_redis_url);
+                $c->app->redis_stat->{connections}++;
                 $redis->on(
                     error => sub {
                         my ($self, $err) = @_;
@@ -149,9 +160,12 @@ sub register {
     $app->helper(
         redis => sub {
             my $c = shift;
+            Scalar::Util::weaken(my $weak_app = $c->app);
 
             if (not $c->stash->{redis}) {
                 my $redis = Mojo::Redis2->new(url => $chronicle_redis_url);
+                $weak_app->redis_stat->{connections}++;
+                $c->stash->{redis_connections_counter_guard} = guard { $weak_app->redis_stat->{connections}-- };
                 $redis->on(
                     error => sub {
                         my ($self, $err) = @_;
@@ -172,6 +186,7 @@ sub register {
     $app->helper(
         redis_pricer => sub {
             my $c = shift;
+            Scalar::Util::weaken(my $weak_app = $c->app);
 
             if (not $c->stash->{redis_pricer}) {
                 state $url_pricers = do {
@@ -182,6 +197,8 @@ sub register {
                 };
 
                 my $redis_pricer = Mojo::Redis2->new(url => $url_pricers);
+                $weak_app->redis_stat->{connections}++;
+                $c->stash->{redis_pricer_connections_counter_guard} = guard { $weak_app->redis_stat->{connections}-- };
                 $redis_pricer->on(
                     error => sub {
                         my ($self, $err) = @_;
