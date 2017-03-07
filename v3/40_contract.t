@@ -316,7 +316,7 @@ $t           = $t->send_ok({
 
 $t->message_ok;
 $res = decode_json($t->message->[1]);
-is $res->{buy}->{buy_price}, 1000 ;
+is $res->{buy}->{buy_price}, 1000;
 
 $t->finish_ok;
 
