@@ -469,14 +469,10 @@ sub startup {
         'app_id' => sub {
             my $c               = shift;
             my $possible_app_id = $c->req->param('app_id');
-            if (defined($possible_app_id) && $possible_app_id =~ /(\[1-9]{1,19})/) {
-                return $1;
+            if (defined($possible_app_id) && $possible_app_id =~ /^[1-9]{1,19}$/) {
+                return $possible_app_id;
             }
-            # that code should never be executed, but if it is, that means
-            # bug in code, as we assume APP_ID pressense, in calls, which bypass
-            # JSON-validation
-            $app->log->warn("undefined app_id, using fallback value 0");
-            return 0;
+            return;
         });
 
     $app->helper(
