@@ -38,7 +38,7 @@ use DataDog::DogStatsd::Helper qw (stats_inc stats_timing stats_count);
 use Client::Account;
 use BOM::Backoffice::Request;
 use Postgres::FeedDB::CurrencyConverter qw (in_USD);
-use BOM::Product::Transaction;
+use BOM::Transaction;
 
 # This report will only be run on the MLS.
 sub generate {
@@ -251,7 +251,7 @@ sub sell_expired_contracts {
             $bet_infos{$fmb_id} = $bet_info;
         }
 
-        my $result = BOM::Product::Transaction::sell_expired_contracts({
+        my $result = BOM::Transaction::sell_expired_contracts({
             client       => $client,
             contract_ids => \@fmb_ids_to_be_sold,
             source       => 3,                      # app id for `Binary.com riskd.pl` in auth db => oauth.apps table

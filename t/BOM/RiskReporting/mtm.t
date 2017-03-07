@@ -129,7 +129,7 @@ subtest 'realtime report generation' => sub {
     is($dm->get_last_generated_historical_marked_to_market_time, undef, 'Start with a clean slate.');
 
     my $short_code         = $fmbs[$contract_error_index]{short_code};
-    my $mocked_transaction = Test::MockModule->new('BOM::Product::Transaction');
+    my $mocked_transaction = Test::MockModule->new('BOM::Transaction');
     my $called_count       = 0;
     $mocked_transaction->mock(
         'sell_expired_contracts' => sub {
@@ -158,7 +158,7 @@ subtest 'realtime report generation' => sub {
     is($dm->get_last_generated_historical_marked_to_market_time, $now->db_timestamp, 'It ran and updated our timestamp.');
     note "Includes a lot of unit test transactions about which we don't care.";
     my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
-    is($called_count, 1, 'BOM::Product::Transaction::sell_expired_contracts called only once');
+    is($called_count, 1, 'BOM::Transaction::sell_expired_contracts called only once');
     my @msgs = $mailbox->search(
         email   => 'quants-market-data@regentmarkets.com',
         subject => qr/AutoSell Failures/
