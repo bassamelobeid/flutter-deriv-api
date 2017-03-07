@@ -5,7 +5,7 @@ PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 export PERL5OPTS=-MTest::FailWarnings=-allow_deps,1
 
 test:
-	@$(PROVE) -r t/BOM/Product/Contract/
+	@$(PROVE) -r t/BOM/
 
 tidy:
 	find . -name '*.p?.bak' -delete
