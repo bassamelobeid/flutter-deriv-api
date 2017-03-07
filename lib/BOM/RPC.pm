@@ -95,9 +95,10 @@ sub _compliance_checks {
     my $client = $params->{client} // die "client should be authed before calling this action";
 
     # checks are not applicable for virtual, costarica and champion clients
+    my $landing_company = $client->landing_company->short;
     return $params
         if ($client->is_virtual
-        or $client->landing_company->short =~ /^(?:costarica|champion)$/);
+        or $landing_company =~ /^(?:costarica|champion)$/);
 
     # as per compliance for high risk client we need to check
     # if financial assessment details are completed or not
@@ -106,6 +107,13 @@ sub _compliance_checks {
             code              => 'FinancialAssessmentRequired',
             message_to_client => localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
         });
+    }
+
+    if ($landing_company eq 'maltainvest' and not $client->get_status('crs_tin_information')) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'TINDetailsMandatory',
+                message_to_client => localize(
+                    'Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.')});
     }
 
     return $params;
