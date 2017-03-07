@@ -834,7 +834,7 @@ subtest 'spreads', sub {
 };
 
 subtest 'custom client limit' => sub {
-    plan tests => 10;
+    plan tests => 9;
     lives_ok {
         my $cl = create_client;
 
