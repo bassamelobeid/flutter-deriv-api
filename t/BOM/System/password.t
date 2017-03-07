@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use utf8;
+binmode STDOUT, ':utf8';
 
 use Test::More tests => 20;
 use BOM::Platform::Password;
@@ -20,9 +21,9 @@ ok(!BOM::Platform::Password::checkpw('foo',    Digest::SHA::sha256_hex('bar')), 
 ok(!BOM::Platform::Password::checkpw('secret', Digest::SHA::sha256_hex('foobar')), 'sha secret incorrect');
 
 # generation 1 passwords -- Current account and cashier locking passwords
-my $salt = 'GhfeHD0H2YWmtny3';
-$foohash    = "1*$salt*" . Crypt::ScryptKDF::scrypt_b64('foo',    $salt);
-$secrethash = "1*$salt*" . Crypt::ScryptKDF::scrypt_b64('secret', $salt);
+my $salt       = 'GhfeHD0H2YWmtny3';
+my $foohash    = "1*$salt*" . Crypt::ScryptKDF::scrypt_b64('foo', $salt);
+my $secrethash = "1*$salt*" . Crypt::ScryptKDF::scrypt_b64('secret', $salt);
 ok(BOM::Platform::Password::checkpw('foo',    $foohash),    'ver 1, foo, correct');
 ok(BOM::Platform::Password::checkpw('secret', $secrethash), 'ver 1, secret, correct');
 ok(!BOM::Platform::Password::checkpw('foo',    $secrethash), 'ver1, foo, incorrect');
