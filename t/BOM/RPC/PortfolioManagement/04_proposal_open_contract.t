@@ -233,7 +233,7 @@ sub _create_contract {
     }
     my $contract = produce_contract($contract_data);
 
-    my $txn = BOM::Product::Transaction->new({
+    my $txn = BOM::Transaction->new({
         client        => $client,
         contract      => $contract,
         price         => 100,

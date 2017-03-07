@@ -194,7 +194,7 @@ my $txn_data = {
     amount_type   => 'stake',
     purchase_date => $now->epoch,
 };
-my $txn = BOM::Product::Transaction->new($txn_data);
+my $txn = BOM::Transaction->new($txn_data);
 is($txn->buy(skip_validation => 1), undef, 'buy contract without error');
 $account->load;
 $balance = $account->balance + 0;

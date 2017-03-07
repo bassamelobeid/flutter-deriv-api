@@ -63,7 +63,7 @@ subtest 'sell' => sub {
         interval     => '20m',
         tick_epoches => [$now - 1, $now, $now + 1, $now + 2]);
     ok($contract);
-    my $txn = BOM::Product::Transaction->new({
+    my $txn = BOM::Transaction->new({
         client        => $client,
         contract      => $contract,
         price         => $contract->ask_price,
