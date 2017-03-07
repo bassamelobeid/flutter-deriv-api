@@ -468,10 +468,8 @@ sub startup {
             if (defined($possible_app_id) && $possible_app_id =~ /(\d{1,10})/) {
                 return $1;
             }
-            # that code should never be executed, but if it is, that means
-            # bug in code, as we assume APP_ID pressense, in calls, which bypass
-            # JSON-validation
-            $app->log->warn("undefined app_id, using fallback value 0");
+            # as of now we allow fallback but next step
+            # is to don't allow connection without app_id
             return 0;
         });
 
