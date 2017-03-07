@@ -469,7 +469,7 @@ sub startup {
         'app_id' => sub {
             my $c               = shift;
             my $possible_app_id = $c->req->param('app_id');
-            if (defined($possible_app_id) && $possible_app_id =~ /^[1-9]{1,19}$/) {
+            if (defined($possible_app_id) && $possible_app_id =~ /^(?!0)[0-9]{1,19}$/) {
                 return $possible_app_id;
             }
             return;
