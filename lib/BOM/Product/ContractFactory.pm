@@ -16,7 +16,6 @@ use Postgres::FeedDB::Spot::Tick;
 use BOM::Platform::Context qw(request);
 use BOM::Product::ContractFactory::Parser qw(
     shortcode_to_parameters
-    financial_market_bet_to_parameters
 );
 
 require UNIVERSAL::require;
@@ -271,7 +270,6 @@ sub _args_to_ref {
 
     my $params_ref =
           (ref $build_arg eq 'HASH') ? $build_arg
-        : ((ref $build_arg) =~ /FinancialMarketBet/) ? financial_market_bet_to_parameters($build_arg, $maybe_currency)
         : (defined $build_arg) ? shortcode_to_parameters($build_arg, $maybe_currency, $maybe_sold)
         :                        undef;
 

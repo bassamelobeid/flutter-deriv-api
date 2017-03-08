@@ -4,7 +4,6 @@ use Moose::Role;
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
-use BOM::Database::Model::Constants;
 use BOM::Platform::Config;
 
 my @bool_attrs = qw(is_intraday is_forward_starting is_atm_bet is_spread);
@@ -23,7 +22,7 @@ sub _report_validation_stats {
     my $tags = {
         tags => [
             'rmgenv:' . BOM::Platform::Config::env,
-            'contract_class:' . $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$self->code},
+            'contract_class:' . $self->code,
             map { substr($_, 3) . ':' . ($self->$_ ? 'yes' : 'no') } (@bool_attrs)]};
 
     stats_inc($stats_name . 'attempt', $tags);
