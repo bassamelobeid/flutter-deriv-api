@@ -17,26 +17,289 @@ use BOM::Platform::RedisReplicated;
 
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('1-Mar-2017');
+#BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+#    'currency',
+#    {
+#        rates => {
+#            1   => 0,
+#            7   => 0,
+#            30  => 0,
+#            90  => 0,
+#            180 => 0,
+#            380 => 0
+#        },
+#        recorded_date => $now,
+#        symbol        => $_,
+#    }) for qw( USD JPY JPY-USD AUD-JPY AUD AUD-USD);
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         rates => {
-            1   => 0,
-            7   => 0,
-            30  => 0,
-            90  => 0,
-            180 => 0,
-            380 => 0
+            1   => 0.683,
+            7   => 0.71,
+            30  => 0.847,
+            90  => 1.106,
+            180 => 1.225,
+            365 => 1.365
         },
         recorded_date => $now,
-        symbol        => $_,
-    }) for qw( USD JPY JPY-USD AUD-JPY AUD AUD-USD);
+        symbol        => 'USD',
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        rates => {
+            7   => 0.001,
+            30  => -0.052,
+            90  => -0.008,
+            180 => 0.024,
+            365 => 0.13
+        },
+        recorded_date => $now,
+        symbol        => 'JPY',
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        rates => {
+            1   => 1.525,
+            30  => 1.64,
+            90  => 1.79,
+            180 => 2,
+            365 => 1.839
+        },
+        recorded_date => $now,
+        symbol        => 'AUD',
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        rates => {
+            1   => -0.0273,
+            7   => -0.4626,
+            30  => -0.8753,
+            90  => -0.5304,
+            180 => -0.5374,
+            365 => -0.5863
+        },
+        recorded_date => $now,
+        symbol        => 'JPY-USD',
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        rates => {
+            1   => 1.7002,
+            7   => 1.765,
+            30  => 2.4477,
+            90  => 2.3414,
+            180 => 2.4712,
+            365 => 2.7343
+        },
+        recorded_date => $now,
+        symbol        => 'AUD-JPY',
+    });
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => $_,
-        recorded_date => $now
-    }) for qw(frxUSDJPY frxAUDJPY frxAUDUSD);
+        symbol        => 'frxUSDJPY',
+        recorded_date => $now,
+        surface       => {
+            1 => {
+                smile => {
+                    25 => 0.098,
+                    50 => 0.097,
+                    75 => 0.102
+                },
+                vol_spread => {50 => 0.01}
+            },
+            7 => {
+                smile => {
+                    25 => 0.0877,
+                    50 => 0.0865,
+                    75 => 0.0909
+                },
+                vol_spread => {50 => 0.01}
+            },
+            30 => {
+                smile => {
+                    25 => 0.095,
+                    50 => 0.0938,
+                    75 => 0.1031
+                },
+                vol_spread => {50 => 0.01}
+            },
+            60 => {
+                smile => {
+                    25 => 0.1004,
+                    50 => 0.1054,
+                    75 => 0.1161
+                },
+                vol_spread => {50 => 0.01}
+            },
+            90 => {
+                smile => {
+                    25 => 0.0963,
+                    50 => 0.102,
+                    75 => 0.1137
+                },
+                vol_spread => {50 => 0.01}
+            },
+            183 => {
+                smile => {
+                    25 => 0.0987,
+                    50 => 0.1006,
+                    75 => 0.1098
+                },
+                vol_spread => {50 => 0.01}
+            },
+            365 => {
+                smile => {
+                    25 => 0.1015,
+                    50 => 0.102,
+                    75 => 0.1122
+                },
+                vol_spread => {50 => 0.01}
+            },
+
+        }});
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxAUDJPY',
+        recorded_date => $now,
+        surface       => {
+            1 => {
+                smile => {
+                    25 => 0.0976,
+                    50 => 0.0993,
+                    75 => 0.1059
+                },
+                vol_spread => {50 => 0.01}
+            },
+            7 => {
+                smile => {
+                    25 => 0.0787,
+                    50 => 0.0802,
+                    75 => 0.0874
+                },
+                vol_spread => {50 => 0.01}
+            },
+            30 => {
+                smile => {
+                    25 => 0.0847,
+                    50 => 0.0918,
+                    75 => 0.1053
+                },
+                vol_spread => {50 => 0.01}
+            },
+            60 => {
+                smile => {
+                    25 => 0.0988,
+                    50 => 0.1106,
+                    75 => 0.1323
+                },
+                vol_spread => {50 => 0.01}
+            },
+            90 => {
+                smile => {
+                    25 => 0.1,
+                    50 => 0.1126,
+                    75 => 0.1364
+                },
+                vol_spread => {50 => 0.01}
+            },
+            183 => {
+                smile => {
+                    25 => 0.1008,
+                    50 => 0.1149,
+                    75 => 0.1412
+                },
+                vol_spread => {50 => 0.01}
+            },
+            365 => {
+                smile => {
+                    25 => 0.1024,
+                    50 => 0.1187,
+                    75 => 0.1495
+                },
+                vol_spread => {50 => 0.01}
+            },
+
+        }});
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxAUDUSD',
+        recorded_date => $now,
+        surface       => {
+            1 => {
+                smile => {
+                    25 => 0.0962,
+                    50 => 0.0979,
+                    75 => 0.1031
+                },
+                vol_spread => {50 => 0.01}
+            },
+            7 => {
+                smile => {
+                    25 => 0.0822,
+                    50 => 0.084,
+                    75 => 0.0889
+                },
+                vol_spread => {50 => 0.01}
+            },
+            30 => {
+                smile => {
+                    25 => 0.0852,
+                    50 => 0.088,
+                    75 => 0.0949
+                },
+                vol_spread => {50 => 0.01}
+            },
+            60 => {
+                smile => {
+                    25 => 0.0902,
+                    50 => 0.0947,
+                    75 => 0.1052
+                },
+                vol_spread => {50 => 0.01}
+            },
+            90 => {
+                smile => {
+                    25 => 0.0905,
+                    50 => 0.0951,
+                    75 => 0.1062
+                },
+                vol_spread => {50 => 0.01}
+            },
+            183 => {
+                smile => {
+                    25 => 0.0921,
+                    50 => 0.0969,
+                    75 => 0.1094
+                },
+                vol_spread => {50 => 0.01}
+            },
+            365 => {
+                smile => {
+                    25 => 0.0948,
+                    50 => 0.0997,
+                    75 => 0.1142
+                },
+                vol_spread => {50 => 0.01}
+            },
+
+        }});
+
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
     quote      => 114.3,
@@ -199,7 +462,7 @@ subtest 'put_call_parity_vv_non_japan' => sub {
             my $contract_theo_prob          = $c->pricing_engine->base_probability->amount;
             my $opposite_contract_theo_prob = $c->opposite_contract->pricing_engine->base_probability->amount;
             my $discounted_prob             = $c->discounted_probability->amount;
-            is roundnear(0.01, $contract_theo_prob + $opposite_contract_theo_prob), $discounted_prob,
+            is $contract_theo_prob + $opposite_contract_theo_prob, $discounted_prob,
                 "put call parity hold for " . $c->shortcode . " with payout currency $currency";
         }
     }
@@ -225,7 +488,7 @@ subtest 'put_call_parity_vv_japan' => sub {
         my $contract_theo_prob          = $c->pricing_engine->base_probability->amount;
         my $opposite_contract_theo_prob = $c->opposite_contract->pricing_engine->base_probability->amount;
         my $discounted_prob             = $c->discounted_probability->amount;
-        is roundnear(0.01, $contract_theo_prob + $opposite_contract_theo_prob), $discounted_prob, "put call parity hold for " . $c->shortcode;
+        is $contract_theo_prob + $opposite_contract_theo_prob, $discounted_prob, "put call parity hold for " . $c->shortcode;
 
     }
 };

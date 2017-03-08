@@ -48,7 +48,7 @@ has [qw(calibration_params)] => (
 sub _build_calibration_model {
     my $self = shift;
 
-    return $self->bet->category->code eq 'touchnotouch' ? 'wystup' : 'bom-surv';
+    return 'bom-surv';
 }
 
 sub _build_display_name {
