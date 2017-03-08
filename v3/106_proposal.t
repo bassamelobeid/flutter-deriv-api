@@ -25,17 +25,18 @@ my $empty_proposal = decode_json($t->message->[1]);
 is($empty_proposal->{error}->{code}, 'InputValidationFailed');
 
 my $req = {
-        "proposal"       => 1,
-        "amount"         => "100",
-        "basis"          => "payout",
-        "currency"       => "USD",
-        "contract_type"  => "CALL",
-        "symbol"         => "R_100",
-        "duration"       => "1",
-        "duration_unit"  => "m" };
-                                            
+    "proposal"      => 1,
+    "amount"        => "100",
+    "basis"         => "payout",
+    "currency"      => "USD",
+    "contract_type" => "CALL",
+    "symbol"        => "R_100",
+    "duration"      => "1",
+    "duration_unit" => "m"
+};
+
 my $res;
-                                            
+
 $t->send_ok({json => $req})->message_ok;
 $res = decode_json($t->message->[1]);
 ok $res->{proposal}->{id}, 'Should return id';
