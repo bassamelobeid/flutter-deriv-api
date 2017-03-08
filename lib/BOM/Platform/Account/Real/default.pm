@@ -411,7 +411,8 @@ sub validate_account_details {
         $details->{$key} = (grep { $key eq $_ } qw /place_of_birth tax_residence tax_identification_number/) ? $value : $value // '';
 
         # Japan real a/c has NO salutation
-        # mf account fields place_of_birth tax_residence tax_identification_number are marked as optional as of now
+        # account fields place_of_birth tax_residence tax_identification_number
+        # are optional for others except financial account
         next
             if (any { $key eq $_ }
             qw(address_line_2 address_state address_postcode salutation place_of_birth tax_residence tax_identification_number));
@@ -420,12 +421,14 @@ sub validate_account_details {
 
     # it's not a standard way, we need to refactor this sub later to
     # to remove reference to database columns name from code
-    # if ($broker eq 'MF') {
-    #     foreach my $field (qw /place_of_birth tax_residence tax_identification_number/) {
-    #         return {error => 'InsufficientAccountDetails'} unless $args->{$field};
-    #         $details->{$field} = $args->{$field};
-    #     }
-    # }
+    # need to check broker here as its upgrade from MLT so
+    # landing company would be malta not maltainvest
+    if ($broker eq 'MF') {
+        foreach my $field (qw /place_of_birth tax_residence tax_identification_number/) {
+            return {error => 'InsufficientAccountDetails'} unless $args->{$field};
+            $details->{$field} = $args->{$field};
+        }
+    }
     return {details => $details};
 }
 

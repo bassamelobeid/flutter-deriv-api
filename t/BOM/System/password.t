@@ -39,7 +39,8 @@ ok(!BOM::Platform::Password::checkpw('secret', BOM::Platform::Password::hashpw('
 
 ok(BOM::Platform::Password::checkpw('São Paulo', BOM::Platform::Password::hashpw('São Paulo')), 'hash password round trip, "São Paulo", correct');
 
-ok(!BOM::Platform::Password::checkpw('São Paulo', BOM::Platform::Password::hashpw('Sao Paulo')), 'hash password round trip, "São Paulo", incorrect');
+ok(!BOM::Platform::Password::checkpw('São Paulo', BOM::Platform::Password::hashpw('Sao Paulo')),
+    'hash password round trip, "São Paulo", incorrect');
 ok(
     BOM::Platform::Password::checkpw(
         'ѦѧѨѩѪԱԲԳԴԵԶԷႤႥႦႧᚕᚖᚗᚘᚙᚚ',
