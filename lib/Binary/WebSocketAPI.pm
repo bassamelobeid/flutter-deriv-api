@@ -103,8 +103,12 @@ sub startup {
                 $c->stash(debug => 1);
             }
 
-            # we cannot use $c->app_id, as it falls back
-            my $app_id    = defang($c->req->param('app_id'));
+            my $app_id = $c->app_id;
+            $c->render(
+                json   => {error => 'InvalidAppID'},
+                status => 401
+            ) unless $app_id;
+
             my $client_ip = $c->client_ip;
             my $brand     = defang($c->req->param('brand'));
 
@@ -120,7 +124,7 @@ sub startup {
                 landing_company_name => $c->landing_company_name,
                 user_agent           => $user_agent,
                 ua_fingerprint       => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
-                ($app_id =~ /^\d{1,10}$/) ? (source => $app_id) : (),
+                ($app_id) ? (source => $app_id) : (),
                 brand => (($brand =~ /^\w{1,10}$/) ? $brand : 'binary'),
             );
         });
@@ -468,12 +472,10 @@ sub startup {
         'app_id' => sub {
             my $c               = shift;
             my $possible_app_id = $c->req->param('app_id');
-            if (defined($possible_app_id) && $possible_app_id =~ /(\d{1,10})/) {
-                return $1;
+            if (defined($possible_app_id) && $possible_app_id =~ /^(?!0)[0-9]{1,19}$/) {
+                return $possible_app_id;
             }
-            # as of now we allow fallback but next step
-            # is to don't allow connection without app_id
-            return 0;
+            return undef;
         });
 
     $app->helper(
