@@ -667,10 +667,11 @@ sub set_settings {
     my $tax_residence             = $args->{'tax_residence'}             // '';
     my $tax_identification_number = $args->{'tax_identification_number'} // '';
 
-    #    return BOM::RPC::v3::Utility::create_error({
-    #            code              => 'TINDetailsMandatory',
-    #            message_to_client => 'Tax related information is mandatory for legal and regulatory requirement.'
-    #        }) if ($client->landing_company->short eq 'maltainvest' and (not $tax_residence or not $tax_identification_number));
+    return BOM::RPC::v3::Utility::create_error({
+            code => 'TINDetailsMandatory',
+            message_to_client =>
+                localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.')}
+    ) if ($client->landing_company->short eq 'maltainvest' and (not $tax_residence or not $tax_identification_number));
 
     my $now             = Date::Utility->new;
     my $address1        = $args->{'address_line_1'};
