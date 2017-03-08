@@ -24,6 +24,8 @@ __PACKAGE__->meta->setup(
         currency_code_2       => { type => 'varchar', length => 3, not_null => 1 },
         target_country        => { type => 'varchar', default => '', length => 255, not_null => 1 },
         supported_banks       => { type => 'varchar', length => 500 },
+        min_withdraw          => { type => 'numeric' },
+        max_withdraw          => { type => 'numeric' },
     ],
 
     primary_key_columns => [ 'client_loginid' ],
