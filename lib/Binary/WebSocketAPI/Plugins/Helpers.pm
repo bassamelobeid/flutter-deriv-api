@@ -29,9 +29,12 @@ sub register {
             state $connections = {};
         });
 
+    # for storing various statistic data
     $app->helper(
-        redis_stat=> sub {
-            state $redis_stat = {};
+        stat => sub {
+            state $stat = {
+                start_time => time,
+            };
         });
 
     $app->helper(
@@ -110,7 +113,7 @@ sub register {
                 my $c = shift;
                 state $redis = do {
                     my $redis = Mojo::Redis2->new(url => $redis_url);
-                    $c->app->redis_stat->{connections}++;
+                    $c->app->stat->{current_redis_connections}++;
                     $redis->on(
                         error => sub {
                             my ($self, $err) = @_;
@@ -129,7 +132,7 @@ sub register {
             my $c = shift;
             state $redis = do {
                 my $redis = Mojo::Redis2->new(url => $chronicle_redis_url);
-                $c->app->redis_stat->{connections}++;
+                $c->app->stat->{current_redis_connections}++;
                 $redis->on(
                     error => sub {
                         my ($self, $err) = @_;
@@ -164,8 +167,8 @@ sub register {
 
             if (not $c->stash->{redis}) {
                 my $redis = Mojo::Redis2->new(url => $chronicle_redis_url);
-                $weak_app->redis_stat->{connections}++;
-                $c->stash->{redis_connections_counter_guard} = guard { $weak_app->redis_stat->{connections}-- };
+                $weak_app->stat->{current_redis_connections}++;
+                $c->stash->{redis_connections_counter_guard} = guard { $weak_app->stat->{current_redis_connections}-- };
                 $redis->on(
                     error => sub {
                         my ($self, $err) = @_;
@@ -197,8 +200,8 @@ sub register {
                 };
 
                 my $redis_pricer = Mojo::Redis2->new(url => $url_pricers);
-                $weak_app->redis_stat->{connections}++;
-                $c->stash->{redis_pricer_connections_counter_guard} = guard { $weak_app->redis_stat->{connections}-- };
+                $weak_app->stat->{current_redis_connections}++;
+                $c->stash->{redis_pricer_connections_counter_guard} = guard { $weak_app->stat->{current_redis_connections}-- };
                 $redis_pricer->on(
                     error => sub {
                         my ($self, $err) = @_;

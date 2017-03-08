@@ -303,6 +303,9 @@ sub on_client_connect {
     # We use a weakref in case the disconnect is never called
     warn "Client connect request but $c is already in active connection list" if exists $c->app->active_connections->{$c};
     Scalar::Util::weaken($c->app->active_connections->{$c} = $c);
+    print "increasing connections_count...";
+    $c->app->stat->{connections_count}++;
+    print $c->app->stat->{connections_count} . "\n";
     init_redis_connections($c);
     $c->rate_limitations_load;
     return;

@@ -16,8 +16,10 @@ use POSIX qw(strftime);
 use JSON::XS;
 use Scalar::Util qw(blessed);
 use Variable::Disposition qw(retain_future);
-use Data::Dumper;
 use Socket qw(:crlf);
+use Proc::ProcessTable;
+
+use feature 'state';
 
 # How many seconds to allow per command - anything that takes more than a few milliseconds
 # is probably a bad idea, please do not rely on this for any meaningful protection
@@ -69,7 +71,6 @@ sub start_server {
                                 Future->wait_any($rslt, Future::Mojo->new_timer(MAX_REQUEST_SECONDS)->then(sub { Future->fail('Timeout') }),)->then(
                                     sub {
                                         my ($resp) = @_;
-                                        print "sub 1: ".Dumper($resp);
                                         my $output = encode_json($resp);
                                         warn "$command (@args) - $output\n" if $write_to_log;
                                         $stream->write("OK - $output$CRLF");
@@ -77,7 +78,6 @@ sub start_server {
                                     },
                                     sub {
                                         my ($resp) = @_;
-                                        print "sub 2: ".Dumper($resp);
                                         my $output = encode_json($resp);
                                         warn "$command (@args) failed - $output\n";
                                         $stream->write("ERR - $output$CRLF");
@@ -91,7 +91,6 @@ sub start_server {
                 });
         });
     $app->log->info("Introspection listening on :" . Mojo::IOLoop->acceptor($id)->port);
-    print("Introspection listening on :" . Mojo::IOLoop->acceptor($id)->port."\n");
     return;
 }
 
@@ -245,7 +244,7 @@ Returns a list of all subscribed Redis channels. Placeholder, not yet implemente
 =cut
 
 command subscriptions => sub {
-    Future->fail({error=>'unimplemented'});
+    Future->fail({error => 'unimplemented'});
 };
 
 =head2 stats
@@ -268,9 +267,14 @@ Returns a summary of current stats. Placeholder, not yet implemented.
 
 command stats => sub {
     my ($self, $app) = @_;
+    state $pt = Proc::ProcessTable->new;
+    my $me = (grep { $_->pid == $$ } @{$pt->table})[0];
     Future->done({
-        redis_connections => $app->redis_stat->{connections},
-        });
+        connections_count => $app->stat->{connections_count},
+        redis_connections => $app->stat->{current_redis_connections},
+        uptime            => time - $app->stat->{start_time},
+        rss               => $me->rss,
+    });
 };
 
 =head2 dumpmem
