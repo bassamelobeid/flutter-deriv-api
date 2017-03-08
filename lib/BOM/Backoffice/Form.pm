@@ -700,7 +700,7 @@ sub get_payment_agent_registration_form {
 
     my $input_field_pa_max_withdraw = {
         'label' => {
-            'text' => localize('Short summary of your Payment Agent service'),
+            'text' => localize('Max withdrawal limit'),
             'for'  => 'pa_max_withdraw'
         },
         'input' => {
@@ -723,7 +723,7 @@ sub get_payment_agent_registration_form {
 
     my $input_field_pa_min_withdraw = {
         'label' => {
-            'text' => localize('Short summary of your Payment Agent service'),
+            'text' => localize('Min withdrawal limit'),
             'for'  => 'pa_min_withdraw'
         },
         'input' => {
