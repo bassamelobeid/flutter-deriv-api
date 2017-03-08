@@ -13,7 +13,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Product::Transaction;
+use BOM::Transaction;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -94,7 +94,7 @@ for (1 .. 10) {
         barrier      => 'S0P',
     });
 
-    my $txn = BOM::Product::Transaction->new({
+    my $txn = BOM::Transaction->new({
         client        => $test_client,
         contract      => $contract_expired,
         price         => 100,
