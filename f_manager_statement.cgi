@@ -8,7 +8,7 @@ use Client::Account;
 
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::DataMapper::Transaction;
-use BOM::Product::Transaction;
+use BOM::Transaction;
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -69,7 +69,7 @@ print "<INPUT type=\"submit\" value=\"Go\"></form>
 <input type=submit value=\"CLIENT STATEMENT\" />
 </form><div style=\"clear:both\"></div>";
 
-BOM::Product::Transaction::sell_expired_contracts({
+BOM::Transaction::sell_expired_contracts({
     client => $client,
 });
 
