@@ -331,14 +331,7 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         'date_start'       => '1476676000',
         "streaming_params" => {add_theo_probability => 1},
     };
-    my $result;
-    like(
-        warning {
-            $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
-        },
-        qr/_get_ask pre_validate_start_expire_dates failed/,
-        "Expected warning"
-    );
+    my $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
     my $expected = {
         error => {
             'code'              => 'ContractCreationFailure',
@@ -359,13 +352,7 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         'date_start'       => '1476676000',
         "streaming_params" => {add_theo_probability => 1},
     };
-    like(
-        warning {
-            $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
-        },
-        qr/_get_ask pre_validate_start_expire_dates failed/,
-        "Expected warning"
-    );
+    $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
     $expected = {
         error => {
             'code'              => 'ContractCreationFailure',
@@ -386,13 +373,7 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         'date_start'       => '1476670200',
         "streaming_params" => {add_theo_probability => 1},
     };
-    like(
-        warning {
-            $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
-        },
-        qr/_get_ask pre_validate_start_expire_dates failed/,
-        "Expected warning"
-    );
+    $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
     $expected = {
         error => {
             'code'              => 'ContractCreationFailure',
@@ -469,14 +450,8 @@ subtest 'send_ask_when_date_expiry_smaller_than_date_start' => sub {
 
             "streaming_params" => {add_theo_probability => 1},
         }};
-    like(
-        warning {
-            $c->call_ok('send_ask', $params)->has_error->error_code_is('ContractCreationFailure')->error_message_is('Cannot create contract');
-        },
-        qr/_get_ask pre_validate_start_expire_dates failed/,
-        "Expected warning"
-    );
-
+    $c->call_ok('send_ask', $params)->has_error->error_code_is('ContractCreationFailure')->error_message_is('Cannot create contract');
+    
 };
 
 subtest 'send_multiple_ask' => sub {
@@ -700,6 +675,7 @@ subtest $method => sub {
             'longcode'     => "Win payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.",
             'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
+            'barrier'      => 'S0P',
         },
         'result is ok'
     );
@@ -827,7 +803,7 @@ subtest $method => sub {
         'shortcode'       => 'CALL_FRXAUDCAD_196.72_1127288260_1127288662_S0P_0',
         'underlying'      => 'frxAUDCAD',
         is_valid_to_sell  => 0,
-        validation_error  => 'This contract has been sold.'
+        validation_error  => 'This contract has been sold.',
     };
     foreach my $key (keys %$expected_result) {
         cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";

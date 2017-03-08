@@ -129,7 +129,6 @@ sub _get_ask {
         die unless pre_validate_start_expire_dates($p2);
     }
     catch {
-        warn __PACKAGE__ . " _get_ask pre_validate_start_expire_dates failed, parameters: " . JSON::XS->new->allow_blessed->encode($p2);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
@@ -588,6 +587,14 @@ sub get_contract_details {
         display_name => $contract->underlying->display_name,
         date_expiry  => $contract->date_expiry->epoch
     };
+
+    if ($contract->two_barriers) {
+        $response->{high_barrier} = $contract->high_barrier->supplied_barrier;
+        $response->{low_barrier}  = $contract->low_barrier->supplied_barrier;
+    } else {
+        $response->{barrier} = $contract->barrier ? $contract->barrier->supplied_barrier : undef;
+    }
+
     return $response;
 }
 
