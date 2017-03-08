@@ -6,7 +6,6 @@ use warnings;
 use Exporter 'import';
 our @EXPORT_OK = qw(
     shortcode_to_parameters
-    financial_market_bet_to_parameters
 );
 
 use BOM::Product::Contract::Strike;
@@ -26,78 +25,8 @@ use LandingCompany::Offerings qw(get_all_contract_types);
 use BOM::Platform::Runtime;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Database::Model::Constants;
 use LandingCompany::Registry;
 use List::MoreUtils qw(uniq);
-
-=head2 financial_market_bet_to_parameters
-
-Convert an FMB into parameters suitable for creating a BOM::Product::Contract
-
-=cut
-
-sub financial_market_bet_to_parameters {
-    my $fmb      = shift;
-    my $currency = shift;
-
-    # don't bother to get legacy parameters; rather we can just use shortcode
-    if ($fmb->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_LEGACY_BET) {
-        return shortcode_to_parameters($fmb->short_code, $currency, $fmb->is_sold);
-    }
-
-    my $underlying     = create_underlying($fmb->underlying_symbol);
-    my $bet_parameters = {
-        bet_type    => $fmb->bet_type,
-        underlying  => $underlying,
-        amount_type => 'payout',
-        amount      => $fmb->payout_price,
-        currency    => $currency,
-        is_sold     => $fmb->is_sold
-    };
-
-    my $purchase_time       = Date::Utility->new($fmb->purchase_time);
-    my $contract_start_time = Date::Utility->new($fmb->start_time->epoch);
-    # since a forward starting contract needs to start 5 minutes in the future,
-    # 5 seconds is a safe mark.
-    if ($contract_start_time->epoch - $purchase_time->epoch > 5) {
-        $bet_parameters->{starts_as_forward_starting} = 1;
-    }
-    $bet_parameters->{date_start} = $contract_start_time;
-    $bet_parameters->{date_expiry} = Date::Utility->new($fmb->expiry_time->epoch) if $fmb->expiry_time;
-
-    if ($fmb->tick_count) {
-        $bet_parameters->{tick_expiry} = 1;
-        $bet_parameters->{tick_count}  = $fmb->tick_count;
-    }
-
-    if ($fmb->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_HIGHER_LOWER_BET) {
-        if (defined $fmb->relative_barrier) {
-            $bet_parameters->{barrier} = $fmb->relative_barrier;
-        } elsif (defined $fmb->absolute_barrier) {
-            $bet_parameters->{barrier} = $fmb->absolute_barrier;
-        }
-    } elsif ($fmb->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_DIGIT_BET) {
-        $bet_parameters->{'barrier'} = $fmb->last_digit;
-    } elsif ($fmb->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_RANGE_BET) {
-        $bet_parameters->{'high_barrier'} =
-              $fmb->relative_higher_barrier
-            ? $fmb->relative_higher_barrier
-            : $fmb->absolute_higher_barrier;
-        $bet_parameters->{'low_barrier'} =
-              $fmb->relative_lower_barrier
-            ? $fmb->relative_lower_barrier
-            : $fmb->absolute_lower_barrier;
-    } elsif ($fmb->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_TOUCH_BET) {
-        $bet_parameters->{'barrier'} =
-              $fmb->relative_barrier
-            ? $fmb->relative_barrier
-            : $fmb->absolute_barrier;
-    } elsif ($fmb->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_SPREAD_BET) {
-        $bet_parameters->{$_} = $fmb->$_ for qw(amount_per_point stop_type stop_loss stop_profit spread);
-    }
-
-    return $bet_parameters;
-}
 
 =head2 shortcode_to_parameters
 
