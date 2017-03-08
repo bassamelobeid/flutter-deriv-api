@@ -129,7 +129,6 @@ sub _get_ask {
         die unless pre_validate_start_expire_dates($p2);
     }
     catch {
-        warn __PACKAGE__ . " _get_ask pre_validate_start_expire_dates failed, parameters: " . JSON::XS->new->allow_blessed->encode($p2);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
