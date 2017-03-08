@@ -172,6 +172,8 @@ $oauth = BOM::Database::Model::OAuth->new;
 ok $oauth->confirm_scope($test_appid, $cr_1), 'confirm scope';
 my ($access_token) = $oauth->store_access_token_only($test_appid, $cr_1);
 
+$t->finish_ok;
+
 $t = build_wsapi_test();
 $t = $t->send_ok({json => {authorize => $access_token}})->message_ok;
 $t = $t->send_ok({
