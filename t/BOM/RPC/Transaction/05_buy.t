@@ -205,7 +205,7 @@ subtest 'app_markup_transaction' => sub {
     my $contract = Test::BOM::RPC::Contract::create_contract();
 
     my $now = time - 180;
-    my $txn = BOM::Product::Transaction->new({
+    my $txn = BOM::Transaction->new({
         client        => $client,
         contract      => $contract,
         price         => $contract->ask_price,
@@ -218,7 +218,7 @@ subtest 'app_markup_transaction' => sub {
     my $app_markup_percentage = 1;
     $contract = Test::BOM::RPC::Contract::create_contract(app_markup_percentage => $app_markup_percentage);
     $now      = time - 120;
-    $txn      = BOM::Product::Transaction->new({
+    $txn      = BOM::Transaction->new({
         client        => $client,
         contract      => $contract,
         price         => $contract->ask_price,
@@ -232,7 +232,7 @@ subtest 'app_markup_transaction' => sub {
     $contract = Test::BOM::RPC::Contract::create_contract(basis => 'stake');
     my $payout = $contract->payout;
     $now = time - 60;
-    $txn = BOM::Product::Transaction->new({
+    $txn = BOM::Transaction->new({
         client        => $client,
         contract      => $contract,
         price         => $contract->ask_price,
@@ -248,7 +248,7 @@ subtest 'app_markup_transaction' => sub {
         app_markup_percentage => $app_markup_percentage
     );
     $now = time;
-    $txn = BOM::Product::Transaction->new({
+    $txn = BOM::Transaction->new({
         client        => $client,
         contract      => $contract,
         price         => $contract->ask_price,
@@ -265,7 +265,7 @@ subtest 'app_markup_transaction' => sub {
         app_markup_percentage => $app_markup_percentage
     );
     $now = time;
-    $txn = BOM::Product::Transaction->new({
+    $txn = BOM::Transaction->new({
         client        => $client,
         contract      => $contract,
         price         => $contract->ask_price,

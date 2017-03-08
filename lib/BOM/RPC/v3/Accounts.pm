@@ -25,7 +25,7 @@ use BOM::Platform::User;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Token;
-use BOM::Product::Transaction;
+use BOM::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
 use BOM::Platform::Config;
 use BOM::Platform::Password;
@@ -1263,7 +1263,7 @@ sub reality_check {
 
     # sell expired contracts so that reality check has proper
     # count for open_contract_count
-    BOM::Product::Transaction::sell_expired_contracts({
+    BOM::Transaction::sell_expired_contracts({
         client => $client,
         source => $params->{source},
     });
