@@ -35,7 +35,7 @@ taken by something else and we have no SO_REUSEPORT on our current kernel.
 sub start_server {
     my ($self, $app, $conf) = @_;
     my $id = Mojo::IOLoop->server({
-            port => 33333,
+            port => $conf->{port},
         } => sub {
             my ($loop, $stream) = @_;
 
@@ -270,10 +270,10 @@ command stats => sub {
     state $pt = Proc::ProcessTable->new;
     my $me = (grep { $_->pid == $$ } @{$pt->table})[0];
     Future->done({
-        connections_count => $app->stat->{connections_count},
-        redis_connections => $app->stat->{current_redis_connections},
-        uptime            => time - $app->stat->{start_time},
-        rss               => $me->rss,
+        connections_count         => $app->stat->{connections_count},
+        current_redis_connections => $app->stat->{current_redis_connections},
+        uptime                    => time - $app->stat->{start_time},
+        rss                       => $me->rss,
     });
 };
 
