@@ -37,10 +37,10 @@ $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
 is $authorize->{msg_type}, 'authorize', "authorised";
 
-my $i = 0;
+my $i         = 0;
 my $limit_hit = 0;
 my $call_type = 'portfolio';
-while(!$limit_hit && $i < 500) {
+while (!$limit_hit && $i < 500) {
     $t->send_ok({json => {$call_type => 1}})->message_ok;
     my $msg = decode_json($t->message->[1]);
     $limit_hit = ($msg->{error}->{code} // '?') eq 'RateLimit';
@@ -53,7 +53,7 @@ pass "rate limit reached";
 $t->send_ok({json => {logout => 1}})->message_ok;
 my $logout = decode_json($t->message->[1]);
 is $logout->{msg_type}, 'logout';
-is $logout->{logout}, 1;
+is $logout->{logout},   1;
 
 $t->send_ok({json => {authorize => $token}})->message_ok;
 $authorize = decode_json($t->message->[1]);
