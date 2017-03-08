@@ -10,7 +10,7 @@ use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
-use BOM::Product::Transaction;
+use BOM::Transaction;
 use BOM::Platform::Context qw (localize request);
 use Client::Account;
 use BOM::Database::DataMapper::FinancialMarketBet;
@@ -62,7 +62,7 @@ sub buy {
         $price = $contract_parameters->{amount};
     }
 
-    my $trx = BOM::Product::Transaction->new({
+    my $trx = BOM::Transaction->new({
             client   => $client,
             contract => $contract,
             price    => ($price || 0),
@@ -163,7 +163,7 @@ sub buy_contract_for_multiple_accounts {
     my ($contract, $response);
     if ($found_at_least_one) {
 
-        # NOTE: we rely here on BOM::Product::Transaction to perform all the
+        # NOTE: we rely here on BOM::Transaction to perform all the
         #       client validations like client_status and self_exclusion.
 
         my $source              = $params->{source};
@@ -210,7 +210,7 @@ sub buy_contract_for_multiple_accounts {
             $price = $contract_parameters->{amount};
         }
 
-        my $trx = BOM::Product::Transaction->new({
+        my $trx = BOM::Transaction->new({
             client   => $client,
             multiple => \@result,
             contract => $contract,
@@ -283,7 +283,7 @@ sub sell {
     $contract_parameters->{landing_company} = $client->landing_company->short;
     my $amount_type = $contract_parameters->{amount_type};
     my $contract    = produce_contract($contract_parameters);
-    my $trx         = BOM::Product::Transaction->new({
+    my $trx         = BOM::Transaction->new({
         client   => $client,
         contract => $contract,
         (defined $amount_type) ? (amount_type => $amount_type) : (),

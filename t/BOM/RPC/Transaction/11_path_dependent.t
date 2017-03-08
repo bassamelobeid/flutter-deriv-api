@@ -105,7 +105,7 @@ subtest 'contract creation and purchase' => sub {
     }
     'generic';
 
-    $txn = BOM::Product::Transaction->new({
+    $txn = BOM::Transaction->new({
         client        => $client,
         contract      => $contract,
         price         => $contract->ask_price,
