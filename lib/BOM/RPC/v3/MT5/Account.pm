@@ -3,8 +3,9 @@ package BOM::RPC::v3::MT5::Account;
 use strict;
 use warnings;
 
+use Guard;
 use YAML::XS;
-use List::Util qw(any);
+use List::Util qw(any first);
 use Try::Tiny;
 use File::ShareDir;
 use Locale::Country::Extra;
@@ -54,33 +55,45 @@ sub mt5_new_account {
     my $mt5_suspended = _is_mt5_suspended();
     return $mt5_suspended if $mt5_suspended;
 
-    my $client       = $params->{client};
-    my $args         = $params->{args};
-    my $account_type = delete $args->{account_type};
+    my $client           = $params->{client};
+    my $args             = $params->{args};
+    my $account_type     = delete $args->{account_type};
+    my $mt5_account_type = delete $args->{mt5_account_type} // '';
+    my $brand            = Brands->new(name => request()->brand);
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'MT5SamePassword',
+            message_to_client => localize('Investor password cannot be same as main password.')}
+    ) if (($args->{mainPassword} // '') eq ($args->{investPassword} // ''));
 
     my $group;
     if ($account_type eq 'demo') {
         if ($client and $client->residence eq 'jp') {
-            $group = 'demo\japan-virtual';
+            $group = 'demo\japan_virtual';
         } else {
-            $group = 'demo\virtual';
+            $group = 'demo\\' . $brand->name . '_virtual';
         }
     } elsif ($account_type eq 'gaming' or $account_type eq 'financial') {
-        # 5 Sept 2016: only CR fully authenticated client can open MT real a/c
-        unless ($client->landing_company->short eq 'costarica') {
-            return BOM::RPC::v3::Utility::permission_error();
-        }
+        # 5 Sept 2016: only CR and Champion fully authenticated client can open MT real a/c
+        return BOM::RPC::v3::Utility::permission_error() if ($client->landing_company->short !~ /^(?:costarica|champion)$/);
 
-        if ($account_type eq 'financial' && !$client->client_fully_authenticated) {
-            return BOM::RPC::v3::Utility::permission_error();
+        if ($account_type eq 'financial') {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'FinancialAssessmentMandatory',
+                    message_to_client => localize('Please complete financial assessment.')}) unless $client->financial_assessment();
+
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'InvalidSubAccountType',
+                    message_to_client => localize('Invalid sub account type.')}) unless ($mt5_account_type =~ /^(?:cent|standard|stp)$/);
         }
 
         # get MT company from countries.yml
         my $mt_key         = 'mt_' . $account_type . '_company';
         my $mt_company     = 'none';
-        my $countries_list = Brands->new(name => request()->brand)->countries_instance->countries_list;
-        if (defined $countries_list->{$client->residence} && defined $countries_list->{$client->residence}->{$mt_key}) {
-            $mt_company = $countries_list->{$client->residence}->{$mt_key};
+        my $residence      = $client->residence;
+        my $countries_list = $brand->countries_instance->countries_list;
+        if (defined $countries_list->{$residence} && defined $countries_list->{$residence}->{$mt_key}) {
+            $mt_company = $countries_list->{$residence}->{$mt_key};
         }
 
         if ($mt_company eq 'none') {
@@ -91,6 +104,8 @@ sub mt5_new_account {
         $args->{agent} = _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
 
         $group = 'real\\' . $mt_company;
+        $group .= "_$mt5_account_type" if $account_type eq 'financial';
+        $group .= "_$residence" if (first { $residence eq $_ } @{$brand->countries_with_own_mt5_group});
     } else {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccountType',
@@ -137,7 +152,7 @@ sub mt5_new_account {
     my $balance = 0;
     # funds in Virtual money
     if ($account_type eq 'demo') {
-        $balance = 5000;
+        $balance = 10000;
         $status  = BOM::MT5::User::deposit({
             login   => $mt5_login,
             amount  => $balance,
@@ -153,9 +168,9 @@ sub mt5_new_account {
 
     return {
         login        => $mt5_login,
+        balance      => $balance,
         account_type => $account_type,
-        balance      => $balance
-    };
+        ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()};
 }
 
 sub _check_logins {
@@ -208,7 +223,8 @@ sub _mt5_is_real_account {
         args   => {login => $mt_login},
     });
 
-    return ($settings->{group} // '') =~ /^real\\/;
+    return $settings if ($settings->{group} // '') =~ /^real\\/;
+    return;
 }
 
 sub mt5_set_settings {
@@ -359,6 +375,9 @@ sub mt5_deposit {
         return $error_sub->(localize('If this error persists, please contact customer support.'),
             "Account stuck in previous transaction $fm_loginid");
     }
+    scope_guard {
+        $fm_client_db->unfreeze;
+    };
 
     # From the point of view of our system, we're withdrawing
     # money to deposit into MT5
@@ -374,9 +393,6 @@ sub mt5_deposit {
     };
 
     if ($withdraw_error) {
-        # should be save to unlock account
-        $fm_client_db->unfreeze;
-
         return $error_sub->(
             BOM::RPC::v3::Cashier::__client_withdrawal_notes({
                     client => $fm_client,
@@ -418,7 +434,6 @@ sub mt5_deposit {
         return $error_sub->($status->{error});
     }
 
-    $fm_client_db->unfreeze;
     return {
         status                => 1,
         binary_transaction_id => $txn->id
@@ -461,8 +476,16 @@ sub mt5_withdrawal {
     if ($to_client->is_virtual) {
         return BOM::RPC::v3::Utility::permission_error();
     }
-    if (not _mt5_is_real_account($to_client, $fm_mt5)) {
+    my $settings;
+    unless ($settings = _mt5_is_real_account($to_client, $fm_mt5)) {
         return BOM::RPC::v3::Utility::permission_error();
+    }
+
+    # check for fully authenticated only if it's not gaming account
+    # as of now we only support gaming for binary brand, in future if we
+    # support for champion please revisit this
+    if (($settings->{group} // '') !~ /^real\\costarica$/ and not $client->client_fully_authenticated) {
+        return $error_sub->(localize('Client is not fully authenticated.'));
     }
 
     if ($to_client->currency ne 'USD') {
@@ -483,9 +506,11 @@ sub mt5_withdrawal {
         return $error_sub->(localize('If this error persists, please contact customer support.'),
             "Account stuck in previous transaction $to_loginid");
     }
+    scope_guard {
+        $to_client_db->unfreeze;
+    };
 
     my $comment = "Transfer from MT5 account $fm_mt5 to $to_loginid.";
-
     # withdraw from MT5 a/c
     my $status = BOM::MT5::User::withdrawal({
         login   => $fm_mt5,
@@ -519,7 +544,6 @@ sub mt5_withdrawal {
     $account->save(cascade => 1);
     $payment->save(cascade => 1);
 
-    $to_client_db->unfreeze;
     return {
         status                => 1,
         binary_transaction_id => $txn->id
