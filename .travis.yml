@@ -34,6 +34,7 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/php-mt5-webapi
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-transaction
 
     - /tmp/travis-scripts/redis.sh
 
