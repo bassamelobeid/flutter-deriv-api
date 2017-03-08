@@ -184,6 +184,19 @@ subtest 'landing_companies_specific' => sub {
     $client_mf->set_default_account('EUR');
     $client_mf->save;
 
+    my $assessment = $client_mf->financial_assessment();
+    $client_mf->aml_risk_classification('high');
+    $client_mf->save;
+
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired',
+        'MF client with High risk should have completed financial assessment')
+        ->error_message_is('Please complete the financial assessment form to lift your withdrawal and trading limits.',
+        'MF client with High risk should have completed financial assessment');
+
+    $client_mf->aml_risk_classification('low');
+    $client_mf->save;
+
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_AUTHENTICATE', 'MF client needs to be fully authenticated')
         ->error_message_is('Client is not fully authenticated.', 'MF client needs to be fully authenticated');
@@ -198,9 +211,10 @@ subtest 'landing_companies_specific' => sub {
     $client_mf->set_status('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
     $client_mf->save;
 
-    #    $rpc_ct->call_ok($method, $params)
-    #        ->has_no_system_error->has_error->error_code_is('ASK_TIN_INFORMATION', 'tax information is required for malatainvest')
-    #        ->error_message_is('Tax information is required.', 'tax information is required for malatainvest');
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('ASK_TIN_INFORMATION', 'tax information is required for malatainvest')
+        ->error_message_is('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.',
+        'tax information is required for malatainvest');
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
 

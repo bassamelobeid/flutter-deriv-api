@@ -88,11 +88,47 @@ sub _validate_tnc {
     return $params;
 }
 
-#
+sub _compliance_checks {
+    my $params = shift;
+
+    # we shouldn't get to this error, so we can die it directly
+    my $client = $params->{client} // die "client should be authed before calling this action";
+
+    # checks are not applicable for virtual, costarica and champion clients
+    return $params
+        if ($client->is_virtual
+        or $client->landing_company->short =~ /^(?:costarica|champion)$/);
+
+    # as per compliance for high risk client we need to check
+    # if financial assessment details are completed or not
+    if (($client->aml_risk_classification // '') eq 'high' and not $client->financial_assessment()) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'FinancialAssessmentRequired',
+            message_to_client => localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
+        });
+    }
+
+    return $params;
+}
+
+sub _check_tax_information {
+    my $params = shift;
+
+    # we shouldn't get to this error, so we can die it directly
+    my $client = $params->{client} // die "client should be authed before calling this action";
+
+    if ($client->landing_company->short eq 'maltainvest' and not $client->get_status('crs_tin_information')) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'TINDetailsMandatory',
+                message_to_client => localize(
+                    'Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.')});
+    }
+
+    return $params;
+}
+
 # don't allow to trade for unwelcome_clients
 # and for MLT and MX we don't allow trading without confirmed age
-#
-
 sub _check_trade_status {
     my $params = shift;
 
@@ -114,15 +150,17 @@ sub register {
 
     # check actions at register time
     my %actions = (
-        auth               => \&_auth,
-        validate_tnc       => \&_validate_tnc,
-        check_trade_status => \&_check_trade_status,
+        auth                  => \&_auth,
+        validate_tnc          => \&_validate_tnc,
+        check_trade_status    => \&_check_trade_status,
+        compliance_checks     => \&_compliance_checks,
+        check_tax_information => \&_check_tax_information,
     );
-    my @before_actions;
+    my @local_before_actions;
     for my $hook (@$before_actions) {
         # it shouldn't happen, so we die it directly
         die "Error: no such hook $hook" unless exists($actions{$hook});
-        push @before_actions, $actions{$hook};
+        push @local_before_actions, $actions{$hook};
     }
     return MojoX::JSON::RPC::Service->new->register(
         $method,
@@ -148,7 +186,7 @@ sub register {
                 $params->{website_name} = BOM::RPC::v3::Utility::website_name(delete $params->{server_name});
             }
 
-            for my $action (@before_actions) {
+            for my $action (@local_before_actions) {
                 my $result;
                 try {
                     $result = $action->($params);
@@ -221,12 +259,13 @@ sub startup {
         ['ticks_history', \&BOM::RPC::v3::TickStreamer::ticks_history],
         ['ticks',         \&BOM::RPC::v3::TickStreamer::ticks],
 
-        ['buy', \&BOM::RPC::v3::Transaction::buy, [qw(auth validate_tnc check_trade_status)]],
+        ['buy', \&BOM::RPC::v3::Transaction::buy, [qw(auth validate_tnc compliance_checks check_tax_information)]],
         [
-            'buy_contract_for_multiple_accounts', \&BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts,
-            [qw(auth validate_tnc check_trade_status)]
+            'buy_contract_for_multiple_accounts',
+            \&BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts,
+            [qw(auth validate_tnc check_trade_status compliance_checks check_tax_information)]
         ],
-        ['sell', \&BOM::RPC::v3::Transaction::sell, [qw(auth validate_tnc check_trade_status)]],
+        ['sell', \&BOM::RPC::v3::Transaction::sell, [qw(auth validate_tnc check_trade_status compliance_checks check_tax_information)]],
 
         ['trading_times',         \&BOM::RPC::v3::MarketDiscovery::trading_times],
         ['asset_index',           \&BOM::RPC::v3::MarketDiscovery::asset_index],
@@ -243,7 +282,7 @@ sub startup {
         ['paymentagent_withdraw',     \&BOM::RPC::v3::Cashier::paymentagent_withdraw, [qw(auth)]],
         ['paymentagent_transfer',     \&BOM::RPC::v3::Cashier::paymentagent_transfer, [qw(auth)]],
         ['transfer_between_accounts', \&BOM::RPC::v3::Cashier::transfer_between_accounts, [qw(auth)]],
-        ['cashier',                   \&BOM::RPC::v3::Cashier::cashier, [qw(auth validate_tnc)]],
+        ['cashier',                   \&BOM::RPC::v3::Cashier::cashier, [qw(auth validate_tnc compliance_checks)]],
         ['topup_virtual',             \&BOM::RPC::v3::Cashier::topup_virtual, [qw(auth)]],
 
         ['payout_currencies',       \&BOM::RPC::v3::Accounts::payout_currencies],
