@@ -541,6 +541,15 @@ sub paymentagent_transfer {
         return $error_sub->($error_msg);
     }
 
+    my ($max_withdraw, $min_withdraw) = ($payment_agent->max_withdraw, $payment_agent->min_withdraw);
+    if ($max_withdraw and $amount > $max_withdraw) {
+        return $error_sub->(localize("Invalid amount. Maximum withdrawal allowed is [_1].", $max_withdraw));
+    }
+
+    if ($min_withdraw and $amount < $min_withdraw) {
+        return $error_sub->(localize("Invalid amount. Minimum withdrawal allowed is [_1].", $min_withdraw));
+    }
+
     ## validate amount
     if ($amount < 10 || $amount > 2000) {
         return $error_sub->(localize('Invalid amount. minimum is 10, maximum is 2000.'));
