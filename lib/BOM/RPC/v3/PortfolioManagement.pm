@@ -13,7 +13,7 @@ use BOM::Product::ContractFactory qw(simple_contract_info);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (request localize);
-use BOM::Product::Transaction;
+use BOM::Transaction;
 
 sub portfolio {
     my $params = shift;
@@ -71,7 +71,7 @@ sub _sell_expired_contracts {
     my $response = {count => 0};
 
     try {
-        my $res = BOM::Product::Transaction::sell_expired_contracts({
+        my $res = BOM::Transaction::sell_expired_contracts({
             client => $client,
             source => $source,
         });

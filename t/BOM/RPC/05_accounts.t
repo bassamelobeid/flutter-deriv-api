@@ -335,7 +335,7 @@ subtest $method => sub {
         barrier      => 'S0P',
     });
 
-    my $txn = BOM::Product::Transaction->new({
+    my $txn = BOM::Transaction->new({
         client        => $test_client2,
         contract      => $contract_expired,
         price         => 100,
@@ -382,7 +382,7 @@ subtest $method => sub {
         barrier      => 'S0P',
     });
     $contract_expired->{shortcode} = 'INTRADU_SPGSWT_20_1413892500_1413906900_S0P_0';
-    $txn = BOM::Product::Transaction->new({
+    $txn = BOM::Transaction->new({
             client        => $test_client2,
             contract      => $contract_expired,
             price         => 100,
@@ -470,7 +470,7 @@ subtest $method => sub {
         barrier      => 'S0P',
     });
 
-    my $txn = BOM::Product::Transaction->new({
+    my $txn = BOM::Transaction->new({
         client        => $test_client2,
         contract      => $contract_expired,
         price         => 100,
