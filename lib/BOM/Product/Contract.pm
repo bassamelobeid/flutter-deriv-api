@@ -19,7 +19,7 @@ use Postgres::FeedDB::Spot::Tick;
 use Price::Calculator;
 use LandingCompany::Offerings qw(get_contract_specifics);
 
-use BOM::System::Chronicle;
+use BOM::Platform::Chronicle;
 use BOM::Platform::Context qw(localize);
 use BOM::MarketData::Types;
 use VolSurface::Empirical;
@@ -956,7 +956,7 @@ sub _build_applicable_economic_events {
     my $end   = $current_epoch + $seconds_to_expiry + 3600;
 
     return Quant::Framework::EconomicEventCalendar->new({
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
         }
         )->get_latest_events_for_period({
             from => Date::Utility->new($start),
@@ -1041,7 +1041,7 @@ sub _build_staking_limits {
     my $underlying = $self->underlying;
     my $curr       = $self->currency;
 
-    my $static     = BOM::System::Config::quants;
+    my $static     = BOM::Platform::Config::quants;
     my $bet_limits = $static->{bet_limits};
     # NOTE: this evaluates only the contract-specific payout limit. There may be further
     # client-specific restrictions which are evaluated in B:P::Transaction.

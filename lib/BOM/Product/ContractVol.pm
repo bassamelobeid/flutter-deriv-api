@@ -269,8 +269,8 @@ sub _build_empirical_volsurface {
     my $self = shift;
     return VolSurface::Empirical->new(
         underlying       => $self->underlying,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
     );
 }
 

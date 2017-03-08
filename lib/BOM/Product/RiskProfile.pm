@@ -8,7 +8,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
-use BOM::System::Config;
+use BOM::Platform::Config;
 
 use JSON qw(from_json);
 
@@ -44,7 +44,7 @@ sub _build_contract_info {
 }
 
 sub limits {
-    return BOM::System::Config::quants->{risk_profile};
+    return BOM::Platform::Config::quants->{risk_profile};
 }
 
 has [qw(base_profile)] => (
@@ -242,7 +242,7 @@ sub get_current_profile_definitions {
     my $config = BOM::Platform::Runtime->instance->get_offerings_config;
     my @markets =
         map { Finance::Asset::Market::Registry->get($_) } get_offerings_with_filter($config, 'market', {landing_company => $landing_company});
-    my $limit_ref = BOM::System::Config::quants->{risk_profile};
+    my $limit_ref = BOM::Platform::Config::quants->{risk_profile};
 
     my %limits;
     foreach my $market (@markets) {

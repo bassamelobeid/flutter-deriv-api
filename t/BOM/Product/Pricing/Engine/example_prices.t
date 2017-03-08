@@ -156,7 +156,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
-    }) for qw( SAR SAR-USD);
+    }) for qw( AED AED-USD);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
@@ -239,7 +239,7 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => 'frxUSDSAR',
+        symbol        => 'frxUSDAED',
         surface_data  => {
             1 => {
                 vol_spread => {50 => 0},
@@ -255,7 +255,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
-        symbol        => 'SASEIDX',
+        symbol        => 'DFMGI',
         recorded_date => $recorded_date,
         surface_data  => {
             1 => {
@@ -272,12 +272,12 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol => 'SASEIDX',
+        symbol => 'DFMGI',
     });
-my $middle_east_intraday = produce_contract('CALL_SASEIDX_10_1447921800F_1447929000_S0P_0', 'USD');
+my $middle_east_intraday = produce_contract('CALL_DFMGI_10_1447921800F_1447929000_S0P_0', 'USD');
 is(roundnear(1e-4, $middle_east_intraday->commission_markup->amount), 0.025, 'Commission markup for middle east is 5%');
 
-my $middle_east_daily = produce_contract('CALL_SASEIDX_10_1447921800_1448022600F_S0P_0', 'USD');
+my $middle_east_daily = produce_contract('CALL_DFMGI_10_1447921800_1448022600F_S0P_0', 'USD');
 is(roundnear(1e-4, $middle_east_daily->commission_markup->amount), 0.025, 'Commission markup for middle east is 5%');
 
 my $GDAXI_intraday = produce_contract('CALL_GDAXI_10_1448013600F_1448020800_S0P_0', 'USD');

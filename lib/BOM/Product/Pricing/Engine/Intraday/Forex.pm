@@ -12,7 +12,7 @@ use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use Volatility::Seasonality;
 use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::Market::DataDecimate;
 
 sub clone {
@@ -813,7 +813,7 @@ has [qw(_vega_formula _delta_formula)] => (
 sub _build_intraday_vega_correction {
     my $self = shift;
 
-    my $vmr = BOM::System::Config::quants->{commission}->{intraday}->{historical_vol_meanrev};
+    my $vmr = BOM::Platform::Config::quants->{commission}->{intraday}->{historical_vol_meanrev};
     my $vc  = Math::Util::CalculatedValue::Validatable->new({
         name        => 'vega_correction',
         description => 'correction for uncertianty of vol',
