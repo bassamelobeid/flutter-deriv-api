@@ -12,7 +12,7 @@ use Parallel::ForkManager;
 use BOM::RPC::PriceDaemon;
 use Sys::Info;
 use List::Util qw(max);
-use DataDog::DogStatsd::Helper;
+use DataDog::DogStatsd::Helper qw/stats_gauge/;
 
 my $internal_ip     = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 GetOptions(
@@ -37,14 +37,14 @@ $pm->run_on_start(
     sub {
         my $pid = shift;
         push @running_forks, $pid;
-        DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.forks.count', (scalar @running_forks), {tags => [ $internal_ip]});
+        stats_gauge('pricer_daemon.forks.count', (scalar @running_forks), {tags => [ $internal_ip]});
         warn "Started a new fork [$pid]\n";
     });
 $pm->run_on_finish(
     sub {
         my ($pid, $exit_code) = @_;
         @running_forks = grep { $_ != $pid } @running_forks;
-        DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.forks.count', (scalar @running_forks), {tags => [ $internal_ip]});
+        stats_gauge('pricer_daemon.forks.count', (scalar @running_forks), {tags => [ $internal_ip]});
         warn "Fork [$pid] ended with exit code [$exit_code]\n";
     });
 
