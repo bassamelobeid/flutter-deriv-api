@@ -78,7 +78,11 @@ sub start_server {
                                     },
                                     sub {
                                         my ($exception, $category, @details) = @_;
-                                        my $output = encode_json({ error => $exception, category => $category, details => \@details });
+                                        my $output = encode_json({
+                                            error    => $exception,
+                                            category => $category,
+                                            details  => \@details
+                                        });
                                         warn "$command (@args) failed - $output\n";
                                         $stream->write("ERR - $output$CRLF");
                                         Future->done;
