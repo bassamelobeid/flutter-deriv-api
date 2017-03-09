@@ -19,7 +19,6 @@ use BOM::Platform::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
-use BOM::Pricing::v3::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 
