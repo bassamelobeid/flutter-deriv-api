@@ -154,11 +154,11 @@ sub startup {
             $usage += $_->[1] for @recent;
             $usage = sprintf('%.2f', 100 * $usage / Time::HiRes::tv_interval($request_end, $recent[0]->[0]));
 
-            $0 = "bom-rpc: (idle since $end #req=$request_counter us=$usage%)";    ## no critic
+            $0 = "bom-pricing-rpc: (idle since $end #req=$request_counter us=$usage%)";    ## no critic
         });
 
     # set $0 after forking children
-    Mojo::IOLoop->timer(0, sub { @recent = [[Time::HiRes::gettimeofday], 0]; $0 = "bom-rpc: (new)" });    ## no critic
+    Mojo::IOLoop->timer(0, sub { @recent = [[Time::HiRes::gettimeofday], 0]; $0 = "bom-pricing-rpc: (new)" });    ## no critic
 
     return;
 }
