@@ -1,6 +1,6 @@
 M=[ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
 export PERL5OPT=-MTest::FailWarnings=-allow_deps,1
-P=/etc/rmg/bin/prove --timer -rl
+P=/etc/rmg/bin/prove --timer -rl -I lib
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 test:
