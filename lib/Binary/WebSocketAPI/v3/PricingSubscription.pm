@@ -23,6 +23,7 @@ sub BUILD {
     stats_inc('bom_websocket_api.v_3.pricing_subscriptions.instances');
     ### For pricer_queue daemon
     $self->redis_server->set($self->channel_name, 1);
+    return $self;
 }
 
 sub _build_redis_server {
