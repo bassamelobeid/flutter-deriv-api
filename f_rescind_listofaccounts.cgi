@@ -8,7 +8,7 @@ use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
 use BOM::Database::ClientDB;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
-use BOM::Product::Transaction;
+use BOM::Transaction;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 
 BOM::Backoffice::Sysinit::init();
@@ -52,7 +52,7 @@ foreach my $loginID (split(/,/, $listaccounts)) {
 
     if (request()->param('whattodo') eq 'Do it for real !') {
 
-        if (my $sold_bets = BOM::Product::Transaction::sell_expired_contracts({client => $client})) {
+        if (my $sold_bets = BOM::Transaction::sell_expired_contracts({client => $client})) {
             print "<br>[FOR REAL] $encoded_loginID ($encoded_name $encoded_email) Expired bets closed out:";
             printf "Account has been credited with <strong>$encoded_curr %s</strong>", encode_entities($sold_bets->{total_credited});
 
