@@ -4,6 +4,8 @@ use warnings;
 use Data::Dumper;
 use YAML::XS qw| LoadFile |;
 use Exporter qw( import );
+use DataDog::DogStatsd::Helper qw| stats_inc stats_dec |;
+use Guard;
 
 use Mojo::Redis2;
 
@@ -23,17 +25,27 @@ sub create {
 
     $redis_url->userinfo('dummy:' . $cf->{password}) if $cf->{password};
 
+    my $guard = guard {
+        stats_dec( 'bom_websocket_api.v_3.redis_instances.'.$name );
+    };
+
     my $server = Mojo::Redis2->new(url => $redis_url);
     $server->on(
+        connection => sub {
+            my $dirty_hack=\$guard;
+        },
         error => sub {
             my ($self, $err) = @_;
             warn("Redis $name error: $err");
         });
+
+    stats_inc( 'bom_websocket_api.v_3.redis_instances.'.$name );
     return $server;
 }
 
 sub check_connections {
     local $@;
+
     foreach my $server_name ( keys %$config ) {
         my $server = eval{__PACKAGE__->$server_name()};
         if ( $@ ) {
@@ -55,9 +67,10 @@ sub pricer_write {
         message => sub {
             my ($self, $msg, $channel) = @_;
             if ($self->{shared_info}{$channel}) {
-                foreach my $uuid (keys %{$self->{shared_info}{$channel}}) {
-                    ### Is memory leak here?
-                    my $c = $self->{shared_info}{$channel}{$uuid};
+                foreach my $c_key (keys %{$self->{shared_info}{$channel}}) {
+                    delete $self->{shared_info}{$channel}{$c_key}
+                        unless $self->{shared_info}{$channel}{$c_key};
+                    my $c = $self->{shared_info}{$channel}{$c_key};
                     Binary::WebSocketAPI::v3::Wrapper::Pricer::process_pricing_events($c, $msg, $channel) if ref $c;
                 }
             }

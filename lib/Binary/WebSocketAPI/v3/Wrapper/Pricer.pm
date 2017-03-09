@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Format::Util::Numbers qw(roundnear);
 use Binary::WebSocketAPI::v3::Wrapper::System;
-use Binary::WebSocketAPI::v3::Instance::Subscription;
+use Binary::WebSocketAPI::v3::PricingSubscription;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use Time::HiRes qw(gettimeofday tv_interval);
@@ -244,6 +244,9 @@ sub _process_proposal_open_contract_response {
 sub _serialized_args {
     my $h    = shift;
     my $copy = {%$h};
+
+    delete @{$copy}{qw(language req_id)};
+
     my @a    = ();
     # We want to handle similar contracts together, so we do this and sort by
     # key in the price_queue.pl daemon
@@ -303,7 +306,6 @@ sub _pricing_channel_for_bid {
 
 sub _create_pricer_channel {
     my ($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip_redis_subscr) = @_;
-
     my $pricing_channel = $c->stash('pricing_channel') || {};
 
     # already subscribed
@@ -321,12 +323,10 @@ sub _create_pricer_channel {
         and $args->{subscribe} == 1
         and not exists $pricing_channel->{$redis_channel}
         and not $skip_redis_subscr)
-    {
-        $pricing_channel->{uuid}{$uuid}{subscription} //= Binary::WebSocketAPI::v3::Instance::Subscription->new({
-                channel_name => $redis_channel,
-                uuid         => $uuid
-            })->subscribe($c);
-    }
+        {
+            $pricing_channel->{$redis_channel}{subscription} =
+                $c->pricing_subscriptions($redis_channel)->subscribe($c);
+        }
 
     $pricing_channel->{$redis_channel}->{$subchannel}->{uuid}          = $uuid;
     $pricing_channel->{$redis_channel}->{$subchannel}->{args}          = $args;
@@ -416,8 +416,8 @@ sub _process_ask_proposal_event {
 
     my $theo_probability = delete $response->{theo_probability};
     foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
+        next if ref $stash_data ne 'HASH';
         my $results;
-
         unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
             $stash_data->{cache}->{contract_parameters}->{longcode} = $stash_data->{cache}->{longcode};
             my $adjusted_results =
