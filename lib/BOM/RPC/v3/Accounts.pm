@@ -1022,8 +1022,7 @@ sub set_self_exclusion {
 sub api_token {
     my $params = shift;
 
-    my $client = $params->{client};
-    my $args   = $params->{args};
+    my ($client, $args, $client_ip) = @{$params}{qw/client args client_ip/};
 
     # check if sub_account loginid is present then check if its valid
     # and assign it to client object
@@ -1076,7 +1075,11 @@ sub api_token {
         }
         ## for old API calls (we'll make it required on v4)
         my $scopes = $args->{new_token_scopes} || ['read', 'trade', 'payments', 'admin'];
-        $m->create_token($client->loginid, $display_name, @$scopes);
+        if ($args->{valid_for_current_ip_only}) {
+            $m->create_token($client->loginid, $display_name, $scopes, $client_ip);
+        } else {
+            $m->create_token($client->loginid, $display_name, $scopes);
+        }
         $rtn->{new_token} = 1;
     }
 
