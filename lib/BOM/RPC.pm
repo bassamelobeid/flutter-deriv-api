@@ -8,6 +8,7 @@ use Proc::CPUUsage;
 use Time::HiRes;
 use Try::Tiny;
 use Carp qw(cluck);
+use JSON;
 
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
@@ -210,8 +211,17 @@ sub register {
                 return $verify_app_res if $verify_app_res->{error};
             }
 
-            my $result = $code->(@_);
-
+	    my @args   = @_;
+            my $result = try{
+                $code->(@args);
+            }
+            catch {
+                warn "Exception when handling $method - $_ with parameters ".encode_json \@args;
+                BOM::RPC::v3::Utility::create_error({
+                         code              => 'InternalServerError',
+                         message_to_client => localize("Sorry, an error occurred while processing your account.")})
+            };
+ 
             if ($verify_app_res && ref $result eq 'HASH') {
                 $result->{stash} = {%{$result->{stash} // {}}, %{$verify_app_res->{stash}}};
             }
