@@ -77,8 +77,8 @@ sub start_server {
                                         Future->done;
                                     },
                                     sub {
-                                        my ($resp) = @_;
-                                        my $output = encode_json($resp);
+                                        my ($exception, $category, @details) = @_;
+                                        my $output = encode_json({ error => $exception, category => $category, details => \@details });
                                         warn "$command (@args) failed - $output\n";
                                         $stream->write("ERR - $output$CRLF");
                                         Future->done;
@@ -244,7 +244,7 @@ Returns a list of all subscribed Redis channels. Placeholder, not yet implemente
 =cut
 
 command subscriptions => sub {
-    Future->fail({error => 'unimplemented'});
+    Future->fail('unimplemented');
 };
 
 =head2 stats
@@ -272,7 +272,7 @@ command stats => sub {
     Future->done({
         connections_count         => $app->stat->{connections_count},
         current_redis_connections => $app->stat->{current_redis_connections},
-        uptime                    => time - $app->stat->{start_time},
+        uptime                    => time - $^T,
         rss                       => $me->rss,
     });
 };
