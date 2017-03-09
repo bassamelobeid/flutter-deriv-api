@@ -40,7 +40,7 @@ input.upper {
         <tr>
             <td class="label">Promocode</td>
             <td>:
-                [% IF pc.code %]
+                [% IF pc.code && is_valid_promocode %]
                     [% pc.code %]
                     <input type="hidden" name="promocode" value="[% pc.code %]" />
                 [% ELSE %]
