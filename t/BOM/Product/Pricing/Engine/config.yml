@@ -1224,7 +1224,7 @@ expected_result:
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0981
       spot: 6685.31
-      theo_prob: 0.8218
+      theo_prob: 0.8186
       total_markup: 0.147
     RANGE:
       ask_prob: 0.1
@@ -1277,7 +1277,7 @@ expected_result:
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0632
       spot: 9518.2
-      theo_prob: 0.6154
+      theo_prob: 0.6246
       total_markup: 0.0726
     RANGE:
       ask_prob: 0.457
@@ -1320,7 +1320,7 @@ expected_result:
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0836
       spot: 1.3803
-      theo_prob: 0.747
+      theo_prob: 0.7409
       total_markup: 0.121
     RANGE:
       ask_prob: 0.2778
@@ -1363,7 +1363,7 @@ expected_result:
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0196
       spot: 102.454
-      theo_prob: 0.3294
+      theo_prob: 0.3303
       total_markup: 0.0425
     RANGE:
       ask_prob: 0.2724
