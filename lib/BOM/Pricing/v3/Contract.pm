@@ -521,7 +521,7 @@ sub get_contract_details {
 
     my $client = $params->{client};
 
-    die 'missing landing_company in params' if ! exists $params->{landing_company};
+    die 'missing landing_company in params' if !exists $params->{landing_company};
 
     my ($response, $contract, $bet_params);
     try {
@@ -538,7 +538,7 @@ sub get_contract_details {
 
     try {
         $bet_params->{app_markup_percentage} = $params->{app_markup_percentage} // 0;
-        $contract                            = produce_contract($bet_params);
+        $contract = produce_contract($bet_params);
     }
     catch {
         warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($bet_params);
