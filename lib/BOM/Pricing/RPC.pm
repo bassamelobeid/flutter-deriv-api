@@ -120,7 +120,7 @@ sub startup {
             my $c = shift;
             $cpu  = Proc::CPUUsage->new();
             $call = $c->req->url->path;
-            $0    = "bom-rpc: " . $call;     ## no critic
+            $0    = "bom-pricing-rpc: " . $call;     ## no critic
             $call =~ s/\///;
             $request_start = [Time::HiRes::gettimeofday];
             DataDog::DogStatsd::Helper::stats_inc('bom_pricing_rpc.v_3.call.count', {tags => ["rpc:$call"]});
