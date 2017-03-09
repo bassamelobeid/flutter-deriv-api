@@ -230,6 +230,43 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 verification_code     => $code
             }});
     is $res->{status}, 1, 'paymentagent_withdraw ok again';
+
+    sleep 3;
+    # test max, min withdraw
+    $pa_client->payment_agent->max_withdraw(50);
+    $pa_client->payment_agent->min_withdraw(20);
+    $pa_client->save();
+    $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
+            client => $client,
+            args   => {
+                paymentagent_withdraw => 1,
+                paymentagent_loginid  => $pa_client->loginid,
+                currency              => 'USD',
+                amount                => 100,
+                verification_code     => $code
+            }});
+    ok $res->{error}->{message_to_client} =~ /Invalid amount. Maximum withdrawal allowed is 50./, 'Amount greater than max withdrawal';
+
+    $client_db->unfreeze;
+    $pa_client_db->unfreeze;
+
+    sleep 3;
+    $pa_client->payment_agent->max_withdraw(50);
+    $pa_client->payment_agent->min_withdraw(20);
+    $pa_client->save();
+    $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
+            client => $client,
+            args   => {
+                paymentagent_withdraw => 1,
+                paymentagent_loginid  => $pa_client->loginid,
+                currency              => 'USD',
+                amount                => 10,
+                verification_code     => $code
+            }});
+    ok $res->{error}->{message_to_client} =~ /Invalid amount. Minimum withdrawal allowed is 20./, 'Amount less than min withdrawal';
+
+    $client_db->unfreeze;
+    $pa_client_db->unfreeze;
 }
 
 ## transfer
