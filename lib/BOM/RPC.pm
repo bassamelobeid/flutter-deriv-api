@@ -8,6 +8,8 @@ use Proc::CPUUsage;
 use Time::HiRes;
 use Try::Tiny;
 use Carp qw(cluck);
+use Path::Tiny;
+use JSON::XS;
 
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
@@ -181,6 +183,7 @@ sub register {
 
             my $r = BOM::Platform::Context::Request->new($args);
             BOM::Platform::Context::request($r);
+           my $start_vsz = (split " ", path("/proc/self/stat")->slurp_utf8)[22];
 
             if (exists $params->{server_name}) {
                 $params->{website_name} = BOM::RPC::v3::Utility::website_name(delete $params->{server_name});
@@ -215,6 +218,9 @@ sub register {
             if ($verify_app_res && ref $result eq 'HASH') {
                 $result->{stash} = {%{$result->{stash} // {}}, %{$verify_app_res->{stash}}};
             }
+           my $end_vsz = (split " ", path("/proc/self/stat")->slurp_utf8)[22];
+           my $vsz_increase = $end_vsz - $start_vsz;
+           warn sprintf "VSZ increase for %d - %d bytes, %s\n", $$, $vsz_increase, encode_json({ app_id => $params->{source}, method => $method }) if $vsz_increase > (
             return $result;
         });
 }
