@@ -801,15 +801,6 @@ sub paymentagent_withdraw {
         return $error_sub->(localize('The Payment Agent facility is currently not available in your country.'));
     }
 
-    my ($max_withdraw, $min_withdraw) = ($payment_agent->max_withdraw, $payment_agent->min_withdraw);
-    if ($max_withdraw and $amount > $max_withdraw) {
-        return $error_sub->(localize("Invalid amount. Maximum withdrawal allowed is [_1].", $max_withdraw));
-    }
-
-    if ($min_withdraw and $amount < $min_withdraw) {
-        return $error_sub->(localize("Invalid amount. Minimum withdrawal allowed is [_1].", $min_withdraw));
-    }
-
     ## validate amount
     if ($amount < 10 || $amount > 2000) {
         return $error_sub->(localize('Invalid amount. minimum is 10, maximum is 2000.'));
@@ -820,6 +811,15 @@ sub paymentagent_withdraw {
 
     if ($client->broker ne $paymentagent->broker) {
         return $error_sub->(localize('Sorry, the Payment Agent is unavailable for your region.'));
+    }
+
+    my ($max_withdraw, $min_withdraw) = ($paymentagent->max_withdraw, $paymentagent->min_withdraw);
+    if ($max_withdraw and $amount > $max_withdraw) {
+        return $error_sub->(localize("Invalid amount. Maximum withdrawal allowed is [_1].", $max_withdraw));
+    }
+
+    if ($min_withdraw and $amount < $min_withdraw) {
+        return $error_sub->(localize("Invalid amount. Minimum withdrawal allowed is [_1].", $min_withdraw));
     }
 
     my $pa_client = $paymentagent->client;
