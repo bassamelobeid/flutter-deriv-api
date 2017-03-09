@@ -1,5 +1,9 @@
 package BOM::RPC;
 
+use strict;
+use warnings;
+no indirect;
+
 use Mojo::Base 'Mojolicious';
 use Mojo::IOLoop;
 use MojoX::JSON::RPC::Service;
