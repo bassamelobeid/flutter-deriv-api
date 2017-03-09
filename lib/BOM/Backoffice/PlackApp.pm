@@ -11,7 +11,7 @@ use File::Copy  ();
 use File::Path  ();
 
 BEGIN {
-    select +(select(STDERR), $| = 1)[0];    ## no critic
+    select +(select(STDERR), $| = 1)[0];
 
     my $t = Time::HiRes::time;
     require CGI;
@@ -34,14 +34,14 @@ BEGIN {
     }
 }
 
-sub app {    ## no critic
+sub app {
     my %options = @_;
 
     my $alog;
     if ($ENV{ACCESS_LOG}) {
-        open $alog, '>>', $ENV{ACCESS_LOG}    ## no critic
+        open $alog, '>>', $ENV{ACCESS_LOG}
             or die "Cannot open access_log: $!";
-        select +(select($alog), $| = 1)[0];    ## no critic
+        select +(select($alog), $| = 1)[0];
     }
 
     $options{preload} //= ["*.cgi"];
@@ -62,7 +62,7 @@ sub app {    ## no critic
     };
 }
 
-package BOM::Backoffice::PlackApp::Streaming;    ## no critic
+package BOM::Backoffice::PlackApp::Streaming;
 
 use strict;
 use warnings;
@@ -114,7 +114,7 @@ sub mkapp {
     return $self->SUPER::mkapp($sub);
 }
 
-package BOM::Backoffice::PlackApp::Request;    ## no critic
+package BOM::Backoffice::PlackApp::Request;
 
 use strict;
 use warnings;
@@ -149,7 +149,7 @@ sub new {
 #
 # To me the result is pretty clear -- ignore PBP.
 
-    binmode STDOUT, ':utf8';    ## no critic
+    binmode STDOUT, ':utf8';
 
     $self->max_buffer     = 1000;
     $self->suppress_flush = 1;
