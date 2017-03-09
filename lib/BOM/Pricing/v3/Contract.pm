@@ -92,7 +92,7 @@ sub _get_ask {
     my $tv = [Time::HiRes::gettimeofday];
     $p2->{app_markup_percentage} = $app_markup_percentage // 0;
     try {
-        die unless pre_validate_start_expire_dates($p2);
+        die unless _pre_validate_start_expire_dates($p2);
     }
     catch {
         $response = _create_error({
@@ -579,7 +579,7 @@ sub _log_exception {
 
 # pre-check
 # this sub indicates error on RPC level if date_start or date_expiry of a new ask/contract are too far from now
-sub pre_validate_start_expire_dates {
+sub _pre_validate_start_expire_dates {
     my $params = shift;
     my ($start_epoch, $expiry_epoch, $duration);
 
