@@ -41,9 +41,9 @@ is $is_confirmed, 1, 'confirmed after confirm_scope';
 
 my ($access_token) = $m->store_access_token_only($test_appid, $test_loginid);
 ok $access_token;
-my ($result_loginid, $t, $ua_fp)  =$m->get_loginid_by_access_token($access_token); 
-is $result_loginid, $test_loginid, 'get_loginid_by_access_token';
-is $m->get_app_id_by_token($access_token),         $test_appid,   'get_app_id_by_token';
+my ($result_loginid, $t, $ua_fp) = @{$m->get_token_details($access_token)}{qw/loginid creation_time ua_fingerprint/};
+is $result_loginid, $test_loginid, 'got correct loginid from token';
+is $m->get_app_id_by_token($access_token), $test_appid, 'get_app_id_by_token';
 
 my @scopes = $m->get_scopes_by_access_token($access_token);
 is_deeply([sort @scopes], ['payments', 'read', 'trade'], 'scopes are right');
@@ -88,7 +88,7 @@ ok $used_apps->[0]->{last_used}, 'last_used ok';
 ok $m->revoke_app($test_appid, $test_loginid);
 $is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid);
 is $is_confirmed, 0, 'not confirmed after revoke';
-($result_loginid, $t, $ua_fp)  =$m->get_loginid_by_access_token($access_token); 
+($result_loginid, $t, $ua_fp) = @{$m->get_token_details($access_token)}{qw/loginid creation_time ua_fingerprint/};
 is $result_loginid, undef, 'token is not valid anymore';
 
 ## delete again will just return 0
@@ -130,9 +130,9 @@ subtest 'revoke tokens by loginid and app_id' => sub {
 
             my ($access_token) = $m->store_access_token_only($app_id, $loginid);
             ok $access_token;
-            ($result_loginid, $t, $ua_fp)  =$m->get_loginid_by_access_token($access_token); 
-            is $result_loginid, $loginid, 'get_loginid_by_access_token';
-            is $m->get_app_id_by_token($access_token),         $app_id,  'get_app_id_by_token';
+            ($result_loginid, $t, $ua_fp) = @{$m->get_token_details($access_token)}{qw/loginid creation_time ua_fingerprint/};
+            is $result_loginid, $loginid, 'correct loginid from token details';
+            is $m->get_app_id_by_token($access_token), $app_id, 'get_app_id_by_token';
         }
     }
 
