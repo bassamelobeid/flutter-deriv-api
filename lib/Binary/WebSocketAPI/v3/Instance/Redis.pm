@@ -26,34 +26,34 @@ sub create {
     $redis_url->userinfo('dummy:' . $cf->{password}) if $cf->{password};
 
     my $guard = guard {
-        stats_dec( 'bom_websocket_api.v_3.redis_instances.'.$name );
+        stats_dec('bom_websocket_api.v_3.redis_instances.' . $name);
     };
 
     my $server = Mojo::Redis2->new(url => $redis_url);
     $server->on(
         connection => sub {
-            my $dirty_hack=\$guard;
+            my $dirty_hack = \$guard;
         },
         error => sub {
             my ($self, $err) = @_;
             warn("Redis $name error: $err");
         });
 
-    stats_inc( 'bom_websocket_api.v_3.redis_instances.'.$name );
+    stats_inc('bom_websocket_api.v_3.redis_instances.' . $name);
     return $server;
 }
 
 sub check_connections {
     local $@;
 
-    foreach my $server_name ( keys %$config ) {
-        my $server = eval{__PACKAGE__->$server_name()};
-        if ( $@ ) {
+    foreach my $server_name (keys %$config) {
+        my $server = eval { __PACKAGE__->$server_name() };
+        if ($@) {
             die "$server_name is not available:" . $@;
         }
-        eval{$server->ping();1;} or do {
-            die "Redis server $server_name does not work! Host: ".$server->url->host. ", port: ".$server->url->port . "\nREASON: " .$@;
-        }
+        eval { $server->ping(); 1; } or do {
+            die "Redis server $server_name does not work! Host: " . $server->url->host . ", port: " . $server->url->port . "\nREASON: " . $@;
+            }
     }
     return 1;
 }
@@ -79,6 +79,6 @@ sub pricer_write {
     return $instances->{$name};
 }
 
-our @EXPORT_OK = ( keys %$config, 'check_connections');
+our @EXPORT_OK = (keys %$config, 'check_connections');
 
 1;

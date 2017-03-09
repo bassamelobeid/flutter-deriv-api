@@ -156,9 +156,9 @@ sub register {
 
             return $pricing_subscriptions->{$key} if defined $pricing_subscriptions->{$key} && ref $pricing_subscriptions->{$key};
 
-            my $subscribe = Binary::WebSocketAPI::v3::PricingSubscription->new( channel_name => $key );
+            my $subscribe = Binary::WebSocketAPI::v3::PricingSubscription->new(channel_name => $key);
             $pricing_subscriptions->{$key} = $subscribe;
-            Scalar::Util::weaken( $pricing_subscriptions->{$key} );
+            Scalar::Util::weaken($pricing_subscriptions->{$key});
             return $pricing_subscriptions->{$key};
         });
 

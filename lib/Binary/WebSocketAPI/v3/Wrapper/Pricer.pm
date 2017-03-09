@@ -247,7 +247,7 @@ sub _serialized_args {
 
     delete @{$copy}{qw(language req_id)};
 
-    my @a    = ();
+    my @a = ();
     # We want to handle similar contracts together, so we do this and sort by
     # key in the price_queue.pl daemon
     push @a, ('short_code', delete $copy->{short_code}) if exists $copy->{short_code};
@@ -323,10 +323,10 @@ sub _create_pricer_channel {
         and $args->{subscribe} == 1
         and not exists $pricing_channel->{$redis_channel}
         and not $skip_redis_subscr)
-        {
-            $pricing_channel->{$redis_channel}{subscription} =
-                $c->pricing_subscriptions($redis_channel)->subscribe($c);
-        }
+    {
+        $pricing_channel->{$redis_channel}{subscription} =
+            $c->pricing_subscriptions($redis_channel)->subscribe($c);
+    }
 
     $pricing_channel->{$redis_channel}->{$subchannel}->{uuid}          = $uuid;
     $pricing_channel->{$redis_channel}->{$subchannel}->{args}          = $args;

@@ -99,7 +99,7 @@ sub _forget_pricing_subscription {
                 }
             }
             delete $pricing_channel->{$channel}->{subscription};
-            stats_dec( 'bom_websocket_api.v_3.pricing_subscriptions.clients' );
+            stats_dec('bom_websocket_api.v_3.pricing_subscriptions.clients');
         }
         $c->stash('pricing_channel' => $pricing_channel);
     }
@@ -122,7 +122,7 @@ sub _forget_all_pricing_subscriptions {
         foreach my $uuid (@$removed_ids) {
             my $redis_channel = $pricing_channel->{uuid}->{$uuid}->{redis_channel};
             if ($pricing_channel->{$redis_channel}) {
-                stats_dec( 'bom_websocket_api.v_3.pricing_subscriptions.clients' );
+                stats_dec('bom_websocket_api.v_3.pricing_subscriptions.clients');
                 delete $pricing_channel->{$redis_channel};
             }
             delete $pricing_channel->{uuid}->{$uuid};

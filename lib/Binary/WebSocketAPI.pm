@@ -61,7 +61,7 @@ sub apply_usergroup {
 sub startup {
     my $app = shift;
 
-    check_connections(); ### Raise and check redis connections
+    check_connections();                                              ### Raise and check redis connections
 
     Mojo::IOLoop->singleton->reactor->on(
         error => sub {
