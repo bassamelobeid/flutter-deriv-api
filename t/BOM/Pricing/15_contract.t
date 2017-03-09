@@ -8,6 +8,7 @@ use Test::Warnings qw(warning warnings);
 use Test::MockModule;
 use Test::MockTime::HiRes;
 use Date::Utility;
+use Data::UUID;
 
 use Data::Dumper;
 use Quant::Framework::Utils::Test;
