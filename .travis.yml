@@ -55,8 +55,7 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
     - /tmp/travis-scripts/clone_branch.sh binary-com/websocket-bench
     - /tmp/travis-scripts/redis.sh
-    - sudo bash -c "echo d3JpdGU6CiAgaG9zdDogMTI3LjAuMC4xCiAgcG9ydDogNjM2OQogIHBhc3N3b3JkOgpyZWFkOgog
-IGhvc3Q6IDEyNy4wLjAuMQogIHBvcnQ6IDYzNjkKICBwYXN3b3JkOgo=| base64 -d >> /etc/rmg/ws-redis.yml"
+    - sudo bash -c "echo d3JpdGU6CiAgaG9zdDogMTI3LjAuMC4xCiAgcG9ydDogNjM2OQogIHBhc3N3b3JkOgpyZWFkOgogIGhvc3Q6IDEyNy4wLjAuMQogIHBvcnQ6IDYzNjkKICBwYXN3b3JkOgo=| base64 -d >> /etc/rmg/ws-redis.yml"
 
 install:
     - sudo ln -s $PWD /home/git/regentmarkets/binary-websocket-api
