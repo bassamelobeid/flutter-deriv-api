@@ -19,14 +19,11 @@ use BOM::MarketData::Types;
 
 use BOM::Pricing::v3::Contract;
 use BOM::Platform::Context qw (request);
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Platform::RedisReplicated;
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Database::Model::OAuth;
 
 initialize_realtime_ticks_db();
 my $now   = Date::Utility->new('2005-09-21 06:46:00');
@@ -36,14 +33,6 @@ my $storage_accessor = Quant::Framework::StorageAccessor->new(
     chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
     chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
 );
-
-my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
-    email       => $email,
-});
-$client->deposit_virtual_funds;
-
-my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
@@ -420,7 +409,6 @@ subtest 'get_bid' => sub {
     });
 
     my $contract = _create_contract(
-        client        => $client,
         spread        => 0,
         current_tick  => $tick,
         date_start    => $now->epoch - 900,
@@ -430,7 +418,7 @@ subtest 'get_bid' => sub {
     my $params = {
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
-        currency    => $client->currency,
+        currency    => 'USD',
         is_sold     => 0,
     };
     $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')
@@ -439,14 +427,13 @@ subtest 'get_bid' => sub {
         );
 
     $contract = _create_contract(
-        client => $client,
         spread => 1
     );
 
     $params = {
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
-        currency    => $client->currency,
+        currency    => 'USD',
         is_sold     => 0,
     };
 
@@ -481,14 +468,13 @@ subtest 'get_bid' => sub {
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
 
     $contract = _create_contract(
-        client => $client,
         spread => 0
     );
 
     $params = {
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
-        currency    => $client->currency,
+        currency    => 'USD',
         is_sold     => 0,
     };
 
@@ -536,7 +522,6 @@ subtest 'get_bid_skip_barrier_validation' => sub {
     set_fixed_time($now->epoch);
 
     $contract = _create_contract(
-        client       => $client,
         spread       => 0,
         date_expiry  => $now->epoch + 900,
         bet_type     => 'ONETOUCH',
@@ -547,7 +532,7 @@ subtest 'get_bid_skip_barrier_validation' => sub {
     $params = {
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
-        currency    => $client->currency,
+        currency    => 'USD',
         is_sold     => 0,
     };
 
@@ -564,14 +549,7 @@ subtest 'get_bid_skip_barrier_validation' => sub {
 
 my $method = 'get_contract_details';
 subtest $method => sub {
-    my $params = {token => '12345'};
-    $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'invalid token');
-    $client->set_status('disabled', 1, 'test');
-    $client->save;
-    $params->{token} = $token;
-    $c->call_ok($method, $params)->has_error->error_message_is('This account is unavailable.', 'invalid token');
-    $client->clr_status('disabled');
-    $client->save;
+    my $params = {};
 
     cmp_deeply([
             warnings {
@@ -586,11 +564,11 @@ subtest $method => sub {
     );
 
     my $contract = _create_contract(
-        client => $client,
         spread => 0
     );
     $params->{short_code} = $contract->shortcode;
     $params->{currency}   = 'USD';
+    $params->{landing_company}   = 'costarica';
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
             'symbol'       => 'R_50',
             'longcode'     => "Win payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.",
@@ -609,7 +587,6 @@ subtest $method => sub {
     });
 
     $contract = _create_contract(
-        client        => $client,
         spread        => 0,
         underlying    => 'frxAUDCAD',
         current_tick  => $tick,
@@ -657,7 +634,6 @@ subtest $method => sub {
     });
 
     $contract = _create_contract(
-        client        => $client,
         spread        => 0,
         current_tick  => $tick,
         underlying    => 'frxAUDCAD',
@@ -782,7 +758,6 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
     Quant::Framework::CorporateAction::create($storage_accessor, 'USAAPL', $opening)->update($action, $opening)->save;
 
     my $contract = _create_contract(
-        client        => $client,
         bet_type      => 'PUT',
         underlying    => 'USAAPL',
         spread        => 0,
@@ -796,7 +771,7 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
     my $params = {
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
-        currency    => $client->currency,
+        currency    => 'USD',
         is_sold     => 0,
     };
 
@@ -889,14 +864,13 @@ subtest 'app_markup_percentage' => sub {
     cmp_ok $val - $result->{payout}, ">", 2 / 100 * $val, "as app markup is added so client will get less payout as compared when there is no markup";
 
     my $contract = _create_contract(
-        client                => $client,
         spread                => 0,
         app_markup_percentage => 1
     );
     $params = {
         short_code            => $contract->shortcode,
         contract_id           => $contract->id,
-        currency              => $client->currency,
+        currency              => 'USD',
         is_sold               => 0,
         sell_time             => undef,
         app_markup_percentage => 1
@@ -905,21 +879,19 @@ subtest 'app_markup_percentage' => sub {
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
     $contract = _create_contract(
-        client => $client,
         spread => 0
     );
 
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 
     $contract = _create_contract(
-        client                => $client,
         spread                => 0,
         app_markup_percentage => 1
     );
     $params = {
         short_code            => $contract->shortcode,
         contract_id           => $contract->id,
-        currency              => $client->currency,
+        currency              => 'USD',
         is_sold               => 0,
         sell_time             => undef,
         app_markup_percentage => 1
@@ -928,24 +900,21 @@ subtest 'app_markup_percentage' => sub {
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
     $contract = _create_contract(
-        client => $client,
         spread => 0
     );
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 
     $contract = _create_contract(
-        client => $client,
         spread => 1
     );
     $contract = _create_contract(
-        client                => $client,
         spread                => 0,
         app_markup_percentage => 1
     );
     $params = {
         short_code            => $contract->shortcode,
         contract_id           => $contract->id,
-        currency              => $client->currency,
+        currency              => 'USD',
         is_sold               => 0,
         sell_time             => undef,
         app_markup_percentage => 1
@@ -954,24 +923,21 @@ subtest 'app_markup_percentage' => sub {
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
     $contract = _create_contract(
-        client => $client,
         spread => 0
     );
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 
     $contract = _create_contract(
-        client => $client,
         spread => 1
     );
     $contract = _create_contract(
-        client                => $client,
         spread                => 0,
         app_markup_percentage => 1
     );
     $params = {
         short_code            => $contract->shortcode,
         contract_id           => $contract->id,
-        currency              => $client->currency,
+        currency              => 'USD',
         is_sold               => 0,
         sell_time             => undef,
         app_markup_percentage => 1
@@ -980,7 +946,6 @@ subtest 'app_markup_percentage' => sub {
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
     $contract = _create_contract(
-        client => $client,
         spread => 0
     );
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
@@ -1004,8 +969,6 @@ sub create_ticks {
 
 sub _create_contract {
     my %args = @_;
-
-    my $client = $args{client};
 
     #postpone 10 minutes to avoid conflicts
     $now = $now->plus_time_interval('10m');
@@ -1048,6 +1011,7 @@ sub _create_contract {
         $contract_data->{date_pricing} = $args{date_pricing};
     }
 
+
     if ($args{spread}) {
         delete $contract_data->{date_expiry};
         delete $contract_data->{barrier};
@@ -1057,21 +1021,10 @@ sub _create_contract {
         $contract_data->{stop_profit}      = 10;
         $contract_data->{stop_loss}        = 10;
     }
+
+    $contract_data->{landing_company} = 'costarica';
+
     my $contract = produce_contract($contract_data);
-
-    my $txn = BOM::Transaction->new({
-            client        => $client,
-            contract      => $contract,
-            price         => 100,
-            payout        => $contract->payout,
-            amount_type   => 'stake',
-            purchase_date => $args{purchase_date}
-            ? $args{purchase_date}
-            : $purchase_date,
-        });
-
-    my $error = $txn->buy(skip_validation => 1);
-    ok(!$error, 'should no error to buy the contract');
 
     return $contract;
 }

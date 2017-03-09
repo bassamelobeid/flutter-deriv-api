@@ -519,8 +519,6 @@ sub send_multiple_ask {
 sub get_contract_details {
     my $params = shift;
 
-    my $client = $params->{client};
-
     die 'missing landing_company in params' if !exists $params->{landing_company};
 
     my ($response, $contract, $bet_params);
