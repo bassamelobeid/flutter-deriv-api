@@ -65,7 +65,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now
     }) for qw (frxAUDCAD frxUSDCAD frxAUDUSD);
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::Pricing')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::Pricing::RPC')->app->ua);
 request(BOM::Platform::Context::Request->new(params => {}));
 
 subtest 'validate_symbol' => sub {
