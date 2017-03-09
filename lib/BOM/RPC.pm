@@ -401,7 +401,7 @@ sub startup {
             );
 
             # Track whether we have any change in memory usage
-            my $vsz_increase = $current_vsz () - $vsz_start;
+            my $vsz_increase = current_vsz() - $vsz_start;
             warn sprintf "VSZ increase for %d - %d bytes, %s\n", $$, $vsz_increase, $call if $vsz_increase > (64 * 1024);
             # We use timing for the extra statistics (min/max/avg) it provides
             DataDog::DogStatsd::Helper::stats_timing('bom_rpc.v_3.vsz.increase', $vsz_increase, {tags => ["rpc:$call"]});
