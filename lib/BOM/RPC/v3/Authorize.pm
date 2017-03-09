@@ -13,14 +13,19 @@ use BOM::Platform::Context qw (localize request);
 use BOM::RPC::v3::Utility;
 
 sub authorize {
-    my $params        = shift;
-    my $token         = $params->{token};
-    my $token_details = $params->{token_details};
+    my $params = shift;
+    my ($token, $token_details, $client_ip) = @{$params}{qw/token token_details client_ip/};
+
     return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
     # temorary remove ua_fingerptint check
     #if ($token_details->{ua_fingerprint} && $token_details->{ua_fingerprint} ne $params->{ua_fingerprint}) {
     #    return BOM::RPC::v3::Utility::invalid_token_error();
     #}
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidToken',
+            message_to_client => BOM::Platform::Context::localize("Token is not valid for current ip address.")}
+    ) if (exists $token_details->{valid_for_ip} and $token_details->{valid_for_ip} ne $client_ip);
 
     my ($loginid, $scopes) = @{$token_details}{qw/loginid scopes/};
 
