@@ -1,4 +1,4 @@
-package BOM::Pricing;
+package BOM::Pricing::RPC;
 
 use Mojo::Base 'Mojolicious';
 use Mojo::IOLoop;
