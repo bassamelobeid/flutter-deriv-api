@@ -115,7 +115,7 @@ sub run {
         qw(feed chronicle) or next;
 
         stats_timing('pricer_daemon.rpc_time', $response->{rpc_time},
-            {tags => ['contract_type:' . $params->{contract_type}, 'currency:' . $params->{currency}]})
+            {tags => $self->tags('contract_type:' . $params->{contract_type}, 'currency:' . $params->{currency})})
             if $response->{rpc_time} > 1000;
 
         my $subscribers_count = $redis->publish($key->[1], encode_json($response));
@@ -204,7 +204,7 @@ Returns an arrayref of datadog tags. Takes an optional list of additional tags t
 
 sub tags {
     my ($self, @tags) = @_;
-    return [@{$self->{tags}}, map { ; "tag:$_" } $self->current_queue // (), @tags];
+    return [@{$self->{tags}}, $self->current_queue // (), @tags];
 }
 
 1;
