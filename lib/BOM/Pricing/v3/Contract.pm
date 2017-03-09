@@ -472,15 +472,13 @@ sub send_ask {
     }
 
     try {
-
         $response = _get_ask(prepare_ask($params->{args}), $params->{app_markup_percentage});
-
     }
     catch {
         _log_exception(send_ask => $_);
         $response = _create_error({
                 code              => 'pricing error',
-                message_to_client => _error_map()->{'pricing error'}});
+                message_to_client => localize('Unable to price the contract.')});
     };
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
