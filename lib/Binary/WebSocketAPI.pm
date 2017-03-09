@@ -241,7 +241,7 @@ sub startup {
             'api_token',
             {
                 require_auth => 'admin',
-                stash_params => [qw/ account_id /]}
+                stash_params => [qw/ account_id client_ip /]}
         ],
         ['tnc_approval', {require_auth => 'admin'}],
         [
