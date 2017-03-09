@@ -515,7 +515,6 @@ sub get_payment_agent_registration_form {
             'class' => 'errorfield'
         },
         'validation' => [
-            # max length = 60
             {
                 'type'    => 'regexp',
                 'regexp'  => '^.{1,60}$',
@@ -715,7 +714,7 @@ sub get_payment_agent_registration_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^\d+\.?\d*$',
+                'regexp'  => '^[0-9.]{0,10}$',
                 'err_msg' => localize('Please enter a numeric value.'),
             },
         ],
@@ -738,7 +737,7 @@ sub get_payment_agent_registration_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^\d+\.?\d*$',
+                'regexp'  => '^[0-9.]{0,10}$',
                 'err_msg' => localize('Please enter a numeric value.'),
             },
         ],
