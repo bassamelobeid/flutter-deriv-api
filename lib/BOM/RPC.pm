@@ -183,7 +183,6 @@ sub register {
 
             my $r = BOM::Platform::Context::Request->new($args);
             BOM::Platform::Context::request($r);
-           my $start_vsz = (split " ", path("/proc/self/stat")->slurp_utf8)[22];
 
             if (exists $params->{server_name}) {
                 $params->{website_name} = BOM::RPC::v3::Utility::website_name(delete $params->{server_name});
@@ -218,9 +217,6 @@ sub register {
             if ($verify_app_res && ref $result eq 'HASH') {
                 $result->{stash} = {%{$result->{stash} // {}}, %{$verify_app_res->{stash}}};
             }
-           my $end_vsz = (split " ", path("/proc/self/stat")->slurp_utf8)[22];
-           my $vsz_increase = $end_vsz - $start_vsz;
-           warn sprintf "VSZ increase for %d - %d bytes, %s\n", $$, $vsz_increase, encode_json({ app_id => $params->{source}, method => $method }) if $vsz_increase > (
             return $result;
         });
 }
@@ -376,6 +372,7 @@ sub startup {
     my @recent;
     my $call;
     my $cpu;
+    my $vsz_start;
 
     $app->hook(
         before_dispatch => sub {
@@ -386,6 +383,7 @@ sub startup {
             $call =~ s/\///;
             $request_start = [Time::HiRes::gettimeofday];
             DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => ["rpc:$call"]});
+            $vsz_start = current_vsz();
         });
 
     $app->hook(
@@ -401,6 +399,15 @@ sub startup {
                 @{$end}[3, 2, 1],
                 $end->[0] + $request_end->[1] / 1_000_000
             );
+
+            # Track whether we have any change in memory usage
+            my $vsz_increase = $current_vsz() - $vsz_start;
+            warn sprintf "VSZ increase for %d - %d bytes, %s\n", $$, $vsz_increase, $call if $vsz_increase > (64 * 1024);
+            # We use timing for the extra statistics (min/max/avg) it provides
+            DataDog::DogStatsd::Helper::stats_timing(
+                'bom_rpc.v_3.vsz.increase',
+                $vsz_increase,
+                {tags => ["rpc:$call"]});
 
             DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call_success.count', {tags => ["rpc:$call"]});
             DataDog::DogStatsd::Helper::stats_timing(
@@ -423,6 +430,16 @@ sub startup {
     Mojo::IOLoop->timer(0, sub { @recent = [[Time::HiRes::gettimeofday], 0]; $0 = "bom-rpc: (new)" });    ## no critic
 
     return;
+}
+
+=head2 current_vsz
+
+Returns the VSZ (virtual memory usage) for the current process, in bytes.
+
+=cut
+
+sub current_vsz {
+    return +(split " ", path("/proc/self/stat")->slurp_utf8)[22];
 }
 
 1;
