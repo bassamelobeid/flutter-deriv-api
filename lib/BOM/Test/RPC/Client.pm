@@ -3,6 +3,7 @@ package BOM::Test::RPC::Client;
 use Data::Dumper;
 use MojoX::JSON::RPC::Client;
 use Test::More ();
+use Data::UUID;
 
 use Moose;
 use namespace::autoclean;
