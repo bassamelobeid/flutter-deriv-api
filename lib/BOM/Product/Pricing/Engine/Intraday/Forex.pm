@@ -45,11 +45,6 @@ has [qw(long_term_prediction)] => (
     lazy_build => 1,
 );
 
-has apply_bounceback_safety => (
-    is      => 'ro',
-    default => undef,
-);
-
 has [qw(pricing_vol news_adjusted_pricing_vol)] => (
     is         => 'rw',
     lazy_build => 1,
@@ -503,25 +498,10 @@ sub calculate_intraday_bounceback {
 
     my $bounceback_base_intraday_trend = $self->calculate_bounceback_base($t_mins, $st_or_lt, $self->intraday_trend->amount);
 
-    my $bounceback_base_max_trend            = $self->calculate_bounceback_base($t_mins, $st_or_lt, ($calibration_coef->{trend_max}));
-    my $bounceback_base_max_trend_with_slope = $self->calculate_bounceback_base($t_mins, $st_or_lt, ($slope * $calibration_coef->{trend_max}));
-
-    my $bounceback_base_min_trend            = $self->calculate_bounceback_base($t_mins, $st_or_lt, ($calibration_coef->{trend_min}));
-    my $bounceback_base_min_trend_with_slope = $self->calculate_bounceback_base($t_mins, $st_or_lt, ($slope * $calibration_coef->{trend_min}));
-
-    my $bounceback_safety_max = abs($bounceback_base_max_trend - $bounceback_base_max_trend_with_slope);
-    my $bounceback_safety_min = abs($bounceback_base_min_trend - $bounceback_base_min_trend_with_slope);
-    my $bounceback_safety     = max($bounceback_safety_min, $bounceback_safety_max);
-
     if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_st') {
         $bounceback_base_intraday_trend =
             ($self->bet->pricing_code eq 'CALL') ? $bounceback_base_intraday_trend : $bounceback_base_intraday_trend * -1;
     }
-    if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_lt') {
-        $bounceback_safety = ($self->bet->pricing_code eq 'CALL') ? $bounceback_safety : $bounceback_safety * -1;
-    }
-
-    $bounceback_base_intraday_trend += $bounceback_safety if $self->apply_bounceback_safety;
 
     return $bounceback_base_intraday_trend;
 }
@@ -582,7 +562,6 @@ sub _get_long_term_delta_correction {
         base_amount => $expected_spot_tv,
     });
     $delta_cv->include_adjustment('subtract', $spot_tv_cv);
-
     return $delta_cv->amount;
 }
 
