@@ -116,7 +116,6 @@ sub register {
         my ($helper_name, $redis_url) = @$redis_info;
         $app->helper(
             $helper_name => sub {
-                my $c = shift;
                 state $redis = do {
                     my $redis = Mojo::Redis2->new(url => $redis_url);
                     $redis->on(connection => $redis_connections_counter_sub);
@@ -135,7 +134,6 @@ sub register {
     # the same worker
     $app->helper(
         shared_redis => sub {
-            my $c = shift;
             state $redis = do {
                 my $redis = Mojo::Redis2->new(url => $chronicle_redis_url);
                 $redis->on(connection => $redis_connections_counter_sub);
