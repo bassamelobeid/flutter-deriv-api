@@ -8,7 +8,6 @@ use Test::Warnings qw(warning warnings);
 use Test::MockModule;
 use Test::MockTime::HiRes;
 use Date::Utility;
-use Data::UUID;
 
 use Data::Dumper;
 use Quant::Framework::Utils::Test;
@@ -17,6 +16,7 @@ use Quant::Framework::StorageAccessor;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
+use Data::UUID;
 
 use BOM::Pricing::v3::Contract;
 use BOM::Platform::Context qw (request);
@@ -83,6 +83,9 @@ subtest 'validate_symbol' => sub {
         'return error if symbol is invalid'
     );
 };
+
+# We dont write unit test. We fuck unit tests.
+set_fixed_time(Date::Utility->new()->epoch);
 
 subtest 'prepare_ask' => sub {
     my $params = {
@@ -242,7 +245,7 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         'date_start'       => '1476676000',
         "streaming_params" => {add_theo_probability => 1},
     };
-    my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
+    my $result   = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
     my $expected = {
         error => {
             'code'              => 'ContractCreationFailure',
@@ -263,7 +266,7 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         'date_start'       => '1476676000',
         "streaming_params" => {add_theo_probability => 1},
     };
-    $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
+    $result   = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
     $expected = {
         error => {
             'code'              => 'ContractCreationFailure',
@@ -284,7 +287,7 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         'date_start'       => '1476670200',
         "streaming_params" => {add_theo_probability => 1},
     };
-    $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
+    $result   = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
     $expected = {
         error => {
             'code'              => 'ContractCreationFailure',
@@ -362,7 +365,7 @@ subtest 'send_ask_when_date_expiry_smaller_than_date_start' => sub {
             "streaming_params" => {add_theo_probability => 1},
         }};
     $c->call_ok('send_ask', $params)->has_error->error_code_is('ContractCreationFailure')->error_message_is('Cannot create contract');
-    
+
 };
 
 subtest 'send_multiple_ask' => sub {
@@ -550,7 +553,7 @@ subtest 'get_bid_skip_barrier_validation' => sub {
 
 my $method = 'get_contract_details';
 subtest $method => sub {
-    my $params = {};
+    my $params = {landing_company => 'costarica'};
 
     cmp_deeply([
             warnings {
@@ -569,7 +572,6 @@ subtest $method => sub {
     );
     $params->{short_code} = $contract->shortcode;
     $params->{currency}   = 'USD';
-    $params->{landing_company}   = 'costarica';
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
             'symbol'       => 'R_50',
             'longcode'     => "Win payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.",
@@ -1012,7 +1014,6 @@ sub _create_contract {
         $contract_data->{date_pricing} = $args{date_pricing};
     }
 
-
     if ($args{spread}) {
         delete $contract_data->{date_expiry};
         delete $contract_data->{barrier};
@@ -1022,9 +1023,6 @@ sub _create_contract {
         $contract_data->{stop_profit}      = 10;
         $contract_data->{stop_loss}        = 10;
     }
-
-    $contract_data->{landing_company} = 'costarica';
-
     my $contract = produce_contract($contract_data);
 
     return $contract;

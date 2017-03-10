@@ -97,7 +97,7 @@ sub _get_ask {
     catch {
         $response = _create_error({
                 code              => 'ContractCreationFailure',
-                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+                message_to_client => localize('Cannot create contract')});
     };
     return $response if $response;
     try {
@@ -107,7 +107,7 @@ sub _get_ask {
         warn __PACKAGE__ . " _get_ask produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($p2);
         $response = _create_error({
                 code              => 'ContractCreationFailure',
-                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+                message_to_client => localize('Cannot create contract')});
     };
     return $response if $response;
 
@@ -223,7 +223,7 @@ sub _get_ask {
     catch {
         _log_exception(_get_ask => $_);
         $response = _create_error({
-            message_to_client => BOM::Platform::Context::localize("Cannot create contract"),
+            message_to_client => localize("Cannot create contract"),
             code              => "ContractCreationFailure"
         });
     };
@@ -245,7 +245,7 @@ sub get_bid {
         warn __PACKAGE__ . " get_bid shortcode_to_parameters failed: $short_code, currency: $currency";
         $response = _create_error({
                 code              => 'GetProposalFailure',
-                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+                message_to_client => localize('Cannot create contract')});
     };
     return $response if $response;
 
@@ -259,7 +259,7 @@ sub get_bid {
         warn __PACKAGE__ . " get_bid produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($bet_params);
         $response = _create_error({
                 code              => 'GetProposalFailure',
-                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+                message_to_client => localize('Cannot create contract')});
     };
     return $response if $response;
 
@@ -417,7 +417,7 @@ sub get_bid {
     catch {
         _log_exception(get_bid => $_);
         $response = _create_error({
-            message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
+            message_to_client => localize('Sorry, an error occurred while processing your request.'),
             code              => "GetProposalFailure"
         });
     };
@@ -464,7 +464,7 @@ sub send_ask {
     if ($response and exists $response->{error}) {
         $response = _create_error({
                 code              => $response->{error}->{code},
-                message_to_client => BOM::Platform::Context::localize($response->{error}->{message}, $symbol)});
+                message_to_client => localize($response->{error}->{message}, $symbol)});
 
         $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
 
@@ -528,19 +528,20 @@ sub get_contract_details {
         warn __PACKAGE__ . " get_contract_details shortcode_to_parameters failed: $params->{short_code}, currency: $params->{currency}";
         $response = _create_error({
                 code              => 'GetContractDetails',
-                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+                message_to_client => localize('Cannot create contract')});
     };
     return $response if $response;
 
     try {
         $bet_params->{app_markup_percentage} = $params->{app_markup_percentage} // 0;
+        $bet_params->{landing_company} = $params->{landing_company};
         $contract = produce_contract($bet_params);
     }
     catch {
         warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($bet_params);
         $response = _create_error({
                 code              => 'GetContractDetails',
-                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+                message_to_client => localize('Cannot create contract')});
     };
     return $response if $response;
 
