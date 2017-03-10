@@ -283,10 +283,11 @@ sub sell_bet {
     # NOTE, the parens around v_fmb and v_trans in the SQL statement
     #       are necessary.
     my $stmt = $self->db->dbh->prepare('
-SELECT (v_fmb).*, (v_trans).*
+SELECT (s.v_fmb).*, (s.v_trans).*, t.id
   FROM bet_v1.sell_bet( $1::VARCHAR(12), $2::VARCHAR(3), $3::BIGINT, $4::NUMERIC, $5::TIMESTAMP,
                         $6::JSON, $7::TIMESTAMP, $8::VARCHAR(24), $9::VARCHAR(800), $10::BIGINT,
-                        $11::JSON)');
+                        $11::JSON) s
+  JOIN transaction.transaction t ON t.financial_market_bet_id=s.v_fmb.id AND t.action_type=$$buy$$');
     my @param;
 
     my $bet    = $self->bet_data;
@@ -326,13 +327,15 @@ SELECT (v_fmb).*, (v_trans).*
     my $txn = {};
     @{$txn}{@txn_col} = @{$row}[@fmb_col .. @fmb_col + $#txn_col];
 
+    my $buy_txn_id = $row->[-1];
+
     if ($self->bet) {
         $self->bet->sell_price($fmb->{sell_price});
         $self->bet->is_sold($fmb->{is_sold});
         $self->bet->is_expired($fmb->{is_expired});
     }
 
-    return wantarray ? ($fmb, $txn) : $txn->{id};
+    return wantarray ? ($fmb, $txn, $buy_txn_id) : $txn->{id};
 }
 
 sub batch_sell_bet {
@@ -389,7 +392,7 @@ bets(id, sell_price, sell_time, chld, transaction_time, staff_loginid, remark, s
         } 0 .. $#$bets
         )
         . ')
-SELECT (s.v_fmb).*, (s.v_trans).*
+SELECT (s.v_fmb).*, (s.v_trans).*, t.id
   FROM bets b
  CROSS JOIN acc a
  CROSS JOIN LATERAL bet_v1.sell_bet(a.account_id,
@@ -403,6 +406,7 @@ SELECT (s.v_fmb).*, (s.v_trans).*
                                     b.remark,
                                     b.source,
                                     b.qv) s
+  JOIN transaction.transaction t ON t.financial_market_bet_id=s.v_fmb.id AND t.action_type=$$buy$$
  ORDER BY (s.v_trans).id DESC';
 
     my $stmt = $self->db->dbh->prepare($sql);
@@ -442,8 +446,9 @@ SELECT (s.v_fmb).*, (s.v_trans).*
         @{$txn}{@txn_col} = @{$row}[@fmb_col .. @fmb_col + $#txn_col];
         push @res,
             {
-            fmb => $fmb,
-            txn => $txn
+            fmb        => $fmb,
+            txn        => $txn,
+            buy_txn_id => $row->[-1],
             };
     }
 
