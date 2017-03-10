@@ -534,8 +534,8 @@ sub get_contract_details {
 
     try {
         $bet_params->{app_markup_percentage} = $params->{app_markup_percentage} // 0;
-        $bet_params->{landing_company} = $params->{landing_company};
-        $contract = produce_contract($bet_params);
+        $bet_params->{landing_company}       = $params->{landing_company};
+        $contract                            = produce_contract($bet_params);
     }
     catch {
         warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($bet_params);
