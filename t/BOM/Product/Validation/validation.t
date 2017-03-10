@@ -347,7 +347,7 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     my $mocked_engine = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
     $mocked_engine->mock('ticks_for_trend', sub { [] });
     $bet = produce_contract($bet_params);
-    ok $bet->theo_probability->amount ne 0, 'Theo probability cant be zero if there are not ticks for forex intraday';
+    is $bet->theo_probability->amount, 0, 'Theo probability can be zero if there are not ticks for forex intraday';
     $mocked_engine->unmock_all;
     $mocked_contract->unmock_all;
 
