@@ -76,7 +76,7 @@ install:
     - perl /home/git/regentmarkets/bom-platform/bin/notify_pub.pl 2>&1 | grep -Ev '(connection has been closed unexpectedly)|(terminating connection due to administrator)' &
     - export RPC_CONFIG=/home/git/regentmarkets/bom-rpc/rpc.conf.travis
     - perl /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl  daemon -m production -l http://*:5005/jsonrpc  &
-    - export RPC_CONFIG=/home/git/regentmarkets/bom-pricng/pricing_rpc.conf.travis
+    - export RPC_CONFIG=/home/git/regentmarkets/bom-pricing/pricing_rpc.conf.travis
     - perl /home/git/regentmarkets/bom-pricing/bin/binary_pricing_rpc.pl  daemon -m production -l http://*:5006/jsonrpc  &
 
 before_script:
