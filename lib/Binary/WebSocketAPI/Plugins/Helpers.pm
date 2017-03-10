@@ -108,7 +108,7 @@ sub register {
     my $redis_connections_counter_sub = sub {
         my ($self, $info) = @_;
         $weak_app->stat->{current_redis_connections}++;
-        $self->{connections}{$info->{group}}{counter_guard} = guard { $weak_app->stat->{current_redis_connections}-- };
+        $self->{connections}{$info->{group}}{counter_guard} = guard { $weak_app->stat->{current_redis_connections}-- unless ${^GLOBAL_PHASE} eq 'DESTRUCT' };
     };
 
     for my $redis_info (@redises) {
