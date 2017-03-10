@@ -463,7 +463,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
         if ($key eq 'age_verification') {
             if ($input{$key} eq 'yes') {
-                $client->set_status('age_verification', $clerk, 'No specific reason.');
+                $client->set_status('age_verification', $clerk, 'No specific reason.')
+                    unless $client->get_status('age_verification');
             } else {
                 $client->clr_status('age_verification');
             }
