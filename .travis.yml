@@ -58,6 +58,7 @@ before_install:
     - /tmp/travis-scripts/redis.sh
 
 install:
+    - source /tmp/travis-scripts/devbox_path.sh
     - sudo ln -s $PWD /home/git/regentmarkets/binary-websocket-api
     - export WEBSOCKET_CONFIG=$PWD/websocket.conf.travis
     - /tmp/travis-scripts/devbox.sh
