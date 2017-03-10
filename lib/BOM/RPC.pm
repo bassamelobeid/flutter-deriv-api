@@ -436,7 +436,10 @@ Returns the VSZ (virtual memory usage) for the current process, in bytes.
 =cut
 
 sub current_vsz {
-    return +(split " ", path("/proc/self/stat")->slurp_utf8)[22];
+    my $stat = path("/proc/self/stat")->slurp_utf8;
+    # Process name is awkward and can contain ()
+    $stat =~ s/^.*\) R [0-9]+ //;
+    return +(split " ", $stat)[18];
 }
 
 1;
