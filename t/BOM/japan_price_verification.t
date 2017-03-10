@@ -311,49 +311,49 @@ subtest 'verify_with_shortcode_VV' => sub {
             'opposite_contract_risk_markup'                   => '0.00887266159362913',
             'opposite_contract_bs_probability'                => '0.119991050812156',
             'opposite_contract_vanna_market_price'            => '-0.0535757052910485',
-            'opposite_contract_volga_survival_weight'         => '0.165742268527768',
+            'opposite_contract_volga_survival_weight'         => '0.327358548606664',
             'opposite_contract_commission_markup'             => '0.035',
-            'opposite_contract_vega_survival_weight'          => '0.165742268527768',
-            'opposite_contract_market_supplement'             => '0.0473693906298077',
+            'opposite_contract_vega_survival_weight'          => '0.327358548606664',
+            'opposite_contract_market_supplement'             => '0.0622429220081686',
             'opposite_contract_vega_market_price'             => '-1.48834633087687e-16',
             'opposite_contract_vol_spread_markup'             => '0.00835726450794668',
             'opposite_contract_volga_market_price'            => '0.0129609605409399',
-            'opposite_contract_vanna_correction'              => '0.0228611847692117',
+            'opposite_contract_vanna_correction'              => '0.013836617625205',
             'opposite_contract_butterfly_markup'              => 0,
             'opposite_contract_mu'                            => 0,
-            'opposite_contract_vega_correction'               => '2.06158586451094e-17',
-            'opposite_contract_volga_correction'              => '0.024508205860596',
+            'opposite_contract_vega_correction'               => '4.07185060533455e-17',
+            'opposite_contract_volga_correction'              => '0.0484063043829636',
             'opposite_contract_payout'                        => '1000',
             'opposite_contract_S'                             => '79.817',
-            'opposite_contract_vanna_survival_weight'         => '0.165742268527768',
+            'opposite_contract_vanna_survival_weight'         => '0.100314678224433',
             'opposite_contract_spot_spread'                   => '0.025',
             'opposite_contract_base_commission'               => '0.035',
             'opposite_contract_K'                             => '79.500',
             'opposite_contract_spread_to_markup'              => 2,
-            'opposite_contract_theoretical_probability'       => '0.167360441441963'
+            'opposite_contract_theoretical_probability'       => '0.182233972820324'
         },
         'market_supplement' => {
-            'volga_survival_weight' => '0.159397025578246',
+            'volga_survival_weight' => '0.327260387943364',
             'Bet_vanna'             => '2.57750866038111',
             'vega_market_price'     => '-1.48834633087687e-16',
             'Bet_volga'             => '-11.4235664112811',
-            'vega_survival_weight'  => '0.159397025578246',
+            'vega_survival_weight'  => '0.327260387943364',
             'Bet_vega'              => '0.836915862648721',
             'volga_market_price'    => '0.0129609605409399',
-            'vanna_correction'      => '-0.0220114292497825',
-            'vanna_survival_weight' => '0.159397025578246',
-            'vega_correction'       => '-1.98548227154916e-17',
+            'vanna_correction'      => '-0.0138029365812866',
+            'vanna_survival_weight' => '0.099954755792334',
+            'vega_correction'       => '-4.07642298270417e-17',
             'vanna_market_price'    => '-0.0535757052910485',
-            'volga_correction'      => '-0.023600386328796'
+            'volga_correction'      => '-0.0484543018137039'
         },
         'ask_probability' => {
-            'theoretical_probability' => '0.834208059237055',
+            'theoretical_probability' => '0.817562636420643',
             'risk_markup'             => '0.00888533428347731',
             'commission_markup'       => '0.035'
         },
         'theoretical_probability' => {
             'bs_probability'    => '0.879819874815633',
-            'market_supplement' => '-0.0456118155785784'
+            'market_supplement' => '-0.0622572383949905'
         },
         'bs_probability' => {
             'S'             => '79.817',
@@ -391,7 +391,7 @@ subtest 'verify_with_shortcode_VV' => sub {
             'ccy'                    => 'JPY',
             'description'            => 'Win payout if USD/JPY touches 79.500 through 2012-11-19 21:00:00 GMT.',
             'trans_id'               => 'NA',
-            'order_price'            => 878,
+            'order_price'            => 861,
             'trade_time'             => '2012-11-08 03:25:45',
             'slippage_price'         => 'NA',
             'trade_ask_price'        => 'NA',
@@ -401,7 +401,7 @@ subtest 'verify_with_shortcode_VV' => sub {
     my $args;
     $args->{landing_company} = 'japan';
     $args->{shortcode}       = 'ONETOUCH_FRXUSDJPY_1000_1352345145_1353358800_795000_0';
-    $args->{contract_price}  = 878;
+    $args->{contract_price}  = 861;
     $args->{currency}        = 'JPY';
     $args->{action_type}     = 'buy';
     my $pricing_parameters = BOM::JapanContractDetails::verify_with_shortcode($args);
@@ -409,7 +409,7 @@ subtest 'verify_with_shortcode_VV' => sub {
         $pricing_parameters,
         {
             order_type  => 'buy',
-            order_price => 878
+            order_price => 861
         });
 
     my @expected_key = sort keys %{$expected_parameters};
@@ -421,7 +421,7 @@ subtest 'verify_with_shortcode_VV' => sub {
         $ask_prob += $pricing_parameters->{ask_probability}->{$key};
     }
 
-    is(roundnear(1, $ask_prob * 1000), 878, 'Ask price is matching');
+    is(roundnear(1, $ask_prob * 1000), 861, 'Ask price is matching');
     foreach my $key (sort keys %{$pricing_parameters}) {
         foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
             is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
