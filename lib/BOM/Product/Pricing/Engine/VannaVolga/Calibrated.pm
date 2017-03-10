@@ -48,7 +48,7 @@ has [qw(calibration_params)] => (
 sub _build_calibration_model {
     my $self = shift;
 
-    return $self->bet->category->code eq 'touchnotouch' ? 'wystup' : 'bom-surv';
+    return 'bom-surv';
 }
 
 sub _build_display_name {
@@ -84,7 +84,8 @@ Bloomberg : This is the method mentioned by Fisher in [1]. This takes a = 1, b =
 
 BOM_fet : this mdoel takes the first exit time as a substitute for the probability of survival. This was mentioned by Bosseens in [2]. We take the average of the domestic and foreign fets and then compare the results. It wa sclose to BOM_surv but not satisfcatory enough.
 
-Hence we weere left with 2 options : Wystup or BOM_surv. We could use Wystup for Single Barrier contracts and BOM_surv for everything else, or use one model across all bet types. Also ideally the calibrations need to be checked every 2 months to maintain a better estimate to the market.
+Hence we weere left with 2 options : Wystup or BOM_surv. We use BOM_surv model across all bet types because Wystup's survival prob calculation are not consistent between both contract and hence break the put call parity . Also ideally the calibrations need to be checked every 2 months to maintain a better estimate to the market.
+
 
 =cut
 
