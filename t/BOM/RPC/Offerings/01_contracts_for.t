@@ -44,7 +44,7 @@ subtest "Request $method" => sub {
 
     is_deeply [sort keys %{$result}], [sort qw/ available close open hit_count spot feed_license /], 'It should return contracts_for object';
     ok @{$result->{available}}, 'It should return available contracts';
-    ok !grep { $_->{contract_type} =~ /^(CALL|PUT|EXPIRYMISS|EXPIRYRANGE)E$/ } @{$result->{available}};
+    ok !grep { $_->{contract_type} =~ /^(EXPIRYMISS|EXPIRYRANGE)E$/ } @{$result->{available}};
 
     generate_trading_periods('frxUSDJPY');
     update_predefined_highlow({
