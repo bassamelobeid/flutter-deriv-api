@@ -3,8 +3,7 @@
 use strict;
 use warnings;
 
-# use Test::More tests => 5;
-use Test::More skip_all => 'we are not using pute for japan any more';
+use Test::More tests => 4;
 
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -66,6 +65,7 @@ subtest 'call variations' => sub {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Pute';
         is $c->code,        'PUTE';
+        is $c->other_side_code, 'CALL';
         ok $c->is_intraday, 'is intraday';
         ok !$c->expiry_daily, 'not expiry daily';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
@@ -152,7 +152,7 @@ subtest 'shortcodes' => sub {
             produce_contract('PUTE_FRXUSDJPY_10_' . $now->plus_time_interval('10m')->epoch . 'F_' . $now->plus_time_interval('20m')->epoch . '_S0P_0',
             'USD');
         isa_ok $c, 'BOM::Product::Contract::Pute';
-        ok $c->is_forward_starting;
+        ok $c->starts_as_forward_starting;
     }
     'builds forward starting Pute from shortcode';
     lives_ok {
