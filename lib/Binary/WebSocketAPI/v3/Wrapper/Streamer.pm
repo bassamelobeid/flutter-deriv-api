@@ -37,8 +37,8 @@ sub notification {
 
             my $shared_info = $c->redis_connections($channel_name);
 
-            $shared_info->{'c'} = $c;
-            $shared_info->{echo} = $args;
+            $shared_info->{broadcast_notifications}{\$c+0}{'c'} = $c;
+            $shared_info->{broadcast_notifications}{\$c+0}{echo} = $args;
 
             my $slave_redis = $c->ws_redis_read;
             ### to config
@@ -60,26 +60,28 @@ sub notification {
 sub send_notification {
     my ($shared, $message, $channel) = @_;
 
-    return if !$shared || !ref $shared || !$shared->{c} || !ref $shared->{c};
+    return if !$shared || !ref $shared || !$shared->{broadcast_notifications} || !ref $shared->{broadcast_notifications};
+    foreach my $c_addr ( keys %{$shared->{broadcast_notifications}} ) {
+        my $client_shared = $shared->{broadcast_notifications}{$c_addr};
+        unless (ref $client_shared->{c}) {
+            my $redis = $client_shared->{c}->ws_redis_write;
 
-    unless ($shared->{c}->tx) {
-        my $redis = $shared->{c}->ws_redis_write;
+            $redis->unsubscribe([$channel]) if $redis && $channel;
+            return;
+        }
 
-        $redis->unsubscribe([$channel]) if $redis && $channel;
-        return;
+        my $slave_redis = $client_shared->{c}->ws_redis_read;
+        my $is_on_key   = "NOTIFY::broadcast::is_on";    ### TODO: to config
+        return unless $slave_redis->get($is_on_key);     ### Need 1 for continuing
+
+        $message = eval { decode_json $message} unless ref $message eq 'HASH';
+        $message //= {};
+        $message->{echo_req} = $client_shared->{echo};
+        $message->{msg_type} = 'broadcast_notifications';
+
+        # TODO: Need to set afterwork with checking json by scheme
+        $client_shared->{c}->send({json => $message});
     }
-
-    my $slave_redis = $shared->{c}->ws_redis_read;
-    my $is_on_key   = "NOTIFY::broadcast::is_on";    ### TODO: to config
-    return unless $slave_redis->get($is_on_key);     ### Need 1 for continuing
-
-    $message = eval { decode_json $message} unless ref $message eq 'HASH';
-    $message //= {};
-    $message->{echo_req} = $shared->{echo};
-    $message->{msg_type} = 'broadcast_notifications';
-
-    # TODO: Need to set afterwork with checking json by scheme
-    $shared->{c}->send({json => $message});
     return;
 }
 
