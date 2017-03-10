@@ -37,7 +37,7 @@ subtest "available contracts for symbol" => sub {
     );
     my %expected = (
         R_100 => {
-            callput      => 14,
+            callput      => 28,
             touchnotouch => 4,    # intraday and daily separated
             staysinout   => 4,
             endsinout    => 4,
@@ -46,41 +46,41 @@ subtest "available contracts for symbol" => sub {
             spreads      => 2
         },
         RDBEAR => {
-            callput      => 10,
+            callput      => 20,
             touchnotouch => 2,    # intraday and daily separated
             staysinout   => 2,
             endsinout    => 2,
             digits       => 6,
         },
         frxUSDJPY => {
-            callput      => 12,
+            callput      => 24,
             touchnotouch => 2,    # only daily
             staysinout   => 2,
             endsinout    => 2,
         },
         frxAUDCAD => {
-            callput => 6,
+            callput => 12,
         },
         WLDUSD => {
-            callput => 4,
+            callput => 8,
         },
         AEX => {
-            callput      => 8,
+            callput      => 16,
             touchnotouch => 2,    # only daily
             staysinout   => 2,
             endsinout    => 2,
         },
         FPCS => {
-            callput => 4,
+            callput => 8,
         },
         frxXAUUSD => {
-            callput      => 8,
+            callput      => 16,
             touchnotouch => 2,    # only daily
             staysinout   => 2,
             endsinout    => 2,
         },
         frxXPDUSD => {
-            callput => 2,
+            callput => 4,
         },
     );
     foreach my $market (keys %input) {
