@@ -51,7 +51,7 @@ sub notification {
                 site_status => 'up',
                 message     => ''
             };
-
+            $current_state->{msg_type} = 'broadcast_notifications';
             return $c->send({json => $current_state}, $req_storage);
         });
     return;
@@ -76,6 +76,7 @@ sub send_notification {
     $message = eval { decode_json $message} unless ref $message eq 'HASH';
     $message //= {};
     $message->{echo_req} = $shared->{echo};
+    $message->{msg_type} = 'broadcast_notifications';
 
     # TODO: Need to set afterwork with checking json by scheme
     $shared->{c}->send({json => $message});
