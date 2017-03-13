@@ -211,6 +211,12 @@ sub get_rpc_url {
     return;
 }
 
+sub get_pricing_rpc_url {
+    my $c = shift;
+
+    return $ENV{PRICING_RPC_URL} || $c->app->config->{pricing_rpc_url};
+}
+
 sub output_validation {
     my ($c, $req_storage, $api_response) = @_;
 
