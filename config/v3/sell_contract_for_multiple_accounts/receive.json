@@ -42,9 +42,15 @@
                   },
                   "transaction_id": {
                     "type": "integer",
-                    "description":"Internal transaction identifier for the sale transaction",
+                    "description":"Internal transaction identifier for the contract buy transaction",
+                    "required": "1"
+                  },
+                  "contract_id": {
+                    "type": "integer",
+                    "description":"Internal contract identifier",
                     "required": "1"
                   }
+
                 }
               },
               {
