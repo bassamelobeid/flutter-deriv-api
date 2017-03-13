@@ -430,7 +430,6 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 transfer_to           => $client->loginid,
                 currency              => 'USD',
                 amount                => 100,
-                verification_code     => $code
             }});
     ok $res->{error}->{message_to_client} =~ /Invalid amount. Maximum withdrawal allowed is 50./, 'Amount greater than max withdrawal';
 
@@ -445,7 +444,6 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 transfer_to           => $client->loginid,
                 currency              => 'USD',
                 amount                => 10,
-                verification_code     => $code
             }});
     ok $res->{error}->{message_to_client} =~ /Invalid amount. Minimum withdrawal allowed is 20./, 'Amount less than min withdrawal';
 
