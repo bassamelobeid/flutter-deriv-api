@@ -128,7 +128,6 @@ sub startup {
 
     $app->hook(
         after_dispatch => sub {
-            BOM::Database::Rose::DB->db_cache->finish_request_cycle;
             $request_counter++;
             my $request_end = [Time::HiRes::gettimeofday];
             my $end         = [gmtime $request_end->[0]];
