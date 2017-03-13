@@ -49,6 +49,7 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-populator
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-rpc
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-pricing
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-transaction
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/php-mt5-webapi
@@ -58,8 +59,9 @@ before_install:
     - /tmp/travis-scripts/redis.sh
 
 install:
+    - source /tmp/travis-scripts/devbox_path.sh
     - sudo ln -s $PWD /home/git/regentmarkets/binary-websocket-api
-    - export WEBSOCKET_CONFIG=$PWD/websocket.conf.travis RPC_CONFIG=/home/git/regentmarkets/bom-rpc/rpc.conf.travis
+    - export WEBSOCKET_CONFIG=$PWD/websocket.conf.travis
     - /tmp/travis-scripts/devbox.sh
 
     - /tmp/travis-scripts/remove_postgresdb_config.sh
@@ -73,7 +75,10 @@ install:
     - .  /tmp/travis-scripts/setup_perl5lib.sh
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
     - perl /home/git/regentmarkets/bom-platform/bin/notify_pub.pl 2>&1 | grep -Ev '(connection has been closed unexpectedly)|(terminating connection due to administrator)' &
+    - export RPC_CONFIG=/home/git/regentmarkets/bom-rpc/rpc.conf.travis
     - perl /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl  daemon -m production -l http://*:5005/jsonrpc  &
+    - export RPC_CONFIG=/home/git/regentmarkets/bom-pricing/pricing_rpc.conf.travis
+    - perl /home/git/regentmarkets/bom-pricing/bin/binary_pricing_rpc.pl  daemon -m production -l http://*:5006/jsonrpc  &
 
 before_script:
     - /tmp/travis-scripts/wait_for_rpc.sh
