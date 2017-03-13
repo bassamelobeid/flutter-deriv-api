@@ -423,8 +423,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     $pa_client->payment_agent->max_withdraw(50);
     $pa_client->payment_agent->min_withdraw(20);
     $pa_client->save();
-    $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-            client => $client,
+    $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
+            client => $pa_client,
             args   => {
                 paymentagent_transfer => 1,
                 transfer_to           => $client->loginid,
@@ -438,8 +438,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     $pa_client_db->unfreeze;
 
     sleep 3;
-    $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-            client => $client,
+    $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
+            client => $pa_client,
             args   => {
                 paymentagent_transfer => 1,
                 transfer_to           => $client->loginid,
