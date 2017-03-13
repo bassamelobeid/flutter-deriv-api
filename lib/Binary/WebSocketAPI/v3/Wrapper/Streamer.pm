@@ -36,7 +36,7 @@ sub notification {
             my ($self, $err) = @_;
 
             my $shared_info = $c->redis_connections($channel_name);
-
+            Scalar::Util::weaken($c);
             $shared_info->{broadcast_notifications}{\$c+0}{'c'} = $c;
             $shared_info->{broadcast_notifications}{\$c+0}{echo} = $args;
 
