@@ -167,7 +167,7 @@ sub buy_contract_for_multiple_accounts {
         $price = $contract_parameters->{amount};
     }
 
-    my $trx = BOM::Product::Transaction->new({
+    my $trx = BOM::Transaction->new({
         client   => $client,
         multiple => $token_list_res->{result},
         contract => $contract,
@@ -218,7 +218,7 @@ sub buy_contract_for_multiple_accounts {
 sub _check_token_list {
     my $tokens = shift;
 
-    my ($err, $result, $success) = (undef, [], 0);
+    my ($err, $result, $success, $m1, $m2) = (undef, [], 0, undef, undef);
 
     for my $t (@$tokens) {
         my $token_details = BOM::RPC::v3::Utility::get_token_details($t);
@@ -244,7 +244,7 @@ sub _check_token_list {
                 +{
                 token             => $t,
                 code              => 'PermissionDenied',
-                message_to_client => BOM::Platform::Context::localize('Permission denied, requires [_1] scope.', 'trade'),
+                message_to_client => ( $m1 //=BOM::Platform::Context::localize('Permission denied, requires [_1] scope.', 'trade' ) ),
                 };
             next;
 
@@ -254,7 +254,7 @@ sub _check_token_list {
             +{
             token             => $t,
             code              => 'InvalidToken',
-            message_to_client => BOM::Platform::Context::localize('Invalid token'),
+            message_to_client => ( $m2 //= BOM::Platform::Context::localize('Invalid token') ),
             };
     }
 
@@ -283,9 +283,12 @@ sub sell_contract_for_multiple_accounts {
 
     return +{result => $token_list_res->{result}} unless $token_list_res->{success};
 
-    my $contract = produce_contract($shortcode, $client->currency);
+    my $contract_parameters =
+        shortcode_to_parameters($shortcode, $client->currency);
+    $contract_parameters->{landing_company} = $client->landing_company->short;
+    my $contract    = produce_contract($contract_parameters);
 
-    my $trx = BOM::Product::Transaction->new({
+    my $trx = BOM::Transaction->new({
         client   => $client,
         multiple => $token_list_res->{result},
         contract => $contract,
@@ -309,9 +312,12 @@ sub sell_contract_for_multiple_accounts {
                 @{$row}{qw/token code error/};
         } else {
             $new = +{
-                transaction_id => $row->{tnx}{id},
+                transaction_id => $row->{buy_tr_id},
                 balance_after  => sprintf('%.2f', $row->{tnx}{balance_after}),
                 sold_for       => abs($row->{tnx}{amount}),
+                sell_price     => abs($row->{fmb}{sell_price}),
+                contract_id    => $row->{tnx}{financial_market_bet_id},
+                sell_time      => $row->{fmb}{sell_time},
             };
         }
         push @{$data_to_return}, $new;
