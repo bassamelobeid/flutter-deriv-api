@@ -35,10 +35,12 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/php-mt5-webapi
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-transaction
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-pricing
 
     - /tmp/travis-scripts/redis.sh
 
 install:
+    - source /tmp/travis-scripts/devbox_path.sh
     - sudo ln -s $PWD /home/git/regentmarkets/bom-rpc
     - export RPC_CONFIG=$PWD/rpc.conf.travis
     - /tmp/travis-scripts/devbox.sh
