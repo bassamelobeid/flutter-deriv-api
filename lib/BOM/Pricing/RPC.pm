@@ -8,6 +8,7 @@ use Proc::CPUUsage;
 use Time::HiRes;
 use Try::Tiny;
 use Carp qw(cluck);
+use JSON;
 
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
