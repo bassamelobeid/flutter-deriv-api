@@ -432,6 +432,7 @@ sub process_transaction_updates {
                                 : Date::Utility->new($payload->{purchase_time})->epoch;
 
                             $c->call_rpc({
+                                    url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
                                     args        => $args,
                                     method      => 'get_contract_details',
                                     call_params => {
