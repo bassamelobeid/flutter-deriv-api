@@ -37,6 +37,20 @@ sub apply_usergroup {
     return;
 }
 
+sub _create_error {
+    my $args = shift;
+    stats_inc("bom_pricing_rpc.v_3.error", {tags => ['code:' . $args->{code},]});
+    return {
+        error => {
+            code              => $args->{code},
+            message_to_client => $args->{message_to_client},
+            $args->{continue_price_stream}
+            ? (continue_price_stream => $args->{continue_price_stream})
+            : (),
+            $args->{message} ? (message => $args->{message}) : (),
+            $args->{details} ? (details => $args->{details}) : ()}};
+}
+
 sub register {
     my ($method, $code) = @_;
 
@@ -48,7 +62,19 @@ sub register {
             $args->{language} = $params->{language} if ($params->{language});
             my $r = BOM::Platform::Context::Request->new($args);
             BOM::Platform::Context::request($r);
-            return $code->(@_);
+            my @call_args = @_;
+            my $result    = try {
+                $code->(@call_args);
+            }
+            catch {
+                warn "Exception when handling $method - $_ with parameters " . encode_json \@call_args;
+                _create_error({
+                        code              => 'InternalServerError',
+                        message_to_client => localize("Sorry, an error occurred while processing your account.")})
+            };
+            return $result;
+
+            #return $code->(@_);
         });
 }
 
@@ -158,7 +184,12 @@ sub startup {
         });
 
     # set $0 after forking children
-    Mojo::IOLoop->timer(0, sub { @recent = [[Time::HiRes::gettimeofday], 0]; $0 = "bom-pricing-rpc: (new)" });    ## no critic
+    Mojo::IOLoop->timer(
+        0,
+        sub {
+            @recent = [[Time::HiRes::gettimeofday], 0];
+            $0 = "bom-pricing-rpc: (new)";
+        });                                                                                     ## no critic
 
     return;
 }
