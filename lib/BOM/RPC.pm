@@ -324,11 +324,6 @@ sub startup {
 
         ['verify_email', \&BOM::RPC::v3::NewAccount::verify_email],
 
-        ['send_ask',             \&BOM::RPC::v3::Contract::send_ask],
-        ['send_multiple_ask',    \&BOM::RPC::v3::Contract::send_multiple_ask],
-        ['get_bid',              \&BOM::RPC::v3::Contract::get_bid],
-        ['get_contract_details', \&BOM::RPC::v3::Contract::get_contract_details, [qw(auth)]],
-
         ['new_account_real',        \&BOM::RPC::v3::NewAccount::new_account_real,         [qw(auth)]],
         ['new_account_maltainvest', \&BOM::RPC::v3::NewAccount::new_account_maltainvest,  [qw(auth)]],
         ['new_account_japan',       \&BOM::RPC::v3::NewAccount::new_account_japan,        [qw(auth)]],
