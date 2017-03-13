@@ -296,8 +296,7 @@ elsif (scalar @overlay and not $merge) {
                     $override_findfullfeed = $p;
                 }
 
-                my $ul_info = BOM::Market::Info->new(underlying => $underlying);
-                my $fffile = $ul_info->fullfeed_file($daytochart, $override_findfullfeed);
+                my $fffile = _fullfeed_file($daytochart, $underlying);
 
                 if (-e $fffile) {
                     $msg .= `wc -l $fffile` . '<br>';
@@ -629,6 +628,34 @@ else {
 
 if (scalar @overlay) {
     print "$msg";
+}
+
+sub _fullfeed_file {
+    my ($date, $underlying) = @_;
+
+    if ($date =~ /^(\d\d?)\-(\w\w\w)\-(\d\d)$/) {
+        $date = $1 . '-' . ucfirst(lc($2)) . '-' . $3;
+    }
+    else {
+        die 'Bad date for fullfeed_file';
+    }
+
+    my $folder = 'combined';
+
+    my $underlying_symbol = $underlying->system_symbol;
+    my $market            = $underlying->market;
+
+    if ($market->name eq 'config') {
+        $underlying_symbol =~ s/^FRX/^frx/;
+        $folder = 'combined/' . $underlying_symbol . '/quant';
+    }
+
+    return
+          BOM::Platform::Runtime->instance->app_config->system->directory->feed . '/'
+        . $folder . '/'
+        . $underlying->system_symbol . '/'
+        . $date
+        . ".fullfeed";
 }
 
 code_exit_BO();
