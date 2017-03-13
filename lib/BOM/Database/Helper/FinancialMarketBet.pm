@@ -350,7 +350,7 @@ sub sell_by_shortcode {
     my $stmt = $self->db->dbh->prepare('
 WITH
 acc( seq, loginid) AS (VALUES ' . $tmp_table_values . ')
-SELECT acc.loginid, b.r_ecode, b.r_edescription, (v_fmb).*, (v_trans).*
+SELECT acc.loginid, b.r_ecode, b.r_edescription, b.v_buytrid, (v_fmb).*, (v_trans).*
   FROM acc
  CROSS JOIN LATERAL
        bet_v1.sell_by_shortcode(
@@ -397,7 +397,7 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, (v_fmb).*, (v_trans).*
         my $loginid = shift @row;
         my $ecode   = shift @row;
         my $edescr  = shift @row;
-
+        my $buy_tr_id = shift @row;
         push @$result,
             {
             fmb           => {},
@@ -405,7 +405,7 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, (v_fmb).*, (v_trans).*
             loginid       => $loginid,
             e_code        => $ecode,
             e_description => $edescr,
-            }
+        }
             and next
             if $ecode;
 
@@ -419,9 +419,10 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, (v_fmb).*, (v_trans).*
         @{$txn}{@txn_col} = @row[@fmb_col .. @fmb_col + $#txn_col];
 
         push @$result, {
-            fmb     => $fmb,
-            txn     => $txn,
-            loginid => $loginid,    ### Not sure, maybe need to remove
+            fmb       => $fmb,
+            txn       => $txn,
+            buy_tr_id => $buy_tr_id,
+            loginid   => $loginid,    ### Not sure, maybe need to remove
         };
     }
 
