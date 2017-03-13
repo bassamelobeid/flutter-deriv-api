@@ -36,6 +36,10 @@ sub contracts_for {
         $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol($query_args);
     } else {
         $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol($query_args);
+        # this is temporary solution till the time front apps are fixed
+        # filter CALLE|PUTE only for non japan
+        $contracts_for->{available} = [grep { $_->{contract_type} !~ /^(?:CALLE|PUTE)$/ } @{$contracts_for->{available}}]
+            if ($contracts_for and $contracts_for->{hit_count} > 0);
     }
 
     my $i = 0;

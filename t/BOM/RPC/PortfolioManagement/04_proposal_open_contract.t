@@ -121,67 +121,6 @@ subtest 'Auth client' => sub {
     $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('It should be success using oauth token');
 };
 
-subtest $method => sub {
-    my ($contract_id, $contract);
-    my @expected_contract_fields;
-
-    lives_ok {
-        ($contract_id, $contract) = _create_contract(client => $client);
-    }
-    'Initial contract';
-
-    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error;
-    lives_ok {
-        my $bid = BOM::RPC::v3::Contract::get_bid({
-            short_code  => $contract->shortcode,
-            contract_id => $contract_id,
-            currency    => $client->currency,
-            is_sold     => $contract->is_sold,
-        });
-
-        @expected_contract_fields = qw/ buy_price purchase_time account_id is_sold transaction_ids /;
-        # we dont send ask_price in proposal_open_contract
-        delete $bid->{ask_price};
-        push @expected_contract_fields, keys %$bid;
-    }
-    'Get extected data';
-    is_deeply([sort keys %{$rpc_ct->result->{$contract_id}}], [sort @expected_contract_fields], 'Should return contract and bid data');
-
-    $params[1]->{contract_id} = $contract_id;
-    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error;
-    lives_ok {
-        my $bid = BOM::RPC::v3::Contract::get_bid({
-            short_code  => $contract->shortcode,
-            contract_id => $contract_id,
-            currency    => $client->currency,
-            is_sold     => $contract->is_sold,
-        });
-
-        @expected_contract_fields = qw/ buy_price purchase_time account_id is_sold transaction_ids /;
-        delete $bid->{ask_price};
-        push @expected_contract_fields, keys %$bid;
-    }
-    'Get extected data';
-    is_deeply([sort keys %{$rpc_ct->result->{$contract_id}}], [sort @expected_contract_fields], 'Should return contract and bid data by contract_id');
-
-    my $contract_factory = Test::MockModule->new('BOM::RPC::v3::Contract');
-    $contract_factory->mock('produce_contract', sub { die });
-
-    warnings_like {
-        $rpc_ct->call_ok(@params)->has_no_system_error->result_is_deeply({
-                $contract_id => {
-                    error => {
-                        message_to_client => 'Cannot create contract',
-                        code              => 'GetProposalFailure',
-                    },
-                },
-            },
-            'Should return error instead contract data',
-        );
-    }
-    [qr/^BOM::RPC::v3::Contract get_bid produce_contract failed/], "Expected warn about error contract producinng";
-};
-
 done_testing();
 
 sub _create_contract {
