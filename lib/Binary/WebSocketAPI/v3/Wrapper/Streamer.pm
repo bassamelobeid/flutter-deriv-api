@@ -37,8 +37,8 @@ sub notification {
 
             my $shared_info = $c->redis_connections($channel_name);
             Scalar::Util::weaken($c);
-            $shared_info->{broadcast_notifications}{\$c+0}{'c'} = $c;
-            $shared_info->{broadcast_notifications}{\$c+0}{echo} = $args;
+            $shared_info->{broadcast_notifications}{\$c + 0}{'c'} = $c;
+            $shared_info->{broadcast_notifications}{\$c + 0}{echo} = $args;
 
             my $slave_redis = $c->ws_redis_read;
             ### to config
@@ -61,7 +61,7 @@ sub send_notification {
     my ($shared, $message, $channel) = @_;
 
     return if !$shared || !ref $shared || !$shared->{broadcast_notifications} || !ref $shared->{broadcast_notifications};
-    foreach my $c_addr ( keys %{$shared->{broadcast_notifications}} ) {
+    foreach my $c_addr (keys %{$shared->{broadcast_notifications}}) {
         my $client_shared = $shared->{broadcast_notifications}{$c_addr};
         unless (ref $client_shared->{c}) {
             my $redis = $client_shared->{c}->ws_redis_write;
@@ -71,8 +71,8 @@ sub send_notification {
         }
 
         my $slave_redis = $client_shared->{c}->ws_redis_read;
-        my $is_on_key   = "NOTIFY::broadcast::is_on";    ### TODO: to config
-        return unless $slave_redis->get($is_on_key);     ### Need 1 for continuing
+        my $is_on_key   = "NOTIFY::broadcast::is_on";           ### TODO: to config
+        return unless $slave_redis->get($is_on_key);            ### Need 1 for continuing
 
         $message = eval { decode_json $message} unless ref $message eq 'HASH';
         $message //= {};
