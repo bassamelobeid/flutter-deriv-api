@@ -502,6 +502,8 @@ sub startup {
             my $c    = shift;
             my $key  = $c->rate_limitations_key;
             my $hits = $c->stash->{rate_limitations_hits};
+            # silence errors  when $hits is undef
+            return unless $hits;
             $c->ws_redis_master->set(
                 $key => encode_json($hits),
                 EX   => 3600,
