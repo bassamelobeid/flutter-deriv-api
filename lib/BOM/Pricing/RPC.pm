@@ -11,7 +11,6 @@ use Carp qw(cluck);
 
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
-use BOM::Database::Rose::DB;
 use BOM::Pricing::v3::Contract;
 
 sub apply_usergroup {
