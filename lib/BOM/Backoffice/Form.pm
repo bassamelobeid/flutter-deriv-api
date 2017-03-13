@@ -714,7 +714,7 @@ sub get_payment_agent_registration_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^[0-9.]{0,10}$',
+                'regexp'  => '^(?:[1-9]\d*|0)?(?:.\d+)?$',
                 'err_msg' => localize('Please enter a numeric value.'),
             },
         ],
@@ -737,7 +737,7 @@ sub get_payment_agent_registration_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^[0-9.]{0,10}$',
+                'regexp'  => '^(?:[1-9]\d*|0)?(?:.\d+)?$',
                 'err_msg' => localize('Please enter a numeric value.'),
             },
         ],
