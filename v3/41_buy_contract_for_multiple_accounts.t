@@ -2,7 +2,6 @@
 
 use Test::More;
 use JSON;
-use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data/;
@@ -177,6 +176,7 @@ subtest "2nd try: dummy tokens => success", sub {
 };
 
 my $tokens_for_sell = [];
+my $trx_ids = {};
 my $shortcode_for_sell = undef;
 subtest "3rd try: the real thing => success", sub {
     # Here we trust that the function in bom-rpc works correctly. We
@@ -194,8 +194,7 @@ subtest "3rd try: the real thing => success", sub {
                 tokens                             => \@tokens,
             }});
     my $res = filter_proposal;
-    use Data::Dumper;
-warn Dumper $res;
+
     isa_ok $res->{buy_contract_for_multiple_accounts}, 'HASH';
 
     # note explain $res;
@@ -203,8 +202,6 @@ warn Dumper $res;
 
     $tokens_for_sell = [map {$_->{token}} grep {$_->{shortcode}} @{$res->{buy_contract_for_multiple_accounts}{result}}];
     $shortcode_for_sell = [map {$_->{shortcode}} grep {$_->{shortcode}} @{$res->{buy_contract_for_multiple_accounts}{result}}]->[0];
-    warn Dumper $tokens_for_sell;
-    warn $shortcode;
 
     $t = $t->send_ok({json => {forget => $proposal_id}})->message_ok;
     my $forget = decode_json($t->message->[1]);
@@ -219,7 +216,9 @@ warn Dumper $res;
             }});
     my $stmt = filter_proposal;
     # note explain $stmt;
-warn Dumper $stmt;
+
+    $trx_ids = +{map {$_->{transaction_id}=>1} @{$stmt->{statement}->{transactions}}};
+
     is_deeply([
             sort { $a->[0] <=> $b->[0] }
             map { [$_->{contract_id}, $_->{transaction_id}, -$_->{amount}] } @{$stmt->{statement}->{transactions}}
@@ -234,7 +233,7 @@ warn Dumper $stmt;
 };
 sleep 5;
 
-subtest "2nd try to sell: dummy tokens => success", sub {
+subtest "try to sell: dummy tokens => success", sub {
     $t = $t->send_ok({
             json => {
                 sell_contract_for_multiple_accounts => 1,
@@ -279,7 +278,10 @@ subtest "sell_contract_for_multiple_accounts => successful", sub {
 
     isa_ok $res->{sell_contract_for_multiple_accounts}{result},      'ARRAY';
     isa_ok $res->{sell_contract_for_multiple_accounts}{result}->[0], 'HASH';
-
+    ok( defined $res->{sell_contract_for_multiple_accounts}{result}->[0]->{transaction_id}, "check trx exist" );
+    for my $r (@{$res->{sell_contract_for_multiple_accounts}{result}}) {
+        ok( defined $r->{transaction_id} && defined $trx_ids->{$r->{transaction_id}}, "Check transaction ID" );
+    }
     test_schema('sell_contract_for_multiple_accounts', $res);
 };
 
