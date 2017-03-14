@@ -7,7 +7,7 @@ use DBIx::TransactionManager::Distributed qw(txn);
 use List::Util qw(first);
 use Time::HiRes ();
 use JSON::XS qw/encode_json decode_json/;
-use DataDog::DogStatsd::Helper;
+use DataDog::DogStatsd::Helper qw/stats_inc stats_gauge stats_count stats_timing/;
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::RedisReplicated;
 use BOM::Platform::Runtime;
@@ -27,13 +27,13 @@ sub process_job {
 
     if (!ref($underlying)) {
         warn "Have legacy underlying - $underlying with params " . encode_json($params) . "\n";
-        DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => $self->tags});
+        stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => $self->tags});
         return undef;
     }
 
     unless (defined $underlying->spot_tick and defined $underlying->spot_tick->epoch) {
         warn "$params->{symbol} has invalid spot tick" if $underlying->calendar->is_open;
-        DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => $self->tags});
+        stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => $self->tags});
         return undef;
     }
 
@@ -54,7 +54,7 @@ sub process_job {
         $response = BOM::Pricing::v3::Contract::send_bid($params);
     } else {
         warn "Unrecognized Pricer command! Payload is: " . ($next // 'undefined');
-        DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.unknown.invalid", {tags => $self->tags});
+        stats_inc("pricer_daemon.unknown.invalid", {tags => $self->tags});
         return undef;
     }
 
@@ -62,8 +62,8 @@ sub process_job {
     $redis->set($next, $current_time);
     $redis->expire($next, 300);
 
-    DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.call", {tags => $self->tags});
-    DataDog::DogStatsd::Helper::stats_timing("pricer_daemon.$price_daemon_cmd.time", $response->{rpc_time}, {tags => $self->tags});
+    stats_inc("pricer_daemon.$price_daemon_cmd.call", {tags => $self->tags});
+    stats_timing("pricer_daemon.$price_daemon_cmd.time", $response->{rpc_time}, {tags => $self->tags});
     $response->{price_daemon_cmd} = $price_daemon_cmd;
     return $response;
 }
@@ -83,7 +83,7 @@ sub run {
         # Apply this for the duration of the current price only
         local $self->{current_queue} = $queue;
 
-        DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.idle.time', 1000 * Time::HiRes::tv_interval($tv, $tv_now), {tags => $self->tags});
+        stats_timing('pricer_daemon.idle.time', 1000 * Time::HiRes::tv_interval($tv, $tv_now), {tags => $self->tags});
         $tv = $tv_now;
 
         if (Time::HiRes::tv_interval($tv_appconfig, $tv_now) >= 15) {
@@ -126,15 +126,15 @@ sub run {
 
         $tv_now = [Time::HiRes::gettimeofday];
 
-        DataDog::DogStatsd::Helper::stats_count('pricer_daemon.queue.subscribers', $subscribers_count, {tags => $self->tags});
-        DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.time', 1000 * Time::HiRes::tv_interval($tv, $tv_now), {tags => $self->tags});
+        stats_count('pricer_daemon.queue.subscribers', $subscribers_count, {tags => $self->tags});
+        stats_timing('pricer_daemon.process.time', 1000 * Time::HiRes::tv_interval($tv, $tv_now), {tags => $self->tags});
         my $end_time = Time::HiRes::time;
-        DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.end_time', 1000 * ($end_time - int($end_time)), {tags => $self->tags});
+        stats_timing('pricer_daemon.process.end_time', 1000 * ($end_time - int($end_time)), {tags => $self->tags});
         $stat_count->{$params->{price_daemon_cmd}}++;
         if ($current_pricing_epoch != time) {
 
             for my $key (keys %$stat_count) {
-                DataDog::DogStatsd::Helper::stats_gauge("pricer_daemon.$key.count_per_second", $stat_count->{$key}, {tags => $self->tags});
+                stats_gauge("pricer_daemon.$key.count_per_second", $stat_count->{$key}, {tags => $self->tags});
             }
             $stat_count            = {};
             $current_pricing_epoch = time;
@@ -154,14 +154,14 @@ sub _get_underlying {
     if ($cmd eq 'price') {
         unless (exists $params->{symbol}) {
             warn "symbol is not provided price daemon for $cmd";
-            DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$cmd.invalid", {tags => $self->tags});
+            stats_inc("pricer_daemon.$cmd.invalid", {tags => $self->tags});
             return undef;
         }
         return create_underlying($params->{symbol});
     } elsif ($cmd eq 'bid') {
         unless (exists $params->{short_code} and $params->{currency}) {
             warn "short_code or currency is not provided price daemon for $cmd";
-            DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$cmd.invalid", {tags => $self->tags});
+            stats_inc("pricer_daemon.$cmd.invalid", {tags => $self->tags});
             return undef;
         }
         my $from_shortcode = shortcode_to_parameters($params->{short_code}, $params->{currency});
