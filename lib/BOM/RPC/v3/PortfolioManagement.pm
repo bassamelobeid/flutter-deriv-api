@@ -7,8 +7,7 @@ use Date::Utility;
 use Try::Tiny;
 
 use BOM::RPC::v3::Utility;
-# TODO usage will be conveted to a remote call (RPC).
-use BOM::Pricing::v3::Contract;
+use BOM::Platform::Pricing;
 use BOM::RPC::v3::Accounts;
 use BOM::Product::ContractFactory qw(simple_contract_info);
 use BOM::Database::DataMapper::FinancialMarketBet;
@@ -108,7 +107,8 @@ sub proposal_open_contract {
         my $id = $fmb->{id};
         my $sell_time;
         $sell_time = Date::Utility->new($fmb->{sell_time})->epoch if $fmb->{sell_time};
-        my $bid = BOM::Pricing::v3::Contract::get_bid({
+        my $bid = BOM::Platform::Pricing::call_rpc('get_bid',
+        {
             short_code            => $fmb->{short_code},
             contract_id           => $id,
             currency              => $client->currency,
