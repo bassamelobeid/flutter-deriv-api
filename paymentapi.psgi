@@ -11,12 +11,13 @@ use lib qw!/etc/perl
 use Plack::Builder;
 
 use BOM::API::Payment;
+use IO::Handle;
 
 my $alog;
 if ($ENV{ACCESS_LOG}) {
-    open $alog, '>>', $ENV{ACCESS_LOG}
+    open $alog, '>>', $ENV{ACCESS_LOG}    ## no critic (RequireBriefOpen)
         or die "Cannot open access_log: $!";
-    select +(select($alog), $| = 1)[0];
+    autoflush $alog 1;
 }
 
 builder {
