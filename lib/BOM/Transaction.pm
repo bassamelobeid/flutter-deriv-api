@@ -734,7 +734,7 @@ sub prepare_bet_data_for_sell {
                 staff_loginid => $self->staff,
                 source        => $self->source,
             },
-            bet_data     => $bet_params,
+            bet_data             => $bet_params,
             quants_bet_variables => $quants_bet_variables,
         });
 }
