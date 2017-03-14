@@ -244,7 +244,7 @@ sub _check_token_list {
                 +{
                 token             => $t,
                 code              => 'PermissionDenied',
-                message_to_client => ( $m1 //=BOM::Platform::Context::localize('Permission denied, requires [_1] scope.', 'trade' ) ),
+                message_to_client => ($m1 //= BOM::Platform::Context::localize('Permission denied, requires [_1] scope.', 'trade')),
                 };
             next;
 
@@ -254,7 +254,7 @@ sub _check_token_list {
             +{
             token             => $t,
             code              => 'InvalidToken',
-            message_to_client => ( $m2 //= BOM::Platform::Context::localize('Invalid token') ),
+            message_to_client => ($m2 //= BOM::Platform::Context::localize('Invalid token')),
             };
     }
 
@@ -283,10 +283,9 @@ sub sell_contract_for_multiple_accounts {
 
     return +{result => $token_list_res->{result}} unless $token_list_res->{success};
 
-    my $contract_parameters =
-        shortcode_to_parameters($shortcode, $client->currency);
+    my $contract_parameters = shortcode_to_parameters($shortcode, $client->currency);
     $contract_parameters->{landing_company} = $client->landing_company->short;
-    my $contract    = produce_contract($contract_parameters);
+    my $contract = produce_contract($contract_parameters);
 
     my $trx = BOM::Transaction->new({
         client   => $client,
