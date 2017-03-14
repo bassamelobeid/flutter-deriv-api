@@ -4,7 +4,6 @@ use strict;
 use warnings;
 use JSON::RPC::Client;
 use feature "state";
-use YAML::XS;
 
 use BOM::Platform::Config;
 
@@ -21,7 +20,7 @@ sub call_rpc {
         params => $params,
     };
 
-    my $res = $client->call($uri, $callobj);
+    my $res = $client->call($url, $callobj);
 
     if (!$res or $res->is_error) {
         return {
@@ -29,7 +28,6 @@ sub call_rpc {
                 code              => 500,
                 message_to_client => 'Request unsuccessful'
             }}
-
     } else {
         return $res->result;
     }
