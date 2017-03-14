@@ -14,6 +14,7 @@ use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
 use BOM::Database::Rose::DB;
 use BOM::Pricing::v3::Contract;
+use BOM::Pricing::v3::Utility;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -69,7 +70,7 @@ sub register {
             }
             catch {
                 warn "Exception when handling $method - $_ with parameters " . encode_json \@call_args;
-                _create_error({
+                BOM::Pricing::v3::Utility::create_error({
                         code              => 'InternalServerError',
                         message_to_client => localize("Sorry, an error occurred while processing your account.")})
             };

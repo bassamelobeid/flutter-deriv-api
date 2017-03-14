@@ -21,6 +21,7 @@ use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use BOM::Pricing::v3::Utility;
 
 use feature "state";
 
@@ -31,9 +32,11 @@ sub _create_error {
         error => {
             code              => $args->{code},
             message_to_client => $args->{message_to_client},
-            $args->{continue_price_stream} ? (continue_price_stream => $args->{continue_price_stream}) : (),
-            $args->{message}               ? (message               => $args->{message})               : (),
-            $args->{details}               ? (details               => $args->{details})               : ()}};
+            $args->{continue_price_stream}
+            ? (continue_price_stream => $args->{continue_price_stream})
+            : (),
+            $args->{message} ? (message => $args->{message}) : (),
+            $args->{details} ? (details => $args->{details}) : ()}};
 }
 
 sub _validate_symbol {
@@ -95,7 +98,7 @@ sub _get_ask {
         die unless _pre_validate_start_expire_dates($p2);
     }
     catch {
-        $response = _create_error({
+        $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => localize('Cannot create contract')});
     };
@@ -112,7 +115,12 @@ sub _get_ask {
     return $response if $response;
 
     try {
-        if (!($contract->is_spread ? $contract->is_valid_to_buy : $contract->is_valid_to_buy({landing_company => $p2->{landing_company}}))) {
+        if (
+            !(
+                  $contract->is_spread
+                ? $contract->is_valid_to_buy
+                : $contract->is_valid_to_buy({landing_company => $p2->{landing_company}})))
+        {
             my ($message_to_client, $code);
 
             if (my $pve = $contract->primary_validation_error) {
@@ -517,7 +525,8 @@ sub send_multiple_ask {
 sub get_contract_details {
     my $params = shift;
 
-    die 'missing landing_company in params' if !exists $params->{landing_company};
+    die 'missing landing_company in params'
+        if !exists $params->{landing_company};
 
     my ($response, $contract, $bet_params);
     try {
