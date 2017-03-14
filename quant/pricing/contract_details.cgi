@@ -96,7 +96,7 @@ sub load_template {
             broker             => $broker,
             pricing_parameters => $pricing_parameters,
             upload_url         => 'contract_details.cgi',
-        }) || die BOM::Backoffice::Request;
+        }) || die BOM::Backoffice::Request::template->error;
     return;
 }
 

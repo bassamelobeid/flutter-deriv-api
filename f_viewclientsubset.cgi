@@ -276,8 +276,6 @@ if ($total) {
 print '<tr><td colspan="9" align="right">' . $paging . '</td></tr>';
 print '</table>';
 
-close(FILE);
-
 print '<p>Total a/c balances of clients in the list: USD ' . encode_entities($total_bal) . '</p><br />';
 
 code_exit_BO();
