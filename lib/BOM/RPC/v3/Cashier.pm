@@ -457,7 +457,7 @@ sub paymentagent_list {
     my $authenticated_paymentagent_agents =
         $payment_agent_mapper->get_authenticated_payment_agents({target_country => $args->{paymentagent_list}});
 
-    my $payment_agent_table_row = [];
+    my ($payment_agent_table_row, $min_max) = ([], BOM::RPC::v3::Utility::paymentagent_default_min_max());
     foreach my $loginid (keys %{$authenticated_paymentagent_agents}) {
         my $payment_agent = $authenticated_paymentagent_agents->{$loginid};
 
@@ -474,6 +474,8 @@ sub paymentagent_list {
             'withdrawal_commission' => $payment_agent->{commission_withdrawal},
             'further_information'   => $payment_agent->{information},
             'supported_banks'       => $payment_agent->{supported_banks},
+            'max_withdraw'          => $payment_agent->{max_withdraw} // $min_max->{maximum},
+            'min_withdraw'          => $payment_agent->{min_withdraw} // $min_max->{minimum},
             };
     }
 
