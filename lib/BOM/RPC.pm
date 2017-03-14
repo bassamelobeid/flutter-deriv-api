@@ -397,8 +397,10 @@ sub startup {
 
             # Track whether we have any change in memory usage
             my $vsz_increase = current_vsz() - $vsz_start;
-            # Anything more than 64 MB is probably something we should know about
-            warn sprintf "Large VSZ increase for %d - %d bytes, %s\n", $$, $vsz_increase, $call if $vsz_increase > (64 * 1024 * 1024);
+            # Anything more than 100 MB is probably something we should know about,
+            # residence_list and ticks can take >64MB so we can't have this limit set
+            # too low.
+            warn sprintf "Large VSZ increase for %d - %d bytes, %s\n", $$, $vsz_increase, $call if $vsz_increase > (100 * 1024 * 1024);
             # We use timing for the extra statistics (min/max/avg) it provides
             DataDog::DogStatsd::Helper::stats_timing('bom_rpc.v_3.vsz.increase', $vsz_increase, {tags => ["rpc:$call"]});
 
