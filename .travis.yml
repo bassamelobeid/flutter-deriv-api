@@ -53,7 +53,5 @@ install:
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
     - make unit_test
-    - find . -iname '*.pm' -or -iname '*.cgi' | xargs -n 1 perl -c
-    - perlcritic -p t/rc/.perlcriticrc .
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
