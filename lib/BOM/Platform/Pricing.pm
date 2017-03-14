@@ -27,7 +27,7 @@ sub call_rpc {
             error => {
                 code              => 500,
                 message_to_client => 'Request unsuccessful'
-            }}
+            }};
     } else {
         return $res->result;
     }
