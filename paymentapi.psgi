@@ -14,9 +14,9 @@ use BOM::API::Payment;
 
 my $alog;
 if ($ENV{ACCESS_LOG}) {
-    open $alog, '>>', $ENV{ACCESS_LOG}    ## no critic
+    open $alog, '>>', $ENV{ACCESS_LOG}
         or die "Cannot open access_log: $!";
-    select +(select($alog), $| = 1)[0];    ## no critic
+    select +(select($alog), $| = 1)[0];
 }
 
 builder {
