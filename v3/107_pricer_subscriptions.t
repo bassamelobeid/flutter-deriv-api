@@ -59,12 +59,15 @@ subtest "Born and die" => sub {
 
     $t->finish_ok;
 };
-
+my $endless_loop_avoid = 0;
 subtest "Create Subscribes" => sub {
 
     my $callback = sub {
         my ($tx, $msg) = @_;
-
+        if ( $endless_loop_avoid++ > 30 ) {
+            Mojo::IOLoop->stop;
+            $tx->finish;
+        }
         test_schema('proposal', decode_json $msg );
 
         Mojo::IOLoop->stop and $tx->finish if ($user_first->{$tx->req->cookie('user')->value} || 0) > 5;
@@ -80,7 +83,7 @@ subtest "Create Subscribes" => sub {
     };
     my $i = 1;
 
-    for my $i (0 .. $subs_count) {
+    for my $i (0 .. $subs_count-1) {
         my $t = $test_server->websocket_ok($url => {});
 
         $t->tx->req->cookies({
