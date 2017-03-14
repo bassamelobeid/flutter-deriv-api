@@ -11,7 +11,7 @@ sub call_rpc {
     my $method = shift;
     my $params = shift;
 
-    state $client = new JSON::RPC::Client;
+    state $client = JSON::RPC::Client->new();
     $client->ua->timeout(5);
     my $url = BOM::Platform::Config::node->{pricing_rpc_url};
 
