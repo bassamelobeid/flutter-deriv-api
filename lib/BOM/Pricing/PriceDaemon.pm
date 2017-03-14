@@ -114,10 +114,9 @@ sub run {
         }
         qw(feed chronicle) or next;
 
-        warn "Pricing time too long: "
-            . $response->{rpc_time} . ': '
-            . join(', ', map { ; $_ . " = " . ($params->{$_} // '"undef"') } sort keys %$params) . "\n"
-            if $response->{rpc_time} > 1000;
+        stats_timing('pricer_daemon.rpc_time', $response->{rpc_time},
+            {tags => $self->tags('contract_type:' . $params->{contract_type}, 'currency:' . $params->{currency})})
+            if (($response->{rpc_time} // 0) > 1000);
 
         my $subscribers_count = $redis->publish($key->[1], encode_json($response));
         # if None was subscribed, so delete the job
