@@ -32,10 +32,10 @@ use warnings;
 
 =cut
 
-sub email { ref $_[0] ? $_[0]->{email} : undef }    ## no critic (RequireArgUnpack, RequireFinalReturn)
-sub token { ref $_[0] ? $_[0]->{token} : undef }    ## no critic (RequireArgUnpack, RequireFinalReturn)
+sub email { $_[0]->{email} if ref $_[0] }    ## no critic (RequireArgUnpack, RequireFinalReturn)
+sub token { $_[0]->{token} if ref $_[0] }    ## no critic (RequireArgUnpack, RequireFinalReturn)
 
-sub new {                                           ## no critic (RequireArgUnpack)
+sub new {                                    ## no critic (RequireArgUnpack)
     my ($package) = shift;
 
     my $self = ref $_[0] ? $_[0] : {@_};
