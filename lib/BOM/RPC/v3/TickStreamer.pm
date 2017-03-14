@@ -70,7 +70,7 @@ sub ticks_history {
     # default to 60 if not defined or send as 0 for candles
     $args->{granularity} = $args->{granularity} || 60 if $style eq 'candles';
 
-    $response = _validate_start_end({%$args, ul => $ul});    ## no critic
+    $response = _validate_start_end({%$args, ul => $ul});    ## no critic (ProhibitCommaSeparatedStatements)
     if ($response and exists $response->{error}) {
         return $response;
     } else {
@@ -122,7 +122,11 @@ sub _ticks {
         limit      => $count,
     });
 
-    return [map { {time => $_->epoch, price => $ul->pipsized_value($_->quote)} } reverse @$ticks];
+    return [
+        map {
+            { time => $_->epoch, price => $ul->pipsized_value($_->quote) }
+        } reverse @$ticks
+    ];
 }
 
 sub _candles {
