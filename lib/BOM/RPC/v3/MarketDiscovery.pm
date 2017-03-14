@@ -13,7 +13,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Client::Account;
 use BOM::Platform::Context qw (localize request);
-use BOM::Product::Contract::Offerings;
+use BOM::RPC::Offerings;
 use LandingCompany::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::Platform::Runtime;
 
@@ -102,7 +102,7 @@ sub trading_times {
     my $params = shift;
 
     my $date = try { Date::Utility->new($params->{args}->{trading_times}) } || Date::Utility->new;
-    my $tree = BOM::Product::Contract::Offerings->new(date => $date)->decorate_tree(
+    my $tree = BOM::RPC::Offerings->new(date => $date)->decorate_tree(
         markets     => {name => 'name'},
         submarkets  => {name => 'name'},
         underlyings => {
@@ -144,7 +144,7 @@ sub asset_index {
 
     my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
 
-    my $asset_index = BOM::Product::Contract::Offerings->new(landing_company => $landing_company_name)->decorate_tree(
+    my $asset_index = BOM::RPC::Offerings->new(landing_company => $landing_company_name)->decorate_tree(
         markets => {
             code => sub { $_->name },
             name => sub { localize($_->display_name) }
