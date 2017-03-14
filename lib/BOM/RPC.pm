@@ -397,7 +397,8 @@ sub startup {
 
             # Track whether we have any change in memory usage
             my $vsz_increase = current_vsz() - $vsz_start;
-            warn sprintf "VSZ increase for %d - %d bytes, %s\n", $$, $vsz_increase, $call if $vsz_increase > (64 * 1024);
+            # Anything more than 64 MB is probably something we should know about
+            warn sprintf "Large VSZ increase for %d - %d bytes, %s\n", $$, $vsz_increase, $call if $vsz_increase > (64 * 1024 * 1024);
             # We use timing for the extra statistics (min/max/avg) it provides
             DataDog::DogStatsd::Helper::stats_timing('bom_rpc.v_3.vsz.increase', $vsz_increase, {tags => ["rpc:$call"]});
 
@@ -432,7 +433,7 @@ Returns the VSZ (virtual memory usage) for the current process, in bytes.
 
 sub current_vsz {
     my $stat = path("/proc/self/stat")->slurp_utf8;
-    # Process name is awkward and can contain ()
+    # Process name is awkward and can contain (). We know that we're a running process.
     $stat =~ s/^.*\) R [0-9]+ //;
     return +(split " ", $stat)[18];
 }
