@@ -39,20 +39,6 @@ sub apply_usergroup {
     return;
 }
 
-sub _create_error {
-    my $args = shift;
-    stats_inc("bom_pricing_rpc.v_3.error", {tags => ['code:' . $args->{code},]});
-    return {
-        error => {
-            code              => $args->{code},
-            message_to_client => $args->{message_to_client},
-            $args->{continue_price_stream}
-            ? (continue_price_stream => $args->{continue_price_stream})
-            : (),
-            $args->{message} ? (message => $args->{message}) : (),
-            $args->{details} ? (details => $args->{details}) : ()}};
-}
-
 sub register {
     my ($method, $code) = @_;
 

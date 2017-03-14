@@ -25,20 +25,6 @@ use BOM::Pricing::v3::Utility;
 
 use feature "state";
 
-sub _create_error {
-    my $args = shift;
-    stats_inc("bom_pricing_rpc.v_3.error", {tags => ['code:' . $args->{code},]});
-    return {
-        error => {
-            code              => $args->{code},
-            message_to_client => $args->{message_to_client},
-            $args->{continue_price_stream}
-            ? (continue_price_stream => $args->{continue_price_stream})
-            : (),
-            $args->{message} ? (message => $args->{message}) : (),
-            $args->{details} ? (details => $args->{details}) : ()}};
-}
-
 sub _validate_symbol {
     my $symbol = shift;
     my @offerings = get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'underlying_symbol');
