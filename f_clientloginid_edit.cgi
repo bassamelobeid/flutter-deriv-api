@@ -27,6 +27,7 @@ use BOM::Database::Model::HandoffToken;
 use BOM::Database::ClientDB;
 use BOM::Platform::Config;
 use BOM::Backoffice::FormAccounts;
+use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 
 BOM::Backoffice::Sysinit::init();
 
