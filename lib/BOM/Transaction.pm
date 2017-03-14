@@ -741,13 +741,13 @@ sub prepare_bet_data_for_sell {
                 staff_loginid => $self->staff,
                 source        => $self->source,
             },
-            bet_data     => $bet_params,
+            bet_data             => $bet_params,
             quants_bet_variables => $quants_bet_variables,
         });
 }
 
 sub sell {
-    my ( $self, %options ) = @_;
+    my ($self, %options) = @_;
 
     my $error_status;
 
@@ -838,7 +838,7 @@ sub sell {
 }
 
 sub sell_by_shortcode {
-    my ( $self, %options ) = @_;
+    my ($self, %options) = @_;
 
     my $stats_data   = $self->stats_start('sell');
     my $error_status = undef;
@@ -957,7 +957,6 @@ sub sell_by_shortcode {
 
     return;
 }
-
 
 =head2 C<< $self->_recover($error, $retry) >>
 
