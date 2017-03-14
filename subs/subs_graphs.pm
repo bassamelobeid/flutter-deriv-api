@@ -64,7 +64,7 @@ sub graph_setup {
 
     #GNU filehandle needs to be global - not sure if this makes mod_perl problems because of SIG_PIPE handling
     my $gnu_plot = BOM::Backoffice::GNUPlot::gnuplot_command();
-    open($gnu, "|-", "$gnu_plot") or die "[$0] execute of '$gnu_plot' failed $!"; ## no critic (RequireBriefOpen)
+    open($gnu, "|-", "$gnu_plot") or die "[$0] execute of '$gnu_plot' failed $!";    ## no critic (RequireBriefOpen)
     print $gnu "set key box\n";
     print $gnu "set key out horiz\n";
     print $gnu "set key bot right\n";

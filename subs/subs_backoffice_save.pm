@@ -106,7 +106,7 @@ sub save_log_save_complete_log {
         system("mv $log $log.1");
     }
 
-    if (open(my $data, ">>" ,  "$log")) {
+    if (open(my $data, ">>", "$log")) {
         flock($data, 2);
         local $\ = "\n";
         print $data "\n=============================================================";

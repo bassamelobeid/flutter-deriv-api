@@ -79,7 +79,7 @@ sub _SetEnvironment {
             if (defined $real_client_ip
                 and $real_client_ip =~ /^(\d+\.\d+\.\d+\.\d+)$/)
             {
-                $ENV{'REMOTE_ADDR'} = $1; ## no critic (RequireLocalizedPunctuationVars)
+                $ENV{'REMOTE_ADDR'} = $1;    ## no critic (RequireLocalizedPunctuationVars)
             }
         }
     }

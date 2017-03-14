@@ -19,7 +19,7 @@ sub config {
 #
 sub get_tmp_path_or_die {
     my $type = shift;
-    my $d = config->{directory}->{tmp};
+    my $d    = config->{directory}->{tmp};
     if ($type and $type eq 'gif') {
         $d = config->{directory}->{tmp_gif};
     }

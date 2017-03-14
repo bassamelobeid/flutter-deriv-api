@@ -47,7 +47,7 @@ foreach my $loginID (split(/,/, $listaccounts)) {
     }
 
     my $curr         = $client->currency;
-    my $balance            = $client->default_account->balance;
+    my $balance      = $client->default_account->balance;
     my $encoded_curr = encode_entities($curr);
 
     if (request()->param('whattodo') eq 'Do it for real !') {

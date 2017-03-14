@@ -43,7 +43,7 @@ my $self_href       = request()->url_for('backoffice/f_clientloginid_edit.cgi', 
 
 # given a bad-enough loginID, BrokerPresentation can die, leaving an unformatted screen..
 # let the client-check offer a chance to retry.
-eval { BrokerPresentation("$encoded_loginid CLIENT DETAILS") }; ## no critic (RequireCheckingReturnValueOfEval)
+eval { BrokerPresentation("$encoded_loginid CLIENT DETAILS") };    ## no critic (RequireCheckingReturnValueOfEval)
 
 my $client = eval { Client::Account->new({loginid => $loginid}) } || do {
     my $err = $@;
@@ -270,7 +270,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             print "<p style=\"color:red; font-weight:bold;\">ERROR ! MRMS field appears to be empty.</p></p>";
             code_exit_BO();
         }
-        if (!grep(/^$input{'mrms'}$/, BOM::Backoffice::FormAccounts::GetSalutations())) { ## no critic (RequireBlockGrep)
+        if (!grep(/^$input{'mrms'}$/, BOM::Backoffice::FormAccounts::GetSalutations())) {    ## no critic (RequireBlockGrep)
             print "<p style=\"color:red; font-weight:bold;\">ERROR ! MRMS field is invalid.</p></p>";
             code_exit_BO();
         }

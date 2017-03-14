@@ -147,7 +147,7 @@ my $process_dataset = sub {
                 $stats{payout}{sum}  += $market_data{value};
 
                 $stats{start} ||= Date::Utility->new($market_data{epoch});
-                $stats{end} ||= $stats{start} or die 'no start info? epoch was ' . $market_data{epoch};
+                ($stats{end} ||= $stats{start}) or die 'no start info? epoch was ' . $market_data{epoch};
                 $stats{end} = Date::Utility->new($market_data{epoch}) if $market_data{epoch} > $stats{end}->epoch;
                 1;
             } or do {

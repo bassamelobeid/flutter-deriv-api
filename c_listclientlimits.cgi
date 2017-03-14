@@ -1,7 +1,8 @@
 #!/etc/rmg/bin/perl
 package main;
+use strict;
+use warnings;
 
-use strict 'vars';
 
 use f_brokerincludeall;
 

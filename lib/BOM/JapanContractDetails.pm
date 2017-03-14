@@ -144,7 +144,7 @@ sub verify_with_shortcode {
             my $built_parameters = $c->build_parameters;
             my $new_contract;
             LOOP:
-            for my $lookback (1 .. 5, map {-$_} 1 .. 5) {
+            for my $lookback (1 .. 5, map { -$_ } 1 .. 5) {
                 $built_parameters->{landing_company} = $landing_company;
                 my $new_pricing_date = Date::Utility->new($c->date_start->epoch - $lookback);
                 # try to price with previous spot

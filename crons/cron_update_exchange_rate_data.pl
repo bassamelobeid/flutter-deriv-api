@@ -7,7 +7,6 @@ BEGIN {
     push @INC, "/home/git/regentmarkets/bom-backoffice/lib";
 }
 
-
 use BOM::Backoffice::Sysinit ();
 use BOM::Database::Model::ExchangeRate;
 use BOM::Database::ClientDB;

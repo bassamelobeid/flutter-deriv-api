@@ -301,7 +301,7 @@ sub get_client_by_status {
         if ($curr ne 'USD') {
             $summaryfilename .= '.' . $curr;
         }
-        if (open(my $sf, '<', $summaryfilename)) { ## no critic (RequireBriefOpen)
+        if (open(my $sf, '<', $summaryfilename)) {    ## no critic (RequireBriefOpen)
             flock($sf, 1);
             while (my $l = <$sf>) {
                 if ($l =~ /^(\D+\d+)\,(\w+)\,(\-?\d*\.?\d*)\,(\-?\d*\.?\d*)\,(\-?\d*\.?\d*)\,/) {

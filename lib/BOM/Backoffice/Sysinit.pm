@@ -16,8 +16,8 @@ use Try::Tiny::Except ();    # should be preloaded as early as possible
                              # this statement here is merely a comment.
 
 sub init {
-    $ENV{REQUEST_STARTTIME} = Time::HiRes::time; ## no critic (RequireLocalizedPunctuationVars)
-    $^T = time; ## no critic (RequireLocalizedPunctuationVars)
+    $ENV{REQUEST_STARTTIME} = Time::HiRes::time;    ## no critic (RequireLocalizedPunctuationVars)
+    $^T = time;                                     ## no critic (RequireLocalizedPunctuationVars)
 
     # Turn off any outstanding alarm, perhaps from a previous request in this mod_perl process,
     # while we figure out how we might want to alarm on this particular request.
@@ -26,14 +26,14 @@ sub init {
 
     if (request()->from_ui) {
         {
-            no strict; ## no critic (ProhibitNoStrict)
+            no strict;    ## no critic (ProhibitNoStrict)
             undef ${"main::input"}
         }
         my $http_handler = Plack::App::CGIBin::Streaming->request;
 
         my $timeout = 1800;
 
-        $SIG{ALRM} = sub { ## no critic (RequireLocalizedPunctuationVars)
+        $SIG{ALRM} = sub {    ## no critic (RequireLocalizedPunctuationVars)
             my $runtime = time - $^T;
             my $timenow = Date::Utility->new->datetime;
 
@@ -65,14 +65,14 @@ sub init {
                 alarm 0;
             });
 
-        $ENV{AUDIT_STAFF_NAME} = BOM::Backoffice::Cookie::get_staff(); ## no critic (RequireLocalizedPunctuationVars)
-        $ENV{AUDIT_STAFF_IP}   = request()->client_ip; ## no critic (RequireLocalizedPunctuationVars)
+        $ENV{AUDIT_STAFF_NAME} = BOM::Backoffice::Cookie::get_staff();    ## no critic (RequireLocalizedPunctuationVars)
+        $ENV{AUDIT_STAFF_IP}   = request()->client_ip;                    ## no critic (RequireLocalizedPunctuationVars)
 
         request()->http_handler($http_handler);
     } else {
         # We can ignore the alarm because we're not serving a web request here.
         # This is most likely happening in tests, long execution of which should be caught elsewhere.
-        $SIG{'ALRM'} = 'IGNORE'; ## no critic (RequireLocalizedPunctuationVars)
+        $SIG{'ALRM'} = 'IGNORE';    ## no critic (RequireLocalizedPunctuationVars)
     }
 
     log_bo_access();
@@ -95,7 +95,7 @@ sub build_request {
 
 sub log_bo_access {
 
-    $ENV{'REMOTE_ADDR'} = request()->client_ip; ## no critic (RequireLocalizedPunctuationVars)
+    $ENV{'REMOTE_ADDR'} = request()->client_ip;    ## no critic (RequireLocalizedPunctuationVars)
 
     # log it
     my $l;
