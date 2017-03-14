@@ -34,8 +34,8 @@ my $response;
 my $global_test_iteration = 0;
 
 # We don't want to fail due to hiting limits
-$ENV{BOM_TEST_RATE_LIMITATIONS} =
-    '/home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/rate_limitations.yml';    ## no critic (Variables::RequireLocalizedPunctuationVars)
+$ENV{BOM_TEST_RATE_LIMITATIONS} =    ## no critic (Variables::RequireLocalizedPunctuationVars)
+    '/home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/rate_limitations.yml';
 
 # Return entire contents of file as string
 sub read_file {
