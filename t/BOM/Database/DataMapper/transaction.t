@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::Most (tests => 30);
+use Test::Most (tests => 36);
 use Test::MockTime qw( set_absolute_time restore_time );
 use Test::Exception;
 
@@ -104,6 +104,9 @@ foreach my $bet_info (@bet_infos) {
         is $fmb->{bet_class}, $bet_info->{bet_class}, 'buy fmb object';
         is $txn->{amount} + 0, -$bet_info->{buy_price}, 'buy txn object';
 
+        my $buy_txn_id = $txn->{id};
+        isnt $buy_txn_id+0, 0, 'got a valid buy txn id';
+
         my $financial_market_bet = BOM::Database::Model::FinancialMarketBet->new({
                 data_object_params => {financial_market_bet_id => $fmb->{id}},
                 db                 => $connection_builder->db,
@@ -117,9 +120,10 @@ foreach my $bet_info (@bet_infos) {
             sell_price => $bet_info->{sell_price},
             sell_time  => Date::Utility->new($now->epoch + 10)->db_timestamp,
         });
-        ($fmb, $txn) = $financial_market_bet_helper->sell_bet;
+        ($fmb, $txn, my $buy_txn_id2) = $financial_market_bet_helper->sell_bet;
         is $fmb->{id}, $financial_market_bet->id, 'sell fmb object';
         is $txn->{amount} + 0, $bet_info->{sell_price}, 'sell txn object';
+        is $buy_txn_id2,  $buy_txn_id, 'got buy txn id during sell';
     }
     'Buy a FLASHU bet and sell it';
 }
