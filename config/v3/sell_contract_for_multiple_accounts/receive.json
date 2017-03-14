@@ -35,7 +35,7 @@
                     "description":"Internal contract code for the sold contract",
                     "required": "1"
                   },
-                  "sold_for": {
+                  "sell_price": {
                     "type": "number",
                     "description": "Actual effected sale price",
                     "required": "1"
