@@ -44,16 +44,16 @@ sub apply_usergroup {
         my $group = $cf->{group};
         if ($group) {
             $group = (getgrnam $group)[2] unless $group =~ /^\d+$/;
-            $(     = $group;                                          ## no critic
-            $)     = "$group $group";                                 ## no critic
+            $(     = $group;                                          ## no critic (RequireLocalizedPunctuationVars)
+            $)     = "$group $group";                                 ## no critic (RequireLocalizedPunctuationVars)
             $log->("Switched group: RGID=$( EGID=$)");
         }
 
         my $user = $cf->{user} // 'nobody';
         if ($user) {
             $user = (getpwnam $user)[2] unless $user =~ /^\d+$/;
-            $<    = $user;                                            ## no critic
-            $>    = $user;                                            ## no critic
+            $<    = $user;                                            ## no critic (RequireLocalizedPunctuationVars)
+            $>    = $user;                                            ## no critic (RequireLocalizedPunctuationVars)
             $log->("Switched user: RUID=$< EUID=$>");
         }
     }
@@ -223,7 +223,7 @@ sub register {
                 warn "Exception when handling $method - $_ with parameters " . encode_json \@args;
                 BOM::RPC::v3::Utility::create_error({
                         code              => 'InternalServerError',
-                        message_to_client => localize("Sorry, an error occurred while processing your account.")})
+                        message_to_client => localize("Sorry, an error occurred while processing your account.")});
             };
 
             if ($verify_app_res && ref $result eq 'HASH') {
@@ -371,7 +371,7 @@ sub startup {
                 $dispatcher->app->log->error(qq{Internal error: $err});
                 $m->invalid_request('Invalid request');
                 return;
-            }
+                }
         });
 
     my $request_counter = 0;
@@ -385,7 +385,7 @@ sub startup {
             my $c = shift;
             $cpu  = Proc::CPUUsage->new();
             $call = $c->req->url->path;
-            $0    = "bom-rpc: " . $call;     ## no critic
+            $0    = "bom-rpc: " . $call;     ## no critic (RequireLocalizedPunctuationVars)
             $call =~ s/\///;
             $request_start = [Time::HiRes::gettimeofday];
             DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => ["rpc:$call"]});
@@ -419,11 +419,11 @@ sub startup {
             $usage += $_->[1] for @recent;
             $usage = sprintf('%.2f', 100 * $usage / Time::HiRes::tv_interval($request_end, $recent[0]->[0]));
 
-            $0 = "bom-rpc: (idle since $end #req=$request_counter us=$usage%)";    ## no critic
+            $0 = "bom-rpc: (idle since $end #req=$request_counter us=$usage%)";    ## no critic (RequireLocalizedPunctuationVars)
         });
 
     # set $0 after forking children
-    Mojo::IOLoop->timer(0, sub { @recent = [[Time::HiRes::gettimeofday], 0]; $0 = "bom-rpc: (new)" });    ## no critic
+    Mojo::IOLoop->timer(0, sub { @recent = [[Time::HiRes::gettimeofday], 0]; $0 = "bom-rpc: (new)" });  ## no critic (RequireLocalizedPunctuationVars)
 
     return;
 }
