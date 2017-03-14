@@ -158,7 +158,19 @@ sub statement {
         if ($params->{args}->{description}) {
             $struct->{shortcode} = $txn->{short_code} // '';
             if ($struct->{shortcode} && $account->currency_code) {
-                $struct->{longcode} = (simple_contract_info($struct->{shortcode}, $account->currency_code))[0];
+
+                my $res = BOM::Platform::Pricing::call_rpc('get_contract_details', {
+                    short_code      => $struct->{shortcode},
+                    currency        => $account->currency_code,
+                    landing_company => $client->landing_company->short,
+                    language        => $params->{language},
+                });
+
+                if (exists $res->{error}) {
+                    $struct->{longcode} = 'Could not retrieve contract details';
+                } else {
+                    $struct->{longcode} = $res->{longcode}
+                }
             }
             $struct->{longcode} //= $txn->{payment_remark} // '';
         }
