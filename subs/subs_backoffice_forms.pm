@@ -1,9 +1,12 @@
-use strict 'vars';
+## no critic (RequireExplicitPackage)
+use strict;
+use warnings;
 use HTML::Entities;
 use BOM::Backoffice::Request qw(request);
 
 sub get_update_volatilities_form {
-    my ($markets, $warndifference, $all_markets) = @{$_[0]}{'selected_markets', 'warndifference', 'all_markets'};
+    my $param = shift;
+    my ($markets, $warndifference, $all_markets) = @{$param}{'selected_markets', 'warndifference', 'all_markets'};
     my @all_markets = @{$all_markets};
 
     my $form =

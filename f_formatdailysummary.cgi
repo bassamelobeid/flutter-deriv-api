@@ -1,6 +1,7 @@
 #!/etc/rmg/bin/perl
 package main;
-use strict 'vars';
+use strict;
+use warnings;
 use open qw[ :encoding(UTF-8) ];
 use Format::Util::Numbers qw(commas);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -31,11 +32,11 @@ my @sums;
 my @fields;
 
 my @to_out;
-local *FILE;
-if (open(FILE, $filename)) {
-    flock(FILE, 1);
 
-    while (my $l = <FILE>) {
+if (open(my $fh, '<', $filename)) {
+    flock($fh, 1);
+
+    while (my $l = <$fh>) { ## no critic (RequireBriefOpen)
         if ($l =~ /^\#/) { print "<TR><TD colspan=8><font size=2 face=verdana><b>$l</td></tr>"; }
         else {
             @fields = split(/\,/, $l);
@@ -74,7 +75,7 @@ if (open(FILE, $filename)) {
         }
     }
 
-    close(FILE);
+    close($fh);
 } else {
     print "Can not open " . encode_entities($filename);
 }

@@ -2,6 +2,7 @@
 package main;
 
 use strict;
+use warnings;
 use f_brokerincludeall;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::Backoffice::Config qw/get_tmp_path_or_die/;

@@ -21,6 +21,7 @@ use BOM::Backoffice::Sysinit ();
 use LandingCompany::Registry;
 use Path::Tiny;
 use Excel::Writer::XLSX;
+
 sub parse_file {
     my ($file, $landing_company) = @_;
 
@@ -143,7 +144,7 @@ sub verify_with_shortcode {
             my $built_parameters = $c->build_parameters;
             my $new_contract;
             LOOP:
-            for my $lookback (1 .. 5, map -$_, 1 .. 5) {
+            for my $lookback (1 .. 5, map {-$_} 1 .. 5) {
                 $built_parameters->{landing_company} = $landing_company;
                 my $new_pricing_date = Date::Utility->new($c->date_start->epoch - $lookback);
                 # try to price with previous spot
@@ -484,7 +485,7 @@ sub output_on_display {
         {
             pricing_parameters => $contract_params,
         }) || die BOM::Backoffice::Request::template->error;
-
+    return;
 }
 
 sub batch_output_as_excel {

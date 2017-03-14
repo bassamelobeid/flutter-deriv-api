@@ -12,6 +12,8 @@ This is a Japanese regulatory requirements.
 =cut
 
 package main;
+use strict;
+use warnings;
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
@@ -25,7 +27,7 @@ use BOM::JapanContractDetails;
 use Data::Dumper;
 my %params = %{request()->params};
 
-my $cgi             = new CGI;
+my $cgi             = CGI->new;
 my $broker          = $params{'broker'} // $cgi->param('broker');
 my $landing_company = LandingCompany::Registry::get_by_broker($broker)->short;
 
@@ -95,8 +97,8 @@ sub load_template {
             pricing_parameters => $pricing_parameters,
             upload_url         => 'contract_details.cgi',
         })
-        || die BOM::Backoffice::Request
-
+        || die BOM::Backoffice::Request;
+    return;
 }
 
 code_exit_BO();

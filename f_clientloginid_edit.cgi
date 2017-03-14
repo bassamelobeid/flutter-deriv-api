@@ -1,6 +1,7 @@
 #!/etc/rmg/bin/perl
 package main;
-use strict 'vars';
+use strict;
+use warnings;
 use open qw[ :encoding(UTF-8) ];
 
 use LWP::UserAgent;
@@ -42,7 +43,7 @@ my $self_href       = request()->url_for('backoffice/f_clientloginid_edit.cgi', 
 
 # given a bad-enough loginID, BrokerPresentation can die, leaving an unformatted screen..
 # let the client-check offer a chance to retry.
-eval { BrokerPresentation("$encoded_loginid CLIENT DETAILS") };
+eval { BrokerPresentation("$encoded_loginid CLIENT DETAILS") }; ## no critic (RequireCheckingReturnValueOfEval)
 
 my $client = eval { Client::Account->new({loginid => $loginid}) } || do {
     my $err = $@;
@@ -155,7 +156,7 @@ if ($input{whattodo} eq 'uploadID') {
     local $CGI::POST_MAX        = 1024 * 1600;    # max 1600K posts
     local $CGI::DISABLE_UPLOADS = 0;              # enable uploads
 
-    my $cgi            = new CGI;
+    my $cgi            = CGI->new;
     my $broker_code    = $cgi->param('broker');
     my $docnationality = $cgi->param('docnationality');
     my $result         = "";
@@ -269,7 +270,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             print "<p style=\"color:red; font-weight:bold;\">ERROR ! MRMS field appears to be empty.</p></p>";
             code_exit_BO();
         }
-        if (!grep(/^$input{'mrms'}$/, BOM::Backoffice::FormAccounts::GetSalutations())) {
+        if (!grep(/^$input{'mrms'}$/, BOM::Backoffice::FormAccounts::GetSalutations())) { ## no critic (RequireBlockGrep)
             print "<p style=\"color:red; font-weight:bold;\">ERROR ! MRMS field is invalid.</p></p>";
             code_exit_BO();
         }

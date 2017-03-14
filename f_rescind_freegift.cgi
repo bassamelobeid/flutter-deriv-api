@@ -1,6 +1,7 @@
 #!/etc/rmg/bin/perl
 package main;
-use strict 'vars';
+use strict;
+use warnings;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;

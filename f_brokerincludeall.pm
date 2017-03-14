@@ -1,3 +1,6 @@
+## no critic (RequireExplicitPackage)
+use strict;
+use warnings;
 use lib qw(. .. ../subs ../oop);
 
 use subs::subs_presentation_backoffice;

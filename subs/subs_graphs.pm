@@ -1,3 +1,4 @@
+## no critic (RequireExplicitPackage)
 use strict;
 use warnings;
 
@@ -17,7 +18,7 @@ use BOM::Charting;
 
 use String::UTF8::MD5;
 
-my ($firstplot, $ip);
+my ($firstplot, $ip, $gnu);
 
 sub graph_setup {
     my $args             = shift;
@@ -63,42 +64,42 @@ sub graph_setup {
 
     #GNU filehandle needs to be global - not sure if this makes mod_perl problems because of SIG_PIPE handling
     my $gnu_plot = BOM::Backoffice::GNUPlot::gnuplot_command();
-    open(GNU, "| $gnu_plot") or die "[$0] execute of '$gnu_plot' failed $!";
-    print GNU "set key box\n";
-    print GNU "set key out horiz\n";
-    print GNU "set key bot right\n";
-    print GNU "set key width 0.5\n";
-    print GNU "set key height 0.5\n";
-    print GNU "set title \"$graph_title\" offset 0,-0.5\n";
-    print GNU "set xlabel \"$graph_xtitle\" 0,0\n";
-    print GNU "set grid\n";
+    open($gnu, "|-", "$gnu_plot") or die "[$0] execute of '$gnu_plot' failed $!"; ## no critic (RequireBriefOpen)
+    print $gnu "set key box\n";
+    print $gnu "set key out horiz\n";
+    print $gnu "set key bot right\n";
+    print $gnu "set key width 0.5\n";
+    print $gnu "set key height 0.5\n";
+    print $gnu "set title \"$graph_title\" offset 0,-0.5\n";
+    print $gnu "set xlabel \"$graph_xtitle\" 0,0\n";
+    print $gnu "set grid\n";
 
     #   bg     border   axes   plotting colors....
-    print GNU
+    print $gnu
         "set terminal gif small size $graph_sizex,$graph_sizey x$graph_background_and_table x000000 x$graph_link_and_line x$graph_link_and_line x39009C x39009C xD60008 xCE9A9C x008631 x0000ff xdda0dd\n"
         ;    #transparent
 
-    print GNU "set output \"$graph_outputfile\"\n";
-    print GNU "set timefmt \"$graph_timeformat\"\n";
-    print GNU "set format x \"$graph_formatx\"\n";
-    print GNU "set xdata time\n";
-    print GNU "set nomxtics\n";
+    print $gnu "set output \"$graph_outputfile\"\n";
+    print $gnu "set timefmt \"$graph_timeformat\"\n";
+    print $gnu "set format x \"$graph_formatx\"\n";
+    print $gnu "set xdata time\n";
+    print $gnu "set nomxtics\n";
 
-    print GNU "set format y \"$graph_formaty\"\n";
-    print GNU "set pointsize 1\n";
-    print GNU "set style line 2 lw 1 pt 1 ps 1\n";
-    print GNU "set style line 3 lw 1 pt 1 ps 1 lc rgb \"#f6be4a\"\n";
-    print GNU "set style line 4 lw 1 pt 1 ps 2\n";
-    print GNU "set style line 5 lw 1 pt 1 ps 1\n";
-    print GNU "set style line 6 lw 1 pt 1 ps 1\n";
-    print GNU "set style line 7 lw 1 pt 1 ps 1\n";
-    print GNU "set style line 8 lw 1 pt 1 ps 1 lc rgb \"#00B900\"\n";
-    print GNU "set style line 9 lw 1 pt 1 ps 1 lc rgb \"F00000\"\n";
-    print GNU "set style line 10 lw 1 pt 1 ps 1 lc rgb \"#f6be4a\"\n";
-    print GNU "set style line 11 lw 2 pt 1 ps 1 lc rgb \"#00B900\"\n";
-    print GNU "set style line 12 lw 2 pt 1 ps 1 lc rgb \"F00000\"\n";
-    print GNU "set style line 13 lw 2 pt 1 ps 1 lc rgb \"#3366FF\"\n";
-    print GNU "set style fill solid 0.25 border\n";
+    print $gnu "set format y \"$graph_formaty\"\n";
+    print $gnu "set pointsize 1\n";
+    print $gnu "set style line 2 lw 1 pt 1 ps 1\n";
+    print $gnu "set style line 3 lw 1 pt 1 ps 1 lc rgb \"#f6be4a\"\n";
+    print $gnu "set style line 4 lw 1 pt 1 ps 2\n";
+    print $gnu "set style line 5 lw 1 pt 1 ps 1\n";
+    print $gnu "set style line 6 lw 1 pt 1 ps 1\n";
+    print $gnu "set style line 7 lw 1 pt 1 ps 1\n";
+    print $gnu "set style line 8 lw 1 pt 1 ps 1 lc rgb \"#00B900\"\n";
+    print $gnu "set style line 9 lw 1 pt 1 ps 1 lc rgb \"F00000\"\n";
+    print $gnu "set style line 10 lw 1 pt 1 ps 1 lc rgb \"#f6be4a\"\n";
+    print $gnu "set style line 11 lw 2 pt 1 ps 1 lc rgb \"#00B900\"\n";
+    print $gnu "set style line 12 lw 2 pt 1 ps 1 lc rgb \"F00000\"\n";
+    print $gnu "set style line 13 lw 2 pt 1 ps 1 lc rgb \"#3366FF\"\n";
+    print $gnu "set style fill solid 0.25 border\n";
 
     $firstplot = 0;
 
@@ -130,18 +131,17 @@ sub graph_plot {
     my @temp_array_candle_o = @{$candle_o};
     my $using;
     local $\ = "";
-    local *DATAF;
     unlink $graph_datafile;    #fix tmpfs bug
-    if (open(DATAF, ">$graph_datafile")) {
-        flock(DATAF, 2);
+    if (open(my $dataf, ">", "$graph_datafile")) {
+        flock($dataf, 2);
         for (my $n = 0; $n < scalar @graph_x; $n++) {
             if ($graph_x[$n]) {
-                print DATAF $graph_x[$n] . ' ' . $graph_y[$n] . "\n";
+                print $dataf $graph_x[$n] . ' ' . $graph_y[$n] . "\n";
                 $using = "";
             }
         }
 
-        close(DATAF);
+        close($dataf);
     } else {
         my $msg = "Can't write to $graph_datafile $@ $!";
         print $msg;
@@ -150,9 +150,10 @@ sub graph_plot {
     }
 
     my $print_ref = $graph_title;
-    print GNU "$thecomma \"$graph_datafile\" using 1:2$using t \"$print_ref\" with lines";
+    print $gnu "$thecomma \"$graph_datafile\" using 1:2$using t \"$print_ref\" with lines";
 
     $firstplot++;
+    return;
 }
 
 sub graph_draw {
@@ -164,8 +165,8 @@ sub graph_draw {
 
     local $\ = "";
 
-    print GNU "\n";
-    close GNU;
+    print $gnu "\n";
+    close $gnu;
 
     if (not -s $graph_outputfile)    #not exists and has non-zero size
     {
@@ -210,6 +211,7 @@ sub Plot {
         graph_x     => $graph_x,
         graph_y     => $graph_y,
     });
+    return;
 }
 
 sub doPlot {

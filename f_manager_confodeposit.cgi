@@ -28,7 +28,7 @@ PrintContentType();
 
 print qq[<style>p {margin: 12px}</style>];
 
-my $cgi    = new CGI;
+my $cgi    = CGI->new;
 my %params = $cgi->Vars;
 
 for (qw/account amount currency ttype range/) {
@@ -161,14 +161,15 @@ unless ($params{skip_validation}) {
         } else {
             $cli->validate_payment(%params, amount => $signed_amount);
         }
-    };
-    if (my $err = $@) {
+        1;
+    } || do {
+        my $err = $@;
         print qq[<p style="color:#F00">$encoded_loginID Failed. $err</p>];
         code_exit_BO();
-    } else {
-        printf qq[<p style="color:#070">Done. %s will be ok.</p>], encode_entities($ttype);
-        $params{skip_validation} = 1;
-    }
+    };
+
+    printf qq[<p style="color:#070">Done. %s will be ok.</p>], encode_entities($ttype);
+    $params{skip_validation} = 1;
 }
 
 my $transRef;

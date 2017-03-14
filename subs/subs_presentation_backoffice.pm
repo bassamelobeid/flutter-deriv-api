@@ -5,7 +5,10 @@
 # This module contains the presentation routines of the BACKOFFICE
 #
 ###############################################################################################
-use strict 'vars';
+## no critic (RequireExplicitPackage)
+use strict;
+use warnings;
+
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Request qw(request);
 use Mojo::URL;
@@ -70,6 +73,7 @@ sub BrokerPresentation {
     if ($Title) {
         print "<br><center><font class=\"whitetop\"><b>$Title $title_description</b></font></center><br>";
     }
+    return;
 }
 
 #
@@ -94,11 +98,13 @@ sub Bar {
     <td align="left" style="padding-left: 10px;">~;
 
     $vk_BarIsDoneOnce = 'yes';
+    return;
 }
 
 sub BarEnd {
     if (not $vk_BarIsDoneOnce) { return; }
     print '</td></tr></table>';
+    return;
 }
 
 sub ServerWarningBar {
@@ -129,6 +135,7 @@ sub ServerWarningBar {
         . request()->url_for('images/topborder.gif', undef, undef, {internal_static => 1}) . qq~">
  <img src="~ . request()->url_for('images/blank.gif', undef, undef, {internal_static => 1}) . qq~" height="16" width="1"></td>
  </tr></table>~;
+    return;
 }
 
 #### THE FOLLOWING (vk) SUBS ARE THE INTERFACE DESIGN OF B/O
@@ -280,6 +287,7 @@ sub vk_BOtopPRES    #this sub executed in BrokerPresentation
  </td>
  <td width="100%" valign="top" align="center">~;
     $vk_didBOtopPRES = 'yes';
+    return;
 }
 
 sub vk_BObottomPRES {
@@ -288,6 +296,7 @@ sub vk_BObottomPRES {
     print "<br><br></td></tr></table>";    #Eventually can be more different stuff here
 
     ServerWarningBar();
+    return;
 }
 
 sub code_exit_BO {

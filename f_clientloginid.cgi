@@ -17,9 +17,9 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation("CLIENT LOGINID ADMIN");
 
-my $staff   = BOM::Backoffice::Auth0::can_access(['CS']);
-my $broker  = request()->broker_code;
-my $clerk   = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $staff  = BOM::Backoffice::Auth0::can_access(['CS']);
+my $broker = request()->broker_code;
+my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 if ($broker eq 'FOG') {
     $broker = request()->broker_code;

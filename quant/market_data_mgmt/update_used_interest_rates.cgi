@@ -1,7 +1,7 @@
 #!/etc/rmg/bin/perl
 package main;
-
-use strict 'vars';
+use strict;
+use warnings;
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;

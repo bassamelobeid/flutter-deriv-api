@@ -1,7 +1,9 @@
 #!/etc/rmg/bin/perl
 package main;
 
-use strict 'vars';
+use strict;
+use warnings;
+
 use POSIX;
 use Date::Utility;
 use Path::Tiny;
@@ -299,10 +301,9 @@ sub get_client_by_status {
         if ($curr ne 'USD') {
             $summaryfilename .= '.' . $curr;
         }
-        local *SF;
-        if (open(SF, $summaryfilename)) {
-            flock(SF, 1);
-            while (my $l = <SF>) {
+        if (open(my $sf, '<', $summaryfilename)) { ## no critic (RequireBriefOpen)
+            flock($sf, 1);
+            while (my $l = <$sf>) {
                 if ($l =~ /^(\D+\d+)\,(\w+)\,(\-?\d*\.?\d*)\,(\-?\d*\.?\d*)\,(\-?\d*\.?\d*)\,/) {
                     my $loginid    = $1;
                     my $liveordead = $2;
@@ -312,7 +313,7 @@ sub get_client_by_status {
                     $SUMMARYFILE{"$loginid-TOTALEQUITY"} += roundnear(0.01, in_USD($equity, $curr));
                 }
             }
-            close SF;
+            close $sf;
         }
     }
 
@@ -482,8 +483,7 @@ sub RecoverFromClientAccount {
 
     my $log = BOM::Backoffice::Config::config->{log}->{withdraw_broker};
     $log =~ s/%BROKERCODE%/$broker/g;
-    Path::Tiny::path($log)
-        ->append_utf8(Date::Utility->new->datetime . " $loginID balance $acc_balance withdrawn by $clerk");
+    Path::Tiny::path($log)->append_utf8(Date::Utility->new->datetime . " $loginID balance $acc_balance withdrawn by $clerk");
 
     $result->{'msg'}          = "<br><span style='color:green;font-weight:bold;'>RECOVERED $acc_balance</span>";
     $result->{'notification'} = $acc_balance;

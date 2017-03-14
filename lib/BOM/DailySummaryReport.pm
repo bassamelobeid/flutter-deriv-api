@@ -152,7 +152,7 @@ sub generate_report {
 
                 my $summary     = $ds_path . $run_for->date_ddmmmyy . '.summary' . $fileext;
                 my $tempsummary = $summary . '.temp';
-                my $sm_fh       = new IO::File '> ' . $tempsummary || die '[' . $0 . '] Can\'t write to ' . $tempsummary . ' ' . $!;
+                my $sm_fh       = IO::File->new('> ' . $tempsummary) || die '[' . $0 . '] Can\'t write to ' . $tempsummary . ' ' . $!;
                 my $generation_msg =
                       '\#File generated for '
                     . $run_for->date . ' on '
