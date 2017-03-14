@@ -314,7 +314,6 @@ sub sell_contract_for_multiple_accounts {
             $new = +{
                 transaction_id => $row->{buy_tr_id},
                 balance_after  => sprintf('%.2f', $row->{tnx}{balance_after}),
-                sold_for       => abs($row->{tnx}{amount}),
                 sell_price     => abs($row->{fmb}{sell_price}),
                 contract_id    => $row->{tnx}{financial_market_bet_id},
                 sell_time      => $row->{fmb}{sell_time},
