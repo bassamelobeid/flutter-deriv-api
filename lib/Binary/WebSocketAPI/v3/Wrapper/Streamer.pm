@@ -431,6 +431,8 @@ sub process_transaction_updates {
                                 ? Date::Utility->new($payload->{sell_time})->epoch
                                 : Date::Utility->new($payload->{purchase_time})->epoch;
 
+                            $args->{landing_company} = $c->landing_company_name;
+
                             $c->call_rpc({
                                     url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
                                     args        => $args,
