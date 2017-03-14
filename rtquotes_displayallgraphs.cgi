@@ -636,8 +636,7 @@ sub _fullfeed_file {
 
     if ($date =~ /^(\d\d?)\-(\w\w\w)\-(\d\d)$/) {
         $date = $1 . '-' . ucfirst(lc($2)) . '-' . $3;
-    }
-    else {
+    } else {
         die 'Bad date for fullfeed_file';
     }
 
