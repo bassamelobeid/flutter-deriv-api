@@ -107,7 +107,7 @@ sub _build_vol_at_strike {
     return $self->volsurface->get_volatility if ($self->underlying->volatility_surface_type eq 'flat');
 
     # For opposite contract's pricing, the effective start is always set to date_pricing.
-    # After expiry while waiting for exit tick, we will be pricing an opposite contract with effective_start that is ahead of date expiry and caused the inverted date issue. 
+    # After expiry while waiting for exit tick, we will be pricing an opposite contract with effective_start that is ahead of date expiry and caused the inverted date issue.
     my $start_date = ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_expiry : $self->effective_start;
 
     my $pricing_spot = $self->pricing_spot;
