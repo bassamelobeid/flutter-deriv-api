@@ -430,9 +430,7 @@ subtest 'get_bid' => sub {
         'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
         );
 
-    $contract = _create_contract(
-        spread => 1
-    );
+    $contract = _create_contract(spread => 1);
 
     $params = {
         short_code  => $contract->shortcode,
@@ -471,9 +469,7 @@ subtest 'get_bid' => sub {
             ));
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
 
-    $contract = _create_contract(
-        spread => 0
-    );
+    $contract = _create_contract(spread => 0);
 
     $params = {
         short_code  => $contract->shortcode,
@@ -567,9 +563,7 @@ subtest $method => sub {
         '... and had warning about failed produce_contract'
     );
 
-    my $contract = _create_contract(
-        spread => 0
-    );
+    my $contract = _create_contract(spread => 0);
     $params->{short_code} = $contract->shortcode;
     $params->{currency}   = 'USD';
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
@@ -881,9 +875,7 @@ subtest 'app_markup_percentage' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
-    $contract = _create_contract(
-        spread => 0
-    );
+    $contract = _create_contract(spread => 0);
 
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 
@@ -902,14 +894,10 @@ subtest 'app_markup_percentage' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
-    $contract = _create_contract(
-        spread => 0
-    );
+    $contract = _create_contract(spread => 0);
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 
-    $contract = _create_contract(
-        spread => 1
-    );
+    $contract = _create_contract(spread => 1);
     $contract = _create_contract(
         spread                => 0,
         app_markup_percentage => 1
@@ -925,14 +913,10 @@ subtest 'app_markup_percentage' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
-    $contract = _create_contract(
-        spread => 0
-    );
+    $contract = _create_contract(spread => 0);
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 
-    $contract = _create_contract(
-        spread => 1
-    );
+    $contract = _create_contract(spread => 1);
     $contract = _create_contract(
         spread                => 0,
         app_markup_percentage => 1
@@ -948,9 +932,7 @@ subtest 'app_markup_percentage' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
-    $contract = _create_contract(
-        spread => 0
-    );
+    $contract = _create_contract(spread => 0);
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 };
 
