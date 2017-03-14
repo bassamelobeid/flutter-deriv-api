@@ -62,7 +62,6 @@ sub register {
             };
             return $result;
 
-            #return $code->(@_);
         });
 }
 
