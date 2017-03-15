@@ -88,6 +88,7 @@ sub startup {
         ['send_multiple_ask',    \&BOM::Pricing::v3::Contract::send_multiple_ask],
         ['get_bid',              \&BOM::Pricing::v3::Contract::get_bid],
         ['get_contract_details', \&BOM::Pricing::v3::Contract::get_contract_details],
+        ['contracts_for',        \&BOM::Pricing::v3::Contract::contracts_for],
     );
     my $services = {};
     foreach my $srv (@services) {

@@ -21,6 +21,8 @@ use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use BOM::Product::Contract::Finder::Japan;
+use BOM::Product::Contract::Finder;
 
 use feature "state";
 
@@ -560,6 +562,52 @@ sub get_contract_details {
     }
 
     return $response;
+}
+
+
+sub contracts_for {
+    my $params = shift;
+
+    my $args                 = $params->{args};
+    my $symbol               = $args->{contracts_for};
+    my $currency             = $args->{currency} || 'USD';
+    my $product_type         = $args->{product_type} // 'basic';
+    my $landing_company_name = $args->{landing_company} // 'costarica';
+
+    my $contracts_for;
+    my $query_args = {
+        symbol          => $symbol,
+        landing_company => $landing_company_name,
+    };
+
+    if ($product_type eq 'multi_barrier') {
+        $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol($query_args);
+    } else {
+        $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol($query_args);
+        # this is temporary solution till the time front apps are fixed
+        # filter CALLE|PUTE only for non japan
+        $contracts_for->{available} = [grep { $_->{contract_type} !~ /^(?:CALLE|PUTE)$/ } @{$contracts_for->{available}}]
+            if ($contracts_for and $contracts_for->{hit_count} > 0);
+    }
+
+    my $i = 0;
+    foreach my $contract (@{$contracts_for->{available}}) {
+        if (exists $contract->{payout_limit}) {
+            $contracts_for->{available}->[$i]->{payout_limit} = $contract->{payout_limit}->{$currency};
+        }
+        $i++;
+    }
+
+    if (not $contracts_for or $contracts_for->{hit_count} == 0) {
+        return _create_error({
+                code              => 'InvalidSymbol',
+                message_to_client => BOM::Platform::Context::localize('The symbol is invalid.')});
+    } else {
+        $contracts_for->{'spot'} = create_underlying($symbol)->spot();
+        return $contracts_for;
+    }
+
+    return;
 }
 
 sub _log_exception {
