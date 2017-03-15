@@ -166,7 +166,10 @@ sub startup {
         ['time',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::server_time}],
 
         ['website_status'],
-        ['contracts_for', {stash_params => [qw/ token /]}],
+        ['contracts_for', {
+            stash_params => [qw/ token /],
+            instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Pricer::contracts_for,
+        }],
         ['residence_list'],
         ['states_list'],
         ['payout_currencies', {stash_params => [qw/ token landing_company_name /]}],
