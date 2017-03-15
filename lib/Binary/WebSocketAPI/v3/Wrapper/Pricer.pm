@@ -157,6 +157,7 @@ sub proposal_array {
             delete $args->{barriers};
             my $f = Future::Mojo->new;
             $c->call_rpc({
+                    url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
                     args        => $args,
                     method      => 'send_ask',
                     msg_type    => 'proposal',
