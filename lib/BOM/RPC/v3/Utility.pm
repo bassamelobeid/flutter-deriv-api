@@ -225,7 +225,6 @@ sub mask_app_id {
 sub error_map {
     return {
         'email unverified'    => localize('Your email address is unverified.'),
-        'pricing error'       => localize('Unable to price the contract.'),
         'no residence'        => localize('Your account has no country of residence.'),
         'invalid'             => localize('Sorry, account opening is unavailable.'),
         'invalid residence'   => localize('Sorry, our service is not available for your country of residence.'),
