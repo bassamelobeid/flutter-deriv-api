@@ -279,7 +279,6 @@ subtest 'No test allowed for VRTJ, unless JP exists' => sub {
 };
 
 $client_mocked->unmock_all;
-$email_mocked->unmock_all;
 $dt_mocked->unmock_all;
 
 sub create_vr_account {
