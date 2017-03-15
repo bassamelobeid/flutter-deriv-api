@@ -110,6 +110,21 @@ sub _get_ask {
     };
     return $response if $response;
 
+    my $market_name             = $contract->market->name;
+    my $base_commission_scaling = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market_name;
+    my $contract_parameters     = {
+        %$p2,
+        !$contract->is_spread
+            ? (
+                    app_markup_percentage => $contract->app_markup_percentage,
+                    staking_limits        => $contract->staking_limits,
+                    deep_otm_threshold    => $contract->otm_threshold,
+              )
+            : (),
+        underlying_base_commission => $contract->underlying->base_commission,
+        base_commission_scaling    => $base_commission_scaling,
+    };
+
     try {
         if (!($contract->is_spread ? $contract->is_valid_to_buy : $contract->is_valid_to_buy({landing_company => $p2->{landing_company}}))) {
             my ($message_to_client, $code);
@@ -157,6 +172,15 @@ sub _get_ask {
                         },
                     });
             }
+            # proposal_array streaming could get error on a first calls
+            # but later could produce valid contract dependant on volatility moves
+            # so we need to store contract_parameters and longcode to use them later
+            if ($code eq 'ContractBuyValidationError') {
+                    my $longcode =
+                        eval { $contract->longcode } || '';    # if we can't get the longcode that's fine, we still want to return the original error
+                    $response->{contract_parameters} = $contract_parameters;
+                    $response->{longcode}            = $longcode;
+            }
         } else {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
             my $trading_window_start = $p2->{trading_period_start} // '';
@@ -186,18 +210,7 @@ sub _get_ask {
                 display_value       => $display_value,
                 spot_time           => $contract->current_tick->epoch,
                 date_start          => $contract->date_start->epoch,
-                contract_parameters => {
-                    %$p2,
-                    !$contract->is_spread
-                    ? (
-                        app_markup_percentage => $contract->app_markup_percentage,
-                        staking_limits        => $contract->staking_limits,
-                        deep_otm_threshold    => $contract->otm_threshold,
-                        )
-                    : (),
-                    underlying_base_commission => $contract->underlying->base_commission,
-                    base_commission_scaling    => $base_commission_scaling,
-                },
+                contract_parameters => $contract_parameters,
             };
 
             # only required for non-spead contracts
