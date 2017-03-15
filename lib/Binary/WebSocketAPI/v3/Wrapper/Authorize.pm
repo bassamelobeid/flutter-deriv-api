@@ -25,6 +25,8 @@ sub login_success {
 
     # rpc response is not yet populated into stash
     $c->stash(loginid => $rpc_response->{loginid});
+    $c->stash(landing_company_name => $rpc_response->{landing_company_name});
+
     $c->rate_limitations_load;
 
     # persist actual limits every 15m for logged-in users
