@@ -19,27 +19,6 @@ my %pricer_cmd_handler = (
     bid   => \&process_bid_event,
 );
 
-sub contracts_for {
-    my ($c, $req_storage) = @_;
-
-    my $args = $req_storage->{args};
-    $c->call_rpc({
-            url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
-            args        => $args,
-            method      => 'contracts_for',
-            msg_type    => 'contracts_for',
-            call_params => {
-                language        => $c->stash('language'),
-                landing_company => $c->landing_company_name,
-            },
-            response => sub {
-                my ($rpc_response, $api_response, $req_storage) = @_;
-                return $api_response;
-            },
-        });
-    return;
-}
-
 sub proposal {
     my ($c, $req_storage) = @_;
 

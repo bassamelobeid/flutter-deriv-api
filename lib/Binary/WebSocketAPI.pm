@@ -146,10 +146,16 @@ sub startup {
                 success      => \&Binary::WebSocketAPI::v3::Wrapper::Authorize::logout_success,
             },
         ],
-        ['trading_times'],
+        [
+            'trading_times',
+            {
+                url => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($app),
+            },
+        ],
         [
             'asset_index',
             {
+                url            => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($app),
                 before_forward => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index_cached,
                 success        => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::cache_asset_index,
             }
@@ -167,8 +173,8 @@ sub startup {
 
         ['website_status'],
         ['contracts_for', {
+            url          => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($app),
             stash_params => [qw/ token /],
-            instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Pricer::contracts_for,
         }],
         ['residence_list'],
         ['states_list'],
