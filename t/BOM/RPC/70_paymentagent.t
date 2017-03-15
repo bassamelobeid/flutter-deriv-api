@@ -12,8 +12,7 @@ use BOM::Database::ClientDB;
 
 my $client_mocked = Test::MockModule->new('Client::Account');
 $client_mocked->mock('add_note', sub { return 1 });
-my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
-$email_mocked->mock('send_email', sub { return 1 });
+local $ENV{SKIP_EMAIL} = 1;
 
 my ($client,         $pa_client);
 my ($client_account, $pa_account);
