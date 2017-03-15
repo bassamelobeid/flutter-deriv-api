@@ -34,7 +34,14 @@ sub _build_contract_types {
 
     my $p = $self->parameters;
 
-    my $c_types = $p->{bet_types} ? $p->{bet_types} : $p->{bet_type} ? [$p->{bet_type}] : die 'bet_type is required';
+    my $c_types;
+    if ($p->{bet_types}) {
+        $c_types = delete $p->{bet_types};
+    } elsif ($p->{bet_type}) {
+        $c_types = [delete $p->{bet_type}];
+    } else {
+        die 'bet_type is required';
+    }
 
     return $c_types;
 }
@@ -75,17 +82,21 @@ sub process {
     my $contract_params = $self->_initialize_contract_parameters();
 
     foreach my $c_type (@$c_types) {
-        $self->_initialize_contract_config($c_type, $contract_params);
+        my $c_config = $self->_initialize_contract_config($c_type);
         if (@$barriers) {
             foreach my $barrier (@$barriers) {
-                $self->_initialize_barrier($barrier, $contract_params);
-                $contract_params->{build_parameters} = {%$contract_params};
-                push @params, $contract_params;
+                my $barrier_info = $self->_initialize_barrier($barrier);
+                my $clone = {%$contract_params, %$c_config, %$barrier_info};
+                # just to make sure nothing gets pass through
+                delete $clone->{$_} for qw(barrier high_barrier low_barrier);
+                $clone->{build_parameters} = {%$clone};
+                push @params, $clone;
             }
         } else {
+            my $clone = {%$contract_params, %$c_config};
             # sometimes barriers could be undefined
-            $contract_params->{build_parameters} = {%$contract_params};
-            push @params, $contract_params;
+            $clone->{build_parameters} = {%$clone};
+            push @params, $clone;
         }
     }
 
@@ -202,42 +213,41 @@ sub _initialize_contract_parameters {
 }
 
 sub _initialize_contract_config {
-    my ($self, $c_type, $params) = @_;
+    my ($self, $c_type) = @_;
 
     die 'contract type is required' unless $c_type;
 
+    my $params;
     if (my $legacy_params = $self->_legacy_contract_types->{$c_type}) {
+        $c_type = delete $legacy_params->{bet_type};
         $params->{$_} = $legacy_params->{$_} for keys %$legacy_params;
     }
 
-    $params->{bet_type} = $c_type unless $params->{bet_type};
-
-    if (not exists $contract_type_config->{$params->{bet_type}}) {
-        $params->{bet_type} = 'INVALID';
+    if (not exists $contract_type_config->{$c_type}) {
+        $c_type = 'INVALID';
     }
 
-    my %c_type_config = %{$contract_type_config->{$params->{bet_type}}};
+    my %c_type_config = %{$contract_type_config->{$c_type}};
 
     $params->{$_} = $c_type_config{$_} for keys %c_type_config;
+    $params->{bet_type} = $c_type;
 
-    return;
+    return $params;
 }
 
 sub _initialize_barrier {
-    my ($self, $barrier, $contract_params) = @_;
+    my ($self, $barrier) = @_;
 
+    my $barrier_info;
     # if it is a hash reference, we will treat it as a double barrier contract.
     if (ref $barrier eq 'HASH') {
-        $contract_params->{supplied_high_barrier} = $barrier->{barrier};
-        $contract_params->{supplied_low_barrier}  = $barrier->{barrier2};
+        $barrier_info->{supplied_high_barrier} = $barrier->{barrier};
+        $barrier_info->{supplied_low_barrier}  = $barrier->{barrier2};
     } else {
-        $contract_params->{supplied_barrier} = $barrier;
+        $barrier_info->{supplied_barrier} = $barrier;
     }
 
-    # just to make sure that we don't accidentally pass in undef barriers
-    delete $contract_params->{$_} for qw(barrier high_barrier low_barrier);
-
-    return;
+    return $barrier_info;
 }
 
 has _legacy_contract_types => (
