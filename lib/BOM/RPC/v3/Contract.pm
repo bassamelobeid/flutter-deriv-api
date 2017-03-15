@@ -90,7 +90,6 @@ sub validate_underlying {
     return {status => 1};
 }
 
-
 # pre-check
 # this sub indicates error on RPC level if date_start or date_expiry of a new ask/contract are too far from now
 sub pre_validate_start_expire_dates {
