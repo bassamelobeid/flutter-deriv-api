@@ -24,10 +24,10 @@ sub notification {
     ### TODO: to config
     my $channel_name = "NOTIFY::broadcast::channel";
     my $redis        = $c->ws_redis_write;
-    my $shared_info = $c->redis_connections($channel_name);
+    my $shared_info  = $c->redis_connections($channel_name);
 
     if ($args->{broadcast_notifications} == 0) {
-        delete $shared_info->{broadcast_notifications}{\$c+0};
+        delete $shared_info->{broadcast_notifications}{\$c + 0};
         return;
     }
 
@@ -38,8 +38,8 @@ sub notification {
 
             my $shared_info = $c->redis_connections($channel_name);
             Scalar::Util::weaken(my $c_copy = $c);
-            $shared_info->{broadcast_notifications}{\$c+0}{'c'} = $c_copy;
-            $shared_info->{broadcast_notifications}{\$c+0}{echo} = $args;
+            $shared_info->{broadcast_notifications}{\$c + 0}{'c'} = $c_copy;
+            $shared_info->{broadcast_notifications}{\$c + 0}{echo} = $args;
 
             my $slave_redis = $c->ws_redis_read;
             ### to config
@@ -65,19 +65,19 @@ sub send_notification {
     my $is_on_key = 0;
     foreach my $c_addr (keys %{$shared->{broadcast_notifications}}) {
         my $client_shared = $shared->{broadcast_notifications}{$c_addr};
-        unless (defined  $client_shared->{c}->tx) {
+        unless (defined $client_shared->{c}->tx) {
             my $redis = $client_shared->{c}->ws_redis_write;
 
             delete $shared->{broadcast_notifications}{$c_addr};
             $redis->unsubscribe([$channel])
-                if ( scalar keys %{$shared->{broadcast_notifications}} ) == 0 && $redis && $channel;
+                if (scalar keys %{$shared->{broadcast_notifications}}) == 0 && $redis && $channel;
             next;
         }
 
-        unless ( $is_on_key ) {
+        unless ($is_on_key) {
             my $slave_redis = $client_shared->{c}->ws_redis_read;
-            $is_on_key   = "NOTIFY::broadcast::is_on";           ### TODO: to config
-            return unless $slave_redis->get($is_on_key);            ### Need 1 for continuing
+            $is_on_key = "NOTIFY::broadcast::is_on";    ### TODO: to config
+            return unless $slave_redis->get($is_on_key);    ### Need 1 for continuing
         }
 
         $message = eval { decode_json $message} unless ref $message eq 'HASH';
