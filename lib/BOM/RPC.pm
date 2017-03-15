@@ -24,7 +24,6 @@ use BOM::RPC::v3::Static;
 use BOM::RPC::v3::TickStreamer;
 use BOM::RPC::v3::Transaction;
 use BOM::RPC::v3::MarketDiscovery;
-use BOM::RPC::v3::Offerings;
 use BOM::RPC::v3::Authorize;
 use BOM::RPC::v3::Cashier;
 use BOM::RPC::v3::Accounts;
@@ -281,12 +280,8 @@ sub startup {
         ],
         ['sell', \&BOM::RPC::v3::Transaction::sell, [qw(auth validate_tnc check_trade_status compliance_checks check_tax_information)]],
 
-        ['trading_times',         \&BOM::RPC::v3::MarketDiscovery::trading_times],
-        ['asset_index',           \&BOM::RPC::v3::MarketDiscovery::asset_index],
         ['active_symbols',        \&BOM::RPC::v3::MarketDiscovery::active_symbols],
         ['get_corporate_actions', \&BOM::RPC::v3::MarketDiscovery::get_corporate_actions],
-
-        ['contracts_for', \&BOM::RPC::v3::Offerings::contracts_for],
 
         ['authorize', \&BOM::RPC::v3::Authorize::authorize],
         ['logout',    \&BOM::RPC::v3::Authorize::logout],
