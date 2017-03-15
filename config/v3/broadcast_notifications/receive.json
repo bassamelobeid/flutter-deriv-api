@@ -11,6 +11,7 @@
     },
     "site_status": {
       "type":"string",
+      "pattern": "^(up|down)$",
       "description": "Current status of the site. Up, Down or any else",
       "required": "1"
     },
