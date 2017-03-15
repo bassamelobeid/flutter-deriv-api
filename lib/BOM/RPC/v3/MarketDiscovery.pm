@@ -13,7 +13,6 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Client::Account;
 use BOM::Platform::Context qw (localize request);
-use BOM::Product::Contract::Offerings;
 use LandingCompany::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::Platform::Runtime;
 
