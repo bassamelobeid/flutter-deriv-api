@@ -32,10 +32,10 @@ use warnings;
 
 =cut
 
-sub email { $_[0]->{email} if ref $_[0] }    ## no critic
-sub token { $_[0]->{token} if ref $_[0] }    ## no critic
+sub email { $_[0]->{email} if ref $_[0] }    ## no critic (RequireArgUnpack, RequireFinalReturn)
+sub token { $_[0]->{token} if ref $_[0] }    ## no critic (RequireArgUnpack, RequireFinalReturn)
 
-sub new {                                    ## no critic RequireArgUnpack
+sub new {                                    ## no critic (RequireArgUnpack)
     my ($package) = shift;
 
     my $self = ref $_[0] ? $_[0] : {@_};
@@ -92,12 +92,13 @@ Deletes from redis
 
 =cut
 
-sub delete_token {    ## no critic
+sub delete_token {
     my $self = shift;
     return unless $self->{token};
     BOM::Platform::RedisReplicated::redis_write()->del('VERIFICATION_TOKEN::' . $self->{token});
-    BOM::Platform::RedisReplicated::redis_write()->del('VERIFICATION_TOKEN_INDEX::' . md5_hex($self->{created_for} . $self->{email}))
+    return BOM::Platform::RedisReplicated::redis_write()->del('VERIFICATION_TOKEN_INDEX::' . md5_hex($self->{created_for} . $self->{email}))
         if ($self->{created_for} and $self->{email});
+    return;
 }
 
 1;
