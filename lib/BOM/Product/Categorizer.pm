@@ -135,7 +135,7 @@ sub _initialize_contract_parameters {
     delete $pp->{expiry_daily};
     delete $pp->{is_intraday};
 
-    if ($pp->{stop_profit} and $pp->{stop_loss}) {
+    if (exists $pp->{stop_profit} and exists $pp->{stop_loss}) {
         # these are the only parameters for spreads
         $pp->{'supplied_' . $_} = delete $pp->{$_} for (qw(stop_profit stop_loss));
     } else {
