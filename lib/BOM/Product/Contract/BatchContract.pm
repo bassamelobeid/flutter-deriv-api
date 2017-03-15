@@ -23,7 +23,8 @@ sub _build__contracts {
 
     my @contracts;
     foreach my $param (@$params) {
-        push @contracts, $method_ref->({%$param, processed => 1});
+        $params->{processed} = 1;
+        push @contracts, $method_ref->($params);
     }
 
     return \@contracts;
