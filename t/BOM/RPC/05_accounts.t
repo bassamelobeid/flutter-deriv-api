@@ -357,7 +357,7 @@ subtest $method => sub {
     is(
         $result->{transactions}[0]{longcode},
         'Win payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.',
-        "if have short code, then simple_contract_info is called"
+        "if have short code, we get more details"
     );
     is($result->{transactions}[2]{longcode}, 'free gift', "if no short code, then longcode is the remark");
 
@@ -404,7 +404,7 @@ subtest $method => sub {
     is(
         $result->{transactions}[0]{longcode},
         'Win payout if SPGSWT is strictly higher than entry spot at 4 hours after 2014-10-21 11:55:00 GMT.',
-        "if have short code, then simple_contract_info is called"
+        "if have short code, then we get more details"
     );
 
     # here the expired contract is sold, so we can get the txns as test value

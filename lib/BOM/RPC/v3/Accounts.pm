@@ -26,7 +26,6 @@ use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Token;
 use BOM::Transaction;
-use BOM::Product::ContractFactory qw( simple_contract_info );
 use BOM::Platform::Config;
 use BOM::Platform::Password;
 use BOM::Database::DataMapper::FinancialMarketBet;
@@ -229,7 +228,19 @@ sub profit_table {
 
         if ($and_description) {
             $trx{shortcode} = $row->{short_code};
-            $trx{longcode} = (simple_contract_info($trx{shortcode}, $client->currency))[0];
+
+            my $res = BOM::Platform::Pricing::call_rpc('get_contract_details', {
+                short_code      => $trx{shortcode},
+                currency        => $client->currency,
+                landing_company => $client->landing_company->short,
+                language        => $params->{language},
+            });
+
+            if (exists $res->{error}) {
+                $trx{longcode} = 'Could not retrieve contract details';
+            } else {
+                $trx{longcode} = $res->{longcode}
+            }
         }
 
         push @transactions, \%trx;

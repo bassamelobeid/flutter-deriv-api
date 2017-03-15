@@ -9,7 +9,6 @@ use Try::Tiny;
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Pricing;
 use BOM::RPC::v3::Accounts;
-use BOM::Product::ContractFactory qw(simple_contract_info);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (request localize);
@@ -26,6 +25,19 @@ sub portfolio {
     _sell_expired_contracts($client, $params->{source});
 
     foreach my $row (@{__get_open_contracts($client)}) {
+        my $res = BOM::Platform::Pricing::call_rpc('get_contract_details', {
+            short_code      => $struct->{shortcode},
+            currency        => $account->currency_code,
+            landing_company => $client->landing_company->short,
+            language        => $params->{language},
+        });
+        my $longcode;
+        if (exists $res->{error}) {
+            $longcode = 'Could not retrieve contract details';
+        } else {
+            $longcode = $res->{longcode};
+        }
+
         my %trx = (
             contract_id    => $row->{id},
             transaction_id => $row->{buy_transaction_id},
@@ -38,7 +50,7 @@ sub portfolio {
             contract_type  => $row->{bet_type},
             currency       => $client->currency,
             shortcode      => $row->{short_code},
-            longcode       => (simple_contract_info($row->{short_code}, $client->currency))[0] // '',
+            longcode       => $longcode,
             app_id => BOM::RPC::v3::Utility::mask_app_id($row->{source}, $row->{purchase_time}));
         push @{$portfolio->{contracts}}, \%trx;
     }

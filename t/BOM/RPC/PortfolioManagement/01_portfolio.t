@@ -16,7 +16,6 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Database::Model::AccessToken;
 use BOM::Database::ClientDB;
-use BOM::Product::ContractFactory qw(simple_contract_info);
 use BOM::Database::Model::OAuth;
 
 use utf8;
@@ -145,13 +144,13 @@ subtest 'Return not expired client contracts' => sub {
             contract_type  => $fmb->{bet_type},
             currency       => $client->currency,
             shortcode      => $fmb->{short_code},
-            longcode       => (simple_contract_info($fmb->{short_code}, $client->currency))[0] // '',
             app_id         => undef
         };
     }
     'Create not expired contract and expected data';
 
     my $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
+    delete $result->{longcode};
     is_deeply($result->{contracts}, [$expected_contract_data], 'Should return contract data',);
 };
 
