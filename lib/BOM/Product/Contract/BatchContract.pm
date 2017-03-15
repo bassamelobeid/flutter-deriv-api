@@ -1,4 +1,4 @@
-package BOM::Product::BatchContract;
+package BOM::Product::Contract::BatchContract;
 
 use Moose;
 
