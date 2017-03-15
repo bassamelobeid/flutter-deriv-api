@@ -60,7 +60,7 @@ if ( $params{"-s"} || $params{"-m"} ) {
   print "\nPublish...";
   my $subscribes_count =  $redis->publish($channel_name, $mess_obj);
   print "Done\n";
-  print $subscribes_count . " clients subscribed\n";
+  print $subscribes_count . " workers subscribed\n";
 }
 
 print "\n\nBYE!\n";
