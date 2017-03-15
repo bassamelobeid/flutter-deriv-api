@@ -432,13 +432,15 @@ sub process_transaction_updates {
                                 : Date::Utility->new($payload->{purchase_time})->epoch;
 
                             $c->call_rpc({
+                                    url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
                                     args        => $args,
                                     method      => 'get_contract_details',
                                     call_params => {
-                                        token      => $c->stash('token'),
-                                        short_code => $payload->{short_code},
-                                        currency   => $payload->{currency_code},
-                                        language   => $c->stash('language'),
+                                        token           => $c->stash('token'),
+                                        short_code      => $payload->{short_code},
+                                        currency        => $payload->{currency_code},
+                                        language        => $c->stash('language'),
+                                        landing_company => $c->landing_company_name,
                                     },
                                     rpc_response_cb => sub {
                                         my ($c, $rpc_response, $req_storage) = @_;

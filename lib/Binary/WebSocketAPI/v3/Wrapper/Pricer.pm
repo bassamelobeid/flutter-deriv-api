@@ -38,6 +38,7 @@ sub proposal {
 
     my $args = $req_storage->{args};
     $c->call_rpc({
+            url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
             args        => $args,
             method      => 'send_ask',
             msg_type    => 'proposal',
