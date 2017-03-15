@@ -25,7 +25,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
 use base qw( Exporter );
-our @EXPORT_OK = qw( produce_contract make_similar_contract simple_contract_info );
+our @EXPORT_OK = qw( produce_contract make_similar_contract );
 
 # pre-load modules
 require BOM::Product::Contract::Asiand;
@@ -277,46 +277,6 @@ sub _args_to_ref {
     die 'Improper arguments to produce_contract.' unless (ref $params_ref eq 'HASH');
 
     return $params_ref;
-}
-
-=head2 simple_contract_info
-
-To avoid doing a bunch of extra work hitting the FeedDB, this fakes up an entry tick and returns a description,
-tick_expiry status and spread status only. These values are cached when accessed via a shortcode.
-
-This whole thing needs to be reconsidered, eventually.
-
-=cut
-
-{
-    my $sci_keyspace = 'SIMPLE_CONTRACT_INFO';
-    my $sci_ttl      = 5 * 60;                   # Tune for cache retention to manage space/time trade-off.
-
-    sub simple_contract_info {
-        my ($build_arg, $maybe_currency) = @_;
-
-        # If this looks like it may be a shortcode (which is the most common case)
-        # we can try to use the cache.
-        my $cache_key =
-            ($maybe_currency && !ref($build_arg))
-            ? join(';', $build_arg, $maybe_currency, BOM::Platform::Context::request()->language)
-            : undef;
-        my $result = ($cache_key) ? Cache::RedisDB->get($sci_keyspace, $cache_key) : undef;
-
-        if (not $result) {
-            # Uncacheable or cache miss, so we do the full routine.
-            my $params = _args_to_ref($build_arg, $maybe_currency);
-            $params->{entry_tick} = Postgres::FeedDB::Spot::Tick->new({
-                quote => 1,
-                epoch => 1,
-            });
-            my $contract_analogue = produce_contract($params);
-            $result = [$contract_analogue->longcode, $contract_analogue->tick_expiry, $contract_analogue->is_spread];
-            Cache::RedisDB->set($sci_keyspace, $cache_key, $result, $sci_ttl) if ($cache_key);
-        }
-
-        return ($result) ? @$result : undef;
-    }
 }
 
 =head2 make_similar_contract

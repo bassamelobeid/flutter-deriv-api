@@ -8,7 +8,7 @@ use Test::FailWarnings;
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
-use BOM::Product::ContractFactory qw( simple_contract_info produce_contract);
+use BOM::Product::ContractFactory qw( produce_contract);
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
 subtest 'Proper form' => sub {
@@ -52,10 +52,8 @@ subtest 'Proper form' => sub {
                                                                  # Can this be improved further?
         my $params;
         foreach my $shortcode (@shortcodes) {
-            my ($description) = simple_contract_info($shortcode, $currency);
-            my ($again)       = simple_contract_info($shortcode, $currency);
-            like($description, $expected_standard_form, $shortcode . ' => long code form appears ok');
-            cmp_ok $again, 'eq', $description, '... and second invocation returns the same result';
+            my $c = produce_contract($shortcode, $currency);
+            like($c->longcode, $expected_standard_form, $shortcode . ' => long code form appears ok');
         }
     }
 };
