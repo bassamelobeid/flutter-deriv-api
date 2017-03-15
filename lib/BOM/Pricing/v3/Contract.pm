@@ -31,7 +31,6 @@ sub _create_error {
         error => {
             code              => $args->{code},
             message_to_client => $args->{message_to_client},
-            $args->{continue_price_stream} ? (continue_price_stream => $args->{continue_price_stream}) : (),
             $args->{message}               ? (message               => $args->{message})               : (),
             $args->{details}               ? (details               => $args->{details})               : ()}};
 }
@@ -132,7 +131,6 @@ sub _get_ask {
                     ? $contract->payout
                     : $contract->ask_price;
                 $response = _create_error({
-                        continue_price_stream => $contract->continue_price_stream,
                         message_to_client     => $message_to_client,
                         code                  => $code,
                         details               => {
@@ -147,7 +145,6 @@ sub _get_ask {
 
             } else {
                 $response = _create_error({
-                        continue_price_stream => $contract->continue_price_stream,
                         message_to_client     => $message_to_client,
                         code                  => $code,
                         details               => {
@@ -500,7 +497,6 @@ sub send_multiple_ask {
             @{$res}{keys %$barriers} = values %$barriers;
             push @$responses, $res;
         } else {
-            $res->{error}{continue_price_stream} = 1;    # we continue price stream because for multiple_ask
             @{$res->{error}{details}}{keys %$barriers} = values %$barriers;
             push @$responses, $res;
         }
