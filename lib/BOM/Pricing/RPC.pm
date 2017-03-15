@@ -89,6 +89,8 @@ sub startup {
         ['get_bid',              \&BOM::Pricing::v3::Contract::get_bid],
         ['get_contract_details', \&BOM::Pricing::v3::Contract::get_contract_details],
         ['contracts_for',        \&BOM::Pricing::v3::Contract::contracts_for],
+        ['trading_times',        \&BOM::Pricing::v3::Contract::trading_times],
+        ['asset_index',          \&BOM::Pricing::v3::Contract::asset_index],
     );
     my $services = {};
     foreach my $srv (@services) {
