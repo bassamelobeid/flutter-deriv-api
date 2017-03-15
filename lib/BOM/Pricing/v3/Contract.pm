@@ -31,8 +31,8 @@ sub _create_error {
         error => {
             code              => $args->{code},
             message_to_client => $args->{message_to_client},
-            $args->{message}               ? (message               => $args->{message})               : (),
-            $args->{details}               ? (details               => $args->{details})               : ()}};
+            $args->{message} ? (message => $args->{message}) : (),
+            $args->{details} ? (details => $args->{details}) : ()}};
 }
 
 sub _validate_symbol {
@@ -131,9 +131,9 @@ sub _get_ask {
                     ? $contract->payout
                     : $contract->ask_price;
                 $response = _create_error({
-                        message_to_client     => $message_to_client,
-                        code                  => $code,
-                        details               => {
+                        message_to_client => $message_to_client,
+                        code              => $code,
+                        details           => {
                             display_value => (
                                   $contract->is_spread
                                 ? $contract->buy_level
@@ -145,9 +145,9 @@ sub _get_ask {
 
             } else {
                 $response = _create_error({
-                        message_to_client     => $message_to_client,
-                        code                  => $code,
-                        details               => {
+                        message_to_client => $message_to_client,
+                        code              => $code,
+                        details           => {
                             display_value => (
                                   $contract->is_spread
                                 ? $contract->buy_level
