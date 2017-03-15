@@ -34,7 +34,7 @@ sub _build_contract_types {
 
     my $p = $self->parameters;
 
-    my $c_types = $p->{bet_types} ? $p->{bet_types} : $p->{bet_type} ? [$p->{bet_type}] : [];
+    my $c_types = $p->{bet_types} ? $p->{bet_types} : $p->{bet_type} ? [$p->{bet_type}] : die 'bet_type is required';
 
     return $c_types;
 }
@@ -48,7 +48,7 @@ sub _build_barriers {
 
     # double barrier contract
     foreach my $pair (['high_barrier', 'low_barrier'], ['supplied_high_barrier', 'supplied_low_barrier']) {
-        if ($p->{$pair->[0]} and $p->{$pair->[1]}) {
+        if (exists $p->{$pair->[0]} and exists $p->{$pair->[1]}) {
             return [{
                     barrier  => $p->{$pair->[0]},
                     barrier2 => $p->{$pair->[1]}}];
@@ -57,7 +57,7 @@ sub _build_barriers {
 
     foreach my $type ('barrier', 'supplied_barrier') {
         # single barrier contract
-        if ($p->{$type}) {
+        if (exists $p->{$type}) {
             return [$p->{$type}];
         }
     }
@@ -135,7 +135,7 @@ sub _initialize_contract_parameters {
     delete $pp->{expiry_daily};
     delete $pp->{is_intraday};
 
-    if ($pp->{stop_profi} and $pp->{stop_loss}) {
+    if ($pp->{stop_profit} and $pp->{stop_loss}) {
         # these are the only parameters for spreads
         $pp->{'supplied_' . $_} = delete $pp->{$_} for (qw(stop_profit stop_loss));
     } else {
