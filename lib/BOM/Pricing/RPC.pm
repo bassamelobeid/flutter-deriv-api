@@ -85,7 +85,6 @@ sub startup {
 
     my @services = (
         ['send_ask',             \&BOM::Pricing::v3::Contract::send_ask],
-        ['send_multiple_ask',    \&BOM::Pricing::v3::Contract::send_multiple_ask],
         ['get_bid',              \&BOM::Pricing::v3::Contract::get_bid],
         ['get_contract_details', \&BOM::Pricing::v3::Contract::get_contract_details],
     );

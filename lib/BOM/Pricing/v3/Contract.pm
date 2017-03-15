@@ -483,33 +483,6 @@ sub send_ask {
     return $response;
 }
 
-sub send_multiple_ask {
-    my $params         = {%{+shift}};
-    my $barriers_array = delete $params->{args}->{barriers};
-    my $responses      = [];
-    my $rpc_time       = 0;
-
-    for my $barriers (@$barriers_array) {
-        $params->{args}->{barrier} = $barriers->{barrier};
-        @{$params->{args}}{keys %$barriers} = values %$barriers;
-        my $res = send_ask($params);
-        if (not exists $res->{error}) {
-            @{$res}{keys %$barriers} = values %$barriers;
-            push @$responses, $res;
-        } else {
-            @{$res->{error}{details}}{keys %$barriers} = values %$barriers;
-            push @$responses, $res;
-        }
-        $rpc_time += $res->{rpc_time} // 0;
-        delete $res->{rpc_time};
-    }
-
-    return {
-        proposals => $responses,
-        rpc_time  => $rpc_time,
-    };
-}
-
 sub get_contract_details {
     my $params = shift;
 

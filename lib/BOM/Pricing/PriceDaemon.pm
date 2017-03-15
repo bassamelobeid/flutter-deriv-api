@@ -44,11 +44,7 @@ sub process_job {
 
     if ($price_daemon_cmd eq 'price') {
         $params->{streaming_params}->{add_theo_probability} = 1;
-        if (exists $params->{barriers}) {
-            $response = BOM::Pricing::v3::Contract::send_multiple_ask({args => $params});
-        } else {
-            $response = BOM::Pricing::v3::Contract::send_ask({args => $params});
-        }
+        $response = BOM::Pricing::v3::Contract::send_ask({args => $params});
     } elsif ($price_daemon_cmd eq 'bid') {
         $params->{validation_params}->{skip_barrier_validation} = 1;
         $response = BOM::Pricing::v3::Contract::send_bid($params);

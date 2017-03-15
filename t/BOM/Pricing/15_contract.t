@@ -368,41 +368,6 @@ subtest 'send_ask_when_date_expiry_smaller_than_date_start' => sub {
 
 };
 
-subtest 'send_multiple_ask' => sub {
-    my $params = {
-        client_ip => '127.0.0.1',
-        args      => {
-            "amount"        => "100",
-            "basis"         => "payout",
-            "contract_type" => "DIGITMATCH",
-            "currency"      => "USD",
-            "duration"      => "10",
-            "duration_unit" => "t",
-            "symbol"        => "R_50",
-            "barriers"      => [{"barrier" => "3"}, {"barrier" => "2"}]}};
-    use Data::Dumper;
-    my $result = $c->call_ok('send_multiple_ask', $params)->has_no_error->result;
-    my $outer_expected_keys = [sort (qw(rpc_time proposals))];
-    cmp_deeply([sort keys %$result], $outer_expected_keys, 'result keys is correct');
-    is(scalar(@{$result->{proposals}}), 2, "There are 2 proposals");
-    my $inner_expected_keys = [sort (qw(longcode spot display_value spot_time ask_price date_start contract_parameters payout barrier))];
-    for my $proposal (@{$result->{proposals}}) {
-        cmp_deeply([sort keys %$proposal], $inner_expected_keys, 'result keys is correct in proposals');
-    }
-
-    $params->{args}{barriers}[0]{barrier} = "10";
-    $result = $c->call_ok('send_multiple_ask', $params)->has_no_error->result;
-    cmp_deeply([sort keys %$result], $outer_expected_keys, 'result keys is correct');
-    is(scalar(@{$result->{proposals}}), 2, "There are 2 proposals");
-    cmp_deeply([sort keys %{$result->{proposals}[0]}], [sort qw(error)], 'the first proposal has error');
-    my $expected_error_keys = [sort qw(message_to_client details code)];
-    cmp_deeply([sort keys %{$result->{proposals}[0]{error}}], $expected_error_keys, "error keys ok");
-    my $expected_details_keys = [sort qw(display_value payout barrier)];
-    cmp_deeply([sort keys %{$result->{proposals}[0]{error}{details}}], $expected_details_keys, "details keys ok");
-    my $proposal = $result->{proposals}[1];
-    cmp_deeply([sort keys %$proposal], $inner_expected_keys, 'the second proposal still ok');
-};
-
 subtest 'get_bid' => sub {
 
     # just one tick for missing market data
