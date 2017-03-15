@@ -61,6 +61,7 @@ sub process_job {
     stats_inc("pricer_daemon.$price_daemon_cmd.call", {tags => $self->tags});
     stats_timing("pricer_daemon.$price_daemon_cmd.time", $response->{rpc_time}, {tags => $self->tags});
     $response->{price_daemon_cmd} = $price_daemon_cmd;
+    delete $response->{contract_parameters};    # contract parameters are stored after first call, no need to send them with every stream message
     return $response;
 }
 
