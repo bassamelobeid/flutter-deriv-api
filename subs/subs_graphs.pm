@@ -62,7 +62,6 @@ sub graph_setup {
     my $graph_background_and_table = 'ffffff';
     my $graph_link_and_line        = '000080';
 
-    #GNU filehandle needs to be global - not sure if this makes mod_perl problems because of SIG_PIPE handling
     my $gnu_plot = BOM::Backoffice::GNUPlot::gnuplot_command();
     open($gnu, "|-", "$gnu_plot") or die "[$0] execute of '$gnu_plot' failed $!";    ## no critic (RequireBriefOpen)
     print $gnu "set key box\n";
