@@ -28,7 +28,6 @@ use constant TICK_CHUNK_SIZE => 86400;
 use constant WORKERS => floor(Sys::Info->new->device("CPU")->count / 2) || 1;
 
 sub run {
-    my $target_data = shift;
     ++$|;
 
     open my $unique_lock, '<', $0 or die $!;
@@ -45,7 +44,7 @@ sub run {
 
         # If given a parameter, we'll use that to calculate data for that day - but since we look at the 24h leading up to
         # that day, we need to add 1d first.
-        $target_date = ($target_date ? Date::Utility->new($taget_date)->plus_time_interval('1d') : Date::Utility->today)->truncate_to_day;
+        my $target_date = (@ARGV ? Date::Utility->new(shift @ARGV)->plus_time_interval('1d') : Date::Utility->today)->truncate_to_day;
 
         my $start = $target_date->epoch - 86400;
         my $end   = $target_date->epoch - 1;
