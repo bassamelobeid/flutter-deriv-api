@@ -212,9 +212,9 @@ sub register {
                         Mojo::IOLoop->remove($proposal_array_loop_id_keeper);
                         return;
                     }
-                    my @proposals;
                     my $proposal_array_subscriptions = $weak_c->stash('proposal_array_subscriptions') // {};
                     for my $pa_uuid (keys %{$proposal_array_subscriptions}) {
+                        my @proposals;
                         for my $i (0 .. $#{$proposal_array_subscriptions->{$pa_uuid}{seq}}) {
                             my $uuid     = $proposal_array_subscriptions->{$pa_uuid}{seq}->[$i];
                             my $barriers = $proposal_array_subscriptions->{$pa_uuid}{args}{barriers}->[$i];
