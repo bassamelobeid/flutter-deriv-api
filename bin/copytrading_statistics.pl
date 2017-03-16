@@ -2,6 +2,6 @@
 use strict;
 use warnings;
 
-use BOM::Script::CopyTradingStatistics;
+use BOM::Backoffice::Script::CopyTradingStatistics;
 
-exit BOM::Script::CopyTradingStatistics->run;
+exit BOM::Backoffice::Script::CopyTradingStatistics::run;

@@ -1,4 +1,4 @@
-package BOM::Script::ExtraTranslations;
+package BOM::Backoffice::Script::ExtraTranslations;
 
 use Moose;
 with 'App::Base::Script';

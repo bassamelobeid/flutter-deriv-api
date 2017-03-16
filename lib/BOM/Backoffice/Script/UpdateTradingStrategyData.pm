@@ -1,4 +1,4 @@
-package BOM::Script::UpdateTradingStrategyData;
+package BOM::Backoffice::Script::UpdateTradingStrategyData;
 
 use strict;
 use warnings;

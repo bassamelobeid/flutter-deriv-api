@@ -1,4 +1,4 @@
-package BOM::Script::Riskd;
+package BOM::Backoffice::Script::Riskd;
 
 use Moose;
 with 'App::Base::Daemon';

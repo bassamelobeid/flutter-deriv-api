@@ -1,8 +1,8 @@
-package BOM::Script::RiskScenarioAnalysis;
+package BOM::Backoffice::Script::RiskScenarioAnalysis;
 
 =head1 NAME
 
-BOM::Script::RiskScenarioAnalysis
+BOM::Backoffice::Script::RiskScenarioAnalysis
 
 =head1 DESCRIPTION
 

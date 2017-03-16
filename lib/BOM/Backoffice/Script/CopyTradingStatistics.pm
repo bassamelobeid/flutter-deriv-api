@@ -1,4 +1,4 @@
-package BOM::Script::CopyTradingStatistics;
+package BOM::Backoffice::Script::CopyTradingStatistics;
 use strict;
 use warnings;
 

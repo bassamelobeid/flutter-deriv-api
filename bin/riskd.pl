@@ -1,9 +1,9 @@
 #!/etc/rmg/bin/perl
 use strict;
 use warnings;
-use BOM::Script::Riskd;
+use BOM::Backoffice::Script::Riskd;
 
-exit BOM::Script::Riskd->new({
+exit BOM::Backoffice::Script::Riskd->new({
         user  => 'nobody',
         group => 'nogroup',
     })->run;

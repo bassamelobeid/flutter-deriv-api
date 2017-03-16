@@ -2,7 +2,7 @@
 
 package main;
 use strict;
-use BOM::Script::RiskScenarioAnalysis;
+use BOM::Backoffice::Script::RiskScenarioAnalysis;
 
-exit BOM::Script::RiskScenarioAnalysis->new->run;
+exit BOM::Backoffice::Script::RiskScenarioAnalysis->new->run;
 
