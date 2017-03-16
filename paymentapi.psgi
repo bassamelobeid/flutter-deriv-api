@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+no indirect;
 
 use lib qw!/etc/perl
     /home/git/regentmarkets/cpan/local/lib/perl5
