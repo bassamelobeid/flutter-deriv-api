@@ -552,8 +552,8 @@ sub process_ask_event {
         if ($stash_data->{cache}{proposal_array_subscription}) {
             unless ($c->stash('proposal_array_collector_running')) {
                 $c->stash('proposal_array_collector_running' => 1);
-                $c->proposal_array_collector;                                # start 1 sec proposal_array sender if not started yet
-                                                                             # see lib/Binary/WebSocketAPI/Plugins/Helpers.pm line ~ 178
+                $c->proposal_array_collector;    # start 1 sec proposal_array sender if not started yet
+                                                 # see lib/Binary/WebSocketAPI/Plugins/Helpers.pm line ~ 178
             }
             my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
             if (ref $proposal_array_subscriptions->{$stash_data->{cache}{proposal_array_subscription}} eq 'HASH') {
