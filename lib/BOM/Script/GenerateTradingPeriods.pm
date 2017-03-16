@@ -24,6 +24,7 @@ sub run {
 
         clock_nanosleep(CLOCK_REALTIME, $next * 1e9, TIMER_ABSTIME);
     }
+    return;
 }
 
 1;
