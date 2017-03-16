@@ -205,42 +205,46 @@ sub register {
             my $c = shift;
             Scalar::Util::weaken(my $weak_c = $c);
             # send proposal_array stream messages collected from apropriate proposal streams
-            my $proposal_array_loop_id_keeper = Mojo::IOLoop->recurring(
+            my $proposal_array_loop_id_keeper;
+            $proposal_array_loop_id_keeper = Mojo::IOLoop->recurring(
                 1,
                 sub {
-                    my @proposals;
-                    my $proposal_array_subscriptions = $weak_c->stash('proposal_array_subscriptions') // {};
-                    for my $pa_uuid (keys %{$proposal_array_subscriptions}) {
-                        for my $i (0 .. $#{$proposal_array_subscriptions->{$pa_uuid}{seq}}) {
-                            my $uuid     = $proposal_array_subscriptions->{$pa_uuid}{seq}->[$i];
-                            my $barriers = $proposal_array_subscriptions->{$pa_uuid}{args}{barriers}->[$i];
-                            my $proposal = pop @{$proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid}} // {};
-                            return unless keys %$proposal;    # wait untill all streams got a message
-                            if ($proposal->{error}) {
-                                $proposal->{error}{details}{barrier} = $barriers->{barrier};
-                                $proposal->{error}{details}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
-                            } else {
-                                $proposal->{proposal}{barrier} = $barriers->{barrier};
-                                $proposal->{proposal}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
+                    if (defined $weak_c) {
+                        my @proposals;
+                        my $proposal_array_subscriptions = $weak_c->stash('proposal_array_subscriptions') // {};
+                        for my $pa_uuid (keys %{$proposal_array_subscriptions}) {
+                            for my $i (0 .. $#{$proposal_array_subscriptions->{$pa_uuid}{seq}}) {
+                                my $uuid     = $proposal_array_subscriptions->{$pa_uuid}{seq}->[$i];
+                                my $barriers = $proposal_array_subscriptions->{$pa_uuid}{args}{barriers}->[$i];
+                                my $proposal = pop @{$proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid}};
+                                return unless defined $proposal and keys %$proposal;    # wait untill all streams got a message
+                                delete $proposal->{msg_type};
+                                if ($proposal->{error}) {
+                                    $proposal->{error}{details}{barrier} = $barriers->{barrier};
+                                    $proposal->{error}{details}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
+                                } else {
+                                    $proposal->{proposal}{barrier} = $barriers->{barrier};
+                                    $proposal->{proposal}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
+                                }
+                                push @proposals, $proposal;
+                                $proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid} = [$proposal];  # keep last and send it if no new in 1 sec
                             }
-                            push @proposals, $proposal;
-                            $proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid} = [$proposal];    # keep last and send it if no new in 1 sec
+                            my $results = {
+                                proposal_array => {
+                                    proposals => [map { $_->{proposal} || $_ } @proposals],
+                                    id => $pa_uuid,
+                                },
+                                echo_req => $proposal_array_subscriptions->{$pa_uuid}{args},
+                                msg_type => 'proposal_array',
+                            };
+                            $weak_c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}}) if $weak_c->tx;
                         }
-                        delete @{$_}{qw(msg_type)} for @proposals;
-                        my $results = {
-                            proposal_array => {
-                                proposals => [map { $_->{proposal} || $_ } @proposals],
-                                id => $pa_uuid,
-                            },
-                            echo_req => $proposal_array_subscriptions->{$pa_uuid}{args},
-                            msg_type => 'proposal_array',
-                        };
-                        $weak_c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}}) if $weak_c->tx;
+                    } else {
+                        Mojo::IOLoop->remove($proposal_array_loop_id_keeper);
+                        return;
                     }
 
                 });
-
-            $weak_c->stash(proposal_array_collector_running_guard => guard { Mojo::IOLoop->remove($proposal_array_loop_id_keeper); });
         });
 
     return;

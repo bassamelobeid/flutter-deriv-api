@@ -88,7 +88,7 @@ sub proposal_array {
     my $uuid;
     my $barriers_order = {};
 
-    if (!_uniquie_barriers($req_storage->{args}->{barriers})) {
+    if (!_unique_barriers($req_storage->{args}->{barriers})) {
         my $error = $c->new_error('proposal_array', 'DuplicatedBarriers', $c->l('Duplicate barriers not allowed.'));
         $c->send({json => $error}, $req_storage);
         return;
@@ -105,7 +105,7 @@ sub proposal_array {
         $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
         my $position = 0;
         for my $barrier (@{$req_storage->{args}->{barriers}}) {
-            $barriers_order->{$barrier->{barrier} . ($barrier->{barrier2} // '')} = $position++;
+            $barriers_order->{$barrier->{barrier} . "\0" . ($barrier->{barrier2} // '')} = $position++;
         }
     } else {
         my $error = $c->new_error('proposal_array', 'AlreadySubscribed', $c->l('You are already subscribed to proposal_array.'));
@@ -127,7 +127,7 @@ sub proposal_array {
         if ($req_storage->{args}{subscribe}) {                                            # we are in subscr mode, so remember the sequence of streams
             my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions');
             if ($proposal_array_subscriptions->{$uuid}) {
-                my $idx = $req_storage->{args}{barrier} . ($req_storage->{args}{barrier2} // '');
+                my $idx = $req_storage->{args}{barrier} . "\0" . ($req_storage->{args}{barrier2} // '');
                 ${$proposal_array_subscriptions->{$uuid}{seq}}[$barriers_order->{$idx}] = $req_storage->{uuid};
                 $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
             }
@@ -747,11 +747,11 @@ sub _get_validation_for_type {
         }
 }
 
-sub _uniquie_barriers {
+sub _unique_barriers {
     my $barriers = shift;
     my %h;
     for my $barrier (@$barriers) {
-        my $idx = $barrier->{barrier} . ($barrier->{barrier2} // '');
+        my $idx = $barrier->{barrier} . "\0" . ($barrier->{barrier2} // '');
         return if $h{$idx}++;
     }
     return 1;
