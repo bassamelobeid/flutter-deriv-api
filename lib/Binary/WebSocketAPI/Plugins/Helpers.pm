@@ -219,7 +219,7 @@ sub register {
                             my $uuid     = $proposal_array_subscriptions->{$pa_uuid}{seq}->[$i];
                             my $barriers = $proposal_array_subscriptions->{$pa_uuid}{args}{barriers}->[$i];
                             my $proposal = pop @{$proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid}};
-                            return unless defined $proposal and keys %$proposal;    # wait untill all streams got a message
+                            return unless defined $proposal;    # wait until all streams got a message
                             delete $proposal->{msg_type};
                             if ($proposal->{error}) {
                                 $proposal->{error}{details}{barrier} = $barriers->{barrier};
