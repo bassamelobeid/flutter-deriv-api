@@ -198,10 +198,12 @@ sub proposal_array {
                 delete @{$_}{qw(msg_type passthrough)} for @result;
                 for my $i (0 .. $#{$req_storage->{args}->{barriers}}) {
                     if (keys %{$result[$i]}) {
-                        if ($result[$i]->{error}) {
-                            $result[$i]->{error}{details}{barrier}  = ${$req_storage->{args}->{barriers}}[$i]->{barrier};
-                            $result[$i]->{error}{details}{barrier2} = ${$req_storage->{args}->{barriers}}[$i]->{barrier2}
-                                if exists ${$req_storage->{args}->{barriers}}[$i]->{barrier2};
+                        if ($result[$i]->{error}) {    # error could be 'Request timed out' without any additional details
+                            if (ref $result[$i]->{error} eq 'HASH') {
+                                $result[$i]->{error}{details}{barrier}  = ${$req_storage->{args}->{barriers}}[$i]->{barrier};
+                                $result[$i]->{error}{details}{barrier2} = ${$req_storage->{args}->{barriers}}[$i]->{barrier2}
+                                    if exists ${$req_storage->{args}->{barriers}}[$i]->{barrier2};
+                            }
                         } else {
                             $result[$i]->{proposal}{barrier}  = ${$req_storage->{args}->{barriers}}[$i]->{barrier};
                             $result[$i]->{proposal}{barrier2} = ${$req_storage->{args}->{barriers}}[$i]->{barrier2}
@@ -219,7 +221,7 @@ sub proposal_array {
                         },
                         msg_type => $msg_type,
                     }};
-                $c->send($res);
+                $c->send($res) if $c and $c->tx;    # connection could be gone
             }
             catch {
                 warn "Failed - $_";
