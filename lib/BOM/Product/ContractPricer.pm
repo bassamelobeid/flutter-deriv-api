@@ -236,17 +236,18 @@ sub _create_new_interface_engine {
     my %pricing_parameters;
 
     my %contract_config = (
-        contract_type     => $self->pricing_code,
-        underlying_symbol => $self->underlying->symbol,
-        date_start        => $self->effective_start,
-        date_pricing      => $self->date_pricing,
-        date_expiry       => $self->date_expiry,
-        payouttime_code   => $self->payouttime_code,
-        for_date          => $self->underlying->for_date,
-        spot              => $self->pricing_spot,
-        strikes           => [grep { $_ } values %{$self->barriers_for_pricing}],
-        priced_with       => $self->priced_with,
-        payout_type       => $self->payout_type,
+        contract_type              => $self->pricing_code,
+        underlying_symbol          => $self->underlying->symbol,
+        date_start                 => $self->effective_start,
+        date_pricing               => $self->date_pricing,
+        date_expiry                => $self->date_expiry,
+        volatility_effective_start => $self->volatility_effective_start,
+        payouttime_code            => $self->payouttime_code,
+        for_date                   => $self->underlying->for_date,
+        spot                       => $self->pricing_spot,
+        strikes                    => [grep { $_ } values %{$self->barriers_for_pricing}],
+        priced_with                => $self->priced_with,
+        payout_type                => $self->payout_type,
     );
 
     if ($self->pricing_engine_name eq 'Pricing::Engine::Digits') {
