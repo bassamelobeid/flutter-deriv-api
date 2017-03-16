@@ -16,8 +16,9 @@ use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Format::Util::Numbers qw(to_monetary_number_format);
 use Price::Calculator;
 use Clone::PP qw(clone);
-use Future::Mojo  ();
-use Future::Utils ();
+use Future::Mojo          ();
+use Future::Utils         ();
+use Variable::Disposition ();
 
 # Number of RPC requests a single active websocket call
 # can issue in parallel. Used for proposal_array.
@@ -135,101 +136,102 @@ sub proposal_array {
     };
 
     # Process a few RPC calls at a time.
-    my $retained;
 
-    $retained = Future->needs_any(
-        # Upper limit on total time taken - we don't really
-        # care how long individual requests take, but we do
-        # expect all the calls to complete in a reasonable time
-        Future::Mojo->new_timer(PARALLEL_RPC_TIMEOUT)->transform(
-            done => sub {
-                return +{error => $c->l('Request timed out')};
-            }
-        ),
-        Future::Utils::fmap {
-            my $barriers = shift;
+    Variable::Disposition::retain_future(
+        Future->needs_any(
+            # Upper limit on total time taken - we don't really
+            # care how long individual requests take, but we do
+            # expect all the calls to complete in a reasonable time
+            Future::Mojo->new_timer(PARALLEL_RPC_TIMEOUT)->transform(
+                done => sub {
+                    return +{error => $c->l('Request timed out')};
+                }
+            ),
+            Future::Utils::fmap {
+                my $barriers = shift;
 
-            # Shallow copy of $args since we want to override a few top-level keys for the RPC calls
-            my $args = {%{$req_storage->{args}}};
+                # Shallow copy of $args since we want to override a few top-level keys for the RPC calls
+                my $args = {%{$req_storage->{args}}};
 
-            $args->{barrier} = $barriers->{barrier};
-            $args->{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
-            delete $args->{barriers};
-            my $f = Future::Mojo->new;
-            $c->call_rpc({
-                    url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
-                    args        => $args,
-                    method      => 'send_ask',
-                    msg_type    => 'proposal',
-                    call_params => {
-                        language              => $c->stash('language'),
-                        app_markup_percentage => $c->stash('app_markup_percentage'),
-                        landing_company       => $c->landing_company_name,
-                    },
-                    error    => $create_price_channel,
-                    success  => $create_price_channel,
-                    response => sub {
-                        my ($rpc_response, $api_response, $req_storage) = @_;
-                        if ($rpc_response->{error}) {
+                $args->{barrier} = $barriers->{barrier};
+                $args->{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
+                delete $args->{barriers};
+                my $f = Future::Mojo->new;
+                $c->call_rpc({
+                        url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
+                        args        => $args,
+                        method      => 'send_ask',
+                        msg_type    => 'proposal',
+                        call_params => {
+                            language              => $c->stash('language'),
+                            app_markup_percentage => $c->stash('app_markup_percentage'),
+                            landing_company       => $c->landing_company_name,
+                        },
+                        error    => $create_price_channel,
+                        success  => $create_price_channel,
+                        response => sub {
+                            my ($rpc_response, $api_response, $req_storage) = @_;
+                            if ($rpc_response->{error}) {
+                                $f->done($api_response);
+                                return;
+                            }
+
+                            # here $api_response and $req_storage are `proposal` call's data, not the original `proposal_array`
+                            # so uuid here is corresponding `proposal` stream's uuid.
+                            # uuid for `proposal_array` is created on the beginning of `sub proposal_array`
+                            $api_response->{passthrough} = $req_storage->{args}->{passthrough};
+                            if (my $uuid = $req_storage->{uuid}) {
+                                $api_response->{proposal}->{id} = $uuid;
+                            } else {
+                                $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
+                            }
                             $f->done($api_response);
                             return;
-                        }
-
-                        $api_response->{passthrough} = $req_storage->{args}->{passthrough};
-                        if (my $uuid = $req_storage->{uuid}) {
-                            $api_response->{proposal}->{id} = $uuid;
-                        } else {
-                            $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
-                        }
-                        $f->done($api_response);
-                        return;
-                    },
-                });
-            $f;
-        }
-        foreach    => [@{$req_storage->{args}->{barriers}}],
-        concurrent => PARALLEL_RPC_COUNT
-        )->on_ready(
-        sub {
-            my $f = shift;
-            try {
-                # should not throw 'cos we do not $future->fail
-                my @result = $f->get;
-                delete @{$_}{qw(msg_type passthrough)} for @result;
-                for my $i (0 .. $#{$req_storage->{args}->{barriers}}) {
-                    if (keys %{$result[$i]}) {
-                        if ($result[$i]->{error}) {    # error could be 'Request timed out' without any additional details
-                            if (ref $result[$i]->{error} eq 'HASH') {
-                                $result[$i]->{error}{details}{barrier}  = ${$req_storage->{args}->{barriers}}[$i]->{barrier};
-                                $result[$i]->{error}{details}{barrier2} = ${$req_storage->{args}->{barriers}}[$i]->{barrier2}
+                        },
+                    });
+                $f;
+            }
+            foreach    => [@{$req_storage->{args}->{barriers}}],
+            concurrent => PARALLEL_RPC_COUNT
+            )->on_ready(
+            sub {
+                my $f = shift;
+                try {
+                    # should not throw 'cos we do not $future->fail
+                    my @result = $f->get;
+                    delete @{$_}{qw(msg_type passthrough)} for @result;
+                    for my $i (0 .. $#{$req_storage->{args}->{barriers}}) {
+                        if (keys %{$result[$i]}) {
+                            if ($result[$i]->{error}) {    # error could be 'Request timed out' without any additional details
+                                if (ref $result[$i]->{error} eq 'HASH') {
+                                    $result[$i]->{error}{details}{barrier}  = ${$req_storage->{args}->{barriers}}[$i]->{barrier};
+                                    $result[$i]->{error}{details}{barrier2} = ${$req_storage->{args}->{barriers}}[$i]->{barrier2}
+                                        if exists ${$req_storage->{args}->{barriers}}[$i]->{barrier2};
+                                }
+                            } else {
+                                $result[$i]->{proposal}{barrier}  = ${$req_storage->{args}->{barriers}}[$i]->{barrier};
+                                $result[$i]->{proposal}{barrier2} = ${$req_storage->{args}->{barriers}}[$i]->{barrier2}
                                     if exists ${$req_storage->{args}->{barriers}}[$i]->{barrier2};
                             }
-                        } else {
-                            $result[$i]->{proposal}{barrier}  = ${$req_storage->{args}->{barriers}}[$i]->{barrier};
-                            $result[$i]->{proposal}{barrier2} = ${$req_storage->{args}->{barriers}}[$i]->{barrier2}
-                                if exists ${$req_storage->{args}->{barriers}}[$i]->{barrier2};
                         }
                     }
+                    # Return a single result back to the client.
+                    my $res = {
+                        json => {
+                            echo_req       => $req_storage->{args},
+                            proposal_array => {
+                                proposals => [map { $_->{proposal} || $_ } @result],
+                                $uuid ? (id => $uuid) : (),
+                            },
+                            msg_type => $msg_type,
+                        }};
+                    $c->send($res) if $c and $c->tx;    # connection could be gone
                 }
-                # Return a single result back to the client.
-                my $res = {
-                    json => {
-                        echo_req       => $req_storage->{args},
-                        proposal_array => {
-                            proposals => [map { $_->{proposal} || $_ } @result],
-                            $uuid ? (id => $uuid) : (),
-                        },
-                        msg_type => $msg_type,
-                    }};
-                $c->send($res) if $c and $c->tx;    # connection could be gone
-            }
-            catch {
-                warn "Failed - $_";
-                $c->send({json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')});
-            };
-            # Capture this to keep the Future alive until it's done
-            undef $retained;
-        });
+                catch {
+                    warn "Failed - $_";
+                    $c->send({json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')});
+                };
+            }));
 
     # Send nothing back to the client yet. We'll push a response
     # once the RPC calls complete or time out
