@@ -179,7 +179,6 @@ sub proposal_array {
                             # here $api_response and $req_storage are `proposal` call's data, not the original `proposal_array`
                             # so uuid here is corresponding `proposal` stream's uuid.
                             # uuid for `proposal_array` is created on the beginning of `sub proposal_array`
-                            $api_response->{passthrough} = $req_storage->{args}->{passthrough};
                             if (my $uuid = $req_storage->{uuid}) {
                                 $api_response->{proposal}->{id} = $uuid;
                             } else {
@@ -219,6 +218,8 @@ sub proposal_array {
                     my $res = {
                         json => {
                             echo_req       => $req_storage->{args},
+                            $req_storage->{args}{req_id} ? (req_id => $req_storage->{args}{req_id}) : (),
+                            $req_storage->{args}{passthrough} ? (passthrough => $req_storage->{args}{passthrough}) : (),
                             proposal_array => {
                                 proposals => [map { $_->{proposal} || $_ } @result],
                                 $uuid ? (id => $uuid) : (),
