@@ -43,7 +43,7 @@ sub app {
     if ($ENV{ACCESS_LOG}) {
         open $alog, '>>', $ENV{ACCESS_LOG}    ## no critic (RequireBriefOpen)
             or die "Cannot open access_log: $!";
-        autoflush $alog 1;
+        $alog->autoflush(1);
     }
 
     $options{preload} //= ["*.cgi"];
