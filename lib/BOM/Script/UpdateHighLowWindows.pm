@@ -1,4 +1,4 @@
-package UpdateHighLowWindows;
+package BOM::Script::UpdateHighLowWindows;
 use strict;
 use warnings;
 

@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use UpdateHighLowWindows;
+use BOM::Script::UpdateHighLowWindows;
 
 #Update high and low of symbols for predefined periods.
 exit UpdateHighLowWindows->run;
