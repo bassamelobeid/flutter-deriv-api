@@ -69,7 +69,7 @@ sub _vols_at_point {
 
     my $vol_args = {
         delta => 50,
-        from  => $self->effective_start,
+        from  => $self->volatility_effective_start,
         to    => $self->date_expiry,
     };
 
@@ -106,9 +106,6 @@ sub _build_vol_at_strike {
     #If surface is flat, don't bother calculating all those arguments
     return $self->volsurface->get_volatility if ($self->underlying->volatility_surface_type eq 'flat');
 
-    # For opposite contract's pricing, the effective start is always set to date_pricing.
-    # After expiry while waiting for exit tick, we will be pricing an opposite contract with effective_start that is ahead of date expiry and caused the inverted date issue.
-    my $start_date = ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_expiry : $self->effective_start;
 
     my $pricing_spot = $self->pricing_spot;
     my $vol_args     = {
@@ -116,7 +113,7 @@ sub _build_vol_at_strike {
         q_rate => $self->q_rate,
         r_rate => $self->r_rate,
         spot   => $pricing_spot,
-        from   => $start_date,
+        from   => $self->volatility_effective_start,
         to     => $self->date_expiry,
     };
 
@@ -131,7 +128,7 @@ sub _build_news_adjusted_pricing_vol {
     my $self = shift;
 
     my $news_adjusted_vol = $self->pricing_vol;
-    my $effective_start   = $self->effective_start;
+    my $effective_start   = $self->volatility_effective_start;
     my $seconds_to_expiry = $self->get_time_to_expiry({from => $effective_start})->seconds;
     my $events            = $self->economic_events_for_volatility_calculation;
 
@@ -162,7 +159,7 @@ sub _build_pricing_vol {
         # where the intraday_delta_correction is the bounceback which is a function of trend, not volatility.
         my $uses_flat_vol = ($self->is_atm_bet and $duration_seconds < 10 * 60) ? 1 : 0;
         $vol = $uses_flat_vol ? $volsurface->long_term_volatility : $volsurface->get_volatility({
-            from            => $self->effective_start->epoch,
+            from            => $self->volatility_effective_start->epoch,
             to              => $self->date_expiry->epoch,
             economic_events => $self->economic_events_for_volatility_calculation,
             ticks           => $self->ticks_for_volatility_calculation,
@@ -170,7 +167,7 @@ sub _build_pricing_vol {
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
             $vol = $self->volsurface->get_volatility({
-                from  => $self->effective_start,
+                from  => $self->volatility_effective_start,
                 to    => $self->date_expiry,
                 delta => 50
             });
@@ -221,7 +218,7 @@ sub _build_pricing_vol_for_two_barriers {
     return if $self->pricing_engine_name ne 'Pricing::Engine::EuropeanDigitalSlope';
 
     my $vol_args = {
-        from => $self->date_start,
+        from => $self->volatility_effective_start,
         to   => $self->date_expiry,
     };
 

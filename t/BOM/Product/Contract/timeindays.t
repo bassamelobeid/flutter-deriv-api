@@ -80,7 +80,7 @@ subtest Forex => sub {
         $bet->vol_at_strike,
         '==',
         $bet->volsurface->get_volatility({
-                from   => $bet->effective_start,
+                from   => $bet->volatility_effective_start,
                 to     => $bet->date_expiry,
                 spot   => 100,
                 strike => $bet->barrier->as_absolute,
@@ -101,7 +101,7 @@ subtest Forex => sub {
         $bet->vol_at_strike,
         '==',
         $bet->volsurface->get_volatility({
-                from   => $bet->effective_start,
+                from   => $bet->volatility_effective_start,
                 to     => $bet->date_expiry,
                 spot   => 100,
                 strike => $bet->barrier->as_absolute,
@@ -126,7 +126,7 @@ subtest Forex => sub {
         $bet->vol_at_strike,
         '==',
         $bet->volsurface->get_volatility({
-                from   => $bet->effective_start,
+                from   => $bet->volatility_effective_start,
                 to     => $bet->date_expiry,
                 spot   => 100,
                 strike => $bet->barrier->as_absolute,
@@ -150,7 +150,7 @@ subtest Forex => sub {
         $bet->vol_at_strike,
         '==',
         $bet->volsurface->get_volatility({
-                from   => $bet->effective_start,
+                from   => $bet->volatility_effective_start,
                 to     => $bet->date_expiry,
                 spot   => 100,
                 strike => $bet->barrier->as_absolute,
@@ -170,7 +170,7 @@ subtest Forex => sub {
         $bet->vol_at_strike,
         '==',
         $bet->volsurface->get_volatility({
-                from   => $bet->effective_start,
+                from   => $bet->volatility_effective_start,
                 to     => $bet->date_expiry,
                 spot   => 100,
                 strike => $bet->barrier->as_absolute,
@@ -190,7 +190,7 @@ subtest Forex => sub {
         $bet->vol_at_strike,
         '==',
         $bet->volsurface->get_volatility({
-                from   => $bet->effective_start,
+                from   => $bet->volatility_effective_start,
                 to     => $bet->date_expiry,
                 spot   => 100,
                 strike => $bet->barrier->as_absolute,
