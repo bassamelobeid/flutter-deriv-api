@@ -106,7 +106,6 @@ sub _build_vol_at_strike {
     #If surface is flat, don't bother calculating all those arguments
     return $self->volsurface->get_volatility if ($self->underlying->volatility_surface_type eq 'flat');
 
-
     my $pricing_spot = $self->pricing_spot;
     my $vol_args     = {
         strike => $self->barriers_for_pricing->{barrier1},

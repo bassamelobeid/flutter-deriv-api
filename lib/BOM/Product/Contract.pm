@@ -557,10 +557,11 @@ sub _build_effective_start {
 sub _build_volatility_effective_start {
     my $self = shift;
 
-    return
-          ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_expiry
+    return ($self->date_pricing->is_after($self->date_expiry))
+        ? $self->date_expiry
         : $self->effective_start;
 }
+
 sub _build_date_pricing {
     my $self = shift;
     my $time = Time::HiRes::time();
