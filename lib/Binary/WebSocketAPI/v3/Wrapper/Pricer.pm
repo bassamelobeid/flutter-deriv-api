@@ -550,8 +550,8 @@ sub process_ask_event {
         }
         delete @{$results->{$type}}{qw(contract_parameters rpc_time)} if $results->{$type};
         if ($stash_data->{cache}{proposal_array_subscription}) {
-            unless ($c->stash('proposal_array_collector_running_guard')) {
-                $c->stash('proposal_array_collector_running_guard' => 1);    # will be later replaced with real guard obj
+            unless ($c->stash('proposal_array_collector_running')) {
+                $c->stash('proposal_array_collector_running' => 1);
                 $c->proposal_array_collector;                                # start 1 sec proposal_array sender if not started yet
                                                                              # see lib/Binary/WebSocketAPI/Plugins/Helpers.pm line ~ 178
             }
