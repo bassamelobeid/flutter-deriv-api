@@ -149,7 +149,7 @@ sub _initialize_contract_parameters {
         $pp->{$type} = Date::Utility->new($pp->{$type});
     }
 
-    if (ref $pp->{underlying} ne 'Quant::Framework::Underlying') {
+    unless ($pp->{underlying}->isa('Quant::Framework::Underlying')) {
         $pp->{underlying} = create_underlying($pp->{underlying}, $pp->{date_pricing});
     }
 
