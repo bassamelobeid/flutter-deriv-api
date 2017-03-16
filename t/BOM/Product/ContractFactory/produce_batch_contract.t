@@ -94,4 +94,58 @@ subtest 'produce_batch_contract - price check' => sub {
     'ask_prices';
 };
 
+subtest 'produce_batch_contract - error check' => sub {
+    my $args = {
+        bet_types  => ['RANGE', 'UPORDOWN'],
+        underlying => 'frxUSDJPY',
+        barriers   => [{
+                barrier  => 100.2,
+                barrier2 => 99.8
+            },
+            {
+                barrier  => 100.25,
+                barrier2 => 98.75
+            }
+        ],
+        date_start   => $now,
+        date_pricing => $now,
+        duration     => '1h',
+        currency     => 'USD',
+        payout       => 10,
+        current_tick => $fake_tick,
+    };
+
+    my $batch      = produce_batch_contract($args);
+    my $ask_prices = $batch->ask_prices;
+    like($ask_prices->{RANGE}->{'100.200-99.800'}->{error},    qr/not offered for this duration/, 'throws an error for invalid duration');
+    like($ask_prices->{UPORDOWN}->{'100.200-99.800'}->{error}, qr/not offered for this duration/, 'throws an error for invalid duration');
+    like($ask_prices->{RANGE}->{'100.250-98.750'}->{error},    qr/not offered for this duration/, 'throws an error for invalid duration');
+    like($ask_prices->{UPORDOWN}->{'100.250-98.750'}->{error}, qr/not offered for this duration/, 'throws an error for invalid duration');
+
+    $args->{duration} = '1d';
+    $batch            = produce_batch_contract($args);
+    $ask_prices       = $batch->ask_prices;
+    is $ask_prices->{RANGE}->{'100.200-99.800'}->{ask_price}, 0.5, 'minimum ask price';
+    like($ask_prices->{UPORDOWN}->{'100.200-99.800'}->{error}, qr/This contract offers no return/, 'throws an error for invalid duration');
+    is $ask_prices->{RANGE}->{'100.250-98.750'}->{ask_price},    2.65, 'correct ask price';
+    is $ask_prices->{UPORDOWN}->{'100.250-98.750'}->{ask_price}, 8.12, 'correct ask price';
+
+    $args->{bet_types} = ['CALL', 'RANGE'];
+    $batch = produce_batch_contract($args);
+    throws_ok { $batch->ask_prices } qr/Could not mixed single barrier and double barrier contracts/, 'throws error if bet_type mismatch';
+
+    $args->{bet_types} = ['CALL', 'ONETOUCH'];
+    $args->{barriers} = [
+        100.12,
+        {
+            barrier  => 100.12,
+            barrier2 => 99.20
+        }];
+    $batch = produce_batch_contract($args);
+    throws_ok { $batch->ask_prices } qr/Invalid barrier list\. Single barrier input is expected\./, 'throws error if bet_type-barrier mismatch';
+    $args->{bet_types} = ['RANGE', 'EXPIRYRANGE'];
+    $batch = produce_batch_contract($args);
+    throws_ok { $batch->ask_prices } qr/Invalid barrier list\. Double barrier input is expected\./, 'throws error if bet_type-barrier mismatch';
+};
+
 done_testing();

@@ -5,16 +5,10 @@ use Moose;
 use Date::Utility;
 use YAML::XS qw(LoadFile);
 use File::ShareDir;
-use Scalar::Util::Numeric qw(isint);
-use List::Util qw(first max);
-use List::MoreUtils qw(none);
-use LandingCompany::Offerings qw(get_contract_specifics);
-use Postgres::FeedDB::Spot::Tick;
 use Time::HiRes;
 
-use BOM::Platform::Context qw(localize);
-use BOM::Platform::Runtime;
-use BOM::MarketData qw(create_underlying create_underlying_db);
+use BOM::MarketData qw(create_underlying);
+use BOM::Product::Contract::Category;
 
 my $contract_type_config = LoadFile(File::ShareDir::dist_file('LandingCompany', 'contract_types.yml'));
 
@@ -23,6 +17,34 @@ has parameters => (
     isa      => 'HashRef',
     required => 1,
 );
+
+sub BUILD {
+    my $self = shift;
+
+    my $c_types  = $self->contract_types;
+    my $barriers = $self->barriers;
+
+    my $barrier_type_count = grep { $_->{category}->two_barriers } @$c_types;
+
+    if ($barrier_type_count > 0 and $barrier_type_count < scalar(@$c_types)) {
+        die 'Could not mixed single barrier and double barrier contracts in bet_types list.';
+    }
+
+    # $barrier_type_count == 0, single barrier contract
+    # $barrier_type_count == @$c_types, double barrier contract
+    if ($barrier_type_count == 0 and grep { ref $_ } @$barriers) {
+        die 'Invalid barrier list. Single barrier input is expected.';
+    } elsif (
+        $barrier_type_count == scalar(@$c_types) and grep {
+            !ref $_
+        } @$barriers
+        )
+    {
+        die 'Invalid barrier list. Double barrier input is expected.';
+    }
+
+    return;
+}
 
 has [qw(contract_types barriers)] => (
     is         => 'ro',
@@ -36,14 +58,14 @@ sub _build_contract_types {
 
     my $c_types;
     if ($p->{bet_types}) {
-        $c_types = delete $p->{bet_types};
+        $c_types = $p->{bet_types};
     } elsif ($p->{bet_type}) {
-        $c_types = [delete $p->{bet_type}];
+        $c_types = [$p->{bet_type}];
     } else {
         die 'bet_type is required';
     }
 
-    return $c_types;
+    return [map { $self->_initialize_contract_config($_) } @$c_types];
 }
 
 sub _build_barriers {
@@ -82,18 +104,17 @@ sub process {
     my $contract_params = $self->_initialize_contract_parameters();
 
     foreach my $c_type (@$c_types) {
-        my $c_config = $self->_initialize_contract_config($c_type);
         if (@$barriers) {
             foreach my $barrier (@$barriers) {
                 my $barrier_info = $self->_initialize_barrier($barrier);
-                my $clone = {%$contract_params, %$c_config, %$barrier_info};
+                my $clone = {%$contract_params, %$c_type, %$barrier_info};
                 # just to make sure nothing gets pass through
-                delete $clone->{$_} for qw(barrier high_barrier low_barrier);
+                delete $clone->{$_} for qw(bet_types barriers barrier high_barrier low_barrier);
                 $clone->{build_parameters} = {%$clone};
                 push @params, $clone;
             }
         } else {
-            my $clone = {%$contract_params, %$c_config};
+            my $clone = {%$contract_params, %$c_type};
             # sometimes barriers could be undefined
             $clone->{build_parameters} = {%$clone};
             push @params, $clone;
@@ -231,6 +252,7 @@ sub _initialize_contract_config {
 
     $params->{$_} = $c_type_config{$_} for keys %c_type_config;
     $params->{bet_type} = $c_type;
+    $params->{category} = BOM::Product::Contract::Category->new($params->{category}) if $params->{category};
 
     return $params;
 }
@@ -287,35 +309,6 @@ has _legacy_contract_types => (
         };
     },
 );
-
-has is_quanto => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_is_quanto {
-    my $self = shift;
-
-    my $pp         = $self->parameters;
-    my $underlying = $pp->{underlying};
-
-    # Everything should have a quoted currency, except our randoms.
-    # However, rather than check for random directly, just do a numeraire bet if we don't know what it is.
-    my $priced_with;
-    if ($underlying->quoted_currency_symbol eq $pp->{currency} or (none { $underlying->market->name eq $_ } (qw(forex commodities indices)))) {
-        $priced_with = 'numeraire';
-    } elsif ($underlying->asset_symbol eq $pp->{currency}) {
-        $priced_with = 'base';
-    } else {
-        $priced_with = 'quanto';
-    }
-
-    if ($underlying->submarket->name eq 'smart_fx') {
-        $priced_with = 'numeraire';
-    }
-
-    return ($priced_with eq 'quanto');
-}
 
 no Moose;
 __PACKAGE__->meta->make_immutable;
