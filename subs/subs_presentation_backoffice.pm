@@ -8,7 +8,7 @@
 ## no critic (RequireExplicitPackage)
 use strict;
 use warnings;
-no warnings 'uninitialized'; # TODO fix these warnings
+no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
 
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Request qw(request);
@@ -303,7 +303,7 @@ sub vk_BObottomPRES {
 sub code_exit_BO {
     if ($vk_BarIsDoneOnce) { BarEnd(); }             #backoffice closing bar output (must be before vk_BObottomPRES)
     if ($vk_didBOtopPRES)  { vk_BObottomPRES(); }    #backoffice closing presentation
-    no strict "refs"; ## no critic (ProhibitNoStrict)
+    no strict "refs";                                ## no critic (ProhibitNoStrict, ProhibitProlongedStrictureOverride)
     undef ${"main::vk_BarIsDoneOnce"};
     undef ${"main::vk_didBOtopPRES"};
     BOM::Backoffice::Request::request_completed();
