@@ -649,7 +649,6 @@ subtest 'sell a spread bet' => sub {
             is $fmb->{tick_count},        undef,   'tick_count';
             is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
         };
-
 # should skip stop loss validaiton when sell
         local $ENV{REQUEST_STARTTIME} = time;
         $contract = produce_contract({
@@ -672,6 +671,8 @@ subtest 'sell a spread bet' => sub {
         });
         $txn->buy;
         my ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db spread_bet => $txn->transaction_id;
+        my $buy_trx_id = $txn->transaction_id;
+
         sleep(1);
         $sell_spread_id = $fmb->{id};
         $contract       = produce_contract({
@@ -696,6 +697,7 @@ subtest 'sell a spread bet' => sub {
         $error = $txn->sell;
         is $error, undef, 'no error';
 
+        ok( $buy_trx_id && $txn->buy_transaction_id == $buy_trx_id, "check buy transaction ID");
 # should skip stop profit validaiton when sell
         sleep(1);
         $contract = produce_contract({
@@ -719,6 +721,7 @@ subtest 'sell a spread bet' => sub {
         $txn->buy;
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db spread_bet => $txn->transaction_id;
         $sell_spread_id = $fmb->{id};
+        my $buy_trx_id = $txn->transaction_id;
 
         sleep(1);
         $contract = produce_contract({
@@ -742,6 +745,7 @@ subtest 'sell a spread bet' => sub {
         });
         $error = $txn->sell;
         is $error, undef, 'no error';
+        ok( $buy_trx_id && $txn->buy_transaction_id == $buy_trx_id, "check buy transaction ID");
 
     }
     'sell spread bet';

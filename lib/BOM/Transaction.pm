@@ -152,6 +152,12 @@ has transaction_id => (
     isa => 'Int',
 );
 
+### For sell operations only
+has buy_transaction_id => (
+    is  => 'rw',
+    isa => 'Int',
+);
+
 has contract_id => (
     is  => 'rw',
     isa => 'Int',
@@ -821,7 +827,8 @@ sub sell {
     $self->stats_stop($stats_data);
 
     $self->balance_after($txn->{balance_after});
-    $self->transaction_id($buy_txn_id);
+    $self->transaction_id($txn->{id});
+    $self->buy_transaction_id($buy_txn_id);
 
     return;
 }
