@@ -84,8 +84,8 @@ sub _build_custom_profiles {
 
     my @profiles = grep { $self->_match_conditions($_) } values %{$self->raw_custom_profiles};
 
-    my $risk_profile = $self->risk_profile;
-    my $setter       = $self->risk_profile_setter;
+    my $risk_profile = $self->underlying_risk_profile;
+    my $setter       = $self->underlying_risk_profile_setter;
     # default market level profile
     push @profiles,
         +{
