@@ -3,14 +3,12 @@ package BOM::Product::Categorizer;
 use Moose;
 
 use Date::Utility;
-use YAML::XS qw(LoadFile);
 use File::ShareDir;
 use Time::HiRes;
+use LandingCompany::Offerings qw(get_all_contract_types);
 
 use BOM::MarketData qw(create_underlying);
 use BOM::Product::Contract::Category;
-
-my $contract_type_config = LoadFile(File::ShareDir::dist_file('LandingCompany', 'contract_types.yml'));
 
 has parameters => (
     is       => 'ro',
@@ -237,6 +235,8 @@ sub _initialize_contract_config {
     my ($self, $c_type) = @_;
 
     die 'contract type is required' unless $c_type;
+
+    my $contract_type_config = get_all_contract_types();
 
     my $params;
     if (my $legacy_params = $self->_legacy_contract_types->{$c_type}) {
