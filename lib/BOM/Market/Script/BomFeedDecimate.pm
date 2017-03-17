@@ -13,7 +13,7 @@ use Data::Decimate qw(decimate);
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
 
 sub run {
-    $0 = 'bom-feed-decimate';
+    local $0 = 'bom-feed-decimate';
 
     GetOptions(
         'h|help' => \my $help,
