@@ -616,7 +616,7 @@ subtest 'sell a spread bet' => sub {
             is $trx->{amount} + 0, $contract->bid_price, 'amount';
             # bought two contracts at 10 and 20 USD.
             is $trx->{balance_after} + 0, 5000 - 30 + $contract->bid_price, 'balance_after';
-            is $trx->{financil_market_bet_id}, $sell_spread_id, 'financial_market_bet_id';
+            is $trx->{financial_market_bet_id}, $sell_spread_id, 'financial_market_bet_id';
             is $trx->{payment_id},    undef,                  'payment_id';
             is $trx->{quantity},      1,                      'quantity';
             is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
