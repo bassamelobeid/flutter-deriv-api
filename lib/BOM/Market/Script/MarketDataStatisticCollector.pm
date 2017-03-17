@@ -1,4 +1,4 @@
-package BOM::Market::Script::MarketDAtaStatisticCollector;
+package BOM::Market::Script::MarketDataStatisticCollector;
 
 =head1 NAME
 
