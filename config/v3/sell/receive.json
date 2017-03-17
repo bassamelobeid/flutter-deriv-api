@@ -28,7 +28,7 @@
         },
         "transaction_id": {
           "type": "integer",
-          "description":"Internal transaction identifier for the sale transaction"
+          "description":"Internal transaction identifier for the buy transaction"
         }
       }
     },
