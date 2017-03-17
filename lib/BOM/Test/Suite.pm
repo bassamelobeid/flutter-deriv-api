@@ -34,8 +34,8 @@ my $response;
 my $global_test_iteration = 0;
 
 # We don't want to fail due to hiting limits
-## no critic (Variables::RequireLocalizedPunctuationVars)
-$ENV{BOM_TEST_RATE_LIMITATIONS} = '/home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/rate_limitations.yml';
+$ENV{BOM_TEST_RATE_LIMITATIONS} =    ## no critic (Variables::RequireLocalizedPunctuationVars)
+    '/home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/rate_limitations.yml';
 
 # Return entire contents of file as string
 sub read_file {
@@ -155,7 +155,7 @@ sub run {
 
         # arbitrary perl code
         if ($line =~ s/^\[%(.*?)%\]//) {
-            eval $1;    ## no critic
+            eval $1;    ## no critic (RequireCheckingReturnValueOfEval, ProhibitStringyEval)
             die $@ if $@;
         }
 
@@ -255,7 +255,7 @@ sub _get_values {
         my $template_content;
         if ($f =~ /^\_.*$/) {
             local $@;    # ensure we clear this first, to avoid false positive
-            $template_content = eval $f;    ## no critic
+            $template_content = eval $f;    ## no critic (ProhibitStringyEval, RequireCheckingReturnValueOfEval)
 
             # we do not expect any exceptions from the eval, they could indicate
             # invalid Perl code or bug, either way we need to know about them

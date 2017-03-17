@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN {
     # Avoid MOJO_LOG_LEVEL = fatal set by Test::Mojo
-    $ENV{HARNESS_IS_VERBOSE} = 1;    ## no critic
+    $ENV{HARNESS_IS_VERBOSE} = 1;    ## no critic (RequireLocalizedPunctuationVars)
 }
 
 use Test::More;
@@ -47,7 +47,7 @@ sub build_mojo_test {
     my $app_class = shift;
 
     die 'Wrong app' if !$app_class || ref $app_class;
-    eval "require $app_class";    ## no critic
+    eval "require $app_class";    ## no critic (ProhibitStringyEval, RequireCheckingReturnValueOfEval)
 
     my $port   = empty_port;
     my $app    = $app_class->new;
@@ -77,7 +77,7 @@ sub launch_redis {
         },
     };
     DumpFile($ws_redis_path, $ws_redis_config);
-    $ENV{BOM_TEST_WS_REDIS} = "$ws_redis_path";    ## no critic
+    $ENV{BOM_TEST_WS_REDIS} = "$ws_redis_path";    ## no critic (RequireLocalizedPunctuationVars)
 
     return ($tmp_dir, $redis_server);
 }
