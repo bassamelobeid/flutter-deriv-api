@@ -25,7 +25,7 @@ $Quant::Framework::Underlying::FORCE_REALTIME_FEED = 1;
 
 my $fullfeed_re = qr/^\d\d?-\w{3}-\d\d.fullfeed(?!\.zip)/;
 
-my $_quotes_cache;
+my $_quotes_cache = {};
 
 sub last_quote {
     my $dir = shift;
