@@ -1068,27 +1068,11 @@ subtest 'insufficient balance: buy bet for 100.01 with a balance of 100', sub {
                 });
                 $error = $txn->buy;
 
-                is $error, undef, 'no error';
+                is $error->get_type, 'InsufficientBalance', 'error is InsufficientBalance';
 
-                # check if the expired contract has been sold
-                ($trx, $fmb, $chld, $qv1, $qv2, my $trx2) = get_transaction_from_db higher_lower_bet => $txn_id_buy_expired_contract;
-
-                is $fmb->{is_sold},    1,     'previously unsold contract is now sold';
-                is $fmb->{is_expired}, 1,     '... and expired';
-                is $trx->{source},     undef, 'source';
-                is $trx2->{source},    31,    'source';
-
-                # now check the buy transaction itself
-                ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
-
-                is $trx->{source}, 31, 'source';
-                is $txn->contract_id, $fmb->{id}, 'txn->contract_id';
-                cmp_ok $txn->contract_id, '>', 0, 'txn->contract_id > 0';
-                is $txn->transaction_id, $trx->{id}, 'txn->transaction_id';
-                cmp_ok $txn->transaction_id, '>', 0, 'txn->transaction_id > 0';
-                is $txn->balance_after, $trx->{balance_after}, 'txn->balance_after';
-                is $txn->balance_after + 0, 100 + 100 - 100.01,
-                    'txn->balance_after == 99.99 (100 (balance) + 100 (unsold bet) - 100.01 (bought bet))';
+                # check if the expired contract still has not been sold
+                ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn_id_buy_expired_contract;
+                is $fmb->{is_sold}, 0, 'have expired but unsold contract in DB';
             };
         }
     }
@@ -1309,7 +1293,7 @@ subtest 'max_open_bets validation', sub {
 };
 
 subtest 'max_open_bets validation: selling bets on the way', sub {
-    plan tests => 16;
+    plan tests => 9;
     lives_ok {
         my $cl = create_client;
 
@@ -1380,7 +1364,6 @@ subtest 'max_open_bets validation: selling bets on the way', sub {
             is $acc_usd->balance + 0, 98, 'USD balance is now 98';
 
             # here we have 2 open bets. One of them is expired.
-            # Hence, the buy should succeed selling the expired bet.
 
             $txn_id_buy_expired_contract = $exp_txn->transaction_id;
             ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn_id_buy_expired_contract;
@@ -1389,23 +1372,10 @@ subtest 'max_open_bets validation: selling bets on the way', sub {
             $txn->buy;
         };
 
-        is $error, undef, 'no error';
+        is $error->get_type, 'OpenPositionLimit', 'error is OpenPositionLimit';
 
-        # check if the expired contract has been sold
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn_id_buy_expired_contract;
-
-        is $fmb->{is_sold},    1, 'previously unsold contract is now sold';
-        is $fmb->{is_expired}, 1, '... and expired';
-
-        # now check the buy transaction itself
-        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
-
-        is $txn->contract_id, $fmb->{id}, 'txn->contract_id';
-        cmp_ok $txn->contract_id, '>', 0, 'txn->contract_id > 0';
-        is $txn->transaction_id, $trx->{id}, 'txn->transaction_id';
-        cmp_ok $txn->transaction_id, '>', 0, 'txn->transaction_id > 0';
-        is $txn->balance_after, $trx->{balance_after}, 'txn->balance_after';
-        is $txn->balance_after + 0, 98, 'txn->balance_after == 98';
+        is $fmb->{is_sold}, 0, 'have expired but unsold contract in DB';
     }
     'survived';
 };
@@ -1595,7 +1565,7 @@ subtest 'max_payout_open_bets validation', sub {
 };
 
 subtest 'max_payout_open_bets validation: selling bets on the way', sub {
-    plan tests => 11;
+    plan tests => 8;
     lives_ok {
         my $cl = create_client;
 
@@ -1673,16 +1643,10 @@ subtest 'max_payout_open_bets validation: selling bets on the way', sub {
             $txn->buy;
         };
 
-        is $error, undef, 'no error';
+        is $error->get_type, 'OpenPositionPayoutLimit', 'error is OpenPositionPayoutLimit';
 
-        # check if the expired contract has been sold
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn_id_buy_expired_contract;
-
-        is $fmb->{is_sold},    1, 'previously unsold contract is now sold';
-        is $fmb->{is_expired}, 1, '... and expired';
-
-        cmp_ok $txn->contract_id,    '>', 0, 'txn->contract_id > 0';
-        cmp_ok $txn->transaction_id, '>', 0, 'txn->transaction_id > 0';
+        is $fmb->{is_sold}, 0, 'have expired but unsold contract in DB';
     }
     'survived';
 };
@@ -1786,7 +1750,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
 };
 
 subtest 'max_payout_per_symbol_and_bet_type validation: selling bets on the way', sub {
-    plan tests => 11;
+    plan tests => 8;
     lives_ok {
         my $cl = create_client;
 
@@ -1864,16 +1828,10 @@ subtest 'max_payout_per_symbol_and_bet_type validation: selling bets on the way'
             $txn->buy;
         };
 
-        is $error, undef, 'no error';
+        is $error->get_type, 'PotentialPayoutLimitForSameContractExceeded', 'error is PotentialPayoutLimitForSameContractExceeded';
 
-        # check if the expired contract has been sold
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn_id_buy_expired_contract;
-
-        is $fmb->{is_sold},    1, 'previously unsold contract is now sold';
-        is $fmb->{is_expired}, 1, '... and expired';
-
-        cmp_ok $txn->contract_id,    '>', 0, 'txn->contract_id > 0';
-        cmp_ok $txn->transaction_id, '>', 0, 'txn->transaction_id > 0';
+        is $fmb->{is_sold}, 0, 'have expired but unsold contract in DB';
     }
     'survived';
 };
