@@ -303,7 +303,7 @@ sub sell {
     my $trx_rec = $trx->transaction_record;
 
     return {
-        transaction_id => $trx->buy_transaction_id, ### Now it is buy transaction ID
+        transaction_id => $trx->buy_transaction_id,                   ### Now it is buy transaction ID
         contract_id    => $id,
         balance_after  => sprintf('%.2f', $trx_rec->balance_after),
         sold_for       => abs($trx_rec->amount),
