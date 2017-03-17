@@ -599,12 +599,16 @@ sub _build_risk_profile {
     my $self = shift;
 
     return BOM::Product::RiskProfile->new(
-        underlying        => $self->underlying,
-        contract_category => $self->category_code,
-        expiry_type       => 'intraday',             # making this intraday.
-        start_type        => 'spot',
-        currency          => $self->currency,
-        barrier_category  => 'spread',
+        contract_category              => $self->category_code,
+        expiry_type                    => 'intraday',                               # making this intraday.
+        start_type                     => 'spot',
+        currency                       => $self->currency,
+        barrier_category               => 'spread',
+        symbol                         => $self->underlying->symbol,
+        market_name                    => $self->underlying->market->name,
+        submarket_name                 => $self->underlying->submarket->name,
+        underlying_risk_profile        => $self->underlying->risk_profile,
+        underlying_risk_profile_setter => $self->underlying->risk_profile_setter,
     );
 }
 
