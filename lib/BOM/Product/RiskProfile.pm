@@ -16,8 +16,6 @@ use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
 
 use BOM::Platform::Runtime;
-use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types;
 use BOM::Platform::Config;
 
 use constant RISK_PROFILES => [qw(no_business extreme_risk high_risk medium_risk low_risk)];
