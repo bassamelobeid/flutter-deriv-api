@@ -45,10 +45,9 @@ sub from_mojo {
 
     # put back some ENV b/c we use it in our other modules like BOM::Platform::AuditLog
 
-    ## no critic (Variables::RequireLocalizedPunctuationVars)
-    %ENV = (%ENV, %{$request->env});
-    ## no critic (Variables::RequireLocalizedPunctuationVars)
-    $ENV{REMOTE_ADDR} = $args->{_ip} = _remote_ip($request);
+    %ENV = (%ENV, %{$request->env});    ## no critic (RequireLocalizedPunctuationVars)
+
+    $ENV{REMOTE_ADDR} = $args->{_ip} = _remote_ip($request);    ## no critic (RequireLocalizedPunctuationVars)
 
     $args->{domain_name} = $request->url->to_abs->host;
 
