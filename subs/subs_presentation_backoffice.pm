@@ -8,6 +8,7 @@
 ## no critic (RequireExplicitPackage)
 use strict;
 use warnings;
+no warnings 'uninitialized'; # TODO fix these warnings
 
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Request qw(request);
