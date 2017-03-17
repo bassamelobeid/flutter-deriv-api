@@ -225,7 +225,8 @@ $t = $t->send_ok({
             parameters => \%contractParameters,
         },
     });
-
+my $buy_txn_id = 0;
+my $contract_id;
 ## skip proposal until we meet buy
 while (1) {
     $t = $t->message_ok;
@@ -236,7 +237,8 @@ while (1) {
     # note explain $res;
     is $res->{msg_type}, 'buy';
     ok $res->{buy};
-    ok $res->{buy}->{contract_id};
+    ok($contract_id = $res->{buy}->{contract_id});
+    ok($buy_txn_id = $res->{buy}->{transaction_id});
     ok $res->{buy}->{purchase_time};
 
     test_schema('buy', $res);
@@ -250,7 +252,28 @@ while (1) {
         price => $ask_price || 0,
     });
 is $call_params->{token}, $token;
+sleep 1;
+$t = $t->send_ok({
+    json => {
+        sell => $contract_id,
+        price => 0
+    }
+});
 
+while (1) {
+    $t = $t->message_ok;
+    my $res = decode_json($t->message->[1]);
+    note explain $res;
+    next if $res->{msg_type} ne 'sell';
+
+    # note explain $res;
+    is $res->{msg_type}, 'sell';
+    ok $res->{sell};
+    ok($res->{sell}{contract_id} && $res->{sell}{contract_id} == $contract_id, "check contract ID");
+    ok($res->{sell}{transaction_id} == $buy_txn_id, "check buy transaction ID");
+    test_schema('sell', $res);
+    last;
+}
 sleep 1;
 my %notouch = (
     "amount"        => "100",
