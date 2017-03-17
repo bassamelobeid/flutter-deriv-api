@@ -1650,7 +1650,7 @@ sub __validate_payout_limit {
     return if $contract->is_spread;
 
     my $rp    = $self->contract->risk_profile;
-    my @cl_rp = $rp->get_client_profiles($client);
+    my @cl_rp = $rp->get_client_profiles($client->loginid, $client->landing_company->short);
 
     # setups client specific payout and turnover limits, if any.
     if (@cl_rp) {
