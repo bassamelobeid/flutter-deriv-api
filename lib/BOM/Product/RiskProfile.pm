@@ -25,10 +25,12 @@ for (my $i = 0; $i < @{RISK_PROFILES()}; $i++) {
     $risk_profile_rank{RISK_PROFILES->[$i]} = $i;
 }
 
-has [qw(contract_category expiry_type start_type currency barrier_category symbol market_name submarket_name underlying_risk_profile underlying_risk_profile_setter)] => (
+has [
+    qw(contract_category expiry_type start_type currency barrier_category symbol market_name submarket_name underlying_risk_profile underlying_risk_profile_setter)
+    ] => (
     is       => 'ro',
     required => 1,
-);
+    );
 
 has [qw(contract_info)] => (
     is         => 'ro',
@@ -293,4 +295,3 @@ sub _match_conditions {
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
-

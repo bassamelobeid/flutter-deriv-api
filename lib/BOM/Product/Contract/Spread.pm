@@ -600,7 +600,7 @@ sub _build_risk_profile {
 
     return BOM::Product::RiskProfile->new(
         contract_category              => $self->category_code,
-        expiry_type                    => 'intraday',             # making this intraday.
+        expiry_type                    => 'intraday',                               # making this intraday.
         start_type                     => 'spot',
         currency                       => $self->currency,
         barrier_category               => 'spread',
