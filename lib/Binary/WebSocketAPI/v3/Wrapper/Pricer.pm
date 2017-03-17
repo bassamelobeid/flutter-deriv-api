@@ -217,8 +217,8 @@ sub proposal_array {
                     # Return a single result back to the client.
                     my $res = {
                         json => {
-                            echo_req       => $req_storage->{args},
-                            $req_storage->{args}{req_id} ? (req_id => $req_storage->{args}{req_id}) : (),
+                            echo_req => $req_storage->{args},
+                            $req_storage->{args}{req_id}      ? (req_id      => $req_storage->{args}{req_id})      : (),
                             $req_storage->{args}{passthrough} ? (passthrough => $req_storage->{args}{passthrough}) : (),
                             proposal_array => {
                                 proposals => [map { $_->{proposal} || $_ } @result],
