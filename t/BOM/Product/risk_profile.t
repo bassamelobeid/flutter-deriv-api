@@ -12,30 +12,40 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
+my $ul = create_underlying('frxUSDJPY');
+
 subtest 'init' => sub {
     throws_ok { BOM::Product::RiskProfile->new } qr/required/, 'throws if required args not provided';
     lives_ok {
         BOM::Product::RiskProfile->new(
-            underlying        => create_underlying('frxUSDJPY'),
-            contract_category => 'callput',
-            start_type        => 'spot',
-            expiry_type       => 'tick',
-            currency          => 'USD',
-            barrier_category  => 'euro_atm',
-            landing_company   => 'costarica',
+            contract_category              => 'callput',
+            start_type                     => 'spot',
+            expiry_type                    => 'tick',
+            currency                       => 'USD',
+            barrier_category               => 'euro_atm',
+            landing_company                => 'costarica',
+            symbol                         => $ul->symbol,
+            market_name                    => $ul->market->name,
+            submarket_name                 => $ul->submarket->name,
+            underlying_risk_profile        => $ul->risk_profile,
+            underlying_risk_profile_setter => $ul->risk_profile_setter,
             )
     }
     'ok if required args provided';
 };
 
 my %args = (
-    underlying        => create_underlying('frxUSDJPY'),
-    contract_category => 'callput',
-    start_type        => 'spot',
-    expiry_type       => 'tick',
-    currency          => 'USD',
-    barrier_category  => 'euro_atm',
-    landing_company   => 'costarica',
+    contract_category              => 'callput',
+    start_type                     => 'spot',
+    expiry_type                    => 'tick',
+    currency                       => 'USD',
+    barrier_category               => 'euro_atm',
+    landing_company                => 'costarica',
+    symbol                         => $ul->symbol,
+    market_name                    => $ul->market->name,
+    submarket_name                 => $ul->submarket->name,
+    underlying_risk_profile        => $ul->risk_profile,
+    underlying_risk_profile_setter => $ul->risk_profile_setter,
 );
 
 subtest 'get_risk_profile' => sub {

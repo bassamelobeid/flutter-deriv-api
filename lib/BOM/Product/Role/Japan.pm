@@ -73,13 +73,18 @@ override risk_profile => sub {
     my $self = shift;
 
     return BOM::Product::RiskProfile->new(
-        underlying        => $self->underlying,
-        contract_category => $self->category_code,
-        expiry_type       => $self->expiry_type,
-        start_type        => $self->start_type,
-        currency          => $self->currency,
-        barrier_category  => $self->barrier_category,
-        landing_company   => $landing_company,
+        underlying                     => $self->underlying,
+        contract_category              => $self->category_code,
+        expiry_type                    => $self->expiry_type,
+        start_type                     => $self->start_type,
+        currency                       => $self->currency,
+        barrier_category               => $self->barrier_category,
+        landing_company                => $landing_company,
+        symbol                         => $self->underlying->symbol,
+        market_name                    => $self->underlying->market->name,
+        submarket_name                 => $self->underlying->submarket->name,
+        underlying_risk_profile        => $self->underlying->risk_profile,
+        underlying_risk_profile_setter => $self->underlying->risk_profile_setter,
     );
 };
 

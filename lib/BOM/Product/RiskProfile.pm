@@ -25,7 +25,7 @@ for (my $i = 0; $i < @{RISK_PROFILES()}; $i++) {
     $risk_profile_rank{RISK_PROFILES->[$i]} = $i;
 }
 
-has [qw(contract_category underlying expiry_type start_type currency barrier_category)] => (
+has [qw(contract_category expiry_type start_type currency barrier_category symbol market_name submarket_name underlying_risk_profile underlying_risk_profile_setter)] => (
     is       => 'ro',
     required => 1,
 );
@@ -39,9 +39,9 @@ sub _build_contract_info {
     my $self = shift;
 
     return {
-        underlying_symbol => $self->underlying->symbol,
-        market            => $self->underlying->market->name,
-        submarket         => $self->underlying->submarket->name,
+        underlying_symbol => $self->symbol,
+        market            => $self->market_name,
+        submarket         => $self->submarket_name,
         contract_category => $self->contract_category,
         expiry_type       => $self->expiry_type,
         start_type        => $self->start_type,
@@ -82,9 +82,8 @@ sub _build_custom_profiles {
 
     my @profiles = grep { $self->_match_conditions($_) } values %{$self->raw_custom_profiles};
 
-    my $ul           = $self->underlying;
-    my $risk_profile = $ul->risk_profile;
-    my $setter       = $ul->risk_profile_setter;
+    my $risk_profile = $self->risk_profile;
+    my $setter       = $self->risk_profile_setter;
     # default market level profile
     push @profiles,
         +{
