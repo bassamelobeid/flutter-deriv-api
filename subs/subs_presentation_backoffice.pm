@@ -302,6 +302,7 @@ sub vk_BObottomPRES {
 sub code_exit_BO {
     if ($vk_BarIsDoneOnce) { BarEnd(); }             #backoffice closing bar output (must be before vk_BObottomPRES)
     if ($vk_didBOtopPRES)  { vk_BObottomPRES(); }    #backoffice closing presentation
+    no strict "refs"; ## no critic (ProhibitNoStrict)
     undef ${"main::vk_BarIsDoneOnce"};
     undef ${"main::vk_didBOtopPRES"};
     BOM::Backoffice::Request::request_completed();
