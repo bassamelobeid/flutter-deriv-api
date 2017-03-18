@@ -15,9 +15,6 @@ use BOM::RPC::v3::Accounts;
 my $client_mocked = Test::MockModule->new('Client::Account');
 $client_mocked->mock('add_note', sub { return 1 });
 
-my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
-$email_mocked->mock('send_email', sub { return 1 });
-
 my %jp_client_details = (
     gender                                      => 'f',
     first_name                                  => 'first\'name',
@@ -282,7 +279,6 @@ subtest 'No test allowed for VRTJ, unless JP exists' => sub {
 };
 
 $client_mocked->unmock_all;
-$email_mocked->unmock_all;
 $dt_mocked->unmock_all;
 
 sub create_vr_account {
