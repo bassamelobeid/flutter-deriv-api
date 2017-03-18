@@ -84,6 +84,7 @@ sub __create_virtual_user {
     my $acc = BOM::Platform::Account::Virtual::create_account({
         details => {
             email => $email,
+            client_password => rand(999999), # random password so you can't login without password
         },
     });
     die $acc->{error} if $acc->{error};
