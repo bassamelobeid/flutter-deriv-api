@@ -131,11 +131,13 @@ sub authorize {
         and (defang($c->param('cancel_scopes')) || defang($c->param('confirm_scopes'))))
     {
         if (defang($c->param('confirm_scopes'))) {
+            print STDERR "confirm_scopes\n";
             ## approval on all loginids
             foreach my $c1 ($user->clients) {
                 $is_all_approved = $oauth_model->confirm_scope($app_id, $c1->loginid);
             }
         } else {
+            print STDERR "cancel_scopes\n";
             my $uri = $redirect_handle->($response_type, 'scope_denied', $state);
             return $c->redirect_to($uri);
         }
