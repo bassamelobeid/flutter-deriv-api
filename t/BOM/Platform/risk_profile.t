@@ -4,7 +4,7 @@ use warnings;
 
 use Test::More tests => 1;
 use Test::Exception;
-use BOM::Product::RiskProfile;
+use BOM::Platform::RiskProfile;
 
 
 subtest 'get_current_profile_definitions' => sub {
@@ -55,6 +55,6 @@ subtest 'get_current_profile_definitions' => sub {
                 'name'           => 'Indices',
                 'profile_name'   => 'medium_risk'
             }]};
-    my $general = BOM::Product::RiskProfile::get_current_profile_definitions;
+    my $general = BOM::Platform::RiskProfile::get_current_profile_definitions;
     is_deeply($general, $expected);
 };
