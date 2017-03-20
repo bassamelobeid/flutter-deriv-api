@@ -149,13 +149,13 @@ sub startup {
         [
             'trading_times',
             {
-                url => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($app),
+                instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::trading_times,
             },
         ],
         [
             'asset_index',
             {
-                url            => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($app),
+                instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index,
                 before_forward => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index_cached,
                 success        => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::cache_asset_index,
             }
