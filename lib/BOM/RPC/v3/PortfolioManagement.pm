@@ -26,7 +26,7 @@ sub portfolio {
 
     foreach my $row (@{__get_open_contracts($client)}) {
         my $res = BOM::Platform::Pricing::call_rpc('get_contract_details', {
-            short_code      => $struct->{shortcode},
+            short_code      => $row->{shortcode},
             currency        => $account->currency_code,
             landing_company => $client->landing_company->short,
             language        => $params->{language},

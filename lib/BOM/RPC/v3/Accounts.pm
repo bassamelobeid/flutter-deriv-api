@@ -34,6 +34,7 @@ use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
+use BOM::Platform::Pricing;
 
 sub payout_currencies {
     my $params = shift;
@@ -230,7 +231,7 @@ sub profit_table {
             $trx{shortcode} = $row->{short_code};
 
             my $res = BOM::Platform::Pricing::call_rpc('get_contract_details', {
-                short_code      => $trx{shortcode},
+                short_code      => $row->{shortcode},
                 currency        => $client->currency,
                 landing_company => $client->landing_company->short,
                 language        => $params->{language},
