@@ -71,7 +71,7 @@ sub _publish {
     my $msg   = shift;
     my $json  = JSON::to_json($msg);
 
-    $redis->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $json);
+    return $redis->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $json);
 }
 
 sub _msg {
@@ -99,7 +99,7 @@ sub _master_db_connections {
 
 sub _db {
     my $ip = shift;
-    DBI->connect(
+    return DBI->connect(
         "dbi:Pg:dbname=regentmarkets;host=$ip;port=5432;application_name=notify_pub;sslmode=require",
         'write',
         $conn->{$ip},
