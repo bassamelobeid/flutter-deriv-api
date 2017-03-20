@@ -7,10 +7,12 @@ use Test::FailWarnings;
 use BOM::Test::Data::Utility::UnitTestRedis;
 
 use BOM::MarketData qw(create_underlying_db);
-use LandingCompany::Offerings qw( get_offerings_with_filter );
+use LandingCompany::Offerings qw( get_offerings_with_filter reinitialise_offerings);
 
-my $udb           = create_underlying_db();
 my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
+reinitialise_offerings($offerings_cfg);
+
+my $udb = create_underlying_db();
 
 subtest 'Sets match' => sub {
     my %po_to_udb_method = (

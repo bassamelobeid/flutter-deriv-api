@@ -14,7 +14,11 @@ use Test::Differences;
 
 use List::MoreUtils qw( all none );
 
+use LandingCompany::Offerings qw(reinitialise_offerings);
 use BOM::Product::Contract::Offerings;
+
+
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $expected_levels = 4;
 my $offerings       = new_ok('BOM::Product::Contract::Offerings');

@@ -13,8 +13,10 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 use Pricing::Engine::EuropeanDigitalSlope;
+use LandingCompany::Offerings qw(reinitialise_offerings);
 
 my $date_pricing = 1352344145;
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',

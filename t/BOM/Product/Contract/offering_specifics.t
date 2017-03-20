@@ -6,6 +6,8 @@ use warnings;
 use Test::More;
 use Test::FailWarnings;
 use Test::MockModule;
+use LandingCompany::Offerings qw(reinitialise_offerings);
+
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -16,6 +18,7 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
 use Cache::RedisDB;
 
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $now = Date::Utility->new('2016-09-22');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
