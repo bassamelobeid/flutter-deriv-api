@@ -17,22 +17,22 @@ use BOM::MarketDataAutoUpdater::Forex;
 use BOM::MarketDataAutoUpdater::Indices;
 use BOM::MarketDataAutoUpdater::Flat;
 
-# su nobody
-unless ($>) {
-    $) = (getgrnam('nogroup'))[2];
-    $> = (getpwnam('nobody'))[2];
-}
-my $opt1 = shift || '';
-
-$SIG{ALRM} = sub { die 'Timed out.' };
-alarm(60 * 30);
-
 sub documentation {
     return 'updates volatility surfaces.';
 }
 
 sub script_run {
     my $self = shift;
+
+    # su nobody
+    unless ($>) {
+        local $) = (getgrnam('nogroup'))[2];
+        local $> = (getpwnam('nobody'))[2];
+    }
+    my $opt1 = shift @ARGV || '';
+
+    $SIG{ALRM} = sub { die 'Timed out.' };
+    alarm(60 * 30);
 
     my ($class, $filename);
     if ($opt1 eq 'forex') {
