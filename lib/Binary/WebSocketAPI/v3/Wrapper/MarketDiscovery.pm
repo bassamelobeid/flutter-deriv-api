@@ -27,7 +27,7 @@ sub cache_asset_index {
 }
 
 sub asset_index {
-   my ($c, $req_storage) = @_;
+    my ($c, $req_storage) = @_;
 
     my $args = $req_storage->{args};
     $c->call_rpc({
@@ -36,8 +36,8 @@ sub asset_index {
             method      => 'asset_index',
             msg_type    => 'asset_index',
             call_params => {
-                language              => $c->stash('language'),
-                landing_company       => $c->landing_company_name,
+                language        => $c->stash('language'),
+                landing_company => $c->landing_company_name,
             },
             response => sub {
                 my ($rpc_response, $api_response, $req_storage) = @_;
@@ -48,7 +48,7 @@ sub asset_index {
 }
 
 sub trading_times {
-   my ($c, $req_storage) = @_;
+    my ($c, $req_storage) = @_;
 
     my $args = $req_storage->{args};
     $c->call_rpc({
@@ -57,8 +57,8 @@ sub trading_times {
             method      => 'trading_times',
             msg_type    => 'trading_times',
             call_params => {
-                language              => $c->stash('language'),
-                landing_company       => $c->landing_company_name,
+                language        => $c->stash('language'),
+                landing_company => $c->landing_company_name,
             },
             response => sub {
                 my ($rpc_response, $api_response, $req_storage) = @_;
@@ -69,7 +69,7 @@ sub trading_times {
 }
 
 sub contracts_for {
-   my ($c, $req_storage) = @_;
+    my ($c, $req_storage) = @_;
 
     my $args = $req_storage->{args};
     $c->call_rpc({
@@ -78,8 +78,8 @@ sub contracts_for {
             method      => 'contracts_for',
             msg_type    => 'contracts_for',
             call_params => {
-                language              => $c->stash('language'),
-                landing_company       => $c->landing_company_name,
+                language        => $c->stash('language'),
+                landing_company => $c->landing_company_name,
             },
             response => sub {
                 my ($rpc_response, $api_response, $req_storage) = @_;
