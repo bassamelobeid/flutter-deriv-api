@@ -25,12 +25,14 @@ sub portfolio {
     _sell_expired_contracts($client, $params->{source});
 
     foreach my $row (@{__get_open_contracts($client)}) {
-        my $res = BOM::Platform::Pricing::call_rpc('get_contract_details', {
-            short_code      => $row->{shortcode},
-            currency        => $client->currency,
-            landing_company => $client->landing_company->short,
-            language        => $params->{language},
-        });
+        my $res = BOM::Platform::Pricing::call_rpc(
+            'get_contract_details',
+            {
+                short_code      => $row->{shortcode},
+                currency        => $client->currency,
+                landing_company => $client->landing_company->short,
+                language        => $params->{language},
+            });
         my $longcode;
         if (exists $res->{error}) {
             $longcode = 'Could not retrieve contract details';
@@ -51,7 +53,7 @@ sub portfolio {
             currency       => $client->currency,
             shortcode      => $row->{short_code},
             longcode       => $longcode,
-            app_id => BOM::RPC::v3::Utility::mask_app_id($row->{source}, $row->{purchase_time}));
+            app_id         => BOM::RPC::v3::Utility::mask_app_id($row->{source}, $row->{purchase_time}));
         push @{$portfolio->{contracts}}, \%trx;
     }
 
@@ -119,18 +121,19 @@ sub proposal_open_contract {
         my $id = $fmb->{id};
         my $sell_time;
         $sell_time = Date::Utility->new($fmb->{sell_time})->epoch if $fmb->{sell_time};
-        my $bid = BOM::Platform::Pricing::call_rpc('get_bid',
-        {
-            short_code            => $fmb->{short_code},
-            contract_id           => $id,
-            currency              => $client->currency,
-            is_sold               => $fmb->{is_sold},
-            sell_time             => $sell_time,
-            sell_price            => $fmb->{sell_price},
-            buy_price             => $fmb->{buy_price},
-            app_markup_percentage => $params->{app_markup_percentage},
-            landing_company       => $client->landing_company->short,
-        });
+        my $bid = BOM::Platform::Pricing::call_rpc(
+            'get_bid',
+            {
+                short_code            => $fmb->{short_code},
+                contract_id           => $id,
+                currency              => $client->currency,
+                is_sold               => $fmb->{is_sold},
+                sell_time             => $sell_time,
+                sell_price            => $fmb->{sell_price},
+                buy_price             => $fmb->{buy_price},
+                app_markup_percentage => $params->{app_markup_percentage},
+                landing_company       => $client->landing_company->short,
+            });
         if (exists $bid->{error}) {
             $response->{$id} = $bid;
         } else {

@@ -97,7 +97,6 @@ sub get_corporate_actions {
     return $response;
 }
 
-
 sub active_symbols {
     my $params = shift;
 
