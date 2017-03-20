@@ -22,7 +22,7 @@ sub call_rpc {
 
     my $res = $client->call($url, $callobj);
 
-    if (!$res or $res->is_error) {
+    if (!$res || $res->is_error) {
         return {
             error => {
                 code              => 500,
