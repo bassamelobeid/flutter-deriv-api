@@ -133,11 +133,12 @@ sub buy_one_bet {
     # note explain [$bet, $txn];
     return ($txn->{id}, $bet->{id}, $txn->{balance_after});
 }
-
+my $buy_multiple_shortcode;
 sub buy_multiple_bets {
     my ($acc) = @_;
 
     my $now      = Date::Utility->new;
+    $buy_multiple_shortcode = ('FLASHU_R_50_200_' . $now->epoch . '_' . $now->plus_time_interval('15s')->epoch . '_S0P_0'),
     my $bet_data = +{
         underlying_symbol => 'frxUSDJPY',
         payout_price      => 200,
@@ -151,7 +152,7 @@ sub buy_multiple_bets {
         is_sold           => 0,
         bet_class         => 'higher_lower_bet',
         bet_type          => 'FLASHU',
-        short_code        => ('FLASHU_R_50_200_' . $now->epoch . '_' . $now->plus_time_interval('15s')->epoch . '_S0P_0'),
+        short_code        => $buy_multiple_shortcode,
         relative_barrier  => 'S0P',
     };
 
@@ -164,6 +165,26 @@ sub buy_multiple_bets {
     });
     my $res = $fmb->batch_buy_bet;
     # note explain [$res];
+    return $res;
+}
+
+sub sell_by_shortcode {
+    my ($shortcode,$acc) = @_;
+
+    my $now      = Date::Utility->new;
+
+    my $fmb = BOM::Database::Helper::FinancialMarketBet->new({
+        bet_data         => +{
+            'sell_price' => '18',
+            'sell_time' => $now->db_timestamp,
+            'id' => undef
+        },
+        account_data     => [map { +{client_loginid => $_->client_loginid, currency_code => $_->currency_code} } @$acc],
+        transaction_data => {staff_loginid => 'CL001'},
+        db               => db,
+    });
+    my $res = $fmb->sell_by_shortcode($shortcode);
+
     return $res;
 }
 
@@ -1621,6 +1642,7 @@ subtest 'batch_buy', sub {
     'setup clients';
 
     $listener->do("LISTEN transaction_watchers");
+    my $buy_trx_ids = {};
 
     lives_ok {
         my $res = buy_multiple_bets [$acc1, $acc2, $acc3];
@@ -1653,6 +1675,7 @@ subtest 'batch_buy', sub {
             is $fmb->{account_id}, $acc->id, 'fmb account id matches';
 
             my $txn = $r->{txn};
+            $buy_trx_ids->{$txn->{id}} = 1;
             is $txn->{account_id}, $acc->id, 'txn account id matches';
             is $txn->{referrer_type}, 'financial_market_bet', 'txn referrer_type is financial_market_bet';
             is $txn->{financial_market_bet_id}, $fmb->{id}, 'txn fmb id matches';
@@ -1698,6 +1721,7 @@ subtest 'batch_buy', sub {
             is $fmb->{account_id}, $acc->id, 'fmb account id matches';
 
             my $txn = $r->{txn};
+            $buy_trx_ids->{$txn->{id}} = 1;
             is $txn->{account_id}, $acc->id, 'txn account id matches';
             is $txn->{referrer_type}, 'financial_market_bet', 'txn referrer_type is financial_market_bet';
             is $txn->{financial_market_bet_id}, $fmb->{id}, 'txn fmb id matches';
@@ -1717,6 +1741,21 @@ subtest 'batch_buy', sub {
         };
     }
     'survived buy_multiple_bets';
+
+    sleep 2;
+
+    lives_ok {
+        my $res = sell_by_shortcode($buy_multiple_shortcode, [$acc1, $acc2, $acc3] );
+        is ref $res, 'ARRAY';
+        foreach my $r (@$res){
+            is ref $r, 'HASH';
+            isnt $r->{fmb},         undef, 'got FMB';
+            isnt $r->{txn},         undef, 'got TXN';
+            ok $buy_trx_ids->{$r->{buy_tr_id}}, 'got buy transaction id';
+            is $r->{txn}{financial_market_bet_id}, $r->{fmb}{id}, 'txn fmb id matches';
+            is $r->{txn}{amount},        '18.00',  'txn amount';
+        }
+    } 'sell_by_shortcode';
 
     dies_ok {
         my $res = buy_multiple_bets [$acc1, $acc4, $acc3];
