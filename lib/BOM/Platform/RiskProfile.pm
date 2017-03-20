@@ -7,6 +7,7 @@ use feature "state";
 use BOM::Platform::Config;
 use BOM::Platform::Runtime;
 use Finance::Asset::Market::Registry;
+use Finance::Asset::SubMarket::Registry;
 use LandingCompany::Offerings qw(get_offerings_with_filter);
 
 sub get_current_profile_definitions {
