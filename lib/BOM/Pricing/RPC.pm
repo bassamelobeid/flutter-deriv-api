@@ -8,10 +8,12 @@ use Proc::CPUUsage;
 use Time::HiRes;
 use Try::Tiny;
 use Carp qw(cluck);
+use JSON;
 
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
 use BOM::Pricing::v3::Contract;
+use BOM::Pricing::v3::Utility;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -47,7 +49,18 @@ sub register {
             $args->{language} = $params->{language} if ($params->{language});
             my $r = BOM::Platform::Context::Request->new($args);
             BOM::Platform::Context::request($r);
-            return $code->(@_);
+            my @call_args = @_;
+            my $result    = try {
+                $code->(@call_args);
+            }
+            catch {
+                warn "Exception when handling $method - $_ with parameters " . encode_json \@call_args;
+                BOM::Pricing::v3::Utility::create_error({
+                        code              => 'InternalServerError',
+                        message_to_client => localize("Sorry, an error occurred while processing your account.")})
+            };
+            return $result;
+
         });
 }
 
@@ -159,7 +172,7 @@ sub startup {
         });
 
     # set $0 after forking children
-    Mojo::IOLoop->timer(0, sub { @recent = [[Time::HiRes::gettimeofday], 0]; $0 = "bom-pricing-rpc: (new)" });    ## no critic
+    Mojo::IOLoop->timer(0, sub { @recent = [[Time::HiRes::gettimeofday], 0]; $0 = "bom-pricing-rpc: (new)"; });    ## no critic
 
     return;
 }
