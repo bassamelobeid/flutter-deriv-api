@@ -3,42 +3,47 @@
 use strict;
 use warnings;
 
-use Test::More tests => 3;
+use Test::More;
 
-use LandingCompany::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Offerings qw(get_offerings_with_filter reinitialise_offerings);
 use BOM::Platform::Runtime;
 
-my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
 
 subtest 'quant suspend trade' => sub {
+    my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
+    reinitialise_offerings($offerings_cfg);
     my @u = get_offerings_with_filter($offerings_cfg, 'underlying_symbol', {market => 'forex'});
     ok grep { $_ eq 'frxUSDJPY' } @u;
+
     my $orig = BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades;
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades(['frxUSDJPY']);
-    LandingCompany::Offerings::_flush_offerings();
+    reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
     $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
     @u = get_offerings_with_filter($offerings_cfg, 'underlying_symbol', {market => 'forex'});
     ok !grep { $_ eq 'frxUSDJPY' } @u;
+
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades($orig);
-    LandingCompany::Offerings::_flush_offerings();
-    $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
 };
 
 subtest 'quant suspend buy' => sub {
+    my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
+    reinitialise_offerings($offerings_cfg);
     my @u = get_offerings_with_filter($offerings_cfg, 'underlying_symbol', {market => 'forex'});
     ok grep { $_ eq 'frxUSDJPY' } @u;
+
     my $orig = BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy;
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy(['frxUSDJPY']);
-    LandingCompany::Offerings::_flush_offerings();
+    reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
     $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
     @u = get_offerings_with_filter($offerings_cfg, 'underlying_symbol', {market => 'forex'});
     ok !grep { $_ eq 'frxUSDJPY' } @u;
+
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy($orig);
-    LandingCompany::Offerings::_flush_offerings();
-    $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
 };
 
 subtest 'suspend on Japan' => sub {
+    my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
+    reinitialise_offerings($offerings_cfg);
     my @u = get_offerings_with_filter(
         $offerings_cfg,
         'underlying_symbol',
@@ -47,9 +52,11 @@ subtest 'suspend on Japan' => sub {
             landing_company => 'japan'
         });
     ok grep { $_ eq 'frxUSDJPY' } @u;
+
     my $orig = BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy;
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy(['frxUSDJPY']);
-    LandingCompany::Offerings::_flush_offerings();
+    reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
+
     $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
     @u             = get_offerings_with_filter(
         $offerings_cfg,
@@ -59,6 +66,6 @@ subtest 'suspend on Japan' => sub {
             landing_company => 'japan'
         });
     ok !grep { $_ eq 'frxUSDJPY' } @u;
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy($orig);
-    LandingCompany::Offerings::_flush_offerings();
 };
+
+done_testing;

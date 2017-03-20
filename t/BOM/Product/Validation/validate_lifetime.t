@@ -7,15 +7,18 @@ use Test::More;
 use Test::MockModule;
 use Test::FailWarnings;
 
+use Date::Utility;
+use LandingCompany::Offerings qw(reinitialise_offerings);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Market::DataDecimate;
-use Date::Utility;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Cache::RedisDB;
 Cache::RedisDB->flushall;
+
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
 my $now = Date::Utility->new('2016-09-19 19:59:59');
@@ -106,7 +109,7 @@ subtest 'inefficient period' => sub {
             my $dp = $bet_params->{date_pricing}->epoch;
             [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp + 19)];
         });
-    
+
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy,       'valid to buy';
     ok $c->market_is_inefficient, 'market inefficient flag triggered for tick expiry';
