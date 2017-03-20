@@ -21,6 +21,7 @@ use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use BOM::Pricing::v3::Utility;
 
 use feature "state";
 
@@ -94,7 +95,7 @@ sub _get_ask {
         die unless _pre_validate_start_expire_dates($p2);
     }
     catch {
-        $response = _create_error({
+        $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => localize('Cannot create contract')});
     };
@@ -104,7 +105,7 @@ sub _get_ask {
     }
     catch {
         warn __PACKAGE__ . " _get_ask produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($p2);
-        $response = _create_error({
+        $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => localize('Cannot create contract')});
     };
@@ -126,7 +127,12 @@ sub _get_ask {
     };
 
     try {
-        if (!($contract->is_spread ? $contract->is_valid_to_buy : $contract->is_valid_to_buy({landing_company => $p2->{landing_company}}))) {
+        if (
+            !(
+                  $contract->is_spread
+                ? $contract->is_valid_to_buy
+                : $contract->is_valid_to_buy({landing_company => $p2->{landing_company}})))
+        {
             my ($message_to_client, $code);
 
             if (my $pve = $contract->primary_validation_error) {
@@ -232,7 +238,7 @@ sub _get_ask {
     }
     catch {
         _log_exception(_get_ask => $_);
-        $response = _create_error({
+        $response = BOM::Pricing::v3::Utility::create_error({
             message_to_client => localize("Cannot create contract"),
             code              => "ContractCreationFailure"
         });
@@ -253,7 +259,7 @@ sub get_bid {
     }
     catch {
         warn __PACKAGE__ . " get_bid shortcode_to_parameters failed: $short_code, currency: $currency";
-        $response = _create_error({
+        $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'GetProposalFailure',
                 message_to_client => localize('Cannot create contract')});
     };
@@ -267,14 +273,14 @@ sub get_bid {
     }
     catch {
         warn __PACKAGE__ . " get_bid produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($bet_params);
-        $response = _create_error({
+        $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'GetProposalFailure',
                 message_to_client => localize('Cannot create contract')});
     };
     return $response if $response;
 
     if ($contract->is_legacy) {
-        return _create_error({
+        return BOM::Pricing::v3::Utility::create_error({
             message_to_client => $contract->longcode,
             code              => "GetProposalFailure"
         });
@@ -351,7 +357,7 @@ sub get_bid {
             if (not $contract->may_settle_automatically
                 and $contract->missing_market_data)
             {
-                $response = _create_error({
+                $response = BOM::Pricing::v3::Utility::create_error({
                         code              => "GetProposalFailure",
                         message_to_client => localize(
                             'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
@@ -426,7 +432,7 @@ sub get_bid {
     }
     catch {
         _log_exception(get_bid => $_);
-        $response = _create_error({
+        $response = BOM::Pricing::v3::Utility::create_error({
             message_to_client => localize('Sorry, an error occurred while processing your request.'),
             code              => "GetProposalFailure"
         });
@@ -450,7 +456,7 @@ sub send_bid {
         # fail, there's not much else that can go wrong. We therefore log and
         # report anyway.
         _log_exception(send_bid => "$_ (and it should be impossible for this to happen)");
-        $response = _create_error({
+        $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'pricing error',
                 message_to_client => localize('Unable to price the contract.')});
     };
@@ -472,7 +478,7 @@ sub send_ask {
     my $symbol   = $params->{args}->{symbol};
     my $response = _validate_symbol($symbol);
     if ($response and exists $response->{error}) {
-        $response = _create_error({
+        $response = BOM::Pricing::v3::Utility::create_error({
                 code              => $response->{error}->{code},
                 message_to_client => localize($response->{error}->{message}, $symbol)});
 
@@ -486,7 +492,7 @@ sub send_ask {
     }
     catch {
         _log_exception(send_ask => $_);
-        $response = _create_error({
+        $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'pricing error',
                 message_to_client => localize('Unable to price the contract.')});
     };
@@ -499,7 +505,8 @@ sub send_ask {
 sub get_contract_details {
     my $params = shift;
 
-    die 'missing landing_company in params' if !exists $params->{landing_company};
+    die 'missing landing_company in params'
+        if !exists $params->{landing_company};
 
     my ($response, $contract, $bet_params);
     try {
@@ -508,7 +515,7 @@ sub get_contract_details {
     }
     catch {
         warn __PACKAGE__ . " get_contract_details shortcode_to_parameters failed: $params->{short_code}, currency: $params->{currency}";
-        $response = _create_error({
+        $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'GetContractDetails',
                 message_to_client => localize('Cannot create contract')});
     };
@@ -521,7 +528,7 @@ sub get_contract_details {
     }
     catch {
         warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($bet_params);
-        $response = _create_error({
+        $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'GetContractDetails',
                 message_to_client => localize('Cannot create contract')});
     };
