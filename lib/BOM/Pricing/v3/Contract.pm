@@ -595,7 +595,7 @@ sub contracts_for {
     }
 
     if (not $contracts_for or $contracts_for->{hit_count} == 0) {
-        return _create_error({
+        return BOM::Pricing::v3::Utility::create_error({
                 code              => 'InvalidSymbol',
                 message_to_client => BOM::Platform::Context::localize('The symbol is invalid.')});
     } else {
