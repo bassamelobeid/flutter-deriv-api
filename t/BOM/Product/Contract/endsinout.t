@@ -112,7 +112,7 @@ subtest 'expiry range' => sub {
         isa_ok $c, 'BOM::Product::Contract::Expiryrange';
         is $c->code,         'EXPIRYRANGE';
         is $c->pricing_code, 'EXPIRYRANGE';
-        is $c->ask_price,    '4.17';
+        is $c->ask_price,    '4.18';
         ok $c->sentiment,    'low_vol';
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
         is_deeply $c->supported_start_types, ['spot'];
