@@ -45,7 +45,7 @@ subtest 'Proper form' => sub {
             ~
     );
     my @currencies = ('USD', 'EUR', 'RUR');    # Inexhaustive, incorrect list: just to be sure the currency is not accidentally hard-coded.
-    plan tests => 2 * scalar @shortcodes * scalar @currencies;
+    plan tests => scalar @shortcodes * scalar @currencies;
 
     foreach my $currency (@currencies) {
         my $expected_standard_form = qr/Win payout if .*\.$/;    # Simplified standard form to which all should adhere.
