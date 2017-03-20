@@ -73,7 +73,10 @@ sub get_high_low_for_contract_period {
     my $exit_tick = $self->is_after_expiry && $self->exit_tick;    # Can still be undef if the tick is not yet in the DB.
     if (not $self->pricing_new and $self->entry_tick and $self->entry_tick->epoch < $self->date_pricing->epoch) {
         my $start_epoch = $self->date_start->epoch + 1;            # exlusive of tick at contract start.
-        my $end_epoch = $self->date_pricing->is_after($self->date_expiry) ? $self->date_settlement->epoch : $self->date_pricing->epoch;
+        # To include the official ohlc on the expiry date, you should include the full day of the expiry date [ie is how our db is handling daily ohlc]
+        # otherwise, it will just include unofficial ohlc on the expiry date
+        # In Postgres::FeedDB::Spot::DatabaseAPI::get_ohlc_data_for_period, it will move the day to end of the day. 
+        my $end_epoch = $self->date_pricing->is_after($self->date_expiry) ? $self->date_expiry->date : $self->date_pricing->epoch;
         ($high, $low, $close) = @{
             $self->underlying->get_high_low_for_period({
                     start => $start_epoch,
