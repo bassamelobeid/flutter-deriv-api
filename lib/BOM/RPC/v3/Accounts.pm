@@ -169,7 +169,7 @@ sub statement {
                     });
 
                 if (exists $res->{error}) {
-                    $struct->{longcode} = 'Could not retrieve contract details';
+                    $struct->{longcode} = 'Could not retrieve contract details for statement';
                 } else {
                     $struct->{longcode} = $res->{longcode};
                 }
@@ -235,14 +235,14 @@ sub profit_table {
             my $res = BOM::Platform::Pricing::call_rpc(
                 'get_contract_details',
                 {
-                    short_code      => $row->{shortcode},
+                    short_code      => $trx{shortcode},
                     currency        => $client->currency,
                     landing_company => $client->landing_company->short,
                     language        => $params->{language},
                 });
 
             if (exists $res->{error}) {
-                $trx{longcode} = 'Could not retrieve contract details';
+                $trx{longcode} = 'Could not retrieve contract details for profit table';
             } else {
                 $trx{longcode} = $res->{longcode};
             }
