@@ -3,14 +3,18 @@
 use strict;
 use warnings;
 
+use Date::Utility;
+
 use Test::More;
 use Test::FailWarnings;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-initialize_realtime_ticks_db;
-use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
+use LandingCompany::Offerings qw(reinitialise_offerings);
+
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
+initialize_realtime_ticks_db;
 
 my $now = Date::Utility->new('2016-09-27 10:00:00');
 

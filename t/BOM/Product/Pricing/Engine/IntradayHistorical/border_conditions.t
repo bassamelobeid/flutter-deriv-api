@@ -15,11 +15,12 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use Quant::Framework::VolSurface::Utils;
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-
+use BOM::Platform::Runtime;
+use LandingCompany::Offerings qw(reinitialise_offerings);
 
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
-
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $test_date = Date::Utility->new('8-Nov-12');
 my $util      = Quant::Framework::VolSurface::Utils->new();
