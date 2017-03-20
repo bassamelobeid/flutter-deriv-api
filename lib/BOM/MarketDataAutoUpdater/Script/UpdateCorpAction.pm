@@ -82,7 +82,7 @@ sub script_run {
         stats_gauge('corporate_action_updates', $successes);
     }
 
-    $self->return_value();
+    return $self->return_value();
 }
 
 sub _update_disabled_symbol_list {
