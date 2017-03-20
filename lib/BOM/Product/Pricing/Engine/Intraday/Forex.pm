@@ -707,7 +707,7 @@ sub _build_risk_markup {
         $risk_markup->include_adjustment('add', $illiquid_market_markup);
     }
 
-    $risk_markup->include_adjustment('add', $self->vol_spread_markup);
+    $risk_markup->include_adjustment('add', $self->vol_spread_markup) if not $self->is_atm_bet;
 
     if (not $self->bet->is_atm_bet and $self->inefficient_period) {
         my $end_of_day_markup = Math::Util::CalculatedValue::Validatable->new({
@@ -924,13 +924,13 @@ sub _build_volatility_scaling_factor {
     return shift->bet->pricing_args->{volatility_scaling_factor};
 }
 
-has vol_spread_markup => (
+has vol_spread => (
     is      => 'ro',
     lazy    => 1,
-    builder => '_build_vol_spread_markup',
+    builder => '_build_vol_spread',
 );
 
-sub _build_vol_spread_markup {
+sub _build_vol_spread {
     my $self = shift;
 
     my $vol_spread = Math::Util::CalculatedValue::Validatable->new({
@@ -942,23 +942,7 @@ sub _build_vol_spread_markup {
         base_amount => (0.1 * (1 - ($self->volatility_scaling_factor)**2)) / 2,
     });
 
-    my $vega = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'bet_vega',
-        set_by      => __PACKAGE__,
-        description => 'The absolute value of vega of a priced option',
-        base_amount => abs($self->bet->vega),
-    });
-
-    my $vsm = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'vol_spread_markup',
-        set_by      => __PACKAGE__,
-        description => 'vol spread adjustment',
-    });
-
-    $vsm->include_adjustment('reset',    $vega);
-    $vsm->include_adjustment('multiply', $vol_spread);
-
-    return $vsm;
+    return $vol_spread;
 }
 
 no Moose;
