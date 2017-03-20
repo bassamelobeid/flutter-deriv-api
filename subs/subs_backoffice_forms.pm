@@ -1,6 +1,8 @@
 ## no critic (RequireExplicitPackage)
 use strict;
 use warnings;
+no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
+
 use HTML::Entities;
 use BOM::Backoffice::Request qw(request);
 

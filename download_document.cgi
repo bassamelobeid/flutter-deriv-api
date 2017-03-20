@@ -2,6 +2,8 @@
 package main;
 use strict;
 use warnings;
+no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
+
 use open qw[ :encoding(UTF-8) ];
 
 use HTML::Entities;

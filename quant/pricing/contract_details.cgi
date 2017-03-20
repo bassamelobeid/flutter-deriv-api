@@ -14,6 +14,7 @@ This is a Japanese regulatory requirements.
 package main;
 use strict;
 use warnings;
+no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;

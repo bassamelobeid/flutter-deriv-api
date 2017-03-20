@@ -3,6 +3,7 @@ package main;
 
 use strict;
 use warnings;
+no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
 
 no indirect;
 
