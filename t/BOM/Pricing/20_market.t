@@ -5,9 +5,6 @@ use BOM::Test::RPC::Client;
 use Test::Most;
 use Test::Mojo;
 use Data::Dumper;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Database::Model::OAuth;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::Pricing::RPC')->app->ua);
 
