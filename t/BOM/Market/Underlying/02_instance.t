@@ -25,6 +25,7 @@ use Finance::Asset::SubMarket;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use Postgres::FeedDB::Spot;
+use LandingCompany::Offerings qw(reinitialise_offerings);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -40,6 +41,7 @@ Quant::Framework::Utils::Test::create_doc(
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
     });
 
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
 # INCORRECT DATA in support of in_quiet_period testing, only.
