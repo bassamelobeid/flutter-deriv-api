@@ -173,8 +173,8 @@ sub startup {
 
         ['website_status'],
         ['contracts_for', {
-            url          => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($app),
-            stash_params => [qw/ token /],
+            instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::contracts_for,
+            stash_params       => [qw/ token /],
         }],
         ['residence_list'],
         ['states_list'],
