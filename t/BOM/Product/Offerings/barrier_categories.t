@@ -8,8 +8,9 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 
 use BOM::MarketData qw(create_underlying_db);
 use BOM::Platform::Runtime;
-use LandingCompany::Offerings qw( get_offerings_with_filter );
+use LandingCompany::Offerings qw( get_offerings_with_filter reinitialise_offerings);
 
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 my $udb = create_underlying_db();
 
 subtest 'Sets match' => sub {

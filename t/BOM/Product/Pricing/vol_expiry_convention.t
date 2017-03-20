@@ -17,8 +17,12 @@ use YAML::XS qw(LoadFile);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Storable qw(dclone);
+use LandingCompany::Offerings qw(reinitialise_offerings);
 
 Cache::RedisDB->flushall;
+
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
+
 subtest 'tuesday to friday close' => sub {
     my $expiry = Date::Utility->new('2016-01-22 21:00:00');
     my $data   = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/vol_expiry_test.yml');

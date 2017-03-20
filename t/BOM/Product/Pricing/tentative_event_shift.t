@@ -12,10 +12,13 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use Postgres::FeedDB::Spot::Tick;
 use Date::Utility;
 use BOM::MarketData qw(create_underlying);
+use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
 my $now = Date::Utility->new('2016-03-18 05:00:00');

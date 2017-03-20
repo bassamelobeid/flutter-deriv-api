@@ -11,12 +11,16 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 use Date::Utility;
+use LandingCompany::Offerings qw(reinitialise_offerings);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods);
 use Cache::RedisDB;
-Cache::RedisDB->flushall;
-initialize_realtime_ticks_db;
 BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
+
+Cache::RedisDB->flushall;
+initialize_realtime_ticks_db();
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
+
 
 my $now = Date::Utility->new('2016-09-28 10:00:00');
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({

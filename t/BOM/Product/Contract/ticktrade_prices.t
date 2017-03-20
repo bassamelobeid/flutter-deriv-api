@@ -11,6 +11,9 @@ use Format::Util::Numbers qw(roundnear);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use LandingCompany::Offerings qw(reinitialise_offerings);
+
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
 my $now = Date::Utility->new('2014-11-11');
