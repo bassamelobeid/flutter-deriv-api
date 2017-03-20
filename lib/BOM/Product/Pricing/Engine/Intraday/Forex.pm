@@ -707,7 +707,7 @@ sub _build_risk_markup {
         $risk_markup->include_adjustment('add', $illiquid_market_markup);
     }
 
-    $risk_markup->include_adjustment('add', $self->vol_spread_markup) if not $self->is_atm_bet;
+    $risk_markup->include_adjustment('add', $self->vol_spread_markup) if not $bet->is_atm_bet;
 
     if (not $self->bet->is_atm_bet and $self->inefficient_period) {
         my $end_of_day_markup = Math::Util::CalculatedValue::Validatable->new({
