@@ -483,11 +483,9 @@ sub prepare_buy {    ## no critic (RequireArgUnpacking)
             _validate_jurisdictional_restrictions
             _validate_client_status
             _validate_client_self_exclusion
-
             _is_valid_to_buy
             _validate_date_pricing
             _validate_trade_pricing_adjustment
-
             _validate_payout_limit
             _validate_stake_limit/
             );
@@ -834,37 +832,23 @@ sub sell {
 }
 
 =head2 C<< $self->_recover($error) >>
-
 This function tries to recover from an unsuccessful buy/sell.
 It may decide to retry the operation. And it may decide to
 sell expired bets before doing so.
-
 =head4 Parameters
-
 =over 4
-
 =item * C<< $error >>
-
 the error exception thrown by BOM::Platform::Data::Persistence::DB::_handle_errors
-
 =back
-
 =head3 Return Value
-
 L<Error::Base> object
-
 which means an unrecoverable but expected condition has been found.
 Typically that means a precondition, like sufficient balance, was
 not met.
-
 =back
-
 Be aware that the function may throw an exception.
-
 =head3 Exceptions
-
 In case of an unexpected error, the exception is re-thrown unmodified.
-
 =cut
 
 %known_errors = (
@@ -1548,9 +1532,7 @@ sub _validate_date_pricing {
 }
 
 =head2 $self->_validate_iom_withdrawal_limit
-
 Validate the withdrawal limit for IOM region
-
 =cut
 
 sub __validate_iom_withdrawal_limit {
@@ -1642,9 +1624,7 @@ sub _validate_stake_limit {
 }
 
 =head2 $self->_validate_payout_limit
-
 Validate if payout is not over the client limits
-
 =cut
 
 sub __validate_payout_limit {
@@ -1655,8 +1635,8 @@ sub __validate_payout_limit {
 
     return if $contract->is_spread;
 
-    my $rp    = $self->contract->risk_profile;
-    my @cl_rp = $rp->get_client_profiles($client);
+    my $rp = $self->contract->risk_profile;
+    my @cl_rp = $rp->get_client_profiles($client->loginid, $client->landing_company->short);
 
     # setups client specific payout and turnover limits, if any.
     if (@cl_rp) {
@@ -1688,9 +1668,7 @@ sub __validate_payout_limit {
 BEGIN { _create_validator '_validate_payout_limit' }
 
 =head2 $self->_validate_jurisdictional_restrictions
-
 Validates whether the client has provided his residence country
-
 =cut
 
 sub __validate_jurisdictional_restrictions {
@@ -1767,10 +1745,8 @@ sub __validate_jurisdictional_restrictions {
 BEGIN { _create_validator '_validate_jurisdictional_restrictions' }
 
 =head2 $self->_validate_client_status
-
 Validates to make sure that the client with unwelcome status
 is not able to purchase contract
-
 =cut
 
 sub __validate_client_status {
@@ -1790,10 +1766,8 @@ sub __validate_client_status {
 BEGIN { _create_validator '_validate_client_status' }
 
 =head2 $self->_validate_client_self_exclusion
-
 Validates to make sure that the client with self exclusion
 is not able to purchase contract
-
 =cut
 
 sub __validate_client_self_exclusion {
@@ -1814,15 +1788,12 @@ sub __validate_client_self_exclusion {
 BEGIN { _create_validator '_validate_client_self_exclusion' }
 
 =head2 sell_expired_contracts
-
 Static function: Sells expired contracts.
 For contracts with missing market data, settle them manually for real money accounts, but sell with purchase price for virtual account
-
 Returns: HashRef, with:
 'total_credited', total amount credited to Client
 'skip_contract', count for expired contracts that failed to be sold
 'failures', the failure information
-
 =cut
 
 my %source_to_sell_type = (

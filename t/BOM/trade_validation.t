@@ -23,7 +23,9 @@ use BOM::MarketData::Types;
 
 use Test::MockTime qw(set_absolute_time);
 use Test::MockModule;
+use LandingCompany::Offerings qw(reinitialise_offerings);
 
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine
