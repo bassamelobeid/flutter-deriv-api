@@ -2,7 +2,6 @@ package BOM::Platform::RiskProfile;
 
 use strict;
 use warnings;
-use JSON::RPC::Client;
 use feature "state";
 
 use BOM::Platform::Config;
