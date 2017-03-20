@@ -28,7 +28,7 @@ sub portfolio {
         my $res = BOM::Platform::Pricing::call_rpc(
             'get_contract_details',
             {
-                short_code      => $row->{shortcode},
+                short_code      => $row->{short_code},
                 currency        => $client->currency,
                 landing_company => $client->landing_company->short,
                 language        => $params->{language},
