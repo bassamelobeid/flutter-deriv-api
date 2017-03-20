@@ -31,7 +31,7 @@ sub script_run {
     }
     my $opt1 = shift @ARGV || '';
 
-    $SIG{ALRM} = sub { die 'Timed out.' };
+    local $SIG{ALRM} = sub { die 'Timed out.' };
     alarm(60 * 30);
 
     my ($class, $filename);
