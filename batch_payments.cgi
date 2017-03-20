@@ -104,11 +104,13 @@ read_csv_row_and_callback(
         my $client;
         my $error;
         {
-            $cols_found == $cols_expected or $error = "Found $cols_found fields, needed $cols_expected for $format payments" and last;
-            $action !~ /^(debit|credit)$/ and $error = "Invalid transaction type [$action]" and last;
-            ($amount !~ /^\d+\.?\d?\d?$/ || $amount == 0) and $error = "Invalid amount [$amount]" and last;
-            not $statement_comment and $error = 'Statement comment can not be empty' and last;
-            $client = eval { Client::Account->new({loginid => $login_id}) } or $error = ($@ || 'No such client') and last;
+            # TODO fix this critic
+            ## no critic (ProhibitCommaSeparatedStatements, ProhibitMixedBooleanOperators)
+            $cols_found == $cols_expected or $error = "Found $cols_found fields, needed $cols_expected for $format payments", last;
+            $action !~ /^(debit|credit)$/ and $error = "Invalid transaction type [$action]", last;
+            $amount !~ /^\d+\.?\d?\d?$/ || $amount == 0 and $error = "Invalid amount [$amount]", last;
+            !$statement_comment and $error = 'Statement comment can not be empty', last;
+            $client = eval { Client::Account->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
             my $signed_amount = $action eq 'debit' ? $amount * -1 : $amount;
 
             unless ($skip_validation) {
