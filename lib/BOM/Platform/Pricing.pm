@@ -12,10 +12,10 @@ sub call_rpc {
     my $params = shift;
 
     state $client = MojoX::JSON::RPC::Client->new();
-    $client->ua->timeout(5);
-    my $url = BOM::Platform::Config::node->{pricing_rpc_url};
+    my $url = BOM::Platform::Config::node->{pricing_rpc_url} . "/v3/$method";
 
     my $callobj = {
+        id     => 1,
         method => $method,
         params => $params,
     };
