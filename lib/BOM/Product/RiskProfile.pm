@@ -1,16 +1,22 @@
 package BOM::Product::RiskProfile;
 
-use Moose;
+=pod
 
-use BOM::Platform::Runtime;
+There are 5 risk profiles: no_business extreme_risk high_risk medium_risk low_risk
+
+A risk profile defines the maximum payout per contract and/or daily turnover limit to be applied to a given client and/or landing company and/or contract type and/or underlying and/or market.
+
+=cut
+
+use Moose;
+use JSON qw(from_json);
+
 use LandingCompany::Offerings qw(get_offerings_with_filter);
-use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types;
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
-use BOM::Platform::Config;
 
-use JSON qw(from_json);
+use BOM::Platform::Runtime;
+use BOM::Platform::Config;
 
 use constant RISK_PROFILES => [qw(no_business extreme_risk high_risk medium_risk low_risk)];
 
@@ -19,10 +25,12 @@ for (my $i = 0; $i < @{RISK_PROFILES()}; $i++) {
     $risk_profile_rank{RISK_PROFILES->[$i]} = $i;
 }
 
-has [qw(contract_category underlying expiry_type start_type currency barrier_category)] => (
+has [
+    qw(contract_category expiry_type start_type currency barrier_category symbol market_name submarket_name underlying_risk_profile underlying_risk_profile_setter)
+    ] => (
     is       => 'ro',
     required => 1,
-);
+    );
 
 has [qw(contract_info)] => (
     is         => 'ro',
@@ -33,18 +41,14 @@ sub _build_contract_info {
     my $self = shift;
 
     return {
-        underlying_symbol => $self->underlying->symbol,
-        market            => $self->underlying->market->name,
-        submarket         => $self->underlying->submarket->name,
+        underlying_symbol => $self->symbol,
+        market            => $self->market_name,
+        submarket         => $self->submarket_name,
         contract_category => $self->contract_category,
         expiry_type       => $self->expiry_type,
         start_type        => $self->start_type,
         barrier_category  => $self->barrier_category,
     };
-}
-
-sub limits {
-    return BOM::Platform::Config::quants->{risk_profile};
 }
 
 has [qw(base_profile)] => (
@@ -68,6 +72,57 @@ sub _build_base_profile {
         last if $min == 0;
     }
     return RISK_PROFILES->[$min];
+}
+
+has custom_profiles => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_custom_profiles {
+    my $self = shift;
+
+    my @profiles = grep { $self->_match_conditions($_) } values %{$self->raw_custom_profiles};
+
+    my $risk_profile = $self->underlying_risk_profile;
+    my $setter       = $self->underlying_risk_profile_setter;
+    # default market level profile
+    push @profiles,
+        +{
+        risk_profile => $risk_profile,
+        name         => $self->contract_info->{$setter} . '_turnover_limit',
+        $setter      => $self->contract_info->{$setter},
+        };
+
+    # specific limit for spreads.
+    push @profiles,
+        +{
+        risk_profile      => BOM::Platform::Runtime->instance->app_config->quants->spreads_daily_profit_limit,
+        name              => 'spreads_daily_profit_limit',
+        contract_category => 'spreads',
+        }
+        if $self->contract_info->{contract_category} eq 'spreads';
+
+    return \@profiles;
+}
+
+has raw_custom_profiles => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+# this is a cache to avoid from_json for each contract
+my $product_profiles_txt      = '';
+my $product_profiles_compiled = {};
+
+sub _build_raw_custom_profiles {
+    my $self = shift;
+
+    my $ptr = \BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles;    # use a pointer to avoid copying
+    $product_profiles_compiled = from_json($product_profiles_txt = $$ptr)                        # copy and compile
+        unless $$ptr eq $product_profiles_txt;
+
+    return $product_profiles_compiled;
 }
 
 # this one is the risk profile including the client profile
@@ -97,7 +152,7 @@ sub get_turnover_limit_parameters {
         map {
             my $params = {
                 name  => $_->{name},
-                limit => $self->limits->{$_->{risk_profile}}{turnover}{$self->currency},
+                limit => BOM::Platform::Config::quants->{risk_profile}->{$_->{risk_profile}}{turnover}{$self->currency},
             };
 
             if (my $exp = $_->{expiry_type}) {
@@ -138,58 +193,6 @@ sub get_turnover_limit_parameters {
             } @{$self->custom_profiles},
         @$ap
     ];
-}
-
-has raw_custom_profiles => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-# this is a cache to avoid from_json for each contract
-my $product_profiles_txt      = '';
-my $product_profiles_compiled = {};
-
-sub _build_raw_custom_profiles {
-    my $self = shift;
-
-    my $ptr = \BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles;    # use a pointer to avoid copying
-    $product_profiles_compiled = from_json($product_profiles_txt = $$ptr)                        # copy and compile
-        unless $$ptr eq $product_profiles_txt;
-
-    return $product_profiles_compiled;
-}
-
-has custom_profiles => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_custom_profiles {
-    my $self = shift;
-
-    my @profiles = grep { $self->_match_conditions($_) } values %{$self->raw_custom_profiles};
-
-    my $ul           = $self->underlying;
-    my $risk_profile = $ul->risk_profile;
-    my $setter       = $ul->risk_profile_setter;
-    # default market level profile
-    push @profiles,
-        +{
-        risk_profile => $risk_profile,
-        name         => $self->contract_info->{$setter} . '_turnover_limit',
-        $setter      => $self->contract_info->{$setter},
-        };
-
-    # specific limit for spreads.
-    push @profiles,
-        +{
-        risk_profile      => BOM::Platform::Runtime->instance->app_config->quants->spreads_daily_profit_limit,
-        name              => 'spreads_daily_profit_limit',
-        contract_category => 'spreads',
-        }
-        if $self->contract_info->{contract_category} eq 'spreads';
-
-    return \@profiles;
 }
 
 # this is a cache to avoid from_json for each contract
@@ -248,4 +251,3 @@ sub _match_conditions {
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
-
