@@ -561,7 +561,6 @@ sub get_contract_details {
     return $response;
 }
 
-
 sub contracts_for {
     my $params = shift;
 
