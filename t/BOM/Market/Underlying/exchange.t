@@ -82,7 +82,7 @@ my $LSE    = Quant::Framework::TradingCalendar->new({
     for_date         => $date
 });
 
-is $ul_LSE->exchange->symbol, $LSE->symbol, "This underlying's exchange is what we expect";
+is $ul_LSE->exchange->symbol, $LSE->exchange->symbol, "This underlying's exchange is what we expect";
 
 # Gold has the same exchange as FOREX.
 # Yng Shan is planning to create a commodities exchange in the near future.
