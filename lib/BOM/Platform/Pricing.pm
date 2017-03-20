@@ -2,7 +2,7 @@ package BOM::Platform::Pricing;
 
 use strict;
 use warnings;
-use JSON::RPC::Client;
+use MojoX::JSON::RPC::Client;
 use feature "state";
 
 use BOM::Platform::Config;
@@ -11,7 +11,7 @@ sub call_rpc {
     my $method = shift;
     my $params = shift;
 
-    state $client = JSON::RPC::Client->new();
+    state $client = MojoX::JSON::RPC::Client->new();
     $client->ua->timeout(5);
     my $url = BOM::Platform::Config::node->{pricing_rpc_url};
 
