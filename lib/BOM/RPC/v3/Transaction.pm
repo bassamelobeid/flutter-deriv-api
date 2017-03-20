@@ -133,19 +133,15 @@ sub buy_contract_for_multiple_accounts {
     $contract_parameters->{landing_company} = $client->landing_company->short;
     my $amount_type = $contract_parameters->{amount_type};
 
-    try {
-        die
-            unless BOM::RPC::v3::Contract::pre_validate_start_expire_dates($contract_parameters);
-    }
-    catch {
+    unless ( BOM::RPC::v3::Contract::pre_validate_start_expire_dates($contract_parameters) ) {
         warn __PACKAGE__
             . " buy_contract_for_multiple_accounts pre_validate_start_expire_dates failed, parameters: "
             . encode_json($contract_parameters);
         $response = BOM::RPC::v3::Utility::create_error({
-                code              => 'ContractCreationFailure',
-                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
-    };
-    return $response if $response;
+            code              => 'ContractCreationFailure',
+            message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+        return $response if $response;
+    }
 
     try {
         $contract = produce_contract($contract_parameters);
@@ -157,6 +153,7 @@ sub buy_contract_for_multiple_accounts {
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
     };
     return $response if $response;
+
     my $price = $args->{price};
     if (defined $amount_type and $amount_type eq 'stake') {
         return BOM::RPC::v3::Utility::create_error({
