@@ -150,7 +150,7 @@ subtest 'Return not expired client contracts' => sub {
     'Create not expired contract and expected data';
 
     my $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
-    delete $result->{longcode};
+    delete $result->{contracts}->[0]->{longcode};
     is_deeply($result->{contracts}, [$expected_contract_data], 'Should return contract data',);
 };
 
