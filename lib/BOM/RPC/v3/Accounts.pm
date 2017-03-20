@@ -724,8 +724,8 @@ sub set_settings {
     }
     if ((!$tax_residence || !$tax_identification_number) && $client->landing_company->short ne 'maltainvest') {
         ### Allow to clean tax info for Non-MF
-        $client->tax_residence('')             if !$tax_residence;
-        $client->tax_identification_number('') if !$tax_identification_number;
+        $client->tax_residence('')             unless $tax_residence;
+        $client->tax_identification_number('') unless $tax_identification_number;
     }
 
     if (not $client->save()) {
