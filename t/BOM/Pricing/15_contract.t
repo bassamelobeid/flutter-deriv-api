@@ -164,6 +164,7 @@ subtest 'get_ask' => sub {
         "streaming_params" => {add_theo_probability => 1},
     };
     my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
+    diag explain $result->{error} if exists $result->{error};
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
@@ -186,7 +187,7 @@ subtest 'get_ask' => sub {
             'base_commission_scaling'    => 100,
             'app_markup_percentage'      => 0,
             'proposal'                   => 1,
-            date_start                   => ignore(),
+            'date_start'                 => ignore(),
             'staking_limits'             => {
                 'message_to_client'       => 'Minimum stake of 0.35 and maximum payout of 50,000.00',
                 'min'                     => '0.35',
