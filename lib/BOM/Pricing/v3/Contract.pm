@@ -131,10 +131,10 @@ sub _get_ask {
     };
     return $response if $response;
     try {
-        $contract = produce_contract($p2);
+        $contract = exists $p2->{bet_types} ? produce_batch_contract($p2) : produce_contract($p2);
     }
     catch {
-        warn __PACKAGE__ . " _get_ask produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($p2);
+        warn __PACKAGE__ . " _get_ask produce_contract failed: $_, parameters: " . JSON::XS->new->allow_blessed->encode($p2);
         $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => localize('Cannot create contract')});
