@@ -141,19 +141,9 @@ sub _get_ask {
     };
     return $response if $response;
 
-    my $market_name             = $contract->market->name;
-    my $base_commission_scaling = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market_name;
-    my $contract_parameters     = {
+    my $contract_parameters = {
         %$p2,
-        !$contract->is_spread
-        ? (
-            app_markup_percentage => $contract->app_markup_percentage,
-            staking_limits        => $contract->staking_limits,
-            deep_otm_threshold    => $contract->otm_threshold,
-            )
-        : (),
-        underlying_base_commission => $contract->underlying->base_commission,
-        base_commission_scaling    => $base_commission_scaling,
+        %{ contract_metadata($contract) }
     };
 
     try {
