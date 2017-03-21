@@ -559,7 +559,7 @@ sub buy {    ## no critic (RequireArgUnpacking)
     $self->transaction_id($txn->{id});
     $self->contract_id($fmb->{id});
 
-    enqueue_new_transaction($self);    # For soft realtime expiration notification.
+    enqueue_new_transaction(_get_params_for_expiryqueue($self));    # For soft realtime expiration notification.
 
     return;
 }
@@ -682,7 +682,7 @@ sub batch_buy {    ## no critic (RequireArgUnpacking)
                 }
             }
             $stat{$broker}->{success} = $success;
-            enqueue_multiple_new_transactions $self, [grep { !$_->{code} } @$list];
+            enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), [grep { !$_->{code} } @$list]);
         }
         catch {
             warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $_;    # log it
@@ -2006,6 +2006,44 @@ sub report {
         . sprintf("%30s: %s",   'Transaction Parameters', Dumper($self->transaction_parameters))
         . sprintf("%30s: %s\n", 'Transaction ID',         $self->transaction_id || -1)
         . sprintf("%30s: %s\n", 'Purchase Date',          $self->purchase_date->datetime_yyyymmdd_hhmmss);
+}
+
+sub _get_params_for_expiryqueue {
+    my $self = shift;
+
+    my $contract = $self->contract;
+
+    my $hash = {
+        purchase_price        => $self->price,
+        transaction_reference => $self->transaction_id,
+        held_by               => $self->client->loginid,
+        contract_id           => $self->contract_id,
+        in_currency           => $contract->currency,
+        underlying_symbol     => $contract->underlying->symbol,
+    };
+
+    if ($contract->is_spread) {
+        # The barriers for spreads are the stop loss/profit level
+        # There is no settlement
+        @{$hash}{qw/up_level down_level/} = @{$contract->_highlow_args};
+    } else {
+        # These-are all non-exclusive conditions, we don't care if anything is
+        # sold to which they all apply.
+        $hash->{settlement_epoch} = $contract->date_settlement->epoch;
+        if ($contract->is_path_dependent) {
+            if ($contract->two_barriers) {
+                $hash->{up_level}   = $contract->high_barrier->as_absolute;
+                $hash->{down_level} = $contract->low_barrier->as_absolute;
+            } else {
+                my $which_level = ($contract->barrier->as_difference > 0) ? 'up_level' : 'down_level';
+                $hash->{$which_level} = $contract->barrier->as_absolute;
+            }
+        }
+
+        $hash->{tick_count} = $contract->tick_count if $contract->tick_expiry;
+    }
+
+    return $hash;
 }
 
 no Moose;
