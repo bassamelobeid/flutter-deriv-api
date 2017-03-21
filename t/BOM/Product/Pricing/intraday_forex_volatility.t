@@ -14,8 +14,11 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
+use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use BOM::Market::DataDecimate;
+
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $ticks = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/ticks.yml');
 

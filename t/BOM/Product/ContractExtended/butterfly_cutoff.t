@@ -13,6 +13,7 @@ use Test::Most;
 use Test::FailWarnings;
 use Test::MockModule;
 use JSON qw(decode_json);
+use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use Postgres::FeedDB::Spot::Tick;
 
@@ -20,6 +21,8 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::MarketData qw(create_underlying);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $spot             = 79.08;
 my $bet_start        = Date::Utility->new('2012-02-01 01:00:00');
