@@ -169,8 +169,8 @@ my %known_decorations = (
                           $self->c
                         ? $self->c->l('Opens late (at [_1])', $calendar->opening_on($when)->time_hhmm)
                         : 'Opens late (at ' . $calendar->opening_on($when)->time_hhmm . ')';
-                } elsif ($calendar->has_holiday_on($when)) {
-                    $message = $calendar->holidays->{$when->days_since_epoch};
+                } elsif (my $holiday_desc = $calendar->is_holiday_for($_->exchange->symbol, $when)) {
+                    $message = $holiday_desc;
                 }
                 if ($message) {
                     # This would be easier here with a hash, but then they might end up out of order.
