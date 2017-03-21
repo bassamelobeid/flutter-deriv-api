@@ -5,9 +5,12 @@ use warnings;
 use Test::Most 0.22;
 use Test::MockTime qw(set_relative_time);
 use YAML::XS qw(DumpFile LoadFile);
+use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use BOM::MarketData qw(create_underlying_db);
 use BOM::Platform::Runtime;
+
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $udb;
 lives_ok {

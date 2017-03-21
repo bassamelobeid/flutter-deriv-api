@@ -3,6 +3,12 @@ use warnings;
 use Test::Most;
 use Test::FailWarnings;
 use BOM::Market::DataDecimate;
+use LandingCompany::Offerings qw(reinitialise_offerings);
+use BOM::Platform::Runtime;
+
+BOM::Platform::Runtime->instance->app_config;
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
+
 my $time = time;
 
 my $redis = BOM::Platform::RedisReplicated::redis_write();
@@ -12,7 +18,7 @@ my $encoder = Sereal::Encoder->new({
     });
 my %defaults = (
     symbol     => 'frxUSDJPY',
-    epoch      => $time, 
+    epoch      => $time,
     quote  => '108.222',
     bid    => '108.223',
     ask    => '108.224',
