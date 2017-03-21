@@ -274,7 +274,7 @@ sub startup {
         ['ticks_history', \&BOM::RPC::v3::TickStreamer::ticks_history],
         ['ticks',         \&BOM::RPC::v3::TickStreamer::ticks],
 
-        ['buy', \&BOM::RPC::v3::Transaction::buy, [qw(auth validate_tnc compliance_checks check_tax_information)]],
+        ['buy', \&BOM::RPC::v3::Transaction::buy, [qw(auth validate_tnc check_trade_status compliance_checks check_tax_information)]],
         [
             'buy_contract_for_multiple_accounts',
             \&BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts,
