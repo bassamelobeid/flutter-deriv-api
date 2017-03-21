@@ -16,6 +16,8 @@ use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Format::Util::Numbers qw(to_monetary_number_format);
 use Price::Calculator;
 use Clone::PP qw(clone);
+use List::UtilsBy qw(bundle_by);
+
 use Future::Mojo          ();
 use Future::Utils         ();
 use Variable::Disposition ();
@@ -28,6 +30,11 @@ use constant PARALLEL_RPC_COUNT => 4;
 # Since this is pricing code, anything more than a few seconds
 # isn't going to be much use to anyone.
 use constant PARALLEL_RPC_TIMEOUT => 20;
+
+# We split proposal_array calls into batches so that we don't
+# overload a single RPC server - this controls how many barriers
+# we expect to be reasonable for each call.
+use constant BARRIERS_PER_BATCH => 4;
 
 my %pricer_cmd_handler = (
     price => \&process_ask_event,
@@ -96,6 +103,8 @@ sub proposal_array {
     }
 
     my $copy_args = {%{$req_storage->{args}}};
+    my @contract_types = ref($copy_args->{contract_type}) ? @{$copy_args->{contract_type}} : [$copy_args->{contract_type}];
+
     $copy_args->{skip_streaming} = 1;    # only for proposal_array: do not create redis subscription, we need only uuid stored in stash
     if ($uuid = _pricing_channel_for_ask($c, $copy_args, {})) {
         my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
@@ -152,10 +161,9 @@ sub proposal_array {
 
                 # Shallow copy of $args since we want to override a few top-level keys for the RPC calls
                 my $args = {%{$req_storage->{args}}};
+                $args->{contract_type} = [ @contract_types ];
+                $args->{barriers} = $barriers;
 
-                $args->{barrier} = $barriers->{barrier};
-                $args->{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
-                delete $args->{barriers};
                 my $f = Future::Mojo->new;
                 $c->call_rpc({
                         url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
@@ -190,7 +198,7 @@ sub proposal_array {
                     });
                 $f;
             }
-            foreach    => [@{$req_storage->{args}->{barriers}}],
+            foreach    => [ bundle_by { [ @_ ] } BARRIERS_PER_BATCH, @{$req_storage->{args}->{barriers}} ],
             concurrent => PARALLEL_RPC_COUNT
             )->on_ready(
             sub {
