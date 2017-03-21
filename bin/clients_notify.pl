@@ -6,29 +6,39 @@ use lib "$Bin/../lib";
 use YAML::XS;
 use Mojo::Redis2;
 use JSON::XS qw | encode_json |;
-if ( $#ARGV < 1 ) {
-  print "Usage:\n";
-  print "\t -s \t site status. up or down. up by default\n";
-  print "\t -o \t Notifications turn on/off ( 1 or 0 ). 1 by default\n";
-  print "\t -m \t Message ( in quotes )\n";
-  print "\n Example:\n";
-  print "\t".' perl clients_notify.pl -s up -o 1 -m "Take five"' . "\n";
-  exit;
+use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
+
+STDOUT->autoflush(1);
+
+GetOptions(
+    's|status=s'              => \my $status,
+    'o|notifications-on=i'    => \my $is_on,
+    'm|message=s'             => \my $message,
+    'h|help'                  => \my $help,
+);
+
+my $show_help = $help;
+die <<"EOF" if ( not ( $status || defined $is_on || $message ) || $show_help);
+usage: $0 OPTIONS
+These options are available:
+  -s, --status                   Site status. up or down. up by default
+  -o, --notifications-on         Notifications turn on/off ( 1 or 0 ). 1 by default
+  -m, --message                  Message ( in quotes )
+  -h, --help                     Show this message.
+EOF
+
+if ($is_on != 0 && $is_on != 1) {
+    $is_on  //= 1;
 }
 
-my %params = @ARGV;
-
-$params{"-o"} //= 1;
-$params{"-s"} //= 'up';
-
-delete $params{"-o"} unless $params{"-o"} == 1    || $params{"-o"} == 0;
-delete $params{"-s"} unless $params{"-s"} eq 'up' || $params{"-s"} eq 'down';
+if ( $status ne 'up' && $status ne 'down' ) {
+    $status = 'up';
+}
 
 my $channel_name = "NOTIFY::broadcast::channel";
 my $state_key    = "NOTIFY::broadcast::state";
 my $is_on_key    = "NOTIFY::broadcast::is_on";     ### TODO: to config
 
-print "\nRedis initiate...";
 my $ws_redis_write_config = YAML::XS::LoadFile('/etc/rmg/ws-redis.yml')->{write};
 my $ws_redis_write_url = do {
     my ($host, $port, $password) = @{$ws_redis_write_config}{qw/host port password/};
@@ -41,26 +51,18 @@ $redis->on(
         my ($self, $err) = @_;
         warn "ws write redis error: $err";
     });
-print "Done\n";
 
-if ( $params{"-s"} || $params{"-m"} ) {
-  print "\nWrite state...";
-  my $is_on_value = $params{"-o"};
+if ( $status || $message ) {
+  my $is_on_value = $is_on;
   print $redis->set($is_on_key, $is_on_value) if $is_on_value;
-  print "...";
-  my $mess_obj = eval{ encode_json ( {
-				      site_status => $params{"-s"} // "up",
-				      message     => $params{"-m"} // ""
-				     } ) };
-  print "\nEncode JSON error: ".$@ and exit if $@;
+  print "\n";
+  my $mess_obj = encode_json ( {
+      site_status => $status  // "up",
+      message     => $message // ""
+  } );
   print $redis->set($state_key, $mess_obj);
-  print "...";
-  print "Done\n";
+  print "\n";
 
-  print "\nPublish...";
   my $subscribes_count =  $redis->publish($channel_name, $mess_obj);
-  print "Done\n";
   print $subscribes_count . " workers subscribed\n";
 }
-
-print "\n\nBYE!\n";
