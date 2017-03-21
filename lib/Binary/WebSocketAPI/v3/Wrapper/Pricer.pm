@@ -226,18 +226,19 @@ sub proposal_array {
                     my $res = {
                         json => {
                             echo_req => $req_storage->{args},
-                            $req_storage->{args}{req_id}      ? (req_id      => $req_storage->{args}{req_id})      : (),
-                            $req_storage->{args}{passthrough} ? (passthrough => $req_storage->{args}{passthrough}) : (),
                             proposal_array => {
-                                proposals => [map { $_->{proposal} || $_ } @result],
+                                proposals => {
+                                    map {; $_ => [ map { $_->{proposal} || $_ } @result ] } @contract_types
+                                },
                                 $uuid ? (id => $uuid) : (),
                             },
                             msg_type => $msg_type,
+                            map {; $_ => $req_storage->{args}{$_} } grep { $req_storage->{args}{$_} } qw(req_id passthrough),
                         }};
                     $c->send($res) if $c and $c->tx;    # connection could be gone
                 }
                 catch {
-                    warn "Failed - $_";
+                    warn "proposal_array exception - $_";
                     $c->send({json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')});
                 };
             }));
