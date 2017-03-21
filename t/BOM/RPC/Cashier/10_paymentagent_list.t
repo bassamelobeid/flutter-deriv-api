@@ -70,8 +70,8 @@ my $expected_result = {
             'summary'               => 'Test Summary',
             'url'                   => 'http://www.example.com/',
             'paymentagent_loginid'  => $pa_client->loginid,
-            'max_withdraw'          => 2000,
-            'min_withdraw'          => 10,
+            'max_withdrawal'        => 2000,
+            'min_withdrawal'        => 10,
         }]};
 $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'If token is invalid, then the paymentagents are from broker "CR"');
 

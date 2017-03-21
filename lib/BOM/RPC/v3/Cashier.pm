@@ -474,8 +474,8 @@ sub paymentagent_list {
             'withdrawal_commission' => $payment_agent->{commission_withdrawal},
             'further_information'   => $payment_agent->{information},
             'supported_banks'       => $payment_agent->{supported_banks},
-            'max_withdraw'          => $payment_agent->{max_withdraw} // $min_max->{maximum},
-            'min_withdraw'          => $payment_agent->{min_withdraw} // $min_max->{minimum},
+            'max_withdrawal'        => $payment_agent->{max_withdrawal} // $min_max->{maximum},
+            'min_withdrawal'        => $payment_agent->{min_withdrawal} // $min_max->{minimum},
             };
     }
 
@@ -545,16 +545,16 @@ sub paymentagent_transfer {
         return $error_sub->($error_msg);
     }
 
-    my ($max_withdraw, $min_withdraw, $min_max) =
-        ($payment_agent->max_withdraw, $payment_agent->min_withdraw, BOM::RPC::v3::Utility::paymentagent_default_min_max());
-    if ($max_withdraw) {
-        return $error_sub->(localize("Invalid amount. Maximum withdrawal allowed is [_1].", $max_withdraw)) if $amount > $max_withdraw;
+    my ($max_withdrawal, $min_withdrawal, $min_max) =
+        ($payment_agent->max_withdrawal, $payment_agent->min_withdrawal, BOM::RPC::v3::Utility::paymentagent_default_min_max());
+    if ($max_withdrawal) {
+        return $error_sub->(localize("Invalid amount. Maximum withdrawal allowed is [_1].", $max_withdrawal)) if $amount > $max_withdrawal;
     } elsif ($amount > $min_max->{maximum}) {
         return $error_sub->(localize("Invalid amount. Maximum is [_1].", $min_max->{maximum}));
     }
 
-    if ($min_withdraw) {
-        return $error_sub->(localize("Invalid amount. Minimum withdrawal allowed is [_1].", $min_withdraw)) if $amount < $min_withdraw;
+    if ($min_withdrawal) {
+        return $error_sub->(localize("Invalid amount. Minimum withdrawal allowed is [_1].", $min_withdrawal)) if $amount < $min_withdrawal;
     } elsif ($amount < $min_max->{minimum}) {
         return $error_sub->(localize('Invalid amount. Minimum is [_1].', $min_max->{minimum}));
     }

@@ -418,8 +418,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
 
     sleep 3;
     # test max, min withdraw
-    $pa_client->payment_agent->max_withdraw(50);
-    $pa_client->payment_agent->min_withdraw(20);
+    $pa_client->payment_agent->max_withdrawal(50);
+    $pa_client->payment_agent->min_withdrawal(20);
     $pa_client->save();
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
             client => $pa_client,
