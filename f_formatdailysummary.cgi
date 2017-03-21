@@ -91,7 +91,7 @@ if (request()->param('sortorder') =~ /reverse/) {
         sort { my ($a1, $b1); $a =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $a1 = $1; $b =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $b1 = $1; $b1 <=> $a1; } @to_out;
 }
 
-splice @s_to_out, $outputlargest;
+splice @s_to_out, $outputlargest if $#s_to_out > $outputlargest;
 print @s_to_out;
 
 print "<TR>";
