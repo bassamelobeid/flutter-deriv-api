@@ -42,16 +42,16 @@ sub apply_usergroup {
         my $group = $cf->{group};
         if ($group) {
             $group = (getgrnam $group)[2] unless $group =~ /^\d+$/;
-            $(     = $group;                                          ## no critic
-            $)     = "$group $group";                                 ## no critic
+            $(     = $group;                                          ## no critic (RequireLocalizedPunctuationVars)
+            $)     = "$group $group";                                 ## no critic (RequireLocalizedPunctuationVars)
             $log->("Switched group: RGID=$( EGID=$)");
         }
 
         my $user = $cf->{user} // 'nobody';
         if ($user) {
             $user = (getpwnam $user)[2] unless $user =~ /^\d+$/;
-            $<    = $user;                                            ## no critic
-            $>    = $user;                                            ## no critic
+            $<    = $user;                                            ## no critic (RequireLocalizedPunctuationVars)
+            $>    = $user;                                            ## no critic (RequireLocalizedPunctuationVars)
             $log->("Switched user: RUID=$< EUID=$>");
         }
     }
