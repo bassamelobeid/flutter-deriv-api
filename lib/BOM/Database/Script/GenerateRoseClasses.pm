@@ -111,10 +111,10 @@ sub generateFMB_relationships {
 #############################################################
 
 sub run {
-    $dbname = shift @ARGV;
-    $schema = shift @ARGV;
-    $tmpdir = shift @ARGV || die "usage: $0 DBNAME SCHEMANAME TMPDIR [SUBDIR]\n";
-    $subdir = shift @ARGV;
+    $dbname = shift;
+    $schema = shift;
+    $tmpdir = shift || die "usage: $0 DBNAME SCHEMANAME TMPDIR [SUBDIR]\n";
+    $subdir = shift;
 
     $sublevel = $subdir ? ("::" . ucfirst(lc($schema))) : '';
 
