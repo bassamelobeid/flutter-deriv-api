@@ -12,6 +12,7 @@ use Test::More qw( no_plan );
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
+use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use Postgres::FeedDB::Spot;
 my $module = Test::MockModule->new('Postgres::FeedDB::Spot');
@@ -31,6 +32,8 @@ use BOM::MarketDataAutoUpdater::Forex;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
+
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 # Prep:
 my $fake_date = Date::Utility->new('2012-08-13 15:55:55');
