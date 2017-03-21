@@ -14,8 +14,9 @@ use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Date::Utility;
+use LandingCompany::Offerings qw(reinitialise_offerings);
 
-
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'partial_trading',
     {
@@ -293,13 +294,13 @@ subtest "check_intraday trading_period_JPY" => sub {
         '2015-11-25 21:45:00' => { combination => 0,},
 
 
-        '2015-11-2600:00:00' => { 
+        '2015-11-2600:00:00' => {
             combination => 1,
             date_start  => [Date::Utility->new('2015-11-26 00:00:00')->epoch],
             date_expiry =>  [Date::Utility->new('2015-11-26 02:00:00')->epoch
             ],
         },
-        
+
 
         # Friday
         '2015-11-27 00:00:00' => {

@@ -12,30 +12,40 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
+my $ul = create_underlying('frxUSDJPY');
+
 subtest 'init' => sub {
     throws_ok { BOM::Product::RiskProfile->new } qr/required/, 'throws if required args not provided';
     lives_ok {
         BOM::Product::RiskProfile->new(
-            underlying        => create_underlying('frxUSDJPY'),
-            contract_category => 'callput',
-            start_type        => 'spot',
-            expiry_type       => 'tick',
-            currency          => 'USD',
-            barrier_category  => 'euro_atm',
-            landing_company   => 'costarica',
+            contract_category              => 'callput',
+            start_type                     => 'spot',
+            expiry_type                    => 'tick',
+            currency                       => 'USD',
+            barrier_category               => 'euro_atm',
+            landing_company                => 'costarica',
+            symbol                         => $ul->symbol,
+            market_name                    => $ul->market->name,
+            submarket_name                 => $ul->submarket->name,
+            underlying_risk_profile        => $ul->risk_profile,
+            underlying_risk_profile_setter => $ul->risk_profile_setter,
             )
     }
     'ok if required args provided';
 };
 
 my %args = (
-    underlying        => create_underlying('frxUSDJPY'),
-    contract_category => 'callput',
-    start_type        => 'spot',
-    expiry_type       => 'tick',
-    currency          => 'USD',
-    barrier_category  => 'euro_atm',
-    landing_company   => 'costarica',
+    contract_category              => 'callput',
+    start_type                     => 'spot',
+    expiry_type                    => 'tick',
+    currency                       => 'USD',
+    barrier_category               => 'euro_atm',
+    landing_company                => 'costarica',
+    symbol                         => $ul->symbol,
+    market_name                    => $ul->market->name,
+    submarket_name                 => $ul->submarket->name,
+    underlying_risk_profile        => $ul->risk_profile,
+    underlying_risk_profile_setter => $ul->risk_profile_setter,
 );
 
 subtest 'get_risk_profile' => sub {
@@ -76,7 +86,20 @@ subtest 'get_risk_profile' => sub {
     is scalar(@$limit), 1, 'only one profile from custom';
     is scalar(@cp),     1, 'one from client';
 
-    $args{underlying} = create_underlying('R_100');
+    $ul = create_underlying('R_100');
+    %args = (
+        contract_category              => 'callput',
+        start_type                     => 'spot',
+        expiry_type                    => 'tick',
+        currency                       => 'USD',
+        barrier_category               => 'euro_atm',
+        landing_company                => 'costarica',
+        symbol                         => $ul->symbol,
+        market_name                    => $ul->market->name,
+        submarket_name                 => $ul->submarket->name,
+        underlying_risk_profile        => $ul->risk_profile,
+        underlying_risk_profile_setter => $ul->risk_profile_setter,
+    );
     $rp = BOM::Product::RiskProfile->new(%args);
     is $rp->get_risk_profile, 'low_risk', 'low risk is default for volatility index';
     $limit = $rp->custom_profiles;
@@ -199,14 +222,19 @@ subtest 'check for risk_profile consistency' => sub {
     );
     for (0 .. 4) {
         for my $bc ('touchnotouch', 'callput') {
+            $ul = create_underlying('frxUSDJPY');
             my $rp = BOM::Product::RiskProfile->new(
-                underlying        => create_underlying('frxUSDJPY'),
-                contract_category => $bc,
-                start_type        => 'spot',
-                expiry_type       => 'tick',
-                currency          => 'USD',
-                barrier_category  => 'euro_atm',
-                landing_company   => 'costarica',
+                contract_category              => $bc,
+                start_type                     => 'spot',
+                expiry_type                    => 'tick',
+                currency                       => 'USD',
+                barrier_category               => 'euro_atm',
+                landing_company                => 'costarica',
+                symbol                         => $ul->symbol,
+                market_name                    => $ul->market->name,
+                submarket_name                 => $ul->submarket->name,
+                underlying_risk_profile        => $ul->risk_profile,
+                underlying_risk_profile_setter => $ul->risk_profile_setter,
             );
             is $rp->get_risk_profile, $expected{$bc}, 'same profile after iteration';
         }

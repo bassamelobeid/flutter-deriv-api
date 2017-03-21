@@ -13,7 +13,10 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
 use Date::Utility;
+use LandingCompany::Offerings qw(reinitialise_offerings);
 use BOM::Product::ContractFactory qw(produce_contract);
+
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');
