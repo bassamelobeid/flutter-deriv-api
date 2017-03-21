@@ -89,6 +89,30 @@ sub prepare_ask {
     return \%p2;
 }
 
+=head2 contract_metadata
+
+Extracts some generic information from a given contract.
+
+=cut
+
+sub contract_metadata {
+    my ($contract) = @_;
+    my $market_name             = $contract->market->name;
+    my $base_commission_scaling = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market_name;
+    return +{
+        %$p2,
+        !$contract->is_spread
+        ? (
+            app_markup_percentage => $contract->app_markup_percentage,
+            staking_limits        => $contract->staking_limits,
+            deep_otm_threshold    => $contract->otm_threshold,
+            )
+        : (),
+        underlying_base_commission => $contract->underlying->base_commission,
+        base_commission_scaling    => $base_commission_scaling,
+    };
+}
+
 sub _get_ask {
     my $p2                    = {%{+shift}};
     my $app_markup_percentage = shift;
