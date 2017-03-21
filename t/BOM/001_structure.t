@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 if (my $r =
-    `git grep BOM:: | grep -v -e BOM::Test -e BOM::Platform -e BOM::Platform -e BOM::Feed -e BOM::Market -e BOM::Database -e BOM::Product -e BOM::RPC -e BOM::Populator -e BOM::MT5 -e BOM::Transaction`
+    `git grep BOM:: | grep -v -e BOM::Test -e BOM::Platform -e BOM::Feed -e BOM::Market -e BOM::Database -e BOM::Product -e BOM::RPC -e BOM::Populator -e BOM::MT5 -e BOM::Transaction`
     )
 {
     print $r;
