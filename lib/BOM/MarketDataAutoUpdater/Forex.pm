@@ -60,7 +60,7 @@ sub _build_file {
     }
     @non_quanto_filename;
 
-    my @tenor_filenames = grep { $_ !~ /quantovol/ and $_ !~ /points/ } @filenames;
+    my @tenor_filenames = grep { $_ =~ /tenors/ } @filenames;
     my $tenor_file = first {
         my ($h, $m, $s) = ($_ =~ /(\d{2})(\d{2})(\d{2})_vol_tenors\.csv$/);
         my $date = Date::Utility->new("$day $h:$m:$s");
