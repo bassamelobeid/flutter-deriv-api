@@ -1,4 +1,3 @@
-## no critic (ProhibitReturnSort)
 package BOM::Platform::User;
 
 use strict;
