@@ -16,9 +16,6 @@ use Test::MockModule;
 my $client_mocked = Test::MockModule->new('Client::Account');
 $client_mocked->mock('add_note', sub { return 1 });
 
-my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
-$email_mocked->mock('send_email', sub { return 1 });
-
 my $t = build_wsapi_test();
 
 my %client_details = (
