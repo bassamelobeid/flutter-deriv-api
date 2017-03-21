@@ -514,8 +514,7 @@ sub get_payment_agent_registration_form {
             'id'    => 'errorpa_name',
             'class' => 'errorfield'
         },
-        'validation' => [
-            {
+        'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => '^.{1,60}$',
                 'err_msg' => localize('Please enter a valid name.'),
@@ -697,19 +696,19 @@ sub get_payment_agent_registration_form {
         },
     };
 
-    my $input_field_pa_max_withdraw = {
+    my $input_field_pa_max_withdrawal = {
         'label' => {
             'text' => localize('Max withdrawal limit'),
-            'for'  => 'pa_max_withdraw'
+            'for'  => 'pa_max_withdrawal'
         },
         'input' => {
-            'id'        => 'pa_max_withdraw',
-            'name'      => 'pa_max_withdraw',
+            'id'        => 'pa_max_withdrawal',
+            'name'      => 'pa_max_withdrawal',
             'type'      => 'text',
             'maxlength' => 10,
         },
         'error' => {
-            'id'    => 'errorpa_max_withdraw',
+            'id'    => 'errorpa_max_withdrawal',
             'class' => 'errorfield'
         },
         'validation' => [{
@@ -720,19 +719,19 @@ sub get_payment_agent_registration_form {
         ],
     };
 
-    my $input_field_pa_min_withdraw = {
+    my $input_field_pa_min_withdrawal = {
         'label' => {
             'text' => localize('Min withdrawal limit'),
-            'for'  => 'pa_min_withdraw'
+            'for'  => 'pa_min_withdrawal'
         },
         'input' => {
-            'id'        => 'pa_min_withdraw',
-            'name'      => 'pa_min_withdraw',
+            'id'        => 'pa_min_withdrawal',
+            'name'      => 'pa_min_withdrawal',
             'type'      => 'text',
             'maxlength' => 10,
         },
         'error' => {
-            'id'    => 'errorpa_min_withdraw',
+            'id'    => 'errorpa_min_withdrawal',
             'class' => 'errorfield'
         },
         'validation' => [{
@@ -877,8 +876,8 @@ sub get_payment_agent_registration_form {
     $fieldset->add_field($input_field_pa_url);
     $fieldset->add_field($input_field_pa_comm_depo);
     $fieldset->add_field($input_field_pa_comm_with);
-    $fieldset->add_field($input_field_pa_max_withdraw);
-    $fieldset->add_field($input_field_pa_min_withdraw);
+    $fieldset->add_field($input_field_pa_max_withdrawal);
+    $fieldset->add_field($input_field_pa_min_withdrawal);
     $fieldset->add_field($textarea_pa_info);
 
     if ($input_field_pa_supported_banks) {

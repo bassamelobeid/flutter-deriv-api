@@ -63,8 +63,8 @@ if ($whattodo eq 'show') {
         pa_url             => $pa->url,
         pa_comm_depo       => $pa->commission_deposit,
         pa_comm_with       => $pa->commission_withdrawal,
-        pa_max_withdraw    => $pa->max_withdraw,
-        pa_min_withdraw    => $pa->min_withdraw,
+        pa_max_withdrawal  => $pa->max_withdrawal,
+        pa_min_withdrawal  => $pa->min_withdrawal,
         pa_info            => $pa->information,
         pa_auth            => ($pa->is_authenticated ? 'yes' : 'no'),
         pa_supported_banks => $pa->supported_banks,
@@ -107,8 +107,8 @@ if ($whattodo eq 'show') {
     $pa->url(request()->param('pa_url'));
     $pa->commission_deposit(request()->param('pa_comm_depo')    || 0);
     $pa->commission_withdrawal(request()->param('pa_comm_with') || 0);
-    $pa->max_withdraw(request()->param('pa_max_withdraw') || 0);
-    $pa->min_withdraw(request()->param('pa_min_withdraw') || 0);
+    $pa->max_withdrawal(request()->param('pa_max_withdrawal')   || 0);
+    $pa->min_withdrawal(request()->param('pa_min_withdrawal')   || 0);
     $pa->information(request()->param('pa_info'));
     $pa->supported_banks(request()->param('pa_supported_banks'));
     $pa->is_authenticated(request()->param('pa_auth') eq 'yes');
