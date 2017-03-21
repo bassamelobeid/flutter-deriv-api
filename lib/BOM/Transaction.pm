@@ -2019,7 +2019,7 @@ sub _get_params_for_expiryqueue {
         held_by               => $self->client->loginid,
         contract_id           => $self->contract_id,
         in_currency           => $contract->currency,
-        underlying_symbol     => $contract->underlying->symbol,
+        symbol                => $contract->underlying->symbol,
     };
 
     if ($contract->is_spread) {
