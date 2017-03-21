@@ -2049,10 +2049,10 @@ sub _get_params_for_expiryqueue {
 sub _get_list_for_expiryqueue {
     my $full_list = shift;
 
-    my @ep_list = ();
+    my @eq_list = ();
     foreach my $elm (@$full_list) {
         next if $elm->{code};
-        push @ep_list,
+        push @eq_list,
             {
             contract_id           => $elm->{fmb}->{id},
             held_by               => $elm->{loginid},

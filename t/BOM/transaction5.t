@@ -37,15 +37,15 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch,
     underlying => 'AS51',
 });
-my $currency = 'USD';
+my $currency   = 'USD';
 my $underlying = create_underlying('AS51');
 
 subtest 'validate client error message' => sub {
 
-    my $mock_cal= Test::MockModule->new('Quant::Framework::TradingCalendar');
+    my $mock_cal = Test::MockModule->new('Quant::Framework::TradingCalendar');
     $mock_cal->mock('is_open_at', sub { 0 });
 
-    my $contract   = produce_contract({
+    my $contract = produce_contract({
         underlying   => $underlying,
         bet_type     => 'CALL',
         currency     => $currency,
@@ -64,14 +64,10 @@ subtest 'validate client error message' => sub {
     });
 
     my $error = $transaction->_is_valid_to_buy;
-    like(
-        $error->{-message_to_client},
-        qr/Try out the Volatility Indices/,
-        'CR client got message about Volatility Indices'
-    );
+    like($error->{-message_to_client}, qr/Try out the Volatility Indices/, 'CR client got message about Volatility Indices');
 
 # same params, but new object - not to hold prev error
-    $contract   = produce_contract({
+    $contract = produce_contract({
         underlying   => $underlying,
         bet_type     => 'CALL',
         currency     => $currency,
@@ -89,11 +85,7 @@ subtest 'validate client error message' => sub {
     });
 
     $error = $transaction->_is_valid_to_buy;
-    unlike(
-        $error->{-message_to_client},
-        qr/Try out the Volatility Indices/,
-        'MF client didnt got message about Volatility Indices'
-    );
+    unlike($error->{-message_to_client}, qr/Try out the Volatility Indices/, 'MF client didnt got message about Volatility Indices');
 
 };
 

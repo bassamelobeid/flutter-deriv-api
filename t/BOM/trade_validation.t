@@ -426,10 +426,10 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
         my $price = $contract->ask_price - ($allowed_move * $contract->payout) + 0.1;
         my $transaction = BOM::Transaction->new({
-            client   => $client,
-            contract => $contract,
-            action   => 'BUY',
-            price    => $price,
+            client      => $client,
+            contract    => $contract,
+            action      => 'BUY',
+            price       => $price,
             amount_type => 'payout',
         });
         my $error = $transaction->_validate_trade_pricing_adjustment;
@@ -492,11 +492,11 @@ subtest 'BUY - trade pricing adjustment' => sub {
         # amount_type = payout, price increase > allowed move
         my $requested_price = $contract->ask_price - ($allowed_move * $contract->payout + 0.1);
         my $transaction = BOM::Transaction->new({
-            client   => $client,
-            contract => $contract,
-            action   => 'BUY',
+            client      => $client,
+            contract    => $contract,
+            action      => 'BUY',
             amount_type => 'payout',
-            price    => $requested_price,
+            price       => $requested_price,
         });
         my $error = $transaction->_validate_trade_pricing_adjustment;
         is($error->get_type, 'PriceMoved', 'Price move too much opposite favour of client');
@@ -512,10 +512,10 @@ subtest 'BUY - trade pricing adjustment' => sub {
         # amount_type = payout, price increase < allowed move
         my $price = $contract->ask_price - ($allowed_move * $contract->payout / 2);
         $transaction = BOM::Transaction->new({
-            client   => $client,
-            contract => $contract,
-            action   => 'BUY',
-            price    => $price,
+            client      => $client,
+            contract    => $contract,
+            action      => 'BUY',
+            price       => $price,
             amount_type => 'payout',
         });
 
@@ -529,10 +529,10 @@ subtest 'BUY - trade pricing adjustment' => sub {
         # amount_type = payout, price decrease => better execution price
         $price = $contract->ask_price + ($allowed_move * $contract->payout * 2);
         $transaction = BOM::Transaction->new({
-            client   => $client,
-            contract => $contract,
-            action   => 'BUY',
-            price    => $price,
+            client      => $client,
+            contract    => $contract,
+            action      => 'BUY',
+            price       => $price,
             amount_type => 'payout',
         });
         $error = $transaction->_validate_trade_pricing_adjustment;
@@ -545,10 +545,10 @@ subtest 'BUY - trade pricing adjustment' => sub {
         # sale back slippage check
         $requested_price = $contract->bid_price + ($allowed_move * $contract->payout + 0.1);
         $transaction = BOM::Transaction->new({
-            client   => $client,
-            contract => $contract,
-            action   => 'SELL',
-            price    => $requested_price,
+            client      => $client,
+            contract    => $contract,
+            action      => 'SELL',
+            price       => $requested_price,
             amount_type => 'payout',
         });
         $error = $transaction->_validate_sell_pricing_adjustment;
@@ -565,10 +565,10 @@ subtest 'BUY - trade pricing adjustment' => sub {
         # amount_type = payout, price increase < allowed move
         $price = $contract->bid_price - ($allowed_move * $contract->payout / 2);
         $transaction = BOM::Transaction->new({
-            client   => $client,
-            contract => $contract,
-            action   => 'SELL',
-            price    => $price,
+            client      => $client,
+            contract    => $contract,
+            action      => 'SELL',
+            price       => $price,
             amount_type => 'payout',
         });
         $error = $transaction->_validate_sell_pricing_adjustment;
@@ -581,10 +581,10 @@ subtest 'BUY - trade pricing adjustment' => sub {
         # amount_type = payout, price increase > allowable move => better execution price
         $price = $contract->bid_price - ($allowed_move * $contract->payout * 2);
         $transaction = BOM::Transaction->new({
-            client   => $client,
-            contract => $contract,
-            action   => 'SELL',
-            price    => $price,
+            client      => $client,
+            contract    => $contract,
+            action      => 'SELL',
+            price       => $price,
             amount_type => 'payout',
         });
         $error = $transaction->_validate_sell_pricing_adjustment;
@@ -953,9 +953,9 @@ subtest 'Purchase Sell Contract' => sub {
     });
 
     my $bpt = BOM::Transaction->new({
-        client   => $client,
-        contract => $contract,
-        price    => $contract->ask_price,
+        client      => $client,
+        contract    => $contract,
+        price       => $contract->ask_price,
         amount_type => 'payout'
     });
 
