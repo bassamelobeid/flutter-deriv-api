@@ -682,7 +682,7 @@ sub batch_buy {    ## no critic (RequireArgUnpacking)
                 }
             }
             $stat{$broker}->{success} = $success;
-            enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), [grep { !$_->{code} } @$list]);
+            enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), _get_list_for_expiryqueue($list));
         }
         catch {
             warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $_;    # log it
@@ -2044,6 +2044,23 @@ sub _get_params_for_expiryqueue {
     }
 
     return $hash;
+}
+
+sub _get_list_for_expiryqueue {
+    my $full_list = shift;
+
+    my @ep_list = ();
+    foreach my $elm (@$full_list) {
+        next if $elm->{code};
+        push @ep_list,
+            {
+            contract_id           => $elm->{fmb}->{id},
+            held_by               => $elm->{loginid},
+            transaction_reference => $elm->{txn}->{id},
+            };
+    }
+
+    return \@eq_list;
 }
 
 no Moose;
