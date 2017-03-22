@@ -156,6 +156,7 @@ sub run {
         my $elapsed = Time::HiRes::time - $script_start_time;
         printf "Took %.1f hours to run\n", $elapsed / 3600;
     }
+    return;
 }
 
 1;
