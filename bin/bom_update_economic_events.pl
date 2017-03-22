@@ -1,6 +1,6 @@
 #!/etc/rmg/bin/perl
 use strict;
 use warnings;
-use
+use BOM::MarketDataAutoUpdater::Script::UpdateEconomicEvents
 
-exit BOM::MarketDataAutoUpdater::Script::UpdateEconomicEvents->new()->run();
+exit BOM::MarketDataAutoUpdater::Script::UpdateEconomicEvents->new->run();
