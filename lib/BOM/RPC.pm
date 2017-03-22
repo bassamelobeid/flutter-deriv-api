@@ -36,6 +36,7 @@ use BOM::RPC::v3::Japan::NewAccount;
 use BOM::RPC::v3::MT5::Account;
 use BOM::RPC::v3::CopyTrading::Statistics;
 use BOM::RPC::v3::CopyTrading;
+use BOM::Validation;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -80,11 +81,8 @@ sub _validate_tnc {
 
     # we shouldn't get to this error, so we can die it directly
     my $client = $params->{client} // die "client should be authenticated before calling this action";
-    return $params if $client->is_virtual;
 
-    my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
-    my $client_tnc_status   = $client->get_status('tnc_approval');
-    if (not $client_tnc_status or ($client_tnc_status->reason ne $current_tnc_version)) {
+    unless (BOM::Validation->new(client => $client)->validate_tnc) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'ASK_TNC_APPROVAL',
             message_to_client => localize('Terms and conditions approval is required.'),
@@ -98,21 +96,12 @@ sub _compliance_checks {
 
     # we shouldn't get to this error, so we can die it directly
     my $client = $params->{client} // die "client should be authed before calling this action";
-
-    # checks are not applicable for virtual, costarica and champion clients
-    return $params
-        if ($client->is_virtual
-        or $client->landing_company->short =~ /^(?:costarica|champion)$/);
-
-    # as per compliance for high risk client we need to check
-    # if financial assessment details are completed or not
-    if (($client->aml_risk_classification // '') eq 'high' and not $client->financial_assessment()) {
+    unless (BOM::Validation->new(client => $client)->compliance_checks) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'FinancialAssessmentRequired',
             message_to_client => localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
         });
     }
-
     return $params;
 }
 
@@ -121,8 +110,7 @@ sub _check_tax_information {
 
     # we shouldn't get to this error, so we can die it directly
     my $client = $params->{client} // die "client should be authed before calling this action";
-
-    if ($client->landing_company->short eq 'maltainvest' and not $client->get_status('crs_tin_information')) {
+    unless (BOM::Validation->new(client => $client)->check_tax_information) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'TINDetailsMandatory',
                 message_to_client => localize(
@@ -139,9 +127,7 @@ sub _check_trade_status {
 
     # we shouldn't get to this error, so we can die it directly
     my $client = $params->{client} // die "client should be authenticated before calling this action";
-    return $params
-        if $client->is_virtual;
-    unless ($client->allow_trade) {
+    unless (BOM::Validation->new(client => $client)->check_trade_status) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'PleaseContactSupport',
             message_to_client => localize('Please contact customer support for more information.'),
