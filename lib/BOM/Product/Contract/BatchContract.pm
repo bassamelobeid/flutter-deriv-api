@@ -2,6 +2,7 @@ package BOM::Product::Contract::BatchContract;
 
 use Moose;
 use BOM::Product::Categorizer;
+use BOM::Platform::Context qw (localize);
 
 has parameters => (
     is       => 'ro',
