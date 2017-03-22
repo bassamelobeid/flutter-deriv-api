@@ -203,16 +203,24 @@ sub register {
         proposal_array_collector => sub {
             my $c = shift;
             Scalar::Util::weaken(my $weak_c = $c);
-            # send proposal_array stream messages collected from apropriate proposal streams
+            # send proposal_array stream messages collected from appropriate proposal streams
             my $proposal_array_loop_id_keeper;
             $proposal_array_loop_id_keeper = Mojo::IOLoop->recurring(
                 1,
                 sub {
-                    unless (defined $weak_c) {
+                    # It's possible for the client to disconnect before we're finished.
+                    # If that happens, make sure we clean up but don't attempt to process any further.
+                    my $c = $weak_c;
+                    unless($c && $c->tx) {
                         Mojo::IOLoop->remove($proposal_array_loop_id_keeper);
                         return;
-                    }
-                    my $proposal_array_subscriptions = $weak_c->stash('proposal_array_subscriptions') // {};
+                    };
+
+                    my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') or do {
+                        Mojo::IOLoop->remove($proposal_array_loop_id_keeper);
+                        return;
+                    };
+
                     for my $pa_uuid (keys %{$proposal_array_subscriptions}) {
                         my @proposals;
                         for my $i (0 .. $#{$proposal_array_subscriptions->{$pa_uuid}{seq}}) {
