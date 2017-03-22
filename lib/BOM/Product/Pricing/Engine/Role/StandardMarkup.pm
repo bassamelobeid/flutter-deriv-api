@@ -23,8 +23,8 @@ use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
 
 has [
-    qw(smile_uncertainty_markup butterfly_markup vol_spread_markup spot_spread_markup risk_markup forward_starting_markup economic_events_markup)] =>
-    (
+    qw(smile_uncertainty_markup butterfly_markup vol_spread vol_spread_markup spot_spread_markup risk_markup forward_starting_markup economic_events_markup)
+    ] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
     lazy_build => 1,
@@ -42,10 +42,29 @@ has _volatility_seasonality_step_size => (
     default => 100,
 );
 
+sub _build_vol_spread {
+    my $self = shift;
+
+    my $bet = $self->bet;
+
+    my $vol_spread = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'vol_spread',
+            description => 'The vol spread for this time',
+            set_by      => 'Quant::Framework::VolSurface',
+            base_amount => $bet->volsurface->get_spread({
+                    sought_point => 'max',
+                    day          => $bet->timeindays->amount
+                }
+            ),
+        });
+
+    return $vol_spread;
+}
+
 sub _build_vol_spread_markup {
     my $self = shift;
 
-    my $comm = Math::Util::CalculatedValue::Validatable->new({
+    my $vsm = Math::Util::CalculatedValue::Validatable->new({
         name        => 'vol_spread_markup',
         description => 'vol spread adjustment',
         set_by      => __PACKAGE__,
@@ -53,25 +72,8 @@ sub _build_vol_spread_markup {
         minimum     => 0,
         maximum     => 0.7,
     });
+
     my $bet = $self->bet;
-    my $spread_type;
-
-    if ($bet->is_atm_bet) {
-        $spread_type = 'atm';
-    } else {
-        $spread_type = 'max';
-    }
-
-    my $vol_spread = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'vol_spread',
-            description => 'The vol spread for this time',
-            set_by      => 'Quant::Framework::VolSurface',
-            base_amount => $bet->volsurface->get_spread({
-                    sought_point => $spread_type,
-                    day          => $bet->timeindays->amount
-                }
-            ),
-        });
 
     my $vega = Math::Util::CalculatedValue::Validatable->new({
         name        => 'bet_vega',
@@ -80,10 +82,10 @@ sub _build_vol_spread_markup {
         base_amount => abs($bet->vega),
     });
 
-    $comm->include_adjustment('reset',    $vol_spread);
-    $comm->include_adjustment('multiply', $vega);
+    $vsm->include_adjustment('reset',    $self->vol_spread);
+    $vsm->include_adjustment('multiply', $vega);
 
-    return $comm;
+    return $vsm;
 }
 
 sub _build_butterfly_markup {
@@ -265,8 +267,8 @@ sub _build_risk_markup {
         base_amount => 0,
     });
     if ($self->bet->market->markups->apply_traded_markets_markup) {
-        $risk_markup->include_adjustment('add',      $self->vol_spread_markup);
-        $risk_markup->include_adjustment('add',      $self->spot_spread_markup) if (not $self->bet->is_intraday);
+        $risk_markup->include_adjustment('add', $self->vol_spread_markup)  if not $self->bet->is_atm_bet;
+        $risk_markup->include_adjustment('add', $self->spot_spread_markup) if (not $self->bet->is_intraday);
         $risk_markup->include_adjustment('subtract', $self->forward_starting_markup);
 
         if (not $self->bet->is_atm_bet and grep { $self->bet->market->name eq $_ } qw(indices stocks) and $self->bet->timeindays->amount < 7) {
