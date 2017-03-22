@@ -211,10 +211,10 @@ sub register {
                     # It's possible for the client to disconnect before we're finished.
                     # If that happens, make sure we clean up but don't attempt to process any further.
                     my $c = $weak_c;
-                    unless($c && $c->tx) {
+                    unless ($c && $c->tx) {
                         Mojo::IOLoop->remove($proposal_array_loop_id_keeper);
                         return;
-                    };
+                    }
 
                     my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') or do {
                         Mojo::IOLoop->remove($proposal_array_loop_id_keeper);
@@ -231,7 +231,7 @@ sub register {
                             my $proposal = pop @{$sub->{proposals}{$uuid}} or return;
                             delete $proposal->{msg_type};
                             my $target = $proposal->{error} ? ($proposal->{error}{details} //= {}) : $proposal->{proposal};
-                            $target->{barrier}  = $barriers->{barrier};
+                            $target->{barrier} = $barriers->{barrier};
                             $target->{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
                             push @proposals, $proposal;
                             $sub->{proposals}{$uuid} = [$proposal];    # keep last and send it if no new in 1 sec
