@@ -1,7 +1,8 @@
 #!/etc/rmg/bin/perl
 package main;
 
-use strict 'vars';
+use strict;
+use warnings;
 use open qw[ :encoding(UTF-8) ];
 
 use HTML::Entities;
@@ -24,12 +25,14 @@ $Quant::Framework::Underlying::FORCE_REALTIME_FEED = 1;
 
 my $fullfeed_re = qr/^\d\d?-\w{3}-\d\d.fullfeed(?!\.zip)/;
 
-my $_quotes_cache;
+my $_quotes_cache = {};
 
 sub last_quote {
     my $dir = shift;
 
-    # check in cache
+    # TODO There are warnings 'Variable "$_quotes_cache" is not available',  don't know why
+    no warnings 'closure';    ## no critic (ProhibitNoWarnings)
+                              # check in cache
     return @{$_quotes_cache->{$dir}} if $_quotes_cache->{$dir};
 
     my $recent = reduce { $a->[1] < $b->[1] ? $a : $b } map { [$_, -M $_] } $dir->children($fullfeed_re);

@@ -1,6 +1,8 @@
 #!/etc/rmg/bin/perl
 package main;
-use strict 'vars';
+use strict;
+use warnings;
+no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
 
 use Locale::Country;
 use DateTime;
@@ -325,7 +327,7 @@ foreach my $client (@clients) {
     ]
 }
 
-my $table_end .=
+my $table_end =
       '</table>'
     . '<br /><input type="submit" value="Save">'
     . '<input type=hidden name="save_file" value="save">'

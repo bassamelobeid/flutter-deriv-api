@@ -1,7 +1,8 @@
 #!/etc/rmg/bin/perl
 package main;
 
-use strict 'vars';
+use strict;
+use warnings;
 use HTML::Entities;
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);

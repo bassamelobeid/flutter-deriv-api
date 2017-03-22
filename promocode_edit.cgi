@@ -41,7 +41,7 @@ my $countries_instance = Brands->new(name => request()->brand)->countries_instan
 if ($input{save}) {
     @messages = _validation_errors(%input);
     if (@messages == 0) {
-        eval {
+        eval {    ## no critic (RequireCheckingReturnValueOfEval)
             $pc->start_date($input{start_date})   if $input{start_date};
             $pc->expiry_date($input{expiry_date}) if $input{expiry_date};
             $pc->status($input{status});

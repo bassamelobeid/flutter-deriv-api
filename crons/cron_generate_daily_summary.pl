@@ -1,11 +1,11 @@
 #!/etc/rmg/bin/perl
+use strict;
+use warnings;
 
 BEGIN {
     push @INC, "/home/git/regentmarkets/bom/cgi", "/home/git/regentmarkets/bom-backoffice/lib";
 }
 
-use strict;
-use warnings;
 use Getopt::Long;
 
 use Brands;

@@ -72,14 +72,14 @@ sub _SetEnvironment {
     {
         # extract client IP from X-Forwarded-For
         if (defined $ENV{'HTTP_X_FORWARDED_FOR'}) {
-            $ENV{'HTTP_X_FORWARDED_FOR'} =~ s/\s//g;    ## no critic
+            $ENV{'HTTP_X_FORWARDED_FOR'} =~ s/\s//g;
             my @ips = split(/,\s*/, $ENV{'HTTP_X_FORWARDED_FOR'});
             shift @ips while ($ips[0] and $ips[0] =~ /^(192|10|172|127)\./);
             my $real_client_ip = $ips[0];
             if (defined $real_client_ip
                 and $real_client_ip =~ /^(\d+\.\d+\.\d+\.\d+)$/)
             {
-                $ENV{'REMOTE_ADDR'} = $1;               ## no critic
+                $ENV{'REMOTE_ADDR'} = $1;    ## no critic (RequireLocalizedPunctuationVars)
             }
         }
     }
