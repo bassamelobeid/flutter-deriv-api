@@ -12,10 +12,13 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use Postgres::FeedDB::Spot::Tick;
 use Date::Utility;
 use BOM::MarketData qw(create_underlying);
+use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
 my $now = Date::Utility->new('2016-03-18 05:00:00');
@@ -87,13 +90,13 @@ my $contract_args = {
 
 #key is "contract type_pip diff" and value is expected barrier(s)
 my $expected = {
-    'CALL_0'        => 55.27,
+    'CALL_0'        => 55.26,
     'CALL_1000'     => 64.75,
     'NOTOUCH_0'     => 5.28,
     'NOTOUCH_1000'  => 45.18,
     'ONETOUCH_2000' => 100,
     'PUT_1000'      => 73.93,
-    'PUT_0'         => 55.3,
+    'PUT_0'         => 55.29,
 };
 
 my $underlying = create_underlying('frxEURUSD');
