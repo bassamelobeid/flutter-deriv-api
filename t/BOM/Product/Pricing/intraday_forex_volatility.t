@@ -44,7 +44,7 @@ my $contract_args = {
     duration     => '30m',
     date_start   => $now,
     date_pricing => $now,
-    barrier      => 'S0P',
+    barrier      => 'S10P',
     currency     => 'USD',
 };
 
@@ -85,5 +85,8 @@ subtest 'full set of decimate ticks' => sub {
     is $c->pricing_args->{volatility_scaling_factor}, 1, 'scaling factor is 1';
     is $c->pricing_engine->risk_markup->peek_amount('vol_spread_markup'), 0,
         'charged a 0% vol spread markup when we have full set of ticks to calculate volatility';
+    $contract_args->{barrier} = 'S0P';
+    $c = produce_contract($contract_args);
+    ok !$c->pricing_engine->risk_markup->peek_amount('vol_spread_markup'), 'vol_spread_markup undef for atm contract';
 };
 done_testing();
