@@ -212,30 +212,36 @@ sub proposal_array {
                 try {
                     # should not throw 'cos we do not $future->fail
                     my @result = $f->get;
-                    delete @{$_}{qw(msg_type passthrough)} for @result;
-                    for my $i (0 .. $#{$req_storage->{args}->{barriers}}) {
-                        if (keys %{$result[$i]}) {
-                            if ($result[$i]->{error}) {    # error could be 'Request timed out' without any additional details
-                                if (ref $result[$i]->{error} eq 'HASH') {
-                                    $result[$i]->{error}{details}{barrier}  = ${$req_storage->{args}->{barriers}}[$i]->{barrier};
-                                    $result[$i]->{error}{details}{barrier2} = ${$req_storage->{args}->{barriers}}[$i]->{barrier2}
-                                        if exists ${$req_storage->{args}->{barriers}}[$i]->{barrier2};
-                                }
-                            } else {
-                                $result[$i]->{proposal}{barrier}  = ${$req_storage->{args}->{barriers}}[$i]->{barrier};
-                                $result[$i]->{proposal}{barrier2} = ${$req_storage->{args}->{barriers}}[$i]->{barrier2}
-                                    if exists ${$req_storage->{args}->{barriers}}[$i]->{barrier2};
+
+                    # Merge the results from all calls. We prepare the data structure first...
+                    my %proposal_array;
+                    @proposal_array{@contract_types} = map {; [ ] } @contract_types;
+
+                    # ... then fit the received results into it
+                    my @pending_barriers = @barriers;
+                    for my $res (map {; $_->{proposal} } @result) {
+                        my @expected_barriers = splice @pending_barriers, 0, min(@pending_barriers, BARRIERS_PER_BATCH);
+                        if(exists $res->{proposals}) {
+                            for my $contract_type (keys %{$res->{proposals}}) {
+                                my @prices = @{ $res->{proposals}{$contract_type} };
+                                warn "Barrier mismatch - expected " . @expected_barriers . " but had " . @prices unless @prices == @expected_barriers;
+                                push @{$proposal_array{$contract_type}}, @prices;
                             }
+                        } else {
+                            warn "Invalid entry in response - " . Dumper($res);
+                            $c->send({json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')});
+                            return;
                         }
                     }
+
+                    delete @{$_}{qw(msg_type passthrough)} for @result;
+
                     # Return a single result back to the client.
                     my $res = {
                         json => {
                             echo_req => $req_storage->{args},
                             proposal_array => {
-                                proposals => {
-                                    map {; $_ => [ map { $_->{proposal} || $_ } @result ] } @contract_types
-                                },
+                                proposals => \%proposal_array,
                                 $uuid ? (id => $uuid) : (),
                             },
                             msg_type => $msg_type,
