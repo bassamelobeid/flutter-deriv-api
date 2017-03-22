@@ -1,6 +1,7 @@
 #!/etc/rmg/bin/perl
 package main;
-use strict 'vars';
+use strict;
+use warnings;
 
 use Scalar::Util qw(looks_like_number);
 use Date::Utility;

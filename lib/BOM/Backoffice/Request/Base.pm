@@ -76,9 +76,9 @@ has 'brand' => (
         is  => 'ro',
         isa => subtype(
             Str => where {
-                exists $known_codes{$_}
+                exists $known_codes{$_};
             } => message {
-                "Unknown broker code [$_]"
+                "Unknown broker code [$_]";
             }
         ),
         lazy_build => 1,
@@ -117,7 +117,8 @@ sub _build_brand {
 sub _build_available_currencies {
     my $self = shift;
 
-    my $landing_company = LandingCompany::Registry::get_by_broker($self->broker_code) or die sprintf "Invalid landing company for broker code [%s]", $self->broker_code;
+    my $landing_company = LandingCompany::Registry::get_by_broker($self->broker_code)
+        or die sprintf "Invalid landing company for broker code [%s]", $self->broker_code;
     return $landing_company->legal_allowed_currencies;
 }
 

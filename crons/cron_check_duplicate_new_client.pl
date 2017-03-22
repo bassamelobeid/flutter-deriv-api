@@ -1,11 +1,11 @@
 #!/etc/rmg/bin/perl
 package main;
+use strict;
+use warnings;
 
 BEGIN {
     push @INC, "/home/git/regentmarkets/bom-backoffice/lib";
 }
-
-use strict;
 
 use BOM::Backoffice::Sysinit ();
 use BOM::Database::DataMapper::CollectorReporting;

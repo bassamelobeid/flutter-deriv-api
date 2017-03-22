@@ -3,6 +3,7 @@ package main;
 
 use strict;
 use warnings;
+no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
 
 no indirect;
 
@@ -31,8 +32,8 @@ PrintContentType();
 
 my $base_dir = '/var/lib/binary/trading_strategy_data/';
 
-my $cgi      = request()->cgi;
-if(my $download = $cgi->param('download')) {
+my $cgi = request()->cgi;
+if (my $download = $cgi->param('download')) {
     my ($date, $dataset) = $download =~ m{^(\d{4}-\d{2}-\d{2})/([0-9a-zA-Z_]{4,20})$} or die 'invalid file';
 
     my $path = path($base_dir)->child($date)->child($dataset . '.csv');
@@ -55,7 +56,7 @@ if (BOM::Platform::Config::on_production() && $hostname !~ /^collector01/) {
 
 my $config = LoadFile('/home/git/regentmarkets/bom-backoffice/config/trading_strategy_datasets.yml');
 
-my @dates = sort map $_->basename, path($base_dir)->children or do {
+my @dates = sort map { $_->basename } path($base_dir)->children or do {
     print "<h2>No data found, please check whether the update_trading_strategy_data cronjob is enabled on this server</h2>\n";
     code_exit_BO();
 };
@@ -77,14 +78,15 @@ my @tbl;
 
 my $process_dataset = sub {
     my ($date_selected, $dataset_selected) = @_;
-    $date_selected = [ $date_selected ] unless ref $date_selected;
-    $dataset_selected = [ $dataset_selected ] unless ref $dataset_selected;
+    $date_selected    = [$date_selected]    unless ref $date_selected;
+    $dataset_selected = [$dataset_selected] unless ref $dataset_selected;
     my @results;
     my %stats;
     $stats{file_size} = 0;
     my @spots;
     my $sum = 0;
     DATE:
+
     for my $date (@$date_selected) {
         warn "date path not found: " . path($base_dir)->child($date) unless path($base_dir)->child($date)->exists;
 
@@ -114,7 +116,7 @@ my $process_dataset = sub {
         }
         my $line = 0;
 
-        for(@data) {
+        for (@data) {
             next if $line++ % $skip;
             eval {
                 my @market_data = split /\s*,\s*/;
@@ -130,22 +132,23 @@ my $process_dataset = sub {
                 push @results, $sum;
                 ++$stats{count};
                 ++$stats{trades} if $should_buy;
+
                 if ($market_data{value} > 0.001) {
                     ++$stats{'winners'};
                 } else {
                     ++$stats{'losers'};
                 }
                 $stats{bought_buy_price}{sum} += $market_data{buy_price} if $should_buy;
-                $stats{buy_price}{sum}        += $market_data{buy_price};
+                $stats{buy_price}{sum} += $market_data{buy_price};
                 $stats{buy_price}{min} //= $market_data{buy_price};
                 $stats{buy_price}{max} //= $market_data{buy_price};
-                $stats{buy_price}{min}         = min $stats{buy_price}{min}, $market_data{buy_price};
-                $stats{buy_price}{max}         = max $stats{buy_price}{max}, $market_data{buy_price};
-                $stats{payout}{mean}          += $market_data{value};
-                $stats{payout}{sum}           += $market_data{value};
+                $stats{buy_price}{min} = min $stats{buy_price}{min}, $market_data{buy_price};
+                $stats{buy_price}{max} = max $stats{buy_price}{max}, $market_data{buy_price};
+                $stats{payout}{mean} += $market_data{value};
+                $stats{payout}{sum}  += $market_data{value};
 
                 $stats{start} ||= Date::Utility->new($market_data{epoch});
-                $stats{end} ||= $stats{start} or die 'no start info? epoch was ' . $market_data{epoch};
+                ($stats{end} ||= $stats{start}) or die 'no start info? epoch was ' . $market_data{epoch};
                 $stats{end} = Date::Utility->new($market_data{epoch}) if $market_data{epoch} > $stats{end}->epoch;
                 1;
             } or do {
@@ -165,20 +168,20 @@ my $process_dataset = sub {
         $stats{sum_contracts_bought} = $sum;
         $stats{profit_margin} =
             $stats{bought_buy_price}{sum}
-        ? sprintf '%.2f%%', -100.0 * $sum / $stats{bought_buy_price}{sum}
-        : 'N/A';
+            ? sprintf '%.2f%%', -100.0 * $sum / $stats{bought_buy_price}{sum}
+            : 'N/A';
         $stats{payout}{mean} /= $stats{count};
     }
-    if(@spots > 50_000) {
+    if (@spots > 50_000) {
         my $spot_skip = 1 + int(@spots / 50_000);
         {
             my @output_spots;
             my @output_results;
-            for(my $idx = 0; $idx < @spots; $idx += $spot_skip) {
-                push @output_spots, $spots[$idx];
+            for (my $idx = 0; $idx < @spots; $idx += $spot_skip) {
+                push @output_spots,   $spots[$idx];
                 push @output_results, $results[$idx];
             }
-            @spots = @output_spots;
+            @spots   = @output_spots;
             @results = @output_results;
         }
     }
@@ -197,19 +200,23 @@ my $statistics_table = sub {
     my $start_epoch = Date::Utility->new($stats->{start})->epoch;
     my $end_epoch   = Date::Utility->new($stats->{end})->epoch;
     return [
-        ['# of bets',              $stats->{count} . '<br>' . $stats->{file_size}],
-        ['Step size',              $stats->{step_size}],
-        ['Starting date',          Date::Utility->new($stats->{start})->datetime],
-        ['Ending date',            Date::Utility->new($stats->{end})->datetime],
-        ['Period',                 Time::Duration::duration($end_epoch - $start_epoch)],
-        ['Average buy price',      to_monetary_number_format($stats->{buy_price}{mean}) . '<br>' . ('(' . to_monetary_number_format($stats->{buy_price}{min}) . '/' . to_monetary_number_format($stats->{buy_price}{max}) . ')')],
+        ['# of bets',     $stats->{count} . '<br>' . $stats->{file_size}],
+        ['Step size',     $stats->{step_size}],
+        ['Starting date', Date::Utility->new($stats->{start})->datetime],
+        ['Ending date',   Date::Utility->new($stats->{end})->datetime],
+        ['Period',        Time::Duration::duration($end_epoch - $start_epoch)],
+        [
+            'Average buy price',
+            to_monetary_number_format($stats->{buy_price}{mean}) . '<br>'
+                . ('(' . to_monetary_number_format($stats->{buy_price}{min}) . '/' . to_monetary_number_format($stats->{buy_price}{max}) . ')')
+        ],
         ['Average payout',         to_monetary_number_format($stats->{payout}{mean})],
         ['Number of winning bets', $stats->{winners}],
         ['Number of losing bets',  $stats->{losers}],
         ['Bets bought',            $stats->{trades}],
-        ['Sum of payouts',         sprintf '%.02f', $stats->{payout}{sum}],
-        ['Sum contracts bought',   sprintf '%.02f', $stats->{bought_buy_price}{sum} // 0],
-        ['Company profit',         sprintf '%.02f', -($stats->{sum_contracts_bought} // 0)],
+        ['Sum of payouts',       sprintf '%.02f', $stats->{payout}{sum}],
+        ['Sum contracts bought', sprintf '%.02f', $stats->{bought_buy_price}{sum} // 0],
+        ['Company profit',       sprintf '%.02f', -($stats->{sum_contracts_bought} // 0)],
         ['Company profit margin', $stats->{profit_margin} // 0],
         ['Normalised Least Squares', sprintf '%.04f', 100.0 * $stats->{regression} // 0],
     ];
@@ -218,19 +225,19 @@ my $statistics_table = sub {
 # When the button is pressed, we end up in here:
 my ($underlying_selected) = $cgi->param('underlying') =~ /^(\w+|\*)$/;
 my ($duration_selected)   = $cgi->param('duration') =~ /^([\w ]+|\*)$/;
-my (@type_selected)       = grep /^(\w+|\*)$/, $cgi->param('type');
+my (@type_selected)       = grep { /^(\w+|\*)$/ } $cgi->param('type');
 if ($cgi->param('run')) {
     if (grep { $_ eq '*' } $underlying_selected, $duration_selected, @type_selected, @date_selected) {
-        @date_selected = @dates if grep { $_ eq '*' } @date_selected;
+        @date_selected = @dates              if grep { $_ eq '*' } @date_selected;
         @type_selected = @{$config->{types}} if grep { $_ eq '*' } @type_selected;
-        $rslt = {};
+        $rslt          = {};
         TABLE:
         for my $underlying ($underlying_selected eq '*' ? @{$config->{underlyings}} : $underlying_selected) {
             for my $duration_line ($duration_selected eq '*' ? @{$config->{durations}} : $duration_selected) {
                 (my $duration = $duration_line) =~ s/ step /_/;
                 for my $type (@type_selected) {
                     my $dataset = join '_', $underlying, $duration, $type;
-                    push @tbl, eval { $process_dataset->([ @date_selected ], $dataset) } or do {
+                    push @tbl, eval { $process_dataset->([@date_selected], $dataset) } or do {
                         print "Failed to process $dataset - $@" if $@;
                         ();
                     };
@@ -241,7 +248,7 @@ if ($cgi->param('run')) {
     } else {
         @date_selected = @dates if grep { $_ eq '*' } @date_selected;
         @type_selected = @{$config->{types}} if grep { $_ eq '*' } @type_selected;
-        my $dataset = [ map {; join '_', $underlying_selected, ($duration_selected =~ s/ step /_/r), $_ } @type_selected ];
+        my $dataset = [map { ; join '_', $underlying_selected, ($duration_selected =~ s/ step /_/r), $_ } @type_selected];
         $rslt = $process_dataset->(\@date_selected, $dataset);
     }
 }
@@ -254,10 +261,10 @@ my %template_args = (
         type       => ['*', @{$config->{types}}],
     },
     selected_parameter => {
-        date       => [ @date_selected ],
+        date       => [@date_selected],
         underlying => $underlying_selected,
         duration   => $duration_selected,
-        type       => [ @type_selected ],
+        type       => [@type_selected],
         price_type => $price_type_selected,
     },
     count            => $count,
@@ -305,13 +312,12 @@ if (@tbl) {
                 . $strategy_name
                 . '&type='
                 . $details{Type} . '">'
-                . join(" ", map $details{$_}, grep exists $details{$_}, @hdr) . '</a>',
-            map $_->[1],
-            @$stats
+                . join(" ", map { $details{$_} } grep { exists $details{$_} } @hdr) . '</a>',
+            map { $_->[1] } @$stats
             ];
     }
     $template_args{result_table} = {
-        header => ['Bet', map $_->[0], @$hdr],
+        header => ['Bet', map { $_->[0] } @$hdr],
         body   => \@result_row,
     };
 }

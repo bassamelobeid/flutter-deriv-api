@@ -1,6 +1,9 @@
 #!/etc/rmg/bin/perl
 package main;
-use strict 'vars';
+use strict;
+use warnings;
+no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
+
 use open qw[ :encoding(UTF-8) ];
 use Format::Util::Numbers qw(commas);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -31,11 +34,11 @@ my @sums;
 my @fields;
 
 my @to_out;
-local *FILE;
-if (open(FILE, $filename)) {
-    flock(FILE, 1);
 
-    while (my $l = <FILE>) {
+if (open(my $fh, '<', $filename)) {    ## no critic (RequireBriefOpen)
+    flock($fh, 1);
+
+    while (my $l = <$fh>) {
         if ($l =~ /^\#/) { print "<TR><TD colspan=8><font size=2 face=verdana><b>$l</td></tr>"; }
         else {
             @fields = split(/\,/, $l);
@@ -74,7 +77,7 @@ if (open(FILE, $filename)) {
         }
     }
 
-    close(FILE);
+    close($fh);
 } else {
     print "Can not open " . encode_entities($filename);
 }
@@ -88,7 +91,7 @@ if (request()->param('sortorder') =~ /reverse/) {
         sort { my ($a1, $b1); $a =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $a1 = $1; $b =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $b1 = $1; $b1 <=> $a1; } @to_out;
 }
 
-splice @s_to_out, $outputlargest;
+splice @s_to_out, $outputlargest if $#s_to_out > $outputlargest;
 print @s_to_out;
 
 print "<TR>";

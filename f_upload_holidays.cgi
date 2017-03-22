@@ -1,7 +1,8 @@
 #!/etc/rmg/bin/perl
 package main;
 
-use strict 'vars';
+use strict;
+use warnings;
 
 use BOM::BloombergCalendar;
 use File::Temp ();
@@ -14,7 +15,7 @@ PrintContentType();
 BOM::Backoffice::Auth0::can_access(['Quants']);
 
 # Upload holiday files
-my $cgi           = new CGI;
+my $cgi           = CGI->new;
 my $calendar_type = $cgi->param('calendar-type');
 my $calendar;
 
