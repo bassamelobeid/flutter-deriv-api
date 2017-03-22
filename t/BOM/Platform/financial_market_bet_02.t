@@ -171,7 +171,7 @@ sub buy_multiple_bets {
 sub sell_by_shortcode {
     my ($shortcode,$acc) = @_;
 
-    my $now      = Date::Utility->new;
+    my $now      = Date::Utility->new->plus_time_interval('1s');
 
     my $fmb = BOM::Database::Helper::FinancialMarketBet->new({
         bet_data         => +{
@@ -1741,8 +1741,6 @@ subtest 'batch_buy', sub {
         };
     }
     'survived buy_multiple_bets';
-
-    sleep 2;
 
     lives_ok {
         my $res = sell_by_shortcode($buy_multiple_shortcode, [$acc1, $acc2, $acc3] );
