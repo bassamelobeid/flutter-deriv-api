@@ -230,13 +230,9 @@ sub register {
                             # Bail out early if we have any streams without a response yet
                             my $proposal = pop @{$sub->{proposals}{$uuid}} or return;
                             delete $proposal->{msg_type};
-                            if ($proposal->{error}) {
-                                $proposal->{error}{details}{barrier} = $barriers->{barrier};
-                                $proposal->{error}{details}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
-                            } else {
-                                $proposal->{proposal}{barrier} = $barriers->{barrier};
-                                $proposal->{proposal}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
-                            }
+                            my $target = $proposal->{error} ? ($proposal->{error}{details} //= {}) : $proposal->{proposal};
+                            $target->{barrier}  = $barriers->{barrier};
+                            $target->{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
                             push @proposals, $proposal;
                             $sub->{proposals}{$uuid} = [$proposal];    # keep last and send it if no new in 1 sec
                         }
