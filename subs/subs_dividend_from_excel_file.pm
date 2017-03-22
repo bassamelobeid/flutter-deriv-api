@@ -1,4 +1,7 @@
-use strict 'vars';
+## no critic (RequireExplicitPackage)
+use strict;
+use warnings;
+
 use open qw[ :encoding(UTF-8) ];
 
 use Try::Tiny;
@@ -77,7 +80,7 @@ sub save_dividends {
             print " We are having error for $symbol: $_";
         };
     }
-
+    return;
 }
 
 ## The relevant data is either get from BDVD <GO> or SD

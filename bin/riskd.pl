@@ -1,5 +1,5 @@
 #!/etc/rmg/bin/perl
-
+## no critic (ProhibitMultiplePackages)
 package BOM::Riskd;
 
 use Moose;

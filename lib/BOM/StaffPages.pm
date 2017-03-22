@@ -1,4 +1,6 @@
 package BOM::StaffPages;
+use strict;
+use warnings;
 
 use MooseX::Singleton;
 use Data::Dumper;

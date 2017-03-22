@@ -18,9 +18,9 @@ sub config {
 # Here we handle situation caused by BO installations on multiple nodes with different functionalities
 #
 sub get_tmp_path_or_die {
-
-    my $d = config->{directory}->{tmp};
-    if ($_[0] and $_[0] eq 'gif') {
+    my $type = shift;
+    my $d    = config->{directory}->{tmp};
+    if ($type and $type eq 'gif') {
         $d = config->{directory}->{tmp_gif};
     }
     $d = $ENV{'TEST_TMPDIR'} if defined $ENV{'TEST_TMPDIR'};

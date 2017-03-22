@@ -1,4 +1,6 @@
-use strict 'vars';
+## no critic (RequireExplicitPackage)
+use strict;
+use warnings;
 use open qw[ :encoding(UTF-8) ];
 
 use Date::Manip;
@@ -93,14 +95,14 @@ sub DailyTurnOverReport {
         foreach my $curr (@all_currencies) {
             my $rate = $rates{$curr};
 
-            my $b = $aggregate_transactions->{$when->date_yyyymmdd}->{$action_bb}->{$curr}->{'amount'};
-            my $buys        += $b;
-            $USDbuys        += $b * $rate;
+            my $b    = $aggregate_transactions->{$when->date_yyyymmdd}->{$action_bb}->{$curr}->{'amount'};
+            my $buys = $b;
+            $USDbuys += $b * $rate;
             $allbuys{$curr} += $b;
 
-            my $s = $aggregate_transactions->{$when->date_yyyymmdd}->{$action_ss}->{$curr}->{'amount'};
-            my $sells        += $s;
-            $USDsells        += $s * $rate;
+            my $s     = $aggregate_transactions->{$when->date_yyyymmdd}->{$action_ss}->{$curr}->{'amount'};
+            my $sells = $s;
+            $USDsells += $s * $rate;
             $allsells{$curr} += $s;
 
             $tday{buys}->{$curr}  = int $buys;

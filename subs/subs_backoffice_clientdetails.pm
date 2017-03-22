@@ -1,3 +1,4 @@
+## no critic (RequireExplicitPackage)
 use strict;
 use warnings;
 use Encode;
@@ -132,7 +133,7 @@ sub print_client_details {
         csr_tin_information   => \@crs_tin_array
     };
 
-    BOM::Backoffice::Request::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
+    return BOM::Backoffice::Request::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
         || die "Error:" . BOM::Backoffice::Request::template->error();
 }
 
