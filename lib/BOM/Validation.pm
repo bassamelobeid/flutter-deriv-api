@@ -5,8 +5,14 @@ use warnings;
 
 use Moo;
 
-has client      => ( is => 'ro', required => 1 );
-has transaction => ( is => 'ro', required => 0 );
+has client => (
+    is       => 'ro',
+    required => 1
+);
+has transaction => (
+    is       => 'ro',
+    required => 0
+);
 
 sub validate_tnc {
     my $self = shift;
@@ -88,13 +94,11 @@ sub allow_trade {
     my $self = shift;
 
     return
-        if ($self->client->landing_company->short =~ /^(?:malta|iom)$/)
+            if ($self->client->landing_company->short =~ /^(?:malta|iom)$/)
         and not $self->client->get_status('age_verification')
         and $self->client->has_deposits;
     return if $self->client->get_status('unwelcome');
     return 1;
 }
-
-
 
 1;
