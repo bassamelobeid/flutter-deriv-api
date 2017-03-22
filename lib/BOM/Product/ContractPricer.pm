@@ -6,6 +6,7 @@ use warnings;
 use Price::Calculator;
 use Math::Util::CalculatedValue::Validatable;
 use List::MoreUtils qw(none all);
+use LandingCompany::Commission qw(get_underlying_base_commission);
 
 use Quant::Framework::EconomicEventCalendar;
 use Quant::Framework::Currency;
@@ -457,7 +458,15 @@ sub _build_risk_markup {
 sub _build_base_commission {
     my $self = shift;
 
-    return $self->price_calculator->base_commission;
+    my $market_name        = $self->market->name;
+    my $per_market_scaling = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market_name;
+    my $args               = {underlying_symbol => $self->underlying->symbol};
+    if ($self->can('landing_company')) {
+        $args->{landing_company} = $self->landing_company;
+    }
+    my $underlying_base = get_underlying_base_commission($args);
+
+    return $underlying_base * $per_market_scaling / 100;
 }
 
 sub _build_commission_markup {
@@ -600,26 +609,19 @@ sub _build_rho {
 sub _build_price_calculator {
     my $self = shift;
 
-    my $market_name             = $self->market->name;
-    my $per_market_scaling      = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling;
-    my $base_commission_scaling = $per_market_scaling->$market_name;
-
     return Price::Calculator->new({
-            currency                => $self->currency,
-            deep_otm_threshold      => $self->otm_threshold,
-            base_commission_scaling => $base_commission_scaling,
-            app_markup_percentage   => $self->app_markup_percentage,
-            ($self->has_base_commission)
-            ? (base_commission => $self->base_commission)
-            : (underlying_base_commission => $self->underlying->base_commission),
-            ($self->has_commission_markup)      ? (commission_markup      => $self->commission_markup)      : (),
-            ($self->has_commission_from_stake)  ? (commission_from_stake  => $self->commission_from_stake)  : (),
-            ($self->has_payout)                 ? (payout                 => $self->payout)                 : (),
-            ($self->has_ask_price)              ? (ask_price              => $self->ask_price)              : (),
-            ($self->has_theo_probability)       ? (theo_probability       => $self->theo_probability)       : (),
-            ($self->has_ask_probability)        ? (ask_probability        => $self->ask_probability)        : (),
-            ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
-        });
+        currency              => $self->currency,
+        deep_otm_threshold    => $self->otm_threshold,
+        base_commission       => $self->base_commission,
+        app_markup_percentage => $self->app_markup_percentage,
+        ($self->has_commission_markup)      ? (commission_markup      => $self->commission_markup)      : (),
+        ($self->has_commission_from_stake)  ? (commission_from_stake  => $self->commission_from_stake)  : (),
+        ($self->has_payout)                 ? (payout                 => $self->payout)                 : (),
+        ($self->has_ask_price)              ? (ask_price              => $self->ask_price)              : (),
+        ($self->has_theo_probability)       ? (theo_probability       => $self->theo_probability)       : (),
+        ($self->has_ask_probability)        ? (ask_probability        => $self->ask_probability)        : (),
+        ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
+    });
 }
 
 sub _build_bid_probability {

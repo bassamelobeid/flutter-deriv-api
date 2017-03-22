@@ -9,7 +9,10 @@ use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 
 use Data::Dumper;
 
-my $landing_company = 'japan';
+has landing_company => (
+    is      => 'ro',
+    default => 'japan',
+);
 
 override _build_otm_threshold => sub {
     return 0.035;    # a fixed 3.5% for japan regardless of market though we only offer forex now.
@@ -40,7 +43,7 @@ sub _build_predefined_contracts {
         available_contracts_for_symbol({
                 symbol          => $self->underlying->symbol,
                 date            => $self->underlying->for_date,
-                landing_company => $landing_company,
+                landing_company => $self->landing_company,
             }
         )->{available}};
 
@@ -64,7 +67,7 @@ override offering_specifics => sub {
             barrier_category  => $self->barrier_category,
             expiry_type       => $self->expiry_type,
             start_type        => $self->start_type,
-            landing_company   => $landing_company,
+            landing_company   => $self->landing_company,
             contract_category => $self->category->code,
         });
 };
@@ -79,7 +82,7 @@ override risk_profile => sub {
         start_type                     => $self->start_type,
         currency                       => $self->currency,
         barrier_category               => $self->barrier_category,
-        landing_company                => $landing_company,
+        landing_company                => $self->landing_company,
         symbol                         => $self->underlying->symbol,
         market_name                    => $self->underlying->market->name,
         submarket_name                 => $self->underlying->submarket->name,
