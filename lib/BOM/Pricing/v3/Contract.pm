@@ -283,8 +283,8 @@ sub handle_batch_contract {
     my $ask_prices = $batch_contract->ask_prices;
     for my $contract_type (keys %$ask_prices) {
         for my $barrier (@{$p2->{barriers}}) {
-            my $key = ref($barrier) ? $barrier->{high_barrier} . '-' . $barrier->{low_barrier} : $barrier;
-            warn "Could not find barrier for key $key, available: " . join ',', sort keys %{$ask_prices->{$contract_type}}
+            my $key = ref($barrier) ? ($barrier->{barrier}) . '-' . ($barrier->{barrier2}) : $barrier;
+            warn "Could not find barrier for key $key, where our barrier is " . Dumper($barrier) . " and available: " . join ',', sort keys %{$ask_prices->{$contract_type}}
                 unless exists $ask_prices->{$contract_type}{$key};
             push @{$proposals->{$contract_type}}, $ask_prices->{$contract_type}{$key} // {};
         }
