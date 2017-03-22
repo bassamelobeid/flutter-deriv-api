@@ -279,6 +279,7 @@ subtest "sell_contract_for_multiple_accounts => successful", sub {
 
     isa_ok $res->{sell_contract_for_multiple_accounts}{result},      'ARRAY';
     isa_ok $res->{sell_contract_for_multiple_accounts}{result}->[0], 'HASH';
+    ok scalar @{$res->{sell_contract_for_multiple_accounts}{result}} == 2, 'check res count';
     ok( defined $res->{sell_contract_for_multiple_accounts}{result}->[0]->{transaction_id}, "check trx exist" );
     for my $r (@{$res->{sell_contract_for_multiple_accounts}{result}}) {
         ok( defined $r->{transaction_id} && defined $trx_ids->{$r->{transaction_id}}, "Check transaction ID" );
