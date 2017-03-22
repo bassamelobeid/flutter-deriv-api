@@ -229,7 +229,7 @@ sub proposal_array {
                             }
                         } else {
                             warn "Invalid entry in response - " . Dumper($res);
-                            $c->send({json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')});
+                            $c->send({json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')}) if $c and $c->tx;
                             return;
                         }
                     }
@@ -251,7 +251,7 @@ sub proposal_array {
                 }
                 catch {
                     warn "proposal_array exception - $_";
-                    $c->send({json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')});
+                    $c->send({json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')}) if $c and $c->tx;
                 };
             }));
 
