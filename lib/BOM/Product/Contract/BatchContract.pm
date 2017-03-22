@@ -14,6 +14,17 @@ has _contracts => (
     lazy_build => 1,
 );
 
+has underlying => (
+    is      => 'ro',
+    lazy_build => 1,
+    handles => [qw(market pip_size)],
+);
+
+sub _build_underlying {
+    my ($self) = @_;
+    return $self->_contracts->[0]->underlying;
+}
+
 sub _build__contracts {
     my $self = shift;
 
