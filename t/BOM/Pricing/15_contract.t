@@ -664,7 +664,7 @@ subtest $method => sub {
         'exit_tick'       => '0.99340',
         'exit_tick_time'  => 1127288661,
         'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 42 seconds after contract start time.',
-        'shortcode'       => 'CALL_FRXAUDCAD_196.72_1127288260_1127288662_S0P_0',
+        'shortcode'       => 'CALL_FRXAUDCAD_196.31_1127288260_1127288662_S0P_0',
         'underlying'      => 'frxAUDCAD',
         is_valid_to_sell  => 1,
     };
@@ -696,7 +696,7 @@ subtest $method => sub {
         'exit_tick'       => '0.99340',
         'exit_tick_time'  => 1127288661,
         'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 42 seconds after contract start time.',
-        'shortcode'       => 'CALL_FRXAUDCAD_196.72_1127288260_1127288662_S0P_0',
+        'shortcode'       => 'CALL_FRXAUDCAD_196.31_1127288260_1127288662_S0P_0',
         'underlying'      => 'frxAUDCAD',
         is_valid_to_sell  => 0,
         validation_error  => 'This contract has been sold.',
