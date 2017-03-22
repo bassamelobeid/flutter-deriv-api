@@ -54,18 +54,70 @@ sub ask_prices {
     foreach my $contract (@{$self->_contracts}) {
         my $barrier_key =
               $contract->two_barriers
-            ? $contract->high_barrier->as_absolute . '-' . $contract->low_barrier->as_absolute
-            : $contract->barrier->as_absolute;
+            ? (0+$contract->high_barrier->as_absolute) . '-' . (0+$contract->low_barrier->as_absolute)
+            : (0+$contract->barrier->as_absolute);
+        my $contract_info = ($prices{$contract->code}{$barrier_key} //= {});
         if ($contract->is_valid_to_buy) {
-            $prices{$contract->code}{$barrier_key}{ask_price}     = $contract->ask_price;
-            $prices{$contract->code}{$barrier_key}{display_value} = $contract->ask_price;
-            $prices{$contract->code}{$barrier_key}{longcode}      = $contract->longcode;
+            $contract_info->{$_} = $contract->$_ for qw(ask_price longcode);
+            $contract_info->{theo_probability} = $contract->theo_probability->amount;
+            $contract_info->{display_value} = $contract->ask_price;
         } else {
-            $prices{$contract->code}{$barrier_key}{error} = $contract->primary_validation_error->message_to_client;
+            if (my $pve = $contract->primary_validation_error) {
+                $contract_info->{error} = {
+                    code => 'ContractBuyValidationError',
+                    message_to_client => $pve->message_to_client
+                };
+                # We want to record longcode if possible
+                $contract_info->{longcode} = eval { $contract->longcode } || '';
+            } else {
+                $contract_info->{error} = {
+                    code => 'ContractValidationError',
+                    message_to_client => localize("Cannot validate contract")
+                };
+            }
+            # When the date_expiry is smaller than date_start, we can not price, display the payout|stake on error message
+            if ($contract->date_expiry->epoch <= $contract->date_start->epoch) {
+
+                my $display_value =
+                      $contract->has_payout
+                    ? $contract->payout
+                    : $contract->ask_price;
+                $contract_info->{details} = {
+                    display_value => (
+                          $contract->is_spread
+                        ? $contract->buy_level
+                        : sprintf('%.2f', $display_value)
+                    ),
+                    payout => sprintf('%.2f', $display_value),
+                };
+            } else {
+                $contract_info->{details} = {
+                    display_value => (
+                          $contract->is_spread
+                        ? $contract->buy_level
+                        : sprintf('%.2f', $contract->ask_price)
+                    ),
+                    payout => sprintf('%.2f', $contract->payout),
+                };
+            }
         }
     }
 
     return \%prices;
+}
+
+sub market_details {
+    my ($self) = @_;
+    # We use the first contract to determine metadata that will be common
+    # across all our contracts - underlying, dates, spot values etc.
+    my ($contract) = @{$self->_contracts};
+    my %details = (
+        spot_time  => $contract->current_tick->epoch,
+        date_start => $contract->date_start->epoch,
+    );
+    $details{spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
+    $details{spread} = $contract->spread if $contract->is_spread;
+    return \%details;
 }
 
 no Moose;
