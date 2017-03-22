@@ -104,7 +104,7 @@ sub proposal_array {
     }
 
     my $copy_args = {%{$req_storage->{args}}};
-    my @contract_types = ref($copy_args->{contract_type}) ? @{$copy_args->{contract_type}} : [$copy_args->{contract_type}];
+    my @contract_types = ref($copy_args->{contract_type}) ? @{$copy_args->{contract_type}} : $copy_args->{contract_type};
 
     $copy_args->{skip_streaming} = 1;    # only for proposal_array: do not create redis subscription, we need only uuid stored in stash
     if ($uuid = _pricing_channel_for_ask($c, $copy_args, {})) {
