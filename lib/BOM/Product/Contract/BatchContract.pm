@@ -15,9 +15,9 @@ has _contracts => (
 );
 
 has underlying => (
-    is      => 'ro',
+    is         => 'ro',
     lazy_build => 1,
-    handles => [qw(market pip_size)],
+    handles    => [qw(market pip_size)],
 );
 
 sub _build_underlying {
@@ -65,16 +65,16 @@ sub ask_prices {
     my %prices;
     foreach my $contract (@{$self->_contracts}) {
         my $barrier_key =
-              $contract->two_barriers
+            $contract->two_barriers
             ? ($contract->high_barrier->as_absolute) . '-' . ($contract->low_barrier->as_absolute)
             : ($contract->barrier->as_absolute);
         my $contract_info = ($prices{$contract->code}{$barrier_key} //= {});
         if ($contract->is_valid_to_buy) {
             $contract_info->{$_} = $contract->$_ for qw(ask_price longcode);
             $contract_info->{theo_probability} = $contract->theo_probability->amount;
-            $contract_info->{display_value} = $contract->ask_price;
-            if( $contract->two_barriers ) {
-                $contract_info->{barrier} = ($contract->high_barrier->as_absolute);
+            $contract_info->{display_value}    = $contract->ask_price;
+            if ($contract->two_barriers) {
+                $contract_info->{barrier}  = ($contract->high_barrier->as_absolute);
                 $contract_info->{barrier2} = ($contract->low_barrier->as_absolute);
             } else {
                 $contract_info->{barrier} = ($contract->barrier->as_absolute);
@@ -82,14 +82,13 @@ sub ask_prices {
         } else {
             if (my $pve = $contract->primary_validation_error) {
                 $contract_info->{error} = {
-                    code => 'ContractBuyValidationError',
+                    code              => 'ContractBuyValidationError',
                     message_to_client => $pve->message_to_client
                 };
             } else {
                 $contract_info->{error} = {
-                    code => 'ContractValidationError',
-                    message_to_client => localize("Cannot validate contract")
-                };
+                    code              => 'ContractValidationError',
+                    message_to_client => localize("Cannot validate contract")};
             }
             # When the date_expiry is smaller than date_start, we can not price, display the payout|stake on error message
             if ($contract->date_expiry->epoch <= $contract->date_start->epoch) {
@@ -116,8 +115,8 @@ sub ask_prices {
                     payout => sprintf('%.2f', $contract->payout),
                 };
             }
-            if( $contract->two_barriers ) {
-                $contract_info->{error}{details}{barrier} = ($contract->high_barrier->as_absolute);
+            if ($contract->two_barriers) {
+                $contract_info->{error}{details}{barrier}  = ($contract->high_barrier->as_absolute);
                 $contract_info->{error}{details}{barrier2} = ($contract->low_barrier->as_absolute);
             } else {
                 $contract_info->{error}{details}{barrier} = ($contract->barrier->as_absolute);
@@ -139,8 +138,8 @@ sub market_details {
         spot_time  => $contract->current_tick->epoch,
         date_start => $contract->date_start->epoch,
     );
-    $details{spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
-    $details{spread} = $contract->spread if $contract->is_spread;
+    $details{spot}   = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
+    $details{spread} = $contract->spread       if $contract->is_spread;
     return \%details;
 }
 

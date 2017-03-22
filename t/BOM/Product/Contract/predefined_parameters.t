@@ -25,11 +25,17 @@ my $monday           = Date::Utility->new('2016-11-14');    # monday
 subtest 'non trading day' => sub {
     my $saturday = Date::Utility->new('2016-11-19');        # saturday
     generate_trading_periods($supported_symbol, $saturday);
-    my $offerings = get_predefined_offerings({symbol => $supported_symbol, date => $saturday});
+    my $offerings = get_predefined_offerings({
+        symbol => $supported_symbol,
+        date   => $saturday
+    });
     ok !@$offerings, 'no offerings were generated on non trading day';
     setup_ticks($supported_symbol, [[$monday->minus_time_interval('400d')], [$monday]]);
     generate_trading_periods($supported_symbol, $monday);
-    $offerings = get_predefined_offerings({symbol => $supported_symbol, date => $monday});
+    $offerings = get_predefined_offerings({
+        symbol => $supported_symbol,
+        date   => $monday
+    });
     ok @$offerings, 'generates predefined offerings on a trading day';
 };
 
@@ -107,7 +113,10 @@ subtest 'intraday trading period' => sub {
         setup_ticks($symbol, [[$date->minus_time_interval('400d')], [$date]]);
         note('generating for ' . $symbol . '. Time set to ' . $date->day_as_string . ' at ' . $date->time);
         generate_trading_periods($symbol, $date);
-        my $offerings = get_predefined_offerings({symbol => $symbol, date => $date});
+        my $offerings = get_predefined_offerings({
+            symbol => $symbol,
+            date   => $date
+        });
         my @intraday = grep { $_->{expiry_type} eq 'intraday' } @$offerings;
         is scalar(@intraday), $count, 'expected two offerings on intraday at 00:00GMT';
 
@@ -210,9 +219,12 @@ subtest 'predefined barriers' => sub {
 
     foreach my $test (@inputs) {
         setup_ticks($symbol, $test->{ticks});
-        my $offerings = get_predefined_offerings({symbol => $symbol, date => $generation_date});
-        my $m         = $test->{match};
-        my $offering  = first {
+        my $offerings = get_predefined_offerings({
+            symbol => $symbol,
+            date   => $generation_date
+        });
+        my $m        = $test->{match};
+        my $offering = first {
             $_->{expiry_type} eq $m->{expiry_type}
                 and $_->{contract_category} eq $m->{contract_category}
                 and $_->{trading_period}->{duration} eq $m->{duration}

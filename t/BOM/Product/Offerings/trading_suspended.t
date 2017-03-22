@@ -8,7 +8,6 @@ use Test::More;
 use LandingCompany::Offerings qw(get_offerings_with_filter reinitialise_offerings);
 use BOM::Platform::Runtime;
 
-
 subtest 'quant suspend trade' => sub {
     my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
     reinitialise_offerings($offerings_cfg);

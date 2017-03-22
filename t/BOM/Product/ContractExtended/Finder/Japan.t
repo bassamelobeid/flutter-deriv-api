@@ -30,7 +30,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         },
     });
 
-
 BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD JPY AUD CAD EUR);
 subtest "predefined contracts for symbol" => sub {
@@ -109,8 +108,10 @@ subtest "predefined trading_period" => sub {
         },
         range_daily => {
             duration => ['1W', '1M', '3M', '1Y'],
-            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-09-04 21:00:00', '2015-09-30 23:59:59', '2015-09-30 23:59:59', '2015-12-31 23:59:59')],
-            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-08-31 00:00:00', '2015-09-01 00:00:00', '2015-07-01 00:00:00', '2015-01-02 00:00:00')],
+            date_expiry =>
+                [map { Date::Utility->new($_)->epoch } ('2015-09-04 21:00:00', '2015-09-30 23:59:59', '2015-09-30 23:59:59', '2015-12-31 23:59:59')],
+            date_start =>
+                [map { Date::Utility->new($_)->epoch } ('2015-08-31 00:00:00', '2015-09-01 00:00:00', '2015-07-01 00:00:00', '2015-01-02 00:00:00')],
         },
     );
 
@@ -283,24 +284,21 @@ subtest "check_intraday trading_period_JPY" => sub {
             ],
         },
 
-
         '2015-11-25 00:00:00' => {
             combination => 1,
             date_start  => [Date::Utility->new('2015-11-24 23:45:00')->epoch],
-            date_expiry =>  [Date::Utility->new('2015-11-25 02:00:00')->epoch
-            ],
+            date_expiry => [Date::Utility->new('2015-11-25 02:00:00')->epoch],
         },
 
-        '2015-11-25 21:45:00' => { combination => 0,},
-
+        '2015-11-25 21:45:00' => {
+            combination => 0,
+        },
 
         '2015-11-2600:00:00' => {
             combination => 1,
             date_start  => [Date::Utility->new('2015-11-26 00:00:00')->epoch],
-            date_expiry =>  [Date::Utility->new('2015-11-26 02:00:00')->epoch
-            ],
+            date_expiry => [Date::Utility->new('2015-11-26 02:00:00')->epoch],
         },
-
 
         # Friday
         '2015-11-27 00:00:00' => {

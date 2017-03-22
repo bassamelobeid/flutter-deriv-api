@@ -98,7 +98,7 @@ subtest 'prices' => sub {
             is $c->pricing_code, $bt_code, 'contract type';
 
             is $c->pricing_engine_name, 'Pricing::Engine::Digits', 'pricing engine';
-            _check_amount($c->theo_probability,    $expect->{bs_prob}, 'bs_prob');
+            _check_amount($c->theo_probability,  $expect->{bs_prob}, 'bs_prob');
             _check_amount($c->commission_markup, $expect->{markup},  'markup');
         };
     }
@@ -106,7 +106,7 @@ subtest 'prices' => sub {
     $params->{barrier}  = 9;
     $params->{bet_type} = 'DIGITDIFF';
     my $c = produce_contract($params);
-    _check_amount($c->theo_probability,    0.9,  'bs_prob');
+    _check_amount($c->theo_probability,  0.9,  'bs_prob');
     _check_amount($c->commission_markup, 0.01, 'markup not the minmum');
 };
 

@@ -21,7 +21,6 @@ Cache::RedisDB->flushall;
 initialize_realtime_ticks_db();
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
-
 my $now = Date::Utility->new('2016-09-28 10:00:00');
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
@@ -40,7 +39,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol        => $_,
         recorded_date => $now
     }) for qw(USD JPY JPY-USD);
-
 
 subtest 'predefined_contracts' => sub {
     my $bet_params = {

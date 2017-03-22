@@ -62,7 +62,6 @@ my $args = {
     barrier      => 'S0P',
 };
 
-
 subtest 'PUT variations' => sub {
     lives_ok {
         my $c = produce_contract($args);
@@ -91,8 +90,8 @@ subtest 'PUT variations' => sub {
         $args->{date_start}   = $now->plus_time_interval('20m');
         $c                    = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Put';
-        ok $c->is_forward_starting, 'forward starting';
-        isa_ok $c->pricing_engine_name,  'Pricing::Engine::EuropeanDigitalSlope';
+        ok $c->is_forward_starting,     'forward starting';
+        isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
 
         $args->{date_pricing} = $now;
         $args->{date_start}   = $now;

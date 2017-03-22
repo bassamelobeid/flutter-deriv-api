@@ -234,8 +234,8 @@ subtest 'put_call_parity_slope_japan' => sub {
         isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
         my $call_theo_prob  = $c->pricing_engine->_base_probability;
         my $put_theo_prob   = $c->opposite_contract->pricing_engine->_base_probability;
-        my $discounted_prob = roundnear(0.001,$c->discounted_probability->amount);
-        is roundnear(0.001,$call_theo_prob + $put_theo_prob), $discounted_prob, "put call parity hold for " . $c->shortcode;
+        my $discounted_prob = roundnear(0.001, $c->discounted_probability->amount);
+        is roundnear(0.001, $call_theo_prob + $put_theo_prob), $discounted_prob, "put call parity hold for " . $c->shortcode;
 
     }
 };
@@ -259,8 +259,8 @@ subtest 'put_call_parity_vv_non_japan' => sub {
             isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
             my $contract_theo_prob          = $c->pricing_engine->base_probability->amount;
             my $opposite_contract_theo_prob = $c->opposite_contract->pricing_engine->base_probability->amount;
-            my $discounted_prob             = roundnear(0.1,$c->discounted_probability->amount);
-            is roundnear(0.1,$contract_theo_prob + $opposite_contract_theo_prob), $discounted_prob,
+            my $discounted_prob             = roundnear(0.1, $c->discounted_probability->amount);
+            is roundnear(0.1, $contract_theo_prob + $opposite_contract_theo_prob), $discounted_prob,
                 "put call parity hold for " . $c->shortcode . " with payout currency $currency";
         }
     }
@@ -285,8 +285,8 @@ subtest 'put_call_parity_vv_japan' => sub {
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
         my $contract_theo_prob          = $c->pricing_engine->base_probability->amount;
         my $opposite_contract_theo_prob = $c->opposite_contract->pricing_engine->base_probability->amount;
-        my $discounted_prob             = roundnear(0.1,$c->discounted_probability->amount);
-        is roundnear(0.1,$contract_theo_prob + $opposite_contract_theo_prob), $discounted_prob, "put call parity hold for " . $c->shortcode;
+        my $discounted_prob             = roundnear(0.1, $c->discounted_probability->amount);
+        is roundnear(0.1, $contract_theo_prob + $opposite_contract_theo_prob), $discounted_prob, "put call parity hold for " . $c->shortcode;
 
     }
 };

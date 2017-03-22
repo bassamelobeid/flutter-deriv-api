@@ -30,7 +30,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 initialize_realtime_ticks_db();
 
-
 my $bet_params = {
     bet_type   => 'FLASHD',
     underlying => 'frxUSDJPY',
