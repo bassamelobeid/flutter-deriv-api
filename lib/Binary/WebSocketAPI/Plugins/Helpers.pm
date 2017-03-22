@@ -225,8 +225,8 @@ sub register {
                         my $sub = $proposal_array_subscriptions->{$pa_uuid};
                         my @proposals;
                         for my $i (0 .. $#{$sub->{seq}}) {
-                            my $uuid     = $sub->{seq}->[$i];
-                            my $barriers = $sub->{args}{barriers}->[$i];
+                            my $uuid     = $sub->{seq}[$i];
+                            my $barriers = $sub->{args}{barriers}[$i];
                             # Bail out early if we have any streams without a response yet
                             my $proposal = pop @{$sub->{proposals}{$uuid}} or return;
                             delete $proposal->{msg_type};
