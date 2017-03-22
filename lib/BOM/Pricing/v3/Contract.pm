@@ -67,7 +67,9 @@ sub prepare_ask {
         $p2{fixed_expiry} //= 1;
     }
 
-    if (defined $p2{barrier} && defined $p2{barrier2}) {
+    if (ref $p2{barriers}) {
+        delete @{$p2}{qw(barrier barrier2)};
+    } elsif (defined $p2{barrier} && defined $p2{barrier2}) {
         $p2{low_barrier}  = delete $p2{barrier2};
         $p2{high_barrier} = delete $p2{barrier};
     } elsif (!grep { /^(SPREAD|ASIAN|DIGITEVEN|DIGITODD)/ } @contract_types) {
