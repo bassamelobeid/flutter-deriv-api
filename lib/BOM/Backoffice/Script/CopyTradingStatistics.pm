@@ -70,7 +70,7 @@ sub run {
         }
         BOM::Platform::RedisReplicated::redis_write->set("COPY_TRADING_LAST_PROCESSED_ID:$trader_id", $max_processed_id) if $max_processed_id;
     }
-
+    return;
 }
 
 1;
