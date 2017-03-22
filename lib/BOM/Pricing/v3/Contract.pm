@@ -140,6 +140,8 @@ sub _get_ask {
     };
     return $response if $response;
 
+    return handle_batch_contract($contract, $p2) if $contract->isa('BOM::Product::Contract::BatchContract');
+
     my $contract_parameters = {
         %$p2,
         %{ contract_metadata($contract) }
@@ -264,6 +266,29 @@ sub _get_ask {
     };
 
     return $response;
+}
+
+sub handle_batch_contract {
+    my ($batch_contract, $p2, $tv) = @_;
+
+    # We should now have a usable ::Contract instance. This may be a single
+    # or multiple (batch) contract.
+    warn "Batch contract = " . $batch_contract . " with ->ask_prices " . Dumper($batch_contract->ask_prices) if $batch_contract->can('ask_prices');
+
+    my $proposals = { };
+    my $ask_prices = $batch_contract->ask_prices;
+    for my $contract_type (keys %$ask_prices) {
+        for my $barrier (@{$p2->{barriers}}) {
+            my $key = exists $barrier->{low_barrier} ? $barrier->{high_barrier} . '-' . $barrier->{low_barrier} : $barrier->{barrier};
+            warn "Could not find barrier for key $key, available: " . join ',', sort keys %{$ask_prices->{$contract_type}} unless exists $ask_prices->{$contract_type}{$key};
+            push @{$proposals->{$contract_type}}, $ask_prices->{$contract_type}{$key} // {};
+        }
+    }
+    return {
+        proposals => $proposals,
+        details   => $batch_contract->market_details,
+        rpc_time  => 0, # $rpc_time,
+    };
 }
 
 sub get_bid {
