@@ -72,13 +72,18 @@ sub prepare_ask {
     } elsif (defined $p2{barrier} && defined $p2{barrier2}) {
         $p2{low_barrier}  = delete $p2{barrier2};
         $p2{high_barrier} = delete $p2{barrier};
-    } elsif (!grep { /^(SPREAD|ASIAN|DIGITEVEN|DIGITODD)/ } @contract_types) {
+    } elsif (
+        !grep {
+            /^(SPREAD|ASIAN|DIGITEVEN|DIGITODD)/
+        } @contract_types
+        )
+    {
         $p2{barrier} //= 'S0P';
         delete $p2{barrier2};
     }
 
-    $p2{underlying}  = delete $p2{symbol};
-    if(@contract_types > 1) {
+    $p2{underlying} = delete $p2{symbol};
+    if (@contract_types > 1) {
         $p2{bet_types} = \@contract_types;
     } else {
         ($p2{bet_type}) = @contract_types;
@@ -98,7 +103,7 @@ Extracts some generic information from a given contract.
 =cut
 
 sub contract_metadata {
-    my ($contract) = @_;
+    my ($contract)              = @_;
     my $market_name             = $contract->market->name;
     my $base_commission_scaling = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market_name;
     return +{
@@ -144,10 +149,7 @@ sub _get_ask {
 
     return handle_batch_contract($contract, $p2) if $contract->isa('BOM::Product::Contract::BatchContract');
 
-    my $contract_parameters = {
-        %$p2,
-        %{ contract_metadata($contract) }
-    };
+    my $contract_parameters = {%$p2, %{contract_metadata($contract)}};
 
     try {
         if (
@@ -277,19 +279,20 @@ sub handle_batch_contract {
     # or multiple (batch) contract.
     warn "Batch contract = " . $batch_contract . " with ->ask_prices " . Dumper($batch_contract->ask_prices) if $batch_contract->can('ask_prices');
 
-    my $proposals = { };
+    my $proposals  = {};
     my $ask_prices = $batch_contract->ask_prices;
     for my $contract_type (keys %$ask_prices) {
         for my $barrier (@{$p2->{barriers}}) {
             my $key = ref($barrier) ? $barrier->{high_barrier} . '-' . $barrier->{low_barrier} : $barrier;
-            warn "Could not find barrier for key $key, available: " . join ',', sort keys %{$ask_prices->{$contract_type}} unless exists $ask_prices->{$contract_type}{$key};
+            warn "Could not find barrier for key $key, available: " . join ',', sort keys %{$ask_prices->{$contract_type}}
+                unless exists $ask_prices->{$contract_type}{$key};
             push @{$proposals->{$contract_type}}, $ask_prices->{$contract_type}{$key} // {};
         }
     }
     return {
         proposals => $proposals,
         details   => $batch_contract->market_details,
-        rpc_time  => 0, # $rpc_time,
+        rpc_time  => 0,                                 # $rpc_time,
     };
 }
 
