@@ -30,6 +30,8 @@ __PACKAGE__->meta->setup(
         target_country        => { type => 'varchar', default => '', length => 255, not_null => 1 },
         supported_banks       => { type => 'varchar', length => 500 },
         remote_addr           => { type => 'scalar' },
+        min_withdrawal        => { type => 'numeric' },
+        max_withdrawal        => { type => 'numeric' },
     ],
 
     primary_key_columns => [ 'remote_addr' ],
