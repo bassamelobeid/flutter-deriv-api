@@ -1746,15 +1746,34 @@ subtest 'batch_buy', sub {
 
     lives_ok {
         my $res = sell_by_shortcode($buy_multiple_shortcode, [$acc1, $acc2, $acc3] );
+        # note explain $res;
         is ref $res, 'ARRAY';
-        foreach my $r (@$res){
-            is ref $r, 'HASH';
-            isnt $r->{fmb},         undef, 'got FMB';
-            isnt $r->{txn},         undef, 'got TXN';
-            ok $buy_trx_ids->{$r->{buy_tr_id}}, 'got buy transaction id';
-            is $r->{txn}{financial_market_bet_id}, $r->{fmb}{id}, 'txn fmb id matches';
-            is $r->{txn}{amount},        '18.00',  'txn amount';
-        }
+        my $r = shift @$res;
+        is ref $r, 'HASH';
+        isnt $r->{fmb},                        undef,         'got FMB';
+        isnt $r->{txn},                        undef,         'got TXN';
+        ok $buy_trx_ids->{$r->{buy_tr_id}},                   'got buy transaction id';
+        is $r->{txn}{financial_market_bet_id}, $r->{fmb}{id}, 'txn fmb id matches';
+        is $r->{txn}{amount},                  '18.00',       'txn amount';
+        ok $r->{loginid},                                     'got login id';
+
+        $r = shift @$res;
+        is ref $r, 'HASH';
+        ok $r->{fmb},                                 'got FMB';
+        ok $r->{txn},                                 'got TXN';
+        is $r->{e_code},        'BI050',              'got error code';
+        is $r->{e_description}, 'Contract not found', 'got error description';
+        ok $r->{loginid},                             'got login id';
+
+        $r = shift @$res;
+        is ref $r, 'HASH';
+        isnt $r->{fmb},                        undef,         'got FMB';
+        isnt $r->{txn},                        undef,         'got TXN';
+        ok $buy_trx_ids->{$r->{buy_tr_id}},                   'got buy transaction id';
+        is $r->{txn}{financial_market_bet_id}, $r->{fmb}{id}, 'txn fmb id matches';
+        is $r->{txn}{amount},                  '18.00',       'txn amount';
+        ok $r->{loginid},                                     'got login id';
+
     } 'sell_by_shortcode';
 
     dies_ok {
