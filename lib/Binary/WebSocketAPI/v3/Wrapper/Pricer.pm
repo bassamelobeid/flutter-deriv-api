@@ -224,6 +224,7 @@ sub proposal_array {
                         if(exists $res->{proposals}) {
                             for my $contract_type (keys %{$res->{proposals}}) {
                                 my @prices = @{ $res->{proposals}{$contract_type} };
+                                $_->{error}{message} = delete $_->{error}{message_to_client} for grep {; exists $_->{error} } @prices;
                                 warn "Barrier mismatch - expected " . @expected_barriers . " but had " . @prices unless @prices == @expected_barriers;
                                 push @{$proposal_array{$contract_type}}, @prices;
                             }
