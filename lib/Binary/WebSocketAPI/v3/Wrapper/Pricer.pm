@@ -17,6 +17,7 @@ use Format::Util::Numbers qw(to_monetary_number_format);
 use Price::Calculator;
 use Clone::PP qw(clone);
 use List::UtilsBy qw(bundle_by);
+use List::Util qw(min);
 
 use Future::Mojo          ();
 use Future::Utils         ();
@@ -146,6 +147,7 @@ sub proposal_array {
 
     # Process a few RPC calls at a time.
 
+    my @barriers = @{$req_storage->{args}->{barriers}};
     Variable::Disposition::retain_future(
         Future->needs_any(
             # Upper limit on total time taken - we don't really
@@ -202,7 +204,7 @@ sub proposal_array {
                     });
                 $f;
             }
-            foreach    => [ bundle_by { [ @_ ] } BARRIERS_PER_BATCH, @{$req_storage->{args}->{barriers}} ],
+            foreach    => [ bundle_by { [ @_ ] } BARRIERS_PER_BATCH, @barriers ],
             concurrent => PARALLEL_RPC_COUNT
             )->on_ready(
             sub {
