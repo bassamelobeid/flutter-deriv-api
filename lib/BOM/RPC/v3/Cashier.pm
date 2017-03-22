@@ -457,7 +457,7 @@ sub paymentagent_list {
     my $authenticated_paymentagent_agents =
         $payment_agent_mapper->get_authenticated_payment_agents({target_country => $args->{paymentagent_list}});
 
-    my $payment_agent_table_row = [];
+    my ($payment_agent_table_row, $min_max) = ([], BOM::RPC::v3::Utility::paymentagent_default_min_max());
     foreach my $loginid (keys %{$authenticated_paymentagent_agents}) {
         my $payment_agent = $authenticated_paymentagent_agents->{$loginid};
 
@@ -474,6 +474,8 @@ sub paymentagent_list {
             'withdrawal_commission' => $payment_agent->{commission_withdrawal},
             'further_information'   => $payment_agent->{information},
             'supported_banks'       => $payment_agent->{supported_banks},
+            'max_withdrawal'        => $payment_agent->{max_withdrawal} // $min_max->{maximum},
+            'min_withdrawal'        => $payment_agent->{min_withdrawal} // $min_max->{minimum},
             };
     }
 
@@ -543,9 +545,18 @@ sub paymentagent_transfer {
         return $error_sub->($error_msg);
     }
 
-    ## validate amount
-    if ($amount < 10 || $amount > 2000) {
-        return $error_sub->(localize('Invalid amount. minimum is 10, maximum is 2000.'));
+    my ($max_withdrawal, $min_withdrawal, $min_max) =
+        ($payment_agent->max_withdrawal, $payment_agent->min_withdrawal, BOM::RPC::v3::Utility::paymentagent_default_min_max());
+    if ($max_withdrawal) {
+        return $error_sub->(localize("Invalid amount. Maximum withdrawal allowed is [_1].", $max_withdrawal)) if $amount > $max_withdrawal;
+    } elsif ($amount > $min_max->{maximum}) {
+        return $error_sub->(localize("Invalid amount. Maximum is [_1].", $min_max->{maximum}));
+    }
+
+    if ($min_withdrawal) {
+        return $error_sub->(localize("Invalid amount. Minimum withdrawal allowed is [_1].", $min_withdrawal)) if $amount < $min_withdrawal;
+    } elsif ($amount < $min_max->{minimum}) {
+        return $error_sub->(localize('Invalid amount. Minimum is [_1].', $min_max->{minimum}));
     }
 
     my $client_to = try { Client::Account->new({loginid => $loginid_to}) };
@@ -801,9 +812,9 @@ sub paymentagent_withdraw {
         return $error_sub->(localize('The Payment Agent facility is currently not available in your country.'));
     }
 
-    ## validate amount
-    if ($amount < 10 || $amount > 2000) {
-        return $error_sub->(localize('Invalid amount. minimum is 10, maximum is 2000.'));
+    my $min_max = BOM::RPC::v3::Utility::paymentagent_default_min_max();
+    if ($amount < $min_max->{minimum} || $amount > $min_max->{maximum}) {
+        return $error_sub->(localize('Invalid amount. minimum is [_1], maximum is [_2].', $min_max->{minimum}, $min_max->{maximum}));
     }
 
     my $paymentagent = Client::Account::PaymentAgent->new({'loginid' => $paymentagent_loginid})
@@ -814,8 +825,6 @@ sub paymentagent_withdraw {
     }
 
     my $pa_client = $paymentagent->client;
-
-    # check that the currency is in correct format
     if ($client->currency ne $currency) {
         return $error_sub->(localize('Sorry, your currency of [_1] is unavailable for Payment Agent Withdrawal', $currency));
     }
