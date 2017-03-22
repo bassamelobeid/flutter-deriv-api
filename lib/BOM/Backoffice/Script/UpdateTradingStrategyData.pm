@@ -30,7 +30,7 @@ use constant WORKERS => floor(Sys::Info->new->device("CPU")->count / 2) || 1;
 sub run {
     ++$|;
 
-    open my $unique_lock, '<', $0 or die $!;
+    open my $unique_lock, '<', $0 or die $!;    ## no critic (RequireBriefOpen)
     die "Another copy of $0 is already running - we expect to run daily, is the script taking more than 24h to complete?"
         unless flock $unique_lock, LOCK_EX | LOCK_NB;
 
@@ -38,7 +38,7 @@ sub run {
     try {
         # Bail out if we take more than a day...
         alarm((24 * 60 * 60) - 10);
-        $SIG{ALRM} = sub { die "Timeout - this script took too long, it needs to complete within 24h" };
+        local $SIG{ALRM} = sub { die "Timeout - this script took too long, it needs to complete within 24h" };
 
         my $config = LoadFile('/home/git/regentmarkets/bom-backoffice/config/trading_strategy_datasets.yml');
 
@@ -98,7 +98,7 @@ sub run {
                 }
 
                 my $key = join '_', $symbol, $duration, $duration_options{step}, $bet_type;
-                open my $fh, '>:encoding(UTF-8)', $output_base . '/' . $key . '.csv' or die $!;
+                open my $fh, '>:encoding(UTF-8)', $output_base . '/' . $key . '.csv' or die $!;    ## no critic (RequireBriefOpen)
                 $fh->autoflush(1);
 
                 my $idx = 0;
@@ -119,7 +119,7 @@ sub run {
                         txn {
                             my $contract         = produce_contract($args);
                             my $contract_expired = produce_contract({
-                                %$args,
+                                %$args,    ## no critic (ProhibitCommaSeparatedStatements)
                                 date_pricing => $now,
                             });
                             if ($contract_expired->is_expired) {

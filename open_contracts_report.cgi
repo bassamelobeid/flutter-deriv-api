@@ -1,6 +1,7 @@
 #!/etc/rmg/bin/perl
 package main;
-use strict 'vars';
+use strict;
+use warnings;
 
 use File::Temp;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -138,7 +139,7 @@ my @fields = qw(
 local $\ = "\n";
 my $filename = File::Temp->new(SUFFIX => '.csv')->filename;
 
-open my $fh, '>:utf8', $filename;
+open my $fh, '>:encoding(UTF-8)', $filename;
 print $fh join(',', @fields);
 
 foreach my $ref (@$open_contracts) {

@@ -1,4 +1,6 @@
 package BOM::JavascriptConfig;
+use strict;
+use warnings;
 
 use MooseX::Singleton;
 use Mojo::URL;
@@ -9,8 +11,10 @@ sub bo_js_files_for {
     my $self = shift;
     my $page = shift;
 
-    my @js_files = ('external/jquery-3.1.1.min.js', 'external/jquery-ui.min.js',
-        'external/sortable.js', 'external/jquery.form.js', 'external/jquery.jsonify-0.1.js', 'backoffice.js');
+    my @js_files = (
+        'external/jquery-3.1.1.min.js',   'external/jquery-ui.min.js', 'external/sortable.js', 'external/jquery.form.js',
+        'external/jquery.jsonify-0.1.js', 'backoffice.js'
+    );
     for ($page) {
         push @js_files, 'bbdl.js' if /f_bet_iv/;
         push @js_files, 'risk_dashboard.js', 'external/jbpivot.min.js', 'external/raphael-min.js', 'external/treemap-squared-0.5.min.js'

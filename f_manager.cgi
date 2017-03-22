@@ -1,6 +1,7 @@
 #!/etc/rmg/bin/perl
 package main;
-use strict 'vars';
+use strict;
+use warnings;
 use HTML::Entities;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -25,7 +26,7 @@ if (length($broker) < 2) {
 my $today = Date::Utility->new->date_ddmmmyy;
 
 # SHOW CLIENT DOCS
-if (request()->param('whattodo') eq 'showdocs') {
+if ((request()->param('whattodo') // '') eq 'showdocs') {
     my $loginid = uc(request()->param('loginID'));
     my $client = Client::Account->new({loginid => $loginid});
     Bar(encode_entities("SHOW CLIENT PAYMENT DOCS FOR $loginid " . $client->full_name));

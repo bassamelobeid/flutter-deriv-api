@@ -2,6 +2,7 @@
 package main;
 
 use strict;
+use warnings;
 use f_brokerincludeall;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
@@ -635,8 +636,7 @@ sub _fullfeed_file {
 
     if ($date =~ /^(\d\d?)\-(\w\w\w)\-(\d\d)$/) {
         $date = $1 . '-' . ucfirst(lc($2)) . '-' . $3;
-    }
-    else {
+    } else {
         die 'Bad date for fullfeed_file';
     }
 
