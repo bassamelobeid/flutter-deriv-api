@@ -16,7 +16,7 @@
             "proposals": {
                 "type": "object",
                 "title":"Multiple Price Proposal Response",
-                "description":"Latest price and other details for a given contract",
+                "description":"Latest price and other details for available contracts",
                 "required": 1,
                 "patternProperties": {
                     "^\\w{2,30}$": {
@@ -52,13 +52,30 @@
                                     "description": "Example: 5.14, same as ask_price except for spread contracts",
                                     "required": 1
                                 },
+                                "payout": {
+                                    "type": "number",
+                                    "description": "Example: 10",
+                                    "required": 1
+                                },
+                                "spread": {
+                                    "type": "number",
+                                    "description": "Example: 10"
+                                },
                                 "error": {
                                     "type": "object",
                                     "description": "Error message"
                                 }
                             }
                         }
-                    },
+                    }
+                }
+            },
+            "market_data": {
+                "type": "object",
+                "title":"Common market information",
+                "description":"Current spot value and details common to all returned contracts in this response",
+                "required": 1,
+                "properties": {
                     "spot": {
                         "type": "number",
                         "description": "Spot value (if there are no Exchange data-feed licensing restrictions for the underlying symbol). Example: 9874.52",
@@ -78,15 +95,6 @@
                         "type": "string",
                         "description": "A stream id that can be used to cancel this stream using the Forget request. Example: 1d6651e7d599bce6c54bd71a8283e579",
                         "required": 1
-                    },
-                    "payout": {
-                        "type": "number",
-                        "description": "Example: 10",
-                        "required": 1
-                    },
-                    "spread": {
-                        "type": "number",
-                        "description": "Example: 10"
                     }
                 }
             }
