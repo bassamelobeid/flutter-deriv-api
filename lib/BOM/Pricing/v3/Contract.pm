@@ -68,7 +68,7 @@ sub prepare_ask {
     }
 
     if (ref $p2{barriers}) {
-        delete @{$p2}{qw(barrier barrier2)};
+        delete @p2{qw(barrier barrier2)};
     } elsif (defined $p2{barrier} && defined $p2{barrier2}) {
         $p2{low_barrier}  = delete $p2{barrier2};
         $p2{high_barrier} = delete $p2{barrier};
