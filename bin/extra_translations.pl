@@ -1,5 +1,5 @@
 #!/etc/rmg/bin/perl -w -I ./cgi -I ./cgi/oop
-
+## no critic (ProhibitMultiplePackages)
 package RMG::UnderlyingsTranslator;
 
 use Moose;

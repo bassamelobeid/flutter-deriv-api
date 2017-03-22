@@ -1,3 +1,4 @@
+#!/etc/rmg/bin/perl
 use strict;
 use warnings;
 

@@ -71,7 +71,7 @@ sub update_event {
 
     my $existing = $events->{$params->{id}};
     my $rd       = Date::Utility->new($existing->{estimated_release_date});
-    my $shift = $params->{tentative_event_shift};
+    my $shift    = $params->{tentative_event_shift};
     $shift = 0 if not $shift or $shift eq '';
 
     $existing->{blankout}              = $rd->plus_time_interval("$b1[0]h$b1[1]m")->epoch;
