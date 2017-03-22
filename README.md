@@ -1,6 +1,5 @@
 # bom-pricing
 
-
 This is the pricing service, which is comprised of:
 
 1. Pricing channels, created by the pricing daemons
