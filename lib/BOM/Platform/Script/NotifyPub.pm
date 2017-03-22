@@ -11,8 +11,9 @@ use Try::Tiny;
 use RedisDB;
 use JSON;
 
+my $conn;
 sub run {
-    my $conn = _master_db_connections();
+    $conn = _master_db_connections();
 
     my $forks = 0;
     my @cpid;
