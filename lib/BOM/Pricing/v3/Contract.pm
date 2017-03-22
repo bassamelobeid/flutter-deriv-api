@@ -165,7 +165,7 @@ sub _get_ask {
                 $code              = "ContractValidationError";
             }
 
-# When the date_expiry is smaller than date_start, we can not price, display the payout|stake on error message
+            # When the date_expiry is smaller than date_start, we can not price, display the payout|stake on error message
             if ($contract->date_expiry->epoch <= $contract->date_start->epoch) {
 
                 my $display_value =
@@ -199,7 +199,7 @@ sub _get_ask {
                         },
                     });
             }
-            # proposal_array streaming could get error on a first calls
+            # proposal_array streaming could get error on a first call
             # but later could produce valid contract dependant on volatility moves
             # so we need to store contract_parameters and longcode to use them later
             if ($code eq 'ContractBuyValidationError') {
