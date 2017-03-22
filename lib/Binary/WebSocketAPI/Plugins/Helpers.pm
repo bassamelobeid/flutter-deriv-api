@@ -248,7 +248,7 @@ sub register {
                             echo_req => $proposal_array_subscriptions->{$pa_uuid}{args},
                             msg_type => 'proposal_array',
                         };
-                        $weak_c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}}) if $weak_c->tx;
+                        $c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}});
                     }
                 });
         });
