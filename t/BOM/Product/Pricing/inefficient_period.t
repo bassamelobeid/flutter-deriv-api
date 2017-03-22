@@ -14,6 +14,9 @@ use Math::Util::CalculatedValue::Validatable;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use LandingCompany::Offerings qw(reinitialise_offerings);
+
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
 my $inefficient_time = Date::Utility->new('2016-10-06 20:00:00');

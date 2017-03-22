@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 
+
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 use Test::More tests => 1;
@@ -10,16 +11,20 @@ use Test::Exception;
 use Test::Memory::Cycle;
 use Test::MockModule;
 
+
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
 use BOM::Product::ContractFactory qw(produce_contract);
 use LandingCompany::Offerings qw(get_offerings_with_filter);
 use Date::Utility;
 use Finance::Asset;
+use LandingCompany::Offerings qw(reinitialise_offerings);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Market::DataDecimate;
 use Cache::RedisDB;
+
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 note('mocking ticks to prevent warnings.');
 my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');

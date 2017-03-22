@@ -6,6 +6,7 @@ use warnings;
 use Test::More;
 use Test::MockModule;
 use Test::FailWarnings;
+use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Market::DataDecimate;
@@ -15,7 +16,9 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Cache::RedisDB;
+
 Cache::RedisDB->flushall;
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
 note('mocking ticks to prevent warnings.');
