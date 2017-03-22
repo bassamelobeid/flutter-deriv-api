@@ -5,5 +5,5 @@ use warnings;
 
 use BOM::Market::Script::BomFeedDecimate;
 
-eixt BOM::Market::Script::BomFeedDecimate::run();
+exit BOM::Market::Script::BomFeedDecimate::run();
 
