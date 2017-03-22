@@ -156,10 +156,9 @@ if ($filen =~ m!^vol/master(\w{3}(?:-\w{3})?)\.interest$!) {
         $rateline = rtrim($rateline);
 
         my ($tenor, $rate);
-        if ($rateline =~ /^(\d+)\s+(\d*\.?\d*)/) {
+        if ($rateline =~ /^(\d+)\s+(\-?\d*\.?\d*)/) {
             $tenor = $1;
             $rate  = $2;
-
             if ($tenor == 0 or $tenor < 1 or $tenor > 733) {
                 $err_cond = 'improper days (' . $tenor . ')';
             } elsif ($rate <= -2) {
