@@ -1,3 +1,7 @@
+use strict;
+use warnings;
+use utf8;
+
 use Test::Most;
 use Test::FailWarnings;
 
@@ -18,6 +22,8 @@ my $token = BOM::Platform::Token->new(
 );
 
 ok $token->token, 'Token created successfully';
+
+is length $token->token, 8, 'Correct length for token';
 
 $token = BOM::Platform::Token->new({token => $token->token});
 is $token->validate_token(), 1, 'Token is valid';
