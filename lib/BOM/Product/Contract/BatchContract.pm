@@ -79,8 +79,6 @@ sub ask_prices {
                     code => 'ContractBuyValidationError',
                     message_to_client => $pve->message_to_client
                 };
-                # We want to record longcode if possible
-                $contract_info->{longcode} = eval { $contract->longcode } || '';
             } else {
                 $contract_info->{error} = {
                     code => 'ContractValidationError',
@@ -94,7 +92,7 @@ sub ask_prices {
                       $contract->has_payout
                     ? $contract->payout
                     : $contract->ask_price;
-                $contract_info->{details} = {
+                $contract_info->{error}{details} = {
                     display_value => (
                           $contract->is_spread
                         ? $contract->buy_level
@@ -103,7 +101,7 @@ sub ask_prices {
                     payout => sprintf('%.2f', $display_value),
                 };
             } else {
-                $contract_info->{details} = {
+                $contract_info->{error}{details} = {
                     display_value => (
                           $contract->is_spread
                         ? $contract->buy_level
@@ -112,6 +110,14 @@ sub ask_prices {
                     payout => sprintf('%.2f', $contract->payout),
                 };
             }
+            if( $contract->two_barriers ) {
+                $contract_info->{error}{details}{barrier} = (0+$contract->high_barrier->as_absolute);
+                $contract_info->{error}{details}{barrier2} = (0+$contract->low_barrier->as_absolute);
+            } else {
+                $contract_info->{error}{details}{barrier} = (0+$contract->barrier->as_absolute);
+            }
+            # We want to record longcode if possible, but it may not always be available
+            $contract_info->{longcode} = eval { $contract->longcode } || '';
         }
     }
 
