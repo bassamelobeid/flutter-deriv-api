@@ -1,6 +1,8 @@
 #!/etc/rmg/bin/perl
 package main;
-use strict 'vars';
+use strict;
+use warnings;
+no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
 
 use HTML::Entities;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );

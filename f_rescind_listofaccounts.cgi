@@ -47,7 +47,7 @@ foreach my $loginID (split(/,/, $listaccounts)) {
     }
 
     my $curr         = $client->currency;
-    my $b            = $client->default_account->balance;
+    my $balance      = $client->default_account->balance;
     my $encoded_curr = encode_entities($curr);
 
     if (request()->param('whattodo') eq 'Do it for real !') {
@@ -61,23 +61,23 @@ foreach my $loginID (split(/,/, $listaccounts)) {
                 next CLIENT;
             }
             # recalc balance
-            $b = $client->default_account->load->balance;
+            $balance = $client->default_account->load->balance;
         }
 
-        if ($b > 0) {
-            print "<br>[FOR REAL] $encoded_loginID ($encoded_name $encoded_email) rescinding <b>$encoded_curr$b</b>";
+        if ($balance > 0) {
+            print "<br>[FOR REAL] $encoded_loginID ($encoded_name $encoded_email) rescinding <b>$encoded_curr$balance</b>";
             $client->payment_legacy_payment(
                 currency     => $curr,
-                amount       => -$b,
+                amount       => -$balance,
                 remark       => $message,
                 payment_type => 'closed_account',
                 staff        => $clerk,
             );
         }
     } else {
-        print "<br>[Simulate] $encoded_loginID ($encoded_name $encoded_email) <b>$encoded_curr$b</b>";
+        print "<br>[Simulate] $encoded_loginID ($encoded_name $encoded_email) <b>$encoded_curr$balance</b>";
     }
-    $grandtotal += in_USD($b, $curr);
+    $grandtotal += in_USD($balance, $curr);
 
     $client_db->unfreeze;
 }

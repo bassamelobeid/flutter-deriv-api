@@ -304,6 +304,7 @@ sub top_up {
     $trx->load;    # to re-read (get balance_after)
 
     note $c->loginid . "'s balance is now $cur " . $trx->balance_after . "\n";
+    return;
 }
 
 sub create_client {

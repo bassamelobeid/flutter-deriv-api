@@ -12,6 +12,8 @@ over the duration of the bet.
 =cut
 
 package main;
+use strict;
+use warnings;
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;

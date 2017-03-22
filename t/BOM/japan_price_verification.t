@@ -8,6 +8,8 @@ use Test::Deep;
 use Test::Exception;
 use Test::FailWarnings;
 use Date::Utility;
+use LandingCompany::Offerings qw(reinitialise_offerings);
+
 use BOM::JapanContractDetails;
 use BOM::MarketData qw(create_underlying);
 use BOM::Market::DataDecimate;
@@ -20,6 +22,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Format::Util::Numbers qw(roundnear);
 
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
 
