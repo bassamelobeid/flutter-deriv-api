@@ -57,7 +57,7 @@ sub new {                                    ## no critic (RequireArgUnpack)
     $self->{token} = Bytes::Random::Secure->new(
         Bits        => 160,
         NonBlocking => 1,
-    )->string_from(join('', 'a' .. 'z', 'A' .. 'Z', '0' .. '9'), 48);
+    )->string_from(join('', 'a' .. 'z', 'A' .. 'Z', '0' .. '9'), 8);
 
     my $key = md5_hex($self->{created_for} . $self->{email});
     if (my $token = BOM::Platform::RedisReplicated::redis_write()->get('VERIFICATION_TOKEN_INDEX::' . $key)) {
