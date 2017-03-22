@@ -100,7 +100,6 @@ sub contract_metadata {
     my $market_name             = $contract->market->name;
     my $base_commission_scaling = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market_name;
     return +{
-        %$p2,
         !$contract->is_spread
         ? (
             app_markup_percentage => $contract->app_markup_percentage,
