@@ -285,4 +285,11 @@ sub format_amount {
     }
 }
 
+sub paymentagent_default_min_max {
+    return {
+        minimum => 10,
+        maximum => 2000
+    };
+}
+
 1;
