@@ -70,33 +70,25 @@
                     }
                 }
             },
-            "market_data": {
-                "type": "object",
-                "title":"Common market information",
-                "description":"Current spot value and details common to all returned contracts in this response",
-                "required": 1,
-                "properties": {
-                    "spot": {
-                        "type": "number",
-                        "description": "Spot value (if there are no Exchange data-feed licensing restrictions for the underlying symbol). Example: 9874.52",
-                        "required": 1
-                    },
-                    "spot_time": {
-                        "type": "integer",
-                        "description": "Example: 1439999052",
-                        "required": 1
-                    },
-                    "date_start": {
-                        "type": "integer",
-                        "description": "Example: 1439999053",
-                        "required": 1
-                    },
-                    "id": {
-                        "type": "string",
-                        "description": "A stream id that can be used to cancel this stream using the Forget request. Example: 1d6651e7d599bce6c54bd71a8283e579",
-                        "required": 1
-                    }
-                }
+            "spot": {
+                "type": "number",
+                "description": "Spot value (if there are no Exchange data-feed licensing restrictions for the underlying symbol). Example: 9874.52",
+                "required": 1
+            },
+            "spot_time": {
+                "type": "integer",
+                "description": "Example: 1439999052",
+                "required": 1
+            },
+            "date_start": {
+                "type": "integer",
+                "description": "Example: 1439999053",
+                "required": 1
+            },
+            "id": {
+                "type": "string",
+                "description": "A stream id that can be used to cancel this stream using the Forget request. Example: 1d6651e7d599bce6c54bd71a8283e579",
+                "required": 1
             }
         },
         "msg_type": {
