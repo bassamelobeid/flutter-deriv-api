@@ -222,12 +222,13 @@ sub register {
                     };
 
                     for my $pa_uuid (keys %{$proposal_array_subscriptions}) {
+                        my $sub = $proposal_array_subscriptions->{$pa_uuid};
                         my @proposals;
-                        for my $i (0 .. $#{$proposal_array_subscriptions->{$pa_uuid}{seq}}) {
-                            my $uuid     = $proposal_array_subscriptions->{$pa_uuid}{seq}->[$i];
-                            my $barriers = $proposal_array_subscriptions->{$pa_uuid}{args}{barriers}->[$i];
-                            my $proposal = pop @{$proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid}};
-                            return unless defined $proposal;    # wait until all streams got a message
+                        for my $i (0 .. $#{$sub->{seq}}) {
+                            my $uuid     = $sub->{seq}->[$i];
+                            my $barriers = $sub->{args}{barriers}->[$i];
+                            # Bail out early if we have any streams without a response yet
+                            my $proposal = pop @{$sub->{proposals}{$uuid}} or return;
                             delete $proposal->{msg_type};
                             if ($proposal->{error}) {
                                 $proposal->{error}{details}{barrier} = $barriers->{barrier};
@@ -237,7 +238,7 @@ sub register {
                                 $proposal->{proposal}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
                             }
                             push @proposals, $proposal;
-                            $proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid} = [$proposal];    # keep last and send it if no new in 1 sec
+                            $sub->{proposals}{$uuid} = [$proposal];    # keep last and send it if no new in 1 sec
                         }
                         my $results = {
                             proposal_array => {
