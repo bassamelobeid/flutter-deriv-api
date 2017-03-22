@@ -1,3 +1,4 @@
+#!/etc/rmg/bin
 use strict;
 use warnings;
 
