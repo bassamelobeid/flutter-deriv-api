@@ -66,13 +66,19 @@ sub ask_prices {
     foreach my $contract (@{$self->_contracts}) {
         my $barrier_key =
               $contract->two_barriers
-            ? (0+$contract->high_barrier->as_absolute) . '-' . (0+$contract->low_barrier->as_absolute)
-            : (0+$contract->barrier->as_absolute);
+            ? ($contract->high_barrier->as_absolute) . '-' . ($contract->low_barrier->as_absolute)
+            : ($contract->barrier->as_absolute);
         my $contract_info = ($prices{$contract->code}{$barrier_key} //= {});
         if ($contract->is_valid_to_buy) {
             $contract_info->{$_} = $contract->$_ for qw(ask_price longcode);
             $contract_info->{theo_probability} = $contract->theo_probability->amount;
             $contract_info->{display_value} = $contract->ask_price;
+            if( $contract->two_barriers ) {
+                $contract_info->{barrier} = ($contract->high_barrier->as_absolute);
+                $contract_info->{barrier2} = ($contract->low_barrier->as_absolute);
+            } else {
+                $contract_info->{barrier} = ($contract->barrier->as_absolute);
+            }
         } else {
             if (my $pve = $contract->primary_validation_error) {
                 $contract_info->{error} = {
@@ -111,10 +117,10 @@ sub ask_prices {
                 };
             }
             if( $contract->two_barriers ) {
-                $contract_info->{error}{details}{barrier} = (0+$contract->high_barrier->as_absolute);
-                $contract_info->{error}{details}{barrier2} = (0+$contract->low_barrier->as_absolute);
+                $contract_info->{error}{details}{barrier} = ($contract->high_barrier->as_absolute);
+                $contract_info->{error}{details}{barrier2} = ($contract->low_barrier->as_absolute);
             } else {
-                $contract_info->{error}{details}{barrier} = (0+$contract->barrier->as_absolute);
+                $contract_info->{error}{details}{barrier} = ($contract->barrier->as_absolute);
             }
             # We want to record longcode if possible, but it may not always be available
             $contract_info->{longcode} = eval { $contract->longcode } || '';
