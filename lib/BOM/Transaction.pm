@@ -2030,11 +2030,14 @@ sub _get_params_for_expiryqueue {
         # These-are all non-exclusive conditions, we don't care if anything is
         # sold to which they all apply.
         $hash->{settlement_epoch} = $contract->date_settlement->epoch;
+        # if we were to enable back the intraday path dependent, the barrier saved
+        # in expiry queue might be wrong, since barrier is set based on next tick.
         if ($contract->is_path_dependent) {
-            if ($contract->two_barriers) {
+            # just check one barrier type since they are not allowed to be different.
+            if ($contract->two_barriers and $contract->high_barrier->barrier_type eq 'absolute') {
                 $hash->{up_level}   = $contract->high_barrier->as_absolute;
                 $hash->{down_level} = $contract->low_barrier->as_absolute;
-            } else {
+            } elsif ($contract->barrier and $contract->barrier->barrier_type eq 'absolute') {
                 my $which_level = ($contract->barrier->as_difference > 0) ? 'up_level' : 'down_level';
                 $hash->{$which_level} = $contract->barrier->as_absolute;
             }
