@@ -11,7 +11,7 @@ cache: apt
 sudo: required
 
 before_install:
-    - git clone https://f63911b871b71b97bb9a52e58ec714f608a9bfb2@github.com/regentmarkets/travis-scripts /tmp/travis-scripts-init
+    - git clone https://d4a95fecbf54180e8fd6ad876e49b62083f3fb62@github.com/regentmarkets/travis-scripts /tmp/travis-scripts-init
     - /tmp/travis-scripts-init/clone_branch.sh regentmarkets/travis-scripts
     - /tmp/travis-scripts/setup_ssh.sh
     - sudo mkdir -p /home/git/binary-com
