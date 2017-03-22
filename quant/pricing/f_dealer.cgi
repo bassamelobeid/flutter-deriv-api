@@ -1,7 +1,9 @@
 #!/etc/rmg/bin/perl
 package main;
+use strict;
+use warnings;
+no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
 
-use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
 use lib qw(/home/git/regentmarkets/bom-backoffice /home/git/regentmarkets/bom/cgi);

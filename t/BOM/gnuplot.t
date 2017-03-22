@@ -1,3 +1,4 @@
+#!/etc/rmg/bin/perl
 use strict;
 use warnings;
 use Test::More;
@@ -7,8 +8,8 @@ use Data::Dumper;
 use feature 'say';
 use utf8;
 
-$ENV{'REMOTE_ADDR'} = defined($ENV{'REMOTE_ADDR'}) ? $ENV{'REMOTE_ADDR'} : '127.0.0.1';
-$ENV{'TEST_TMPDIR'} = '/home/git/regentmarkets/bom-backoffice/t/BOM';
+local $ENV{'REMOTE_ADDR'} = defined($ENV{'REMOTE_ADDR'}) ? $ENV{'REMOTE_ADDR'} : '127.0.0.1';
+local $ENV{'TEST_TMPDIR'} = '/home/git/regentmarkets/bom-backoffice/t/BOM';
 
 my $object1 = BOM::Backoffice::GNUPlot->new();
 
