@@ -163,12 +163,12 @@ sub proposal_array {
 
                 # The format is [ 123.4, 128.1, ... ] for single-barrier contracts,
                 # with hashrefs [ { barrier => 121.8, barrier2 => 127.4 }, ... ] for 2-barrier
-                $barriers = [ map {; $_->{barrier} } @$barriers ] unless grep $_->{barrier2}, @$barriers;
+                $barriers = [map { ; $_->{barrier} } @$barriers] unless grep $_->{barrier2}, @$barriers;
 
                 # Shallow copy of $args since we want to override a few top-level keys for the RPC calls
                 my $args = {%{$req_storage->{args}}};
-                $args->{contract_type} = [ @contract_types ];
-                $args->{barriers} = $barriers;
+                $args->{contract_type} = [@contract_types];
+                $args->{barriers}      = $barriers;
 
                 my $f = Future::Mojo->new;
                 $c->call_rpc({
@@ -204,7 +204,7 @@ sub proposal_array {
                     });
                 $f;
             }
-            foreach    => [ bundle_by { [ @_ ] } BARRIERS_PER_BATCH, @barriers ],
+            foreach    => [bundle_by { [@_] } BARRIERS_PER_BATCH, @barriers],
             concurrent => PARALLEL_RPC_COUNT
             )->on_ready(
             sub {
@@ -215,22 +215,24 @@ sub proposal_array {
 
                     # Merge the results from all calls. We prepare the data structure first...
                     my %proposal_array;
-                    @proposal_array{@contract_types} = map {; [ ] } @contract_types;
+                    @proposal_array{@contract_types} = map { ; [] } @contract_types;
 
                     # ... then fit the received results into it
                     my @pending_barriers = @barriers;
-                    for my $res (map {; $_->{proposal} } @result) {
+                    for my $res (map { ; $_->{proposal} } @result) {
                         my @expected_barriers = splice @pending_barriers, 0, min(@pending_barriers, BARRIERS_PER_BATCH);
-                        if(exists $res->{proposals}) {
+                        if (exists $res->{proposals}) {
                             for my $contract_type (keys %{$res->{proposals}}) {
-                                my @prices = @{ $res->{proposals}{$contract_type} };
-                                $_->{error}{message} = delete $_->{error}{message_to_client} for grep {; exists $_->{error} } @prices;
+                                my @prices = @{$res->{proposals}{$contract_type}};
+                                $_->{error}{message} = delete $_->{error}{message_to_client} for grep { ; exists $_->{error} } @prices;
                                 warn "Barrier mismatch - expected " . @expected_barriers . " but had " . @prices unless @prices == @expected_barriers;
                                 push @{$proposal_array{$contract_type}}, @prices;
                             }
                         } else {
                             warn "Invalid entry in response - " . Dumper($res);
-                            $c->send({json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')}) if $c and $c->tx;
+                            $c->send(
+                                {json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')})
+                                if $c and $c->tx;
                             return;
                         }
                     }
@@ -240,19 +242,20 @@ sub proposal_array {
                     # Return a single result back to the client.
                     my $res = {
                         json => {
-                            echo_req => $req_storage->{args},
+                            echo_req       => $req_storage->{args},
                             proposal_array => {
                                 proposals => \%proposal_array,
                                 $uuid ? (id => $uuid) : (),
                             },
                             msg_type => $msg_type,
-                            map {; $_ => $req_storage->{args}{$_} } grep { $req_storage->{args}{$_} } qw(req_id passthrough),
+                            map { ; $_ => $req_storage->{args}{$_} } grep { $req_storage->{args}{$_} } qw(req_id passthrough),
                         }};
                     $c->send($res) if $c and $c->tx;    # connection could be gone
                 }
                 catch {
                     warn "proposal_array exception - $_";
-                    $c->send({json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')}) if $c and $c->tx;
+                    $c->send({json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')})
+                        if $c and $c->tx;
                 };
             }));
 
