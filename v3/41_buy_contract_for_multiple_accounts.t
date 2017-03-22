@@ -231,7 +231,8 @@ subtest "3rd try: the real thing => success", sub {
         'got all 3 contracts via statement call'
     );
 };
-sleep 5;
+### If we'll be sell it immediately we'll fail basic_validation
+sleep 1;
 
 subtest "try to sell: dummy tokens => success", sub {
     $t = $t->send_ok({
