@@ -477,11 +477,9 @@ sub prepare_buy {    ## no critic (RequireArgUnpacking)
             _validate_jurisdictional_restrictions
             _validate_client_status
             _validate_client_self_exclusion
-
             _is_valid_to_buy
             _validate_date_pricing
             _validate_trade_pricing_adjustment
-
             _validate_payout_limit
             _validate_stake_limit/
             );
@@ -534,23 +532,18 @@ sub buy {    ## no critic (RequireArgUnpacking)
         db     => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
     );
 
-    my $try   = 0;
     my $error = 1;
     my ($fmb, $txn);
-    TRY: {
-        try {
-            ($fmb, $txn) = $fmb_helper->buy_bet;
-            $error = 0;
-        }
-        catch {
-            # $error_status==undef means repeat operation
-            # if $error_status is defined, return it
-            # otherwise the function re-throws the exception (unrecoverable).
-            $error_status = $self->_recover($_, $try);
-        };
-        return $self->stats_stop($stats_data, $error_status) if $error_status;
-        redo TRY if $error and $try++ < 3;
+    try {
+        ($fmb, $txn) = $fmb_helper->buy_bet;
+        $error = 0;
     }
+    catch {
+        # if $error_status is defined, return it
+        # otherwise the function re-throws the exception
+        $error_status = $self->_recover($_);
+    };
+    return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     return $self->stats_stop(
         $stats_data,
@@ -795,23 +788,18 @@ sub sell {
         db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
     );
 
-    my $try   = 0;
     my $error = 1;
     my ($fmb, $txn);
-    TRY: {
-        try {
-            ($fmb, $txn) = $fmb_helper->sell_bet;
-            $error = 0;
-        }
-        catch {
-            # $error_status==undef means repeat operation
-            # if $error_status is defined, return it
-            # otherwise the function re-throws the exception (unrecoverable).
-            $error_status = $self->_recover($_, $try);
-        };
-        return $self->stats_stop($stats_data, $error_status) if $error_status;
-        redo TRY if $error and $try++ < 3;
+    try {
+        ($fmb, $txn) = $fmb_helper->sell_bet;
+        $error = 0;
     }
+    catch {
+        # if $error_status is defined, return it
+        # otherwise the function re-throws the exception
+        $error_status = $self->_recover($_);
+    };
+    return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     return $self->stats_stop(
         $stats_data,
@@ -958,7 +946,7 @@ sub sell_by_shortcode {
     return;
 }
 
-=head2 C<< $self->_recover($error, $retry) >>
+=head2 C<< $self->_recover($error) >>
 
 This function tries to recover from an unsuccessful buy/sell.
 It may decide to retry the operation. And it may decide to
@@ -969,37 +957,16 @@ sell expired bets before doing so.
 =over 4
 
 =item * C<< $error >>
-
 the error exception thrown by BOM::Platform::Data::Persistence::DB::_handle_errors
-
-=item * C<< $retry >>
-
-an optional count of how many times the operation has been tried before.
-Default is 0.
 
 =back
 
 =head3 Return Value
 
-=over 4
-
-=item * the empty list
-
-which means I<please retry the operation, and, in case of an error, get
-back with a C<$retry> count incremented by 1>.
-
-=item * an L<Error::Base> object
-
+L<Error::Base> object
 which means an unrecoverable but expected condition has been found.
 Typically that means a precondition, like sufficient balance, was
 not met.
-
-The caller should not retry the operation or try to amend the
-situation. Instead it should pass on the error to the client.
-
-=back
-
-Be aware that the function may throw an exception.
 
 =head3 Exceptions
 
@@ -1031,16 +998,6 @@ In case of an unexpected error, the exception is re-thrown unmodified.
     BI002 => sub {
         my $self   = shift;
         my $client = shift;
-        my $retry  = shift;
-
-        unless ($retry) {
-            my $res = sell_expired_contracts +{
-                client       => $client,
-                source       => $self->source,
-                only_expired => 1
-            };
-            return if $res and $res->{number_of_sold_bets} > 0;    # retry
-        }
 
         my $limit = $client->get_limit_for_open_positions;
         return Error::Base->cuss(
@@ -1055,16 +1012,6 @@ In case of an unexpected error, the exception is re-thrown unmodified.
     BI003 => sub {
         my $self   = shift;
         my $client = shift;
-        my $retry  = shift;
-
-        unless ($retry) {
-            my $res = sell_expired_contracts +{
-                client       => $client,
-                source       => $self->source,
-                only_expired => 1
-            };
-            return if $res and $res->{number_of_sold_bets} > 0;    # retry
-        }
 
         my $currency = $self->contract->currency;
         my $account  = BOM::Database::DataMapper::Account->new({
@@ -1085,16 +1032,6 @@ In case of an unexpected error, the exception is re-thrown unmodified.
     BI007 => sub {
         my $self   = shift;
         my $client = shift;
-        my $retry  = shift;
-
-        unless ($retry) {
-            my $res = sell_expired_contracts +{
-                client       => $client,
-                source       => $self->source,
-                only_expired => 1
-            };
-            return if $res and $res->{number_of_sold_bets} > 0;    # retry
-        }
 
         return Error::Base->cuss(
             -type              => 'PotentialPayoutLimitForSameContractExceeded',
@@ -1107,7 +1044,6 @@ In case of an unexpected error, the exception is re-thrown unmodified.
     BI008 => sub {
         my $self   = shift;
         my $client = shift;
-        my $retry  = shift;
 
         my $currency = $self->contract->currency;
         my $limit = to_monetary_number_format($client->get_limit_for_account_balance, 1);
@@ -1130,16 +1066,6 @@ In case of an unexpected error, the exception is re-thrown unmodified.
     BI009 => sub {
         my $self   = shift;
         my $client = shift;
-        my $retry  = shift;
-
-        unless ($retry) {
-            my $res = sell_expired_contracts +{
-                client       => $client,
-                source       => $self->source,
-                only_expired => 1
-            };
-            return if $res and $res->{number_of_sold_bets} > 0;    # retry
-        }
 
         my $currency = $self->contract->currency;
         my $limit = to_monetary_number_format($client->get_limit_for_payout, 1);
@@ -1162,7 +1088,6 @@ In case of an unexpected error, the exception is re-thrown unmodified.
     BI011 => sub {
         my $self   = shift;
         my $client = shift;
-        my $retry  = shift;
         my $msg    = shift;
 
         my $limit_name = 'Unknown';
@@ -1275,13 +1200,12 @@ In case of an unexpected error, the exception is re-thrown unmodified.
 );
 
 sub _recover {
-    my $self  = shift;
-    my $err   = shift;
-    my $retry = shift // 0;
+    my $self = shift;
+    my $err  = shift;
 
     if (ref($err) eq 'ARRAY') {    # special BINARY code
         my $ref = $known_errors{$err->[0]};
-        return ref $ref eq 'CODE' ? $ref->($self, $self->client, $retry, $err->[1]) : $ref if $ref;
+        return ref $ref eq 'CODE' ? $ref->($self, $self->client, $err->[1]) : $ref if $ref;
     } else {
         # TODO: recover from deadlocks & co.
     }
@@ -1731,9 +1655,7 @@ sub _validate_date_pricing {
 }
 
 =head2 $self->_validate_iom_withdrawal_limit
-
 Validate the withdrawal limit for IOM region
-
 =cut
 
 sub __validate_iom_withdrawal_limit {
@@ -1825,9 +1747,7 @@ sub _validate_stake_limit {
 }
 
 =head2 $self->_validate_payout_limit
-
 Validate if payout is not over the client limits
-
 =cut
 
 sub __validate_payout_limit {
@@ -1838,8 +1758,8 @@ sub __validate_payout_limit {
 
     return if $contract->is_spread;
 
-    my $rp    = $self->contract->risk_profile;
-    my @cl_rp = $rp->get_client_profiles($client);
+    my $rp = $self->contract->risk_profile;
+    my @cl_rp = $rp->get_client_profiles($client->loginid, $client->landing_company->short);
 
     # setups client specific payout and turnover limits, if any.
     if (@cl_rp) {
@@ -1871,9 +1791,7 @@ sub __validate_payout_limit {
 BEGIN { _create_validator '_validate_payout_limit' }
 
 =head2 $self->_validate_jurisdictional_restrictions
-
 Validates whether the client has provided his residence country
-
 =cut
 
 sub __validate_jurisdictional_restrictions {
@@ -1950,10 +1868,8 @@ sub __validate_jurisdictional_restrictions {
 BEGIN { _create_validator '_validate_jurisdictional_restrictions' }
 
 =head2 $self->_validate_client_status
-
 Validates to make sure that the client with unwelcome status
 is not able to purchase contract
-
 =cut
 
 sub __validate_client_status {
@@ -1973,10 +1889,8 @@ sub __validate_client_status {
 BEGIN { _create_validator '_validate_client_status' }
 
 =head2 $self->_validate_client_self_exclusion
-
 Validates to make sure that the client with self exclusion
 is not able to purchase contract
-
 =cut
 
 sub __validate_client_self_exclusion {
@@ -1997,15 +1911,12 @@ sub __validate_client_self_exclusion {
 BEGIN { _create_validator '_validate_client_self_exclusion' }
 
 =head2 sell_expired_contracts
-
 Static function: Sells expired contracts.
 For contracts with missing market data, settle them manually for real money accounts, but sell with purchase price for virtual account
-
 Returns: HashRef, with:
 'total_credited', total amount credited to Client
 'skip_contract', count for expired contracts that failed to be sold
 'failures', the failure information
-
 =cut
 
 my %source_to_sell_type = (

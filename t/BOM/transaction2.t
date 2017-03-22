@@ -27,7 +27,11 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
 use Crypt::NamedKeys;
+use LandingCompany::Offerings qw(reinitialise_offerings);
+
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
+
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_})
@@ -834,7 +838,7 @@ subtest 'spreads', sub {
 };
 
 subtest 'custom client limit' => sub {
-    plan tests => 9;
+    plan tests => 10;
     lives_ok {
         my $cl = create_client;
 
