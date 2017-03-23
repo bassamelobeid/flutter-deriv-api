@@ -383,6 +383,7 @@ sub prepare_bet_data_for_buy {
     }
 
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
+
     $self->contract_class($bet_class);
 
     $self->price(Format::Util::Numbers::roundnear(0.01, $self->price));
@@ -458,7 +459,7 @@ sub prepare_bet_data_for_buy {
 sub prepare_buy {
     my ($self, $skip) = @_;
 
-    return $self->prepare_bet_data_for_sell if $skip and not $self->multiple;
+    return $self->prepare_bet_data_for_buy if $skip and not $self->multiple;
 
     if ($self->multiple) {
         for my $m (@{$self->multiple}) {
@@ -474,6 +475,7 @@ sub prepare_buy {
                     transaction => $self,
                     client      => $c
                 )->validate_trx_buy();
+
                 return $error_status if $error_status;
             }
 
@@ -502,11 +504,11 @@ sub prepare_buy {
 }
 
 sub buy {
-    my ($self, @options) = @_;
+    my ($self, %options) = @_;
 
     my $stats_data = $self->stats_start('buy');
 
-    my ($error_status, $bet_data) = $self->prepare_buy(@options);
+    my ($error_status, $bet_data) = $self->prepare_buy($options{skip_validation});
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
@@ -589,9 +591,8 @@ sub buy {
 #   contract validation no exception whatsoever is thrown. That means there
 #   is no way for a contract to be bought but not reported back to the caller.
 
-sub batch_buy {    ## no critic (RequireArgUnpacking)
-    my $self    = shift;
-    my @options = @_;
+sub batch_buy {
+    my ($self, %options) = @_;
 
     # TODO: shall we allow this operation only if $self->client is real-money?
     #       Or allow virtual $self->client only if all other clients are also
@@ -599,7 +600,7 @@ sub batch_buy {    ## no critic (RequireArgUnpacking)
 
     my $stats_data = $self->stats_start('batch_buy');
 
-    my ($error_status, $bet_data) = $self->prepare_buy(@options);
+    my ($error_status, $bet_data) = $self->prepare_buy($options{skip_validation});
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
@@ -767,7 +768,7 @@ sub sell {
 
     my $stats_data = $self->stats_start('sell');
 
-    my ($error_status, $bet_data) = $self->prepare_sell($options{skip});
+    my ($error_status, $bet_data) = $self->prepare_sell($options{skip_validation});
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $bet_data->{account_data} = {
