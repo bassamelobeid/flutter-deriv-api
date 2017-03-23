@@ -240,27 +240,8 @@ sub _build__volsurface_fetcher {
 sub _build_volsurface {
     my $self = shift;
 
-    # Due to the craziness we have in volsurface cutoff. This complexity is needed!
-    # FX volsurface has cutoffs at either 21:00 or 23:59 or the early close time.
-    # Index volsurfaces shouldn't have cutoff concept. But due to the system design, an index surface cuts at the close of trading time on a non-DST day.
-    my %submarkets = (
-        major_pairs => 1,
-        minor_pairs => 1
-    );
-    my $vol_utils = Quant::Framework::VolSurface::Utils->new;
-    my $cutoff_str;
-    if ($submarkets{$self->underlying->submarket->name}) {
-        my $calendar       = $self->calendar;
-        my $effective_date = $vol_utils->effective_date_for($self->date_pricing);
-        $effective_date = $calendar->trades_on($effective_date) ? $effective_date : $calendar->trade_date_after($effective_date);
-        my $cutoff_date = $calendar->closing_on($effective_date);
-
-        $cutoff_str = $cutoff_date->time_cutoff;
-    }
-
     return $self->_volsurface_fetcher->fetch_surface({
         underlying => $self->underlying,
-        (defined $cutoff_str) ? (cutoff => $cutoff_str) : (),
     });
 }
 
