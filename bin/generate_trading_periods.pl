@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-use BOM::Script::GenerateTradingPeriods;
+use BOM::Product::Script::GenerateTradingPeriods;
 
 #This daemon generates predefined trading periods for selected underlying symbols at XX:45 and XX:00
-exit BOM::Script::GenerateTradingPeriods->run;
+exit BOM::Product::Script::GenerateTradingPeriods->run;

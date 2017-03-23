@@ -1,4 +1,4 @@
-package GenerateTradingPeriods;
+package BOM::Product::Script::GenerateTradingPeriods;
 use strict;
 use warnings;
 use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods next_generation_epoch);
