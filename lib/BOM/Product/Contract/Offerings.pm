@@ -99,7 +99,7 @@ my %known_decorations = (
         my ($parent_obj, $self) = @_;
         my $calendar = $_->calendar;
 
-        if (my $cached = $self->times_cache->{$calendar->symbol}) {
+        if (my $cached = $self->times_cache->{$calendar->exchange_symbol}) {
             return $cached;
         }
 
@@ -135,7 +135,7 @@ my %known_decorations = (
         my ($parent_obj, $self) = @_;
         my $calendar = $_->calendar;
         my @events;
-        if (my $cached = $self->holidays_cache->{$calendar->symbol}) {
+        if (my $cached = $self->holidays_cache->{$calendar->exchange_symbol}) {
             @events = @$cached;
         } else {
             my $today               = Date::Utility->today;
@@ -193,7 +193,7 @@ my %known_decorations = (
                     }
                     $seen_rules{$rule} = 1 if ($rule and $explain eq $rule);
                 }
-                $self->holidays_cache->{$calendar->symbol} = \@events;
+                $self->holidays_cache->{$calendar->exchange_symbol} = \@events;
             }
         }
         return \@events;
