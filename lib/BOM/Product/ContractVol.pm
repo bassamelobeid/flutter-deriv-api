@@ -8,7 +8,7 @@ use warnings;
 use BOM::MarketData::Fetcher::VolSurface;
 use List::MoreUtils qw(none all);
 use BOM::Market::DataDecimate;
-use VolSurface::Empirical;
+use VolSurface::IntradayFX;
 use Quant::Framework::VolSurface;
 use BOM::Platform::Context qw(localize);
 
@@ -37,9 +37,9 @@ has atm_vols => (
     lazy_build => 1
 );
 
-has empirical_volsurface => (
+has intradayfx_volsurface => (
     is         => 'ro',
-    isa        => 'Maybe[VolSurface::Empirical]',
+    isa        => 'Maybe[VolSurface::IntradayFX]',
     lazy_build => 1,
 );
 
@@ -124,26 +124,13 @@ sub _build_vol_at_strike {
 }
 
 sub _build_news_adjusted_pricing_vol {
-    my $self = shift;
+    my $self            = shift;
+    my $effective_start = $self->effective_start;
 
-    my $news_adjusted_vol = $self->pricing_vol;
-    my $effective_start   = $self->effective_start;
-    my $seconds_to_expiry = $self->get_time_to_expiry({from => $effective_start})->seconds;
-    my $events            = $self->economic_events_for_volatility_calculation;
-
-    # Only recalculated if there's economic_events.
-    if ($seconds_to_expiry > 10 and @$events) {
-        $news_adjusted_vol = $self->empirical_volsurface->get_volatility({
-            from                          => $effective_start->epoch,
-            to                            => $self->date_expiry->epoch,
-            economic_events               => $events,
-            ticks                         => $self->ticks_for_volatility_calculation,
-            include_economic_event_impact => 1,
-            backprice                     => ($self->underlying->for_date ? 1 : 0),
-        });
-    }
-
-    return $news_adjusted_vol;
+    return $self->intradayfx_volsurface->news_adjusted_pricing_vol({
+        from => $effective_start->epoch,
+        to   => $self->date_expiry->epoch,
+    });
 }
 
 sub _build_pricing_vol {
@@ -152,16 +139,14 @@ sub _build_pricing_vol {
     my $vol;
     my $volatility_error;
     if ($self->priced_with_intraday_model) {
-        my $volsurface       = $self->empirical_volsurface;
+        my $volsurface       = $self->intradayfx_volsurface;
         my $duration_seconds = $self->timeindays->amount * 86400;
         # volatility doesn't matter for less than 10 minutes ATM contracts,
         # where the intraday_delta_correction is the bounceback which is a function of trend, not volatility.
         my $uses_flat_vol = ($self->is_atm_bet and $duration_seconds < 10 * 60) ? 1 : 0;
         $vol = $uses_flat_vol ? $volsurface->long_term_volatility : $volsurface->get_volatility({
-            from            => $self->effective_start->epoch,
-            to              => $self->date_expiry->epoch,
-            economic_events => $self->economic_events_for_volatility_calculation,
-            ticks           => $self->ticks_for_volatility_calculation,
+            from => $self->effective_start->epoch,
+            to   => $self->date_expiry->epoch,
         });
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
@@ -264,9 +249,9 @@ sub _build_volsurface {
     });
 }
 
-sub _build_empirical_volsurface {
+sub _build_intradayfx_volsurface {
     my $self = shift;
-    return VolSurface::Empirical->new(
+    return VolSurface::IntradayFX->new(
         underlying       => $self->underlying,
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,

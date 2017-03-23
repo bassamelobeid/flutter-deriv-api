@@ -22,7 +22,6 @@ use LandingCompany::Offerings qw(get_contract_specifics);
 use BOM::Platform::Chronicle;
 use BOM::Platform::Context qw(localize);
 use BOM::MarketData::Types;
-use VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Contract::Category;
 use BOM::Product::RiskProfile;
