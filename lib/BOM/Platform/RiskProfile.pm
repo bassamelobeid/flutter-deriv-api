@@ -2,7 +2,6 @@ package BOM::Platform::RiskProfile;
 
 use strict;
 use warnings;
-use feature "state";
 
 use BOM::Platform::Config;
 use BOM::Platform::Runtime;
