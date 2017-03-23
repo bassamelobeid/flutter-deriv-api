@@ -218,6 +218,8 @@ sub _validate_start_end {
     my $end         = $args->{end} !~ /^[0-9]+$/ ? time() : $args->{end};
     my $count       = $args->{count};
     my $granularity = $args->{granularity};
+    my $calendar    = $ul->calendar;
+    my $exchange    = $ul->exchange;
 
     # special case to send explicit error when
     # both are timestamp & start > end time
@@ -231,12 +233,12 @@ sub _validate_start_end {
     if (not $start and $count and $granularity) {
         my $expected_start = Date::Utility->new($end - ($count * $granularity));
         # handle for non trading day as well
-        unless ($ul->calendar->trades_on($expected_start)) {
+        unless ($calendar->trades_on($exchange, $expected_start)) {
             my $count = 0;
             do {
                 $expected_start = $expected_start->minus_time_interval('1d');
                 $count++;
-            } while ($count < 5 and not $ul->calendar->trades_on($expected_start));
+            } while ($count < 5 and not $calendar->trades_on($exchange, $expected_start));
         }
         $start = $expected_start->epoch;
     }
@@ -277,12 +279,12 @@ sub _validate_start_end {
         }
     }
     if ($args->{adjust_start_time}) {
-        unless ($ul->calendar->is_open_at($end)) {
-            my $shift_back = $ul->calendar->seconds_since_close_at($end);
+        unless ($ul->calendar->is_open_at($exchange, $end)) {
+            my $shift_back = $ul->calendar->seconds_since_close_at($exchange, $end);
             unless (defined $shift_back) {
-                my $last_day = $ul->calendar->trade_date_before(Date::Utility->new($end));
+                my $last_day = $ul->calendar->trade_date_before($exchange, Date::Utility->new($end));
                 if ($last_day) {
-                    my $closes = $ul->calendar->closing_on($last_day)->epoch;
+                    my $closes = $ul->calendar->closing_on($exchange, $last_day)->epoch;
                     $shift_back = $end - $closes;
                 }
             }
