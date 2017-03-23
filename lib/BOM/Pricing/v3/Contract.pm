@@ -288,11 +288,13 @@ sub handle_batch_contract {
                 sort keys %{$ask_prices->{$contract_type}}
                 unless exists $ask_prices->{$contract_type}{$key};
             push @{$proposals->{$contract_type}}, $ask_prices->{$contract_type}{$key} // {};
+            my $price = $ask_prices->{$contract_type}{$key} // {};
+            push @{$proposals->{$contract_type}}, $price;
         }
     }
     return {
         proposals => $proposals,
-        details   => $batch_contract->market_details,
+        %{ $batch_contract->market_details },
         rpc_time  => 0,                                 # $rpc_time,
     };
 }
