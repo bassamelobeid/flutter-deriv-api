@@ -137,6 +137,14 @@ sub market_details {
     my %details = (
         spot_time  => $contract->current_tick->epoch,
         date_start => $contract->date_start->epoch,
+        !$contract->is_spread
+        ? (
+            app_markup_percentage => $contract->app_markup_percentage,
+            staking_limits        => $contract->staking_limits,
+            deep_otm_threshold    => $contract->otm_threshold,
+            )
+        : (),
+        base_commission => $contract->base_commission,
     );
     $details{spot}   = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
     $details{spread} = $contract->spread       if $contract->is_spread;
