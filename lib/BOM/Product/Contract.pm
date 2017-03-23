@@ -517,8 +517,8 @@ sub _build_pricing_args {
     };
 
     if ($self->priced_with_intraday_model) {
-        $args->{long_term_prediction}      = $self->empirical_volsurface->long_term_prediction;
-        $args->{volatility_scaling_factor} = $self->empirical_volsurface->volatility_scaling_factor;
+        $args->{long_term_prediction}      = $self->intradayfx_volsurface->long_term_prediction;
+        $args->{volatility_scaling_factor} = $self->intradayfx_volsurface->volatility_scaling_factor;
         $args->{iv_with_news}              = $self->news_adjusted_pricing_vol;
     }
 
