@@ -4,7 +4,6 @@ use Moose;
 
 use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Moneyness;
-use VolSurface::Empirical;
 
 use BOM::MarketData::VolSurface::Flat;
 
