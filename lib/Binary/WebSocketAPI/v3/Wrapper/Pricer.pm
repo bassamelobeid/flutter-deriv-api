@@ -163,7 +163,7 @@ sub proposal_array {
 
                 # The format is [ 123.4, 128.1, ... ] for single-barrier contracts,
                 # with hashrefs [ { barrier => 121.8, barrier2 => 127.4 }, ... ] for 2-barrier
-                $barriers = [map {; $_->{barrier} } @$barriers] unless grep {; $_->{barrier2} } @$barriers;
+                $barriers = [map { ; $_->{barrier} } @$barriers] unless grep { ; $_->{barrier2} } @$barriers;
 
                 # Shallow copy of $args since we want to override a few top-level keys for the RPC calls
                 my $args = {%{$req_storage->{args}}};
