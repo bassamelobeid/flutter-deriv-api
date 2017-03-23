@@ -230,7 +230,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                                 push @{$proposal_array{$contract_type}}, @prices;
                             }
                         } else {
-                            warn "Invalid entry in response - " . Dumper($res);
+                            warn "Invalid entry in proposal_array response - " . encode_json($res);
                             $c->send(
                                 {json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')})
                                 if $c and $c->tx;
