@@ -1,4 +1,4 @@
-package BOM::Market::Script::BomFeedDecimate;
+package BOM::Market::Script::FeedDecimate;
 use strict;
 use warnings;
 

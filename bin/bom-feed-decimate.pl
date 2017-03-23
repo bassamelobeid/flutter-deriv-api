@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use BOM::Market::Script::BomFeedDecimate;
+use BOM::Market::Script::FeedDecimate;
 
-exit BOM::Market::Script::BomFeedDecimate::run();
+exit BOM::Market::Script::FeedDecimate::run();
 
