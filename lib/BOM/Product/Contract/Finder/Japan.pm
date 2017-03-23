@@ -23,14 +23,17 @@ sub available_contracts_for_symbol {
     my $args            = shift;
     my $symbol          = $args->{symbol} || die 'no symbol';
     my $underlying      = create_underlying($symbol, $args->{date});
+    my $exchange        = $underlying->exchange;
     my $now             = $args->{date} || Date::Utility->new;
     my $landing_company = $args->{landing_company};
 
-    my $calendar = $underlying->calendar;
+    my $calendar = Quant::Framework::TradingCalendar->new(
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($args->{date}),
+    );
     my ($open, $close, $offerings);
-    if ($calendar->trades_on($now)) {
-        $open      = $calendar->opening_on($now)->epoch;
-        $close     = $calendar->closing_on($now)->epoch;
+    if ($calendar->trades_on($exchange, $$now)) {
+        $open = $calendar->opening_on($exchange, $now)->epoch;
+        $close = $calendar->closing_on($exchange, $now)->epoch;
         $offerings = get_predefined_offerings({
             symbol          => $underlying->symbol,
             date            => $underlying->for_date,
