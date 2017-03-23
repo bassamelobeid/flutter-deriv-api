@@ -161,7 +161,7 @@ sub _save_early_closes_calendar {
     my $calendar_data;
     foreach my $exchange_name (keys %$data) {
         my $calendar = Quant::Framework::TradingCalendar->new({
-                symbol           => $exchange_name,
+                exchange         => $exchange_name,
                 chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader()});
         my $partial_trading = $calendar->market_times->{partial_trading};
         if (not $partial_trading) {
