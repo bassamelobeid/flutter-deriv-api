@@ -3,7 +3,6 @@ package BOM::Product::Categorizer;
 use Moose;
 
 use Date::Utility;
-use File::ShareDir;
 use Time::HiRes;
 use LandingCompany::Offerings qw(get_all_contract_types);
 
