@@ -501,7 +501,7 @@ subtest 'all methods on a selection of underlyings' => sub {
     };
 
     my $eod = Quant::Framework::TradingCalendar->new({
-            symbol           => 'NYSE',
+            exchange           => 'NYSE',
             underlying       => create_underlying('DJI'),
             chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader()})->closing_on(Date::Utility->new('2016-04-05'));
     foreach my $pair (qw(frxUSDJPY frxEURUSD frxAUDUSD)) {
