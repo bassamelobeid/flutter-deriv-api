@@ -1418,14 +1418,10 @@ sub _validate_sell_pricing_adjustment {
     # set the requested price and recomputed  price to be store in db
     $self->requested_price($self->price);
     $self->recomputed_price($contract->bid_price);
-    my $recomputed        = $contract->bid_probability->amount;
-    my $move              = $recomputed - $requested;
-    my $slippage          = $contract->bid_price - $self->price;
-    my $commission_markup = 0;
-    if (not $contract->is_expired) {
-        $commission_markup = $contract->opposite_contract->commission_markup->amount || 0;
-    }
-    my $allowed_move = $commission_markup * 0.5;
+    my $recomputed   = $contract->bid_probability->amount;
+    my $move         = $recomputed - $requested;
+    my $slippage     = $contract->bid_price - $self->price;
+    my $allowed_move = $contract->allowed_slippage;
     $allowed_move = 0 if $recomputed == 1;
     my ($amount, $recomputed_amount) = ($self->price, $contract->bid_price);
 
@@ -1509,14 +1505,10 @@ sub _validate_trade_pricing_adjustment {
     # set the requested price and recomputed price to be store in db
     $self->requested_price($self->price);
     $self->recomputed_price($contract->ask_price);
-    my $recomputed        = $contract->ask_probability->amount;
-    my $move              = $requested - $recomputed;
-    my $slippage          = $self->price - $contract->ask_price;
-    my $commission_markup = 0;
-    if (not $contract->is_expired) {
-        $commission_markup = $contract->commission_markup->amount || 0;
-    }
-    my $allowed_move = ($self->contract->category->code eq 'digits') ? $commission_markup : ($commission_markup * 0.5);
+    my $recomputed   = $contract->ask_probability->amount;
+    my $move         = $requested - $recomputed;
+    my $slippage     = $self->price - $contract->ask_price;
+    my $allowed_move = $contract->allowed_slippage;
     $allowed_move = 0 if $recomputed == 1;
     my ($amount, $recomputed_amount) = $amount_type eq 'payout' ? ($self->price, $contract->ask_price) : ($self->payout, $contract->payout);
 
