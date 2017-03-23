@@ -549,7 +549,6 @@ sub mt5_withdrawal {
     }
 
     try {
-
         # deposit to Binary a/c
         my $account = $to_client->set_default_account('USD');
         my ($payment) = $account->add_payment({
@@ -586,7 +585,7 @@ sub mt5_withdrawal {
             error   => $_,
         );
         die $_;    # throw exception again
-    }
+    };
 }
 
 sub _is_mt5_suspended {
