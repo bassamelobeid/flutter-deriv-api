@@ -12,7 +12,8 @@ use Proc::CPUUsage;
 use Time::HiRes;
 use Try::Tiny;
 use Carp qw(cluck);
-use JSON;
+use Path::Tiny;
+use JSON::XS;
 
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
@@ -370,6 +371,7 @@ sub startup {
     my @recent;
     my $call;
     my $cpu;
+    my $vsz_start;
 
     $app->hook(
         before_dispatch => sub {
@@ -380,6 +382,7 @@ sub startup {
             $call =~ s/\///;
             $request_start = [Time::HiRes::gettimeofday];
             DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => ["rpc:$call"]});
+            $vsz_start = current_vsz();
         });
 
     $app->hook(
@@ -395,6 +398,15 @@ sub startup {
                 @{$end}[3, 2, 1],
                 $end->[0] + $request_end->[1] / 1_000_000
             );
+
+            # Track whether we have any change in memory usage
+            my $vsz_increase = current_vsz() - $vsz_start;
+            # Anything more than 100 MB is probably something we should know about,
+            # residence_list and ticks can take >64MB so we can't have this limit set
+            # too low.
+            warn sprintf "Large VSZ increase for %d - %d bytes, %s\n", $$, $vsz_increase, $call if $vsz_increase > (100 * 1024 * 1024);
+            # We use timing for the extra statistics (min/max/avg) it provides
+            DataDog::DogStatsd::Helper::stats_timing('bom_rpc.v_3.vsz.increase', $vsz_increase, {tags => ["rpc:$call"]});
 
             DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call_success.count', {tags => ["rpc:$call"]});
             DataDog::DogStatsd::Helper::stats_timing(
@@ -417,6 +429,19 @@ sub startup {
     Mojo::IOLoop->timer(0, sub { @recent = [[Time::HiRes::gettimeofday], 0]; $0 = "bom-rpc: (new)" });  ## no critic (RequireLocalizedPunctuationVars)
 
     return;
+}
+
+=head2 current_vsz
+
+Returns the VSZ (virtual memory usage) for the current process, in bytes.
+
+=cut
+
+sub current_vsz {
+    my $stat = path("/proc/self/stat")->slurp_utf8;
+    # Process name is awkward and can contain (). We know that we're a running process.
+    $stat =~ s/^.*\) R [0-9]+ //;
+    return +(split " ", $stat)[18];
 }
 
 1;
