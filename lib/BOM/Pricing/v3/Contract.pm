@@ -103,9 +103,7 @@ Extracts some generic information from a given contract.
 =cut
 
 sub contract_metadata {
-    my ($contract)              = @_;
-    my $market_name             = $contract->market->name;
-    my $base_commission_scaling = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market_name;
+    my ($contract) = @_;
     return +{
         !$contract->is_spread
         ? (
@@ -114,8 +112,7 @@ sub contract_metadata {
             deep_otm_threshold    => $contract->otm_threshold,
             )
         : (),
-        underlying_base_commission => $contract->underlying->base_commission,
-        base_commission_scaling    => $base_commission_scaling,
+        base_commission => $contract->base_commission,
     };
 }
 
@@ -231,9 +228,6 @@ sub _get_ask {
             }
 
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
-            my $market_name = $contract->market->name;
-            my $base_commission_scaling =
-                BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market_name;
 
             $response = {
                 longcode            => $contract->longcode,
