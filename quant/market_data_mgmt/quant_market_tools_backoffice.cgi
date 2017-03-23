@@ -1,6 +1,8 @@
 #!/etc/rmg/bin/perl
 package main;
-use strict 'vars';
+use strict;
+use warnings;
+
 use HTML::Entities;
 use lib qw(/home/git/regentmarkets/bom-backoffice /home/git/regentmarkets/bom/cgi/oop);
 use f_brokerincludeall;
@@ -42,7 +44,7 @@ print generate_dividend_upload_form({
 });
 
 if (request()->param('whattodo') eq 'process_dividend') {
-    my $cgi                      = new CGI;
+    my $cgi                      = CGI->new;
     my $filetoupload             = $cgi->param('filetoupload');
     my $update_discrete_dividend = request()->param('update_discrete_dividend');
     print process_dividend($filetoupload, $update_discrete_dividend);
@@ -55,7 +57,7 @@ print generate_correlations_upload_form({
 });
 
 if (request()->param('whattodo') eq 'process_superderivatives_correlations') {
-    my $cgi          = new CGI;
+    my $cgi          = CGI->new;
     my $filetoupload = $cgi->param('filetoupload');
     local $CGI::POST_MAX        = 1024 * 100 * 8;    # max 800K posts
     local $CGI::DISABLE_UPLOADS = 0;                 # enable uploads

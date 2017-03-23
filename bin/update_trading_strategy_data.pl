@@ -1,3 +1,4 @@
+#!/etc/rmg/bin/perl
 use strict;
 use warnings;
 
@@ -27,7 +28,7 @@ use constant WORKERS => floor(Sys::Info->new->device("CPU")->count / 2) || 1;
 
 ++$|;
 
-open my $unique_lock, '<', $0 or die $!;
+open my $unique_lock, '<', $0 or die $!;    ## no critic (RequireBriefOpen)
 die "Another copy of $0 is already running - we expect to run daily, is the script taking more than 24h to complete?"
     unless flock $unique_lock, LOCK_EX | LOCK_NB;
 
@@ -35,7 +36,7 @@ my $script_start_time = Time::HiRes::time;
 try {
     # Bail out if we take more than a day...
     alarm((24 * 60 * 60) - 10);
-    $SIG{ALRM} = sub { die "Timeout - this script took too long, it needs to complete within 24h" };
+    local $SIG{ALRM} = sub { die "Timeout - this script took too long, it needs to complete within 24h" };
 
     my $config = LoadFile('/home/git/regentmarkets/bom-backoffice/config/trading_strategy_datasets.yml');
 
@@ -65,7 +66,7 @@ try {
     JOB:
     for my $job (@jobs) {
         my $pid = $pm->start and next JOB;
-	my $start_time = Time::HiRes::time;
+        my $start_time = Time::HiRes::time;
         my ($symbol, $duration_step, $bet_type) = split "\0", $job;
         print "$$ working on " . ($job =~ s/\0/ /gr) . " from $start..$end\n";
         my ($duration, %duration_options) = split ' ', $duration_step;
@@ -95,7 +96,7 @@ try {
             }
 
             my $key = join '_', $symbol, $duration, $duration_options{step}, $bet_type;
-            open my $fh, '>:encoding(UTF-8)', $output_base . '/' . $key . '.csv' or die $!;
+            open my $fh, '>:encoding(UTF-8)', $output_base . '/' . $key . '.csv' or die $!;    ## no critic (RequireBriefOpen)
             $fh->autoflush(1);
 
             my $idx = 0;
@@ -116,15 +117,16 @@ try {
                     txn {
                         my $contract         = produce_contract($args);
                         my $contract_expired = produce_contract({
-                            %$args,
+                            %$args,    ## no critic (ProhibitCommaSeparatedStatements)
                             date_pricing => $now,
                         });
                         if ($contract_expired->is_expired) {
                             my $ask_price = $contract->ask_price;
                             my $value     = $contract_expired->value;
-                            $fh->print(join(",", (map $tick->{$_}, qw(epoch quote)), $ask_price, $value, $contract->theo_price) . "\n");
+                            $fh->print(join(",", (map { $tick->{$_} } qw(epoch quote)), $ask_price, $value, $contract->theo_price) . "\n");
                         }
-                    } qw(feed chronicle);
+                    }
+                    qw(feed chronicle);
                 }
                 catch {
                     warn "Failed to price with parameters " . Dumper($args) . " - $_\n";
@@ -143,7 +145,8 @@ try {
         $pm->finish;
     }
     $pm->wait_all_children;
-} catch {
+}
+catch {
     warn "Failed to run - $_";
 };
 alarm(0);

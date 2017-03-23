@@ -1,6 +1,8 @@
 #!/etc/rmg/bin/perl
 package main;
-use strict 'vars';
+use strict;
+use warnings;
+no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
 use open qw[ :encoding(UTF-8) ];
 
 use Text::Trim;
@@ -154,10 +156,9 @@ if ($filen =~ m!^vol/master(\w{3}(?:-\w{3})?)\.interest$!) {
         $rateline = rtrim($rateline);
 
         my ($tenor, $rate);
-        if ($rateline =~ /^(\d+)\s+(\d*\.?\d*)/) {
+        if ($rateline =~ /^(\d+)\s+(\-?\d*\.?\d*)/) {
             $tenor = $1;
             $rate  = $2;
-
             if ($tenor == 0 or $tenor < 1 or $tenor > 733) {
                 $err_cond = 'improper days (' . $tenor . ')';
             } elsif ($rate <= -2) {
@@ -245,16 +246,15 @@ if ($filen eq 'f_broker/promocodes.txt' and not BOM::Platform::Config::on_qa and
             message => ["$ENV{'REMOTE_ADDR'}\n$ENV{'HTTP_USER_AGENT'} \nDIFF=\n$diff", '================', 'NEW FILE=', @lines]});
 }
 
-local *DATA;
-open(DATA, ">$overridefilename")
+open(my $fh, ">", "$overridefilename")
     || die "[$0] Cannot open $overridefilename to write $!";
-flock(DATA, 2);
+flock($fh, 2);
 local $\ = "\n";
 
 foreach my $l (@lines) {
-    print DATA $l;
+    print $fh $l;
 }
-close(DATA)
+close($fh)
     || die "[$0] Cannot close $overridefilename $!";
 
 # Log the difference (difflog)

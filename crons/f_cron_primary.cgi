@@ -1,6 +1,7 @@
 #!/etc/rmg/bin/perl
 package main;
-use strict 'vars';
+use strict;
+use warnings;
 
 BEGIN {
     push @INC, "/home/git/regentmarkets/bom/cgi", "/home/git/regentmarkets/bom-backoffice/lib", "/home/git/regentmarkets/bom-backoffice/subs";

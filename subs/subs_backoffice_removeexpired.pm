@@ -1,4 +1,6 @@
-use strict 'vars';
+## no critic (RequireExplicitPackage)
+use strict;
+use warnings;
 use open qw[ :encoding(UTF-8) ];
 
 use BOM::Database::DataMapper::Payment::FreeGift;
