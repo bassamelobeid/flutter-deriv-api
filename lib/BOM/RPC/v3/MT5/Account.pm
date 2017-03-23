@@ -325,7 +325,7 @@ sub _send_email {
         message               => [$message, "Client login id: $loginid", "MT5 login: $mt5_id", "Amount: $amount", "error: $error"],
         use_email_template    => 1,
         email_content_is_html => 1,
-        template_loginid      => $client->loginid,
+        template_loginid      => $loginid,
     });
 }
 
