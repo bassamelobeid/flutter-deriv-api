@@ -312,8 +312,8 @@ sub mt5_password_change {
 
 sub _send_email {
     my %args = @_;
-    my ($loginid, $mt5_id, $amount, $action, $error) = @args{qw(loginid mt5_id amount action error)} my $brand =
-        Brands->new(name => request()->brand);
+    my ($loginid, $mt5_id, $amount, $action, $error) = @args{qw(loginid mt5_id amount action error)};
+    my $brand = Brands->new(name => request()->brand);
     my $message =
         $action eq 'deposit'
         ? "Error happened when doing MT5 deposit after withdrawal from client account:"
@@ -548,7 +548,7 @@ sub mt5_withdrawal {
         return $error_sub->($status->{error});
     }
 
-    try {
+    return try {
         # deposit to Binary a/c
         my $account = $to_client->set_default_account('USD');
         my ($payment) = $account->add_payment({
