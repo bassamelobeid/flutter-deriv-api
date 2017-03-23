@@ -213,6 +213,7 @@ sub _get_ask {
                 $response->{longcode}            = $longcode;
             }
         } else {
+            # We think this contract is valid to buy
             my $ask_price = sprintf('%.2f', $contract->ask_price);
             my $trading_window_start = $p2->{trading_period_start} // '';
 
@@ -277,7 +278,6 @@ sub handle_batch_contract {
 
     # We should now have a usable ::Contract instance. This may be a single
     # or multiple (batch) contract.
-    warn "Batch contract = " . $batch_contract . " with ->ask_prices " . Dumper($batch_contract->ask_prices) if $batch_contract->can('ask_prices');
 
     my $proposals  = {};
     my $ask_prices = $batch_contract->ask_prices;
