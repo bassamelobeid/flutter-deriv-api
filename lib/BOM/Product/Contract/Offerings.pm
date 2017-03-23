@@ -126,7 +126,7 @@ my %known_decorations = (
         }
         push @{$times->{open}},  $no_data if not @{$times->{open}};
         push @{$times->{close}}, $no_data if not @{$times->{close}};
-        $self->times_cache->{$calendar->symbol} = $times;
+        $self->times_cache->{$calendar->exchange_symbol} = $times;
 
         return $times;
     },
