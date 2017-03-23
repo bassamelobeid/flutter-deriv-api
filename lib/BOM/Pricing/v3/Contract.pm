@@ -287,7 +287,6 @@ sub handle_batch_contract {
             warn "Could not find barrier for key $key, where our barrier is " . Dumper($barrier) . " and available: " . join ',',
                 sort keys %{$ask_prices->{$contract_type}}
                 unless exists $ask_prices->{$contract_type}{$key};
-            push @{$proposals->{$contract_type}}, $ask_prices->{$contract_type}{$key} // {};
             my $price = $ask_prices->{$contract_type}{$key} // {};
             push @{$proposals->{$contract_type}}, $price;
         }
