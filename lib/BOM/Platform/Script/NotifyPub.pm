@@ -12,6 +12,7 @@ use RedisDB;
 use JSON;
 
 my $conn;
+
 sub run {
     $conn = _master_db_connections();
 
