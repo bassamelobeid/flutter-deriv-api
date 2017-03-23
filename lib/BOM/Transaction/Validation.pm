@@ -6,6 +6,11 @@ use LandingCompany::Registry;
 use Error::Base;
 use BOM::Platform::Context qw(localize request);
 use BOM::Database::Helper::RejectedTrade;
+use YAML::XS qw(LoadFile);
+use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
+use Format::Util::Numbers qw(commas roundnear to_monetary_number_format);
+use List::Util qw(min max first);
+use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 
 use Moo;
 
@@ -116,8 +121,8 @@ sub _validate_sell_pricing_adjustment {
     my $contract = $self->transaction->contract;
 
     # always sell at recomputed bid price for spreads.
-    if ($contract->is_spread or not defined $self->price) {
-        $self->price($contract->bid_price);
+    if ($contract->is_spread or not defined $self->transaction->price) {
+        $self->transaction->price($contract->bid_price);
         return;
     }
 
@@ -165,7 +170,7 @@ sub _validate_sell_pricing_adjustment {
             my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
                     login_id                => $self->client->loginid,
                     financial_market_bet_id => $self->transaction->contract_id,
-                    shortcode               => $self->contract->shortcode,
+                    shortcode               => $self->transaction->contract->shortcode,
                     action_type             => 'sell',
                     reason                  => 'SLIPPAGE',
                     details                 => JSON::to_json({
@@ -204,7 +209,7 @@ sub _validate_sell_pricing_adjustment {
             }
         }
 
-        $self->price($final_value);
+        $self->transaction->price($final_value);
     }
 
     return;

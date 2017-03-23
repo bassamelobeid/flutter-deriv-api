@@ -6,20 +6,19 @@ use Error::Base;
 use Path::Tiny;
 use Scalar::Util qw(blessed);
 use Time::HiRes qw(tv_interval gettimeofday time);
-use List::Util qw(min max first);
+
 use JSON qw( from_json to_json );
 use Date::Utility;
 use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
 use Format::Util::Numbers qw(commas roundnear to_monetary_number_format);
 use Try::Tiny;
-use YAML::XS qw(LoadFile);
+
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count);
 
 use Brands;
 use Client::Account;
 
 use Finance::Asset::Market::Types;
-use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 
 use BOM::Platform::Context qw(localize request);
 
