@@ -209,7 +209,7 @@ subtest 'get_ask' => sub {
                 );
             }
         ],
-        bag(re('Could not load volsurface for invalid symbol')),
+        bag(re('Could not load volsurface for invalid symbol'), re('base commission for invalid symbol not set')),
         'had warning about volsurface for invalid symbol'
     );
 
