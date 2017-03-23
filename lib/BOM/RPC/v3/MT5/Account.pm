@@ -9,7 +9,6 @@ use List::Util qw(any first);
 use Try::Tiny;
 use File::ShareDir;
 use Locale::Country::Extra;
-
 use Brands;
 use WebService::MyAffiliates;
 
@@ -21,6 +20,7 @@ use BOM::Platform::User;
 use BOM::MT5::User;
 use BOM::Database::ClientDB;
 use BOM::Platform::Runtime;
+use BOM::Platform::Email;
 
 sub mt5_login_list {
     my $params = shift;
@@ -310,6 +310,25 @@ sub mt5_password_change {
     return 1;
 }
 
+sub _send_email {
+    my %args = @_;
+    my ($loginid, $mt5_id, $amount, $action, $error) = @args{qw(loginid mt5_id amount action error)} my $brand =
+        Brands->new(name => request()->brand);
+    my $message =
+        $action eq 'deposit'
+        ? "Error happened when doing MT5 deposit after withdrawal from client account:"
+        : "Error happened when doing deposit to client account after withdrawal from MT5 account:";
+    return BOM::Platform::Email::send_email({
+        from                  => $brand->emails('system'),
+        to                    => $brand->emails('payments'),
+        subject               => "MT5 $action error",
+        message               => [$message, "Client login id: $loginid", "MT5 login: $mt5_id", "Amount: $amount", "error: $error"],
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        template_loginid      => $client->loginid,
+    });
+}
+
 sub mt5_deposit {
     my $params = shift;
 
@@ -431,6 +450,13 @@ sub mt5_deposit {
     });
 
     if ($status->{error}) {
+        _send_email(
+            loginid => $fm_loginid,
+            mt5_id  => $to_mt5,
+            amount  => $amount,
+            action  => 'deposit',
+            error   => $status->{error},
+        );
         return $error_sub->($status->{error});
     }
 
@@ -522,32 +548,45 @@ sub mt5_withdrawal {
         return $error_sub->($status->{error});
     }
 
-    # deposit to Binary a/c
-    my $account = $to_client->set_default_account('USD');
-    my ($payment) = $account->add_payment({
-        amount               => $amount,
-        payment_gateway_code => 'account_transfer',
-        payment_type_code    => 'internal_transfer',
-        status               => 'OK',
-        staff_loginid        => $to_loginid,
-        remark               => $comment,
-    });
-    my ($txn) = $payment->add_transaction({
-        account_id    => $account->id,
-        amount        => $amount,
-        staff_loginid => $to_loginid,
-        referrer_type => 'payment',
-        action_type   => 'deposit',
-        quantity      => 1,
-        source        => $source,
-    });
-    $account->save(cascade => 1);
-    $payment->save(cascade => 1);
+    try {
 
-    return {
-        status                => 1,
-        binary_transaction_id => $txn->id
-    };
+        # deposit to Binary a/c
+        my $account = $to_client->set_default_account('USD');
+        my ($payment) = $account->add_payment({
+            amount               => $amount,
+            payment_gateway_code => 'account_transfer',
+            payment_type_code    => 'internal_transfer',
+            status               => 'OK',
+            staff_loginid        => $to_loginid,
+            remark               => $comment,
+        });
+        my ($txn) = $payment->add_transaction({
+            account_id    => $account->id,
+            amount        => $amount,
+            staff_loginid => $to_loginid,
+            referrer_type => 'payment',
+            action_type   => 'deposit',
+            quantity      => 1,
+            source        => $source,
+        });
+        $account->save(cascade => 1);
+        $payment->save(cascade => 1);
+
+        return {
+            status                => 1,
+            binary_transaction_id => $txn->id
+        };
+    }
+    catch {
+        _send_email(
+            loginid => $to_loginid,
+            mt5_id  => $fm_mt5,
+            amount  => $amount,
+            action  => 'withdraw',
+            error   => $_,
+        );
+        die $_;    # throw exception again
+    }
 }
 
 sub _is_mt5_suspended {
