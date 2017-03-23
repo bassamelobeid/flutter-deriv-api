@@ -248,6 +248,7 @@ sub _create_new_interface_engine {
         strikes           => [grep { $_ } values %{$self->barriers_for_pricing}],
         priced_with       => $self->priced_with,
         payout_type       => $self->payout_type,
+        is_atm_contract   => $self->is_atm_bet,
     );
 
     if ($self->pricing_engine_name eq 'Pricing::Engine::Digits') {
