@@ -125,7 +125,7 @@ sub run {
                             if ($contract_expired->is_expired) {
                                 my $ask_price = $contract->ask_price;
                                 my $value     = $contract_expired->value;
-                                $fh->print(join(",", (map {$tick->{$_}} qw(epoch quote)), $ask_price, $value, $contract->theo_price) . "\n");
+                                $fh->print(join(",", (map { $tick->{$_} } qw(epoch quote)), $ask_price, $value, $contract->theo_price) . "\n");
                             }
                         }
                         qw(feed chronicle);
