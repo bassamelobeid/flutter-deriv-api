@@ -92,7 +92,7 @@ in a single response back to the client.
 =cut
 
 # perlcritic seems to be confused about the fmap block, hence this workaround
-sub proposal_array { ## no critic(Subroutines::RequireArgUnpacking)
+sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
     my ($c, $req_storage) = @_;
     my $msg_type = 'proposal_array';
     my $uuid;
