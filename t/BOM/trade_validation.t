@@ -376,6 +376,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
     subtest 'do not allow move if recomputed is 1' => sub {
         $mock_contract->mock('ask_price', sub { 100 });
+        $mock_contract->mock( 'allowed_slippage', sub { 0.005; });
         $mock_contract->mock(
             'commission_markup',
             sub {
@@ -744,6 +745,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
 
     subtest 'do not allow move if recomputed is 0' => sub {
         $mock_contract->mock('bid_price', sub { 100 });
+        $mock_contract->mock( 'allowed_slippage', sub { 0.005; });
         $mock_contract->mock(
             'commission_markup',
             sub {
