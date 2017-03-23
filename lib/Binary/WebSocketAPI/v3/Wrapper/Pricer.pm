@@ -91,7 +91,8 @@ in a single response back to the client.
 
 =cut
 
-sub proposal_array {
+# perlcritic seems to be confused about the fmap block, hence this workaround
+sub proposal_array { ## no critic(Subroutines::RequireArgUnpacking)
     my ($c, $req_storage) = @_;
     my $msg_type = 'proposal_array';
     my $uuid;
@@ -204,7 +205,7 @@ sub proposal_array {
                     });
                 $f;
             }
-            foreach    => [bundle_by { [@_] } BARRIERS_PER_BATCH, @barriers],
+            foreach    => [List::UtilsBy::bundle_by { [@_] } BARRIERS_PER_BATCH, @barriers],
             concurrent => PARALLEL_RPC_COUNT
             )->on_ready(
             sub {
