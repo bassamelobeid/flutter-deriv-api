@@ -55,6 +55,7 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/php-mt5-webapi
     - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
     - /tmp/travis-scripts/clone_branch.sh binary-com/websocket-bench
+    # creating of ws-redis config on Travis
     - sudo bash -c "echo d3JpdGU6CiAgaG9zdDogMTI3LjAuMC4xCiAgcG9ydDogNjM1OQogIHBhc3N3b3JkOgpyZWFkOgogIGhvc3Q6IDEyNy4wLjAuMQogIHBvcnQ6IDYzNTkKICBwYXN3b3JkOgo=| base64 -d >> /etc/rmg/ws-redis.yml"
     - /tmp/travis-scripts/redis.sh
 
