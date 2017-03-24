@@ -6,6 +6,8 @@ extends 'BOM::MarketDataAutoUpdater';
 use Text::CSV::Slurp;
 use File::Slurp;
 
+use BOM::Platform::Chronicle;
+use Quant::Framework::TradingCalendar;
 use Date::Utility;
 use Finance::Asset::Market::Registry;
 use BOM::MarketData qw(create_underlying);
@@ -209,12 +211,13 @@ sub verify_ohlc_update {
 
         next if (-M $db_file and -M $db_file >= 20);    # do only those that were modified in last 20 days (others are junk/tests)
 
-        # we are checking back past 10 day OHLC, so start to look back calendar from that day
-        my $underlying = create_underlying({
-                symbol   => $underlying_symbol,
-                for_date => $now->minus_time_interval('10d')});
+        my $underlying = create_underlying($underlying_symbol);
 
-        my $calendar = $underlying->calendar;
+        # we are checking back past 10 day OHLC, so start to look back calendar from that day
+        my $calendar = Quant::Framework::TradingCalendar->new(
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
+            for_date         => $now->minus_time_interval('10d'),
+        );
         next if $calendar->is_holiday_for($underlying->exchange, $now);
         next if ($underlying->submarket->is_OTC);
         if (my @filelines = read_file($db_file)) {
