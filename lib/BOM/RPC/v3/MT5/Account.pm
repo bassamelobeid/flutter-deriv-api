@@ -344,6 +344,10 @@ sub mt5_deposit {
         return $error_sub->(localize("Deposit amount must be greater than zero."));
     }
 
+    if ($amount != sprintf("%0.2f", $amount)) {
+        return $error_sub->(localize("Only a maximum of two decimal points are allowed for the deposit amount."));
+    }
+
     # MT5 login or binary loginid not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $to_mt5, $fm_loginid]);
 
@@ -465,6 +469,10 @@ sub mt5_withdrawal {
 
     if ($amount <= 0) {
         return $error_sub->(localize("Withdrawal amount must be greater than zero."));
+    }
+
+    if ($amount != sprintf("%0.2f", $amount)) {
+        return $error_sub->(localize("Only a maximum of two decimal points are allowed for the withdrawal amount."));
     }
 
     # MT5 login or binary loginid not belongs to user
