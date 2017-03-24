@@ -97,12 +97,15 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
     my $msg_type = 'proposal_array';
     my $uuid;
     my $barriers_order = {};
+    my @barriers = @{$req_storage->{args}->{barriers}};
 
-    if (!_unique_barriers($req_storage->{args}->{barriers})) {
+    if (!_unique_barriers(\@barriers)) {
         my $error = $c->new_error('proposal_array', 'DuplicatedBarriers', $c->l('Duplicate barriers not allowed.'));
         $c->send({json => $error}, $req_storage);
         return;
     }
+
+    my $barrier_chunks = [ List::UtilsBy::bundle_by { [@_] } BARRIERS_PER_BATCH, @barriers];
 
     my $copy_args = {%{$req_storage->{args}}};
     my @contract_types = ref($copy_args->{contract_type}) ? @{$copy_args->{contract_type}} : $copy_args->{contract_type};
@@ -116,8 +119,8 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
             seq       => []};
         $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
         my $position = 0;
-        for my $barrier (@{$req_storage->{args}->{barriers}}) {
-            $barriers_order->{$barrier->{barrier} . "\0" . ($barrier->{barrier2} // '')} = $position++;
+        for my $barrier (@$barrier_chunks) {
+            $barriers_order->{_make_barrier_key($barrier->[0])} = $position++;
         }
     } else {
         my $error = $c->new_error('proposal_array', 'AlreadySubscribed', $c->l('You are already subscribed to proposal_array.'));
@@ -128,18 +131,31 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
     my $create_price_channel = sub {
         my ($c, $rpc_response, $req_storage) = @_;
         my $cache = {
-            longcode                    => $rpc_response->{longcode},
-            contract_parameters         => delete $rpc_response->{contract_parameters},
-            payout                      => $rpc_response->{payout},
             proposal_array_subscription => $uuid,                                         # does not matters if there will not be any subscription
         };
+        for my $contract_type (keys %{$rpc_response->{proposals}}) {
+            for my $barrier (@{$rpc_response->{proposals}{$contract_type}}) {
+                my $barrier_key = _make_barrier_key($barrier->{error} ? $barrier->{error}->{details} : $barrier);
+                my $entry = {
+                    %$rpc_response,
+                    longcode            => $barrier->{longcode},
+                    ask_price           => $barrier->{ask_price},
+                };
+                delete $entry->{proposals};
+                $entry->{error}{details}{longcode} ||= $entry->{longcode} if $entry->{error};
+                $cache->{$contract_type}{$barrier_key} = {
+                    contract_parameters => $entry,
+                };
+            }
+        }
         $rpc_response->{error}{details}{longcode} = $rpc_response->{longcode} if $rpc_response->{error};
-        $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
         $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
         if ($req_storage->{args}{subscribe}) {                                            # we are in subscr mode, so remember the sequence of streams
             my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions');
             if ($proposal_array_subscriptions->{$uuid}) {
-                my $idx = $req_storage->{args}{barrier} . "\0" . ($req_storage->{args}{barrier2} // '');
+                my $barriers = $req_storage->{args}{barriers}[0];
+                my $idx = _make_barrier_key($barriers);
+                warn "unknown idx ". $idx . ", available: " . join ',', sort keys %$barriers_order unless exists $barriers_order->{$idx};
                 ${$proposal_array_subscriptions->{$uuid}{seq}}[$barriers_order->{$idx}] = $req_storage->{uuid};
                 $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
             }
@@ -148,7 +164,6 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
 
     # Process a few RPC calls at a time.
 
-    my @barriers = @{$req_storage->{args}->{barriers}};
     Variable::Disposition::retain_future(
         Future->needs_any(
             # Upper limit on total time taken - we don't really
@@ -205,7 +220,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                     });
                 $f;
             }
-            foreach    => [List::UtilsBy::bundle_by { [@_] } BARRIERS_PER_BATCH, @barriers],
+            foreach    => $barrier_chunks,
             concurrent => PARALLEL_RPC_COUNT
             )->on_ready(
             sub {
@@ -571,18 +586,33 @@ sub process_proposal_array_event {
                 try {
                     if (my $invalid = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
                         push @$barriers, $invalid;
+                    } elsif(exists $price->{error}) {
+                        push @$barriers, $price;
                     } else {
+                        my $barrier_key = _make_barrier_key($price);
                         my $theo_probability = delete $price->{theo_probability};
-                        @{$price}{@extra_details} = @{$response}{@extra_details};
-                        $price->{currency} = $stash_data->{args}{currency};
-                        $stash_data->{cache}{contract_parameters}{ask_price} = $price->{ask_price};
+                        my $stashed_contract_parameters = $stash_data->{cache}{$contract_type}{$barrier_key};
+                        $stashed_contract_parameters->{contract_parameters}{currency} ||= $stash_data->{args}{currency};
+                        @{$stashed_contract_parameters->{contract_parameters}}{@extra_details} = @{$response}{@extra_details};
+                        $stashed_contract_parameters->{$stash_data->{args}{basis}} = $stash_data->{args}{amount};
+                        $stashed_contract_parameters->{contract_parameters}{ask_price} = $price->{ask_price};
                         my $adjusted_results =
-                            _price_stream_results_adjustment($c, $stash_data->{args}, $stash_data->{cache}, $price, $theo_probability);
+                            _price_stream_results_adjustment($c, $stash_data->{args}, $stashed_contract_parameters, $price, $theo_probability);
                         push @$barriers, $adjusted_results;
                     }
                 }
                 catch {
-                    warn "Failed to apply price - $_";
+                    warn "Failed to apply price - $_ - with a price struc containing " . Dumper($price);
+                    push @$barriers, {
+                        error => {
+                            message_to_client => $c->l('Sorry, an error occurred while processing your request.'),
+                            code              => 'ContractValidationError',
+                            details           => {
+                                barrier => $price->{barrier},
+                                (exists $price->{barrier2} ? (barrier2 => $price->{barrier2}) : ()),
+                            },
+                        }
+                    };
                 };
             }
         }
@@ -822,10 +852,16 @@ sub _unique_barriers {
     my $barriers = shift;
     my %h;
     for my $barrier (@$barriers) {
-        my $idx = $barrier->{barrier} . "\0" . ($barrier->{barrier2} // '');
-        return if $h{$idx}++;
+        my $idx = $barrier->{barrier} . ":" . ($barrier->{barrier2} // '');
+        return 0 if $h{$idx}++;
     }
     return 1;
+}
+
+sub _make_barrier_key {
+    my ($barrier) = @_;
+    return $barrier unless ref $barrier;
+    return join ':', $barrier->{barrier}, $barrier->{barrier2} // ();
 }
 
 1;
