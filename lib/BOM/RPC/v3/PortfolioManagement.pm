@@ -35,7 +35,7 @@ sub portfolio {
             });
         my $longcode;
         if (exists $res->{error}) {
-            $longcode = 'Could not retrieve contract details for portfolio';
+            $longcode = localize('Could not retrieve contract details');
         } else {
             $longcode = $res->{longcode};
         }

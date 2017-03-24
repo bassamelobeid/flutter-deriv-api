@@ -169,7 +169,7 @@ sub statement {
                     });
 
                 if (exists $res->{error}) {
-                    $struct->{longcode} = 'Could not retrieve contract details for statement';
+                    $struct->{longcode} = localize('Could not retrieve contract details');
                 } else {
                     $struct->{longcode} = $res->{longcode};
                 }
@@ -242,7 +242,7 @@ sub profit_table {
                 });
 
             if (exists $res->{error}) {
-                $trx{longcode} = 'Could not retrieve contract details for profit table';
+                $trx{longcode} = localize('Could not retrieve contract details');
             } else {
                 $trx{longcode} = $res->{longcode};
             }
