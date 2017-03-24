@@ -546,9 +546,42 @@ sub process_bid_event {
     return;
 }
 
+sub process_proposal_array_event {
+    my ($c, $response, $redis_channel, $pricing_channel) = @_;
+    my $type = 'proposal';
+
+    my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
+
+    unless ($c->stash('proposal_array_collector_running')) {
+        $c->stash('proposal_array_collector_running' => 1);
+        $c->proposal_array_collector;    # start 1 sec proposal_array sender if not started yet
+                                         # see lib/Binary/WebSocketAPI/Plugins/Helpers.pm line ~ 178
+    }
+    my @extra_details = grep {; exists $response->{$_} } qw(app_markup_percentage staking_limits deep_otm_threshold underlying_base_commission base_commission_scaling);
+    foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
+        for my $contract_type (keys %{$response->{proposals}}) {
+            for my $price (@{$response->{proposals}{$contract_type}}) {
+                try {
+                    my $theo_probability = delete $price->{theo_probability};
+                    @{$price}{@extra_details} = @{$response}{@extra_details};
+                    $price->{currency} = $stash_data->{args}{currency};
+                    my $valid = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'});
+                    @{$stash_data->{cache}{contract_parameters}}{@extra_details} = @{$response}{@extra_details};
+                    my $adjusted_results =
+                        _price_stream_results_adjustment($c, $stash_data->{args}, $stash_data->{cache}, $price, $theo_probability);
+                } catch {
+                    warn "Failed to apply price - $_";
+                };
+            }
+        }
+    }
+}
+
 sub process_ask_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
     my $type = 'proposal';
+
+    return process_proposal_array_event($c, $response, $redis_channel, $pricing_channel) if exists $response->{proposals};
 
     my $theo_probability = delete $response->{theo_probability};
     foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
