@@ -596,6 +596,7 @@ sub process_proposal_array_event {
             }
         }
     }
+    return;
 }
 
 sub process_ask_event {
