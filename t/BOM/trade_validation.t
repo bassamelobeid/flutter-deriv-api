@@ -120,7 +120,10 @@ subtest 'IOM withdrawal limit' => sub {
             client   => $client,
             contract => $contract,
         });
-        $error = BOM::Transaction::Validation->new(transaction=>$transaction, client=>$client)->_validate_iom_withdrawal_limit;
+        $error = BOM::Transaction::Validation->new(
+            transaction => $transaction,
+            client      => $client
+        )->_validate_iom_withdrawal_limit;
     }
     'validate withdrawal limit';
     is($error, undef, 'pass withdrawal limit check');
@@ -137,7 +140,10 @@ subtest 'IOM withdrawal limit' => sub {
             client   => $client,
             contract => $contract,
         });
-        $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_iom_withdrawal_limit;
+        $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_iom_withdrawal_limit;
     }
     'validate withdrawal limit';
 
@@ -171,7 +177,15 @@ subtest 'Is contract valid to buy' => sub {
         contract => $contract1,
     });
 
-    is(BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_is_valid_to_buy, undef, 'Contract is valid to buy');
+    is(
+        BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            }
+            )->_is_valid_to_buy,
+        undef,
+        'Contract is valid to buy'
+    );
 
     $mock_contract->unmock_all;
 
@@ -181,7 +195,10 @@ subtest 'Is contract valid to buy' => sub {
         message_to_client => 'Error message to be sent to client',
     });
 
-    my $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_is_valid_to_buy;
+    my $error = BOM::Transaction::Validation->new({
+            transaction => $transaction,
+            client      => $client
+        })->_is_valid_to_buy;
     is($error->get_type, 'InvalidtoBuy', 'Contract is invalid to buy as it contains errors: _is_valid_to_buy - error type');
 
 };
@@ -209,7 +226,15 @@ subtest 'Is contract valid to sell' => sub {
         contract => $contract1,
     });
 
-    is(BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_is_valid_to_sell, undef, 'Contract is valid to sell');
+    is(
+        BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            }
+            )->_is_valid_to_sell,
+        undef,
+        'Contract is valid to sell'
+    );
 
     $mock_contract->unmock_all;
     $mock_contract->mock('_validate_trading_times',         sub { undef });
@@ -221,7 +246,10 @@ subtest 'Is contract valid to sell' => sub {
         contract => $contract1,
     });
 
-    my $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_is_valid_to_sell;
+    my $error = BOM::Transaction::Validation->new({
+            transaction => $transaction,
+            client      => $client
+        })->_is_valid_to_sell;
     is($error->get_type, 'InvalidtoSell', 'Contract is invalid to sell as expiry is too low: _is_valid_to_sell - error type');
 
 };
@@ -254,7 +282,10 @@ subtest 'contract date pricing Validation' => sub {
             client   => $client,
             contract => $contract,
         });
-        $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_date_pricing;
+        $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_date_pricing;
     }
     'validate date pricing';
 
@@ -292,7 +323,10 @@ subtest 'valid currency test' => sub {
             contract => $contract,
         });
 
-        my $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_available_currency;
+        my $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_available_currency;
 
         my $curr = $contract->currency;
         is($error->get_type, 'InvalidCurrency', 'Invalid currency: _validate_currency - error type');
@@ -324,7 +358,10 @@ subtest 'valid currency test' => sub {
             contract => $contract,
         });
 
-        my $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_currency;
+        my $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_currency;
 
         my $curr   = $contract->currency;
         my $broker = $client->broker;
@@ -361,7 +398,10 @@ subtest 'valid currency test' => sub {
             contract => $contract,
         });
 
-        my $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_currency;
+        my $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_currency;
 
         my $curr   = $contract->currency;
         my $broker = $client->broker;
@@ -434,7 +474,10 @@ subtest 'BUY - trade pricing adjustment' => sub {
             price       => $price,
             amount_type => 'payout',
         });
-        my $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_trade_pricing_adjustment;
+        my $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_trade_pricing_adjustment;
         is($error, undef, 'no error');
         cmp_ok($transaction->price, '==', 100, 'BUY at the recomputed price');
     };
@@ -501,7 +544,10 @@ subtest 'BUY - trade pricing adjustment' => sub {
             amount_type => 'payout',
             price       => $requested_price,
         });
-        my $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_trade_pricing_adjustment;
+        my $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_trade_pricing_adjustment;
         is($error->get_type, 'PriceMoved', 'Price move too much opposite favour of client');
         like(
             $error->{-message_to_client},
@@ -522,7 +568,10 @@ subtest 'BUY - trade pricing adjustment' => sub {
             amount_type => 'payout',
         });
 
-        $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_trade_pricing_adjustment;
+        $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_trade_pricing_adjustment;
         is($error, undef, 'BUY price increase within allowable move');
         cmp_ok($transaction->price, '==', $price, 'BUY with original price');
         is $transaction->price_slippage, -0.25, 'correct probability slippage set';
@@ -538,7 +587,10 @@ subtest 'BUY - trade pricing adjustment' => sub {
             price       => $price,
             amount_type => 'payout',
         });
-        $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_trade_pricing_adjustment;
+        $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_trade_pricing_adjustment;
         is($error, undef, 'BUY price decrease, better execution price');
         cmp_ok($transaction->price, '<', $price, 'BUY with lower price');
         is $transaction->price_slippage, 1, 'correct probability slippage set';
@@ -554,7 +606,10 @@ subtest 'BUY - trade pricing adjustment' => sub {
             price       => $requested_price,
             amount_type => 'payout',
         });
-        $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_sell_pricing_adjustment;
+        $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_sell_pricing_adjustment;
         is($error->get_type, 'PriceMoved', 'Price move too much opposite favour of client');
         like(
             $error->{-message_to_client},
@@ -574,7 +629,10 @@ subtest 'BUY - trade pricing adjustment' => sub {
             price       => $price,
             amount_type => 'payout',
         });
-        $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_sell_pricing_adjustment;
+        $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_sell_pricing_adjustment;
         is($error, undef, 'SELL price increase within allowable move');
         cmp_ok($transaction->price, '==', $price, 'sell with original price');
         is $transaction->price_slippage, 0.25, 'correct probability slippage set';
@@ -590,7 +648,10 @@ subtest 'BUY - trade pricing adjustment' => sub {
             price       => $price,
             amount_type => 'payout',
         });
-        $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_sell_pricing_adjustment;
+        $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_sell_pricing_adjustment;
         is($error, undef, 'SELL price increase, better execution price');
         cmp_ok($transaction->price, '>', $price, 'SELL with higher price');
         is $transaction->price_slippage, 1, 'correct probability slippage set';
@@ -653,7 +714,10 @@ subtest 'BUY - trade pricing adjustment' => sub {
             payout      => 100,
             amount_type => 'stake',
         });
-        my $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_trade_pricing_adjustment;
+        my $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_trade_pricing_adjustment;
         is($error->get_type, 'PriceMoved', 'Payout move too much opposite favour of client');
         like(
             $error->{-message_to_client},
@@ -681,7 +745,10 @@ subtest 'BUY - trade pricing adjustment' => sub {
             payout      => 100,
             amount_type => 'stake',
         });
-        $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_trade_pricing_adjustment;
+        $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_trade_pricing_adjustment;
         is($error, undef, 'BUY decrease within allowable move');
         cmp_ok($transaction->payout, '==', 100, 'BUY with original payout');
         is $transaction->price_slippage,  -0.4, 'correct probability slippage set';
@@ -706,7 +773,10 @@ subtest 'BUY - trade pricing adjustment' => sub {
             payout      => 100,
             amount_type => 'stake',
         });
-        $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_trade_pricing_adjustment;
+        $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_trade_pricing_adjustment;
         is($error, undef, 'BUY decrease within allowable move');
         cmp_ok($transaction->payout, '==', 100, 'BUY with original payout');
         is $transaction->price_slippage,  0.4, 'correct probability slippage set';
@@ -731,7 +801,10 @@ subtest 'BUY - trade pricing adjustment' => sub {
             payout      => 100,
             amount_type => 'stake',
         });
-        $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_trade_pricing_adjustment;
+        $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_trade_pricing_adjustment;
         is($error, undef, 'payout increase, better execution price');
         cmp_ok($transaction->payout, '>',  100,     'BUY with higher payout');
         cmp_ok($transaction->payout, '==', 106.383, 'payout');
@@ -797,7 +870,10 @@ subtest 'SELL - sell pricing adjustment' => sub {
             action   => 'SELL',
             price    => $price,
         });
-        my $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_sell_pricing_adjustment;
+        my $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_sell_pricing_adjustment;
         is($error, undef, 'no error');
         cmp_ok($transaction->price, '==', 100, 'SELL at the recomputed price');
     };
@@ -856,7 +932,10 @@ subtest 'SELL - sell pricing adjustment' => sub {
             price    => $requested_price,
         });
 
-        my $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_sell_pricing_adjustment;
+        my $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_sell_pricing_adjustment;
         is($error->get_type, 'PriceMoved', 'Price move too much opposite favour of client');
         like(
             $error->{-message_to_client},
@@ -875,7 +954,10 @@ subtest 'SELL - sell pricing adjustment' => sub {
             price    => $price,
         });
 
-        $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_sell_pricing_adjustment;
+        $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_sell_pricing_adjustment;
         is($error, undef, 'SELL price descrease within allowable move');
         cmp_ok($transaction->price, '==', $price, 'SELL with original price');
         is $transaction->price_slippage, -0.4, 'correct probability slippage set';
@@ -889,7 +971,10 @@ subtest 'SELL - sell pricing adjustment' => sub {
             action   => 'SELL',
             price    => $price,
         });
-        $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_sell_pricing_adjustment;
+        $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_sell_pricing_adjustment;
         is($error, undef, 'SELL price increase, better execution price');
         cmp_ok($transaction->price, '>', $price, 'SELL with higher price');
         is $transaction->price_slippage, 1, 'correct probability slippage set';
@@ -919,7 +1004,10 @@ subtest 'SELL - sell pricing adjustment' => sub {
             action   => 'SELL',
             price    => undef,
         });
-        my $error = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_sell_pricing_adjustment;
+        my $error = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_sell_pricing_adjustment;
         is($error, undef, 'no error');
         cmp_ok($transaction->price, '==', 50, 'SELL at the recomputed price');
     };
@@ -1030,10 +1118,16 @@ subtest 'validate stake limit' => sub {
         payout      => 100,
         amount_type => 'stake',
     });
-    ok !BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_stake_limit, 'can buy with minimum stake of 0.5 for non MF broker';
+    ok !BOM::Transaction::Validation->new({
+            transaction => $transaction,
+            client      => $client
+        })->_validate_stake_limit, 'can buy with minimum stake of 0.5 for non MF broker';
     $contract->mock('ask_price', sub { 0.49 });
     lives_ok {
-        my $err = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_stake_limit;
+        my $err = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_stake_limit;
         like($err->{-message_to_client}, qr/This contract's price is/, 'correct error message');
     }
     'error out on 0.49 stake for non MF borker';
@@ -1047,10 +1141,16 @@ subtest 'validate stake limit' => sub {
         payout      => 100,
         amount_type => 'stake',
     });
-    ok !BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_stake_limit, 'can buy with minimum stake of 5 for MF broker';
+    ok !BOM::Transaction::Validation->new({
+            transaction => $transaction,
+            client      => $client
+        })->_validate_stake_limit, 'can buy with minimum stake of 5 for MF broker';
     $contract->mock('ask_price', sub { 4.9 });
     lives_ok {
-        my $err = BOM::Transaction::Validation->new({transaction=>$transaction, client=>$client})->_validate_stake_limit;
+        my $err = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                client      => $client
+            })->_validate_stake_limit;
         like($err->{-message_to_client}, qr/This contract's price is/, 'correct error message');
     }
     'error out on 4.9 stake for MF borker';

@@ -9,6 +9,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Transaction;
+use BOM::Transaction::Validation;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::MarketData qw(create_underlying);
@@ -63,7 +64,10 @@ subtest 'validate client error message' => sub {
         contract => $contract
     });
 
-    my $error = $transaction->_is_valid_to_buy;
+    my $error = BOM::Transaction::Validation->new(
+        client      => $cr,
+        transaction => $transaction
+    )->_is_valid_to_buy;
     like($error->{-message_to_client}, qr/Try out the Volatility Indices/, 'CR client got message about Volatility Indices');
 
 # same params, but new object - not to hold prev error
@@ -84,7 +88,10 @@ subtest 'validate client error message' => sub {
         contract => $contract
     });
 
-    $error = $transaction->_is_valid_to_buy;
+    $error = BOM::Transaction::Validation->new(
+        client      => $mf,
+        transaction => $transaction
+    )->_is_valid_to_buy;
     unlike($error->{-message_to_client}, qr/Try out the Volatility Indices/, 'MF client didnt got message about Volatility Indices');
 
 };
