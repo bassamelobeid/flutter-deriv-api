@@ -427,7 +427,7 @@ sub _validate_trading_times {
             my $safer_expiry = $date_expiry;
             my $trade_count  = $trading_days;
             while ($trade_count < 4) {
-                $safer_expiry = $underlying->trade_date_after($safer_expiry);
+                $safer_expiry = $calendar->trade_date_after($exchange, $safer_expiry);
                 $trade_count++;
             }
             my $message =
