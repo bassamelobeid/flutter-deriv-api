@@ -232,9 +232,9 @@ sub register {
                             for my $contract_type (keys %$proposal) {
                                 for my $price (@{$proposal->{$contract_type}}) {
                                     # Ensure we have barriers
-                                    if($price->{error}) {
+                                    if ($price->{error}) {
                                         $price->{error}{details}{barrier} = $barriers->{barrier};
-                                        $price->{error}{details}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2}
+                                        $price->{error}{details}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
                                     }
                                     push @{$proposal_array{$contract_type}}, $price;
                                 }
@@ -245,7 +245,7 @@ sub register {
                         my $results = {
                             proposal_array => {
                                 proposals => \%proposal_array,
-                                id => $pa_uuid,
+                                id        => $pa_uuid,
                             },
                             echo_req => $proposal_array_subscriptions->{$pa_uuid}{args},
                             msg_type => 'proposal_array',

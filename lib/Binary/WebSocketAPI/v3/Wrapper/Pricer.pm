@@ -559,7 +559,7 @@ sub process_proposal_array_event {
         $c->proposal_array_collector;
     }
 
-    my @extra_details = grep {; exists $response->{$_} } qw(app_markup_percentage staking_limits deep_otm_threshold base_commission);
+    my @extra_details = grep { ; exists $response->{$_} } qw(app_markup_percentage staking_limits deep_otm_threshold base_commission);
 
     foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
         @{$stash_data->{cache}{contract_parameters}}{@extra_details} = @{$response}{@extra_details};
@@ -569,7 +569,7 @@ sub process_proposal_array_event {
             $proposals{$contract_type} = (my $barriers = []);
             for my $price (@{$response->{proposals}{$contract_type}}) {
                 try {
-                    if(my $invalid = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
+                    if (my $invalid = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
                         push @$barriers, $invalid;
                     } else {
                         my $theo_probability = delete $price->{theo_probability};
@@ -580,7 +580,8 @@ sub process_proposal_array_event {
                             _price_stream_results_adjustment($c, $stash_data->{args}, $stash_data->{cache}, $price, $theo_probability);
                         push @$barriers, $adjusted_results;
                     }
-                } catch {
+                }
+                catch {
                     warn "Failed to apply price - $_";
                 };
             }
@@ -588,7 +589,7 @@ sub process_proposal_array_event {
         if ($stash_data->{cache}{proposal_array_subscription}) {
             my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
             if (ref $proposal_array_subscriptions->{$stash_data->{cache}{proposal_array_subscription}} eq 'HASH') {
-                $proposal_array_subscriptions->{$stash_data->{cache}{proposal_array_subscription}}{proposals}{$stash_data->{uuid}} = [ \%proposals ];
+                $proposal_array_subscriptions->{$stash_data->{cache}{proposal_array_subscription}}{proposals}{$stash_data->{uuid}} = [\%proposals];
                 $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
             } else {
                 Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid});
