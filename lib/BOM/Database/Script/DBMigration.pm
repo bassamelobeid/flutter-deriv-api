@@ -24,8 +24,6 @@ schema_1_up.sql
 
 Note: We dont support the downgrading.
 
-use example_bomdb_migration.sql as a guide to how to make changesets.
-
 Current version of database schema will be stored inside database in "dbix_migration" table. This table is used by Migration packge to keep the state of database.
 
 MAKE A BACKUP BEFORE ANY MAJOR CHANGE ON LIVE SERVER.
