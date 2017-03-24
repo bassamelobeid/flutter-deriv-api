@@ -1,4 +1,4 @@
-#!/etc/rmg/bin/perl -w
+#!/etc/rmg/bin/perl
 use strict;
 use warnings;
 use BOM::Database::Script::DBMigration;
