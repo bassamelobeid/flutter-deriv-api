@@ -545,7 +545,7 @@ sub startup {
                         return;
                     }
                     unless ($weak_c && $weak_c->tx) {
-                        warn 'No longer have context in rate limits load, probable client disconnect, bailing out';
+                        # No longer have context in rate limits load, probable client disconnect, bailing out
                         return;
                     }
                     try {
