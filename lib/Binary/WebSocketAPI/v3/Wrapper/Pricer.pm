@@ -557,7 +557,7 @@ sub process_proposal_array_event {
         $c->proposal_array_collector;    # start 1 sec proposal_array sender if not started yet
                                          # see lib/Binary/WebSocketAPI/Plugins/Helpers.pm line ~ 178
     }
-    my @extra_details = grep {; exists $response->{$_} } qw(app_markup_percentage staking_limits deep_otm_threshold underlying_base_commission base_commission_scaling);
+    my @extra_details = grep {; exists $response->{$_} } qw(app_markup_percentage staking_limits deep_otm_threshold base_commission);
     foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
         for my $contract_type (keys %{$response->{proposals}}) {
             for my $price (@{$response->{proposals}{$contract_type}}) {
