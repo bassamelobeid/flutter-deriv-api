@@ -35,7 +35,7 @@ use constant PARALLEL_RPC_TIMEOUT => 20;
 # We split proposal_array calls into batches so that we don't
 # overload a single RPC server - this controls how many barriers
 # we expect to be reasonable for each call.
-use constant BARRIERS_PER_BATCH => 4;
+use constant BARRIERS_PER_BATCH => 16;
 
 my %pricer_cmd_handler = (
     price => \&process_ask_event,
@@ -554,24 +554,44 @@ sub process_proposal_array_event {
 
     unless ($c->stash('proposal_array_collector_running')) {
         $c->stash('proposal_array_collector_running' => 1);
-        $c->proposal_array_collector;    # start 1 sec proposal_array sender if not started yet
-                                         # see lib/Binary/WebSocketAPI/Plugins/Helpers.pm line ~ 178
+        # start 1 sec proposal_array sender if not started yet
+        # see lib/Binary/WebSocketAPI/Plugins/Helpers.pm line ~ 178
+        $c->proposal_array_collector;
     }
+
     my @extra_details = grep {; exists $response->{$_} } qw(app_markup_percentage staking_limits deep_otm_threshold base_commission);
+
     foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
+        @{$stash_data->{cache}{contract_parameters}}{@extra_details} = @{$response}{@extra_details};
+        $stash_data->{cache}{contract_parameters}{currency} ||= $stash_data->{args}{currency};
+        my %proposals;
         for my $contract_type (keys %{$response->{proposals}}) {
+            $proposals{$contract_type} = (my $barriers = []);
             for my $price (@{$response->{proposals}{$contract_type}}) {
                 try {
-                    my $theo_probability = delete $price->{theo_probability};
-                    @{$price}{@extra_details} = @{$response}{@extra_details};
-                    $price->{currency} = $stash_data->{args}{currency};
-                    my $valid = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'});
-                    @{$stash_data->{cache}{contract_parameters}}{@extra_details} = @{$response}{@extra_details};
-                    my $adjusted_results =
-                        _price_stream_results_adjustment($c, $stash_data->{args}, $stash_data->{cache}, $price, $theo_probability);
+                    if(my $invalid = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
+                        push @$barriers, $invalid;
+                    } else {
+                        my $theo_probability = delete $price->{theo_probability};
+                        @{$price}{@extra_details} = @{$response}{@extra_details};
+                        $price->{currency} = $stash_data->{args}{currency};
+                        $stash_data->{cache}{contract_parameters}{ask_price} = $price->{ask_price};
+                        my $adjusted_results =
+                            _price_stream_results_adjustment($c, $stash_data->{args}, $stash_data->{cache}, $price, $theo_probability);
+                        push @$barriers, $adjusted_results;
+                    }
                 } catch {
                     warn "Failed to apply price - $_";
                 };
+            }
+        }
+        if ($stash_data->{cache}{proposal_array_subscription}) {
+            my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
+            if (ref $proposal_array_subscriptions->{$stash_data->{cache}{proposal_array_subscription}} eq 'HASH') {
+                $proposal_array_subscriptions->{$stash_data->{cache}{proposal_array_subscription}}{proposals}{$stash_data->{uuid}} = [ \%proposals ];
+                $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
+            } else {
+                Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid});
             }
         }
     }
@@ -613,22 +633,7 @@ sub process_ask_event {
             };
         }
         delete @{$results->{$type}}{qw(contract_parameters rpc_time)} if $results->{$type};
-        if ($stash_data->{cache}{proposal_array_subscription}) {
-            unless ($c->stash('proposal_array_collector_running')) {
-                $c->stash('proposal_array_collector_running' => 1);
-                $c->proposal_array_collector;    # start 1 sec proposal_array sender if not started yet
-                                                 # see lib/Binary/WebSocketAPI/Plugins/Helpers.pm line ~ 178
-            }
-            my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
-            if (ref $proposal_array_subscriptions->{$stash_data->{cache}{proposal_array_subscription}} eq 'HASH') {
-                push @{$proposal_array_subscriptions->{$stash_data->{cache}{proposal_array_subscription}}{proposals}{$stash_data->{uuid}}}, $results;
-                $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
-            } else {
-                Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid});
-            }
-        } else {
-            $c->send({json => $results}, {args => $stash_data->{args}});
-        }
+        $c->send({json => $results}, {args => $stash_data->{args}});
     }
     return;
 }
