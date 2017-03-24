@@ -221,24 +221,30 @@ sub register {
                         return;
                     };
 
+                    my %proposal_array;
                     for my $pa_uuid (keys %{$proposal_array_subscriptions}) {
                         my $sub = $proposal_array_subscriptions->{$pa_uuid};
-                        my @proposals;
                         for my $i (0 .. $#{$sub->{seq}}) {
                             my $uuid     = $sub->{seq}[$i];
                             my $barriers = $sub->{args}{barriers}[$i];
                             # Bail out early if we have any streams without a response yet
                             my $proposal = pop @{$sub->{proposals}{$uuid}} or return;
-                            delete $proposal->{msg_type};
-                            my $target = $proposal->{error} ? ($proposal->{error}{details} //= {}) : $proposal->{proposal};
-                            $target->{barrier} = $barriers->{barrier};
-                            $target->{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
-                            push @proposals, $proposal;
+                            for my $contract_type (keys %$proposal) {
+                                for my $price (@{$proposal->{$contract_type}}) {
+                                    # Ensure we have barriers
+                                    if($price->{error}) {
+                                        $price->{error}{details}{barrier} = $barriers->{barrier};
+                                        $price->{error}{details}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2}
+                                    }
+                                    push @{$proposal_array{$contract_type}}, $price;
+                                }
+                            }
                             $sub->{proposals}{$uuid} = [$proposal];    # keep last and send it if no new in 1 sec
                         }
+
                         my $results = {
                             proposal_array => {
-                                proposals => [map { $_->{proposal} || $_ } @proposals],
+                                proposals => \%proposal_array,
                                 id => $pa_uuid,
                             },
                             echo_req => $proposal_array_subscriptions->{$pa_uuid}{args},
