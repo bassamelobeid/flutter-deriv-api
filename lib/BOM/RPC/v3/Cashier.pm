@@ -110,7 +110,7 @@ sub cashier {
         unless ($self_exclusion->{max_turnover}) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET',
-                    message_to_client => localize('Please set Daily Turnover Limit.')});
+                    message_to_client => localize('Please set Self Exclusion Daily Turnover Limit.')});
         }
     }
 
