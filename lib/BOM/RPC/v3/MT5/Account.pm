@@ -21,6 +21,7 @@ use BOM::MT5::User;
 use BOM::Database::ClientDB;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email;
+use Data::Dumper;
 
 sub mt5_login_list {
     my $params = shift;
@@ -582,7 +583,7 @@ sub mt5_withdrawal {
             mt5_id  => $fm_mt5,
             amount  => $amount,
             action  => 'withdraw',
-            error   => $_,
+            error   => Dumper($_),
         );
         die $_;    # throw exception again
     };
