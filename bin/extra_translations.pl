@@ -1,4 +1,4 @@
-#!/etc/rmg/bin/perl -w -I ./cgi -I ./cgi/oop
+#!/etc/rmg/bin/perl
 use strict;
 use warnings;
 use BOM::Backoffice::Script::ExtraTranslations;
