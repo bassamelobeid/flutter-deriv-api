@@ -666,7 +666,6 @@ sub batch_buy {    ## no critic (RequireArgUnpacking)
                             ref $ref eq 'CODE'
                             ? $ref->(
                                 $self, $el->{client},
-                                1_000_000,    # fake an insanely high retry count
                                 $res->{e_description})
                             : $ref
                         );
@@ -913,14 +912,14 @@ sub sell_by_shortcode {
                             ref $ref eq 'CODE'
                             ? $ref->(
                                 $self, $r->{client},
-                                1_000_000,    # fake an insanely high retry count
-                                $res->{e_description})
+                                $res_row->{e_description})
                             : $ref
                         );
+
                         $r->{code}  = $error->{-type};
                         $r->{error} = $error->{-message_to_client};
                     } else {
-                        @{$r}{qw/code error/} = ('UnexpectedError', BOM::Platform::Context::localize('An unexpected error occurred'));
+                        @{$r}{qw/code error/} = ('UnexpectedError'.$ecode, BOM::Platform::Context::localize('An unexpected error occurred'));
                     }
                 } else {
                     $r->{tnx}       = $res_row->{txn};
@@ -1194,6 +1193,17 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -type              => 'DailyProfitLimitExceeded',
             -mesg              => 'Exceeds daily profit limit',
             -message_to_client => BOM::Platform::Context::localize('No further trading is allowed for the current trading session.'),
+        );
+    },
+    BI050 => sub {
+        my $self   = shift;
+        my $client = shift;
+        my $msg    = shift;
+
+        Error::Base->cuss(
+            -type              => 'NoOpenPosition',
+            -mesg              => $msg,
+            -message_to_client => BOM::Platform::Context::localize('This contract was not found among your open positions.'),
         );
     },
 );
