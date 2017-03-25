@@ -37,6 +37,10 @@ use constant PARALLEL_RPC_TIMEOUT => 20;
 # we expect to be reasonable for each call.
 use constant BARRIERS_PER_BATCH => 16;
 
+# Sanity check - if we have more than this many barriers, reject
+# the request entirely.
+use constant BARRIER_LIMIT => 16;
+
 my %pricer_cmd_handler = (
     price => \&process_ask_event,
     bid   => \&process_bid_event,
@@ -97,6 +101,12 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
     my $msg_type = 'proposal_array';
     my $barriers_order = {};
     my @barriers       = @{$req_storage->{args}->{barriers}};
+
+    if (@barriers > BARRIER_LIMIT) {
+        my $error = $c->new_error('proposal_array', 'TooManyBarriers', $c->l('Too many barriers were requested.'));
+        $c->send({json => $error}, $req_storage);
+        return;
+    }
 
     if (!_unique_barriers(\@barriers)) {
         my $error = $c->new_error('proposal_array', 'DuplicatedBarriers', $c->l('Duplicate barriers not allowed.'));
