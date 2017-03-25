@@ -95,7 +95,6 @@ in a single response back to the client.
 sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
     my ($c, $req_storage) = @_;
     my $msg_type = 'proposal_array';
-    my $uuid;
     my $barriers_order = {};
     my @barriers       = @{$req_storage->{args}->{barriers}};
 
@@ -105,27 +104,29 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
         return;
     }
 
+    # We can end up with 10 barriers or more, and each one has a CPU cost, so we limit each
+    # request and distribute between RPC servers and pricers.
     my $barrier_chunks = [List::UtilsBy::bundle_by { [@_] } BARRIERS_PER_BATCH, @barriers];
 
     my $copy_args = {%{$req_storage->{args}}};
     my @contract_types = ref($copy_args->{contract_type}) ? @{$copy_args->{contract_type}} : $copy_args->{contract_type};
 
     $copy_args->{skip_streaming} = 1;    # only for proposal_array: do not create redis subscription, we need only uuid stored in stash
-    if ($uuid = _pricing_channel_for_ask($c, $copy_args, {})) {
-        my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
-        $proposal_array_subscriptions->{$uuid} = {
-            args      => $req_storage->{args},
-            proposals => {},
-            seq       => []};
-        $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
-        my $position = 0;
-        for my $barrier (@$barrier_chunks) {
-            $barriers_order->{_make_barrier_key($barrier->[0])} = $position++;
-        }
-    } else {
+    my $uuid = _pricing_channel_for_ask($c, $copy_args, {}) or do {
         my $error = $c->new_error('proposal_array', 'AlreadySubscribed', $c->l('You are already subscribed to proposal_array.'));
         $c->send({json => $error}, $req_storage);
         return;
+    };
+
+    my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
+    $proposal_array_subscriptions->{$uuid} = {
+        args      => $req_storage->{args},
+        proposals => {},
+        seq       => []};
+    $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
+    my $position = 0;
+    for my $barrier (@$barrier_chunks) {
+        $barriers_order->{_make_barrier_key($barrier->[0])} = $position++;
     }
 
     my $create_price_channel = sub {
