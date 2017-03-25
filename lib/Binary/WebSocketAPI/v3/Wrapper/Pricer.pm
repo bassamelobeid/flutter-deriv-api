@@ -226,7 +226,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                 $f;
             }
             foreach    => $barrier_chunks,
-            concurrent => PARALLEL_RPC_COUNT
+            concurrent => min(0 + @$barrier_chunks, PARALLEL_RPC_COUNT),
             )->on_ready(
             sub {
                 my $f = shift;
