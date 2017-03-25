@@ -37,7 +37,7 @@ require BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
 require BOM::Product::Pricing::Greeks::BlackScholes;
 
 ## ATTRIBUTES  #######################
-has [qw(date_start date_pricing date_settlement effective_start)] => (
+has [qw(date_start date_pricing date_settlement effective_start volatility_effective_start)] => (
     is         => 'ro',
     isa        => 'date_object',
     lazy_build => 1,
@@ -548,6 +548,18 @@ sub _build_effective_start {
           ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_start
         : ($self->date_pricing->is_after($self->date_start))  ? $self->date_pricing
         :                                                       $self->date_start;
+}
+
+# When price an opposite contract, the date_start is always set to date_pricing (now)
+# After expiry while waiting for exit tick, we will be pricing an opposite contract with effective_start set to date_pricing which is ahead of date_expiry and caused inverted date issue on get_volatility function.
+# Hence, introduce the new volatility_effective_start function to handle the volatility function after expiry.
+
+sub _build_volatility_effective_start {
+    my $self = shift;
+
+    return ($self->date_pricing->is_after($self->date_expiry))
+        ? $self->date_expiry
+        : $self->effective_start;
 }
 
 sub _build_date_pricing {
