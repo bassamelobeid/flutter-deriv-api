@@ -134,6 +134,9 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
         my $cache = {
             proposal_array_subscription => $uuid,    # does not matters if there will not be any subscription
         };
+
+        # Apply contract parameters - we will use them for Price::Calculator calls to determine
+        # the actual price from the theo_probability value the pricers return
         for my $contract_type (keys %{$rpc_response->{proposals}}) {
             for my $barrier (@{$rpc_response->{proposals}{$contract_type}}) {
                 my $barrier_key = _make_barrier_key($barrier->{error} ? $barrier->{error}->{details} : $barrier);
@@ -149,6 +152,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                 };
             }
         }
+
         $rpc_response->{error}{details}{longcode} = $rpc_response->{longcode} if $rpc_response->{error};
         $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
         if ($req_storage->{args}{subscribe}) {    # we are in subscr mode, so remember the sequence of streams
@@ -166,7 +170,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
     # Process a few RPC calls at a time.
 
     Variable::Disposition::retain_future(
-        Future->needs_any(
+        Future->wait_any(
             # Upper limit on total time taken - we don't really
             # care how long individual requests take, but we do
             # expect all the calls to complete in a reasonable time
