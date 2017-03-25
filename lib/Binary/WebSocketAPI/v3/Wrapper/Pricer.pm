@@ -244,6 +244,22 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                     # should not throw 'cos we do not $future->fail
                     my @result = $f->get;
 
+                    # If any request failed, report the error and skip any further processing
+                    # Note that this is an RPC-level error or WrongResponse: contract validation
+                    # failures for an individual barrier will be reported at the type => [ barrier ]
+                    # level.
+                    if(my ($err) = grep {; $_->{error} } @result) {
+                        my $res = {
+                            json => {
+                                echo_req => $req_storage->{args},
+                                error    => $err,
+                                msg_type => $msg_type,
+                                map { ; $_ => $req_storage->{args}{$_} } grep { $req_storage->{args}{$_} } qw(req_id passthrough),
+                            }};
+                        $c->send($res) if $c and $c->tx;    # connection could be gone
+                        return;
+                    }
+
                     # Merge the results from all calls. We prepare the data structure first...
                     my %proposal_array;
                     @proposal_array{@contract_types} = map { ; [] } @contract_types;
@@ -260,6 +276,8 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                                 push @{$proposal_array{$contract_type}}, @prices;
                             }
                         } else {
+                            # We've already done the check for top-level { error => { ... } } by this point,
+                            # so if we don't have the proposals key then something very unexpected happened.
                             warn "Invalid entry in proposal_array response - " . encode_json($res);
                             $c->send(
                                 {json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')})
