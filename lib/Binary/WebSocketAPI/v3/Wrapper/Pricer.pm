@@ -652,7 +652,7 @@ sub process_proposal_array_event {
         if (my $subscription_key = $stash_data->{cache}{proposal_array_subscription}) {
             my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
             if (ref $proposal_array_subscriptions->{$subscription_key} eq 'HASH') {
-                $proposal_array_subscriptions->{$subscription_key}{proposals}{$stash_data->{uuid}} = [\%proposals];
+                $proposal_array_subscriptions->{$subscription_key}{proposals}{$stash_data->{uuid}} = \%proposals;
                 $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
             } else {
                 Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid});

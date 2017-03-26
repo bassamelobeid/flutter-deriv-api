@@ -228,7 +228,7 @@ sub register {
                             my $uuid     = $sub->{seq}[$i];
                             my $barriers = $sub->{args}{barriers}[$i];
                             # Bail out early if we have any streams without a response yet
-                            my $proposal = pop @{$sub->{proposals}{$uuid}} or return;
+                            my $proposal = $sub->{proposals}{$uuid} or return;
                             for my $contract_type (keys %$proposal) {
                                 for my $price (@{$proposal->{$contract_type}}) {
                                     # Ensure we have barriers
@@ -239,7 +239,6 @@ sub register {
                                     push @{$proposal_array{$contract_type}}, $price;
                                 }
                             }
-                            $sub->{proposals}{$uuid} = [$proposal];    # keep last and send it if no new in 1 sec
                         }
 
                         my $results = {
