@@ -617,10 +617,10 @@ sub process_proposal_array_event {
             $proposals{$contract_type} = (my $barriers = []);
             for my $price (@{$response->{proposals}{$contract_type}}) {
                 try {
-                    if (my $invalid = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
-                        push @$barriers, $invalid;
-                    } elsif (exists $price->{error}) {
+                    if (exists $price->{error}) {
                         push @$barriers, $price;
+                    } elsif (my $invalid = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
+                        push @$barriers, $invalid;
                     } else {
                         my $barrier_key                 = _make_barrier_key($price);
                         my $theo_probability            = delete $price->{theo_probability};
