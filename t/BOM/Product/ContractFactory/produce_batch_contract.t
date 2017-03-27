@@ -147,8 +147,8 @@ subtest 'produce_batch_contract - error check' => sub {
         qr/This contract offers no return/,
         'throws an error for invalid duration'
     );
-    is $ask_prices->{RANGE}->{'100.250-98.750'}->{ask_price},    2.65, 'correct ask price';
-    is $ask_prices->{UPORDOWN}->{'100.250-98.750'}->{ask_price}, 8.12, 'correct ask price';
+    is $ask_prices->{RANGE}->{'100.250-98.750'}->{ask_price},    2.35, 'correct ask price';
+    is $ask_prices->{UPORDOWN}->{'100.250-98.750'}->{ask_price}, 8.4,  'correct ask price';
 
     $args->{bet_types} = ['CALL', 'RANGE'];
     $batch = produce_batch_contract($args);
