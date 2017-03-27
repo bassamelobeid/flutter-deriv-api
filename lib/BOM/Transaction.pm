@@ -664,9 +664,7 @@ sub batch_buy {    ## no critic (RequireArgUnpacking)
                     if (my $ref = $known_errors{$ecode}) {
                         my $error = (
                             ref $ref eq 'CODE'
-                            ? $ref->(
-                                $self, $el->{client},
-                                $res->{e_description})
+                            ? $ref->($self, $el->{client}, $res->{e_description})
                             : $ref
                         );
                         $el->{code}  = $error->{-type};
@@ -895,10 +893,8 @@ sub sell_by_shortcode {
 
         my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
             %$bet_data,
-            account_data => [
-                map { +{client_loginid => $_->{loginid}, currency_code => $currency} } @$list
-            ],
-            db => BOM::Database::ClientDB->new({broker_code => $broker})->db,
+            account_data => [map                                      { +{client_loginid => $_->{loginid}, currency_code => $currency} } @$list],
+            db           => BOM::Database::ClientDB->new({broker_code => $broker})->db,
         );
         try {
             my $res = $fmb_helper->sell_by_shortcode($self->contract->shortcode);
@@ -910,16 +906,14 @@ sub sell_by_shortcode {
                     if (my $ref = $known_errors{$ecode}) {
                         my $error = (
                             ref $ref eq 'CODE'
-                            ? $ref->(
-                                $self, $r->{client},
-                                $res_row->{e_description})
+                            ? $ref->($self, $r->{client}, $res_row->{e_description})
                             : $ref
                         );
 
                         $r->{code}  = $error->{-type};
                         $r->{error} = $error->{-message_to_client};
                     } else {
-                        @{$r}{qw/code error/} = ('UnexpectedError'.$ecode, BOM::Platform::Context::localize('An unexpected error occurred'));
+                        @{$r}{qw/code error/} = ('UnexpectedError' . $ecode, BOM::Platform::Context::localize('An unexpected error occurred'));
                     }
                 } else {
                     $r->{tnx}       = $res_row->{txn};
