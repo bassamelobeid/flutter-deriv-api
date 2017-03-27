@@ -151,11 +151,11 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
             for my $barrier (@{$rpc_response->{proposals}{$contract_type}}) {
                 my $barrier_key = _make_barrier_key($barrier->{error} ? $barrier->{error}->{details} : $barrier);
                 my $entry = {
-                    %$rpc_response,
+                    %{$rpc_response->{contract_parameters}},
                     longcode  => $barrier->{longcode},
                     ask_price => $barrier->{ask_price},
                 };
-                delete $entry->{proposals};
+                delete @{$entry}{qw(proposals barriers)};
                 $entry->{error}{details}{longcode} ||= $entry->{longcode} if $entry->{error};
                 $cache->{$contract_type}{$barrier_key} = {
                     contract_parameters => $entry,
@@ -626,11 +626,13 @@ sub process_proposal_array_event {
                         my $theo_probability            = delete $price->{theo_probability};
                         my $stashed_contract_parameters = $stash_data->{cache}{$contract_type}{$barrier_key};
                         $stashed_contract_parameters->{contract_parameters}{currency} ||= $stash_data->{args}{currency};
-                        @{$stashed_contract_parameters->{contract_parameters}}{@extra_details} = @{$response}{@extra_details};
-                        $stashed_contract_parameters->{$stash_data->{args}{basis}} = $stash_data->{args}{amount};
-                        $stashed_contract_parameters->{contract_parameters}{ask_price} = $price->{ask_price};
+                        $stashed_contract_parameters->{contract_parameters}{$stashed_contract_parameters->{contract_parameters}{amount_type}} = $stashed_contract_parameters->{contract_parameters}{amount};
+                        delete $stashed_contract_parameters->{contract_parameters}{ask_price};
+
+                        # Make sure that we don't override any of the values for next time (e.g. ask_price)
+                        my $copy = { contract_parameters => { %{$stashed_contract_parameters->{contract_parameters}} } };
                         my $adjusted_results =
-                            _price_stream_results_adjustment($c, $stash_data->{args}, $stashed_contract_parameters, $price, $theo_probability);
+                            _price_stream_results_adjustment($c, $stash_data->{args}, $copy, $price, $theo_probability);
                         push @$barriers, $adjusted_results;
                     }
                 }
