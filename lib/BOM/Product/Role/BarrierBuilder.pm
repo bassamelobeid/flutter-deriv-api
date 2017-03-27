@@ -92,7 +92,7 @@ sub _build_minimum_allowable_move {
         $min_move = 2;
     } else {
         my $atm_vol = $self->volsurface->get_volatility({
-            from                    => $self->effective_start,
+            from                    => $self->volatility_effective_start,
             to                      => $self->date_expiry,
             $self->volsurface->type => $self->volsurface->atm_spread_point,
         });

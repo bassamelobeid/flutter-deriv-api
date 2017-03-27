@@ -227,7 +227,7 @@ sub _build_priced_portfolios {
 
     # Plus 1 day to get volatility seems to be hacky.
     # Will backtest this to decide whether to keep/remove it.
-    my $from    = $self->bet->effective_start;
+    my $from    = $self->bet->volatility_effective_start;
     my $to      = $self->bet->date_expiry->plus_time_interval('1d');
     my $atm_vol = $self->bet->volsurface->get_volatility({
         from  => $from,
