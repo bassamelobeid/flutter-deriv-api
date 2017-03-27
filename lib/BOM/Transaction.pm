@@ -893,7 +893,7 @@ sub sell_by_shortcode {
 
         my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
             %$bet_data,
-            account_data => [map                                      { +{client_loginid => $_->{loginid}, currency_code => $currency} } @$list],
+            account_data => [map { +{client_loginid => $_->{loginid}, currency_code => $currency} } @$list],
             db           => BOM::Database::ClientDB->new({broker_code => $broker})->db,
         );
         try {
