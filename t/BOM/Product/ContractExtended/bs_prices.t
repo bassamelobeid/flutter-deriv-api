@@ -90,10 +90,18 @@ foreach my $code (@codes) {
 
     my $contract = produce_contract(\%bet_args);
 
-    if ( $contract->pricing_engine->can('bs_probability')) {
-        is(roundnear(0.001, $contract->pricing_engine->bs_probability->amount), roundnear(0.001, $expected[$count]), 'bs probability for [' . $contract->code . ']');
-    } elsif ( $contract->pricing_engine->can('_bs_probability')) {
-        is(roundnear(0.001, $contract->pricing_engine->_bs_probability), roundnear(0.001, $expected[$count]), 'bs probability for [' . $contract->code . ']');
+    if ($contract->pricing_engine->can('bs_probability')) {
+        is(
+            roundnear(0.001, $contract->pricing_engine->bs_probability->amount),
+            roundnear(0.001, $expected[$count]),
+            'bs probability for [' . $contract->code . ']'
+        );
+    } elsif ($contract->pricing_engine->can('_bs_probability')) {
+        is(
+            roundnear(0.001, $contract->pricing_engine->_bs_probability),
+            roundnear(0.001, $expected[$count]),
+            'bs probability for [' . $contract->code . ']'
+        );
     }
     $count++;
 }

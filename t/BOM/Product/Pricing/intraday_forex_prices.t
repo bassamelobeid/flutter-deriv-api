@@ -45,9 +45,9 @@ $start = $start - $start % 15;
 my $first_agg = $start - 15;
 
 my $hist_ticks = $underlying->ticks_in_between_start_end({
-        start_time => $first_agg,
-        end_time   => $date_start->epoch,
-    });
+    start_time => $first_agg,
+    end_time   => $date_start->epoch,
+});
 
 my @tmp_ticks = reverse @$hist_ticks;
 
@@ -57,17 +57,17 @@ my $key          = $decimate_cache->_make_key('frxUSDJPY', 0);
 my $decimate_key = $decimate_cache->_make_key('frxUSDJPY', 1);
 
 foreach my $single_data (@tmp_ticks) {
-       $decimate_cache->_update($decimate_cache->redis_write, $key, $single_data->{epoch}, $decimate_cache->encoder->encode($single_data));
+    $decimate_cache->_update($decimate_cache->redis_write, $key, $single_data->{epoch}, $decimate_cache->encoder->encode($single_data));
 }
 
 my $decimate_data = Data::Decimate::decimate($decimate_cache->sampling_frequency->seconds, \@tmp_ticks);
 
 foreach my $single_data (@$decimate_data) {
-            $decimate_cache->_update(
-                $decimate_cache->redis_write,
-                $decimate_key,
-                $single_data->{decimate_epoch},
-                $decimate_cache->encoder->encode($single_data));
+    $decimate_cache->_update(
+        $decimate_cache->redis_write,
+        $decimate_key,
+        $single_data->{decimate_epoch},
+        $decimate_cache->encoder->encode($single_data));
 }
 
 my $recorded_date = $date_start->truncate_to_day;
@@ -148,12 +148,12 @@ subtest 'atm prices without economic events' => sub {
 
 subtest 'prices with economic events' => sub {
     my $event_date = $date_start->minus_time_interval('15m');
-    my $event = [{
-                    symbol       => 'USD',
-                    impact       => 5,
-                    release_date => $event_date->epoch,
-                    event_name   => 'Construction Spending m/m'
-                }];
+    my $event      = [{
+            symbol       => 'USD',
+            impact       => 5,
+            release_date => $event_date->epoch,
+            event_name   => 'Construction Spending m/m'
+        }];
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'economic_events',
         {
@@ -163,7 +163,10 @@ subtest 'prices with economic events' => sub {
     Volatility::Seasonality->new(
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
-    )->generate_economic_event_seasonality({underlying_symbol => $underlying->symbol, economic_events => $event});
+        )->generate_economic_event_seasonality({
+            underlying_symbol => $underlying->symbol,
+            economic_events   => $event
+        });
 
     foreach my $contract_type (@ct) {
         my @barriers = @{
