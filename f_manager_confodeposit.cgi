@@ -233,6 +233,9 @@ if ($ttype eq 'CREDIT' and $params{payment_type} !~ /^(?:affiliate_reward|arbitr
     try {
         $client_pa_exp->payment_agent_withdrawal_expiration_date($today->date_yyyymmdd);
         $client_pa_exp->save;
+    }
+    catch {
+        warn "Not able to set payment agent expiration date for " . $client_pa_exp->loginid;
     };
 }
 
