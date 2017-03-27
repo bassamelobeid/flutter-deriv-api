@@ -307,6 +307,9 @@ my $acc_aud;
 lives_ok {
     $cl = create_client;
 
+    #make sure client can trade
+    ok(BOM::Transaction::Validation->new(client=>$cl)->allow_trade, "client can trade");
+
     top_up $cl, 'USD', 5000;
 
     isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
