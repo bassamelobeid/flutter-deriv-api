@@ -646,8 +646,8 @@ sub process_proposal_array_event {
                         }};
                 };
 
-                if(exists $result->{error}) {
-                    $result->{error}{details}{barrier}  //= $price->{barrier};
+                if (exists $result->{error}) {
+                    $result->{error}{details}{barrier} //= $price->{barrier};
                     $result->{error}{details}{barrier2} //= $price->{barrier2} if exists $price->{barrier2};
                 }
                 push @$barriers, $result;
