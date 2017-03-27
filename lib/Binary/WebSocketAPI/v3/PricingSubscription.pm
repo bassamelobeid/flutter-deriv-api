@@ -2,8 +2,6 @@ package Binary::WebSocketAPI::v3::PricingSubscription;
 
 use strict;
 use warnings;
-use Test::More;
-use Data::Dumper;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| pricer_write |;
 
 use Moo;

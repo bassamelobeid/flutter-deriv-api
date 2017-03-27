@@ -1,11 +1,9 @@
 package Binary::WebSocketAPI::v3::Instance::Redis;
 use strict;
 use warnings;
-use Data::Dumper;
 use YAML::XS qw| LoadFile |;
 use Exporter qw( import );
 use DataDog::DogStatsd::Helper qw| stats_inc stats_dec |;
-use Guard;
 
 use Mojo::Redis2;
 
@@ -25,21 +23,14 @@ sub create {
 
     $redis_url->userinfo('dummy:' . $cf->{password}) if $cf->{password};
 
-    my $guard = guard {
-        stats_dec('bom_websocket_api.v_3.redis_instances.' . $name);
-    };
-
     my $server = Mojo::Redis2->new(url => $redis_url);
     $server->on(
-        connection => sub {
-            my $dirty_hack = \$guard;
-        },
+        connection => sub { stats_inc('bom_websocket_api.v_3.redis_instances.' . $name . '.connections') },
         error => sub {
             my ($self, $err) = @_;
             warn("Redis $name error: $err");
         });
 
-    stats_inc('bom_websocket_api.v_3.redis_instances.' . $name);
     return $server;
 }
 
@@ -47,10 +38,13 @@ sub check_connections {
     local $@;
 
     foreach my $server_name (keys %$config) {
-        my $server = eval { __PACKAGE__->$server_name() };
-        if ($@) {
+        my $server;
+        eval {
+            $server = __PACKAGE__->$server_name();
+            1;
+        } or do {
             die "$server_name is not available:" . $@;
-        }
+        };
         eval { $server->ping(); 1; } or do {
             die "Redis server $server_name does not work! Host: " . $server->url->host . ", port: " . $server->url->port . "\nREASON: " . $@;
             }
