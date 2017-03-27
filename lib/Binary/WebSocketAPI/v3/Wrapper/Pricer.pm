@@ -18,6 +18,7 @@ use Price::Calculator;
 use Clone::PP qw(clone);
 use List::UtilsBy qw(bundle_by);
 use List::Util qw(min);
+use Data::Dumper;
 
 use Future::Mojo          ();
 use Future::Utils         ();
@@ -613,11 +614,11 @@ sub process_proposal_array_event {
         for my $contract_type (keys %{$response->{proposals}}) {
             $proposals{$contract_type} = (my $barriers = []);
             for my $price (@{$response->{proposals}{$contract_type}}) {
-                try {
-                    if (exists $price->{error}) {
-                        push @$barriers, $price;
-                    } elsif (my $invalid = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
-                        push @$barriers, $invalid;
+                my $result = try {
+                    if (my $invalid = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
+                        return $invalid;
+                    } elsif (exists $price->{error}) {
+                        return $price;
                     } else {
                         my $barrier_key                 = _make_barrier_key($price);
                         my $theo_probability            = delete $price->{theo_probability};
@@ -629,14 +630,12 @@ sub process_proposal_array_event {
 
                         # Make sure that we don't override any of the values for next time (e.g. ask_price)
                         my $copy = {contract_parameters => {%{$stashed_contract_parameters->{contract_parameters}}}};
-                        my $adjusted_results = _price_stream_results_adjustment($c, $stash_data->{args}, $copy, $price, $theo_probability);
-                        push @$barriers, $adjusted_results;
+                        return _price_stream_results_adjustment($c, $stash_data->{args}, $copy, $price, $theo_probability);
                     }
                 }
                 catch {
                     warn "Failed to apply price - $_ - with a price struc containing " . Dumper($price);
-                    push @$barriers,
-                        {
+                    return +{
                         error => {
                             message_to_client => $c->l('Sorry, an error occurred while processing your request.'),
                             code              => 'ContractValidationError',
@@ -646,6 +645,12 @@ sub process_proposal_array_event {
                             },
                         }};
                 };
+
+                if(exists $result->{error}) {
+                    $result->{error}{details}{barrier}  //= $price->{barrier};
+                    $result->{error}{details}{barrier2} //= $price->{barrier2} if exists $price->{barrier2};
+                }
+                push @$barriers, $result;
             }
         }
         if (my $subscription_key = $stash_data->{cache}{proposal_array_subscription}) {
@@ -771,7 +776,6 @@ sub _price_stream_results_adjustment {
     $results->{payout} = $price_calculator->payout;
     $results->{$_} .= '' for qw(ask_price display_value payout);
     stats_timing('price_adjustment.timing', 1000 * tv_interval($t));
-
     return $results;
 }
 
