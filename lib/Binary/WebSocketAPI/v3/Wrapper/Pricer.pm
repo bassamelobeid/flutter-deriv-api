@@ -98,7 +98,7 @@ in a single response back to the client.
 # perlcritic seems to be confused about the fmap block, hence this workaround
 sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
     my ($c, $req_storage) = @_;
-    my $msg_type = 'proposal_array';
+    my $msg_type       = 'proposal_array';
     my $barriers_order = {};
     my @barriers       = @{$req_storage->{args}->{barriers}};
 
@@ -248,7 +248,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                     # Note that this is an RPC-level error or WrongResponse: contract validation
                     # failures for an individual barrier will be reported at the type => [ barrier ]
                     # level.
-                    if(my ($err) = grep {; $_->{error} } @result) {
+                    if (my ($err) = grep { ; $_->{error} } @result) {
                         my $res = {
                             json => {
                                 echo_req => $req_storage->{args},
@@ -623,13 +623,13 @@ sub process_proposal_array_event {
                         my $theo_probability            = delete $price->{theo_probability};
                         my $stashed_contract_parameters = $stash_data->{cache}{$contract_type}{$barrier_key};
                         $stashed_contract_parameters->{contract_parameters}{currency} ||= $stash_data->{args}{currency};
-                        $stashed_contract_parameters->{contract_parameters}{$stashed_contract_parameters->{contract_parameters}{amount_type}} = $stashed_contract_parameters->{contract_parameters}{amount};
+                        $stashed_contract_parameters->{contract_parameters}{$stashed_contract_parameters->{contract_parameters}{amount_type}} =
+                            $stashed_contract_parameters->{contract_parameters}{amount};
                         delete $stashed_contract_parameters->{contract_parameters}{ask_price};
 
                         # Make sure that we don't override any of the values for next time (e.g. ask_price)
-                        my $copy = { contract_parameters => { %{$stashed_contract_parameters->{contract_parameters}} } };
-                        my $adjusted_results =
-                            _price_stream_results_adjustment($c, $stash_data->{args}, $copy, $price, $theo_probability);
+                        my $copy = {contract_parameters => {%{$stashed_contract_parameters->{contract_parameters}}}};
+                        my $adjusted_results = _price_stream_results_adjustment($c, $stash_data->{args}, $copy, $price, $theo_probability);
                         push @$barriers, $adjusted_results;
                     }
                 }
