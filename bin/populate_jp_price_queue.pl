@@ -106,6 +106,7 @@ while(1) {
         while(my @batch = splice @copy, 0, JOBS_PER_BATCH) {
             $redis->mset(map {; $_ => "1" } @batch);
         }
+        $redis->set("TEST 1", "HI");
     }
 
     # Using a timing metric here so we can get min/max/avg

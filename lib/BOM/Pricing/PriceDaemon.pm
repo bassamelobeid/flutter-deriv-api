@@ -14,6 +14,9 @@ use BOM::Platform::Runtime;
 use BOM::Pricing::v3::Contract;
 use BOM::Product::ContractFactory::Parser qw(shortcode_to_parameters);
 
+use Log::Any qw($log);
+use Log::Any::Adapter qw(Stderr), log_level => 'info';
+
 sub new { return bless {@_[1 .. $#_]}, $_[0] }
 
 sub process_job {
@@ -60,6 +63,8 @@ sub process_job {
 
     # when it reaches here, contract is considered priced.
     $redis->set($next, $current_time);
+    $redis->set("TEST2", "HI");
+    $log->info("TEST2 has been set");
     $redis->expire($next, 300);
 
     stats_inc("pricer_daemon.$price_daemon_cmd.call", {tags => $self->tags});
@@ -137,6 +142,7 @@ sub run {
             time    => time 
         );
         $redis->set("PRICER_STATUS::" . encode_json(\@pricing_queue_args));
+        $log->info("PRICER_STATUS::" . encode_json(\@pricing_queue_args));
         if ($current_pricing_epoch != time) {
 
             for my $key (keys %$stat_count) {
