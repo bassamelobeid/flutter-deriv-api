@@ -69,7 +69,7 @@ sub _vols_at_point {
 
     my $vol_args = {
         delta => 50,
-        from  => $self->volatility_effective_start,
+        from  => $self->effective_start,
         to    => $self->date_expiry,
     };
 
@@ -112,7 +112,7 @@ sub _build_vol_at_strike {
         q_rate => $self->q_rate,
         r_rate => $self->r_rate,
         spot   => $pricing_spot,
-        from   => $self->volatility_effective_start,
+        from   => $self->effective_start,
         to     => $self->date_expiry,
     };
 
@@ -127,7 +127,7 @@ sub _build_news_adjusted_pricing_vol {
     my $self = shift;
 
     my $news_adjusted_vol = $self->pricing_vol;
-    my $effective_start   = $self->volatility_effective_start;
+    my $effective_start   = $self->effective_start;
     my $seconds_to_expiry = $self->get_time_to_expiry({from => $effective_start})->seconds;
     my $events            = $self->economic_events_for_volatility_calculation;
 
@@ -158,7 +158,7 @@ sub _build_pricing_vol {
         # where the intraday_delta_correction is the bounceback which is a function of trend, not volatility.
         my $uses_flat_vol = ($self->is_atm_bet and $duration_seconds < 10 * 60) ? 1 : 0;
         $vol = $uses_flat_vol ? $volsurface->long_term_volatility : $volsurface->get_volatility({
-            from            => $self->volatility_effective_start->epoch,
+            from            => $self->effective_start->epoch,
             to              => $self->date_expiry->epoch,
             economic_events => $self->economic_events_for_volatility_calculation,
             ticks           => $self->ticks_for_volatility_calculation,
@@ -166,7 +166,7 @@ sub _build_pricing_vol {
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
             $vol = $self->volsurface->get_volatility({
-                from  => $self->volatility_effective_start,
+                from  => $self->effective_start,
                 to    => $self->date_expiry,
                 delta => 50
             });
@@ -218,7 +218,7 @@ sub _build_pricing_vol_for_two_barriers {
     return if $self->pricing_engine_name ne 'Pricing::Engine::EuropeanDigitalSlope';
 
     my $vol_args = {
-        from => $self->volatility_effective_start,
+        from => $self->date_start,
         to   => $self->date_expiry,
     };
 
