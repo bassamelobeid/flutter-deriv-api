@@ -235,6 +235,7 @@ sub register {
                                     if ($price->{error}) {
                                         $price->{error}{details}{barrier} = $barriers->{barrier};
                                         $price->{error}{details}{barrier2} = $barriers->{barrier2} if exists $barriers->{barrier2};
+                                        $price->{error}{message} = delete $price->{error}{message_to_client} if exists $price->{error}{message_to_client};
                                     }
                                     push @{$proposal_array{$contract_type}}, $price;
                                 }
