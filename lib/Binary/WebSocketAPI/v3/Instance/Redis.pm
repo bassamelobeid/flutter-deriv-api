@@ -26,7 +26,7 @@ sub create {
     my $server = Mojo::Redis2->new(url => $redis_url);
     $server->on(
         connection => sub { stats_inc('bom_websocket_api.v_3.redis_instances.' . $name . '.connections') },
-        error => sub {
+        error      => sub {
             my ($self, $err) = @_;
             warn("Redis $name error: $err");
         });
