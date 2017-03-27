@@ -183,7 +183,7 @@ read_csv_row_and_callback(
             if ($err) {
                 $client_account_table .= construct_row_line(%row, error => "Transaction Error: $err");
                 return;
-            } elsif ($action eq 'credit') {
+            } elsif ($action eq 'credit' and $payment_type !~ /^(?:affiliate_reward|arbitrary_markup)$/) {
                 # need to set this for batch payment in case of credit only
                 try {
                     $client->payment_agent_withdrawal_expiration_date(Date::Utility->today->date_yyyymmdd);
