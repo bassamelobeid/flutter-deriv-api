@@ -74,3 +74,33 @@ Test::Exception::lives_ok { $client->save() } "can save to unwelcome login file"
 
 #make sure unwelcome client cannot trade
 is($validation_obj->allow_trade, undef, "unwelcome client cannot trade");
+
+my $client_details = {
+    broker_code     => 'MX',
+    residence       => 'au',
+    client_password => 'x',
+    last_name       => 'shuwnyuan',
+    first_name      => 'tee',
+    email           => 'shuwnyuan@regentmarkets.com',
+    salutation      => 'Ms',
+    address_line_1  => 'ADDR 1',
+    address_city    => 'Segamat',
+    phone           => '+60123456789',
+    secret_question => "Mother's maiden name",
+    secret_answer   => 'blah',
+};
+
+my %deposit = (
+    currency     => 'USD',
+    amount       => 1_000,
+    remark       => 'here is money',
+    payment_type => 'free_gift'
+);
+
+my $client_new = Client::Account->register_and_return_new_client($client_details);
+$validation_obj = BOM::Transaction::Validation->new(client=>$client_new);
+$client_new->set_default_account('USD');
+
+is($validation_obj->allow_trade, 1, "MX client without age_verified allowed to trade before 1st deposit");
+$client_new->payment_free_gift(%deposit);
+is($validation_obj->allow_trade, undef, "MX client without age_verified cannot trade after 1st deposit");
