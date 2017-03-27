@@ -286,7 +286,7 @@ sub handle_batch_contract {
     }
     return {
         proposals => $proposals,
-        %{$batch_contract->market_details},
+        contract_parameters => {%$p2, %{$batch_contract->market_details}},
         rpc_time => 0,    # $rpc_time,
     };
 }
