@@ -392,7 +392,7 @@ sub _process_proposal_open_contract_response {
             my %copy_req = %$req_storage;
             delete @copy_req{qw(in_validator out_validator)};
             $copy_req{loginid} = $c->stash('loginid') if $c->stash('loginid');
-            warn "undef shortcode req_storage " . encode_json(\%copy_req);
+            warn "undef shortcode in req_storage " . encode_json(\%copy_req);
             my $error =
                 $c->new_error('proposal_open_contract', 'GetProposalFailure', $c->l('Sorry, an error occurred while processing your request.'));
             $c->send({json => $error}, $req_storage);
