@@ -38,7 +38,7 @@ sub validate_trx_sell {
         _validate_sell_pricing_adjustment
         _validate_date_pricing
         /
-    )
+        )
     {
         my $res = $self->$_;
         return $res if $res;

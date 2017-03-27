@@ -23,7 +23,7 @@ $client->payment_legacy_payment(
     remark       => 'here is money',
     payment_type => 'ewallet',
 );
-my $validation_obj = BOM::Transaction::Validation->new(client=>$client);
+my $validation_obj = BOM::Transaction::Validation->new(client => $client);
 
 subtest 'no doughflow payment for client - allow for payment agent withdrawal' => sub {
     my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal();
@@ -98,7 +98,7 @@ my %deposit = (
 );
 
 my $client_new = Client::Account->register_and_return_new_client($client_details);
-$validation_obj = BOM::Transaction::Validation->new(client=>$client_new);
+$validation_obj = BOM::Transaction::Validation->new(client => $client_new);
 $client_new->set_default_account('USD');
 
 is($validation_obj->allow_trade, 1, "MX client without age_verified allowed to trade before 1st deposit");
