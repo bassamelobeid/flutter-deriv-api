@@ -36,8 +36,9 @@ sub validate_trx_sell {
         _validate_available_currency
         _validate_currency
         _validate_sell_pricing_adjustment
-        _validate_date_pricing /
-        )
+        _validate_date_pricing
+        /
+    )
     {
         my $res = $self->$_;
         return $res if $res;
@@ -52,7 +53,6 @@ sub validate_trx_buy {
     # ask your friendly DBA team if in doubt
     #
     # Keep the transaction rate test first to limit the impact of abusive buyers
-
     for (
         qw/
         _validate_iom_withdrawal_limit
@@ -61,7 +61,7 @@ sub validate_trx_buy {
         _validate_jurisdictional_restrictions
         _validate_client_status
         _validate_client_self_exclusion
-
+        validate_tnc
         _is_valid_to_buy
         _validate_date_pricing
         _validate_trade_pricing_adjustment
