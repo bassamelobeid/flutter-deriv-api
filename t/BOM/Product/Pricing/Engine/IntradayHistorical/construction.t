@@ -30,7 +30,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 initialize_realtime_ticks_db();
 
-
 my $bet_params = {
     bet_type   => 'FLASHD',
     underlying => 'frxUSDJPY',
@@ -72,8 +71,7 @@ is $bet->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope', 'expiry_d
 
 delete $bet_params->{date_start};
 $bet_params->{bet_type} = 'RANGE';
-
-lives_ok { $bet = produce_contract($bet_params); } 'Can create example RANGE bet';
+lives_ok { $bet = produce_contract(+{%$bet_params, high_barrier => 'S20P', low_barrier => 'S-10P'}); } 'Can create example RANGE bet';
 throws_ok { $pe = BOM::Product::Pricing::Engine::Intraday::Forex->new({bet => $bet}) } qr/Invalid claimtype/,
     'Cannot create engine for two barrier path-dependents (RANGE)';
 

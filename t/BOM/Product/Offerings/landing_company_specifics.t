@@ -27,9 +27,9 @@ my %expected_type = (
         'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',   'ONETOUCH',  'PUT',        'PUTE',     'RANGE',
         'SPREADD',    'SPREADU',    'UPORDOWN',    'CALLE',     'EXPIRYRANGEE'
     ],
-    maltainvest => ['CALL',  'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH', 'ONETOUCH', 'PUT', 'PUTE',     'RANGE',        'UPORDOWN', 'CALLE', 'EXPIRYRANGEE'],
-    japan       => ['CALLE', 'NOTOUCH',    'ONETOUCH',    'PUT',     'RANGE',    'UPORDOWN', 'EXPIRYRANGEE', 'EXPIRYMISS'],
-    malta       => [
+    maltainvest => ['CALL', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH', 'ONETOUCH', 'PUT', 'PUTE', 'RANGE', 'UPORDOWN', 'CALLE', 'EXPIRYRANGEE'],
+    japan => ['CALLE', 'NOTOUCH', 'ONETOUCH', 'PUT', 'RANGE', 'UPORDOWN', 'EXPIRYRANGEE', 'EXPIRYMISS'],
+    malta => [
         'ASIAND',     'ASIANU',     'CALL',        'DIGITDIFF', 'DIGITEVEN', 'DIGITMATCH', 'DIGITODD', 'DIGITOVER',
         'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',   'ONETOUCH',  'PUT',        'PUTE',     'RANGE',
         'SPREADD',    'SPREADU',    'UPORDOWN',    'CALLE',     'EXPIRYRANGEE'
@@ -176,7 +176,7 @@ subtest 'legal allowed underlyings' => sub {
         OTC_BSESENSEX30
         OTC_BIST100
         OTC_AEX
-	DJI
+        DJI
         OTC_AS51
         OTC_FTSE
         OTC_BFX
