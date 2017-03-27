@@ -77,8 +77,10 @@ my $params = {
 };
 my $c = produce_contract($params);
 like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
-is roundnear(0.0001, $c->pricing_engine->bs_probability->amount), 0.1537, 'correct bs probability for FX contract';
-is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0216, 'correct market supplement';
+
+is roundnear(0.0001, $c->pricing_engine->bs_probability->amount), 0.1706, 'correct bs probability for FX contract';
+is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0181, 'correct market supplement';
+
 
 $c = produce_contract({
     %$params,
@@ -87,8 +89,8 @@ $c = produce_contract({
     low_barrier  => 99,
 });
 like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
-is roundnear(0.0001, $c->pricing_engine->bs_probability->amount), 0.1053, 'correct bs probability for FX contract';
-is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0287, 'correct market supplement';
+is roundnear(0.0001, $c->pricing_engine->bs_probability->amount), 0.0852, 'correct bs probability for FX contract';
+is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0274, 'correct market supplement';
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
