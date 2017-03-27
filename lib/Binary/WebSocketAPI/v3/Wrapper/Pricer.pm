@@ -607,10 +607,7 @@ sub process_proposal_array_event {
         $c->proposal_array_collector;
     }
 
-    my @extra_details = grep { ; exists $response->{$_} } qw(app_markup_percentage staking_limits deep_otm_threshold base_commission);
-
     foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
-        @{$stash_data->{cache}{contract_parameters}}{@extra_details} = @{$response}{@extra_details};
         $stash_data->{cache}{contract_parameters}{currency} ||= $stash_data->{args}{currency};
         my %proposals;
         for my $contract_type (keys %{$response->{proposals}}) {
