@@ -7,6 +7,7 @@ use warnings;
 use feature "state";
 use Sys::Hostname;
 use YAML::XS;
+use Scalar::Util ();
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Locale::Maketext::ManyPluralForms {
@@ -244,6 +245,63 @@ sub register {
                 $c->stash->{redis_pricer} = $redis_pricer;
             }
             return $c->stash->{redis_pricer};
+        });
+
+    $app->helper(
+        proposal_array_collector => sub {
+            my $c = shift;
+            Scalar::Util::weaken(my $weak_c = $c);
+            # send proposal_array stream messages collected from appropriate proposal streams
+            my $proposal_array_loop_id_keeper;
+            $proposal_array_loop_id_keeper = Mojo::IOLoop->recurring(
+                1,
+                sub {
+                    # It's possible for the client to disconnect before we're finished.
+                    # If that happens, make sure we clean up but don't attempt to process any further.
+                    my $c = $weak_c;
+                    unless ($c && $c->tx) {
+                        Mojo::IOLoop->remove($proposal_array_loop_id_keeper);
+                        return;
+                    }
+
+                    my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') or do {
+                        Mojo::IOLoop->remove($proposal_array_loop_id_keeper);
+                        return;
+                    };
+
+                    my %proposal_array;
+                    for my $pa_uuid (keys %{$proposal_array_subscriptions}) {
+                        my $sub = $proposal_array_subscriptions->{$pa_uuid};
+                        for my $i (0 .. $#{$sub->{seq}}) {
+                            my $uuid     = $sub->{seq}[$i];
+                            my $barriers = $sub->{args}{barriers}[$i];
+                            # Bail out early if we have any streams without a response yet
+                            my $proposal = $sub->{proposals}{$uuid} or return;
+                            for my $contract_type (keys %$proposal) {
+                                for my $price (@{$proposal->{$contract_type}}) {
+                                    # Ensure we have barriers
+                                    if ($price->{error}) {
+                                        $price->{error}{details}{barrier} //= $barriers->{barrier};
+                                        $price->{error}{details}{barrier2} //= $barriers->{barrier2} if exists $barriers->{barrier2};
+                                        $price->{error}{message} = delete $price->{error}{message_to_client}
+                                            if exists $price->{error}{message_to_client};
+                                    }
+                                    push @{$proposal_array{$contract_type}}, $price;
+                                }
+                            }
+                        }
+
+                        my $results = {
+                            proposal_array => {
+                                proposals => \%proposal_array,
+                                id        => $pa_uuid,
+                            },
+                            echo_req => $proposal_array_subscriptions->{$pa_uuid}{args},
+                            msg_type => 'proposal_array',
+                        };
+                        $c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}});
+                    }
+                });
         });
 
     return;

@@ -572,6 +572,7 @@ my %skip_type_list     = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITO
 sub _skip_streaming {
     my $args = shift;
 
+    return 1 if $args->{skip_streaming};
     my $skip_symbols = ($skip_symbol_list{$args->{symbol}}) ? 1 : 0;
     my $atm_contract =
         ($args->{contract_type} =~ /^(CALL|PUT)$/ and not($args->{barrier} or ($args->{proposal_array} and $args->{barriers}))) ? 1 : 0;
