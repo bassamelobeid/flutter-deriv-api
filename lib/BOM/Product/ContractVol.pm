@@ -127,9 +127,10 @@ sub _build_news_adjusted_pricing_vol {
     my $self            = shift;
     my $effective_start = $self->effective_start;
 
-    return $self->intradayfx_volsurface->news_adjusted_pricing_vol({
+    return $self->intradayfx_volsurface->get_volatility({
         from => $effective_start->epoch,
         to   => $self->date_expiry->epoch,
+        include_economic_event_impact => 1,
     });
 }
 
@@ -147,6 +148,7 @@ sub _build_pricing_vol {
         $vol = $uses_flat_vol ? $volsurface->long_term_volatility : $volsurface->get_volatility({
             from => $self->effective_start->epoch,
             to   => $self->date_expiry->epoch,
+            include_economic_event_impact => 0,
         });
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
