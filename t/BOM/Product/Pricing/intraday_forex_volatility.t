@@ -72,7 +72,7 @@ subtest 'ten ticks in decimate ticks' => sub {
         });
     my $c = produce_contract($contract_args);
     $c->pricing_args;
-    is $c->pricing_vol, 0.118725511279854, 'we rely solely on long term prediction if there is only one decimated tick.';
+    is $c->pricing_vol, 0.119418941965231, 'we rely solely on long term prediction if there is only one decimated tick.';
     is $c->pricing_args->{volatility_scaling_factor}, 135 / 1800, 'scaling factor is non zero';
     is $c->pricing_engine->risk_markup->peek_amount('vol_spread'), 0.04971875, 'charged a 9.9 vol spread markup due to shortterm uncertainty';
 };
@@ -81,7 +81,7 @@ subtest 'full set of decimate ticks' => sub {
     $mocked->mock('decimate_cache_get', sub { $ticks });
     my $c = produce_contract($contract_args);
     $c->pricing_args;
-    is $c->pricing_vol, 0.105908540749393, 'we rely solely on long term prediction if there is only one decimated tick.';
+    is $c->pricing_vol, 0.106236103095101, 'we rely solely on long term prediction if there is only one decimated tick.';
     is $c->pricing_args->{volatility_scaling_factor}, 1, 'scaling factor is 1';
     is $c->pricing_engine->risk_markup->peek_amount('vol_spread_markup'), 0,
         'charged a 0% vol spread markup when we have full set of ticks to calculate volatility';
