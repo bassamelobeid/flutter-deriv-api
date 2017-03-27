@@ -8,6 +8,7 @@ use Try::Tiny;
 use Path::Tiny;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Fcntl qw/ :flock /;
+use Mojo::IOLoop;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
 sub start_timing {
@@ -252,7 +253,6 @@ sub init_redis_connections {
 sub forget_all {
     my $c = shift;
     # stop all recurring
-    Binary::WebSocketAPI::v3::Wrapper::System::forget_all($c, {args => {forget_all => 1}});
     delete $c->stash->{redis};
     delete $c->stash->{redis_pricer};
 
