@@ -32,6 +32,11 @@ has file => (
     lazy_build => 1,
 );
 
+has tenor_file => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
 sub _build_file {
     my $self = shift;
 
@@ -54,6 +59,16 @@ sub _build_file {
         return $date->epoch <= $now->epoch;
     }
     @non_quanto_filename;
+
+    my @tenor_filenames = grep { $_ =~ /tenors/ } @filenames;
+    my $tenor_file = first {
+        my ($h, $m, $s) = ($_ =~ /(\d{2})(\d{2})(\d{2})_vol_tenors\.csv$/);
+        my $date = Date::Utility->new("$day $h:$m:$s");
+        return $date->epoch <= $now->epoch;
+    }
+    @tenor_filenames;
+
+    $self->tenor_file($tenor_file);
 
     #  On weekend, we only subscribe the volsurface file at 23:40GMT. So anytime before this, there is no file available
     # On weekday, the first response file of the day is at 00:45GMT, hence at the first 45 minutes of the day, there is no file
@@ -120,7 +135,12 @@ sub _build_surfaces_from_file {
     my $self = shift;
     my @volsurface;
     foreach my $file (@{$self->file}) {
-        my $surface = Bloomberg::VolSurfaces->new->parse_data_for($file);
+        my $surface;
+        if ($file =~ /vol_points/) {
+            $surface = Bloomberg::VolSurfaces->new->parse_data_for($file, $self->tenor_file);
+        } else {
+            $surface = Bloomberg::VolSurfaces->new->parse_data_for($file);
+        }
         foreach my $underlying (keys %{$surface}) {
             if (scalar keys %{$surface->{$underlying}->{surface}} == 2) {
                 $surface->{$underlying}->{surface} = _append_to_existing_surface($surface->{$underlying}->{surface}, $underlying);
