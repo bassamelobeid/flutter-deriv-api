@@ -230,7 +230,6 @@ subtest 'invalid underlying is a weak foundation' => sub {
     BOM::Platform::Runtime->instance->app_config->system->suspend->trading(0);    # Resume betting!
     reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
-
     my $old_tick = Postgres::FeedDB::Spot::Tick->new({
         symbol => $bet->underlying->symbol,
         epoch  => $starting - 3600,
@@ -508,7 +507,6 @@ subtest 'volsurfaces become old and invalid' => sub {
     $bet              = produce_contract($bet_params);
     $expected_reasons = [qr/volsurface too old/];
     test_error_list('buy', $bet, $expected_reasons);
-
 
     $bet = produce_contract($bet_params);
     ok($bet->volsurface->validation_error('fake broken surface'), 'Set broken surface');

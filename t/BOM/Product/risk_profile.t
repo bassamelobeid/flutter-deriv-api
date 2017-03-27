@@ -86,7 +86,7 @@ subtest 'get_risk_profile' => sub {
     is scalar(@$limit), 1, 'only one profile from custom';
     is scalar(@cp),     1, 'one from client';
 
-    $ul = create_underlying('R_100');
+    $ul   = create_underlying('R_100');
     %args = (
         contract_category              => 'callput',
         start_type                     => 'spot',
@@ -113,7 +113,7 @@ subtest 'custom client profile' => sub {
     note("set volatility index to no business for client XYZ");
     BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(
         '{"CR1": {"reason": "test XYZ", "custom_limits": {"xxx": {"market": "volidx", "risk_profile": "no_business", "name": "test custom"}}}}');
-    my $rp    = BOM::Product::RiskProfile->new(%args);
+    my $rp = BOM::Product::RiskProfile->new(%args);
     my @cl_pr = $rp->get_client_profiles('CR2', 'costarica');
     ok !@cl_pr, 'no custom client limit';
     @cl_pr = $rp->get_client_profiles('CR1', 'costarica');

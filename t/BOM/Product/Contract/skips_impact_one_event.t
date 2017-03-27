@@ -57,7 +57,7 @@ subtest 'skips economic event with impact 1 in volatility calculation' => sub {
         currency     => 'USD',
         payout       => 1,
     });
-    is scalar(@{$c->_applicable_economic_events}),                 2, 'two economic events recorded';
+    is scalar(@{$c->_applicable_economic_events}),                2, 'two economic events recorded';
     is scalar(@{$c->economic_events_for_volatility_calculation}), 1, 'one economic event left for volatility calculation';
     my $e = $c->economic_events_for_volatility_calculation->[0];
     is $e->{impact}, 5, 'impact 5';

@@ -58,22 +58,22 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => 0.9936,
 });
 
-my $redis = BOM::Platform::RedisReplicated::redis_write();
-my $undec_key   = "DECIMATE_frxAUDCAD" . "_31m_FULL";
-my $encoder = Sereal::Encoder->new({
-        canonical => 1,
-    });
+my $redis     = BOM::Platform::RedisReplicated::redis_write();
+my $undec_key = "DECIMATE_frxAUDCAD" . "_31m_FULL";
+my $encoder   = Sereal::Encoder->new({
+    canonical => 1,
+});
 my %defaults = (
-        symbol     => 'frxAUDCAD',
-        epoch      => $now->epoch,
-        quote      => 0.9935,
-        bid        => 0.9935,
-        ask        => 0.9935,
-        count      => 1,
-    );
+    symbol => 'frxAUDCAD',
+    epoch  => $now->epoch,
+    quote  => 0.9935,
+    bid    => 0.9935,
+    ask    => 0.9935,
+    count  => 1,
+);
 $redis->zadd($undec_key, $defaults{epoch}, $encoder->encode(\%defaults));
 
-$defaults{epoch} = $now->epoch+1;
+$defaults{epoch} = $now->epoch + 1;
 $defaults{quote} = 0.9936;
 $redis->zadd($undec_key, $defaults{epoch}, $encoder->encode(\%defaults));
 
@@ -130,8 +130,8 @@ subtest 'call variations' => sub {
         $args->{date_start}   = $now->plus_time_interval('20m');
         $c                    = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Call';
-        ok $c->is_forward_starting, 'forward starting';
-        isa_ok $c->pricing_engine_name,  'Pricing::Engine::EuropeanDigitalSlope';
+        ok $c->is_forward_starting,     'forward starting';
+        isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
 
         $args->{date_pricing} = $now;
         $args->{date_start}   = $now;

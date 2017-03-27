@@ -55,7 +55,7 @@ subtest 'expiry miss' => sub {
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
         is_deeply $c->supported_start_types, ['spot'];
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
-        isa_ok $c->greek_engine,   'BOM::Product::Pricing::Greeks::BlackScholes';
+        isa_ok $c->greek_engine,        'BOM::Product::Pricing::Greeks::BlackScholes';
     }
     'generic';
 
@@ -108,7 +108,7 @@ subtest 'expiry range' => sub {
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
         is_deeply $c->supported_start_types, ['spot'];
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
-        isa_ok $c->greek_engine,   'BOM::Product::Pricing::Greeks::BlackScholes';
+        isa_ok $c->greek_engine,        'BOM::Product::Pricing::Greeks::BlackScholes';
     }
     'generic';
 

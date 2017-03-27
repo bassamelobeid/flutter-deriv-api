@@ -41,9 +41,9 @@ $mocked->mock(
     '_get_economic_events',
     sub {
         [{
-                'bias'         => 0.010000,
-                'duration'     => 60.000000,
-                'magnitude'    => 1.000000,
+                'bias'          => 0.010000,
+                'duration'      => 60.000000,
+                'magnitude'     => 1.000000,
                 'release_epoch' => 1389096000,
             }];
     });

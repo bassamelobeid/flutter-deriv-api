@@ -41,27 +41,26 @@ set_absolute_time($now->epoch);
 
 my $blackout_start = $now->minus_time_interval('1h');
 my $blackout_end   = $now->plus_time_interval('1h');
-my $events = [{
-                symbol                => 'USD',
-                release_date          => $now->epoch,
-                blankout              => $blackout_start->epoch,
-                blankout_end          => $blackout_end->epoch,
-                is_tentative          => 1,
-                tentative_event_shift => 0.02,
-                event_name            => 'Test tentative',
-                impact                => 5,
-            },
-            {
-                symbol                => 'EUR',
-                release_date          => $now->epoch,
-                blankout              => $blackout_start->epoch,
-                blankout_end          => $blackout_end->epoch,
-                is_tentative          => 1,
-                tentative_event_shift => 0.01,
-                event_name            => 'Test tentative',
-                impact                => 5,
-            }
-        ];
+my $events         = [{
+        symbol                => 'USD',
+        release_date          => $now->epoch,
+        blankout              => $blackout_start->epoch,
+        blankout_end          => $blackout_end->epoch,
+        is_tentative          => 1,
+        tentative_event_shift => 0.02,
+        event_name            => 'Test tentative',
+        impact                => 5,
+    },
+    {
+        symbol                => 'EUR',
+        release_date          => $now->epoch,
+        blankout              => $blackout_start->epoch,
+        blankout_end          => $blackout_end->epoch,
+        is_tentative          => 1,
+        tentative_event_shift => 0.01,
+        event_name            => 'Test tentative',
+        impact                => 5,
+    }];
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
     {
@@ -72,7 +71,10 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 Volatility::Seasonality->new(
     chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
     chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
-)->generate_economic_event_seasonality({underlying_symbol => 'frxEURUSD', economic_events => $events});
+    )->generate_economic_event_seasonality({
+        underlying_symbol => 'frxEURUSD',
+        economic_events   => $events
+    });
 
 my $contract_args = {
     underlying   => 'frxEURUSD',
