@@ -781,7 +781,6 @@ subtest 'spreads', sub {
                 stop_type        => 'point',
                 spread           => 2,
                 date_start       => $now,
-                date_expiry      => $now + 15 * 60,
                 date_pricing     => $now,
                 current_tick     => $current_tick,
             });
