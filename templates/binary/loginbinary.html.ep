@@ -29,8 +29,8 @@
             </form>
         </div>
         <p class="center-text">
-            <a class="pjaxload" id="lost-password" href="https://www.binary.com/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Lost Password?') %></a> |
-            <a class="pjaxload" id="create-account" href="https://www.binary.com/<%= lc($r->language) %>/home.html"><%= l('Open an Account') %></a>
+            <a id="lost-password" href="https://www.binary.com/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Lost Password?') %></a> |
+            <a id="create-account" href="https://www.binary.com/<%= lc($r->language) %>/home.html"><%= l('Open an Account') %></a>
         </p>
         <div class="center-text" style="display:none;">
             <div id="oa_social_login_container"></div>
