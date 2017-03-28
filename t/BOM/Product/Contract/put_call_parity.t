@@ -206,7 +206,8 @@ subtest 'put_call_parity_slope_non_japan' => sub {
                 ? $c->opposite_contract->pricing_engine->_base_probability
                 : $c->opposite_contract->debug_information->{$opposite_type}{base_probability}{amount};
             my $discounted_prob = $c->discounted_probability->amount;
-            is roundnear(0.0000000001, $call_theo_prob + $put_theo_prob), roundnear(0.0000000001, $discounted_prob), "put call parity hold for " . $c->shortcode . " with payout currency $currency";
+            is roundnear(0.0000000001, $call_theo_prob + $put_theo_prob), roundnear(0.0000000001, $discounted_prob),
+                "put call parity hold for " . $c->shortcode . " with payout currency $currency";
         }
     }
 };
