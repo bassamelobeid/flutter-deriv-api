@@ -582,8 +582,9 @@ sub mt5_withdrawal {
         my $error        = $_;
         my $known_errors = \%BOM::Transaction::known_errors;
         my $msg          = Dumper($error);
-        if (ref($error) eq 'ARRAY' && exists $know_errors->{$error->[0]}) {
-            $error = ref($known_errors->{$error->[0]}) eq 'CODE' ? $known_errors->{$error->[0]}->(undef, $to_client) : $known_errors;
+        if (ref($error) eq 'ARRAY' && exists $known_errors->{$error->[0]}) {
+            my $error_generator = $known_errors->{$error->[0]};
+            $error = ref($error_generator) eq 'CODE' ? $error_generator->(undef, $to_client) : $error_generator;
         }
         if (blessed($error) && $error->isa('Error::Base')) {
             $msg = $error->get_mesg;
