@@ -275,6 +275,12 @@ sub handle_batch_contract {
 
     my $proposals  = {};
     my $ask_prices = $batch_contract->ask_prices;
+    my $trading_window_start = $p2->{trading_period_start} // '';
+    for my $contract (grep {; $p2->{currency} && $p2->{currency} eq 'JPY' } @{$batch_contract->_contracts}) {
+        if (my $code = $contract->can('japan_pricing_info')) {
+            warn $code->($contract, $trading_window_start);
+        }
+    }
     for my $contract_type (keys %$ask_prices) {
         for my $barrier (@{$p2->{barriers}}) {
             my $key = ref($barrier) ? ($barrier->{barrier}) . '-' . ($barrier->{barrier2}) : $barrier;
