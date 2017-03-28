@@ -10,6 +10,10 @@
       "description": "Must be 1",
       "required": "1"
     },
+    "subscribe": {
+      "type": "integer",
+      "description": "Turning site status notifications on"
+    },
     "passthrough": {
       "type": "object",
       "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
