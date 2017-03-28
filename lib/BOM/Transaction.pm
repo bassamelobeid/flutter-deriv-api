@@ -670,10 +670,7 @@ sub batch_buy {    ## no critic (RequireArgUnpacking)
                     if (my $ref = $known_errors{$ecode}) {
                         my $error = (
                             ref $ref eq 'CODE'
-                            ? $ref->(
-                                $self, $el->{client},
-                                1_000_000,    # fake an insanely high retry count
-                                $res->{e_description})
+                            ? $ref->($self, $el->{client}, $res->{e_description})
                             : $ref
                         );
                         $el->{code}  = $error->{-type};
@@ -740,11 +737,7 @@ sub prepare_bet_data_for_sell {
                 staff_loginid => $self->staff,
                 source        => $self->source,
             },
-            bet_data     => $bet_params,
-            account_data => {
-                client_loginid => $loginid,
-                currency_code  => $currency
-            },
+            bet_data             => $bet_params,
             quants_bet_variables => $quants_bet_variables,
         });
 }
@@ -785,6 +778,11 @@ sub sell {
 
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_sell;
     return $self->stats_stop($stats_data, $error_status) if $error_status;
+
+    $bet_data->{account_data} = {
+        client_loginid => $self->client->loginid,
+        currency_code  => $self->contract->currency,
+    };
 
     $self->stats_validation_done($stats_data);
 
@@ -831,24 +829,148 @@ sub sell {
     return;
 }
 
+sub sell_by_shortcode {
+    my ($self, %options) = @_;
+
+    my $stats_data   = $self->stats_start('sell');
+    my $error_status = undef;
+
+    for my $m (@{$self->multiple}) {
+        next if $m->{code};
+        my $c = try { Client::Account->new({loginid => $m->{loginid}}) };
+        unless ($c) {
+            $m->{code}  = 'InvalidLoginid';
+            $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
+            next;
+        }
+
+        $m->{client} = $c;
+    }
+
+    unless ($options{skip_validation}) {
+        # all these validations MUST NOT use the database
+        # database related validations MUST be implemented in the database
+        # ask your friendly DBA team if in doubt
+        $error_status = $self->$_ and return $self->stats_stop($stats_data, $error_status)
+            for (
+            qw/
+            _is_valid_to_sell
+            _validate_available_currency
+            _validate_currency
+            _validate_sell_pricing_adjustment
+            _validate_date_pricing/
+            );
+
+        $self->comment(
+            _build_pricing_comment({
+                    contract         => $self->contract,
+                    price            => $self->price,
+                    requested_price  => $self->requested_price,
+                    recomputed_price => $self->recomputed_price,
+                    ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
+                    ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
+                    action => 'sell'
+                })) unless @{$self->comment};
+    }
+
+    ($error_status, my $bet_data) = $self->prepare_bet_data_for_sell;
+
+    return $self->stats_stop($stats_data, $error_status) if $error_status;
+
+    $self->stats_validation_done($stats_data);
+
+    my $currency = $self->contract->currency;
+
+    my %per_broker;
+    for my $m (@{$self->multiple}) {
+        next if $m->{code};
+        push @{$per_broker{$m->{client}->broker_code}}, $m;
+    }
+
+    my %stat = map { $_ => {attempt => 0 + @{$per_broker{$_}}} } keys %per_broker;
+
+    for my $broker (keys %per_broker) {
+        my $list    = $per_broker{$broker};
+        my $success = 0;
+        # with hash key caching introduced in recent perl versions
+        # the "map sort map" pattern does not make sense anymore.
+
+        # this sorting is to prevent deadlocks in the database
+        @$list = sort { $a->{loginid} cmp $b->{loginid} } @$list;
+
+        my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
+            %$bet_data,
+            account_data => [map                                      { +{client_loginid => $_->{loginid}, currency_code => $currency} } @$list],
+            db           => BOM::Database::ClientDB->new({broker_code => $broker})->db,
+        );
+        try {
+            my $res = $fmb_helper->sell_by_shortcode($self->contract->shortcode);
+
+            foreach my $r (@$list) {
+                my $res_row = shift @$res;
+                if (my $ecode = $res_row->{e_code}) {
+                    # map DB errors to client messages
+                    if (my $ref = $known_errors{$ecode}) {
+                        my $error = (
+                            ref $ref eq 'CODE'
+                            ? $ref->($self, $r->{client}, $res_row->{e_description})
+                            : $ref
+                        );
+
+                        $r->{code}  = $error->{-type};
+                        $r->{error} = $error->{-message_to_client};
+                    } else {
+                        @{$r}{qw/code error/} = ('UnexpectedError' . $ecode, BOM::Platform::Context::localize('An unexpected error occurred'));
+                    }
+                } else {
+                    $r->{tnx}       = $res_row->{txn};
+                    $r->{fmb}       = $res_row->{fmb};
+                    $r->{buy_tr_id} = $res_row->{buy_tr_id};
+                    $success++;
+                }
+            }
+            $stat{$broker}->{success} = $success;
+        }
+        catch {
+            warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $_;    # log it
+            for my $el (@$list) {
+                @{$el}{qw/code error/} = ('UnexpectedError', BOM::Platform::Context::localize('An unexpected error occurred'))
+                    unless $el->{code} or $el->{fmb};
+            }
+        };
+    }
+
+    $self->stats_stop($stats_data, undef, \%stat);
+
+    return;
+}
+
 =head2 C<< $self->_recover($error) >>
+
 This function tries to recover from an unsuccessful buy/sell.
 It may decide to retry the operation. And it may decide to
 sell expired bets before doing so.
+
 =head4 Parameters
+
 =over 4
+
 =item * C<< $error >>
 the error exception thrown by BOM::Platform::Data::Persistence::DB::_handle_errors
+
 =back
+
 =head3 Return Value
+
 L<Error::Base> object
 which means an unrecoverable but expected condition has been found.
 Typically that means a precondition, like sufficient balance, was
 not met.
-=back
-Be aware that the function may throw an exception.
+
 =head3 Exceptions
+
 In case of an unexpected error, the exception is re-thrown unmodified.
+
 =cut
 
 %known_errors = (
@@ -1072,6 +1194,17 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -type              => 'DailyProfitLimitExceeded',
             -mesg              => 'Exceeds daily profit limit',
             -message_to_client => BOM::Platform::Context::localize('No further trading is allowed for the current trading session.'),
+        );
+    },
+    BI050 => sub {
+        my $self   = shift;
+        my $client = shift;
+        my $msg    = shift;
+
+        Error::Base->cuss(
+            -type              => 'NoOpenPosition',
+            -mesg              => $msg,
+            -message_to_client => BOM::Platform::Context::localize('This contract was not found among your open positions.'),
         );
     },
 );
