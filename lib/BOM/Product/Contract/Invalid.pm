@@ -28,7 +28,10 @@ has 'date_expiry' => (
     lazy_build => 1,
 );
 
-sub _build_date_expiry { shift->date_start }
+sub _build_date_expiry {
+    my ($self) = @_;
+    return $self->date_start;
+}
 
 sub _build_longcode {
     return localize('Legacy contract. No further information is available.');
