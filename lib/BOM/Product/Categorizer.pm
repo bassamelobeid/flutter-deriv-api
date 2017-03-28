@@ -223,7 +223,6 @@ sub _initialize_contract_parameters {
         }
 
         $pp->{date_start}  //= 1;    # Error conditions if it's not legacy or run, I guess.
-        $pp->{date_expiry} //= 1;
     }
 
     return $pp;
