@@ -226,6 +226,7 @@ subtest 'landing_companies_specific' => sub {
         ->has_no_system_error->has_error->error_code_is('ASK_UK_FUNDS_PROTECTION', 'GB residence needs to accept fund protection')
         ->error_message_is('Please accept Funds Protection.', 'GB residence needs to accept fund protection');
     $client_mx->set_status('ukgc_funds_protection', 'system', 'testing');
+    $client_mx->save;
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_SELF_EXCLUSION_MAX_TURNOVER_SET', 'GB residence needs to set 30-Day turnover')
         ->error_message_is('Please set Self Exclusion 30-Day Turnover Limit.', 'GB residence needs to set 30-Day turnover');
