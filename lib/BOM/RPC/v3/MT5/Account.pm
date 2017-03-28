@@ -21,6 +21,7 @@ use BOM::MT5::User;
 use BOM::Database::ClientDB;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email;
+use BOM::Transaction;
 use Data::Dumper;
 
 sub mt5_login_list {
@@ -578,14 +579,23 @@ sub mt5_withdrawal {
         };
     }
     catch {
+        my $error        = $_;
+        my $known_errors = \%BOM::Transaction::known_errors;
+        my $msg          = Dumper($error);
+        if (ref($error) eq 'ARRAY' && exists $know_errors->{$error->[0]}) {
+            $error = ref($known_errors->{$error->[0]}) eq 'CODE' ? $known_errors->{$error->[0]}->(undef, $to_client) : $known_errors;
+        }
+        if (blessed($error) && $error->isa('Error::Base')) {
+            $msg = $error->get_mesg;
+        }
         _send_email(
             loginid => $to_loginid,
             mt5_id  => $fm_mt5,
             amount  => $amount,
             action  => 'withdraw',
-            error   => Dumper($_),
+            error   => $msg,
         );
-        die $_;    # throw exception again
+        die $error;    # throw exception again
     };
 }
 
