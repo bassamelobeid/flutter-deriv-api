@@ -283,6 +283,12 @@ sub startup {
             }
         ],
         [
+            'sell_contract_for_multiple_accounts',
+            {
+                require_auth => 'trade',
+            }
+        ],
+        [
             'transaction',
             {
                 require_auth   => 'read',
