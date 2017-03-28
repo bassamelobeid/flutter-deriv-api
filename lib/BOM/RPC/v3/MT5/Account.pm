@@ -22,6 +22,7 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email;
 use BOM::Transaction;
+use Scalar::Util qw(blessed);
 use Data::Dumper;
 
 sub mt5_login_list {
@@ -579,15 +580,17 @@ sub mt5_withdrawal {
         };
     }
     catch {
-        my $error        = $_;
-        my $known_errors = \%BOM::Transaction::known_errors;
-        my $msg          = Dumper($error);
+        my $error         = $_;
+        my $known_errors  = \%BOM::Transaction::known_errors;
+        my $msg           = Dumper($error);
+        my $msg_to_client = 'Internal error';
         if (ref($error) eq 'ARRAY' && exists $known_errors->{$error->[0]}) {
             my $error_generator = $known_errors->{$error->[0]};
             $error = ref($error_generator) eq 'CODE' ? $error_generator->(undef, $to_client) : $error_generator;
         }
         if (blessed($error) && $error->isa('Error::Base')) {
             $msg = $error->get_mesg;
+            $msg_to_client = $error->{-message_to_client} // $msg;
         }
         _send_email(
             loginid => $to_loginid,
@@ -596,7 +599,7 @@ sub mt5_withdrawal {
             action  => 'withdraw',
             error   => $msg,
         );
-        die $error;    # throw exception again
+        return $error_sub->($msg_to_client);
     };
 }
 
