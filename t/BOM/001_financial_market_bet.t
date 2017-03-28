@@ -139,7 +139,7 @@ my $transaction_2 = BOM::Transaction->new({
     client        => $new_client,
     contract      => $contract_2,
     purchase_date => $start_time_2,
-    amount_type => $p_2->{amount_type},
+    amount_type   => $p_2->{amount_type},
 });
 my $b = $transaction_2->buy;
 
@@ -273,8 +273,8 @@ my $transaction_6 = BOM::Transaction->new({
     client        => $new_client,
     contract      => $contract_6,
     purchase_date => $start_time_6,
-    amount_type => $p_6->{amount_type},
-   });
+    amount_type   => $p_6->{amount_type},
+});
 isnt $transaction_6->buy(skip_validation => 1), 'undef', 'successful buy';
 
 $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({

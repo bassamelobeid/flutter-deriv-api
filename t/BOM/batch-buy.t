@@ -16,6 +16,8 @@ use ExpiryQueue ();
 
 use BOM::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -222,7 +224,7 @@ sub check_one_result {
         $err++ unless is $m->{fmb}->{account_id}, $acc->id, 'fmb account_id';
         $err++ unless is $m->{txn}->{financial_market_bet_id}, $m->{fmb}->{id}, 'txn financial_market_bet_id';
         $err++ unless is $m->{txn}->{balance_after}, sprintf('%.2f', $balance_after), 'balance_after';
-        note explain $m if $err;
+#        note explain $m if $err;
     };
 }
 
@@ -230,12 +232,13 @@ sub check_one_result {
 # real tests begin here
 ####################################################################
 
-subtest 'batch-buy success', sub {
-    plan tests => 10;
+subtest 'batch-buy success + multisell', sub {
+    plan tests => 11;
     lives_ok {
         my $clm = create_client;    # manager
         my $cl1 = create_client;
         my $cl2 = create_client;
+        my $cl3 = create_client;
 
         top_up $clm, 'USD', 0;      # the manager has no money
         top_up $cl1, 'USD', 5000;
@@ -276,8 +279,8 @@ subtest 'batch-buy success', sub {
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-            $mock_transaction->mock(
-                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_transaction->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             ExpiryQueue::queue_flush;
@@ -297,6 +300,48 @@ subtest 'batch-buy success', sub {
             ready_to_sell  => 0,    # obviously
         };
         is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
+
+        subtest "sell_by_shortcode", sub {
+            plan tests => 8;
+            my $contract_parameters = shortcode_to_parameters($contract->shortcode, $clm->currency);
+            $contract_parameters->{landing_company} = $clm->landing_company->short;
+            $contract = produce_contract($contract_parameters);
+            ok($contract, 'contract have produced');
+            my $trx = BOM::Transaction->new({
+                    client   => $clm,
+                    multiple => [{
+                            loginid  => $cl2->loginid,
+                            currency => $clm->currency
+                        },
+                        {loginid => $cl3->loginid},
+                        {loginid => $cl1->loginid},
+                        {loginid => $cl2->loginid},
+                    ],
+                    contract => $contract,
+                    price    => 10,
+                    source   => 1,
+                });
+            my $err = do {
+                my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+                $mock_contract->mock(is_valid_to_sell => sub { note "mocked Contract->is_valid_to_sell returning true"; 1 });
+                my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+                $mock_transaction->mock(
+                    _validate_sell_pricing_adjustment => sub { note "mocked Transaction->_validate_sell_pricing_adjustment returning nothing"; () });
+                $trx->sell_by_shortcode;
+            };
+
+            is $err, undef, 'successful multisell';
+            $m = $trx->multiple;
+
+            $_->{txn} = $_->{tnx} for @$m;
+
+            ok(!$m->[1]->{fmb} && !$m->[1]->{tnx} && !$m->[1]->{buy_tr_id}, 'check undef fields for invalid sell');
+            is($m->[1]->{code}, 'NoOpenPosition', 'check error code');
+            is($m->[1]->{error}, 'This contract was not found among your open positions.', 'check error message');
+            check_one_result 'result for client #1', $cl1, $acc1, $m->[2], 4960;
+            check_one_result 'result for client #2', $cl2, $acc2, $m->[0], 4910;
+            check_one_result 'result for client #3', $cl2, $acc2, $m->[3], 4920;
+        };
     }
     'survived';
 };
