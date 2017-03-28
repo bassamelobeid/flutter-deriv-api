@@ -280,6 +280,11 @@ sub startup {
             [qw(auth validate_tnc check_trade_status compliance_checks check_tax_information)]
         ],
         ['sell', \&BOM::RPC::v3::Transaction::sell, [qw(auth validate_tnc check_trade_status compliance_checks check_tax_information)]],
+        [
+            'sell_contract_for_multiple_accounts',
+            \&BOM::RPC::v3::Transaction::sell_contract_for_multiple_accounts,
+            [qw(auth validate_tnc check_trade_status compliance_checks check_tax_information)]
+        ],
 
         ['active_symbols',        \&BOM::RPC::v3::MarketDiscovery::active_symbols],
         ['get_corporate_actions', \&BOM::RPC::v3::MarketDiscovery::get_corporate_actions],
