@@ -18,6 +18,18 @@ has 'code' => (
     default => sub { shift->bet_type },
 );
 
+# Previously we were passing in a dummy expiry
+# (1s after 1970-01-01). We override date_expiry
+# to avoid that here: the actual value is just
+# as invalid (expiry == start).
+has 'date_expiry' => (
+    is         => 'ro',
+    isa        => 'date_object',
+    lazy_build => 1,
+);
+
+sub _build_date_expiry { shift->date_start }
+
 sub _build_longcode {
     return localize('Legacy contract. No further information is available.');
 }
