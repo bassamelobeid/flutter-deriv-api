@@ -214,7 +214,7 @@ sub BUILDARGS {
 
 my $payment_limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'));
 
-my %known_errors;              # forward declaration
+our %known_errors;             # forward declaration
 sub sell_expired_contracts;    # forward declaration
 
 sub _build_purchase_date {
@@ -1068,6 +1068,11 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -message_to_client => BOM::Platform::Context::localize('No further trading is allowed for the current trading session.'),
         );
     },
+    BI103 => Error::Base->cuss(
+        -type              => 'RoundingExceedPermittedEpsilon',
+        -mesg              => 'Rounding exceed permitted epsilon',
+        -message_to_client => BOM::Platform::Context::localize('Only a maximum of two decimal points are allowed for the amount.'),
+    );
 );
 
 sub _recover {
