@@ -641,10 +641,7 @@ sub batch_buy {
                     if (my $ref = $known_errors{$ecode}) {
                         my $error = (
                             ref $ref eq 'CODE'
-                            ? $ref->(
-                                $self, $el->{client},
-                                1_000_000,    # fake an insanely high retry count
-                                $res->{e_description})
+                            ? $ref->($self, $el->{client}, $res->{e_description})
                             : $ref
                         );
                         $el->{code}  = $error->{-type};
@@ -825,6 +822,7 @@ sub sell_by_shortcode {
     my $stats_data = $self->stats_start('sell');
 
     my ($error_status, $bet_data) = $self->prepare_sell($options{skip});
+
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
@@ -850,11 +848,8 @@ sub sell_by_shortcode {
 
         my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
             %$bet_data,
-            account_data => [
-                map { +{client_loginid => $_->{loginid}, currency_code => $currency} }
-                grep { !$_->{code} } @$list
-            ],
-            db => BOM::Database::ClientDB->new({broker_code => $broker})->db,
+            account_data => [map                                      { +{client_loginid => $_->{loginid}, currency_code => $currency} } @$list],
+            db           => BOM::Database::ClientDB->new({broker_code => $broker})->db,
         );
         try {
             my $res = $fmb_helper->sell_by_shortcode($self->contract->shortcode);
@@ -866,16 +861,14 @@ sub sell_by_shortcode {
                     if (my $ref = $known_errors{$ecode}) {
                         my $error = (
                             ref $ref eq 'CODE'
-                            ? $ref->(
-                                $self, $r->{client},
-                                1_000_000,    # fake an insanely high retry count
-                                $res->{e_description})
+                            ? $ref->($self, $r->{client}, $res_row->{e_description})
                             : $ref
                         );
+
                         $r->{code}  = $error->{-type};
                         $r->{error} = $error->{-message_to_client};
                     } else {
-                        @{$r}{qw/code error/} = ('UnexpectedError', BOM::Platform::Context::localize('An unexpected error occurred'));
+                        @{$r}{qw/code error/} = ('UnexpectedError' . $ecode, BOM::Platform::Context::localize('An unexpected error occurred'));
                     }
                 } else {
                     $r->{tnx}       = $res_row->{txn};
@@ -900,25 +893,32 @@ sub sell_by_shortcode {
     return;
 }
 
-=head2 C<< $self->_recover($error, $retry) >>
+=head2 C<< $self->_recover($error) >>
 
 This function tries to recover from an unsuccessful buy/sell.
 It may decide to retry the operation. And it may decide to
 sell expired bets before doing so.
+
 =head4 Parameters
+
 =over 4
+
 =item * C<< $error >>
 the error exception thrown by BOM::Platform::Data::Persistence::DB::_handle_errors
+
 =back
+
 =head3 Return Value
+
 L<Error::Base> object
 which means an unrecoverable but expected condition has been found.
 Typically that means a precondition, like sufficient balance, was
 not met.
-=back
-Be aware that the function may throw an exception.
+
 =head3 Exceptions
+
 In case of an unexpected error, the exception is re-thrown unmodified.
+
 =cut
 
 %known_errors = (
@@ -1142,6 +1142,17 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -type              => 'DailyProfitLimitExceeded',
             -mesg              => 'Exceeds daily profit limit',
             -message_to_client => BOM::Platform::Context::localize('No further trading is allowed for the current trading session.'),
+        );
+    },
+    BI050 => sub {
+        my $self   = shift;
+        my $client = shift;
+        my $msg    = shift;
+
+        Error::Base->cuss(
+            -type              => 'NoOpenPosition',
+            -mesg              => $msg,
+            -message_to_client => BOM::Platform::Context::localize('This contract was not found among your open positions.'),
         );
     },
 );
