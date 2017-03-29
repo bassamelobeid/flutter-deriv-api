@@ -8,17 +8,18 @@ use warnings;
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use JSON qw(from_json to_json);
 use f_brokerincludeall;
-
-use BOM::Platform::Runtime;
-use BOM::Backoffice::Request qw(request);
-use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use LandingCompany::Offerings qw(get_offerings_with_filter);
 use List::Util qw(first);
 use Digest::MD5 qw(md5_hex);
 use Date::Utility;
 use HTML::Entities;
 
 use LandingCompany::Registry;
+use LandingCompany::Offerings qw(get_offerings_with_filter);
+
+use BOM::Platform::Runtime;
+use BOM::Platform::RiskProfile;
+use BOM::Backoffice::Request qw(request);
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Config;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -120,7 +121,7 @@ if ($r->param('delete_client')) {
 Bar("Limit Definitions");
 
 my $limit_defs          = BOM::Platform::Config::quants->{risk_profile};
-my $current_definitions = BOM::Product::RiskProfile::get_current_profile_definitions();
+my $current_definitions = BOM::Platform::RiskProfile::get_current_profile_definitions();
 
 BOM::Backoffice::Request::template->process(
     'backoffice/profile_definitions.html.tt',
