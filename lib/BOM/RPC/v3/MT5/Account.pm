@@ -344,8 +344,8 @@ sub mt5_deposit {
         return $error_sub->(localize("Deposit amount must be greater than zero."));
     }
 
-    if ($amount != sprintf("%0.2f", $amount)) {
-        return $error_sub->(localize("Only a maximum of two decimal points are allowed for the deposit amount."));
+    if ($amount !~ /^\d+(?:\.\d{0,2})?$/){
+      return $error_sub->(localize("Only a maximum of two decimal points are allowed for the deposit amount."));
     }
 
     # MT5 login or binary loginid not belongs to user
