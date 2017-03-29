@@ -580,18 +580,9 @@ sub mt5_withdrawal {
         };
     }
     catch {
-        my $error         = $_;
-        my $known_errors  = \%BOM::Transaction::known_errors;
-        my $msg           = Dumper($error);
-        my $msg_to_client = 'Internal error';
-        if (ref($error) eq 'ARRAY' && exists $known_errors->{$error->[0]}) {
-            my $error_generator = $known_errors->{$error->[0]};
-            $error = ref($error_generator) eq 'CODE' ? $error_generator->(undef, $to_client) : $error_generator;
-        }
-        if (blessed($error) && $error->isa('Error::Base')) {
-            $msg = $error->get_mesg;
-            $msg_to_client = $error->{-message_to_client} // $msg;
-        }
+        my $error         = BOM::Transaction::format_error($_);
+        my $msg           = $error->get_mesg;
+        my $msg_to_client = $error->{-message_to_client};
         _send_email(
             loginid => $to_loginid,
             mt5_id  => $fm_mt5,
