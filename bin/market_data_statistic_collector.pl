@@ -226,7 +226,7 @@ sub _collect_dividend_ages {
 
 }
 
-sub _collect_vol_diff_stat {
+sub _On_vol_day_stat {
     my @underlyings = map { create_underlying($_) } create_underlying_db->get_symbols_for(
         market    => 'forex',
         submarket => 'major_pairs',
@@ -237,16 +237,7 @@ sub _collect_vol_diff_stat {
         my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
         my $surface    = $volsurface->surface_data;
         my $day_for_on = $volsurface->get_day_for_tenor('ON');
-        my $day_for_one_week = $volsurface->get_day_for_tenor('1W');
-        my $day_for_one_month = $volsurface->get_day_for_tenor('1M');
-        my $vol_On     = $surface->{$day_for_on}->{smile}->{50};
-        my $vol_1w     = $surface->{$day_for_one_week}->{smile}->{50};
-        my $vol_1m     = $surface->{$day_for_one_month}->{smile}->{50};
-        my $total_var_On = ($vol_On**2) * $day_for_on;
-        my $total_var_1w = ($vol_1w**2) * $day_for_one_week;
-        my $total_var_1m = ($vol_1m**2) * $day_for_one_month;
-        stats_gauge('total_variance_diff_On_1w', abs($total_var_1w - $total_var_On)/$total_var_On, {tags => ['tag:' . $underlying->{symbol}]});
-        stats_gauge('total_variance_diff_On_1m', abs($total_var_1m - $total_var_On)/$total_var_On, {tags => ['tag:' . $underlying->{symbol}]});
+        stats_gauge('On_vol_day_alert', $day_for_on, {tags => ['tag:' . $underlying->{symbol}]});
     }
     return;
 }
