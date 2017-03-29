@@ -106,7 +106,7 @@ sub cashier {
                 message_to_client => localize('Please accept Funds Protection.'),
             });
         }
-        unless ($client->get_status('gb_max_turnover_set')) {
+        if ($client->get_status('gb_max_turnover_not_set')) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET',
                     message_to_client => localize('Please set Self Exclusion 30-Day Turnover Limit.')});
