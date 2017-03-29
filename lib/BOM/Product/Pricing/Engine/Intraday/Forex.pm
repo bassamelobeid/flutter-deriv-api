@@ -685,7 +685,7 @@ sub _build_risk_markup {
         });
         $risk_markup->include_adjustment('add', $iv_risk);
     }
-    my $open_at_start = $bet->underlying->calendar->is_open_at($bet->date_start);
+    my $open_at_start = $bet->underlying->calendar->is_open_at($bet->underlying->exchange, $bet->date_start);
 
     if ($open_at_start and $bet->underlying->is_in_quiet_period($bet->date_pricing)) {
         my $quiet_period_markup = Math::Util::CalculatedValue::Validatable->new({

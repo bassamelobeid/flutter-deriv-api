@@ -507,7 +507,7 @@ sub _validate_underlying {
             };
     }
 
-    if (not $self->underlying->calendar->is_open) {
+    if (not $self->underlying->calendar->is_open($self->underlying->exchange)) {
         push @err,
             {
             message           => 'Market is closed',
