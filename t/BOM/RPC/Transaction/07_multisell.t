@@ -48,8 +48,6 @@ my $clm_token = BOM::RPC::v3::Accounts::api_token({
 
 my $clm_token_details = BOM::RPC::v3::Utility::get_token_details($clm_token);
 
-
-
 my @cl;
 push @cl,
     BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -105,29 +103,29 @@ is 0 + @token, 4, 'got 4 tokens';
 
 my $contract = Test::BOM::RPC::Contract::create_contract();
 
-my $result = BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts( {
-    client              => $clm,
-    token_details       => $clm_token_details,
-    source              => 1,
-    contract_parameters => {
-        proposal      => 1,
-        amount        => "100",
-        basis         => "payout",
-        contract_type => "CALL",
-        currency      => "USD",
-        duration      => "120",
-        duration_unit => "s",
-        symbol        => "R_50",
-    },
-    args => {
-        price  => $contract->ask_price,
-        tokens => \@token,
-    },
-});
+my $result = BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts({
+        client              => $clm,
+        token_details       => $clm_token_details,
+        source              => 1,
+        contract_parameters => {
+            proposal      => 1,
+            amount        => "100",
+            basis         => "payout",
+            contract_type => "CALL",
+            currency      => "USD",
+            duration      => "120",
+            duration_unit => "s",
+            symbol        => "R_50",
+        },
+        args => {
+            price  => $contract->ask_price,
+            tokens => \@token,
+        },
+    });
 
 $result = $result->{result};
 
-my $buy_trx_ids = { map { $_->{transaction_id} => 1 } grep {$_->{transaction_id}} @$result };
+my $buy_trx_ids = {map { $_->{transaction_id} => 1 } grep { $_->{transaction_id} } @$result};
 
 sleep 1;
 my $shortcode = $result->[0]->{shortcode};
@@ -135,24 +133,24 @@ my $shortcode = $result->[0]->{shortcode};
 my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
 $mock_contract->mock(is_valid_to_sell => sub { note "mocked Contract->is_valid_to_sell returning true"; 1 });
 
-$result = BOM::RPC::v3::Transaction::sell_contract_for_multiple_accounts( {
-    client              => $clm,
-    source              => 1,
-    args => {
-        shortcode => $shortcode,
-        price  => 0,
-        tokens => \@token,
-    },
-});
+$result = BOM::RPC::v3::Transaction::sell_contract_for_multiple_accounts({
+        client => $clm,
+        source => 1,
+        args   => {
+            shortcode => $shortcode,
+            price     => 0,
+            tokens    => \@token,
+        },
+    });
 
 $result = $result->{result};
 
-ok( delete $buy_trx_ids->{$_->{transaction_id}} ) for grep{ $_->{transaction_id}} @$result;
-ok( scalar keys %$buy_trx_ids == 0);
-is( $result->[2]->{code}, 'NoOpenPosition', 'contract not found code' );
-is( $result->[2]->{message_to_client}, 'This contract was not found among your open positions.', 'contract not found code' );
-ok( $result->[2]->{token}, 'contract not found token' );
-is( $result->[3]->{code}, 'PermissionDenied', 'permission denied code' );
-ok( $result->[3]->{token}, 'permission denied token' );
+ok(delete $buy_trx_ids->{$_->{transaction_id}}) for grep { $_->{transaction_id} } @$result;
+ok(scalar keys %$buy_trx_ids == 0);
+is($result->[2]->{code}, 'NoOpenPosition', 'contract not found code');
+is($result->[2]->{message_to_client}, 'This contract was not found among your open positions.', 'contract not found code');
+ok($result->[2]->{token}, 'contract not found token');
+is($result->[3]->{code}, 'PermissionDenied', 'permission denied code');
+ok($result->[3]->{token}, 'permission denied token');
 
 done_testing;
