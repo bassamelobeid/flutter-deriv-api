@@ -40,6 +40,8 @@ EOF
     my $start = $end - $decimate_cache->decimate_retention_interval->seconds;
     $start = $start - ($start % $interval) - $interval;
 
+    $end = $end - ($end % $interval);
+
     foreach my $ul (@uls) {
 
         my $decimate_key = $decimate_cache->_make_key($ul->symbol, 1);
