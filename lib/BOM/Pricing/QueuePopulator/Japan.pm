@@ -36,14 +36,22 @@ sub new {
     return bless \%args, $class;
 }
 
+sub redis { return shift->{redis} }
+
+sub check_appconfig {
+    my ($self) = @_;
+    if ($start - $self->{appconfig_age} >= APP_CONFIG_REFRESH_INTERVAL) {
+        BOM::Platform::Runtime->instance->app_config->check_for_update;
+        $self->{appconfig_age} = $start;
+    }
+    return;
+}
+
 sub process {
     my ($self) = @_;
     my $start = Time::HiRes::time;
 
-    if ($start - $appconfig_age >= APP_CONFIG_REFRESH_INTERVAL) {
-        BOM::Platform::Runtime->instance->app_config->check_for_update;
-        $appconfig_age = $start;
-    }
+    $self->check_appconfig;
     # Get a full list of symbols since some may have been updated/disabled
     # since the last time
     my @symbols = get_offerings_with_filter(
@@ -97,7 +105,7 @@ sub process {
                            )
                         )
                     );
-                    $log->debugf("Contract parameters will be %s", \@pricing_queue_args);
+                    $log->tracef("Contract parameters will be %s", \@pricing_queue_args);
                     # my $contract = produce_contract(@contract_parameters);
                     push @jobs, "PRICER_KEYS::" . encode_json(\@pricing_queue_args);
                 }
@@ -109,6 +117,7 @@ sub process {
 
     { # Attempt to group the Redis operations to reduce network overhead
         my @copy = @jobs;
+        my $redis = $self->redis;
         while(my @batch = splice @copy, 0, JOBS_PER_BATCH) {
             $redis->mset(map {; $_ => "1" } @batch);
         }
@@ -125,11 +134,12 @@ sub process {
         $log->debugf("Will sleep until %s (current time %s)", map $_->iso8601, Date::Utility->new($target / 1e9), Date::Utility->new);
         clock_nanosleep(CLOCK_REALTIME, $target, TIMER_ABSTIME);
     }
+    return;
 }
 
 sub run {
     $self->process while 1;
-    exit 1;
+    return 1;
 }
 
 1;
