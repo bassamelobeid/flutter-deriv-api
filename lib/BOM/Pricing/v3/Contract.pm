@@ -607,6 +607,32 @@ sub get_contract_details {
     return $response;
 }
 
+sub longcode {
+    my $params = shift;
+
+    my $longcodes;
+
+    my @short_codes = @{$params->{short_codes}};
+
+    foreach my $s (@short_codes) {
+        my ($contract, $bet_params, $longcode);
+        try {
+            $bet_params = shortcode_to_parameters($s, $params->{currency});
+            $contract   = produce_contract($bet_params);
+            $longcode   = $contract->longcode;
+        }
+        catch {
+            warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($bet_params);
+        };
+        $longcodes->{$s} = $longcode;
+    }
+
+    return {
+        longcodes => $longcodes,
+    };
+
+}
+
 sub contracts_for {
     my $params = shift;
 
