@@ -31,20 +31,14 @@
             "type": "string"
           }
         },
-        "notification": {
-          "type": "object",
-          "title": "Site status update",
-          "properties": {
-            "site_status": {
-              "type":"string",
-              "pattern": "^(up|down)$",
-              "description": "Current status of the site. Up, Down or any else",
-            },
-            "message": {
-              "type":"string",
-              "description": "Text for banner",
-            }
-          }
+        "site_status": {
+          "type":"string",
+          "pattern": "^(up|down)$",
+          "description": "Current status of the site. Up, Down or any else"
+        },
+        "message": {
+          "type":"string",
+          "description": "Text for banner"
         }
       }
     },

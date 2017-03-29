@@ -16,45 +16,61 @@ use Time::HiRes qw(gettimeofday);
 use utf8;
 use Try::Tiny;
 
-sub notification {
-    my ($c, $req_storage) = @_;
+sub website_status {
+    my ($self, $req_storage) = @_;
 
     my $args = $req_storage->{args};
 
     ### TODO: to config
     my $channel_name = "NOTIFY::broadcast::channel";
-    my $redis        = $c->ws_redis_write;
-    my $shared_info  = $c->redis_connections($channel_name);
+    my $redis        = $self->ws_redis_write;
+    my $shared_info  = $self->redis_connections($channel_name);
 
-    if ($args->{broadcast_notifications} == 0) {
-        delete $shared_info->{broadcast_notifications}{\$c + 0};
+    my $callback = sub {
+        $self->call_rpc({
+                args     => $args,
+                method   => 'website_status',
+                response => sub {
+                    my $rpc_response   = shift;
+                    my $website_status = {};
+                    $rpc_response->{clients_country} //= '';
+                    $website_status->{$_} = $rpc_response->{$_} for qw|api_call_limits clients_country supported_languages terms_conditions_version|;
+                    my $shared_info = $self->redis_connections($channel_name);
+                    Scalar::Util::weaken(my $c_copy = $self);
+                    $shared_info->{broadcast_notifications}{\$self + 0}{'c'}            = $c_copy;
+                    $shared_info->{broadcast_notifications}{\$self + 0}{echo}           = $args;
+                    $shared_info->{broadcast_notifications}{\$self + 0}{website_status} = $rpc_response;
+
+                    my $slave_redis = $self->ws_redis_read;
+                    ### to config
+                    my $current_state = undef;
+                    $current_state = $slave_redis->get("NOTIFY::broadcast::state")
+                        if $slave_redis;
+
+                    $current_state = eval { decode_json($current_state) }
+                        if $current_state && !ref $current_state;
+                    $website_status->{site_status} = $current_state->{site_status} // 'up';
+                    $website_status->{message}     = $current_state->{message}     // '';
+
+                    return {
+                        website_status => $website_status,
+                        msg_type       => 'website_status'
+                    };
+                }
+            });
+    };
+
+    if (!$args->{subscribe} || $args->{subscribe} == 0) {
+        delete $shared_info->{broadcast_notifications}{\$self + 0};
+        &$callback();
+        return;
+    }
+    if ($shared_info->{broadcast_notifications}{\$self + 0}) {
+        &$callback();
         return;
     }
 
-    $redis->subscribe(
-        [$channel_name],
-        sub {
-            my ($self, $err) = @_;
-
-            my $shared_info = $c->redis_connections($channel_name);
-            Scalar::Util::weaken(my $c_copy = $c);
-            $shared_info->{broadcast_notifications}{\$c + 0}{'c'} = $c_copy;
-            $shared_info->{broadcast_notifications}{\$c + 0}{echo} = $args;
-
-            my $slave_redis = $c->ws_redis_read;
-            ### to config
-            my $current_state = undef;
-            $current_state = $slave_redis->get("NOTIFY::broadcast::state")
-                if $slave_redis;
-            $current_state = eval { decode_json($current_state) }
-                if $current_state && !ref $current_state;
-            $current_state //= {
-                site_status => 'up',
-                message     => ''
-            };
-            $current_state->{msg_type} = 'broadcast_notifications';
-            return $c->send({json => $current_state}, $req_storage);
-        });
+    $redis->subscribe([$channel_name], $callback);
     return;
 }
 
@@ -80,12 +96,15 @@ sub send_notification {
             return unless $slave_redis->get($is_on_key);    ### Need 1 for continuing
         }
 
-        $message = eval { decode_json $message} unless ref $message eq 'HASH';
-        $message //= {};
-        $message->{echo_req} = $client_shared->{echo};
-        $message->{msg_type} = 'broadcast_notifications';
+        my $res_message = eval { decode_json $message} unless ref $message eq 'HASH';
+        $res_message //= {};
 
-        $client_shared->{c}->send({json => $message});
+        $client_shared->{c}->send({
+                json => {
+                    website_status => {%{$client_shared->{website_status}}, %$res_message},
+                    echo_req       => $client_shared->{echo},
+                    msg_type       => 'website_status'
+                }});
     }
     return;
 }

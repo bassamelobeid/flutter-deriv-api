@@ -27,11 +27,11 @@ These options are available:
   -h, --help                     Show this message.
 EOF
 
-if ($is_on != 0 && $is_on != 1) {
-    $is_on  //= 1;
+if (!$is_on || $is_on != 0 && $is_on != 1) {
+    $is_on = 1;
 }
 
-if ( $status ne 'up' && $status ne 'down' ) {
+if ( !$status || $status ne 'up' && $status ne 'down' ) {
     $status = 'up';
 }
 
