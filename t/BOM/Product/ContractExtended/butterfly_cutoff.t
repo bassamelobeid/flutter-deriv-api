@@ -33,9 +33,9 @@ my $shortterm_expiry = Date::Utility->new($bet_start->epoch + 23 * 3540);
 #insert this tick into feed-db so everywhere when they want to fetch data
 #like vol, the vol-surface can fetch the underlying's spot_tick
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $bet_start->epoch,
-        quote      => $spot,
-    });
+    epoch => $bet_start->epoch,
+    quote => $spot,
+});
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -182,8 +182,6 @@ sub _sample_bet {
         epoch  => 1,
         symbol => $underlying->symbol,
     );
-
-
 
     my %bet_args = ((
             underlying   => $underlying->symbol,

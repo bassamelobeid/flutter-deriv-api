@@ -18,8 +18,8 @@ my $now = Date::Utility->new('10-Mar-2015');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        recorded_date   => $now
+        symbol        => $_,
+        recorded_date => $now
     }) for ('USD', 'JPY-USD');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
@@ -71,9 +71,9 @@ subtest 'range' => sub {
         isa_ok $c, 'BOM::Product::Contract::Range';
         is $c->code,         'RANGE';
         is $c->pricing_code, 'RANGE';
-        is $c->ask_price, 0.5;
+        is $c->ask_price,    0.5;
         is roundnear(0.001, $c->pricing_vol), 0.184;
-        is $c->sentiment,    'low_vol';
+        is $c->sentiment, 'low_vol';
         ok $c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
         is_deeply $c->supported_start_types, ['spot'];

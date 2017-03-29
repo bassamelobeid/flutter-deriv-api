@@ -69,7 +69,7 @@ sub _vols_at_point {
 
     my $vol_args = {
         delta => 50,
-        from  => $self->volatility_effective_start,
+        from  => $self->effective_start,
         to    => $self->date_expiry,
     };
 
@@ -112,7 +112,7 @@ sub _build_vol_at_strike {
         q_rate => $self->q_rate,
         r_rate => $self->r_rate,
         spot   => $pricing_spot,
-        from   => $self->volatility_effective_start,
+        from   => $self->effective_start,
         to     => $self->date_expiry,
     };
 
@@ -153,7 +153,7 @@ sub _build_pricing_vol {
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
             $vol = $self->volsurface->get_volatility({
-                from  => $self->volatility_effective_start,
+                from  => $self->effective_start,
                 to    => $self->date_expiry,
                 delta => 50
             });
@@ -204,7 +204,7 @@ sub _build_pricing_vol_for_two_barriers {
     return if $self->pricing_engine_name ne 'Pricing::Engine::EuropeanDigitalSlope';
 
     my $vol_args = {
-        from => $self->volatility_effective_start,
+        from => $self->date_start,
         to   => $self->date_expiry,
     };
 
