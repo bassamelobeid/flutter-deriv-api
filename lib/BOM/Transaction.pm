@@ -1229,7 +1229,7 @@ sub format_error {
     my $err               = $args{err};
     my $client            = $args{client};
     my $bak_type          = $args{bak_type} // 'InternalError';             # maybe caller know the type
-    my $bak_msg           = Dumper($error);
+    my $bak_msg           = Dumper($err);
     my $bak_msg_to_client = $args{bak_msg_to_client} // 'Internal Error';
     return try {
         return $self->_recover($err, $client);
