@@ -14,6 +14,6 @@
     </div>
     <p class="center-text">
         <a id="lost-password" href="https://www.champion-fx.com/<%= lc($r->language) %>/lost-password.html"><%= l('Lost Password?') %></a> |
-        <a id="create-account" href="https://www.champion-fx.com/<%= lc($r->language) %>/home.html"><%= l('Open an Account') %></a>
+        <a id="create-account" href="https://www.champion-fx.com/<%= lc($r->language) %>/home.html#signup"><%= l('Open an Account') %></a>
     </p>
 </fieldset>
