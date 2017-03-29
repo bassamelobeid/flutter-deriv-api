@@ -96,12 +96,11 @@ sub send_notification {
             return unless $slave_redis->get($is_on_key);    ### Need 1 for continuing
         }
 
-        my $res_message = eval { decode_json $message} unless ref $message eq 'HASH';
-        $res_message //= {};
+        $message = eval { decode_json $message } unless ref $message eq 'HASH';
 
         $client_shared->{c}->send({
                 json => {
-                    website_status => {%{$client_shared->{website_status}}, %$res_message},
+                    website_status => {%{$client_shared->{website_status}}, %$message},
                     echo_req       => $client_shared->{echo},
                     msg_type       => 'website_status'
                 }});
