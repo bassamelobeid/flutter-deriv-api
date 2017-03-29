@@ -28,8 +28,11 @@ sub website_status {
 
     my $callback = sub {
         $self->call_rpc({
-                args     => $args,
-                method   => 'website_status',
+                args        => $args,
+                method      => 'website_status',
+                call_params => {
+                    country_code => $self->country_code,
+                },
                 response => sub {
                     my $rpc_response   = shift;
                     my $website_status = {};
