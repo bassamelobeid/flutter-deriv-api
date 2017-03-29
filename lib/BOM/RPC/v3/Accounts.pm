@@ -244,6 +244,7 @@ sub profit_table {
         $trx{app_id}         = BOM::RPC::v3::Utility::mask_app_id($row->{source}, $row->{purchase_time});
 
         if ($args->{description}) {
+            $trx{shortcode} = $row->{short_code};
             if (!$res->{longcodes}->{$row->{short_code}}) {
                 $trx{longcode} = localize('Could not retrieve contract details');
             } else {
