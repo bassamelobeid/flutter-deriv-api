@@ -64,7 +64,7 @@ sub validate_is_open {
     my $symbol = shift;
     my $u      = create_underlying($symbol);
 
-    unless ($u->calendar->is_open) {
+    unless ($u->calendar->is_open($u->exchange)) {
         return {
             error => {
                 code    => 'MarketIsClosed',

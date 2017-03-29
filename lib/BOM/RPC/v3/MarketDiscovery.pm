@@ -281,7 +281,7 @@ sub _description {
     my $ul     = create_underlying($symbol) || return;
     my $iim    = $ul->intraday_interval ? $ul->intraday_interval->minutes : '';
     # sometimes the ul's exchange definition or spot-pricing is not availble yet.  Make that not fatal.
-    my $exchange_is_open = eval { $ul->calendar } ? $ul->calendar->is_open_at(time) : '';
+    my $exchange_is_open = eval { $ul->calendar } ? $ul->calendar->is_open_at($ul->exchange, time) : '';
     my ($spot, $spot_time, $spot_age) = ('', '', '');
     if ($spot = eval { $ul->spot }) {
         $spot_time = $ul->spot_time;
