@@ -112,7 +112,7 @@ sub run {
         qw(feed chronicle) or next;
 
         stats_timing('pricer_daemon.rpc_time', $response->{rpc_time},
-            {tags => $self->tags('contract_type:' . $params->{contract_type}, 'currency:' . $params->{currency})})
+            {tags => $self->tags('contract_type:' . ($params->{contract_type} // join "-", @{$params->{contract_types}}), 'currency:' . $params->{currency})})
             if (($response->{rpc_time} // 0) > 1000);
 
         my $subscribers_count = $redis->publish($key->[1], encode_json($response));
