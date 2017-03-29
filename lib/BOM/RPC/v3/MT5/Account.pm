@@ -471,7 +471,7 @@ sub mt5_withdrawal {
         return $error_sub->(localize("Withdrawal amount must be greater than zero."));
     }
 
-    if ($amount != sprintf("%0.2f", $amount)) {
+    if ($amount !~ /^\d+(?:\.\d{0,2})?$/){
         return $error_sub->(localize("Only a maximum of two decimal points are allowed for the withdrawal amount."));
     }
 
