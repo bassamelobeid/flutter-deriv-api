@@ -24,20 +24,26 @@ sub portfolio {
 
     _sell_expired_contracts($client, $params->{source});
 
-    foreach my $row (@{__get_open_contracts($client)}) {
-        my $res = BOM::Platform::Pricing::call_rpc(
-            'get_contract_details',
-            {
-                short_code      => $row->{short_code},
-                currency        => $client->currency,
-                landing_company => $client->landing_company->short,
-                language        => $params->{language},
-            });
+    my @rows = @{__get_open_contracts($client)};
+    return $portfolio unless scalar @rows > 0;
+
+    my @short_codes = map { $_->{short_code} } @rows;
+
+    my $res = BOM::Platform::Pricing::call_rpc(
+        'longcode',
+        {
+            short_codes => \@short_codes,
+            currency    => $client->currency,
+            language    => $params->{language},
+        });
+
+    foreach my $row (@rows) {
+
         my $longcode;
-        if (exists $res->{error}) {
+        if (!$res->{longcodes}->{$row->{short_code}}) {
             $longcode = localize('Could not retrieve contract details');
         } else {
-            $longcode = $res->{longcode};
+            $longcode = $res->{longcodes}->{$row->{short_code}};
         }
 
         my %trx = (
