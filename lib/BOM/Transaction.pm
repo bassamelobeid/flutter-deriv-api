@@ -214,7 +214,7 @@ sub BUILDARGS {
 
 my $payment_limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'));
 
-our %known_errors;             # forward declaration
+my %known_errors;              # forward declaration
 sub sell_expired_contracts;    # forward declaration
 
 sub _build_purchase_date {
@@ -1208,16 +1208,39 @@ In case of an unexpected error, the exception is re-thrown unmodified.
 );
 
 sub _recover {
-    my $self = shift;
-    my $err  = shift;
+    my $self   = shift;
+    my $err    = shift;
+    my $client = shift;
+    if (blessed($self)) {
+        $client //= $self->client;
+    }
 
     if (ref($err) eq 'ARRAY') {    # special BINARY code
         my $ref = $known_errors{$err->[0]};
-        return ref $ref eq 'CODE' ? $ref->($self, $self->client, $err->[1]) : $ref if $ref;
+        return ref $ref eq 'CODE' ? $ref->($self, $client, $err->[1]) : $ref if $ref;
     } else {
         # TODO: recover from deadlocks & co.
     }
     die $err;
+}
+
+sub format_error {
+    my ($self, %args) = @_;
+    my $err               = $args{err};
+    my $client            = $args{client};
+    my $bak_type          = $args{bak_type} // 'InternalError';             # maybe caller know the type
+    my $bak_msg           = Dumper($error);
+    my $bak_msg_to_client = $args{bak_msg_to_client} // 'Internal Error';
+    return try {
+        return $self->_recover($err, $client);
+    }
+    catch {
+        return Error::Base->cuss(
+            -type              => $bak_type,
+            -mesg              => $bak_msg,
+            -message_to_client => BOM::Platform::Context::localize($bak_msg_to_client),
+        );
+    }
 }
 
 sub _validate_available_currency {
