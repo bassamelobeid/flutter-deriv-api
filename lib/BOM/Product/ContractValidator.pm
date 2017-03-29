@@ -595,14 +595,15 @@ sub _validate_volsurface {
     }
 
     if ($volsurface->type eq 'moneyness' and my $current_spot = $self->current_spot) {
-        warn 'spot too far from surface reference '
-            . "[symbol: "
-            . $self->underlying->symbol . "] "
-            . "[spot: "
-            . $current_spot . "] "
-            . "[surface reference: "
-            . $volsurface->spot_reference . "]";
         if (abs($volsurface->spot_reference - $current_spot) / $current_spot * 100 > 5) {
+            warn 'spot too far from surface reference '
+                . "[symbol: "
+                . $self->underlying->symbol . "] "
+                . "[spot: "
+                . $current_spot . "] "
+                . "[surface reference: "
+                . $volsurface->spot_reference . "]";
+
             return {
                 message => 'spot too far from surface reference '
                     . "[symbol: "
