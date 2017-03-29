@@ -134,7 +134,7 @@ sub statement {
     my @txns;
     foreach my $txn (@$results) {
         my $struct = {
-            transaction_id => $txn->{id},
+            transaction_id => $txn->{buy_tr_id} || $txn->{id},
             amount         => $txn->{amount},
             action_type    => $txn->{action_type},
             balance_after  => sprintf('%.2f', $txn->{balance_after}),
