@@ -226,9 +226,17 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
             is($bet->barrier->supplied_barrier, $expectations->{barrier}, 'Barrier is set as expected.');
         }
         my $theo = $bet->theo_probability;
-        is(roundnear(1e-4, $theo->amount), roundnear(1e-4, $expectations->{theo_prob}), 'Theo probability is correct for ' . $bet->pricing_engine_name);
+        is(
+            roundnear(1e-4, $theo->amount),
+            roundnear(1e-4, $expectations->{theo_prob}),
+            'Theo probability is correct for ' . $bet->pricing_engine_name
+        );
         is(roundnear(1e-4, $bet->commission_markup->amount), $expectations->{commission_markup}, 'Commission markup is correct.');
-        is(roundnear(1e-4, $bet->risk_markup->amount), roundnear(1e-4, $expectations->{risk_markup}), 'Risk markup is correctfor ' . $bet->pricing_engine_name);
+        is(
+            roundnear(1e-4, $bet->risk_markup->amount),
+            roundnear(1e-4, $expectations->{risk_markup}),
+            'Risk markup is correctfor ' . $bet->pricing_engine_name
+        );
         $date_pricing++;
         $date_start++;
 
@@ -239,15 +247,23 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => 'frxUSDAED',
-        surface_data  => {
+        symbol       => 'frxUSDAED',
+        surface_data => {
             1 => {
                 vol_spread => {50 => 0},
-                smile => {25 => 0.1, 50 => 0.1, 75 => 0.1}
+                smile      => {
+                    25 => 0.1,
+                    50 => 0.1,
+                    75 => 0.1
+                }
             },
             7 => {
                 vol_spread => {50 => 0},
-                smile => {25 => 0.1, 50 => 0.1, 75 => 0.1}
+                smile      => {
+                    25 => 0.1,
+                    50 => 0.1,
+                    75 => 0.1
+                }
             },
         },
         recorded_date => $recorded_date,
@@ -260,11 +276,27 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         surface_data  => {
             1 => {
                 vol_spread => {100 => 0},
-                smile => {80 => 0.1, 90 => 0.1, 95 => 0.1, 100 => 0.1, 110 => 0.1, 115 => 0.1, 120 => 0.1}
+                smile      => {
+                    80  => 0.1,
+                    90  => 0.1,
+                    95  => 0.1,
+                    100 => 0.1,
+                    110 => 0.1,
+                    115 => 0.1,
+                    120 => 0.1
+                }
             },
             365 => {
                 vol_spread => {100 => 0},
-                smile => {80 => 0.1, 90 => 0.1, 95 => 0.1, 100 => 0.1, 110 => 0.1, 115 => 0.1, 120 => 0.1}
+                smile      => {
+                    80  => 0.1,
+                    90  => 0.1,
+                    95  => 0.1,
+                    100 => 0.1,
+                    110 => 0.1,
+                    115 => 0.1,
+                    120 => 0.1
+                }
             },
         },
     });

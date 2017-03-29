@@ -9,11 +9,13 @@ use File::Spec;
 use JSON qw(decode_json);
 
 use Postgres::FeedDB::Spot::Tick;
+use LandingCompany::Offerings qw(reinitialise_offerings);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
+use BOM::Product::ContractFactory qw( produce_contract make_similar_contract simple_contract_info );
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
@@ -55,8 +57,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         implied_from => 'USD'
     });
 
-use BOM::Product::ContractFactory qw( produce_contract make_similar_contract simple_contract_info );
-
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 subtest 'produce_contract' => sub {
     plan tests => 3;
 

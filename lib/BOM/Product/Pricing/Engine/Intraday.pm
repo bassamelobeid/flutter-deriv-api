@@ -74,7 +74,7 @@ Presently represent the 1W tenor.  Math::Util::CalculatedValue::Validatable.
 sub _build_long_term_vol {
     my $self = shift;
 
-    my $from = $self->bet->volatility_effective_start;
+    my $from = $self->bet->effective_start;
 
     return Math::Util::CalculatedValue::Validatable->new({
             name        => 'long_term_vol',

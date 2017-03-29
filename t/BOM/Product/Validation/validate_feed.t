@@ -54,7 +54,7 @@ my $fake_tick = Postgres::FeedDB::Spot::Tick->new({
 my $old_tick;
 
 subtest 'open contracts - missing current tick & quote too old' => sub {
-    $bet_params->{_basis_tick}   = $fake_tick;    # basis tick need to be present
+    $bet_params->{_basis_tick}  = $fake_tick;    # basis tick need to be present
     $bet_params->{date_pricing} = $now;
     my $c = produce_contract($bet_params);
     ok !$c->is_expired,      'contract not expired';
