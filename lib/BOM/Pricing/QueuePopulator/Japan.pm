@@ -39,6 +39,8 @@ sub new {
 }
 
 sub redis { return shift->{redis} }
+
+# Mapping from the contracts available to the contract types that we want to queue.
 my %type_map = (
     PUT        => [qw(CALLE PUT)],
     ONETOUCH      => [qw(ONETOUCH NOTOUCH)],
@@ -69,7 +71,6 @@ sub process {
 
     my @jobs;
     my $skipped = 0;
-my %missing;
     for my $symbol (@symbols) {
         my $symbol_start = Time::HiRes::time;
         my $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol({
@@ -82,11 +83,11 @@ my %missing;
         for my $contract_parameters (@{$contracts_for->{available}}) {
             unless(ref $contract_parameters->{contract_type}) {
                 die "unknown contract_type?" unless $contract_parameters->{contract_type};
-++$missing{$contract_parameters->{contract_type}} unless exists $type_map{$contract_parameters->{contract_type}};
                 next PARAMETER unless exists $type_map{$contract_parameters->{contract_type}};
                 $contract_parameters->{contract_type} = $type_map{$contract_parameters->{contract_type}};
             }
-            # Expired entries
+
+            # Expired entries - barriers which are no longer relevant can be skipped
             my %expired;
             $expired{ref($_) ? join(',', @$_) : $_} = 1 for @{$contract_parameters->{expired_barriers}};
             BARRIER:
@@ -101,6 +102,8 @@ my %missing;
                     }
                 }
                 next BARRIER unless @barriers;
+
+		# At this point, we have contract(s) that we want to queue for pricing.
                 my @pricing_queue_args = (
                     amount               => 1000,
                     basis                => 'payout',
@@ -124,7 +127,6 @@ my %missing;
                     ],
                 );
                 $log->tracef("Contract parameters will be %s", \@pricing_queue_args);
-                # my $contract = produce_contract(@contract_parameters);
                 push @jobs, "PRICER_KEYS::" . encode_json(\@pricing_queue_args);
             }
         }
