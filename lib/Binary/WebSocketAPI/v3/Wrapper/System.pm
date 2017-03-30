@@ -26,6 +26,7 @@ sub forget_after_logout {
     Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'proposal_open_contract');
     Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, 'proposal_open_contract');
     Binary::WebSocketAPI::v3::Wrapper::System::_forget_feed_subscription($c, 'proposal_open_contract');
+    return;
 }
 
 sub forget_all {
