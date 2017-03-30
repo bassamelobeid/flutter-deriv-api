@@ -49,6 +49,8 @@ sub _forget_all_proposal_array {
     for my $pa_key (@$pa_keys) {
         forget_one($c, $_) for keys %{$proposal_array_subscriptions->{$pa_key}{proposals}};
         delete $proposal_array_subscriptions->{$pa_key};
+        # proposal_array also creates 'price' subscription for itself while obtains uuid - so delete it too
+        _forget_pricing_subscription($c, $pa_key);
     }
     $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
 
@@ -104,6 +106,8 @@ sub _forget_proposal_array {
     my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
     if ($proposal_array_subscriptions->{$id}) {
         _forget_pricing_subscription($c, $_) for keys %{$proposal_array_subscriptions->{$id}{proposals}};
+        # proposal_array also creates 'price' subscription for itself while obtains uuid - so delete it too
+        _forget_pricing_subscription($c, $id);
         delete $proposal_array_subscriptions->{$id};
         $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
         return [$id];
