@@ -589,19 +589,24 @@ sub _build_rho {
         $rhos{fd_dq} =
             $w * (($atm_vols->{forqqq}**2 - $atm_vols->{fordom}**2 - $atm_vols->{domqqq}**2) / (2 * $atm_vols->{fordom} * $atm_vols->{domqqq}));
     } elsif ($self->underlying->market->name eq 'indices') {
+        my $cr             = BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date);
         my $construct_args = {
             symbol           => $self->underlying->market->name,
             for_date         => $self->underlying->for_date,
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
+            chronicle_reader => $cr,
         };
-        my $rho_data = Quant::Framework::CorrelationMatrix->new($construct_args);
+        my $rho_data           = Quant::Framework::CorrelationMatrix->new($construct_args);
+        my $expiry_conventions = Quant::Framework::ExpiryConventions->new(
+            underlying       => $self->underlying,
+            chronicle_reader => $cr,
+            calendar         => $self->underlying->calendar,
+        );
 
         my $index           = $self->underlying->asset_symbol;
         my $payout_currency = $self->currency;
         my $tiy             = $self->timeinyears->amount;
-        my $correlation_u   = create_underlying($index);
 
-        $rhos{fd_dq} = $rho_data->correlation_for($index, $payout_currency, $tiy, $correlation_u->expiry_conventions);
+        $rhos{fd_dq} = $rho_data->correlation_for($index, $payout_currency, $tiy, $expiry_conventions);
     }
 
     return \%rhos;
