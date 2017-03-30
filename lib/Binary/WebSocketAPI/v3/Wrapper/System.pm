@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Scalar::Util qw(looks_like_number);
+use Array::Utils qw(array_minus);
 
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 
@@ -30,11 +31,28 @@ sub forget_all {
         if ($type ne 'proposal_open_contract') {
             @removed_ids{@{_forget_feed_subscription($c, $type)}} = ();
         }
+        if ($type eq 'proposal_array') {
+            @removed_ids{@{_forget_all_proposal_array($c)}} = ();
+        }
     }
     return {
         msg_type   => 'forget_all',
         forget_all => [keys %removed_ids],
     };
+}
+
+sub _forget_all_proposal_array {
+    my $c = shift;
+
+    my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
+    my $pa_keys = [keys %$proposal_array_subscriptions];
+    for my $pa_key (@$pa_keys) {
+        forget_one($c, $_) for keys %{$proposal_array_subscriptions->{$pa_key}{proposals}};
+        delete $proposal_array_subscriptions->{$pa_key};
+    }
+    $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
+
+    return $pa_keys;
 }
 
 sub forget_one {
@@ -45,6 +63,7 @@ sub forget_one {
         @removed_ids{@{_forget_feed_subscription($c, $id)}} = ();
         @removed_ids{@{_forget_transaction_subscription($c, $id)}} = ();
         @removed_ids{@{_forget_pricing_subscription($c, $id)}} = ();
+        @removed_ids{@{_forget_proposal_array($c, $id)}} = ();
     }
 
     return scalar keys %removed_ids;
@@ -78,6 +97,26 @@ sub _forget_transaction_subscription {
         }
     }
     return $removed_ids;
+}
+
+sub _forget_proposal_array {
+    my ($c, $id) = @_;
+    my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
+    if ($proposal_array_subscriptions->{$id}) {
+        _forget_pricing_subscription($c, $_) for keys %{$proposal_array_subscriptions->{$id}{proposals}};
+        delete $proposal_array_subscriptions->{$id};
+        $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
+        return [$id];
+    }
+    return [];
+}
+
+sub _get_proposal_array_proposal_ids {
+    my $c                            = shift;
+    my $ret                          = [];
+    my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
+    push @$ret, keys %{$proposal_array_subscriptions->{$_}{proposals}} for (keys %$proposal_array_subscriptions);
+    return $ret;
 }
 
 sub _forget_pricing_subscription {
@@ -118,6 +157,8 @@ sub _forget_all_pricing_subscriptions {
     my $pricing_channel = $c->stash('pricing_channel');
     if ($pricing_channel) {
         @$removed_ids = keys %{$pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd}};
+        my $proposal_array_proposal_ids = _get_proposal_array_proposal_ids($c);
+        @$removed_ids = array_minus(@$removed_ids, @$proposal_array_proposal_ids);
         foreach my $uuid (@$removed_ids) {
             my $redis_channel = $pricing_channel->{uuid}->{$uuid}->{redis_channel};
             if ($pricing_channel->{$redis_channel}) {
@@ -126,8 +167,8 @@ sub _forget_all_pricing_subscriptions {
                 delete $pricing_channel->{$redis_channel};
             }
             delete $pricing_channel->{uuid}->{$uuid};
+            delete $pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd}->{$uuid};
         }
-        delete $pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd};
         $c->stash('pricing_channel' => $pricing_channel);
     }
     return $removed_ids;
