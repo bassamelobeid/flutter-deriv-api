@@ -1166,6 +1166,20 @@ sub _build_market_is_inefficient {
     return 1;
 }
 
+has allowed_slippage => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_allowed_slippage',
+);
+
+sub _build_allowed_slippage {
+    my $self = shift;
+
+    # our commission for volatility indices is 1.5% so we can let it slipped more than that.
+    return 0.01 if $self->market->name eq 'volidx';
+    return 0.0175;
+}
+
 # Don't mind me, I just need to make sure my attibutes are available.
 with 'BOM::Product::Role::Reportable';
 

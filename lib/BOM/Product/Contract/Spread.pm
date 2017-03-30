@@ -10,6 +10,7 @@ use Math::Round qw(round);
 use List::Util qw(min max);
 use Scalar::Util qw(looks_like_number);
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
+use LandingCompany::Commission qw(get_underlying_base_commission);
 
 use BOM::Platform::Context qw(localize request);
 use BOM::MarketData::Fetcher::VolSurface;
@@ -38,11 +39,6 @@ use constant {    # added for CustomClientLimits & Transaction
     tick_expiry         => 0,
     pricing_engine_name => '',
 };
-
-has continue_price_stream => (
-    is      => 'rw',
-    default => 0
-);
 
 # This is to indicate whether this is a sale transaction.
 # For a sale transaction, we no need to do validation on stop loss and stop profit level as they are something that is validated and set when a contract is placed.
@@ -610,6 +606,26 @@ sub _build_risk_profile {
         underlying_risk_profile        => $self->underlying->risk_profile,
         underlying_risk_profile_setter => $self->underlying->risk_profile_setter,
     );
+}
+
+has base_commission => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_base_commission',
+);
+
+sub _build_base_commission {
+    my $self = shift;
+
+    my $market_name        = $self->underlying->market->name;
+    my $per_market_scaling = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market_name;
+    my $args               = {underlying_symbol => $self->underlying->symbol};
+    if ($self->can('landing_company')) {
+        $args->{landing_company} = $self->landing_company;
+    }
+    my $underlying_base = get_underlying_base_commission($args);
+
+    return $underlying_base * $per_market_scaling / 100;
 }
 
 no Moose;
