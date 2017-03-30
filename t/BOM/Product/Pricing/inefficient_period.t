@@ -5,16 +5,17 @@ use warnings;
 
 use Test::More;
 use Test::FailWarnings;
+use Test::Warnings qw/warning/;
 use Test::MockModule;
-
-use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
 use Math::Util::CalculatedValue::Validatable;
 
+use LandingCompany::Offerings qw(reinitialise_offerings);
+
+use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use LandingCompany::Offerings qw(reinitialise_offerings);
 
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
@@ -58,23 +59,30 @@ subtest 'inefficient craziness' => sub {
         payout       => 10,
     };
     my $c = produce_contract($bet_params);
-    is $c->pricing_engine->risk_markup->peek_amount('intraday_eod_markup'), 0.05, 'eod markup added for ATM';
+    my $res;
+    warning { $res = $c->pricing_engine->risk_markup->peek_amount('intraday_eod_markup') }, qr/No basis tick for/;
+    is $res, 0.05, 'eod markup added for ATM';
     $bet_params->{duration}   = '15m';
     $bet_params->{underlying} = 'R_100';
     $c                        = produce_contract($bet_params);
-    ok $c->ask_probability->amount < 0.7, 'ask probability is less than 0.7 for R_100';
+    warning { $res = $c->ask_probability->amount }, qr/No basis tick for/;
+    ok $res < 0.7, 'ask probability is less than 0.7 for R_100';
     $bet_params->{underlying} = 'frxUSDJPY';
     $bet_params->{barrier}    = 'S5P';
     $c                        = produce_contract($bet_params);
-    ok $c->ask_probability->amount < 0.7, 'ask probability is less than 0.7 for USDJPY non ATM';
-    is $c->pricing_engine->risk_markup->peek_amount('intraday_eod_markup'), 0.1, '10% eod markup added for non ATM';
+    warning { $res = $c->ask_probability->amount }, qr/No basis tick for/;
+    ok $res < 0.7, 'ask probability is less than 0.7 for USDJPY non ATM';
+    warning { $res = $c->pricing_engine->risk_markup->peek_amount('intraday_eod_markup') }, qr/No basis tick for/;
+    is $res, 0.1, '10% eod markup added for non ATM';
     $bet_params->{barrier}    = 'S0P';
     $bet_params->{date_start} = $bet_params->{date_pricing} = $efficient_time;
     $c                        = produce_contract($bet_params);
-    ok $c->ask_probability->amount < 0.7, 'ask probability is less than 0.7 1 second before inefficient period';
+    warning { $res = $c->ask_probability->amount }, qr/No basis tick for/;
+    ok $res < 0.7, 'ask probability is less than 0.7 1 second before inefficient period';
     $bet_params->{barrier} = 'S5P';
     $c = produce_contract($bet_params);
-    ok !$c->pricing_engine->risk_markup->peek_amount('intraday_eod_markup'), '10% eod markup not added 1 second before inefficient period';
+    warning { $res = $c->pricing_engine->risk_markup->peek_amount('intraday_eod_markup') }, qr/No basis tick for/;
+    ok !$res, '10% eod markup not added 1 second before inefficient period';
 };
 
 subtest 'payout limit' => sub {
