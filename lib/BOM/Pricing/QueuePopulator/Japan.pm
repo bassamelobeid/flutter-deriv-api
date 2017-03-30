@@ -19,12 +19,14 @@ use Time::HiRes qw(clock_nanosleep CLOCK_REALTIME TIMER_ABSTIME);
 
 # How long each Redis key should persist for - we'll refresh the list
 # when the key(s) expire
-use constant JOB_QUEUE_TTL => 60;
+use constant JOB_QUEUE_TTL => 1;
 
 # Number of keys to set per Redis call, used to reduce network latency overhead
 use constant JOBS_PER_BATCH => 30;
 # Reload appconfig regularly, in case any underlyings have been disabled
 use constant APP_CONFIG_REFRESH_INTERVAL => 60;
+
+use constant BARRIERS_PER_BATCH => 1;
 
 use Log::Any qw($log);
 use Log::Any::Adapter qw(Stderr), log_level => 'info';
@@ -37,6 +39,12 @@ sub new {
 }
 
 sub redis { return shift->{redis} }
+my %type_map = (
+    PUT        => [qw(CALLE PUT)],
+    ONETOUCH      => [qw(ONETOUCH NOTOUCH)],
+    EXPIRYMISS => [qw(EXPIRYMISS EXPIRYRANGEE)],
+    RANGE      => [qw(RANGE UPORDOWN)],
+);
 
 sub check_appconfig {
     my ($self) = @_;
@@ -61,55 +69,73 @@ sub process {
 
     my @jobs;
     my $skipped = 0;
+my %missing;
     for my $symbol (@symbols) {
         my $symbol_start = Time::HiRes::time;
-        my $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol({symbol => $symbol});
+        my $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol({
+            symbol => $symbol
+        });
         $now = Time::HiRes::time;
         $log->debugf("Retrieved contracts for %s - %.2fms", $symbol, 1000 * ($now - $symbol_start));
 
+        PARAMETER:
         for my $contract_parameters (@{$contracts_for->{available}}) {
+            unless(ref $contract_parameters->{contract_type}) {
+                die "unknown contract_type?" unless $contract_parameters->{contract_type};
+++$missing{$contract_parameters->{contract_type}} unless exists $type_map{$contract_parameters->{contract_type}};
+                next PARAMETER unless exists $type_map{$contract_parameters->{contract_type}};
+                $contract_parameters->{contract_type} = $type_map{$contract_parameters->{contract_type}};
+            }
             # Expired entries
             my %expired;
             $expired{ref($_) ? join(',', @$_) : $_} = 1 for @{$contract_parameters->{expired_barriers}};
             BARRIER:
-            for my $barrier (@{$contract_parameters->{available_barriers}}) {
-                my ($barrier_desc) = map { ; ref($_) ? join(',', @$_) : $_ } $barrier;
-                if (exists $expired{$barrier_desc}) {
-                    $skipped++;
-                } else {
-                    my @pricing_queue_args = (
-                        amount                 => 1000,
-                        basis                  => 'payout',
-                        currency               => 'JPY',
-                        contract_type          => $contract_parameters->{contract_type},
-                        price_daemon_cmd       => 'price',
-                        skips_price_validation => 1,
-                        landing_company        => 'japan',
-                        date_expiry            => $contract_parameters->{trading_period}{date_expiry}{epoch},
-                        trading_period_start   => $contract_parameters->{trading_period}{date_start}{epoch},
-                        symbol                 => $symbol,
-                        (
-                            ref($barrier)
-                            ? (
-                                low_barrier  => $barrier->[0],
-                                high_barrier => $barrier->[1],
-                                )
-                            : (barrier => $barrier)));
-                    $log->tracef("Contract parameters will be %s", \@pricing_queue_args);
-                    # my $contract = produce_contract(@contract_parameters);
-                    push @jobs, "PRICER_KEYS::" . encode_json(\@pricing_queue_args);
+            for my $barriers (bundle_by {; [@_] } BARRIERS_PER_BATCH, @{$contract_parameters->{available_barriers}}) {
+                my @barriers;
+                for my $bar (@$barriers) {
+                    my ($barrier_desc) = map {; ref($_) ? join(',', @$_) : $_ } $bar;
+                    if(exists $expired{$barrier_desc}) {
+                        $skipped++;
+                    } else {
+                        push @barriers, $bar;
+                    }
                 }
+                next BARRIER unless @barriers;
+                my @pricing_queue_args = (
+                    amount               => 1000,
+                    basis                => 'payout',
+                    currency             => 'JPY',
+                    contract_type        => $contract_parameters->{contract_type},
+                    price_daemon_cmd     => 'price',
+                    skips_price_validation => 1,
+                    landing_company      => 'japan',
+                    date_expiry          => $contract_parameters->{trading_period}{date_expiry}{epoch},
+                    trading_period_start => $contract_parameters->{trading_period}{date_start}{epoch},
+                    symbol               => $symbol,
+                    barriers => [
+                        map {;
+                             ref($_)
+                             ? +{ 
+                                 barrier2 => $_->[0],
+                                 barrier  => $_->[1],
+                               }
+                             : $_
+                        } @barriers
+                    ],
+                );
+                $log->tracef("Contract parameters will be %s", \@pricing_queue_args);
+                # my $contract = produce_contract(@contract_parameters);
+                push @jobs, "PRICER_KEYS::" . encode_json(\@pricing_queue_args);
             }
         }
     }
     DataDog::DogStatsd::Helper::stats_timing("pricer_queue.japan.jobs", 0 + @jobs);
     $log->debugf("Total of %d jobs to process, %d skipped", 0 + @jobs, $skipped);
 
-    {    # Attempt to group the Redis operations to reduce network overhead
-        my @copy  = @jobs;
-        my $redis = $self->redis;
-        while (my @batch = splice @copy, 0, JOBS_PER_BATCH) {
-            $redis->mset(map { ; $_ => "1" } @batch);
+    { # Attempt to group the Redis operations to reduce network overhead
+        my @copy = @jobs;
+        while(my @batch = splice @copy, 0, JOBS_PER_BATCH) {
+            $redis->mset(map {; $_ => "1" } @batch);
         }
     }
 
@@ -120,7 +146,7 @@ sub process {
     # Sleep to start of next minute
     {
         my $now = Time::HiRes::time;
-        my $target = 60e9 * (1 + floor($now / 60));
+        my $target = 1e9 * JOB_QUEUE_TTL * (1 + floor($now / JOB_QUEUE_TTL));
         $log->debugf("Will sleep until %s (current time %s)", map $_->iso8601, Date::Utility->new($target / 1e9), Date::Utility->new);
         clock_nanosleep(CLOCK_REALTIME, $target, TIMER_ABSTIME);
     }
