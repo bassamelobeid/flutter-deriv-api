@@ -763,7 +763,9 @@ sub _build_opposite_contract {
         $opp_parameters{$vol_param} = $self->$vol_param;
     }
 
-    if ($self->pricing_new) {
+    # We have this concept in forward starting contract where a forward start contract is considered
+    # pricing_new until it has started. So it kind of messed up here.
+    if ($self->pricing_new and not $self->starts_as_forward_starting) {
         $opp_parameters{current_tick} = $self->current_tick;
         $opp_parameters{pricing_new}  = 1;
     } else {
