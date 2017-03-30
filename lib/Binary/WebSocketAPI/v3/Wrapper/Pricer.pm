@@ -571,6 +571,7 @@ sub process_bid_event {
             $response->{purchase_time}   = $passed_fields->{purchase_time};
             $response->{is_sold}         = $passed_fields->{is_sold};
             $response->{longcode}        = $passed_fields->{longcode};
+            $response->{contract_id}     = $stash_data->{args}->{contract_id} if exists $stash_data->{args}->{contract_id};
             $results                     = {
                 msg_type => $type,
                 $type    => $response
@@ -794,30 +795,18 @@ sub send_proposal_open_contract_last_time {
         # cancel proposal open contract streaming which will cancel transaction subscription also
         Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $uuid);
     };
+    my $args = $pricing_channel->{uuid}->{$uuid}->{args};
 
     $c->call_rpc({
-            args        => $pricing_channel->{uuid}->{$uuid}->{args},
-            method      => 'get_bid',
+            args        => $args,
+            method      => 'proposal_open_contract',
             msg_type    => 'proposal_open_contract',
             call_params => {
-                short_code  => $args->{short_code},
                 contract_id => $args->{financial_market_bet_id},
-                currency    => $args->{currency_code},
-                sell_time   => $args->{sell_time},
-                is_sold     => 1,
+                token       => $c->stash('token'),
             },
             response => sub {
                 my ($rpc_response, $api_response, $req_storage) = @_;
-
-                return $api_response if $rpc_response->{error};
-
-                $api_response->{proposal_open_contract}->{buy_price}               = $cache->{buy_price};
-                $api_response->{proposal_open_contract}->{purchase_time}           = $cache->{purchase_time};
-                $api_response->{proposal_open_contract}->{transaction_ids}         = $cache->{transaction_ids};
-                $api_response->{proposal_open_contract}->{transaction_ids}->{sell} = $args->{id};
-                $api_response->{proposal_open_contract}->{sell_price}              = sprintf('%.2f', $args->{amount});
-                $api_response->{proposal_open_contract}->{sell_time}               = $args->{sell_time};
-                $api_response->{proposal_open_contract}->{is_sold}                 = 1;
 
                 return $api_response;
             },
