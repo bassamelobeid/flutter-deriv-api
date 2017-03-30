@@ -1192,7 +1192,7 @@ subtest $method => sub {
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
     my $res = $c->tcall('get_settings', {token => $token1});
     is($res->{tax_identification_number}, $params->{args}{tax_identification_number}, "Check tax information");
-    is($res->{tax_residence}, $params->{args}{tax_residence}, "Check tax information");
+    is($res->{tax_residence},             $params->{args}{tax_residence},             "Check tax information");
 
     ok($add_note_called, 'add_note is called, so the email should be sent to support address');
     $test_client->load();

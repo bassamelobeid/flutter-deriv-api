@@ -81,13 +81,13 @@ sub _validate_tnc {
     # we shouldn't get to this error, so we can die it directly
     my $client = shift->{client} // die "client should be authenticated before calling this action";
 
-    return BOM::Transaction::Validation->new(client => $client)->validate_tnc);
+    return BOM::Transaction::Validation->new(client => $client)->validate_tnc;
 }
 
 sub _compliance_checks {
     # we shouldn't get to this error, so we can die it directly
     my $client = shift->{client} // die "client should be authed before calling this action";
-    return BOM::Transaction::Validation->new(client => $client)->compliance_checks);
+    return BOM::Transaction::Validation->new(client => $client)->compliance_checks;
 }
 
 sub _check_tax_information {
@@ -159,9 +159,9 @@ sub register {
                 };
 
                 return BOM::RPC::v3::Utility::create_error({
-                    code              => $err->get_type,
-                    message_to_client => $err->{-message_to_client},
-                }) if defined $result;
+                        code              => $result->get_type,
+                        message_to_client => $result->{-message_to_client},
+                    }) if defined $result;
             }
 
             my $verify_app_res;
