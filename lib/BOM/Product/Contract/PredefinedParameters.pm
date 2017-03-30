@@ -131,7 +131,7 @@ sub generate_trading_periods {
     my $underlying = create_underlying($symbol, $date);
     $date //= Date::Utility->new;
 
-    return [] unless $underlying->calendar->trades_on($date);
+    return [] unless $underlying->calendar->trades_on($underlying->exchange, $date);
 
     my $key = join '_', ('trading_period', $underlying->symbol, $date->date, $date->hour);
     my @trading_periods = _get_daily_trading_window($underlying, $date);
@@ -247,7 +247,7 @@ sub _apply_predefined_parameters {
 
     return () unless @$trading_periods;
 
-    my $close_epoch = $underlying->calendar->closing_on($date)->epoch;
+    my $close_epoch = $underlying->calendar->closing_on($underlying->exchange, $date)->epoch;
     # full trading seconds
     my $trading_seconds = $close_epoch - $date->truncate_to_day->epoch;
 
@@ -445,15 +445,15 @@ sub _get_intraday_trading_window {
         push @intraday_windows,
             _get_intraday_window({
                 now        => $date,
-                calendar   => $calendar,
                 date_start => $start_of_day->plus_time_interval(($even_hour - 2) . 'h'),
-                duration   => '2h'
+                duration   => '2h',
+                underlying => $underlying,
             });
 
         push @intraday_windows,
             _get_intraday_window({
                 now        => $date,
-                calendar   => $calendar,
+                underlying => $underlying,
                 date_start => $start_of_day->plus_time_interval($odd_hour - 4 . 'h'),
                 duration   => '5h'
             });
@@ -464,7 +464,7 @@ sub _get_intraday_trading_window {
 
     my $window_2h = _get_intraday_window({
         now        => $date,
-        calendar   => $calendar,
+        underlying => $underlying,
         date_start => $start_of_day->plus_time_interval($even_hour . 'h'),
         duration   => '2h'
     });
@@ -476,7 +476,7 @@ sub _get_intraday_trading_window {
         push @intraday_windows,
             _get_intraday_window({
                 now        => $date,
-                calendar   => $calendar,
+                underlying => $underlying,
                 date_start => $start_of_day->plus_time_interval(($even_hour - 2) . 'h'),
                 duration   => '2h'
             });
@@ -487,7 +487,7 @@ sub _get_intraday_trading_window {
         push @intraday_windows,
             _get_intraday_window({
                 now        => $date,
-                calendar   => $calendar,
+                underlying => $underlying,
                 date_start => $start_of_day->plus_time_interval($odd_hour . 'h'),
                 duration   => '5h'
             });
@@ -498,7 +498,7 @@ sub _get_intraday_trading_window {
         push @intraday_windows,
             _get_intraday_window({
                 now        => $date,
-                calendar   => $calendar,
+                underlying => $underlying,
                 date_start => $start_of_day->plus_time_interval($previous_odd_hour . 'h'),
                 duration   => '5h'
             });
@@ -529,7 +529,7 @@ sub _get_daily_trading_window {
             current_date_start => $first_day_of_week,
             next_date_start    => $first_day_of_next_week,
             duration           => '1W',
-            calendar           => $calendar
+            underlying         => $underlying,
         });
 
     # monthly contract
@@ -540,7 +540,7 @@ sub _get_daily_trading_window {
             current_date_start => $first_day_of_month,
             next_date_start    => $first_day_of_next_month,
             duration           => '1M',
-            calendar           => $calendar
+            underlying         => $underlying,
         });
 
     # quarterly contract
@@ -552,7 +552,7 @@ sub _get_daily_trading_window {
             current_date_start => $first_day_of_quarter,
             next_date_start    => $first_day_of_next_quarter,
             duration           => '3M',
-            calendar           => $calendar
+            underlying         => $underlying,
         });
 
     # yearly contract
@@ -563,12 +563,12 @@ sub _get_daily_trading_window {
             current_date_start => $first_day_of_year,
             next_date_start    => $first_day_of_next_year,
             duration           => '1Y',
-            calendar           => $calendar
+            underlying         => $underlying,
         });
 
     # This is for 0 day contract
     my $start_of_day = $date->truncate_to_day;
-    my $close_of_day = $calendar->closing_on($date);
+    my $close_of_day = $calendar->closing_on($underlying->exchange, $date);
     push @daily_duration,
         {
         date_start => {
@@ -594,12 +594,14 @@ sub _get_intraday_window {
     my $args           = shift;
     my $date_start     = $args->{date_start};
     my $duration       = $args->{duration};
-    my $calendar       = $args->{calendar};
+    my $underlying     = $args->{underlying};
+    my $exchange       = $underlying->exchange;
+    my $calendar       = $underlying->calendar;
     my $now            = $args->{now};
-    my $is_early_close = $calendar->closes_early_on($now);
+    my $is_early_close = $calendar->closes_early_on($exchange, $now);
 
     # If it is early close on the day before, it should start at 00GMT.
-    my $start_at_00 = ($date_start->day_of_week == 1 or $calendar->closes_early_on($date_start->minus_time_interval('1d'))) && $date_start->hour == 0;
+    my $start_at_00 = ($date_start->day_of_week == 1 or $calendar->closes_early_on($exchange, $date_start->minus_time_interval('1d'))) && $date_start->hour == 0;
     my $early_date_start = $start_at_00 ? $date_start : $date_start->minus_time_interval('15m');
     my $date_expiry = $date_start->hour == 22 ? $date_start->plus_time_interval('1h59m59s') : $date_start->plus_time_interval($duration);
 
@@ -633,10 +635,14 @@ sub _get_trade_date_of_daily_window {
     my $start_of_current_window = $args->{current_date_start};
     my $start_of_next_window    = $args->{next_date_start};
     my $duration                = $args->{duration};
-    my $calendar                = $args->{calendar};
+    my $underlying              = $args->{underlying};
+    my $exchange                = $underlying->exchange;
+    my $calendar                = $underlying->calendar;
     my $date_start =
-        $calendar->trades_on($start_of_current_window) ? $start_of_current_window : $calendar->trade_date_after($start_of_current_window);
-    my $date_expiry = $calendar->closing_on($calendar->trade_date_before($start_of_next_window));
+          $calendar->trades_on($exchange, $start_of_current_window)
+        ? $start_of_current_window
+        : $calendar->trade_date_after($exchange, $start_of_current_window);
+    my $date_expiry = $calendar->closing_on($exchange, $calendar->trade_date_before($exchange, $start_of_next_window));
 
     return {
         date_start => {

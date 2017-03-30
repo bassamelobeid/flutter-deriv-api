@@ -74,8 +74,8 @@ my $args = {
     bet_type        => 'ONETOUCH',
     underlying      => $ul,
     date_start      => $when,
-    date_expiry     => $ul->calendar->closing_on(Date::Utility->new('2015-11-09')),
-    date_settlement => $ul->calendar->settlement_on(Date::Utility->new('2015-11-09')),
+    date_expiry     => $ul->calendar->closing_on($ul->exchange, Date::Utility->new('2015-11-09')),
+    date_settlement => $ul->calendar->settlement_on($ul->exchange, Date::Utility->new('2015-11-09')),
     entry_tick      => $entry_tick,
     currency        => 'USD',
     payout          => 10,
@@ -92,8 +92,8 @@ subtest 'resolve onetouch correctly with no ticks, but OHLC' => sub {
 subtest 'get_high_low_for_contract_period' => sub {
 
     $args->{barrier}         = '14500';
-    $args->{date_expiry}     = $ul->calendar->closing_on(Date::Utility->new('2015-11-10'));
-    $args->{date_settlement} = $ul->calendar->settlement_on(Date::Utility->new('2015-11-10'));
+    $args->{date_expiry}     = $ul->calendar->closing_on($ul->exchange, Date::Utility->new('2015-11-10'));
+    $args->{date_settlement} = $ul->calendar->settlement_on($ul->exchange, Date::Utility->new('2015-11-10'));
 
     my $c = produce_contract($args);
     my ($high, $low) = $c->get_high_low_for_contract_period;
