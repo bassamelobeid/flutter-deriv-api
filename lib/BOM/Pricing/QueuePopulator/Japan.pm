@@ -11,7 +11,7 @@ use BOM::Product::Contract::Finder::Japan;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::MarketData qw(create_underlying);
 use JSON::XS qw(encode_json);
-use List::UtilsBy qw(rev_nsort_by);
+use List::UtilsBy qw(rev_nsort_by bundle_by);
 use Pricing::Engine::EuropeanDigitalSlope;
 use Date::Utility;
 use POSIX qw(floor);
