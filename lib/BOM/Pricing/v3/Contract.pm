@@ -214,19 +214,6 @@ sub _get_ask {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
             my $trading_window_start = $p2->{trading_period_start} // '';
 
-            # need this warning to be logged for Japan as a regulatory requirement
-            if ($p2->{currency} && $p2->{currency} eq 'JPY') {
-                if (my $code = $contract->can('japan_pricing_info')) {
-                    warn $code->($contract, $trading_window_start);
-                } else {
-                    # We currently have 26 VRTC users with JPY as their account currency.
-                    # After cleaning these up, we expect this error to go away, but if you're
-                    # seeing this message after 2016-12-21 then please check client currencies
-                    # for that landing company.
-                    warn "JPY currency for non-JP contract - landing company is " . ($p2->{landing_company} // 'not available');
-                }
-            }
-
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
 
             $response = {
@@ -276,9 +263,11 @@ sub handle_batch_contract {
     my $proposals            = {};
     my $ask_prices           = $batch_contract->ask_prices;
     my $trading_window_start = $p2->{trading_period_start} // '';
-    for my $contract (grep { ; $p2->{currency} && $p2->{currency} eq 'JPY' } @{$batch_contract->_contracts}) {
-        if (my $code = $contract->can('japan_pricing_info')) {
-            warn $code->($contract, $trading_window_start);
+    if ($p2->{currency} && $p2->{currency} eq 'JPY') {
+        for my $contract (@{$batch_contract->_contracts}) {
+            if (my $code = $contract->can('japan_pricing_info')) {
+                warn $code->($contract, $trading_window_start);
+            }
         }
     }
     for my $contract_type (keys %$ask_prices) {
