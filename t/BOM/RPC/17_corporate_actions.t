@@ -60,10 +60,10 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => Date::Utility->new,
     });
 
-my $date       = Date::Utility->new('2013-03-27');
-my $opening    = create_underlying('USAAPL')->calendar->opening_on($date);
 my $underlying = create_underlying('USAAPL');
-my $starting   = $underlying->calendar->opening_on(Date::Utility->new('2013-03-27'))->plus_time_interval('50m');
+my $date       = Date::Utility->new('2013-03-27');
+my $opening    = $underlying->calendar->opening_on($underlying->exchange, $date);
+my $starting   = $opening->plus_time_interval('50m');
 my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'USAAPL',
     epoch      => $starting->epoch,
