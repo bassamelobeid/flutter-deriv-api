@@ -1,4 +1,4 @@
-package BOM::Product::Contract::BatchContract;
+package BOM::Product::Contract::Batch;
 
 use Moose;
 use BOM::Product::Categorizer;
