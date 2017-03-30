@@ -183,11 +183,14 @@ read_csv_row_and_callback(
             if ($err) {
                 $client_account_table .= construct_row_line(%row, error => "Transaction Error: $err");
                 return;
-            } elsif ($action eq 'credit' and $payment_type !~ /^(?:affiliate_reward|arbitrary_markup)$/) {
+            } elsif ($action eq 'credit' and $payment_type !~ /^(?:affiliate_reward|arbitrary_markup|free_gift)$/) {
                 # need to set this for batch payment in case of credit only
                 try {
                     $client->payment_agent_withdrawal_expiration_date(Date::Utility->today->date_yyyymmdd);
                     $client->save;
+                }
+                catch {
+                    warn "Not able to set payment agent expiration date for " . $client->loginid;
                 };
             }
             $row{remark} = sprintf "OK transaction reference id: %d", $trx->id;
