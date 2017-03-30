@@ -12,6 +12,8 @@ BOM::Product::Contract::Batch
 
 A class that handles one/multiple contract types and/or one/multiple barriers.
 
+A little optimization in market data handling is done here, where the contracts share common market data like volatility surface, spot price, interest rates, etc.
+
 =head1 USAGE
 
     my $batch = BOM::Product::Contract::Batch->new(parameters => {
