@@ -263,7 +263,7 @@ sub handle_batch_contract {
     my $proposals            = {};
     my $ask_prices           = $batch_contract->ask_prices;
     my $trading_window_start = $p2->{trading_period_start} // '';
-    if($p2->{currency} && $p2->{currency} eq 'JPY') {
+    if ($p2->{currency} && $p2->{currency} eq 'JPY') {
         for my $contract (@{$batch_contract->_contracts}) {
             if (my $code = $contract->can('japan_pricing_info')) {
                 warn $code->($contract, $trading_window_start);
