@@ -17,6 +17,17 @@ sub forget {
     };
 }
 
+# forgeting all stream which need authentication after logout
+sub forget_after_logout {
+    my $c = shift;
+
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'balance');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'transaction');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'proposal_open_contract');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, 'proposal_open_contract');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_feed_subscription($c, 'proposal_open_contract');
+}
+
 sub forget_all {
     my ($c, $req_storage) = @_;
 
