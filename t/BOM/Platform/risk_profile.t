@@ -5,14 +5,13 @@ use warnings;
 
 use Test::More tests => 7;
 use Test::Exception;
+
+use Quant::Framework::Underlying;
+
 use BOM::Platform::RiskProfile;
 use BOM::Platform::Runtime;
 
-use BOM::MarketData qw(create_underlying_db);
-use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types;
-
-my $ul = create_underlying('frxUSDJPY');
+my $ul = Quant::Framework::Underlying->new('frxUSDJPY');
 
 subtest 'init' => sub {
     throws_ok { BOM::Platform::RiskProfile->new } qr/required/, 'throws if required args not provided';
@@ -86,7 +85,7 @@ subtest 'get_risk_profile' => sub {
     is scalar(@$limit), 1, 'only one profile from custom';
     is scalar(@cp),     1, 'one from client';
 
-    $ul   = create_underlying('R_100');
+    $ul   = Quant::Framework::Underlying->new('R_100');
     %args = (
         contract_category              => 'callput',
         start_type                     => 'spot',
@@ -222,7 +221,7 @@ subtest 'check for risk_profile consistency' => sub {
     );
     for (0 .. 4) {
         for my $bc ('touchnotouch', 'callput') {
-            $ul = create_underlying('frxUSDJPY');
+            $ul = Quant::Framework::Underlying->new('frxUSDJPY');
             my $rp = BOM::Platform::RiskProfile->new(
                 contract_category              => $bc,
                 start_type                     => 'spot',
