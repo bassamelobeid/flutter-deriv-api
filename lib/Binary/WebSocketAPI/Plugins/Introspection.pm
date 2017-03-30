@@ -274,10 +274,10 @@ command stats => sub {
     state $pt = Proc::ProcessTable->new;
     my $me = (grep { $_->pid == $$ } @{$pt->table})[0];
     Future->done({
-        connections_count         => $app->stat->{connections_count},
-        current_redis_connections => $app->stat->{current_redis_connections},
-        uptime                    => time - $^T,
-        rss                       => $me->rss,
+        cumulative_client_connections => $app->stat->{cumulative_client_connections},
+        current_redis_connections     => $app->stat->{current_redis_connections},
+        uptime                        => time - $^T,
+        rss                           => $me->rss,
     });
 };
 
