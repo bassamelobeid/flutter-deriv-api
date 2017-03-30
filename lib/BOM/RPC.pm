@@ -78,63 +78,30 @@ sub _auth {
 }
 
 sub _validate_tnc {
-    my $params = shift;
-
     # we shouldn't get to this error, so we can die it directly
-    my $client = $params->{client} // die "client should be authenticated before calling this action";
+    my $client = shift->{client} // die "client should be authenticated before calling this action";
 
-    unless (BOM::Transaction::Validation->new(client => $client)->validate_tnc) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'ASK_TNC_APPROVAL',
-            message_to_client => localize('Terms and conditions approval is required.'),
-        });
-    }
-    return $params;
+    return BOM::Transaction::Validation->new(client => $client)->validate_tnc);
 }
 
 sub _compliance_checks {
-    my $params = shift;
-
     # we shouldn't get to this error, so we can die it directly
-    my $client = $params->{client} // die "client should be authed before calling this action";
-    unless (BOM::Transaction::Validation->new(client => $client)->compliance_checks) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'FinancialAssessmentRequired',
-            message_to_client => localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
-        });
-    }
-    return $params;
+    my $client = shift->{client} // die "client should be authed before calling this action";
+    return BOM::Transaction::Validation->new(client => $client)->compliance_checks);
 }
 
 sub _check_tax_information {
-    my $params = shift;
-
     # we shouldn't get to this error, so we can die it directly
-    my $client = $params->{client} // die "client should be authed before calling this action";
-    unless (BOM::Transaction::Validation->new(client => $client)->check_tax_information) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'TINDetailsMandatory',
-                message_to_client => localize(
-                    'Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.')});
-    }
-
-    return $params;
+    my $client = shift->{client} // die "client should be authed before calling this action";
+    return BOM::Transaction::Validation->new(client => $client)->check_tax_information;
 }
 
 # don't allow to trade for unwelcome_clients
 # and for MLT and MX we don't allow trading without confirmed age
 sub _check_trade_status {
-    my $params = shift;
-
     # we shouldn't get to this error, so we can die it directly
-    my $client = $params->{client} // die "client should be authenticated before calling this action";
-    unless (BOM::Transaction::Validation->new(client => $client)->check_trade_status) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'PleaseContactSupport',
-            message_to_client => localize('Please contact customer support for more information.'),
-        });
-    }
-    return $params;
+    my $client = shift->{client} // die "client should be authenticated before calling this action";
+    return BOM::Transaction::Validation->new(client => $client)->check_trade_status;
 }
 
 sub register {
@@ -191,7 +158,10 @@ sub register {
                     });
                 };
 
-                return $result if (exists $result->{error});
+                return BOM::RPC::v3::Utility::create_error({
+                    code              => $err->get_type,
+                    message_to_client => $err->{-message_to_client},
+                }) if defined $result;
             }
 
             my $verify_app_res;
