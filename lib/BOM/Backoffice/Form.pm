@@ -514,10 +514,7 @@ sub get_payment_agent_registration_form {
             'id'    => 'errorpa_name',
             'class' => 'errorfield'
         },
-        'validation' => [
-
-            # max length = 60
-            {
+        'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => '^.{1,60}$',
                 'err_msg' => localize('Please enter a valid name.'),
@@ -618,14 +615,12 @@ sub get_payment_agent_registration_form {
             'class' => 'errorfield',
         },
         'validation' => [
-
             # min length = 6
             {
                 'type'    => 'regexp',
                 'regexp'  => '^(|.{6}.*)$',
                 'err_msg' => localize('Invalid telephone number (too short).'),
             },
-
             # max length = 35
             {
                 'type'    => 'regexp',
@@ -701,6 +696,52 @@ sub get_payment_agent_registration_form {
         },
     };
 
+    my $input_field_pa_max_withdrawal = {
+        'label' => {
+            'text' => localize('Max withdrawal limit'),
+            'for'  => 'pa_max_withdrawal'
+        },
+        'input' => {
+            'id'        => 'pa_max_withdrawal',
+            'name'      => 'pa_max_withdrawal',
+            'type'      => 'text',
+            'maxlength' => 10,
+        },
+        'error' => {
+            'id'    => 'errorpa_max_withdrawal',
+            'class' => 'errorfield'
+        },
+        'validation' => [{
+                'type'    => 'regexp',
+                'regexp'  => '^(?:[1-9]\d*|0)?(?:.\d+)?$',
+                'err_msg' => localize('Please enter a numeric value.'),
+            },
+        ],
+    };
+
+    my $input_field_pa_min_withdrawal = {
+        'label' => {
+            'text' => localize('Min withdrawal limit'),
+            'for'  => 'pa_min_withdrawal'
+        },
+        'input' => {
+            'id'        => 'pa_min_withdrawal',
+            'name'      => 'pa_min_withdrawal',
+            'type'      => 'text',
+            'maxlength' => 10,
+        },
+        'error' => {
+            'id'    => 'errorpa_min_withdrawal',
+            'class' => 'errorfield'
+        },
+        'validation' => [{
+                'type'    => 'regexp',
+                'regexp'  => '^(?:[1-9]\d*|0)?(?:.\d+)?$',
+                'err_msg' => localize('Please enter a numeric value.'),
+            },
+        ],
+    };
+
     # Input field for pa_info
     my $textarea_pa_info = {
         'label' => {
@@ -713,20 +754,17 @@ sub get_payment_agent_registration_form {
             'type'    => 'textarea',
             'row'     => 10,
             'cols'    => 60,
-            'maxsize' => '2000',
+            'maxsize' => '500',
         },
         'error' => {
             'text'  => '',
             'id'    => 'errorpa_info',
             'class' => 'errorfield'
         },
-        'validation' => [
-
-            # max length = 2000
-            {
+        'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(.|\n){0,2000}$',
-                'err_msg' => localize('Comment must not exceed [_1] characters. Please resubmit.', 2000),
+                'regexp'  => '^(.|\n){0,500}$',
+                'err_msg' => localize('Comment must not exceed [_1] characters. Please resubmit.', 500),
             },
 
         ],
@@ -838,6 +876,8 @@ sub get_payment_agent_registration_form {
     $fieldset->add_field($input_field_pa_url);
     $fieldset->add_field($input_field_pa_comm_depo);
     $fieldset->add_field($input_field_pa_comm_with);
+    $fieldset->add_field($input_field_pa_max_withdrawal);
+    $fieldset->add_field($input_field_pa_min_withdrawal);
     $fieldset->add_field($textarea_pa_info);
 
     if ($input_field_pa_supported_banks) {

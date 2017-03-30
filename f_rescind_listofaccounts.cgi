@@ -8,7 +8,7 @@ use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
 use BOM::Database::ClientDB;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
-use BOM::Product::Transaction;
+use BOM::Transaction;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 
 BOM::Backoffice::Sysinit::init();
@@ -47,12 +47,12 @@ foreach my $loginID (split(/,/, $listaccounts)) {
     }
 
     my $curr         = $client->currency;
-    my $b            = $client->default_account->balance;
+    my $balance      = $client->default_account->balance;
     my $encoded_curr = encode_entities($curr);
 
     if (request()->param('whattodo') eq 'Do it for real !') {
 
-        if (my $sold_bets = BOM::Product::Transaction::sell_expired_contracts({client => $client})) {
+        if (my $sold_bets = BOM::Transaction::sell_expired_contracts({client => $client})) {
             print "<br>[FOR REAL] $encoded_loginID ($encoded_name $encoded_email) Expired bets closed out:";
             printf "Account has been credited with <strong>$encoded_curr %s</strong>", encode_entities($sold_bets->{total_credited});
 
@@ -61,23 +61,23 @@ foreach my $loginID (split(/,/, $listaccounts)) {
                 next CLIENT;
             }
             # recalc balance
-            $b = $client->default_account->load->balance;
+            $balance = $client->default_account->load->balance;
         }
 
-        if ($b > 0) {
-            print "<br>[FOR REAL] $encoded_loginID ($encoded_name $encoded_email) rescinding <b>$encoded_curr$b</b>";
+        if ($balance > 0) {
+            print "<br>[FOR REAL] $encoded_loginID ($encoded_name $encoded_email) rescinding <b>$encoded_curr$balance</b>";
             $client->payment_legacy_payment(
                 currency     => $curr,
-                amount       => -$b,
+                amount       => -$balance,
                 remark       => $message,
                 payment_type => 'closed_account',
                 staff        => $clerk,
             );
         }
     } else {
-        print "<br>[Simulate] $encoded_loginID ($encoded_name $encoded_email) <b>$encoded_curr$b</b>";
+        print "<br>[Simulate] $encoded_loginID ($encoded_name $encoded_email) <b>$encoded_curr$balance</b>";
     }
-    $grandtotal += in_USD($b, $curr);
+    $grandtotal += in_USD($balance, $curr);
 
     $client_db->unfreeze;
 }

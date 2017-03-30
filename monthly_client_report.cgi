@@ -23,7 +23,7 @@ my $dir       = "/db/f_broker/$broker/monthly_client_report";
 my $csv_name  = "${yyyymm}_${crdr}.csv";
 my $file_name = "$dir/$csv_name";
 
-if (open my $fh, $file_name) {
+if (open my $fh, "<", $file_name) {
     PrintContentType_excel("${broker}_$csv_name", -s $file_name);
     local $/;
     print <$fh>;

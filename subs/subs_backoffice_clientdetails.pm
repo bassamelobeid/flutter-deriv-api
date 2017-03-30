@@ -1,3 +1,4 @@
+## no critic (RequireExplicitPackage)
 use strict;
 use warnings;
 use Encode;
@@ -132,7 +133,7 @@ sub print_client_details {
         csr_tin_information   => \@crs_tin_array
     };
 
-    BOM::Backoffice::Request::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
+    return BOM::Backoffice::Request::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
         || die "Error:" . BOM::Backoffice::Request::template->error();
 }
 
@@ -214,7 +215,7 @@ sub build_client_warning_message {
     }
 
     # build the table
-    my $output;
+    my $output = '';
     if (@output) {
         $output =
               '<br /><table border="1" cellpadding="2" style="background-color:#cccccc">' . '<tr>'
@@ -360,6 +361,8 @@ sub client_statement_for_backoffice {
     $currency = $args->{currency} if exists $args->{currency};
     $currency //= $client->currency;
 
+    my $depositswithdrawalsonly = request()->param('depositswithdrawalsonly') // '';
+
     my $db = BOM::Database::ClientDB->new({
             client_loginid => $client->loginid,
         })->db;
@@ -371,7 +374,7 @@ sub client_statement_for_backoffice {
     });
 
     my $transactions = [];
-    if (request()->param('depositswithdrawalsonly') eq 'yes') {
+    if ($depositswithdrawalsonly eq 'yes') {
         $transactions = $txn_dm->get_payments({
             before => $before,
             after  => $after,
