@@ -244,7 +244,7 @@ sub _build_calendar {
     my $for_date = $self->underlying->for_date;
 
     return Quant::Framework::TradingCalendar->new(
-        chrocicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($for_date),
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($for_date),
         for_date         => $for_date,
     );
 }
