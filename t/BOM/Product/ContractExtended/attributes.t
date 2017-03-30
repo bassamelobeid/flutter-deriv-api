@@ -3,17 +3,18 @@ use warnings;
 
 use Test::Most;
 use Test::Exception;
+use Test::Warnings qw/warning/;
 use Test::FailWarnings;
 use Scalar::Util qw( looks_like_number );
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
-
 use Date::Utility;
+
 use LandingCompany::Offerings qw(reinitialise_offerings);
+
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
-
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -83,8 +84,9 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 use BOM::Product::ContractFactory qw( produce_contract );
 
+my $res;
 subtest 'Numbers and stuff.' => sub {
-    plan tests => 12;
+    plan tests => 14;
 
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
@@ -104,12 +106,15 @@ subtest 'Numbers and stuff.' => sub {
     };
 
     my $bet = produce_contract($bet_params);
-    ok(looks_like_number($bet->pricing_vol), 'Pricing iv looks like a number.');
-    ok(looks_like_number($bet->pricing_mu),  'Pricing mu looks like a number.');
-    ok(looks_like_number($bet->bid_price),   'Bid price looks like a number.');
-    ok(looks_like_number($bet->payout),      'Payout looks like a number.');
-    ok(looks_like_number($bet->ask_price),   'Ask price looks like a number.');
-    ok(looks_like_number($bet->theo_price),  'Theo price looks like a number.');
+    like(warning { $res = $bet->pricing_vol }, qr/Volatility error:/, 'Got warning for volatility for pricing vol');
+    ok(looks_like_number($res),             'Pricing iv looks like a number.');
+    ok(looks_like_number($bet->pricing_mu), 'Pricing mu looks like a number.');
+    like(warning { $res = $bet->bid_price }, qr/Volatility error:/, 'Got warning for volatility for bid price');
+    ok(looks_like_number($res), 'Bid price looks like a number.');
+
+    ok(looks_like_number($bet->payout),     'Payout looks like a number.');
+    ok(looks_like_number($bet->ask_price),  'Ask price looks like a number.');
+    ok(looks_like_number($bet->theo_price), 'Theo price looks like a number.');
 
     lives_ok { shortcode_to_parameters($bet->shortcode) } 'Can extracts parameters from shortcode.';
 
@@ -141,8 +146,11 @@ subtest 'Probabilities etc.' => sub {
 
     my $bet = produce_contract($bet_params);
     isa_ok($bet->discounted_probability, 'Math::Util::CalculatedValue::Validatable', 'isa CalculatedValue.');
-    lives_ok { $bet->bid_probability } 'can call bid_probability for expired contract.';
 
+    lives_ok {
+        warning { $res = $bet->bid_probability }, qr/Volatility error:/;
+    }
+    "can call bid_probability for expired contract.";
 };
 
 subtest 'Forward starting.' => sub {

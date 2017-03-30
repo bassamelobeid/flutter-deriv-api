@@ -4,6 +4,7 @@ use warnings;
 use 5.010;
 use Test::Most;
 use Test::FailWarnings;
+use Test::Warnings qw/warning/;
 use Test::Warn;
 use YAML::XS;
 
@@ -45,7 +46,7 @@ for my $expiry (@expiry_dates) {
     }
 
     foreach my $date (@dates) {
-        price_contract($date, $end_of_day, $expected->[$counter]);
+        warning { price_contract($date, $end_of_day, $expected->[$counter]) }, qr/No basis tick for/;
     }
 }
 
