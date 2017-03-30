@@ -795,7 +795,7 @@ sub paymentagent_withdraw {
             localize('Sorry, the Payment Agent Withdrawal is temporarily disabled due to system maintenance. Please try again in 30 minutes.'));
     } elsif (not $client->landing_company->allows_payment_agents) {
         return $error_sub->(localize('Payment Agents are not available on this site.'));
-    } elsif (not $client->allow_paymentagent_withdrawal()) {
+    } elsif (not BOM::Transaction::Validation->new(client => $client)->allow_paymentagent_withdrawal()) {
         # check whether allow to withdraw via payment agent
         return $reject_error_sub->(localize('You are not authorized for withdrawal via payment agent.'));
     } elsif ($client->cashier_setting_password) {

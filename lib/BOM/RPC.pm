@@ -17,7 +17,6 @@ use JSON::XS;
 
 use Data::Dumper;
 
-
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
 use Client::Account;
@@ -66,7 +65,7 @@ sub apply_usergroup {
 }
 
 sub _auth {
-    my $params        = shift;
+    my $params = shift;
 
     my $token_details = $params->{token_details};
     return BOM::RPC::v3::Utility::invalid_token_error()
@@ -109,15 +108,16 @@ sub register {
                 $params->{website_name} = BOM::RPC::v3::Utility::website_name(delete $params->{server_name});
             }
 
-            for my $act ( @$before_actions ) {
+            for my $act (@$before_actions) {
                 my $err;
-                ( ($err = _auth($params)) and return $err ) or next if $act eq 'auth';
+                (($err = _auth($params)) and return $err) or next if $act eq 'auth';
 
                 die "Error: no such hook $act" unless BOM::Transaction::Validation->can($act);
 
                 try {
                     $err = BOM::Transaction::Validation->new(client => $params->{client})->$act;
-                } catch {
+                }
+                catch {
                     cluck("Error happened when call before_action $act at method $method: $_");
                     $err = Error::Base->cuss({
                         -type              => 'Internal Error',
@@ -126,9 +126,9 @@ sub register {
                     });
                 };
                 return BOM::RPC::v3::Utility::create_error({
-                    code              => $err->get_type,
-                    message_to_client => $err->{-message_to_client},
-                }) if defined $err and ref $err eq "Error::Base";
+                        code              => $err->get_type,
+                        message_to_client => $err->{-message_to_client},
+                    }) if defined $err and ref $err eq "Error::Base";
 
             }
 
