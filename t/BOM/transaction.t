@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 25;
+use Test::More tests => 26;
 use Test::Exception;
 use Guard;
 use Crypt::NamedKeys;
@@ -31,6 +31,11 @@ use LandingCompany::Offerings qw(reinitialise_offerings);
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
+
+my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+
+$mock_validation->mock(validate_tnc =>
+                           sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
 
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine
 #Because the code to prepare market data is called for all pricings in Contract
@@ -308,7 +313,7 @@ lives_ok {
     $cl = create_client;
 
     #make sure client can trade
-    ok(BOM::Transaction::Validation->new(client => $cl)->allow_trade, "client can trade");
+    ok(!BOM::Transaction::Validation->new(client => $cl)->not_allow_trade, "client can trade");
 
     top_up $cl, 'USD', 5000;
 
@@ -891,21 +896,22 @@ subtest 'sell a bet', sub {
                 exit_tick    => $tick,
                 barrier      => 'S0P',
         });
-
-        note 'bid price: ' . $contract->bid_price;
-
-        my $mocked           = Test::MockModule->new('BOM::Transaction');
-        my $mocked_validator = Test::MockModule->new('BOM::Transaction::Validation');
-        $mocked_validator->mock('_validate_trade_pricing_adjustment', sub { });
-        $mocked->mock('price', sub { $contract->bid_price });
-        my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            contract_id => $fmb->{id},
-            price       => $contract->bid_price,
-            source      => 23,
-        });
-        my $error = $txn->sell;
+        my $txn;
+        #note 'bid price: ' . $contract->bid_price;
+        my $error = do {
+            my $mocked           = Test::MockModule->new('BOM::Transaction');
+            my $mocked_validator = Test::MockModule->new('BOM::Transaction::Validation');
+            $mocked_validator->mock('_validate_trade_pricing_adjustment', sub { });
+            $mocked->mock('price', sub { $contract->bid_price });
+            $txn = BOM::Transaction->new({
+                client      => $cl,
+                contract    => $contract,
+                contract_id => $fmb->{id},
+                price       => $contract->bid_price,
+                source      => 23,
+            });
+            $txn->sell;
+        };
         is $error, undef, 'no error';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
@@ -1305,7 +1311,6 @@ subtest 'max_open_bets validation', sub {
 };
 
 subtest 'max_open_bets validation: selling bets on the way', sub {
-    plan tests => 10;
     lives_ok {
         my $cl = create_client;
 
@@ -2001,7 +2006,7 @@ subtest 'max_turnover validation', sub {
 };
 
 subtest 'max_7day_turnover validation', sub {
-    plan tests => 12;
+    plan tests => 11;
     lives_ok {
         my $cl = create_client;
 
@@ -2752,6 +2757,7 @@ subtest 'transaction slippage' => sub {
 
         # we just want to _validate_trade_pricing_adjustment
         my $mocked = Test::MockModule->new('BOM::Transaction::Validation');
+        $mocked->unmock_all();
         $mocked->mock($_ => sub { '' })
             for (
             qw/
@@ -2765,10 +2771,12 @@ subtest 'transaction slippage' => sub {
             _is_valid_to_buy
             _validate_date_pricing
             _validate_payout_limit
+            validate_tnc
             _validate_stake_limit/
             );
         # no limits
-        $mocked->mock('limits', sub { {} });
+        my $mocked_tr = Test::MockModule->new('BOM::Transaction');
+        $mocked_tr->mock('limits', sub { {} });
 
         my $price = $contract->ask_price - ($allowed_move * $contract->payout / 2);
         my $transaction = BOM::Transaction->new({
@@ -2782,6 +2790,7 @@ subtest 'transaction slippage' => sub {
 
         ok !$transaction->buy, 'buy without error.';
         my ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $transaction->transaction_id;
+
         is $fmb->{buy_price}, $price, 'buy at requested price';
         is $qv1->{price_slippage}, -0.25, 'slippage stored';
         is $qv1->{requested_price}, $price, 'correct requested price stored';
@@ -2825,7 +2834,8 @@ subtest 'transaction slippage' => sub {
             _validate_available_currency
             _validate_currency
             _validate_date_pricing/
-            );
+        );
+
         # no limits
         $mocked->mock('limits', sub { {} });
 

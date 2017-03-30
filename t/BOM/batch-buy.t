@@ -282,6 +282,7 @@ subtest 'batch-buy success + multisell', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+            $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
@@ -327,9 +328,9 @@ subtest 'batch-buy success + multisell', sub {
             my $err = do {
                 my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
                 $mock_contract->mock(is_valid_to_sell => sub { note "mocked Contract->is_valid_to_sell returning true"; 1 });
-                my $mock_transaction = Test::MockModule->new('BOM::Transaction');
-                $mock_transaction->mock(
-                    _validate_sell_pricing_adjustment => sub { note "mocked Transaction->_validate_sell_pricing_adjustment returning nothing"; () });
+                my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+                $mock_validation->mock(_validate_sell_pricing_adjustment =>
+                        sub { note "mocked Transaction::Validation->_validate_sell_pricing_adjustment returning nothing"; () });
                 $trx->sell_by_shortcode;
             };
 
@@ -401,6 +402,9 @@ subtest 'batch-buy success 2', sub {
             },
             {code => 'ignore'},
         ];
+
+        delete $txn->multiple->[0]->{limits};
+        delete $txn->multiple->[1]->{limits};
         is_deeply $txn->multiple, $expected, 'nothing bought';
     }
     'survived';
@@ -505,6 +509,7 @@ subtest 'single contract fails in database', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+            $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
@@ -582,6 +587,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+            $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
@@ -589,6 +595,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
             ExpiryQueue::queue_flush;
             # note explain +ExpiryQueue::queue_status;
             reset_datadog;
+
             $txn->batch_buy;
         };
 

@@ -1014,7 +1014,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
 };
 
 subtest 'Purchase Sell Contract' => sub {
-    plan tests => 4;
+    plan tests => 5;
 
     my $client = Client::Account->new({loginid => 'CR2002'});
     $client = Client::Account::get_instance({'loginid' => $client->loginid});
@@ -1055,6 +1055,20 @@ subtest 'Purchase Sell Contract' => sub {
 
     $ENV{REQUEST_STARTTIME} = $now->epoch - 1;
     my $error = $bpt->buy;
+
+    ok(ref $error, 'TNC validation failed');
+    my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+    $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+
+    $bpt = BOM::Transaction->new({
+        client      => $client,
+        contract    => $contract,
+        price       => $contract->ask_price,
+        amount_type => 'payout'
+    });
+
+    $ENV{REQUEST_STARTTIME} = $now->epoch - 1;
+    $error = $bpt->buy;
     is($error, undef, 'Able to purchase the contract successfully');
 
     my $trx = $bpt->transaction_record;

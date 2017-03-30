@@ -73,7 +73,7 @@ Test::Exception::lives_ok { $client->set_status('unwelcome', $clerk, $reason) } 
 Test::Exception::lives_ok { $client->save() } "can save to unwelcome login file";
 
 #make sure unwelcome client cannot trade
-is($validation_obj->allow_trade, undef, "unwelcome client cannot trade");
+ok(ref $validation_obj->not_allow_trade eq 'Error::Base', "unwelcome client cannot trade");
 
 my $client_details = {
     broker_code     => 'MX',
@@ -101,6 +101,6 @@ my $client_new = Client::Account->register_and_return_new_client($client_details
 $validation_obj = BOM::Transaction::Validation->new(client => $client_new);
 $client_new->set_default_account('USD');
 
-is($validation_obj->allow_trade, 1, "MX client without age_verified allowed to trade before 1st deposit");
+is($validation_obj->not_allow_trade, undef, "MX client without age_verified allowed to trade before 1st deposit");
 $client_new->payment_free_gift(%deposit);
-is($validation_obj->allow_trade, undef, "MX client without age_verified cannot trade after 1st deposit");
+ok(ref $validation_obj->not_allow_trade eq 'Error::Base', "MX client without age_verified cannot trade after 1st deposit");

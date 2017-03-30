@@ -16,6 +16,7 @@ use BOM::Platform::Client::Utility;
 use BOM::Platform::Client::IDAuthentication;
 
 use BOM::Transaction;
+use BOM::Transaction::Validation;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -30,6 +31,12 @@ use Crypt::NamedKeys;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
+
+my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+
+$mock_validation->mock(validate_tnc =>
+                           sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+
 
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 

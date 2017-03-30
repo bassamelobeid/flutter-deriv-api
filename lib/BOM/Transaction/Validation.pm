@@ -71,6 +71,7 @@ sub validate_trx_buy {
         )
     {
         my $res = $self->$_;
+
         return $res if $res;
     }
     return;
@@ -639,34 +640,50 @@ sub validate_tnc {
     my $self = shift;
 
     # we shouldn't get to this error, so we can die it directly
-    return 1 if $self->client->is_virtual;
+    return if $self->client->is_virtual;
 
     my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
     my $client_tnc_status   = $self->client->get_status('tnc_approval');
-    return if not $client_tnc_status or ($client_tnc_status->reason ne $current_tnc_version);
-    return 1;
+    if (not $client_tnc_status or ($client_tnc_status->reason ne $current_tnc_version)) {
+        return Error::Base->cuss(
+            -type              => 'ASK_TNC_APPROVAL',
+            -mesg              => 'Terms and conditions approval is required',
+            -message_to_client => BOM::Platform::Context::localize('Terms and conditions approval is required.'),
+        );
+    }
+
+    return;
 }
 
 sub compliance_checks {
     my $self = shift;
 
     # checks are not applicable for virtual, costarica and champion clients
-    return 1 if $self->client->is_virtual;
-    return 1 if $self->client->landing_company->short =~ /^(?:costarica|champion)$/;
+    return if $self->client->is_virtual;
+    return if $self->client->landing_company->short =~ /^(?:costarica|champion)$/;
 
     # as per compliance for high risk client we need to check
     # if financial assessment details are completed or not
-    return if ($self->client->aml_risk_classification // '') eq 'high' and not $self->client->financial_assessment();
+    if (($self->client->aml_risk_classification // '') eq 'high' and not $self->client->financial_assessment()) {
+        return Error::Base->cuss(
+            -type              => 'FinancialAssessmentRequired',
+            -message_to_client => localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
+        );
+    }
 
-    return 1;
+    return;
 }
 
 sub check_tax_information {
     my $self = shift;
 
-    return if $self->client->landing_company->short eq 'maltainvest' and not $self->client->get_status('crs_tin_information');
-
-    return 1;
+    if ($self->client->landing_company->short eq 'maltainvest' and not $self->client->get_status('crs_tin_information')) {
+        return Error::Base->cuss(
+            -type => 'TINDetailsMandatory',
+            -message_to_client =>
+                localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.'));
+    }
+    return;
 }
 
 # don't allow to trade for unwelcome_clients
@@ -674,10 +691,8 @@ sub check_tax_information {
 sub check_trade_status {
     my $self = shift;
 
-    return 1 if $self->client->is_virtual;
-    return 1 if $self->allow_trade;
-
-    return undef;
+    return if $self->client->is_virtual;
+    return $self->not_allow_trade;
 }
 
 =head2 allow_paymentagent_withdrawal
@@ -704,7 +719,7 @@ sub allow_paymentagent_withdrawal {
     return;
 }
 
-=head2 allow_trade
+=head2 not_allow_trade
 
 Check if client is allowed to trade.
 
@@ -712,15 +727,22 @@ Don't allow to trade for unwelcome_clients and for MLT and MX without confirmed 
 
 =cut
 
-sub allow_trade {
+sub not_allow_trade {
     my $self = shift;
 
-    return
-            if ($self->client->landing_company->short =~ /^(?:malta|iom)$/)
-        and not $self->client->get_status('age_verification')
-        and $self->client->has_deposits;
-    return if $self->client->get_status('unwelcome');
-    return 1;
+    if ((
+                ($self->client->landing_company->short =~ /^(?:malta|iom)$/)
+            and not $self->client->get_status('age_verification')
+            and $self->client->has_deposits
+        )
+        or $self->client->get_status('unwelcome'))
+    {
+        return Error::Base->cuss(
+            -type              => 'PleaseContactSupport',
+            -message_to_client => localize('Please contact customer support for more information.'),
+        );
+    }
+    return;
 }
 
 1;

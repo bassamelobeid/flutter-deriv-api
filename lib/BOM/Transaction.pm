@@ -463,6 +463,7 @@ sub prepare_buy {
     if ($self->multiple) {
         for my $m (@{$self->multiple}) {
             next if $m->{code};
+            $m->{limits} = $self->calculate_limits($m->{client});
             my $c = try { Client::Account->new({loginid => $m->{loginid}}) };
             unless ($c) {
                 $m->{code}  = 'InvalidLoginid';
@@ -474,13 +475,13 @@ sub prepare_buy {
                     transaction => $self,
                     client      => $c
                 )->validate_trx_buy();
-
                 return $error_status if $error_status;
             }
 
             $m->{client} = $c;
         }
     } else {
+        $self->limits($self->calculate_limits);
         my $error_status = BOM::Transaction::Validation->new(
             transaction => $self,
             client      => $self->client
@@ -600,6 +601,7 @@ sub batch_buy {
     my $stats_data = $self->stats_start('batch_buy');
 
     my ($error_status, $bet_data) = $self->prepare_buy($options{skip_validation});
+
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
