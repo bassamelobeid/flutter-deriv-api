@@ -8,7 +8,7 @@ isa_ok($error, "Error::Base");
 is($error->get_type, 'RoundingExceedPermittedEpsilon');
 is($error->get_mesg, 'Rounding exceed permitted epsilon');
 
-$error = BOMK::Transaction->format_error(err => "random error");
+$error = BOM::Transaction->format_error(err => "random error");
 isa_ok($error, "Error::Base");
 is($error->get_type,             'InternalError');
 is($error->get_mesg,             'random error');
