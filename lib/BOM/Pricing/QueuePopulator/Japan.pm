@@ -43,7 +43,7 @@ sub redis { return shift->{redis} }
 # Mapping from the contracts available to the contract types that we want to queue.
 my %type_map = (
     PUT        => [qw(CALLE PUT)],
-    ONETOUCH      => [qw(ONETOUCH NOTOUCH)],
+    ONETOUCH   => [qw(ONETOUCH NOTOUCH)],
     EXPIRYMISS => [qw(EXPIRYMISS EXPIRYRANGEE)],
     RANGE      => [qw(RANGE UPORDOWN)],
 );
@@ -73,15 +73,13 @@ sub process {
     my $skipped = 0;
     for my $symbol (@symbols) {
         my $symbol_start = Time::HiRes::time;
-        my $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol({
-            symbol => $symbol
-        });
+        my $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol({symbol => $symbol});
         $now = Time::HiRes::time;
         $log->debugf("Retrieved contracts for %s - %.2fms", $symbol, 1000 * ($now - $symbol_start));
 
         PARAMETER:
         for my $contract_parameters (@{$contracts_for->{available}}) {
-            unless(ref $contract_parameters->{contract_type}) {
+            unless (ref $contract_parameters->{contract_type}) {
                 die "unknown contract_type?" unless $contract_parameters->{contract_type};
                 next PARAMETER unless exists $type_map{$contract_parameters->{contract_type}};
                 $contract_parameters->{contract_type} = $type_map{$contract_parameters->{contract_type}};
@@ -91,11 +89,11 @@ sub process {
             my %expired;
             $expired{ref($_) ? join(',', @$_) : $_} = 1 for @{$contract_parameters->{expired_barriers}};
             BARRIER:
-            for my $barriers (bundle_by {; [@_] } BARRIERS_PER_BATCH, @{$contract_parameters->{available_barriers}}) {
+            for my $barriers (bundle_by { ; [@_] } BARRIERS_PER_BATCH, @{$contract_parameters->{available_barriers}}) {
                 my @barriers;
                 for my $bar (@$barriers) {
-                    my ($barrier_desc) = map {; ref($_) ? join(',', @$_) : $_ } $bar;
-                    if(exists $expired{$barrier_desc}) {
+                    my ($barrier_desc) = map { ; ref($_) ? join(',', @$_) : $_ } $bar;
+                    if (exists $expired{$barrier_desc}) {
                         $skipped++;
                     } else {
                         push @barriers, $bar;
@@ -103,26 +101,27 @@ sub process {
                 }
                 next BARRIER unless @barriers;
 
-		# At this point, we have contract(s) that we want to queue for pricing.
+                # At this point, we have contract(s) that we want to queue for pricing.
                 my @pricing_queue_args = (
-                    amount               => 1000,
-                    basis                => 'payout',
-                    currency             => 'JPY',
-                    contract_type        => $contract_parameters->{contract_type},
-                    price_daemon_cmd     => 'price',
+                    amount                 => 1000,
+                    basis                  => 'payout',
+                    currency               => 'JPY',
+                    contract_type          => $contract_parameters->{contract_type},
+                    price_daemon_cmd       => 'price',
                     skips_price_validation => 1,
-                    landing_company      => 'japan',
-                    date_expiry          => $contract_parameters->{trading_period}{date_expiry}{epoch},
-                    trading_period_start => $contract_parameters->{trading_period}{date_start}{epoch},
-                    symbol               => $symbol,
-                    barriers => [
-                        map {;
-                             ref($_)
-                             ? +{ 
-                                 barrier2 => $_->[0],
-                                 barrier  => $_->[1],
-                               }
-                             : $_
+                    landing_company        => 'japan',
+                    date_expiry            => $contract_parameters->{trading_period}{date_expiry}{epoch},
+                    trading_period_start   => $contract_parameters->{trading_period}{date_start}{epoch},
+                    symbol                 => $symbol,
+                    barriers               => [
+                        map {
+                            ;
+                            ref($_)
+                                ? +{
+                                barrier2 => $_->[0],
+                                barrier  => $_->[1],
+                                }
+                                : $_
                         } @barriers
                     ],
                 );
@@ -134,10 +133,10 @@ sub process {
     DataDog::DogStatsd::Helper::stats_timing("pricer_queue.japan.jobs", 0 + @jobs);
     $log->debugf("Total of %d jobs to process, %d skipped", 0 + @jobs, $skipped);
 
-    { # Attempt to group the Redis operations to reduce network overhead
+    {    # Attempt to group the Redis operations to reduce network overhead
         my @copy = @jobs;
-        while(my @batch = splice @copy, 0, JOBS_PER_BATCH) {
-            $redis->mset(map {; $_ => "1" } @batch);
+        while (my @batch = splice @copy, 0, JOBS_PER_BATCH) {
+            $redis->mset(map { ; $_ => "1" } @batch);
         }
     }
 
