@@ -34,7 +34,7 @@ use BOM::Platform::Config;
 use BOM::Platform::AuditLog;
 use BOM::Product::RiskProfile;
 use BOM::RPC::v3::Utility;
-
+use BOM::Transaction::Validation;
 use BOM::Database::Model::HandoffToken;
 use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Database::DataMapper::Payment;
