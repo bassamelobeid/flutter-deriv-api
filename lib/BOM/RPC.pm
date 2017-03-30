@@ -79,7 +79,7 @@ sub _auth {
     }
     $params->{client} = $client;
     $params->{app_id} = $token_details->{app_id};
-    return $params;
+    return;
 }
 
 sub register {
@@ -110,9 +110,11 @@ sub register {
             }
 
             for my $act ( @$before_actions ) {
-                _auth($params) and next if $act eq 'auth';
-                die "Error: no such hook $act" unless BOM::Transaction::Validation->can($act);
                 my $err;
+                ( ($err = _auth($params)) and return $err ) or next if $act eq 'auth';
+
+                die "Error: no such hook $act" unless BOM::Transaction::Validation->can($act);
+
                 try {
                     $err = BOM::Transaction::Validation->new(client => $params->{client})->$act;
                 } catch {
