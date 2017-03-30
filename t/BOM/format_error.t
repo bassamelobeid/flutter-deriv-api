@@ -10,7 +10,7 @@ is($error->get_mesg, 'Rounding exceed permitted epsilon', 'error message ok');
 
 $error = BOM::Transaction->format_error(err => "random error");
 isa_ok($error, "Error::Base", 'object type ok');
-is($error->get_type,             'InternalError',  'error type ok');
-is($error->get_mesg,             '$VAR1 = "random error"',   'error message ok');
-is($error->{-message_to_client}, 'Internal Error', 'client message ok');
+is($error->get_type,             'InternalError',        'error type ok');
+is($error->get_mesg,             Dumper('random error'), 'error message ok');
+is($error->{-message_to_client}, 'Internal Error',       'client message ok');
 
