@@ -601,7 +601,9 @@ sub _get_intraday_window {
     my $is_early_close = $calendar->closes_early_on($exchange, $now);
 
     # If it is early close on the day before, it should start at 00GMT.
-    my $start_at_00 = ($date_start->day_of_week == 1 or $calendar->closes_early_on($exchange, $date_start->minus_time_interval('1d'))) && $date_start->hour == 0;
+    my $start_at_00 = (
+               $date_start->day_of_week == 1
+            or $calendar->closes_early_on($exchange, $date_start->minus_time_interval('1d'))) && $date_start->hour == 0;
     my $early_date_start = $start_at_00 ? $date_start : $date_start->minus_time_interval('15m');
     my $date_expiry = $date_start->hour == 22 ? $date_start->plus_time_interval('1h59m59s') : $date_start->plus_time_interval($duration);
 

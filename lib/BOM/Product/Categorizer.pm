@@ -211,7 +211,7 @@ sub _initialize_contract_parameters {
                         $expiry = $closing->epoch;
                     } else {
                         $expiry = $expiry_date->epoch;
-                        my $regular_day   = $underlying->calendar->regular_trading_day_after($underlying->exchange, $expiry_date);
+                        my $regular_day = $underlying->calendar->regular_trading_day_after($underlying->exchange, $expiry_date);
                         my $regular_close = $underlying->calendar->closing_on($underlying->exchange, $regular_day);
                         $expiry = Date::Utility->new($expiry_date->date_yyyymmdd . ' ' . $regular_close->time_hhmmss)->epoch;
                     }
