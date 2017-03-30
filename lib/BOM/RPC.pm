@@ -15,6 +15,9 @@ use Carp qw(cluck);
 use Path::Tiny;
 use JSON::XS;
 
+use Data::Dumper;
+
+
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
 use Client::Account;
@@ -64,11 +67,13 @@ sub apply_usergroup {
 
 sub _auth {
     my $params        = shift;
+
     my $token_details = $params->{token_details};
     return BOM::RPC::v3::Utility::invalid_token_error()
         unless $token_details and exists $token_details->{loginid};
 
     my $client = Client::Account->new({loginid => $token_details->{loginid}});
+
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
@@ -77,50 +82,9 @@ sub _auth {
     return $params;
 }
 
-sub _validate_tnc {
-    # we shouldn't get to this error, so we can die it directly
-    my $client = shift->{client} // die "client should be authenticated before calling this action";
-
-    return BOM::Transaction::Validation->new(client => $client)->validate_tnc;
-}
-
-sub _compliance_checks {
-    # we shouldn't get to this error, so we can die it directly
-    my $client = shift->{client} // die "client should be authed before calling this action";
-    return BOM::Transaction::Validation->new(client => $client)->compliance_checks;
-}
-
-sub _check_tax_information {
-    # we shouldn't get to this error, so we can die it directly
-    my $client = shift->{client} // die "client should be authed before calling this action";
-    return BOM::Transaction::Validation->new(client => $client)->check_tax_information;
-}
-
-# don't allow to trade for unwelcome_clients
-# and for MLT and MX we don't allow trading without confirmed age
-sub _check_trade_status {
-    # we shouldn't get to this error, so we can die it directly
-    my $client = shift->{client} // die "client should be authenticated before calling this action";
-    return BOM::Transaction::Validation->new(client => $client)->check_trade_status;
-}
-
 sub register {
     my ($method, $code, $before_actions) = @_;
 
-    # check actions at register time
-    my %actions = (
-        auth                  => \&_auth,
-        validate_tnc          => \&_validate_tnc,
-        check_trade_status    => \&_check_trade_status,
-        compliance_checks     => \&_compliance_checks,
-        check_tax_information => \&_check_tax_information,
-    );
-    my @local_before_actions;
-    for my $hook (@$before_actions) {
-        # it shouldn't happen, so we die it directly
-        die "Error: no such hook $hook" unless exists($actions{$hook});
-        push @local_before_actions, $actions{$hook};
-    }
     return MojoX::JSON::RPC::Service->new->register(
         $method,
         sub {
@@ -145,23 +109,25 @@ sub register {
                 $params->{website_name} = BOM::RPC::v3::Utility::website_name(delete $params->{server_name});
             }
 
-            for my $action (@local_before_actions) {
-                my $result;
+            for my $act ( @$before_actions ) {
+                _auth($params) and next if $act eq 'auth';
+                die "Error: no such hook $act" unless BOM::Transaction::Validation->can($act);
+                my $err;
                 try {
-                    $result = $action->($params);
-                }
-                catch {
-                    cluck("Error happened when call before_action $action at method $method: $_");
-                    $result = BOM::RPC::v3::Utility::create_error({
-                        code              => 'Internal Error',
-                        message_to_client => localize('Sorry, there is an internal error.'),
+                    $err = BOM::Transaction::Validation->new(client => $params->{client})->$act;
+                } catch {
+                    cluck("Error happened when call before_action $act at method $method: $_");
+                    $err = Error::Base->cuss({
+                        -type              => 'Internal Error',
+                        -mesg              => 'Internal Error',
+                        -message_to_client => localize('Sorry, there is an internal error.'),
                     });
                 };
-
                 return BOM::RPC::v3::Utility::create_error({
-                        code              => $result->get_type,
-                        message_to_client => $result->{-message_to_client},
-                    }) if defined $result;
+                    code              => $err->get_type,
+                    message_to_client => $err->{-message_to_client},
+                }) if defined $err and ref $err eq "Error::Base";
+
             }
 
             my $verify_app_res;
