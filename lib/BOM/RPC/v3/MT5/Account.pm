@@ -22,8 +22,6 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email;
 use BOM::Transaction;
-use Scalar::Util qw(blessed);
-use Data::Dumper;
 
 sub mt5_login_list {
     my $params = shift;
