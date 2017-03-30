@@ -580,7 +580,7 @@ sub mt5_withdrawal {
         };
     }
     catch {
-        my $error         = BOM::Transaction::format_error(err => $_);
+        my $error         = BOM::Transaction->format_error(err => $_);
         my $msg           = $error->get_mesg;
         my $msg_to_client = $error->{-message_to_client};
         _send_email(
