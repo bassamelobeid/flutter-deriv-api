@@ -261,9 +261,11 @@ sub forget_all {
 
 sub error_check {
     my ($c, $req_storage, $rpc_response) = @_;
+    #print Dumper($rpc_response);
     my $result = $rpc_response->result;
-    if (ref($result) eq 'HASH' && $result->{error} && $result->{error}->{code} eq 'InvalidAppID') {
-        $req_storage->{close_connection} = 1;
+    if (ref($result) eq 'HASH' && $result->{error}) {
+        $c->stash->{introspection}{last_rpc_error} = $result->{error};
+        $req_storage->{close_connection} = 1 if $result->{error}->{code} eq 'InvalidAppID';
     }
     return;
 }
@@ -325,6 +327,25 @@ sub on_client_disconnect {
     my $timer_id = $c->stash->{rate_limitations_timer};
     Mojo::IOLoop->remove($timer_id) if $timer_id;
 
+    return;
+}
+use Data::Dumper;
+sub introspection_before_forward {
+    my ($c, $req_storage) = @_;
+    $c->stash->{introspection}{last_call_received} = $req_storage->{origin_args};
+    $c->stash->{introspection}{msg_type}{received}{$req_storage->{method}}++;
+#    print Dumper($req_storage);
+    use bytes;
+    $c->stash->{introspection}{received_bytes} += bytes::length($req_storage->{origin_args});
+    return;
+}
+
+sub introspection_before_send_response {
+    my ($c, $req_storage, $api_response) = @_; 
+    $c->stash->{introspection}{last_message_sent} = $api_response;
+    $c->stash->{introspection}{msg_type}{sent}{$api_response->{msg_type}}++;
+    use bytes;
+    $c->stash->{introspection}{sent_bytes} += bytes::length($api_response);
     return;
 }
 

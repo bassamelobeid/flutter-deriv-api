@@ -18,7 +18,7 @@ use Scalar::Util qw(blessed);
 use Variable::Disposition qw(retain_future);
 use Socket qw(:crlf);
 use Proc::ProcessTable;
-
+use Data::Dumper;
 use feature 'state';
 
 # How many seconds to allow per command - anything that takes more than a few milliseconds
@@ -35,7 +35,7 @@ taken by something else and we have no SO_REUSEPORT on our current kernel.
 sub start_server {
     my ($self, $app, $conf) = @_;
     my $id = Mojo::IOLoop->server({
-            port => $conf->{port},
+            port => 33333, #$conf->{port},
         } => sub {
             my ($loop, $stream) = @_;
 
@@ -71,7 +71,8 @@ sub start_server {
                                 Future->wait_any($rslt, Future::Mojo->new_timer(MAX_REQUEST_SECONDS)->then(sub { Future->fail('Timeout') }),)->then(
                                     sub {
                                         my ($resp) = @_;
-                                        my $output = encode_json($resp);
+                                        #my $output = encode_json($resp);
+                                        my $output = Dumper($resp);
                                         warn "$command (@args) - $output\n" if $write_to_log;
                                         $stream->write("OK - $output$CRLF");
                                         Future->done;
@@ -230,6 +231,13 @@ command connections => sub {
                         country         => $_->country_code,
                         client          => $_->stash->{loginid},
                         count           => scalar keys($_->stash->{pricing_channel} || []),
+                        last_call_received=> $_->stash->{introspection}{last_call_received},
+                        last_message_sent => $_->stash->{introspection}{last_message_sent},
+                        received_bytes=> $_->stash->{introspection}{received_bytes},
+                        sent_bytes=> $_->stash->{introspection}{sent_bytes},
+                        messages_received => $_->stash->{introspection}{msg_type}{received},
+                        messages_sent=> $_->stash->{introspection}{msg_type}{sent},
+                        last_rpc_error => $_->stash->{introspection}{last_rpc_error},
                         }
                     }
                     grep {

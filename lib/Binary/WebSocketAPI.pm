@@ -560,7 +560,8 @@ sub startup {
             # action hooks
             before_forward => [
                 \&Binary::WebSocketAPI::Hooks::check_app_id, \&Binary::WebSocketAPI::Hooks::before_forward,
-                \&Binary::WebSocketAPI::Hooks::get_rpc_url
+                \&Binary::WebSocketAPI::Hooks::get_rpc_url,
+                \&Binary::WebSocketAPI::Hooks::introspection_before_forward
             ],
             before_call => [
                 \&Binary::WebSocketAPI::Hooks::add_app_id,   \&Binary::WebSocketAPI::Hooks::add_brand,
@@ -570,7 +571,8 @@ sub startup {
             after_got_rpc_response   => [\&Binary::WebSocketAPI::Hooks::log_call_timing_connection, \&Binary::WebSocketAPI::Hooks::error_check],
             before_send_api_response => [
                 \&Binary::WebSocketAPI::Hooks::add_req_data,      \&Binary::WebSocketAPI::Hooks::start_timing,
-                \&Binary::WebSocketAPI::Hooks::output_validation, \&Binary::WebSocketAPI::Hooks::add_call_debug
+                \&Binary::WebSocketAPI::Hooks::output_validation, \&Binary::WebSocketAPI::Hooks::add_call_debug,
+                \&Binary::WebSocketAPI::Hooks::introspection_before_send_response
             ],
             after_sent_api_response => [\&Binary::WebSocketAPI::Hooks::log_call_timing_sent, \&Binary::WebSocketAPI::Hooks::close_bad_connection],
 
