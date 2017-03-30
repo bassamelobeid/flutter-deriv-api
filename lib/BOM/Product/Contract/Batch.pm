@@ -4,6 +4,26 @@ use Moose;
 use BOM::Product::Categorizer;
 use BOM::Platform::Context qw (localize);
 
+=head1 NAME
+
+BOM::Product::Contract::Batch
+
+=head1 DESCRIPTION
+
+A class that handles one/multiple contract types and/or one/multiple barriers.
+
+=head1 USAGE
+
+    my $batch = BOM::Product::Contract::Batch->new(parameters => {
+        bet_types => ['CALL', 'PUT'],
+        barriers => ['S0P', 'S10P', 'S-10P'],
+        ...
+    });
+
+    $batch->ask_prices;
+
+=cut
+
 has parameters => (
     is       => 'ro',
     required => 1,
@@ -58,6 +78,33 @@ sub _build__contracts {
 
     return \@contracts;
 }
+
+=head2 ask_prices
+
+Returns a hash reference of contract prices in the following format:
+
+{
+    $contract_type => {
+        $barrier1 => {
+            # if it is valid to buy
+            theo_probability => ...,
+            longcode => ...,
+            ask_price => ...,
+            display_value => ...,
+            barrier => ..., # for single barrier contracts. high_barrier & low_barrier for double barrier contracts.
+        },
+        $barrier2 => {
+            $ if it is invalid
+            error => ...,
+            message_to_client => ...,
+        }
+    },
+    $contract_type2 => {
+        ...
+    },
+}
+
+=cut
 
 sub ask_prices {
     my $self = shift;
