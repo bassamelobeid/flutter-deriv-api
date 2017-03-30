@@ -191,24 +191,4 @@ subtest 'Range on R_100.' => sub {
     );
 };
 
-subtest 'Exchange' => sub {
-    plan tests => 1;
-
-    my $bet_params = {
-        bet_type     => 'RANGE',
-        date_start   => '1-Nov-12',
-        date_expiry  => '2-Nov-12',
-        underlying   => 'R_100',
-        high_barrier => 80000,
-        low_barrier  => 70000,
-        payout       => 100,
-        currency     => 'USD',
-        current_spot => 70000,
-    };
-
-    my $bet = produce_contract($bet_params);
-    is($bet->calendar->exchange_symbol, $bet->underlying->calendar->exchange_symbol, ' Bet exchange matches that of underlying');
-
-};
-
 done_testing;
