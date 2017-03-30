@@ -2,6 +2,7 @@ use strict;
 use warnings;
 use Test::More tests => 7;
 use BOM::Transaction;
+use Data::Dumper;
 
 my $error = BOM::Transaction->format_error(err => ['BI103']);
 isa_ok($error, "Error::Base", 'object type is Error::Base');
