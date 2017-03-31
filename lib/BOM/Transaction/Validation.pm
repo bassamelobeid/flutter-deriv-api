@@ -32,7 +32,6 @@ sub validate_trx_sell {
     # ask your friendly DBA team if in doubt
     for (
         qw/
-        _is_valid_to_sell
         _validate_available_currency
         _validate_currency
         _validate_sell_pricing_adjustment
@@ -667,6 +666,7 @@ sub compliance_checks {
     if (($self->client->aml_risk_classification // '') eq 'high' and not $self->client->financial_assessment()) {
         return Error::Base->cuss(
             -type              => 'FinancialAssessmentRequired',
+            -mesg              => 'Please complete the financial assessment form to lift your withdrawal and trading limits.',
             -message_to_client => localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
         );
     }
@@ -680,8 +680,10 @@ sub check_tax_information {
     if ($self->client->landing_company->short eq 'maltainvest' and not $self->client->get_status('crs_tin_information')) {
         return Error::Base->cuss(
             -type => 'TINDetailsMandatory',
+            -mesg => 'Tax-related information is mandatory for legal and regulatory requirements',
             -message_to_client =>
-                localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.'));
+                localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.' )
+            );
     }
     return;
 }
@@ -706,15 +708,12 @@ sub allow_paymentagent_withdrawal {
 
     my $expires_on = $self->client->payment_agent_withdrawal_expiration_date;
 
-    if ($expires_on) {
-        # if expiry date is in future it means it has been validated hence allowed
-        return 1 if Date::Utility->new($expires_on)->is_after(Date::Utility->new);
-    } else {
-        # if expiry date is not set check for doughflow count
-        my $payment_mapper = BOM::Database::DataMapper::Payment->new({'client_loginid' => $self->client->loginid});
-        my $doughflow_count = $payment_mapper->get_client_payment_count_by({payment_gateway_code => 'doughflow'});
-        return 1 if $doughflow_count == 0;
-    }
+    return ( $expires_on->epoch > time ) if $expires_on;
+
+    # if expiry date is not set check for doughflow count
+    my $payment_mapper = BOM::Database::DataMapper::Payment->new({'client_loginid' => $self->client->loginid});
+    my $doughflow_count = $payment_mapper->get_client_payment_count_by({payment_gateway_code => 'doughflow'});
+    return 1 if $doughflow_count == 0;
 
     return;
 }
@@ -735,10 +734,11 @@ sub not_allow_trade {
             and not $self->client->get_status('age_verification')
             and $self->client->has_deposits
         )
-        or $self->client->get_status('unwelcome'))
+        or $self->client->get_status('unwelcome') or $client->get_status('disabled')))
     {
         return Error::Base->cuss(
             -type              => 'PleaseContactSupport',
+            -mesg              => 'Please contact customer support for more information.',
             -message_to_client => localize('Please contact customer support for more information.'),
         );
     }

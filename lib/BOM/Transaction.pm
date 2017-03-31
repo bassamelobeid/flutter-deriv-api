@@ -719,6 +719,11 @@ sub prepare_sell {
     my ($self, $skip) = @_;
 
     return $self->prepare_bet_data_for_sell if $skip and not $self->multiple;
+    my $error_status = BOM::Transaction::Validation->new(
+        transaction => $self,
+        client      => $self->client
+    )->_is_valid_to_sell();
+    return $error_status if $error_status;
 
     if ($self->multiple) {
         for my $m (@{$self->multiple}) {
