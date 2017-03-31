@@ -186,20 +186,22 @@ sub _collect_correlation_ages {
 }
 
 sub _collect_pipsize_stats {
-    my @symbols = create_underlying_db->get_symbols_for(market => ['volidx'], contract_category => 'ANY');
+    my @symbols = create_underlying_db->get_symbols_for(
+        market            => ['volidx'],
+        contract_category => 'ANY'
+    );
     foreach my $symbol (@symbols) {
-        my $underlying = create_underlying($symbol);
-        my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
-        my $vol        = $volsurface->get_volatility();
-        my $pipsize    = $underlying->pip_size;
-        my $spot       = $underlying->spot;
-        my $sigma      = sqrt($vol**2 / 365 / 86400 * 10);
-        my $quants_volidx_digit_move  = $spot * $sigma / $pipsize;
+        my $underlying               = create_underlying($symbol);
+        my $volsurface               = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
+        my $vol                      = $volsurface->get_volatility();
+        my $pipsize                  = $underlying->pip_size;
+        my $spot                     = $underlying->spot;
+        my $sigma                    = sqrt($vol**2 / 365 / 86400 * 10);
+        my $quants_volidx_digit_move = $spot * $sigma / $pipsize;
         stats_gauge('quants_volidx_digit_move', $quants_volidx_digit_move, {tags => ['tag:' . $underlying->{symbol}]});
     }
     return;
 }
-
 
 sub _collect_dividend_ages {
 
@@ -226,10 +228,10 @@ sub _collect_dividend_ages {
 
 }
 
-sub _collect_vol_diff_stat {
+sub _on_vol_day_stat {
     my @underlyings = map { create_underlying($_) } create_underlying_db->get_symbols_for(
-        market    => 'forex',
-        submarket => 'major_pairs',
+        market            => 'forex',
+        submarket         => 'major_pairs',
         contract_category => 'ANY',
     );
 
@@ -237,16 +239,7 @@ sub _collect_vol_diff_stat {
         my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
         my $surface    = $volsurface->surface_data;
         my $day_for_on = $volsurface->get_day_for_tenor('ON');
-        my $day_for_one_week = $volsurface->get_day_for_tenor('1W');
-        my $day_for_one_month = $volsurface->get_day_for_tenor('1M');
-        my $vol_On     = $surface->{$day_for_on}->{smile}->{50};
-        my $vol_1w     = $surface->{$day_for_one_week}->{smile}->{50};
-        my $vol_1m     = $surface->{$day_for_one_month}->{smile}->{50};
-        my $total_var_On = ($vol_On**2) * $day_for_on;
-        my $total_var_1w = ($vol_1w**2) * $day_for_one_week;
-        my $total_var_1m = ($vol_1m**2) * $day_for_one_month;
-        stats_gauge('total_variance_diff_On_1w', abs($total_var_1w - $total_var_On)/$total_var_On, {tags => ['tag:' . $underlying->{symbol}]});
-        stats_gauge('total_variance_diff_On_1m', abs($total_var_1m - $total_var_On)/$total_var_On, {tags => ['tag:' . $underlying->{symbol}]});
+        stats_gauge('On_vol_day_alert', $day_for_on, {tags => ['tag:' . $underlying->{symbol}]});
     }
     return;
 }
