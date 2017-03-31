@@ -1226,9 +1226,9 @@ sub _recover {
 
 sub format_error {
     my ($self, %args) = @_;
-    my $err               = $args{err};
-    my $client            = $args{client};
-    my $type          = $args{type} // 'InternalError';             # maybe caller know the type
+    my $err           = $args{err};
+    my $client        = $args{client};
+    my $type          = $args{type} // 'InternalError';             # maybe caller know the type. If the err cannot be parsed, then we use this value
     my $msg           = Dumper($err);
     my $msg_to_client = $args{msg_to_client} // 'Internal Error';
     return try {
