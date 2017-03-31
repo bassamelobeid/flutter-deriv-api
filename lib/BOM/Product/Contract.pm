@@ -768,7 +768,8 @@ sub _build_opposite_contract {
     # pricing_new until it has started. So it kind of messed up here.
     if ($self->pricing_new and not $self->starts_as_forward_starting) {
         $opp_parameters{current_tick} = $self->current_tick;
-        $opp_parameters{pricing_new}  = 1;
+        $opp_parameters{$_} = $self->$_ for qw(r_rate q_rate discount_rate pricing_vol pricing_spot mu);
+        $opp_parameters{pricing_new} = 1;
     } else {
         # we still want to set for_sale for a forward_starting contracts
         $opp_parameters{for_sale} = 1;
