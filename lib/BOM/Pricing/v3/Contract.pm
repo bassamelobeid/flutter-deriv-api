@@ -19,11 +19,22 @@ use BOM::Platform::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Product::ContractFactory qw(produce_contract produce_batch_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Pricing::v3::Utility;
 
 use feature "state";
+
+sub _create_error {
+    my $args = shift;
+    stats_inc("bom_pricing_rpc.v_3.error", {tags => ['code:' . $args->{code},]});
+    return {
+        error => {
+            code              => $args->{code},
+            message_to_client => $args->{message_to_client},
+            $args->{message} ? (message => $args->{message}) : (),
+            $args->{details} ? (details => $args->{details}) : ()}};
+}
 
 sub _validate_symbol {
     my $symbol = shift;
@@ -49,27 +60,60 @@ sub prepare_ask {
     my $p1 = shift;
     my %p2 = %$p1;
 
+    my @contract_types = ref($p2{contract_type}) ? @{$p2{contract_type}} : ($p2{contract_type});
+    delete $p2{contract_type};
     $p2{date_start} //= 0;
     if ($p2{date_expiry}) {
         $p2{fixed_expiry} //= 1;
     }
 
-    if (defined $p2{barrier} && defined $p2{barrier2}) {
+    if (ref $p2{barriers}) {
+        delete @p2{qw(barrier barrier2)};
+    } elsif (defined $p2{barrier} && defined $p2{barrier2}) {
         $p2{low_barrier}  = delete $p2{barrier2};
         $p2{high_barrier} = delete $p2{barrier};
-    } elsif ($p1->{contract_type} !~ /^(SPREAD|ASIAN|DIGITEVEN|DIGITODD)/) {
+    } elsif (
+        !grep {
+            /^(SPREAD|ASIAN|DIGITEVEN|DIGITODD)/
+        } @contract_types
+        )
+    {
         $p2{barrier} //= 'S0P';
         delete $p2{barrier2};
     }
 
-    $p2{underlying}  = delete $p2{symbol};
-    $p2{bet_type}    = delete $p2{contract_type};
+    $p2{underlying} = delete $p2{symbol};
+    if (@contract_types > 1) {
+        $p2{bet_types} = \@contract_types;
+    } else {
+        ($p2{bet_type}) = @contract_types;
+    }
     $p2{amount_type} = delete $p2{basis} if exists $p2{basis};
     if ($p2{duration} and not exists $p2{date_expiry}) {
         $p2{duration} .= (delete $p2{duration_unit} or "s");
     }
 
     return \%p2;
+}
+
+=head2 contract_metadata
+
+Extracts some generic information from a given contract.
+
+=cut
+
+sub contract_metadata {
+    my ($contract) = @_;
+    return +{
+        !$contract->is_spread
+        ? (
+            app_markup_percentage => $contract->app_markup_percentage,
+            staking_limits        => $contract->staking_limits,
+            deep_otm_threshold    => $contract->otm_threshold,
+            )
+        : (),
+        base_commission => $contract->base_commission,
+    };
 }
 
 sub _get_ask {
@@ -90,15 +134,19 @@ sub _get_ask {
     };
     return $response if $response;
     try {
-        $contract = produce_contract($p2);
+        $contract = exists $p2->{bet_types} ? produce_batch_contract($p2) : produce_contract($p2);
     }
     catch {
-        warn __PACKAGE__ . " _get_ask produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($p2);
+        warn __PACKAGE__ . " _get_ask produce_contract failed: $_, parameters: " . JSON::XS->new->allow_blessed->encode($p2);
         $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => localize('Cannot create contract')});
     };
     return $response if $response;
+
+    return handle_batch_contract($contract, $p2) if $contract->isa('BOM::Product::Contract::BatchContract');
+
+    my $contract_parameters = {%$p2, %{contract_metadata($contract)}};
 
     try {
         if (
@@ -118,18 +166,17 @@ sub _get_ask {
                 $code              = "ContractValidationError";
             }
 
-# When the date_expiry is smaller than date_start, we can not price, display the payout|stake on error message
+            # When the date_expiry is smaller than date_start, we can not price, display the payout|stake on error message
             if ($contract->date_expiry->epoch <= $contract->date_start->epoch) {
 
                 my $display_value =
                       $contract->has_payout
                     ? $contract->payout
                     : $contract->ask_price;
-                $response = BOM::Pricing::v3::Utility::create_error({
-                        continue_price_stream => $contract->continue_price_stream,
-                        message_to_client     => $message_to_client,
-                        code                  => $code,
-                        details               => {
+                $response = _create_error({
+                        message_to_client => $message_to_client,
+                        code              => $code,
+                        details           => {
                             display_value => (
                                   $contract->is_spread
                                 ? $contract->buy_level
@@ -140,11 +187,10 @@ sub _get_ask {
                     });
 
             } else {
-                $response = BOM::Pricing::v3::Utility::create_error({
-                        continue_price_stream => $contract->continue_price_stream,
-                        message_to_client     => $message_to_client,
-                        code                  => $code,
-                        details               => {
+                $response = _create_error({
+                        message_to_client => $message_to_client,
+                        code              => $code,
+                        details           => {
                             display_value => (
                                   $contract->is_spread
                                 ? $contract->buy_level
@@ -154,22 +200,19 @@ sub _get_ask {
                         },
                     });
             }
+            # proposal_array streaming could get error on a first call
+            # but later could produce valid contract dependant on volatility moves
+            # so we need to store contract_parameters and longcode to use them later
+            if ($code eq 'ContractBuyValidationError') {
+                my $longcode =
+                    eval { $contract->longcode } || '';    # if we can't get the longcode that's fine, we still want to return the original error
+                $response->{contract_parameters} = $contract_parameters;
+                $response->{longcode}            = $longcode;
+            }
         } else {
+            # We think this contract is valid to buy
             my $ask_price = sprintf('%.2f', $contract->ask_price);
             my $trading_window_start = $p2->{trading_period_start} // '';
-
-            # need this warning to be logged for Japan as a regulatory requirement
-            if ($p2->{currency} && $p2->{currency} eq 'JPY') {
-                if (my $code = $contract->can('japan_pricing_info')) {
-                    warn $code->($contract, $trading_window_start);
-                } else {
-                    # We currently have 26 VRTC users with JPY as their account currency.
-                    # After cleaning these up, we expect this error to go away, but if you're
-                    # seeing this message after 2016-12-21 then please check client currencies
-                    # for that landing company.
-                    warn "JPY currency for non-JP contract - landing company is " . ($p2->{landing_company} // 'not available');
-                }
-            }
 
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
 
@@ -180,17 +223,7 @@ sub _get_ask {
                 display_value       => $display_value,
                 spot_time           => $contract->current_tick->epoch,
                 date_start          => $contract->date_start->epoch,
-                contract_parameters => {
-                    %$p2,
-                    !$contract->is_spread
-                    ? (
-                        app_markup_percentage => $contract->app_markup_percentage,
-                        staking_limits        => $contract->staking_limits,
-                        deep_otm_threshold    => $contract->otm_threshold,
-                        )
-                    : (),
-                    base_commission => $contract->base_commission,
-                },
+                contract_parameters => $contract_parameters,
             };
 
             # only required for non-spead contracts
@@ -219,6 +252,38 @@ sub _get_ask {
     };
 
     return $response;
+}
+
+sub handle_batch_contract {
+    my ($batch_contract, $p2, $tv) = @_;
+
+    # We should now have a usable ::Contract instance. This may be a single
+    # or multiple (batch) contract.
+
+    my $proposals            = {};
+    my $ask_prices           = $batch_contract->ask_prices;
+    my $trading_window_start = $p2->{trading_period_start} // '';
+    if ($p2->{currency} && $p2->{currency} eq 'JPY') {
+        for my $contract (@{$batch_contract->_contracts}) {
+            if (my $code = $contract->can('japan_pricing_info')) {
+                warn $code->($contract, $trading_window_start);
+            }
+        }
+    }
+    for my $contract_type (keys %$ask_prices) {
+        for my $barrier (@{$p2->{barriers}}) {
+            my $key = ref($barrier) ? ($barrier->{barrier}) . '-' . ($barrier->{barrier2}) : $barrier;
+            warn "Could not find barrier for key $key, available barriers: " . join ',', sort keys %{$ask_prices->{$contract_type}}
+                unless exists $ask_prices->{$contract_type}{$key};
+            my $price = $ask_prices->{$contract_type}{$key} // {};
+            push @{$proposals->{$contract_type}}, $price;
+        }
+    }
+    return {
+        proposals           => $proposals,
+        contract_parameters => {%$p2, %{$batch_contract->market_details}},
+        rpc_time            => 0,                                            # $rpc_time,
+    };
 }
 
 sub get_bid {
@@ -472,36 +537,10 @@ sub send_ask {
     };
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
-    map { exists($response->{$_}) && ($response->{$_} .= '') } qw(ask_price barrier date_start display_value payout spot spot_time);
+
+    # Stringify all returned numeric values
+    $response->{$_} .= '' for grep { exists $response->{$_} } qw(ask_price barrier date_start display_value payout spot spot_time);
     return $response;
-}
-
-sub send_multiple_ask {
-    my $params         = {%{+shift}};
-    my $barriers_array = delete $params->{args}->{barriers};
-    my $responses      = [];
-    my $rpc_time       = 0;
-
-    for my $barriers (@$barriers_array) {
-        $params->{args}->{barrier} = $barriers->{barrier};
-        @{$params->{args}}{keys %$barriers} = values %$barriers;
-        my $res = send_ask($params);
-        if (not exists $res->{error}) {
-            @{$res}{keys %$barriers} = values %$barriers;
-            push @$responses, $res;
-        } else {
-            $res->{error}{continue_price_stream} = 1;    # we continue price stream because for multiple_ask
-            @{$res->{error}{details}}{keys %$barriers} = values %$barriers;
-            push @$responses, $res;
-        }
-        $rpc_time += $res->{rpc_time} // 0;
-        delete $res->{rpc_time};
-    }
-
-    return {
-        proposals => $responses,
-        rpc_time  => $rpc_time,
-    };
 }
 
 sub get_contract_details {

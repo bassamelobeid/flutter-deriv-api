@@ -47,11 +47,7 @@ sub process_job {
 
     if ($price_daemon_cmd eq 'price') {
         $params->{streaming_params}->{add_theo_probability} = 1;
-        if (exists $params->{barriers}) {
-            $response = BOM::Pricing::v3::Contract::send_multiple_ask({args => $params});
-        } else {
-            $response = BOM::Pricing::v3::Contract::send_ask({args => $params});
-        }
+        $response = BOM::Pricing::v3::Contract::send_ask({args => $params});
     } elsif ($price_daemon_cmd eq 'bid') {
         $params->{validation_params}->{skip_barrier_validation} = 1;
         $response = BOM::Pricing::v3::Contract::send_bid($params);
@@ -70,6 +66,7 @@ sub process_job {
     stats_inc("pricer_daemon.$price_daemon_cmd.call", {tags => $self->tags});
     stats_timing("pricer_daemon.$price_daemon_cmd.time", $response->{rpc_time}, {tags => $self->tags});
     $response->{price_daemon_cmd} = $price_daemon_cmd;
+    delete $response->{contract_parameters};    # contract parameters are stored after first call, no need to send them with every stream message
     return $response;
 }
 
@@ -119,9 +116,13 @@ sub run {
         }
         qw(feed chronicle) or next;
 
-        stats_timing('pricer_daemon.rpc_time', $response->{rpc_time},
-            {tags => $self->tags('contract_type:' . $params->{contract_type}, 'currency:' . $params->{currency})})
-            if (($response->{rpc_time} // 0) > 1000);
+        {
+            my $contract_type = $params->{contract_type};
+            $contract_type = join '_', @$contract_type if ref $contract_type;
+            stats_timing('pricer_daemon.rpc_time', $response->{rpc_time},
+                {tags => $self->tags('contract_type:' . $contract_type, 'currency:' . $params->{currency})})
+                if (($response->{rpc_time} // 0) > 1000);
+        }
 
         my $subscribers_count = $redis->publish($key->[1], encode_json($response));
         # if None was subscribed, so delete the job

@@ -164,6 +164,7 @@ subtest 'get_ask' => sub {
         "streaming_params" => {add_theo_probability => 1},
     };
     my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
+    diag explain $result->{error} if exists $result->{error};
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
@@ -174,19 +175,19 @@ subtest 'get_ask' => sub {
         'payout'              => '100',
         'theo_probability'    => 0.499862404631018,
         'contract_parameters' => {
-            'deep_otm_threshold'         => '0.025',
-            'barrier'                    => 'S0P',
-            'duration'                   => '60s',
-            'bet_type'                   => 'CALL',
-            'amount_type'                => 'payout',
-            'underlying'                 => 'R_50',
-            'currency'                   => 'USD',
-            base_commission              => '0.015',
-            'amount'                     => '100',
-            'app_markup_percentage'      => 0,
-            'proposal'                   => 1,
-            date_start                   => ignore(),
-            'staking_limits'             => {
+            'deep_otm_threshold'    => '0.025',
+            'barrier'               => 'S0P',
+            'duration'              => '60s',
+            'bet_type'              => 'CALL',
+            'amount_type'           => 'payout',
+            'underlying'            => 'R_50',
+            'currency'              => 'USD',
+            base_commission         => '0.015',
+            'amount'                => '100',
+            'app_markup_percentage' => 0,
+            'proposal'              => 1,
+            'date_start'            => ignore(),
+            'staking_limits'        => {
                 'message_to_client'       => 'Minimum stake of 0.35 and maximum payout of 50,000.00',
                 'min'                     => '0.35',
                 'max'                     => 50000,
@@ -208,7 +209,7 @@ subtest 'get_ask' => sub {
                 );
             }
         ],
-        bag(re('Could not load volsurface for invalid symbol')),
+        bag(re('Could not load volsurface for invalid symbol'), re('base commission for invalid symbol not set')),
         'had warning about volsurface for invalid symbol'
     );
 
@@ -330,7 +331,7 @@ subtest 'send_ask' => sub {
                         ->error_message_is('Cannot create contract');
                 }
             ],
-            bag(re('Use of uninitialized value in pattern match'), re('_get_ask produce_contract failed')),
+            bag(re('Use of uninitialized value'), re('_get_ask produce_contract failed')),
             'missing bet_type when checking contract_type'
         );
 
@@ -342,7 +343,7 @@ subtest 'send_ask' => sub {
                         ->error_message_is('Unable to price the contract.');
                 }
             ],
-            bag(re('mock _get_ask dying'), re('Use of uninitialized value in pattern match'),),
+            bag(re('mock _get_ask dying'), re('Use of uninitialized value'),),
             'have expected warnings when _get_ask dies'
         );
     }
@@ -367,41 +368,6 @@ subtest 'send_ask_when_date_expiry_smaller_than_date_start' => sub {
         }};
     $c->call_ok('send_ask', $params)->has_error->error_code_is('ContractCreationFailure')->error_message_is('Cannot create contract');
 
-};
-
-subtest 'send_multiple_ask' => sub {
-    my $params = {
-        client_ip => '127.0.0.1',
-        args      => {
-            "amount"        => "100",
-            "basis"         => "payout",
-            "contract_type" => "DIGITMATCH",
-            "currency"      => "USD",
-            "duration"      => "10",
-            "duration_unit" => "t",
-            "symbol"        => "R_50",
-            "barriers"      => [{"barrier" => "3"}, {"barrier" => "2"}]}};
-    use Data::Dumper;
-    my $result = $c->call_ok('send_multiple_ask', $params)->has_no_error->result;
-    my $outer_expected_keys = [sort (qw(rpc_time proposals))];
-    cmp_deeply([sort keys %$result], $outer_expected_keys, 'result keys is correct');
-    is(scalar(@{$result->{proposals}}), 2, "There are 2 proposals");
-    my $inner_expected_keys = [sort (qw(longcode spot display_value spot_time ask_price date_start contract_parameters payout barrier))];
-    for my $proposal (@{$result->{proposals}}) {
-        cmp_deeply([sort keys %$proposal], $inner_expected_keys, 'result keys is correct in proposals');
-    }
-
-    $params->{args}{barriers}[0]{barrier} = "10";
-    $result = $c->call_ok('send_multiple_ask', $params)->has_no_error->result;
-    cmp_deeply([sort keys %$result], $outer_expected_keys, 'result keys is correct');
-    is(scalar(@{$result->{proposals}}), 2, "There are 2 proposals");
-    cmp_deeply([sort keys %{$result->{proposals}[0]}], [sort qw(error)], 'the first proposal has error');
-    my $expected_error_keys = [sort qw(message_to_client details continue_price_stream code)];
-    cmp_deeply([sort keys %{$result->{proposals}[0]{error}}], $expected_error_keys, "error keys ok");
-    my $expected_details_keys = [sort qw(display_value payout barrier)];
-    cmp_deeply([sort keys %{$result->{proposals}[0]{error}{details}}], $expected_details_keys, "details keys ok");
-    my $proposal = $result->{proposals}[1];
-    cmp_deeply([sort keys %$proposal], $inner_expected_keys, 'the second proposal still ok');
 };
 
 subtest 'get_bid' => sub {
@@ -656,14 +622,14 @@ subtest $method => sub {
         'date_expiry'     => 1127288662,
         'date_settlement' => 1127288662,
         'date_start'      => 1127288260,
-        'payout'          => '197.37',
+        'payout'          => '196.31',
         'entry_spot'      => '0.99360',
         'entry_tick'      => '0.99360',
         'entry_tick_time' => 1127288261,
         'exit_tick'       => '0.99340',
         'exit_tick_time'  => 1127288661,
         'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 42 seconds after contract start time.',
-        'shortcode'       => 'CALL_FRXAUDCAD_197.37_1127288260_1127288662_S0P_0',
+        'shortcode'       => 'CALL_FRXAUDCAD_196.31_1127288260_1127288662_S0P_0',
         'underlying'      => 'frxAUDCAD',
         is_valid_to_sell  => 1,
     };
@@ -685,7 +651,7 @@ subtest $method => sub {
         'is_expired'      => 1,
         'contract_id'     => 10,
         'currency'        => 'USD',
-        'payout'          => '197.37',
+        'payout'          => '196.31',
         'date_expiry'     => 1127288662,
         'date_settlement' => 1127288662,
         'date_start'      => 1127288260,
@@ -695,7 +661,7 @@ subtest $method => sub {
         'exit_tick'       => '0.99340',
         'exit_tick_time'  => 1127288661,
         'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 42 seconds after contract start time.',
-        'shortcode'       => 'CALL_FRXAUDCAD_197.37_1127288260_1127288662_S0P_0',
+        'shortcode'       => 'CALL_FRXAUDCAD_196.31_1127288260_1127288662_S0P_0',
         'underlying'      => 'frxAUDCAD',
         is_valid_to_sell  => 0,
         validation_error  => 'This contract has been sold.',
