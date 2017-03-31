@@ -64,7 +64,7 @@ my $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MX',
     email       => $email
 });
-$client_mx->set_status('gb_max_turnover_not_set', 'tests', 'Newly created GB clients have this status until they set 30Day turnover');
+$client_mx->set_status('ukrts_max_turnover_limit_not_set', 'tests', 'Newly created GB clients have this status until they set 30Day turnover');
 my $client_jp = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'JP',
     email       => $email
