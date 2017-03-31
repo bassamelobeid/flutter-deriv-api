@@ -518,12 +518,29 @@ sub _build_pricing_args {
     };
 
     if ($self->priced_with_intraday_model) {
-        $args->{long_term_prediction}      = $self->empirical_volsurface->long_term_prediction;
-        $args->{volatility_scaling_factor} = $self->empirical_volsurface->volatility_scaling_factor;
+        $args->{long_term_prediction}      = $self->long_term_prediction;
+        $args->{volatility_scaling_factor} = $self->volatility_scaling_factor;
         $args->{iv_with_news}              = $self->news_adjusted_pricing_vol;
     }
 
     return $args;
+}
+
+has [qw(volatility_scaling_factor long_term_prediction)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_long_term_prediction {
+    my $self = shift;
+
+    return $self->empirical_volsurface->long_term_prediction;
+}
+
+sub _build_volatility_scaling_factor {
+    my $self = shift;
+
+    return $self->empirical_volsurface->volatility_scaling_factor;
 }
 
 sub _build_debug_information {
@@ -768,7 +785,9 @@ sub _build_opposite_contract {
     # pricing_new until it has started. So it kind of messed up here.
     if ($self->pricing_new and not $self->starts_as_forward_starting) {
         $opp_parameters{current_tick} = $self->current_tick;
-        $opp_parameters{$_} = $self->$_ for qw(r_rate q_rate discount_rate pricing_vol pricing_spot mu);
+        my @to_override = qw(r_rate q_rate discount_rate pricing_vol pricing_spot mu);
+        push @to_override, qw(volatility_scaling_factor long_term_prediction) if $self->priced_with_intraday_model;
+        $opp_parameters{$_} = $self->$_ for @to_override;
         $opp_parameters{pricing_new} = 1;
     } else {
         # we still want to set for_sale for a forward_starting contracts
