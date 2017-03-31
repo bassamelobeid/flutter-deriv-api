@@ -9,7 +9,7 @@ use Time::Duration::Concise;
 use List::Util qw(first);
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 
-use Quant::Framework::TradingCalendar;
+use Quant::Framework;
 use BOM::Platform::Chronicle;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -53,9 +53,7 @@ sub available_contracts_for_symbol {
     my $now        = Date::Utility->new;
     my $underlying = create_underlying($symbol);
     my $exchange   = $underlying->exchange;
-    my $calendar   = Quant::Framework::TradingCalendar->new(
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-    );
+    my $calendar   = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
     my ($open, $close);
     if ($calendar->trades_on($underlying->exchange, $now)) {
         $open = $calendar->opening_on($exchange, $now)->epoch;

@@ -7,6 +7,7 @@ use Date::Utility;
 use LandingCompany::Offerings qw(get_offerings_flyby);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
+use Quant::Framework;
 use BOM::Platform::Chronicle;
 use Exporter qw( import );
 our @EXPORT_OK = qw(available_contracts_for_symbol);
@@ -27,9 +28,7 @@ sub available_contracts_for_symbol {
     my $now             = $args->{date} || Date::Utility->new;
     my $landing_company = $args->{landing_company};
 
-    my $calendar = Quant::Framework::TradingCalendar->new(
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($args->{date}),
-    );
+    my $calendar   = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
     my ($open, $close, $offerings);
     if ($calendar->trades_on($exchange, $now)) {
         $open = $calendar->opening_on($exchange, $now)->epoch;
