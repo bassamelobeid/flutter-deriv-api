@@ -783,7 +783,7 @@ sub _price_stream_results_adjustment {
 sub send_proposal_open_contract_last_time {
     # last message (contract is sold) of proposal_open_contract stream could not be done from pricer
     # because it should be performed with other parameters
-    my ($c, $args) = @_;
+    my ($c, $args, $contract_id) = @_;
     my $uuid = $args->{uuid};
 
     my $pricing_channel = $c->stash('pricing_channel');
@@ -801,7 +801,7 @@ sub send_proposal_open_contract_last_time {
             method      => 'proposal_open_contract',
             msg_type    => 'proposal_open_contract',
             call_params => {
-                contract_id => $pricing_channel->{uuid}->{$uuid}->{args}->{financial_market_bet_id},
+                contract_id => $contract_id,
                 token       => $c->stash('token'),
             },
             response => sub {
