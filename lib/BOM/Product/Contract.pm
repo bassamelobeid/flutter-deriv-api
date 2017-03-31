@@ -755,30 +755,6 @@ sub _build_opposite_contract {
 
     # Start by making a copy of the parameters we used to build this bet.
     my %opp_parameters = %{$self->build_parameters};
-    # we still want to set for_sale for a forward_starting contracts
-    $opp_parameters{for_sale} = 1;
-    # delete traces of this contract were a forward starting contract before.
-    delete $opp_parameters{starts_as_forward_starting};
-    # duration could be set for an opposite contract from bad hash reference reused.
-    delete $opp_parameters{duration};
-
-    if (not $self->is_forward_starting) {
-        if ($self->entry_tick) {
-            foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-                if (defined $self->$barrier) {
-                    $opp_parameters{$barrier} = $self->$barrier->as_absolute;
-                    $opp_parameters{'supplied_' . $barrier} = $self->$barrier->as_absolute;
-                }
-            }
-        }
-        # We should be looking to move forward in time to a bet starting now.
-        $opp_parameters{date_start}  = $self->date_pricing;
-        $opp_parameters{pricing_new} = 1;
-        # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
-        # Currently, 'sell at market' button will appear when current spot == barrier when the duration
-        # of the contract is less than the minimum duration of non ATM contract.
-    }
-
     # Always switch out the bet type for the other side.
     $opp_parameters{'bet_type'} = $self->other_side_code;
     # Don't set the shortcode, as it will change between these.
@@ -786,6 +762,35 @@ sub _build_opposite_contract {
     # Save a round trip.. copy market data
     foreach my $vol_param (qw(volsurface fordom forqqq domqqq)) {
         $opp_parameters{$vol_param} = $self->$vol_param;
+    }
+
+    # We have this concept in forward starting contract where a forward start contract is considered
+    # pricing_new until it has started. So it kind of messed up here.
+    if ($self->pricing_new and not $self->starts_as_forward_starting) {
+        $opp_parameters{current_tick} = $self->current_tick;
+        $opp_parameters{pricing_new}  = 1;
+    } else {
+        # we still want to set for_sale for a forward_starting contracts
+        $opp_parameters{for_sale} = 1;
+        # delete traces of this contract were a forward starting contract before.
+        delete $opp_parameters{starts_as_forward_starting};
+        # duration could be set for an opposite contract from bad hash reference reused.
+        delete $opp_parameters{duration};
+
+        if (not $self->is_forward_starting) {
+            if ($self->entry_tick) {
+                foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
+                    if (defined $self->$barrier) {
+                        $opp_parameters{$barrier} = $self->$barrier->as_absolute;
+                        $opp_parameters{'supplied_' . $barrier} = $self->$barrier->as_absolute;
+                    }
+                }
+            }
+            # We should be looking to move forward in time to a bet starting now.
+            $opp_parameters{date_start}  = $self->date_pricing;
+            $opp_parameters{pricing_new} = 1;
+        }
+
     }
 
     my $opp_contract = $self->_produce_contract_ref->(\%opp_parameters);
