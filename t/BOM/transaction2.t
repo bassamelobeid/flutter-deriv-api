@@ -34,9 +34,7 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
 
-$mock_validation->mock(validate_tnc =>
-                           sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
-
+$mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
 
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 

@@ -719,6 +719,8 @@ sub prepare_sell {
     my ($self, $skip) = @_;
 
     return $self->prepare_bet_data_for_sell if $skip and not $self->multiple;
+    ### Unfortunately we can do this check only once
+    ### TODO: add multiple field into BOM::Transaction::Validation and separate.
     my $error_status = BOM::Transaction::Validation->new(
         transaction => $self,
         client      => $self->client

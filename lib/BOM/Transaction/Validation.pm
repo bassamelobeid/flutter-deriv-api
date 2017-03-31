@@ -682,8 +682,7 @@ sub check_tax_information {
             -type => 'TINDetailsMandatory',
             -mesg => 'Tax-related information is mandatory for legal and regulatory requirements',
             -message_to_client =>
-                localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.' )
-            );
+                localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.'));
     }
     return;
 }
@@ -708,7 +707,7 @@ sub allow_paymentagent_withdrawal {
 
     my $expires_on = $self->client->payment_agent_withdrawal_expiration_date;
 
-    return ( $expires_on->epoch > time ) if $expires_on;
+    return ($expires_on->epoch > time) if $expires_on;
 
     # if expiry date is not set check for doughflow count
     my $payment_mapper = BOM::Database::DataMapper::Payment->new({'client_loginid' => $self->client->loginid});
@@ -734,7 +733,8 @@ sub not_allow_trade {
             and not $self->client->get_status('age_verification')
             and $self->client->has_deposits
         )
-        or $self->client->get_status('unwelcome') or $client->get_status('disabled')))
+        or $self->client->get_status('unwelcome')
+        or $self->client->get_status('disabled'))
     {
         return Error::Base->cuss(
             -type              => 'PleaseContactSupport',
