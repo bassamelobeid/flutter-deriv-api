@@ -76,17 +76,6 @@ has otm_threshold => (
     lazy_build => 1,
 );
 
-=head2 memory_chronicle
-
-A memory-backed chronicle reader instance
-
-=cut
-
-has memory_chronicle => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 # discounted_probability - The discounted total probability, given the time value of the money at stake.
 # timeindays/timeinyears - note that for FX contracts of >=1 duration, these values will follow the market convention of integer days
 has [qw(
@@ -282,7 +271,7 @@ sub _create_new_interface_engine {
         #pricing_vol can be calculated using an empirical vol. So we have to sent the raw numbers
         %pricing_parameters = (
             %contract_config,
-            chronicle_reader         => $self->memory_chronicle,
+            chronicle_reader         => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
             discount_rate            => $self->discount_rate,
             mu                       => $self->mu,
             vol                      => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
@@ -346,38 +335,6 @@ sub _generate_market_data {
 }
 
 ## BUILDERS  #######################
-
-sub _build_memory_chronicle {
-    my $self             = shift;
-    my $chronicle_reader = BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date);
-
-    my $hash_ref = {};
-    my $symbol   = $self->underlying->symbol;
-
-    $hash_ref->{'volatility_surfaces::' . $symbol}  = $chronicle_reader->get('volatility_surfaces',  $symbol);
-    $hash_ref->{'holidays::holidays'}               = $chronicle_reader->get('holidays',             'holidays');
-    $hash_ref->{'correlation_matrices::' . $symbol} = $chronicle_reader->get('correlation_matrices', $symbol);
-
-    my $asset_symbol = $self->underlying->asset_symbol;
-    $hash_ref->{'interest_rates::' . $asset_symbol} = $chronicle_reader->get('interest_rates', $asset_symbol);
-
-    my $quoted_symbol = $self->underlying->quoted_currency_symbol;
-    $hash_ref->{'interest_rates::' . $quoted_symbol} = $chronicle_reader->get('interest_rates', $quoted_symbol);
-
-    $hash_ref->{'dividends::' . $symbol} = $chronicle_reader->get('dividends', $symbol);
-
-    if ($self->underlying->market->name eq 'forex' and $self->underlying->submarket->name ne 'smart_fx') {
-        my $implied_symbol;
-        if ($self->underlying->uses_implied_rate($self->underlying->quoted_currency_symbol)) {
-            $implied_symbol = $self->underlying->quoted_currency_symbol . '-' . $self->underlying->rate_to_imply_from;
-        } elsif ($self->underlying->uses_implied_rate($self->underlying->asset_symbol)) {
-            $implied_symbol = $self->underlying->asset_symbol . '-' . $self->underlying->rate_to_imply_from;
-        }
-        $hash_ref->{'interest_rates::' . $implied_symbol} = $chronicle_reader->get('interest_rates', $implied_symbol) if $implied_symbol;
-    }
-
-    return Data::Chronicle::Reader->new({cache_reader => $hash_ref});
-}
 
 sub _build_domqqq {
     my $self = shift;

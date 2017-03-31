@@ -28,7 +28,7 @@ sub available_contracts_for_symbol {
     my $now             = $args->{date} || Date::Utility->new;
     my $landing_company = $args->{landing_company};
 
-    my $calendar   = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
+    my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
     my ($open, $close, $offerings);
     if ($calendar->trades_on($exchange, $now)) {
         $open = $calendar->opening_on($exchange, $now)->epoch;

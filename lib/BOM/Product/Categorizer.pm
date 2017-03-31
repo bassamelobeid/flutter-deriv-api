@@ -166,7 +166,7 @@ sub _initialize_contract_parameters {
             my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
             my $date_expiry      = Date::Utility->new($pp->{date_expiry});
             if (my $closing = $trading_calendar->closing_on($exchange, $date_expiry)) {
-                $pp->{date_expiry} = $closing->epoch;
+                $pp->{date_expiry} = $closing;
             } else {
                 my $regular_close = $trading_calendar->closing_on($exchange, $trading_calendar->regular_trading_day_after($exchange, $date_expiry));
                 $pp->{date_expiry} = Date::Utility->new($date_expiry->date_yyyymmdd . ' ' . $regular_close->time_hhmmss);
