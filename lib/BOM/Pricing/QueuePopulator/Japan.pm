@@ -96,8 +96,8 @@ Process a single pricing interval.
 
 sub process {
     my ($self) = @_;
-    my $start = Time::HiRes::time;
 
+    my $start = Time::HiRes::time;
     $self->check_appconfig;
     # Get a full list of symbols since some may have been updated/disabled
     # since the last time
@@ -167,18 +167,18 @@ sub process {
             }
         }
     }
-    DataDog::DogStatsd::Helper::stats_timing("pricer_queue.japan.jobs", 0 + @jobs);
+    # Using a timing metric here so we can get min/max/avg
+    DataDog::DogStatsd::Helper::stats_timing("pricer_queue.japan.jobs.queued", 0 + @jobs);
+    DataDog::DogStatsd::Helper::stats_timing("pricer_queue.japan.jobs.skipped", $skipped);
     $log->debugf("Total of %d jobs to process, %d skipped", 0 + @jobs, $skipped);
 
     {    # Attempt to group the Redis operations to reduce network overhead
-        my @copy = @jobs;
-        while (my @batch = splice @copy, 0, JOBS_PER_BATCH) {
+	    my $redis = $self->redis;
+        while (my @batch = splice @jobs, 0, JOBS_PER_BATCH) {
             $redis->mset(map { ; $_ => "1" } @batch);
         }
     }
 
-    # Using a timing metric here so we can get min/max/avg
-    DataDog::DogStatsd::Helper::stats_timing("pricer_queue.japan.jobs.count", 0 + @jobs);
     DataDog::DogStatsd::Helper::stats_timing("pricer_queue.japan.jobs.gather_time", 1000 * ($now - $start));
 
     return;
