@@ -186,20 +186,22 @@ sub _collect_correlation_ages {
 }
 
 sub _collect_pipsize_stats {
-    my @symbols = create_underlying_db->get_symbols_for(market => ['volidx'], contract_category => 'ANY');
+    my @symbols = create_underlying_db->get_symbols_for(
+        market            => ['volidx'],
+        contract_category => 'ANY'
+    );
     foreach my $symbol (@symbols) {
-        my $underlying = create_underlying($symbol);
-        my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
-        my $vol        = $volsurface->get_volatility();
-        my $pipsize    = $underlying->pip_size;
-        my $spot       = $underlying->spot;
-        my $sigma      = sqrt($vol**2 / 365 / 86400 * 10);
-        my $quants_volidx_digit_move  = $spot * $sigma / $pipsize;
+        my $underlying               = create_underlying($symbol);
+        my $volsurface               = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
+        my $vol                      = $volsurface->get_volatility();
+        my $pipsize                  = $underlying->pip_size;
+        my $spot                     = $underlying->spot;
+        my $sigma                    = sqrt($vol**2 / 365 / 86400 * 10);
+        my $quants_volidx_digit_move = $spot * $sigma / $pipsize;
         stats_gauge('quants_volidx_digit_move', $quants_volidx_digit_move, {tags => ['tag:' . $underlying->{symbol}]});
     }
     return;
 }
-
 
 sub _collect_dividend_ages {
 
@@ -226,10 +228,10 @@ sub _collect_dividend_ages {
 
 }
 
-sub _On_vol_day_stat {
+sub _on_vol_day_stat {
     my @underlyings = map { create_underlying($_) } create_underlying_db->get_symbols_for(
-        market    => 'forex',
-        submarket => 'major_pairs',
+        market            => 'forex',
+        submarket         => 'major_pairs',
         contract_category => 'ANY',
     );
 
