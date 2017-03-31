@@ -7,6 +7,7 @@ use MooseX::Singleton;
 use Postgres::FeedDB;
 use Postgres::FeedDB::Spot::Tick;
 use Postgres::FeedDB::Spot::OHLC;
+use Cache::RedisDB;
 use Try::Tiny;
 use BOM::Test;
 
@@ -164,6 +165,14 @@ EOD
 
     delete $defaults{underlying};
     return Postgres::FeedDB::Spot::OHLC->new(\%defaults);
+}
+
+sub create_realtime_tick {
+    my $args = shift;
+
+    die 'args must be a hash reference' if ref $args ne 'HASH';
+
+    return Cache::RedisDB->set_nw('QUOTE', $args->{underlying}, $args);
 }
 
 sub _create_table_for_date {
