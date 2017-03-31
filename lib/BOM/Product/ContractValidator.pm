@@ -213,7 +213,7 @@ sub _validate_feed {
             message           => "No realtime data [symbol: " . $underlying->symbol . "]",
             message_to_client => localize('Trading on this market is suspended due to missing market data.'),
         };
-    } elsif ($self->calendar->is_open_at($underlying->exchange, $self->date_pricing)
+    } elsif ($self->trading_calendar->is_open_at($underlying->exchange, $self->date_pricing)
         and $self->date_pricing->epoch - $underlying->max_suspend_trading_feed_delay->seconds > $self->current_tick->epoch)
     {
         # only throw errors for quote too old, if the exchange is open at pricing time
@@ -350,7 +350,7 @@ sub _validate_input_parameters {
         };
     } elsif ($self->expiry_daily) {
         my $date_expiry = $self->date_expiry;
-        my $closing = $self->calendar->closing_on($self->underlying->exchange, $date_expiry);
+        my $closing = $self->trading_calendar->closing_on($self->underlying->exchange, $date_expiry);
         if ($closing and not $date_expiry->is_same_as($closing)) {
             return {
                 message => 'daily expiry must expire at close '
@@ -373,7 +373,7 @@ sub _validate_trading_times {
 
     my $underlying  = $self->underlying;
     my $exchange    = $underlying->exchange;
-    my $calendar    = $self->calendar;
+    my $calendar    = $self->trading_calendar;
     my $date_expiry = $self->date_expiry;
     my $date_start  = $self->date_start;
     my $volidx_flag = 1;
@@ -526,7 +526,7 @@ sub _validate_lifetime {
         ($min_duration, $max_duration) = ($min_duration->seconds, $max_duration->seconds);
         $message = 'Intraday duration not acceptable';
     } else {
-        my $calendar = $self->calendar;
+        my $calendar = $self->trading_calendar;
         my $exchange = $self->underlying->exchange;
         $duration =
             $calendar->trading_date_for($exchange, $self->date_expiry)->days_between($calendar->trading_date_for($exchange, $self->date_start));
@@ -576,7 +576,7 @@ sub _validate_volsurface {
         $exceeded = '6h';
     } elsif ($self->market->name eq 'indices' and $surface_age > 24 and not $self->is_atm_bet) {
         $exceeded = '24h';
-    } elsif ($volsurface->recorded_date->days_between($self->calendar->trade_date_before($self->underlying->exchange, $now)) < 0) {
+    } elsif ($volsurface->recorded_date->days_between($self->trading_calendar->trade_date_before($self->underlying->exchange, $now)) < 0) {
         # will discuss if this can be removed.
         $exceeded = 'different day';
     }
@@ -672,7 +672,7 @@ sub _build_date_expiry_blackouts {
     my $date_start = $self->date_start;
 
     if ($self->is_intraday) {
-        my $end_of_trading = $self->calendar->closing_on($underlying->exchange, $self->date_start);
+        my $end_of_trading = $self->trading_calendar->closing_on($underlying->exchange, $self->date_start);
         if ($end_of_trading and my $expiry_blackout = $underlying->eod_blackout_expiry) {
             push @periods, [$end_of_trading->minus_time_interval($expiry_blackout)->epoch, $end_of_trading->epoch];
         }
@@ -699,7 +699,7 @@ sub _build_date_start_blackouts {
 
     my @periods;
     my $underlying = $self->underlying;
-    my $calendar   = $self->calendar;
+    my $calendar   = $self->trading_calendar;
     my $start      = $self->date_start;
 
     # We need to set sod_blackout_start for forex on Monday morning because otherwise, if there is no tick ,it will always take Friday's last tick and trigger the missing feed check

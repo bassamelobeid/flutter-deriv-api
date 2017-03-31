@@ -18,6 +18,8 @@ use BOM::Product::Contract::Category;
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::RedisReplicated;
 use BOM::Platform::Runtime;
+use BOM::Platform::Chronicle;
+use Quant::Framework;
 
 my %supported_contract_types = (
     CALLE        => 1,
@@ -31,6 +33,20 @@ my %supported_contract_types = (
 );
 
 my $cache_namespace = 'predefined_parameters';
+
+{
+    my %trading_calendar = ();
+
+    sub _trading_calendar {
+        my $for_date = shift;
+
+        $cache_key = $for_date ? $for_date->date : Date::Utility->new->date;
+        $trading_calendar{$cache_key} //=
+            Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
+
+        return $trading_calendar{$cache_key};
+    }
+}
 
 =head2 get_predefined_offerings
 
@@ -129,9 +145,10 @@ sub generate_trading_periods {
     my ($symbol, $date) = @_;
 
     my $underlying = create_underlying($symbol, $date);
+    my $calendar = _trading_calendar($date);
     $date //= Date::Utility->new;
 
-    return [] unless $underlying->calendar->trades_on($underlying->exchange, $date);
+    return [] unless $calendar->trades_on($underlying->exchange, $date);
 
     my $key = join '_', ('trading_period', $underlying->symbol, $date->date, $date->hour);
     my @trading_periods = _get_daily_trading_window($underlying, $date);
@@ -244,10 +261,11 @@ sub _apply_predefined_parameters {
     my ($date, $underlying, $offerings) = @_;
 
     my $trading_periods = get_trading_periods($underlying->symbol, $underlying->for_date);
+    my $calender = _trading_calendar($underlying->for_date);
 
     return () unless @$trading_periods;
 
-    my $close_epoch = $underlying->calendar->closing_on($underlying->exchange, $date)->epoch;
+    my $close_epoch = $calendar->closing_on($underlying->exchange, $date)->epoch;
     # full trading seconds
     my $trading_seconds = $close_epoch - $date->truncate_to_day->epoch;
 
@@ -428,7 +446,7 @@ sub _get_intraday_trading_window {
 
     my $start_of_day = $date->truncate_to_day;
     my ($current_hour, $minute, $date_str) = ($date->hour, $date->minute, $date->date);
-    my $calendar  = $underlying->calendar;
+    my $calendar  = _trading_calendar($underlying->for_date);
     my $hour      = $minute < 45 ? $current_hour : $current_hour + 1;
     my $even_hour = $hour - ($hour % 2);
 
@@ -516,7 +534,7 @@ To get the end of day, weekly, monthly , quarterly, and yearly trading window.
 sub _get_daily_trading_window {
     my ($underlying, $date) = @_;
 
-    my $calendar = $underlying->calendar;
+    my $calendar = _trading_calendar($underlying->for_date);
     my $now_dow  = $date->day_of_week;
     my $now_year = $date->year;
     my @daily_duration;
@@ -596,7 +614,7 @@ sub _get_intraday_window {
     my $duration       = $args->{duration};
     my $underlying     = $args->{underlying};
     my $exchange       = $underlying->exchange;
-    my $calendar       = $underlying->calendar;
+    my $calendar       = _trading_calendar($underlying->for_date);
     my $now            = $args->{now};
     my $is_early_close = $calendar->closes_early_on($exchange, $now);
 
@@ -639,7 +657,7 @@ sub _get_trade_date_of_daily_window {
     my $duration                = $args->{duration};
     my $underlying              = $args->{underlying};
     my $exchange                = $underlying->exchange;
-    my $calendar                = $underlying->calendar;
+    my $calendar                = _trading_calendar($underlying->for_date);
     my $date_start =
           $calendar->trades_on($exchange, $start_of_current_window)
         ? $start_of_current_window

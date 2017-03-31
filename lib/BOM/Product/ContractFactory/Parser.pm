@@ -145,17 +145,6 @@ sub shortcode_to_parameters {
     }
 
     my $underlying = create_underlying($underlying_symbol);
-    if (Date::Utility::is_ddmmmyy($date_expiry)) {
-        my $calendar = $underlying->calendar;
-        $date_expiry = Date::Utility->new($date_expiry);
-        if (my $closing = $calendar->closing_on($underlying->exchange, $date_expiry)) {
-            $date_expiry = $closing->epoch;
-        } else {
-            my $regular_close =
-                $calendar->closing_on($underlying->exchange, $calendar->regular_trading_day_after($underlying->exchange, $date_expiry));
-            $date_expiry = Date::Utility->new($date_expiry->date_yyyymmdd . ' ' . $regular_close->time_hhmmss);
-        }
-    }
     $barrier = BOM::Product::Contract::Strike->strike_string($barrier, $underlying, $bet_type, $date_start)
         if defined $barrier;
     $barrier2 = BOM::Product::Contract::Strike->strike_string($barrier2, $underlying, $bet_type, $date_start)

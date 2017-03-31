@@ -599,7 +599,7 @@ sub _build_rho {
         my $expiry_conventions = Quant::Framework::ExpiryConventions->new(
             underlying       => $self->underlying,
             chronicle_reader => $cr,
-            calendar         => $self->underlying->calendar,
+            calendar         => $self->trading_calendar,
         );
 
         my $index           = $self->underlying->asset_symbol;

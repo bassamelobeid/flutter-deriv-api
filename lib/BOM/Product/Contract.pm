@@ -13,7 +13,7 @@ use Date::Utility;
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use Time::Duration::Concise;
 
-use Quant::Framework::TradingCalendar;
+use Quant::Framework;
 use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
 use Postgres::FeedDB::Spot::Tick;
@@ -231,22 +231,18 @@ has underlying => (
     handles => [qw(market pip_size)],
 );
 
-has calendar => (
+has trading_calendar => (
     is      => 'ro',
-    isa     => 'Quant::Framework::TradingCalendar',
     lazy    => 1,
-    builder => '_build_calendar',
+    builder => '_build_trading_calendar',
 );
 
-sub _build_calendar {
+sub _build_trading_calendar {
     my $self = shift;
 
     my $for_date = $self->underlying->for_date;
 
-    return Quant::Framework::TradingCalendar->new(
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($for_date),
-        for_date         => $for_date,
-    );
+    return Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
 }
 
 has opposite_contract => (
@@ -371,7 +367,7 @@ sub _check_is_intraday {
     return 0 if $contract_duration > 86400;
 
     # for contract that start at the open of day and expire at the close of day (include early close) should be treated as daily contract
-    my $closing = $self->calendar->closing_on($self->underlying->exchange, $self->date_expiry);
+    my $closing = $self->trading_calendar->closing_on($self->underlying->exchange, $self->date_expiry);
     return 0 if $closing and $closing->is_same_as($self->date_expiry) and $contract_duration >= $self->effective_daily_trading_seconds;
 
     return 1;
@@ -593,7 +589,7 @@ sub _build_expiry_daily {
 sub _build_effective_daily_trading_seconds {
     my $self                  = shift;
     my $date_expiry           = $self->date_expiry;
-    my $calendar              = $self->calendar;
+    my $calendar              = $self->trading_calendar;
     my $exchange              = $self->underlying->exchange;
     my $daily_trading_seconds = $calendar->closing_on($exchange, $date_expiry)->epoch - $calendar->opening_on($exchange, $date_expiry)->epoch;
 
@@ -682,8 +678,8 @@ sub _build_date_settlement {
     my $exchange = $self->underlying->exchange;
 
     my $date_settlement = $end_date;    # Usually we settle when we expire.
-    if ($self->expiry_daily and $self->calendar->trades_on($exchange, $end_date)) {
-        $date_settlement = $self->calendar->settlement_on($exchange, $end_date);
+    if ($self->expiry_daily and $self->trading_calendar->trades_on($exchange, $end_date)) {
+        $date_settlement = $self->trading_calendar->settlement_on($exchange, $end_date);
     }
 
     return $date_settlement;
@@ -836,7 +832,7 @@ sub _build_longcode {
         $when_end = $self->get_time_to_expiry({from => $self->date_start})->as_string;
         $when_start = ($forward_starting_contract) ? $self->date_start->db_timestamp . ' GMT' : localize('contract start time');
     } elsif ($expiry_type eq 'daily') {
-        my $close = $self->calendar->closing_on($self->underlying->exchange, $self->date_expiry);
+        my $close = $self->trading_calendar->closing_on($self->underlying->exchange, $self->date_expiry);
         if ($close and $close->epoch != $self->date_expiry->epoch) {
             $when_end = $self->date_expiry->datetime . ' GMT';
         } else {
@@ -862,7 +858,7 @@ sub _build_corporate_actions {
     my $underlying = $self->underlying;
 
     if ($underlying->market->affected_by_corporate_actions) {
-        my $first_day_close = $self->calendar->closing_on($underlying->exchange, $self->date_start);
+        my $first_day_close = $self->trading_calendar->closing_on($underlying->exchange, $self->date_start);
         if ($first_day_close and not $self->date_expiry->is_before($first_day_close)) {
             @actions = $underlying->get_applicable_corporate_actions_for_period({
                 start => $self->date_start,
@@ -1106,7 +1102,7 @@ sub _build_exit_tick {
         # After expiry and yet pass the settlement, use current tick at the date_expiry
         # to determine the pre-settlement value. It might diff with actual settlement value
         $exit_tick = $underlying->tick_at($self->date_expiry->epoch, {allow_inconsistent => 1});
-    } elsif ($self->expiry_daily or $self->date_expiry->is_same_as($self->calendar->closing_on($underlying->exchange, $self->date_expiry))) {
+    } elsif ($self->expiry_daily or $self->date_expiry->is_same_as($self->trading_calendar->closing_on($underlying->exchange, $self->date_expiry))) {
         # Expiration based on daily OHLC
         $exit_tick = $underlying->closing_tick_on($self->date_expiry->date);
     } else {
@@ -1117,7 +1113,7 @@ sub _build_exit_tick {
         my ($entry_tick_date, $exit_tick_date) = map { Date::Utility->new($_) } ($self->entry_tick->epoch, $exit_tick->epoch);
         if (    not $self->expiry_daily
             and $underlying->intradays_must_be_same_day
-            and $self->calendar->trading_days_between($underlying->exchange, $entry_tick_date, $exit_tick_date))
+            and $self->trading_calendar->trading_days_between($underlying->exchange, $entry_tick_date, $exit_tick_date))
         {
             $self->add_error({
                 message => 'Exit tick date differs from entry tick date on intraday '

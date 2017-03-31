@@ -19,6 +19,8 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Product::Types;
 use BOM::Product::RiskProfile;
+use BOM::Platform::Chronicle;
+use Quant::Framework;
 
 with 'MooseX::Role::Validatable';
 
@@ -503,7 +505,10 @@ sub _validate_underlying {
             };
     }
 
-    if (not $self->underlying->calendar->is_open($self->underlying->exchange)) {
+    my $for_date = $self->underlying->for_date;
+    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
+
+    if (not $trading_calendar->is_open($self->underlying->exchange)) {
         push @err,
             {
             message           => 'Market is closed',

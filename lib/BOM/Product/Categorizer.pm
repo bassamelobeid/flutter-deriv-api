@@ -4,7 +4,9 @@ use Moose;
 
 use Date::Utility;
 use LandingCompany::Offerings qw(get_all_contract_types);
+use Quant::Framework;
 
+use BOM::Platform::Chronicle;
 use BOM::MarketData qw(create_underlying);
 use BOM::Product::Contract::Category;
 
@@ -141,8 +143,8 @@ sub _initialize_contract_parameters {
         $pp->{date_start} = Date::Utility->new($pp->{date_start});
     }
 
-    foreach my $type (grep { defined $pp->{$_} } qw(date_pricing date_expiry)) {
-        $pp->{$type} = Date::Utility->new($pp->{$type});
+    if (defined $pp->{date_pricing}) {
+        $pp->{date_pricing} = Date::Utility->new($pp->{date_pricing});
     }
 
     unless ($pp->{underlying}->isa('Quant::Framework::Underlying')) {
@@ -153,6 +155,24 @@ sub _initialize_contract_parameters {
     if ($pp->{date_pricing}) {
         if (not($pp->{underlying}->for_date and $pp->{underlying}->for_date->is_same_as($pp->{date_pricing}))) {
             $pp->{underlying} = create_underlying($pp->{underlying}->symbol, $pp->{date_pricing});
+        }
+    }
+
+    if (defined $pp->{date_expiry}) {
+        # to support legacy shortcode where expiry date is date string in dd-mmm-yy format
+        if (Date::Utility::is_ddmmmyy($pp->{date_expiry})) {
+            my $for_date         = $pp->{underlying}->for_date;
+            my $exchange         = $pp->{underlying}->exchange;
+            my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
+            my $date_expiry      = Date::Utility->new($date_expiry);
+            if (my $closing = $trading_calendara->closing_on($exchange, $date_expiry)) {
+                $date_expiry = $closing->epoch;
+            } else {
+                my $regular_close = $trading_calendar->closing_on($exchange, $trading_calendar->regular_trading_day_after($exchange, $date_expiry));
+                $date_expiry = Date::Utility->new($date_expiry->date_yyyymmdd . ' ' . $regular_close->time_hhmmss);
+            }
+        } else {
+            $pp->{date_expiry} = Date::Utility->new($pp->{date_expiry});
         }
     }
 
@@ -167,6 +187,8 @@ sub _initialize_contract_parameters {
         # these are the only parameters for spreads
         $pp->{'supplied_' . $_} = delete $pp->{$_} for (qw(stop_profit stop_loss));
     } else {
+        my $for_date = $pp->{underlying}->for_date;
+        my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
         # if amount_type and amount are defined, give them priority.
         if ($pp->{amount} and $pp->{amount_type}) {
             if ($pp->{amount_type} eq 'payout') {
@@ -207,12 +229,12 @@ sub _initialize_contract_parameters {
                     # Since we return the day AFTER, we pass one day ahead of expiry.
                     my $expiry_date = Date::Utility->new($start_epoch)->plus_time_interval($duration);
                     # Daily bet expires at the end of day, so here you go
-                    if (my $closing = $underlying->calendar->closing_on($underlying->exchange, $expiry_date)) {
+                    if (my $closing = $trading_calendar->closing_on($underlying->exchange, $expiry_date)) {
                         $expiry = $closing->epoch;
                     } else {
                         $expiry = $expiry_date->epoch;
-                        my $regular_day = $underlying->calendar->regular_trading_day_after($underlying->exchange, $expiry_date);
-                        my $regular_close = $underlying->calendar->closing_on($underlying->exchange, $regular_day);
+                        my $regular_day = $trading_calendar->regular_trading_day_after($underlying->exchange, $expiry_date);
+                        my $regular_close = $trading_calendar->closing_on($underlying->exchange, $regular_day);
                         $expiry = Date::Utility->new($expiry_date->date_yyyymmdd . ' ' . $regular_close->time_hhmmss)->epoch;
                     }
                 } else {
