@@ -168,12 +168,12 @@ sub process {
         }
     }
     # Using a timing metric here so we can get min/max/avg
-    DataDog::DogStatsd::Helper::stats_timing("pricer_queue.japan.jobs.queued", 0 + @jobs);
+    DataDog::DogStatsd::Helper::stats_timing("pricer_queue.japan.jobs.queued",  0 + @jobs);
     DataDog::DogStatsd::Helper::stats_timing("pricer_queue.japan.jobs.skipped", $skipped);
     $log->debugf("Total of %d jobs to process, %d skipped", 0 + @jobs, $skipped);
 
     {    # Attempt to group the Redis operations to reduce network overhead
-	    my $redis = $self->redis;
+        my $redis = $self->redis;
         while (my @batch = splice @jobs, 0, JOBS_PER_BATCH) {
             $redis->mset(map { ; $_ => "1" } @batch);
         }
