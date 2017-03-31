@@ -190,18 +190,18 @@ Sleep to start of next minute
 =cut
 
 sub wait_for_next_cycle {
-	my $now = Time::HiRes::time;
-	my $target = 1e9 * JOB_QUEUE_TTL * (1 + floor($now / JOB_QUEUE_TTL));
-	$log->debugf("Will sleep until %s (current time %s)", map $_->iso8601, Date::Utility->new($target / 1e9), Date::Utility->new);
-	clock_nanosleep(CLOCK_REALTIME, $target, TIMER_ABSTIME);
+    my $now = Time::HiRes::time;
+    my $target = 1e9 * JOB_QUEUE_TTL * (1 + floor($now / JOB_QUEUE_TTL));
+    $log->debugf("Will sleep until %s (current time %s)", map $_->iso8601, Date::Utility->new($target / 1e9), Date::Utility->new);
+    clock_nanosleep(CLOCK_REALTIME, $target, TIMER_ABSTIME);
 }
 
 sub run {
-	my ($self) = @_;
-	while(1) {
-		$self->process;
-		$self->wait_for_next_cycle;
-	}
+    my ($self) = @_;
+    while (1) {
+        $self->process;
+        $self->wait_for_next_cycle;
+    }
     return 1;
 }
 
