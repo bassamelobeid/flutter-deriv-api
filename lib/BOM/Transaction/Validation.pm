@@ -707,7 +707,7 @@ sub allow_paymentagent_withdrawal {
 
     my $expires_on = $self->client->payment_agent_withdrawal_expiration_date;
 
-    if ( $expires_on ) {
+    if ($expires_on) {
         return 1 if Date::Utility->new($expires_on)->is_after(Date::Utility->new);
     } else {
         # if expiry date is not set check for doughflow count
