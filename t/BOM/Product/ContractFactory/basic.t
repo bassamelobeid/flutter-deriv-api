@@ -1,8 +1,9 @@
 use strict;
 use warnings;
 
-use Test::More (tests => 5);
+use Test::More;
 use Test::FailWarnings;
+use Test::Warnings qw/warning/;
 use Test::Exception;
 use Test::MockModule;
 use File::Spec;
@@ -104,8 +105,11 @@ subtest 'make_similar_contract' => sub {
     'make similar contract appears to work';
 
     isa_ok($similar, 'BOM::Product::Contract');
-    is($similar->barrier->as_relative, 'S0P', 'new contract has the proper barrier');
-    isnt($contract->barrier->as_relative, 'S0P', '... and the old one did not');
+    my $res;
+    warning { $res = $similar->barrier->as_relative }, qr/No basis tick for/;
+    is($res, 'S0P', 'new contract has the proper barrier');
+    warning { $res = $contract->barrier->as_relative }, qr/No basis tick for/;
+    isnt($res, 'S0P', '... and the old one did not');
     ok($similar->date_expiry->is_same_as($contract->date_expiry),
         '.. but they both end at the same time.. which we will take to mean they are otherwise the same.');
 
@@ -127,7 +131,8 @@ subtest 'simple_contract_info' => sub {
         barrier    => 108.26,
     };
 
-    my ($desc, $ticky, $spready) = simple_contract_info($contract_params);
+    my ($desc, $ticky, $spready);
+    warning { ($desc, $ticky, $spready) = simple_contract_info($contract_params) }, qr/No basis tick for/;
 
     like $desc, qr#^Win payout if#, 'our params got us what seems like it might be a description';
     ok(!$ticky,   "our params do not create a tick expiry contract.");
@@ -142,7 +147,7 @@ subtest 'simple_contract_info' => sub {
         barrier    => 108.26,
     };
 
-    ($desc, $ticky, $spready) = simple_contract_info($contract_params);
+    warning { ($desc, $ticky, $spready) = simple_contract_info($contract_params) }, qr/No basis tick for/;
 
     like $desc, qr#^Win payout if#, 'our params got us what seems like it might be a description';
     ok($ticky,    "our params create a tick expiry contract.");
@@ -159,7 +164,7 @@ subtest 'simple_contract_info' => sub {
         stop_type        => 'point',
     };
 
-    ($desc, $ticky, $spready) = simple_contract_info($contract_params);
+    warning { ($desc, $ticky, $spready) = simple_contract_info($contract_params) }, qr/No basis tick for/;
 
     like $desc, qr#^USD 1.00#, 'our params got us what seems like it might be a description';
     ok(!$ticky,  "our params do not create a tick expiry contract.");
@@ -190,4 +195,4 @@ subtest 'unknown shortcode does not die' => sub {
     'unknown shortcode';
 };
 
-1;
+done_testing();

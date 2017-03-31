@@ -5,6 +5,7 @@ use Time::HiRes;
 use Test::MockTime qw/:all/;
 use Test::Most qw(-Test::Deep);
 use Test::FailWarnings;
+use Test::Warnings qw/warning/;
 use DateTime;
 use Test::MockModule;
 use File::Spec;
@@ -513,7 +514,8 @@ subtest 'volsurfaces become old and invalid' => sub {
 
     $bet = produce_contract($bet_params);
     ok($bet->volsurface->validation_error('fake broken surface'), 'Set broken surface');
-    my $vol = $bet->pricing_vol;
+    my $vol;
+    warning { $vol = $bet->pricing_vol }, qr/Volatility error: fake broken surface/;
     ok $bet->primary_validation_error->message =~ qr/fake broken surface/, "correct error";
 
     my $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -559,7 +561,9 @@ subtest 'volsurfaces become old and invalid' => sub {
     $bet = produce_contract($bet_params);
     is($bet->pricing_args->{iv}, $forced_vol, 'Pricing args contains proper forced vol.');
     $expected_reasons = [qr/forced \(not calculated\) IV/];
-    ok $bet->is_valid_to_buy, 'valid to buy with forced vol';
+    my $valid_to_buy;
+    warning { $valid_to_buy = $bet->is_valid_to_buy }, qr/spot too far from surface reference/;
+    ok $valid_to_buy, 'valid to buy with forced vol';
 };
 
 subtest 'invalid start times' => sub {
@@ -859,7 +863,9 @@ subtest 'invalid lifetimes.. how rude' => sub {
         });
 
     $bet = produce_contract($bet_params);
-    ok($bet->is_valid_to_buy, '..but when we pick an earlier start date, validates just fine.');
+    my $valid_to_buy;
+    warning { $valid_to_buy = $bet->is_valid_to_buy }, qr/spot too far from surface reference/;
+    ok($valid_to_buy, '..but when we pick an earlier start date, validates just fine.');
 
     $bet_params->{bet_type} = 'CALL';
     $bet_params->{duration} = '1d';
@@ -870,7 +876,8 @@ subtest 'invalid lifetimes.. how rude' => sub {
 
     $bet_params->{duration} = '14d';
     $bet = produce_contract($bet_params);
-    ok($bet->is_valid_to_buy, '..but when we pick a reasonable duration, validates just fine.');
+    warning { $valid_to_buy = $bet->is_valid_to_buy }, qr/spot too far from surface reference/;
+    ok($valid_to_buy, '..but when we pick a reasonable duration, validates just fine.');
 
     my $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
@@ -948,7 +955,9 @@ subtest 'underlying with critical corporate actions' => sub {
             spot_reference => $tick->quote,
         });
     my $bet = produce_contract($bet_params);
-    ok $bet->_confirm_validity, 'can buy stock';
+    my $confirm_validity;
+    warning { $confirm_validity = $bet->_confirm_validity }, qr/spot too far from surface reference/;
+    ok $confirm_validity, 'can buy stock';
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions(['USAAPL']);
     $bet = produce_contract($bet_params);
     my $expected_reasons = [qr/Underlying.*suspended/];
@@ -1044,7 +1053,10 @@ subtest 'intraday indices duration test' => sub {
         });
 
     my $c = produce_contract($params);
-    ok $c->is_valid_to_buy, 'valid 15 minutes Flash on AS51';
+    my $valid_to_buy;
+    warning { $valid_to_buy = $c->is_valid_to_buy }, qr/spot too far from surface reference/;
+    ok $valid_to_buy, 'valid 15 minutes Flash on AS51';
+
     $params->{duration} = '14m';
     $c = produce_contract($params);
     my $expected_reasons = [qr/Intraday duration.*not acceptable/];
@@ -1283,15 +1295,20 @@ subtest 'integer barrier' => sub {
     };
 
     my $c = produce_contract($params);
-    ok $c->is_valid_to_buy, 'valid to buy if barrier is integer for indices';
+    my $valid_to_buy;
+    warning { $valid_to_buy = $c->is_valid_to_buy }, qr/spot too far from surface reference/;
+    ok $valid_to_buy, 'valid to buy if barrier is integer for indices';
 
     $params->{barrier} = 100.1;
     $c = produce_contract($params);
-    ok !$c->is_valid_to_buy, 'not valid to buy if barrier is non integer';
+    warning { $valid_to_buy = $c->is_valid_to_buy }, qr/spot too far from surface reference/;
+    ok !$valid_to_buy, 'not valid to buy if barrier is non integer';
     like($c->primary_validation_error->message, qr/Barrier is not an integer/, 'correct error');
     $params->{date_pricing} = $now->epoch + 1;
     $c = produce_contract($params);
-    ok $c->is_valid_to_sell, 'valid to sell at non integer barrier';
+    my $valid_to_sell;
+    warning { $valid_to_sell = $c->is_valid_to_sell }, qr/spot too far from surface reference/;
+    ok $valid_to_sell, 'valid to sell at non integer barrier';
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
@@ -1301,7 +1318,9 @@ subtest 'integer barrier' => sub {
     $params->{underlying}   = 'frxAUDUSD';
     $params->{date_pricing} = $now;
     $c                      = produce_contract($params);
-    ok $c->is_valid_to_buy, 'valid to buy if barrier is non integer for forex';
+
+    warning { $valid_to_buy = $c->is_valid_to_buy }, qr/spot too far from surface reference/;
+    ok $valid_to_buy, 'valid to buy if barrier is non integer for forex';
 };
 
 subtest 'contract must be held' => sub {
@@ -1436,7 +1455,9 @@ sub test_error_list {
     subtest $bet->shortcode . ' error confirmation' => sub {
         plan tests => 2;
 
-        ok(!$bet->$val_method, 'Not valid for ' . $which);
+        my $res;
+        warning { $res = $bet->$val_method }, qr/Quote too old for/;
+        ok(!$res, 'Not valid for ' . $which);
         if ($bet->primary_validation_error->message =~ $expected->[0]) {
             pass 'error is expected';
         } else {
