@@ -26,6 +26,8 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestRedis;
+use BOM::Platform::Chronicle;
+use Quant::Framework;
 
 my $FRW_frxUSDJPY_ON = create_underlying('FRW_frxUSDJPY_ON');
 my $FRW_frxUSDJPY_TN = create_underlying('FRW_frxUSDJPY_TN');
@@ -247,10 +249,11 @@ subtest Equity => sub {
 
     # normal one day bet
     my $underlying = create_underlying('FTSE');
+    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
     my $bet        = _sample_bet(
         underlying  => $underlying,
         date_start  => Date::Utility->new('2012-01-11 10:30:00'),
-        date_expiry => $underlying->calendar->closing_on($underlying->exchange, Date::Utility->new('18-Jan-12')),
+        date_expiry => $trading_calendar->closing_on($underlying->exchange, Date::Utility->new('18-Jan-12')),
     );
     cmp_ok($bet->timeindays->amount, '==', 7.25, 'One week EQ bet: does not follow integer days concept.');
 };

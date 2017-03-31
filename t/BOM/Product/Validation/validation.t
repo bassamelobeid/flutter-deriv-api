@@ -22,10 +22,13 @@ use BOM::Platform::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Platform::Chronicle;
+use Quant::Framework;
 
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
+my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
 my $mocked = Test::MockModule->new('BOM::Product::Contract');
 $mocked->mock('market_is_inefficient', sub { 0 });
 my $oft_used_date   = Date::Utility->new('2013-03-29 15:00:34');
@@ -521,7 +524,7 @@ subtest 'volsurfaces become old and invalid' => sub {
             spot_reference => $tick->quote,
         });
     my $gdaxi                = create_underlying('GDAXI');
-    my $surface_too_old_date = $gdaxi->calendar->opening_on($gdaxi->exchange, Date::Utility->new('2013-03-28'));
+    my $surface_too_old_date = $trading_calendar->opening_on($gdaxi->exchange, Date::Utility->new('2013-03-28'));
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
@@ -636,7 +639,7 @@ subtest 'invalid start times' => sub {
     $bet_params->{underlying}   = $underlying;
     $bet_params->{bet_type}     = 'DOUBLEDOWN';
     $bet_params->{duration}     = '7d';
-    $bet_params->{date_start}   = $underlying->calendar->opening_on($underlying->exchange, Date::Utility->new('2013-03-28'));
+    $bet_params->{date_start}   = $trading_calendar->opening_on($underlying->exchange, Date::Utility->new('2013-03-28'));
     $bet_params->{date_pricing} = $bet_params->{date_start};
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
@@ -662,7 +665,7 @@ subtest 'invalid start times' => sub {
     $bet_params->{volsurface}   = $volsurface;
     $bet_params->{bet_type}     = 'DOUBLEDOWN';
     $bet_params->{duration}     = '0d';
-    $bet_params->{date_start}   = $underlying->calendar->closing_on($underlying->exchange, Date::Utility->new('2013-03-28'))->minus_time_interval('1m');
+    $bet_params->{date_start}   = $trading_calendar->closing_on($underlying->exchange, Date::Utility->new('2013-03-28'))->minus_time_interval('1m');
     $bet_params->{date_pricing} = $bet_params->{date_start};
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
@@ -736,7 +739,7 @@ subtest 'invalid expiry times' => sub {
     $bet_params->{underlying}   = $underlying;
     $bet_params->{bet_type}     = 'CALL';
     $bet_params->{duration}     = '10h';
-    $bet_params->{date_start}   = $underlying->calendar->closing_on($underlying->exchange, Date::Utility->new('2013-03-28'))->minus_time_interval('9h');
+    $bet_params->{date_start}   = $trading_calendar->closing_on($underlying->exchange, Date::Utility->new('2013-03-28'))->minus_time_interval('9h');
     $bet_params->{date_pricing} = $bet_params->{date_start}->epoch - 1776;
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
         {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
@@ -758,7 +761,7 @@ subtest 'invalid expiry times' => sub {
     $bet_params->{volsurface}   = $volsurface;
     $bet_params->{underlying}   = $underlying;
     $bet_params->{duration}     = '2h';
-    $bet_params->{date_start}   = $underlying->calendar->closing_on($underlying->exchange, Date::Utility->new('2013-03-28'))->minus_time_interval('1h');
+    $bet_params->{date_start}   = $trading_calendar->closing_on($underlying->exchange, Date::Utility->new('2013-03-28'))->minus_time_interval('1h');
     $bet_params->{date_pricing} = $bet_params->{date_start}->epoch - 1066;
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
         {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
@@ -829,7 +832,7 @@ subtest 'invalid lifetimes.. how rude' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_start})});
     $underlying                 = create_underlying('GDAXI');
     $bet_params->{underlying}   = $underlying;
-    $bet_params->{date_start}   = $underlying->calendar->opening_on($underlying->exchange, Date::Utility->new('6-Dec-12'))->plus_time_interval('15m');
+    $bet_params->{date_start}   = $trading_calendar->opening_on($underlying->exchange, Date::Utility->new('6-Dec-12'))->plus_time_interval('15m');
     $bet_params->{date_pricing} = $bet_params->{date_start};
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
@@ -877,7 +880,7 @@ subtest 'invalid lifetimes.. how rude' => sub {
             spot_reference => $tick->quote,
         });
 
-    $bet_params->{date_start}   = $underlying->calendar->opening_on($underlying->exchange, Date::Utility->new('28-Mar-13'))->plus_time_interval('15m');
+    $bet_params->{date_start}   = $trading_calendar->opening_on($underlying->exchange, Date::Utility->new('28-Mar-13'))->plus_time_interval('15m');
     $bet_params->{date_pricing} = $bet_params->{date_start};
     $bet_params->{duration}     = '8d';
     $bet_params->{barrier}      = 101;
@@ -911,7 +914,7 @@ subtest 'underlying with critical corporate actions' => sub {
     my $orig = BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions;
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions([]);
     my $underlying = create_underlying('USAAPL');
-    my $starting   = $underlying->calendar->opening_on($underlying->exchange, Date::Utility->new('2013-03-28'))->plus_time_interval('1h');
+    my $starting   = $trading_calendar->opening_on($underlying->exchange, Date::Utility->new('2013-03-28'))->plus_time_interval('1h');
 
     my $bet_params = {
         underlying   => $underlying,

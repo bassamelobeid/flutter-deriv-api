@@ -12,9 +12,12 @@ use BOM::Platform::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Platform::Chronicle;
+use Quant::Framework;
 
 initialize_realtime_ticks_db;
 
+my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
 my $weekday             = Date::Utility->new('2016-03-29');
 my $usdjpy_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxAUDUSD',
@@ -210,7 +213,7 @@ subtest 'date start blackouts' => sub {
 
     note('Testing date_start blackouts for HSI');
     my $hsi = create_underlying('HSI');
-    my $hsi_open         = $hsi->calendar->opening_on($hsi->exchange, $weekday);
+    my $hsi_open         = $trading_calendar->opening_on($hsi->exchange, $weekday);
     my $hsi_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'HSI',
         epoch      => $hsi_open->epoch + 600,
@@ -228,7 +231,7 @@ subtest 'date start blackouts' => sub {
     $bet_params->{duration}     = '1h';
     $c                          = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy forward starting contract on first 1 minute of opening';
-    my $hsi_close = $hsi->calendar->closing_on($hsi->exchange, $weekday);
+    my $hsi_close = $trading_calendar->closing_on($hsi->exchange, $weekday);
     $hsi_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'HSI',
         epoch      => $hsi_close->epoch - 900,
@@ -243,7 +246,7 @@ subtest 'date start blackouts' => sub {
 
     note('Multiday contract on HSI');
     my $new_day           = $weekday->plus_time_interval('1d');
-    my $hour_before_close = $hsi->calendar->closing_on($hsi->exchange, $new_day)->minus_time_interval('1h');
+    my $hour_before_close = $trading_calendar->closing_on($hsi->exchange, $new_day)->minus_time_interval('1h');
     $hsi_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'HSI',
         epoch      => $hour_before_close->epoch,
@@ -319,7 +322,7 @@ subtest 'date_expiry blackouts' => sub {
     note('Testing date_expiry blackouts for HSI');
     my $hsi = create_underlying('HSI');
     my $new_week          = $weekday->plus_time_interval('7d');
-    my $hsi_close         = $hsi->calendar->closing_on($hsi->exchange, $new_week);
+    my $hsi_close         = $trading_calendar->closing_on($hsi->exchange, $new_week);
     my $hour_before_close = $hsi_close->minus_time_interval('1h');
     my $hsi_weekday_tick  = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'HSI',
@@ -351,7 +354,7 @@ subtest 'date_expiry blackouts' => sub {
     like(($c->primary_validation_error)[0]->{message_to_client}, qr/between 07:39:00 and 07:40:00/, 'throws error');
 
     my $usdjpy = create_underlying('frxUSDJPY');
-    my $usdjpy_close = $usdjpy->calendar->closing_on($usdjpy->exchange, $new_week);
+    my $usdjpy_close = $trading_calendar->closing_on($usdjpy->exchange, $new_week);
     my $pricing_date = $usdjpy_close->minus_time_interval('6h');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
@@ -374,7 +377,7 @@ subtest 'date_expiry blackouts' => sub {
 subtest 'date expiry blackout - year end holidays for equity' => sub {
     my $hsi = create_underlying('HSI');
     my $year_end   = Date::Utility->new('2016-12-30');
-    my $date_start = $hsi->calendar->opening_on($hsi->exchange, $year_end)->plus_time_interval('15m');
+    my $date_start = $trading_calendar->opening_on($hsi->exchange, $year_end)->plus_time_interval('15m');
     my $tick       = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'HSI',
         epoch      => $date_start->epoch,

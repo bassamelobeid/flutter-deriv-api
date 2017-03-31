@@ -16,6 +16,8 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use LandingCompany::Offerings qw(reinitialise_offerings);
+use Quant::Framework;
+use BOM::Platform::Chronicle;
 
 use Quant::Framework::CorporateAction;
 use Quant::Framework::StorageAccessor;
@@ -66,7 +68,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 
 my $underlying = create_underlying('USAAPL');
-my $opening    = $underlying->calendar->opening_on($underlying->exchange, $date);
+my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
+my $opening    = $trading_calendar->opening_on($underlying->exchange, $date);
 my $starting   = $opening->plus_time_interval('50m');
 my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'USAAPL',
