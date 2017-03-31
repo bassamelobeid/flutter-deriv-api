@@ -479,10 +479,8 @@ sub process_transaction_updates {
                         $payload->{sell_time} = Date::Utility->new($payload->{sell_time})->epoch;
                         $payload->{uuid}      = $type;
 
-                        # send proposal details last time
                         Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time($c, $payload,
                             $channel->{$type}->{contract_id});
-
                     }
                 } elsif ($channel and exists $channel->{$type}->{account_id}) {
                     _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);

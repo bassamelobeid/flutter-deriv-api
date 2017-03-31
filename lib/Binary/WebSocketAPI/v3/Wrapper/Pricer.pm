@@ -781,12 +781,9 @@ sub _price_stream_results_adjustment {
 }
 
 sub send_proposal_open_contract_last_time {
-    # last message (contract is sold) of proposal_open_contract stream could not be done from pricer
-    # because it should be performed with other parameters
     my ($c, $args, $contract_id) = @_;
 
     Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $args->{uuid});
-
     $c->call_rpc({
             args => {
                 proposal_open_contract => 1,
