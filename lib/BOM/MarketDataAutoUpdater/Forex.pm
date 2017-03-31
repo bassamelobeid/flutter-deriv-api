@@ -33,7 +33,7 @@ has file => (
 );
 
 has tenor_file => (
-    is         => 'ro',
+    is         => 'rw',
     lazy_build => 1,
 );
 
