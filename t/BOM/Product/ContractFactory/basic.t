@@ -1,8 +1,10 @@
 use strict;
 use warnings;
 
-use Test::More (tests => 3);
+
+use Test::More;
 use Test::FailWarnings;
+use Test::Warnings qw/warning/;
 use Test::Exception;
 use Test::MockModule;
 use File::Spec;
@@ -104,8 +106,11 @@ subtest 'make_similar_contract' => sub {
     'make similar contract appears to work';
 
     isa_ok($similar, 'BOM::Product::Contract');
-    is($similar->barrier->as_relative, 'S0P', 'new contract has the proper barrier');
-    isnt($contract->barrier->as_relative, 'S0P', '... and the old one did not');
+    my $res;
+    warning { $res = $similar->barrier->as_relative }, qr/No basis tick for/;
+    is($res, 'S0P', 'new contract has the proper barrier');
+    warning { $res = $contract->barrier->as_relative }, qr/No basis tick for/;
+    isnt($res, 'S0P', '... and the old one did not');
     ok($similar->date_expiry->is_same_as($contract->date_expiry),
         '.. but they both end at the same time.. which we will take to mean they are otherwise the same.');
 
@@ -124,4 +129,4 @@ subtest 'unknown shortcode does not die' => sub {
     'unknown shortcode';
 };
 
-1;
+done_testing();

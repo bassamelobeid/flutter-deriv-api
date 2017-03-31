@@ -3,14 +3,15 @@ use warnings;
 
 use Test::Most;
 use Test::FailWarnings;
+use Test::Warnings qw/warning/;
 use File::Spec;
 use JSON qw(decode_json);
-
 use Cache::RedisDB;
 use Date::Utility;
-use LandingCompany::Offerings qw(reinitialise_offerings);
 
+use LandingCompany::Offerings qw(reinitialise_offerings);
 use Postgres::FeedDB::Spot::Tick;
+
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Platform::Chronicle;
@@ -100,12 +101,14 @@ sub test_economic_events_markup {
     my $bet = produce_contract($params);
     is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'uses Intraday Historical pricing engine');
     is($bet->pricing_engine->economic_events_spot_risk_markup->amount, $expected_ee_srmarkup, 'correct spot risk markup');
-    cmp_ok(
-        $bet->pricing_engine->economic_events_volatility_risk_markup->amount,
-        '<',
-        $bet->pricing_engine->economic_events_spot_risk_markup->amount,
-        'vol risk markup is lower than higher range'
+
+    my $amount;
+    like(
+        warning { $amount = $bet->pricing_engine->economic_events_volatility_risk_markup->amount },
+        qr/No basis tick for/,
+        'Got warning for no basis tick'
     );
+    cmp_ok($amount, '<', $bet->pricing_engine->economic_events_spot_risk_markup->amount, 'vol risk markup is lower than higher range');
     is($bet->pricing_engine->economic_events_markup->amount, $expected_ee_markup, 'economic events markup is max of spot or vol risk markup');
 }
 

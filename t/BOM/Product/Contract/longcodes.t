@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Test::Most;
+use Test::Warnings qw/warning/;
 use Test::FailWarnings;
 use Test::MockModule;
 use File::Spec;
@@ -74,7 +75,11 @@ subtest 'longcode from params for forward starting' => sub {
     });
 
     ok $c->is_forward_starting, 'is a forward starting contract';
-    is $c->longcode,            'Win payout if Volatility 100 Index is strictly higher than entry spot at 10 minutes after 2016-10-19 10:10:00 GMT.',
+    my $longcode;
+
+    like(warning { $longcode = $c->longcode }, qr/No basis tick for/, 'Got warning for no basis tick');
+
+    is $longcode, 'Win payout if Volatility 100 Index is strictly higher than entry spot at 10 minutes after 2016-10-19 10:10:00 GMT.',
         'correct longcode';
 };
 
