@@ -80,6 +80,7 @@ Reloads appconfig if it has changed recently.
 
 sub check_appconfig {
     my ($self) = @_;
+    my $start = Time::HiRes::time;
     if ($start - $self->{appconfig_age} >= APP_CONFIG_REFRESH_INTERVAL) {
         BOM::Platform::Runtime->instance->app_config->check_for_update;
         $self->{appconfig_age} = $start;
