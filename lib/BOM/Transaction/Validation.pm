@@ -707,13 +707,14 @@ sub allow_paymentagent_withdrawal {
 
     my $expires_on = $self->client->payment_agent_withdrawal_expiration_date;
 
-    return ($expires_on->epoch > time) if $expires_on;
-
-    # if expiry date is not set check for doughflow count
-    my $payment_mapper = BOM::Database::DataMapper::Payment->new({'client_loginid' => $self->client->loginid});
-    my $doughflow_count = $payment_mapper->get_client_payment_count_by({payment_gateway_code => 'doughflow'});
-    return 1 if $doughflow_count == 0;
-
+    if ( $expires_on ) {
+        return 1 if Date::Utility->new($expires_on)->is_after(Date::Utility->new);
+    } else {
+        # if expiry date is not set check for doughflow count
+        my $payment_mapper = BOM::Database::DataMapper::Payment->new({'client_loginid' => $self->client->loginid});
+        my $doughflow_count = $payment_mapper->get_client_payment_count_by({payment_gateway_code => 'doughflow'});
+        return 1 if $doughflow_count == 0;
+    }
     return;
 }
 
