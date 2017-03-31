@@ -1228,17 +1228,17 @@ sub format_error {
     my ($self, %args) = @_;
     my $err               = $args{err};
     my $client            = $args{client};
-    my $bak_type          = $args{bak_type} // 'InternalError';             # maybe caller know the type
-    my $bak_msg           = Dumper($err);
-    my $bak_msg_to_client = $args{bak_msg_to_client} // 'Internal Error';
+    my $type          = $args{type} // 'InternalError';             # maybe caller know the type
+    my $msg           = Dumper($err);
+    my $msg_to_client = $args{msg_to_client} // 'Internal Error';
     return try {
         return $self->_recover($err, $client);
     }
     catch {
         return Error::Base->cuss(
-            -type              => $bak_type,
-            -mesg              => $bak_msg,
-            -message_to_client => BOM::Platform::Context::localize($bak_msg_to_client),
+            -type              => $type,
+            -mesg              => $msg,
+            -message_to_client => BOM::Platform::Context::localize($msg_to_client),
         );
     }
 }
