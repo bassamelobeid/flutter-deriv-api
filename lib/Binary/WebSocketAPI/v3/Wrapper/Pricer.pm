@@ -784,33 +784,25 @@ sub send_proposal_open_contract_last_time {
     # last message (contract is sold) of proposal_open_contract stream could not be done from pricer
     # because it should be performed with other parameters
     my ($c, $args, $contract_id) = @_;
-    my $uuid = $args->{uuid};
 
-    my $pricing_channel = $c->stash('pricing_channel');
-    return if not $pricing_channel or not $pricing_channel->{uuid}->{$uuid};
-    my $cache = $pricing_channel->{uuid}->{$uuid}->{cache};
-
-    my $forget_subscr_sub = sub {
-        my ($c, $rpc_response) = @_;
-        # cancel proposal open contract streaming which will cancel transaction subscription also
-        Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $uuid);
-    };
+    Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $args->{uuid});
 
     $c->call_rpc({
-            args        => $pricing_channel->{uuid}->{$uuid}->{args},
+            args => {
+                proposal_open_contract => 1,
+                contract_id            => $contract_id
+            },
             method      => 'proposal_open_contract',
             msg_type    => 'proposal_open_contract',
             call_params => {
-                contract_id => $contract_id,
-                token       => $c->stash('token'),
+                token => $c->stash('token'),
             },
-            response => sub {
-                my ($rpc_response, $api_response, $req_storage) = @_;
-
-                return $api_response;
+            rpc_response_cb => sub {
+                my ($c, $rpc_response, $req_storage) = @_;
+                return {
+                    msg_type               => 'proposal_open_contract',
+                    proposal_open_contract => $rpc_response->{$contract_id}};
             },
-            success => $forget_subscr_sub,
-            error   => $forget_subscr_sub,
         });
     return;
 }
