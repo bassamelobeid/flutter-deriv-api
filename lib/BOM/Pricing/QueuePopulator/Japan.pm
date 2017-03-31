@@ -2,7 +2,19 @@ package BOM::Pricing::QueuePopulator::Japan;
 use strict;
 use warnings;
 
-use feature qw(say);
+=head1 NAME
+
+BOM::Pricing::QueuePopulator::Japan - adds Japan pricing entries to each pricing cycle
+
+=head1 DESCRIPTION
+
+This module is used by C<bin/populate_jp_price_queue.pl> to insert pricing requests for
+all Japan contracts each pricing cycle.
+
+For regulatory reasons, we need to price all contracts even when users are not actively
+requesting them.
+
+=cut
 
 use BOM::Platform::Runtime;
 use LandingCompany::Offerings qw(get_offerings_with_filter);
@@ -31,12 +43,24 @@ use constant BARRIERS_PER_BATCH => 1;
 use Log::Any qw($log);
 use Log::Any::Adapter qw(Stderr), log_level => 'info';
 
+=head2 new
+
+Instantiates - currently, no parameters are expected.
+
+=cut
+
 sub new {
     my ($class, %args) = @_;
     $args{appconfig_age} = 0;
     $args{redis}         = BOM::Platform::RedisReplicated::redis_pricer();
     return bless \%args, $class;
 }
+
+=head2 redis
+
+Returns a Redis instance with access to write to the pricing queue.
+
+=cut
 
 sub redis { return shift->{redis} }
 
@@ -48,6 +72,12 @@ my %type_map = (
     RANGE      => [qw(RANGE UPORDOWN)],
 );
 
+=head2 check_appconfig
+
+Reloads appconfig if it has changed recently.
+
+=cut
+
 sub check_appconfig {
     my ($self) = @_;
     if ($start - $self->{appconfig_age} >= APP_CONFIG_REFRESH_INTERVAL) {
@@ -56,6 +86,12 @@ sub check_appconfig {
     }
     return;
 }
+
+=head2 process
+
+Process a single pricing interval.
+
+=cut
 
 sub process {
     my ($self) = @_;
@@ -144,18 +180,28 @@ sub process {
     DataDog::DogStatsd::Helper::stats_timing("pricer_queue.japan.jobs.count", 0 + @jobs);
     DataDog::DogStatsd::Helper::stats_timing("pricer_queue.japan.jobs.gather_time", 1000 * ($now - $start));
 
-    # Sleep to start of next minute
-    {
-        my $now = Time::HiRes::time;
-        my $target = 1e9 * JOB_QUEUE_TTL * (1 + floor($now / JOB_QUEUE_TTL));
-        $log->debugf("Will sleep until %s (current time %s)", map $_->iso8601, Date::Utility->new($target / 1e9), Date::Utility->new);
-        clock_nanosleep(CLOCK_REALTIME, $target, TIMER_ABSTIME);
-    }
     return;
 }
 
+=head2 wait_for_next_cycle
+
+Sleep to start of next minute
+
+=cut
+
+sub wait_for_next_cycle {
+	my $now = Time::HiRes::time;
+	my $target = 1e9 * JOB_QUEUE_TTL * (1 + floor($now / JOB_QUEUE_TTL));
+	$log->debugf("Will sleep until %s (current time %s)", map $_->iso8601, Date::Utility->new($target / 1e9), Date::Utility->new);
+	clock_nanosleep(CLOCK_REALTIME, $target, TIMER_ABSTIME);
+}
+
 sub run {
-    $self->process while 1;
+	my ($self) = @_;
+	while(1) {
+		$self->process;
+		$self->wait_for_next_cycle;
+	}
     return 1;
 }
 
