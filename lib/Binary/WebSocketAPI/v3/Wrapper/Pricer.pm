@@ -795,14 +795,13 @@ sub send_proposal_open_contract_last_time {
         # cancel proposal open contract streaming which will cancel transaction subscription also
         Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $uuid);
     };
-    my $args = $pricing_channel->{uuid}->{$uuid}->{args};
 
     $c->call_rpc({
-            args        => $args,
+            args        => $pricing_channel->{uuid}->{$uuid}->{args},
             method      => 'proposal_open_contract',
             msg_type    => 'proposal_open_contract',
             call_params => {
-                contract_id => $args->{financial_market_bet_id},
+                contract_id => $pricing_channel->{uuid}->{$uuid}->{args}->{financial_market_bet_id},
                 token       => $c->stash('token'),
             },
             response => sub {
