@@ -25,7 +25,7 @@ use BOM::MarketData::Types;
 use VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Contract::Category;
-use BOM::Product::RiskProfile;
+use BOM::Platform::RiskProfile;
 use BOM::Product::Types;
 use BOM::Product::ContractValidator;
 use BOM::Product::ContractPricer;
@@ -1134,7 +1134,7 @@ sub _build_exit_tick {
 sub _build_risk_profile {
     my $self = shift;
 
-    return BOM::Product::RiskProfile->new(
+    return BOM::Platform::RiskProfile->new(
         contract_category              => $self->category_code,
         expiry_type                    => $self->expiry_type,
         start_type                     => $self->start_type,
