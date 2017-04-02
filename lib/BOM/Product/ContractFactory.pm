@@ -30,7 +30,7 @@ use base qw( Exporter );
 our @EXPORT_OK = qw( produce_contract make_similar_contract produce_batch_contract );
 
 # pre-load modules
-require BOM::Product::Contract::BatchContract;
+require BOM::Product::Contract::Batch;
 require BOM::Product::Contract::Asiand;
 require BOM::Product::Contract::Asianu;
 require BOM::Product::Contract::Call;
@@ -105,7 +105,7 @@ my $contract_type_config = LoadFile(File::ShareDir::dist_file('LandingCompany', 
         my $build_args = shift;
 
         $build_args->{_produce_contract_ref} = \&produce_contract;
-        return BOM::Product::Contract::BatchContract->new(parameters => $build_args);
+        return BOM::Product::Contract::Batch->new(parameters => $build_args);
     }
 }
 
