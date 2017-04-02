@@ -144,7 +144,7 @@ sub _get_ask {
     };
     return $response if $response;
 
-    return handle_batch_contract($contract, $p2) if $contract->isa('BOM::Product::Contract::BatchContract');
+    return handle_batch_contract($contract, $p2) if $contract->isa('BOM::Product::Contract::Batch');
 
     my $contract_parameters = {%$p2, %{contract_metadata($contract)}};
 
