@@ -2,6 +2,21 @@ package BOM::Product::Categorizer;
 
 use Moose;
 
+=head1 NAME
+
+BOM::Product::Categorizer
+
+=head1 DESCRIPTION
+
+A class to describe a contract based on the input parameters.
+
+One of the optimizations that we want to do in pricing is to load market data prior to contract object creation.
+To achieve that, we need to extract some contract information to determine which market data to load, hence this class was created.
+
+But we are not there yet because there's a lot of refactoring needed to have the desired interface.
+
+=cut
+
 use Date::Utility;
 use LandingCompany::Offerings qw(get_all_contract_types);
 
