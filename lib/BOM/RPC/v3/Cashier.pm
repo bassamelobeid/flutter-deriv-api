@@ -32,7 +32,7 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Config;
 use BOM::Platform::AuditLog;
-use BOM::Product::RiskProfile;
+use BOM::Platform::RiskProfile;
 use BOM::RPC::v3::Utility;
 
 use BOM::Database::Model::HandoffToken;
@@ -390,7 +390,7 @@ sub get_limits {
         open_positions => $client->get_limit_for_open_positions,
     };
 
-    $limit->{market_specific} = BOM::Product::RiskProfile::get_current_profile_definitions($client);
+    $limit->{market_specific} = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
 
     my $numdays       = $wl_config->{for_days};
     my $numdayslimit  = $wl_config->{limit_for_days};
