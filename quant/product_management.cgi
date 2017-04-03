@@ -21,6 +21,7 @@ use BOM::Platform::RiskProfile;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Config;
+use BOM::Platform::RiskProfile;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
