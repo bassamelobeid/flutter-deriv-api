@@ -142,8 +142,8 @@ sub run {
             ip      => $self->ip,
             time    => time 
         );
-        $redis->set("PRICER_STATUS::" . encode_json(\@pricing_queue_args));
-        $log->info("PRICER_STATUS::" . encode_json(\@pricing_queue_args));
+        $redis->set("PRICER_STATUS::" . encode_json(\@stat_redis));
+        $log->info("PRICER_STATUS::" . encode_json(\@stat_redis));
         if ($current_pricing_epoch != time) {
 
             for my $key (keys %$stat_count) {
