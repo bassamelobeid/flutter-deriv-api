@@ -26,22 +26,9 @@ sub get_info {
         $info->{is_legacy} = 1;
     } else {
         try {
-            my $res = BOM::Platform::Pricing::call_rpc(
-                'get_contract_details',
-                {
-                    short_code      => $fmb->{short_code},
-                    currency        => $currency,
-                    landing_company => $bo_client->landing_company->short,
-                    language        => 'EN',
-                });
-            if (exists $res->{error}) {
-                $info->{longcode} = 'Could not retrieve contract details';
-            } else {
-                $info->{longcode} = $res->{longcode};
-            }
-
+            my $contract = produce_contract($fmb->{short_code}, $currency);
+            $info->{longcode} = $contract->longcode;
             if (not $fmb->{is_sold}) {
-                my $contract = produce_contract($fmb->{short_code}, $currency);
                 if ($contract and $contract->may_settle_automatically) {
                     $info->{indicative_price} = $contract->bid_price
                         unless $contract->is_spread;
