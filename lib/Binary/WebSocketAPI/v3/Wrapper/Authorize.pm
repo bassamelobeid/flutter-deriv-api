@@ -6,11 +6,14 @@ use warnings;
 use curry::weak;
 use Mojo::IOLoop;
 use Scalar::Util qw(weaken);
+use Binary::WebSocketAPI::v3::Wrapper::System;
 
 sub logout_success {
     my ($c, $rpc_response) = @_;
     my %stash;
     $c->rate_limitations_save;
+
+    Binary::WebSocketAPI::v3::Wrapper::System::forget_after_logout($c);
 
     my $timer_id = $c->stash->{rate_limitations_timer};
     Mojo::IOLoop->remove($timer_id) if $timer_id;
