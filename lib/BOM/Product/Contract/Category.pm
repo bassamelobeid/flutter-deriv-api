@@ -17,8 +17,6 @@ This class represents available contract categories.
 =cut
 
 use Moose;
-use File::ShareDir;
-use YAML::XS qw(LoadFile);
 use namespace::autoclean;
 use BOM::Platform::Context qw(localize);
 use LandingCompany::Offerings qw(get_all_contract_categories);
