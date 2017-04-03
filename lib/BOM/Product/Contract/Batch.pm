@@ -69,6 +69,8 @@ sub _build__contracts {
         $similar_market_data{pricing_vol}               = $first_contract->pricing_vol;
         $similar_market_data{news_adjusted_pricing_vol} = $first_contract->news_adjusted_pricing_vol;
         $similar_market_data{empirical_volsurface}      = $first_contract->empirical_volsurface;
+        $similar_market_data{volatility_scaling_factor} = $first_contract->volatility_scaling_factor;
+        $similar_market_data{long_term_prediction}      = $first_contract->long_term_prediction;
     } else {
         $similar_market_data{volsurface} = $first_contract->volsurface;
     }
