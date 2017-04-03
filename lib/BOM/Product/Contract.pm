@@ -25,7 +25,7 @@ use BOM::MarketData::Types;
 use VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Contract::Category;
-use BOM::Product::RiskProfile;
+use BOM::Platform::RiskProfile;
 use BOM::Product::Types;
 use BOM::Product::ContractValidator;
 use BOM::Product::ContractPricer;
@@ -641,6 +641,7 @@ sub _build_basis_tick {
     if ($self->pricing_new) {
         $basis_tick = $self->current_tick;
         $potential_error = $self->starts_as_forward_starting ? $waiting_for_entry_tick : $missing_market_data;
+        warn "No basis tick for " . $self->underlying->symbol if ($potential_error eq $missing_market_data && !$basis_tick);
     } else {
         $basis_tick      = $self->entry_tick;
         $potential_error = $waiting_for_entry_tick;
@@ -754,30 +755,6 @@ sub _build_opposite_contract {
 
     # Start by making a copy of the parameters we used to build this bet.
     my %opp_parameters = %{$self->build_parameters};
-    # we still want to set for_sale for a forward_starting contracts
-    $opp_parameters{for_sale} = 1;
-    # delete traces of this contract were a forward starting contract before.
-    delete $opp_parameters{starts_as_forward_starting};
-    # duration could be set for an opposite contract from bad hash reference reused.
-    delete $opp_parameters{duration};
-
-    if (not $self->is_forward_starting) {
-        if ($self->entry_tick) {
-            foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-                if (defined $self->$barrier) {
-                    $opp_parameters{$barrier} = $self->$barrier->as_absolute;
-                    $opp_parameters{'supplied_' . $barrier} = $self->$barrier->as_absolute;
-                }
-            }
-        }
-        # We should be looking to move forward in time to a bet starting now.
-        $opp_parameters{date_start}  = $self->date_pricing;
-        $opp_parameters{pricing_new} = 1;
-        # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
-        # Currently, 'sell at market' button will appear when current spot == barrier when the duration
-        # of the contract is less than the minimum duration of non ATM contract.
-    }
-
     # Always switch out the bet type for the other side.
     $opp_parameters{'bet_type'} = $self->other_side_code;
     # Don't set the shortcode, as it will change between these.
@@ -785,6 +762,35 @@ sub _build_opposite_contract {
     # Save a round trip.. copy market data
     foreach my $vol_param (qw(volsurface fordom forqqq domqqq)) {
         $opp_parameters{$vol_param} = $self->$vol_param;
+    }
+
+    # We have this concept in forward starting contract where a forward start contract is considered
+    # pricing_new until it has started. So it kind of messed up here.
+    if ($self->pricing_new and not $self->starts_as_forward_starting) {
+        $opp_parameters{current_tick} = $self->current_tick;
+        $opp_parameters{pricing_new}  = 1;
+    } else {
+        # we still want to set for_sale for a forward_starting contracts
+        $opp_parameters{for_sale} = 1;
+        # delete traces of this contract were a forward starting contract before.
+        delete $opp_parameters{starts_as_forward_starting};
+        # duration could be set for an opposite contract from bad hash reference reused.
+        delete $opp_parameters{duration};
+
+        if (not $self->is_forward_starting) {
+            if ($self->entry_tick) {
+                foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
+                    if (defined $self->$barrier) {
+                        $opp_parameters{$barrier} = $self->$barrier->as_absolute;
+                        $opp_parameters{'supplied_' . $barrier} = $self->$barrier->as_absolute;
+                    }
+                }
+            }
+            # We should be looking to move forward in time to a bet starting now.
+            $opp_parameters{date_start}  = $self->date_pricing;
+            $opp_parameters{pricing_new} = 1;
+        }
+
     }
 
     my $opp_contract = $self->_produce_contract_ref->(\%opp_parameters);
@@ -876,15 +882,18 @@ sub _build_dividend_adjustment {
 
     my $dividend_recorded_date = $dividend_adjustment->{recorded_date};
 
-    if (scalar @corporate_actions and (first { Date::Utility->new($_->{effective_date})->is_after($dividend_recorded_date) } @corporate_actions)) {
+    if (scalar @corporate_actions
+        and (my $action = first { Date::Utility->new($_->{effective_date})->is_after($dividend_recorded_date) } @corporate_actions))
+    {
 
+        warn "Missing dividend data: corp actions are " . join(',', @corporate_actions) . " and found date for action " . $action;
         $self->add_error({
             message => 'Dividend is not updated  after corporate action'
                 . "[dividend recorded date : "
                 . $dividend_recorded_date->datetime . "] "
                 . "[symbol: "
                 . $self->underlying->symbol . "]",
-            message_to_client => localize('Trading on this market is suspended due to missing market data.'),
+            message_to_client => localize('Trading on this market is suspended due to missing market (dividend) data.'),
         });
 
     }
@@ -1125,7 +1134,7 @@ sub _build_exit_tick {
 sub _build_risk_profile {
     my $self = shift;
 
-    return BOM::Product::RiskProfile->new(
+    return BOM::Platform::RiskProfile->new(
         contract_category              => $self->category_code,
         expiry_type                    => $self->expiry_type,
         start_type                     => $self->start_type,

@@ -3,6 +3,7 @@ use warnings;
 
 use Test::Most;
 use Test::FailWarnings;
+use Test::Warnings qw/warning/;
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
@@ -15,7 +16,6 @@ use LandingCompany::Offerings qw(reinitialise_offerings);
 
 my $date_pricing = '8-Nov-12';
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
-
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -89,7 +89,8 @@ subtest 'Base.' => sub {
     foreach my $greek_engine (qw( Greeks )) {
 
         my $greeks = "BOM::Product::Pricing::$greek_engine"->new(bet => $call);
-        my $greeks_ref = $greeks->get_greeks;
+        my $greeks_ref;
+        warning { $greeks_ref = $greeks->get_greeks }, qr/No basis tick for/;
 
         is(ref $greeks_ref, 'HASH', 'get_greeks returns a HashRef.');
         cmp_deeply([sort keys %{$greeks_ref}], [qw(delta gamma theta vanna vega volga)], 'get_greeks has correct keys.');

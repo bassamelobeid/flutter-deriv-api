@@ -3,14 +3,12 @@
 use strict;
 use warnings;
 
-
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 use Test::More tests => 1;
 use Test::Exception;
 use Test::Memory::Cycle;
 use Test::MockModule;
-
 
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );

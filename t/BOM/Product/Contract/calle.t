@@ -69,9 +69,9 @@ subtest 'call variations' => sub {
     lives_ok {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Calle';
-        is $c->code,        'CALLE';
+        is $c->code,            'CALLE';
         is $c->other_side_code, 'PUT';
-        ok $c->is_intraday, 'is intraday';
+        ok $c->is_intraday,     'is intraday';
         ok !$c->expiry_daily, 'not expiry daily';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
         isa_ok $c->barrier,        'BOM::Product::Contract::Strike';
@@ -94,8 +94,8 @@ subtest 'call variations' => sub {
         $args->{date_start}   = $now->plus_time_interval('20m');
         $c                    = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Calle';
-        ok $c->is_forward_starting, 'forward starting';
-        isa_ok $c->pricing_engine_name,  'Pricing::Engine::EuropeanDigitalSlope';
+        ok $c->is_forward_starting,     'forward starting';
+        isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
 
         $args->{date_pricing} = $now;
         $args->{date_start}   = $now;

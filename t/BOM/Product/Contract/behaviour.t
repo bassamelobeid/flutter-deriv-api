@@ -287,8 +287,8 @@ subtest 'longcode of index daily contracts' => sub {
 subtest 'longcode of daily contract on early close day' => sub {
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1482332400_1482429600_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
-    ok $c2->expiry_daily,                   'is a multiday contract';
-    is $c2->longcode,                       'Win payout if GBP/USD is strictly lower than entry spot at close on 2016-12-22.';
+    ok $c2->expiry_daily,                    'is a multiday contract';
+    is $c2->longcode,                        'Win payout if GBP/USD is strictly lower than entry spot at close on 2016-12-22.';
     is $c2->effective_daily_trading_seconds, 64800;
     is $c2->expiry_type,                     'daily';
 };

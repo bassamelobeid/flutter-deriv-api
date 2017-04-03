@@ -58,22 +58,22 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => 0.9936,
 });
 
-my $redis = BOM::Platform::RedisReplicated::redis_write();
-my $undec_key   = "DECIMATE_frxAUDCAD" . "_31m_FULL";
-my $encoder = Sereal::Encoder->new({
-        canonical => 1,
-    });
+my $redis     = BOM::Platform::RedisReplicated::redis_write();
+my $undec_key = "DECIMATE_frxAUDCAD" . "_31m_FULL";
+my $encoder   = Sereal::Encoder->new({
+    canonical => 1,
+});
 my %defaults = (
-        symbol     => 'frxAUDCAD',
-        epoch      => $now->epoch,
-        quote      => 0.9935,
-        bid        => 0.9935,
-        ask        => 0.9935,
-        count      => 1,
-    );
+    symbol => 'frxAUDCAD',
+    epoch  => $now->epoch,
+    quote  => 0.9935,
+    bid    => 0.9935,
+    ask    => 0.9935,
+    count  => 1,
+);
 $redis->zadd($undec_key, $defaults{epoch}, $encoder->encode(\%defaults));
 
-$defaults{epoch} = $now->epoch+1;
+$defaults{epoch} = $now->epoch + 1;
 $defaults{quote} = 0.9936;
 $redis->zadd($undec_key, $defaults{epoch}, $encoder->encode(\%defaults));
 
@@ -106,8 +106,9 @@ subtest 'call variations' => sub {
         is $c->code,        'CALL';
         ok $c->is_intraday, 'is intraday';
         ok !$c->expiry_daily, 'not expiry daily';
+
         is $c->ask_price, 5.31, 'correct ask price';
-        is roundnear(0.001,$c->pricing_vol), 0.103, 'correct pricing vol';
+        is roundnear(0.001, $c->pricing_vol), 0.107, 'correct pricing vol';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
         isa_ok $c->barrier,        'BOM::Product::Contract::Strike';
         cmp_ok $c->barrier->as_absolute, '==', 76.900, 'correct absolute barrier';
@@ -129,8 +130,8 @@ subtest 'call variations' => sub {
         $args->{date_start}   = $now->plus_time_interval('20m');
         $c                    = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Call';
-        ok $c->is_forward_starting, 'forward starting';
-        isa_ok $c->pricing_engine_name,  'Pricing::Engine::EuropeanDigitalSlope';
+        ok $c->is_forward_starting,     'forward starting';
+        isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
 
         $args->{date_pricing} = $now;
         $args->{date_start}   = $now;

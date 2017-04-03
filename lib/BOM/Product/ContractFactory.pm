@@ -14,6 +14,7 @@ use Try::Tiny;
 use Postgres::FeedDB::Spot::Tick;
 
 use BOM::Platform::Context qw(request);
+use BOM::Product::Categorizer;
 use BOM::Product::ContractFactory::Parser qw(
     shortcode_to_parameters
 );
@@ -25,9 +26,10 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
 use base qw( Exporter );
-our @EXPORT_OK = qw( produce_contract make_similar_contract simple_contract_info );
+our @EXPORT_OK = qw( produce_contract make_similar_contract simple_contract_info produce_batch_contract );
 
 # pre-load modules
+require BOM::Product::Contract::Batch;
 require BOM::Product::Contract::Asiand;
 require BOM::Product::Contract::Asianu;
 require BOM::Product::Contract::Call;
@@ -60,39 +62,6 @@ Produce a Contract Object from a set of parameters
 
 =cut
 
-my %OVERRIDE_LIST = (
-    INTRADU => {
-        bet_type                   => 'CALL',
-        is_forward_starting        => 1,
-        starts_as_forward_starting => 1
-    },
-    INTRADD => {
-        bet_type                   => 'PUT',
-        is_forward_starting        => 1,
-        starts_as_forward_starting => 1
-    },
-    FLASHU => {
-        bet_type     => 'CALL',
-        is_intraday  => 1,
-        expiry_daily => 0
-    },
-    FLASHD => {
-        bet_type     => 'PUT',
-        is_intraday  => 1,
-        expiry_daily => 0
-    },
-    DOUBLEUP => {
-        bet_type     => 'CALL',
-        is_intraday  => 0,
-        expiry_daily => 1
-    },
-    DOUBLEDOWN => {
-        bet_type     => 'PUT',
-        is_intraday  => 0,
-        expiry_daily => 1
-    },
-);
-
 my $contract_type_config = LoadFile(File::ShareDir::dist_file('LandingCompany', 'contract_types.yml'));
 {
     my %loaded = ();
@@ -100,44 +69,14 @@ my $contract_type_config = LoadFile(File::ShareDir::dist_file('LandingCompany', 
     sub produce_contract {
         my ($build_arg, $maybe_currency, $maybe_sold) = @_;
 
-        my $params_ref = _args_to_ref($build_arg, $maybe_currency, $maybe_sold);
+        my $params_ref = {%{_args_to_ref($build_arg, $maybe_currency, $maybe_sold)}};
 
-        # dereference here
-        my %input_params = %$params_ref;
-
-        # always build shortcode
-        delete $input_params{shortcode};
-
-        if (my $missing = first { not defined $input_params{$_} } (qw(bet_type currency))) {
-            # Some things are required for all possible contracts
-            # This list is pretty small, though!
-            die $missing . ' is required.';
-        }
-
-        # common initialization for spreads and derivatives
-        if (defined $OVERRIDE_LIST{$input_params{bet_type}}) {
-            my $override_params = $OVERRIDE_LIST{$input_params{bet_type}};
-            $input_params{$_} = $override_params->{$_} for keys %$override_params;
-        }
-
-        $input_params{bet_type} = 'INVALID' unless exists $contract_type_config->{$input_params{bet_type}};
-        my %type_config = %{$contract_type_config->{$input_params{bet_type}}};
-        @input_params{keys %type_config} = values %type_config;
-        my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $input_params{bet_type};
-
-        # We might need this for build so, pre-coerce;
-        if ((ref $input_params{underlying}) !~ /Quant::Framework::Underlying/) {
-            $input_params{underlying} = create_underlying($input_params{underlying});
-        }
-        # If they gave us a date for start and pricing, then we need to do some magic.
-        if (defined $input_params{date_pricing}) {
-            my $pricing = Date::Utility->new($input_params{date_pricing});
-            $input_params{underlying} = create_underlying($input_params{underlying}->symbol, $pricing)
-                if (not($input_params{underlying}->for_date and $input_params{underlying}->for_date->is_same_as($pricing)));
+        unless ($params_ref->{processed}) {
+            $params_ref = BOM::Product::Categorizer->new(parameters => $params_ref)->process();
         }
 
         # load it first
-        my $landing_company = delete $input_params{landing_company} // 'costarica';
+        my $landing_company = $params_ref->{landing_company};
         # We have 'japan-virtual' as one of the landing companies: remap this to a valid Perl class name
         # Can't change the name to 'japanvirtual' because we have db functions tie to the original name.
         $landing_company =~ s/-//;
@@ -148,120 +87,24 @@ my $contract_type_config = LoadFile(File::ShareDir::dist_file('LandingCompany', 
             # Ignoring the return of try on purpose: we just want to know whether the file exists
             $loaded{$role} = try { $role->require } || 0;
         }
-        $input_params{role} = $role if $loaded{$role};
+        $params_ref->{build_parameters}{role} = $role if $loaded{$role};
 
-        my $contract_obj;
-        if ($input_params{category} eq 'spreads') {
-            $input_params{date_start} = Date::Utility->new if not $input_params{date_start};
-            for (grep { defined $input_params{$_} } qw(stop_loss stop_profit)) {
-                # copy them to supplied, we will build stop_loss & stop_profit later
-                $input_params{'supplied_' . $_} = $input_params{$_};
-                delete $input_params{$_};
-            }
-            $input_params{build_parameters} = {%input_params};
-            $contract_obj = $contract_class->new(\%input_params);
-        } else {
-            delete $input_params{expiry_daily};
-            if (not $input_params{date_start}) {
-                # An undefined or missing date_start implies that we want a bet which starts now.
-                $input_params{date_start} = Date::Utility->new;
-                # Force date_pricing to be similarly set, but make sure we know below that we did this, for speed reasons.
-                $input_params{pricing_new} = 1;
-            }
-            # Still need the available amount_types somewhere visible.
-            my @available_amount_types = qw(payout stake);
-            foreach my $at (@available_amount_types) {
-                delete $input_params{$at} if ($input_params{amount_type});    # looks like ambiguous hash ref reuse.
-                                                                              # Use the amount_type and make them work it out.
-                if ($input_params{$at}) {
-                    # Support pre-stake parameters and how people might think it should work.
-                    $input_params{amount_type} = $at;                         # Replace these wholesale.
-                    $input_params{amount}      = $input_params{$at};
-                    delete $input_params{$at};
-                }
-            }
-            if (defined $input_params{amount} && first { $_ eq $input_params{amount_type} } (@available_amount_types)) {
-                if ($input_params{amount_type} eq 'payout') {
-                    $input_params{payout} = $input_params{amount};
-                } elsif ($input_params{amount_type} eq 'stake') {
-                    $input_params{ask_price} = $input_params{amount};
-                }
-            } else {
-                # Dunno what this is, so set the payout to zero and let it fail validation.
-                $input_params{payout} = 0;
-            }
+        # This occurs after to hopefully make it more annoying to bypass the Factory.
+        $params_ref->{'_produce_contract_ref'} = \&produce_contract;
 
-            $input_params{date_start} = Date::Utility->new($input_params{date_start});
-
-            if (defined $input_params{tick_expiry}) {
-                $input_params{date_expiry} = $input_params{date_start}->plus_time_interval(2 * $input_params{tick_count});
-            }
-
-            if (defined $input_params{duration}) {
-                if (my ($number_of_ticks) = $input_params{duration} =~ /(\d+)t$/) {
-                    $input_params{tick_expiry} = 1;
-                    $input_params{tick_count}  = $number_of_ticks;
-                    $input_params{date_expiry} = $input_params{date_start}->plus_time_interval(2 * $input_params{tick_count});
-                } else {
-                    # The thinking here is that duration is only added on purpose, but
-                    # date_expiry might be hanging around from a poorly reused hashref.
-                    my $duration    = $input_params{duration};
-                    my $underlying  = $input_params{underlying};
-                    my $start_epoch = $input_params{date_start}->epoch;
-                    my $expiry;
-                    if ($duration =~ /d$/) {
-                        # Since we return the day AFTER, we pass one day ahead of expiry.
-                        my $expiry_date = Date::Utility->new($start_epoch)->plus_time_interval($duration);
-                        # Daily bet expires at the end of day, so here you go
-                        if (my $closing = $underlying->calendar->closing_on($expiry_date)) {
-                            $expiry = $closing->epoch;
-                        } else {
-                            $expiry = $expiry_date->epoch;
-                            my $regular_day   = $underlying->calendar->regular_trading_day_after($expiry_date);
-                            my $regular_close = $underlying->calendar->closing_on($regular_day);
-                            $expiry = Date::Utility->new($expiry_date->date_yyyymmdd . ' ' . $regular_close->time_hhmmss)->epoch;
-                        }
-                    } else {
-                        $expiry = $start_epoch + Time::Duration::Concise->new(interval => $duration)->seconds;
-                    }
-                    $input_params{date_expiry} = Date::Utility->new($expiry);
-                }
-            }
-            $input_params{date_start}  //= 1;    # Error conditions if it's not legacy or run, I guess.
-            $input_params{date_expiry} //= 1;
-
-            my @barriers = qw(barrier high_barrier low_barrier);
-            foreach my $barrier_name (grep { defined $input_params{$_} } @barriers) {
-                # if barrier is parsed by intention or by mistake, delete it.
-                if ($input_params{asian}) {
-                    delete $input_params{$barrier_name};
-                    next;
-                }
-
-                my $possible = $input_params{$barrier_name};
-
-                if (ref($possible) !~ /BOM::Product::Contract::Strike/) {
-                    # Some sort of string which Strike can presumably use.
-                    $input_params{'supplied_' . $barrier_name} = $possible;
-                    delete $input_params{$barrier_name};
-                }
-            }
-
-            # just to make sure that we don't accidentally pass in undef barriers
-            delete $input_params{$_} for @barriers;
-
-            $input_params{'build_parameters'} = {%input_params};    # Do not self-cycle.
-
-            # This occurs after to hopefully make it more annoying to bypass the Factory.
-            $input_params{'_produce_contract_ref'} = \&produce_contract;
-
-            $contract_obj = $contract_class->new(\%input_params);
-        }
-
+        my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $params_ref->{bet_type};
+        my $contract_obj   = $contract_class->new($params_ref);
         # apply it here.
         $role->meta->apply($contract_obj) if $loaded{$role};
 
         return $contract_obj;
+    }
+
+    sub produce_batch_contract {
+        my $build_args = shift;
+
+        $build_args->{_produce_contract_ref} = \&produce_contract;
+        return BOM::Product::Contract::Batch->new(parameters => $build_args);
     }
 }
 
