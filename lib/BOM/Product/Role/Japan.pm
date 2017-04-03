@@ -1,13 +1,14 @@
 package BOM::Product::Role::Japan;
 
 use Moose::Role;
-
 use List::Util qw(first);
-use BOM::Platform::Context qw(localize);
-use LandingCompany::Offerings qw(get_contract_specifics);
-use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
-
 use Data::Dumper;
+
+use LandingCompany::Offerings qw(get_contract_specifics);
+
+use BOM::Platform::Context qw(localize);
+use BOM::Platform::RiskProfile;
+use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 
 has landing_company => (
     is      => 'ro',
@@ -75,7 +76,7 @@ override offering_specifics => sub {
 override risk_profile => sub {
     my $self = shift;
 
-    return BOM::Product::RiskProfile->new(
+    return BOM::Platform::RiskProfile->new(
         underlying                     => $self->underlying,
         contract_category              => $self->category_code,
         expiry_type                    => $self->expiry_type,
@@ -226,8 +227,9 @@ sub japan_pricing_info {
 
     }
 
-    my $bid_price = $self->payout - $self->opposite_contract->ask_price;
-    my $pricing_info = join ',', ($self->shortcode, $trading_window_start, $self->ask_price, $bid_price, $self->pricing_spot, $iv, $iv_2);
+    my $bid_price    = $self->payout - $self->opposite_contract->ask_price;
+    my $pricing_info = join ',',
+        ($self->shortcode, $trading_window_start, $self->ask_price, $bid_price, $self->pricing_spot, $iv, $iv_2, $self->_date_pricing_milliseconds);
 
     return "[JPLOG]," . $pricing_info . "\n";
 

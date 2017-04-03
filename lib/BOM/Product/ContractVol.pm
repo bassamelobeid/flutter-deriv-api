@@ -165,9 +165,10 @@ sub _build_pricing_vol {
     }
 
     if ($volatility_error) {
+        warn "Volatility error: $volatility_error";
         $self->add_error({
             message           => $volatility_error,
-            message_to_client => localize('Trading on this market is suspended due to missing market data.'),
+            message_to_client => localize('Trading on this market is suspended due to missing market (volatility) data.'),
         });
     }
 
