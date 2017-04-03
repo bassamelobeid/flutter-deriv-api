@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 
+
 use Test::More;
 use Test::FailWarnings;
 use Test::Warnings qw/warning/;
@@ -16,7 +17,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Product::ContractFactory qw( produce_contract make_similar_contract simple_contract_info );
+use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
@@ -117,73 +118,6 @@ subtest 'make_similar_contract' => sub {
         $similar = make_similar_contract($contract, {priced_at => 'now'});
     }
     'make similar contract changing pricing date appears to work';
-};
-
-subtest 'simple_contract_info' => sub {
-    plan tests => 9;
-
-    my $contract_params = {
-        bet_type   => 'DOUBLEUP',
-        duration   => '4d',
-        underlying => 'frxUSDJPY',
-        payout     => 1,
-        currency   => 'USD',
-        barrier    => 108.26,
-    };
-
-    my ($desc, $ticky, $spready);
-    warning { ($desc, $ticky, $spready) = simple_contract_info($contract_params) }, qr/No basis tick for/;
-
-    like $desc, qr#^Win payout if#, 'our params got us what seems like it might be a description';
-    ok(!$ticky,   "our params do not create a tick expiry contract.");
-    ok(!$spready, "our params do not create a spread contract.");
-
-    $contract_params = {
-        bet_type   => 'FLASHD',
-        duration   => '4t',
-        underlying => 'frxUSDJPY',
-        payout     => 1,
-        currency   => 'USD',
-        barrier    => 108.26,
-    };
-
-    warning { ($desc, $ticky, $spready) = simple_contract_info($contract_params) }, qr/No basis tick for/;
-
-    like $desc, qr#^Win payout if#, 'our params got us what seems like it might be a description';
-    ok($ticky,    "our params create a tick expiry contract.");
-    ok(!$spready, "our params do not create a spread contract.");
-
-    $contract_params = {
-        bet_type         => 'SPREADU',
-        underlying       => 'R_100',
-        date_start       => 1449810000,    # 2015-12-11 05:00:00
-        amount_per_point => 1,
-        stop_loss        => 10,
-        stop_profit      => 10,
-        currency         => 'USD',
-        stop_type        => 'point',
-    };
-
-    warning { ($desc, $ticky, $spready) = simple_contract_info($contract_params) }, qr/No basis tick for/;
-
-    like $desc, qr#^USD 1.00#, 'our params got us what seems like it might be a description';
-    ok(!$ticky,  "our params do not create a tick expiry contract.");
-    ok($spready, "our params create a spread contract.");
-};
-
-subtest 'invalid contracts does not die' => sub {
-    my $invalid_shortcode = 'RUNBET_DOUBLEUP_GBP20_R_50_5';
-    lives_ok {
-        my $contract = produce_contract($invalid_shortcode, 'GBP');
-        isa_ok $contract, 'BOM::Product::Contract::Invalid';
-    }
-    'produce_contract on legacy shortcode lives';
-
-    lives_ok {
-        my @info = simple_contract_info($invalid_shortcode, 'GBP');
-        like($info[0], qr/Legacy contract. No further information is available/, 'legacy longcode');
-    }
-    'simple_contract_info for legacy shortcode lives';
 };
 
 subtest 'unknown shortcode does not die' => sub {
