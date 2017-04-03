@@ -128,8 +128,8 @@ sub _build_news_adjusted_pricing_vol {
     my $effective_start = $self->effective_start;
 
     return $self->intradayfx_volsurface->get_volatility({
-        from => $effective_start->epoch,
-        to   => $self->date_expiry->epoch,
+        from                          => $effective_start->epoch,
+        to                            => $self->date_expiry->epoch,
         include_economic_event_impact => 1,
     });
 }
@@ -146,8 +146,8 @@ sub _build_pricing_vol {
         # where the intraday_delta_correction is the bounceback which is a function of trend, not volatility.
         my $uses_flat_vol = ($self->is_atm_bet and $duration_seconds < 10 * 60) ? 1 : 0;
         $vol = $uses_flat_vol ? $volsurface->long_term_volatility : $volsurface->get_volatility({
-            from => $self->effective_start->epoch,
-            to   => $self->date_expiry->epoch,
+            from                          => $self->effective_start->epoch,
+            to                            => $self->date_expiry->epoch,
             include_economic_event_impact => 0,
         });
     } else {

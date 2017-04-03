@@ -517,8 +517,8 @@ sub _build_pricing_args {
     };
 
     if ($self->priced_with_intraday_model) {
-        $args->{long_term_prediction}      = $self->intradayfx_volsurface->long_term_prediction;
-        $args->{iv_with_news}              = $self->news_adjusted_pricing_vol;
+        $args->{long_term_prediction} = $self->intradayfx_volsurface->long_term_prediction;
+        $args->{iv_with_news}         = $self->news_adjusted_pricing_vol;
     }
 
     return $args;
