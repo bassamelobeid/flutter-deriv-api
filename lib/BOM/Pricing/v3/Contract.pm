@@ -606,8 +606,8 @@ sub longcode {
     foreach my $s (@short_codes) {
         my ($contract, $longcode);
         try {
-            $contract   = produce_contract($s, $params->{currency});
-            $longcode   = $contract->longcode;
+            $contract = produce_contract($s, $params->{currency});
+            $longcode = $contract->longcode;
         }
         catch {
             warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($$params);
