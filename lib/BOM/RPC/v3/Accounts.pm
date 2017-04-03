@@ -26,7 +26,6 @@ use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Token;
 use BOM::Transaction;
-use BOM::Product::ContractFactory qw( simple_contract_info );
 use BOM::Platform::Config;
 use BOM::Platform::Password;
 use BOM::Database::DataMapper::FinancialMarketBet;
@@ -35,6 +34,7 @@ use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
+use BOM::Platform::Pricing;
 
 sub payout_currencies {
     my $params = shift;
@@ -158,7 +158,21 @@ sub statement {
         if ($params->{args}->{description}) {
             $struct->{shortcode} = $txn->{short_code} // '';
             if ($struct->{shortcode} && $account->currency_code) {
-                $struct->{longcode} = (simple_contract_info($struct->{shortcode}, $account->currency_code))[0];
+
+                my $res = BOM::Platform::Pricing::call_rpc(
+                    'get_contract_details',
+                    {
+                        short_code      => $struct->{shortcode},
+                        currency        => $account->currency_code,
+                        landing_company => $client->landing_company->short,
+                        language        => $params->{language},
+                    });
+
+                if (exists $res->{error}) {
+                    $struct->{longcode} = localize('Could not retrieve contract details');
+                } else {
+                    $struct->{longcode} = $res->{longcode};
+                }
             }
             $struct->{longcode} //= $txn->{payment_remark} // '';
         }
@@ -199,13 +213,27 @@ sub profit_table {
     $args->{after}  = $args->{date_from} if $args->{date_from};
     $args->{before} = $args->{date_to}   if $args->{date_to};
     my $data = $fmb_dm->get_sold_bets_of_account($args);
+    return {
+        transactions => [],
+        count        => 0
+    } unless (scalar @{$data} > 0);
     # args is passed to echo req hence we need to delete them
     delete $args->{after};
     delete $args->{before};
 
+    my @short_codes = map { $_->{short_code} } @{$data};
+
+    my $res;
+    $res = BOM::Platform::Pricing::call_rpc(
+        'longcode',
+        {
+            short_codes => \@short_codes,
+            currency    => $client->currency,
+            language    => $params->{language},
+        }) if $args->{description};
+
     ## remove useless and plus new
     my @transactions;
-    my $and_description = $args->{description};
     foreach my $row (@{$data}) {
         my %trx = map { $_ => $row->{$_} } (qw/sell_price buy_price/);
         $trx{contract_id}    = $row->{id};
@@ -215,9 +243,13 @@ sub profit_table {
         $trx{sell_time}      = Date::Utility->new($row->{sell_time})->epoch;
         $trx{app_id}         = BOM::RPC::v3::Utility::mask_app_id($row->{source}, $row->{purchase_time});
 
-        if ($and_description) {
+        if ($args->{description}) {
             $trx{shortcode} = $row->{short_code};
-            $trx{longcode} = (simple_contract_info($trx{shortcode}, $client->currency))[0];
+            if (!$res->{longcodes}->{$row->{short_code}}) {
+                $trx{longcode} = localize('Could not retrieve contract details');
+            } else {
+                $trx{longcode} = $res->{longcodes}->{$row->{short_code}};
+            }
         }
 
         push @transactions, \%trx;
