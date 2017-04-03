@@ -6,6 +6,7 @@ use MojoX::JSON::RPC::Client;
 use feature "state";
 
 use BOM::Platform::Config;
+use BOM::Platform::Context qw (request);
 
 sub call_rpc {
     my $method = shift;
@@ -14,6 +15,8 @@ sub call_rpc {
     state $client = MojoX::JSON::RPC::Client->new();
     $client->ua->request_timeout(10);
     my $url = BOM::Platform::Config::node->{pricing_rpc_url} . "/v3/$method";
+
+    $params->{language} = request()->language;
 
     my $callobj = {
         id     => 1,
