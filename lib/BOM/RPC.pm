@@ -15,8 +15,6 @@ use Carp qw(cluck);
 use Path::Tiny;
 use JSON::XS;
 
-use Data::Dumper;
-
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
 use Client::Account;
