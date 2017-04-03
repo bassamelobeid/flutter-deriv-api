@@ -53,9 +53,9 @@ while (1) {
     my $daemon = BOM::Pricing::PriceDaemon->new(
         tags => [ 'tag:' . $internal_ip ],
         ip   => $internal_ip,
-        pid  => $pid
+        pid  => $PID
     );
-    $daemon->run(queues => [ split /,/, $queues ], ip => $internal_ip, pid => $pid);
+    $daemon->run(queues => [ split /,/, $queues ], ip => $internal_ip, pid => $PID);
     $pm->finish;
 }
 
