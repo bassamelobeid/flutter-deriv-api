@@ -604,14 +604,13 @@ sub longcode {
     my @short_codes = @{$params->{short_codes}};
 
     foreach my $s (@short_codes) {
-        my ($contract, $bet_params, $longcode);
+        my ($contract, $longcode);
         try {
-            $bet_params = shortcode_to_parameters($s, $params->{currency});
-            $contract   = produce_contract($bet_params);
+            $contract   = produce_contract($s, $params->{currency});
             $longcode   = $contract->longcode;
         }
         catch {
-            warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($bet_params);
+            warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($$params);
         };
         $longcodes->{$s} = $longcode;
     }
