@@ -15,7 +15,7 @@ reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 subtest 'get_offerings_flyby' => sub {
     my $fb;
     lives_ok { $fb = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config) } 'get_offerings flyby() does not die';
-    isa_ok $fb, 'FlyBy', '...and resulting object';
+    isa_ok $fb, 'LandingCompany::Offerings', '...and resulting object';
     cmp_ok(scalar @{$fb->records}, '>=', 600, '...with over 600 varieties.');
     eq_or_diff(
         [sort $fb->all_keys],
@@ -35,16 +35,19 @@ subtest 'get_offerings_flyby' => sub {
     );
     eq_or_diff([$fb->values_for_key('expiry_type')], [qw( daily intraday tick )], '..with, at least, the expected values for expiry_type');
     subtest 'example queries' => sub {
-        is(scalar $fb->query('"start_type" IS "forward" -> "market"'),          5,  'Forward-starting is offered on 6 markets.');
-        is(scalar $fb->query('"expiry_type" IS "tick" -> "underlying_symbol"'), 25, 'Tick expiries are offered on 24 underlyings.');
+        is(scalar $fb->query({"start_type"  => "forward"}, "market"),            5,  'Forward-starting is offered on 6 markets.');
+        is(scalar $fb->query({"expiry_type" => "tick"},    "underlying_symbol"), 25, 'Tick expiries are offered on 24 underlyings.');
         is(
-            scalar get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, 'iom')
-                ->query('"contract_category" IS "callput" AND "underlying_symbol" IS "frxUSDJPY"'),
+            scalar get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, 'iom')->query({
+                    "contract_category" => "callput",
+                    "underlying_symbol" => "frxUSDJPY"
+                }
+            ),
             24,
             '24 callput options on frxUSDJPY'
         );
-        is(scalar $fb->query('"exchange_name" IS "RANDOM" -> "underlying_symbol"'), 7, 'Six underlyings trade on the RANDOM exchange');
-        is(scalar $fb->query('"market" IS "volidx" -> "underlying_symbol"'),        7, '...out of 6 total random market symbols.');
+        is(scalar $fb->query({"exchange_name" => "RANDOM"}, "underlying_symbol"), 7, 'Six underlyings trade on the RANDOM exchange');
+        is(scalar $fb->query({"market"        => "volidx"}, "underlying_symbol"), 7, '...out of 6 total random market symbols.');
     };
 };
 
