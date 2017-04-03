@@ -234,7 +234,7 @@ sub check_one_result {
 ####################################################################
 
 subtest 'batch-buy success + multisell', sub {
-    plan tests => 10;
+    plan tests => 11;
     lives_ok {
         my $clm = create_client;    # manager
         my $cl1 = create_client;
@@ -304,7 +304,7 @@ subtest 'batch-buy success + multisell', sub {
             ready_to_sell  => 0,    # obviously
         };
         ### Commented because has different behaviour on Travis and QA
-        #is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
+        is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
 
         subtest "sell_by_shortcode", sub {
             plan tests => 8;
@@ -463,7 +463,7 @@ subtest 'contract already started', sub {
 };
 
 subtest 'single contract fails in database', sub {
-    plan tests => 9;
+    plan tests => 10;
     lives_ok {
         my $clm = create_client;    # manager
         my $cl1 = create_client;
@@ -538,13 +538,13 @@ subtest 'single contract fails in database', sub {
         };
         ### Commented because has different behaviour on Travis and QA
 
-#        is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
+        is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
     }
     'survived';
 };
 
 subtest 'batch-buy multiple databases and datadog', sub {
-    plan tests => 22;
+    plan tests => 23;
     lives_ok {
         my $clm = create_client 'VRTC';    # manager
         my @cl;
@@ -615,7 +615,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
         };
         ### Commented because has different behaviour on Travis and QA
 
-#        is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
+        is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
 
         check_datadog increment => [
             "transaction.batch_buy.attempt" => {
