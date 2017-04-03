@@ -12,7 +12,7 @@ use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Time::HiRes;
 use Format::Util::Numbers qw(roundnear);
 
-use LandingCompany::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Platform::Config;
@@ -21,6 +21,10 @@ use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
 use BOM::Product::ContractFactory qw(produce_contract produce_batch_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use BOM::Product::Contract::Finder::Japan;
+use BOM::Product::Contract::Finder;
+use BOM::Product::Contract::Offerings;
+use Time::Duration::Concise::Localize;
 use BOM::Pricing::v3::Utility;
 
 use feature "state";
@@ -590,6 +594,207 @@ sub get_contract_details {
     }
 
     return $response;
+}
+
+sub longcode {
+    my $params = shift;
+
+    my $longcodes;
+
+    my @short_codes = @{$params->{short_codes}};
+
+    foreach my $s (@short_codes) {
+        my ($contract, $longcode);
+        try {
+            $contract = produce_contract($s, $params->{currency});
+            $longcode = $contract->longcode;
+        }
+        catch {
+            warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($$params);
+        };
+        $longcodes->{$s} = $longcode;
+    }
+
+    return {
+        longcodes => $longcodes,
+    };
+
+}
+
+sub contracts_for {
+    my $params = shift;
+
+    my $args                 = $params->{args};
+    my $symbol               = $args->{contracts_for};
+    my $currency             = $args->{currency} || 'USD';
+    my $product_type         = $args->{product_type} // 'basic';
+    my $landing_company_name = $args->{landing_company} // 'costarica';
+
+    my $contracts_for;
+    my $query_args = {
+        symbol          => $symbol,
+        landing_company => $landing_company_name,
+    };
+
+    if ($product_type eq 'multi_barrier') {
+        $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol($query_args);
+    } else {
+        $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol($query_args);
+        # this is temporary solution till the time front apps are fixed
+        # filter CALLE|PUTE only for non japan
+        $contracts_for->{available} = [grep { $_->{contract_type} !~ /^(?:CALLE|PUTE)$/ } @{$contracts_for->{available}}]
+            if ($contracts_for and $contracts_for->{hit_count} > 0);
+    }
+
+    my $i = 0;
+    foreach my $contract (@{$contracts_for->{available}}) {
+        if (exists $contract->{payout_limit}) {
+            $contracts_for->{available}->[$i]->{payout_limit} = $contract->{payout_limit}->{$currency};
+        }
+        $i++;
+    }
+
+    if (not $contracts_for or $contracts_for->{hit_count} == 0) {
+        return BOM::Pricing::v3::Utility::create_error({
+                code              => 'InvalidSymbol',
+                message_to_client => BOM::Platform::Context::localize('The symbol is invalid.')});
+    } else {
+        $contracts_for->{'spot'} = create_underlying($symbol)->spot();
+        return $contracts_for;
+    }
+
+    return;
+}
+
+sub trading_times {
+    my $params = shift;
+
+    my $date = try { Date::Utility->new($params->{args}->{trading_times}) } || Date::Utility->new;
+    my $tree = BOM::Product::Contract::Offerings->new(date => $date)->decorate_tree(
+        markets     => {name => 'name'},
+        submarkets  => {name => 'name'},
+        underlyings => {
+            name         => 'name',
+            times        => 'times',
+            events       => 'events',
+            symbol       => sub { $_->symbol },
+            feed_license => sub { $_->feed_license },
+            delay_amount => sub { $_->delay_amount },
+        });
+    my $trading_times = {};
+    for my $mkt (@$tree) {
+        my $market = {};
+        push @{$trading_times->{markets}}, $market;
+        $market->{name} = $mkt->{name};
+        for my $sbm (@{$mkt->{submarkets}}) {
+            my $submarket = {};
+            push @{$market->{submarkets}}, $submarket;
+            $submarket->{name} = $sbm->{name};
+            for my $ul (@{$sbm->{underlyings}}) {
+                push @{$submarket->{symbols}},
+                    {
+                    name       => $ul->{name},
+                    symbol     => $ul->{symbol},
+                    settlement => $ul->{settlement} || '',
+                    events     => $ul->{events},
+                    times      => $ul->{times},
+                    ($ul->{feed_license} ne 'realtime') ? (feed_license => $ul->{feed_license}) : (),
+                    ($ul->{delay_amount} > 0)           ? (delay_amount => $ul->{delay_amount}) : (),
+                    };
+            }
+        }
+    }
+    return $trading_times,;
+}
+
+sub asset_index {
+    my $params = shift;
+
+    my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
+
+    my $asset_index = BOM::Product::Contract::Offerings->new(landing_company => $landing_company_name)->decorate_tree(
+        markets => {
+            code => sub { $_->name },
+            name => sub { localize($_->display_name) }
+        },
+        submarkets => {
+            code => sub {
+                $_->name;
+            },
+            name => sub {
+                localize($_->display_name);
+            }
+        },
+        underlyings => {
+            code => sub {
+                $_->symbol;
+            },
+            name => sub {
+                localize($_->display_name);
+            }
+        },
+        contract_categories => {
+            code => sub {
+                $_->code;
+            },
+            name => sub {
+                localize($_->display_name);
+            },
+            expiries => sub {
+                my $underlying = shift;
+                my %offered    = %{
+                    get_permitted_expiries(
+                        BOM::Platform::Runtime->instance->get_offerings_config,
+                        {
+                            underlying_symbol => $underlying->symbol,
+                            contract_category => $_->code,
+                        })};
+
+                my @times;
+                foreach my $expiry (qw(intraday daily tick)) {
+                    if (my $included = $offered{$expiry}) {
+                        foreach my $key (qw(min max)) {
+                            if ($expiry eq 'tick') {
+                                # some tick is set to seconds somehow in this code.
+                                # don't want to waste time to figure out how it is set
+                                my $tick_count = (ref $included->{$key}) ? $included->{$key}->seconds : $included->{$key};
+                                push @times, [$tick_count, $tick_count . 't'];
+                            } else {
+                                $included->{$key} = Time::Duration::Concise::Localize->new(
+                                    interval => $included->{$key},
+                                    locale   => $params->{language}) unless (ref $included->{$key});
+                                push @times, [$included->{$key}->seconds, $included->{$key}->as_concise_string];
+                            }
+                        }
+                    }
+                }
+                @times = sort { $a->[0] <=> $b->[0] } @times;
+                return +{
+                    min => $times[0][1],
+                    max => $times[-1][1],
+                };
+            },
+        },
+    );
+
+    ## remove obj for json encode
+    my @data;
+    for my $market (@$asset_index) {
+        delete $market->{$_} for (qw/obj children/);
+        for my $submarket (@{$market->{submarkets}}) {
+            delete $submarket->{$_} for (qw/obj parent_obj children parent/);
+            for my $ul (@{$submarket->{underlyings}}) {
+                delete $ul->{$_} for (qw/obj parent_obj children parent/);
+                for (@{$ul->{contract_categories}}) {
+                    $_ = [$_->{code}, $_->{name}, $_->{expiries}->{min}, $_->{expiries}->{max}];
+                }
+                my $x = [$ul->{code}, $ul->{name}, $ul->{contract_categories}];
+                push @data, $x;
+            }
+        }
+    }
+
+    return \@data;
 }
 
 sub _log_exception {
