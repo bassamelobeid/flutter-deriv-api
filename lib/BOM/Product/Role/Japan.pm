@@ -227,9 +227,23 @@ sub japan_pricing_info {
 
     }
 
-    my $bid_price    = $self->payout - $self->opposite_contract->ask_price;
-    my $pricing_info = join ',',
+    my $bid_price = $self->payout - $self->opposite_contract->ask_price;
+    my @pricing_info =
         ($self->shortcode, $trading_window_start, $self->ask_price, $bid_price, $self->pricing_spot, $iv, $iv_2, $self->_date_pricing_milliseconds);
+    if ($self->priced_with_intraday_model) {
+        my $pe = $self->pricing_engine;
+        push @pricing_info,
+            (
+            $pe->base_probability->base_amount,            $pe->intraday_delta_correction->amount,
+            $pe->intraday_vega_correction->amount,         $pe->economic_events_volatility_risk_markup->amount,
+            $pe->economic_events_spot_risk_markup->amount, $pe->economic_events_markup->amount,
+            $pe->risk_markup->amount
+            );
+    } else {
+        push @pricing_info, (0) x 7;
+    }
+
+    my $pricing_info = join ',', @pricing_info;
 
     return "[JPLOG]," . $pricing_info . "\n";
 
