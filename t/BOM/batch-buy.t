@@ -303,7 +303,6 @@ subtest 'batch-buy success + multisell', sub {
             open_contracts => 3,    # the ones just bought
             ready_to_sell  => 0,    # obviously
         };
-        ### Commented because has different behaviour on Travis and QA
         is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
 
         subtest "sell_by_shortcode", sub {
@@ -536,8 +535,6 @@ subtest 'single contract fails in database', sub {
             open_contracts => 2,    # the ones just bought
             ready_to_sell  => 0,    # obviously
         };
-        ### Commented because has different behaviour on Travis and QA
-
         is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
     }
     'survived';
@@ -613,8 +610,6 @@ subtest 'batch-buy multiple databases and datadog', sub {
             open_contracts => 5,    # the ones just bought
             ready_to_sell  => 0,    # obviously
         };
-        ### Commented because has different behaviour on Travis and QA
-
         is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
 
         check_datadog increment => [
