@@ -218,18 +218,21 @@ sub japan_pricing_info {
     my $self                 = shift;
     my $trading_window_start = shift;
 
-    my $iv   = $self->pricing_vol;
-    my $iv_2 = '0';
+    my $bid_price = $self->payout - $self->opposite_contract->ask_price;
+    my $name      = $self->pricing_engine_name;
+    $name =~ s/:://g;
+    my @pricing_info = ($self->shortcode, $trading_window_start, $self->ask_price, $bid_price, $self->_date_pricing_milliseconds);
 
-    if ($self->pricing_vol_for_two_barriers) {
-        $iv   = $self->pricing_vol_for_two_barriers->{high_barrier_vol};
-        $iv_2 = $self->pricing_vol_for_two_barriers->{low_barrier_vol};
-
+    my $extra = $name . '_' . $self->pricing_spot . '_';
+    if ($self->priced_with_intraday_model) {
+        $extra .= join '_', ($self->pricing_vol, $self->news_adjusted_pricing_vol, $self->long_term_prediction, $self->volatility_scaling_factor);
+    } elsif ($self->pricing_vol_for_two_barriers) {
+        $extra .= join '_', ($self->pricing_vol_for_two_barriers->{high_barrier_vol}, $self->pricing_vol_for_two_barriers->{low_barrier_vol});
+    } else {
+        $extra .= $self->pricing_vol;
     }
 
-    my $bid_price    = $self->payout - $self->opposite_contract->ask_price;
-    my $pricing_info = join ',',
-        ($self->shortcode, $trading_window_start, $self->ask_price, $bid_price, $self->pricing_spot, $iv, $iv_2, $self->_date_pricing_milliseconds);
+    my $pricing_info = join ',', @pricing_info, $extra;
 
     return "[JPLOG]," . $pricing_info . "\n";
 
