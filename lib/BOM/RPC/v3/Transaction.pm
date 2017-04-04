@@ -8,7 +8,7 @@ use JSON::XS qw/encode_json/;
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
-use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
+use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Transaction;
 use BOM::Platform::Context qw (localize request);
