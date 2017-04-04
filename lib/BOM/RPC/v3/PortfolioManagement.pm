@@ -7,10 +7,8 @@ use Date::Utility;
 use Try::Tiny;
 
 use BOM::RPC::v3::Utility;
-# TODO usage will be conveted to a remote call (RPC).
-use BOM::Pricing::v3::Contract;
+use BOM::Platform::Pricing;
 use BOM::RPC::v3::Accounts;
-use BOM::Product::ContractFactory qw(simple_contract_info);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (request localize);
@@ -26,7 +24,28 @@ sub portfolio {
 
     _sell_expired_contracts($client, $params->{source});
 
-    foreach my $row (@{__get_open_contracts($client)}) {
+    my @rows = @{__get_open_contracts($client)};
+    return $portfolio unless scalar @rows > 0;
+
+    my @short_codes = map { $_->{short_code} } @rows;
+
+    my $res = BOM::Platform::Pricing::call_rpc(
+        'longcode',
+        {
+            short_codes => \@short_codes,
+            currency    => $client->currency,
+            language    => $params->{language},
+        });
+
+    foreach my $row (@rows) {
+
+        my $longcode;
+        if (!$res->{longcodes}->{$row->{short_code}}) {
+            $longcode = localize('Could not retrieve contract details');
+        } else {
+            $longcode = $res->{longcodes}->{$row->{short_code}};
+        }
+
         my %trx = (
             contract_id    => $row->{id},
             transaction_id => $row->{buy_transaction_id},
@@ -39,8 +58,8 @@ sub portfolio {
             contract_type  => $row->{bet_type},
             currency       => $client->currency,
             shortcode      => $row->{short_code},
-            longcode       => (simple_contract_info($row->{short_code}, $client->currency))[0] // '',
-            app_id => BOM::RPC::v3::Utility::mask_app_id($row->{source}, $row->{purchase_time}));
+            longcode       => $longcode,
+            app_id         => BOM::RPC::v3::Utility::mask_app_id($row->{source}, $row->{purchase_time}));
         push @{$portfolio->{contracts}}, \%trx;
     }
 
@@ -108,17 +127,19 @@ sub proposal_open_contract {
         my $id = $fmb->{id};
         my $sell_time;
         $sell_time = Date::Utility->new($fmb->{sell_time})->epoch if $fmb->{sell_time};
-        my $bid = BOM::Pricing::v3::Contract::get_bid({
-            short_code            => $fmb->{short_code},
-            contract_id           => $id,
-            currency              => $client->currency,
-            is_sold               => $fmb->{is_sold},
-            sell_time             => $sell_time,
-            sell_price            => $fmb->{sell_price},
-            buy_price             => $fmb->{buy_price},
-            app_markup_percentage => $params->{app_markup_percentage},
-            landing_company       => $client->landing_company->short,
-        });
+        my $bid = BOM::Platform::Pricing::call_rpc(
+            'get_bid',
+            {
+                short_code            => $fmb->{short_code},
+                contract_id           => $id,
+                currency              => $client->currency,
+                is_sold               => $fmb->{is_sold},
+                sell_time             => $sell_time,
+                sell_price            => $fmb->{sell_price},
+                buy_price             => $fmb->{buy_price},
+                app_markup_percentage => $params->{app_markup_percentage},
+                landing_company       => $client->landing_company->short,
+            });
         if (exists $bid->{error}) {
             $response->{$id} = $bid;
         } else {
