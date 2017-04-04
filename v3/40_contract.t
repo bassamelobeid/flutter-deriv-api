@@ -270,7 +270,7 @@ while (1) {
     is $res->{msg_type}, 'sell';
     ok $res->{sell};
     ok($res->{sell}{contract_id} && $res->{sell}{contract_id} == $contract_id, "check contract ID");
-    ok($res->{sell}{transaction_id} == $buy_txn_id, "check buy transaction ID");
+    ok($res->{sell}{reference_id} == $buy_txn_id, "check buy transaction ID");
     test_schema('sell', $res);
     last;
 }
