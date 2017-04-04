@@ -10,15 +10,16 @@ use Math::Round qw(round);
 use List::Util qw(min max);
 use Scalar::Util qw(looks_like_number);
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
+
+use Postgres::FeedDB::Spot::Tick;
 use LandingCompany::Commission qw(get_underlying_base_commission);
 
 use BOM::Platform::Context qw(localize request);
 use BOM::MarketData::Fetcher::VolSurface;
-use Postgres::FeedDB::Spot::Tick;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Product::Types;
-use BOM::Product::RiskProfile;
+use BOM::Platform::RiskProfile;
 use BOM::Platform::Chronicle;
 use Quant::Framework;
 
@@ -599,7 +600,7 @@ has risk_profile => (
 sub _build_risk_profile {
     my $self = shift;
 
-    return BOM::Product::RiskProfile->new(
+    return BOM::Platform::RiskProfile->new(
         contract_category              => $self->category_code,
         expiry_type                    => 'intraday',                               # making this intraday.
         start_type                     => 'spot',
