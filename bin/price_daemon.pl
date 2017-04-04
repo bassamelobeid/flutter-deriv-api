@@ -23,6 +23,9 @@ $queues ||= 'pricer_jobs,pricer_jobs_jp';
 $workers ||= max(1, Sys::Info->new->device("CPU")->count);
 
 my @running_forks;
+my @workers = (0) x $workers;
+my $index;
+
 sub signal_handler {
     kill KILL => @running_forks;
     exit 0;
@@ -36,6 +39,8 @@ my $pm = Parallel::ForkManager->new($workers);
 $pm->run_on_start(
     sub {
         my $pid = shift;
+		($index) = grep { $workers[$_] == 0 } @workers;
+        $workers[$index] = $pid;
         push @running_forks, $pid;
         DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.forks.count', (scalar @running_forks), {tags => ['tag:' . $internal_ip]});
         warn "Started a new fork [$pid]\n";
@@ -43,22 +48,26 @@ $pm->run_on_start(
 $pm->run_on_finish(
     sub {
         my ($pid, $exit_code) = @_;
+		for (@workers) {
+        	$_ = 0 and last if $_ == $pid;
+		}
         @running_forks = grep { $_ != $pid } @running_forks;
         DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.forks.count', (scalar @running_forks), {tags => ['tag:' . $internal_ip]});
         warn "Fork [$pid] ended with exit code [$exit_code]\n";
     });
 
-my $fork_count = 1;
 while (1) {
     $pm->start and next;
     my $pid = $$;
     my $daemon = BOM::Pricing::PriceDaemon->new(
-        tags       => [ 'tag:' . $internal_ip ],
-        ip         => $internal_ip,
-        pid        => $pid,
-        fork_count => $fork_count
+        tags       => [ 'tag:' . $internal_ip ]
     );
-    $daemon->run(queues => [ split /,/, $queues ], ip => $internal_ip, pid => $pid, fork_count => $fork_count++);
+    $daemon->run(
+		queues 		=> [ split /,/, $queues ], 
+		ip 			=> $internal_ip, 
+		pid 		=> $pid, 
+		fork_index 	=> $index
+	);
     $pm->finish;
 }
 

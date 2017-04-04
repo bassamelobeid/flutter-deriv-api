@@ -59,8 +59,6 @@ sub process_job {
 
     # when it reaches here, contract is considered priced.
     $redis->set($next, $current_time);
-    $redis->set("TEST2", "HI");
-    $log->info("TEST2 has been set");
     $redis->expire($next, 300);
 
     stats_inc("pricer_daemon.$price_daemon_cmd.call", {tags => $self->tags});
@@ -143,10 +141,10 @@ sub run {
             process_time     => 1000 * Time::HiRes::tv_interval($tv, $tv_now),
             process_end_time => 1000 * ($end_time - int($end_time)),
             time             => time,
-            fork_count       => $args{fork_count}
+            fork_index       => $args{fork_index}
         );
-        $redis->set("PRICER_STATUS-$args{fork_count}" , encode_json(\@stat_redis));
-        $log->info("PRICER_STATUS-$args{fork_count}->" . encode_json(\@stat_redis));
+        $redis->set("PRICER_STATUS-$args{fork_index}" , encode_json(\@stat_redis));
+        $log->info("PRICER_STATUS-$args{fork_index}->" . encode_json(\@stat_redis));
         if ($current_pricing_epoch != time) {
 
             for my $key (keys %$stat_count) {
