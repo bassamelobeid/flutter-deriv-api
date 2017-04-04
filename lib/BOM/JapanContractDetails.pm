@@ -36,6 +36,7 @@ sub parse_file {
         my $shortcode = $fields[0];
         my $ask_price = $fields[2];
         my $bid_price = $fields[3];
+        my $extra     = $fields[5];
 
         my $currency = $landing_company =~ /japan/ ? 'JPY' : 'USD';
         my $parameters = verify_with_shortcode({
@@ -45,6 +46,7 @@ sub parse_file {
             ask_price       => $ask_price,
             bid_price       => $bid_price,
             action_type     => 'buy',
+            extra           => $extra,
         });
 
         $pricing_parameters->{$shortcode} = include_contract_details(
@@ -113,6 +115,7 @@ sub verify_with_shortcode {
     my $verify_ask      = $args->{ask_price};                                  # This is the price to be verify
     my $verify_bid      = $args->{bid_price} // undef;
     my $currency        = $args->{currency};
+    my $extra           = $args->{extra} // undef;
 
     my $original_contract = produce_contract($short_code, $currency);
     my $purchase_time = $original_contract->date_start;
@@ -123,6 +126,25 @@ sub verify_with_shortcode {
     my $prev_tick = $original_contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
     $pricing_args->{date_pricing}    = $start;
     $pricing_args->{landing_company} = $landing_company;
+
+    if ($extra) {
+        my @extra_args = split '_', $extra;
+        my $engine_name = $extra_args[0];
+        $pricing_args->{pricing_spot} = $extra_args[1];
+        if ($engine_name =~ /IntradayForex/) {
+            $pricing_args->{pricing_vol}               = $extra_args[2];
+            $pricing_args->{news_adjusted_pricing_vol} = $extra_args[3];
+            $pricing_args->{long_term_prediction}      = $extra_args[4];
+            $pricing_args->{volatility_scaling_factor} = $extra_args[5];
+        } elsif ($engine_name =~ /Slope/) {
+            $pricing_args->{pricing_vol_for_two_barriers} = {
+                high_barrier_vol => $extra_args[2],
+                low_barrier_vol  => $extra_args[3],
+            };
+        } else {
+            $pricing_args->{pricing_vol} = $extra_args[2];
+        }
+    }
 
     my $contract = produce_contract($pricing_args);
     # due to complexity in $action_type, this is a hacky fix.
