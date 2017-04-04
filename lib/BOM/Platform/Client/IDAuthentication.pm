@@ -31,17 +31,15 @@ sub run_authentication {
     # Binary Investment clients should already be fully_authenticated by the time this code runs following an intial deposit.
     # Binary Investment accounts are set to "unwelcome" when they are first created.  Document
     # submission is REQUIRED before the account is enabled for use
-
-    return if $client->client_fully_authenticated || $client->landing_company->short eq 'maltainvest';
+    my $landing_company;
+    return if $client->client_fully_authenticated || ($landing_company = $client->landing_company->short) eq 'maltainvest';
 
     # any of these callouts might invoke _request_id_authentication which
     # will return a structure suitable for passing to a mailer.
-
     my $envelope;
-
-    if ($client->landing_company->country eq 'Isle of Man') {
+    if ($landing_company eq 'iom') {
         $envelope = $self->_do_proveid;
-    } elsif ($client->landing_company->country ne 'Costa Rica'
+    } elsif ($landing_company eq 'malta'
         && !$client->get_status('age_verification')
         && !$client->has_valid_documents)
     {
