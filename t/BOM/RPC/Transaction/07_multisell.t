@@ -145,7 +145,7 @@ $result = BOM::RPC::v3::Transaction::sell_contract_for_multiple_accounts({
 
 $result = $result->{result};
 
-ok(delete $buy_trx_ids->{$_->{transaction_id}}) for grep { $_->{transaction_id} } @$result;
+ok(delete $buy_trx_ids->{$_->{reference_id}}) for grep { $_->{reference_id} } @$result;
 ok(scalar keys %$buy_trx_ids == 0);
 is($result->[2]->{code}, 'NoOpenPosition', 'contract not found code');
 is($result->[2]->{message_to_client}, 'This contract was not found among your open positions.', 'contract not found code');

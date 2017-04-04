@@ -308,7 +308,8 @@ sub sell_contract_for_multiple_accounts {
                 @{$row}{qw/token code error/};
         } else {
             $new = +{
-                transaction_id => $row->{buy_tr_id},
+                transaction_id => $row->{tnx}{id},
+                reference_id   => $row->{buy_tr_id},
                 balance_after  => sprintf('%.2f', $row->{tnx}{balance_after}),
                 sell_price     => abs($row->{fmb}{sell_price}),
                 contract_id    => $row->{tnx}{financial_market_bet_id},
@@ -365,7 +366,8 @@ sub sell {
     my $trx_rec = $trx->transaction_record;
 
     return {
-        transaction_id => $trx->buy_transaction_id,                   ### Now it is buy transaction ID
+        transaction_id => $trx->transaction_id,
+        reference_id   => $trx->reference_id,                         ### buy transaction ID
         contract_id    => $id,
         balance_after  => sprintf('%.2f', $trx_rec->balance_after),
         sold_for       => abs($trx_rec->amount),
