@@ -17,14 +17,13 @@ use Moo;
 has [qw/ client clients transaction /] => (is => 'rw');
 
 sub BUILDARGS {
-    my ( undef, $args ) = @_;
+    my (undef, $args) = @_;
 
     $args->{client}  //= $args->{clients}->[0];
     $args->{clients} //= [$args->{client}];
 
     return $args;
 }
-
 
 ################ Client and transaction validation ########################
 
