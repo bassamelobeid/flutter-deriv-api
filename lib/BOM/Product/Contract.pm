@@ -237,7 +237,7 @@ has calendar => (
     default => sub { return shift->underlying->calendar; },
 );
 
-has opposite_contract => (
+has [qw(opposite_contract opposite_contract_for_sale)] => (
     is         => 'ro',
     isa        => 'BOM::Product::Contract',
     lazy_build => 1
@@ -767,6 +767,51 @@ sub _build_timeindays {
     return $tid;
 }
 
+sub _build_opposite_contract_for_sale {
+    my $self = shift;
+
+    # Start by making a copy of the parameters we used to build this bet.
+    my %opp_parameters = %{$self->build_parameters};
+    # Always switch out the bet type for the other side.
+    $opp_parameters{'bet_type'} = $self->other_side_code;
+    # Don't set the shortcode, as it will change between these.
+    delete $opp_parameters{'shortcode'};
+    # Save a round trip.. copy market data
+    foreach my $vol_param (qw(volsurface fordom forqqq domqqq)) {
+        $opp_parameters{$vol_param} = $self->$vol_param;
+    }
+
+    # we still want to set for_sale for a forward_starting contracts
+    $opp_parameters{for_sale} = 1;
+    # delete traces of this contract were a forward starting contract before.
+    delete $opp_parameters{starts_as_forward_starting};
+    # duration could be set for an opposite contract from bad hash reference reused.
+    delete $opp_parameters{duration};
+
+    if (not $self->is_forward_starting) {
+        if ($self->entry_tick) {
+            foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
+                if (defined $self->$barrier) {
+                    $opp_parameters{$barrier} = $self->$barrier->as_absolute;
+                    $opp_parameters{'supplied_' . $barrier} = $self->$barrier->as_absolute;
+                }
+            }
+        }
+        # We should be looking to move forward in time to a bet starting now.
+        $opp_parameters{date_start}  = $self->date_pricing;
+        $opp_parameters{pricing_new} = 1;
+    }
+
+    my $opp_contract = $self->_produce_contract_ref->(\%opp_parameters);
+
+    if (my $role = $opp_parameters{role}) {
+        $role->require;
+        $role->meta->apply($opp_contract);
+    }
+
+    return $opp_contract;
+}
+
 sub _build_opposite_contract {
     my $self = shift;
 
@@ -783,35 +828,11 @@ sub _build_opposite_contract {
 
     # We have this concept in forward starting contract where a forward start contract is considered
     # pricing_new until it has started. So it kind of messed up here.
-    if ($self->pricing_new and not $self->starts_as_forward_starting) {
-        $opp_parameters{current_tick} = $self->current_tick;
-        my @to_override = qw(r_rate q_rate discount_rate pricing_vol pricing_spot mu);
-        push @to_override, qw(volatility_scaling_factor long_term_prediction) if $self->priced_with_intraday_model;
-        $opp_parameters{$_} = $self->$_ for @to_override;
-        $opp_parameters{pricing_new} = 1;
-    } else {
-        # we still want to set for_sale for a forward_starting contracts
-        $opp_parameters{for_sale} = 1;
-        # delete traces of this contract were a forward starting contract before.
-        delete $opp_parameters{starts_as_forward_starting};
-        # duration could be set for an opposite contract from bad hash reference reused.
-        delete $opp_parameters{duration};
-
-        if (not $self->is_forward_starting) {
-            if ($self->entry_tick) {
-                foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-                    if (defined $self->$barrier) {
-                        $opp_parameters{$barrier} = $self->$barrier->as_absolute;
-                        $opp_parameters{'supplied_' . $barrier} = $self->$barrier->as_absolute;
-                    }
-                }
-            }
-            # We should be looking to move forward in time to a bet starting now.
-            $opp_parameters{date_start}  = $self->date_pricing;
-            $opp_parameters{pricing_new} = 1;
-        }
-
-    }
+    $opp_parameters{current_tick} = $self->current_tick;
+    my @to_override = qw(r_rate q_rate discount_rate pricing_vol pricing_spot mu);
+    push @to_override, qw(volatility_scaling_factor long_term_prediction) if $self->priced_with_intraday_model;
+    $opp_parameters{$_} = $self->$_ for @to_override;
+    $opp_parameters{pricing_new} = 1;
 
     my $opp_contract = $self->_produce_contract_ref->(\%opp_parameters);
 

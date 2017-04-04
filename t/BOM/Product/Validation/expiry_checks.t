@@ -50,7 +50,7 @@ test_with_feed(
             is($bet->is_expired, 1, 'Past end of bet, so it is expired.');
             is($bet->value, $barrier_win_map{$barrier}, 'Correct expiration for strike of ' . $barrier);
 
-            my $opposite = $bet->opposite_contract;
+            my $opposite = $bet->opposite_contract_for_sale;
             $opposite->is_expired;
             is($opposite->value, int(not $barrier_win_map{$barrier}), 'Correct expiration for strike of ' . $barrier . ' on opposite bet.');
         }
