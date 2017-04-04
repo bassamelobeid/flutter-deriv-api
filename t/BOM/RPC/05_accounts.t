@@ -1384,7 +1384,7 @@ subtest 'get and set self_exclusion' => sub {
         subject => qr/Client set self-exclusion limits/
     );
     ok(@msgs, "msg sent to support email");
-    like($msgs[0]{body}, qr/Maximum number of open positions: 100.*Maximum account balance: 10000/s, 'email content is ok');
+    like($msgs[0]{body}, qr/Maximum number of open positions: 100.*Exclude from website until/s, 'email content is ok');
 
     delete $params->{args};
     like(
