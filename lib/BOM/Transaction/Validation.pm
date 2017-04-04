@@ -275,7 +275,7 @@ sub _validate_trade_pricing_adjustment {
 }
 
 sub _write_to_rejected {
-    my ($self, $p) = shift;
+    my ($self, $p) = @_;
 
     my $what_changed = $p->{action} eq 'sell' ? 'sell price' : undef;
     $what_changed //= $self->transaction->amount_type eq 'payout' ? 'price' : 'payout';
