@@ -11,6 +11,8 @@ use BOM::RPC::v3::Contract;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Platform::Context qw (localize request);
+use Quant::Framework;
+use BOM::Platform::Chronicle;
 
 sub ticks {
     my $params = shift;
@@ -214,12 +216,12 @@ sub _validate_start_end {
             code              => 'NoSymbolProvided',
             message_to_client => BOM::Platform::Context::localize("Please provide an underlying symbol.")});
 
-    my $start       = $args->{start};
-    my $end         = $args->{end} !~ /^[0-9]+$/ ? time() : $args->{end};
-    my $count       = $args->{count};
-    my $granularity = $args->{granularity};
-    my $calendar    = $ul->calendar;
-    my $exchange    = $ul->exchange;
+    my $start            = $args->{start};
+    my $end              = $args->{end} !~ /^[0-9]+$/ ? time() : $args->{end};
+    my $count            = $args->{count};
+    my $granularity      = $args->{granularity};
+    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
+    my $exchange         = $ul->exchange;
 
     # special case to send explicit error when
     # both are timestamp & start > end time
@@ -279,12 +281,12 @@ sub _validate_start_end {
         }
     }
     if ($args->{adjust_start_time}) {
-        unless ($ul->calendar->is_open_at($exchange, $end)) {
-            my $shift_back = $ul->calendar->seconds_since_close_at($exchange, $end);
+        unless ($trading_calendar->is_open_at($exchange, $end)) {
+            my $shift_back = $trading_calendar->seconds_since_close_at($exchange, $end);
             unless (defined $shift_back) {
-                my $last_day = $ul->calendar->trade_date_before($exchange, Date::Utility->new($end));
+                my $last_day = $trading_calendar->trade_date_before($exchange, Date::Utility->new($end));
                 if ($last_day) {
-                    my $closes = $ul->calendar->closing_on($exchange, $last_day)->epoch;
+                    my $closes = $trading_calendar->closing_on($exchange, $last_day)->epoch;
                     $shift_back = $end - $closes;
                 }
             }

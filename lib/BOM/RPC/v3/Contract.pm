@@ -9,6 +9,8 @@ use List::MoreUtils qw(none);
 use JSON::XS;
 use Date::Utility;
 
+use Quant::Framework;
+use BOM::Platform::Chronicle;
 use BOM::Platform::Config;
 use BOM::RPC::v3::Utility;
 use BOM::MarketData qw(create_underlying);
@@ -60,9 +62,11 @@ sub validate_license {
 
 sub validate_is_open {
     my $symbol = shift;
-    my $u      = create_underlying($symbol);
 
-    unless ($u->calendar->is_open($u->exchange)) {
+    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
+    my $u                = create_underlying($symbol);
+
+    unless ($trading_calendar->is_open($u->exchange)) {
         return {
             error => {
                 code    => 'MarketIsClosed',

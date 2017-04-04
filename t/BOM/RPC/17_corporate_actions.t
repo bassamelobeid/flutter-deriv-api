@@ -22,6 +22,8 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
+use Quant::Framework;
+use BOM::Platform::Chronicle;
 use Quant::Framework::CorporateAction;
 use Quant::Framework::StorageAccessor;
 use Quant::Framework::Utils::Test;
@@ -60,9 +62,10 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => Date::Utility->new,
     });
 
+my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
 my $underlying = create_underlying('USAAPL');
 my $date       = Date::Utility->new('2013-03-27');
-my $opening    = $underlying->calendar->opening_on($underlying->exchange, $date);
+my $opening    = $trading_calendar->opening_on($underlying->exchange, $date);
 my $starting   = $opening->plus_time_interval('50m');
 my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'USAAPL',
