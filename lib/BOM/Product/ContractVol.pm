@@ -156,6 +156,9 @@ sub _build_pricing_vol {
                 include_economic_event_impact => 0,
             });
         }
+        unless($vol) {
+            warn "falt_vol: $uses_flat_vol";
+    }
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
             $vol = $self->volsurface->get_volatility({
@@ -165,6 +168,9 @@ sub _build_pricing_vol {
             });
         } else {
             $vol = $self->vol_at_strike;
+        }
+        unless($vol) {
+            warn "VV";
         }
         # we might get an error while pricing contract, take care of them here.
         $volatility_error = $self->volsurface->validation_error if $self->volsurface->validation_error;
@@ -176,6 +182,14 @@ sub _build_pricing_vol {
             message           => $volatility_error,
             message_to_client => localize('Trading on this market is suspended due to missing market (volatility) data.'),
         });
+    }
+
+    unless($vol) {
+          use Devel::StackTrace;
+
+            my $trace = Devel::StackTrace->new;
+
+              warn $trace->as_string;
     }
 
     if ($vol <= 0) {

@@ -93,12 +93,12 @@ my $contract_args = {
 #key is "contract type_pip diff" and value is expected barrier(s)
 my $expected = {
     'CALL_0'        => 52.26,
-    'CALL_1000'     => 61.48,
+    'CALL_1000'     => 67.69,
     'NOTOUCH_0'     => 3.5,
-    'NOTOUCH_1000'  => 41.17,
+    'NOTOUCH_1000'  => 63.92,
     'ONETOUCH_2000' => 100,
-    'PUT_1000'      => 70.45,
-    'PUT_0'         => 52.29,
+    'PUT_1000'      => 81.33,
+    'PUT_0'         => 52.28,
 };
 
 my $underlying = create_underlying('frxEURUSD');
