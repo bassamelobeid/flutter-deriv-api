@@ -574,6 +574,7 @@ sub process_bid_event {
             $response->{purchase_time}   = $passed_fields->{purchase_time};
             $response->{is_sold}         = $passed_fields->{is_sold};
             $response->{longcode}        = $passed_fields->{longcode};
+            $response->{contract_id}     = $stash_data->{args}->{contract_id} if exists $stash_data->{args}->{contract_id};
             $results                     = {
                 msg_type => $type,
                 $type    => $response
@@ -783,49 +784,25 @@ sub _price_stream_results_adjustment {
 }
 
 sub send_proposal_open_contract_last_time {
-    # last message (contract is sold) of proposal_open_contract stream could not be done from pricer
-    # because it should be performed with other parameters
-    my ($c, $args) = @_;
-    my $uuid = $args->{uuid};
+    my ($c, $args, $contract_id) = @_;
 
-    my $pricing_channel = $c->stash('pricing_channel');
-    return if not $pricing_channel or not $pricing_channel->{uuid}->{$uuid};
-    my $cache = $pricing_channel->{uuid}->{$uuid}->{cache};
-
-    my $forget_subscr_sub = sub {
-        my ($c, $rpc_response) = @_;
-        # cancel proposal open contract streaming which will cancel transaction subscription also
-        Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $uuid);
-    };
-
+    Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $args->{uuid});
     $c->call_rpc({
-            args        => $pricing_channel->{uuid}->{$uuid}->{args},
-            method      => 'get_bid',
+            args => {
+                proposal_open_contract => 1,
+                contract_id            => $contract_id
+            },
+            method      => 'proposal_open_contract',
             msg_type    => 'proposal_open_contract',
             call_params => {
-                short_code  => $args->{short_code},
-                contract_id => $args->{financial_market_bet_id},
-                currency    => $args->{currency_code},
-                sell_time   => $args->{sell_time},
-                is_sold     => 1,
+                token => $c->stash('token'),
             },
-            response => sub {
-                my ($rpc_response, $api_response, $req_storage) = @_;
-
-                return $api_response if $rpc_response->{error};
-
-                $api_response->{proposal_open_contract}->{buy_price}               = $cache->{buy_price};
-                $api_response->{proposal_open_contract}->{purchase_time}           = $cache->{purchase_time};
-                $api_response->{proposal_open_contract}->{transaction_ids}         = $cache->{transaction_ids};
-                $api_response->{proposal_open_contract}->{transaction_ids}->{sell} = $args->{id};
-                $api_response->{proposal_open_contract}->{sell_price}              = sprintf('%.2f', $args->{amount});
-                $api_response->{proposal_open_contract}->{sell_time}               = $args->{sell_time};
-                $api_response->{proposal_open_contract}->{is_sold}                 = 1;
-
-                return $api_response;
+            rpc_response_cb => sub {
+                my ($c, $rpc_response, $req_storage) = @_;
+                return {
+                    msg_type               => 'proposal_open_contract',
+                    proposal_open_contract => $rpc_response->{$contract_id}};
             },
-            success => $forget_subscr_sub,
-            error   => $forget_subscr_sub,
         });
     return;
 }
