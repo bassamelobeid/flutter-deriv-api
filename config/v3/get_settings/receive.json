@@ -81,7 +81,7 @@
         },
         "client_tnc_status": {
           "type": ["string", "null"],
-          "description": "Latest terms and coditions version accepted by client"
+          "description": "Latest terms and conditions version accepted by client"
         },
         "place_of_birth": {
           "type": ["string", "null"],
