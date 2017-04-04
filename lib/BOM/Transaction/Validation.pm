@@ -14,14 +14,15 @@ use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 
 use Moo;
 
-has client => (
-    is       => 'ro',
-    required => 1
-);
-has transaction => (
-    is       => 'ro',
-    required => 0
-);
+has [qw/ client clients transaction /] => (is => 'rw');
+
+sub BUILD {
+    my ($self, $args) = @_;
+
+    $args->{client}  //= $args->{clients}->[0];
+    $args->{clients} //= [$args->{client}];
+    return;
+}
 
 ################ Client and transaction validation ########################
 
@@ -30,19 +31,22 @@ sub validate_trx_sell {
     # all these validations MUST NOT use the database
     # database related validations MUST be implemented in the database
     # ask your friendly DBA team if in doubt
-    for (
-        qw/
-        _validate_available_currency
-        _validate_currency
-        _validate_sell_pricing_adjustment
-        _validate_date_pricing
-        /
-        )
-    {
-        my $res = $self->$_;
-        return $res if $res;
+
+    my $res = $self->_is_valid_to_sell;
+    return $res if $res;
+    $res = $self->_validate_date_pricing;
+    return $res if $res;
+
+    for my $c (@{$self->clients}) {
+        $self->client($c);
+        for (qw/ _validate_available_currency _validate_currency /) {
+            $res = $self->$_;
+            return $res if $res;
+        }
     }
-    return;
+    ### It's quete expensive
+    $res = $self->_validate_sell_pricing_adjustment();
+    return $res;
 }
 
 sub validate_trx_buy {
@@ -52,26 +56,37 @@ sub validate_trx_buy {
     # ask your friendly DBA team if in doubt
     #
     # Keep the transaction rate test first to limit the impact of abusive buyers
-    for (
-        qw/
-        _validate_iom_withdrawal_limit
-        _validate_available_currency
-        _validate_currency
-        _validate_jurisdictional_restrictions
-        _validate_client_status
-        _validate_client_self_exclusion
-        validate_tnc
-        _is_valid_to_buy
-        _validate_date_pricing
-        _validate_trade_pricing_adjustment
+    my $res = $self->_validate_date_pricing;
+    return $res if $res;
 
-        _validate_payout_limit
-        _validate_stake_limit/
-        )
-    {
-        my $res = $self->$_;
+    for my $c (@{$self->clients}) {
+        $self->client($c);
+        for (
+            qw/
+            _validate_iom_withdrawal_limit
+            _validate_available_currency
+            _validate_currency
+            _validate_jurisdictional_restrictions
+            _validate_client_status
+            _validate_client_self_exclusion
+            validate_tnc
+            _is_valid_to_buy /
+            )
+        {
+            $res = $self->$_;
+            return $res if $res;
+        }
+    }
+    ### Order is very important
+    $res = $self->_validate_trade_pricing_adjustment();
+    return $res if $res;
 
-        return $res if $res;
+    for my $c (@{$self->clients}) {
+        $self->client($c);
+        for (qw/ _validate_payout_limit _validate_stake_limit /) {
+            $res = $self->$_;
+            return $res if $res;
+        }
     }
     return;
 }
@@ -152,65 +167,31 @@ sub _validate_sell_pricing_adjustment {
     my $allowed_move = $commission_markup * 0.5;
     $allowed_move = 0 if $recomputed == 1;
 
-    if ($move != 0) {
-        my $final_value;
-        if ($allowed_move == 0) {
+    return if $move == 0;
+
+    my $final_value;
+    if ($allowed_move == 0) {
+        $final_value = $recomputed_amount;
+    } elsif ($move < -$allowed_move) {
+        return $self->_write_to_rejected({
+            action            => 'sell',
+            amount            => $amount,
+            recomputed_amount => $recomputed_amount
+        });
+    } else {
+        if ($move <= $allowed_move and $move >= -$allowed_move) {
+            $final_value = $amount;
+            # We absorbed the price difference here and we want to keep it in our book.
+            $self->transaction->price_slippage($slippage);
+        } elsif ($move > $allowed_move) {
+            $self->transaction->execute_at_better_price(1);
+            # We need to keep record of slippage even it is executed at better price
+            $self->transaction->price_slippage($slippage);
             $final_value = $recomputed_amount;
-        } elsif ($move < -$allowed_move) {
-            my $market_moved = BOM::Platform::Context::localize('The underlying market has moved too much since you priced the contract. ');
-            $market_moved .= BOM::Platform::Context::localize(
-                'The contract [_4] has changed from [_1][_2] to [_1][_3].',
-                $currency,
-                to_monetary_number_format($amount),
-                to_monetary_number_format($recomputed_amount),
-                'sell price'
-            );
-
-            #Record failed transaction here.
-            my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
-                    login_id                => $self->client->loginid,
-                    financial_market_bet_id => $self->transaction->contract_id,
-                    shortcode               => $self->transaction->contract->shortcode,
-                    action_type             => 'sell',
-                    reason                  => 'SLIPPAGE',
-                    details                 => JSON::to_json({
-                            order_price      => $self->transaction->price,
-                            recomputed_price => $contract->bid_price,
-                            slippage         => $slippage,
-                            option_type      => $contract->code,
-                            currency_pair    => $contract->underlying->symbol,
-                            ($contract->two_barriers)
-                            ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
-                            : (barriers => $contract->barrier->as_absolute),
-                            expiry => $contract->date_expiry->db_timestamp,
-                            payout => $contract->payout
-                        }
-                    ),
-                    db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
-                });
-            $rejected_trade->record_fail_txn();
-
-            return Error::Base->cuss(
-                -type => 'PriceMoved',
-                -mesg =>
-                    "Difference between submitted and newly calculated bet price: currency $currency, amount: $amount, recomputed amount: $recomputed_amount",
-                -message_to_client => $market_moved,
-            );
-        } else {
-            if ($move <= $allowed_move and $move >= -$allowed_move) {
-                $final_value = $amount;
-                # We absorbed the price difference here and we want to keep it in our book.
-                $self->transaction->price_slippage($slippage);
-            } elsif ($move > $allowed_move) {
-                $self->transaction->execute_at_better_price(1);
-                # We need to keep record of slippage even it is executed at better price
-                $self->transaction->price_slippage($slippage);
-                $final_value = $recomputed_amount;
-            }
         }
-
-        $self->transaction->price($final_value);
     }
+
+    $self->transaction->price($final_value);
 
     return;
 }
@@ -226,7 +207,6 @@ sub _validate_trade_pricing_adjustment {
 
     my $amount_type = $self->transaction->amount_type;
     my $contract    = $self->transaction->contract;
-    my $currency    = $contract->currency;
 
     my $requested = $self->transaction->price / $self->transaction->payout;
     # set the requested price and recomputed price to be store in db
@@ -244,90 +224,107 @@ sub _validate_trade_pricing_adjustment {
     my ($amount, $recomputed_amount) =
         $amount_type eq 'payout' ? ($self->transaction->price, $contract->ask_price) : ($self->transaction->payout, $contract->payout);
 
-    if ($move != 0) {
-        my $final_value;
-        if ($contract->is_expired) {
-            return Error::Base->cuss(
-                -type              => 'BetExpired',
-                -mesg              => 'Bet expired with a new price[' . $recomputed_amount . '] (old price[' . $amount . '])',
-                -message_to_client => BOM::Platform::Context::localize('The contract has expired'),
-            );
-        } elsif ($allowed_move == 0) {
+    return if $move == 0;
+
+    my $final_value;
+
+    return Error::Base->cuss(
+        -type              => 'BetExpired',
+        -mesg              => 'Bet expired with a new price[' . $recomputed_amount . '] (old price[' . $amount . '])',
+        -message_to_client => BOM::Platform::Context::localize('The contract has expired'),
+    ) if $contract->is_expired;
+
+    if ($allowed_move == 0) {
+        $final_value = $recomputed_amount;
+    } elsif ($move < -$allowed_move) {
+        return $self->_write_to_rejected({
+            action            => 'buy',
+            amount            => $amount,
+            recomputed_amount => $recomputed_amount
+        });
+    } else {
+        if ($move <= $allowed_move and $move >= -$allowed_move) {
+            $final_value = $amount;
+            # We absorbed the price difference here and we want to keep it in our book.
+            $self->transaction->price_slippage($slippage);
+        } elsif ($move > $allowed_move) {
+            $self->transaction->execute_at_better_price(1);
+            # We need to keep record of slippage even it is executed at better price
+            $self->transaction->price_slippage($slippage);
             $final_value = $recomputed_amount;
-        } elsif ($move < -$allowed_move) {
-            my $what_changed = $amount_type eq 'payout' ? 'price' : 'payout';
-            my $market_moved = BOM::Platform::Context::localize('The underlying market has moved too much since you priced the contract. ');
-            $market_moved .= BOM::Platform::Context::localize(
-                'The contract [_4] has changed from [_1][_2] to [_1][_3].',
-                $currency,
-                to_monetary_number_format($amount),
-                to_monetary_number_format($recomputed_amount),
-                $what_changed
-            );
-
-            #Record failed transaction here.
-            my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
-                    login_id    => $self->client->loginid,
-                    shortcode   => $contract->shortcode,
-                    action_type => 'buy',
-                    reason      => 'SLIPPAGE',
-                    details     => JSON::to_json({
-                            order_price      => $self->transaction->price,
-                            recomputed_price => $contract->ask_price,
-                            slippage         => $slippage,
-                            option_type      => $contract->code,
-                            currency_pair    => $contract->underlying->symbol,
-                            ($self->transaction->trading_period_start)
-                            ? (trading_period_start => $self->transaction->trading_period_start->db_timestamp)
-                            : (),
-                            ($contract->two_barriers)
-                            ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
-                            : (barriers => $contract->barrier->as_absolute),
-                            expiry => $contract->date_expiry->db_timestamp,
-                            payout => $contract->payout
-                        }
-                    ),
-                    db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
-                });
-            $rejected_trade->record_fail_txn();
-
-            return Error::Base->cuss(
-                -type => 'PriceMoved',
-                -mesg =>
-                    "Difference between submitted and newly calculated bet price: currency $currency, amount: $amount, recomputed amount: $recomputed_amount",
-                -message_to_client => $market_moved,
-            );
-        } else {
-            if ($move <= $allowed_move and $move >= -$allowed_move) {
-                $final_value = $amount;
-                # We absorbed the price difference here and we want to keep it in our book.
-                $self->transaction->price_slippage($slippage);
-            } elsif ($move > $allowed_move) {
-                $self->transaction->execute_at_better_price(1);
-                # We need to keep record of slippage even it is executed at better price
-                $self->transaction->price_slippage($slippage);
-                $final_value = $recomputed_amount;
-            }
-        }
-
-        # adjust the value here
-        if ($amount_type eq 'payout') {
-            $self->transaction->price($final_value);
-        } else {
-            $self->transaction->payout($final_value);
-
-            # They are all 'payout'-based when they hit the DB.
-            my $new_contract = make_similar_contract(
-                $contract,
-                {
-                    amount_type => 'payout',
-                    amount      => $final_value,
-                });
-            $self->transaction->contract($new_contract);
         }
     }
 
+    # adjust the value here
+    if ($amount_type eq 'payout') {
+        $self->transaction->price($final_value);
+    } else {
+        $self->transaction->payout($final_value);
+
+        # They are all 'payout'-based when they hit the DB.
+        my $new_contract = make_similar_contract(
+            $contract,
+            {
+                amount_type => 'payout',
+                amount      => $final_value,
+            });
+        $self->transaction->contract($new_contract);
+    }
+
     return;
+}
+
+sub _write_to_rejected {
+    my ($self, $p) = shift;
+
+    my $what_changed = $p->{action} eq 'sell' ? 'sell price' : undef;
+    $what_changed //= $self->transaction->amount_type eq 'payout' ? 'price' : 'payout';
+    my $market_moved = BOM::Platform::Context::localize('The underlying market has moved too much since you priced the contract. ');
+    my $contract     = $self->transaction->contract;
+    $market_moved .= BOM::Platform::Context::localize(
+        'The contract [_4] has changed from [_1][_2] to [_1][_3].',
+        $contract->currency,
+        to_monetary_number_format($p->{amount}),
+        to_monetary_number_format($p->{recomputed_amount}),
+        $what_changed
+    );
+
+    #Record failed transaction here.
+    for my $c (@{$self->clients}) {
+        my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
+                login_id => $c->loginid,
+                ($p->{action} eq 'sell') ? (financial_market_bet_id => $self->transaction->contract_id) : (),
+                shortcode   => $contract->shortcode,
+                action_type => $p->{action},
+                reason      => 'SLIPPAGE',
+                details     => JSON::to_json({
+                        order_price      => $self->transaction->price,
+                        recomputed_price => $p->{action} eq 'buy' ? $contract->ask_price : $contract->bid_price,
+                        slippage         => $self->transaction->price - $contract->ask_price,
+                        option_type      => $contract->code,
+                        currency_pair    => $contract->underlying->symbol,
+                        ($self->transaction->trading_period_start) ? (trading_period_start => $self->transaction->trading_period_start->db_timestamp)
+                        : (),
+                        ($contract->two_barriers) ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
+                        : (barriers => $contract->barrier->as_absolute),
+                        expiry => $contract->date_expiry->db_timestamp,
+                        payout => $contract->payout
+                    }
+                ),
+                db => BOM::Database::ClientDB->new({broker_code => $c->broker_code})->db,
+            });
+        $rejected_trade->record_fail_txn();
+    }
+    return Error::Base->cuss(
+        -type => 'PriceMoved',
+        -mesg => "Difference between submitted and newly calculated bet price: currency "
+            . $contract->currency
+            . ", amount: "
+            . $p->{amount}
+            . ", recomputed amount: "
+            . $p->{recomputed_amount},
+        -message_to_client => $market_moved,
+    );
 }
 
 sub _is_valid_to_buy {

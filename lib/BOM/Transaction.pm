@@ -458,8 +458,6 @@ sub prepare_bet_data_for_buy {
 sub prepare_buy {
     my ($self, $skip) = @_;
 
-    return $self->prepare_bet_data_for_buy if $skip and not $self->multiple;
-
     if ($self->multiple) {
         for my $m (@{$self->multiple}) {
             next if $m->{code};
@@ -470,24 +468,22 @@ sub prepare_buy {
                 $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
                 next;
             }
-            unless ($skip) {
-                my $error_status = BOM::Transaction::Validation->new(
-                    transaction => $self,
-                    client      => $c
-                )->validate_trx_buy();
-                return $error_status if $error_status;
-            }
 
             $m->{client} = $c;
         }
-    } else {
-        $self->limits($self->calculate_limits);
-        my $error_status = BOM::Transaction::Validation->new(
-            transaction => $self,
-            client      => $self->client
-        )->validate_trx_buy();
-        return $error_status if $error_status;
     }
+
+    return $self->prepare_bet_data_for_buy if $skip;
+
+    $self->limits($self->calculate_limits) unless $self->multiple;
+
+    my $error_status = BOM::Transaction::Validation->new(
+        transaction => $self,
+        client      => $self->client,
+        clients     => [map { $_->{client} } grep { ref $_->{client} } @{$self->multiple || []}],
+    )->validate_trx_buy();
+
+    return $error_status if $error_status;
 
     $self->comment(
         _build_pricing_comment({
@@ -718,15 +714,6 @@ sub prepare_bet_data_for_sell {
 sub prepare_sell {
     my ($self, $skip) = @_;
 
-    return $self->prepare_bet_data_for_sell if $skip and not $self->multiple;
-    ### Unfortunately we can do this check only once
-    ### TODO: add multiple field into BOM::Transaction::Validation and separate.
-    my $error_status = BOM::Transaction::Validation->new(
-        transaction => $self,
-        client      => $self->client
-    )->_is_valid_to_sell();
-    return $error_status if $error_status;
-
     if ($self->multiple) {
         for my $m (@{$self->multiple}) {
             next if $m->{code};
@@ -736,23 +723,20 @@ sub prepare_sell {
                 $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
                 next;
             }
-            unless ($skip) {
-                my $error_status = BOM::Transaction::Validation->new(
-                    transaction => $self,
-                    client      => $c
-                )->validate_trx_sell();
-                return $error_status if $error_status;
-            }
 
             $m->{client} = $c;
         }
-    } else {
-        my $error_status = BOM::Transaction::Validation->new(
-            transaction => $self,
-            client      => $self->client
-        )->validate_trx_sell();
-        return $error_status if $error_status;
     }
+
+    return $self->prepare_bet_data_for_sell if $skip;
+
+    my $error_status = BOM::Transaction::Validation->new(
+        transaction => $self,
+        client      => $self->client,
+        clients     => [map { $_->{client} } grep { ref $_->{client} } @{$self->multiple || []}],
+    )->validate_trx_sell();
+
+    return $error_status if $error_status;
 
     $self->comment(
         _build_pricing_comment({
