@@ -146,12 +146,18 @@ sub startup {
                 success      => \&Binary::WebSocketAPI::v3::Wrapper::Authorize::logout_success,
             },
         ],
-        ['trading_times'],
+        [
+            'trading_times',
+            {
+                instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::trading_times,
+            },
+        ],
         [
             'asset_index',
             {
-                before_forward => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index_cached,
-                success        => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::cache_asset_index,
+                instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index,
+                before_forward     => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index_cached,
+                success            => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::cache_asset_index,
             }
         ],
         ['active_symbols', {stash_params => [qw/ token /]}],
@@ -166,7 +172,13 @@ sub startup {
         ['time',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::server_time}],
 
         ['website_status'],
-        ['contracts_for', {stash_params => [qw/ token /]}],
+        [
+            'contracts_for',
+            {
+                instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::contracts_for,
+                stash_params       => [qw/ token /],
+            }
+        ],
         ['residence_list'],
         ['states_list'],
         ['payout_currencies', {stash_params => [qw/ token landing_company_name /]}],
