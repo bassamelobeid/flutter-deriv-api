@@ -18,6 +18,12 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use Cache::RedisDB;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol        => $_,
+        recorded_date => Date::Utility->new
+    }) for qw(USD JPY JPY-USD);
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
@@ -60,7 +66,7 @@ test_with_feed(
         my $bet = produce_contract($bet_params);
         is($bet->is_expired, 1, 'Past end of bet, so it is expired.');
         is($bet->value,      0, 'Expiration for on-the-nail strike.');
-        my $opposite = $bet->opposite_contract;
+        my $opposite = $bet->opposite_contract_for_sale;
         is($opposite->is_expired, 1, 'Past end of opposite, on-the-nail bet.');
         is($opposite->value,      0, 'Expiration for on-the-nail strike, opposite bet.');
 
