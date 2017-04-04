@@ -368,7 +368,7 @@ subtest $method => sub {
     is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[0]{sell_time})->epoch,     'transaction time correct for sell');
     is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{purchase_time})->epoch, 'transaction time correct for buy ');
     is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
-    is($result->{transactions}[0]{reference_id}, $result->{transactions}[1]{transaction_id}, 'transaction id is same for buy and sell ');
+    is($result->{transactions}[1]{reference_id}, $result->{transactions}[0]{transaction_id}, 'transaction id is same for buy and sell ');
 
     $contract_expired = produce_contract({
         underlying   => create_underlying('SPGSWT'),
@@ -418,7 +418,7 @@ subtest $method => sub {
         '<=', 2, 'transaction time correct for buy ');
     cmp_ok(abs($result->{transactions}[2]{transaction_time} - Date::Utility->new($txns->[2]{payment_time})->epoch),
         '<=', 2, 'transaction time correct for payment');
-    is($result->{transactions}[0]{reference_id}, $result->{transactions}[1]{transaction_id}, 'transaction id is same for buy and sell ');
+    is($result->{transactions}[1]{reference_id}, $result->{transactions}[0]{transaction_id}, 'transaction id is same for buy and sell ');
 
 };
 

@@ -78,7 +78,7 @@ subtest 'sell' => sub {
     $params->{args}{sell} = $txn->contract_id;
     my $old_balance = $client->default_account->load->balance;
     $c->call_ok('sell', $params)->has_no_system_error->has_no_error->result;
-    is_deeply([sort keys %{$c->result}], [sort qw(sold_for balance_after transaction_id contract_id stash)], 'keys is correct');
+    is_deeply([sort keys %{$c->result}], [sort qw(sold_for balance_after transaction_id contract_id stash reference_id)], 'keys is correct');
     my $new_balance = $client->default_account->load->balance;
     ok($new_balance - $c->result->{balance_after} < 0.000001,           'balance is correct');
     ok($old_balance + $c->result->{sold_for} - $new_balance < 0.000001, 'balance is correct');
