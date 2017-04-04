@@ -202,8 +202,9 @@ sub _login {
 
     my ($user, $client, $last_login, $err);
 
-    my ($email, $password) = map { defang($c->param($_)) // undef } qw/ email password /;
-    my $brand = $c->stash('brand');
+    my $email    = defang($c->param('email'));
+    my $password = $c->param('password');
+    my $brand    = $c->stash('brand');
     LOGIN:
     {
         if ($oneall_user_id) {
