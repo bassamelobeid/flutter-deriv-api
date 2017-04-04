@@ -178,13 +178,6 @@ $t   = $t->message_ok;
 $res = decode_json($t->message->[1]);
 note explain $res;
 is $res->{msg_type}, 'proposal_open_contract', 'Got message about selling contract';
-ok $res->{proposal_open_contract}->{sell_time},  'Got message about selling contract';
-ok $res->{proposal_open_contract}->{sell_price}, 'Got message about selling contract';
-is $res->{proposal_open_contract}->{ok},         1, 'Got message about selling contract';
-is $call_params->{contract_id}, $contract_id, 'Request RPC to sell contract 1';
-ok $call_params->{short_code},  'Request RPC to sell contract 2';
-ok $call_params->{sell_time},   'Request RPC to sell contract 3';
-ok $url =~ /get_bid/;
 
 $module->unmock_all;
 
