@@ -25,6 +25,9 @@ use Data::Decimate qw(decimate);
 
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
+my $volsurfaces = LoadFile('/home/git/regentmarkets/bom-test/data/20121108_volsurfaces.yml');
+my $news        = LoadFile('/home/git/regentmarkets/bom-test/data/20121108_news.yml');
+my $holidays    = LoadFile('/home/git/regentmarkets/bom-test/data/20121108_holidays.yml');
 
 my $expected   = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/intraday_forex_config.yml');
 my $date_start = Date::Utility->new(1352345145);
@@ -71,6 +74,7 @@ foreach my $single_data (@$decimate_data) {
 }
 
 my $recorded_date = $date_start->truncate_to_day;
+
 Test::BOM::UnitTestPrice::create_pricing_data($underlying->symbol, $payout_currency, $recorded_date);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -84,6 +88,20 @@ my %equal = (
     CALLE => 1,
     PUTE  => 1,
 );
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {events => $news});
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'holiday',
+    {
+        recorded_date => Date::Utility->new(1352345145),
+        calendar      => $holidays
+    });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxUSDJPY',
+        recorded_date => Date::Utility->new(1352345145)->truncate_to_day(),
+        surface       => $volsurfaces->{frxUSDJPY}->{surfaces}->{'New York 10:00'},
+    });
 my @ct = grep { !$equal{$_} } get_offerings_with_filter(
     $offerings_cfg,
     'contract_type',
