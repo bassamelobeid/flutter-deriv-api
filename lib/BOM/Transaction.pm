@@ -153,7 +153,7 @@ has transaction_id => (
 );
 
 ### For sell operations only
-has buy_transaction_id => (
+has reference_id => (
     is  => 'rw',
     isa => 'Int',
 );
@@ -824,7 +824,7 @@ sub sell {
 
     $self->balance_after($txn->{balance_after});
     $self->transaction_id($txn->{id});
-    $self->buy_transaction_id($buy_txn_id);
+    $self->reference_id($buy_txn_id);
 
     return;
 }

@@ -700,7 +700,7 @@ subtest 'sell a spread bet' => sub {
         $error = $txn->sell;
         is $error, undef, 'no error';
 
-        ok( $buy_trx_id && $txn->buy_transaction_id == $buy_trx_id, "check buy transaction ID");
+        ok( $buy_trx_id && $txn->reference_id == $buy_trx_id, "check buy transaction ID");
 # should skip stop profit validaiton when sell
         sleep(1);
         $contract = produce_contract({
@@ -748,7 +748,7 @@ subtest 'sell a spread bet' => sub {
         });
         $error = $txn->sell;
         is $error, undef, 'no error';
-        ok( $buy_trx_id && $txn->buy_transaction_id == $buy_trx_id, "check buy transaction ID");
+        ok( $buy_trx_id && $txn->reference_id == $buy_trx_id, "check buy transaction ID");
 
     }
     'sell spread bet';
