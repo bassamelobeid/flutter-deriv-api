@@ -68,7 +68,7 @@ sub _build__contracts {
         # intraday model uses intradayfx volatility which is the same across barriers
         $similar_market_data{pricing_vol}               = $first_contract->pricing_vol;
         $similar_market_data{news_adjusted_pricing_vol} = $first_contract->news_adjusted_pricing_vol;
-        $similar_market_data{intradayfx_volsurface}      = $first_contract->intradayfx_volsurface;
+        $similar_market_data{intradayfx_volsurface}     = $first_contract->intradayfx_volsurface;
     } else {
         $similar_market_data{volsurface} = $first_contract->volsurface;
     }
