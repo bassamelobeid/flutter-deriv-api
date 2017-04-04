@@ -251,9 +251,6 @@ subtest 'proveid' => sub {
             local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
             $v->run_authentication;
         };
-        my @notif = @{$v->notified};
-        is @notif, 1, 'sent one notification';
-        like $notif[0][0], qr/SET TO UNWELCOME PENDING EMAIL REQUEST FOR ID/, 'notification is correct';
         ok !$v->client->client_fully_authenticated, 'client not fully authenticated';
         ok !$v->client->get_status('age_verification'), 'client not age verified';
         ok $v->client->get_status('unwelcome'), 'client now unwelcome';
