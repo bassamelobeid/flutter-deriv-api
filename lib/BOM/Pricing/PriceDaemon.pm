@@ -142,10 +142,11 @@ sub run {
             ip               => $args{ip},
             process_time     => 1000 * Time::HiRes::tv_interval($tv, $tv_now),
             process_end_time => 1000 * ($end_time - int($end_time)),
-            time             => time 
+            time             => time,
+            fork_count       => $args{fork_count}
         );
-        $redis->set("PRICER_STATUS-$args{pid}" , encode_json(\@stat_redis));
-        $log->info("PRICER_STATUS-$args{pid}->" . encode_json(\@stat_redis));
+        $redis->set("PRICER_STATUS-$args{fork_count}" , encode_json(\@stat_redis));
+        $log->info("PRICER_STATUS-$args{fork_count}->" . encode_json(\@stat_redis));
         if ($current_pricing_epoch != time) {
 
             for my $key (keys %$stat_count) {
