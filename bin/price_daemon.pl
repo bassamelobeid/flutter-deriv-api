@@ -39,7 +39,7 @@ my $pm = Parallel::ForkManager->new($workers);
 $pm->run_on_start(
     sub {
         my $pid = shift;
-		($index) = grep { $workers[$_] == 0 } @workers;
+		($index) = grep { $workers[$_] == 0 } 0..$#workers;
         $workers[$index] = $pid;
         push @running_forks, $pid;
         DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.forks.count', (scalar @running_forks), {tags => ['tag:' . $internal_ip]});
@@ -49,7 +49,10 @@ $pm->run_on_finish(
     sub {
         my ($pid, $exit_code) = @_;
 		for (@workers) {
-        	$_ = 0 and last if $_ == $pid;
+            if ($_ == $pid){
+                $_ = 0;
+                last;
+            }
 		}
         @running_forks = grep { $_ != $pid } @running_forks;
         DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.forks.count', (scalar @running_forks), {tags => ['tag:' . $internal_ip]});
@@ -59,6 +62,7 @@ $pm->run_on_finish(
 while (1) {
     $pm->start and next;
     my $pid = $$;
+    ($index) = grep { $workers[$_] == 0 } 0..$#workers;
     my $daemon = BOM::Pricing::PriceDaemon->new(
         tags       => [ 'tag:' . $internal_ip ]
     );
