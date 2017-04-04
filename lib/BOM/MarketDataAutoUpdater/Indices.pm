@@ -141,10 +141,26 @@ sub run {
                     my $otc_surface = $volsurface->clone({
                         underlying => $otc,
                     });
+			if (exists $volsurface->{7}) {
                     $otc_surface->save;
+			}
+			else {
+			$self->report->{$symbol} = {
+                    success => 0,
+                    reason  => 'Term 7 is missing from datasource for ' . $symbol,
+                    };
+			}
                 }
 
+			if (exists $volsurface->{7}) {
                 $volsurface->save;
+			}
+			else {
+			$self->report->{$symbol} = {
+                    success => 0,
+                    reason  => 'Term 7 is missing from datasource for ' . $symbol,
+                    };			
+			}
                 $self->report->{$symbol}->{success} = 1;
             } else {
                 $self->report->{$symbol} = {
