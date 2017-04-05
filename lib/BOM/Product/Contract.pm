@@ -73,7 +73,7 @@ has starts_as_forward_starting => (
     default => 0,
 );
 
-has [qw(longcode shortcode)] => (
+has [qw(shortcode)] => (
     is         => 'ro',
     isa        => 'Str',
     lazy_build => 1,
@@ -271,14 +271,10 @@ has is_sold => (
     default => 0
 );
 
-has [qw(risk_profile)] => (
+has risk_profile => (
     is         => 'ro',
     lazy_build => 1,
-);
-
-has market_is_inefficient => (
-    is         => 'ro',
-    lazy_build => 1,
+    init_arg   => undef,
 );
 
 # pricing_spot - The spot used in pricing.  It may have been adjusted for corporate actions.
@@ -486,7 +482,7 @@ sub _get_time_to_end {
     );
 }
 
-sub add_error {
+sub _add_error {
     my ($self, $err) = @_;
     $err->{set_by} = __PACKAGE__;
     $self->primary_validation_error(MooseX::Role::Validatable::Error->new(%$err));
@@ -654,7 +650,7 @@ sub _build_basis_tick {
             epoch  => time,
             symbol => $self->underlying->symbol,
         });
-        $self->add_error({
+        $self->_add_error({
             message           => "Waiting for entry tick [symbol: " . $self->underlying->symbol . "]",
             message_to_client => $potential_error,
         });
@@ -802,7 +798,7 @@ sub _build_opposite_contract {
     return $opp_contract;
 }
 
-=head2 _build_longcode
+=head2 longcode
 
 Returns the (localized) longcode for this contract.
 
@@ -810,7 +806,7 @@ May throw an exception if an invalid expiry type is requested for this contract 
 
 =cut
 
-sub _build_longcode {
+sub longcode {
     my $self = shift;
 
     # When we are building the longcode, we should always take the date_start to date_expiry as duration.
@@ -886,7 +882,7 @@ sub _build_dividend_adjustment {
     {
 
         warn "Missing dividend data: corp actions are " . join(',', @corporate_actions) . " and found date for action " . $action;
-        $self->add_error({
+        $self->_add_error({
             message => 'Dividend is not updated  after corporate action'
                 . "[dividend recorded date : "
                 . $dividend_recorded_date->datetime . "] "
@@ -987,7 +983,7 @@ sub _build_pricing_spot {
         # This is to prevent undefined spot being passed to BlackScholes formula that causes the code to die!!
         $initial_spot = $self->underlying->tick_at($self->date_pricing->epoch, {allow_inconsistent => 1});
         $initial_spot //= $self->underlying->pip_size * 2;
-        $self->add_error({
+        $self->_add_error({
             message => 'Undefined spot '
                 . "[date pricing: "
                 . $self->date_pricing->datetime . "] "
@@ -1114,7 +1110,7 @@ sub _build_exit_tick {
             and $underlying->intradays_must_be_same_day
             and $self->calendar->trading_days_between($entry_tick_date, $exit_tick_date))
         {
-            $self->add_error({
+            $self->_add_error({
                 message => 'Exit tick date differs from entry tick date on intraday '
                     . "[symbol: "
                     . $underlying->symbol . "] "
@@ -1147,7 +1143,13 @@ sub _build_risk_profile {
     );
 }
 
-sub _build_market_is_inefficient {
+=head2 market_is_inefficient
+
+Returns true or false. Note that the value may vary depending on date_pricing.
+
+=cut
+
+sub market_is_inefficient {
     my $self = shift;
 
     # market inefficiency only applies to forex and commodities.
@@ -1161,13 +1163,13 @@ sub _build_market_is_inefficient {
     return 1;
 }
 
-has allowed_slippage => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_allowed_slippage',
-);
+=head2 allowed_slippage
 
-sub _build_allowed_slippage {
+Ratio of slippage we allow for this contract, where 0.01 is 1%.
+
+=cut
+
+sub allowed_slippage {
     my $self = shift;
 
     # our commission for volatility indices is 1.5% so we can let it slipped more than that.

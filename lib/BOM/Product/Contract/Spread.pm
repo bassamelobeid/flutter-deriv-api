@@ -321,7 +321,7 @@ sub _build_may_settle_automatically {
     return $self->is_valid_to_sell;
 }
 
-has [qw(shortcode longcode)] => (
+has [qw(shortcode)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -337,7 +337,7 @@ sub _build_shortcode {
     return join '_', @element;
 }
 
-sub _build_longcode {
+sub longcode {
     my $self        = shift;
     my $description = $self->localizable_description->{$self->stop_type};
     my @other       = ($self->supplied_stop_loss, $self->supplied_stop_profit);
