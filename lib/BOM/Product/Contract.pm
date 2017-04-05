@@ -664,7 +664,7 @@ sub _build_is_atm_bet {
     return 0 if $self->two_barriers;
     # if not defined, it is non ATM
     return 0 if not defined $self->supplied_barrier;
-    return 0 if $self->supplied_barrier !~ /^S0P$/;
+    return 0 if $self->supplied_barrier ne 'S0P';
     return 1;
 }
 
@@ -710,7 +710,7 @@ sub _build_payouttime_code {
 sub _build_translated_display_name {
     my $self = shift;
 
-    return unless ($self->display_name);
+    return undef unless $self->display_name;
     return localize($self->display_name);
 }
 
@@ -722,8 +722,7 @@ sub _build_is_forward_starting {
 sub _build_permitted_expiries {
     my $self = shift;
 
-    my $expiries_ref = $self->offering_specifics->{permitted};
-    return $expiries_ref;
+    return $self->offering_specifics->{permitted};
 }
 
 sub _build_basis_tick {
@@ -786,15 +785,16 @@ sub _build_remaining_time {
 sub _build_current_spot {
     my $self = shift;
 
-    my $spot = $self->current_tick;
+    my $spot = $self->current_tick or return undef;
 
-    return ($spot) ? $self->underlying->pipsized_value($spot->quote) : undef;
+    return $self->underlying->pipsized_value($spot->quote);
 }
 
 sub _build_entry_spot {
     my $self = shift;
 
-    return ($self->entry_tick) ? $self->entry_tick->quote : undef;
+    my $entry_tick = $self->entry_tick or return undef;
+    return $self->entry_tick->quote;
 }
 
 sub _build_current_tick {
