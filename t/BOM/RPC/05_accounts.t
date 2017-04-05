@@ -1249,7 +1249,6 @@ subtest 'get and set self_exclusion' => sub {
         max_turnover       => undef,    # null should be OK to pass
         max_7day_losses    => 0,        # 0 is ok to pass but not saved
     };
-    $mailbox->clear;
     is($c->tcall($method, $params)->{status}, 1, "update self_exclusion ok");
     delete $params->{args};
     is_deeply(
@@ -1260,12 +1259,7 @@ subtest 'get and set self_exclusion' => sub {
         },
         'get self_exclusion ok'
     );
-    my @msgs = $mailbox->search(
-        email   => 'compliance@binary.com,support@binary.com',
-        subject => qr/Client set self-exclusion limits/
-    );
-    ok(@msgs, "msg sent to support email");
-    like($msgs[0]{body}, qr/Maximum number of open positions: 100.*Maximum account balance: 10000/s, 'email content is ok');
+
     $params->{args} = {
         set_self_exclusion => 1,
         max_balance        => 10001,
@@ -1373,6 +1367,7 @@ subtest 'get and set self_exclusion' => sub {
             'code'              => 'SetSelfExclusionError'
         });
 
+    $mailbox->clear;
     my $exclude_until = DateTime->now()->add(months => 7)->ymd;
     my $timeout_until = DateTime->now()->add(days   => 1);
     $params->{args} = {
@@ -1385,6 +1380,12 @@ subtest 'get and set self_exclusion' => sub {
         timeout_until          => $timeout_until->epoch,
     };
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
+    my @msgs = $mailbox->search(
+        email   => 'compliance@binary.com,support@binary.com',
+        subject => qr/Client set self-exclusion limits/
+    );
+    ok(@msgs, "msg sent to support email");
+    like($msgs[0]{body}, qr/Maximum number of open positions: 100.*Exclude from website until/s, 'email content is ok');
 
     delete $params->{args};
     like(
