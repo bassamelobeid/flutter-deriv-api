@@ -91,11 +91,9 @@ sub produce_contract {
     # Can't change the name to 'japanvirtual' because we have db functions tie to the original name.
     $landing_company =~ s/-//;
     my $role = 'BOM::Product::Role::' . ucfirst lc $landing_company;
+    my $role_exists = $role->can('meta');
     # Only apply the role if the class exists
-    {
-        no strict 'refs';
-        $params_ref->{build_parameters}{role} = $role if %{$role . '::'};
-    }
+    $params_ref->{build_parameters}{role} = $role if $role_exists;
 
     # This occurs after to hopefully make it more annoying to bypass the Factory.
     $params_ref->{'_produce_contract_ref'} = \&produce_contract;
@@ -103,7 +101,7 @@ sub produce_contract {
     my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $params_ref->{bet_type};
     my $contract_obj   = $contract_class->new($params_ref);
     # apply it here.
-    $role->meta->apply($contract_obj) if $loaded{$role};
+    $role->meta->apply($contract_obj) if $role_exists;
 
     return $contract_obj;
 }
