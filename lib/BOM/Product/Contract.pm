@@ -67,25 +67,108 @@ require BOM::Product::Pricing::Engine::Intraday::Index;
 require BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
 require BOM::Product::Pricing::Greeks::BlackScholes;
 
-=head1 METHODS - Attributes
+=head1 METHODS - Date attributes
 
 =cut
 
-has [qw(date_start date_pricing date_settlement effective_start)] => (
-    is         => 'ro',
+my @date_attribute = (
     isa        => 'date_object',
     lazy_build => 1,
     coerce     => 1,
 );
 
-has date_expiry => (
-    is       => 'rw',
-    isa      => 'date_object',
-    coerce   => 1,
-    required => 1,
+=head2 date_start
+
+For American contracts, defines when the contract starts.
+
+For Europeans, this is used to determine the barrier when the requested barrier is relative.
+
+=cut
+
+has date_start => (
+    is         => 'ro',
+    @date_attribute,
 );
 
-#user supplied duration
+=head2 date_pricing
+
+The date at which we're pricing the contract. Provide C< undef > to indicate "now".
+
+=cut
+
+has date_pricing => (
+    is         => 'ro',
+    @date_attribute,
+);
+
+=head2 date_expiry
+
+When the contract expires.
+
+=cut
+
+has date_expiry => (
+    is       => 'rw',
+    @date_attribute,
+);
+
+=head2 date_settlement
+
+When the contract was settled (can be C<undef>).
+
+=cut
+
+has date_settlement => (
+    is       => 'rw',
+    @date_attribute,
+);
+
+=head2 effective_start
+
+=over 4
+
+=item * For backpricing, this is L</date_start>.
+
+=item * For a forward-starting contract, this is L</date_start>.
+
+=item * For all other states - i.e. active, non-expired contracts - this is L</date_pricing>.
+
+=back
+
+=cut
+
+has effective_start => (
+    is       => 'rw',
+    @date_attribute,
+);
+
+=head1 METHODS - Other attributes
+
+=cut
+
+=head2 duration
+
+The requested contract duration, specified as a string indicating value with units.
+The unit is provided as a single character suffix:
+
+=over 4
+
+=item * t - ticks
+
+=item * s - seconds
+
+=item * m - minutes
+
+=item * h - hours
+
+=item * d - days
+
+=back
+
+Examples would be C< 5t > for 5 ticks, C< 3h > for 3 hours.
+
+=cut
+
 has duration => (is => 'ro');
 
 has [qw(_pricing_args)] => (
@@ -202,7 +285,7 @@ has [qw(prediction tick_count)] => (
     isa => 'Maybe[Num]',
 );
 
-=item for_sale
+=head2 for_sale
 
 Was this bet built using BOM-generated parameters, as opposed to user-supplied parameters?
 
@@ -219,7 +302,7 @@ has for_sale => (
     default => 0,
 );
 
-=item max_tick_expiry_duration
+=head2 max_tick_expiry_duration
 
 A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.
 
