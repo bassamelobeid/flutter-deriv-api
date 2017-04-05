@@ -21,6 +21,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Format::Util::Numbers qw(roundnear);
+use YAML::XS qw(LoadFile);
 
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
