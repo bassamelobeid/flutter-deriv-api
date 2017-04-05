@@ -326,7 +326,7 @@ sub _get_pricing_parameter_from_vv_pricer {
         bs_probability    => $pe->bs_probability->amount,
         market_supplement => $pe->market_supplement->amount,
     };
-    my $pricing_arg = $contract->pricing_args;
+    my $pricing_arg = $contract->_pricing_args;
     $pricing_parameters->{bs_probability} = {
         'S'      => $pricing_arg->{spot},
         'K'      => $pricing_arg->{barrier1},

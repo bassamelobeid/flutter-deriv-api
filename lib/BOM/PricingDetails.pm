@@ -440,7 +440,7 @@ sub _get_overview {
         },
         {
             label => 'Pricing IV (for this model)',
-            value => sprintf($number_format, $bet->pricing_args->{iv} * 100) . '%'
+            value => sprintf($number_format, $bet->_pricing_args->{iv} * 100) . '%'
         },
         {
             label => 'Use discrete dividend',
