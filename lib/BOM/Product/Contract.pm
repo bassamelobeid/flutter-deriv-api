@@ -1,5 +1,36 @@
 package BOM::Product::Contract;
 
+use strict;
+use warnings;
+
+=head1 NAME
+
+BOM::Product::Contract - represents a contract object for a single bet
+
+=head1 SYNOPSIS
+
+    use feature qw(say);
+    use BOM::Product::ContractFactory qw(produce_contract);
+    # Create a simple contract
+    my $contract = produce_contract({
+        bet_type => 'CALLE',
+        duration => '5t',
+    });
+    # Show the current prices (as of now, since an explicit pricing date is not provided)
+    say "Bid for CALLE:  " . $contract->bid_price;
+    say "Ask for CALLE:  " . $contract->ask_price;
+    # Get the contract with the opposite bet type, in this case a PUT
+    my $opposite = $contract->opposite_contract;
+    say "Bid for PUT:    " . $opposite->bid_price;
+    say "Ask for PUT:    " . $opposite->ask_price;
+
+=head1 DESCRIPTION
+
+This class is the base definition for all our contract types. It provides behaviour common to all contracts,
+and defines the standard API for interacting with those contracts.
+
+=cut
+
 use Moose;
 
 require UNIVERSAL::require;
