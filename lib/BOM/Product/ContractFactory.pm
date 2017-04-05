@@ -90,7 +90,7 @@ sub produce_contract {
     # We have 'japan-virtual' as one of the landing companies: remap this to a valid Perl class name
     # Can't change the name to 'japanvirtual' because we have db functions tie to the original name.
     $landing_company =~ s/-//;
-    my $role = 'BOM::Product::Role::' . ucfirst lc $landing_company;
+    my $role        = 'BOM::Product::Role::' . ucfirst lc $landing_company;
     my $role_exists = $role->can('meta');
     # Only apply the role if the class exists
     $params_ref->{build_parameters}{role} = $role if $role_exists;
