@@ -602,9 +602,9 @@ sub get_settings {
                 phone                          => $client->phone,
                 allow_copiers                  => $client->allow_copiers // 0,
                 is_authenticated_payment_agent => ($client->payment_agent and $client->payment_agent->is_authenticated) ? 1 : 0,
-                $client_tnc_status ? (client_tnc_status => $client_tnc_status->reason) : (),
-                place_of_birth            => $client->place_of_birth,
-                tax_residence             => $client->tax_residence,
+                client_tnc_status => $client_tnc_status ? $client_tnc_status->reason : '',
+                place_of_birth    => $client->place_of_birth,
+                tax_residence     => $client->tax_residence,
                 tax_identification_number => $client->tax_identification_number,
             )
         ),
@@ -1033,9 +1033,12 @@ sub set_self_exclusion {
 
         $message = "Client $client_title set the following self-exclusion limits:\n\n$message";
         my $brand = Brands->new(name => request()->brand);
+        my $to_email = $brand->emails('compliance');
+        # send to support only when client has self excluded
+        $to_email .= ',' . $brand->emails('support') if $args{exclude_until};
         send_email({
             from    => $brand->emails('compliance'),
-            to      => $brand->emails('compliance') . ',' . $brand->emails('support'),
+            to      => $to_email,
             subject => "Client set self-exclusion limits",
             message => [$message],
         });
