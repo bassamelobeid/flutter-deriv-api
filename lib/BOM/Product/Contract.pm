@@ -272,9 +272,10 @@ has is_sold => (
     default => 0
 );
 
-has [qw(risk_profile)] => (
+has risk_profile => (
     is         => 'ro',
     lazy_build => 1,
+    init_arg   => undef,
 );
 
 # pricing_spot - The spot used in pricing.  It may have been adjusted for corporate actions.
