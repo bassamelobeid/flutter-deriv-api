@@ -53,7 +53,7 @@ has date_expiry => (
 #user supplied duration
 has duration => (is => 'ro');
 
-has [qw(pricing_args)] => (
+has [qw(_pricing_args)] => (
     is         => 'ro',
     isa        => 'HashRef',
     lazy_build => 1,
@@ -498,7 +498,7 @@ sub add_error {
 # The pricing, greek and markup engines need the same set of arguments,
 # so we provide this helper function which pulls all the revelant bits out of the object and
 # returns a nice HashRef for them.
-sub _build_pricing_args {
+sub _build__pricing_args {
     my $self = shift;
 
     my $start_date           = $self->date_pricing;

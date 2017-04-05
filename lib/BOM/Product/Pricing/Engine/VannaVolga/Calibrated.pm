@@ -92,7 +92,7 @@ Hence we weere left with 2 options : Wystup or BOM_surv. We use BOM_surv model a
 sub _build_survival_weight {
     my $self = shift;
     my $bet  = $self->bet;
-    my $args = $bet->pricing_args;
+    my $args = $bet->_pricing_args;
 
     my $vega_weight  = 1;
     my $vanna_weight = 1;

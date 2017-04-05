@@ -83,7 +83,7 @@ sub _build_bs_probability {
     my $self = shift;
 
     my $bet  = $self->bet;
-    my $args = $bet->pricing_args;
+    my $args = $bet->_pricing_args;
 
     my @barrier_args = ($bet->two_barriers) ? ($args->{barrier1}, $args->{barrier2}) : ($args->{barrier1});
     my $tv = $self->formula->($args->{spot}, @barrier_args, $args->{t}, $bet->discount_rate, $bet->mu, $args->{iv}, $args->{payouttime_code});
@@ -126,7 +126,7 @@ sub _build_d2 {
     my $self = shift;
 
     my $bet  = $self->bet;
-    my $args = $bet->pricing_args;
+    my $args = $bet->_pricing_args;
 
     my $d2 = Math::Business::BlackScholes::Binaries::d2($args->{spot}, $args->{barrier1}, $args->{t}, $bet->discount_rate, $bet->mu, $args->{iv});
 

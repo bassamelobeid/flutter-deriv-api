@@ -92,8 +92,8 @@ subtest 'discrete dividend on stocks' => sub {
     isnt $bet->dividend_adjustment->{spot}, 0, 'spot adjustment is not zero';
     ok $bet->dividend_adjustment->{spot} < 0, 'spot adjustment is negative';
     isnt $bet->dividend_adjustment->{barrier}, 0, 'barrier adjustment is not zero';
-    isnt $bet->current_spot, $bet->pricing_args->{spot}, 'spot for pricing is not the current spot';
-    is $bet->pricing_spot,   $bet->pricing_args->{spot}, 'spot for pricing is the adjusted spot';
-    isnt $bet->barrier->as_absolute, $bet->pricing_args->{barrier1}, 'barrier for pricing is the adjusted barrier';
-    is $bet->pricing_args->{q_rate}, 0, 'q_rate is zero if discrete dividend is used';
+    isnt $bet->current_spot, $bet->_pricing_args->{spot}, 'spot for pricing is not the current spot';
+    is $bet->pricing_spot,   $bet->_pricing_args->{spot}, 'spot for pricing is the adjusted spot';
+    isnt $bet->barrier->as_absolute, $bet->_pricing_args->{barrier1}, 'barrier for pricing is the adjusted barrier';
+    is $bet->_pricing_args->{q_rate}, 0, 'q_rate is zero if discrete dividend is used';
 };
