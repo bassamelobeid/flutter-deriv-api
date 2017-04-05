@@ -21,7 +21,7 @@ has client => (
 has [qw/ clients transaction /] => (is => 'ro');
 
 around BUILDARGS => sub {
-    my ($orig, $class) = ( shift, shift );
+    my ($orig, $class) = (shift, shift);
 
     my $args = ref $_[0] ? shift : +{@_};
 
