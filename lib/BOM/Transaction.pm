@@ -200,6 +200,7 @@ sub _build_app_markup {
     return $self->contract->app_markup_dollar_amount;
 }
 
+### TODO: fix with around and hash args parsing ( ->new( test => 1 ) )
 sub BUILDARGS {
     my ($class, $args) = @_;
 

@@ -21,14 +21,16 @@ has client => (
 has [qw/ clients transaction /] => (is => 'ro');
 
 around BUILDARGS => sub {
-    my ($orig, $class, %args) = @_;
+    my ($orig, $class) = ( shift, shift );
 
-    $args{client} //= $args{clients}->[0];
-    unless (defined $args{clients} && scalar @{$args{clients}}) {
-        $args{clients} = [$args{client}];
+    my $args = ref $_[0] ? shift : +{@_};
+
+    $args->{client} //= $args->{clients}->[0];
+    unless (defined $args->{clients} && scalar @{$args->{clients}}) {
+        $args->{clients} = [$args->{client}];
     }
 
-    return $class->$orig(%args);
+    return $class->$orig(%$args);
 };
 
 ################ Client and transaction validation ########################
