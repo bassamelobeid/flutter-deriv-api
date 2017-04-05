@@ -1162,13 +1162,13 @@ sub _build_market_is_inefficient {
     return 1;
 }
 
-has allowed_slippage => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_allowed_slippage',
-);
+=head2 allowed_slippage
 
-sub _build_allowed_slippage {
+Ratio of slippage we allow for this contract, where 0.01 is 1%.
+
+=cut
+
+sub allowed_slippage {
     my $self = shift;
 
     # our commission for volatility indices is 1.5% so we can let it slipped more than that.
