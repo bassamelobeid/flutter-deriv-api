@@ -74,7 +74,7 @@ has starts_as_forward_starting => (
     default => 0,
 );
 
-has [qw(longcode shortcode)] => (
+has [qw(shortcode)] => (
     is         => 'ro',
     isa        => 'Str',
     lazy_build => 1,
@@ -803,7 +803,7 @@ sub _build_opposite_contract {
     return $opp_contract;
 }
 
-=head2 _build_longcode
+=head2 longcode
 
 Returns the (localized) longcode for this contract.
 
@@ -811,7 +811,7 @@ May throw an exception if an invalid expiry type is requested for this contract 
 
 =cut
 
-sub _build_longcode {
+sub longcode {
     my $self = shift;
 
     # When we are building the longcode, we should always take the date_start to date_expiry as duration.

@@ -33,7 +33,7 @@ sub _build_date_expiry {
     return $self->date_start;
 }
 
-sub _build_longcode {
+sub longcode {
     return localize('Legacy contract. No further information is available.');
 }
 
