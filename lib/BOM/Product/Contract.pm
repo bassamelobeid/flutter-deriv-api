@@ -88,7 +88,7 @@ For Europeans, this is used to determine the barrier when the requested barrier 
 =cut
 
 has date_start => (
-    is         => 'ro',
+    is => 'ro',
     @date_attribute,
 );
 
@@ -99,7 +99,7 @@ The date at which we're pricing the contract. Provide C< undef > to indicate "no
 =cut
 
 has date_pricing => (
-    is         => 'ro',
+    is => 'ro',
     @date_attribute,
 );
 
@@ -110,7 +110,7 @@ When the contract expires.
 =cut
 
 has date_expiry => (
-    is       => 'rw',
+    is => 'rw',
     @date_attribute,
 );
 
@@ -121,7 +121,7 @@ When the contract was settled (can be C<undef>).
 =cut
 
 has date_settlement => (
-    is       => 'rw',
+    is => 'rw',
     @date_attribute,
 );
 
@@ -140,7 +140,7 @@ has date_settlement => (
 =cut
 
 has effective_start => (
-    is       => 'rw',
+    is => 'rw',
     @date_attribute,
 );
 

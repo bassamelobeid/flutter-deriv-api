@@ -365,7 +365,6 @@ sub market_is_inefficient {
     return 1;
 }
 
-
 ## BUILDERS  #######################
 
 sub _build_memory_chronicle {
