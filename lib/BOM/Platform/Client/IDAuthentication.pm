@@ -114,8 +114,6 @@ sub _request_id_authentication {
 
     $client->set_status($status, 'system', 'Experian id authentication failed on first deposit');
     $client->save;
-    $status = uc($status);
-    $self->_notify("SET TO $status PENDING EMAIL REQUEST FOR ID", 'client received an email requesting identity proof');
 
     my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
     my $brand         = Brands->new(name => request()->brand);
