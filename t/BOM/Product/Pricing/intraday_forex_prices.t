@@ -157,7 +157,7 @@ subtest 'atm prices without economic events' => sub {
                     barrier      => 'S0P',
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                is $c->theo_probability->amount, $expected->{$c->shortcode}, 'correct ask probability [event_' . $c->shortcode . ']';
+                is $c->theo_probability->amount, $expected->{$c->shortcode}, 'correct ask probability [' . $c->shortcode . ']';
             }
             'survived';
         }
