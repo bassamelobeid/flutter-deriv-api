@@ -225,7 +225,7 @@ sub japan_pricing_info {
 
     my $extra = $name . '_' . $self->pricing_spot . '_';
     if ($self->priced_with_intraday_model) {
-        $extra .= join '_', ($self->pricing_vol, $self->news_adjusted_pricing_vol, $self->long_term_prediction, $self->volatility_scaling_factor);
+        $extra .= join '_', ($self->pricing_vol, $self->news_adjusted_pricing_vol, $self->pricing_args->{long_term_prediction}, $self->pricing_args->{volatility_scaling_factor});
     } elsif ($self->pricing_vol_for_two_barriers) {
         $extra .= join '_', ($self->pricing_vol_for_two_barriers->{high_barrier_vol}, $self->pricing_vol_for_two_barriers->{low_barrier_vol});
     } else {
