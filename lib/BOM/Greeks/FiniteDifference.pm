@@ -230,7 +230,7 @@ sub _build_original_params {
 
     return {
         build   => \%bet_params,
-        pricing => $bet->pricing_args,
+        pricing => $bet->_pricing_args,
     };
 }
 
