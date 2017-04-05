@@ -25,6 +25,9 @@ use Format::Util::Numbers qw(roundnear);
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
+my $volsurfaces = LoadFile('/home/git/regentmarkets/bom-test/data/20121108_volsurfaces.yml');
+my $news        = LoadFile('/home/git/regentmarkets/bom-test/data/20121108_news.yml');
+my $holidays    = LoadFile('/home/git/regentmarkets/bom-test/data/20121108_holidays.yml');
 
 my $underlying = create_underlying('frxUSDJPY');
 my $now        = Date::Utility->new(1352345145);
@@ -59,11 +62,19 @@ foreach my $single_data (@$decimate_data) {
         $decimate_cache->encoder->encode($single_data));
 }
 
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {events => $news});
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'holiday',
+    {
+        recorded_date => Date::Utility->new(1352345145),
+        calendar      => $holidays
+    });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => $underlying->symbol,
-        recorded_date => $now,
+        symbol        => 'frxUSDJPY',
+        recorded_date => Date::Utility->new(1352345145)->truncate_to_day(),
+        surface       => $volsurfaces->{frxUSDJPY}->{surfaces}->{'New York 10:00'},
     });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
