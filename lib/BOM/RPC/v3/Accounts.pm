@@ -1033,9 +1033,12 @@ sub set_self_exclusion {
 
         $message = "Client $client_title set the following self-exclusion limits:\n\n$message";
         my $brand = Brands->new(name => request()->brand);
+        my $to_email = $brand->emails('compliance');
+        # send to support only when client has self excluded
+        $to_email .= ',' . $brand->emails('support') if $args{exclude_until};
         send_email({
             from    => $brand->emails('compliance'),
-            to      => $brand->emails('compliance') . ',' . $brand->emails('support'),
+            to      => $to_email,
             subject => "Client set self-exclusion limits",
             message => [$message],
         });
