@@ -67,7 +67,10 @@ require BOM::Product::Pricing::Engine::Intraday::Index;
 require BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
 require BOM::Product::Pricing::Greeks::BlackScholes;
 
-## ATTRIBUTES  #######################
+=head1 METHODS - Attributes
+
+=cut
+
 has [qw(date_start date_pricing date_settlement effective_start)] => (
     is         => 'ro',
     isa        => 'date_object',
@@ -373,9 +376,12 @@ has _basis_tick => (
     builder    => '_build_basis_tick',
 );
 
-#== METHODS ======================
+=head1 METHODS
+
+=cut
 
 sub is_spread { return 0 }
+
 sub is_legacy { return 0 }
 
 sub _check_is_intraday {
