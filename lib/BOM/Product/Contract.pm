@@ -398,17 +398,6 @@ sub _check_is_intraday {
     return 1;
 }
 
-sub _market_convention {
-    my $self = shift;
-
-    return {
-        get_rollover_time => sub {
-            my $when = shift;
-            return Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($when);
-        },
-    };
-}
-
 =item is_after_settlement
 
 This check if the contract already passes the settlement time
