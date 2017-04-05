@@ -92,7 +92,10 @@ sub produce_contract {
     $landing_company =~ s/-//;
     my $role = 'BOM::Product::Role::' . ucfirst lc $landing_company;
     # Only apply the role if the class exists
-    { no strict 'refs'; $params_ref->{build_parameters}{role} = $role if %{$role . '::'}; }
+    {
+        no strict 'refs';
+        $params_ref->{build_parameters}{role} = $role if %{$role . '::'};
+    }
 
     # This occurs after to hopefully make it more annoying to bypass the Factory.
     $params_ref->{'_produce_contract_ref'} = \&produce_contract;
