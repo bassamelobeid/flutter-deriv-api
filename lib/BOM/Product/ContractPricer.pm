@@ -769,4 +769,12 @@ sub _build_discounted_probability {
     return $self->price_calculator->discounted_probability;
 }
 
+sub _match_symbol {
+    my ($lists, $symbol) = @_;
+    for (@$lists) {
+        return 1 if $_ eq $symbol;
+    }
+    return;
+}
+
 1;

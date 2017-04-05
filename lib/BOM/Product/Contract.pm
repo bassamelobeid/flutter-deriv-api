@@ -392,14 +392,6 @@ sub _check_is_intraday {
     return 1;
 }
 
-sub _match_symbol {
-    my ($lists, $symbol) = @_;
-    for (@$lists) {
-        return 1 if $_ eq $symbol;
-    }
-    return;
-}
-
 sub _market_convention {
     my $self = shift;
 
