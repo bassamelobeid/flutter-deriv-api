@@ -180,8 +180,8 @@ sub get_bet_results {
         my $arbitrage_check = ($bet->bid_probability->amount > $sd_ask or $bet->ask_probability->amount < $sd_bid) ? 1 : 0;
 
         $csv->combine(
-            $record->{ID}, $underlying->symbol,       $bet_type,          $spot,                    @barriers,
-            $days_between, $date_start->date_ddmmmyy, $date_expiry->date, $bet->pricing_args->{iv}, $sd_mid,
+            $record->{ID}, $underlying->symbol,       $bet_type,          $spot,                     @barriers,
+            $days_between, $date_start->date_ddmmmyy, $date_expiry->date, $bet->_pricing_args->{iv}, $sd_mid,
             $bom_mid,      $mid_diff,                 $arbitrage_check
         );
         my $result = $csv->string;

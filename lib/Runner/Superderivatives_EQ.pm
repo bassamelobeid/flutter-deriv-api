@@ -130,7 +130,7 @@ sub price_superderivatives_bets_locally {
 
         $csv->combine(
             $record->{ID},                 $record->{underlying}->symbol, $record->{bet_type}, $record->{date_start}->epoch,
-            $record->{date_expiry}->epoch, $record->{spot},               @barriers,           $bet->pricing_args->{iv},
+            $record->{date_expiry}->epoch, $record->{spot},               @barriers,           $bet->_pricing_args->{iv},
             $sd_mid,                       $bom_mid,                      $mid_diff
         );
 
