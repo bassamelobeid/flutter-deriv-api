@@ -189,7 +189,7 @@ subtest 'Range on R_100.' => sub {
     };
 
     my $bet          = produce_contract($bet_params);
-    my $pricing_args = $bet->pricing_args;
+    my $pricing_args = $bet_pricing_args;
     is(ref $pricing_args, 'HASH', 'Pricing args is a HashRef.');
 
     cmp_bag(

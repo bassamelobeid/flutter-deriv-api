@@ -51,7 +51,7 @@ has [qw(pricing_vol news_adjusted_pricing_vol)] => (
 );
 
 sub _build_news_adjusted_pricing_vol {
-    return shift->bet->pricing_args->{iv_with_news};
+    return shift->bet->_pricing_args->{iv_with_news};
 }
 
 sub _build_long_term_prediction {
@@ -59,11 +59,11 @@ sub _build_long_term_prediction {
             name        => 'long_term_prediction',
             description => 'long term prediction for intraday historical model',
             set_by      => __PACKAGE__,
-            base_amount => shift->bet->pricing_args->{long_term_prediction}});
+            base_amount => shift->bet->_pricing_args->{long_term_prediction}});
 }
 
 sub _build_pricing_vol {
-    return shift->bet->pricing_args->{iv};
+    return shift->bet->_pricing_args->{iv};
 }
 
 has _supported_types => (
@@ -119,7 +119,7 @@ sub _build_probability {
     my ($self) = @_;
 
     my $bet  = $self->bet;
-    my $args = $bet->pricing_args;
+    my $args = $bet->_pricing_args;
 
     my $ifx_prob = Math::Util::CalculatedValue::Validatable->new({
         name        => lc($bet->code) . '_theoretical_probability',
@@ -450,7 +450,7 @@ sub _build_intraday_trend {
     my $duration_in_secs = $bet->timeindays->amount * 86400;
 
     my @ticks    = @{$self->ticks_for_trend};
-    my $average  = (@ticks) ? sum(map { $_->{quote} } @ticks) / @ticks : $bet->pricing_args->{spot};
+    my $average  = (@ticks) ? sum(map { $_->{quote} } @ticks) / @ticks : $bet->_pricing_args->{spot};
     my $avg_spot = Math::Util::CalculatedValue::Validatable->new({
         name        => 'average_spot',
         description => 'mean of spot over 2 * duration of the contract',
@@ -463,7 +463,7 @@ sub _build_intraday_trend {
     # But let's be extra careful here.
     my $lookback_seconds = $self->lookback_seconds;
     if (@ticks > 1 and $lookback_seconds > 0) {
-        $trend = ((($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($lookback_seconds / 2)) * $self->slope;
+        $trend = ((($bet->_pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($lookback_seconds / 2)) * $self->slope;
     }
     my $calibration_coef = $self->coefficients->{$bet->underlying->symbol};
     my $trend_cv         = Math::Util::CalculatedValue::Validatable->new({
@@ -524,7 +524,7 @@ sub calculate_expected_spot {
     my $bet = $self->bet;
     my $expected_spot =
         $self->intraday_trend->peek_amount('average_spot') * $self->calculate_intraday_bounceback($t, "_lt") * sqrt($t * 60) +
-        $bet->pricing_args->{spot};
+        $bet->_pricing_args->{spot};
     return $expected_spot;
 }
 
@@ -538,7 +538,7 @@ sub _get_long_term_delta_correction {
     my $self = shift;
 
     my $bet           = $self->bet;
-    my $args          = $bet->pricing_args;
+    my $args          = $bet->_pricing_args;
     my $pricing_spot  = $args->{spot};
     my $duration_mins = $args->{t} * 365 * 24 * 60;
     $duration_mins = max($duration_mins, 15);
@@ -624,7 +624,7 @@ sub _build_intraday_vanilla_delta {
     my $self = shift;
 
     my $bet           = $self->bet;
-    my $args          = $bet->pricing_args;
+    my $args          = $bet->_pricing_args;
     my $barrier_delta = get_delta_for_strike({
         strike           => $args->{barrier1},
         atm_vol          => $args->{iv},
@@ -762,7 +762,7 @@ sub _build_jump_metric {
             })};
 
     my $median = do {
-        my $median_spot = $bet->pricing_args->{spot};
+        my $median_spot = $bet->_pricing_args->{spot};
         if (@ticks > 1) {
             my $size  = @ticks;
             my $index = int($size / 2);
@@ -774,7 +774,7 @@ sub _build_jump_metric {
         $median_spot;
     };
 
-    my $metric = ($median - $bet->pricing_args->{spot}) / $median;
+    my $metric = ($median - $bet->_pricing_args->{spot}) / $median;
 
     return $metric;
 }
@@ -921,7 +921,7 @@ has volatility_scaling_factor => (
 );
 
 sub _build_volatility_scaling_factor {
-    return shift->bet->pricing_args->{volatility_scaling_factor};
+    return shift->bet->_pricing_args->{volatility_scaling_factor};
 }
 
 has vol_spread => (
