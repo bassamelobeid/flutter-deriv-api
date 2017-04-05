@@ -483,7 +483,7 @@ sub _get_time_to_end {
     );
 }
 
-sub add_error {
+sub _add_error {
     my ($self, $err) = @_;
     $err->{set_by} = __PACKAGE__;
     $self->primary_validation_error(MooseX::Role::Validatable::Error->new(%$err));
@@ -651,7 +651,7 @@ sub _build_basis_tick {
             epoch  => time,
             symbol => $self->underlying->symbol,
         });
-        $self->add_error({
+        $self->_add_error({
             message           => "Waiting for entry tick [symbol: " . $self->underlying->symbol . "]",
             message_to_client => $potential_error,
         });
@@ -883,7 +883,7 @@ sub _build_dividend_adjustment {
     {
 
         warn "Missing dividend data: corp actions are " . join(',', @corporate_actions) . " and found date for action " . $action;
-        $self->add_error({
+        $self->_add_error({
             message => 'Dividend is not updated  after corporate action'
                 . "[dividend recorded date : "
                 . $dividend_recorded_date->datetime . "] "
@@ -984,7 +984,7 @@ sub _build_pricing_spot {
         # This is to prevent undefined spot being passed to BlackScholes formula that causes the code to die!!
         $initial_spot = $self->underlying->tick_at($self->date_pricing->epoch, {allow_inconsistent => 1});
         $initial_spot //= $self->underlying->pip_size * 2;
-        $self->add_error({
+        $self->_add_error({
             message => 'Undefined spot '
                 . "[date pricing: "
                 . $self->date_pricing->datetime . "] "
@@ -1111,7 +1111,7 @@ sub _build_exit_tick {
             and $underlying->intradays_must_be_same_day
             and $self->calendar->trading_days_between($entry_tick_date, $exit_tick_date))
         {
-            $self->add_error({
+            $self->_add_error({
                 message => 'Exit tick date differs from entry tick date on intraday '
                     . "[symbol: "
                     . $underlying->symbol . "] "

@@ -19,7 +19,7 @@ sub BUILD {
     my $self = shift;
 
     if (not(looks_like_number($self->supplied_barrier) and $self->supplied_barrier =~ /^[0-9]$/)) {
-        $self->add_errors({
+        $self->_add_errors({
             severity          => 110,
             message           => 'invalid supplied barrier format for digits',
             message_to_client => localize('Barrier is not an integer between 0 to 9.'),

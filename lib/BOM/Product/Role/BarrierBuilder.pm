@@ -20,7 +20,7 @@ sub make_barrier {
 
     if (not defined $string_version) {
         $string_version = $self->underlying->pip_size;
-        $self->add_error({
+        $self->_add_error({
             severity          => 100,
             message           => 'Undefined barrier',
             message_to_client => localize('We could not process this contract at this time.'),
@@ -32,7 +32,7 @@ sub make_barrier {
         and $string_version !~ /^S-?\d+P$/i
         and not isint($string_version))
     {
-        $self->add_error({
+        $self->_add_error({
             severity          => 100,
             message           => 'Barrier is not an integer',
             message_to_client => localize('Barrier must be an integer.'),
@@ -40,7 +40,7 @@ sub make_barrier {
     }
 
     if ($self->tick_expiry and $self->pricing_new and $string_version !~ /^S-?\d+P|[-+]\d+(\.\d+)?$/i) {
-        $self->add_error({
+        $self->_add_error({
             severity          => 100,
             message           => 'Intend to buy tick expiry contract with absolute barrier.',
             message_to_client => localize('Invalid barrier.'),
@@ -66,7 +66,7 @@ sub make_barrier {
                 });
             }
             catch {
-                $self->add_error({
+                $self->_add_error({
                     severity          => 100,
                     message           => "Could not apply corporate action [error: $_]",
                     message_to_client => localize('System problems prevent proper settlement at this time.'),

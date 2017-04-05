@@ -125,7 +125,7 @@ sub _build_as_absolute {
 
         my $value = $relative_to->quote + $diff;
         if ($value <= 0) {
-            $self->add_errors({
+            $self->_add_errors({
                 severity          => 100,
                 message           => "Non-positive barrier [value: $value]",
                 message_to_client => localize('Contract barrier must be positive.'),

@@ -179,14 +179,14 @@ sub _build_pricing_vol {
 
     if ($volatility_error) {
         warn "Volatility error: $volatility_error";
-        $self->add_error({
+        $self->_add_error({
             message           => $volatility_error,
             message_to_client => localize('Trading on this market is suspended due to missing market (volatility) data.'),
         });
     }
 
     if ($vol <= 0) {
-        $self->add_error({
+        $self->_add_error({
             message           => 'Zero volatility. Invalidate price.',
             message_to_client => localize('We could not process this contract at this time.'),
         });

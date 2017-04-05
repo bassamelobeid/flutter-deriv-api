@@ -59,7 +59,7 @@ sub BUILD {
     };
     if ($self->amount_per_point < $limits->{min} or $self->amount_per_point > $limits->{max}) {
         $self->amount_per_point($limits->{min});    # set to minimum
-        $self->add_errors({
+        $self->_add_errors({
             message => 'amount_per_point is not within limits '
                 . "[given: "
                 . $self->amount_per_point . "] "
@@ -208,7 +208,7 @@ sub _build_current_tick {
     my $current_tick = $self->underlying->spot_tick;
     unless ($current_tick) {
         $current_tick = $self->_pip_size_tick;
-        $self->add_errors({
+        $self->_add_errors({
             message           => "Current tick is undefined [symbol: " . $self->underlying->symbol . "]",
             severity          => 99,
             message_to_client => localize('Trading on this market is suspended due to missing market data.'),
@@ -249,7 +249,7 @@ sub _build_entry_tick {
 
     if (not $entry_tick) {
         $entry_tick = $self->current_tick // $self->_pip_size_tick;
-        $self->add_errors({
+        $self->_add_errors({
             message           => "Entry tick is undefined [symbol: " . $self->underlying->symbol . "]",
             severity          => 99,
             message_to_client => localize('Trading on this market is suspended due to missing market data.'),
@@ -306,7 +306,7 @@ sub _build_is_valid_to_sell {
     $self->_for_sale(1);
 
     if ($self->is_sold) {
-        $self->add_errors({
+        $self->_add_errors({
             message           => 'Contract already sold',
             severity          => 99,
             message_to_client => localize("This contract has been sold."),
