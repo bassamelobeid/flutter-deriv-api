@@ -313,6 +313,16 @@ has _legacy_contract_types => (
                 is_intraday  => 0,
                 expiry_daily => 1
             },
+            SPREADU => {
+                bet_type     => 'CALL',
+                is_intraday  => 0,
+                expiry_daily => 1
+            },
+            SPREADD => {
+                bet_type     => 'PUT',
+                is_intraday  => 0,
+                expiry_daily => 1
+            },
         };
     },
 );
