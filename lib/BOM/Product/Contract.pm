@@ -62,10 +62,12 @@ use BOM::Product::ContractValidator;
 use BOM::Product::ContractPricer;
 
 # require Pricing:: modules to avoid circular dependency problems.
-require BOM::Product::Pricing::Engine::Intraday::Forex;
-require BOM::Product::Pricing::Engine::Intraday::Index;
-require BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
-require BOM::Product::Pricing::Greeks::BlackScholes;
+UNITCHECK {
+    use BOM::Product::Pricing::Engine::Intraday::Forex;
+    use BOM::Product::Pricing::Engine::Intraday::Index;
+    use BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
+    use BOM::Product::Pricing::Greeks::BlackScholes;
+}
 
 =head1 METHODS - Date attributes
 
