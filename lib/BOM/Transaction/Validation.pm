@@ -14,16 +14,22 @@ use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 
 use Moo;
 
-has [qw/ client clients transaction /] => (is => 'rw');
+has client => (
+    is       => 'rw',
+    required => 1
+);
+has [qw/ clients transaction /] => (is => 'ro');
 
-sub BUILDARGS {
-    my (undef, $args) = @_;
+around BUILDARGS => sub {
+    my ($orig, $class, %args) = @_;
 
-    $args->{client}  //= $args->{clients}->[0];
-    $args->{clients} //= [$args->{client}];
+    $args{client} //= $args{clients}->[0];
+    unless ($args{clients} && scalar @{$args{clients}}) {
+        $args{clients} = [$args{client}];
+    }
 
-    return $args;
-}
+    return $class->$orig(%args);
+};
 
 ################ Client and transaction validation ########################
 
@@ -40,7 +46,7 @@ sub validate_trx_sell {
 
     for my $c (@{$self->clients}) {
         $self->client($c);
-        for (qw/ _validate_available_currency _validate_currency /) {
+        for (qw/ _validate_available_currency _validate_currency check_trade_status /) {
             $res = $self->$_;
             return $res if $res;
         }
@@ -64,6 +70,8 @@ sub validate_trx_buy {
         $self->client($c);
         for (
             qw/
+            check_trade_status
+            _is_valid_to_buy
             _validate_iom_withdrawal_limit
             _validate_available_currency
             _validate_currency
@@ -71,7 +79,7 @@ sub validate_trx_buy {
             _validate_client_status
             _validate_client_self_exclusion
             validate_tnc
-            _is_valid_to_buy /
+            /
             )
         {
             $res = $self->$_;
