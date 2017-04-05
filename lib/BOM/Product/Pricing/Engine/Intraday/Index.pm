@@ -19,7 +19,7 @@ has [qw(pricing_vol probability risk_markup)] => (
 );
 
 sub _build_pricing_vol {
-    return shift->bet->pricing_args->{iv};
+    return shift->bet->_pricing_args->{iv};
 }
 
 sub _build_risk_markup {
