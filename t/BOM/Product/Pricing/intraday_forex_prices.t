@@ -165,25 +165,12 @@ subtest 'atm prices without economic events' => sub {
 };
 
 subtest 'prices with economic events' => sub {
-    my $event_date = $date_start->minus_time_interval('15m');
-    my $event      = [{
-            symbol       => 'USD',
-            impact       => 5,
-            release_date => $event_date->epoch,
-            event_name   => 'Construction Spending m/m'
-        }];
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'economic_events',
-        {
-            recorded_date => $event_date,
-            events        => $event,
-        });
     Volatility::Seasonality->new(
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
         )->generate_economic_event_seasonality({
             underlying_symbol => $underlying->symbol,
-            economic_events   => $event
+            economic_events   => $news
         });
 
     foreach my $contract_type (@ct) {
