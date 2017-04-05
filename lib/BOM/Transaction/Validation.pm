@@ -24,7 +24,7 @@ around BUILDARGS => sub {
     my ($orig, $class, %args) = @_;
 
     $args{client} //= $args{clients}->[0];
-    unless ($args{clients} && scalar @{$args{clients}}) {
+    unless (defined $args{clients} && scalar @{$args{clients}}) {
         $args{clients} = [$args{client}];
     }
 

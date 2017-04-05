@@ -140,10 +140,10 @@ subtest 'IOM withdrawal limit' => sub {
             client   => $client,
             contract => $contract,
         });
-        $error = BOM::Transaction::Validation->new({
-                transaction => $transaction,
-                client      => $client
-            })->_validate_iom_withdrawal_limit;
+        $error = BOM::Transaction::Validation->new(
+            transaction => $transaction,
+            client      => $client
+        )->_validate_iom_withdrawal_limit;
     }
     'validate withdrawal limit';
 
@@ -178,10 +178,9 @@ subtest 'Is contract valid to buy' => sub {
     });
 
     is(
-        BOM::Transaction::Validation->new({
-                transaction => $transaction,
-                client      => $client
-            }
+        BOM::Transaction::Validation->new(
+            transaction => $transaction,
+            client      => $client
             )->_is_valid_to_buy,
         undef,
         'Contract is valid to buy'
@@ -195,10 +194,10 @@ subtest 'Is contract valid to buy' => sub {
         message_to_client => 'Error message to be sent to client',
     });
 
-    my $error = BOM::Transaction::Validation->new({
-            transaction => $transaction,
-            client      => $client
-        })->_is_valid_to_buy;
+    my $error = BOM::Transaction::Validation->new(
+        transaction => $transaction,
+        client      => $client
+    )->_is_valid_to_buy;
     is($error->get_type, 'InvalidtoBuy', 'Contract is invalid to buy as it contains errors: _is_valid_to_buy - error type');
 
 };
@@ -227,10 +226,9 @@ subtest 'Is contract valid to sell' => sub {
     });
 
     is(
-        BOM::Transaction::Validation->new({
-                transaction => $transaction,
-                client      => $client
-            }
+        BOM::Transaction::Validation->new(
+            transaction => $transaction,
+            client      => $client
             )->_is_valid_to_sell,
         undef,
         'Contract is valid to sell'
