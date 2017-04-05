@@ -76,42 +76,40 @@ Produce a Contract Object from a set of parameters
 =cut
 
 my $contract_type_config = LoadFile(File::ShareDir::dist_file('LandingCompany', 'contract_types.yml'));
-{
 
-    sub produce_contract {
-        my ($build_arg, $maybe_currency, $maybe_sold) = @_;
+sub produce_contract {
+    my ($build_arg, $maybe_currency, $maybe_sold) = @_;
 
-        my $params_ref = {%{_args_to_ref($build_arg, $maybe_currency, $maybe_sold)}};
+    my $params_ref = {%{_args_to_ref($build_arg, $maybe_currency, $maybe_sold)}};
 
-        unless ($params_ref->{processed}) {
-            $params_ref = BOM::Product::Categorizer->new(parameters => $params_ref)->process();
-        }
-
-        my $landing_company = $params_ref->{landing_company};
-        # We have 'japan-virtual' as one of the landing companies: remap this to a valid Perl class name
-        # Can't change the name to 'japanvirtual' because we have db functions tie to the original name.
-        $landing_company =~ s/-//;
-        my $role = 'BOM::Product::Role::' . ucfirst lc $landing_company;
-        # Only apply the role if the class exists
-        { no strict 'refs'; $params_ref->{build_parameters}{role} = $role if %{$role . '::'}; }
-
-        # This occurs after to hopefully make it more annoying to bypass the Factory.
-        $params_ref->{'_produce_contract_ref'} = \&produce_contract;
-
-        my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $params_ref->{bet_type};
-        my $contract_obj   = $contract_class->new($params_ref);
-        # apply it here.
-        $role->meta->apply($contract_obj) if $loaded{$role};
-
-        return $contract_obj;
+    unless ($params_ref->{processed}) {
+        $params_ref = BOM::Product::Categorizer->new(parameters => $params_ref)->process();
     }
 
-    sub produce_batch_contract {
-        my $build_args = shift;
+    my $landing_company = $params_ref->{landing_company};
+    # We have 'japan-virtual' as one of the landing companies: remap this to a valid Perl class name
+    # Can't change the name to 'japanvirtual' because we have db functions tie to the original name.
+    $landing_company =~ s/-//;
+    my $role = 'BOM::Product::Role::' . ucfirst lc $landing_company;
+    # Only apply the role if the class exists
+    { no strict 'refs'; $params_ref->{build_parameters}{role} = $role if %{$role . '::'}; }
 
-        $build_args->{_produce_contract_ref} = \&produce_contract;
-        return BOM::Product::Contract::Batch->new(parameters => $build_args);
-    }
+    # This occurs after to hopefully make it more annoying to bypass the Factory.
+    $params_ref->{'_produce_contract_ref'} = \&produce_contract;
+
+    my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $params_ref->{bet_type};
+    my $contract_obj   = $contract_class->new($params_ref);
+    # apply it here.
+    $role->meta->apply($contract_obj) if $loaded{$role};
+
+    return $contract_obj;
+}
+
+sub produce_batch_contract {
+    my $build_args = shift;
+
+    $build_args->{_produce_contract_ref} = \&produce_contract;
+    return BOM::Product::Contract::Batch->new(parameters => $build_args);
 }
 
 sub _args_to_ref {
