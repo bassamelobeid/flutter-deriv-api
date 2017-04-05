@@ -226,7 +226,7 @@ has category_code => (
     lazy_build => 1,
 );
 
-#These data are coming from contrac_types.yml
+#These data are coming from contract_types.yml
 has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
     is      => 'ro',
     default => undef,
@@ -534,8 +534,11 @@ sub may_settle_automatically {
 
 =head2 get_time_to_expiry
 
-Returns a TimeInterval to expiry of the bet. For a forward start bet, it will NOT return the bet lifetime, but the time till the bet expires,
-if you want to get the bet life time call it like C<$bet-E<gt>get_time_to_expiry({from =E<gt> $bet-E<gt>date_start})>.
+Returns a TimeInterval to expiry of the bet. For a forward start bet, it will NOT return the bet lifetime, but the time till the bet expires.
+
+If you want to get the contract life time, use:
+
+    $contract->get_time_to_expiry({from => $contract->date_start})
 
 =cut
 
@@ -565,7 +568,6 @@ sub get_time_to_settlement {
     return ($time >= $self->date_settlement->epoch and $self->expiry_daily) ? $zero_duration : $self->_get_time_to_end($attributes);
 }
 
-# PRIVATE METHOD: _get_time_to_end
 # Send in the correct 'to'
 sub _get_time_to_end {
     my ($self, $attributes) = @_;
