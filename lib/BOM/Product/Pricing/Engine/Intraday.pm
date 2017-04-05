@@ -93,7 +93,7 @@ sub _formula_args {
     my $self = shift;
 
     my $bet  = $self->bet;
-    my $args = $bet->pricing_args;
+    my $args = $bet->_pricing_args;
     my @barrier_args =
           ($bet->two_barriers)
         ? ($args->{barrier1}, $args->{barrier2})
