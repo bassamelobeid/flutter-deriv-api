@@ -85,6 +85,14 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now
     }) for ('USD', 'JPY-USD', 'JPY');
 
+Volatility::Seasonality->new(
+    chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
+    chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
+    )->generate_economic_event_seasonality({
+        underlying_symbol => $underlying->symbol,
+        economic_events   => $news
+    });
+
 subtest 'verify_with_shortcode_IH' => sub {
     my $expected_parameters = {
         'intraday_vega_correction' => {
