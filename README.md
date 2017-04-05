@@ -1,7 +1,7 @@
 bom
 ===
 
-This library implements our products (binary options, spreads) and their associated pricing engines.
+This library implements our products (binary options) and their associated pricing engines.
 
 Note: badges show the master branch status:
 [![Build Status](https://magnum.travis-ci.com/regentmarkets/bom.svg?token=hW4diZKywb9ZykP5jBev&branch=master)](https://magnum.travis-ci.com/regentmarkets/bom)

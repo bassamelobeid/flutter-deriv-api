@@ -148,18 +148,14 @@ sub ask_prices {
                     : $contract->ask_price;
                 $contract_info->{error}{details} = {
                     display_value => (
-                          $contract->is_spread
-                        ? $contract->buy_level
-                        : sprintf('%.2f', $display_value)
+                        sprintf('%.2f', $display_value)
                     ),
                     payout => sprintf('%.2f', $display_value),
                 };
             } else {
                 $contract_info->{error}{details} = {
                     display_value => (
-                          $contract->is_spread
-                        ? $contract->buy_level
-                        : sprintf('%.2f', $contract->ask_price)
+                        sprintf('%.2f', $contract->ask_price)
                     ),
                     payout => sprintf('%.2f', $contract->payout),
                 };
@@ -186,17 +182,12 @@ sub market_details {
     my %details = (
         spot_time  => $contract->current_tick->epoch,
         date_start => $contract->date_start->epoch,
-        !$contract->is_spread
-        ? (
-            app_markup_percentage => $contract->app_markup_percentage,
-            staking_limits        => $contract->staking_limits,
-            deep_otm_threshold    => $contract->otm_threshold,
-            )
-        : (),
+        app_markup_percentage => $contract->app_markup_percentage,
+        staking_limits        => $contract->staking_limits,
+        deep_otm_threshold    => $contract->otm_threshold,
         base_commission => $contract->base_commission,
     );
     $details{spot}   = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
-    $details{spread} = $contract->spread       if $contract->is_spread;
     return \%details;
 }
 

@@ -51,8 +51,6 @@ require BOM::Product::Contract::Notouch;
 require BOM::Product::Contract::Onetouch;
 require BOM::Product::Contract::Put;
 require BOM::Product::Contract::Range;
-require BOM::Product::Contract::Spreadd;
-require BOM::Product::Contract::Spreadu;
 require BOM::Product::Contract::Upordown;
 require BOM::Product::Contract::Vanilla_call;
 require BOM::Product::Contract::Vanilla_put;
@@ -142,13 +140,11 @@ sub make_similar_contract {
     my %build_parameters = %{$orig_contract->build_parameters};
 
     if ($changes->{as_new}) {
-        if (!$orig_contract->is_spread) {
-            if ($orig_contract->two_barriers) {
-                $build_parameters{high_barrier} = $orig_contract->high_barrier->supplied_barrier if $orig_contract->high_barrier;
-                $build_parameters{low_barrier}  = $orig_contract->low_barrier->supplied_barrier  if $orig_contract->low_barrier;
-            } else {
-                $build_parameters{barrier} = $orig_contract->barrier->supplied_barrier if (defined $orig_contract->barrier);
-            }
+        if ($orig_contract->two_barriers) {
+            $build_parameters{high_barrier} = $orig_contract->high_barrier->supplied_barrier if $orig_contract->high_barrier;
+            $build_parameters{low_barrier}  = $orig_contract->low_barrier->supplied_barrier  if $orig_contract->low_barrier;
+        } else {
+            $build_parameters{barrier} = $orig_contract->barrier->supplied_barrier if (defined $orig_contract->barrier);
         }
         delete $build_parameters{date_start};
     }

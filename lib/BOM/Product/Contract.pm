@@ -348,7 +348,6 @@ has _basis_tick => (
 
 #== METHODS ======================
 
-sub is_spread { return 0 }
 sub is_legacy { return 0 }
 
 sub _check_is_intraday {

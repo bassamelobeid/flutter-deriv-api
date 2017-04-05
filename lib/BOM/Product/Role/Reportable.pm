@@ -6,7 +6,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 
 use BOM::Platform::Config;
 
-my @bool_attrs = qw(is_intraday is_forward_starting is_atm_bet is_spread);
+my @bool_attrs = qw(is_intraday is_forward_starting is_atm_bet);
 
 requires @bool_attrs;
 
