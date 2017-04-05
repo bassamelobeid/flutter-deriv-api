@@ -52,7 +52,7 @@ subtest 'no ticks in decimate ticks' => sub {
     $mocked->mock('decimate_cache_get', sub { [] });
     my $c = produce_contract($contract_args);
     my $args;
-    warning { $args = $c->pricing_args }, qr/No basis tick for/;
+    warning { $args = $c->_pricing_args }, qr/No basis tick for/;
     my $res;
     warning { $res = $c->pricing_vol }, qr/No basis tick for/;
     is $res, $args->{long_term_prediction}, 'we rely solely on long term prediction if there is no decimated ticks.';
@@ -64,7 +64,7 @@ subtest 'one tick in decimate ticks' => sub {
     $mocked->mock('decimate_cache_get', sub { [$ticks->[0]] });
     my $c = produce_contract($contract_args);
     my $args;
-    warning { $args = $c->pricing_args }, qr/No basis tick for/;
+    warning { $args = $c->_pricing_args }, qr/No basis tick for/;
     my $res;
     warning { $res = $c->pricing_vol }, qr/No basis tick for/;
     is $res, $args->{long_term_prediction}, 'we rely solely on long term prediction if there is only one decimated tick.';
@@ -80,7 +80,7 @@ subtest 'ten ticks in decimate ticks' => sub {
         });
     my $c = produce_contract($contract_args);
     my $args;
-    warning { $args = $c->pricing_args }, qr/No basis tick for/;
+    warning { $args = $c->_pricing_args }, qr/No basis tick for/;
     my $res;
     warning { $res = $c->pricing_vol }, qr/No basis tick for/;
     is $res, 0.119418941965231, 'we rely solely on long term prediction if there is only one decimated tick.';
@@ -93,7 +93,7 @@ subtest 'full set of decimate ticks' => sub {
     $mocked->mock('decimate_cache_get', sub { $ticks });
     my $c = produce_contract($contract_args);
     my $args;
-    warning { $args = $c->pricing_args }, qr/No basis tick for/;
+    warning { $args = $c->_pricing_args }, qr/No basis tick for/;
     my $res;
     warning { $res = $c->pricing_vol }, qr/No basis tick for/;
     is $res, 0.106236103095101, 'we rely solely on long term prediction if there is only one decimated tick.';
