@@ -277,11 +277,6 @@ has [qw(risk_profile)] => (
     lazy_build => 1,
 );
 
-has market_is_inefficient => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 # pricing_spot - The spot used in pricing.  It may have been adjusted for corporate actions.
 has pricing_spot => (
     is         => 'ro',
@@ -1148,7 +1143,13 @@ sub _build_risk_profile {
     );
 }
 
-sub _build_market_is_inefficient {
+=head2 market_is_inefficient
+
+Returns true or false. Note that the value may vary depending on date_pricing.
+
+=cut
+
+sub market_is_inefficient {
     my $self = shift;
 
     # market inefficiency only applies to forex and commodities.
