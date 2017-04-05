@@ -398,14 +398,12 @@ sub _check_is_intraday {
     return 1;
 }
 
-=item is_after_settlement
+=head2 is_after_settlement
 
 This check if the contract already passes the settlement time
 
 For tick expiry contract, it can expires when a certain number of ticks is received or it already passes the max_tick_expiry_duration.
 For other contracts, it can expires when current time has past a pre-determined settelement time.
-
-=back
 
 =cut
 
@@ -422,13 +420,12 @@ sub is_after_settlement {
     return 0;
 }
 
-=item is_after_expiry
+=head2 is_after_expiry
 
 This check if the contract already passes the expiry times
 
 For tick expiry contract, there is no expiry time, so it will check again the exit tick
 For other contracts, it will check the remaining time of the contract to expiry.
-=back
 
 =cut
 
