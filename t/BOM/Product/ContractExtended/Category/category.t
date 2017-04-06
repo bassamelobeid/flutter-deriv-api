@@ -32,8 +32,8 @@ subtest 'asian' => sub {
     is $cat->display_name,  'Asians';
     ok !$cat->is_path_dependent;
     ok !$cat->barrier_at_start, 'barrier determined at expiry';
-    is_deeply $cat->supported_expiries,    ['tick'];
-    cmp_bag $cat->available_types,         ['ASIANU', 'ASIAND'];
+    is_deeply $cat->supported_expiries, ['tick'];
+    cmp_bag $cat->available_types, ['ASIANU', 'ASIAND'];
 };
 
 subtest 'digits' => sub {
@@ -43,8 +43,8 @@ subtest 'digits' => sub {
     is $cat->display_name,  'Digits';
     ok !$cat->is_path_dependent;
     ok $cat->barrier_at_start, 'barrier determined at start';
-    is_deeply $cat->supported_expiries,    ['tick'];
-    cmp_bag $cat->available_types,         ['DIGITMATCH', 'DIGITDIFF', 'DIGITODD', 'DIGITEVEN', 'DIGITOVER', 'DIGITUNDER'];
+    is_deeply $cat->supported_expiries, ['tick'];
+    cmp_bag $cat->available_types, ['DIGITMATCH', 'DIGITDIFF', 'DIGITODD', 'DIGITEVEN', 'DIGITOVER', 'DIGITUNDER'];
 };
 
 subtest 'touchnotouch' => sub {
@@ -55,7 +55,7 @@ subtest 'touchnotouch' => sub {
     ok $cat->is_path_dependent;
     ok $cat->barrier_at_start, 'barrier determined at start';
     is_deeply $cat->supported_expiries, ['intraday', 'daily'];
-    cmp_bag $cat->available_types, ['ONETOUCH', 'NOTOUCH'];
+    cmp_bag $cat->available_types,      ['ONETOUCH', 'NOTOUCH'];
 };
 
 subtest 'endsinout' => sub {
@@ -77,5 +77,5 @@ subtest 'staysinout' => sub {
     ok $cat->is_path_dependent;
     ok $cat->barrier_at_start, 'barrier determined at start';
     is_deeply $cat->supported_expiries, ['intraday', 'daily'];
-    cmp_bag $cat->available_types, ['RANGE', 'UPORDOWN'];
+    cmp_bag $cat->available_types,      ['RANGE',    'UPORDOWN'];
 };
