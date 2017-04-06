@@ -100,7 +100,7 @@ has trading_calendar => (
 );
 
 sub _build_trading_calendar {
-    return Quant::Framework->new->trading_calender(BOM::Platform::Chronicle::get_chronicle_reader);
+    return Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
 }
 
 my %known_decorations = (
