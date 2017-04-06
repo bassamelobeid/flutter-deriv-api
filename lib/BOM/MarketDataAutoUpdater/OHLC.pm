@@ -7,7 +7,6 @@ use Text::CSV::Slurp;
 use File::Slurp;
 
 use BOM::Platform::Chronicle;
-use Quant::Framework::TradingCalendar;
 use Date::Utility;
 use Finance::Asset::Market::Registry;
 use BOM::MarketData qw(create_underlying);
@@ -15,8 +14,10 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::Platform::Runtime;
 use Bloomberg::FileDownloader;
 use Bloomberg::RequestFiles;
+use Quant::Framework;
+use BOM::Platform::Chronicle
 
-has directory_to_save => (
+    has directory_to_save => (
     is      => 'ro',
     default => sub {
         return BOM::Platform::Runtime->instance->app_config->system->directory->feed . '/market';
@@ -214,10 +215,8 @@ sub verify_ohlc_update {
         my $underlying = create_underlying($underlying_symbol);
 
         # we are checking back past 10 day OHLC, so start to look back calendar from that day
-        my $calendar = Quant::Framework::TradingCalendar->new(
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
-            for_date         => $now->minus_time_interval('10d'),
-        );
+        my $for_date = $now->minus_time_interval('10d');
+        my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
         next if $calendar->is_holiday_for($underlying->exchange, $now);
         next if ($underlying->submarket->is_OTC);
         if (my @filelines = read_file($db_file)) {

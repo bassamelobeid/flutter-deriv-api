@@ -26,6 +26,8 @@ use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Utils;
 use List::Util qw( first );
+use Quant::Framework;
+use BOM::Platform::Chronicle;
 
 has file => (
     is         => 'ro',
@@ -255,7 +257,7 @@ sub passes_additional_check {
     # for the same reasons. This is likely mostly partially covered by some of the above,
     # but I am sitting here fixing this on Christmas, so I might be missing something.
     my $underlying         = create_underlying($volsurface->underlying->symbol);
-    my $calendar           = Quant::Framework::TradingCalendar->new(chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader());
+    my $calendar           = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
     my $recorded_date      = $volsurface->recorded_date;
     my $friday_after_close = ($recorded_date->day_of_week == 5 and not $calendar->is_open_at($underlying->exchange, $recorded_date));
     my $wont_open          = not $calendar->trades_on($underlying->exchange, $volsurface->effective_date);
