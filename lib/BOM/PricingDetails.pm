@@ -321,50 +321,50 @@ sub _get_greeks {
     my $bs_greeks = $bet->greek_engine->get_greeks;
 
     my $display_greeks_engine = BOM::DisplayGreeks->new(
-        payout         => $bet->payout,
-        priced_with    => $bet->priced_with,
-        current_spot   => $bet->current_spot,
-        underlying     => $bet->underlying
+        payout       => $bet->payout,
+        priced_with  => $bet->priced_with,
+        current_spot => $bet->current_spot,
+        underlying   => $bet->underlying
     );
     my $display = $display_greeks_engine->get_display_greeks();
 
     my $base_curr    = $bet->underlying->asset_symbol;
     my $num_curr     = $bet->underlying->quoted_currency_symbol;
     my $greeks_attrs = [{
-            label             => 'Delta',
-            analytical        => sprintf($number_format, $bs_greeks->{delta}),
-            display_base      => $base_curr . " " . sprintf($number_format, $display->{delta}->{base}),
-            display_num       => $num_curr . " " . sprintf($number_format, $display->{delta}->{num}),
+            label        => 'Delta',
+            analytical   => sprintf($number_format, $bs_greeks->{delta}),
+            display_base => $base_curr . " " . sprintf($number_format, $display->{delta}->{base}),
+            display_num  => $num_curr . " " . sprintf($number_format, $display->{delta}->{num}),
         },
         {
-            label             => 'Gamma',
-            analytical        => sprintf($number_format, $bs_greeks->{gamma}),
-            display_base      => $base_curr . " " . sprintf($number_format, $display->{gamma}->{base}),
-            display_num       => $num_curr . " " . sprintf($number_format, $display->{gamma}->{num}),
+            label        => 'Gamma',
+            analytical   => sprintf($number_format, $bs_greeks->{gamma}),
+            display_base => $base_curr . " " . sprintf($number_format, $display->{gamma}->{base}),
+            display_num  => $num_curr . " " . sprintf($number_format, $display->{gamma}->{num}),
         },
         {
-            label             => 'Theta',
-            analytical        => sprintf($number_format, $bs_greeks->{theta}),
-            display_base      => $base_curr . " " . sprintf($number_format, $display->{theta}->{base}),
-            display_num       => $num_curr . " " . sprintf($number_format, $display->{theta}->{num}),
+            label        => 'Theta',
+            analytical   => sprintf($number_format, $bs_greeks->{theta}),
+            display_base => $base_curr . " " . sprintf($number_format, $display->{theta}->{base}),
+            display_num  => $num_curr . " " . sprintf($number_format, $display->{theta}->{num}),
         },
         {
-            label             => 'Vega',
-            analytical        => sprintf($number_format, $bs_greeks->{vega}),
-            display_base      => $base_curr . " " . sprintf($number_format, $display->{vega}->{base}),
-            display_num       => $num_curr . " " . sprintf($number_format, $display->{vega}->{num}),
+            label        => 'Vega',
+            analytical   => sprintf($number_format, $bs_greeks->{vega}),
+            display_base => $base_curr . " " . sprintf($number_format, $display->{vega}->{base}),
+            display_num  => $num_curr . " " . sprintf($number_format, $display->{vega}->{num}),
         },
         {
-            label             => 'Vanna',
-            analytical        => sprintf($number_format, $bs_greeks->{vanna}),
-            display_base      => $base_curr . " " . sprintf($number_format, $display->{vanna}->{base}),
-            display_num       => $num_curr . " " . sprintf($number_format, $display->{vanna}->{num}),
+            label        => 'Vanna',
+            analytical   => sprintf($number_format, $bs_greeks->{vanna}),
+            display_base => $base_curr . " " . sprintf($number_format, $display->{vanna}->{base}),
+            display_num  => $num_curr . " " . sprintf($number_format, $display->{vanna}->{num}),
         },
         {
-            label             => 'Volga',
-            analytical        => sprintf($number_format, $bs_greeks->{volga}),
-            display_base      => $base_curr . " " . sprintf($number_format, $display->{volga}->{base}),
-            display_num       => $num_curr . " " . sprintf($number_format, $display->{volga}->{num}),
+            label        => 'Volga',
+            analytical   => sprintf($number_format, $bs_greeks->{volga}),
+            display_base => $base_curr . " " . sprintf($number_format, $display->{volga}->{base}),
+            display_num  => $num_curr . " " . sprintf($number_format, $display->{volga}->{num}),
         },
     ];
 
