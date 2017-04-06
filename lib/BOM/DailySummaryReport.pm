@@ -108,7 +108,7 @@ sub generate_report {
 
                         try {
                             my $contract = produce_contract($bet->{short_code}, $currency);
-                            $theo = ($contract->is_spread) ? $contract->bid_price : $contract->theo_price;
+                            $theo = $contract->theo_price;
                             return 0;
                         }
                         catch {
