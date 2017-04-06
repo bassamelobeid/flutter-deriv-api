@@ -194,7 +194,7 @@ if ($input{whattodo} eq 'uploadID') {
 
         }
 
-        if ($doctype eq 'passport') {
+        if ($doctype =~ /passport|proofid/) {
             if ($docnationality && $docnationality =~ /[a-z]{2}/) {
                 $client->citizen($docnationality);
             } else {

@@ -754,7 +754,7 @@ sub get_payment_agent_registration_form {
             'type'    => 'textarea',
             'row'     => 10,
             'cols'    => 60,
-            'maxsize' => '2000',
+            'maxsize' => '500',
         },
         'error' => {
             'text'  => '',
@@ -763,8 +763,8 @@ sub get_payment_agent_registration_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(.|\n){0,2000}$',
-                'err_msg' => localize('Comment must not exceed [_1] characters. Please resubmit.', 2000),
+                'regexp'  => '^(.|\n){0,500}$',
+                'err_msg' => localize('Comment must not exceed [_1] characters. Please resubmit.', 500),
             },
 
         ],

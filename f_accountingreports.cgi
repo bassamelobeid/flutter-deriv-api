@@ -16,7 +16,6 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
-use LandingCompany::Registry;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -90,25 +89,6 @@ print "<form action=\""
     . "<br />*or* view only these clients : <input type=text size=20 name=viewonlylist> (list loginIDs separated by spaces)"
     . "<input type=\"submit\" value=\"View Dailysummary File in Table format\">"
     . "</form>";
-
-my $landing_company = LandingCompany::Registry::get_by_broker($broker)->short;
-if (any { $landing_company eq $_ } qw(iom malta maltainvest)) {
-    Bar("HMCE/IOMCE bet numbering records");
-
-    print "<form action=\""
-        . request()->url_for('backoffice/f_broker_hmce_numbering_output.cgi')
-        . "\" method=post>"
-        . "<input type=hidden name=\"broker\" value=\"$encoded_broker\">"
-        . "<input type=hidden name=\"output\" value=\"CSV\">"
-        . "<br />Do : <select name=action_type>
-                       <option>sell</option>
-                       <option>buy</option>
-               </select>"
-        . "<br />Start Date : <input type=text size=10 name=start> eg: 2015-01-01"
-        . "<br />End Date: <input type=text size=10 name=end> eg: 2015-01-31"
-        . "<br /><b><input type=\"submit\" value=\"VIEW HMCE/IOMCE bet numbering records\">"
-        . "</form>";
-}
 
 Bar("Monthly Client Reports");
 {

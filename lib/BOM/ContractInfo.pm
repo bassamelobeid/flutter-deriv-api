@@ -4,8 +4,9 @@ use strict;
 use warnings;
 
 use Try::Tiny;
-use BOM::Product::ContractFactory qw( simple_contract_info produce_contract );
+use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Backoffice::Request;
+use BOM::Platform::Pricing;
 
 # Get:
 #    description - typical description printed on statement/profit_table.
@@ -25,13 +26,9 @@ sub get_info {
         $info->{is_legacy} = 1;
     } else {
         try {
-            my ($longcode, undef, undef) =
-                simple_contract_info($fmb->{short_code}, $currency);
-
-            $info->{longcode} = $longcode;
-
+            my $contract = produce_contract($fmb->{short_code}, $currency);
+            $info->{longcode} = $contract->longcode;
             if (not $fmb->{is_sold}) {
-                my $contract = produce_contract($fmb->{short_code}, $currency);
                 if ($contract and $contract->may_settle_automatically) {
                     $info->{indicative_price} = $contract->bid_price
                         unless $contract->is_spread;
