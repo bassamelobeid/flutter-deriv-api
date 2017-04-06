@@ -94,15 +94,6 @@ sub _build_custom_profiles {
         $setter      => $self->contract_info->{$setter},
         };
 
-    # specific limit for spreads.
-    push @profiles,
-        +{
-        risk_profile      => BOM::Platform::Runtime->instance->app_config->quants->spreads_daily_profit_limit,
-        name              => 'spreads_daily_profit_limit',
-        contract_category => 'spreads',
-        }
-        if $self->contract_info->{contract_category} eq 'spreads';
-
     return \@profiles;
 }
 
