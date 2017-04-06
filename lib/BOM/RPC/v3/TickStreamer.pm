@@ -235,12 +235,12 @@ sub _validate_start_end {
     if (not $start and $count and $granularity) {
         my $expected_start = Date::Utility->new($end - ($count * $granularity));
         # handle for non trading day as well
-        unless ($calendar->trades_on($exchange, $expected_start)) {
+        unless ($trading_calendar->trades_on($exchange, $expected_start)) {
             my $count = 0;
             do {
                 $expected_start = $expected_start->minus_time_interval('1d');
                 $count++;
-            } while ($count < 5 and not $calendar->trades_on($exchange, $expected_start));
+            } while ($count < 5 and not $trading_calendar->trades_on($exchange, $expected_start));
         }
         $start = $expected_start->epoch;
     }
