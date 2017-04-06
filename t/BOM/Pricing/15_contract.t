@@ -138,17 +138,13 @@ subtest 'prepare_ask' => sub {
     delete $expected->{high_barrier};
     delete $expected->{low_barrier};
     cmp_deeply(BOM::Pricing::v3::Contract::prepare_ask($params),
-        $expected, 'will set barrier default value and delete barrier2 if contract type is not like SPREAD and ASIAN');
+        $expected, 'will set barrier default value and delete barrier2 if contract type is not like ASIAN');
 
     delete $expected->{barrier};
-    $expected->{barrier2} = 'S1P';
-    for my $t (qw(SPREAD ASIAN)) {
-        $params->{contract_type} = $t;
-        $expected->{bet_type}    = $t;
-        cmp_deeply(BOM::Pricing::v3::Contract::prepare_ask($params), $expected, 'will not set barrier if contract type is like SPREAD and ASIAN ');
-
-    }
-
+    $expected->{barrier2}    = 'S1P';
+    $params->{contract_type} = "ASIAN";
+    $expected->{bet_type}    = "ASIAN";
+    cmp_deeply(BOM::Pricing::v3::Contract::prepare_ask($params), $expected, 'will not set barrier if contract type is like ASIAN ');
 };
 
 subtest 'get_ask' => sub {
@@ -380,7 +376,6 @@ subtest 'get_bid' => sub {
     });
 
     my $contract = _create_contract(
-        spread        => 0,
         current_tick  => $tick,
         date_start    => $now->epoch - 900,
         date_expiry   => $now->epoch - 500,
@@ -397,7 +392,7 @@ subtest 'get_bid' => sub {
         'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
         );
 
-    $contract = _create_contract(spread => 1);
+    $contract = _create_contract();
 
     $params = {
         short_code  => $contract->shortcode,
@@ -436,7 +431,7 @@ subtest 'get_bid' => sub {
             ));
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
 
-    $contract = _create_contract(spread => 0);
+    $contract = _create_contract();
 
     $params = {
         short_code  => $contract->shortcode,
@@ -489,7 +484,6 @@ subtest 'get_bid_skip_barrier_validation' => sub {
     set_fixed_time($now->epoch);
 
     $contract = _create_contract(
-        spread       => 0,
         date_expiry  => $now->epoch + 900,
         bet_type     => 'ONETOUCH',
         barrier      => 963.3055,
@@ -530,7 +524,7 @@ subtest $method => sub {
         '... and had warning about failed produce_contract'
     );
 
-    my $contract = _create_contract(spread => 0);
+    my $contract = _create_contract();
     $params->{short_code} = $contract->shortcode;
     $params->{currency}   = 'USD';
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
@@ -551,7 +545,6 @@ subtest $method => sub {
     });
 
     $contract = _create_contract(
-        spread        => 0,
         underlying    => 'frxAUDCAD',
         current_tick  => $tick,
         date_start    => $now->epoch - 900,
@@ -598,7 +591,6 @@ subtest $method => sub {
     });
 
     $contract = _create_contract(
-        spread        => 0,
         current_tick  => $tick,
         underlying    => 'frxAUDCAD',
         date_start    => $now->epoch - 500,
@@ -724,7 +716,6 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
     my $contract = _create_contract(
         bet_type      => 'PUT',
         underlying    => 'USAAPL',
-        spread        => 0,
         current_tick  => $entry_tick,
         date_start    => $starting,
         date_expiry   => $closing->plus_time_interval('3d'),
@@ -827,10 +818,7 @@ subtest 'app_markup_percentage' => sub {
     $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params), 2);
     cmp_ok $val - $result->{payout}, ">", 2 / 100 * $val, "as app markup is added so client will get less payout as compared when there is no markup";
 
-    my $contract = _create_contract(
-        spread                => 0,
-        app_markup_percentage => 1
-    );
+    my $contract = _create_contract(app_markup_percentage => 1);
     $params = {
         short_code            => $contract->shortcode,
         contract_id           => $contract->id,
@@ -842,14 +830,11 @@ subtest 'app_markup_percentage' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
-    $contract = _create_contract(spread => 0);
+    $contract = _create_contract();
 
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 
-    $contract = _create_contract(
-        spread                => 0,
-        app_markup_percentage => 1
-    );
+    $contract = _create_contract(app_markup_percentage => 1);
     $params = {
         short_code            => $contract->shortcode,
         contract_id           => $contract->id,
@@ -861,15 +846,12 @@ subtest 'app_markup_percentage' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
-    $contract = _create_contract(spread => 0);
+    $contract = _create_contract();
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 
-    $contract = _create_contract(spread => 1);
-    $contract = _create_contract(
-        spread                => 0,
-        app_markup_percentage => 1
-    );
-    $params = {
+    $contract = _create_contract();
+    $contract = _create_contract(app_markup_percentage => 1);
+    $params   = {
         short_code            => $contract->shortcode,
         contract_id           => $contract->id,
         currency              => 'USD',
@@ -880,15 +862,12 @@ subtest 'app_markup_percentage' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
-    $contract = _create_contract(spread => 0);
+    $contract = _create_contract();
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 
-    $contract = _create_contract(spread => 1);
-    $contract = _create_contract(
-        spread                => 0,
-        app_markup_percentage => 1
-    );
-    $params = {
+    $contract = _create_contract();
+    $contract = _create_contract(app_markup_percentage => 1);
+    $params   = {
         short_code            => $contract->shortcode,
         contract_id           => $contract->id,
         currency              => 'USD',
@@ -899,7 +878,7 @@ subtest 'app_markup_percentage' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
-    $contract = _create_contract(spread => 0);
+    $contract = _create_contract();
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
 };
 
@@ -963,16 +942,5 @@ sub _create_contract {
         $contract_data->{date_pricing} = $args{date_pricing};
     }
 
-    if ($args{spread}) {
-        delete $contract_data->{date_expiry};
-        delete $contract_data->{barrier};
-        $contract_data->{bet_type}         = 'SPREADU';
-        $contract_data->{amount_per_point} = 1;
-        $contract_data->{stop_type}        = 'point';
-        $contract_data->{stop_profit}      = 10;
-        $contract_data->{stop_loss}        = 10;
-    }
-    my $contract = produce_contract($contract_data);
-
-    return $contract;
+    return produce_contract($contract_data);
 }
