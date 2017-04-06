@@ -109,7 +109,7 @@ sub cashier {
         if ($client->get_status('ukrts_max_turnover_limit_not_set')) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET',
-                    message_to_client => localize('Please set Self Exclusion 30-Day Turnover Limit.')});
+                    message_to_client => localize('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.')});
         }
     }
 
