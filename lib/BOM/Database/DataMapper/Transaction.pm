@@ -335,7 +335,7 @@ sub get_transactions_ws {
                 LEFT JOIN bet.financial_market_bet b
                     ON (t.financial_market_bet_id = b.id)
                 LEFT JOIN transaction.transaction t1
-                    ON (t1.action_type = $$sell$$ AND t.action_type = $$buy$$ AND t.financial_market_bet_id = t1.financial_market_bet_id)
+                    ON (t1.action_type = $$buy$$ AND t.action_type = $$sell$$ AND t.financial_market_bet_id = t1.financial_market_bet_id)
                 LEFT JOIN payment.payment p
                     ON (t.payment_id = p.id)
                 ORDER BY t.transaction_time DESC
