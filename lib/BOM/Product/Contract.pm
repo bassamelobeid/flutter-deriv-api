@@ -184,24 +184,29 @@ has tick_expiry => (
     default => 0,
 );
 
-# This attribute tells us if this contract was initially bought as a forward starting contract.
-# This should not be mistaken for is_forwarding_start attribute as that could change over time.
+=head2 starts_as_forward_starting
+
+This attribute tells us if this contract was initially bought as a forward starting contract.
+This should not be mistaken for is_forwarding_start attribute as that could change over time.
+
+=cut
+
 has starts_as_forward_starting => (
     is      => 'ro',
     default => 0,
 );
 
-has [qw(shortcode)] => (
+=head2 shortcode
+
+(optional) This can be provided when creating a contract from a shortcode. If not, it will
+be populated from the contract parameters.
+
+=cut
+
+has shortcode => (
     is         => 'ro',
     isa        => 'Str',
     lazy_build => 1,
-);
-
-has category => (
-    is      => 'ro',
-    isa     => 'bom_contract_category',
-    coerce  => 1,
-    handles => [qw(supported_expiries supported_start_types is_path_dependent allow_forward_starting two_barriers barrier_at_start)],
 );
 
 has category_code => (
@@ -546,6 +551,65 @@ sub may_settle_automatically {
     # For now, only trigger this condition when the bet is past expiry.
     return (not $self->get_time_to_settlement->seconds and not $self->is_valid_to_sell) ? 0 : 1;
 }
+
+=head1 METHODS - Proxied to L<BOM::Product::Contract::Category>
+
+Our C<category> attribute provides several helper methods:
+
+=cut
+
+has category => (
+    is      => 'ro',
+    isa     => 'bom_contract_category',
+    coerce  => 1,
+    handles => [qw(supported_expiries supported_start_types is_path_dependent allow_forward_starting two_barriers barrier_at_start)],
+);
+
+=head2 supported_expiries
+
+Which expiry durations we allow. Values can be:
+
+=over 4
+
+=item * intraday
+
+=item * daily
+
+=item * tick
+
+=back
+
+=cut
+
+=head2 supported_start_types
+
+(removed)
+
+=cut
+
+=head2 is_path_dependent
+
+True if this is a path-dependent contract.
+
+=cut
+
+=head2 allow_forward_starting
+
+True if we allow forward starting for this contract type.
+
+=cut
+
+=head2 two_barriers
+
+True if the contract has two barriers.
+
+=cut
+
+=head2 barrier_at_start
+
+The starting barrier value.
+
+=cut
 
 =head1 METHODS - Other
 
