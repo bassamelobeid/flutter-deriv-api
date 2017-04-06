@@ -25,6 +25,12 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
+# List of landing company roles that implement specific rules.
+# So far, we only have one of these (real+virtual), and where possible
+# we should discourage custom logic - better to support it directly if we can.
+use BOM::Product::Role::Japan;
+use BOM::Product::Role::Japanvirtual;
+
 use Exporter qw(import export_to_level);
 
 BEGIN {
@@ -70,49 +76,41 @@ Produce a Contract Object from a set of parameters
 =cut
 
 my $contract_type_config = LoadFile(File::ShareDir::dist_file('LandingCompany', 'contract_types.yml'));
-{
-    my %loaded = ();
 
-    sub produce_contract {
-        my ($build_arg, $maybe_currency, $maybe_sold) = @_;
+sub produce_contract {
+    my ($build_arg, $maybe_currency, $maybe_sold) = @_;
 
-        my $params_ref = {%{_args_to_ref($build_arg, $maybe_currency, $maybe_sold)}};
+    my $params_ref = {%{_args_to_ref($build_arg, $maybe_currency, $maybe_sold)}};
 
-        unless ($params_ref->{processed}) {
-            $params_ref = BOM::Product::Categorizer->new(parameters => $params_ref)->process();
-        }
-
-        # load it first
-        my $landing_company = $params_ref->{landing_company};
-        # We have 'japan-virtual' as one of the landing companies: remap this to a valid Perl class name
-        # Can't change the name to 'japanvirtual' because we have db functions tie to the original name.
-        $landing_company =~ s/-//;
-        my $role = 'BOM::Product::Role::' . ucfirst lc $landing_company;
-        # We'll cache positive + negative results here, and we don't expect files to appear/disappear
-        # after startup so we don't ever clear the cache.
-        unless (exists $loaded{$role}) {
-            # Ignoring the return of try on purpose: we just want to know whether the file exists
-            $loaded{$role} = try { $role->require } || 0;
-        }
-        $params_ref->{build_parameters}{role} = $role if $loaded{$role};
-
-        # This occurs after to hopefully make it more annoying to bypass the Factory.
-        $params_ref->{'_produce_contract_ref'} = \&produce_contract;
-
-        my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $params_ref->{bet_type};
-        my $contract_obj   = $contract_class->new($params_ref);
-        # apply it here.
-        $role->meta->apply($contract_obj) if $loaded{$role};
-
-        return $contract_obj;
+    unless ($params_ref->{processed}) {
+        $params_ref = BOM::Product::Categorizer->new(parameters => $params_ref)->process();
     }
 
-    sub produce_batch_contract {
-        my $build_args = shift;
+    my $landing_company = $params_ref->{landing_company};
+    # We have 'japan-virtual' as one of the landing companies: remap this to a valid Perl class name
+    # Can't change the name to 'japanvirtual' because we have db functions tie to the original name.
+    $landing_company =~ s/-//;
+    my $role        = 'BOM::Product::Role::' . ucfirst lc $landing_company;
+    my $role_exists = $role->can('meta');
+    # Only apply the role if the class exists
+    $params_ref->{build_parameters}{role} = $role if $role_exists;
 
-        $build_args->{_produce_contract_ref} = \&produce_contract;
-        return BOM::Product::Contract::Batch->new(parameters => $build_args);
-    }
+    # This occurs after to hopefully make it more annoying to bypass the Factory.
+    $params_ref->{'_produce_contract_ref'} = \&produce_contract;
+
+    my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $params_ref->{bet_type};
+    my $contract_obj   = $contract_class->new($params_ref);
+    # apply it here.
+    $role->meta->apply($contract_obj) if $role_exists;
+
+    return $contract_obj;
+}
+
+sub produce_batch_contract {
+    my $build_args = shift;
+
+    $build_args->{_produce_contract_ref} = \&produce_contract;
+    return BOM::Product::Contract::Batch->new(parameters => $build_args);
 }
 
 sub _args_to_ref {
