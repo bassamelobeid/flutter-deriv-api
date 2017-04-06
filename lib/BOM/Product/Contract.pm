@@ -69,7 +69,7 @@ UNITCHECK {
     use BOM::Product::Pricing::Greeks::BlackScholes;
 }
 
-=head1 METHODS - Date attributes
+=head1 ATTRIBUTES - Date-related
 
 =cut
 
@@ -173,15 +173,8 @@ Examples would be C< 5t > for 5 ticks, C< 3h > for 3 hours.
 
 has duration => (is => 'ro');
 
-has [qw(_pricing_args)] => (
-    is         => 'ro',
-    isa        => 'HashRef',
-    lazy_build => 1,
-);
-
-#backtest - Enable optimizations for speedier back testing.  Not suitable for production.
 #tick_expiry - A boolean that indicates if a contract expires after a pre-specified number of ticks.
-has [qw(backtest tick_expiry)] => (
+has tick_expiry => (
     is      => 'ro',
     default => 0,
 );
@@ -459,6 +452,20 @@ has _basis_tick => (
     isa        => 'Postgres::FeedDB::Spot::Tick',
     lazy_build => 1,
     builder    => '_build_basis_tick',
+);
+
+=head1 ATTRIBUTES - Internal
+
+=head2 _pricing_args
+
+Internal hashref of attributes that will be passed to the pricing engine.
+
+=cut
+
+has _pricing_args => (
+    is         => 'ro',
+    isa        => 'HashRef',
+    lazy_build => 1,
 );
 
 =head1 METHODS
