@@ -136,7 +136,7 @@ sub verify_with_shortcode {
             $pricing_args->{news_adjusted_pricing_vol} = $extra_args[3];
             $pricing_args->{long_term_prediction}      = $extra_args[4];
             $pricing_args->{volatility_scaling_factor} = $extra_args[5];
-        } elsif ($engine_name =~ /Slope/) {
+        } elsif ($engine_name =~ /Slope/ and $extra_args[3]) { # two barrier for slope
             $pricing_args->{pricing_vol_for_two_barriers} = {
                 high_barrier_vol => $extra_args[2],
                 low_barrier_vol  => $extra_args[3],
