@@ -144,7 +144,7 @@ has effective_start => (
     @date_attribute,
 );
 
-=head1 METHODS - Other attributes
+=head1 ATTRIBUTES - Other
 
 =cut
 
