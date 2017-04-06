@@ -405,11 +405,6 @@ sub _build_bid_price {
     return roundnear(0.01, $bid);
 }
 
-has is_expired => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 sub is_expired {
     my $self = shift;
 
