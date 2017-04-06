@@ -144,10 +144,6 @@ has effective_start => (
     @date_attribute,
 );
 
-=head1 ATTRIBUTES - Other
-
-=cut
-
 =head2 duration
 
 The requested contract duration, specified as a string indicating value with units.
@@ -173,7 +169,16 @@ Examples would be C< 5t > for 5 ticks, C< 3h > for 3 hours.
 
 has duration => (is => 'ro');
 
-#tick_expiry - A boolean that indicates if a contract expires after a pre-specified number of ticks.
+=head1 ATTRIBUTES - Other
+
+=cut
+
+=head2 tick_expiry
+
+A boolean that indicates if a contract expires after a pre-specified number of ticks.
+
+=cut
+
 has tick_expiry => (
     is      => 'ro',
     default => 0,

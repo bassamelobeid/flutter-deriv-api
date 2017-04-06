@@ -50,8 +50,6 @@ When the contract was settled (can be `undef`).
 - For a forward-starting contract, this is ["date\_start"](#date_start).
 - For all other states - i.e. active, non-expired contracts - this is ["date\_pricing"](#date_pricing).
 
-# METHODS - Other attributes
-
 ## duration
 
 The requested contract duration, specified as a string indicating value with units.
@@ -64,6 +62,12 @@ The unit is provided as a single character suffix:
 - d - days
 
 Examples would be ` 5t ` for 5 ticks, ` 3h ` for 3 hours.
+
+# ATTRIBUTES - Other
+
+## tick\_expiry
+
+A boolean that indicates if a contract expires after a pre-specified number of ticks.
 
 ## for\_sale
 
@@ -84,7 +88,27 @@ A TimeInterval which expresses the maximum time a tick trade may run, even if th
 
 Internal hashref of attributes that will be passed to the pricing engine.
 
-# METHODS
+# METHODS - Boolean checks
+
+## is\_spread
+
+Returns true if this is a spread contract - due to be removed.
+
+## is\_legacy
+
+True for obsolete contract types, see [BOM::Product::Contract::Invalid](https://metacpan.org/pod/BOM::Product::Contract::Invalid).
+
+## is\_expired
+
+Returns true if this contract is expired.
+
+It is expired only if it passes the expiry time time and has valid exit tick.
+
+## is\_settleable
+
+Returns true if the contract is settleable.
+
+To be able to settle, it need pass the settlement time and has valid exit tick
 
 ## is\_after\_settlement
 
@@ -99,6 +123,12 @@ This check if the contract already passes the expiry times
 
 For tick expiry contract, there is no expiry time, so it will check again the exit tick
 For other contracts, it will check the remaining time of the contract to expiry.
+
+# METHODS - Other
+
+## debug\_information
+
+Pricing engine internal debug information hashref.
 
 ## get\_time\_to\_expiry
 
