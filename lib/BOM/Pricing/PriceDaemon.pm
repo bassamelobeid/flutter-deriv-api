@@ -111,9 +111,13 @@ sub run {
         }
         qw(feed chronicle) or next;
 
-        stats_timing('pricer_daemon.rpc_time', $response->{rpc_time},
-            {tags => $self->tags('contract_type:' . $params->{contract_type}, 'currency:' . $params->{currency})})
-            if (($response->{rpc_time} // 0) > 1000);
+        {
+            my $contract_type = $params->{contract_type};
+            $contract_type = join '_', @$contract_type if ref $contract_type;
+            stats_timing('pricer_daemon.rpc_time', $response->{rpc_time},
+                {tags => $self->tags('contract_type:' . $contract_type, 'currency:' . $params->{currency})})
+                if (($response->{rpc_time} // 0) > 1000);
+        }
 
         my $subscribers_count = $redis->publish($key->[1], encode_json($response));
         # if None was subscribed, so delete the job
