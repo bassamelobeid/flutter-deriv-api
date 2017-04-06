@@ -716,8 +716,6 @@ sub _price_stream_results_adjustment {
     my $resp_theo_probability = shift;
 
     my $contract_parameters = $cache->{contract_parameters};
-    # skips for spreads
-    $_ eq $orig_args->{contract_type} and return $results for qw(SPREADU SPREADD);
 
     # log the instances when pricing server doesn't return theo probability
     unless (defined $resp_theo_probability) {
