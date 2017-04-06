@@ -154,7 +154,7 @@ Evaluate sub to get a specific greek
 sub get_greek {
     my ($self, $greek) = @_;
     my $bet  = $self->bet;
-    my $args = $bet->pricing_args;
+    my $args = $bet->_pricing_args;
 
     return 0 if ($args->{t} <= 0);
     die 'Unknown greek[' . $greek . ']' if not $self->_available_greeks->{$greek};

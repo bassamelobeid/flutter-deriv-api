@@ -334,6 +334,26 @@ sub _generate_market_data {
     return $result;
 }
 
+=head2 market_is_inefficient
+
+Returns true or false. Note that the value may vary depending on date_pricing.
+
+=cut
+
+sub market_is_inefficient {
+    my $self = shift;
+
+    # market inefficiency only applies to forex and commodities.
+    return 0 unless ($self->market->name eq 'forex' or $self->market->name eq 'commodities');
+    return 0 if $self->expiry_daily;
+
+    my $hour = $self->date_pricing->hour + 0;
+    # only 20:00/21:00 GMT to end of day
+    my $disable_hour = $self->date_pricing->is_dst_in_zone('America/New_York') ? 20 : 21;
+    return 0 if $hour < $disable_hour;
+    return 1;
+}
+
 ## BUILDERS  #######################
 
 sub _build_domqqq {
@@ -729,6 +749,14 @@ sub _build_discounted_probability {
 
     $self->_set_price_calculator_params('discounted_probability');
     return $self->price_calculator->discounted_probability;
+}
+
+sub _match_symbol {
+    my ($lists, $symbol) = @_;
+    for (@$lists) {
+        return 1 if $_ eq $symbol;
+    }
+    return;
 }
 
 1;

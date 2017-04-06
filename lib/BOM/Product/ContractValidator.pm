@@ -38,7 +38,7 @@ sub is_valid_to_sell {
     my $args = shift;
 
     if ($self->is_sold) {
-        $self->add_error({
+        $self->_add_error({
             message           => 'Contract already sold',
             message_to_client => localize("This contract has been sold."),
         });
@@ -48,10 +48,10 @@ sub is_valid_to_sell {
     if ($self->is_after_settlement) {
         if (my ($ref, $hold_for_exit_tick) = $self->_validate_settlement_conditions) {
             $self->missing_market_data(1) if not $hold_for_exit_tick;
-            $self->add_error($ref);
+            $self->_add_error($ref);
         }
     } elsif ($self->is_after_expiry) {
-        $self->add_error({
+        $self->_add_error({
 
                 message => 'waiting for settlement',
                 message_to_client =>
@@ -60,11 +60,11 @@ sub is_valid_to_sell {
 
     } elsif (not $self->is_expired and not $self->opposite_contract->is_valid_to_buy($args)) {
         # Their errors are our errors, now!
-        $self->add_error($self->opposite_contract->primary_validation_error);
+        $self->_add_error($self->opposite_contract->primary_validation_error);
     }
 
     if (scalar @{$self->corporate_actions}) {
-        $self->add_error({
+        $self->_add_error({
             message           => "affected by corporate action [symbol: " . $self->underlying->symbol . "]",
             message_to_client => localize("This contract is affected by corporate action."),
         });
@@ -96,7 +96,7 @@ sub _confirm_validity {
 
     foreach my $method (@validation_methods) {
         if (my $err = $self->$method($args)) {
-            $self->add_error($err);
+            $self->_add_error($err);
         }
         return 0 if ($self->primary_validation_error);
     }
