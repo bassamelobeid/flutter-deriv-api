@@ -343,8 +343,8 @@ sub calculate_limits {
     $limits{max_turnover} = $client->get_limit_for_daily_turnover;
 
     my $rp = $contract->risk_profile;
-    push @{$limits{specific_turnover_limits}},
-        @{$rp->get_turnover_limit_parameters(\@{$rp->get_client_profiles($client->loginid, $client->landing_company->short)})};
+    my @cl_rp = $rp->get_client_profiles($client->loginid, $client->landing_company->short);
+    push @{$limits{specific_turnover_limits}}, @{$rp->get_turnover_limit_parameters(\@cl_rp)};
 
     return \%limits;
 }
