@@ -182,7 +182,8 @@ sub _get_ask {
                         message_to_client => $message_to_client,
                         code              => $code,
                         details           => {
-                            display_value => sprintf('%.2f', $contract->ask_price) payout => sprintf('%.2f', $contract->payout),
+                            display_value => sprintf('%.2f', $contract->ask_price),
+                            payout        => sprintf('%.2f', $contract->payout),
                         },
                     });
             }
@@ -210,7 +211,6 @@ sub _get_ask {
                 contract_parameters => $contract_parameters,
             };
 
-            # only required for non-spead contracts
             if ($streaming_params->{add_theo_probability}) {
                 $response->{theo_probability} = $contract->theo_probability->amount;
             }
