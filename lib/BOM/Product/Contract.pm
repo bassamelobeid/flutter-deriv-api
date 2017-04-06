@@ -69,7 +69,7 @@ UNITCHECK {
     use BOM::Product::Pricing::Greeks::BlackScholes;
 }
 
-=head1 METHODS - Date attributes
+=head1 ATTRIBUTES - Date-related
 
 =cut
 
@@ -173,9 +173,8 @@ Examples would be C< 5t > for 5 ticks, C< 3h > for 3 hours.
 
 has duration => (is => 'ro');
 
-#backtest - Enable optimizations for speedier back testing.  Not suitable for production.
 #tick_expiry - A boolean that indicates if a contract expires after a pre-specified number of ticks.
-has [qw(backtest tick_expiry)] => (
+has tick_expiry => (
     is      => 'ro',
     default => 0,
 );
