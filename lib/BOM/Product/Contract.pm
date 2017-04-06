@@ -471,20 +471,6 @@ sub is_spread { return 0 }
 
 sub is_legacy { return 0 }
 
-sub _check_is_intraday {
-    my ($self, $date_start) = @_;
-    my $date_expiry       = $self->date_expiry;
-    my $contract_duration = $date_expiry->epoch - $date_start->epoch;
-
-    return 0 if $contract_duration > 86400;
-
-    # for contract that start at the open of day and expire at the close of day (include early close) should be treated as daily contract
-    my $closing = $self->calendar->closing_on($self->date_expiry);
-    return 0 if $closing and $closing->is_same_as($self->date_expiry) and $contract_duration >= $self->effective_daily_trading_seconds;
-
-    return 1;
-}
-
 =head2 is_after_settlement
 
 This check if the contract already passes the settlement time
@@ -582,6 +568,22 @@ sub get_time_to_settlement {
         interval => 0,
     );
     return ($time >= $self->date_settlement->epoch and $self->expiry_daily) ? $zero_duration : $self->_get_time_to_end($attributes);
+}
+
+# INTERNAL METHODS
+
+sub _check_is_intraday {
+    my ($self, $date_start) = @_;
+    my $date_expiry       = $self->date_expiry;
+    my $contract_duration = $date_expiry->epoch - $date_start->epoch;
+
+    return 0 if $contract_duration > 86400;
+
+    # for contract that start at the open of day and expire at the close of day (include early close) should be treated as daily contract
+    my $closing = $self->calendar->closing_on($self->date_expiry);
+    return 0 if $closing and $closing->is_same_as($self->date_expiry) and $contract_duration >= $self->effective_daily_trading_seconds;
+
+    return 1;
 }
 
 # Send in the correct 'to'
