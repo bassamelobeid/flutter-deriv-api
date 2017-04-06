@@ -24,7 +24,7 @@ BOM::Product::Contract - represents a contract object for a single bet
 This class is the base definition for all our contract types. It provides behaviour common to all contracts,
 and defines the standard API for interacting with those contracts.
 
-# METHODS - Date attributes
+# ATTRIBUTES - Date-related
 
 ## date\_start
 
@@ -77,6 +77,12 @@ This will contain the shortcode of the original bet, if we built it from one.
 ## max\_tick\_expiry\_duration
 
 A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.
+
+# ATTRIBUTES - Internal
+
+## \_pricing\_args
+
+Internal hashref of attributes that will be passed to the pricing engine.
 
 # METHODS
 
