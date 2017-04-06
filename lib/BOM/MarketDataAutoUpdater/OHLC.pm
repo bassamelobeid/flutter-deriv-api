@@ -57,6 +57,8 @@ sub run {
         exclude_disabled  => 1,
     );
 
+    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
+
     foreach my $file (@files) {
         my @bloomberg_result_lines = read_file($file);
 
@@ -82,7 +84,7 @@ sub run {
             my $underlying = create_underlying($bom_underlying_symbol);
             my $now        = Date::Utility->new;
 
-            next if (not $underlying->trades_on($underlying->exchange, $now));
+            next if (not $trading_calendar->trades_on($underlying->exchange, $now));
 
             if (my $validation_error = $self->_passes_sanity_check($data, $bom_underlying_symbol, @symbols_to_update)) {
                 $report->{$bom_underlying_symbol} = {
