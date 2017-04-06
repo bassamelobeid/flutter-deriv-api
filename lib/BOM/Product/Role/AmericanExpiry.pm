@@ -27,7 +27,7 @@ sub _build_is_expired {
     return $is_expired;
 }
 
-sub _build_is_settleable {
+sub is_settleable {
     my $self = shift;
 
     return $self->is_expired // 0;

@@ -192,15 +192,6 @@ has [qw(shortcode)] => (
     lazy_build => 1,
 );
 
-# Check whether the contract is expired or not . It is expired only if it passes the expiry time time and has valid exit tick
-sub is_expired { die "Calling ->is_expired on a ::Contract instance" }
-
-# Check whether the contract is settelable or not. To be able to settle, it need pass the settlement time and has valid exit tick
-has is_settleable => (
-    is         => 'rw',
-    lazy_build => 1,
-);
-
 has category => (
     is      => 'ro',
     isa     => 'bom_contract_category',
@@ -460,13 +451,45 @@ has _pricing_args => (
     lazy_build => 1,
 );
 
-=head1 METHODS
+=head1 METHODS - Boolean checks
+
+=cut
+
+=head2 is_spread
+
+Returns true if this is a spread contract - due to be removed.
 
 =cut
 
 sub is_spread { return 0 }
 
+=head2 is_legacy
+
+True for obsolete contract types, see L<BOM::Product::Contract::Invalid>.
+
+=cut
+
 sub is_legacy { return 0 }
+
+=head2 is_expired
+
+Returns true if this contract is expired.
+
+It is expired only if it passes the expiry time time and has valid exit tick.
+
+=cut
+
+sub is_expired { die "Calling ->is_expired on a ::Contract instance" }
+
+=head2 is_settleable
+
+Returns true if the contract is settelable.
+
+To be able to settle, it need pass the settlement time and has valid exit tick
+
+=cut
+
+sub is_settleable { die "Calling ->is_settleable on a ::Contract instance" }
 
 =head2 is_after_settlement
 
@@ -518,6 +541,10 @@ sub may_settle_automatically {
     # For now, only trigger this condition when the bet is past expiry.
     return (not $self->get_time_to_settlement->seconds and not $self->is_valid_to_sell) ? 0 : 1;
 }
+
+=head1 METHODS - Other
+
+=cut
 
 =head2 debug_information
 
