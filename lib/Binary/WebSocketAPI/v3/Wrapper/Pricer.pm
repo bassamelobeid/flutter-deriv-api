@@ -19,7 +19,6 @@ use Price::Calculator;
 use Clone::PP qw(clone);
 use List::UtilsBy qw(bundle_by);
 use List::Util qw(min);
-use Data::Dumper;
 
 use Future::Mojo          ();
 use Future::Utils         ();
@@ -565,6 +564,7 @@ sub process_bid_event {
     my $type = 'proposal_open_contract';
 
     for my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
+        next if ref $stash_data ne 'HASH';
         my $results;
         unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data)) {
             my $passed_fields = $stash_data->{cache};
@@ -613,6 +613,7 @@ sub process_proposal_array_event {
     }
 
     foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
+        next if ref $stash_data ne 'HASH';
         $stash_data->{cache}{contract_parameters}{currency} ||= $stash_data->{args}{currency};
         my %proposals;
         for my $contract_type (keys %{$response->{proposals}}) {
