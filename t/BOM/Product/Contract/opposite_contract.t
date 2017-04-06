@@ -80,7 +80,7 @@ subtest 'opposite_contract for sellback' => sub {
         epoch      => $now->epoch,
         underlying => 'R_100'
     });
-    my $opposite_c = $c->opposite_contract;
+    my $opposite_c = $c->opposite_contract_for_sale;
     ok $opposite_c->pricing_new, 'is pricing new';
     is $opposite_c->current_tick->quote, 105, 'current tick is 105';
     is $opposite_c->code, 'PUT', 'contract code is PUT';

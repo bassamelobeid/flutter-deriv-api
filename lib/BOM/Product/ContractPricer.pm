@@ -202,7 +202,7 @@ my $pc_params_setters = {
     },
     opposite_ask_probability => sub {
         my $self = shift;
-        $self->price_calculator->opposite_ask_probability($self->opposite_contract->ask_probability);
+        $self->price_calculator->opposite_ask_probability($self->opposite_contract_for_sale->ask_probability);
     },
 };
 
