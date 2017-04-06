@@ -192,11 +192,6 @@ has [qw(shortcode)] => (
     lazy_build => 1,
 );
 
-has debug_information => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 # Check whether the contract is expired or not . It is expired only if it passes the expiry time time and has valid exit tick
 has is_expired => (
     is         => 'ro',
@@ -541,6 +536,18 @@ sub may_settle_automatically {
     return (not $self->get_time_to_settlement->seconds and not $self->is_valid_to_sell) ? 0 : 1;
 }
 
+=head2 debug_information
+
+Pricing engine internal debug information hashref.
+
+=cut
+
+sub debug_information {
+    my $self = shift;
+
+    return $self->pricing_engine->can('debug_info') ? $self->pricing_engine->debug_info : {};
+}
+
 =head2 get_time_to_expiry
 
 Returns a TimeInterval to expiry of the bet. For a forward start bet, it will NOT return the bet lifetime, but the time till the bet expires.
@@ -629,12 +636,6 @@ sub _build__pricing_args {
     }
 
     return $args;
-}
-
-sub _build_debug_information {
-    my $self = shift;
-
-    return $self->pricing_engine->can('debug_info') ? $self->pricing_engine->debug_info : {};
 }
 
 sub _build_category_code {
