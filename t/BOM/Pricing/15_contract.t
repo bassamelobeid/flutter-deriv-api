@@ -26,6 +26,8 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Platform::RedisReplicated;
 use BOM::Product::ContractFactory qw( produce_contract );
 use LandingCompany::Offerings qw(reinitialise_offerings);
+use Quant::Framework;
+use BOM::Platform::Chronicle;
 
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
@@ -673,9 +675,10 @@ subtest $method => sub {
 };
 
 subtest 'get_bid_affected_by_corporate_action' => sub {
-    my $opening    = create_underlying('USAAPL')->calendar->opening_on($now);
-    my $closing    = create_underlying('USAAPL')->calendar->closing_on($now);
+    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
     my $underlying = create_underlying('USAAPL');
+    my $opening    = $trading_calendar->opening_on($underlying->exchange, $now);
+    my $closing    = $trading_calendar->closing_on($underlying->exchange, $now);
     my $starting   = $opening->plus_time_interval('50m');
     my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'USAAPL',
