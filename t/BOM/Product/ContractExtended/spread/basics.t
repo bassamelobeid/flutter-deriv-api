@@ -267,7 +267,6 @@ subtest 'category' => sub {
         stop_loss        => 10
     });
     ok !$c->supported_expiries, 'no expiry concept';
-    is_deeply $c->supported_start_types, ['spot'], 'spot';
     ok !$c->is_path_dependent,      'non path dependent';
     ok !$c->allow_forward_starting, 'non forward-starting';
     ok !$c->two_barriers,           'non two barriers';

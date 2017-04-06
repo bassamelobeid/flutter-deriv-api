@@ -40,7 +40,6 @@ subtest 'digits test it all' => sub {
         is $c->other_side_code, 'DIGITDIFF';
         is $c->category->code, 'digits';
         is_deeply $c->supported_expiries,    ['tick'];
-        is_deeply $c->supported_start_types, ['spot'];
         isa_ok $c, 'BOM::Product::Contract::Digitmatch';
         is $c->pricing_engine_name, 'Pricing::Engine::Digits';
         isa_ok $c->greek_engine,    'BOM::Product::Pricing::Greeks::Digits';
