@@ -28,7 +28,6 @@ use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use VolSurface::Utils qw( get_delta_for_strike get_strike_for_spot_delta get_1vol_butterfly);
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
-use BOM::Greeks::FiniteDifference;
 use BOM::Platform::Chronicle;
 
 use BOM::MarketData::Display::VolatilitySurface;
@@ -319,13 +318,11 @@ sub _get_greeks {
     my $number_format = '%.3f';
     my $bet           = $self->bet;
 
-    my $fd_greeks = BOM::Greeks::FiniteDifference->new({bet => $bet});
     my $bs_greeks = $bet->greek_engine->get_greeks;
 
     my $display_greeks_engine = BOM::DisplayGreeks->new(
         payout         => $bet->payout,
         priced_with    => $bet->priced_with,
-        pricing_greeks => $fd_greeks->get_greeks,
         current_spot   => $bet->current_spot,
         underlying     => $bet->underlying
     );
@@ -335,7 +332,6 @@ sub _get_greeks {
     foreach my $greek (qw(delta gamma theta vega vanna volga)) {
         $diff->{$greek} = (
             not $bs_greeks->{$greek}
-                or (abs($bs_greeks->{$greek} - $fd_greeks->{$greek})) / abs($bs_greeks->{$greek}) * 100 > 2
         ) ? 'red' : 'normal';
     }
 
@@ -344,7 +340,6 @@ sub _get_greeks {
     my $greeks_attrs = [{
             label             => 'Delta',
             analytical        => sprintf($number_format, $bs_greeks->{delta}),
-            finite_difference => sprintf($number_format, $fd_greeks->{delta}),
             display_base      => $base_curr . " " . sprintf($number_format, $display->{delta}->{base}),
             display_num       => $num_curr . " " . sprintf($number_format, $display->{delta}->{num}),
             color             => $diff->{delta},
@@ -352,7 +347,6 @@ sub _get_greeks {
         {
             label             => 'Gamma',
             analytical        => sprintf($number_format, $bs_greeks->{gamma}),
-            finite_difference => sprintf($number_format, $fd_greeks->{gamma}),
             display_base      => $base_curr . " " . sprintf($number_format, $display->{gamma}->{base}),
             display_num       => $num_curr . " " . sprintf($number_format, $display->{gamma}->{num}),
             color             => $diff->{gamma},
@@ -360,7 +354,6 @@ sub _get_greeks {
         {
             label             => 'Theta',
             analytical        => sprintf($number_format, $bs_greeks->{theta}),
-            finite_difference => sprintf($number_format, $fd_greeks->{theta}),
             display_base      => $base_curr . " " . sprintf($number_format, $display->{theta}->{base}),
             display_num       => $num_curr . " " . sprintf($number_format, $display->{theta}->{num}),
             color             => $diff->{theta},
@@ -368,7 +361,6 @@ sub _get_greeks {
         {
             label             => 'Vega',
             analytical        => sprintf($number_format, $bs_greeks->{vega}),
-            finite_difference => sprintf($number_format, $fd_greeks->{vega}),
             display_base      => $base_curr . " " . sprintf($number_format, $display->{vega}->{base}),
             display_num       => $num_curr . " " . sprintf($number_format, $display->{vega}->{num}),
             color             => $diff->{vega},
@@ -376,7 +368,6 @@ sub _get_greeks {
         {
             label             => 'Vanna',
             analytical        => sprintf($number_format, $bs_greeks->{vanna}),
-            finite_difference => sprintf($number_format, $fd_greeks->{vanna}),
             display_base      => $base_curr . " " . sprintf($number_format, $display->{vanna}->{base}),
             display_num       => $num_curr . " " . sprintf($number_format, $display->{vanna}->{num}),
             color             => $diff->{vanna},
@@ -384,7 +375,6 @@ sub _get_greeks {
         {
             label             => 'Volga',
             analytical        => sprintf($number_format, $bs_greeks->{volga}),
-            finite_difference => sprintf($number_format, $fd_greeks->{volga}),
             display_base      => $base_curr . " " . sprintf($number_format, $display->{volga}->{base}),
             display_num       => $num_curr . " " . sprintf($number_format, $display->{volga}->{num}),
             color             => $diff->{volga},

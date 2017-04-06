@@ -9,7 +9,6 @@
             <tr class="[% IF (loop.index+1) % 2 %]odd[%ELSE%]even[% END %]">
                 <td>[% hashref.label %]</td>
                 <td>[% hashref.analytical %]</td>
-                <td [% IF hashref.color == 'red' %] style="color:red;" [% END %]>[% hashref.finite_difference %]</td>
                 <td>[% hashref.display_base %] [% IF is_quanto == 'quanto' %] * [% END %]</td>
                 <td>[% hashref.display_num %] [% IF is_quanto == 'quanto' %] * [% END %]</td>
             </tr>
