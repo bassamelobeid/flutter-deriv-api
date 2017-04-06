@@ -230,7 +230,7 @@ subtest 'landing_companies_specific' => sub {
     $client_mx->save;
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_SELF_EXCLUSION_MAX_TURNOVER_SET', 'GB residence needs to set 30-Day turnover')
-        ->error_message_is('Please set Self Exclusion 30-Day Turnover Limit.', 'GB residence needs to set 30-Day turnover');
+        ->error_message_is('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier', 'GB residence needs to set 30-Day turnover');
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_jp->loginid, 'test token');
     $client_jp->set_default_account('JPY');
