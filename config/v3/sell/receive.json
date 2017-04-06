@@ -32,7 +32,7 @@
         },
         "reference_id": {
           "type": "integer",
-          "description":"Internal transaction identifier for the relative buy transaction"
+          "description":"Internal transaction identifier for the corresponding buy transaction"
         }
       }
     },
