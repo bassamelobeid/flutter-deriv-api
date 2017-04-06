@@ -556,7 +556,7 @@ subtest 'volsurfaces become old and invalid' => sub {
         });
     $bet_params->{pricing_vol} = $forced_vol;
     $bet = produce_contract($bet_params);
-    is($bet->pricing_args->{iv}, $forced_vol, 'Pricing args contains proper forced vol.');
+    is($bet->_pricing_args->{iv}, $forced_vol, 'Pricing args contains proper forced vol.');
     $expected_reasons = [qr/forced \(not calculated\) IV/];
     my $valid_to_buy;
     warning { $valid_to_buy = $bet->is_valid_to_buy }, qr/spot too far from surface reference/;

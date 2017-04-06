@@ -1,5 +1,36 @@
 package BOM::Product::Contract;
 
+use strict;
+use warnings;
+
+=head1 NAME
+
+BOM::Product::Contract - represents a contract object for a single bet
+
+=head1 SYNOPSIS
+
+    use feature qw(say);
+    use BOM::Product::ContractFactory qw(produce_contract);
+    # Create a simple contract
+    my $contract = produce_contract({
+        bet_type => 'CALLE',
+        duration => '5t',
+    });
+    # Show the current prices (as of now, since an explicit pricing date is not provided)
+    say "Bid for CALLE:  " . $contract->bid_price;
+    say "Ask for CALLE:  " . $contract->ask_price;
+    # Get the contract with the opposite bet type, in this case a PUT
+    my $opposite = $contract->opposite_contract;
+    say "Bid for PUT:    " . $opposite->bid_price;
+    say "Ask for PUT:    " . $opposite->ask_price;
+
+=head1 DESCRIPTION
+
+This class is the base definition for all our contract types. It provides behaviour common to all contracts,
+and defines the standard API for interacting with those contracts.
+
+=cut
+
 use Moose;
 
 require UNIVERSAL::require;
@@ -18,11 +49,11 @@ use Quant::Framework::EconomicEventCalendar;
 use Postgres::FeedDB::Spot::Tick;
 use Price::Calculator;
 use LandingCompany::Offerings qw(get_contract_specifics);
+use VolSurface::Empirical;
 
 use BOM::Platform::Chronicle;
 use BOM::Platform::Context qw(localize);
 use BOM::MarketData::Types;
-use VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Contract::Category;
 use BOM::Platform::RiskProfile;
@@ -31,38 +62,119 @@ use BOM::Product::ContractValidator;
 use BOM::Product::ContractPricer;
 
 # require Pricing:: modules to avoid circular dependency problems.
-require BOM::Product::Pricing::Engine::Intraday::Forex;
-require BOM::Product::Pricing::Engine::Intraday::Index;
-require BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
-require BOM::Product::Pricing::Greeks::BlackScholes;
+UNITCHECK {
+    use BOM::Product::Pricing::Engine::Intraday::Forex;
+    use BOM::Product::Pricing::Engine::Intraday::Index;
+    use BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
+    use BOM::Product::Pricing::Greeks::BlackScholes;
+}
 
-## ATTRIBUTES  #######################
-has [qw(date_start date_pricing date_settlement effective_start)] => (
-    is         => 'ro',
+=head1 ATTRIBUTES - Date-related
+
+=cut
+
+my @date_attribute = (
     isa        => 'date_object',
     lazy_build => 1,
     coerce     => 1,
 );
 
-has date_expiry => (
-    is       => 'rw',
-    isa      => 'date_object',
-    coerce   => 1,
-    required => 1,
+=head2 date_start
+
+For American contracts, defines when the contract starts.
+
+For Europeans, this is used to determine the barrier when the requested barrier is relative.
+
+=cut
+
+has date_start => (
+    is => 'ro',
+    @date_attribute,
 );
 
-#user supplied duration
+=head2 date_pricing
+
+The date at which we're pricing the contract. Provide C< undef > to indicate "now".
+
+=cut
+
+has date_pricing => (
+    is => 'ro',
+    @date_attribute,
+);
+
+=head2 date_expiry
+
+When the contract expires.
+
+=cut
+
+has date_expiry => (
+    is => 'rw',
+    @date_attribute,
+);
+
+=head2 date_settlement
+
+When the contract was settled (can be C<undef>).
+
+=cut
+
+has date_settlement => (
+    is => 'rw',
+    @date_attribute,
+);
+
+=head2 effective_start
+
+=over 4
+
+=item * For backpricing, this is L</date_start>.
+
+=item * For a forward-starting contract, this is L</date_start>.
+
+=item * For all other states - i.e. active, non-expired contracts - this is L</date_pricing>.
+
+=back
+
+=cut
+
+has effective_start => (
+    is => 'rw',
+    @date_attribute,
+);
+
+=head1 METHODS - Other attributes
+
+=cut
+
+=head2 duration
+
+The requested contract duration, specified as a string indicating value with units.
+The unit is provided as a single character suffix:
+
+=over 4
+
+=item * t - ticks
+
+=item * s - seconds
+
+=item * m - minutes
+
+=item * h - hours
+
+=item * d - days
+
+=back
+
+Examples would be C< 5t > for 5 ticks, C< 3h > for 3 hours.
+
+=cut
+
 has duration => (is => 'ro');
 
-has [qw(pricing_args)] => (
-    is         => 'ro',
-    isa        => 'HashRef',
-    lazy_build => 1,
-);
-
-#backtest - Enable optimizations for speedier back testing.  Not suitable for production.
 #tick_expiry - A boolean that indicates if a contract expires after a pre-specified number of ticks.
-has [qw(backtest tick_expiry)] => (
+has tick_expiry => (
     is      => 'ro',
     default => 0,
 );
@@ -74,7 +186,7 @@ has starts_as_forward_starting => (
     default => 0,
 );
 
-has [qw(longcode shortcode)] => (
+has [qw(shortcode)] => (
     is         => 'ro',
     isa        => 'Str',
     lazy_build => 1,
@@ -109,7 +221,7 @@ has category_code => (
     lazy_build => 1,
 );
 
-#These data are coming from contrac_types.yml
+#These data are coming from contract_types.yml
 has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
     is      => 'ro',
     default => undef,
@@ -168,7 +280,7 @@ has [qw(prediction tick_count)] => (
     isa => 'Maybe[Num]',
 );
 
-=item for_sale
+=head2 for_sale
 
 Was this bet built using BOM-generated parameters, as opposed to user-supplied parameters?
 
@@ -185,7 +297,7 @@ has for_sale => (
     default => 0,
 );
 
-=item max_tick_expiry_duration
+=head2 max_tick_expiry_duration
 
 A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.
 
@@ -272,14 +384,10 @@ has is_sold => (
     default => 0
 );
 
-has [qw(risk_profile)] => (
+has risk_profile => (
     is         => 'ro',
     lazy_build => 1,
-);
-
-has market_is_inefficient => (
-    is         => 'ro',
-    lazy_build => 1,
+    init_arg   => undef,
 );
 
 # pricing_spot - The spot used in pricing.  It may have been adjusted for corporate actions.
@@ -346,9 +454,26 @@ has _basis_tick => (
     builder    => '_build_basis_tick',
 );
 
-#== METHODS ======================
+=head1 ATTRIBUTES - Internal
+
+=head2 _pricing_args
+
+Internal hashref of attributes that will be passed to the pricing engine.
+
+=cut
+
+has _pricing_args => (
+    is         => 'ro',
+    isa        => 'HashRef',
+    lazy_build => 1,
+);
+
+=head1 METHODS
+
+=cut
 
 sub is_spread { return 0 }
+
 sub is_legacy { return 0 }
 
 sub _check_is_intraday {
@@ -365,33 +490,12 @@ sub _check_is_intraday {
     return 1;
 }
 
-sub _match_symbol {
-    my ($lists, $symbol) = @_;
-    for (@$lists) {
-        return 1 if $_ eq $symbol;
-    }
-    return;
-}
-
-sub _market_convention {
-    my $self = shift;
-
-    return {
-        get_rollover_time => sub {
-            my $when = shift;
-            return Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($when);
-        },
-    };
-}
-
-=item is_after_settlement
+=head2 is_after_settlement
 
 This check if the contract already passes the settlement time
 
 For tick expiry contract, it can expires when a certain number of ticks is received or it already passes the max_tick_expiry_duration.
 For other contracts, it can expires when current time has past a pre-determined settelement time.
-
-=back
 
 =cut
 
@@ -408,13 +512,12 @@ sub is_after_settlement {
     return 0;
 }
 
-=item is_after_expiry
+=head2 is_after_expiry
 
 This check if the contract already passes the expiry times
 
 For tick expiry contract, there is no expiry time, so it will check again the exit tick
 For other contracts, it will check the remaining time of the contract to expiry.
-=back
 
 =cut
 
@@ -440,8 +543,11 @@ sub may_settle_automatically {
 
 =head2 get_time_to_expiry
 
-Returns a TimeInterval to expiry of the bet. For a forward start bet, it will NOT return the bet lifetime, but the time till the bet expires,
-if you want to get the bet life time call it like C<$bet-E<gt>get_time_to_expiry({from =E<gt> $bet-E<gt>date_start})>.
+Returns a TimeInterval to expiry of the bet. For a forward start bet, it will NOT return the bet lifetime, but the time till the bet expires.
+
+If you want to get the contract life time, use:
+
+    $contract->get_time_to_expiry({from => $contract->date_start})
 
 =cut
 
@@ -471,7 +577,6 @@ sub get_time_to_settlement {
     return ($time >= $self->date_settlement->epoch and $self->expiry_daily) ? $zero_duration : $self->_get_time_to_end($attributes);
 }
 
-# PRIVATE METHOD: _get_time_to_end
 # Send in the correct 'to'
 sub _get_time_to_end {
     my ($self, $attributes) = @_;
@@ -487,7 +592,7 @@ sub _get_time_to_end {
     );
 }
 
-sub add_error {
+sub _add_error {
     my ($self, $err) = @_;
     $err->{set_by} = __PACKAGE__;
     $self->primary_validation_error(MooseX::Role::Validatable::Error->new(%$err));
@@ -499,7 +604,7 @@ sub add_error {
 # The pricing, greek and markup engines need the same set of arguments,
 # so we provide this helper function which pulls all the revelant bits out of the object and
 # returns a nice HashRef for them.
-sub _build_pricing_args {
+sub _build__pricing_args {
     my $self = shift;
 
     my $start_date           = $self->date_pricing;
@@ -580,7 +685,7 @@ sub _build_is_atm_bet {
     return 0 if $self->two_barriers;
     # if not defined, it is non ATM
     return 0 if not defined $self->supplied_barrier;
-    return 0 if $self->supplied_barrier !~ /^S0P$/;
+    return 0 if $self->supplied_barrier ne 'S0P';
     return 1;
 }
 
@@ -626,7 +731,7 @@ sub _build_payouttime_code {
 sub _build_translated_display_name {
     my $self = shift;
 
-    return unless ($self->display_name);
+    return undef unless $self->display_name;
     return localize($self->display_name);
 }
 
@@ -638,8 +743,7 @@ sub _build_is_forward_starting {
 sub _build_permitted_expiries {
     my $self = shift;
 
-    my $expiries_ref = $self->offering_specifics->{permitted};
-    return $expiries_ref;
+    return $self->offering_specifics->{permitted};
 }
 
 sub _build_basis_tick {
@@ -667,7 +771,7 @@ sub _build_basis_tick {
             epoch  => time,
             symbol => $self->underlying->symbol,
         });
-        $self->add_error({
+        $self->_add_error({
             message           => "Waiting for entry tick [symbol: " . $self->underlying->symbol . "]",
             message_to_client => $potential_error,
         });
@@ -702,15 +806,16 @@ sub _build_remaining_time {
 sub _build_current_spot {
     my $self = shift;
 
-    my $spot = $self->current_tick;
+    my $spot = $self->current_tick or return undef;
 
-    return ($spot) ? $self->underlying->pipsized_value($spot->quote) : undef;
+    return $self->underlying->pipsized_value($spot->quote);
 }
 
 sub _build_entry_spot {
     my $self = shift;
 
-    return ($self->entry_tick) ? $self->entry_tick->quote : undef;
+    my $entry_tick = $self->entry_tick or return undef;
+    return $self->entry_tick->quote;
 }
 
 sub _build_current_tick {
@@ -839,7 +944,7 @@ sub _build_opposite_contract {
     return $opp_contract;
 }
 
-=head2 _build_longcode
+=head2 longcode
 
 Returns the (localized) longcode for this contract.
 
@@ -847,7 +952,7 @@ May throw an exception if an invalid expiry type is requested for this contract 
 
 =cut
 
-sub _build_longcode {
+sub longcode {
     my $self = shift;
 
     # When we are building the longcode, we should always take the date_start to date_expiry as duration.
@@ -923,7 +1028,7 @@ sub _build_dividend_adjustment {
     {
 
         warn "Missing dividend data: corp actions are " . join(',', @corporate_actions) . " and found date for action " . $action;
-        $self->add_error({
+        $self->_add_error({
             message => 'Dividend is not updated  after corporate action'
                 . "[dividend recorded date : "
                 . $dividend_recorded_date->datetime . "] "
@@ -1024,7 +1129,7 @@ sub _build_pricing_spot {
         # This is to prevent undefined spot being passed to BlackScholes formula that causes the code to die!!
         $initial_spot = $self->underlying->tick_at($self->date_pricing->epoch, {allow_inconsistent => 1});
         $initial_spot //= $self->underlying->pip_size * 2;
-        $self->add_error({
+        $self->_add_error({
             message => 'Undefined spot '
                 . "[date pricing: "
                 . $self->date_pricing->datetime . "] "
@@ -1151,7 +1256,7 @@ sub _build_exit_tick {
             and $underlying->intradays_must_be_same_day
             and $self->calendar->trading_days_between($entry_tick_date, $exit_tick_date))
         {
-            $self->add_error({
+            $self->_add_error({
                 message => 'Exit tick date differs from entry tick date on intraday '
                     . "[symbol: "
                     . $underlying->symbol . "] "
@@ -1184,27 +1289,13 @@ sub _build_risk_profile {
     );
 }
 
-sub _build_market_is_inefficient {
-    my $self = shift;
+=head2 allowed_slippage
 
-    # market inefficiency only applies to forex and commodities.
-    return 0 unless ($self->market->name eq 'forex' or $self->market->name eq 'commodities');
-    return 0 if $self->expiry_daily;
+Ratio of slippage we allow for this contract, where 0.01 is 1%.
 
-    my $hour = $self->date_pricing->hour + 0;
-    # only 20:00/21:00 GMT to end of day
-    my $disable_hour = $self->date_pricing->is_dst_in_zone('America/New_York') ? 20 : 21;
-    return 0 if $hour < $disable_hour;
-    return 1;
-}
+=cut
 
-has allowed_slippage => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_allowed_slippage',
-);
-
-sub _build_allowed_slippage {
+sub allowed_slippage {
     my $self = shift;
 
     # our commission for volatility indices is 1.5% so we can let it slipped more than that.

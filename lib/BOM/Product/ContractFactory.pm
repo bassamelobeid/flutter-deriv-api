@@ -25,37 +25,49 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
-use base qw( Exporter );
+# List of landing company roles that implement specific rules.
+# So far, we only have one of these (real+virtual), and where possible
+# we should discourage custom logic - better to support it directly if we can.
+use BOM::Product::Role::Japan;
+use BOM::Product::Role::Japanvirtual;
 
-our @EXPORT_OK = qw( produce_contract make_similar_contract produce_batch_contract );
+use Exporter qw(import export_to_level);
 
-# pre-load modules
-require BOM::Product::Contract::Batch;
-require BOM::Product::Contract::Asiand;
-require BOM::Product::Contract::Asianu;
-require BOM::Product::Contract::Call;
-require BOM::Product::Contract::Calle;
-require BOM::Product::Contract::Pute;
-require BOM::Product::Contract::Digitdiff;
-require BOM::Product::Contract::Digiteven;
-require BOM::Product::Contract::Digitmatch;
-require BOM::Product::Contract::Digitodd;
-require BOM::Product::Contract::Digitover;
-require BOM::Product::Contract::Digitunder;
-require BOM::Product::Contract::Expirymisse;
-require BOM::Product::Contract::Expiryrangee;
-require BOM::Product::Contract::Expirymiss;
-require BOM::Product::Contract::Expiryrange;
-require BOM::Product::Contract::Invalid;
-require BOM::Product::Contract::Notouch;
-require BOM::Product::Contract::Onetouch;
-require BOM::Product::Contract::Put;
-require BOM::Product::Contract::Range;
-require BOM::Product::Contract::Spreadd;
-require BOM::Product::Contract::Spreadu;
-require BOM::Product::Contract::Upordown;
-require BOM::Product::Contract::Vanilla_call;
-require BOM::Product::Contract::Vanilla_put;
+BEGIN {
+    our @EXPORT_OK = qw( produce_contract make_similar_contract produce_batch_contract );
+}
+
+# Defer these until after we've compiled all our modules, since that way they can find the make_similar_contract
+# function. Ideally, no pricing engine would need to use BOM::Product::Contract code, so we expect this UNITCHECK
+# block to be redundant once those are split out.
+UNITCHECK {
+    use BOM::Product::Contract::Batch;
+    use BOM::Product::Contract::Asiand;
+    use BOM::Product::Contract::Asianu;
+    use BOM::Product::Contract::Call;
+    use BOM::Product::Contract::Calle;
+    use BOM::Product::Contract::Pute;
+    use BOM::Product::Contract::Digitdiff;
+    use BOM::Product::Contract::Digiteven;
+    use BOM::Product::Contract::Digitmatch;
+    use BOM::Product::Contract::Digitodd;
+    use BOM::Product::Contract::Digitover;
+    use BOM::Product::Contract::Digitunder;
+    use BOM::Product::Contract::Expirymisse;
+    use BOM::Product::Contract::Expiryrangee;
+    use BOM::Product::Contract::Expirymiss;
+    use BOM::Product::Contract::Expiryrange;
+    use BOM::Product::Contract::Invalid;
+    use BOM::Product::Contract::Notouch;
+    use BOM::Product::Contract::Onetouch;
+    use BOM::Product::Contract::Put;
+    use BOM::Product::Contract::Range;
+    use BOM::Product::Contract::Spreadd;
+    use BOM::Product::Contract::Spreadu;
+    use BOM::Product::Contract::Upordown;
+    use BOM::Product::Contract::Vanilla_call;
+    use BOM::Product::Contract::Vanilla_put;
+}
 
 =head2 produce_contract
 
@@ -64,49 +76,41 @@ Produce a Contract Object from a set of parameters
 =cut
 
 my $contract_type_config = LoadFile(File::ShareDir::dist_file('LandingCompany', 'contract_types.yml'));
-{
-    my %loaded = ();
 
-    sub produce_contract {
-        my ($build_arg, $maybe_currency, $maybe_sold) = @_;
+sub produce_contract {
+    my ($build_arg, $maybe_currency, $maybe_sold) = @_;
 
-        my $params_ref = {%{_args_to_ref($build_arg, $maybe_currency, $maybe_sold)}};
+    my $params_ref = {%{_args_to_ref($build_arg, $maybe_currency, $maybe_sold)}};
 
-        unless ($params_ref->{processed}) {
-            $params_ref = BOM::Product::Categorizer->new(parameters => $params_ref)->process();
-        }
-
-        # load it first
-        my $landing_company = $params_ref->{landing_company};
-        # We have 'japan-virtual' as one of the landing companies: remap this to a valid Perl class name
-        # Can't change the name to 'japanvirtual' because we have db functions tie to the original name.
-        $landing_company =~ s/-//;
-        my $role = 'BOM::Product::Role::' . ucfirst lc $landing_company;
-        # We'll cache positive + negative results here, and we don't expect files to appear/disappear
-        # after startup so we don't ever clear the cache.
-        unless (exists $loaded{$role}) {
-            # Ignoring the return of try on purpose: we just want to know whether the file exists
-            $loaded{$role} = try { $role->require } || 0;
-        }
-        $params_ref->{build_parameters}{role} = $role if $loaded{$role};
-
-        # This occurs after to hopefully make it more annoying to bypass the Factory.
-        $params_ref->{'_produce_contract_ref'} = \&produce_contract;
-
-        my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $params_ref->{bet_type};
-        my $contract_obj   = $contract_class->new($params_ref);
-        # apply it here.
-        $role->meta->apply($contract_obj) if $loaded{$role};
-
-        return $contract_obj;
+    unless ($params_ref->{processed}) {
+        $params_ref = BOM::Product::Categorizer->new(parameters => $params_ref)->process();
     }
 
-    sub produce_batch_contract {
-        my $build_args = shift;
+    my $landing_company = $params_ref->{landing_company};
+    # We have 'japan-virtual' as one of the landing companies: remap this to a valid Perl class name
+    # Can't change the name to 'japanvirtual' because we have db functions tie to the original name.
+    $landing_company =~ s/-//;
+    my $role        = 'BOM::Product::Role::' . ucfirst lc $landing_company;
+    my $role_exists = $role->can('meta');
+    # Only apply the role if the class exists
+    $params_ref->{build_parameters}{role} = $role if $role_exists;
 
-        $build_args->{_produce_contract_ref} = \&produce_contract;
-        return BOM::Product::Contract::Batch->new(parameters => $build_args);
-    }
+    # This occurs after to hopefully make it more annoying to bypass the Factory.
+    $params_ref->{'_produce_contract_ref'} = \&produce_contract;
+
+    my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $params_ref->{bet_type};
+    my $contract_obj   = $contract_class->new($params_ref);
+    # apply it here.
+    $role->meta->apply($contract_obj) if $role_exists;
+
+    return $contract_obj;
+}
+
+sub produce_batch_contract {
+    my $build_args = shift;
+
+    $build_args->{_produce_contract_ref} = \&produce_contract;
+    return BOM::Product::Contract::Batch->new(parameters => $build_args);
 }
 
 sub _args_to_ref {
