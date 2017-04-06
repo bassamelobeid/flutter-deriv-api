@@ -4,7 +4,7 @@ use Moose::Role;
 
 use BOM::Platform::Context qw(localize);
 
-sub _build_is_expired {
+override is_expired => sub {
     my $self = shift;
     my $is_expired;
     my ($barrier, $barrier2) =
@@ -25,14 +25,13 @@ sub _build_is_expired {
     }
 
     return $is_expired;
-}
+};
 
-sub is_settleable {
+override is_settleable => sub {
     my $self = shift;
 
     return $self->is_expired // 0;
-
-}
+};
 
 has hit_tick => (
     is         => 'ro',

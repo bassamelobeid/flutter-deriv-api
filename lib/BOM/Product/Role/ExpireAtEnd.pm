@@ -5,7 +5,7 @@ use Moose::Role;
 use Time::Duration::Concise;
 use BOM::Platform::Context qw(localize);
 
-sub _build_is_expired {
+override is_expired => sub {
     my $self = shift;
 
     # As long as it already pass the expiry time and have exit tick, it is consider expired.
@@ -15,13 +15,14 @@ sub _build_is_expired {
     $self->check_expiry_conditions;
 
     return 1;
-}
+};
 
-sub is_settleable {
+override is_settleable => sub {
     my $self = shift;
 
     my $settleable = ($self->is_after_settlement and $self->exit_tick) ? 1 : 0;
 
     return $settleable;
-}
+};
+
 1;
