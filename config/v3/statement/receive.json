@@ -33,7 +33,7 @@
                   },
                   "reference_id": {
                     "type": ["integer","null"],
-                    "description":"Internal transaction identifier for the relative buy transaction ( set only for contract selling )"
+                    "description":"Internal transaction identifier for the corresponding buy transaction ( set only for contract selling )"
                   },
                   "contract_id":{
                     "type": ["integer", "null"],
