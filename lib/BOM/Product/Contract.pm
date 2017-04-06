@@ -570,6 +570,65 @@ sub get_time_to_settlement {
     return ($time >= $self->date_settlement->epoch and $self->expiry_daily) ? $zero_duration : $self->_get_time_to_end($attributes);
 }
 
+=head2 longcode
+
+Returns the (localized) longcode for this contract.
+
+May throw an exception if an invalid expiry type is requested for this contract type.
+
+=cut
+
+sub longcode {
+    my $self = shift;
+
+    # When we are building the longcode, we should always take the date_start to date_expiry as duration.
+    # Don't use $self->expiry_type because that's use to price a contract at effective_start time.
+    my $forward_starting_contract = ($self->starts_as_forward_starting or $self->is_forward_starting);
+    my $expiry_type = $self->tick_expiry ? 'tick' : $self->_check_is_intraday($self->date_start) == 0 ? 'daily' : 'intraday';
+    $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $forward_starting_contract and $self->fixed_expiry;
+    my $localizable_description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
+
+    my ($when_end, $when_start);
+    if ($expiry_type eq 'intraday_fixed_expiry') {
+        $when_end   = $self->date_expiry->datetime . ' GMT';
+        $when_start = '';
+    } elsif ($expiry_type eq 'intraday') {
+        $when_end = $self->get_time_to_expiry({from => $self->date_start})->as_string;
+        $when_start = ($forward_starting_contract) ? $self->date_start->db_timestamp . ' GMT' : localize('contract start time');
+    } elsif ($expiry_type eq 'daily') {
+        my $close = $self->underlying->calendar->closing_on($self->date_expiry);
+        if ($close and $close->epoch != $self->date_expiry->epoch) {
+            $when_end = $self->date_expiry->datetime . ' GMT';
+        } else {
+            $when_end = localize('close on [_1]', $self->date_expiry->date);
+        }
+        $when_start = '';
+    } elsif ($expiry_type eq 'tick') {
+        $when_end   = $self->tick_count;
+        $when_start = localize('first tick');
+    }
+    my $payout = to_monetary_number_format($self->payout);
+    my @barriers = ($self->two_barriers) ? ($self->high_barrier, $self->low_barrier) : ($self->barrier);
+    @barriers = map { $_->display_text if $_ } @barriers;
+
+    return localize($localizable_description,
+        ($self->currency, $payout, localize($self->underlying->display_name), $when_start, $when_end, @barriers));
+}
+
+=head2 allowed_slippage
+
+Ratio of slippage we allow for this contract, where 0.01 is 1%.
+
+=cut
+
+sub allowed_slippage {
+    my $self = shift;
+
+    # our commission for volatility indices is 1.5% so we can let it slipped more than that.
+    return 0.01 if $self->market->name eq 'volidx';
+    return 0.0175;
+}
+
 # INTERNAL METHODS
 
 sub _check_is_intraday {
@@ -911,51 +970,6 @@ sub _build_opposite_contract {
     return $opp_contract;
 }
 
-=head2 longcode
-
-Returns the (localized) longcode for this contract.
-
-May throw an exception if an invalid expiry type is requested for this contract type.
-
-=cut
-
-sub longcode {
-    my $self = shift;
-
-    # When we are building the longcode, we should always take the date_start to date_expiry as duration.
-    # Don't use $self->expiry_type because that's use to price a contract at effective_start time.
-    my $forward_starting_contract = ($self->starts_as_forward_starting or $self->is_forward_starting);
-    my $expiry_type = $self->tick_expiry ? 'tick' : $self->_check_is_intraday($self->date_start) == 0 ? 'daily' : 'intraday';
-    $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $forward_starting_contract and $self->fixed_expiry;
-    my $localizable_description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
-
-    my ($when_end, $when_start);
-    if ($expiry_type eq 'intraday_fixed_expiry') {
-        $when_end   = $self->date_expiry->datetime . ' GMT';
-        $when_start = '';
-    } elsif ($expiry_type eq 'intraday') {
-        $when_end = $self->get_time_to_expiry({from => $self->date_start})->as_string;
-        $when_start = ($forward_starting_contract) ? $self->date_start->db_timestamp . ' GMT' : localize('contract start time');
-    } elsif ($expiry_type eq 'daily') {
-        my $close = $self->underlying->calendar->closing_on($self->date_expiry);
-        if ($close and $close->epoch != $self->date_expiry->epoch) {
-            $when_end = $self->date_expiry->datetime . ' GMT';
-        } else {
-            $when_end = localize('close on [_1]', $self->date_expiry->date);
-        }
-        $when_start = '';
-    } elsif ($expiry_type eq 'tick') {
-        $when_end   = $self->tick_count;
-        $when_start = localize('first tick');
-    }
-    my $payout = to_monetary_number_format($self->payout);
-    my @barriers = ($self->two_barriers) ? ($self->high_barrier, $self->low_barrier) : ($self->barrier);
-    @barriers = map { $_->display_text if $_ } @barriers;
-
-    return localize($localizable_description,
-        ($self->currency, $payout, localize($self->underlying->display_name), $when_start, $when_end, @barriers));
-}
-
 sub _build_corporate_actions {
     my $self = shift;
 
@@ -1254,20 +1268,6 @@ sub _build_risk_profile {
         underlying_risk_profile        => $self->underlying->risk_profile,
         underlying_risk_profile_setter => $self->underlying->risk_profile_setter,
     );
-}
-
-=head2 allowed_slippage
-
-Ratio of slippage we allow for this contract, where 0.01 is 1%.
-
-=cut
-
-sub allowed_slippage {
-    my $self = shift;
-
-    # our commission for volatility indices is 1.5% so we can let it slipped more than that.
-    return 0.01 if $self->market->name eq 'volidx';
-    return 0.0175;
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.
