@@ -410,7 +410,7 @@ has is_expired => (
     lazy_build => 1,
 );
 
-sub _build_is_expired {
+sub is_expired {
     my $self = shift;
 
     my $is_expired = 0;

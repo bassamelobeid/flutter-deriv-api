@@ -193,10 +193,7 @@ has [qw(shortcode)] => (
 );
 
 # Check whether the contract is expired or not . It is expired only if it passes the expiry time time and has valid exit tick
-has is_expired => (
-    is         => 'ro',
-    lazy_build => 1,
-);
+sub is_expired { die "Calling ->is_expired on a ::Contract instance" }
 
 # Check whether the contract is settelable or not. To be able to settle, it need pass the settlement time and has valid exit tick
 has is_settleable => (
