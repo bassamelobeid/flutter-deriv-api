@@ -483,7 +483,7 @@ sub is_expired { die "Calling ->is_expired on a ::Contract instance" }
 
 =head2 is_settleable
 
-Returns true if the contract is settelable.
+Returns true if the contract is settleable.
 
 To be able to settle, it need pass the settlement time and has valid exit tick
 
