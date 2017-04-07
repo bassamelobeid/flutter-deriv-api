@@ -81,6 +81,17 @@ sub buy {
             message_to_client => $err->{-message_to_client},
         });
     }
+    ### TODO: Decrease params count
+    check_copiers({
+        action        => 'buy',
+        client        => $client,
+        contract      => $contract,
+        price         => $price,
+        payout        => $payout,
+        amount_type   => $amount_type,
+        purchase_date => $purchase_date,
+        source        => $source
+    }) if $client->allow_copiers;
 
     $response = {
         transaction_id => $trx->transaction_id,
@@ -362,6 +373,15 @@ sub sell {
         });
     }
 
+    ### TODO: Decrease params count
+    check_copiers({
+        action        => 'sell',
+        client        => $client,
+        contract      => $contract,
+        price         => $price,
+        source        => $source
+    }) if $client->allow_copiers;
+
     $trx = $trx->transaction_record;
 
     return {
@@ -370,6 +390,48 @@ sub sell {
         balance_after  => sprintf('%.2f', $trx->balance_after),
         sold_for       => abs($trx->amount),
     };
+}
+
+sub check_copiers {
+    my $params = shift;
+    use Data::Dumper;
+    warn Dumper $params->contract;
+    my $copiers = BOM::Database::DataMapper::Copier->new(
+        broker_code => $params->{client}->broker_code,
+        operation   => 'replica',
+    )->get_trade_copiers({
+        trader_id  => $params->{client}->loginid,
+        trade_type => $params->{contract}{bet_type},
+        asset      => $params->{contract}{underlying},
+        price      => ($params->{price} || undef),
+    });
+
+    warn Dumper $copiers;
+    return unless $copiers && ref $copiers eq 'ARRAY' && scalar @$copiers;
+    ### TODO: Add checking of trade permission in copy_start
+    my @multiple = map { +{loginid => $_} } @$copiers;
+    my $trx = BOM::Transaction->new({
+        client   => $params->{client},
+        multiple => \@multiple,
+        contract => $params->{contract},
+        price    => ($params->{price} || 0),
+        (defined $params->{payout})      ? (payout      => $params->{payout})           : (),
+        (defined $params->{amount_type}) ? (amount_type => $params->{amount_type})      : (),
+        ( $params->{action} eq 'buy' )   ? (purchase_date => $params->{purchase_date} ) : (),
+        source        => $params->{source},
+    });
+
+    $params->{action} eq 'buy' ? $trx->batch_buy : $trx->sell_by_shortcode;
+
+    for my $el (grep { $_->{error} } @multiple) {
+        warn "[COPY TRADING " . uc $params->{action} . "] "
+            . encode_json + {
+                trader_id => $params->{client}->loginid,
+                copier    => $el->{loginid},
+                code      => $el->{code},
+                error     => $el->{error}};
+    }
+    return 1;
 }
 
 1;

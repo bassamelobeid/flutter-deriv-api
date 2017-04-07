@@ -3,14 +3,15 @@ package BOM::RPC::v3::CopyTrading;
 use strict;
 use warnings;
 
-use Try::Tiny;
-
-use Client::Account;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Copier;
+use Client::Account;
 
 use LandingCompany::Offerings;
+use List::Util qw(first);
+
+use Try::Tiny;
 
 sub copy_start {
     my $params = shift;
@@ -37,10 +38,11 @@ sub copy_start {
                 code              => 'InvalidToken',
                 message_to_client => localize('Invalid token')});
     }
-    unless (grep { /^read$/ } @{$token_details->{scopes}}) {
+    if ((first { $_ ne 'read' } @{$token_details->{scopes}})
+            || !scalar(grep { defined $_ } first { $_ eq 'read' } @{$token_details->{scopes}})) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'PermissionDenied',
-                message_to_client => localize('Permission denied, requires read scope.')});
+            code              => 'PermissionDenied',
+            message_to_client => localize('Permission denied, requires read scope.')});
     }
     unless ($trader->allow_copiers) {
         return BOM::RPC::v3::Utility::create_error({
