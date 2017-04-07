@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 25;
+use Test::More tests => 23;
 use Test::Exception;
 use Guard;
 use Crypt::NamedKeys;
