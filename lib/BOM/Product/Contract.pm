@@ -79,16 +79,14 @@ my @date_attribute = (
     coerce     => 1,
 );
 
-=head2 date_start
+=head2 date_expiry
 
-For American contracts, defines when the contract starts.
-
-For Europeans, this is used to determine the barrier when the requested barrier is relative.
+When the contract expires.
 
 =cut
 
-has date_start => (
-    is => 'ro',
+has date_expiry => (
+    is => 'rw',
     @date_attribute,
 );
 
@@ -103,44 +101,16 @@ has date_pricing => (
     @date_attribute,
 );
 
-=head2 date_expiry
+=head2 date_start
 
-When the contract expires.
+For American contracts, defines when the contract starts.
 
-=cut
-
-has date_expiry => (
-    is => 'rw',
-    @date_attribute,
-);
-
-=head2 date_settlement
-
-When the contract was settled (can be C<undef>).
+For Europeans, this is used to determine the barrier when the requested barrier is relative.
 
 =cut
 
-has date_settlement => (
-    is => 'rw',
-    @date_attribute,
-);
-
-=head2 effective_start
-
-=over 4
-
-=item * For backpricing, this is L</date_start>.
-
-=item * For a forward-starting contract, this is L</date_start>.
-
-=item * For all other states - i.e. active, non-expired contracts - this is L</date_pricing>.
-
-=back
-
-=cut
-
-has effective_start => (
-    is => 'rw',
+has date_start => (
+    is => 'ro',
     @date_attribute,
 );
 
@@ -206,11 +176,6 @@ be populated from the contract parameters.
 has shortcode => (
     is         => 'ro',
     isa        => 'Str',
-    lazy_build => 1,
-);
-
-has category_code => (
-    is         => 'ro',
     lazy_build => 1,
 );
 
@@ -447,14 +412,9 @@ has _basis_tick => (
     builder    => '_build_basis_tick',
 );
 
-=head1 ATTRIBUTES - Internal
+# ATTRIBUTES - Internal
 
-=head2 _pricing_args
-
-Internal hashref of attributes that will be passed to the pricing engine.
-
-=cut
-
+# Internal hashref of attributes that will be passed to the pricing engine.
 has _pricing_args => (
     is         => 'ro',
     isa        => 'HashRef',
@@ -611,6 +571,17 @@ The starting barrier value.
 
 =cut
 
+=head2 category_code
+
+The code for this category.
+
+=cut
+
+sub category_code {
+    my $self = shift;
+    return $self->category->code;
+}
+
 =head1 METHODS - Other
 
 =cut
@@ -625,6 +596,48 @@ sub debug_information {
     my $self = shift;
 
     return $self->pricing_engine->can('debug_info') ? $self->pricing_engine->debug_info : {};
+}
+
+=head2 effective_start
+
+=over 4
+
+=item * For backpricing, this is L</date_start>.
+
+=item * For a forward-starting contract, this is L</date_start>.
+
+=item * For all other states - i.e. active, non-expired contracts - this is L</date_pricing>.
+
+=back
+
+=cut
+
+sub effective_start {
+    my $self = shift;
+
+    return
+          ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_start
+        : ($self->date_pricing->is_after($self->date_start))  ? $self->date_pricing
+        :                                                       $self->date_start;
+}
+
+=head2 date_settlement
+
+When the contract was settled (can be C<undef>).
+
+=cut
+
+sub date_settlement {
+    my $self       = shift;
+    my $end_date   = $self->date_expiry;
+    my $underlying = $self->underlying;
+
+    my $date_settlement = $end_date;    # Usually we settle when we expire.
+    if ($self->expiry_daily and $self->calendar->trades_on($end_date)) {
+        $date_settlement = $self->calendar->settlement_on($end_date);
+    }
+
+    return $date_settlement;
 }
 
 =head2 get_time_to_expiry
@@ -792,22 +805,8 @@ sub _build__pricing_args {
     return $args;
 }
 
-sub _build_category_code {
-    my $self = shift;
-    return $self->category->code;
-}
-
 sub _build_ticks_to_expiry {
     return shift->tick_count + 1;
-}
-
-sub _build_effective_start {
-    my $self = shift;
-
-    return
-          ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_start
-        : ($self->date_pricing->is_after($self->date_start))  ? $self->date_pricing
-        :                                                       $self->date_start;
 }
 
 sub _build_date_pricing {
@@ -921,19 +920,6 @@ sub _build_basis_tick {
     }
 
     return $basis_tick;
-}
-
-sub _build_date_settlement {
-    my $self       = shift;
-    my $end_date   = $self->date_expiry;
-    my $underlying = $self->underlying;
-
-    my $date_settlement = $end_date;    # Usually we settle when we expire.
-    if ($self->expiry_daily and $self->calendar->trades_on($end_date)) {
-        $date_settlement = $self->calendar->settlement_on($end_date);
-    }
-
-    return $date_settlement;
 }
 
 sub _build_remaining_time {
