@@ -213,7 +213,6 @@ has tick_expiry => (
     default => 0,
 );
 
-
 =head2 prediction
 
 Prediction (for tick trades) is what client predicted would happen.
