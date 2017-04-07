@@ -54,7 +54,6 @@ subtest 'expiry miss' => sub {
         is $c->ask_price,    '6.84';
         ok !$c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
-        is_deeply $c->supported_start_types, ['spot'];
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
         isa_ok $c->greek_engine,        'BOM::Product::Pricing::Greeks::BlackScholes';
         $c->ask_probability;
@@ -115,7 +114,6 @@ subtest 'expiry range' => sub {
         is $c->ask_price,    '4.18';
         ok $c->sentiment,    'low_vol';
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
-        is_deeply $c->supported_start_types, ['spot'];
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
         isa_ok $c->greek_engine,        'BOM::Product::Pricing::Greeks::BlackScholes';
         $c->ask_probability;
