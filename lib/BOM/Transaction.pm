@@ -501,7 +501,6 @@ sub prepare_buy {    ## no critic (RequireArgUnpacking)
                     recomputed_price => $self->recomputed_price,
                     ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
                     ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
-                    ($self->contract->can('extra_info')) ? (%{$self->contract->extra_info('hash')}) : (),
                     action => 'buy'
                 })) unless @{$self->comment};
     }
@@ -767,7 +766,6 @@ sub sell {
                     recomputed_price => $self->recomputed_price,
                     ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
                     ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
-                    ($self->contract->can('extra_info')) ? (%{$self->contract->extra_info('hash')}) : (),
                     action => 'sell'
                 })) unless @{$self->comment};
     }
@@ -1301,22 +1299,9 @@ sub _build_pricing_comment {
         );
     } else {
 
-        # IV is the pricing vol (high barrier vol if it is double barrier contract), iv_2 is the low barrier vol.
-        my $iv   = $contract->pricing_vol;
-        my $iv_2 = 0;
-
-        if ($contract->pricing_vol_for_two_barriers) {
-
-            $iv   = $contract->pricing_vol_for_two_barriers->{high_barrier_vol};
-            $iv_2 = $contract->pricing_vol_for_two_barriers->{low_barrier_vol};
-
-        }
-
         # This way the order of the fields is well-defined.
         @comment_fields = map { defined $_->[1] ? @$_ : (); } (
             [theo  => $contract->theo_price],
-            [iv    => $iv],
-            [iv_2  => $iv_2],
             [win   => $contract->payout],
             [div   => $contract->q_rate],
             [int   => $contract->r_rate],
@@ -1326,7 +1311,9 @@ sub _build_pricing_comment {
             [theta => $contract->theta],
             [vanna => $contract->vanna],
             [volga => $contract->volga],
-            [spot  => $contract->current_spot]);
+            [spot  => $contract->current_spot],
+            ($contract->can('extra_info') ? @{$contract->extra_info('arrayref')} : []),
+        );
 
         # only manual sell and buy has a price
         if ($price) {
