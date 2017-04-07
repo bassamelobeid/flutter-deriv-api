@@ -69,15 +69,60 @@ UNITCHECK {
     use BOM::Product::Pricing::Greeks::BlackScholes;
 }
 
-=head1 ATTRIBUTES - Date-related
-
-=cut
-
 my @date_attribute = (
     isa        => 'date_object',
     lazy_build => 1,
     coerce     => 1,
 );
+
+=head1 ATTRIBUTES - Construction
+
+These are the parameters we expect to be passed when constructing a new contract.
+These would be passed to L<BOM::Product::ContractFactory/produce_contract>.
+
+=cut
+
+=head2 underlying
+
+The underlying asset, as a L<Finance::Asset::Underlying> instance.
+
+=cut
+
+has underlying => (
+    is      => 'ro',
+    isa     => 'underlying_object',
+    coerce  => 1,
+    handles => [qw(market pip_size)],
+);
+
+
+=head2 payout
+
+Payout amount value, see L</currency>.
+
+=cut
+
+has payout => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
+=head2 currency
+
+The currency in which this contract is bought/sold, e.g. C<USD>.
+
+=cut
+
+has currency => (
+    is       => 'ro',
+    isa      => 'Str',
+    required => 1,
+);
+
+=head1 ATTRIBUTES - Date-related
+
+=cut
 
 =head2 date_expiry
 
@@ -199,18 +244,6 @@ has [
     lazy_build => 1,
     );
 
-has currency => (
-    is       => 'ro',
-    isa      => 'Str',
-    required => 1,
-);
-
-has payout => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
-);
-
 has value => (
     is      => 'rw',
     isa     => 'Num',
@@ -291,13 +324,6 @@ has [qw(
 has fixed_expiry => (
     is      => 'ro',
     default => 0,
-);
-
-has underlying => (
-    is      => 'ro',
-    isa     => 'underlying_object',
-    coerce  => 1,
-    handles => [qw(market pip_size)],
 );
 
 has calendar => (

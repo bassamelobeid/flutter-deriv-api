@@ -84,25 +84,12 @@ A TimeInterval which expresses the maximum time a tick trade may run, even if th
 
 # METHODS - Boolean checks
 
-## is\_spread
+## is\_after\_expiry
 
-Returns true if this is a spread contract - due to be removed.
+This check if the contract already passes the expiry times
 
-## is\_legacy
-
-True for obsolete contract types, see [BOM::Product::Contract::Invalid](https://metacpan.org/pod/BOM::Product::Contract::Invalid).
-
-## is\_expired
-
-Returns true if this contract is expired.
-
-It is expired only if it passes the expiry time time and has valid exit tick.
-
-## is\_settleable
-
-Returns true if the contract is settleable.
-
-To be able to settle, it need pass the settlement time and has valid exit tick
+For tick expiry contract, there is no expiry time, so it will check again the exit tick
+For other contracts, it will check the remaining time of the contract to expiry.
 
 ## is\_after\_settlement
 
@@ -111,12 +98,25 @@ This check if the contract already passes the settlement time
 For tick expiry contract, it can expires when a certain number of ticks is received or it already passes the max\_tick\_expiry\_duration.
 For other contracts, it can expires when current time has past a pre-determined settelement time.
 
-## is\_after\_expiry
+## is\_expired
 
-This check if the contract already passes the expiry times
+Returns true if this contract is expired.
 
-For tick expiry contract, there is no expiry time, so it will check again the exit tick
-For other contracts, it will check the remaining time of the contract to expiry.
+It is expired only if it passes the expiry time time and has valid exit tick.
+
+## is\_legacy
+
+True for obsolete contract types, see [BOM::Product::Contract::Invalid](https://metacpan.org/pod/BOM::Product::Contract::Invalid).
+
+## is\_settleable
+
+Returns true if the contract is settleable.
+
+To be able to settle, it need pass the settlement time and has valid exit tick
+
+## is\_spread
+
+Returns true if this is a spread contract - due to be removed.
 
 # METHODS - Proxied to [BOM::Product::Contract::Category](https://metacpan.org/pod/BOM::Product::Contract::Category)
 
