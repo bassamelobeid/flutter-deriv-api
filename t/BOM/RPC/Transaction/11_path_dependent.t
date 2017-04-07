@@ -99,7 +99,6 @@ subtest 'contract creation and purchase' => sub {
         is $contract->sentiment,    'high_vol', 'high_vol';
         ok $contract->is_path_dependent, 'is path dependent';
         is_deeply $contract->supported_expiries, ['intraday', 'daily'], 'proper expires type';
-        is_deeply $contract->supported_start_types, ['spot'], 'spot start type';
     }
     'generic';
 
