@@ -219,11 +219,9 @@ sub japan_pricing_info {
     my $trading_window_start = shift;
 
     my $bid_price = $self->payout - $self->opposite_contract->ask_price;
-    my $name      = $self->pricing_engine_name;
-    $name =~ s/:://g;
     my @pricing_info = ($self->shortcode, $trading_window_start, $self->ask_price, $bid_price, $self->_date_pricing_milliseconds);
 
-    my $extra = $name . '_' . $self->pricing_spot . '_';
+    my $extra = $self->pricing_spot . '_';
     if ($self->priced_with_intraday_model) {
         $extra .= join '_', ($self->pricing_vol, $self->news_adjusted_pricing_vol, $self->long_term_prediction, $self->volatility_scaling_factor);
     } elsif ($self->pricing_vol_for_two_barriers) {
