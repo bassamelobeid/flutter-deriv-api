@@ -412,14 +412,9 @@ has _basis_tick => (
     builder    => '_build_basis_tick',
 );
 
-=head1 ATTRIBUTES - Internal
+# ATTRIBUTES - Internal
 
-=head2 _pricing_args
-
-Internal hashref of attributes that will be passed to the pricing engine.
-
-=cut
-
+# Internal hashref of attributes that will be passed to the pricing engine.
 has _pricing_args => (
     is         => 'ro',
     isa        => 'HashRef',
