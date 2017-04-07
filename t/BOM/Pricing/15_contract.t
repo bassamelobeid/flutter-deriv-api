@@ -141,10 +141,13 @@ subtest 'prepare_ask' => sub {
         $expected, 'will set barrier default value and delete barrier2 if contract type is not like ASIAN');
 
     delete $expected->{barrier};
-    $expected->{barrier2}    = 'S1P';
-    $params->{contract_type} = "ASIAN";
-    $expected->{bet_type}    = "ASIAN";
-    cmp_deeply(BOM::Pricing::v3::Contract::prepare_ask($params), $expected, 'will not set barrier if contract type is like ASIAN ');
+    $expected->{barrier2} = 'S1P';
+    for my $t (qw(ASIAN)) {
+        $params->{contract_type} = $t;
+        $expected->{bet_type}    = $t;
+        cmp_deeply(BOM::Pricing::v3::Contract::prepare_ask($params), $expected, 'will not set barrier if contract type is like ASIAN ');
+    }
+
 };
 
 subtest 'get_ask' => sub {
@@ -367,6 +370,7 @@ subtest 'send_ask_when_date_expiry_smaller_than_date_start' => sub {
 };
 
 subtest 'get_bid' => sub {
+
     # just one tick for missing market data
     create_ticks([100, $now->epoch - 899, 'R_50']);
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -401,7 +405,6 @@ subtest 'get_bid' => sub {
     };
 
     my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-
     my @expected_keys = (qw(
             bid_price
             current_spot_time
@@ -422,18 +425,28 @@ subtest 'get_bid' => sub {
             payout
             contract_type
             display_name
+            barrier
+            exit_tick_time
+            exit_tick
+            entry_tick
+            entry_tick_time
+            current_spot
+            entry_spot
+            barrier_count
     ));
+    cmp_bag([sort keys %{$result}], [sort @expected_keys]);
 
-    push @expected_keys, qw(
-        barrier
-        exit_tick_time
-        exit_tick
-        entry_tick
-        entry_tick_time
-        current_spot
-        entry_spot
-        barrier_count
-    );
+    $contract = _create_contract();
+
+    $params = {
+        short_code  => $contract->shortcode,
+        contract_id => $contract->id,
+        currency    => 'USD',
+        is_sold     => 0,
+    };
+
+    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+
     cmp_bag([sort keys %{$result}], [sort @expected_keys], 'keys of result is correct');
 
 };
@@ -780,6 +793,54 @@ subtest 'app_markup_percentage' => sub {
 
     my $contract = _create_contract(app_markup_percentage => 1);
     $params = {
+        short_code            => $contract->shortcode,
+        contract_id           => $contract->id,
+        currency              => 'USD',
+        is_sold               => 0,
+        sell_time             => undef,
+        app_markup_percentage => 1
+    };
+    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
+
+    $contract = _create_contract();
+
+    cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
+
+    $contract = _create_contract(app_markup_percentage => 1);
+    $params = {
+        short_code            => $contract->shortcode,
+        contract_id           => $contract->id,
+        currency              => 'USD',
+        is_sold               => 0,
+        sell_time             => undef,
+        app_markup_percentage => 1
+    };
+    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
+
+    $contract = _create_contract();
+    cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
+
+    $contract = _create_contract();
+    $contract = _create_contract(app_markup_percentage => 1);
+    $params   = {
+        short_code            => $contract->shortcode,
+        contract_id           => $contract->id,
+        currency              => 'USD',
+        is_sold               => 0,
+        sell_time             => undef,
+        app_markup_percentage => 1
+    };
+    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
+
+    $contract = _create_contract();
+    cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
+
+    $contract = _create_contract();
+    $contract = _create_contract(app_markup_percentage => 1);
+    $params   = {
         short_code            => $contract->shortcode,
         contract_id           => $contract->id,
         currency              => 'USD',
