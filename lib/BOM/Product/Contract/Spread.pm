@@ -83,7 +83,7 @@ has category => (
     is      => 'ro',
     isa     => 'bom_contract_category',
     coerce  => 1,
-    handles => [qw(supported_expiries supported_start_types is_path_dependent allow_forward_starting two_barriers)],
+    handles => [qw(supported_expiries is_path_dependent allow_forward_starting two_barriers)],
 );
 
 has category_code => (
@@ -407,12 +407,7 @@ sub _build_bid_price {
     return roundnear(0.01, $bid);
 }
 
-has is_expired => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_is_expired {
+sub is_expired {
     my $self = shift;
 
     my $is_expired = 0;
@@ -435,12 +430,7 @@ sub _build_is_expired {
 }
 
 # there is no settlement time concept on spread, as soon as it is expired, it is settleable
-has is_settleable => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_is_settleable {
+sub is_settleable {
     my $self = shift;
 
     return $self->is_expired // 0;
