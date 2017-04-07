@@ -501,6 +501,7 @@ sub prepare_buy {    ## no critic (RequireArgUnpacking)
                     recomputed_price => $self->recomputed_price,
                     ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
                     ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
+                    ($self->contract->can('extra_info')) ? (%{$self->contract->extra_info('hash')}) : (),
                     action => 'buy'
                 })) unless @{$self->comment};
     }
@@ -766,6 +767,7 @@ sub sell {
                     recomputed_price => $self->recomputed_price,
                     ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
                     ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
+                    ($self->contract->can('extra_info')) ? (%{$self->contract->extra_info('hash')}) : (),
                     action => 'sell'
                 })) unless @{$self->comment};
     }
