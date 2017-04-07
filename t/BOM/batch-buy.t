@@ -300,7 +300,7 @@ subtest 'batch-buy success + multisell', sub {
             ready_to_sell  => 0,    # obviously
         };
         is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
-
+        sleep 1;
         subtest "sell_by_shortcode", sub {
             plan tests => 8;
             my $contract_parameters = shortcode_to_parameters($contract->shortcode, $clm->currency);
