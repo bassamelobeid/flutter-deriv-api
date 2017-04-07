@@ -420,11 +420,6 @@ has apply_market_inefficient_limit => (
     lazy_build => 1,
 );
 
-has [qw(volatility_scaling_factor long_term_prediction)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 # We can't import the Factory directly as that goes circular.
 # On the other hand, we want some extra info which only
 # becomes available here. So, require the Factory to give us
@@ -871,18 +866,6 @@ sub _build__pricing_args {
     }
 
     return $args;
-}
-
-sub _build_long_term_prediction {
-    my $self = shift;
-
-    return $self->empirical_volsurface->long_term_prediction;
-}
-
-sub _build_volatility_scaling_factor {
-    my $self = shift;
-
-    return $self->empirical_volsurface->volatility_scaling_factor;
 }
 
 sub _build_ticks_to_expiry {
