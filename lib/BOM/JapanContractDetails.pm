@@ -13,7 +13,6 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel PrintContentType_XSendfile);
 use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Database::ClientDB;
-use Client::Account;
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
 use BOM::Database::DataMapper::Transaction;
@@ -32,11 +31,7 @@ sub parse_file {
         chomp $line;
         # Might have a trailing blank at the end, and any in the middle of the file are generally harmless too
         next unless length $line;
-        my @fields    = split ",", $line;
-        my $shortcode = $fields[0];
-        my $ask_price = $fields[2];
-        my $bid_price = $fields[3];
-        my $extra     = $fields[5];
+        my ($shortcode, $ask_price, $bid_price, $extra) = extract_from_code($line);
 
         my $currency = $landing_company =~ /japan/ ? 'JPY' : 'USD';
         my $parameters = verify_with_shortcode({
@@ -71,7 +66,6 @@ sub verify_with_id {
             operation   => 'backoffice_replica',
         })->get_details_by_transaction_ref($id);
 
-    my $client          = Client::Account::get_instance({'loginid' => $details->{loginid}});
     my $action_type     = $details->{action_type};
     my $requested_price = $details->{order_price};
     my $ask_price       = $details->{ask_price};
@@ -81,14 +75,25 @@ sub verify_with_id {
     # apply slippage according to reflect the difference between traded price and recomputed price
     my $adjusted_traded_contract_price =
         ($traded_price == $requested_price) ? ($action_type eq 'buy' ? $traded_price - $slippage : $traded_price + $slippage) : $traded_price;
+
+    my $extra;
+    if ($details->{volatility_scaling_factor}) {
+        $extra = join '_',
+            (map { $details->{$_} } qw(pricing_spot high_barrier_vol news_adjusted_pricing_vol long_term_prediction volatility_scaling_factor));
+    } elsif ($details->{low_barrier_vol}) {
+        $extra = join '_', (map { $details->{$_} } qw(pricing_spot high_barrier_vol low_barrier_vol));
+    } else {
+        $extra = join '_', (map { $details->{$_} } qw(pricing_spot high_barrier_vol));
+    }
+
     my $parameters = verify_with_shortcode({
-        broker          => $broker,
         shortcode       => $details->{shortcode},
         currency        => $details->{currency_code},
         landing_company => $landing_company,
         ask_price       => $adjusted_traded_contract_price,
         start           => $action_type eq 'buy' ? $details->{purchase_time} : $details->{sell_time},
         action_type     => $action_type,
+        extra           => $extra,
     });
     my $contract_args = {
         loginID         => $details->{loginid},
@@ -111,8 +116,8 @@ sub verify_with_shortcode {
     my $args            = shift;
     my $landing_company = $args->{landing_company};
     my $short_code      = $args->{shortcode} or die "No shortcode provided";
-    my $action_type     = lc $args->{action_type};
-    my $verify_ask      = $args->{ask_price};                                  # This is the price to be verify
+    my $action_type     = defined $args->{action_type} ? lc $args->{action_type} : 'buy';    # default to buy if not specified
+    my $verify_ask      = $args->{ask_price};                                                # This is the price to be verify
     my $verify_bid      = $args->{bid_price} // undef;
     my $currency        = $args->{currency};
     my $extra           = $args->{extra} // undef;
@@ -129,20 +134,19 @@ sub verify_with_shortcode {
 
     if ($extra) {
         my @extra_args = split '_', $extra;
-        my $engine_name = $extra_args[0];
-        $pricing_args->{pricing_spot} = $extra_args[1];
-        if ($engine_name =~ /IntradayForex/) {
-            $pricing_args->{pricing_vol}               = $extra_args[2];
-            $pricing_args->{news_adjusted_pricing_vol} = $extra_args[3];
-            $pricing_args->{long_term_prediction}      = $extra_args[4];
-            $pricing_args->{volatility_scaling_factor} = $extra_args[5];
-        } elsif ($engine_name =~ /Slope/ and $extra_args[3]) { # two barrier for slope
+        $pricing_args->{pricing_spot} = $extra_args[0];
+        if ($original_contract->priced_with_intraday_model) {
+            $pricing_args->{pricing_vol}               = $extra_args[1];
+            $pricing_args->{news_adjusted_pricing_vol} = $extra_args[2];
+            $pricing_args->{long_term_prediction}      = $extra_args[3];
+            $pricing_args->{volatility_scaling_factor} = $extra_args[4];
+        } elsif ($original_contract->pricing_vol_for_two_barriers) {    # two barrier for slope
             $pricing_args->{pricing_vol_for_two_barriers} = {
-                high_barrier_vol => $extra_args[2],
-                low_barrier_vol  => $extra_args[3],
+                high_barrier_vol => $extra_args[1],
+                low_barrier_vol  => $extra_args[2],
             };
         } else {
-            $pricing_args->{pricing_vol} = $extra_args[2];
+            $pricing_args->{pricing_vol} = $extra_args[1];
         }
     }
 
@@ -186,7 +190,6 @@ sub verify_with_shortcode {
     };
 
     return $pricing_parameters;
-
 }
 
 sub get_pricing_parameter {
@@ -518,6 +521,18 @@ sub single_output_as_excel {
 
     PrintContentType_XSendfile($temp_file, 'application/octet-stream');
     return;
+}
+
+sub extract_from_code {
+    my $code = shift;
+
+    my @fields    = split ",", $code;
+    my $shortcode = $fields[0];
+    my $ask_price = $fields[2];
+    my $bid_price = $fields[3];
+    my $extra     = $fields[5];
+
+    return ($shortcode, $ask_price, $bid_price, $extra);
 }
 
 1;
