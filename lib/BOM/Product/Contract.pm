@@ -1418,13 +1418,21 @@ sub extra_info {
 
     die 'Supports \'string\' or \'arrayref\' type only' if (not($as_type eq 'string' or $as_type eq 'arrayref'));
 
+    # We have these keys save in data_collection.quants_bet_variables.
+    # Not going to change it for backward compatibility.
+    my %mapper = (
+        high_barrier_vol => 'iv',
+        low_barrier_vol  => 'iv_2',
+        pricing_vol      => 'iv',
+    );
     my @extra = ([pricing_spot => $self->pricing_spot]);
     if ($self->priced_with_intraday_model) {
-        push @extra, (map { [$_ => $self->$_] } qw(pricing_vol news_adjusted_pricing_vol long_term_prediction volatility_scaling_factor));
+        push @extra,
+            (map { [($mapper{$_} // $_) => $self->$_] } qw(pricing_vol news_adjusted_pricing_vol long_term_prediction volatility_scaling_factor));
     } elsif ($self->pricing_vol_for_two_barriers) {
-        push @extra, (map { [$_ => $self->pricing_vol_for_two_barriers->{$_}] } qw(high_barrier_vol low_barrier_vol));
+        push @extra, (map { [($mapper{$_} // $_) => $self->pricing_vol_for_two_barriers->{$_}] } qw(high_barrier_vol low_barrier_vol));
     } else {
-        push @extra, [pricing_vol => $self->pricing_vol];
+        push @extra, [iv => $self->pricing_vol];
     }
 
     if ($as_type eq 'string') {
