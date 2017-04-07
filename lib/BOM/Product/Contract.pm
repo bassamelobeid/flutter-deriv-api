@@ -79,16 +79,14 @@ my @date_attribute = (
     coerce     => 1,
 );
 
-=head2 date_start
+=head2 date_expiry
 
-For American contracts, defines when the contract starts.
-
-For Europeans, this is used to determine the barrier when the requested barrier is relative.
+When the contract expires.
 
 =cut
 
-has date_start => (
-    is => 'ro',
+has date_expiry => (
+    is => 'rw',
     @date_attribute,
 );
 
@@ -103,14 +101,16 @@ has date_pricing => (
     @date_attribute,
 );
 
-=head2 date_expiry
+=head2 date_start
 
-When the contract expires.
+For American contracts, defines when the contract starts.
+
+For Europeans, this is used to determine the barrier when the requested barrier is relative.
 
 =cut
 
-has date_expiry => (
-    is => 'rw',
+has date_start => (
+    is => 'ro',
     @date_attribute,
 );
 

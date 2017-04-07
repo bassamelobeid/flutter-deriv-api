@@ -26,29 +26,19 @@ and defines the standard API for interacting with those contracts.
 
 # ATTRIBUTES - Date-related
 
-## date\_start
+## date\_expiry
 
-For American contracts, defines when the contract starts.
-
-For Europeans, this is used to determine the barrier when the requested barrier is relative.
+When the contract expires.
 
 ## date\_pricing
 
 The date at which we're pricing the contract. Provide ` undef ` to indicate "now".
 
-## date\_expiry
+## date\_start
 
-When the contract expires.
+For American contracts, defines when the contract starts.
 
-## date\_settlement
-
-When the contract was settled (can be `undef`).
-
-## effective\_start
-
-- For backpricing, this is ["date\_start"](#date_start).
-- For a forward-starting contract, this is ["date\_start"](#date_start).
-- For all other states - i.e. active, non-expired contracts - this is ["date\_pricing"](#date_pricing).
+For Europeans, this is used to determine the barrier when the requested barrier is relative.
 
 ## duration
 
@@ -69,6 +59,16 @@ Examples would be ` 5t ` for 5 ticks, ` 3h ` for 3 hours.
 
 A boolean that indicates if a contract expires after a pre-specified number of ticks.
 
+## starts\_as\_forward\_starting
+
+This attribute tells us if this contract was initially bought as a forward starting contract.
+This should not be mistaken for is\_forwarding\_start attribute as that could change over time.
+
+## shortcode
+
+(optional) This can be provided when creating a contract from a shortcode. If not, it will
+be populated from the contract parameters.
+
 ## for\_sale
 
 Was this bet built using BOM-generated parameters, as opposed to user-supplied parameters?
@@ -81,12 +81,6 @@ This will contain the shortcode of the original bet, if we built it from one.
 ## max\_tick\_expiry\_duration
 
 A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.
-
-# ATTRIBUTES - Internal
-
-## \_pricing\_args
-
-Internal hashref of attributes that will be passed to the pricing engine.
 
 # METHODS - Boolean checks
 
@@ -124,11 +118,57 @@ This check if the contract already passes the expiry times
 For tick expiry contract, there is no expiry time, so it will check again the exit tick
 For other contracts, it will check the remaining time of the contract to expiry.
 
+# METHODS - Proxied to [BOM::Product::Contract::Category](https://metacpan.org/pod/BOM::Product::Contract::Category)
+
+Our `category` attribute provides several helper methods:
+
+## supported\_expiries
+
+Which expiry durations we allow. Values can be:
+
+- intraday
+- daily
+- tick
+
+## supported\_start\_types
+
+(removed)
+
+## is\_path\_dependent
+
+True if this is a path-dependent contract.
+
+## allow\_forward\_starting
+
+True if we allow forward starting for this contract type.
+
+## two\_barriers
+
+True if the contract has two barriers.
+
+## barrier\_at\_start
+
+The starting barrier value.
+
+## category\_code
+
+The code for this category.
+
 # METHODS - Other
 
 ## debug\_information
 
 Pricing engine internal debug information hashref.
+
+## effective\_start
+
+- For backpricing, this is ["date\_start"](#date_start).
+- For a forward-starting contract, this is ["date\_start"](#date_start).
+- For all other states - i.e. active, non-expired contracts - this is ["date\_pricing"](#date_pricing).
+
+## date\_settlement
+
+When the contract was settled (can be `undef`).
 
 ## get\_time\_to\_expiry
 
