@@ -773,7 +773,7 @@ sub longcode {
         $when_end = $self->get_time_to_expiry({from => $self->date_start})->as_string;
         $when_start = ($forward_starting_contract) ? $self->date_start->db_timestamp . ' GMT' : localize('contract start time');
     } elsif ($expiry_type eq 'daily') {
-        my $close = $self->trading_calendar->closing_on($self->date_expiry);
+        my $close = $self->trading_calendar->closing_on($self->underlying->exchange, $$self->date_expiry);
         if ($close and $close->epoch != $self->date_expiry->epoch) {
             $when_end = $self->date_expiry->datetime . ' GMT';
         } else {
@@ -816,7 +816,7 @@ sub _check_is_intraday {
     return 0 if $contract_duration > 86400;
 
     # for contract that start at the open of day and expire at the close of day (include early close) should be treated as daily contract
-    my $closing = $self->trading_calendar->closing_on($self->date_expiry);
+    my $closing = $self->trading_calendar->closing_on($self->underlying->exchange, $self->date_expiry);
     return 0 if $closing and $closing->is_same_as($self->date_expiry) and $contract_duration >= $self->effective_daily_trading_seconds;
 
     return 1;
