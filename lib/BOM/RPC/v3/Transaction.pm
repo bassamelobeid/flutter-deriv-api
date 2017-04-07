@@ -83,15 +83,15 @@ sub buy {
     }
     ### TODO: Decrease params count
     check_copiers({
-        action        => 'buy',
-        client        => $client,
-        contract      => $contract,
-        price         => $price,
-        payout        => $payout,
-        amount_type   => $amount_type,
-        purchase_date => $purchase_date,
-        source        => $source
-    }) if $client->allow_copiers;
+            action        => 'buy',
+            client        => $client,
+            contract      => $contract,
+            price         => $price,
+            payout        => $payout,
+            amount_type   => $amount_type,
+            purchase_date => $purchase_date,
+            source        => $source
+        }) if $client->allow_copiers;
 
     $response = {
         transaction_id => $trx->transaction_id,
@@ -375,12 +375,12 @@ sub sell {
 
     ### TODO: Decrease params count
     check_copiers({
-        action        => 'sell',
-        client        => $client,
-        contract      => $contract,
-        price         => $price,
-        source        => $source
-    }) if $client->allow_copiers;
+            action   => 'sell',
+            client   => $client,
+            contract => $contract,
+            price    => $args->{price},
+            source   => $source
+        }) if $client->allow_copiers;
 
     $trx = $trx->transaction_record;
 
@@ -399,12 +399,12 @@ sub check_copiers {
     my $copiers = BOM::Database::DataMapper::Copier->new(
         broker_code => $params->{client}->broker_code,
         operation   => 'replica',
-    )->get_trade_copiers({
-        trader_id  => $params->{client}->loginid,
-        trade_type => $params->{contract}{bet_type},
-        asset      => $params->{contract}{underlying},
-        price      => ($params->{price} || undef),
-    });
+        )->get_trade_copiers({
+            trader_id  => $params->{client}->loginid,
+            trade_type => $params->{contract}{bet_type},
+            asset      => $params->{contract}{underlying},
+            price      => ($params->{price} || undef),
+        });
 
     warn Dumper $copiers;
     return unless $copiers && ref $copiers eq 'ARRAY' && scalar @$copiers;
@@ -415,21 +415,22 @@ sub check_copiers {
         multiple => \@multiple,
         contract => $params->{contract},
         price    => ($params->{price} || 0),
-        (defined $params->{payout})      ? (payout      => $params->{payout})           : (),
-        (defined $params->{amount_type}) ? (amount_type => $params->{amount_type})      : (),
-        ( $params->{action} eq 'buy' )   ? (purchase_date => $params->{purchase_date} ) : (),
-        source        => $params->{source},
+        (defined $params->{payout})      ? (payout        => $params->{payout})        : (),
+        (defined $params->{amount_type}) ? (amount_type   => $params->{amount_type})   : (),
+        ($params->{action} eq 'buy')     ? (purchase_date => $params->{purchase_date}) : (),
+        source => $params->{source},
     });
 
     $params->{action} eq 'buy' ? $trx->batch_buy : $trx->sell_by_shortcode;
 
     for my $el (grep { $_->{error} } @multiple) {
-        warn "[COPY TRADING " . uc $params->{action} . "] "
+        warn "[COPY TRADING "
+            . uc $params->{action} . "] "
             . encode_json + {
-                trader_id => $params->{client}->loginid,
-                copier    => $el->{loginid},
-                code      => $el->{code},
-                error     => $el->{error}};
+            trader_id => $params->{client}->loginid,
+            copier    => $el->{loginid},
+            code      => $el->{code},
+            error     => $el->{error}};
     }
     return 1;
 }
