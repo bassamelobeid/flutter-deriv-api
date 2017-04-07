@@ -82,19 +82,17 @@ These would be passed to L<BOM::Product::ContractFactory/produce_contract>.
 
 =cut
 
-=head2 underlying
+=head2 currency
 
-The underlying asset, as a L<Finance::Asset::Underlying> instance.
+The currency in which this contract is bought/sold, e.g. C<USD>.
 
 =cut
 
-has underlying => (
-    is      => 'ro',
-    isa     => 'underlying_object',
-    coerce  => 1,
-    handles => [qw(market pip_size)],
+has currency => (
+    is       => 'ro',
+    isa      => 'Str',
+    required => 1,
 );
-
 
 =head2 payout
 
@@ -108,16 +106,30 @@ has payout => (
     lazy_build => 1,
 );
 
-=head2 currency
+=head2 shortcode
 
-The currency in which this contract is bought/sold, e.g. C<USD>.
+(optional) This can be provided when creating a contract from a shortcode. If not, it will
+be populated from the contract parameters.
 
 =cut
 
-has currency => (
-    is       => 'ro',
-    isa      => 'Str',
-    required => 1,
+has shortcode => (
+    is         => 'ro',
+    isa        => 'Str',
+    lazy_build => 1,
+);
+
+=head2 underlying
+
+The underlying asset, as a L<Finance::Asset::Underlying> instance.
+
+=cut
+
+has underlying => (
+    is      => 'ro',
+    isa     => 'underlying_object',
+    coerce  => 1,
+    handles => [qw(market pip_size)],
 );
 
 =head1 ATTRIBUTES - Date-related
@@ -209,25 +221,6 @@ This should not be mistaken for is_forwarding_start attribute as that could chan
 has starts_as_forward_starting => (
     is      => 'ro',
     default => 0,
-);
-
-=head2 shortcode
-
-(optional) This can be provided when creating a contract from a shortcode. If not, it will
-be populated from the contract parameters.
-
-=cut
-
-has shortcode => (
-    is         => 'ro',
-    isa        => 'Str',
-    lazy_build => 1,
-);
-
-#These data are coming from contract_types.yml
-has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
-    is      => 'ro',
-    default => undef,
 );
 
 has ticks_to_expiry => (
@@ -445,6 +438,29 @@ has _pricing_args => (
     is         => 'ro',
     isa        => 'HashRef',
     lazy_build => 1,
+);
+
+=head1 ATTRIBUTES - From contract_types.yml
+
+=head2 id
+
+=head2 pricing_code
+
+=head2 display_name
+
+=head2 sentiment
+
+=head2 other_side_code
+
+=head2 payout_type
+
+=head2 payouttime
+
+=cut
+
+has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
+    is      => 'ro',
+    default => undef,
 );
 
 =head1 METHODS - Boolean checks
