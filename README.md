@@ -24,6 +24,23 @@ BOM::Product::Contract - represents a contract object for a single bet
 This class is the base definition for all our contract types. It provides behaviour common to all contracts,
 and defines the standard API for interacting with those contracts.
 
+# ATTRIBUTES - Construction
+
+These are the parameters we expect to be passed when constructing a new contract.
+These would be passed to ["produce\_contract" in BOM::Product::ContractFactory](https://metacpan.org/pod/BOM::Product::ContractFactory#produce_contract).
+
+## underlying
+
+The underlying asset, as a [Finance::Asset::Underlying](https://metacpan.org/pod/Finance::Asset::Underlying) instance.
+
+## payout
+
+Payout amount value, see ["currency"](#currency).
+
+## currency
+
+The currency in which this contract is bought/sold, e.g. `USD`.
+
 # ATTRIBUTES - Date-related
 
 ## date\_expiry
