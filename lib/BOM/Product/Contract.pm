@@ -196,7 +196,9 @@ Examples would be C< 5t > for 5 ticks, C< 3h > for 3 hours.
 
 has duration => (is => 'ro');
 
-=head1 ATTRIBUTES - Other
+=head1 ATTRIBUTES - Tick-expiry contracts
+
+These are only valid for tick contracts.
 
 =cut
 
@@ -210,6 +212,33 @@ has tick_expiry => (
     is      => 'ro',
     default => 0,
 );
+
+
+=head2 prediction
+
+Prediction (for tick trades) is what client predicted would happen.
+
+=cut
+
+has prediction => (
+    is  => 'ro',
+    isa => 'Maybe[Num]',
+);
+
+=head2 tick_count
+
+Number of ticks in this trade.
+
+=cut
+
+has tick_count => (
+    is  => 'ro',
+    isa => 'Maybe[Num]',
+);
+
+=head1 ATTRIBUTES - Other
+
+=cut
 
 =head2 starts_as_forward_starting
 
@@ -256,13 +285,6 @@ has [
     isa        => 'Maybe[PositiveNum]',
     lazy_build => 1,
     );
-
-#prediction (for tick trades) is what client predicted would happen
-#tick_count is for tick trades
-has [qw(prediction tick_count)] => (
-    is  => 'ro',
-    isa => 'Maybe[Num]',
-);
 
 =head2 for_sale
 

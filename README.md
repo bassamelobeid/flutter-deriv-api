@@ -75,11 +75,23 @@ The unit is provided as a single character suffix:
 
 Examples would be ` 5t ` for 5 ticks, ` 3h ` for 3 hours.
 
-# ATTRIBUTES - Other
+# ATTRIBUTES - Tick-expiry contracts
+
+These are only valid for tick contracts.
 
 ## tick\_expiry
 
 A boolean that indicates if a contract expires after a pre-specified number of ticks.
+
+## prediction
+
+Prediction (for tick trades) is what client predicted would happen.
+
+## tick\_count
+
+Number of ticks in this trade.
+
+# ATTRIBUTES - Other
 
 ## starts\_as\_forward\_starting
 
