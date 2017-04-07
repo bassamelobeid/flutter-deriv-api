@@ -209,11 +209,6 @@ has shortcode => (
     lazy_build => 1,
 );
 
-has category_code => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 #These data are coming from contract_types.yml
 has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
     is      => 'ro',
@@ -611,6 +606,17 @@ The starting barrier value.
 
 =cut
 
+=head2 category_code
+
+The code for this category.
+
+=cut
+
+sub category_code {
+    my $self = shift;
+    return $self->category->code;
+}
+
 =head1 METHODS - Other
 
 =cut
@@ -790,11 +796,6 @@ sub _build__pricing_args {
     }
 
     return $args;
-}
-
-sub _build_category_code {
-    my $self = shift;
-    return $self->category->code;
 }
 
 sub _build_ticks_to_expiry {
