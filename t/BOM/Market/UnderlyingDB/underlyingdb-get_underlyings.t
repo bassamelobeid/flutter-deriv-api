@@ -18,7 +18,7 @@ lives_ok {
 }
 'Initialized';
 
-eq_or_diff [sort $udb->available_contract_categories], [sort qw(callput endsinout touchnotouch spreads staysinout asian digits)],
+eq_or_diff [sort $udb->available_contract_categories], [sort qw(callput endsinout touchnotouch staysinout asian digits)],
     "Correct list of available contract categories";
 
 eq_or_diff [sort $udb->available_expiry_types], [sort qw(intraday daily tick)], 'Correct list of available expiry types.';
