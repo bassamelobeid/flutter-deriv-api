@@ -1404,6 +1404,37 @@ sub _build_risk_profile {
     );
 }
 
+=head2 extra_info
+
+get the extra pricing information of the contract. Is it necessary for Japan but let's do it for everyone.
+
+->extra_info('string'); # returns a string of information separated by underscore
+->extra_info('arrayref'); # returns an array reference of information
+
+=cut
+
+sub extra_info {
+    my ($self, $as_type) = @_;
+
+    die 'Supports \'string\' or \'arrayref\' type only' if (not($as_type eq 'string' or $as_type eq 'arrayref'));
+
+    my @extra = ([pricing_spot => $self->pricing_spot]);
+    if ($self->priced_with_intraday_model) {
+        push @extra, (map { [$_ => $self->$_] } qw(pricing_vol news_adjusted_pricing_vol long_term_prediction volatility_scaling_factor));
+    } elsif ($self->pricing_vol_for_two_barriers) {
+        push @extra, (map { [$_ => $self->pricing_vol_for_two_barriers->{$_}] } qw(high_barrier_vol low_barrier_vol));
+    } else {
+        push @extra, [pricing_vol => $self->pricing_vol];
+    }
+
+    if ($as_type eq 'string') {
+        my $string = join '_', map { $_->[1] } @extra;
+        return $string;
+    }
+
+    return \@extra;
+}
+
 # Don't mind me, I just need to make sure my attibutes are available.
 with 'BOM::Product::Role::Reportable';
 
