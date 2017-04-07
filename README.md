@@ -24,31 +24,43 @@ BOM::Product::Contract - represents a contract object for a single bet
 This class is the base definition for all our contract types. It provides behaviour common to all contracts,
 and defines the standard API for interacting with those contracts.
 
+# ATTRIBUTES - Construction
+
+These are the parameters we expect to be passed when constructing a new contract.
+These would be passed to ["produce\_contract" in BOM::Product::ContractFactory](https://metacpan.org/pod/BOM::Product::ContractFactory#produce_contract).
+
+## currency
+
+The currency in which this contract is bought/sold, e.g. `USD`.
+
+## payout
+
+Payout amount value, see ["currency"](#currency).
+
+## shortcode
+
+(optional) This can be provided when creating a contract from a shortcode. If not, it will
+be populated from the contract parameters.
+
+## underlying
+
+The underlying asset, as a [Finance::Asset::Underlying](https://metacpan.org/pod/Finance::Asset::Underlying) instance.
+
 # ATTRIBUTES - Date-related
+
+## date\_expiry
+
+When the contract expires.
+
+## date\_pricing
+
+The date at which we're pricing the contract. Provide ` undef ` to indicate "now".
 
 ## date\_start
 
 For American contracts, defines when the contract starts.
 
 For Europeans, this is used to determine the barrier when the requested barrier is relative.
-
-## date\_pricing
-
-The date at which we're pricing the contract. Provide ` undef ` to indicate "now".
-
-## date\_expiry
-
-When the contract expires.
-
-## date\_settlement
-
-When the contract was settled (can be `undef`).
-
-## effective\_start
-
-- For backpricing, this is ["date\_start"](#date_start).
-- For a forward-starting contract, this is ["date\_start"](#date_start).
-- For all other states - i.e. active, non-expired contracts - this is ["date\_pricing"](#date_pricing).
 
 ## duration
 
@@ -63,11 +75,28 @@ The unit is provided as a single character suffix:
 
 Examples would be ` 5t ` for 5 ticks, ` 3h ` for 3 hours.
 
-# ATTRIBUTES - Other
+# ATTRIBUTES - Tick-expiry contracts
+
+These are only valid for tick contracts.
 
 ## tick\_expiry
 
 A boolean that indicates if a contract expires after a pre-specified number of ticks.
+
+## prediction
+
+Prediction (for tick trades) is what client predicted would happen.
+
+## tick\_count
+
+Number of ticks in this trade.
+
+# ATTRIBUTES - Other
+
+## starts\_as\_forward\_starting
+
+This attribute tells us if this contract was initially bought as a forward starting contract.
+This should not be mistaken for is\_forwarding\_start attribute as that could change over time.
 
 ## for\_sale
 
@@ -82,40 +111,23 @@ This will contain the shortcode of the original bet, if we built it from one.
 
 A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.
 
-# ATTRIBUTES - Internal
+# ATTRIBUTES - From contract\_types.yml
 
-## \_pricing\_args
+## id
 
-Internal hashref of attributes that will be passed to the pricing engine.
+## pricing\_code
+
+## display\_name
+
+## sentiment
+
+## other\_side\_code
+
+## payout\_type
+
+## payouttime
 
 # METHODS - Boolean checks
-
-## is\_spread
-
-Returns true if this is a spread contract - due to be removed.
-
-## is\_legacy
-
-True for obsolete contract types, see [BOM::Product::Contract::Invalid](https://metacpan.org/pod/BOM::Product::Contract::Invalid).
-
-## is\_expired
-
-Returns true if this contract is expired.
-
-It is expired only if it passes the expiry time time and has valid exit tick.
-
-## is\_settleable
-
-Returns true if the contract is settleable.
-
-To be able to settle, it need pass the settlement time and has valid exit tick
-
-## is\_after\_settlement
-
-This check if the contract already passes the settlement time
-
-For tick expiry contract, it can expires when a certain number of ticks is received or it already passes the max\_tick\_expiry\_duration.
-For other contracts, it can expires when current time has past a pre-determined settelement time.
 
 ## is\_after\_expiry
 
@@ -124,11 +136,84 @@ This check if the contract already passes the expiry times
 For tick expiry contract, there is no expiry time, so it will check again the exit tick
 For other contracts, it will check the remaining time of the contract to expiry.
 
+## is\_after\_settlement
+
+This check if the contract already passes the settlement time
+
+For tick expiry contract, it can expires when a certain number of ticks is received or it already passes the max\_tick\_expiry\_duration.
+For other contracts, it can expires when current time has past a pre-determined settelement time.
+
+## is\_expired
+
+Returns true if this contract is expired.
+
+It is expired only if it passes the expiry time time and has valid exit tick.
+
+## is\_legacy
+
+True for obsolete contract types, see [BOM::Product::Contract::Invalid](https://metacpan.org/pod/BOM::Product::Contract::Invalid).
+
+## is\_settleable
+
+Returns true if the contract is settleable.
+
+To be able to settle, it need pass the settlement time and has valid exit tick
+
+## is\_spread
+
+Returns true if this is a spread contract - due to be removed.
+
+# METHODS - Proxied to [BOM::Product::Contract::Category](https://metacpan.org/pod/BOM::Product::Contract::Category)
+
+Our `category` attribute provides several helper methods:
+
+## supported\_expiries
+
+Which expiry durations we allow. Values can be:
+
+- intraday
+- daily
+- tick
+
+## supported\_start\_types
+
+(removed)
+
+## is\_path\_dependent
+
+True if this is a path-dependent contract.
+
+## allow\_forward\_starting
+
+True if we allow forward starting for this contract type.
+
+## two\_barriers
+
+True if the contract has two barriers.
+
+## barrier\_at\_start
+
+The starting barrier value.
+
+## category\_code
+
+The code for this category.
+
 # METHODS - Other
 
 ## debug\_information
 
 Pricing engine internal debug information hashref.
+
+## effective\_start
+
+- For backpricing, this is ["date\_start"](#date_start).
+- For a forward-starting contract, this is ["date\_start"](#date_start).
+- For all other states - i.e. active, non-expired contracts - this is ["date\_pricing"](#date_pricing).
+
+## date\_settlement
+
+When the contract was settled (can be `undef`).
 
 ## get\_time\_to\_expiry
 
