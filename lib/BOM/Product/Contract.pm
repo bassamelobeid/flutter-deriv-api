@@ -425,41 +425,27 @@ has _pricing_args => (
 
 =cut
 
-=head2 is_spread
+=head2 is_after_expiry
 
-Returns true if this is a spread contract - due to be removed.
+This check if the contract already passes the expiry times
 
-=cut
-
-sub is_spread { return 0 }
-
-=head2 is_legacy
-
-True for obsolete contract types, see L<BOM::Product::Contract::Invalid>.
+For tick expiry contract, there is no expiry time, so it will check again the exit tick
+For other contracts, it will check the remaining time of the contract to expiry.
 
 =cut
 
-sub is_legacy { return 0 }
+sub is_after_expiry {
+    my $self = shift;
 
-=head2 is_expired
+    if ($self->tick_expiry) {
+        return 1
+            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds));
+    } else {
 
-Returns true if this contract is expired.
-
-It is expired only if it passes the expiry time time and has valid exit tick.
-
-=cut
-
-sub is_expired { die "Calling ->is_expired on a ::Contract instance" }
-
-=head2 is_settleable
-
-Returns true if the contract is settleable.
-
-To be able to settle, it need pass the settlement time and has valid exit tick
-
-=cut
-
-sub is_settleable { die "Calling ->is_settleable on a ::Contract instance" }
+        return 1 if $self->get_time_to_expiry->seconds == 0;
+    }
+    return 0;
+}
 
 =head2 is_after_settlement
 
@@ -483,27 +469,41 @@ sub is_after_settlement {
     return 0;
 }
 
-=head2 is_after_expiry
+=head2 is_expired
 
-This check if the contract already passes the expiry times
+Returns true if this contract is expired.
 
-For tick expiry contract, there is no expiry time, so it will check again the exit tick
-For other contracts, it will check the remaining time of the contract to expiry.
+It is expired only if it passes the expiry time time and has valid exit tick.
 
 =cut
 
-sub is_after_expiry {
-    my $self = shift;
+sub is_expired { die "Calling ->is_expired on a ::Contract instance" }
 
-    if ($self->tick_expiry) {
-        return 1
-            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds));
-    } else {
+=head2 is_legacy
 
-        return 1 if $self->get_time_to_expiry->seconds == 0;
-    }
-    return 0;
-}
+True for obsolete contract types, see L<BOM::Product::Contract::Invalid>.
+
+=cut
+
+sub is_legacy { return 0 }
+
+=head2 is_settleable
+
+Returns true if the contract is settleable.
+
+To be able to settle, it need pass the settlement time and has valid exit tick
+
+=cut
+
+sub is_settleable { die "Calling ->is_settleable on a ::Contract instance" }
+
+=head2 is_spread
+
+Returns true if this is a spread contract - due to be removed.
+
+=cut
+
+sub is_spread { return 0 }
 
 sub may_settle_automatically {
     my $self = shift;
