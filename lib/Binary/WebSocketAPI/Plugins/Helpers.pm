@@ -5,11 +5,15 @@ use base 'Mojolicious::Plugin';
 use strict;
 use warnings;
 use feature "state";
-use Sys::Hostname;
-use YAML::XS;
-use Scalar::Util ();
+
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
+
+use Future;
+use Sys::Hostname;
+use Scalar::Util ();
+use YAML::XS;
+
 use Locale::Maketext::ManyPluralForms {
     'EN'      => ['Gettext' => '/home/git/binary-com/translations-websockets-api/src/en.po'],
     '*'       => ['Gettext' => '/home/git/binary-com/translations-websockets-api/src/locales/*.po'],
@@ -254,6 +258,65 @@ sub register {
                         $c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}});
                     }
                 });
+        });
+
+    ### rate-limitation plugin
+    my %rates_files = (
+        binary => LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml'),
+        japan  => LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/japan_perl_rate_limitations.yml'));
+
+    my %rates_config;
+    # convert configuration
+    # (i.e. unify human-readable time intervals like '1m' to seconds (60))
+    for my $company (keys %rates_files) {
+        my $rates_file_content = $rates_files{$company};
+        for my $service (keys %$rates_file_content) {
+            for my $interval (keys %{$rates_file_content->{$service}}) {
+                my $seconds_ttl = Time::Duration::Concise->new(interval => $interval)->seconds;
+                my $limit       = $rates_file_content->{$service}->{$interval};
+                my $limit_name  = "${service}.${interval}";
+
+                push @{$rates_config{$company}{$service}},
+                    {
+                    name  => $limit_name,
+                    limit => $limit,
+                    ttl   => $seconds_ttl,
+                    };
+            }
+        }
+    }
+    $app->helper(
+        # returns future, which will be 'done' if services usage limit wasn't hit,
+        # and 'fail' otherwise
+        check_limits => sub {
+            my ($c, $service) = @_;
+            my $client_id = $c->rate_limitations_key;
+            my $limit_descriptors = $rates_config{$c->landing_company_name // 'binary'}{$service};
+
+            my $redis = $app->ws_redis_master;
+            my @future_checks;
+            for my $descr (@$limit_descriptors) {
+                my $f = Future->new;
+                $redis->incr(
+                    $descr->{name},
+                    sub {
+                        my ($redis, $count) = @_;
+                        if ($count == 1) {
+                            $redis->expire(
+                                $descr->{name},
+                                $descr->{ttl},
+                                sub {
+                                    $f->done;
+                                });
+                        } elsif ($count >= $descr->{limit}) {
+                            $f->fail('limit hit');
+                        } else {
+                            $f->done;
+                        }
+                    });
+                push @future_checks, $f;
+            }
+            return Future->needs_all(@future_checks);
         });
 
     return;
