@@ -69,7 +69,7 @@
                 },
                 "legal_allowed_contract_categories": {
                     "type": "array",
-                    "minItems": 7,
+                    "minItems": 6,
                     "required": "1",
                     "items": {
                         "type": "string",
@@ -136,7 +136,7 @@
                 },
                 "legal_allowed_contract_categories": {
                     "type": "array",
-                    "minItems": 7,
+                    "minItems": 6,
                     "required": "1",
                     "items": {
                         "type": "string",
