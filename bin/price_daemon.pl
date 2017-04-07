@@ -14,7 +14,7 @@ use Sys::Info;
 use List::Util qw(max);
 use DataDog::DogStatsd::Helper;
 
-my $internal_ip     = get("http://169.254.169.254/latest/meta-data/local-ipv4");
+my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 GetOptions(
     "workers=i" => \my $workers,
     "queues=s"  => \my $queues,
@@ -30,7 +30,10 @@ sub signal_handler {
     kill KILL => @running_forks;
     exit 0;
 }
-sigtrap->import(handler => 'signal_handler', 'normal-signals');
+sigtrap->import(
+    handler => 'signal_handler',
+    'normal-signals'
+);
 
 # tune cache: up to 2s
 $ENV{QUANT_FRAMEWORK_HOLIDAY_CACHE} = $ENV{QUANT_FRAMEWORK_PATRIALTRADING_CACHE} = 2;    ## nocritic
@@ -39,7 +42,7 @@ my $pm = Parallel::ForkManager->new($workers);
 $pm->run_on_start(
     sub {
         my $pid = shift;
-		($index) = grep { $workers[$_] == 0 } 0..$#workers;
+        ($index) = grep { $workers[$_] == 0 } 0 .. $#workers;
         $workers[$index] = $pid;
         push @running_forks, $pid;
         DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.forks.count', (scalar @running_forks), {tags => ['tag:' . $internal_ip]});
@@ -48,12 +51,12 @@ $pm->run_on_start(
 $pm->run_on_finish(
     sub {
         my ($pid, $exit_code) = @_;
-		for (@workers) {
-            if ($_ == $pid){
+        for (@workers) {
+            if ($_ == $pid) {
                 $_ = 0;
                 last;
             }
-		}
+        }
         @running_forks = grep { $_ != $pid } @running_forks;
         DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.forks.count', (scalar @running_forks), {tags => ['tag:' . $internal_ip]});
         warn "Fork [$pid] ended with exit code [$exit_code]\n";
@@ -62,16 +65,14 @@ $pm->run_on_finish(
 while (1) {
     $pm->start and next;
     my $pid = $$;
-    ($index) = grep { $workers[$_] == 0 } 0..$#workers;
-    my $daemon = BOM::Pricing::PriceDaemon->new(
-        tags       => [ 'tag:' . $internal_ip ]
-    );
+    ($index) = grep { $workers[$_] == 0 } 0 .. $#workers;
+    my $daemon = BOM::Pricing::PriceDaemon->new(tags => ['tag:' . $internal_ip]);
     $daemon->run(
-		queues 		=> [ split /,/, $queues ], 
-		ip 			=> $internal_ip, 
-		pid 		=> $pid, 
-		fork_index 	=> $index
-	);
+        queues     => [split /,/, $queues],
+        ip         => $internal_ip,
+        pid        => $pid,
+        fork_index => $index
+    );
     $pm->finish;
 }
 
