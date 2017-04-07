@@ -29,17 +29,22 @@ and defines the standard API for interacting with those contracts.
 These are the parameters we expect to be passed when constructing a new contract.
 These would be passed to ["produce\_contract" in BOM::Product::ContractFactory](https://metacpan.org/pod/BOM::Product::ContractFactory#produce_contract).
 
-## underlying
+## currency
 
-The underlying asset, as a [Finance::Asset::Underlying](https://metacpan.org/pod/Finance::Asset::Underlying) instance.
+The currency in which this contract is bought/sold, e.g. `USD`.
 
 ## payout
 
 Payout amount value, see ["currency"](#currency).
 
-## currency
+## shortcode
 
-The currency in which this contract is bought/sold, e.g. `USD`.
+(optional) This can be provided when creating a contract from a shortcode. If not, it will
+be populated from the contract parameters.
+
+## underlying
+
+The underlying asset, as a [Finance::Asset::Underlying](https://metacpan.org/pod/Finance::Asset::Underlying) instance.
 
 # ATTRIBUTES - Date-related
 
@@ -81,11 +86,6 @@ A boolean that indicates if a contract expires after a pre-specified number of t
 This attribute tells us if this contract was initially bought as a forward starting contract.
 This should not be mistaken for is\_forwarding\_start attribute as that could change over time.
 
-## shortcode
-
-(optional) This can be provided when creating a contract from a shortcode. If not, it will
-be populated from the contract parameters.
-
 ## for\_sale
 
 Was this bet built using BOM-generated parameters, as opposed to user-supplied parameters?
@@ -98,6 +98,22 @@ This will contain the shortcode of the original bet, if we built it from one.
 ## max\_tick\_expiry\_duration
 
 A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.
+
+# ATTRIBUTES - From contract\_types.yml
+
+## id
+
+## pricing\_code
+
+## display\_name
+
+## sentiment
+
+## other\_side\_code
+
+## payout\_type
+
+## payouttime
 
 # METHODS - Boolean checks
 
