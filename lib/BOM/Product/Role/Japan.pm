@@ -221,19 +221,35 @@ sub japan_pricing_info {
     my $bid_price = $self->payout - $self->opposite_contract->ask_price;
     my @pricing_info = ($self->shortcode, $trading_window_start, $self->ask_price, $bid_price, $self->_date_pricing_milliseconds);
 
-    my $extra = $self->pricing_spot . '_';
-    if ($self->priced_with_intraday_model) {
-        $extra .= join '_', ($self->pricing_vol, $self->news_adjusted_pricing_vol, $self->long_term_prediction, $self->volatility_scaling_factor);
-    } elsif ($self->pricing_vol_for_two_barriers) {
-        $extra .= join '_', ($self->pricing_vol_for_two_barriers->{high_barrier_vol}, $self->pricing_vol_for_two_barriers->{low_barrier_vol});
-    } else {
-        $extra .= $self->pricing_vol;
-    }
-
+    my $extra = $self->extra_info('string');
     my $pricing_info = join ',', @pricing_info, $extra;
 
     return "[JPLOG]," . $pricing_info . "\n";
 
+}
+
+sub extra_info {
+    my ($self, $as_type) = @_;
+
+    die 'Supports \'string\' or \'hash\' type only' if (not($as_type eq 'string' or $as_type eq 'hash'));
+
+    my @extra = ({pricing_spot => $self->pricing_spot});
+    if ($self->priced_with_intraday_model) {
+        push @extra, (map { $_ => $self->$_ } qw(pricing_vol news_adjusted_pricing_vol long_term_prediction volatility_scaling_factor));
+    } elsif ($self->pricing_vol_for_two_barriers) {
+        push @extra, (map { $_ => $self->pricing_vol_for_two_barriers->{$_} } qw(high_barrier_vol low_barrier_vol));
+    } else {
+        push @extra, +{pricing_vol => $self->pricing_vol};
+    }
+
+    if ($as_type eq 'string') {
+        my $string = join '_', map { values %$_ } @extra;
+        return $string;
+    }
+
+    my %hash = map { %$_ } @extra;
+
+    return %hash;
 }
 
 1;
