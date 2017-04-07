@@ -71,11 +71,6 @@ has is_path_dependent => (
     default => 0,
 );
 
-has supported_start_types => (
-    is      => 'ro',
-    default => sub { ['spot'] },
-);
-
 =head1 METHODS
 
 =head2 translated_display_name
