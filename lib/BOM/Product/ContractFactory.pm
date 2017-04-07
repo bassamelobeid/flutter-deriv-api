@@ -75,8 +75,6 @@ Produce a Contract Object from a set of parameters
 
 =cut
 
-my $contract_type_config = LoadFile(File::ShareDir::dist_file('LandingCompany', 'contract_types.yml'));
-
 sub produce_contract {
     my ($build_arg, $maybe_currency, $maybe_sold) = @_;
 
