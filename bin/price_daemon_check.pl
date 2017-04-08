@@ -24,6 +24,7 @@ for (@keys) {
     my %entry = @{decode_json($redis->get($_))};
     $entries{$entry{ip}} = [] unless exists $entries{$entry{ip}};
     $entry{'diff'} = time - $entry{time};
+    $entry{'key'} = $_;
     $entries{$entry{ip}}[$entry{fork_index}] = \%entry;
 }
 
@@ -42,29 +43,26 @@ for (keys %ip_list) {
             #first approach is send the time differance to datadog and create a monitor there.
             DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.forks.last_active',
                 $e->{'diff'}, {tags => ['tag:' . $e->{'ip'}, 'pid:' . $e->{'pid'}]});
-            #second approach is to send PD alerts from this script.
+            #to be printed to log.
             if ($e->{'diff'} > 10) {
                 print
                     "pricer_daemon service in $e->{'ip'} ENV: $ip_list{$_}  with fork PID: $e->{'pid'} did not do any pricing for the last $e->{'diff'} seconds.\n";
-                my $error_msg =
-                    "TEST PLEASE IGNORE pricer_daemon service in $e->{'ip'} ENV: $ip_list{$_}  with fork PID: $e->{'pid'} did not do any pricing for the last $e->{'diff'} seconds.";
-                my $event_type   = "trigger";
-                my $incident_key = "pricer:$e->{'ip'}-$e->{'fork_index'}";
-                send_pd($error_msg, $event_type, $incident_key);
-                #warn "pricer_daemon service in $e->{'ip'} ENV: $ip_list{$_}  with fork PID: $e->{'pid'} did not do any pricing for the last $e->{'diff'} seconds.";
             } else {
                 #fork status is ok.
-                send_pd("", "resolve", "pricer:$e->{'ip'}-$e->{'fork_index'}");
             }
         }
-        delete $entries{$_};
-        delete $ip_list{$_};
     } else {
         print "pricer_daemon with an ip: $_ is not doing any pricing while its set to be a pricer in env: $ip_list{$_}\n";
+        #send PD alert
+        send_pd("pricer_daemon with an ip: $_ is not doing any pricing while its set to be a pricer in env: $ip_list{$_}", "trigger", "");
     }
+    delete $entries{$_};
+    delete $ip_list{$_};
 }
 for (keys %entries) {
     print "pricer_daemon with an ip: $_ is an orphan\n";
+    #delete key from redis.
+    $redis->dump($_);
 }
 
 sub get_ips {
@@ -86,6 +84,7 @@ sub send_pd {
     my $PD_serviceKey = $ENV{'PD_SERVICE_KEY'};
     my $PD_apiKey     = $ENV{'PD_API_KEY'};
     my $PD_enabled    = $ENV{'PD_ENABLED'};
+    #debug.
     print "PD_APIKEY = $PD_apiKey, TYPE: $type, $error_msg\n";
 
     if ($PD_enabled) {
