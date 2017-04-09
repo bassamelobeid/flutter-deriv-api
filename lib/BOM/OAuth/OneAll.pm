@@ -41,12 +41,7 @@ sub callback {
         my $user  = try {
             BOM::Platform::User->new({email => $email})
         };
-        if ($user) {
-            if ($user->password) {
-                $c->session(_oneall_error => localize('Please log in using your email and password.'));
-                return $c->redirect_to($redirect_uri);
-            }
-        } else {
+        unless ($user) {
             # create user based on email by fly
             $user = $c->__create_virtual_user($email);
         }
@@ -88,6 +83,10 @@ sub __create_virtual_user {
         },
     });
     die $acc->{error} if $acc->{error};
+
+    ## set social_signup flag
+    $acc->{client}->set_status('social_signup', 'system', '1');
+    $acc->{client}->save;
 
     return $acc->{user};
 }
