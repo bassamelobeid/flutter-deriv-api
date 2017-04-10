@@ -324,12 +324,13 @@ sub startup {
             }
         ],
 
-        ['app_register', {require_auth => 'admin'}],
-        ['app_list',     {require_auth => 'admin'}],
-        ['app_get',      {require_auth => 'admin'}],
-        ['app_update',   {require_auth => 'admin'}],
-        ['app_delete',   {require_auth => 'admin'}],
-        ['oauth_apps',   {require_auth => 'read'}],
+        ['app_register',     {require_auth => 'admin'}],
+        ['app_list',         {require_auth => 'admin'}],
+        ['app_get',          {require_auth => 'admin'}],
+        ['app_update',       {require_auth => 'admin'}],
+        ['app_delete',       {require_auth => 'admin'}],
+        ['oauth_apps',       {require_auth => 'read'}],
+        ['revoke_oauth_app', {require_auth => 'admin'}],
 
         ['topup_virtual',     {require_auth => 'trade'}],
         ['get_limits',        {require_auth => 'read'}],
