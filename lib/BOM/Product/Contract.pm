@@ -251,11 +251,6 @@ has starts_as_forward_starting => (
     default => 0,
 );
 
-has ticks_to_expiry => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 #expiry_daily - Does this bet expire at close of the exchange?
 has [
     qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_code
@@ -661,6 +656,17 @@ sub debug_information {
     return $self->pricing_engine->can('debug_info') ? $self->pricing_engine->debug_info : {};
 }
 
+=head2 ticks_to_expiry
+
+Number of ticks until expiry of this contract. Defaults to one more than tick_count,
+TODO JB - this is overridden in the digit/Asian contracts, any idea why?
+
+=cut
+
+sub ticks_to_expiry {
+    return shift->tick_count + 1;
+}
+
 =head2 effective_start
 
 =over 4
@@ -866,10 +872,6 @@ sub _build__pricing_args {
     }
 
     return $args;
-}
-
-sub _build_ticks_to_expiry {
-    return shift->tick_count + 1;
 }
 
 sub _build_date_pricing {
