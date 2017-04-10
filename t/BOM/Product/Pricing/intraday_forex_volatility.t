@@ -83,7 +83,7 @@ subtest 'ten ticks in decimate ticks' => sub {
     warning { $args = $c->_pricing_args }, qr/No basis tick for/;
     my $res;
     warning { $res = $c->pricing_vol }, qr/No basis tick for/;
-    is $res, 0.119418941965231, 'we rely solely on long term prediction if there is only one decimated tick.';
+    is $res, 0.119608383744582, 'we rely solely on long term prediction if there is only one decimated tick.';
     is $args->{volatility_scaling_factor}, 135 / 1800, 'scaling factor is non zero';
     warning { $res = $c->pricing_engine->risk_markup->peek_amount('vol_spread') }, qr/No basis tick for/;
     is $res, 0.04971875, 'charged a 9.9 vol spread markup due to shortterm uncertainty';
@@ -96,7 +96,7 @@ subtest 'full set of decimate ticks' => sub {
     warning { $args = $c->_pricing_args }, qr/No basis tick for/;
     my $res;
     warning { $res = $c->pricing_vol }, qr/No basis tick for/;
-    is $res, 0.106236103095101, 'we rely solely on long term prediction if there is only one decimated tick.';
+    is $res, 0.106404632107923, 'we rely solely on long term prediction if there is only one decimated tick.';
     is $args->{volatility_scaling_factor}, 1, 'scaling factor is 1';
     warning { $res = $c->pricing_engine->risk_markup->peek_amount('vol_spread_markup') }, qr/No basis tick for/;
     is $res, 0, 'charged a 0% vol spread markup when we have full set of ticks to calculate volatility';
