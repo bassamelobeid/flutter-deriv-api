@@ -35,7 +35,7 @@ my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $logi
 
 $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
-is $authorize->{msg_type}, 'authorize', "authorised";
+ok !$authorize->{error}, "authorised";
 
 my $i         = 0;
 my $limit_hit = 0;
@@ -55,9 +55,10 @@ my $logout = decode_json($t->message->[1]);
 is $logout->{msg_type}, 'logout';
 is $logout->{logout},   1;
 
+($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 $t->send_ok({json => {authorize => $token}})->message_ok;
 $authorize = decode_json($t->message->[1]);
-is $authorize->{msg_type}, 'authorize', "re-authorised";
+ok !$authorize->{error}, "re-authorised";
 
 $t->send_ok({json => {$call_type => 1}})->message_ok;
 my $msg = decode_json($t->message->[1]);
