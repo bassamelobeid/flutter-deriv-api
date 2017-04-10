@@ -256,7 +256,6 @@ has [qw(
         is_intraday
         expiry_type
         start_type
-        payouttime_code
         translated_display_name
         is_forward_starting
         permitted_expiries
@@ -887,6 +886,7 @@ sub _build__pricing_args {
 
     my $start_date           = $self->date_pricing;
     my $barriers_for_pricing = $self->barriers_for_pricing;
+    my $payouttime_code      = ($self->payouttime eq 'hit') ? 0 : 1;
     my $args                 = {
         spot            => $self->pricing_spot,
         r_rate          => $self->r_rate,
@@ -897,7 +897,7 @@ sub _build__pricing_args {
         iv              => $self->pricing_vol,
         discount_rate   => $self->discount_rate,
         mu              => $self->mu,
-        payouttime_code => $self->payouttime_code,
+        payouttime_code => $payouttime_code,
     };
 
     if ($self->priced_with_intraday_model) {
@@ -945,12 +945,6 @@ sub _build_expiry_type {
 sub _build_start_type {
     my $self = shift;
     return $self->is_forward_starting ? 'forward' : 'spot';
-}
-
-sub _build_payouttime_code {
-    my $self = shift;
-
-    return ($self->payouttime eq 'hit') ? 0 : 1;
 }
 
 sub _build_translated_display_name {
