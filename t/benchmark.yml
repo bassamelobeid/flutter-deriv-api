@@ -3,30 +3,30 @@ mini:
     merlin:
         NUM:
             UPORDOWN:
-                avg: 0.0115
-                max: 0.03
+                avg: 0.0116
+                max: 0.0306
             ONETOUCH:
-                avg: 0.0059
-                max: 0.0106
+                avg: 0.0125
+                max: 0.0222
             NOTOUCH:
-                avg: 0.0061
-                max: 0.0172
+                avg: 0.0091
+                max: 0.0539
             CALL:
-                avg: 0.0033
+                avg: 0.0038
                 max: 0.0417
             RANGE:
-                avg: 0.0087
-                max: 0.0415
+                avg: 0.0147
+                max: 0.1411
         BASE:
             UPORDOWN:
                 avg: 0.0131
-                max: 0.0322
+                max: 0.0327
             ONETOUCH:
-                avg: 0.0084
+                avg: 0.0128
                 max: 0.0273
             NOTOUCH:
-                avg: 0.0071
-                max: 0.0249
+                avg: 0.0101
+                max: 0.059
             CALL:
                 avg: 0.0116
                 max: 0.0788
