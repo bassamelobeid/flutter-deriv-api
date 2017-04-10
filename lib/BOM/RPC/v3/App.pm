@@ -182,11 +182,19 @@ sub oauth_apps {
     my $client = $params->{client};
 
     my $oauth = BOM::Database::Model::OAuth->new;
-    if ($params->{args} and $params->{args}->{revoke_app}) {
-        my $user = BOM::Platform::User->new({email => $client->email});
-        foreach my $c1 ($user->clients) {
-            $oauth->revoke_app($params->{args}->{revoke_app}, $c1->loginid);
-        }
+
+    return $oauth->get_used_apps_by_loginid($client->loginid);
+}
+
+sub revoke_oauth_app {
+    my $params = shift;
+
+    my $client = $params->{client};
+    my $app_id = $params->{revoke_oauth_app};
+    my $oauth  = BOM::Database::Model::OAuth->new;
+    my $user   = BOM::Platform::User->new({email => $client->email});
+    foreach my $c1 ($user->clients) {
+        $oauth->revoke_app($params->{args}->{revoke_app}, $c1->loginid);
     }
 
     return $oauth->get_used_apps_by_loginid($client->loginid);
