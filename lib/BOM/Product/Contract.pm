@@ -257,9 +257,18 @@ has ticks_to_expiry => (
 );
 
 #expiry_daily - Does this bet expire at close of the exchange?
-has [
-    qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_code
-        translated_display_name is_forward_starting permitted_expiries effective_daily_trading_seconds)
+has [qw(
+        is_atm_bet
+        expiry_daily
+        is_intraday
+        expiry_type
+        start_type
+        payouttime_code
+        translated_display_name
+        is_forward_starting
+        permitted_expiries
+        effective_daily_trading_seconds
+        )
     ] => (
     is         => 'ro',
     lazy_build => 1,
