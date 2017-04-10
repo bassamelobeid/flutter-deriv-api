@@ -3,13 +3,13 @@ package Binary::WebSocketAPI::Hooks;
 use strict;
 use warnings;
 
-use JSON;
-use Try::Tiny;
-use Path::Tiny;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
-use Fcntl qw/ :flock /;
-use Mojo::IOLoop;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
+use Future;
+use JSON;
+use Mojo::IOLoop;
+use Path::Tiny;
+use Try::Tiny;
 
 sub start_timing {
     my ($c, $req_storage) = @_;
@@ -120,14 +120,15 @@ sub reached_limit_check {
             ? 'real'
             : 'virtual'
             )} // 'websocket_call';
-    if ($limiting_service
-        and not $c->rate_limitations->within_rate_limits($limiting_service, 'does-not-matter'))
-    {
-        stats_inc("bom_websocket_api.v_3.call.ratelimit.hit.$limiting_service", {tags => ["app_id:" . $c->app_id]});
-        $c->rate_limitations_save;
-        return 1;
+    if ($limiting_service) {
+        my $f = $c->check_limits($limiting_service);
+        $f->on_fail(
+            sub {
+                stats_inc("bom_websocket_api.v_3.call.ratelimit.hit.$limiting_service", {tags => ["app_id:" . $c->app_id]});
+            });
+        return $f;
     }
-    return;
+    return Future->done;
 }
 
 # Set JSON Schema default values for fields which are missing and have default.
@@ -153,56 +154,61 @@ sub before_forward {
     # None are much helpful in a well prepared DDoS.
     my $is_real = $c->stash('loginid') && !$c->stash('is_virtual');
     my $category = $req_storage->{name};
-    if (reached_limit_check($c, $category, $is_real)) {
-        return $c->new_error($category, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $category));
-    }
 
-    my $input_validation_result = $req_storage->{in_validator}->validate($args);
-    if (not $input_validation_result) {
-        my ($details, @general);
-        foreach my $err ($input_validation_result->errors) {
-            if ($err->property =~ /\$\.(.+)$/) {
-                $details->{$1} = $err->message;
-            } else {
-                push @general, $err->message;
+    return reached_limit_check($c, $category, $is_real)->then(
+        sub {
+
+            my $input_validation_result = $req_storage->{in_validator}->validate($args);
+            if (not $input_validation_result) {
+                my ($details, @general);
+                foreach my $err ($input_validation_result->errors) {
+                    if ($err->property =~ /\$\.(.+)$/) {
+                        $details->{$1} = $err->message;
+                    } else {
+                        push @general, $err->message;
+                    }
+                }
+                my $message = $c->l('Input validation failed: ') . join(', ', (keys %$details, @general));
+                if ($details->{req_id}) {
+                    delete $args->{req_id};
+                }
+                return Future->fail($c->new_error($req_storage->{name}, 'InputValidationFailed', $message, $details));
             }
+
+            _set_defaults($req_storage, $args);
+
+            my $tag = 'origin:';
+            if (my $origin = $c->req->headers->header("Origin")) {
+                if ($origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/) {
+                    $tag = "origin:$1";
+                }
+            }
+
+            DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.' . $req_storage->{name}, {tags => [$tag]});
+            DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.all', {tags => [$tag, "category:$req_storage->{name}"]});
+
+            my $loginid = $c->stash('loginid');
+            if ($req_storage->{require_auth} and not $loginid) {
+                return Future->fail($c->new_error($req_storage->{name}, 'AuthorizationRequired', $c->l('Please log in.')));
+            }
+
+            if ($req_storage->{require_auth} and not(grep { $_ eq $req_storage->{require_auth} } @{$c->stash('scopes') || []})) {
+                return Future->fail(
+                    $c->new_error(
+                        $req_storage->{name}, 'PermissionDenied', $c->l('Permission denied, requires [_1] scope.', $req_storage->{require_auth})));
+            }
+
+            if ($loginid) {
+                my $account_type = $c->stash('is_virtual') ? 'virtual' : 'real';
+                DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
+                    {tags => [$tag, $req_storage->{name}, "account_type:$account_type"]});
+            }
+            return Future->done;
         }
-        my $message = $c->l('Input validation failed: ') . join(', ', (keys %$details, @general));
-        if ($details->{req_id}) {
-            delete $args->{req_id};
-        }
-        return $c->new_error($req_storage->{name}, 'InputValidationFailed', $message, $details);
-    }
-
-    _set_defaults($req_storage, $args);
-
-    my $tag = 'origin:';
-    if (my $origin = $c->req->headers->header("Origin")) {
-        if ($origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/) {
-            $tag = "origin:$1";
-        }
-    }
-
-    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.' . $req_storage->{name}, {tags => [$tag]});
-    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.all', {tags => [$tag, "category:$req_storage->{name}"]});
-
-    my $loginid = $c->stash('loginid');
-    if ($req_storage->{require_auth} and not $loginid) {
-        return $c->new_error($req_storage->{name}, 'AuthorizationRequired', $c->l('Please log in.'));
-    }
-
-    if ($req_storage->{require_auth} and not(grep { $_ eq $req_storage->{require_auth} } @{$c->stash('scopes') || []})) {
-        return $c->new_error($req_storage->{name}, 'PermissionDenied',
-            $c->l('Permission denied, requires [_1] scope.', $req_storage->{require_auth}));
-    }
-
-    if ($loginid) {
-        my $account_type = $c->stash('is_virtual') ? 'virtual' : 'real';
-        DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
-            {tags => [$tag, $req_storage->{name}, "account_type:$account_type"]});
-    }
-
-    return;
+        )->else(
+        sub {
+            Future->fail($c->new_error($category, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $category)));
+        });
 }
 
 sub get_rpc_url {
@@ -310,7 +316,6 @@ sub on_client_connect {
     warn "Client connect request but $c is already in active connection list" if exists $c->app->active_connections->{$c};
     Scalar::Util::weaken($c->app->active_connections->{$c} = $c);
     init_redis_connections($c);
-    $c->rate_limitations_load;
     return;
 }
 
@@ -319,10 +324,6 @@ sub on_client_disconnect {
     warn "Client disconnect request but $c is not in active connection list" unless exists $c->app->active_connections->{$c};
     forget_all($c);
     delete $c->app->active_connections->{$c};
-    $c->rate_limitations_save;
-
-    my $timer_id = $c->stash->{rate_limitations_timer};
-    Mojo::IOLoop->remove($timer_id) if $timer_id;
 
     return;
 }
