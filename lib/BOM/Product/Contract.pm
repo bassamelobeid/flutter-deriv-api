@@ -773,7 +773,7 @@ sub longcode {
         $when_end = $self->get_time_to_expiry({from => $self->date_start})->as_string;
         $when_start = ($forward_starting_contract) ? $self->date_start->db_timestamp . ' GMT' : localize('contract start time');
     } elsif ($expiry_type eq 'daily') {
-        my $close = $self->trading_calendar->closing_on($self->underlying->exchange, $$self->date_expiry);
+        my $close = $self->trading_calendar->closing_on($self->underlying->exchange, $self->date_expiry);
         if ($close and $close->epoch != $self->date_expiry->epoch) {
             $when_end = $self->date_expiry->datetime . ' GMT';
         } else {
