@@ -252,8 +252,7 @@ has starts_as_forward_starting => (
 );
 
 #expiry_daily - Does this bet expire at close of the exchange?
-has [
-    qw(
+has [qw(
         expiry_daily
         is_intraday
         expiry_type
@@ -263,7 +262,7 @@ has [
         is_forward_starting
         permitted_expiries
         effective_daily_trading_seconds
-    )
+        )
     ] => (
     is         => 'ro',
     lazy_build => 1,
@@ -552,7 +551,6 @@ sub is_atm_bet {
     return 0 if $self->supplied_barrier ne 'S0P';
     return 1;
 }
-
 
 =head2 is_expired
 
