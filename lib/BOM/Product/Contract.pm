@@ -251,15 +251,18 @@ has starts_as_forward_starting => (
     default => 0,
 );
 
-has ticks_to_expiry => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 #expiry_daily - Does this bet expire at close of the exchange?
-has [
-    qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_code
-        translated_display_name is_forward_starting permitted_expiries effective_daily_trading_seconds)
+has [qw(
+        expiry_daily
+        is_intraday
+        expiry_type
+        start_type
+        payouttime_code
+        translated_display_name
+        is_forward_starting
+        permitted_expiries
+        effective_daily_trading_seconds
+        )
     ] => (
     is         => 'ro',
     lazy_build => 1,
@@ -532,6 +535,23 @@ sub is_after_settlement {
     return 0;
 }
 
+=head2 is_atm_bet
+
+Is this contract meant to be ATM or non ATM at start?
+The status will not change throughout the lifetime of the contract due to differences in offerings for ATM and non ATM contracts.
+
+=cut
+
+sub is_atm_bet {
+    my $self = shift;
+
+    return 0 if $self->two_barriers;
+    # if not defined, it is non ATM
+    return 0 if not defined $self->supplied_barrier;
+    return 0 if $self->supplied_barrier ne 'S0P';
+    return 1;
+}
+
 =head2 is_expired
 
 Returns true if this contract is expired.
@@ -659,6 +679,17 @@ sub debug_information {
     my $self = shift;
 
     return $self->pricing_engine->can('debug_info') ? $self->pricing_engine->debug_info : {};
+}
+
+=head2 ticks_to_expiry
+
+Number of ticks until expiry of this contract. Defaults to one more than tick_count,
+TODO JB - this is overridden in the digit/Asian contracts, any idea why?
+
+=cut
+
+sub ticks_to_expiry {
+    return shift->tick_count + 1;
 }
 
 =head2 effective_start
@@ -868,10 +899,6 @@ sub _build__pricing_args {
     return $args;
 }
 
-sub _build_ticks_to_expiry {
-    return shift->tick_count + 1;
-}
-
 sub _build_date_pricing {
     my $self = shift;
     my $time = Time::HiRes::time();
@@ -880,18 +907,6 @@ sub _build_date_pricing {
     return ($self->has_pricing_new and $self->pricing_new)
         ? $self->date_start
         : $now;
-}
-
-# Is this contract meant to be ATM or non ATM at start.
-# The status will not change throughout the lifetime of the contract due to differences in offerings for ATM and non ATM contracts.
-sub _build_is_atm_bet {
-    my $self = shift;
-
-    return 0 if $self->two_barriers;
-    # if not defined, it is non ATM
-    return 0 if not defined $self->supplied_barrier;
-    return 0 if $self->supplied_barrier ne 'S0P';
-    return 1;
 }
 
 sub _build_expiry_daily {
