@@ -290,8 +290,9 @@ sub register {
         # and 'fail' otherwise
         check_limits => sub {
             my ($c, $service) = @_;
-            my $client_id = $c->rate_limitations_key;
-            my $limit_descriptors = $rates_config{$c->landing_company_name // 'binary'}{$service};
+            my $client_id         = $c->rate_limitations_key;
+            my $limits_domain     = $rates_config{$c->landing_company_name // ''} // $rates_config{binary};
+            my $limit_descriptors = $limits_domain->{$service};
 
             my $redis = $app->ws_redis_master;
             my @future_checks;
