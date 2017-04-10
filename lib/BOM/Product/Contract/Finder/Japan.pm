@@ -38,6 +38,8 @@ sub available_contracts_for_symbol {
             date            => $underlying->for_date,
             landing_company => $landing_company,
         });
+    } else {
+        $offerings = [];
     }
 
     return {
