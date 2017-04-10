@@ -204,8 +204,7 @@ sub before_forward {
                     {tags => [$tag, $req_storage->{name}, "account_type:$account_type"]});
             }
             return Future->done;
-        }
-        )->else(
+        },
         sub {
             Future->fail($c->new_error($category, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $category)));
         });

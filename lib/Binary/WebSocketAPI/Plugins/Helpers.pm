@@ -12,7 +12,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Future;
 use Sys::Hostname;
 use Scalar::Util ();
-use YAML::XS;
+use YAML::XS qw(LoadFile);
 
 use Locale::Maketext::ManyPluralForms {
     'EN'      => ['Gettext' => '/home/git/binary-com/translations-websockets-api/src/en.po'],
@@ -298,9 +298,13 @@ sub register {
             for my $descr (@$limit_descriptors) {
                 my $f = Future->new;
                 $redis->incr(
-                    $descr->{name},
+                    $descr->{name} . $client_id,
                     sub {
-                        my ($redis, $count) = @_;
+                        my ($redis, $error, $count) = @_;
+                        if ($error) {
+                            $app->log->warn("Redis error: $error");
+                            return $f->fail($error) if $error;
+                        }
                         if ($count == 1) {
                             $redis->expire(
                                 $descr->{name},
@@ -308,7 +312,7 @@ sub register {
                                 sub {
                                     $f->done;
                                 });
-                        } elsif ($count >= $descr->{limit}) {
+                        } elsif ($count > $descr->{limit}) {
                             $f->fail('limit hit');
                         } else {
                             $f->done;
