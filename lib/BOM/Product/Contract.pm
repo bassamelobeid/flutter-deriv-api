@@ -259,7 +259,6 @@ has ticks_to_expiry => (
 #expiry_daily - Does this bet expire at close of the exchange?
 has [qw(
         is_atm_bet
-        expiry_daily
         is_intraday
         expiry_type
         start_type
@@ -693,6 +692,17 @@ sub effective_start {
         :                                                       $self->date_start;
 }
 
+=head2 expiry_daily
+
+Returns true if this is not an intraday contract.
+
+=cut
+
+sub expiry_daily {
+    my $self = shift;
+    return $self->is_intraday ? 0 : 1;
+}
+
 =head2 date_settlement
 
 When the contract was settled (can be C<undef>).
@@ -901,11 +911,6 @@ sub _build_is_atm_bet {
     return 0 if not defined $self->supplied_barrier;
     return 0 if $self->supplied_barrier ne 'S0P';
     return 1;
-}
-
-sub _build_expiry_daily {
-    my $self = shift;
-    return $self->is_intraday ? 0 : 1;
 }
 
 # daily trading seconds based on the market's trading hour
