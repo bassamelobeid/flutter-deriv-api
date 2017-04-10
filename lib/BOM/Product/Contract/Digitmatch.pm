@@ -19,7 +19,7 @@ sub localizable_description {
     };
 }
 
-sub _build_ticks_to_expiry {
+sub ticks_to_expiry {
     return shift->tick_count;
 }
 
