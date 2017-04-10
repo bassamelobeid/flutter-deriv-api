@@ -69,26 +69,81 @@ UNITCHECK {
     use BOM::Product::Pricing::Greeks::BlackScholes;
 }
 
-=head1 METHODS - Date attributes
-
-=cut
-
 my @date_attribute = (
     isa        => 'date_object',
     lazy_build => 1,
     coerce     => 1,
 );
 
-=head2 date_start
+=head1 ATTRIBUTES - Construction
 
-For American contracts, defines when the contract starts.
-
-For Europeans, this is used to determine the barrier when the requested barrier is relative.
+These are the parameters we expect to be passed when constructing a new contract.
+These would be passed to L<BOM::Product::ContractFactory/produce_contract>.
 
 =cut
 
-has date_start => (
-    is => 'ro',
+=head2 currency
+
+The currency in which this contract is bought/sold, e.g. C<USD>.
+
+=cut
+
+has currency => (
+    is       => 'ro',
+    isa      => 'Str',
+    required => 1,
+);
+
+=head2 payout
+
+Payout amount value, see L</currency>.
+
+=cut
+
+has payout => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
+=head2 shortcode
+
+(optional) This can be provided when creating a contract from a shortcode. If not, it will
+be populated from the contract parameters.
+
+=cut
+
+has shortcode => (
+    is         => 'ro',
+    isa        => 'Str',
+    lazy_build => 1,
+);
+
+=head2 underlying
+
+The underlying asset, as a L<Finance::Asset::Underlying> instance.
+
+=cut
+
+has underlying => (
+    is      => 'ro',
+    isa     => 'underlying_object',
+    coerce  => 1,
+    handles => [qw(market pip_size)],
+);
+
+=head1 ATTRIBUTES - Date-related
+
+=cut
+
+=head2 date_expiry
+
+When the contract expires.
+
+=cut
+
+has date_expiry => (
+    is => 'rw',
     @date_attribute,
 );
 
@@ -103,50 +158,18 @@ has date_pricing => (
     @date_attribute,
 );
 
-=head2 date_expiry
+=head2 date_start
 
-When the contract expires.
+For American contracts, defines when the contract starts.
+
+For Europeans, this is used to determine the barrier when the requested barrier is relative.
 
 =cut
 
-has date_expiry => (
-    is => 'rw',
+has date_start => (
+    is => 'ro',
     @date_attribute,
 );
-
-=head2 date_settlement
-
-When the contract was settled (can be C<undef>).
-
-=cut
-
-has date_settlement => (
-    is => 'rw',
-    @date_attribute,
-);
-
-=head2 effective_start
-
-=over 4
-
-=item * For backpricing, this is L</date_start>.
-
-=item * For a forward-starting contract, this is L</date_start>.
-
-=item * For all other states - i.e. active, non-expired contracts - this is L</date_pricing>.
-
-=back
-
-=cut
-
-has effective_start => (
-    is => 'rw',
-    @date_attribute,
-);
-
-=head1 METHODS - Other attributes
-
-=cut
 
 =head2 duration
 
@@ -173,92 +196,75 @@ Examples would be C< 5t > for 5 ticks, C< 3h > for 3 hours.
 
 has duration => (is => 'ro');
 
-has [qw(_pricing_args)] => (
-    is         => 'ro',
-    isa        => 'HashRef',
-    lazy_build => 1,
-);
+=head1 ATTRIBUTES - Tick-expiry contracts
 
-#backtest - Enable optimizations for speedier back testing.  Not suitable for production.
-#tick_expiry - A boolean that indicates if a contract expires after a pre-specified number of ticks.
-has [qw(backtest tick_expiry)] => (
+These are only valid for tick contracts.
+
+=cut
+
+=head2 tick_expiry
+
+A boolean that indicates if a contract expires after a pre-specified number of ticks.
+
+=cut
+
+has tick_expiry => (
     is      => 'ro',
     default => 0,
 );
 
-# This attribute tells us if this contract was initially bought as a forward starting contract.
-# This should not be mistaken for is_forwarding_start attribute as that could change over time.
+=head2 prediction
+
+Prediction (for tick trades) is what client predicted would happen.
+
+=cut
+
+has prediction => (
+    is  => 'ro',
+    isa => 'Maybe[Num]',
+);
+
+=head2 tick_count
+
+Number of ticks in this trade.
+
+=cut
+
+has tick_count => (
+    is  => 'ro',
+    isa => 'Maybe[Num]',
+);
+
+=head1 ATTRIBUTES - Other
+
+=cut
+
+=head2 starts_as_forward_starting
+
+This attribute tells us if this contract was initially bought as a forward starting contract.
+This should not be mistaken for is_forwarding_start attribute as that could change over time.
+
+=cut
+
 has starts_as_forward_starting => (
     is      => 'ro',
     default => 0,
 );
 
-has [qw(shortcode)] => (
-    is         => 'ro',
-    isa        => 'Str',
-    lazy_build => 1,
-);
-
-has debug_information => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-# Check whether the contract is expired or not . It is expired only if it passes the expiry time time and has valid exit tick
-has is_expired => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-# Check whether the contract is settelable or not. To be able to settle, it need pass the settlement time and has valid exit tick
-has is_settleable => (
-    is         => 'rw',
-    lazy_build => 1,
-);
-
-has category => (
-    is      => 'ro',
-    isa     => 'bom_contract_category',
-    coerce  => 1,
-    handles => [qw(supported_expiries supported_start_types is_path_dependent allow_forward_starting two_barriers barrier_at_start)],
-);
-
-has category_code => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-#These data are coming from contract_types.yml
-has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
-    is      => 'ro',
-    default => undef,
-);
-
-has ticks_to_expiry => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 #expiry_daily - Does this bet expire at close of the exchange?
-has [
-    qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_code
-        translated_display_name is_forward_starting permitted_expiries effective_daily_trading_seconds)
+has [qw(
+        is_intraday
+        expiry_type
+        start_type
+        translated_display_name
+        is_forward_starting
+        permitted_expiries
+        effective_daily_trading_seconds
+        )
     ] => (
     is         => 'ro',
     lazy_build => 1,
     );
-
-has currency => (
-    is       => 'ro',
-    isa      => 'Str',
-    required => 1,
-);
-
-has payout => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
-);
 
 has value => (
     is      => 'rw',
@@ -279,13 +285,6 @@ has [
     isa        => 'Maybe[PositiveNum]',
     lazy_build => 1,
     );
-
-#prediction (for tick trades) is what client predicted would happen
-#tick_count is for tick trades
-has [qw(prediction tick_count)] => (
-    is  => 'ro',
-    isa => 'Maybe[Num]',
-);
 
 =head2 for_sale
 
@@ -340,13 +339,6 @@ has [qw(
 has fixed_expiry => (
     is      => 'ro',
     default => 0,
-);
-
-has underlying => (
-    is      => 'ro',
-    isa     => 'underlying_object',
-    coerce  => 1,
-    handles => [qw(market pip_size)],
 );
 
 has calendar => (
@@ -461,26 +453,62 @@ has _basis_tick => (
     builder    => '_build_basis_tick',
 );
 
-=head1 METHODS
+# ATTRIBUTES - Internal
+
+# Internal hashref of attributes that will be passed to the pricing engine.
+has _pricing_args => (
+    is         => 'ro',
+    isa        => 'HashRef',
+    lazy_build => 1,
+);
+
+=head1 ATTRIBUTES - From contract_types.yml
+
+=head2 id
+
+=head2 pricing_code
+
+=head2 display_name
+
+=head2 sentiment
+
+=head2 other_side_code
+
+=head2 payout_type
+
+=head2 payouttime
 
 =cut
 
-sub is_spread { return 0 }
+has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
+    is      => 'ro',
+    default => undef,
+);
 
-sub is_legacy { return 0 }
+=head1 METHODS - Boolean checks
 
-sub _check_is_intraday {
-    my ($self, $date_start) = @_;
-    my $date_expiry       = $self->date_expiry;
-    my $contract_duration = $date_expiry->epoch - $date_start->epoch;
+=cut
 
-    return 0 if $contract_duration > 86400;
+=head2 is_after_expiry
 
-    # for contract that start at the open of day and expire at the close of day (include early close) should be treated as daily contract
-    my $closing = $self->calendar->closing_on($self->date_expiry);
-    return 0 if $closing and $closing->is_same_as($self->date_expiry) and $contract_duration >= $self->effective_daily_trading_seconds;
+This check if the contract already passes the expiry times
 
-    return 1;
+For tick expiry contract, there is no expiry time, so it will check again the exit tick
+For other contracts, it will check the remaining time of the contract to expiry.
+
+=cut
+
+sub is_after_expiry {
+    my $self = shift;
+
+    if ($self->tick_expiry) {
+        return 1
+            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds));
+    } else {
+
+        return 1 if $self->get_time_to_expiry->seconds == 0;
+    }
+    return 0;
 }
 
 =head2 is_after_settlement
@@ -505,33 +533,214 @@ sub is_after_settlement {
     return 0;
 }
 
-=head2 is_after_expiry
+=head2 is_atm_bet
 
-This check if the contract already passes the expiry times
-
-For tick expiry contract, there is no expiry time, so it will check again the exit tick
-For other contracts, it will check the remaining time of the contract to expiry.
+Is this contract meant to be ATM or non ATM at start?
+The status will not change throughout the lifetime of the contract due to differences in offerings for ATM and non ATM contracts.
 
 =cut
 
-sub is_after_expiry {
+sub is_atm_bet {
     my $self = shift;
 
-    if ($self->tick_expiry) {
-        return 1
-            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds));
-    } else {
-
-        return 1 if $self->get_time_to_expiry->seconds == 0;
-    }
-    return 0;
+    return 0 if $self->two_barriers;
+    # if not defined, it is non ATM
+    return 0 if not defined $self->supplied_barrier;
+    return 0 if $self->supplied_barrier ne 'S0P';
+    return 1;
 }
+
+=head2 is_expired
+
+Returns true if this contract is expired.
+
+It is expired only if it passes the expiry time time and has valid exit tick.
+
+=cut
+
+sub is_expired { die "Calling ->is_expired on a ::Contract instance" }
+
+=head2 is_legacy
+
+True for obsolete contract types, see L<BOM::Product::Contract::Invalid>.
+
+=cut
+
+sub is_legacy { return 0 }
+
+=head2 is_settleable
+
+Returns true if the contract is settleable.
+
+To be able to settle, it need pass the settlement time and has valid exit tick
+
+=cut
+
+sub is_settleable { die "Calling ->is_settleable on a ::Contract instance" }
+
+=head2 is_spread
+
+Returns true if this is a spread contract - due to be removed.
+
+=cut
+
+sub is_spread { return 0 }
 
 sub may_settle_automatically {
     my $self = shift;
 
     # For now, only trigger this condition when the bet is past expiry.
     return (not $self->get_time_to_settlement->seconds and not $self->is_valid_to_sell) ? 0 : 1;
+}
+
+=head1 METHODS - Proxied to L<BOM::Product::Contract::Category>
+
+Our C<category> attribute provides several helper methods:
+
+=cut
+
+has category => (
+    is      => 'ro',
+    isa     => 'bom_contract_category',
+    coerce  => 1,
+    handles => [qw(supported_expiries is_path_dependent allow_forward_starting two_barriers barrier_at_start)],
+);
+
+=head2 supported_expiries
+
+Which expiry durations we allow. Values can be:
+
+=over 4
+
+=item * intraday
+
+=item * daily
+
+=item * tick
+
+=back
+
+=cut
+
+=head2 supported_start_types
+
+(removed)
+
+=cut
+
+=head2 is_path_dependent
+
+True if this is a path-dependent contract.
+
+=cut
+
+=head2 allow_forward_starting
+
+True if we allow forward starting for this contract type.
+
+=cut
+
+=head2 two_barriers
+
+True if the contract has two barriers.
+
+=cut
+
+=head2 barrier_at_start
+
+The starting barrier value.
+
+=cut
+
+=head2 category_code
+
+The code for this category.
+
+=cut
+
+sub category_code {
+    my $self = shift;
+    return $self->category->code;
+}
+
+=head1 METHODS - Other
+
+=cut
+
+=head2 debug_information
+
+Pricing engine internal debug information hashref.
+
+=cut
+
+sub debug_information {
+    my $self = shift;
+
+    return $self->pricing_engine->can('debug_info') ? $self->pricing_engine->debug_info : {};
+}
+
+=head2 ticks_to_expiry
+
+Number of ticks until expiry of this contract. Defaults to one more than tick_count,
+TODO JB - this is overridden in the digit/Asian contracts, any idea why?
+
+=cut
+
+sub ticks_to_expiry {
+    return shift->tick_count + 1;
+}
+
+=head2 effective_start
+
+=over 4
+
+=item * For backpricing, this is L</date_start>.
+
+=item * For a forward-starting contract, this is L</date_start>.
+
+=item * For all other states - i.e. active, non-expired contracts - this is L</date_pricing>.
+
+=back
+
+=cut
+
+sub effective_start {
+    my $self = shift;
+
+    return
+          ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_start
+        : ($self->date_pricing->is_after($self->date_start))  ? $self->date_pricing
+        :                                                       $self->date_start;
+}
+
+=head2 expiry_daily
+
+Returns true if this is not an intraday contract.
+
+=cut
+
+sub expiry_daily {
+    my $self = shift;
+    return $self->is_intraday ? 0 : 1;
+}
+
+=head2 date_settlement
+
+When the contract was settled (can be C<undef>).
+
+=cut
+
+sub date_settlement {
+    my $self       = shift;
+    my $end_date   = $self->date_expiry;
+    my $underlying = $self->underlying;
+
+    my $date_settlement = $end_date;    # Usually we settle when we expire.
+    if ($self->expiry_daily and $self->calendar->trades_on($end_date)) {
+        $date_settlement = $self->calendar->settlement_on($end_date);
+    }
+
+    return $date_settlement;
 }
 
 =head2 get_time_to_expiry
@@ -570,6 +779,81 @@ sub get_time_to_settlement {
     return ($time >= $self->date_settlement->epoch and $self->expiry_daily) ? $zero_duration : $self->_get_time_to_end($attributes);
 }
 
+=head2 longcode
+
+Returns the (localized) longcode for this contract.
+
+May throw an exception if an invalid expiry type is requested for this contract type.
+
+=cut
+
+sub longcode {
+    my $self = shift;
+
+    # When we are building the longcode, we should always take the date_start to date_expiry as duration.
+    # Don't use $self->expiry_type because that's use to price a contract at effective_start time.
+    my $forward_starting_contract = ($self->starts_as_forward_starting or $self->is_forward_starting);
+    my $expiry_type = $self->tick_expiry ? 'tick' : $self->_check_is_intraday($self->date_start) == 0 ? 'daily' : 'intraday';
+    $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $forward_starting_contract and $self->fixed_expiry;
+    my $localizable_description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
+
+    my ($when_end, $when_start);
+    if ($expiry_type eq 'intraday_fixed_expiry') {
+        $when_end   = $self->date_expiry->datetime . ' GMT';
+        $when_start = '';
+    } elsif ($expiry_type eq 'intraday') {
+        $when_end = $self->get_time_to_expiry({from => $self->date_start})->as_string;
+        $when_start = ($forward_starting_contract) ? $self->date_start->db_timestamp . ' GMT' : localize('contract start time');
+    } elsif ($expiry_type eq 'daily') {
+        my $close = $self->underlying->calendar->closing_on($self->date_expiry);
+        if ($close and $close->epoch != $self->date_expiry->epoch) {
+            $when_end = $self->date_expiry->datetime . ' GMT';
+        } else {
+            $when_end = localize('close on [_1]', $self->date_expiry->date);
+        }
+        $when_start = '';
+    } elsif ($expiry_type eq 'tick') {
+        $when_end   = $self->tick_count;
+        $when_start = localize('first tick');
+    }
+    my $payout = to_monetary_number_format($self->payout);
+    my @barriers = ($self->two_barriers) ? ($self->high_barrier, $self->low_barrier) : ($self->barrier);
+    @barriers = map { $_->display_text if $_ } @barriers;
+
+    return localize($localizable_description,
+        ($self->currency, $payout, localize($self->underlying->display_name), $when_start, $when_end, @barriers));
+}
+
+=head2 allowed_slippage
+
+Ratio of slippage we allow for this contract, where 0.01 is 1%.
+
+=cut
+
+sub allowed_slippage {
+    my $self = shift;
+
+    # our commission for volatility indices is 1.5% so we can let it slipped more than that.
+    return 0.01 if $self->market->name eq 'volidx';
+    return 0.0175;
+}
+
+# INTERNAL METHODS
+
+sub _check_is_intraday {
+    my ($self, $date_start) = @_;
+    my $date_expiry       = $self->date_expiry;
+    my $contract_duration = $date_expiry->epoch - $date_start->epoch;
+
+    return 0 if $contract_duration > 86400;
+
+    # for contract that start at the open of day and expire at the close of day (include early close) should be treated as daily contract
+    my $closing = $self->calendar->closing_on($self->date_expiry);
+    return 0 if $closing and $closing->is_same_as($self->date_expiry) and $contract_duration >= $self->effective_daily_trading_seconds;
+
+    return 1;
+}
+
 # Send in the correct 'to'
 sub _get_time_to_end {
     my ($self, $attributes) = @_;
@@ -602,6 +886,7 @@ sub _build__pricing_args {
 
     my $start_date           = $self->date_pricing;
     my $barriers_for_pricing = $self->barriers_for_pricing;
+    my $payouttime_code      = ($self->payouttime eq 'hit') ? 0 : 1;
     my $args                 = {
         spot            => $self->pricing_spot,
         r_rate          => $self->r_rate,
@@ -612,7 +897,7 @@ sub _build__pricing_args {
         iv              => $self->pricing_vol,
         discount_rate   => $self->discount_rate,
         mu              => $self->mu,
-        payouttime_code => $self->payouttime_code,
+        payouttime_code => $payouttime_code,
     };
 
     if ($self->priced_with_intraday_model) {
@@ -624,30 +909,6 @@ sub _build__pricing_args {
     return $args;
 }
 
-sub _build_debug_information {
-    my $self = shift;
-
-    return $self->pricing_engine->can('debug_info') ? $self->pricing_engine->debug_info : {};
-}
-
-sub _build_category_code {
-    my $self = shift;
-    return $self->category->code;
-}
-
-sub _build_ticks_to_expiry {
-    return shift->tick_count + 1;
-}
-
-sub _build_effective_start {
-    my $self = shift;
-
-    return
-          ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_start
-        : ($self->date_pricing->is_after($self->date_start))  ? $self->date_pricing
-        :                                                       $self->date_start;
-}
-
 sub _build_date_pricing {
     my $self = shift;
     my $time = Time::HiRes::time();
@@ -656,23 +917,6 @@ sub _build_date_pricing {
     return ($self->has_pricing_new and $self->pricing_new)
         ? $self->date_start
         : $now;
-}
-
-# Is this contract meant to be ATM or non ATM at start.
-# The status will not change throughout the lifetime of the contract due to differences in offerings for ATM and non ATM contracts.
-sub _build_is_atm_bet {
-    my $self = shift;
-
-    return 0 if $self->two_barriers;
-    # if not defined, it is non ATM
-    return 0 if not defined $self->supplied_barrier;
-    return 0 if $self->supplied_barrier ne 'S0P';
-    return 1;
-}
-
-sub _build_expiry_daily {
-    my $self = shift;
-    return $self->is_intraday ? 0 : 1;
 }
 
 # daily trading seconds based on the market's trading hour
@@ -701,12 +945,6 @@ sub _build_expiry_type {
 sub _build_start_type {
     my $self = shift;
     return $self->is_forward_starting ? 'forward' : 'spot';
-}
-
-sub _build_payouttime_code {
-    my $self = shift;
-
-    return ($self->payouttime eq 'hit') ? 0 : 1;
 }
 
 sub _build_translated_display_name {
@@ -759,19 +997,6 @@ sub _build_basis_tick {
     }
 
     return $basis_tick;
-}
-
-sub _build_date_settlement {
-    my $self       = shift;
-    my $end_date   = $self->date_expiry;
-    my $underlying = $self->underlying;
-
-    my $date_settlement = $end_date;    # Usually we settle when we expire.
-    if ($self->expiry_daily and $self->calendar->trades_on($end_date)) {
-        $date_settlement = $self->calendar->settlement_on($end_date);
-    }
-
-    return $date_settlement;
 }
 
 sub _build_remaining_time {
@@ -853,6 +1078,30 @@ sub _build_opposite_contract {
 
     # Start by making a copy of the parameters we used to build this bet.
     my %opp_parameters = %{$self->build_parameters};
+    # we still want to set for_sale for a forward_starting contracts
+    $opp_parameters{for_sale} = 1;
+    # delete traces of this contract were a forward starting contract before.
+    delete $opp_parameters{starts_as_forward_starting};
+    # duration could be set for an opposite contract from bad hash reference reused.
+    delete $opp_parameters{duration};
+
+    if (not $self->is_forward_starting) {
+        if ($self->entry_tick) {
+            foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
+                if (defined $self->$barrier) {
+                    $opp_parameters{$barrier} = $self->$barrier->as_absolute;
+                    $opp_parameters{'supplied_' . $barrier} = $self->$barrier->as_absolute;
+                }
+            }
+        }
+        # We should be looking to move forward in time to a bet starting now.
+        $opp_parameters{date_start}  = $self->date_pricing;
+        $opp_parameters{pricing_new} = 1;
+        # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
+        # Currently, 'sell at market' button will appear when current spot == barrier when the duration
+        # of the contract is less than the minimum duration of non ATM contract.
+    }
+
     # Always switch out the bet type for the other side.
     $opp_parameters{'bet_type'} = $self->other_side_code;
     # Don't set the shortcode, as it will change between these.
@@ -860,35 +1109,6 @@ sub _build_opposite_contract {
     # Save a round trip.. copy market data
     foreach my $vol_param (qw(volsurface fordom forqqq domqqq)) {
         $opp_parameters{$vol_param} = $self->$vol_param;
-    }
-
-    # We have this concept in forward starting contract where a forward start contract is considered
-    # pricing_new until it has started. So it kind of messed up here.
-    if ($self->pricing_new and not $self->starts_as_forward_starting) {
-        $opp_parameters{current_tick} = $self->current_tick;
-        $opp_parameters{pricing_new}  = 1;
-    } else {
-        # we still want to set for_sale for a forward_starting contracts
-        $opp_parameters{for_sale} = 1;
-        # delete traces of this contract were a forward starting contract before.
-        delete $opp_parameters{starts_as_forward_starting};
-        # duration could be set for an opposite contract from bad hash reference reused.
-        delete $opp_parameters{duration};
-
-        if (not $self->is_forward_starting) {
-            if ($self->entry_tick) {
-                foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-                    if (defined $self->$barrier) {
-                        $opp_parameters{$barrier} = $self->$barrier->as_absolute;
-                        $opp_parameters{'supplied_' . $barrier} = $self->$barrier->as_absolute;
-                    }
-                }
-            }
-            # We should be looking to move forward in time to a bet starting now.
-            $opp_parameters{date_start}  = $self->date_pricing;
-            $opp_parameters{pricing_new} = 1;
-        }
-
     }
 
     my $opp_contract = $self->_produce_contract_ref->(\%opp_parameters);
@@ -899,51 +1119,6 @@ sub _build_opposite_contract {
     }
 
     return $opp_contract;
-}
-
-=head2 longcode
-
-Returns the (localized) longcode for this contract.
-
-May throw an exception if an invalid expiry type is requested for this contract type.
-
-=cut
-
-sub longcode {
-    my $self = shift;
-
-    # When we are building the longcode, we should always take the date_start to date_expiry as duration.
-    # Don't use $self->expiry_type because that's use to price a contract at effective_start time.
-    my $forward_starting_contract = ($self->starts_as_forward_starting or $self->is_forward_starting);
-    my $expiry_type = $self->tick_expiry ? 'tick' : $self->_check_is_intraday($self->date_start) == 0 ? 'daily' : 'intraday';
-    $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $forward_starting_contract and $self->fixed_expiry;
-    my $localizable_description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
-
-    my ($when_end, $when_start);
-    if ($expiry_type eq 'intraday_fixed_expiry') {
-        $when_end   = $self->date_expiry->datetime . ' GMT';
-        $when_start = '';
-    } elsif ($expiry_type eq 'intraday') {
-        $when_end = $self->get_time_to_expiry({from => $self->date_start})->as_string;
-        $when_start = ($forward_starting_contract) ? $self->date_start->db_timestamp . ' GMT' : localize('contract start time');
-    } elsif ($expiry_type eq 'daily') {
-        my $close = $self->underlying->calendar->closing_on($self->date_expiry);
-        if ($close and $close->epoch != $self->date_expiry->epoch) {
-            $when_end = $self->date_expiry->datetime . ' GMT';
-        } else {
-            $when_end = localize('close on [_1]', $self->date_expiry->date);
-        }
-        $when_start = '';
-    } elsif ($expiry_type eq 'tick') {
-        $when_end   = $self->tick_count;
-        $when_start = localize('first tick');
-    }
-    my $payout = to_monetary_number_format($self->payout);
-    my @barriers = ($self->two_barriers) ? ($self->high_barrier, $self->low_barrier) : ($self->barrier);
-    @barriers = map { $_->display_text if $_ } @barriers;
-
-    return localize($localizable_description,
-        ($self->currency, $payout, localize($self->underlying->display_name), $when_start, $when_end, @barriers));
 }
 
 sub _build_corporate_actions {
@@ -1244,20 +1419,6 @@ sub _build_risk_profile {
         underlying_risk_profile        => $self->underlying->risk_profile,
         underlying_risk_profile_setter => $self->underlying->risk_profile_setter,
     );
-}
-
-=head2 allowed_slippage
-
-Ratio of slippage we allow for this contract, where 0.01 is 1%.
-
-=cut
-
-sub allowed_slippage {
-    my $self = shift;
-
-    # our commission for volatility indices is 1.5% so we can let it slipped more than that.
-    return 0.01 if $self->market->name eq 'volidx';
-    return 0.0175;
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.
