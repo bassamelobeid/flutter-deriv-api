@@ -49,7 +49,6 @@ use Quant::Framework::EconomicEventCalendar;
 use Postgres::FeedDB::Spot::Tick;
 use Price::Calculator;
 use LandingCompany::Offerings qw(get_contract_specifics);
-use VolSurface::Empirical;
 
 use BOM::Platform::Chronicle;
 use BOM::Platform::Context qw(localize);
