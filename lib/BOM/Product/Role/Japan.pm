@@ -227,9 +227,8 @@ sub japan_pricing_info {
 
     }
 
-    my $bid_price    = $self->payout - $self->opposite_contract->ask_price;
-    my $pricing_info = join ',',
-        ($self->shortcode, $trading_window_start, $self->ask_price, $bid_price, $self->pricing_spot, $iv, $iv_2, $self->_date_pricing_milliseconds);
+    my $bid_price = $self->payout - $self->opposite_contract->ask_price;
+    my $pricing_info = join ',', ($self->shortcode, $trading_window_start, $self->ask_price, $bid_price, $self->pricing_spot, $iv, $iv_2);
 
     return "[JPLOG]," . $pricing_info . "\n";
 
