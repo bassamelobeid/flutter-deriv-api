@@ -336,12 +336,13 @@ sub startup {
         ['sell_expired',           \&BOM::RPC::v3::PortfolioManagement::sell_expired,           [qw(auth)]],
         ['proposal_open_contract', \&BOM::RPC::v3::PortfolioManagement::proposal_open_contract, [qw(auth)]],
 
-        ['app_register', \&BOM::RPC::v3::App::register,   [qw(auth)]],
-        ['app_list',     \&BOM::RPC::v3::App::list,       [qw(auth)]],
-        ['app_get',      \&BOM::RPC::v3::App::get,        [qw(auth)]],
-        ['app_update',   \&BOM::RPC::v3::App::update,     [qw(auth)]],
-        ['app_delete',   \&BOM::RPC::v3::App::delete,     [qw(auth)]],
-        ['oauth_apps',   \&BOM::RPC::v3::App::oauth_apps, [qw(auth)]],
+        ['app_register',     \&BOM::RPC::v3::App::register,         [qw(auth)]],
+        ['app_list',         \&BOM::RPC::v3::App::list,             [qw(auth)]],
+        ['app_get',          \&BOM::RPC::v3::App::get,              [qw(auth)]],
+        ['app_update',       \&BOM::RPC::v3::App::update,           [qw(auth)]],
+        ['app_delete',       \&BOM::RPC::v3::App::delete,           [qw(auth)]],
+        ['oauth_apps',       \&BOM::RPC::v3::App::oauth_apps,       [qw(auth)]],
+        ['revoke_oauth_app', \&BOM::RPC::v3::App::revoke_oauth_app, [qw(auth)]],
 
         ['mt5_login_list',      \&BOM::RPC::v3::MT5::Account::mt5_login_list,      [qw(auth)]],
         ['mt5_new_account',     \&BOM::RPC::v3::MT5::Account::mt5_new_account,     [qw(auth)]],
@@ -372,7 +373,7 @@ sub startup {
                 $dispatcher->app->log->error(qq{Internal error: $err});
                 $m->invalid_request('Invalid request');
                 return;
-            }
+                }
         });
 
     my $request_counter = 0;
