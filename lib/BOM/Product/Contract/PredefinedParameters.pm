@@ -34,18 +34,10 @@ my %supported_contract_types = (
 
 my $cache_namespace = 'predefined_parameters';
 
-{
-    my %trading_calendar = ();
+sub _trading_calendar {
+    my $for_date = shift;
 
-    sub _trading_calendar {
-        my $for_date = shift;
-
-        my $cache_key = $for_date ? $for_date->date : Date::Utility->new->date;
-        $trading_calendar{$cache_key} //=
-            Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
-
-        return $trading_calendar{$cache_key};
-    }
+    return Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
 }
 
 =head2 get_predefined_offerings
