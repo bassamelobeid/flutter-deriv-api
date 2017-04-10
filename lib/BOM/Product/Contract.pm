@@ -251,15 +251,16 @@ has starts_as_forward_starting => (
     default => 0,
 );
 
-has ticks_to_expiry => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 #expiry_daily - Does this bet expire at close of the exchange?
-has [
-    qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_code
-        translated_display_name is_forward_starting permitted_expiries effective_daily_trading_seconds)
+has [qw(
+        is_intraday
+        expiry_type
+        start_type
+        translated_display_name
+        is_forward_starting
+        permitted_expiries
+        effective_daily_trading_seconds
+        )
     ] => (
     is         => 'ro',
     lazy_build => 1,
@@ -532,6 +533,23 @@ sub is_after_settlement {
     return 0;
 }
 
+=head2 is_atm_bet
+
+Is this contract meant to be ATM or non ATM at start?
+The status will not change throughout the lifetime of the contract due to differences in offerings for ATM and non ATM contracts.
+
+=cut
+
+sub is_atm_bet {
+    my $self = shift;
+
+    return 0 if $self->two_barriers;
+    # if not defined, it is non ATM
+    return 0 if not defined $self->supplied_barrier;
+    return 0 if $self->supplied_barrier ne 'S0P';
+    return 1;
+}
+
 =head2 is_expired
 
 Returns true if this contract is expired.
@@ -653,6 +671,17 @@ sub debug_information {
     return $self->pricing_engine->can('debug_info') ? $self->pricing_engine->debug_info : {};
 }
 
+=head2 ticks_to_expiry
+
+Number of ticks until expiry of this contract. Defaults to one more than tick_count,
+TODO JB - this is overridden in the digit/Asian contracts, any idea why?
+
+=cut
+
+sub ticks_to_expiry {
+    return shift->tick_count + 1;
+}
+
 =head2 effective_start
 
 =over 4
@@ -674,6 +703,17 @@ sub effective_start {
           ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_start
         : ($self->date_pricing->is_after($self->date_start))  ? $self->date_pricing
         :                                                       $self->date_start;
+}
+
+=head2 expiry_daily
+
+Returns true if this is not an intraday contract.
+
+=cut
+
+sub expiry_daily {
+    my $self = shift;
+    return $self->is_intraday ? 0 : 1;
 }
 
 =head2 date_settlement
@@ -838,6 +878,7 @@ sub _build__pricing_args {
 
     my $start_date           = $self->date_pricing;
     my $barriers_for_pricing = $self->barriers_for_pricing;
+    my $payouttime_code      = ($self->payouttime eq 'hit') ? 0 : 1;
     my $args                 = {
         spot            => $self->pricing_spot,
         r_rate          => $self->r_rate,
@@ -848,7 +889,7 @@ sub _build__pricing_args {
         iv              => $self->pricing_vol,
         discount_rate   => $self->discount_rate,
         mu              => $self->mu,
-        payouttime_code => $self->payouttime_code,
+        payouttime_code => $payouttime_code,
     };
 
     if ($self->priced_with_intraday_model) {
@@ -860,10 +901,6 @@ sub _build__pricing_args {
     return $args;
 }
 
-sub _build_ticks_to_expiry {
-    return shift->tick_count + 1;
-}
-
 sub _build_date_pricing {
     my $self = shift;
     my $time = Time::HiRes::time();
@@ -872,23 +909,6 @@ sub _build_date_pricing {
     return ($self->has_pricing_new and $self->pricing_new)
         ? $self->date_start
         : $now;
-}
-
-# Is this contract meant to be ATM or non ATM at start.
-# The status will not change throughout the lifetime of the contract due to differences in offerings for ATM and non ATM contracts.
-sub _build_is_atm_bet {
-    my $self = shift;
-
-    return 0 if $self->two_barriers;
-    # if not defined, it is non ATM
-    return 0 if not defined $self->supplied_barrier;
-    return 0 if $self->supplied_barrier ne 'S0P';
-    return 1;
-}
-
-sub _build_expiry_daily {
-    my $self = shift;
-    return $self->is_intraday ? 0 : 1;
 }
 
 # daily trading seconds based on the market's trading hour
@@ -917,12 +937,6 @@ sub _build_expiry_type {
 sub _build_start_type {
     my $self = shift;
     return $self->is_forward_starting ? 'forward' : 'spot';
-}
-
-sub _build_payouttime_code {
-    my $self = shift;
-
-    return ($self->payouttime eq 'hit') ? 0 : 1;
 }
 
 sub _build_translated_display_name {
@@ -1056,6 +1070,30 @@ sub _build_opposite_contract {
 
     # Start by making a copy of the parameters we used to build this bet.
     my %opp_parameters = %{$self->build_parameters};
+    # we still want to set for_sale for a forward_starting contracts
+    $opp_parameters{for_sale} = 1;
+    # delete traces of this contract were a forward starting contract before.
+    delete $opp_parameters{starts_as_forward_starting};
+    # duration could be set for an opposite contract from bad hash reference reused.
+    delete $opp_parameters{duration};
+
+    if (not $self->is_forward_starting) {
+        if ($self->entry_tick) {
+            foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
+                if (defined $self->$barrier) {
+                    $opp_parameters{$barrier} = $self->$barrier->as_absolute;
+                    $opp_parameters{'supplied_' . $barrier} = $self->$barrier->as_absolute;
+                }
+            }
+        }
+        # We should be looking to move forward in time to a bet starting now.
+        $opp_parameters{date_start}  = $self->date_pricing;
+        $opp_parameters{pricing_new} = 1;
+        # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
+        # Currently, 'sell at market' button will appear when current spot == barrier when the duration
+        # of the contract is less than the minimum duration of non ATM contract.
+    }
+
     # Always switch out the bet type for the other side.
     $opp_parameters{'bet_type'} = $self->other_side_code;
     # Don't set the shortcode, as it will change between these.
@@ -1063,35 +1101,6 @@ sub _build_opposite_contract {
     # Save a round trip.. copy market data
     foreach my $vol_param (qw(volsurface fordom forqqq domqqq)) {
         $opp_parameters{$vol_param} = $self->$vol_param;
-    }
-
-    # We have this concept in forward starting contract where a forward start contract is considered
-    # pricing_new until it has started. So it kind of messed up here.
-    if ($self->pricing_new and not $self->starts_as_forward_starting) {
-        $opp_parameters{current_tick} = $self->current_tick;
-        $opp_parameters{pricing_new}  = 1;
-    } else {
-        # we still want to set for_sale for a forward_starting contracts
-        $opp_parameters{for_sale} = 1;
-        # delete traces of this contract were a forward starting contract before.
-        delete $opp_parameters{starts_as_forward_starting};
-        # duration could be set for an opposite contract from bad hash reference reused.
-        delete $opp_parameters{duration};
-
-        if (not $self->is_forward_starting) {
-            if ($self->entry_tick) {
-                foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-                    if (defined $self->$barrier) {
-                        $opp_parameters{$barrier} = $self->$barrier->as_absolute;
-                        $opp_parameters{'supplied_' . $barrier} = $self->$barrier->as_absolute;
-                    }
-                }
-            }
-            # We should be looking to move forward in time to a bet starting now.
-            $opp_parameters{date_start}  = $self->date_pricing;
-            $opp_parameters{pricing_new} = 1;
-        }
-
     }
 
     my $opp_contract = $self->_produce_contract_ref->(\%opp_parameters);
