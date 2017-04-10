@@ -253,8 +253,17 @@ has starts_as_forward_starting => (
 
 #expiry_daily - Does this bet expire at close of the exchange?
 has [
-    qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_code
-        translated_display_name is_forward_starting permitted_expiries effective_daily_trading_seconds)
+    qw(
+        expiry_daily
+        is_intraday
+        expiry_type
+        start_type
+        payouttime_code
+        translated_display_name
+        is_forward_starting
+        permitted_expiries
+        effective_daily_trading_seconds
+    )
     ] => (
     is         => 'ro',
     lazy_build => 1,
@@ -526,6 +535,24 @@ sub is_after_settlement {
 
     return 0;
 }
+
+=head2 is_atm_bet
+
+Is this contract meant to be ATM or non ATM at start?
+The status will not change throughout the lifetime of the contract due to differences in offerings for ATM and non ATM contracts.
+
+=cut
+
+sub is_atm_bet {
+    my $self = shift;
+
+    return 0 if $self->two_barriers;
+    # if not defined, it is non ATM
+    return 0 if not defined $self->supplied_barrier;
+    return 0 if $self->supplied_barrier ne 'S0P';
+    return 1;
+}
+
 
 =head2 is_expired
 
@@ -882,18 +909,6 @@ sub _build_date_pricing {
     return ($self->has_pricing_new and $self->pricing_new)
         ? $self->date_start
         : $now;
-}
-
-# Is this contract meant to be ATM or non ATM at start.
-# The status will not change throughout the lifetime of the contract due to differences in offerings for ATM and non ATM contracts.
-sub _build_is_atm_bet {
-    my $self = shift;
-
-    return 0 if $self->two_barriers;
-    # if not defined, it is non ATM
-    return 0 if not defined $self->supplied_barrier;
-    return 0 if $self->supplied_barrier ne 'S0P';
-    return 1;
 }
 
 sub _build_expiry_daily {
