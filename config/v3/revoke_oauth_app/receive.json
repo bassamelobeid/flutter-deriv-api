@@ -10,8 +10,8 @@
       "required": 1
     },
     "revoke_oauth_app": {
-        "type": "integer",
-        "description": "Oauth App id",
+        "type": "string",
+        "description": "1 on",
         "required": 1
     },
     "msg_type": {
