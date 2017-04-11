@@ -58,21 +58,6 @@ sub _build_predefined_contracts {
     return \%info;
 }
 
-override offering_specifics => sub {
-    my $self = shift;
-
-    return get_contract_specifics(
-        BOM::Platform::Runtime->instance->get_offerings_config,
-        {
-            underlying_symbol => $self->underlying->symbol,
-            barrier_category  => $self->barrier_category,
-            expiry_type       => $self->expiry_type,
-            start_type        => ($self->is_forward_starting ? 'forward' : 'spot'),
-            landing_company   => $self->landing_company,
-            contract_category => $self->category->code,
-        });
-};
-
 override risk_profile => sub {
     my $self = shift;
 
