@@ -113,7 +113,7 @@ subtest 'verify_with_shortcode_IH' => sub {
             'intraday_vega_correction'  => '0.00180523037982591',
             'risk_markup'               => '0.000160311775951805',
             'bs_probability'            => '0.475024892925858',
-            'intraday_delta_correction' => '0.00843697235863543',
+            'intraday_delta_correction' => '0.00843609523489751',
             'commission_markup'         => '0.005'
         },
         'bs_probability' => {
