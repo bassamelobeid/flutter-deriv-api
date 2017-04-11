@@ -56,7 +56,6 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
     - /tmp/travis-scripts/clone_branch.sh binary-com/websocket-bench
     - /tmp/travis-scripts/redis.sh
-    - sudo cp /etc/rmg/redis-pricer.yml /etc/rmg/ws-redis.yml
 
 install:
     - source /tmp/travis-scripts/devbox_path.sh
@@ -83,6 +82,7 @@ install:
 before_script:
     - /tmp/travis-scripts/wait_for_rpc.sh
     - perl -le 'print $^V'; which perl; ls -l /etc/rmg/bin
+    - sudo cp /etc/rmg/redis-pricer.yml /etc/rmg/ws-redis.yml
 
 script:
     - make $TEST_SUITE
