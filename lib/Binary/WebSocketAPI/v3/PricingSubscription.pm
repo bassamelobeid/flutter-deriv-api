@@ -6,8 +6,8 @@ use Binary::WebSocketAPI::v3::Instance::Redis qw| pricer_write |;
 
 use Moo;
 
-use JSON::XS qw| encode_json         |;
-use Scalar::Util qw| weaken              |;
+use JSON::XS qw| encode_json |;
+use Scalar::Util qw| weaken |;
 use DataDog::DogStatsd::Helper qw| stats_inc stats_dec |;
 
 has channel_name => (

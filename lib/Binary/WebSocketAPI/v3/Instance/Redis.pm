@@ -62,7 +62,7 @@ sub pricer_write {
             my ($self, $msg, $channel) = @_;
             if ($self->{shared_info}{$channel}) {
                 foreach my $c_key (keys %{$self->{shared_info}{$channel}}) {
-                    delete $self->{shared_info}{$channel}{$c_key}
+                    delete $self->{shared_info}{$channel}{$c_key} and next
                         unless $self->{shared_info}{$channel}{$c_key};
                     my $c = $self->{shared_info}{$channel}{$c_key};
                     Binary::WebSocketAPI::v3::Wrapper::Pricer::process_pricing_events($c, $msg, $channel) if ref $c;
