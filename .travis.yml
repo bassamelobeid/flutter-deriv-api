@@ -82,7 +82,7 @@ install:
 before_script:
     - /tmp/travis-scripts/wait_for_rpc.sh
     - perl -le 'print $^V'; which perl; ls -l /etc/rmg/bin
-    - sudo cp /etc/rmg/redis-pricer.yml /etc/rmg/ws-redis.yml
+    - sudo cp /etc/rmg/chronicle.yml /etc/rmg/ws-redis.yml
 
 script:
     - make $TEST_SUITE
