@@ -32,7 +32,8 @@ sub register {
     # for storing various statistic data
     $app->helper(
         stat => sub {
-            state $stat = {};
+            my $app = shift->app;
+            return $app->{_binary_introspection_stats} //= {};
         });
 
     $app->helper(
@@ -106,7 +107,7 @@ sub register {
 
     Scalar::Util::weaken(my $weak_app = $app);
     my $redis_connections_counter_sub = sub {
-        my ($self, $info) = @_;
+        my ($self, $info) = @_;    # $self here is Mojo::Redis2 obj
         $weak_app->stat->{current_redis_connections}++;
         $self->{connections}{$info->{group}}{counter_guard} =
             guard { $weak_app->stat->{current_redis_connections}-- unless ${^GLOBAL_PHASE} eq 'DESTRUCT' };
