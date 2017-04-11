@@ -193,11 +193,12 @@ sub revoke_oauth_app {
     my $app_id = $params->{revoke_oauth_app};
     my $oauth  = BOM::Database::Model::OAuth->new;
     my $user   = BOM::Platform::User->new({email => $client->email});
+    my $status = 1;
     foreach my $c1 ($user->clients) {
-        $oauth->revoke_app($params->{args}->{revoke_app}, $c1->loginid);
+        $status &&= $oauth->revoke_app($params->{args}->{revoke_app}, $c1->loginid);
     }
 
-    return $oauth->get_used_apps_by_loginid($client->loginid);
+    return $status;
 }
 
 sub verify_app {
