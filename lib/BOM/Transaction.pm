@@ -1338,9 +1338,9 @@ sub _build_pricing_comment {
             push @comment_fields, (trade => $price);
         }
 
-        if ($contract->entry_tick) {
-            push @comment_fields, (entry_spot       => $contract->entry_tick->quote);
-            push @comment_fields, (entry_spot_epoch => $contract->entry_tick->epoch);
+        if ($contract->entry_spot) {
+            push @comment_fields, (entry_spot       => $contract->entry_spot);
+            push @comment_fields, (entry_spot_epoch => $contract->entry_spot_epoch);
         }
 
         # Record price slippage in quants bet variable.
