@@ -181,7 +181,7 @@ has [qw(value point_value)] => (
 );
 
 # spread_divisor - needed to reproduce the digit corresponding to one point
-has [qw(spread spread_divisor half_spread current_tick current_spot translated_display_name)] => (
+has [qw(spread spread_divisor half_spread current_tick current_spot)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -221,13 +221,6 @@ sub _build_current_tick {
 sub _build_current_spot {
     my $self = shift;
     return $self->current_tick ? $self->current_tick->quote : undef;
-}
-
-sub _build_translated_display_name {
-    my $self = shift;
-
-    return unless ($self->display_name);
-    return localize($self->display_name);
 }
 
 has exit_level => (is => 'rw');

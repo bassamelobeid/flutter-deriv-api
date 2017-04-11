@@ -254,7 +254,6 @@ has starts_as_forward_starting => (
 #expiry_daily - Does this bet expire at close of the exchange?
 has [qw(
         is_intraday
-        translated_display_name
         is_forward_starting
         permitted_expiries
         effective_daily_trading_seconds
@@ -959,13 +958,6 @@ sub _build_is_intraday {
 
     return $self->_check_is_intraday($self->effective_start);
 
-}
-
-sub _build_translated_display_name {
-    my $self = shift;
-
-    return undef unless $self->display_name;
-    return localize($self->display_name);
 }
 
 sub _build_is_forward_starting {
