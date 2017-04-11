@@ -90,7 +90,6 @@ sub create_realtime_tick {
     return Cache::RedisDB->set_nw('QUOTE', $args->{underlying}, $args);
 }
 
-
 sub create_tick {
     my $args = shift;
 
