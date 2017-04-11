@@ -59,19 +59,21 @@ foreach my $single_data (@$decimate_data) {
         $decimate_cache->encoder->encode($single_data));
 }
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'volsurface_delta',
-    {
-        symbol        => $underlying->symbol,
-        recorded_date => $now,
-    });
+for my $date ($now, Date::Utility->new(1491448384)) {
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => $underlying->symbol,
+            recorded_date => $date,
+        });
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'currency',
-    {
-        symbol        => $_,
-        recorded_date => $now
-    }) for ('USD', 'JPY-USD', 'JPY');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'currency',
+        {
+            symbol        => $_,
+            recorded_date => $date
+        }) for ('USD', 'JPY-USD', 'JPY');
+}
 
 subtest 'verify_with_shortcode_IH' => sub {
     my $expected_parameters = {
@@ -194,7 +196,25 @@ subtest 'verify_with_shortcode_IH' => sub {
 
     }
 
+    my $input = {
+        shortcode       => 'CALLE_FRXUSDJPY_1000_1491448384_1491523199F_110146000_0',
+        ask_price       => 798,
+        bid_price       => 695,
+        currency        => 'JPY',
+        extra           => '110.500_0.0889897947653115_0.0928825867781793_0.0855312039590466_0.577290650270668',
+        landing_company => 'japan',
+    };
+
+    my $output = BOM::JapanContractDetails::verify_with_shortcode($input);
+    my $ask    = $output->{ask_probability};
+
+    is $ask->{bs_probability},            0.76978238455266,    'matched bs probability';
+    is $ask->{commission_markup},         0.005,               'matched commission markup';
+    is $ask->{intraday_delta_correction}, 0,                   'matched intraday delta correction';
+    is $ask->{intraday_vega_correction},  -0.0216800649832659, 'matched intraday vega correction';
+    is $ask->{risk_markup},               0.0243572993892055,  'matched risk markup';
 };
+
 subtest 'verify_with_shortcode_Slope' => sub {
     my $expected_parameters = {
         'risk_markup' => {
@@ -291,6 +311,18 @@ subtest 'verify_with_shortcode_Slope' => sub {
         }
     }
 
+    my $input = {
+        shortcode       => 'EXPIRYMISS_FRXUSDJPY_1000_1491448384_1491598800F_112917000_111836000',
+        ask_price       => 951,
+        bid_price       => 888,
+        landing_company => 'japan',
+        currency        => 'JPY',
+        extra           => '110.500_0.135916237059658_0.133846265459211',
+    };
+
+    my $output = BOM::JapanContractDetails::verify_with_shortcode($input);
+    is $output->{put_bs_probability}->{put_vol},   0.133846265459211;
+    is $output->{call_bs_probability}->{call_vol}, 0.135916237059658;
 };
 
 subtest 'verify_with_shortcode_VV' => sub {
@@ -429,7 +461,20 @@ subtest 'verify_with_shortcode_VV' => sub {
         }
 
     }
+    my $input = {
+        shortcode       => 'UPORDOWN_FRXUSDJPY_1000_1491473229_1514570400F_97947000_70407000',
+        ask_price       => 296,
+        bid_price       => 232,
+        landing_company => 'japan',
+        currency        => 'JPY',
+        extra           => '83.769_0.119638984890473',
+    };
 
+    my $output = BOM::JapanContractDetails::verify_with_shortcode($input);
+    is $output->{ask_probability}->{risk_markup},               0.0294968173771841,  'matched risk markup';
+    is $output->{theoretical_probability}->{bs_probability},    0.39948640590055,    'matched bs probability';
+    is $output->{theoretical_probability}->{market_supplement}, -0.0747101273705034, 'matched market supplement';
+    is $output->{bs_probability}->{vol},                        0.119638984890473,   'matched vol';
 };
 
 done_testing;
