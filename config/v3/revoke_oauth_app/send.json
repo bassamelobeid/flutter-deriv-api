@@ -1,12 +1,11 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "OAuth Applications Send",
-  "description":"List all my used OAuth applications.",
+  "title": "Revoking OAuth Application Send",
+  "description":"ask for revoking my Oauth app.",
   "properties": {
-    "oauth_apps": {
+    "revoke_oauth_apps": {
       "type":"integer",
-      "pattern": "^1$",
       "required": "1"
     },
     "passthrough": {
