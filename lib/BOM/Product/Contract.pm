@@ -254,7 +254,6 @@ has starts_as_forward_starting => (
 #expiry_daily - Does this bet expire at close of the exchange?
 has [qw(
         is_intraday
-        expiry_type
         start_type
         translated_display_name
         is_forward_starting
@@ -713,6 +712,18 @@ sub effective_start {
         :                                                       $self->date_start;
 }
 
+=head2 expiry_type
+
+The expiry type of a contract (daily, tick or intraday).
+
+=cut
+
+sub expiry_type {
+    my $self = shift;
+
+    return ($self->tick_expiry) ? 'tick' : ($self->expiry_daily) ? 'daily' : 'intraday';
+}
+
 =head2 expiry_daily
 
 Returns true if this is not an intraday contract.
@@ -934,12 +945,6 @@ sub _build_is_intraday {
 
     return $self->_check_is_intraday($self->effective_start);
 
-}
-
-sub _build_expiry_type {
-    my $self = shift;
-
-    return ($self->tick_expiry) ? 'tick' : ($self->expiry_daily) ? 'daily' : 'intraday';
 }
 
 sub _build_start_type {

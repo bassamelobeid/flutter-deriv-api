@@ -27,7 +27,7 @@ and defines the standard API for interacting with those contracts.
 # ATTRIBUTES - Construction
 
 These are the parameters we expect to be passed when constructing a new contract.
-These would be passed to ["produce\_contract" in BOM::Product::ContractFactory](https://metacpan.org/pod/BOM::Product::ContractFactory#produce_contract).
+These would be passed to ["produce\_contract" in BOM::Product::ContractFactory](http://search.cpan.org/perldoc?BOM::Product::ContractFactory#produce\_contract).
 
 ## currency
 
@@ -44,7 +44,7 @@ be populated from the contract parameters.
 
 ## underlying
 
-The underlying asset, as a [Finance::Asset::Underlying](https://metacpan.org/pod/Finance::Asset::Underlying) instance.
+The underlying asset, as a [Finance::Asset::Underlying](http://search.cpan.org/perldoc?Finance::Asset::Underlying) instance.
 
 # ATTRIBUTES - Date-related
 
@@ -143,6 +143,11 @@ This check if the contract already passes the settlement time
 For tick expiry contract, it can expires when a certain number of ticks is received or it already passes the max\_tick\_expiry\_duration.
 For other contracts, it can expires when current time has past a pre-determined settelement time.
 
+## is\_atm\_bet
+
+Is this contract meant to be ATM or non ATM at start?
+The status will not change throughout the lifetime of the contract due to differences in offerings for ATM and non ATM contracts.
+
 ## is\_expired
 
 Returns true if this contract is expired.
@@ -151,7 +156,7 @@ It is expired only if it passes the expiry time time and has valid exit tick.
 
 ## is\_legacy
 
-True for obsolete contract types, see [BOM::Product::Contract::Invalid](https://metacpan.org/pod/BOM::Product::Contract::Invalid).
+True for obsolete contract types, see [BOM::Product::Contract::Invalid](http://search.cpan.org/perldoc?BOM::Product::Contract::Invalid).
 
 ## is\_settleable
 
@@ -163,7 +168,7 @@ To be able to settle, it need pass the settlement time and has valid exit tick
 
 Returns true if this is a spread contract - due to be removed.
 
-# METHODS - Proxied to [BOM::Product::Contract::Category](https://metacpan.org/pod/BOM::Product::Contract::Category)
+# METHODS - Proxied to [BOM::Product::Contract::Category](http://search.cpan.org/perldoc?BOM::Product::Contract::Category)
 
 Our `category` attribute provides several helper methods:
 
@@ -205,11 +210,24 @@ The code for this category.
 
 Pricing engine internal debug information hashref.
 
+## ticks\_to\_expiry
+
+Number of ticks until expiry of this contract. Defaults to one more than tick\_count,
+TODO JB - this is overridden in the digit/Asian contracts, any idea why?
+
 ## effective\_start
 
-- For backpricing, this is ["date\_start"](#date_start).
-- For a forward-starting contract, this is ["date\_start"](#date_start).
-- For all other states - i.e. active, non-expired contracts - this is ["date\_pricing"](#date_pricing).
+- For backpricing, this is ["date\_start"](#date\_start).
+- For a forward-starting contract, this is ["date\_start"](#date\_start).
+- For all other states - i.e. active, non-expired contracts - this is ["date\_pricing"](#date\_pricing).
+
+## expiry\_type
+
+The expiry type of a contract (daily, tick or intraday).
+
+## expiry\_daily
+
+Returns true if this is not an intraday contract.
 
 ## date\_settlement
 
