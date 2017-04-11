@@ -110,7 +110,7 @@ foreach my $ref (@$open_contracts) {
     my $contract = produce_contract($bet_params);
 
     $ref->{mtm_price}     = $contract->bid_price;
-    $ref->{entry_spot}    = $contract->entry_tick ? $contract->entry_tick->quote : '';
+    $ref->{entry_spot}    = $contract->entry_spot;
     $ref->{current_spot}  = $contract->current_spot;
     $ref->{unrealized_pl} = $ref->{mtm_price} - $ref->{buy_price};
 }
