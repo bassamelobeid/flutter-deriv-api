@@ -221,13 +221,6 @@ TODO JB - this is overridden in the digit/Asian contracts, any idea why?
 - For a forward-starting contract, this is ["date\_start"](#date\_start).
 - For all other states - i.e. active, non-expired contracts - this is ["date\_pricing"](#date\_pricing).
 
-## start\_type
-
-The start type of the contract (forward or spot).
-
-spot = starts now.
-forward = forward starting.
-
 ## expiry\_type
 
 The expiry type of a contract (daily, tick or intraday).

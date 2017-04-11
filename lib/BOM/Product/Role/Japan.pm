@@ -67,7 +67,7 @@ override offering_specifics => sub {
             underlying_symbol => $self->underlying->symbol,
             barrier_category  => $self->barrier_category,
             expiry_type       => $self->expiry_type,
-            start_type        => $self->start_type,
+            start_type        => ($self->is_forward_starting ? 'forward' : 'spot'),
             landing_company   => $self->landing_company,
             contract_category => $self->category->code,
         });
@@ -80,7 +80,7 @@ override risk_profile => sub {
         underlying                     => $self->underlying,
         contract_category              => $self->category_code,
         expiry_type                    => $self->expiry_type,
-        start_type                     => $self->start_type,
+        start_type                     => ($self->is_forward_starting ? 'forward' : 'spot'),
         currency                       => $self->currency,
         barrier_category               => $self->barrier_category,
         landing_company                => $self->landing_company,

@@ -710,21 +710,6 @@ sub effective_start {
         :                                                       $self->date_start;
 }
 
-=head2 start_type
-
-The start type of the contract (forward or spot).
-
-spot = starts now.
-forward = forward starting.
-
-=cut
-
-sub start_type {
-    my $self = shift;
-
-    return $self->is_forward_starting ? 'forward' : 'spot';
-}
-
 =head2 expiry_type
 
 The expiry type of a contract (daily, tick or intraday).
@@ -1293,7 +1278,7 @@ sub _build_offering_specifics {
             underlying_symbol => $self->underlying->symbol,
             barrier_category  => $self->barrier_category,
             expiry_type       => $self->expiry_type,
-            start_type        => $self->start_type,
+            start_type => ($self->is_forward_starting ? 'forward' : 'spot'),
             contract_category => $self->category->code,
         });
 }
@@ -1414,10 +1399,10 @@ sub _build_risk_profile {
     my $self = shift;
 
     return BOM::Platform::RiskProfile->new(
-        contract_category              => $self->category_code,
-        expiry_type                    => $self->expiry_type,
-        start_type                     => $self->start_type,
-        currency                       => $self->currency,
+        contract_category => $self->category_code,
+        expiry_type       => $self->expiry_type,
+        start_type => ($self->is_forward_starting ? 'forward' : 'spot'),
+        currency => $self->currency,
         barrier_category               => $self->barrier_category,
         symbol                         => $self->underlying->symbol,
         market_name                    => $self->underlying->market->name,
