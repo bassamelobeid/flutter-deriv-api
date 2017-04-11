@@ -413,11 +413,11 @@ sub get_bid {
                 if @{$contract->corporate_actions};
 
             $response->{barrier_count} = $contract->two_barriers ? 2 : 1;
-            if ($contract->entry_tick) {
-                my $entry_spot = $contract->underlying->pipsized_value($contract->entry_tick->quote);
+            if ($contract->entry_spot) {
+                my $entry_spot = $contract->underlying->pipsized_value($contract->entry_spot);
                 $response->{entry_tick}      = $entry_spot;
                 $response->{entry_spot}      = $entry_spot;
-                $response->{entry_tick_time} = $contract->entry_tick->epoch;
+                $response->{entry_tick_time} = $contract->entry_spot_epoch;
                 if ($contract->two_barriers) {
                     $response->{high_barrier}          = $contract->high_barrier->as_absolute;
                     $response->{low_barrier}           = $contract->low_barrier->as_absolute;
