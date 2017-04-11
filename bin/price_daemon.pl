@@ -31,6 +31,7 @@ sigtrap->import(handler => 'signal_handler', 'normal-signals');
 
 # tune cache: up to 2s
 $ENV{QUANT_FRAMEWORK_HOLIDAY_CACHE} = $ENV{QUANT_FRAMEWORK_PATRIALTRADING_CACHE} = 2;    ## nocritic
+$ENV{QUANT_FRAMEWORK_VOLSURFACE_CACHE} = $ENV{QUANT_FRAMEWORK_SEASONALITY_CACHE} = 1;    ## nocritic
 my $pm = Parallel::ForkManager->new($workers);
 
 $pm->run_on_start(
