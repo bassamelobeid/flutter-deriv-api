@@ -194,8 +194,7 @@ my $is_confirmed = BOM::Database::Model::OAuth->new->is_scope_confirmed($test_ap
 is $is_confirmed, 1, 'was confirmed';
 $t = $t->send_ok({
         json => {
-            oauth_apps => 1,
-            revoke_app => $test_appid,
+            revoke_oauth_app => $test_appid,
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 $is_confirmed = BOM::Database::Model::OAuth->new->is_scope_confirmed($test_appid, $cr_1);
@@ -205,7 +204,6 @@ is $is_confirmed, 0, 'not confirmed after revoke';
 $t = $t->send_ok({
         json => {
             oauth_apps => 1,
-            revoke_app => $test_appid,
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'oauth_apps';
