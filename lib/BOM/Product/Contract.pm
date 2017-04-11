@@ -255,7 +255,6 @@ has starts_as_forward_starting => (
 has [qw(
         is_intraday
         is_forward_starting
-        effective_daily_trading_seconds
         )
     ] => (
     is         => 'ro',
@@ -870,8 +869,11 @@ sub _check_is_intraday {
     return 0 if $contract_duration > 86400;
 
     # for contract that start at the open of day and expire at the close of day (include early close) should be treated as daily contract
-    my $closing = $self->calendar->closing_on($self->date_expiry);
-    return 0 if $closing and $closing->is_same_as($self->date_expiry) and $contract_duration >= $self->effective_daily_trading_seconds;
+    my $closing  = $self->calendar->closing_on($self->date_expiry);
+    my $calendar = $self->calendar;
+    # daily trading seconds based on the market's trading hour
+    my $daily_trading_seconds = $calendar->closing_on($date_expiry)->epoch - $calendar->opening_on($date_expiry)->epoch;
+    return 0 if $closing and $closing->is_same_as($self->date_expiry) and $contract_duration >= $daily_trading_seconds;
 
     return 1;
 }
@@ -939,16 +941,6 @@ sub _build_date_pricing {
     return ($self->has_pricing_new and $self->pricing_new)
         ? $self->date_start
         : $now;
-}
-
-# daily trading seconds based on the market's trading hour
-sub _build_effective_daily_trading_seconds {
-    my $self                  = shift;
-    my $date_expiry           = $self->date_expiry;
-    my $calendar              = $self->calendar;
-    my $daily_trading_seconds = $calendar->closing_on($date_expiry)->epoch - $calendar->opening_on($date_expiry)->epoch;
-
-    return $daily_trading_seconds;
 }
 
 sub _build_is_intraday {
