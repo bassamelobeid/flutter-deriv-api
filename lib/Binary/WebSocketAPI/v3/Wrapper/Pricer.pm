@@ -19,6 +19,8 @@ use Clone::PP qw(clone);
 use List::UtilsBy qw(bundle_by);
 use List::Util qw(min);
 use Data::Dumper;
+use Guard;
+use Scalar::Util ();
 
 use Future::Mojo          ();
 use Future::Utils         ();
@@ -522,6 +524,10 @@ sub _create_pricer_channel {
     {
         $c->redis_pricer->set($redis_channel, 1);
         $c->stash('redis_pricer')->subscribe([$redis_channel], sub { });
+        $c->stash->{introspection}{pricer_subscribtion_count}++;
+        Scalar::Util::weaken(my $weak_c = $c);
+        $pricing_channel->{$redis_channel}->{$subchannel}->{counter_guard} =
+            guard { $weak_c->stash->{introspection}{pricer_subscribtion_count}-- unless ${^GLOBAL_PHASE} eq 'DESTRUCT' };
     }
 
     $pricing_channel->{$redis_channel}->{$subchannel}->{uuid}          = $uuid;

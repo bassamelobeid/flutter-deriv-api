@@ -35,7 +35,7 @@ taken by something else and we have no SO_REUSEPORT on our current kernel.
 sub start_server {
     my ($self, $app, $conf) = @_;
     my $id = Mojo::IOLoop->server({
-            port => 33333, #$conf->{port},
+            port => $conf->{port},
         } => sub {
             my ($loop, $stream) = @_;
 
@@ -225,19 +225,20 @@ command connections => sub {
                 map {
                     ;
                     +{
-                        app_id          => $_->stash->{source},
-                        landing_company => $_->landing_company_name,
-                        ip              => $_->stash->{client_ip},
-                        country         => $_->country_code,
-                        client          => $_->stash->{loginid},
-                        count           => scalar keys($_->stash->{pricing_channel} || []),
-                        last_call_received=> $_->stash->{introspection}{last_call_received},
-                        last_message_sent => $_->stash->{introspection}{last_message_sent},
-                        received_bytes=> $_->stash->{introspection}{received_bytes},
-                        sent_bytes=> $_->stash->{introspection}{sent_bytes},
-                        messages_received => $_->stash->{introspection}{msg_type}{received},
-                        messages_sent=> $_->stash->{introspection}{msg_type}{sent},
-                        last_rpc_error => $_->stash->{introspection}{last_rpc_error},
+                        app_id                         => $_->stash->{source},
+                        landing_company                => $_->landing_company_name,
+                        ip                             => $_->stash->{client_ip},
+                        country                        => $_->country_code,
+                        client                         => $_->stash->{loginid},
+                        count                          => scalar keys($_->stash->{pricing_channel} || []),
+                        last_call_received_from_client => $_->stash->{introspection}{last_call_received},
+                        last_message_sent_to_client    => $_->stash->{introspection}{last_message_sent},
+                        received_bytes_from_client     => $_->stash->{introspection}{received_bytes},
+                        sent_bytes_to_client           => $_->stash->{introspection}{sent_bytes},
+                        messages_received_from_client  => $_->stash->{introspection}{msg_type}{received},
+                        messages_sent_to_client        => $_->stash->{introspection}{msg_type}{sent},
+                        last_rpc_error                 => $_->stash->{introspection}{last_rpc_error},
+                        pricer_subscribtion_count      => $_->stash->{introspection}{pricer_subscribtion_count},
                         }
                     }
                     grep {

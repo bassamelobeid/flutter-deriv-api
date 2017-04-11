@@ -572,8 +572,7 @@ sub startup {
             # action hooks
             before_forward => [
                 \&Binary::WebSocketAPI::Hooks::check_app_id, \&Binary::WebSocketAPI::Hooks::before_forward,
-                \&Binary::WebSocketAPI::Hooks::get_rpc_url,
-                \&Binary::WebSocketAPI::Hooks::introspection_before_forward
+                \&Binary::WebSocketAPI::Hooks::get_rpc_url,  \&Binary::WebSocketAPI::Hooks::introspection_before_forward
             ],
             before_call => [
                 \&Binary::WebSocketAPI::Hooks::add_app_id,   \&Binary::WebSocketAPI::Hooks::add_brand,
