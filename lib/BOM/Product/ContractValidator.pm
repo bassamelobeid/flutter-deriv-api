@@ -113,7 +113,7 @@ sub _validate_settlement_conditions {
     if ($self->tick_expiry) {
         if (not $self->exit_tick) {
             $message = 'exit tick undefined after 5 minutes of contract start';
-        } elsif ($self->exit_tick->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds) {
+        } elsif ($self->exit_tick->epoch - $self->date_start->epoch > $self->_max_tick_expiry_duration->seconds) {
             $message = 'no ticks within 5 minutes after contract start';
         }
     } else {
@@ -726,7 +726,7 @@ sub _build_date_start_blackouts {
         if ($self->is_intraday) {
             my $eod_blackout =
                 ($self->tick_expiry and ($underlying->resets_at_open or ($underlying->market->name eq 'forex' and $start->day_of_week == 5)))
-                ? $self->max_tick_expiry_duration
+                ? $self->_max_tick_expiry_duration
                 : $underlying->eod_blackout_start;
             push @periods, [$end_of_trading->minus_time_interval($eod_blackout)->epoch, $end_of_trading->epoch] if $eod_blackout;
         }

@@ -107,10 +107,6 @@ user at some point.. and they are wily.
 
 This will contain the shortcode of the original bet, if we built it from one.
 
-## max\_tick\_expiry\_duration
-
-A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.
-
 # ATTRIBUTES - From contract\_types.yml
 
 ## id

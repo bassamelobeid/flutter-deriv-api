@@ -298,19 +298,6 @@ has for_sale => (
     default => 0,
 );
 
-=head2 max_tick_expiry_duration
-
-A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.
-
-=cut
-
-has max_tick_expiry_duration => (
-    is      => 'ro',
-    isa     => 'time_interval',
-    default => '5m',
-    coerce  => 1,
-);
-
 has build_parameters => (
     is  => 'ro',
     isa => 'HashRef',
@@ -416,6 +403,14 @@ has apply_market_inefficient_limit => (
     lazy_build => 1,
 );
 
+#A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.
+has _max_tick_expiry_duration => (
+    is      => 'ro',
+    isa     => 'time_interval',
+    default => '5m',
+    coerce  => 1,
+);
+
 # We can't import the Factory directly as that goes circular.
 # On the other hand, we want some extra info which only
 # becomes available here. So, require the Factory to give us
@@ -498,7 +493,7 @@ sub is_after_expiry {
 
     if ($self->tick_expiry) {
         return 1
-            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds));
+            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->_max_tick_expiry_duration->seconds));
     } else {
 
         return 1 if $self->get_time_to_expiry->seconds == 0;
@@ -520,7 +515,7 @@ sub is_after_settlement {
 
     if ($self->tick_expiry) {
         return 1
-            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds));
+            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->_max_tick_expiry_duration->seconds));
     } else {
         return 1 if $self->get_time_to_settlement->seconds == 0;
     }
