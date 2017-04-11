@@ -14,9 +14,6 @@ use BOM::Platform::Runtime;
 use BOM::Pricing::v3::Contract;
 use BOM::Product::ContractFactory::Parser qw(shortcode_to_parameters);
 
-use Log::Any qw($log);
-use Log::Any::Adapter qw(Stderr), log_level => 'info';
-
 sub new { return bless {@_[1 .. $#_]}, $_[0] }
 
 sub process_job {
@@ -143,7 +140,6 @@ sub run {
             time             => time,
             fork_index       => $args{fork_index});
         $redis->set("PRICER_STATUS::$args{ip}-$args{fork_index}", encode_json(\@stat_redis));
-        $log->info("PRICER_STATUS::$args{ip}-$args{fork_index}->" . encode_json(\@stat_redis));
 
         if ($current_pricing_epoch != time) {
 
