@@ -200,6 +200,16 @@ The starting barrier value.
 
 The code for this category.
 
+# METHODS - Time-related
+
+## timeinyears
+
+Contract duration in years.
+
+## timeindays
+
+Contract duration in days.
+
 # METHODS - Other
 
 ## debug\_information

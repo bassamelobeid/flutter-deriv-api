@@ -305,17 +305,6 @@ has build_parameters => (
     required => 1,
 );
 
-# timeindays/timeinyears - note that for FX contracts of >=1 duration, these values will follow the market convention of integer days
-has [qw(
-        timeinyears
-        timeindays
-        )
-    ] => (
-    is         => 'ro',
-    isa        => 'Math::Util::CalculatedValue::Validatable',
-    lazy_build => 1,
-    );
-
 #fixed_expiry - A Boolean to determine if this bet has fixed or flexible expiries.
 
 has fixed_expiry => (
@@ -651,6 +640,74 @@ The code for this category.
 sub category_code {
     my $self = shift;
     return $self->category->code;
+}
+
+=head1 METHODS - Time-related
+
+=cut
+
+=head2 timeinyears
+
+Contract duration in years.
+
+=head2 timeindays
+
+Contract duration in days.
+
+=cut
+
+has [qw(
+        timeinyears
+        timeindays
+        )
+    ] => (
+    is         => 'ro',
+    init_arg   => undef,
+    isa        => 'Math::Util::CalculatedValue::Validatable',
+    lazy_build => 1,
+    );
+
+sub _build_timeinyears {
+    my $self = shift;
+
+    my $tiy = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'time_in_years',
+        description => 'Bet duration in years',
+        set_by      => 'BOM::Product::Contract',
+        base_amount => 0,
+        minimum     => 0.000000001,
+    });
+
+    my $days_per_year = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'days_per_year',
+        description => 'We use a 365 day year.',
+        set_by      => 'BOM::Product::Contract',
+        base_amount => 365,
+    });
+
+    $tiy->include_adjustment('add',    $self->timeindays);
+    $tiy->include_adjustment('divide', $days_per_year);
+
+    return $tiy;
+}
+
+sub _build_timeindays {
+    my $self = shift;
+
+    my $atid = $self->get_time_to_expiry({
+            from => $self->effective_start,
+        })->days;
+
+    my $tid = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'time_in_days',
+        description => 'Duration of this bet in days',
+        set_by      => 'BOM::Product::Contract',
+        minimum     => 0.000001,
+        maximum     => 730,
+        base_amount => $atid,
+    });
+
+    return $tid;
 }
 
 =head1 METHODS - Other
@@ -1037,49 +1094,6 @@ sub _build_current_tick {
     my $self = shift;
 
     return $self->underlying->spot_tick;
-}
-
-sub _build_timeinyears {
-    my $self = shift;
-
-    my $tiy = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'time_in_years',
-        description => 'Bet duration in years',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => 0,
-        minimum     => 0.000000001,
-    });
-
-    my $days_per_year = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'days_per_year',
-        description => 'We use a 365 day year.',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => 365,
-    });
-
-    $tiy->include_adjustment('add',    $self->timeindays);
-    $tiy->include_adjustment('divide', $days_per_year);
-
-    return $tiy;
-}
-
-sub _build_timeindays {
-    my $self = shift;
-
-    my $atid = $self->get_time_to_expiry({
-            from => $self->effective_start,
-        })->days;
-
-    my $tid = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'time_in_days',
-        description => 'Duration of this bet in days',
-        set_by      => 'BOM::Product::Contract',
-        minimum     => 0.000001,
-        maximum     => 730,
-        base_amount => $atid,
-    });
-
-    return $tid;
 }
 
 sub _build_opposite_contract {
