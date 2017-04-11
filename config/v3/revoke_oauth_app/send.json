@@ -4,7 +4,7 @@
   "title": "Revoking OAuth Application Send",
   "description":"ask for revoking my Oauth app.",
   "properties": {
-    "revoke_oauth_apps": {
+    "revoke_oauth_app": {
       "type":"integer",
       "required": "1"
     },
