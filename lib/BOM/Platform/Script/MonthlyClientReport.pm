@@ -147,7 +147,7 @@ sub run {
 
     STDOUT->autoflush(1);    # flushes stdout progress report faster
 
-    for my $broker (qw/ MLT MX MF CR JP /) {
+    for my $broker (qw/ MLT MX MF CR JP CH /) {
         for my $crdr ('debit', 'credit') {
             printf "%5s / %6s: %s.. ", $broker, $crdr, scalar(localtime);
             my $rows = go
