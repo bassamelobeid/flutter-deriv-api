@@ -2,13 +2,13 @@ package Binary::WebSocketAPI::v3::Instance::Redis;
 use strict;
 use warnings;
 use YAML::XS qw| LoadFile |;
-use Exporter qw( import );
+use Exporter qw| import   |;
 use DataDog::DogStatsd::Helper qw| stats_inc stats_dec |;
 
 use Mojo::Redis2;
 
 my $config = {
-    pricer_write => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write},
+    pricer_write => LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write},
 };
 
 my $instances = {

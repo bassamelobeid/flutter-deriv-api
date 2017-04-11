@@ -440,19 +440,18 @@ sub _process_proposal_open_contract_response {
 }
 
 sub _serialized_args {
-    my $h    = shift;
-    my $copy = {%$h};
+    my $copy = {%{+shift}};
+    my @arr  = ();
 
     delete @{$copy}{qw(language req_id)};
 
-    my @a = ();
     # We want to handle similar contracts together, so we do this and sort by
     # key in the price_queue.pl daemon
-    push @a, ('short_code', delete $copy->{short_code}) if exists $copy->{short_code};
+    push @arr, ('short_code', delete $copy->{short_code}) if exists $copy->{short_code};
     foreach my $k (sort keys %$copy) {
-        push @a, ($k, $copy->{$k});
+        push @arr, ($k, $copy->{$k});
     }
-    return 'PRICER_KEYS::' . encode_json(\@a);
+    return 'PRICER_KEYS::' . encode_json(\@arr);
 }
 
 sub _pricing_channel_for_ask {
