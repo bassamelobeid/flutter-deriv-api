@@ -495,7 +495,7 @@ sub _validate_lifetime {
         };
     }
 
-    my $permitted = $self->permitted_expiries;
+    my $permitted = $self->_offering_specifics->{permitted};
     my ($min_duration, $max_duration) = @{$permitted}{'min', 'max'};
 
     my $message_to_client_array;

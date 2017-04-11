@@ -255,7 +255,6 @@ has starts_as_forward_starting => (
 has [qw(
         is_intraday
         is_forward_starting
-        permitted_expiries
         effective_daily_trading_seconds
         )
     ] => (
@@ -392,7 +391,7 @@ has pricing_spot => (
     lazy_build => 1,
 );
 
-has [qw(offering_specifics barrier_category)] => (
+has [qw(barrier_category)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -849,6 +848,20 @@ sub allowed_slippage {
 
 # INTERNAL METHODS
 
+sub _offering_specifics {
+    my $self = shift;
+
+    return get_contract_specifics(
+        BOM::Platform::Runtime->instance->get_offerings_config,
+        {
+            underlying_symbol => $self->underlying->symbol,
+            barrier_category  => $self->barrier_category,
+            expiry_type       => $self->expiry_type,
+            start_type        => ($self->is_forward_starting ? 'forward' : 'spot'),
+            contract_category => $self->category->code,
+        });
+}
+
 sub _check_is_intraday {
     my ($self, $date_start) = @_;
     my $date_expiry       = $self->date_expiry;
@@ -947,13 +960,8 @@ sub _build_is_intraday {
 
 sub _build_is_forward_starting {
     my $self = shift;
+
     return ($self->allow_forward_starting and $self->date_pricing->is_before($self->date_start)) ? 1 : 0;
-}
-
-sub _build_permitted_expiries {
-    my $self = shift;
-
-    return $self->offering_specifics->{permitted};
 }
 
 sub _build_basis_tick {
@@ -1269,20 +1277,6 @@ sub _build_pricing_spot {
     return $initial_spot;
 }
 
-sub _build_offering_specifics {
-    my $self = shift;
-
-    return get_contract_specifics(
-        BOM::Platform::Runtime->instance->get_offerings_config,
-        {
-            underlying_symbol => $self->underlying->symbol,
-            barrier_category  => $self->barrier_category,
-            expiry_type       => $self->expiry_type,
-            start_type => ($self->is_forward_starting ? 'forward' : 'spot'),
-            contract_category => $self->category->code,
-        });
-}
-
 sub _build_barrier_category {
     my $self = shift;
 
@@ -1399,10 +1393,10 @@ sub _build_risk_profile {
     my $self = shift;
 
     return BOM::Platform::RiskProfile->new(
-        contract_category => $self->category_code,
-        expiry_type       => $self->expiry_type,
-        start_type => ($self->is_forward_starting ? 'forward' : 'spot'),
-        currency => $self->currency,
+        contract_category              => $self->category_code,
+        expiry_type                    => $self->expiry_type,
+        start_type                     => ($self->is_forward_starting ? 'forward' : 'spot'),
+        currency                       => $self->currency,
         barrier_category               => $self->barrier_category,
         symbol                         => $self->underlying->symbol,
         market_name                    => $self->underlying->market->name,
