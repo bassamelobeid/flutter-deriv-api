@@ -9,6 +9,7 @@ use Postgres::FeedDB::Spot::Tick;
 use Postgres::FeedDB::Spot::OHLC;
 use Try::Tiny;
 use BOM::Test;
+use Cache::RedisDB;
 
 use base qw( Exporter );
 our @EXPORT_OK = qw( setup_ticks );
@@ -80,6 +81,15 @@ sub setup_ticks {
     }
     return;
 }
+
+sub create_realtime_tick {
+    my $args = shift;
+
+    die 'args must be a hash reference' if ref $args ne 'HASH';
+
+    return Cache::RedisDB->set_nw('QUOTE', $args->{underlying}, $args);
+}
+
 
 sub create_tick {
     my $args = shift;
