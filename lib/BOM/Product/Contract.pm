@@ -898,12 +898,12 @@ sub _check_is_intraday {
     # for contract that start at the open of day and expire at the close of day (include early close) should be treated as daily contract
     my $closing = $self->calendar->closing_on($self->date_expiry);
 
-    # not an intraday if the market is close on expiry
-    return 0 unless $closing;
+    # An intraday if the market is close on expiry
+    return 1 unless $closing;
     my $calendar = $self->calendar;
     # daily trading seconds based on the market's trading hour
     my $daily_trading_seconds = $calendar->closing_on($date_expiry)->epoch - $calendar->opening_on($date_expiry)->epoch;
-    return 0 if $closing and $closing->is_same_as($self->date_expiry) and $contract_duration >= $daily_trading_seconds;
+    return 0 if $closing->is_same_as($self->date_expiry) and $contract_duration >= $daily_trading_seconds;
 
     return 1;
 }
