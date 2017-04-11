@@ -370,9 +370,28 @@ sub get_bid {
             }
         }
 
-        if ($contract->exit_tick and $contract->is_after_settlement) {
-            $response->{exit_tick}      = $contract->underlying->pipsized_value($contract->exit_tick->quote);
-            $response->{exit_tick_time} = $contract->exit_tick->epoch;
+        $response->{is_settleable}         = $contract->is_settleable;
+        $response->{has_corporate_actions} = 1
+            if @{$contract->corporate_actions};
+
+        $response->{barrier_count} = $contract->two_barriers ? 2 : 1;
+        if ($contract->entry_spot) {
+            my $entry_spot = $contract->underlying->pipsized_value($contract->entry_spot);
+            $response->{entry_tick}      = $entry_spot;
+            $response->{entry_spot}      = $entry_spot;
+            $response->{entry_tick_time} = $contract->entry_spot_epoch;
+            if ($contract->two_barriers) {
+                $response->{high_barrier}          = $contract->high_barrier->as_absolute;
+                $response->{low_barrier}           = $contract->low_barrier->as_absolute;
+                $response->{original_high_barrier} = $contract->original_high_barrier->as_absolute
+                    if defined $contract->original_high_barrier;
+                $response->{original_low_barrier} = $contract->original_low_barrier->as_absolute
+                    if defined $contract->original_low_barrier;
+            } elsif ($contract->barrier) {
+                $response->{barrier}          = $contract->barrier->as_absolute;
+                $response->{original_barrier} = $contract->original_barrier->as_absolute
+                    if defined $contract->original_barrier;
+            }
         }
 
         $response->{current_spot} = $contract->current_spot
