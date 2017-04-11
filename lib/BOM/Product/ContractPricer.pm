@@ -236,13 +236,14 @@ sub _create_new_interface_engine {
 
     my %pricing_parameters;
 
+    my $payouttime_code = ($self->payouttime eq 'hit') ? 0 : 1;
     my %contract_config = (
         contract_type     => $self->pricing_code,
         underlying_symbol => $self->underlying->symbol,
         date_start        => $self->effective_start,
         date_pricing      => $self->date_pricing,
         date_expiry       => $self->date_expiry,
-        payouttime_code   => $self->payouttime_code,
+        payouttime_code   => $payouttime_code,
         for_date          => $self->underlying->for_date,
         spot              => $self->pricing_spot,
         strikes           => [grep { $_ } values %{$self->barriers_for_pricing}],
