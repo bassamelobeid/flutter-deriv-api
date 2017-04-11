@@ -9,7 +9,7 @@ This package is to output contract's pricing parameters that will be used by Jap
 use strict;
 use warnings;
 use lib qw(/home/git/regentmarkets/bom-backoffice);
-use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel PrintContentType_XSendfile);
 use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Database::ClientDB;
@@ -123,6 +123,7 @@ sub verify_with_shortcode {
     my $extra           = $args->{extra} // undef;
 
     my $original_contract = produce_contract($short_code, $currency);
+    my $priced_at_start = make_similar_contract($original_contract, {priced_at => 'start'});
     my $purchase_time = $original_contract->date_start;
 
     my $start = $args->{start} ? Date::Utility->new($args->{start}) : Date::Utility->new($purchase_time);
@@ -135,12 +136,12 @@ sub verify_with_shortcode {
     if ($extra) {
         my @extra_args = split '_', $extra;
         $pricing_args->{pricing_spot} = $extra_args[0];
-        if ($original_contract->priced_with_intraday_model) {
+        if ($priced_at_start->priced_with_intraday_model) {
             $pricing_args->{pricing_vol}               = $extra_args[1];
             $pricing_args->{news_adjusted_pricing_vol} = $extra_args[2];
             $pricing_args->{long_term_prediction}      = $extra_args[3];
             $pricing_args->{volatility_scaling_factor} = $extra_args[4];
-        } elsif ($original_contract->pricing_vol_for_two_barriers) {    # two barrier for slope
+        } elsif ($priced_at_start->pricing_vol_for_two_barriers) {    # two barrier for slope
             $pricing_args->{pricing_vol_for_two_barriers} = {
                 high_barrier_vol => $extra_args[1],
                 low_barrier_vol  => $extra_args[2],
