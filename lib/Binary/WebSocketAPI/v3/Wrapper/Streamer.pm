@@ -224,7 +224,7 @@ sub process_realtime_events {
                     next;
                 }
 
-                $payload->{ohlc} =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);?/;
+                $payload->{ohlc} =~ /$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);?/;
                 my $epoch = $payload->{epoch};
                 my $ohlc  = {
                     id        => $feed_channels_type->{$channel}->{uuid},
