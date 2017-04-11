@@ -273,8 +273,7 @@ has [qw(entry_tick current_tick)] => (
     lazy_build => 1,
 );
 
-has [
-    qw( entry_spot
+has [qw(
         current_spot)
     ] => (
     is         => 'rw',
@@ -686,6 +685,32 @@ sub ticks_to_expiry {
     return shift->tick_count + 1;
 }
 
+=head2 entry_spot
+
+The entry spot price of the contract.
+
+=cut
+
+sub entry_spot {
+    my $self = shift;
+
+    my $entry_tick = $self->entry_tick or return undef;
+    return $self->entry_tick->quote;
+}
+
+=head2 entry_spot_epoch
+
+The entry spot epoch of the contract.
+
+=cut
+
+sub entry_spot_epoch {
+    my $self = shift;
+
+    my $entry_tick = $self->entry_tick or return undef;
+    return $self->entry_tick->epoch;
+}
+
 =head2 effective_start
 
 =over 4
@@ -1011,13 +1036,6 @@ sub _build_current_spot {
     my $spot = $self->current_tick or return undef;
 
     return $self->underlying->pipsized_value($spot->quote);
-}
-
-sub _build_entry_spot {
-    my $self = shift;
-
-    my $entry_tick = $self->entry_tick or return undef;
-    return $self->entry_tick->quote;
 }
 
 sub _build_current_tick {

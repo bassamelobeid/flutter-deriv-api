@@ -215,6 +215,14 @@ Pricing engine internal debug information hashref.
 Number of ticks until expiry of this contract. Defaults to one more than tick\_count,
 TODO JB - this is overridden in the digit/Asian contracts, any idea why?
 
+## entry\_spot
+
+The entry spot price of the contract.
+
+## entry\_spot\_epoch
+
+The entry spot epoch of the contract.
+
 ## effective\_start
 
 - For backpricing, this is ["date\_start"](#date\_start).
