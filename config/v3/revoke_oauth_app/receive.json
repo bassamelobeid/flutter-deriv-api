@@ -11,8 +11,7 @@
     },
     "revoke_oauth_app": {
         "type": "string",
-        "description": "1 on",
-        "required": 1
+        "description": "1 on success"
     },
     "msg_type": {
       "type": "string",
