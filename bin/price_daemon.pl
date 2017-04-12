@@ -13,6 +13,7 @@ use BOM::Pricing::PriceDaemon;
 use Sys::Info;
 use List::Util qw(max);
 use DataDog::DogStatsd::Helper;
+use Volatility::Seasonality;
 
 my $internal_ip     = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 GetOptions(
@@ -48,7 +49,8 @@ $pm->run_on_finish(
         warn "Fork [$pid] ended with exit code [$exit_code]\n";
     });
 
-BOM::Pricing::PriceDaemon::warmup_cache();
+# warming up cache to eleminate pricing time on first price of underlying
+Volatility::Seasonality::warmup_cache();
 
 while (1) {
     $pm->start and next;

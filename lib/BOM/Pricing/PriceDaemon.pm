@@ -208,10 +208,5 @@ sub tags {
     return [@{$self->{tags}}, map { ; "tag:$_" } $self->current_queue // (), @tags];
 }
 
-sub warmup_cache {
-    use Volatility::Seasonality;
-    return Volatility::Seasonality::warmup_cache();
-}
-
 1;
 
