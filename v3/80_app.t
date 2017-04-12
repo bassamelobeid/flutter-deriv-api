@@ -261,7 +261,8 @@ $t = $t->send_ok({
                            revoke_oauth_app => $test_appid,
                           }})->message_ok;
 $res = decode_json($t->message->[1]);
-diag explain $res;
+diag "here here here --------------------------------------------------------------------------------";
+is $res->{revoke_oauth_app}, 0, 'revoke_oauth_app failed';
 
 
 $t = build_wsapi_test({app_id => 333});
