@@ -173,6 +173,8 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                 my $idx      = _make_barrier_key($barriers);
                 warn "unknown idx " . $idx . ", available: " . join ',', sort keys %$barriers_order unless exists $barriers_order->{$idx};
                 ${$proposal_array_subscriptions->{$uuid}{seq}}[$barriers_order->{$idx}] = $req_storage->{uuid};
+                # creating this key to be used by forget_all, undef - not to allow proposal_array message to be sent before real data received
+                $proposal_array_subscriptions->{$uuid}{proposals}{$req_storage->{uuid}} = undef;
                 $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
             }
         }
