@@ -2,17 +2,17 @@ package BOM::Transaction::Validation;
 
 use strict;
 use warnings;
-use LandingCompany::Registry;
-use Error::Base;
-use BOM::Platform::Context qw(localize request);
-use BOM::Database::Helper::RejectedTrade;
-use YAML::XS qw(LoadFile);
-use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
-use Format::Util::Numbers qw(commas roundnear to_monetary_number_format);
-use List::Util qw(min max first);
-use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 
+use BOM::Database::Helper::RejectedTrade;
+use BOM::Platform::Context qw(localize request);
+use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
+use Error::Base;
+use Format::Util::Numbers qw(commas roundnear to_monetary_number_format);
+use LandingCompany::Registry;
+use List::Util qw(min max first);
 use Moo;
+use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
+use YAML::XS qw(LoadFile);
 
 has client => (
     is       => 'rw',
@@ -25,7 +25,6 @@ around BUILDARGS => sub {
 
     my $args = ref $_[0] ? shift : +{@_};
 
-    $args->{client} //= $args->{clients}->[0];
     unless (defined $args->{clients} && scalar @{$args->{clients}}) {
         $args->{clients} = [$args->{client}];
     }
@@ -53,7 +52,7 @@ sub validate_trx_sell {
             return $res if $res;
         }
     }
-    ### It's quete expensive
+    ### It's quite expensive
     $res = $self->_validate_sell_pricing_adjustment();
     return $res;
 }
@@ -89,6 +88,8 @@ sub validate_trx_buy {
         }
     }
     ### Order is very important
+    ### _validate_trade_pricing_adjustment contain some expensive calculations
+    #### And last per-client checks must be after this calculations.
     $res = $self->_validate_trade_pricing_adjustment();
     return $res if $res;
 
