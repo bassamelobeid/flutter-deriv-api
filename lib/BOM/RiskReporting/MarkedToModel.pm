@@ -99,7 +99,7 @@ sub generate {
                 my $bet = produce_contract($bet_params);
                 $cached_underlyings{$symbol} ||= $bet->underlying;
 
-                my $current_value = $bet->is_spread ? $bet->bid_price : $bet->theo_price;
+                my $current_value = $bet->theo_price;
                 my $value = $self->amount_in_usd($current_value, $open_fmb->{currency_code});
                 $totals{value} += $value;
 
@@ -116,16 +116,11 @@ sub generate {
                     }
                 } else {
                     # spreaed does not have greeks
-                    if ($bet->is_spread) {
-                        $dbh->do(qq{INSERT INTO accounting.realtime_book (financial_market_bet_id, market_price)  VALUES(?, ?)},
-                            undef, $open_fmb_id, $value);
-                    } else {
-                        map { $totals{$_} += $bet->$_ } qw(delta theta vega gamma);
-                        $dbh->do(
-                            qq{INSERT INTO accounting.realtime_book (financial_market_bet_id, market_price, delta, theta, vega, gamma)  VALUES(?, ?, ?, ?, ?, ?)},
-                            undef, $open_fmb_id, $value, $bet->delta, $bet->theta, $bet->vega, $bet->gamma
-                        );
-                    }
+                    map { $totals{$_} += $bet->$_ } qw(delta theta vega gamma);
+                    $dbh->do(
+                        qq{INSERT INTO accounting.realtime_book (financial_market_bet_id, market_price, delta, theta, vega, gamma)  VALUES(?, ?, ?, ?, ?, ?)},
+                        undef, $open_fmb_id, $value, $bet->delta, $bet->theta, $bet->vega, $bet->gamma
+                    );
                 }
             }
             catch {
@@ -228,8 +223,7 @@ sub sell_expired_contracts {
                 $bet_info->{bb_lookup} = $csv->string;
             }
             $bet_info->{shortcode} = $bet->shortcode;
-            # for spread max payout is determined by stop_profit.
-            $bet_info->{payout} = $bet->is_spread ? $bet->amount_per_point * $bet->stop_profit : $bet->payout;
+            $bet_info->{payout}    = $bet->payout;
 
             if (not defined $bet->value) {
                 # $bet->value is set when we confirm expiration status, even further above.
