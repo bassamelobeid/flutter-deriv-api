@@ -51,11 +51,11 @@
         },
         "legal_allowed_contract_categories": {
             "type": "array",
-            "minItems": 7,
+            "minItems": 6,
             "required": "1",
             "items": {
                 "type": "string",
-                "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|spreads)$",
+                "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch)$",
                 "required": "1"
             }
         },
