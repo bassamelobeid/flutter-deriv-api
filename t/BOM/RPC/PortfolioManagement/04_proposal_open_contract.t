@@ -161,18 +161,8 @@ sub _create_contract {
         barrier      => 'S0P',
     };
 
-    if ($args{spread}) {
-        delete $contract_data->{date_expiry};
-        delete $contract_data->{barrier};
-        $contract_data->{bet_type}         = 'SPREADU';
-        $contract_data->{amount_per_point} = 1;
-        $contract_data->{stop_type}        = 'point';
-        $contract_data->{stop_profit}      = 10;
-        $contract_data->{stop_loss}        = 10;
-    }
     my $contract = produce_contract($contract_data);
-
-    my $txn = BOM::Transaction->new({
+    my $txn      = BOM::Transaction->new({
         client        => $client,
         contract      => $contract,
         price         => 100,
