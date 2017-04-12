@@ -115,27 +115,6 @@ subtest 'buy' => sub {
     #Try setting trading period start in parameters.
     $params->{contract_parameters}{trading_period_start} = time - 3600;
     $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
-
-    $contract = Test::BOM::RPC::Contract::create_contract(is_spread => 1);
-    $params->{contract_parameters} = {
-        "proposal"         => 1,
-        "amount"           => "100",
-        "basis"            => "payout",
-        "contract_type"    => "SPREADU",
-        "currency"         => "USD",
-        "stop_profit"      => "10",
-        "stop_type"        => "point",
-        "amount_per_point" => "1",
-        "stop_loss"        => "10",
-        "symbol"           => "R_50",
-    };
-
-    $params->{args}{price} = $contract->ask_price;
-
-    $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
-    push @expected_keys, qw(stop_loss_level stop_profit_level amount_per_point);
-    is_deeply([sort keys %$result], [sort @expected_keys], 'result spread keys is ok');
-
 };
 
 subtest 'app_markup' => sub {
@@ -259,20 +238,6 @@ subtest 'app_markup_transaction' => sub {
     is $txn->app_markup, sprintf('%.2f', $txn->payout * $app_markup_percentage / 100),
         "in case of stake contract, app_markup is app_markup_percentage of final payout i.e transaction payout";
     cmp_ok $txn->payout, "<", $payout, "payout after app_markup_percentage is less than actual payout";
-
-    $contract = Test::BOM::RPC::Contract::create_contract(
-        is_spread             => 1,
-        app_markup_percentage => $app_markup_percentage
-    );
-    $now = time;
-    $txn = BOM::Transaction->new({
-        client        => $client,
-        contract      => $contract,
-        price         => $contract->ask_price,
-        purchase_date => $now,
-        amount_type   => 'payout',
-    });
-    is $txn->app_markup, 0, "no app markup for spread contracts as of now, may be added in future";
 };
 
 done_testing();
