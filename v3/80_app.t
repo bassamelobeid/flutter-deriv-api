@@ -268,7 +268,7 @@ $t = $t->send_ok({
 $res = decode_json($t->message->[1]);
 diag "here here here --------------------------------------------------------------------------------";
 diag(explain($res));
-is $res->{revoke_oauth_app}, 0, 'revoke_oauth_app failed';
+is $res->{error}{code}, 'PermissionDenied', 'revoke_oauth_app failed';
 
 
 $t = build_wsapi_test({app_id => 333});
