@@ -48,6 +48,8 @@ $pm->run_on_finish(
         warn "Fork [$pid] ended with exit code [$exit_code]\n";
     });
 
+BOM::Pricing::PriceDaemon::warmup_cache();
+
 while (1) {
     $pm->start and next;
     my $daemon = BOM::Pricing::PriceDaemon->new(
