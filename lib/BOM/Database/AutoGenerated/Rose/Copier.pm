@@ -15,8 +15,6 @@ __PACKAGE__->meta->setup(
         trade_type      => { type => 'varchar', length => 50 },
         min_trade_stake => { type => 'numeric' },
         max_trade_stake => { type => 'numeric' },
-        autolink        => { type => 'boolean', default => 'false' },
-        linkcount       => { type => 'integer', default => 1 },
     ],
 
     primary_key_columns => [ 'copier_id' ],
