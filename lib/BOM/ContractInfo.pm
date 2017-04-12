@@ -30,8 +30,7 @@ sub get_info {
             $info->{longcode} = $contract->longcode;
             if (not $fmb->{is_sold}) {
                 if ($contract and $contract->may_settle_automatically) {
-                    $info->{indicative_price} = $contract->bid_price
-                        unless $contract->is_spread;
+                    $info->{indicative_price} = $contract->bid_price;
                 }
             }
         }
