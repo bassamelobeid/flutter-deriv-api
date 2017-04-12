@@ -169,11 +169,6 @@ quants:
           global: 1
           isa: ArrayRef
           default: []
-    spreads_daily_profit_limit:
-      description: "Limit of daily profit for spreads"
-      isa: Str
-      global: 1
-      default: 'extreme_risk'
     custom_client_profiles:
       description: "Custom client limits specification."
       isa: json_string
