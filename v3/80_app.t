@@ -255,7 +255,7 @@ $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'oauth_apps';
 test_schema('oauth_apps', $res);
 $used_apps = $res->{oauth_apps};
-is scalar(@{$used_apps}), 2;
+is scalar(@{$used_apps}), 1;
 is $used_apps->[0]->{app_id}, $app_no_admin_id, 'app_id app_no_admin_id';
 is_deeply([sort @{$used_apps->[0]->{scopes}}], ['read', 'trade'], 'scopes are right');
 
@@ -267,6 +267,7 @@ $t = $t->send_ok({
                           }})->message_ok;
 $res = decode_json($t->message->[1]);
 diag "here here here --------------------------------------------------------------------------------";
+daig explain $res;
 is $res->{revoke_oauth_app}, 0, 'revoke_oauth_app failed';
 
 
