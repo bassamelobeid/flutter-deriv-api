@@ -123,7 +123,7 @@ subtest 'Numbers and stuff.' => sub {
     isa_ok($remaining_time, 'Time::Duration::Concise', 'remaining_time');
     cmp_ok($remaining_time->seconds, '==', 0, ' of 0 on expired.');
 
-    my $max_ted = $bet->max_tick_expiry_duration;
+    my $max_ted = $bet->_max_tick_expiry_duration;
     isa_ok($max_ted, 'Time::Duration::Concise', 'max_tick_expiry_duration');
     cmp_ok($max_ted->minutes, '>=', 1, ' of at least one minute.');
 };

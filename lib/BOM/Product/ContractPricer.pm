@@ -711,7 +711,7 @@ sub _build_pricing_engine_name {
     {
         my $func = (first { $self->market->name eq $_ } qw(forex commodities)) ? 'symbols_for_intraday_fx' : 'symbols_for_intraday_index';
         my @symbols = create_underlying_db->$func;
-        if (_match_symbol(\@symbols, $self->underlying->symbol) and my $loc = $self->offering_specifics->{historical}) {
+        if (_match_symbol(\@symbols, $self->underlying->symbol) and my $loc = $self->_offering_specifics->{historical}) {
             my $duration = $self->remaining_time;
             my $name = $self->market->name eq 'indices' ? 'Index' : 'Forex';
             $engine_name = 'BOM::Product::Pricing::Engine::Intraday::' . $name
