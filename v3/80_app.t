@@ -76,8 +76,6 @@ $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'app_register';
 test_schema('app_register', $res);
 my $app1 = $res->{app_register};
-
-
 my $app_id = $app1->{app_id};
 is_deeply([sort @{$app1->{scopes}}], ['read', 'trade'], 'scopes are right');
 is $app1->{redirect_uri}, 'https://www.example.com/',  'redirect_uri is right';
@@ -266,8 +264,6 @@ $t = $t->send_ok({
                            revoke_oauth_app => $test_appid,
                           }})->message_ok;
 $res = decode_json($t->message->[1]);
-diag "here here here --------------------------------------------------------------------------------";
-diag(explain($res));
 is $res->{error}{code}, 'PermissionDenied', 'revoke_oauth_app failed';
 
 
