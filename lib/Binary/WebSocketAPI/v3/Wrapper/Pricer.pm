@@ -472,7 +472,7 @@ sub _pricing_channel_for_ask {
     $args_hash{landing_company}        = $c->landing_company_name;
     $args_hash{skips_price_validation} = 1;
     my $redis_channel = _serialized_args(\%args_hash);
-    my $subchannel = $args->{amount_per_point} // $args->{amount};
+    my $subchannel    = $args->{amount};
 
     my $skip = Binary::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args);
 
@@ -722,8 +722,6 @@ sub _price_stream_results_adjustment {
     my $resp_theo_probability = shift;
 
     my $contract_parameters = $cache->{contract_parameters};
-    # skips for spreads
-    $_ eq $orig_args->{contract_type} and return $results for qw(SPREADU SPREADD);
 
     # log the instances when pricing server doesn't return theo probability
     unless (defined $resp_theo_probability) {
