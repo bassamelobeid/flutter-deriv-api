@@ -159,7 +159,7 @@ is $res->{msg_type}, 'app_list';
 test_schema('app_list', $res);
 my $get_apps = [grep { $_->{app_id} ne '1' } @{$res->{app_list}}];
 
-is_deeply($get_apps, [$app1, $app2], 'app_list ok');
+is_deeply($get_apps, [$app1, $app2, $app_no_admin], 'app_list ok');
 
 $t = $t->send_ok({
         json => {
@@ -176,7 +176,7 @@ $t = $t->send_ok({
 $res = decode_json($t->message->[1]);
 test_schema('app_list', $res);
 $get_apps = [grep { $_->{app_id} ne '1' } @{$res->{app_list}}];
-is_deeply($get_apps, [$app1], 'app_delete ok');
+is_deeply($get_apps, [$app1, $app_no_admin], 'app_delete ok');
 
 ## for used and revoke
 my $test_appid = $app1->{app_id};
