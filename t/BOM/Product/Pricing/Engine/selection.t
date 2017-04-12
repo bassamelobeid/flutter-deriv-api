@@ -38,7 +38,6 @@ subtest 'test everything' => sub {
     my $expected = YAML::XS::LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/Engine/selection_config.yml');
     foreach my $symbol (get_offerings_with_filter($offerings_cfg, 'underlying_symbol')) {
         foreach my $ref (@{available_contracts_for_symbol({symbol => $symbol})->{available}}) {
-            next if $ref->{contract_category} eq 'spreads';
             my %barriers;
             if ($ref->{contract_category} eq 'digits') {
                 %barriers = (barrier => 1);
