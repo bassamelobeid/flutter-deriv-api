@@ -107,9 +107,9 @@ sub register {
 
     Scalar::Util::weaken(my $weak_app = $app);
     my $redis_connections_counter_sub = sub {
-        my ($self, $info) = @_;    # $self here is Mojo::Redis2 obj
+        my ($redis, $info) = @_;
         $weak_app->stat->{current_redis_connections}++;
-        $self->{connections}{$info->{group}}{counter_guard} =
+        $redis->{connections}{$info->{id}}{counter_guard} =
             guard { $weak_app->stat->{current_redis_connections}-- unless ${^GLOBAL_PHASE} eq 'DESTRUCT' };
     };
 
