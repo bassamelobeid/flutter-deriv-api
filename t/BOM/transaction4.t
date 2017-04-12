@@ -70,61 +70,6 @@ my $contract   = produce_contract({
     barrier      => 'S0P',
 });
 
-subtest 'validate legal allowed contract categories' => sub {
-    my $cr = Client::Account->new({loginid => 'CR2002'});
-    my $mocked_client = Test::MockModule->new('Client::Account');
-    $mocked_client->mock('residence', sub { return 'al' });
-
-    my $loginid  = $cr->loginid;
-    my $currency = 'USD';
-    my $account  = $cr->default_account;
-    my $c        = produce_contract({
-        underlying       => 'R_100',
-        bet_type         => 'SPREADU',
-        currency         => $currency,
-        date_start       => $now,
-        amount_per_point => 1,
-        stop_loss        => 10,
-        stop_profit      => 10,
-        stop_type        => 'point',
-        spread           => 2,
-    });
-    my $transaction = BOM::Transaction->new({
-        client   => $cr,
-        contract => $c,
-    });
-
-    ok !BOM::Transaction::Validation->new(
-        client      => $cr,
-        transaction => $transaction
-    )->_validate_jurisdictional_restrictions, 'no error for CR';
-
-    my $mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MLT'});
-    $loginid     = $mlt->loginid;
-    $account     = $mlt->default_account;
-    $transaction = BOM::Transaction->new({
-        client   => $mlt,
-        contract => $c,
-    });
-    ok !BOM::Transaction::Validation->new(
-        client      => $mlt,
-        transaction => $transaction
-    )->_validate_jurisdictional_restrictions, 'no error for MLT';
-
-    my $mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
-    $loginid     = $mf->loginid;
-    $account     = $mf->default_account;
-    $transaction = BOM::Transaction->new({
-        client   => $mf,
-        contract => $c,
-    });
-    my $error = BOM::Transaction::Validation->new(
-        client      => $mf,
-        transaction => $transaction
-    )->_validate_jurisdictional_restrictions;
-    is $error->{'-type'}, 'NotLegalContractCategory', 'error for MF';
-};
-
 subtest 'Validate legal_allowed_underlyings' => sub {
     my $jp = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'JP'});
 
