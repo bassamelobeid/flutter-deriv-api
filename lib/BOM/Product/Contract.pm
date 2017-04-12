@@ -556,14 +556,6 @@ To be able to settle, it need pass the settlement time and has valid exit tick
 
 sub is_settleable { die "Calling ->is_settleable on a ::Contract instance" }
 
-=head2 is_spread
-
-Returns true if this is a spread contract - due to be removed.
-
-=cut
-
-sub is_spread { return 0 }
-
 sub may_settle_automatically {
     my $self = shift;
 

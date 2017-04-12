@@ -285,7 +285,7 @@ sub _validate_price {
 sub _validate_barrier_type {
     my $self = shift;
 
-    return if ($self->tick_expiry or $self->is_spread);
+    return if $self->tick_expiry;
 
     # The barrier for atm bet is always SOP which is relative
     return if ($self->is_atm_bet and defined $self->barrier and $self->barrier->barrier_type eq 'relative');

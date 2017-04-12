@@ -39,8 +39,6 @@ my %supported_contract_types = (
     UPORDOWN    => 1,
     ONETOUCH    => 1,
     NOTOUCH     => 1,
-    SPREADU     => 1,
-    SPREADD     => 1,
 );
 
 sub available_contracts_for_symbol {
@@ -85,7 +83,6 @@ sub available_contracts_for_symbol {
         $o->{barriers} =
               $cat->two_barriers    ? 2
             : $cc eq 'asian'        ? 0
-            : $cc eq 'spreads'      ? 0
             : $cc eq 'digits'       ? 1
             : $cc eq 'touchnotouch' ? 1
             : $cc eq 'callput'      ? (
@@ -140,13 +137,6 @@ sub available_contracts_for_symbol {
                 }
             }
         }
-
-        if ($cc eq 'spreads') {
-            $o->{amount_per_point} = 1;
-            $o->{stop_type}        = 'point';
-            $o->{stop_profit}      = 10;
-            $o->{stop_loss}        = _get_minimum_stop_loss($underlying);
-        }
     }
 
     return {
@@ -199,21 +189,6 @@ sub _default_barrier {
     my $barrier = $duration >= 86400 ? $strike->as_absolute : $strike->as_difference;
 
     return $underlying->market->integer_barrier ? floor($barrier) : $barrier;
-}
-
-sub _get_minimum_stop_loss {
-    my $underlying = shift;
-
-    my $vs = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
-    my $from = Date::Utility->new;
-    # 7 days volatility should be fine.
-    my $spread = $underlying->calculate_spread(
-        $vs->get_volatility({
-                delta => 50,
-                from  => $from,
-                to    => $from->plus_time_interval('7d'),
-            }));
-    return 1.5 * $spread;
 }
 
 1;
