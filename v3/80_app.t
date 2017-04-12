@@ -254,6 +254,11 @@ $t = $t->send_ok({
 $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'oauth_apps';
 test_schema('oauth_apps', $res);
+$used_apps = $res->{oauth_apps};
+is scalar(@{$used_apps}), 1;
+is $used_apps->[0]->{app_id}, $app_no_admin_id, 'app_id app_no_admin_id';
+is_deeply([sort @{$used_apps->[0]->{scopes}}], ['read', 'trade'], 'scopes are right');
+
 $is_confirmed = BOM::Database::Model::OAuth->new->is_scope_confirmed($app_no_admin_id, $cr_1);
 is $is_confirmed, 1, 'was confirmed';
 $t = $t->send_ok({
