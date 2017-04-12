@@ -67,14 +67,6 @@ sub create_contract {
         barrier               => 'S0P',
         app_markup_percentage => $args{app_markup_percentage} // 0
     };
-    if ($args{is_spread}) {
-        delete $contract_data->{date_expiry};
-        $contract_data->{bet_type}         = 'SPREADU';
-        $contract_data->{amount_per_point} = 1;
-        $contract_data->{stop_type}        = 'point';
-        $contract_data->{stop_profit}      = 10;
-        $contract_data->{stop_loss}        = 10;
-    }
     return produce_contract($contract_data);
 }
 

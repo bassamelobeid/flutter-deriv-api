@@ -94,12 +94,6 @@ sub buy {
         payout         => $trx->payout
     };
 
-    if ($contract->is_spread) {
-        $response->{stop_loss_level}   = $contract->stop_loss_level;
-        $response->{stop_profit_level} = $contract->stop_profit_level;
-        $response->{amount_per_point}  = $contract->amount_per_point;
-    }
-
     return $response;
 }
 
@@ -199,12 +193,6 @@ sub buy_contract_for_multiple_accounts {
             $new->{longcode}  = $contract->longcode;
             $new->{shortcode} = $el->{fmb}->{short_code};
             $new->{payout}    = $el->{fmb}->{payout_price};
-
-            if ($contract->is_spread) {
-                $new->{stop_loss_level}   = $contract->stop_loss_level;
-                $new->{stop_profit_level} = $contract->stop_profit_level;
-                $new->{amount_per_point}  = $contract->amount_per_point;
-            }
         }
         $el = $new;
     }
