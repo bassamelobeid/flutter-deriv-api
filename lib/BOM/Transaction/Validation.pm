@@ -147,8 +147,7 @@ sub _validate_sell_pricing_adjustment {
 
     my $contract = $self->transaction->contract;
 
-    # always sell at recomputed bid price for spreads.
-    if ($contract->is_spread or not defined $self->transaction->price) {
+    if (not defined $self->transaction->price) {
         $self->transaction->price($contract->bid_price);
         return;
     }
@@ -210,12 +209,6 @@ sub _validate_sell_pricing_adjustment {
 
 sub _validate_trade_pricing_adjustment {
     my $self = shift;
-
-    # always buy at recomputed ask price for spreads.
-    if ($self->transaction->contract->is_spread) {
-        $self->transaction->price($self->transaction->contract->ask_price);
-        return;
-    }
 
     my $amount_type = $self->transaction->amount_type;
     my $contract    = $self->transaction->contract;
@@ -343,12 +336,7 @@ sub _is_valid_to_buy {
     my $self     = shift;
     my $contract = $self->transaction->contract;
 
-    if (
-        not(
-              $contract->is_spread
-            ? $contract->is_valid_to_buy
-            : $contract->is_valid_to_buy({landing_company => $self->client->landing_company->short})))
-    {
+    unless ($contract->is_valid_to_buy({landing_company => $self->client->landing_company->short})) {
         return Error::Base->cuss(
             -type              => 'InvalidtoBuy',
             -mesg              => $contract->primary_validation_error->message,
@@ -449,7 +437,6 @@ sub _validate_stake_limit {
     my $self     = shift;
     my $client   = $self->client;
     my $contract = $self->transaction->contract;
-    return if $contract->is_spread;
 
     my $landing_company = $client->landing_company;
     my $currency        = $contract->currency;
@@ -486,8 +473,6 @@ sub _validate_payout_limit {
     my $client = $self->client;
 
     my $contract = $self->transaction->contract;
-
-    return if $contract->is_spread;
 
     my $rp    = $contract->risk_profile;
     my @cl_rp = $rp->get_client_profiles($client);
