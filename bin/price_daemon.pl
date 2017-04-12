@@ -49,7 +49,7 @@ $pm->run_on_finish(
         warn "Fork [$pid] ended with exit code [$exit_code]\n";
     });
 
-# warming up cache to eleminate pricing time on first price of underlying
+# warming up cache to eliminate pricing time spike on first price of underlying
 Volatility::Seasonality::warmup_cache();
 
 while (1) {
