@@ -267,7 +267,7 @@ $t = $t->send_ok({
                           }})->message_ok;
 $res = decode_json($t->message->[1]);
 diag "here here here --------------------------------------------------------------------------------";
-daig explain $res;
+diag(explain($res));
 is $res->{revoke_oauth_app}, 0, 'revoke_oauth_app failed';
 
 
