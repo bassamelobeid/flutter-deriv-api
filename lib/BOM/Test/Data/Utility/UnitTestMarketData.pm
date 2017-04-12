@@ -94,9 +94,8 @@ sub _init {
                         'suspend_contract_types' => [],
                     },
                     'client_limits' => {
-                        'asian_turnover_limit'       => '50000',
-                        'spreads_daily_profit_limit' => '10000',
-                        'intraday_forex_iv'          => '{
+                        'asian_turnover_limit' => '50000',
+                        'intraday_forex_iv'    => '{
                                "potential_profit" : 35000,
                                "realized_profit" : 35000,
                                "turnover" : 35000
