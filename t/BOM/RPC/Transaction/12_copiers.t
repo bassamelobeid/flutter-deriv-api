@@ -199,12 +199,20 @@ lives_ok {
 
     $trader->allow_copiers(1);
     $trader->save;
-    BOM::Platform::Copier->update_or_create({
-        trader_id => $trader->loginid,
-        copier_id => $copier->loginid,
-        broker    => $copier->broker_code,
+
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
+    my $token_details = BOM::RPC::v3::Utility::get_token_details($token);
+
+
+    my $res = BOM::RPC::v3::CopyTrading::copy_start({
+        args => {
+            copy_start => $token,
+        },
+        client => $copier
     });
 
+    #is($res && $res->{error}{code},'PermissionDenied', "start following attepmt. PermissionDenied");
+    ok($res && $res->{status},"start following");
     $trader_acc_mapper = BOM::Database::DataMapper::Account->new({
         'client_loginid' => $trader->loginid,
         'currency_code'  => 'USD',
@@ -218,6 +226,52 @@ lives_ok {
     is($trader_acc_mapper->get_balance + 0, 15000, 'USD balance is 15000 got: ' . $balance);
 }
 'trader funded';
+
+lives_ok {
+    my $wrong_copier = create_client;
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
+
+    my $res = BOM::RPC::v3::CopyTrading::copy_start({
+        args => {
+            copy_start => $token,
+            trade_types => 'CAL',
+        },
+        client => $wrong_copier
+    });
+
+    is($res && $res->{error}{code},'InvalidTradeType', "following attepmt. InvalidTradeType");
+    my $res = BOM::RPC::v3::CopyTrading::copy_start({
+        args => {
+            copy_start  => $token,
+            trade_types => 'CALL',
+            assets      => 'R666'
+        },
+        client => $wrong_copier
+    });
+
+    ok($res && $res->{error}{code}, "following attepmt. Invalid symbol");
+
+    my $res = BOM::RPC::v3::CopyTrading::copy_start({
+        args => {
+            copy_start  => "Invalid",
+        },
+        client => $wrong_copier
+    });
+
+    ok($res && $res->{error}{code}, "following attepmt. Invalid symbol");
+
+    my ($token1) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $wrong_copier->loginid);
+
+    my $res = BOM::RPC::v3::CopyTrading::copy_start({
+        args => {
+            copy_start => $token1,
+        },
+        client => $trader
+    });
+
+    is($res && $res->{error}{code},'CopyTradingNotAllowed', "following attepmt. CopyTradingNotAllowed");
+}
+'following validation';
 
 lives_ok {
     ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet( $trader_acc );

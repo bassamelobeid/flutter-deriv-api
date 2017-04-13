@@ -13,6 +13,25 @@ use List::Util qw(first);
 
 use Try::Tiny;
 
+=head copy_start
+
+Subscribe to trader operations
+
+Example:
+
+{
+ args => {
+   copy_start => 'NvervEV35353', #trader token, required
+   min_trade_stake => 10,
+   max_trade_stake => 100,
+   trade_types     => ['CALL', 'PUT' ],
+   assets          => ['R_50'],
+ },
+ client => $client, # blessed object of client, required
+}
+
+=cut
+
 sub copy_start {
     my $params = shift;
     my $args   = $params->{args};
@@ -38,12 +57,10 @@ sub copy_start {
                 code              => 'InvalidToken',
                 message_to_client => localize('Invalid token')});
     }
-    if ((first { $_ ne 'read' } @{$token_details->{scopes}})
-        || !scalar(grep { defined $_ } first { $_ eq 'read' } @{$token_details->{scopes}}))
-    {
+    unless (grep { $_ eq 'read' } @{$token_details->{scopes}}) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'PermissionDenied',
-                message_to_client => localize('Permission denied, requires read scope.')});
+            code              => 'PermissionDenied',
+            message_to_client => localize('Permission denied, requires read scope.')});
     }
     unless ($trader->allow_copiers) {
         return BOM::RPC::v3::Utility::create_error({
