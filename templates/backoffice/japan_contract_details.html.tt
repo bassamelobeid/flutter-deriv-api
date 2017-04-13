@@ -1,5 +1,5 @@
 <p><b> Upload csv file contains the contracts that you wish to verify the price.</b></p>
-<p> The file should be in this format: "shortcode,trading_window_start,ask_price,bid_price,pricing_spot,iv,iv_2". (same format as JPLOG)</p>
+<p> The file should be in this format: "shortcode,trading_window_start,ask_price,bid_price,calc_time_pricing_info". (same format as JPLOG)</p>
 
 <form  name="upload_file" action="[% upload_url %]" method="POST" enctype="multipart/form-data">
     <table>
