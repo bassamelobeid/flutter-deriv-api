@@ -133,9 +133,9 @@ sub buy_one_bet {
     my $contract = Test::BOM::RPC::Contract::create_contract();
 
     my $params = {
-        language => 'EN',
-        token    => $token,
-        source   => 1,
+        language            => 'EN',
+        token               => $token,
+        source              => 1,
         contract_parameters => {
             "proposal"      => 1,
             "amount"        => "100",
@@ -146,10 +146,7 @@ sub buy_one_bet {
             "duration_unit" => "s",
             "symbol"        => "R_50",
         },
-        args => {
-            price => $contract->ask_price
-        }
-    };
+        args => {price => $contract->ask_price}};
     my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
     $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
 
@@ -173,10 +170,7 @@ sub sell_one_bet {
         language => 'EN',
         token    => $token,
         source   => 1,
-        args     => {
-            sell => $args->{id}
-        }
-    };
+        args     => {sell => $args->{id}}};
 
     my $result = $c->call_ok('sell', $params)->has_no_system_error->has_no_error->result;
 
@@ -200,16 +194,15 @@ lives_ok {
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
     my $token_details = BOM::RPC::v3::Utility::get_token_details($token);
 
-
     my $res = BOM::RPC::v3::CopyTrading::copy_start({
-        args => {
-            copy_start => $token,
-        },
-        client => $copier
-    });
+            args => {
+                copy_start => $token,
+            },
+            client => $copier
+        });
 
     #is($res && $res->{error}{code},'PermissionDenied', "start following attepmt. PermissionDenied");
-    ok($res && $res->{status},"start following");
+    ok($res && $res->{status}, "start following");
     $trader_acc_mapper = BOM::Database::DataMapper::Account->new({
         'client_loginid' => $trader->loginid,
         'currency_code'  => 'USD',
@@ -229,49 +222,49 @@ lives_ok {
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
 
     my $res = BOM::RPC::v3::CopyTrading::copy_start({
-        args => {
-            copy_start => $token,
-            trade_types => 'CAL',
-        },
-        client => $wrong_copier
-    });
+            args => {
+                copy_start  => $token,
+                trade_types => 'CAL',
+            },
+            client => $wrong_copier
+        });
 
-    is($res && $res->{error}{code},'InvalidTradeType', "following attepmt. InvalidTradeType");
+    is($res && $res->{error}{code}, 'InvalidTradeType', "following attepmt. InvalidTradeType");
     $res = BOM::RPC::v3::CopyTrading::copy_start({
-        args => {
-            copy_start  => $token,
-            trade_types => 'CALL',
-            assets      => 'R666'
-        },
-        client => $wrong_copier
-    });
+            args => {
+                copy_start  => $token,
+                trade_types => 'CALL',
+                assets      => 'R666'
+            },
+            client => $wrong_copier
+        });
 
     ok($res && $res->{error}{code}, "following attepmt. Invalid symbol");
 
     $res = BOM::RPC::v3::CopyTrading::copy_start({
-        args => {
-            copy_start  => "Invalid",
-        },
-        client => $wrong_copier
-    });
+            args => {
+                copy_start => "Invalid",
+            },
+            client => $wrong_copier
+        });
 
-    is($res->{error}{code},"InvalidToken", "following attepmt. InvalidToken");
+    is($res->{error}{code}, "InvalidToken", "following attepmt. InvalidToken");
 
     my ($token1) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $wrong_copier->loginid);
 
     $res = BOM::RPC::v3::CopyTrading::copy_start({
-        args => {
-            copy_start => $token1,
-        },
-        client => $trader
-    });
+            args => {
+                copy_start => $token1,
+            },
+            client => $trader
+        });
 
-    is($res->{error}{code},'CopyTradingNotAllowed', "following attepmt. CopyTradingNotAllowed");
+    is($res->{error}{code}, 'CopyTradingNotAllowed', "following attepmt. CopyTradingNotAllowed");
 }
 'following validation';
 
 lives_ok {
-    ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet( $trader_acc );
+    ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
     $balance -= $buy_price;
     is($balance_after + 0, $balance, 'correct balance_after');
 }
@@ -290,7 +283,7 @@ lives_ok {
 'copier funded';
 
 lives_ok {
-    ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet( $trader_acc );
+    ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
     is($copier_acc_mapper->get_balance + 0, 15000 - $buy_price, 'correct copier balance');
     $balance -= $buy_price;
     is($balance_after + 0, $balance, 'correct balance_after');
@@ -303,10 +296,11 @@ lives_ok {
     my $copier_balance = $copier_acc_mapper->get_balance + 0;
     my $trader_balance = $trader_acc_mapper->get_balance + 0;
 
-    ( $balance_after, my $sell_price ) = sell_one_bet( $trader_acc,
-                           +{
-                               id => $fmbid,
-                           } );
+    ($balance_after, my $sell_price) = sell_one_bet(
+        $trader_acc,
+        +{
+            id => $fmbid,
+        });
 
     is($copier_acc_mapper->get_balance, $copier_balance + $sell_price, "correct copier balance");
 
@@ -320,16 +314,16 @@ lives_ok {
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
     my $res = BOM::RPC::v3::CopyTrading::copy_stop({
-        args => {
-            copy_stop => $token,
-        },
-        client => $copier
-    });
+            args => {
+                copy_stop => $token,
+            },
+            client => $copier
+        });
     ok($res && $res->{status}, "stop following");
     my $copier_balance = $copier_acc_mapper->get_balance + 0;
     my $trader_balance = $trader_acc_mapper->get_balance + 0;
 
-    ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet( $trader_acc );
+    ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
     is($copier_acc_mapper->get_balance, $copier_balance, "correct copier balance");
 
     is($trader_acc_mapper->get_balance, $trader_balance - $buy_price, "correct trader balance");

@@ -23,12 +23,12 @@ sub check_copiers {
     my $copiers = BOM::Database::DataMapper::Copier->new(
         broker_code => $params->{client}->broker_code,
         operation   => 'replica',
-    )->get_trade_copiers({
-        trader_id  => $params->{client}->loginid,
-        trade_type => $params->{contract}{bet_type},
-        asset      => $params->{contract}->underlying->symbol,
-        price      => ($params->{price} || undef),
-    });
+        )->get_trade_copiers({
+            trader_id  => $params->{client}->loginid,
+            trade_type => $params->{contract}{bet_type},
+            asset      => $params->{contract}->underlying->symbol,
+            price      => ($params->{price} || undef),
+        });
 
     return unless $copiers && ref $copiers eq 'ARRAY' && scalar @$copiers;
     ### TODO: Add checking of trade permission in copy_start
@@ -127,16 +127,17 @@ sub buy {
     ### TODO: Decrease params count
     try {
         check_copiers({
-            action        => 'buy',
-            client        => $client,
-            contract      => $contract,
-            price         => $price,
-            payout        => $payout,
-            amount_type   => $amount_type,
-            purchase_date => $purchase_date,
-            source        => $source
-        }) if $client->allow_copiers;
-    } catch {
+                action        => 'buy',
+                client        => $client,
+                contract      => $contract,
+                price         => $price,
+                payout        => $payout,
+                amount_type   => $amount_type,
+                purchase_date => $purchase_date,
+                source        => $source
+            }) if $client->allow_copiers;
+    }
+    catch {
         warn "Copiers trade error: " . $_;
     };
 
@@ -411,13 +412,14 @@ sub sell {
     try {
         ### TODO: Decrease params count
         check_copiers({
-            action   => 'sell',
-            client   => $client,
-            contract => $contract,
-            price    => $args->{price},
-            source   => $source
-        }) if $client->allow_copiers;
-    } catch {
+                action   => 'sell',
+                client   => $client,
+                contract => $contract,
+                price    => $args->{price},
+                source   => $source
+            }) if $client->allow_copiers;
+    }
+    catch {
         warn "Copiers trade error: " . $_;
     };
 
