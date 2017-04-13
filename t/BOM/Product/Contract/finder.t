@@ -43,7 +43,6 @@ subtest "available contracts for symbol" => sub {
             endsinout    => 4,
             digits       => 6,
             asian        => 2,
-            spreads      => 2
         },
         RDBEAR => {
             callput      => 20,
