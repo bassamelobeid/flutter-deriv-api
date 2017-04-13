@@ -258,7 +258,7 @@ lives_ok {
         client => $wrong_copier
     });
 
-    ok($res && $res->{error}{code}, "following attepmt. Invalid symbol");
+    is($res->{error}{code},"InvalidToken", "following attepmt. InvalidToken");
 
     my ($token1) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $wrong_copier->loginid);
 
@@ -269,7 +269,7 @@ lives_ok {
         client => $trader
     });
 
-    is($res && $res->{error}{code},'CopyTradingNotAllowed', "following attepmt. CopyTradingNotAllowed");
+    is($res->{error}{code},'CopyTradingNotAllowed', "following attepmt. CopyTradingNotAllowed");
 }
 'following validation';
 
