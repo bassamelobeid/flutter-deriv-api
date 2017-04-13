@@ -86,7 +86,6 @@ sub debug_link {
     my $number_format = $self->number_format;
 
     my $attr_content   = $self->_get_overview();
-    my $greeks_content = $self->_get_greeks();
 
     my $ask_price_content = $self->_get_price({
         id   => 'buildask' . $bet->id,
@@ -112,11 +111,6 @@ sub debug_link {
             label   => 'Bid Price',
             url     => 'bidpb',
             content => $bid_price_content,
-        },
-        {
-            label   => 'Greeks',
-            url     => 'gr',
-            content => $greeks_content,
         },
     ];
 
