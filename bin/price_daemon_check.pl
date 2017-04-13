@@ -25,15 +25,16 @@ for (@keys) {
     $entries{$entry{ip}} = [] unless exists $entries{$entry{ip}};
     $entry{'diff'}       = time - $entry{time};
     $entry{'key'}        = $_;
+    #reconsructed hash that has the ip address of the pricer as key and the stats (including calculated time difference) of each fork that it has as an array.
     $entries{$entry{ip}}[$entry{fork_index}] = \%entry;
 }
 
-#print Dumper(\%entries);
 
-#Getting all pricers ips that are currently being used.
+#Getting all pricers ips that are currently registered as valid working pricers.
 my $ip_list = {};
 $ip_list = {%$ip_list, get_ips($_)} for qw/blue green/;
 
+#find out which pricers that has been terminated and delete their keys from redis. (this will work as garbage collector)
 my @ips_not_in_list = grep { not exists $ip_list->{$_} } keys %entries;
 
 for (@ips_not_in_list) {
@@ -45,23 +46,27 @@ for (@ips_not_in_list) {
 
 }
 
-#Comparing
+#Comparing and reporting the stats to datadog.
 for (keys %$ip_list) {
+    #check if the pricer is registered and doing work
     if (exists $entries{$_}) {
+        #looping through the array of forks.
         foreach my $e (@{$entries{$_}}) {
-            #first approach is send the time differance to datadog and create a monitor there.
+            #send the time of the last activity of each fork to datadog and create a monitor there.
             DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.forks.last_active',
                 $e->{'diff'}, {tags => ['tag:' . $e->{'ip'}, 'pid:' . $e->{'pid'}]});
             #to be printed to log.
             print "pricer_daemon service in $e->{'ip'} ENV: $ip_list->{$_}  with fork PID: $e->{'pid'} last pricing before $e->{'diff'} seconds.\n";
         }
     } else {
+        #the pricer is registered, but its not doing any work.
         print "pricer_daemon with an ip: $_ is not doing any pricing while its set to be a pricer in env: $ip_list->{$_}\n";
         #send PD alert
         send_pd("pricer_daemon with an ip: $_ is not doing any pricing while its set to be a pricer in env: $ip_list->{$_}", "trigger", "");
     }
 }
 
+#get the list of registered pricers ips.
 sub get_ips {
     my $env = shift;
     #for development
@@ -85,6 +90,7 @@ sub get_ips {
     return {map { ; $_ => $env } split /\n/, $b};
 }
 
+#send PagerDuty alert, im trying to set an incident key so we can resolve it, within the code also. but it needs more testing.
 sub send_pd {
     my ($error_msg, $type, $incident_key) = @_;
     my $ua            = Mojo::UserAgent->new;
