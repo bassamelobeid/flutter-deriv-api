@@ -2098,9 +2098,11 @@ sub _get_params_for_expiryqueue {
     # in expiry queue might be wrong, since barrier is set based on next tick.
     if ($contract->is_path_dependent) {
         # just check one barrier type since they are not allowed to be different.
-        if ($contract->two_barriers and $contract->high_barrier->barrier_type eq 'absolute') {
-            $hash->{up_level}   = $contract->high_barrier->as_absolute;
-            $hash->{down_level} = $contract->low_barrier->as_absolute;
+        if ($contract->two_barriers) {
+            if ($contract->high_barrier->barrier_type eq 'absolute') {
+                $hash->{up_level}   = $contract->high_barrier->as_absolute;
+                $hash->{down_level} = $contract->low_barrier->as_absolute;
+            }
         } elsif ($contract->barrier and $contract->barrier->barrier_type eq 'absolute') {
             my $which_level = ($contract->barrier->as_difference > 0) ? 'up_level' : 'down_level';
             $hash->{$which_level} = $contract->barrier->as_absolute;
