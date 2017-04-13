@@ -281,8 +281,8 @@ sub _validate_start_end {
         }
     }
     if ($args->{adjust_start_time}) {
-        unless ($trading_calendar->is_open_at($exchange, $end)) {
-            my $shift_back = $trading_calendar->seconds_since_close_at($exchange, $end);
+        unless ($trading_calendar->is_open_at($exchange, Date::Utility->new($end))) {
+            my $shift_back = $trading_calendar->seconds_since_close_at($exchange, Date::Utility->new($end));
             unless (defined $shift_back) {
                 my $last_day = $trading_calendar->trade_date_before($exchange, Date::Utility->new($end));
                 if ($last_day) {
