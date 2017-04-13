@@ -85,7 +85,7 @@ sub debug_link {
     my $bet           = $self->bet;
     my $number_format = $self->number_format;
 
-    my $attr_content   = $self->_get_overview();
+    my $attr_content = $self->_get_overview();
 
     my $ask_price_content = $self->_get_price({
         id   => 'buildask' . $bet->id,
