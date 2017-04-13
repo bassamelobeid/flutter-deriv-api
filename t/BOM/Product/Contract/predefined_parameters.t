@@ -242,7 +242,7 @@ subtest 'update_predefined_highlow' => sub {
     SKIP: {
         my $u = create_underlying($symbol);
         skip 'non trading day', 4, unless $u->calendar->trades_on($u->exchange, $now);
-        setup_ticks($symbol, [[$now->minus_time_interval('100d'), 100], [$now, 69], [$now->plus_time_interval('10s'), 69.1]]);
+        setup_ticks($symbol, [[$now->minus_time_interval('365d'), 100], [$now, 69], [$now->plus_time_interval('10s'), 69.1]]);
         my $new_tick = {
             symbol => $symbol,
             epoch  => $now->plus_time_interval('30s')->epoch,

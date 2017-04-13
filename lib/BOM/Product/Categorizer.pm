@@ -173,13 +173,15 @@ sub _initialize_contract_parameters {
         }
     }
 
+    my $for_date = $pp->{underlying}->for_date;
+    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
+
     if (defined $pp->{date_expiry}) {
         # to support legacy shortcode where expiry date is date string in dd-mmm-yy format
         if (Date::Utility::is_ddmmmyy($pp->{date_expiry})) {
-            my $for_date         = $pp->{underlying}->for_date;
-            my $exchange         = $pp->{underlying}->exchange;
-            my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
-            my $date_expiry      = Date::Utility->new($pp->{date_expiry});
+            my $for_date    = $pp->{underlying}->for_date;
+            my $exchange    = $pp->{underlying}->exchange;
+            my $date_expiry = Date::Utility->new($pp->{date_expiry});
             if (my $closing = $trading_calendar->closing_on($exchange, $date_expiry)) {
                 $pp->{date_expiry} = $closing;
             } else {
@@ -198,69 +200,62 @@ sub _initialize_contract_parameters {
     delete $pp->{expiry_daily};
     delete $pp->{is_intraday};
 
-    if (exists $pp->{stop_profit} and exists $pp->{stop_loss}) {
-        # these are the only parameters for spreads
-        $pp->{'supplied_' . $_} = delete $pp->{$_} for (qw(stop_profit stop_loss));
-    } else {
-        my $for_date = $pp->{underlying}->for_date;
-        my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
-        # if amount_type and amount are defined, give them priority.
-        if ($pp->{amount} and $pp->{amount_type}) {
-            if ($pp->{amount_type} eq 'payout') {
-                $pp->{payout} = $pp->{amount};
-            } elsif ($pp->{amount_type} eq 'stake') {
-                $pp->{ask_price} = $pp->{amount};
-            } else {
-                $pp->{payout} = 0;    # if we don't know what it is, set payout to zero
-            }
+    # if amount_type and amount are defined, give them priority.
+    if ($pp->{amount} and $pp->{amount_type}) {
+        if ($pp->{amount_type} eq 'payout') {
+            $pp->{payout} = $pp->{amount};
+        } elsif ($pp->{amount_type} eq 'stake') {
+            $pp->{ask_price} = $pp->{amount};
+        } else {
+            $pp->{payout} = 0;    # if we don't know what it is, set payout to zero
         }
-
-        # if stake is defined, set it to ask_price.
-        if ($pp->{stake}) {
-            $pp->{ask_price} = $pp->{stake};
-        }
-
-        unless (defined $pp->{payout} or defined $pp->{ask_price}) {
-            $pp->{payout} = 0;        # last safety net
-        }
-
-        if (defined $pp->{tick_expiry}) {
-            $pp->{date_expiry} = $pp->{date_start}->plus_time_interval(2 * $pp->{tick_count});
-        }
-
-        if (defined $pp->{duration}) {
-            if (my ($number_of_ticks) = $pp->{duration} =~ /(\d+)t$/) {
-                $pp->{tick_expiry} = 1;
-                $pp->{tick_count}  = $number_of_ticks;
-                $pp->{date_expiry} = $pp->{date_start}->plus_time_interval(2 * $pp->{tick_count});
-            } else {
-                # The thinking here is that duration is only added on purpose, but
-                # date_expiry might be hanging around from a poorly reused hashref.
-                my $duration    = $pp->{duration};
-                my $underlying  = $pp->{underlying};
-                my $start_epoch = $pp->{date_start}->epoch;
-                my $expiry;
-                if ($duration =~ /d$/) {
-                    # Since we return the day AFTER, we pass one day ahead of expiry.
-                    my $expiry_date = Date::Utility->new($start_epoch)->plus_time_interval($duration);
-                    # Daily bet expires at the end of day, so here you go
-                    if (my $closing = $trading_calendar->closing_on($underlying->exchange, $expiry_date)) {
-                        $expiry = $closing->epoch;
-                    } else {
-                        $expiry = $expiry_date->epoch;
-                        my $regular_day = $trading_calendar->regular_trading_day_after($underlying->exchange, $expiry_date);
-                        my $regular_close = $trading_calendar->closing_on($underlying->exchange, $regular_day);
-                        $expiry = Date::Utility->new($expiry_date->date_yyyymmdd . ' ' . $regular_close->time_hhmmss)->epoch;
-                    }
-                } else {
-                    $expiry = $start_epoch + Time::Duration::Concise->new(interval => $duration)->seconds;
-                }
-                $pp->{date_expiry} = Date::Utility->new($expiry);
-            }
-        }
-
-        $pp->{date_start} //= 1;    # Error conditions if it's not legacy or run, I guess.
     }
+
+    # if stake is defined, set it to ask_price.
+    if ($pp->{stake}) {
+        $pp->{ask_price} = $pp->{stake};
+    }
+
+    unless (defined $pp->{payout} or defined $pp->{ask_price}) {
+        $pp->{payout} = 0;        # last safety net
+    }
+
+    if (defined $pp->{tick_expiry}) {
+        $pp->{date_expiry} = $pp->{date_start}->plus_time_interval(2 * $pp->{tick_count});
+    }
+
+    if (defined $pp->{duration}) {
+        if (my ($number_of_ticks) = $pp->{duration} =~ /(\d+)t$/) {
+            $pp->{tick_expiry} = 1;
+            $pp->{tick_count}  = $number_of_ticks;
+            $pp->{date_expiry} = $pp->{date_start}->plus_time_interval(2 * $pp->{tick_count});
+        } else {
+            # The thinking here is that duration is only added on purpose, but
+            # date_expiry might be hanging around from a poorly reused hashref.
+            my $duration    = $pp->{duration};
+            my $underlying  = $pp->{underlying};
+            my $start_epoch = $pp->{date_start}->epoch;
+            my $expiry;
+            if ($duration =~ /d$/) {
+                # Since we return the day AFTER, we pass one day ahead of expiry.
+                my $expiry_date = Date::Utility->new($start_epoch)->plus_time_interval($duration);
+                # Daily bet expires at the end of day, so here you go
+                if (my $closing = $trading_calendar->closing_on($underlying->exchange, $expiry_date)) {
+                    $expiry = $closing->epoch;
+                } else {
+                    $expiry = $expiry_date->epoch;
+                    my $regular_day = $trading_calendar->regular_trading_day_after($underlying->exchange, $expiry_date);
+                    my $regular_close = $trading_calendar->closing_on($underlying->exchange, $regular_day);
+                    $expiry = Date::Utility->new($expiry_date->date_yyyymmdd . ' ' . $regular_close->time_hhmmss)->epoch;
+                }
+            } else {
+                $expiry = $start_epoch + Time::Duration::Concise->new(interval => $duration)->seconds;
+            }
+            $pp->{date_expiry} = Date::Utility->new($expiry);
+        }
+    }
+
+    $pp->{date_start} //= 1;    # Error conditions if it's not legacy or run, I guess.
 
     return $pp;
 }
@@ -336,6 +331,16 @@ has _legacy_contract_types => (
                 expiry_daily => 1
             },
             DOUBLEDOWN => {
+                bet_type     => 'PUT',
+                is_intraday  => 0,
+                expiry_daily => 1
+            },
+            SPREADU => {
+                bet_type     => 'CALL',
+                is_intraday  => 0,
+                expiry_daily => 1
+            },
+            SPREADD => {
                 bet_type     => 'PUT',
                 is_intraday  => 0,
                 expiry_daily => 1

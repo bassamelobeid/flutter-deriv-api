@@ -255,12 +255,7 @@ has starts_as_forward_starting => (
 #expiry_daily - Does this bet expire at close of the exchange?
 has [qw(
         is_intraday
-        expiry_type
-        start_type
-        translated_display_name
         is_forward_starting
-        permitted_expiries
-        effective_daily_trading_seconds
         )
     ] => (
     is         => 'ro',
@@ -268,9 +263,10 @@ has [qw(
     );
 
 has value => (
-    is      => 'rw',
-    isa     => 'Num',
-    default => 0,
+    is       => 'rw',
+    init_arg => undef,
+    isa      => 'Num',
+    default  => 0,
 );
 
 has [qw(entry_tick current_tick)] => (
@@ -278,8 +274,7 @@ has [qw(entry_tick current_tick)] => (
     lazy_build => 1,
 );
 
-has [
-    qw( entry_spot
+has [qw(
         current_spot)
     ] => (
     is         => 'rw',
@@ -304,36 +299,12 @@ has for_sale => (
     default => 0,
 );
 
-=head2 max_tick_expiry_duration
-
-A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.
-
-=cut
-
-has max_tick_expiry_duration => (
-    is      => 'ro',
-    isa     => 'time_interval',
-    default => '5m',
-    coerce  => 1,
-);
-
 has build_parameters => (
     is  => 'ro',
     isa => 'HashRef',
     # Required until it goes away entirely.
     required => 1,
 );
-
-# timeindays/timeinyears - note that for FX contracts of >=1 duration, these values will follow the market convention of integer days
-has [qw(
-        timeinyears
-        timeindays
-        )
-    ] => (
-    is         => 'ro',
-    isa        => 'Math::Util::CalculatedValue::Validatable',
-    lazy_build => 1,
-    );
 
 #fixed_expiry - A Boolean to determine if this bet has fixed or flexible expiries.
 
@@ -403,7 +374,7 @@ has pricing_spot => (
     lazy_build => 1,
 );
 
-has [qw(offering_specifics barrier_category)] => (
+has [qw(barrier_category)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -427,6 +398,14 @@ has 'staking_limits' => (
 has apply_market_inefficient_limit => (
     is         => 'ro',
     lazy_build => 1,
+);
+
+#A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.
+has _max_tick_expiry_duration => (
+    is      => 'ro',
+    isa     => 'time_interval',
+    default => '5m',
+    coerce  => 1,
 );
 
 # We can't import the Factory directly as that goes circular.
@@ -511,7 +490,7 @@ sub is_after_expiry {
 
     if ($self->tick_expiry) {
         return 1
-            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds));
+            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->_max_tick_expiry_duration->seconds));
     } else {
 
         return 1 if $self->get_time_to_expiry->seconds == 0;
@@ -533,7 +512,7 @@ sub is_after_settlement {
 
     if ($self->tick_expiry) {
         return 1
-            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds));
+            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->_max_tick_expiry_duration->seconds));
     } else {
         return 1 if $self->get_time_to_settlement->seconds == 0;
     }
@@ -585,14 +564,6 @@ To be able to settle, it need pass the settlement time and has valid exit tick
 =cut
 
 sub is_settleable { die "Calling ->is_settleable on a ::Contract instance" }
-
-=head2 is_spread
-
-Returns true if this is a spread contract - due to be removed.
-
-=cut
-
-sub is_spread { return 0 }
 
 sub may_settle_automatically {
     my $self = shift;
@@ -671,6 +642,74 @@ sub category_code {
     return $self->category->code;
 }
 
+=head1 METHODS - Time-related
+
+=cut
+
+=head2 timeinyears
+
+Contract duration in years.
+
+=head2 timeindays
+
+Contract duration in days.
+
+=cut
+
+has [qw(
+        timeinyears
+        timeindays
+        )
+    ] => (
+    is         => 'ro',
+    init_arg   => undef,
+    isa        => 'Math::Util::CalculatedValue::Validatable',
+    lazy_build => 1,
+    );
+
+sub _build_timeinyears {
+    my $self = shift;
+
+    my $tiy = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'time_in_years',
+        description => 'Bet duration in years',
+        set_by      => 'BOM::Product::Contract',
+        base_amount => 0,
+        minimum     => 0.000000001,
+    });
+
+    my $days_per_year = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'days_per_year',
+        description => 'We use a 365 day year.',
+        set_by      => 'BOM::Product::Contract',
+        base_amount => 365,
+    });
+
+    $tiy->include_adjustment('add',    $self->timeindays);
+    $tiy->include_adjustment('divide', $days_per_year);
+
+    return $tiy;
+}
+
+sub _build_timeindays {
+    my $self = shift;
+
+    my $atid = $self->get_time_to_expiry({
+            from => $self->effective_start,
+        })->days;
+
+    my $tid = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'time_in_days',
+        description => 'Duration of this bet in days',
+        set_by      => 'BOM::Product::Contract',
+        minimum     => 0.000001,
+        maximum     => 730,
+        base_amount => $atid,
+    });
+
+    return $tid;
+}
+
 =head1 METHODS - Other
 
 =cut
@@ -698,6 +737,32 @@ sub ticks_to_expiry {
     return shift->tick_count + 1;
 }
 
+=head2 entry_spot
+
+The entry spot price of the contract.
+
+=cut
+
+sub entry_spot {
+    my $self = shift;
+
+    my $entry_tick = $self->entry_tick or return undef;
+    return $self->entry_tick->quote;
+}
+
+=head2 entry_spot_epoch
+
+The entry spot epoch of the contract.
+
+=cut
+
+sub entry_spot_epoch {
+    my $self = shift;
+
+    my $entry_tick = $self->entry_tick or return undef;
+    return $self->entry_tick->epoch;
+}
+
 =head2 effective_start
 
 =over 4
@@ -719,6 +784,18 @@ sub effective_start {
           ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_start
         : ($self->date_pricing->is_after($self->date_start))  ? $self->date_pricing
         :                                                       $self->date_start;
+}
+
+=head2 expiry_type
+
+The expiry type of a contract (daily, tick or intraday).
+
+=cut
+
+sub expiry_type {
+    my $self = shift;
+
+    return ($self->tick_expiry) ? 'tick' : ($self->expiry_daily) ? 'daily' : 'intraday';
 }
 
 =head2 expiry_daily
@@ -848,6 +925,21 @@ sub allowed_slippage {
 
 # INTERNAL METHODS
 
+sub _offering_specifics {
+    my $self = shift;
+
+    return get_contract_specifics(
+        BOM::Platform::Runtime->instance->get_offerings_config,
+        {
+            underlying_symbol => $self->underlying->symbol,
+            barrier_category  => $self->barrier_category,
+            expiry_type       => $self->expiry_type,
+            start_type        => ($self->is_forward_starting ? 'forward' : 'spot'),
+            contract_category => $self->category->code,
+            ($self->can('landing_company') ? (landing_company => $self->landing_company) : ()),    # this is done for japan
+        });
+}
+
 sub _check_is_intraday {
     my ($self, $date_start) = @_;
     my $date_expiry       = $self->date_expiry;
@@ -855,9 +947,16 @@ sub _check_is_intraday {
 
     return 0 if $contract_duration > 86400;
 
+    my $trading_calendar = $self->trading_calendar;
+    my $exchange = $self->underlying->exchange;
     # for contract that start at the open of day and expire at the close of day (include early close) should be treated as daily contract
-    my $closing = $self->trading_calendar->closing_on($self->underlying->exchange, $self->date_expiry);
-    return 0 if $closing and $closing->is_same_as($self->date_expiry) and $contract_duration >= $self->effective_daily_trading_seconds;
+    my $closing = $trading_calendar->closing_on($exchange, $self->date_expiry);
+
+    # An intraday if the market is close on expiry
+    return 1 unless $closing;
+    # daily trading seconds based on the market's trading hour
+    my $daily_trading_seconds = $trading_calendar->closing_on($exchange, $date_expiry)->epoch - $trading_calendar->opening_on($exchange, $date_expiry)->epoch;
+    return 0 if $closing->is_same_as($self->date_expiry) and $contract_duration >= $daily_trading_seconds;
 
     return 1;
 }
@@ -927,17 +1026,6 @@ sub _build_date_pricing {
         : $now;
 }
 
-# daily trading seconds based on the market's trading hour
-sub _build_effective_daily_trading_seconds {
-    my $self                  = shift;
-    my $date_expiry           = $self->date_expiry;
-    my $calendar              = $self->trading_calendar;
-    my $exchange              = $self->underlying->exchange;
-    my $daily_trading_seconds = $calendar->closing_on($exchange, $date_expiry)->epoch - $calendar->opening_on($exchange, $date_expiry)->epoch;
-
-    return $daily_trading_seconds;
-}
-
 sub _build_is_intraday {
     my $self = shift;
 
@@ -945,33 +1033,10 @@ sub _build_is_intraday {
 
 }
 
-sub _build_expiry_type {
-    my $self = shift;
-
-    return ($self->tick_expiry) ? 'tick' : ($self->expiry_daily) ? 'daily' : 'intraday';
-}
-
-sub _build_start_type {
-    my $self = shift;
-    return $self->is_forward_starting ? 'forward' : 'spot';
-}
-
-sub _build_translated_display_name {
-    my $self = shift;
-
-    return undef unless $self->display_name;
-    return localize($self->display_name);
-}
-
 sub _build_is_forward_starting {
     my $self = shift;
+
     return ($self->allow_forward_starting and $self->date_pricing->is_before($self->date_start)) ? 1 : 0;
-}
-
-sub _build_permitted_expiries {
-    my $self = shift;
-
-    return $self->offering_specifics->{permitted};
 }
 
 sub _build_basis_tick {
@@ -1026,60 +1091,10 @@ sub _build_current_spot {
     return $self->underlying->pipsized_value($spot->quote);
 }
 
-sub _build_entry_spot {
-    my $self = shift;
-
-    my $entry_tick = $self->entry_tick or return undef;
-    return $self->entry_tick->quote;
-}
-
 sub _build_current_tick {
     my $self = shift;
 
     return $self->underlying->spot_tick;
-}
-
-sub _build_timeinyears {
-    my $self = shift;
-
-    my $tiy = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'time_in_years',
-        description => 'Bet duration in years',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => 0,
-        minimum     => 0.000000001,
-    });
-
-    my $days_per_year = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'days_per_year',
-        description => 'We use a 365 day year.',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => 365,
-    });
-
-    $tiy->include_adjustment('add',    $self->timeindays);
-    $tiy->include_adjustment('divide', $days_per_year);
-
-    return $tiy;
-}
-
-sub _build_timeindays {
-    my $self = shift;
-
-    my $atid = $self->get_time_to_expiry({
-            from => $self->effective_start,
-        })->days;
-
-    my $tid = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'time_in_days',
-        description => 'Duration of this bet in days',
-        set_by      => 'BOM::Product::Contract',
-        minimum     => 0.000001,
-        maximum     => 730,
-        base_amount => $atid,
-    });
-
-    return $tid;
 }
 
 sub _build_opposite_contract {
@@ -1287,20 +1302,6 @@ sub _build_pricing_spot {
     return $initial_spot;
 }
 
-sub _build_offering_specifics {
-    my $self = shift;
-
-    return get_contract_specifics(
-        BOM::Platform::Runtime->instance->get_offerings_config,
-        {
-            underlying_symbol => $self->underlying->symbol,
-            barrier_category  => $self->barrier_category,
-            expiry_type       => $self->expiry_type,
-            start_type        => $self->start_type,
-            contract_category => $self->category->code,
-        });
-}
-
 sub _build_barrier_category {
     my $self = shift;
 
@@ -1419,7 +1420,7 @@ sub _build_risk_profile {
     return BOM::Platform::RiskProfile->new(
         contract_category              => $self->category_code,
         expiry_type                    => $self->expiry_type,
-        start_type                     => $self->start_type,
+        start_type                     => ($self->is_forward_starting ? 'forward' : 'spot'),
         currency                       => $self->currency,
         barrier_category               => $self->barrier_category,
         symbol                         => $self->underlying->symbol,
