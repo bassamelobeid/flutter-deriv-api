@@ -29,7 +29,6 @@ for (@keys) {
     $entries{$entry{ip}}[$entry{fork_index}] = \%entry;
 }
 
-
 #Getting all pricers ips that are currently registered as valid working pricers.
 my $ip_list = {};
 $ip_list = {%$ip_list, get_ips($_)} for qw/blue green/;
@@ -43,7 +42,6 @@ for (@ips_not_in_list) {
     for (@{$redis->scan_all(MATCH => "PRICER_STATUS::$_*")}) {
         $redis->del("$_");
     }
-
 }
 
 #Comparing and reporting the stats to datadog.
@@ -97,8 +95,6 @@ sub send_pd {
     my $PD_serviceKey = $ENV{'PD_SERVICE_KEY'};
     my $PD_apiKey     = $ENV{'PD_API_KEY'};
     my $PD_enabled    = $ENV{'PD_ENABLED'};
-    #debug.
-    print "PD_APIKEY = $PD_apiKey, TYPE: $type, $error_msg\n";
 
     if ($PD_enabled) {
         my $tx = $ua->post(
