@@ -108,26 +108,15 @@ subtest 'successful run' => sub {
             barrier   => 'S-99P',
             bet_class => 'touch_bet'
         },
-        SPREADU => 1,
-        SPREADD => 1,
     );
     # buy all valid contracts
     foreach my $type (keys %contracts) {
-        if ($type eq 'SPREADU' or $type eq 'SPREADD') {
-            buy_one_spread_bet(
-                $acc_usd,
-                {
-                    bet_type   => $type,
-                    start_time => $next_day
-                });
-        } else {
-            buy_one_bet(
-                $acc_usd,
-                {
-                    bet_type   => $type,
-                    start_time => $next_day,
-                    %{$contracts{$type}}});
-        }
+        buy_one_bet(
+            $acc_usd,
+            {
+                bet_type   => $type,
+                start_time => $next_day,
+                %{$contracts{$type}}});
     }
 
     lives_ok {
@@ -193,56 +182,6 @@ sub buy_one_bet {
         bet_type          => $args->{bet_type},
         short_code        => $shortcode,
         relative_barrier  => $relative_barrier,
-    };
-
-    my $fmb = BOM::Database::Helper::FinancialMarketBet->new({
-            bet_data     => $bet_data,
-            account_data => {
-                client_loginid => $acc->client_loginid,
-                currency_code  => $acc->currency_code
-            },
-            limits => $limits,
-            db     => db,
-        });
-    my ($bet, $txn) = $fmb->buy_bet;
-    # note explain [$bet, $txn];
-    return ($txn->{id}, $bet->{id}, $txn->{balance_after});
-}
-
-sub buy_one_spread_bet {
-    my ($acc, $args) = @_;
-
-    my $now =
-          $args->{start_time}
-        ? $args->{start_time}->truncate_to_day->minus_time_interval('1s')
-        : Date::Utility->new->truncate_to_day->minus_time_interval('1s');
-    my $buy_price      = delete $args->{buy_price} // 20;
-    my $limits         = delete $args->{limits};
-    my $app            = delete $args->{amount_per_point} // 2;
-    my $stop_type      = delete $args->{stop_type} // 'point';
-    my $stop_loss      = delete $args->{stop_loss} // 10;
-    my $stop_profit    = delete $args->{stop_profit} // 10;
-    my $spread         = delete $args->{spread} // 2;
-    my $spread_divisor = delete $args->{spread_divisor} // 1;
-
-    my $bet_data = +{
-        underlying_symbol => 'R_100',
-        buy_price         => $buy_price,
-        remark            => 'Test Remark',
-        purchase_time     => $now->db_timestamp,
-        start_time        => $now->db_timestamp,
-        expiry_time       => $now->plus_time_interval('365d')->db_timestamp,
-        settlement_time   => $now->plus_time_interval('365d')->db_timestamp,
-        is_expired        => 0,
-        is_sold           => 0,
-        bet_class         => 'spread_bet',
-        bet_type          => $args->{bet_type},
-        short_code        => ($args->{bet_type} . '_R_100_' . $app . '_' . $now->epoch . '_' . $stop_loss . '_' . $stop_profit . '_' . uc $stop_type),
-        amount_per_point  => $app,
-        stop_type         => $stop_type,
-        stop_profit       => $stop_profit,
-        stop_loss         => $stop_loss,
-        spread_divisor    => $spread_divisor,
     };
 
     my $fmb = BOM::Database::Helper::FinancialMarketBet->new({

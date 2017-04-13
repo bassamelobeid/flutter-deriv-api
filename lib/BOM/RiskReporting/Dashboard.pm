@@ -210,10 +210,6 @@ sub _open_bets_report {
 
     foreach my $bet_details (@open_bets) {
         my $bet = produce_contract($bet_details->{short_code}, $bet_details->{currency_code});
-        if ($bet->is_spread) {
-            $bet_details->{payout_price} = $bet->amount_per_point * $bet->stop_profit;
-        }
-
         my $normalized_mtm = $self->amount_in_usd($bet_details->{market_price}, $bet_details->{currency_code});
 
         my $seconds_to_expiry = Date::Utility->new($bet_details->{expiry_time})->epoch - time;
