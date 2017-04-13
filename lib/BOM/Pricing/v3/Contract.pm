@@ -78,7 +78,7 @@ sub prepare_ask {
         $p2{high_barrier} = delete $p2{barrier};
     } elsif (
         !grep {
-            /^(SPREAD|ASIAN|DIGITEVEN|DIGITODD)/
+            /^(ASIAN|DIGITEVEN|DIGITODD)/
         } @contract_types
         )
     {
@@ -109,14 +109,10 @@ Extracts some generic information from a given contract.
 sub contract_metadata {
     my ($contract) = @_;
     return +{
-        !$contract->is_spread
-        ? (
-            app_markup_percentage => $contract->app_markup_percentage,
-            staking_limits        => $contract->staking_limits,
-            deep_otm_threshold    => $contract->otm_threshold,
-            )
-        : (),
-        base_commission => $contract->base_commission,
+        app_markup_percentage => $contract->app_markup_percentage,
+        staking_limits        => $contract->staking_limits,
+        deep_otm_threshold    => $contract->otm_threshold,
+        base_commission       => $contract->base_commission,
     };
 }
 
@@ -153,12 +149,7 @@ sub _get_ask {
     my $contract_parameters = {%$p2, %{contract_metadata($contract)}};
 
     try {
-        if (
-            !(
-                  $contract->is_spread
-                ? $contract->is_valid_to_buy
-                : $contract->is_valid_to_buy({landing_company => $p2->{landing_company}})))
-        {
+        if (!($contract->is_valid_to_buy({landing_company => $p2->{landing_company}}))) {
             my ($message_to_client, $code);
 
             if (my $pve = $contract->primary_validation_error) {
@@ -181,12 +172,8 @@ sub _get_ask {
                         message_to_client => $message_to_client,
                         code              => $code,
                         details           => {
-                            display_value => (
-                                  $contract->is_spread
-                                ? $contract->buy_level
-                                : sprintf('%.2f', $display_value)
-                            ),
-                            payout => sprintf('%.2f', $display_value),
+                            display_value => sprintf('%.2f', $display_value),
+                            payout        => sprintf('%.2f', $display_value),
                         },
                     });
 
@@ -195,12 +182,8 @@ sub _get_ask {
                         message_to_client => $message_to_client,
                         code              => $code,
                         details           => {
-                            display_value => (
-                                  $contract->is_spread
-                                ? $contract->buy_level
-                                : sprintf('%.2f', $contract->ask_price)
-                            ),
-                            payout => sprintf('%.2f', $contract->payout),
+                            display_value => sprintf('%.2f', $contract->ask_price),
+                            payout        => sprintf('%.2f', $contract->payout),
                         },
                     });
             }
@@ -218,30 +201,23 @@ sub _get_ask {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
             my $trading_window_start = $p2->{trading_period_start} // '';
 
-            my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
-
             $response = {
                 longcode            => $contract->longcode,
                 payout              => $contract->payout,
                 ask_price           => $ask_price,
-                display_value       => $display_value,
+                display_value       => $ask_price,
                 spot_time           => $contract->current_tick->epoch,
                 date_start          => $contract->date_start->epoch,
                 contract_parameters => $contract_parameters,
             };
 
-            # only required for non-spead contracts
-            if ($streaming_params->{add_theo_probability}
-                and not $contract->is_spread)
-            {
+            if ($streaming_params->{add_theo_probability}) {
                 $response->{theo_probability} = $contract->theo_probability->amount;
             }
 
             if ($contract->underlying->feed_license eq 'realtime') {
                 $response->{spot} = $contract->current_spot;
             }
-            $response->{spread} = $contract->spread if $contract->is_spread;
-
         }
         my $pen = $contract->pricing_engine_name;
         $pen =~ s/::/_/g;
@@ -331,10 +307,7 @@ sub get_bid {
 
     try {
         $params->{validation_params}->{landing_company} = $landing_company;
-        my $is_valid_to_sell =
-              $contract->is_spread
-            ? $contract->is_valid_to_sell
-            : $contract->is_valid_to_sell($params->{validation_params});
+        my $is_valid_to_sell = $contract->is_valid_to_sell($params->{validation_params});
 
         $response = {
             is_valid_to_sell => $is_valid_to_sell,
@@ -362,113 +335,78 @@ sub get_bid {
             contract_type       => $contract->code
         };
 
-        if ($contract->is_spread) {
+        if (not $contract->may_settle_automatically
+            and $contract->missing_market_data)
+        {
+            $response = BOM::Pricing::v3::Utility::create_error({
+                    code              => "GetProposalFailure",
+                    message_to_client => localize(
+                        'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
+                    )});
+            return;
+        }
 
-            # spreads require different set of parameters.
-            my $sign = $contract->sentiment eq 'up' ? '+' : '-';
-            my $amount_per_point = $sign . $contract->amount_per_point;
-            $response->{amount_per_point}  = $amount_per_point;
-            $response->{entry_level}       = $contract->barrier->as_absolute;
-            $response->{stop_loss_level}   = $contract->stop_loss_level;
-            $response->{stop_profit_level} = $contract->stop_profit_level;
+        $response->{is_settleable}         = $contract->is_settleable;
+        $response->{has_corporate_actions} = 1
+            if @{$contract->corporate_actions};
 
-            if (    $contract->is_sold
-                and defined $sell_price
-                and defined $buy_price)
-            {
-                $response->{is_expired} = 1;
-                my $pnl              = $sell_price - $buy_price;
-                my $point_from_entry = $pnl / $contract->amount_per_point;
-                my $multiplier       = $contract->sentiment eq 'up' ? 1 : -1;
-                $response->{exit_level} = $contract->underlying->pipsized_value($response->{entry_level} + $point_from_entry * $multiplier);
-                $response->{current_value_in_dollar} = $pnl;
-                $response->{current_value_in_point}  = $point_from_entry;
-            } else {
-                if ($contract->is_expired) {
-                    $response->{is_expired}              = 1;
-                    $response->{exit_level}              = $contract->exit_level;
-                    $response->{current_value_in_dollar} = $contract->value;
-                    $response->{current_value_in_point}  = $contract->point_value;
-                } else {
-                    $response->{is_expired}              = 0;
-                    $response->{current_level}           = $contract->sell_level;
-                    $response->{current_value_in_dollar} = $contract->current_value->{dollar};
-                    $response->{current_value_in_point}  = $contract->current_value->{point};
-                }
-            }
-        } else {
-            if (not $contract->may_settle_automatically
-                and $contract->missing_market_data)
-            {
-                $response = BOM::Pricing::v3::Utility::create_error({
-                        code              => "GetProposalFailure",
-                        message_to_client => localize(
-                            'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
-                        )});
-                return;
-            }
-
-            $response->{is_settleable}         = $contract->is_settleable;
-            $response->{has_corporate_actions} = 1
-                if @{$contract->corporate_actions};
-
-            $response->{barrier_count} = $contract->two_barriers ? 2 : 1;
-            if ($contract->entry_tick) {
-                my $entry_spot = $contract->underlying->pipsized_value($contract->entry_tick->quote);
-                $response->{entry_tick}      = $entry_spot;
-                $response->{entry_spot}      = $entry_spot;
-                $response->{entry_tick_time} = $contract->entry_tick->epoch;
-                if ($contract->two_barriers) {
-                    $response->{high_barrier}          = $contract->high_barrier->as_absolute;
-                    $response->{low_barrier}           = $contract->low_barrier->as_absolute;
-                    $response->{original_high_barrier} = $contract->original_high_barrier->as_absolute
-                        if defined $contract->original_high_barrier;
-                    $response->{original_low_barrier} = $contract->original_low_barrier->as_absolute
-                        if defined $contract->original_low_barrier;
-                } elsif ($contract->barrier) {
-                    $response->{barrier}          = $contract->barrier->as_absolute;
-                    $response->{original_barrier} = $contract->original_barrier->as_absolute
-                        if defined $contract->original_barrier;
-                }
-            }
-
-            if ($contract->exit_tick and $contract->is_after_settlement) {
-                $response->{exit_tick}      = $contract->underlying->pipsized_value($contract->exit_tick->quote);
-                $response->{exit_tick_time} = $contract->exit_tick->epoch;
-            }
-
-            $response->{current_spot} = $contract->current_spot
-                if $contract->underlying->feed_license eq 'realtime';
-
-            # sell_spot and sell_spot_time are updated if the contract is sold
-            # or when the contract is expired.
-            if ($sell_time or $contract->is_expired) {
-                $response->{is_expired} = 1;
-
-                # path dependent contracts may have hit tick but not sell time
-                my $sell_tick =
-                      $sell_time
-                    ? $contract->underlying->tick_at($sell_time, {allow_inconsistent => 1})
-                    : undef;
-
-                my $hit_tick;
-                if (    $contract->is_path_dependent
-                    and $hit_tick = $contract->hit_tick
-                    and (not $sell_time or $hit_tick->epoch <= $sell_time))
-                {
-                    $sell_tick = $hit_tick;
-                }
-
-                if ($sell_tick) {
-                    $response->{sell_spot}      = $contract->underlying->pipsized_value($sell_tick->quote);
-                    $response->{sell_spot_time} = $sell_tick->epoch;
-                }
-            }
-
-            if ($contract->expiry_type eq 'tick') {
-                $response->{tick_count} = $contract->tick_count;
+        $response->{barrier_count} = $contract->two_barriers ? 2 : 1;
+        if ($contract->entry_spot) {
+            my $entry_spot = $contract->underlying->pipsized_value($contract->entry_spot);
+            $response->{entry_tick}      = $entry_spot;
+            $response->{entry_spot}      = $entry_spot;
+            $response->{entry_tick_time} = $contract->entry_spot_epoch;
+            if ($contract->two_barriers) {
+                $response->{high_barrier}          = $contract->high_barrier->as_absolute;
+                $response->{low_barrier}           = $contract->low_barrier->as_absolute;
+                $response->{original_high_barrier} = $contract->original_high_barrier->as_absolute
+                    if defined $contract->original_high_barrier;
+                $response->{original_low_barrier} = $contract->original_low_barrier->as_absolute
+                    if defined $contract->original_low_barrier;
+            } elsif ($contract->barrier) {
+                $response->{barrier}          = $contract->barrier->as_absolute;
+                $response->{original_barrier} = $contract->original_barrier->as_absolute
+                    if defined $contract->original_barrier;
             }
         }
+
+        if ($contract->exit_tick and $contract->is_after_settlement) {
+            $response->{exit_tick}      = $contract->underlying->pipsized_value($contract->exit_tick->quote);
+            $response->{exit_tick_time} = $contract->exit_tick->epoch;
+        }
+
+        $response->{current_spot} = $contract->current_spot
+            if $contract->underlying->feed_license eq 'realtime';
+
+        # sell_spot and sell_spot_time are updated if the contract is sold
+        # or when the contract is expired.
+        if ($sell_time or $contract->is_expired) {
+            $response->{is_expired} = 1;
+
+            # path dependent contracts may have hit tick but not sell time
+            my $sell_tick =
+                  $sell_time
+                ? $contract->underlying->tick_at($sell_time, {allow_inconsistent => 1})
+                : undef;
+
+            my $hit_tick;
+            if (    $contract->is_path_dependent
+                and $hit_tick = $contract->hit_tick
+                and (not $sell_time or $hit_tick->epoch <= $sell_time))
+            {
+                $sell_tick = $hit_tick;
+            }
+
+            if ($sell_tick) {
+                $response->{sell_spot}      = $contract->underlying->pipsized_value($sell_tick->quote);
+                $response->{sell_spot_time} = $sell_tick->epoch;
+            }
+        }
+
+        if ($contract->expiry_type eq 'tick') {
+            $response->{tick_count} = $contract->tick_count;
+        }
+
         my $pen = $contract->pricing_engine_name;
         $pen =~ s/::/_/g;
         stats_timing('compute_price.sell.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
