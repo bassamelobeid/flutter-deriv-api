@@ -31,10 +31,21 @@ for (@keys) {
 #print Dumper(\%entries);
 
 #Getting all pricers ips that are currently being used.
-my %ip_list;
-get_ips("green", \%ip_list);
-get_ips("blue",  \%ip_list);
-#print Dumper(\%ip_list);
+my $ip_list = {};
+$ip_list = { %$ip_list, get_ips($_)  } for qw/blue green/;
+print Dumper($ip_list);
+die;
+
+@ips_not_in_list = grep { not exists $ip_list->{$_}} keys %entries;
+
+for (@ips_not_in_list) {
+    print "pricer_daemon with an ip: $_ is an orphan\n";
+    #delete key from redis.
+    $redis->dump("PRICER_STATUS::$_*");
+	
+}
+exit;
+
 
 #Comparing
 for (keys %ip_list) {
@@ -44,39 +55,48 @@ for (keys %ip_list) {
             DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.forks.last_active',
                 $e->{'diff'}, {tags => ['tag:' . $e->{'ip'}, 'pid:' . $e->{'pid'}]});
             #to be printed to log.
-            if ($e->{'diff'} > 10) {
                 print
-                    "pricer_daemon service in $e->{'ip'} ENV: $ip_list{$_}  with fork PID: $e->{'pid'} did not do any pricing for the last $e->{'diff'} seconds.\n";
-            } else {
-                #fork status is ok.
-            }
+                    "pricer_daemon service in $e->{'ip'} ENV: $ip_list{$_}  with fork PID: $e->{'pid'} last pricing before $e->{'diff'} seconds.\n";
         }
     } else {
         print "pricer_daemon with an ip: $_ is not doing any pricing while its set to be a pricer in env: $ip_list{$_}\n";
         #send PD alert
         send_pd("pricer_daemon with an ip: $_ is not doing any pricing while its set to be a pricer in env: $ip_list{$_}", "trigger", "");
     }
-    delete $entries{$_};
-    delete $ip_list{$_};
+    #delete $entries{$_};
+    #delete $ip_list{$_};
 }
-for (keys %entries) {
-    print "pricer_daemon with an ip: $_ is an orphan\n";
+#for (keys %entries) {
+#    print "pricer_daemon with an ip: $_ is an orphan\n";
     #delete key from redis.
-    $redis->dump($_);
-}
+#    $redis->dump($_);
+#}
+
 
 sub get_ips {
-    my ($env, $ip_list) = shift;
-
-    open FILE, "/tmp/" . $env . "_ip_list" or die $!;
-    while (my $line = <FILE>) {
-
-        chomp($line);
-        $line =~ s/\r//;
-        $ip_list{"$line"} = $env;
-    }
-    close FILE;
+     my $env = shift;
+     #for development
+     my %ip_list;
+     open FILE, "/tmp/" . $env . "_ip_list" or die $!;
+     while (my $line = <FILE>) {
+         chomp($line);
+         $line =~ s/\r//; 
+         $ip_list{"$line"} = $env;
+     }
+     close FILE;
+	 return %ip_list;
+     #for prod 
+     my $ua = Mojo::UserAgent->new;
+     my $res;
+     my $tx = $ua->get("http://172.30.0.60/$env")->success;
+	 die unless $tx;
+	 my $b = $tx->body;
+	 $b =~ s/\r//gm;
+	 chomp $b;
+     return {map {; $_ => $env } split /\n/, $b};
 }
+
+
 
 sub send_pd {
     my ($error_msg, $type, $incident_key) = @_;
