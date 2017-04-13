@@ -5,8 +5,8 @@ use warnings;
 
 use Test::More;
 use Test::MockModule;
-#use Test::NoWarnings ();    # no END block test
-#use Test::Warnings qw(warnings);
+use Test::NoWarnings ();    # no END block test
+use Test::Warnings qw(warnings);
 use Test::Exception;
 
 use Client::Account;
