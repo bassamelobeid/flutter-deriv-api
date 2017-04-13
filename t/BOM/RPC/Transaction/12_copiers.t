@@ -11,20 +11,17 @@ use Test::Exception;
 
 use Client::Account;
 
-use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Platform::Password;
 use BOM::Platform::Client::Utility;
-use BOM::Database::Model::FinancialMarketBet::Factory;
-use BOM::Platform::Client::IDAuthentication;
+
 use BOM::Platform::Copier;
 use BOM::Database::DataMapper::Copier;
 use BOM::Database::DataMapper::Account;
 use Test::Mojo;
 use BOM::Test::RPC::Client;
 use Test::BOM::RPC::Contract;
-
-use BOM::Transaction::Validation;
+use BOM::Platform::Client::IDAuthentication;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -240,7 +237,7 @@ lives_ok {
     });
 
     is($res && $res->{error}{code},'InvalidTradeType', "following attepmt. InvalidTradeType");
-    my $res = BOM::RPC::v3::CopyTrading::copy_start({
+    $res = BOM::RPC::v3::CopyTrading::copy_start({
         args => {
             copy_start  => $token,
             trade_types => 'CALL',
@@ -251,7 +248,7 @@ lives_ok {
 
     ok($res && $res->{error}{code}, "following attepmt. Invalid symbol");
 
-    my $res = BOM::RPC::v3::CopyTrading::copy_start({
+    $res = BOM::RPC::v3::CopyTrading::copy_start({
         args => {
             copy_start  => "Invalid",
         },
@@ -262,7 +259,7 @@ lives_ok {
 
     my ($token1) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $wrong_copier->loginid);
 
-    my $res = BOM::RPC::v3::CopyTrading::copy_start({
+    $res = BOM::RPC::v3::CopyTrading::copy_start({
         args => {
             copy_start => $token1,
         },
