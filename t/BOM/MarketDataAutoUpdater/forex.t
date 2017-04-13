@@ -14,6 +14,7 @@ use File::Spec;
 use JSON qw(decode_json);
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
+$ENV{QUANT_FRAMEWORK_HOLIDAY_CACHE} = 0;
 use Postgres::FeedDB::Spot;
 my $module = Test::MockModule->new('Postgres::FeedDB::Spot');
 $module->mock(
@@ -250,7 +251,7 @@ subtest "Friday after close, weekend, won't open check." => sub {
                 underlying    => $usdjpy,
                 recorded_date => Date::Utility->new($details->{datetime}),
             });
-
+$DB::single=1;
         my $result = $auf->passes_additional_check($surface);
         cmp_ok($result, '==', $details->{success}, "Surface with recorded_date for the '$name' test doesn't update.");
 
