@@ -31,7 +31,6 @@ use BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
 use BOM::Platform::Chronicle;
 
 use BOM::MarketData::Display::VolatilitySurface;
-use BOM::DisplayGreeks;
 use Try::Tiny;
 
 =head1 ATTRIBUTES
