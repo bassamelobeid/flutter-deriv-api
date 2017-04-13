@@ -123,7 +123,12 @@ sub verify_with_shortcode {
     my $extra           = $args->{extra} // undef;
 
     my $original_contract = produce_contract($short_code, $currency);
-    my $priced_at_start = make_similar_contract($original_contract, {priced_at => 'start', landing_company => $landing_company});
+    my $priced_at_start = make_similar_contract(
+        $original_contract,
+        {
+            priced_at       => 'start',
+            landing_company => $landing_company
+        });
     my $purchase_time = $original_contract->date_start;
 
     my $start = $args->{start} ? Date::Utility->new($args->{start}) : Date::Utility->new($purchase_time);
