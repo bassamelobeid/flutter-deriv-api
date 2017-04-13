@@ -124,10 +124,7 @@ has amount_type => (
 
 sub _build_amount_type {
     my $self = shift;
-
-    return 'payout' if $self->contract->is_spread;
     die 'amount type is required';
-
 }
 
 has comment => (
@@ -195,8 +192,6 @@ has app_markup => (
 
 sub _build_app_markup {
     my $self = shift;
-
-    return 0 if $self->contract->is_spread;
     return $self->contract->app_markup_dollar_amount;
 }
 
@@ -238,11 +233,7 @@ sub stats_start {
     my $tags      = {tags => ["broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "contract_class:$bet_class",]};
 
     if ($what eq 'buy' or $what eq 'batch_buy') {
-        if ($self->contract->is_spread) {
-            push @{$tags->{tags}}, "stop_type:" . lc($contract->stop_type);
-        } else {
-            push @{$tags->{tags}}, "amount_type:" . lc($self->amount_type), "expiry_type:" . ($contract->fixed_expiry ? 'fixed' : 'duration');
-        }
+        push @{$tags->{tags}}, "amount_type:" . lc($self->amount_type), "expiry_type:" . ($contract->fixed_expiry ? 'fixed' : 'duration');
     } elsif ($what eq 'sell') {
         push @{$tags->{tags}}, "sell_type:manual";
     }
@@ -358,12 +349,7 @@ sub calculate_limits {
 
     my $rp = $contract->risk_profile;
     my @cl_rp = $rp->get_client_profiles($client->loginid, $client->landing_company->short);
-    if ($contract->is_spread) {
-        # limits are calculated differently for spreads
-        $limits{spread_bet_profit_limit} = $static_config->{risk_profile}{$rp->get_risk_profile(\@cl_rp)}{turnover}{$currency};
-    } else {
-        push @{$limits{specific_turnover_limits}}, @{$rp->get_turnover_limit_parameters(\@cl_rp)};
-    }
+    push @{$limits{specific_turnover_limits}}, @{$rp->get_turnover_limit_parameters(\@cl_rp)};
 
     return \%limits;
 }
@@ -410,11 +396,7 @@ sub prepare_bet_data_for_buy {
         $bet_params->{tick_count}  = scalar $contract->tick_count;
     }
 
-    if ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_SPREAD_BET) {
-        $bet_params->{$_} = $contract->$_ for qw(amount_per_point spread stop_type spread_divisor);
-        $bet_params->{stop_loss}   = $contract->supplied_stop_loss;
-        $bet_params->{stop_profit} = $contract->supplied_stop_profit;
-    } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_HIGHER_LOWER_BET) {
+    if ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_HIGHER_LOWER_BET) {
         # only store barrier in the database if it is defined.
         # asian contracts have barriers at/after expiry.
         if ($contract->barrier) {
@@ -1138,15 +1120,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -message_to_client => $error_message,
         );
     },
-    BI015 => sub {
-        my $self = shift;
-
-        return Error::Base->cuss(
-            -type              => 'SpreadDailyProfitLimitExceeded',
-            -mesg              => 'Exceeds profit limit on spread',
-            -message_to_client => BOM::Platform::Context::localize('You have exceeded the daily limit for contracts of this type.'),
-        );
-    },
+    # BI015 deprecated as spread is removed
     BI016 => sub {
         my $self   = shift;
         my $client = shift;
@@ -1289,90 +1263,90 @@ sub _build_pricing_comment {
     my ($contract, $price, $action, $price_slippage, $requested_price, $recomputed_price, $trading_period_start) =
         @{$args}{'contract', 'price', 'action', 'price_slippage', 'requested_price', 'recomputed_price', 'trading_period_start'};
 
-    my @comment_fields;
-    if ($contract->is_spread) {
-        @comment_fields = map { defined $_->[1] ? @$_ : () } (
-            [amount_per_point => $contract->amount_per_point],
-            [stop_profit      => $contract->stop_profit],
-            [stop_loss        => $contract->stop_loss],
-            [spread           => $contract->spread],
-        );
-    } else {
+    # IV is the pricing vol (high barrier vol if it is double barrier contract), iv_2 is the low barrier vol.
+    my $iv   = $contract->pricing_vol;
+    my $iv_2 = 0;
 
-        # This way the order of the fields is well-defined.
-        @comment_fields = map { defined $_->[1] ? @$_ : (); } (
-            [theo  => $contract->theo_price],
-            [win   => $contract->payout],
-            [div   => $contract->q_rate],
-            [int   => $contract->r_rate],
-            [delta => $contract->delta],
-            [gamma => $contract->gamma],
-            [vega  => $contract->vega],
-            [theta => $contract->theta],
-            [vanna => $contract->vanna],
-            [volga => $contract->volga],
-            [spot  => $contract->current_spot],
-            ($contract->can('extra_info') ? @{$contract->extra_info('arrayref')} : []),
-        );
+    if ($contract->pricing_vol_for_two_barriers) {
+        $iv   = $contract->pricing_vol_for_two_barriers->{high_barrier_vol};
+        $iv_2 = $contract->pricing_vol_for_two_barriers->{low_barrier_vol};
+    }
 
-        # only manual sell and buy has a price
-        if ($price) {
-            push @comment_fields, (trade => $price);
+    # This way the order of the fields is well-defined.
+    my @comment_fields = map { defined $_->[1] ? @$_ : (); } (
+        [theo  => $contract->theo_price],
+        [iv    => $iv],
+        [iv_2  => $iv_2],
+        [win   => $contract->payout],
+        [div   => $contract->q_rate],
+        [int   => $contract->r_rate],
+        [delta => $contract->delta],
+        [gamma => $contract->gamma],
+        [vega  => $contract->vega],
+        [theta => $contract->theta],
+        [vanna => $contract->vanna],
+        [volga => $contract->volga],
+        [spot  => $contract->current_spot],
+        ($contract->can('extra_info') ? @{$contract->extra_info('arrayref')} : []),
+    );
+
+    # only manual sell and buy has a price
+    if ($price) {
+        push @comment_fields, (trade => $price);
+    }
+
+    if ($contract->entry_spot) {
+        push @comment_fields, (entry_spot       => $contract->entry_spot);
+        push @comment_fields, (entry_spot_epoch => $contract->entry_spot_epoch);
+    }
+
+    # Record price slippage in quants bet variable.
+    # To always reproduce ask price, we would want to record the slippage allowed during transaction.
+    if (defined $price_slippage) {
+        push @comment_fields, (price_slippage => $price_slippage);
+    }
+
+    # Record requested price in quants bet variable.
+    if (defined $requested_price) {
+        push @comment_fields, (requested_price => $requested_price);
+    }
+
+    # Record recomputed price in quants bet variable.
+    if (defined $recomputed_price) {
+        push @comment_fields, (recomputed_price => $recomputed_price);
+    }
+
+    my $tick;
+    if ($action eq 'sell') {
+        # current tick is lazy, even though the realtime cache might have changed during the course of the transaction.
+        $tick = $contract->current_tick;
+    } elsif ($action eq 'autosell_expired_contract') {
+        $tick = ($contract->is_path_dependent and $contract->hit_tick) ? $contract->hit_tick : $contract->exit_tick;
+    }
+
+    if ($tick) {
+        push @comment_fields, (exit_spot       => $tick->quote);
+        push @comment_fields, (exit_spot_epoch => $tick->epoch);
+        if ($contract->two_barriers) {
+            push @comment_fields, (high_barrier => $contract->high_barrier->as_absolute) if $contract->high_barrier;
+            push @comment_fields, (low_barrier  => $contract->low_barrier->as_absolute)  if $contract->low_barrier;
+        } else {
+            push @comment_fields, (barrier => $contract->barrier->as_absolute) if $contract->barrier;
         }
+    }
 
-        if ($contract->entry_spot) {
-            push @comment_fields, (entry_spot       => $contract->entry_spot);
-            push @comment_fields, (entry_spot_epoch => $contract->entry_spot_epoch);
-        }
+    my $news_factor = $contract->ask_probability->peek('news_factor');
+    if ($news_factor) {
+        push @comment_fields, news_fct => $news_factor->amount;
+        my $news_impact = $news_factor->peek('news_impact');
+        push @comment_fields, news_impact => $news_impact->amount if $news_impact;
+    }
 
-        # Record price slippage in quants bet variable.
-        # To always reproduce ask price, we would want to record the slippage allowed during transaction.
-        if (defined $price_slippage) {
-            push @comment_fields, (price_slippage => $price_slippage);
-        }
-
-        # Record requested price in quants bet variable.
-        if (defined $requested_price) {
-            push @comment_fields, (requested_price => $requested_price);
-        }
-
-        # Record recomputed price in quants bet variable.
-        if (defined $recomputed_price) {
-            push @comment_fields, (recomputed_price => $recomputed_price);
-        }
-
-        my $tick;
-        if ($action eq 'sell') {
-            # current tick is lazy, even though the realtime cache might have changed during the course of the transaction.
-            $tick = $contract->current_tick;
-        } elsif ($action eq 'autosell_expired_contract') {
-            $tick = ($contract->is_path_dependent and $contract->hit_tick) ? $contract->hit_tick : $contract->exit_tick;
-        }
-
-        if ($tick) {
-            push @comment_fields, (exit_spot       => $tick->quote);
-            push @comment_fields, (exit_spot_epoch => $tick->epoch);
-            if ($contract->two_barriers) {
-                push @comment_fields, (high_barrier => $contract->high_barrier->as_absolute) if $contract->high_barrier;
-                push @comment_fields, (low_barrier  => $contract->low_barrier->as_absolute)  if $contract->low_barrier;
-            } else {
-                push @comment_fields, (barrier => $contract->barrier->as_absolute) if $contract->barrier;
-            }
-        }
-
-        my $news_factor = $contract->ask_probability->peek('news_factor');
-        if ($news_factor) {
-            push @comment_fields, news_fct => $news_factor->amount;
-            my $news_impact = $news_factor->peek('news_impact');
-            push @comment_fields, news_impact => $news_impact->amount if $news_impact;
-        }
-
-        if (@{$contract->corporate_actions}) {
-            push @comment_fields,
-                corporate_action => 1,
-                actions          => join '|',
-                map { $_->{description} . ',' . $_->{modifier} . ',' . $_->{value} } @{$contract->corporate_actions};
-        }
+    if (@{$contract->corporate_actions}) {
+        push @comment_fields,
+            corporate_action => 1,
+            actions          => join '|',
+            map { $_->{description} . ',' . $_->{modifier} . ',' . $_->{value} } @{$contract->corporate_actions};
     }
 
     my $comment_str = sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
@@ -1389,8 +1363,7 @@ sub _build_pricing_comment {
 sub _validate_sell_pricing_adjustment {
     my $self = shift;
 
-    # always sell at recomputed bid price for spreads.
-    if ($self->contract->is_spread or not defined $self->price) {
+    if (not defined $self->price) {
         $self->price($self->contract->bid_price);
         return;
     }
@@ -1482,12 +1455,6 @@ sub _validate_sell_pricing_adjustment {
 
 sub _validate_trade_pricing_adjustment {
     my $self = shift;
-
-    # always buy at recomputed ask price for spreads.
-    if ($self->contract->is_spread) {
-        $self->price($self->contract->ask_price);
-        return;
-    }
 
     my $amount_type = $self->amount_type;
     my $contract    = $self->contract;
@@ -1592,12 +1559,7 @@ sub _is_valid_to_buy {
     my $self     = shift;
     my $contract = $self->contract;
 
-    if (
-        not(
-              $contract->is_spread
-            ? $contract->is_valid_to_buy
-            : $contract->is_valid_to_buy({landing_company => $self->client->landing_company->short})))
-    {
+    if (not($contract->is_valid_to_buy({landing_company => $self->client->landing_company->short}))) {
         return Error::Base->cuss(
             -type              => 'InvalidtoBuy',
             -mesg              => $contract->primary_validation_error->message,
@@ -1723,10 +1685,6 @@ BEGIN { _create_validator '__validate_stake_limit' }
 
 sub _validate_stake_limit {
     my $self = shift;
-
-    # spread stake validation is within its module.
-    # spread bet won't be offered to maltainvest.
-    return if $self->contract->is_spread;
     return $self->__validate_stake_limit;
 }
 
@@ -1739,8 +1697,6 @@ sub __validate_payout_limit {
     my $client = shift;
 
     my $contract = $self->contract;
-
-    return if $contract->is_spread;
 
     my $rp = $self->contract->risk_profile;
     my @cl_rp = $rp->get_client_profiles($client->loginid, $client->landing_company->short);
@@ -2135,29 +2091,23 @@ sub _get_params_for_expiryqueue {
         symbol                => $contract->underlying->symbol,
     };
 
-    if ($contract->is_spread) {
-        # The barriers for spreads are the stop loss/profit level
-        # There is no settlement
-        @{$hash}{qw/up_level down_level/} = @{$contract->_highlow_args};
-    } else {
-        # These-are all non-exclusive conditions, we don't care if anything is
-        # sold to which they all apply.
-        $hash->{settlement_epoch} = $contract->date_settlement->epoch;
-        # if we were to enable back the intraday path dependent, the barrier saved
-        # in expiry queue might be wrong, since barrier is set based on next tick.
-        if ($contract->is_path_dependent) {
-            # just check one barrier type since they are not allowed to be different.
-            if ($contract->two_barriers and $contract->high_barrier->barrier_type eq 'absolute') {
-                $hash->{up_level}   = $contract->high_barrier->as_absolute;
-                $hash->{down_level} = $contract->low_barrier->as_absolute;
-            } elsif ($contract->barrier and $contract->barrier->barrier_type eq 'absolute') {
-                my $which_level = ($contract->barrier->as_difference > 0) ? 'up_level' : 'down_level';
-                $hash->{$which_level} = $contract->barrier->as_absolute;
-            }
+    # These-are all non-exclusive conditions, we don't care if anything is
+    # sold to which they all apply.
+    $hash->{settlement_epoch} = $contract->date_settlement->epoch;
+    # if we were to enable back the intraday path dependent, the barrier saved
+    # in expiry queue might be wrong, since barrier is set based on next tick.
+    if ($contract->is_path_dependent) {
+        # just check one barrier type since they are not allowed to be different.
+        if ($contract->two_barriers and $contract->high_barrier->barrier_type eq 'absolute') {
+            $hash->{up_level}   = $contract->high_barrier->as_absolute;
+            $hash->{down_level} = $contract->low_barrier->as_absolute;
+        } elsif ($contract->barrier and $contract->barrier->barrier_type eq 'absolute') {
+            my $which_level = ($contract->barrier->as_difference > 0) ? 'up_level' : 'down_level';
+            $hash->{$which_level} = $contract->barrier->as_absolute;
         }
-
-        $hash->{tick_count} = $contract->tick_count if $contract->tick_expiry;
     }
+
+    $hash->{tick_count} = $contract->tick_count if $contract->tick_expiry;
 
     return $hash;
 }
