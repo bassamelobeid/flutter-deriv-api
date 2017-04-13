@@ -9,7 +9,7 @@ use feature "state";
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 
-use Future;
+use Future::Mojo;
 use Sys::Hostname;
 use Scalar::Util ();
 use YAML::XS qw(LoadFile);
@@ -297,7 +297,7 @@ sub register {
             my $redis = $app->ws_redis_master;
             my @future_checks;
             for my $descr (@$limit_descriptors) {
-                my $f = Future->new;
+                my $f = Future::Mojo->new;
                 $redis->incr(
                     $descr->{name} . $client_id,
                     sub {
