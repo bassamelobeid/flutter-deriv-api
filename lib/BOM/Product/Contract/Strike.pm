@@ -16,6 +16,9 @@ use feature "state";
 
 with 'MooseX::Role::Validatable';
 
+# Multiply all absolute barriers by this for use in shortcodes
+use constant FOREX_BARRIER_MULTIPLIER => 1e6;
+
 has supplied_barrier => (
     is       => 'ro',
     isa      => 'Str',
@@ -201,7 +204,7 @@ sub _build_for_shortcode {
     my $sc_version;
 
     if ($strike->underlying->market->absolute_barrier_multiplier) {
-        $sc_version = $strike->as_absolute * $self->_forex_barrier_multiplier(Date::Utility->new($self->basis_tick->epoch));
+        $sc_version = $strike->as_absolute * FOREX_BARRIER_MULTIPLIER;
     } else {
         # Really?
         $sc_version = floor($strike->as_absolute);
@@ -317,7 +320,7 @@ sub adjust {
 sub strike_string {
     my ($class, $string, $underlying, $bet_type_code) = @_;
 
-    $string /= 1e6
+    $string /= FOREX_BARRIER_MULTIPLIER
         if ($bet_type_code !~ /^DIGIT/ and $string and looks_like_number($string) and $underlying->market->absolute_barrier_multiplier);
 
     return $string;
