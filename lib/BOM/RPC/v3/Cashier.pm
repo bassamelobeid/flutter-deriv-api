@@ -99,11 +99,18 @@ sub cashier {
         ) unless $client->get_status('crs_tin_information');
     }
 
-    if ($client->residence eq 'gb' and not $client->get_status('ukgc_funds_protection')) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'ASK_UK_FUNDS_PROTECTION',
-            message_to_client => localize('Please accept Funds Protection.'),
-        });
+    if ($client->residence eq 'gb') {
+        unless ($client->get_status('ukgc_funds_protection')) {
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'ASK_UK_FUNDS_PROTECTION',
+                message_to_client => localize('Please accept Funds Protection.'),
+            });
+        }
+        if ($client->get_status('ukrts_max_turnover_limit_not_set')) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET',
+                    message_to_client => localize('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.')});
+        }
     }
 
     if ($client->residence eq 'jp' and ($client->get_status('jp_knowledge_test_pending') or $client->get_status('jp_knowledge_test_fail'))) {
