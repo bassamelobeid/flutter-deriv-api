@@ -16,6 +16,9 @@ use feature "state";
 
 with 'MooseX::Role::Validatable';
 
+# Multiply all absolute barriers by this for use in shortcodes
+use constant FOREX_BARRIER_MULTIPLIER => 1e6;
+
 has supplied_barrier => (
     is       => 'ro',
     isa      => 'Str',
@@ -201,7 +204,7 @@ sub _build_for_shortcode {
     my $sc_version;
 
     if ($strike->underlying->market->absolute_barrier_multiplier) {
-        $sc_version = $strike->as_absolute * $self->_forex_barrier_multiplier(Date::Utility->new($self->basis_tick->epoch));
+        $sc_version = $strike->as_absolute * FOREX_BARRIER_MULTIPLIER;
     } else {
         # Really?
         $sc_version = floor($strike->as_absolute);
@@ -315,12 +318,9 @@ sub adjust {
 }
 
 sub strike_string {
-    my ($class, $string, $underlying, $bet_type_code, $when) = @_;
+    my ($class, $string, $underlying, $bet_type_code) = @_;
 
-    $when = Date::Utility->new($when);
-    # some legacy bet types don't have barriers
-    # 0 barriers are NOT difference.
-    $string /= $class->_forex_barrier_multiplier($when)
+    $string /= FOREX_BARRIER_MULTIPLIER
         if ($bet_type_code !~ /^DIGIT/ and $string and looks_like_number($string) and $underlying->market->absolute_barrier_multiplier);
 
     return $string;
@@ -329,16 +329,6 @@ sub strike_string {
 sub _proper_value {
     my ($self, $value) = @_;
     return $self->underlying->pipsized_value($value, $self->custom_pipsize);
-}
-
-sub _forex_barrier_multiplier {
-    my ($self, $when) = @_;
-
-    $when = Date::Utility->new($when);
-    # This is the date we increased some of major FX's pip size.
-    state $release_date = Date::Utility->new('8-Feb-2015');
-    my $multiplier = $when->is_before($release_date) ? 1e4 : 1e6;
-    return $multiplier;
 }
 
 __PACKAGE__->meta->make_immutable;
