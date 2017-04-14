@@ -64,6 +64,7 @@ my $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MX',
     email       => $email
 });
+$client_mx->set_status('ukrts_max_turnover_limit_not_set', 'tests', 'Newly created GB clients have this status until they set 30Day turnover');
 my $client_jp = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'JP',
     email       => $email
@@ -225,6 +226,11 @@ subtest 'landing_companies_specific' => sub {
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_UK_FUNDS_PROTECTION', 'GB residence needs to accept fund protection')
         ->error_message_is('Please accept Funds Protection.', 'GB residence needs to accept fund protection');
+    $client_mx->set_status('ukgc_funds_protection', 'system', 'testing');
+    $client_mx->save;
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('ASK_SELF_EXCLUSION_MAX_TURNOVER_SET', 'GB residence needs to set 30-Day turnover')
+        ->error_message_is('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.', 'GB residence needs to set 30-Day turnover');
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_jp->loginid, 'test token');
     $client_jp->set_default_account('JPY');
