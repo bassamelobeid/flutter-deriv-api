@@ -320,7 +320,7 @@ sub strike_string {
     $when = Date::Utility->new($when);
     # some legacy bet types don't have barriers
     # 0 barriers are NOT difference.
-    $string /= $class->_forex_barrier_multiplier($when)
+    $string /= $class->_forex_barrier_multiplier
         if ($bet_type_code !~ /^DIGIT/ and $string and looks_like_number($string) and $underlying->market->absolute_barrier_multiplier);
 
     return $string;
@@ -334,11 +334,7 @@ sub _proper_value {
 sub _forex_barrier_multiplier {
     my ($self, $when) = @_;
 
-    $when = Date::Utility->new($when);
-    # This is the date we increased some of major FX's pip size.
-    state $release_date = Date::Utility->new('8-Feb-2015');
-    my $multiplier = $when->is_before($release_date) ? 1e4 : 1e6;
-    return $multiplier;
+    return 1e6;
 }
 
 __PACKAGE__->meta->make_immutable;
