@@ -67,10 +67,10 @@ foreach my $code (@codes) {
     $bet_args{underlying} = $underlying;
 
     if (defined $bits[4]) {
-        $bet_args{high_barrier} = BOM::Product::Contract::Strike->strike_string($bits[3], $underlying, $bet_args{bet_type}, $bet_args{date_start});
-        $bet_args{low_barrier}  = BOM::Product::Contract::Strike->strike_string($bits[4], $underlying, $bet_args{bet_type}, $bet_args{date_start});
+        $bet_args{high_barrier} = BOM::Product::Contract::Strike->strike_string($bits[3], $underlying, $bet_args{bet_type});
+        $bet_args{low_barrier}  = BOM::Product::Contract::Strike->strike_string($bits[4], $underlying, $bet_args{bet_type});
     } elsif (defined $bits[3]) {
-        $bet_args{barrier} = BOM::Product::Contract::Strike->strike_string($bits[3], $underlying, $bet_args{bet_type}, $bet_args{date_start});
+        $bet_args{barrier} = BOM::Product::Contract::Strike->strike_string($bits[3], $underlying, $bet_args{bet_type});
     }
     $bet_args{payout}     = 250;
     $bet_args{currency}   = $currency;
