@@ -5,8 +5,8 @@ use warnings;
 
 use Test::More;
 use Test::MockModule;
-use Test::NoWarnings ();    # no END block test
-use Test::Warnings qw(warnings);
+#use Test::NoWarnings ();    # no END block test
+use Test::Warnings qw(warning);
 use Test::Exception;
 
 use Client::Account;
@@ -264,7 +264,11 @@ lives_ok {
 'following validation';
 
 lives_ok {
-    ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
+    like(
+        warning {
+            ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
+        }, qr/COPY TRADING BUY.*YOUR ACCOUNT BALANCE.*IS INSUFFICIENT TO BUY THIS CONTRACT/ , 'we warned about influence ballance'
+    );
     $balance -= $buy_price;
     is($balance_after + 0, $balance, 'correct balance_after');
 }
