@@ -170,7 +170,9 @@ sub register {
     return MojoX::JSON::RPC::Service->new->register(
         $method,
         sub {
-            my ($params) = @_;
+            # let's have an copy, which will be dumped to log if something goes wrong
+            my @original_args = @_;
+            my $params = $original_args[0] // {};
 
             my $args = {};
             $args->{country_code} = $params->{country} if exists $params->{country};
@@ -215,12 +217,12 @@ sub register {
                 return $verify_app_res if $verify_app_res->{error};
             }
 
-            my @args   = @_;
+            my @args   = @original_args;
             my $result = try {
                 $code->(@args);
             }
             catch {
-                warn "Exception when handling $method - $_ with parameters " . encode_json \@args;
+                warn "Exception when handling $method - $_ with parameters " . encode_json \@original_args;
                 BOM::RPC::v3::Utility::create_error({
                         code              => 'InternalServerError',
                         message_to_client => localize("Sorry, an error occurred while processing your account.")});
