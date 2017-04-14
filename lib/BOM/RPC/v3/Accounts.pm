@@ -1002,6 +1002,10 @@ sub set_self_exclusion {
     if ($args{max_30day_turnover}) {
         my $ret = $client->set_exclusion->max_30day_turnover($args{max_30day_turnover});
         $message .= "- 30-Day turnover: $ret\n";
+        if ($client->residence eq 'gb') {    # RTS 12 - Financial Limits - UK Clients
+            $client->clr_status('ukrts_max_turnover_limit_not_set');
+            $client->save;
+        }
     }
     if ($args{max_30day_losses}) {
         my $ret = $client->set_exclusion->max_30day_losses($args{max_30day_losses});
