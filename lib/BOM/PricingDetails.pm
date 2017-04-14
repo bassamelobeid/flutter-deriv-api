@@ -31,7 +31,6 @@ use BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
 use BOM::Platform::Chronicle;
 
 use BOM::MarketData::Display::VolatilitySurface;
-use BOM::DisplayGreeks;
 use Try::Tiny;
 
 =head1 ATTRIBUTES
@@ -85,8 +84,7 @@ sub debug_link {
     my $bet           = $self->bet;
     my $number_format = $self->number_format;
 
-    my $attr_content   = $self->_get_overview();
-    my $greeks_content = $self->_get_greeks();
+    my $attr_content = $self->_get_overview();
 
     my $ask_price_content = $self->_get_price({
         id   => 'buildask' . $bet->id,
@@ -112,11 +110,6 @@ sub debug_link {
             label   => 'Bid Price',
             url     => 'bidpb',
             content => $bid_price_content,
-        },
-        {
-            label   => 'Greeks',
-            url     => 'gr',
-            content => $greeks_content,
         },
     ];
 
@@ -311,79 +304,6 @@ sub _get_price {
     ) || die BOM::Backoffice::Request::template->error;
 
     return $price_content;
-}
-
-sub _get_greeks {
-    my $self          = shift;
-    my $number_format = '%.3f';
-    my $bet           = $self->bet;
-
-    my $bs_greeks = $bet->greek_engine->get_greeks;
-
-    my $display_greeks_engine = BOM::DisplayGreeks->new(
-        payout       => $bet->payout,
-        priced_with  => $bet->priced_with,
-        current_spot => $bet->current_spot,
-        underlying   => $bet->underlying
-    );
-    my $display = $display_greeks_engine->get_display_greeks();
-
-    my $base_curr    = $bet->underlying->asset_symbol;
-    my $num_curr     = $bet->underlying->quoted_currency_symbol;
-    my $greeks_attrs = [{
-            label        => 'Delta',
-            analytical   => sprintf($number_format, $bs_greeks->{delta}),
-            display_base => $base_curr . " " . sprintf($number_format, $display->{delta}->{base}),
-            display_num  => $num_curr . " " . sprintf($number_format, $display->{delta}->{num}),
-        },
-        {
-            label        => 'Gamma',
-            analytical   => sprintf($number_format, $bs_greeks->{gamma}),
-            display_base => $base_curr . " " . sprintf($number_format, $display->{gamma}->{base}),
-            display_num  => $num_curr . " " . sprintf($number_format, $display->{gamma}->{num}),
-        },
-        {
-            label        => 'Theta',
-            analytical   => sprintf($number_format, $bs_greeks->{theta}),
-            display_base => $base_curr . " " . sprintf($number_format, $display->{theta}->{base}),
-            display_num  => $num_curr . " " . sprintf($number_format, $display->{theta}->{num}),
-        },
-        {
-            label        => 'Vega',
-            analytical   => sprintf($number_format, $bs_greeks->{vega}),
-            display_base => $base_curr . " " . sprintf($number_format, $display->{vega}->{base}),
-            display_num  => $num_curr . " " . sprintf($number_format, $display->{vega}->{num}),
-        },
-        {
-            label        => 'Vanna',
-            analytical   => sprintf($number_format, $bs_greeks->{vanna}),
-            display_base => $base_curr . " " . sprintf($number_format, $display->{vanna}->{base}),
-            display_num  => $num_curr . " " . sprintf($number_format, $display->{vanna}->{num}),
-        },
-        {
-            label        => 'Volga',
-            analytical   => sprintf($number_format, $bs_greeks->{volga}),
-            display_base => $base_curr . " " . sprintf($number_format, $display->{volga}->{base}),
-            display_num  => $num_curr . " " . sprintf($number_format, $display->{volga}->{num}),
-        },
-    ];
-
-    my $payout        = $bet->payout;
-    my $is_quanto     = $bet->priced_with;
-    my $greeks_header = ['Greek Name', 'Analytical Greek (1 unit)', 'FD Greek (1 unit)', "Greek * $payout $base_curr", "Greek * $payout $num_curr"];
-    my $greeks_content;
-    BOM::Backoffice::Request::template->process(
-        'backoffice/container/four_column_table.html.tt',
-        {
-            title     => 'Bet Display Greeks',
-            rows      => $greeks_attrs,
-            headers   => $greeks_header,
-            is_quanto => $is_quanto,
-        },
-        \$greeks_content
-    ) || die BOM::Backoffice::Request::template->error;
-
-    return $greeks_content;
 }
 
 sub _get_overview {
