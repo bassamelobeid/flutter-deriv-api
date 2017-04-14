@@ -315,12 +315,9 @@ sub adjust {
 }
 
 sub strike_string {
-    my ($class, $string, $underlying, $bet_type_code, $when) = @_;
+    my ($class, $string, $underlying, $bet_type_code) = @_;
 
-    $when = Date::Utility->new($when);
-    # some legacy bet types don't have barriers
-    # 0 barriers are NOT difference.
-    $string /= $class->_forex_barrier_multiplier
+    $string /= 1e6
         if ($bet_type_code !~ /^DIGIT/ and $string and looks_like_number($string) and $underlying->market->absolute_barrier_multiplier);
 
     return $string;
@@ -329,12 +326,6 @@ sub strike_string {
 sub _proper_value {
     my ($self, $value) = @_;
     return $self->underlying->pipsized_value($value, $self->custom_pipsize);
-}
-
-sub _forex_barrier_multiplier {
-    my ($self, $when) = @_;
-
-    return 1e6;
 }
 
 __PACKAGE__->meta->make_immutable;
