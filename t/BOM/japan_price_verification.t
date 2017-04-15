@@ -246,7 +246,7 @@ subtest 'verify_with_shortcode_Slope' => sub {
             'trade_bid_price'        => 'NA',
             'loginID'                => 'NA',
             'tick_before_trade_time' => '79.817',
-            'short_code'             => 'CALLE_FRXUSDJPY_1000_1352345145_1353358800_783000_0',
+            'short_code'             => 'CALLE_FRXUSDJPY_1000_1352345145_1353358800_78300000_0',
             'ccy'                    => 'JPY',
             'description'            => 'Win payout if USD/JPY is higher than or equal to 78.300 at 2012-11-19 21:00:00 GMT.',
             'trans_id'               => 'NA',
@@ -263,7 +263,7 @@ subtest 'verify_with_shortcode_Slope' => sub {
         }};
     my $args;
     $args->{landing_company} = 'japan';
-    $args->{shortcode}       = 'CALLE_FRXUSDJPY_1000_1352345145_1353358800_783000_0';
+    $args->{shortcode}       = 'CALLE_FRXUSDJPY_1000_1352345145_1353358800_78300000_0';
     $args->{contract_price}  = 928;
     $args->{currency}        = 'JPY';
     $args->{action_type}     = 'buy';
@@ -387,7 +387,7 @@ subtest 'verify_with_shortcode_VV' => sub {
             'trade_bid_price'        => 'NA',
             'loginID'                => 'NA',
             'tick_before_trade_time' => '79.817',
-            'short_code'             => 'ONETOUCH_FRXUSDJPY_1000_1352345145_1353358800_795000_0',
+            'short_code'             => 'ONETOUCH_FRXUSDJPY_1000_1352345145_1353358800_79500000_0',
             'ccy'                    => 'JPY',
             'description'            => 'Win payout if USD/JPY touches 79.500 through 2012-11-19 21:00:00 GMT.',
             'trans_id'               => 'NA',
@@ -400,7 +400,7 @@ subtest 'verify_with_shortcode_VV' => sub {
 
     my $args;
     $args->{landing_company} = 'japan';
-    $args->{shortcode}       = 'ONETOUCH_FRXUSDJPY_1000_1352345145_1353358800_795000_0';
+    $args->{shortcode}       = 'ONETOUCH_FRXUSDJPY_1000_1352345145_1353358800_79500000_0';
     $args->{contract_price}  = 861;
     $args->{currency}        = 'JPY';
     $args->{action_type}     = 'buy';
