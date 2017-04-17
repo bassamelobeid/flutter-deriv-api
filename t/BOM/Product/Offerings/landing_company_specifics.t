@@ -20,24 +20,24 @@ my %expected_type = (
     virtual         => [
         'ASIAND',     'ASIANU',     'CALL',        'DIGITDIFF', 'DIGITEVEN', 'DIGITMATCH', 'DIGITODD', 'DIGITOVER',
         'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',   'ONETOUCH',  'PUT',        'PUTE',     'RANGE',
-        'SPREADD',    'SPREADU',    'UPORDOWN',    'CALLE',     'EXPIRYRANGEE'
+        'UPORDOWN',   'CALLE',      'EXPIRYRANGEE'
     ],
     costarica => [
         'ASIAND',     'ASIANU',     'CALL',        'DIGITDIFF', 'DIGITEVEN', 'DIGITMATCH', 'DIGITODD', 'DIGITOVER',
         'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',   'ONETOUCH',  'PUT',        'PUTE',     'RANGE',
-        'SPREADD',    'SPREADU',    'UPORDOWN',    'CALLE',     'EXPIRYRANGEE'
+        'UPORDOWN',   'CALLE',      'EXPIRYRANGEE'
     ],
     maltainvest => ['CALL', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH', 'ONETOUCH', 'PUT', 'PUTE', 'RANGE', 'UPORDOWN', 'CALLE', 'EXPIRYRANGEE'],
     japan => ['CALLE', 'NOTOUCH', 'ONETOUCH', 'PUT', 'RANGE', 'UPORDOWN', 'EXPIRYRANGEE', 'EXPIRYMISS'],
     malta => [
         'ASIAND',     'ASIANU',     'CALL',        'DIGITDIFF', 'DIGITEVEN', 'DIGITMATCH', 'DIGITODD', 'DIGITOVER',
         'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',   'ONETOUCH',  'PUT',        'PUTE',     'RANGE',
-        'SPREADD',    'SPREADU',    'UPORDOWN',    'CALLE',     'EXPIRYRANGEE'
+        'UPORDOWN',   'CALLE',      'EXPIRYRANGEE'
     ],
     iom => [
         'ASIAND',     'ASIANU',     'CALL',        'DIGITDIFF', 'DIGITEVEN', 'DIGITMATCH', 'DIGITODD', 'DIGITOVER',
         'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',   'ONETOUCH',  'PUT',        'PUTE',     'RANGE',
-        'SPREADD',    'SPREADU',    'UPORDOWN',    'CALLE',     'EXPIRYRANGEE'
+        'UPORDOWN',   'CALLE',      'EXPIRYRANGEE'
     ],
 
 );

@@ -155,9 +155,9 @@ sub shortcode_to_parameters {
             $date_expiry = Date::Utility->new($date_expiry->date_yyyymmdd . ' ' . $regular_close->time_hhmmss);
         }
     }
-    $barrier = BOM::Product::Contract::Strike->strike_string($barrier, $underlying, $bet_type, $date_start)
+    $barrier = BOM::Product::Contract::Strike->strike_string($barrier, $underlying, $bet_type)
         if defined $barrier;
-    $barrier2 = BOM::Product::Contract::Strike->strike_string($barrier2, $underlying, $bet_type, $date_start)
+    $barrier2 = BOM::Product::Contract::Strike->strike_string($barrier2, $underlying, $bet_type)
         if defined $barrier2;
     my %barriers =
         ($barrier and $barrier2)

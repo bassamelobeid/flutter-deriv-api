@@ -254,12 +254,7 @@ has starts_as_forward_starting => (
 #expiry_daily - Does this bet expire at close of the exchange?
 has [qw(
         is_intraday
-        expiry_type
-        start_type
-        translated_display_name
         is_forward_starting
-        permitted_expiries
-        effective_daily_trading_seconds
         )
     ] => (
     is         => 'ro',
@@ -267,9 +262,10 @@ has [qw(
     );
 
 has value => (
-    is      => 'rw',
-    isa     => 'Num',
-    default => 0,
+    is       => 'rw',
+    init_arg => undef,
+    isa      => 'Num',
+    default  => 0,
 );
 
 has [qw(entry_tick current_tick)] => (
@@ -277,8 +273,7 @@ has [qw(entry_tick current_tick)] => (
     lazy_build => 1,
 );
 
-has [
-    qw( entry_spot
+has [qw(
         current_spot)
     ] => (
     is         => 'rw',
@@ -303,36 +298,12 @@ has for_sale => (
     default => 0,
 );
 
-=head2 max_tick_expiry_duration
-
-A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.
-
-=cut
-
-has max_tick_expiry_duration => (
-    is      => 'ro',
-    isa     => 'time_interval',
-    default => '5m',
-    coerce  => 1,
-);
-
 has build_parameters => (
     is  => 'ro',
     isa => 'HashRef',
     # Required until it goes away entirely.
     required => 1,
 );
-
-# timeindays/timeinyears - note that for FX contracts of >=1 duration, these values will follow the market convention of integer days
-has [qw(
-        timeinyears
-        timeindays
-        )
-    ] => (
-    is         => 'ro',
-    isa        => 'Math::Util::CalculatedValue::Validatable',
-    lazy_build => 1,
-    );
 
 #fixed_expiry - A Boolean to determine if this bet has fixed or flexible expiries.
 
@@ -348,7 +319,7 @@ has calendar => (
     default => sub { return shift->underlying->calendar; },
 );
 
-has opposite_contract => (
+has [qw(opposite_contract opposite_contract_for_sale)] => (
     is         => 'ro',
     isa        => 'BOM::Product::Contract',
     lazy_build => 1
@@ -395,7 +366,7 @@ has pricing_spot => (
     lazy_build => 1,
 );
 
-has [qw(offering_specifics barrier_category)] => (
+has [qw(barrier_category)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -419,6 +390,14 @@ has 'staking_limits' => (
 has apply_market_inefficient_limit => (
     is         => 'ro',
     lazy_build => 1,
+);
+
+#A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.
+has _max_tick_expiry_duration => (
+    is      => 'ro',
+    isa     => 'time_interval',
+    default => '5m',
+    coerce  => 1,
 );
 
 # We can't import the Factory directly as that goes circular.
@@ -503,7 +482,7 @@ sub is_after_expiry {
 
     if ($self->tick_expiry) {
         return 1
-            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds));
+            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->_max_tick_expiry_duration->seconds));
     } else {
 
         return 1 if $self->get_time_to_expiry->seconds == 0;
@@ -525,7 +504,7 @@ sub is_after_settlement {
 
     if ($self->tick_expiry) {
         return 1
-            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds));
+            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->_max_tick_expiry_duration->seconds));
     } else {
         return 1 if $self->get_time_to_settlement->seconds == 0;
     }
@@ -577,14 +556,6 @@ To be able to settle, it need pass the settlement time and has valid exit tick
 =cut
 
 sub is_settleable { die "Calling ->is_settleable on a ::Contract instance" }
-
-=head2 is_spread
-
-Returns true if this is a spread contract - due to be removed.
-
-=cut
-
-sub is_spread { return 0 }
 
 sub may_settle_automatically {
     my $self = shift;
@@ -663,6 +634,74 @@ sub category_code {
     return $self->category->code;
 }
 
+=head1 METHODS - Time-related
+
+=cut
+
+=head2 timeinyears
+
+Contract duration in years.
+
+=head2 timeindays
+
+Contract duration in days.
+
+=cut
+
+has [qw(
+        timeinyears
+        timeindays
+        )
+    ] => (
+    is         => 'ro',
+    init_arg   => undef,
+    isa        => 'Math::Util::CalculatedValue::Validatable',
+    lazy_build => 1,
+    );
+
+sub _build_timeinyears {
+    my $self = shift;
+
+    my $tiy = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'time_in_years',
+        description => 'Bet duration in years',
+        set_by      => 'BOM::Product::Contract',
+        base_amount => 0,
+        minimum     => 0.000000001,
+    });
+
+    my $days_per_year = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'days_per_year',
+        description => 'We use a 365 day year.',
+        set_by      => 'BOM::Product::Contract',
+        base_amount => 365,
+    });
+
+    $tiy->include_adjustment('add',    $self->timeindays);
+    $tiy->include_adjustment('divide', $days_per_year);
+
+    return $tiy;
+}
+
+sub _build_timeindays {
+    my $self = shift;
+
+    my $atid = $self->get_time_to_expiry({
+            from => $self->effective_start,
+        })->days;
+
+    my $tid = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'time_in_days',
+        description => 'Duration of this bet in days',
+        set_by      => 'BOM::Product::Contract',
+        minimum     => 0.000001,
+        maximum     => 730,
+        base_amount => $atid,
+    });
+
+    return $tid;
+}
+
 =head1 METHODS - Other
 
 =cut
@@ -690,6 +729,32 @@ sub ticks_to_expiry {
     return shift->tick_count + 1;
 }
 
+=head2 entry_spot
+
+The entry spot price of the contract.
+
+=cut
+
+sub entry_spot {
+    my $self = shift;
+
+    my $entry_tick = $self->entry_tick or return undef;
+    return $self->entry_tick->quote;
+}
+
+=head2 entry_spot_epoch
+
+The entry spot epoch of the contract.
+
+=cut
+
+sub entry_spot_epoch {
+    my $self = shift;
+
+    my $entry_tick = $self->entry_tick or return undef;
+    return $self->entry_tick->epoch;
+}
+
 =head2 effective_start
 
 =over 4
@@ -711,6 +776,18 @@ sub effective_start {
           ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_start
         : ($self->date_pricing->is_after($self->date_start))  ? $self->date_pricing
         :                                                       $self->date_start;
+}
+
+=head2 expiry_type
+
+The expiry type of a contract (daily, tick or intraday).
+
+=cut
+
+sub expiry_type {
+    my $self = shift;
+
+    return ($self->tick_expiry) ? 'tick' : ($self->expiry_daily) ? 'daily' : 'intraday';
 }
 
 =head2 expiry_daily
@@ -840,6 +917,21 @@ sub allowed_slippage {
 
 # INTERNAL METHODS
 
+sub _offering_specifics {
+    my $self = shift;
+
+    return get_contract_specifics(
+        BOM::Platform::Runtime->instance->get_offerings_config,
+        {
+            underlying_symbol => $self->underlying->symbol,
+            barrier_category  => $self->barrier_category,
+            expiry_type       => $self->expiry_type,
+            start_type        => ($self->is_forward_starting ? 'forward' : 'spot'),
+            contract_category => $self->category->code,
+            ($self->can('landing_company') ? (landing_company => $self->landing_company) : ()),    # this is done for japan
+        });
+}
+
 sub _check_is_intraday {
     my ($self, $date_start) = @_;
     my $date_expiry       = $self->date_expiry;
@@ -849,7 +941,13 @@ sub _check_is_intraday {
 
     # for contract that start at the open of day and expire at the close of day (include early close) should be treated as daily contract
     my $closing = $self->calendar->closing_on($self->date_expiry);
-    return 0 if $closing and $closing->is_same_as($self->date_expiry) and $contract_duration >= $self->effective_daily_trading_seconds;
+
+    # An intraday if the market is close on expiry
+    return 1 unless $closing;
+    my $calendar = $self->calendar;
+    # daily trading seconds based on the market's trading hour
+    my $daily_trading_seconds = $calendar->closing_on($date_expiry)->epoch - $calendar->opening_on($date_expiry)->epoch;
+    return 0 if $closing->is_same_as($self->date_expiry) and $contract_duration >= $daily_trading_seconds;
 
     return 1;
 }
@@ -901,8 +999,8 @@ sub _build__pricing_args {
     };
 
     if ($self->priced_with_intraday_model) {
-        $args->{long_term_prediction}      = $self->empirical_volsurface->long_term_prediction;
-        $args->{volatility_scaling_factor} = $self->empirical_volsurface->volatility_scaling_factor;
+        $args->{long_term_prediction}      = $self->long_term_prediction;
+        $args->{volatility_scaling_factor} = $self->volatility_scaling_factor;
         $args->{iv_with_news}              = $self->news_adjusted_pricing_vol;
     }
 
@@ -919,16 +1017,6 @@ sub _build_date_pricing {
         : $now;
 }
 
-# daily trading seconds based on the market's trading hour
-sub _build_effective_daily_trading_seconds {
-    my $self                  = shift;
-    my $date_expiry           = $self->date_expiry;
-    my $calendar              = $self->calendar;
-    my $daily_trading_seconds = $calendar->closing_on($date_expiry)->epoch - $calendar->opening_on($date_expiry)->epoch;
-
-    return $daily_trading_seconds;
-}
-
 sub _build_is_intraday {
     my $self = shift;
 
@@ -936,33 +1024,10 @@ sub _build_is_intraday {
 
 }
 
-sub _build_expiry_type {
-    my $self = shift;
-
-    return ($self->tick_expiry) ? 'tick' : ($self->expiry_daily) ? 'daily' : 'intraday';
-}
-
-sub _build_start_type {
-    my $self = shift;
-    return $self->is_forward_starting ? 'forward' : 'spot';
-}
-
-sub _build_translated_display_name {
-    my $self = shift;
-
-    return undef unless $self->display_name;
-    return localize($self->display_name);
-}
-
 sub _build_is_forward_starting {
     my $self = shift;
+
     return ($self->allow_forward_starting and $self->date_pricing->is_before($self->date_start)) ? 1 : 0;
-}
-
-sub _build_permitted_expiries {
-    my $self = shift;
-
-    return $self->offering_specifics->{permitted};
 }
 
 sub _build_basis_tick {
@@ -1017,63 +1082,13 @@ sub _build_current_spot {
     return $self->underlying->pipsized_value($spot->quote);
 }
 
-sub _build_entry_spot {
-    my $self = shift;
-
-    my $entry_tick = $self->entry_tick or return undef;
-    return $self->entry_tick->quote;
-}
-
 sub _build_current_tick {
     my $self = shift;
 
     return $self->underlying->spot_tick;
 }
 
-sub _build_timeinyears {
-    my $self = shift;
-
-    my $tiy = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'time_in_years',
-        description => 'Bet duration in years',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => 0,
-        minimum     => 0.000000001,
-    });
-
-    my $days_per_year = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'days_per_year',
-        description => 'We use a 365 day year.',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => 365,
-    });
-
-    $tiy->include_adjustment('add',    $self->timeindays);
-    $tiy->include_adjustment('divide', $days_per_year);
-
-    return $tiy;
-}
-
-sub _build_timeindays {
-    my $self = shift;
-
-    my $atid = $self->get_time_to_expiry({
-            from => $self->effective_start,
-        })->days;
-
-    my $tid = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'time_in_days',
-        description => 'Duration of this bet in days',
-        set_by      => 'BOM::Product::Contract',
-        minimum     => 0.000001,
-        maximum     => 730,
-        base_amount => $atid,
-    });
-
-    return $tid;
-}
-
-sub _build_opposite_contract {
+sub _build_opposite_contract_for_sale {
     my $self = shift;
 
     # Start by making a copy of the parameters we used to build this bet.
@@ -1110,6 +1125,59 @@ sub _build_opposite_contract {
     foreach my $vol_param (qw(volsurface fordom forqqq domqqq)) {
         $opp_parameters{$vol_param} = $self->$vol_param;
     }
+
+    # we still want to set for_sale for a forward_starting contracts
+    $opp_parameters{for_sale} = 1;
+    # delete traces of this contract were a forward starting contract before.
+    delete $opp_parameters{starts_as_forward_starting};
+    # duration could be set for an opposite contract from bad hash reference reused.
+    delete $opp_parameters{duration};
+
+    if (not $self->is_forward_starting) {
+        if ($self->entry_tick) {
+            foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
+                if (defined $self->$barrier) {
+                    $opp_parameters{$barrier} = $self->$barrier->as_absolute;
+                    $opp_parameters{'supplied_' . $barrier} = $self->$barrier->as_absolute;
+                }
+            }
+        }
+        # We should be looking to move forward in time to a bet starting now.
+        $opp_parameters{date_start}  = $self->date_pricing;
+        $opp_parameters{pricing_new} = 1;
+    }
+
+    my $opp_contract = $self->_produce_contract_ref->(\%opp_parameters);
+
+    if (my $role = $opp_parameters{role}) {
+        $role->require;
+        $role->meta->apply($opp_contract);
+    }
+
+    return $opp_contract;
+}
+
+sub _build_opposite_contract {
+    my $self = shift;
+
+    # Start by making a copy of the parameters we used to build this bet.
+    my %opp_parameters = %{$self->build_parameters};
+    # Always switch out the bet type for the other side.
+    $opp_parameters{'bet_type'} = $self->other_side_code;
+    # Don't set the shortcode, as it will change between these.
+    delete $opp_parameters{'shortcode'};
+    # Save a round trip.. copy market data
+    foreach my $vol_param (qw(volsurface fordom forqqq domqqq)) {
+        $opp_parameters{$vol_param} = $self->$vol_param;
+    }
+
+    # We have this concept in forward starting contract where a forward start contract is considered
+    # pricing_new until it has started. So it kind of messed up here.
+    $opp_parameters{current_tick} = $self->current_tick;
+    my @to_override = qw(r_rate q_rate discount_rate pricing_vol pricing_spot mu);
+    push @to_override, qw(volatility_scaling_factor long_term_prediction) if $self->priced_with_intraday_model;
+    $opp_parameters{$_} = $self->$_ for @to_override;
+    $opp_parameters{pricing_new} = 1;
 
     my $opp_contract = $self->_produce_contract_ref->(\%opp_parameters);
 
@@ -1278,20 +1346,6 @@ sub _build_pricing_spot {
     return $initial_spot;
 }
 
-sub _build_offering_specifics {
-    my $self = shift;
-
-    return get_contract_specifics(
-        BOM::Platform::Runtime->instance->get_offerings_config,
-        {
-            underlying_symbol => $self->underlying->symbol,
-            barrier_category  => $self->barrier_category,
-            expiry_type       => $self->expiry_type,
-            start_type        => $self->start_type,
-            contract_category => $self->category->code,
-        });
-}
-
 sub _build_barrier_category {
     my $self = shift;
 
@@ -1410,7 +1464,7 @@ sub _build_risk_profile {
     return BOM::Platform::RiskProfile->new(
         contract_category              => $self->category_code,
         expiry_type                    => $self->expiry_type,
-        start_type                     => $self->start_type,
+        start_type                     => ($self->is_forward_starting ? 'forward' : 'spot'),
         currency                       => $self->currency,
         barrier_category               => $self->barrier_category,
         symbol                         => $self->underlying->symbol,
@@ -1419,6 +1473,45 @@ sub _build_risk_profile {
         underlying_risk_profile        => $self->underlying->risk_profile,
         underlying_risk_profile_setter => $self->underlying->risk_profile_setter,
     );
+}
+
+=head2 extra_info
+
+get the extra pricing information of the contract. Is it necessary for Japan but let's do it for everyone.
+
+->extra_info('string'); # returns a string of information separated by underscore
+->extra_info('arrayref'); # returns an array reference of information
+
+=cut
+
+sub extra_info {
+    my ($self, $as_type) = @_;
+
+    die 'Supports \'string\' or \'arrayref\' type only' if (not($as_type eq 'string' or $as_type eq 'arrayref'));
+
+    # We have these keys save in data_collection.quants_bet_variables.
+    # Not going to change it for backward compatibility.
+    my %mapper = (
+        high_barrier_vol => 'iv',
+        low_barrier_vol  => 'iv_2',
+        pricing_vol      => 'iv',
+    );
+    my @extra = ([pricing_spot => $self->pricing_spot]);
+    if ($self->priced_with_intraday_model) {
+        push @extra,
+            (map { [($mapper{$_} // $_) => $self->$_] } qw(pricing_vol news_adjusted_pricing_vol long_term_prediction volatility_scaling_factor));
+    } elsif ($self->pricing_vol_for_two_barriers) {
+        push @extra, (map { [($mapper{$_} // $_) => $self->pricing_vol_for_two_barriers->{$_}] } qw(high_barrier_vol low_barrier_vol));
+    } else {
+        push @extra, [iv => $self->pricing_vol];
+    }
+
+    if ($as_type eq 'string') {
+        my $string = join '_', map { $_->[1] } @extra;
+        return $string;
+    }
+
+    return \@extra;
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.

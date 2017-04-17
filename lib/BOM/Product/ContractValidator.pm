@@ -58,9 +58,9 @@ sub is_valid_to_sell {
                     localize('Please wait for contract settlement. The final settlement price may differ from the indicative price.'),
         });
 
-    } elsif (not $self->is_expired and not $self->opposite_contract->is_valid_to_buy($args)) {
+    } elsif (not $self->is_expired and not $self->opposite_contract_for_sale->is_valid_to_buy($args)) {
         # Their errors are our errors, now!
-        $self->_add_error($self->opposite_contract->primary_validation_error);
+        $self->_add_error($self->opposite_contract_for_sale->primary_validation_error);
     }
 
     if (scalar @{$self->corporate_actions}) {
@@ -113,7 +113,7 @@ sub _validate_settlement_conditions {
     if ($self->tick_expiry) {
         if (not $self->exit_tick) {
             $message = 'exit tick undefined after 5 minutes of contract start';
-        } elsif ($self->exit_tick->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds) {
+        } elsif ($self->exit_tick->epoch - $self->date_start->epoch > $self->_max_tick_expiry_duration->seconds) {
             $message = 'no ticks within 5 minutes after contract start';
         }
     } else {
@@ -285,7 +285,7 @@ sub _validate_price {
 sub _validate_barrier_type {
     my $self = shift;
 
-    return if ($self->tick_expiry or $self->is_spread);
+    return if $self->tick_expiry;
 
     # The barrier for atm bet is always SOP which is relative
     return if ($self->is_atm_bet and defined $self->barrier and $self->barrier->barrier_type eq 'relative');
@@ -495,7 +495,7 @@ sub _validate_lifetime {
         };
     }
 
-    my $permitted = $self->permitted_expiries;
+    my $permitted = $self->_offering_specifics->{permitted};
     my ($min_duration, $max_duration) = @{$permitted}{'min', 'max'};
 
     my $message_to_client_array;
@@ -726,7 +726,7 @@ sub _build_date_start_blackouts {
         if ($self->is_intraday) {
             my $eod_blackout =
                 ($self->tick_expiry and ($underlying->resets_at_open or ($underlying->market->name eq 'forex' and $start->day_of_week == 5)))
-                ? $self->max_tick_expiry_duration
+                ? $self->_max_tick_expiry_duration
                 : $underlying->eod_blackout_start;
             push @periods, [$end_of_trading->minus_time_interval($eod_blackout)->epoch, $end_of_trading->epoch] if $eod_blackout;
         }
