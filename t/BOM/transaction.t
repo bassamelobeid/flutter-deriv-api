@@ -809,6 +809,7 @@ subtest 'max_open_bets validation', sub {
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
 
+        my $now = Date::Utility->new;
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'FLASHU',
@@ -825,7 +826,7 @@ subtest 'max_open_bets validation', sub {
             price         => 1.00,
             payout        => $contract->payout,
             amount_type   => 'stake',
-            purchase_date => Date::Utility->new(),
+            purchase_date => $now,
         });
 
         my $error = do {
@@ -838,7 +839,7 @@ subtest 'max_open_bets validation', sub {
                     price         => 1.00,
                     payout        => $contract->payout,
                     amount_type   => 'stake',
-                    purchase_date => Date::Utility->new(),
+                    purchase_date => $now,
                 })->buy, undef, '1st bet bought';
 
             is +BOM::Transaction->new({
@@ -847,7 +848,7 @@ subtest 'max_open_bets validation', sub {
                     price         => 1.00,
                     payout        => $contract->payout,
                     amount_type   => 'stake',
-                    purchase_date => Date::Utility->new(),
+                    purchase_date => $now,
                 })->buy, undef, '2nd bet bought';
 
             $txn->buy;
