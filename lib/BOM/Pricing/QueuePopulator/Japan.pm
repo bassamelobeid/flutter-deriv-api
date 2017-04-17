@@ -95,7 +95,11 @@ Process a single pricing interval.
 
 =cut
 
-sub process {
+# The 'no critic' line is to work around perlcritic complaints for
+# the bundle_by { [ @_ ] } construct. Assigning @_ to a separate
+# array is possible, but it complicates the already-length for() loop
+# expression.
+sub process {    ## no critic qw(Subroutines::RequireArgUnpacking)
     my ($self) = @_;
 
     my $start = Time::HiRes::time;
@@ -127,7 +131,7 @@ sub process {
             my %expired;
             $expired{ref($_) ? join(',', @$_) : $_} = 1 for @{$contract_parameters->{expired_barriers}};
             BARRIER:
-            for my $barriers (bundle_by { ; [@_] } BARRIERS_PER_BATCH, @{$contract_parameters->{available_barriers}}) {
+            for my $barriers (bundle_by { [@_] } BARRIERS_PER_BATCH, @{$contract_parameters->{available_barriers}}) {
                 my @barriers;
                 for my $bar (@$barriers) {
                     my ($barrier_desc) = map { ; ref($_) ? join(',', @$_) : $_ } $bar;
