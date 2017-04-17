@@ -981,11 +981,10 @@ subtest 'Purchase Sell Contract' => sub {
         client        => $client,
         contract      => $contract,
         price         => $contract->ask_price,
-        amount_type   => 'payout'
-        purchase_date => Date::Utility->new(),
+        amount_type   => 'payout',
+        purchase_date => Date::Utility->new($now->epoch - 1),
     });
 
-    $ENV{REQUEST_STARTTIME} = $now->epoch - 1;
     my $error = $bpt->buy;
     is($error, undef, 'Able to purchase the contract successfully');
 
