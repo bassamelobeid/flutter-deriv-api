@@ -1846,6 +1846,7 @@ subtest 'max_30day_losses validation', sub {
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
 
+        my $now = Date::Utility->new();
         my $contract_up = produce_contract({
             underlying   => $underlying,
             bet_type     => 'FLASHU',
@@ -1874,7 +1875,7 @@ subtest 'max_30day_losses validation', sub {
             price         => 5.20,
             payout        => $contract_up->payout,
             amount_type   => 'payout',
-            purchase_date => Date::Utility->new(),
+            purchase_date => $now,
         });
 
         my $error = do {
@@ -1896,7 +1897,7 @@ subtest 'max_30day_losses validation', sub {
                 price         => 5.20,
                 payout        => $contract_up->payout,
                 amount_type   => 'payout',
-                purchase_date => Date::Utility->new(),
+                purchase_date => $now,
             });
             is $t->buy, undef, 'FLASHU bet bought';
             $t = BOM::Transaction->new({
@@ -1913,7 +1914,7 @@ subtest 'max_30day_losses validation', sub {
                 price         => 5.20,
                 payout        => $contract_down->payout,
                 amount_type   => 'payout',
-                purchase_date => Date::Utility->new(),
+                purchase_date => $now,
             });
             is $t->buy, undef, 'FLASHD bet bought';
             $t = BOM::Transaction->new({
