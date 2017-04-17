@@ -267,5 +267,16 @@ sub _build_intradayfx_volsurface {
     );
 }
 
+has [qw(long_term_prediction)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_long_term_prediction {
+    my $self = shift;
+
+    return $self->intradayfx_volsurface->long_term_prediction;
+}
+
 1;
 
