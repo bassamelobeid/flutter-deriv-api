@@ -687,7 +687,7 @@ sub _build_risk_markup {
     }
     my $open_at_start = $bet->trading_calendar->is_open_at($bet->underlying->exchange, $bet->date_start);
 
-    if ($open_at_start and $bet->trading_calendar->is_in_quiet_period($bet->underlying->symbol, $bet->date_pricing)) {
+    if ($open_at_start and $bet->trading_calendar->is_in_quiet_period($bet->underlying, $bet->date_pricing)) {
         my $quiet_period_markup = Math::Util::CalculatedValue::Validatable->new({
             name        => 'quiet_period_markup',
             description => 'Intraday::Forex markup factor for underlyings in the quiet period',
