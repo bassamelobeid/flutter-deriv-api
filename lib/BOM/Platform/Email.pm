@@ -102,7 +102,7 @@ sub send_email {
         }
 
         try {
-            Email::Stuffer->from($fromemail)->to($email)->subject($subject)->html_body($message)->send;
+            Email::Stuffer->from($fromemail)->to($email)->subject($subject)->html_body($mail_message)->send;
             1;
         }
         catch {
