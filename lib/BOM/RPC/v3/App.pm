@@ -183,6 +183,7 @@ sub oauth_apps {
 
     my $oauth = BOM::Database::Model::OAuth->new;
     if ($params->{args} and $params->{args}->{revoke_app}) {
+        warn "Revoke called for " . $params->{args}->{revoke_app} . "\n";
         my $user = BOM::Platform::User->new({email => $client->email});
         foreach my $c1 ($user->clients) {
             $oauth->revoke_app($params->{args}->{revoke_app}, $c1->loginid);
