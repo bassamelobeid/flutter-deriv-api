@@ -663,7 +663,6 @@ subtest 'exactly sufficient balance: buy bet for 100 with balance of 100', sub {
         }
         is $acc_usd->balance + 0, 100, 'USD balance is now 100';
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'FLASHU',
@@ -707,7 +706,6 @@ subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_
         }
         is $acc_usd->balance + 0, 100, 'USD balance is now 100';
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'FLASHU',
@@ -760,7 +758,6 @@ subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_
         }
         is $acc_usd->balance + 0, 100, 'USD balance is now 100';
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'FLASHU',
@@ -812,7 +809,6 @@ subtest 'max_open_bets validation', sub {
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'FLASHU',
@@ -884,7 +880,6 @@ subtest 'max_open_bets validation: selling bets on the way', sub {
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'FLASHU',
@@ -974,7 +969,6 @@ subtest 'max_payout_open_bets validation', sub {
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'FLASHU',
@@ -1161,7 +1155,6 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'FLASHU',
@@ -1410,7 +1403,6 @@ subtest 'max_7day_turnover validation', sub {
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract_up = produce_contract({
             underlying   => $underlying,
             bet_type     => 'FLASHU',
@@ -1505,7 +1497,6 @@ subtest 'max_30day_turnover validation', sub {
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract_up = produce_contract({
             underlying   => $underlying,
             bet_type     => 'FLASHU',
@@ -1599,7 +1590,6 @@ subtest 'max_losses validation', sub {
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract_up = produce_contract({
             underlying   => $underlying,
             bet_type     => 'FLASHU',
@@ -1727,7 +1717,6 @@ subtest 'max_7day_losses validation', sub {
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract_up = produce_contract({
             underlying   => $underlying,
             bet_type     => 'FLASHU',
@@ -1855,7 +1844,6 @@ subtest 'max_30day_losses validation', sub {
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract_up = produce_contract({
             underlying   => $underlying,
             bet_type     => 'FLASHU',
