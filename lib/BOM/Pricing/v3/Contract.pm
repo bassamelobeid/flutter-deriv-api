@@ -261,12 +261,13 @@ sub handle_batch_contract {
         }
         BARRIER:
         for my $contracts (values %contracts_to_log) {
-            if(@$contracts == 2) {
+            if (@$contracts == 2) {
                 # For each contract, we pass the opposite contract to the logging function
                 warn $contracts->[0]->japan_pricing_info($trading_window_start, $contracts->[1]);
                 warn $contracts->[1]->japan_pricing_info($trading_window_start, $contracts->[0]);
             } else {
-                warn "Had unexpected number of contracts for ->japan_pricing_info calls - types are " . join ',', map { $_->contract_type } @$contracts;
+                warn "Had unexpected number of contracts for ->japan_pricing_info calls - types are " . join ',',
+                    map { $_->contract_type } @$contracts;
             }
         }
     }
