@@ -168,9 +168,9 @@ has execute_at_better_price => (
 
 # calling server should capture time of request
 has purchase_date => (
-    is         => 'rw',
-    isa        => 'date_object',
-    coerce     => 1,
+    is     => 'rw',
+    isa    => 'date_object',
+    coerce => 1,
 );
 
 has contract_class => (
