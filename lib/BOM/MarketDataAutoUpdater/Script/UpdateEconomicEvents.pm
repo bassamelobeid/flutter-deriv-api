@@ -73,6 +73,8 @@ sub script_run {
             });
         }
 
+        BOM::Platform::Chronicle::get_chronicle_writer()->set('seasonality', 'economic_events_updated', {ts => time}, Date::Utility->new(), 0);
+
         print "generated economic events impact curves for " . scalar(@underlying_symbols) . " underlying symbols.";
 
     }
