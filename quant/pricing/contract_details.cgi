@@ -56,27 +56,6 @@ if ($cgi->param('upload_file')) {
         load_template($cgi->param('broker'), $pricing_parameters);
 
     }
-} elsif ($cgi->param('manual_verify_with_shortcode')) {
-    my $args;
-    $args->{landing_company} = $landing_company;
-    $args->{shortcode}       = $cgi->param('short_code');
-    $args->{ask_price}       = $cgi->param('price');
-    $args->{currency}        = $cgi->param('currency');
-    $args->{start_time}      = $cgi->param('start');
-    $args->{action_type}     = $cgi->param('action_type');
-    my $pricing_parameters = BOM::JapanContractDetails::verify_with_shortcode($args);
-    $pricing_parameters = BOM::JapanContractDetails::include_contract_details(
-        $pricing_parameters,
-        {
-            order_type  => $cgi->param('action_type'),
-            order_price => $cgi->param('price')});
-
-    if ($cgi->param('download') eq 'download') {
-        BOM::JapanContractDetails::single_output_as_excel($pricing_parameters, $cgi->param('short_code') . '.xlsx');
-    } else {
-        load_template($cgi->param('broker'), $pricing_parameters);
-
-    }
 } elsif ($params{'load_template'}) {
 
     load_template($params{broker});
