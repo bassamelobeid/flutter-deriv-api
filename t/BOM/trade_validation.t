@@ -563,11 +563,11 @@ subtest 'BUY - trade pricing adjustment' => sub {
         # sale back slippage check
         $requested_price = $contract->bid_price + ($allowed_move * $contract->payout + 0.1);
         $transaction = BOM::Transaction->new({
-            client        => $client,
-            contract      => $contract,
-            action        => 'SELL',
-            price         => $requested_price,
-            amount_type   => 'payout',
+            client      => $client,
+            contract    => $contract,
+            action      => 'SELL',
+            price       => $requested_price,
+            amount_type => 'payout',
         });
         $error = $transaction->_validate_sell_pricing_adjustment;
         is($error->get_type, 'PriceMoved', 'Price move too much opposite favour of client');
