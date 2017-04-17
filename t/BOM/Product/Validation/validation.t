@@ -472,43 +472,35 @@ subtest 'volsurfaces become old and invalid' => sub {
     my $expected_reasons = [qr/volsurface too old/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'volsurface_delta',
-        {
-            symbol        => $underlying->symbol,
-            recorded_date => Date::Utility->new($starting)->minus_time_interval('2h'),
-        });
-
     $bet_params->{date_start}   = $oft_used_date->epoch;
     $bet_params->{date_pricing} = $oft_used_date->epoch;
     $bet                        = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but when we are close in time, validates just fine.');
 
     $starting = $oft_used_date->epoch + 5 * 3600 + 600;    # Intradays are even more sensitive.
-
+    $starting += 4*86400;
+    $tick = Postgres::FeedDB::Spot::Tick->new({
+        symbol => 'frxAUDUSD',
+        epoch  => $starting,
+        quote  => 100
+    });
     $bet_params = {
         underlying   => $underlying,
         bet_type     => 'CALL',
         currency     => 'USD',
         payout       => 100,
         date_start   => $starting,
-        date_pricing => $starting - 450,
-        duration     => '30m',
+        date_pricing => $starting,
+        duration     => '2m',
         barrier      => 'S0P',
         current_tick => $tick,
     };
-
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'volsurface_delta',
-        {
-            symbol        => $underlying->symbol,
-            recorded_date => Date::Utility->new($starting)->minus_time_interval('2d'),
-        });
 
     $bet              = produce_contract($bet_params);
     $expected_reasons = [qr/volsurface too old/];
     test_error_list('buy', $bet, $expected_reasons);
 
+    $bet_params->{duration} = '1d';
     $bet = produce_contract($bet_params);
     ok($bet->volsurface->validation_error('fake broken surface'), 'Set broken surface');
     my $vol;
