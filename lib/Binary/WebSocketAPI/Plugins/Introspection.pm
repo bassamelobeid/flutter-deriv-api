@@ -18,7 +18,6 @@ use Scalar::Util qw(blessed);
 use Variable::Disposition qw(retain_future);
 use Socket qw(:crlf);
 use Proc::ProcessTable;
-use Data::Dumper;
 use feature 'state';
 
 # How many seconds to allow per command - anything that takes more than a few milliseconds
@@ -71,8 +70,7 @@ sub start_server {
                                 Future->wait_any($rslt, Future::Mojo->new_timer(MAX_REQUEST_SECONDS)->then(sub { Future->fail('Timeout') }),)->then(
                                     sub {
                                         my ($resp) = @_;
-                                        #my $output = encode_json($resp);
-                                        my $output = Dumper($resp);
+                                        my $output = encode_json($resp);
                                         warn "$command (@args) - $output\n" if $write_to_log;
                                         $stream->write("OK - $output$CRLF");
                                         Future->done;
@@ -223,7 +221,6 @@ command connections => sub {
     Future->done({
             connections => [
                 map {
-                    ;
                     +{
                         app_id                         => $_->stash->{source},
                         landing_company                => $_->landing_company_name,
@@ -283,11 +280,11 @@ command stats => sub {
     state $pt = Proc::ProcessTable->new;
     my $me = (grep { $_->pid == $$ } @{$pt->table})[0];
     Future->done({
-        cumulative_client_connections => $app->stat->{cumulative_client_connections},
-        current_redis_connections     => $app->stat->{current_redis_connections},
-        uptime                        => time - $^T,
-        rss                           => $me->rss,
-    });
+            cumulative_client_connections => $app->stat->{cumulative_client_connections},
+            current_redis_connections     => $app->stat->{current_redis_connections},
+            uptime                        => time - $^T,
+            rss                           => $me->rss,
+            cumulative_redis_errors       => $app->stat->{redis_errors}});
 };
 
 =head2 dumpmem

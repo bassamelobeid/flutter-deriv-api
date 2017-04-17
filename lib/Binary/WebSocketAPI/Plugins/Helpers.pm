@@ -26,7 +26,8 @@ sub register {
     # Weakrefs to active $c instances
     $app->helper(
         active_connections => sub {
-            state $connections = {};
+            my $app = shift->app;
+            return $app->{_binary_connections} //= {};
         });
 
     # for storing various statistic data
@@ -105,12 +106,15 @@ sub register {
 
     my @redises = ([ws_redis_master => $redis_url->($ws_redis_cfg->{write})], [ws_redis_slave => $redis_url->($ws_redis_cfg->{read})],);
 
-    Scalar::Util::weaken(my $weak_app = $app);
     my $redis_connections_counter_sub = sub {
         my ($redis, $info) = @_;
-        $weak_app->stat->{current_redis_connections}++;
-        $redis->{connections}{$info->{id}}{counter_guard} =
-            guard { $weak_app->stat->{current_redis_connections}-- unless ${^GLOBAL_PHASE} eq 'DESTRUCT' };
+        $app->stat->{current_redis_connections}++;
+    };
+    my $redis_on_error_sub = sub {
+        my ($redis, $err) = @_;
+        $app->log->warn("redis error: $err");
+        $app->stat->{current_redis_connections}-- if $err eq 'Connection refused';
+        $app->stat->{redis_errors}++;
     };
 
     for my $redis_info (@redises) {
@@ -120,11 +124,7 @@ sub register {
                 state $redis = do {
                     my $redis = Mojo::Redis2->new(url => $redis_url);
                     $redis->on(connection => $redis_connections_counter_sub);
-                    $redis->on(
-                        error => sub {
-                            my ($self, $err) = @_;
-                            $app->log->warn("redis error: $err");
-                        });
+                    $redis->on(error      => $redis_on_error_sub);
                     $redis;
                 };
                 return $redis;
@@ -138,11 +138,7 @@ sub register {
             state $redis = do {
                 my $redis = Mojo::Redis2->new(url => $chronicle_redis_url);
                 $redis->on(connection => $redis_connections_counter_sub);
-                $redis->on(
-                    error => sub {
-                        my ($self, $err) = @_;
-                        $app->log->warn("redis error: $err");
-                    });
+                $redis->on(error      => $redis_on_error_sub);
                 $redis->on(
                     message => sub {
                         my ($self, $msg, $channel) = @_;
@@ -172,11 +168,7 @@ sub register {
             if (not $c->stash->{redis}) {
                 my $redis = Mojo::Redis2->new(url => $chronicle_redis_url);
                 $redis->on(connection => $redis_connections_counter_sub);
-                $redis->on(
-                    error => sub {
-                        my ($self, $err) = @_;
-                        warn("error: $err");
-                    });
+                $redis->on(error      => $redis_on_error_sub);
                 $redis->on(
                     message => sub {
                         my ($self, $msg, $channel) = @_;
@@ -203,11 +195,7 @@ sub register {
 
                 my $redis_pricer = Mojo::Redis2->new(url => $url_pricers);
                 $redis_pricer->on(connection => $redis_connections_counter_sub);
-                $redis_pricer->on(
-                    error => sub {
-                        my ($self, $err) = @_;
-                        warn("error: $err");
-                    });
+                $redis_pricer->on(error      => $redis_on_error_sub);
                 $redis_pricer->on(
                     message => sub {
                         my ($self, $msg, $channel) = @_;

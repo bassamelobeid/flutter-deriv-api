@@ -10,6 +10,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Fcntl qw/ :flock /;
 use Mojo::IOLoop;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
+use Data::Dumper;
 
 sub start_timing {
     my ($c, $req_storage) = @_;
@@ -331,19 +332,22 @@ sub on_client_disconnect {
 
 sub introspection_before_forward {
     my ($c, $req_storage) = @_;
-    $c->stash->{introspection}{last_call_received} = $req_storage->{origin_args};
+    my %args_copy = %{$req_storage->{origin_args}};
+    $c->stash->{introspection}{last_call_received} = \%args_copy;
+
     $c->stash->{introspection}{msg_type}{received}{$req_storage->{method}}++;
     use bytes;
-    $c->stash->{introspection}{received_bytes} += bytes::length($req_storage->{origin_args});
+    $c->stash->{introspection}{received_bytes} += bytes::length(Dumper($req_storage->{origin_args}));
     return;
 }
 
 sub introspection_before_send_response {
     my ($c, $req_storage, $api_response) = @_;
-    $c->stash->{introspection}{last_message_sent} = $api_response;
+    my %copy = %{$api_response};
+    $c->stash->{introspection}{last_message_sent} = \%copy;
     $c->stash->{introspection}{msg_type}{sent}{$api_response->{msg_type}}++;
     use bytes;
-    $c->stash->{introspection}{sent_bytes} += bytes::length($api_response);
+    $c->stash->{introspection}{sent_bytes} += bytes::length(Dumper($api_response));
     return;
 }
 
