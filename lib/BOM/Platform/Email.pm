@@ -30,9 +30,9 @@ sub send_email {
     # This is no longer used, since the MIME type on the attachment is autodetected
     # ($ctype is slightly confusing as a variable name - it applied only to the
     # attachment, not any of the other MIME parts...)
-    my $ctype              = $args_ref->{'att_type'} // 'text/plain';
-    my $skip_text2html     = $args_ref->{'skip_text2html'};
-    my $template_loginid   = $args_ref->{template_loginid};
+    my $ctype            = $args_ref->{'att_type'} // 'text/plain';
+    my $skip_text2html   = $args_ref->{'skip_text2html'};
+    my $template_loginid = $args_ref->{template_loginid};
 
     my $request = request();
     my $language = $request ? $request->language : 'EN';
@@ -80,14 +80,8 @@ sub send_email {
 
     if ($attachment) {
         try {
-            Email::Stuffer
-                ->from($fromemail)
-                ->to($email)
-                ->subject($subject)
-                ->text_body($message)
-                ->attach_file($attachment)
-                ->send;
-            1
+            Email::Stuffer->from($fromemail)->to($email)->subject($subject)->text_body($message)->attach_file($attachment)->send;
+            1;
         }
         catch {
             warn("Error sending mail: ", $_) unless $ENV{BOM_SUPPRESS_WARNINGS};
@@ -122,13 +116,8 @@ sub send_email {
         }
 
         try {
-            Email::Stuffer
-                ->from($fromemail)
-                ->to($email)
-                ->subject($subject)
-                ->html_body($message)
-                ->send;
-            1
+            Email::Stuffer->from($fromemail)->to($email)->subject($subject)->html_body($message)->send;
+            1;
         }
         catch {
             warn("Error sending mail [$subject]: ", $_) unless $ENV{BOM_SUPPRESS_WARNINGS};
