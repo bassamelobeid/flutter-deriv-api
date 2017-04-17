@@ -27,8 +27,8 @@ sub send_email {
     my @message            = @{$args_ref->{'message'}};
     my $use_email_template = $args_ref->{'use_email_template'};
     my $attachment         = $args_ref->{'attachment'};
-    my $skip_text2html   = $args_ref->{'skip_text2html'};
-    my $template_loginid = $args_ref->{template_loginid};
+    my $skip_text2html     = $args_ref->{'skip_text2html'};
+    my $template_loginid   = $args_ref->{template_loginid};
 
     my $request = request();
     my $language = $request ? $request->language : 'EN';
