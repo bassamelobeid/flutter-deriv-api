@@ -281,5 +281,23 @@ sub _build_ticks_for_volatility_calculation {
 
     return $ticks;
 }
+
+has [qw(volatility_scaling_factor long_term_prediction)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_long_term_prediction {
+    my $self = shift;
+
+    return $self->empirical_volsurface->long_term_prediction;
+}
+
+sub _build_volatility_scaling_factor {
+    my $self = shift;
+
+    return $self->empirical_volsurface->volatility_scaling_factor;
+}
+
 1;
 
