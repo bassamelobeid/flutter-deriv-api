@@ -7,6 +7,7 @@ no indirect;
 use Try::Tiny;
 use Format::Util::Numbers qw(roundnear);
 use Binary::WebSocketAPI::v3::Wrapper::System;
+use Binary::WebSocketAPI::v3::PricingSubscription;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use Time::HiRes qw(gettimeofday tv_interval);
@@ -18,7 +19,6 @@ use Price::Calculator;
 use Clone::PP qw(clone);
 use List::UtilsBy qw(bundle_by);
 use List::Util qw(min);
-use Data::Dumper;
 
 use Future::Mojo          ();
 use Future::Utils         ();
@@ -442,16 +442,18 @@ sub _process_proposal_open_contract_response {
 }
 
 sub _serialized_args {
-    my $h    = shift;
-    my $copy = {%$h};
-    my @a    = ();
+    my $copy = {%{+shift}};
+    my @arr  = ();
+
+    delete @{$copy}{qw(language req_id)};
+
     # We want to handle similar contracts together, so we do this and sort by
     # key in the price_queue.pl daemon
-    push @a, ('short_code', delete $copy->{short_code}) if exists $copy->{short_code};
+    push @arr, ('short_code', delete $copy->{short_code}) if exists $copy->{short_code};
     foreach my $k (sort keys %$copy) {
-        push @a, ($k, $copy->{$k});
+        push @arr, ($k, $copy->{$k});
     }
-    return 'PRICER_KEYS::' . encode_json(\@a);
+    return 'PRICER_KEYS::' . encode_json(\@arr);
 }
 
 sub _pricing_channel_for_ask {
@@ -503,7 +505,6 @@ sub _pricing_channel_for_bid {
 
 sub _create_pricer_channel {
     my ($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip_redis_subscr) = @_;
-
     my $pricing_channel = $c->stash('pricing_channel') || {};
 
     # already subscribed
@@ -522,8 +523,8 @@ sub _create_pricer_channel {
         and not exists $pricing_channel->{$redis_channel}
         and not $skip_redis_subscr)
     {
-        $c->redis_pricer->set($redis_channel, 1);
-        $c->stash('redis_pricer')->subscribe([$redis_channel], sub { });
+        $pricing_channel->{$redis_channel}{subscription} =
+            $c->pricing_subscriptions($redis_channel)->subscribe($c);
     }
 
     $pricing_channel->{$redis_channel}->{$subchannel}->{uuid}          = $uuid;
@@ -564,6 +565,7 @@ sub process_bid_event {
     my $type = 'proposal_open_contract';
 
     for my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
+        next if ref $stash_data ne 'HASH';
         my $results;
         unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data)) {
             my $passed_fields = $stash_data->{cache};
@@ -612,6 +614,7 @@ sub process_proposal_array_event {
     }
 
     foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
+        next if ref $stash_data ne 'HASH';
         $stash_data->{cache}{contract_parameters}{currency} ||= $stash_data->{args}{currency};
         my %proposals;
         for my $contract_type (keys %{$response->{proposals}}) {
@@ -677,8 +680,8 @@ sub process_ask_event {
 
     my $theo_probability = delete $response->{theo_probability};
     foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
+        next if ref $stash_data ne 'HASH';
         my $results;
-
         unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
             $stash_data->{cache}->{contract_parameters}->{longcode} = $stash_data->{cache}->{longcode};
             my $adjusted_results =
