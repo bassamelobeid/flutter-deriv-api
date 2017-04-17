@@ -8,6 +8,8 @@ use BOM::RPC::v3::Utility;
 use BOM::Platform::Context qw (localize);
 use BOM::Database::Model::OAuth;
 
+use DataDog::DogStatsd::Helper;
+
 sub register {
     my $params = shift;
 
@@ -182,11 +184,20 @@ sub oauth_apps {
     my $client = $params->{client};
 
     my $oauth = BOM::Database::Model::OAuth->new;
-    if ($params->{args} and $params->{args}->{revoke_app}) {
-        warn "Revoke called for " . $params->{args}->{revoke_app} . "\n";
+    if ($params->{args} and my $app_id = $params->{args}->{revoke_app}) {
+        # Sanity check before putting user data into log messages and datadog
+        if ($app_id !~ /^(?!0)[0-9]{1,19}$/) {
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidAppID',
+                message_to_client => localize('Your app_id is invalid.'),
+            });
+        }
+
+        DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.app.revoke.count', {tags => ["app_id:$app_id"]});
         my $user = BOM::Platform::User->new({email => $client->email});
-        foreach my $c1 ($user->clients) {
-            $oauth->revoke_app($params->{args}->{revoke_app}, $c1->loginid);
+        foreach my $client ($user->clients) {
+            warn "Revoke called for app_id " . $app_id . " on " . $client->loginid . "\n";
+            $oauth->revoke_app($app_id, $client->loginid);
         }
     }
 
