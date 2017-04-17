@@ -676,11 +676,12 @@ subtest 'exactly sufficient balance: buy bet for 100 with balance of 100', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 100.00,
-            payout      => $contract->payout,
-            amount_type => 'stake',
+            client        => $cl,
+            contract      => $contract,
+            price         => 100.00,
+            payout        => $contract->payout,
+            amount_type   => 'stake',
+            purchase_date => Date::Utility->new(),
         });
         my $error = $txn->buy;
         is $error, undef, 'no error';
@@ -719,11 +720,12 @@ subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 100.00,
-            payout      => $contract->payout,
-            amount_type => 'stake',
+            client        => $cl,
+            contract      => $contract,
+            price         => 100.00,
+            payout        => $contract->payout,
+            amount_type   => 'stake',
+            purchase_date => Date::Utility->new(),
         });
 
         my $error = do {
@@ -771,11 +773,12 @@ subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 100.00,
-            payout      => $contract->payout,
-            amount_type => 'stake',
+            client        => $cl,
+            contract      => $contract,
+            price         => 100.00,
+            payout        => $contract->payout,
+            amount_type   => 'stake',
+            purchase_date => Date::Utility->new(),
         });
 
         my $error = do {
@@ -822,11 +825,12 @@ subtest 'max_open_bets validation', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 1.00,
-            payout      => $contract->payout,
-            amount_type => 'stake',
+            client        => $cl,
+            contract      => $contract,
+            price         => 1.00,
+            payout        => $contract->payout,
+            amount_type   => 'stake',
+            purchase_date => Date::Utility->new(),
         });
 
         my $error = do {
@@ -834,19 +838,21 @@ subtest 'max_open_bets validation', sub {
             $mock_client->mock(get_limit_for_open_positions => sub { note "mocked Client->get_limit_for_open_positions returning 2"; 2 });
 
             is +BOM::Transaction->new({
-                    client      => $cl,
-                    contract    => $contract,
-                    price       => 1.00,
-                    payout      => $contract->payout,
-                    amount_type => 'stake',
+                    client        => $cl,
+                    contract      => $contract,
+                    price         => 1.00,
+                    payout        => $contract->payout,
+                    amount_type   => 'stake',
+                    purchase_date => Date::Utility->new(),
                 })->buy, undef, '1st bet bought';
 
             is +BOM::Transaction->new({
-                    client      => $cl,
-                    contract    => $contract,
-                    price       => 1.00,
-                    payout      => $contract->payout,
-                    amount_type => 'stake',
+                    client        => $cl,
+                    contract      => $contract,
+                    price         => 1.00,
+                    payout        => $contract->payout,
+                    amount_type   => 'stake',
+                    purchase_date => Date::Utility->new(),
                 })->buy, undef, '2nd bet bought';
 
             $txn->buy;
@@ -891,11 +897,12 @@ subtest 'max_open_bets validation: selling bets on the way', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 1.00,
-            payout      => $contract->payout,
-            amount_type => 'stake',
+            client        => $cl,
+            contract      => $contract,
+            price         => 1.00,
+            payout        => $contract->payout,
+            amount_type   => 'stake',
+            purchase_date => Date::Utility->new(),
         });
 
         my $txn_id_buy_expired_contract;
@@ -904,11 +911,12 @@ subtest 'max_open_bets validation: selling bets on the way', sub {
             $mock_client->mock(get_limit_for_open_positions => sub { note "mocked Client->get_limit_for_open_positions returning 2"; 2 });
 
             is +BOM::Transaction->new({
-                    client      => $cl,
-                    contract    => $contract,
-                    price       => 1.00,
-                    payout      => $contract->payout,
-                    amount_type => 'stake',
+                    client        => $cl,
+                    contract      => $contract,
+                    price         => 1.00,
+                    payout        => $contract->payout,
+                    amount_type   => 'stake',
+                    purchase_date => Date::Utility->new(),
                 })->buy, undef, '1st bet bought';
 
             my $contract_expired = produce_contract({
@@ -979,11 +987,12 @@ subtest 'max_payout_open_bets validation', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 5.20,
-            payout      => $contract->payout,
-            amount_type => 'payout',
+            client        => $cl,
+            contract      => $contract,
+            price         => 5.20,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            purchase_date => Date::Utility->new(),
         });
 
         my $error = do {
@@ -991,19 +1000,21 @@ subtest 'max_payout_open_bets validation', sub {
             $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 29.99"; 29.99 });
 
             is +BOM::Transaction->new({
-                    client      => $cl,
-                    contract    => $contract,
-                    price       => 5.20,
-                    payout      => $contract->payout,
-                    amount_type => 'payout',
+                    client        => $cl,
+                    contract      => $contract,
+                    price         => 5.20,
+                    payout        => $contract->payout,
+                    amount_type   => 'payout',
+                    purchase_date => Date::Utility->new(),
                 })->buy, undef, '1st bet bought';
 
             is +BOM::Transaction->new({
-                    client      => $cl,
-                    contract    => $contract,
-                    price       => 5.20,
-                    payout      => $contract->payout,
-                    amount_type => 'payout',
+                    client        => $cl,
+                    contract      => $contract,
+                    price         => 5.20,
+                    payout        => $contract->payout,
+                    amount_type   => 'payout',
+                    purchase_date => Date::Utility->new(),
                 })->buy, undef, '2nd bet bought';
 
             $txn->buy;
@@ -1139,93 +1150,6 @@ subtest 'max_payout_open_bets validation', sub {
     restore_time();
 };
 
-subtest 'max_payout_open_bets validation: selling bets on the way', sub {
-    plan tests => 8;
-    lives_ok {
-        my $cl = create_client;
-
-        top_up $cl, 'USD', 100;
-
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
-
-        my $bal;
-        is + ($bal = $acc_usd->balance + 0), 100, 'free_gift USD balance is 100 got: ' . $bal;
-
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
-        my $contract = produce_contract({
-            underlying   => $underlying,
-            bet_type     => 'FLASHU',
-            currency     => 'USD',
-            payout       => 10.00,
-            duration     => '15m',
-            current_tick => $tick,
-            barrier      => 'S0P',
-        });
-
-        my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 5.20,
-            payout      => $contract->payout,
-            amount_type => 'payout',
-        });
-
-        my $txn_id_buy_expired_contract;
-        my $error = do {
-            my $mock_client = Test::MockModule->new('Client::Account');
-            $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 29.99"; 29.99 });
-
-            is +BOM::Transaction->new({
-                    client      => $cl,
-                    contract    => $contract,
-                    price       => 5.20,
-                    payout      => $contract->payout,
-                    amount_type => 'payout',
-                })->buy, undef, '1st bet bought';
-
-            my $contract_expired = produce_contract({
-                underlying   => $underlying,
-                bet_type     => 'FLASHU',
-                currency     => 'USD',
-                payout       => 10.00,
-                date_start   => $now->epoch - 100,
-                date_expiry  => $now->epoch - 50,
-                current_tick => $tick,
-                entry_tick   => $old_tick1,
-                exit_tick    => $old_tick2,
-                barrier      => 'S0P',
-            });
-
-            my $exp_txn = BOM::Transaction->new({
-                client        => $cl,
-                contract      => $contract_expired,
-                price         => 5.20,
-                payout        => $contract->payout,
-                amount_type   => 'payout',
-                purchase_date => $now->epoch - 101,
-            });
-
-            is $exp_txn->buy(skip_validation => 1), undef, '2nd, expired bet bought';
-
-            # Now we have 2 open bets. The net payout of them is 20.
-            # One of them is expired.
-            # Hence, the buy should succeed selling the expired bet.
-
-            $txn_id_buy_expired_contract = $exp_txn->transaction_id;
-            ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn_id_buy_expired_contract;
-            is $fmb->{is_sold}, 0, 'have expired but unsold contract in DB';
-
-            $txn->buy;
-        };
-
-        is $error->get_type, 'OpenPositionPayoutLimit', 'error is OpenPositionPayoutLimit';
-
-        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn_id_buy_expired_contract;
-        is $fmb->{is_sold}, 0, 'have expired but unsold contract in DB';
-    }
-    'survived';
-};
-
 subtest 'max_payout_per_symbol_and_bet_type validation', sub {
     plan tests => 12;
     lives_ok {
@@ -1250,11 +1174,12 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 5.20,
-            payout      => $contract->payout,
-            amount_type => 'payout',
+            client        => $cl,
+            contract      => $contract,
+            price         => 5.20,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            purchase_date => Date::Utility->new(),
         });
 
         my $error = do {
@@ -1265,19 +1190,21 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
             local BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
 
             is +BOM::Transaction->new({
-                    client      => $cl,
-                    contract    => $contract,
-                    price       => 5.20,
-                    payout      => $contract->payout,
-                    amount_type => 'payout',
+                    client        => $cl,
+                    contract      => $contract,
+                    price         => 5.20,
+                    payout        => $contract->payout,
+                    amount_type   => 'payout',
+                    purchase_date => Date::Utility->new(),
                 })->buy, undef, '1st bet bought';
 
             is +BOM::Transaction->new({
-                    client      => $cl,
-                    contract    => $contract,
-                    price       => 5.20,
-                    payout      => $contract->payout,
-                    amount_type => 'payout',
+                    client        => $cl,
+                    contract      => $contract,
+                    price         => 5.20,
+                    payout        => $contract->payout,
+                    amount_type   => 'payout',
+                    purchase_date => Date::Utility->new(),
                 })->buy, undef, '2nd bet bought';
 
             $txn->buy;
@@ -1309,104 +1236,18 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
             });
 
             is +BOM::Transaction->new({
-                    client      => $cl,
-                    contract    => $contract_r100,
-                    price       => 5.20,
-                    payout      => $contract_r100->payout,
-                    amount_type => 'payout',
+                    client        => $cl,
+                    contract      => $contract_r100,
+                    price         => 5.20,
+                    payout        => $contract_r100->payout,
+                    amount_type   => 'payout',
+                    purchase_date => Date::Utility->new(),
                 })->buy, undef, 'R_100 contract bought -- should not interfere R_50 trading';
 
             $txn->buy;
         };
 
         is $error, undef, 'no error';
-    }
-    'survived';
-};
-
-subtest 'max_payout_per_symbol_and_bet_type validation: selling bets on the way', sub {
-    plan tests => 8;
-    lives_ok {
-        my $cl = create_client;
-
-        top_up $cl, 'USD', 100;
-
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
-
-        my $bal;
-        is + ($bal = $acc_usd->balance + 0), 100, 'free_gift USD balance is 100 got: ' . $bal;
-
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
-        my $contract = produce_contract({
-            underlying   => $underlying,
-            bet_type     => 'FLASHU',
-            currency     => 'USD',
-            payout       => 10.00,
-            duration     => '15m',
-            current_tick => $tick,
-            barrier      => 'S0P',
-        });
-
-        my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 5.20,
-            payout      => $contract->payout,
-            amount_type => 'payout',
-        });
-
-        my $txn_id_buy_expired_contract;
-        my $error = do {
-            note "change quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} to 29.99";
-            local BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
-
-            is +BOM::Transaction->new({
-                    client      => $cl,
-                    contract    => $contract,
-                    price       => 5.20,
-                    payout      => $contract->payout,
-                    amount_type => 'payout',
-                })->buy, undef, '1st bet bought';
-
-            my $contract_expired = produce_contract({
-                underlying   => $underlying,
-                bet_type     => 'FLASHU',
-                currency     => 'USD',
-                payout       => 10.00,
-                date_start   => $now->epoch - 100,
-                date_expiry  => $now->epoch - 50,
-                current_tick => $tick,
-                entry_tick   => $old_tick1,
-                exit_tick    => $old_tick2,
-                barrier      => 'S0P',
-            });
-
-            my $exp_txn = BOM::Transaction->new({
-                client        => $cl,
-                contract      => $contract_expired,
-                price         => 5.20,
-                payout        => $contract->payout,
-                amount_type   => 'payout',
-                purchase_date => $now->epoch - 101,
-            });
-
-            is $exp_txn->buy(skip_validation => 1), undef, '2nd, expired bet bought';
-
-            # Now we have 2 open bets. The net payout of them is 20.
-            # One of them is expired.
-            # Hence, the buy should succeed selling the expired bet.
-
-            $txn_id_buy_expired_contract = $exp_txn->transaction_id;
-            ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn_id_buy_expired_contract;
-            is $fmb->{is_sold}, 0, 'have expired but unsold contract in DB';
-
-            $txn->buy;
-        };
-
-        is $error->get_type, 'PotentialPayoutLimitForSameContractExceeded', 'error is PotentialPayoutLimitForSameContractExceeded';
-
-        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn_id_buy_expired_contract;
-        is $fmb->{is_sold}, 0, 'have expired but unsold contract in DB';
     }
     'survived';
 };
@@ -1423,7 +1264,6 @@ subtest 'max_turnover validation', sub {
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract_up = produce_contract({
             underlying   => $underlying,
             bet_type     => 'FLASHU',
@@ -1445,11 +1285,12 @@ subtest 'max_turnover validation', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract_up,
-            price       => 5.20,
-            payout      => $contract_up->payout,
-            amount_type => 'payout',
+            client        => $cl,
+            contract      => $contract_up,
+            price         => 5.20,
+            payout        => $contract_up->payout,
+            amount_type   => 'payout',
+            purchase_date => Date::Utility->new(),
         });
 
         my $error = do {
@@ -1459,19 +1300,21 @@ subtest 'max_turnover validation', sub {
             $mock_client->mock(client_fully_authenticated => sub { note "mocked Client->client_fully_authenticated returning false"; undef });
 
             is +BOM::Transaction->new({
-                    client      => $cl,
-                    contract    => $contract_up,
-                    price       => 5.20,
-                    payout      => $contract_up->payout,
-                    amount_type => 'payout',
+                    client        => $cl,
+                    contract      => $contract_up,
+                    price         => 5.20,
+                    payout        => $contract_up->payout,
+                    amount_type   => 'payout',
+                    purchase_date => Date::Utility->new(),
                 })->buy, undef, 'FLASHU bet bought';
 
             is +BOM::Transaction->new({
-                    client      => $cl,
-                    contract    => $contract_down,
-                    price       => 5.20,
-                    payout      => $contract_down->payout,
-                    amount_type => 'payout',
+                    client        => $cl,
+                    contract      => $contract_down,
+                    price         => 5.20,
+                    payout        => $contract_down->payout,
+                    amount_type   => 'payout',
+                    purchase_date => Date::Utility->new(),
                 })->buy, undef, 'FLASHD bet bought';
 
             $txn->buy;
