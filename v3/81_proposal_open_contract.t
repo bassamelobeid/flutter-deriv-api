@@ -121,19 +121,6 @@ $t = $t->send_ok({
         json => {
             proposal_open_contract => 1,
             subscribe              => 1,
-            req_id                 => 456
-        }});
-
-$t   = $t->message_ok;
-$res = decode_json($t->message->[1]);
-
-ok $res->{proposal_open_contract}->{id}, 'different req_id should allow multiple proposal_open_contract subscription';
-ok $res->{req_id};
-
-$t = $t->send_ok({
-        json => {
-            proposal_open_contract => 1,
-            subscribe              => 1,
             req_id                 => 456,
             passthrough            => {'sample' => 1},
         }});

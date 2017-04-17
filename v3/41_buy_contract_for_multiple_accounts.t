@@ -281,8 +281,9 @@ subtest "sell_contract_for_multiple_accounts => successful", sub {
     isa_ok $res->{sell_contract_for_multiple_accounts}{result}->[0], 'HASH';
     ok scalar @{$res->{sell_contract_for_multiple_accounts}{result}} == 3, 'check res count';
     ok( defined $res->{sell_contract_for_multiple_accounts}{result}->[0]->{transaction_id}, "check trx exist" );
+    ok( defined $res->{sell_contract_for_multiple_accounts}{result}->[0]->{reference_id}, "check ref exist" );
     for my $r (@{$res->{sell_contract_for_multiple_accounts}{result}}) {
-        ok( defined $r->{transaction_id} && defined $trx_ids->{$r->{transaction_id}}, "Check transaction ID" );
+        ok( defined $r->{reference_id} && defined $trx_ids->{$r->{reference_id}}, "Check transaction ID" );
     }
     test_schema('sell_contract_for_multiple_accounts', $res);
 };
