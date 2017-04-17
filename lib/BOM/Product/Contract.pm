@@ -1497,8 +1497,7 @@ sub extra_info {
     );
     my @extra = ([pricing_spot => $self->pricing_spot]);
     if ($self->priced_with_intraday_model) {
-        push @extra,
-            (map { [($mapper{$_} // $_) => $self->$_] } qw(pricing_vol news_adjusted_pricing_vol long_term_prediction));
+        push @extra, (map { [($mapper{$_} // $_) => $self->$_] } qw(pricing_vol news_adjusted_pricing_vol long_term_prediction));
     } elsif ($self->pricing_vol_for_two_barriers) {
         push @extra, (map { [($mapper{$_} // $_) => $self->pricing_vol_for_two_barriers->{$_}] } qw(high_barrier_vol low_barrier_vol));
     } else {
