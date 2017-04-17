@@ -41,7 +41,6 @@ use constant APP_CONFIG_REFRESH_INTERVAL => 60;
 use constant BARRIERS_PER_BATCH => 1;
 
 use Log::Any qw($log);
-use Log::Any::Adapter qw(Stderr), log_level => 'info';
 
 =head2 new
 
