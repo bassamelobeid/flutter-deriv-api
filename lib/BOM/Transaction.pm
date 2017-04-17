@@ -1154,7 +1154,6 @@ sub _recover {
     die $err;
 }
 
-
 sub _build_pricing_comment {
     my $args = shift;
 
