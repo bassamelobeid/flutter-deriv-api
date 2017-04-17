@@ -79,15 +79,15 @@ sub prepare_market_data {
         'holiday',
         {
             recorded_date => $date,
-            calendar      => $holidays,
+            calendar      => $holidays->{$date->epoch},
         });
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             symbol        => $underlying->symbol,
-            recorded_date => Date::Utility->new($volsurfaces->{$underlying->symbol}->{date}),
-            surface       => $volsurfaces->{$underlying->symbol}->{surfaces}->{'New York 10:00'},
+            recorded_date => Date::Utility->new($volsurfaces->{$date->epoch}->{$underlying->symbol}->{date}),
+            surface       => $volsurfaces->{$date->epoch}->{$underlying->symbol}->{surfaces}->{'New York 10:00'},
         });
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -102,7 +102,7 @@ sub prepare_market_data {
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
         )->generate_economic_event_seasonality({
             underlying_symbol => $underlying->symbol,
-            economic_events   => $news->{$now->epoch}});
+            economic_events   => $news->{$date->epoch}});
 }
 prepare_market_data($now);
 
