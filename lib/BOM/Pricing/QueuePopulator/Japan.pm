@@ -29,9 +29,8 @@ use Date::Utility;
 use POSIX qw(floor);
 use Time::HiRes qw(clock_nanosleep CLOCK_REALTIME TIMER_ABSTIME);
 
-# How long each Redis key should persist for - we'll refresh the list
-# when the key(s) expire
-use constant JOB_QUEUE_TTL => 1;
+# Seconds between updates. This should match the figure used in the price_queue.pl script.
+use constant PRICING_INTERVAL => 3;
 
 # Number of keys to set per Redis call, used to reduce network latency overhead
 use constant JOBS_PER_BATCH => 30;
@@ -192,7 +191,7 @@ Sleep to start of next minute
 
 sub wait_for_next_cycle {
     my $now = Time::HiRes::time;
-    my $target = 1e9 * JOB_QUEUE_TTL * (1 + floor($now / JOB_QUEUE_TTL));
+    my $target = 1e9 * PRICING_INTERVAL * (1 + floor($now / PRICING_INTERVAL));
     $log->debugf("Will sleep until %s (current time %s)", map $_->iso8601, Date::Utility->new($target / 1e9), Date::Utility->new);
     clock_nanosleep(CLOCK_REALTIME, $target, TIMER_ABSTIME);
 }
