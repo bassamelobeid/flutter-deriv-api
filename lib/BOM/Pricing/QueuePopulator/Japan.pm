@@ -35,7 +35,8 @@ use constant JOB_QUEUE_TTL => 1;
 
 # Number of keys to set per Redis call, used to reduce network latency overhead
 use constant JOBS_PER_BATCH => 30;
-# Reload appconfig regularly, in case any underlyings have been disabled
+# Reload appconfig regularly, in case any underlyings have been disabled -
+# values are in seconds
 use constant APP_CONFIG_REFRESH_INTERVAL => 60;
 
 use constant BARRIERS_PER_BATCH => 1;
