@@ -978,10 +978,11 @@ subtest 'Purchase Sell Contract' => sub {
     });
 
     my $bpt = BOM::Transaction->new({
-        client      => $client,
-        contract    => $contract,
-        price       => $contract->ask_price,
-        amount_type => 'payout'
+        client        => $client,
+        contract      => $contract,
+        price         => $contract->ask_price,
+        amount_type   => 'payout'
+        purchase_date => Date::Utility->new(),
     });
 
     $ENV{REQUEST_STARTTIME} = $now->epoch - 1;
