@@ -562,6 +562,7 @@ subtest 'insufficient balance: buy bet for 100.01 with a balance of 100', sub {
         $acc_usd->load;
         is $acc_usd->balance + 0, 100, 'USD balance is now 100';
 
+        my $now = Date::Utility->new;
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'FLASHU',
@@ -578,7 +579,7 @@ subtest 'insufficient balance: buy bet for 100.01 with a balance of 100', sub {
             price         => 100.01,
             payout        => $contract->payout,
             amount_type   => 'stake',
-            purchase_date => Date::Utility->new(),
+            purchase_date => $now,
         });
         my $error = $txn->buy;
         SKIP: {
@@ -638,7 +639,7 @@ subtest 'insufficient balance: buy bet for 100.01 with a balance of 100', sub {
                     payout        => $contract->payout,
                     amount_type   => 'stake',
                     source        => 31,
-                    purchase_date => Date::Utility->new(),
+                    purchase_date => $now,
                 });
                 $error = $txn->buy;
 
