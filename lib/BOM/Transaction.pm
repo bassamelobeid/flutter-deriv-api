@@ -1154,6 +1154,25 @@ sub _recover {
     die $err;
 }
 
+sub format_error {
+    my ($self, %args) = @_;
+    my $err           = $args{err};
+    my $client        = $args{client};
+    my $type          = $args{type} // 'InternalError';             # maybe caller know the type. If the err cannot be parsed, then we use this value
+    my $msg           = Dumper($err);
+    my $msg_to_client = $args{msg_to_client} // 'Internal Error';
+    return try {
+        return $self->_recover($err, $client);
+    }
+    catch {
+        return Error::Base->cuss(
+            -type              => $type,
+            -mesg              => $msg,
+            -message_to_client => BOM::Platform::Context::localize($msg_to_client),
+        );
+    }
+}
+
 sub _build_pricing_comment {
     my $args = shift;
 
