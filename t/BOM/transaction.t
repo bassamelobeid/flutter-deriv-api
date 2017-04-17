@@ -464,12 +464,11 @@ subtest 'sell a bet', sub {
         $mocked->mock('_validate_trade_pricing_adjustment', sub { });
         $mocked->mock('price',                              sub { $contract->bid_price });
         my $txn = BOM::Transaction->new({
-            client        => $cl,
-            contract      => $contract,
-            contract_id   => $fmb->{id},
-            price         => $contract->bid_price,
-            source        => 23,
-            purchase_date => Date::Utility->new(),
+            client      => $cl,
+            contract    => $contract,
+            contract_id => $fmb->{id},
+            price       => $contract->bid_price,
+            source      => 23,
         });
         my $error = $txn->sell;
         is $error, undef, 'no error';
@@ -1433,11 +1432,12 @@ subtest 'max_7day_turnover validation', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract_up,
-            price       => 5.20,
-            payout      => $contract_up->payout,
-            amount_type => 'payout',
+            client        => $cl,
+            contract      => $contract_up,
+            price         => 5.20,
+            payout        => $contract_up->payout,
+            amount_type   => 'payout',
+            purchase_date => Date::Utility->new(),
         });
 
         my $error = do {
@@ -1447,19 +1447,21 @@ subtest 'max_7day_turnover validation', sub {
             );
 
             is +BOM::Transaction->new({
-                    client      => $cl,
-                    contract    => $contract_up,
-                    price       => 5.20,
-                    payout      => $contract_up->payout,
-                    amount_type => 'payout',
+                    client        => $cl,
+                    contract      => $contract_up,
+                    price         => 5.20,
+                    payout        => $contract_up->payout,
+                    amount_type   => 'payout',
+                    purchase_date => Date::Utility->new(),
                 })->buy, undef, 'FLASHU bet bought';
 
             is +BOM::Transaction->new({
-                    client      => $cl,
-                    contract    => $contract_down,
-                    price       => 5.20,
-                    payout      => $contract_down->payout,
-                    amount_type => 'payout',
+                    client        => $cl,
+                    contract      => $contract_down,
+                    price         => 5.20,
+                    payout        => $contract_down->payout,
+                    amount_type   => 'payout',
+                    purchase_date => Date::Utility->new(),
                 })->buy, undef, 'FLASHD bet bought';
 
             $txn->buy;
@@ -1525,11 +1527,12 @@ subtest 'max_30day_turnover validation', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract_up,
-            price       => 5.20,
-            payout      => $contract_up->payout,
-            amount_type => 'payout',
+            client        => $cl,
+            contract      => $contract_up,
+            price         => 5.20,
+            payout        => $contract_up->payout,
+            amount_type   => 'payout',
+            purchase_date => Date::Utility->new(),
         });
 
         my $error = do {
@@ -1538,19 +1541,21 @@ subtest 'max_30day_turnover validation', sub {
                     sub { note "mocked Client->get_limit_for_30day_turnover returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
 
             is +BOM::Transaction->new({
-                    client      => $cl,
-                    contract    => $contract_up,
-                    price       => 5.20,
-                    payout      => $contract_up->payout,
-                    amount_type => 'payout',
+                    client        => $cl,
+                    contract      => $contract_up,
+                    price         => 5.20,
+                    payout        => $contract_up->payout,
+                    amount_type   => 'payout',
+                    purchase_date => Date::Utility->new(),
                 })->buy, undef, 'FLASHU bet bought';
 
             is +BOM::Transaction->new({
-                    client      => $cl,
-                    contract    => $contract_down,
-                    price       => 5.20,
-                    payout      => $contract_down->payout,
-                    amount_type => 'payout',
+                    client        => $cl,
+                    contract      => $contract_down,
+                    price         => 5.20,
+                    payout        => $contract_down->payout,
+                    amount_type   => 'payout',
+                    purchase_date => Date::Utility->new(),
                 })->buy, undef, 'FLASHD bet bought';
 
             $txn->buy;
@@ -1618,11 +1623,12 @@ subtest 'max_losses validation', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract_up,
-            price       => 5.20,
-            payout      => $contract_up->payout,
-            amount_type => 'payout',
+            client        => $cl,
+            contract      => $contract_up,
+            price         => 5.20,
+            payout        => $contract_up->payout,
+            amount_type   => 'payout',
+            purchase_date => Date::Utility->new(),
         });
 
         my $error = do {
@@ -1639,11 +1645,12 @@ subtest 'max_losses validation', sub {
                 get_limit_for_daily_losses => sub { note "mocked Client->get_limit_for_daily_losses returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
 
             my $t = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract_up,
-                price       => 5.20,
-                payout      => $contract_up->payout,
-                amount_type => 'payout',
+                client        => $cl,
+                contract      => $contract_up,
+                price         => 5.20,
+                payout        => $contract_up->payout,
+                amount_type   => 'payout',
+                purchase_date => Date::Utility->new(),
             });
             is $t->buy, undef, 'FLASHU bet bought';
             $t = BOM::Transaction->new({
@@ -1655,11 +1662,12 @@ subtest 'max_losses validation', sub {
             is $t->sell(skip_validation => 1), undef, 'FLASHU bet sold';
 
             $t = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract_down,
-                price       => 5.20,
-                payout      => $contract_down->payout,
-                amount_type => 'payout',
+                client        => $cl,
+                contract      => $contract_down,
+                price         => 5.20,
+                payout        => $contract_down->payout,
+                amount_type   => 'payout',
+                purchase_date => Date::Utility->new(),
             });
             is $t->buy, undef, 'FLASHD bet bought';
             $t = BOM::Transaction->new({
@@ -1743,11 +1751,12 @@ subtest 'max_7day_losses validation', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract_up,
-            price       => 5.20,
-            payout      => $contract_up->payout,
-            amount_type => 'payout',
+            client        => $cl,
+            contract      => $contract_up,
+            price         => 5.20,
+            payout        => $contract_up->payout,
+            amount_type   => 'payout',
+            purchase_date => Date::Utility->new(),
         });
 
         my $error = do {
@@ -1764,11 +1773,12 @@ subtest 'max_7day_losses validation', sub {
                 get_limit_for_7day_losses => sub { note "mocked Client->get_limit_for_7day_losses returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
 
             my $t = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract_up,
-                price       => 5.20,
-                payout      => $contract_up->payout,
-                amount_type => 'payout',
+                client        => $cl,
+                contract      => $contract_up,
+                price         => 5.20,
+                payout        => $contract_up->payout,
+                amount_type   => 'payout',
+                purchase_date => Date::Utility->new(),
             });
             is $t->buy, undef, 'FLASHU bet bought';
             $t = BOM::Transaction->new({
@@ -1780,11 +1790,12 @@ subtest 'max_7day_losses validation', sub {
             is $t->sell(skip_validation => 1), undef, 'FLASHU bet sold';
 
             $t = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract_down,
-                price       => 5.20,
-                payout      => $contract_down->payout,
-                amount_type => 'payout',
+                client        => $cl,
+                contract      => $contract_down,
+                price         => 5.20,
+                payout        => $contract_down->payout,
+                amount_type   => 'payout',
+                purchase_date => Date::Utility->new(),
             });
             is $t->buy, undef, 'FLASHD bet bought';
             $t = BOM::Transaction->new({
@@ -1868,11 +1879,12 @@ subtest 'max_30day_losses validation', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract_up,
-            price       => 5.20,
-            payout      => $contract_up->payout,
-            amount_type => 'payout',
+            client        => $cl,
+            contract      => $contract_up,
+            price         => 5.20,
+            payout        => $contract_up->payout,
+            amount_type   => 'payout',
+            purchase_date => Date::Utility->new(),
         });
 
         my $error = do {
@@ -1889,11 +1901,12 @@ subtest 'max_30day_losses validation', sub {
                 get_limit_for_30day_losses => sub { note "mocked Client->get_limit_for_30day_losses returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
 
             my $t = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract_up,
-                price       => 5.20,
-                payout      => $contract_up->payout,
-                amount_type => 'payout',
+                client        => $cl,
+                contract      => $contract_up,
+                price         => 5.20,
+                payout        => $contract_up->payout,
+                amount_type   => 'payout',
+                purchase_date => Date::Utility->new(),
             });
             is $t->buy, undef, 'FLASHU bet bought';
             $t = BOM::Transaction->new({
@@ -1905,11 +1918,12 @@ subtest 'max_30day_losses validation', sub {
             is $t->sell(skip_validation => 1), undef, 'FLASHU bet sold';
 
             $t = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract_down,
-                price       => 5.20,
-                payout      => $contract_down->payout,
-                amount_type => 'payout',
+                client        => $cl,
+                contract      => $contract_down,
+                price         => 5.20,
+                payout        => $contract_down->payout,
+                amount_type   => 'payout',
+                purchase_date => Date::Utility->new(),
             });
             is $t->buy, undef, 'FLASHD bet bought';
             $t = BOM::Transaction->new({
