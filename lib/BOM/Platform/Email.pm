@@ -64,16 +64,6 @@ sub send_email {
 
     my $message = join("\n", @message);
 
-    unless ($skip_text2html) {
-      $message = text2html(
-                           $message,
-                           urls      => 1,
-                           email     => 1,
-                           lines     => 1,
-                           metachars => 0,
-                          );
-    }
-
     if ($attachment) {
         try {
             Email::Stuffer->from($fromemail)->to($email)->subject($subject)->text_body($message)->attach_file($attachment)->send;
@@ -84,6 +74,16 @@ sub send_email {
             0;
         } or return 0;
     } else {
+        unless ($skip_text2html) {
+            $message = text2html(
+                $message,
+                urls      => 1,
+                email     => 1,
+                lines     => 1,
+                metachars => 0,
+            );
+        }
+
         my $mail_message;
         if ($use_email_template) {
             my $vars = {
