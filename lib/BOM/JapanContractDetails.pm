@@ -9,11 +9,10 @@ This package is to output contract's pricing parameters that will be used by Jap
 use strict;
 use warnings;
 use lib qw(/home/git/regentmarkets/bom-backoffice);
-use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel PrintContentType_XSendfile);
 use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Database::ClientDB;
-use Client::Account;
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
 use BOM::Database::DataMapper::Transaction;
@@ -32,10 +31,7 @@ sub parse_file {
         chomp $line;
         # Might have a trailing blank at the end, and any in the middle of the file are generally harmless too
         next unless length $line;
-        my @fields    = split ",", $line;
-        my $shortcode = $fields[0];
-        my $ask_price = $fields[2];
-        my $bid_price = $fields[3];
+        my ($shortcode, $ask_price, $bid_price, $extra) = extract_from_code($line);
 
         my $currency = $landing_company =~ /japan/ ? 'JPY' : 'USD';
         my $parameters = verify_with_shortcode({
@@ -45,6 +41,7 @@ sub parse_file {
             ask_price       => $ask_price,
             bid_price       => $bid_price,
             action_type     => 'buy',
+            extra           => $extra,
         });
 
         $pricing_parameters->{$shortcode} = include_contract_details(
@@ -69,7 +66,6 @@ sub verify_with_id {
             operation   => 'backoffice_replica',
         })->get_details_by_transaction_ref($id);
 
-    my $client          = Client::Account::get_instance({'loginid' => $details->{loginid}});
     my $action_type     = $details->{action_type};
     my $requested_price = $details->{order_price};
     my $ask_price       = $details->{ask_price};
@@ -79,14 +75,25 @@ sub verify_with_id {
     # apply slippage according to reflect the difference between traded price and recomputed price
     my $adjusted_traded_contract_price =
         ($traded_price == $requested_price) ? ($action_type eq 'buy' ? $traded_price - $slippage : $traded_price + $slippage) : $traded_price;
+
+    my $extra;
+    if ($details->{volatility_scaling_factor}) {
+        $extra = join '_',
+            (map { $details->{$_} } qw(pricing_spot high_barrier_vol news_adjusted_pricing_vol long_term_prediction volatility_scaling_factor));
+    } elsif ($details->{low_barrier_vol}) {
+        $extra = join '_', (map { $details->{$_} } qw(pricing_spot high_barrier_vol low_barrier_vol));
+    } else {
+        $extra = join '_', (map { $details->{$_} } qw(pricing_spot high_barrier_vol));
+    }
+
     my $parameters = verify_with_shortcode({
-        broker          => $broker,
         shortcode       => $details->{shortcode},
         currency        => $details->{currency_code},
         landing_company => $landing_company,
         ask_price       => $adjusted_traded_contract_price,
         start           => $action_type eq 'buy' ? $details->{purchase_time} : $details->{sell_time},
         action_type     => $action_type,
+        extra           => $extra,
     });
     my $contract_args = {
         loginID         => $details->{loginid},
@@ -109,12 +116,19 @@ sub verify_with_shortcode {
     my $args            = shift;
     my $landing_company = $args->{landing_company};
     my $short_code      = $args->{shortcode} or die "No shortcode provided";
-    my $action_type     = lc $args->{action_type};
-    my $verify_ask      = $args->{ask_price};                                  # This is the price to be verify
+    my $action_type     = defined $args->{action_type} ? lc $args->{action_type} : 'buy';    # default to buy if not specified
+    my $verify_ask      = $args->{ask_price};                                                # This is the price to be verify
     my $verify_bid      = $args->{bid_price} // undef;
     my $currency        = $args->{currency};
+    my $extra           = $args->{extra} // undef;
 
     my $original_contract = produce_contract($short_code, $currency);
+    my $priced_at_start = make_similar_contract(
+        $original_contract,
+        {
+            priced_at       => 'start',
+            landing_company => $landing_company
+        });
     my $purchase_time = $original_contract->date_start;
 
     my $start = $args->{start} ? Date::Utility->new($args->{start}) : Date::Utility->new($purchase_time);
@@ -124,46 +138,29 @@ sub verify_with_shortcode {
     $pricing_args->{date_pricing}    = $start;
     $pricing_args->{landing_company} = $landing_company;
 
+    if ($extra) {
+        my @extra_args = split '_', $extra;
+        $pricing_args->{pricing_spot} = $extra_args[0];
+        if ($priced_at_start->priced_with_intraday_model) {
+            $pricing_args->{pricing_vol}               = $extra_args[1];
+            $pricing_args->{news_adjusted_pricing_vol} = $extra_args[2];
+            $pricing_args->{long_term_prediction}      = $extra_args[3];
+            $pricing_args->{volatility_scaling_factor} = $extra_args[4];
+        } elsif ($priced_at_start->pricing_vol_for_two_barriers) {    # two barrier for slope
+            $pricing_args->{pricing_vol_for_two_barriers} = {
+                high_barrier_vol => $extra_args[1],
+                low_barrier_vol  => $extra_args[2],
+            };
+        } else {
+            $pricing_args->{pricing_vol} = $extra_args[1];
+        }
+    }
+
     my $contract = produce_contract($pricing_args);
     # due to complexity in $action_type, this is a hacky fix.
     my @contracts = (
         [$contract, $verify_ask],
         [$contract->opposite_contract, ($verify_bid ? $contract->discounted_probability->amount * $contract->payout - $verify_bid : undef)]);
-
-    my $parameters;
-    foreach my $ind (0 .. $#contracts) {
-        my $c               = $contracts[$ind]->[0];
-        my $price_to_verify = $contracts[$ind]->[1];
-
-        next unless defined $price_to_verify;
-
-        my $recalculated_price = $action_type eq 'buy' ? $c->ask_price : $c->bid_price;
-        my $diff = abs($price_to_verify - $recalculated_price) / $c->payout;
-        # If there is difference, look backward and forward to find the match price.
-        if ($diff > 0.001) {
-            my $built_parameters = $c->build_parameters;
-            my $new_contract;
-            LOOP:
-            for my $lookback (1 .. 5, map { -$_ } 1 .. 5) {
-                $built_parameters->{landing_company} = $landing_company;
-                my $new_pricing_date = Date::Utility->new($c->date_start->epoch - $lookback);
-                # try to price with previous spot
-                my $prev_spot = $c->underlying->tick_at($new_pricing_date->epoch, {allow_inconsistent => 1})->quote;
-                $built_parameters->{pricing_spot} = $prev_spot;
-                $new_contract = produce_contract($built_parameters);
-                my $new_price = $action_type eq 'buy' ? $new_contract->ask_price : $new_contract->bid_price;
-                last LOOP if (abs($new_price - $price_to_verify) / $new_contract->payout <= 0.001);
-                # delete the previous spot
-                delete $built_parameters->{pricing_spot};
-                # now move the pricing time
-                $built_parameters->{date_pricing} = $built_parameters->{date_start} = $new_pricing_date;
-                $new_contract = produce_contract($built_parameters);
-                $new_price = $action_type eq 'buy' ? $new_contract->ask_price : $new_contract->bid_price;
-                last LOOP if (abs($new_price - $price_to_verify) / $new_contract->payout <= 0.001);
-            }
-            $contracts[$ind]->[0] = $new_contract;
-        }
-    }
 
     my ($verified_contract, $verified_opposite) = map { $contracts[$_]->[0] } (0 .. $#contracts);
     my $traded_contract = $action_type eq 'buy' ? $verified_contract : $verified_contract->opposite_contract;
@@ -199,7 +196,6 @@ sub verify_with_shortcode {
     };
 
     return $pricing_parameters;
-
 }
 
 sub get_pricing_parameter {
@@ -531,6 +527,18 @@ sub single_output_as_excel {
 
     PrintContentType_XSendfile($temp_file, 'application/octet-stream');
     return;
+}
+
+sub extract_from_code {
+    my $code = shift;
+
+    my @fields    = split ",", $code;
+    my $shortcode = $fields[0];
+    my $ask_price = $fields[2];
+    my $bid_price = $fields[3];
+    my $extra     = $fields[5];
+
+    return ($shortcode, $ask_price, $bid_price, $extra);
 }
 
 1;
