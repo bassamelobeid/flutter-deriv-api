@@ -7,6 +7,7 @@ use Scalar::Util qw(looks_like_number);
 use Array::Utils qw(array_minus);
 
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
+use DataDog::DogStatsd::Helper qw(stats_dec);
 
 sub forget {
     my ($c, $req_storage) = @_;
@@ -137,6 +138,7 @@ sub _get_proposal_array_proposal_ids {
 
 sub _forget_pricing_subscription {
     my ($c, $uuid) = @_;
+
     my $removed_ids     = [];
     my $pricing_channel = $c->stash('pricing_channel');
     if ($pricing_channel) {
@@ -151,11 +153,8 @@ sub _forget_pricing_subscription {
                     delete $pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd}->{$uuid};
                 }
             }
-
-            if (scalar keys %{$pricing_channel->{$channel}} == 0) {
-                $c->stash('redis_pricer')->unsubscribe([$channel]);
-                delete $pricing_channel->{$channel};
-            }
+            delete $pricing_channel->{$channel}->{subscription};
+            stats_dec('bom_websocket_api.v_3.pricing_subscriptions.clients');
         }
         $c->stash('pricing_channel' => $pricing_channel);
     }
@@ -165,6 +164,7 @@ sub _forget_pricing_subscription {
 
 sub _forget_all_pricing_subscriptions {
     my ($c, $type) = @_;
+
     my $price_daemon_cmd =
           $type eq 'proposal'               ? 'price'
         : $type eq 'proposal_open_contract' ? 'bid'
@@ -178,8 +178,7 @@ sub _forget_all_pricing_subscriptions {
         foreach my $uuid (@$removed_ids) {
             my $redis_channel = $pricing_channel->{uuid}->{$uuid}->{redis_channel};
             if ($pricing_channel->{$redis_channel}) {
-                $c->stash('redis_pricer')->unsubscribe([$redis_channel]);
-
+                stats_dec('bom_websocket_api.v_3.pricing_subscriptions.clients');
                 delete $pricing_channel->{$redis_channel};
             }
             delete $pricing_channel->{uuid}->{$uuid};
