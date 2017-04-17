@@ -28,13 +28,16 @@ BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
 my $volsurfaces = {
     1352345145 => LoadFile('/home/git/regentmarkets/bom-test/data/20121108_volsurfaces.yml'),
-    1491448384 => LoadFile('/home/git/regentmarkets/bom-test/data/20121108_volsurfaces.yml'),
+    1491448384 => LoadFile('/home/git/regentmarkets/bom-test/data/20170406_volsurfaces.yml'),
 };
 my $news = {
     1352345145 => LoadFile('/home/git/regentmarkets/bom-test/data/20121108_news.yml'),
-    1491448384 => LoadFile('/home/git/regentmarkets/bom-test/data/20121108_news.yml'),
+    1491448384 => LoadFile('/home/git/regentmarkets/bom-test/data/20170406_news.yml'),
 };
-my $holidays = LoadFile('/home/git/regentmarkets/bom-test/data/20121108_holidays.yml');
+my $holidays = {
+    1352345145 => LoadFile('/home/git/regentmarkets/bom-test/data/20121108_holidays.yml'),
+    1491448384 => LoadFile('/home/git/regentmarkets/bom-test/data/20170406_holidays.yml'),
+};
 
 my $underlying = create_underlying('frxUSDJPY');
 my $now        = Date::Utility->new(1352345145);
@@ -69,8 +72,9 @@ foreach my $single_data (@$decimate_data) {
         $decimate_cache->encoder->encode($single_data));
 }
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {events => $news});
-for my $date ($now, Date::Utility->new(1491448384)) {
+sub prepare_market_data {
+    my $date = shift;
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {events => $news->{$date->epoch}});
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'holiday',
         {
@@ -92,15 +96,15 @@ for my $date ($now, Date::Utility->new(1491448384)) {
             symbol        => $_,
             recorded_date => $date
         }) for ('USD', 'JPY-USD', 'JPY');
-}
 
-Volatility::Seasonality->new(
-    chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
-    chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
-    )->generate_economic_event_seasonality({
-        underlying_symbol => $underlying->symbol,
-        economic_events   => $news
-    });
+    Volatility::Seasonality->new(
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
+        )->generate_economic_event_seasonality({
+            underlying_symbol => $underlying->symbol,
+            economic_events   => $news->{$now->epoch}});
+}
+prepare_market_data($now);
 
 subtest 'verify_with_shortcode_IH' => sub {
     my $expected_parameters = {
@@ -459,6 +463,8 @@ subtest 'verify_with_shortcode_VV' => sub {
 
     }
 };
+
+prepare_market_data(Date::Utility->new(1491448384));
 
 subtest '2017' => sub {
     subtest 'verify_with_shortcode_IH' => sub {
