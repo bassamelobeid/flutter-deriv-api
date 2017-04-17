@@ -8,6 +8,7 @@ use Test::Exception;
 
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
+use Date::Utility;
 use Data::Hash::DotNotation;
 use BOM::Database::Model::Account;
 use BOM::Database::DataMapper::Account;
