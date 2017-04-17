@@ -1,11 +1,10 @@
 package BOM::Platform::Email;
 
-use 5.010;
 use strict;
 use warnings;
 
 use URL::Encode;
-use Mail::Sender;
+use Email::Stuffer;
 use HTML::FromText;
 use Try::Tiny;
 use Encode;
@@ -15,11 +14,11 @@ use Brands;
 use BOM::Platform::Config;
 use BOM::Platform::Context qw(request localize);
 
-use base 'Exporter';
+use parent 'Exporter';
 our @EXPORT_OK = qw(send_email);
 
-$Mail::Sender::NO_X_MAILER = 1;    # avoid hostname/IP leak
-
+# Note that this function has two ways to indicate errors: it may raise an exception, or return false.
+# Ideally we should pick one for consistency.
 sub send_email {
     my $args_ref           = shift;
     my $fromemail          = $args_ref->{'from'};
@@ -28,6 +27,9 @@ sub send_email {
     my @message            = @{$args_ref->{'message'}};
     my $use_email_template = $args_ref->{'use_email_template'};
     my $attachment         = $args_ref->{'attachment'};
+    # This is no longer used, since the MIME type on the attachment is autodetected
+    # ($ctype is slightly confusing as a variable name - it applied only to the
+    # attachment, not any of the other MIME parts...)
     my $ctype              = $args_ref->{'att_type'} // 'text/plain';
     my $skip_text2html     = $args_ref->{'skip_text2html'};
     my $template_loginid   = $args_ref->{template_loginid};
@@ -38,25 +40,23 @@ sub send_email {
     die 'No email provided' unless $email;
 
     if (not $fromemail) {
+        # FIXME so this is most likely going to leave undef warnings
         warn("fromemail missing - [$fromemail, $email, $subject]");
-        return;
+        return 0;
     }
+    # FIXME this is redundant, we already died if this was missing
     if (not $email) {
         warn("email missing - [$fromemail, $email, $subject]");
-        return;
+        return 0;
     }
     if (not $subject) {
+        # FIXME also likely to leave undef warnings
         warn("subject missing - [$fromemail, $email, $subject]");
-        return;
+        return 0;
     }
 
-    # strip carriage returns in subject
-    $subject =~ s/[\r\n\f\t]/ /g;
-
-    # Encode subj here:
-    # Mail::Sender produces too long encoded Subject
-    # which sometimes gets double-encoded after sending
-    $subject = encode('MIME-Q', $subject);
+    # replace all whitespace - including vertical such as CR/LF - with a single space
+    $subject =~ s/\s+/ /g;
 
     return 1 if $ENV{SKIP_EMAIL};
 
@@ -64,7 +64,7 @@ sub send_email {
     foreach my $toemail (@toemails) {
         if ($toemail and $toemail !~ /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/) {
             warn("erroneous email address $toemail");
-            return;
+            return 0;
         }
     }
 
@@ -80,25 +80,19 @@ sub send_email {
 
     if ($attachment) {
         try {
-            Mail::Sender->new({
-                    smtp      => 'localhost',
-                    from      => $fromemail,
-                    to        => $email,
-                    charset   => 'UTF-8',
-                    b_charset => 'UTF-8',
-                    on_errors => 'die',
-                }
-                )->MailFile({
-                    subject => $subject,
-                    msg     => $message,
-                    ctype   => $ctype,
-                    file    => $attachment,
-                });
+            Email::Stuffer
+                ->from($fromemail)
+                ->to($email)
+                ->subject($subject)
+                ->text_body($message)
+                ->attach_file($attachment)
+                ->send;
+            1
         }
         catch {
-            warn("Error sending mail: ", $Mail::Sender::Error // $_) unless $ENV{BOM_SUPPRESS_WARNINGS};
+            warn("Error sending mail: ", $_) unless $ENV{BOM_SUPPRESS_WARNINGS};
             0;
-        } or return;
+        } or return 0;
     } else {
         unless ($skip_text2html) {
             $message = text2html(
@@ -128,23 +122,18 @@ sub send_email {
         }
 
         try {
-            Mail::Sender->new({
-                    smtp      => 'localhost',
-                    from      => $fromemail,
-                    to        => $email,
-                    ctype     => 'text/html',
-                    charset   => 'UTF-8',
-                    encoding  => "quoted-printable",
-                    on_errors => 'die',
-                }
-                )->Open({
-                    subject => $subject,
-                })->SendEnc($mail_message)->Close();
+            Email::Stuffer
+                ->from($fromemail)
+                ->to($email)
+                ->subject($subject)
+                ->html_body($message)
+                ->send;
+            1
         }
         catch {
-            warn("Error sending mail [$subject]: ", $Mail::Sender::Error // $_) unless $ENV{BOM_SUPPRESS_WARNINGS};
+            warn("Error sending mail [$subject]: ", $_) unless $ENV{BOM_SUPPRESS_WARNINGS};
             0;
-        } or return;
+        } or return 0;
     }
 
     return 1;
