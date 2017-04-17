@@ -105,8 +105,7 @@ sub send_pd {
                 } => json => {
                 "service_key" => "$PD_serviceKey",
                 "event_type"  => "$type",
-                "description" => "$error_msg",
-                #"incident_key" => "$incident_key"
+                "description" => "$error_msg"
                 });
         if (my $res = $tx->success) { print $res->body }
         else {
