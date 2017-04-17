@@ -149,6 +149,12 @@ has transaction_id => (
     isa => 'Int',
 );
 
+### For sell operations only
+has reference_id => (
+    is  => 'rw',
+    isa => 'Int',
+);
+
 has contract_id => (
     is  => 'rw',
     isa => 'Int',
@@ -768,9 +774,9 @@ sub sell {
     );
 
     my $error = 1;
-    my ($fmb, $txn);
+    my ($fmb, $txn, $buy_txn_id);
     try {
-        ($fmb, $txn) = $fmb_helper->sell_bet;
+        ($fmb, $txn, $buy_txn_id) = $fmb_helper->sell_bet;
         $error = 0;
     }
     catch {
@@ -794,12 +800,13 @@ sub sell {
             -type              => 'NoOpenPosition',
             -mesg              => 'No such open contract.',
             -message_to_client => BOM::Platform::Context::localize('This contract was not found among your open positions.'),
-        )) unless defined $txn->{id};
+        )) unless defined $txn->{id} && defined $buy_txn_id;
 
     $self->stats_stop($stats_data);
 
     $self->balance_after($txn->{balance_after});
     $self->transaction_id($txn->{id});
+    $self->reference_id($buy_txn_id);
 
     return;
 }
