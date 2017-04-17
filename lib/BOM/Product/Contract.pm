@@ -1174,7 +1174,7 @@ sub _build_opposite_contract {
     # pricing_new until it has started. So it kind of messed up here.
     $opp_parameters{current_tick} = $self->current_tick;
     my @to_override = qw(r_rate q_rate discount_rate pricing_vol pricing_spot mu);
-    push @to_override, qw(volatility_scaling_factor long_term_prediction) if $self->priced_with_intraday_model;
+    push @to_override, qw(long_term_prediction) if $self->priced_with_intraday_model;
     $opp_parameters{$_} = $self->$_ for @to_override;
     $opp_parameters{pricing_new} = 1;
 
@@ -1498,7 +1498,7 @@ sub extra_info {
     my @extra = ([pricing_spot => $self->pricing_spot]);
     if ($self->priced_with_intraday_model) {
         push @extra,
-            (map { [($mapper{$_} // $_) => $self->$_] } qw(pricing_vol news_adjusted_pricing_vol long_term_prediction volatility_scaling_factor));
+            (map { [($mapper{$_} // $_) => $self->$_] } qw(pricing_vol news_adjusted_pricing_vol long_term_prediction));
     } elsif ($self->pricing_vol_for_two_barriers) {
         push @extra, (map { [($mapper{$_} // $_) => $self->pricing_vol_for_two_barriers->{$_}] } qw(high_barrier_vol low_barrier_vol));
     } else {
