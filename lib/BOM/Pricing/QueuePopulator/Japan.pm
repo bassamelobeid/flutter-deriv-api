@@ -187,7 +187,7 @@ sub process {
 
 =head2 wait_for_next_cycle
 
-Sleep to start of next minute
+Sleep to start of next pricing cycle.
 
 =cut
 
