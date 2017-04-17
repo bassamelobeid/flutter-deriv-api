@@ -194,8 +194,9 @@ Sleep to start of next pricing cycle.
 sub wait_for_next_cycle {
     my $now = Time::HiRes::time;
     my $target = 1e9 * PRICING_INTERVAL * (1 + floor($now / PRICING_INTERVAL));
-    $log->debugf("Will sleep until %s (current time %s)", map $_->iso8601, Date::Utility->new($target / 1e9), Date::Utility->new);
+    $log->debugf("Will sleep until %s (current time %s)", map { $_->iso8601 } Date::Utility->new($target / 1e9), Date::Utility->new($now));
     clock_nanosleep(CLOCK_REALTIME, $target, TIMER_ABSTIME);
+    return;
 }
 
 sub run {
