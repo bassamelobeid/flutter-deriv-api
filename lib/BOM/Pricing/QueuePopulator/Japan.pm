@@ -39,7 +39,7 @@ use constant JOBS_PER_BATCH => 30;
 # values are in seconds
 use constant APP_CONFIG_REFRESH_INTERVAL => 60;
 
-use constant BARRIERS_PER_BATCH => 1;
+use constant BARRIERS_PER_BATCH => 2;
 
 use Log::Any qw($log);
 
