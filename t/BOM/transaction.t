@@ -324,7 +324,6 @@ my $new_acc_usd = $new_client->find_account(query => [currency_code => 'USD'])->
 subtest 'buy a bet', sub {
     plan tests => 11;
     lives_ok {
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
                 underlying => $underlying,
                 bet_type   => 'FLASHU',
@@ -338,12 +337,13 @@ subtest 'buy a bet', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 514.00,
-            payout      => $contract->payout,
-            amount_type => 'payout',
-            source      => 19,
+            client        => $cl,
+            contract      => $contract,
+            price         => 514.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            source        => 19,
+            purchase_date => Date::Utility->new(),
         });
         my $error = $txn->buy;
         is $error, undef, 'no error';
@@ -444,7 +444,6 @@ subtest 'sell a bet', sub {
     lives_ok {
         set_relative_time 1;
         my $reset_time = guard { restore_time };
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
                 underlying => $underlying,
                 bet_type   => 'FLASHU',
@@ -465,11 +464,12 @@ subtest 'sell a bet', sub {
         $mocked->mock('_validate_trade_pricing_adjustment', sub { });
         $mocked->mock('price',                              sub { $contract->bid_price });
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            contract_id => $fmb->{id},
-            price       => $contract->bid_price,
-            source      => 23,
+            client        => $cl,
+            contract      => $contract,
+            contract_id   => $fmb->{id},
+            price         => $contract->bid_price,
+            source        => 23,
+            purchase_date => Date::Utility->new(),
         });
         my $error = $txn->sell;
         is $error, undef, 'no error';
@@ -563,7 +563,6 @@ subtest 'insufficient balance: buy bet for 100.01 with a balance of 100', sub {
         $acc_usd->load;
         is $acc_usd->balance + 0, 100, 'USD balance is now 100';
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'FLASHU',
@@ -575,11 +574,12 @@ subtest 'insufficient balance: buy bet for 100.01 with a balance of 100', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 100.01,
-            payout      => $contract->payout,
-            amount_type => 'stake',
+            client        => $cl,
+            contract      => $contract,
+            price         => 100.01,
+            payout        => $contract->payout,
+            amount_type   => 'stake',
+            purchase_date => Date::Utility->new(),
         });
         my $error = $txn->buy;
         SKIP: {
@@ -633,12 +633,13 @@ subtest 'insufficient balance: buy bet for 100.01 with a balance of 100', sub {
                 is $fmb->{is_sold}, 0, 'have expired but unsold contract in DB';
 
                 $txn = BOM::Transaction->new({
-                    client      => $cl,
-                    contract    => $contract,
-                    price       => 100.01,
-                    payout      => $contract->payout,
-                    amount_type => 'stake',
-                    source      => 31,
+                    client        => $cl,
+                    contract      => $contract,
+                    price         => 100.01,
+                    payout        => $contract->payout,
+                    amount_type   => 'stake',
+                    source        => 31,
+                    purchase_date => Date::Utility->new(),
                 });
                 $error = $txn->buy;
 
