@@ -1,0 +1,222 @@
+use strict;
+use warnings;
+use Test::More;
+use Test::MockTime qw/:all/;
+use JSON;
+use FindBin qw/$Bin/;
+use lib "$Bin/../lib";
+use BOM::Test::Helper qw/reconnect test_schema build_wsapi_test/;
+use BOM::Platform::RedisReplicated;
+use File::Temp;
+use Date::Utility;
+use Data::Dumper;
+use Socket qw(PF_INET SOCK_STREAM pack_sockaddr_in inet_aton);
+use Variable::Disposition qw(retain_future);
+use Future;
+use Future::Mojo;
+use Try::Tiny;
+use BOM::Database::Model::OAuth;
+use BOM::MarketData qw(create_underlying);
+
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+initialize_realtime_ticks_db();
+
+my $t = build_wsapi_test();
+note "Daemon started\n";
+
+my $intro_port;
+for (@{$t->app->log->history}) {
+    if ($_->[2] =~ /Introspection[^:]+:(\d+)/) {
+        $intro_port = $1;
+        last;
+    }
+}
+die "Introspection server port not found!" unless $intro_port;
+note "Introspection port: $intro_port\n";
+
+socket(my $socket, PF_INET, SOCK_STREAM, 0)
+      or die "socket: $!";
+connect($socket, pack_sockaddr_in($intro_port, inet_aton("localhost")))
+     or die "connect: $!";      
+
+my ($res, $ticks, $intro_stats, $intro_conn);
+
+
+
+my $now = Date::Utility->new;
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'economic_events',
+    {
+        events => [{
+                symbol       => 'USD',
+                release_date => 1,
+                source       => 'forexfactory',
+                impact       => 1,
+                event_name   => 'FOMC',
+            }]});
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol        => $_,
+        recorded_date => $now,
+    }) for qw(USD JPY JPY-USD);
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxUSDJPY',
+        recorded_date => $now,
+    });
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    quote      => 100,
+    epoch      => $now->epoch - 1,
+    underlying => 'frxUSDJPY',
+});
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    quote      => 101,
+    epoch      => $now->epoch,
+    underlying => 'frxUSDJPY',
+});
+
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    quote      => 102,
+    epoch      => $now->epoch + 1,
+    underlying => 'frxUSDJPY',
+});
+
+# prepare client
+my $email  = 'test-binary@binary.com';
+my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+$client->email($email);
+$client->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
+$client->save;
+
+my $loginid = $client->loginid;
+my $user    = BOM::Platform::User->create(
+    email    => $email,
+    password => '1234',
+);
+$user->add_loginid({loginid => $loginid});
+$user->save;
+
+$client->set_default_account('USD');
+$client->smart_payment(
+    currency     => 'USD',
+    amount       => +300000,
+    payment_type => 'external_cashier',
+    remark       => 'test deposit'
+);
+
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
+
+$t = $t->send_ok({json => {authorize => $token}})->message_ok;
+my $authorize = decode_json($t->message->[1]);
+
+my $underlying = create_underlying('frxUSDJPY');
+
+## stats
+
+# cumulative_client_connections
+
+$t->send_ok({json=>{ping=>1}})->message_ok;
+$intro_stats = send_introspection_cmd('stats');
+cmp_ok $intro_stats->{cumulative_client_connections}, '==', 1, "1 cumulative_client_connections";
+reconnect($t, {app_id=>2});
+$t->send_ok({json=>{ping=>1}})->message_ok;
+$intro_stats = send_introspection_cmd('stats');
+cmp_ok $intro_stats->{cumulative_client_connections}, '==', 2, "2 cumulative_client_connections";
+
+# number of redis connections
+
+my %contract = (
+    "amount"        => "100",
+    "basis"         => "payout",
+    "contract_type" => "CALL",
+    "currency"      => "USD",
+    "symbol"        => "frxUSDJPY",
+    "duration"      => "7",
+    "duration_unit" => "d",
+    "subscribe"     => 1,
+);
+
+$t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
+
+$intro_stats = send_introspection_cmd('stats');
+cmp_ok $intro_stats->{current_redis_connections}, '==', 3, '3 redis connections after proposal subscription';
+
+$t->{_bom}{redis_server}->stop;
+
+$t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
+
+$intro_stats = send_introspection_cmd('stats');
+cmp_ok $intro_stats->{current_redis_connections}, '==', 2, '2 redis connections after redis stop and connection attempt';
+cmp_ok $intro_stats->{cumulative_redis_errors}, '==', 1, 'Got 1 redis error';
+
+$t->{_bom}{redis_server}->start;
+
+
+## connections
+
+# last sent and recieved message
+
+$t = $t->send_ok({ json => { "time" => 1}})->message_ok;
+$intro_conn = send_introspection_cmd('connections');
+ok $intro_conn->{connections}[0]{last_call_received_from_client}{time}, 'last msg was time';
+$t = $t->send_ok({ json => { "ping" => 1}})->message_ok;
+$intro_conn = send_introspection_cmd('connections');
+cmp_ok $intro_conn->{connections}[0]{last_message_sent_to_client}{ping}, 'eq', 'pong', 'last msg was pong';
+#print Dumper($intro_conn);
+
+# count of each type
+cmp_ok $intro_conn->{connections}[0]{messages_received_from_client}{time}, '==', 1, '1 time call';
+cmp_ok $intro_conn->{connections}[0]{messages_sent_to_client}{time}, '==', 1, '1 time reply';
+$t = $t->send_ok({ json => { "time" => 1}})->message_ok;
+$intro_conn = send_introspection_cmd('connections');
+cmp_ok $intro_conn->{connections}[0]{messages_received_from_client}{time}, '==', 2, '2 time call';
+cmp_ok $intro_conn->{connections}[0]{messages_sent_to_client}{time}, '==', 2, '2 time reply';
+
+# number of pricer subs
+
+cmp_ok $intro_conn->{connections}[0]{pricer_subscribtion_count}, '==', 1, 'current 1 price subscription';
+$contract{amount} = 200;
+$t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
+$intro_conn = send_introspection_cmd('connections');
+cmp_ok $intro_conn->{connections}[0]{pricer_subscribtion_count}, '==', 1, 'again current 1 price subscription';
+$contract{duration} = 14;
+$t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
+#$res = decode_json($t->message->[1]);
+#print "2 SUB RES: ".Dumper($res);
+$intro_conn = send_introspection_cmd('connections');
+cmp_ok $intro_conn->{connections}[0]{pricer_subscribtion_count}, '==', 2, 'now 2 price subscription';
+
+$t = $t->send_ok({ json => { "forget_all" => 'proposal'}})->message_ok;
+$intro_conn = send_introspection_cmd('connections');
+cmp_ok $intro_conn->{connections}[0]{pricer_subscribtion_count}, '==', 0, 'no more price subscription';
+
+
+done_testing;
+
+sub send_introspection_cmd {
+    my $cmd = shift;
+    my $ret;
+    my $VAR1;
+    retain_future(
+        Future->done( try {
+            my $stream = Mojo::IOLoop::Stream->new($socket);
+            $stream->start;
+            $stream->on(read=>sub{
+                ($stream, $ret) = @_;
+                $stream->close;
+                Mojo::IOLoop->stop;
+                Future->done;
+            });
+            $stream->write("$cmd\n");
+            Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
+        }));
+    $ret = substr($ret, 5); # remove 'OK - '
+    $ret = JSON::from_json($ret);
+    return $ret;
+}
