@@ -319,7 +319,7 @@ has calendar => (
     default => sub { return shift->underlying->calendar; },
 );
 
-has opposite_contract => (
+has [qw(opposite_contract opposite_contract_for_sale)] => (
     is         => 'ro',
     isa        => 'BOM::Product::Contract',
     lazy_build => 1
@@ -999,8 +999,8 @@ sub _build__pricing_args {
     };
 
     if ($self->priced_with_intraday_model) {
-        $args->{long_term_prediction}      = $self->empirical_volsurface->long_term_prediction;
-        $args->{volatility_scaling_factor} = $self->empirical_volsurface->volatility_scaling_factor;
+        $args->{long_term_prediction}      = $self->long_term_prediction;
+        $args->{volatility_scaling_factor} = $self->volatility_scaling_factor;
         $args->{iv_with_news}              = $self->news_adjusted_pricing_vol;
     }
 
@@ -1088,7 +1088,7 @@ sub _build_current_tick {
     return $self->underlying->spot_tick;
 }
 
-sub _build_opposite_contract {
+sub _build_opposite_contract_for_sale {
     my $self = shift;
 
     # Start by making a copy of the parameters we used to build this bet.
@@ -1125,6 +1125,59 @@ sub _build_opposite_contract {
     foreach my $vol_param (qw(volsurface fordom forqqq domqqq)) {
         $opp_parameters{$vol_param} = $self->$vol_param;
     }
+
+    # we still want to set for_sale for a forward_starting contracts
+    $opp_parameters{for_sale} = 1;
+    # delete traces of this contract were a forward starting contract before.
+    delete $opp_parameters{starts_as_forward_starting};
+    # duration could be set for an opposite contract from bad hash reference reused.
+    delete $opp_parameters{duration};
+
+    if (not $self->is_forward_starting) {
+        if ($self->entry_tick) {
+            foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
+                if (defined $self->$barrier) {
+                    $opp_parameters{$barrier} = $self->$barrier->as_absolute;
+                    $opp_parameters{'supplied_' . $barrier} = $self->$barrier->as_absolute;
+                }
+            }
+        }
+        # We should be looking to move forward in time to a bet starting now.
+        $opp_parameters{date_start}  = $self->date_pricing;
+        $opp_parameters{pricing_new} = 1;
+    }
+
+    my $opp_contract = $self->_produce_contract_ref->(\%opp_parameters);
+
+    if (my $role = $opp_parameters{role}) {
+        $role->require;
+        $role->meta->apply($opp_contract);
+    }
+
+    return $opp_contract;
+}
+
+sub _build_opposite_contract {
+    my $self = shift;
+
+    # Start by making a copy of the parameters we used to build this bet.
+    my %opp_parameters = %{$self->build_parameters};
+    # Always switch out the bet type for the other side.
+    $opp_parameters{'bet_type'} = $self->other_side_code;
+    # Don't set the shortcode, as it will change between these.
+    delete $opp_parameters{'shortcode'};
+    # Save a round trip.. copy market data
+    foreach my $vol_param (qw(volsurface fordom forqqq domqqq)) {
+        $opp_parameters{$vol_param} = $self->$vol_param;
+    }
+
+    # We have this concept in forward starting contract where a forward start contract is considered
+    # pricing_new until it has started. So it kind of messed up here.
+    $opp_parameters{current_tick} = $self->current_tick;
+    my @to_override = qw(r_rate q_rate discount_rate pricing_vol pricing_spot mu);
+    push @to_override, qw(volatility_scaling_factor long_term_prediction) if $self->priced_with_intraday_model;
+    $opp_parameters{$_} = $self->$_ for @to_override;
+    $opp_parameters{pricing_new} = 1;
 
     my $opp_contract = $self->_produce_contract_ref->(\%opp_parameters);
 
@@ -1420,6 +1473,45 @@ sub _build_risk_profile {
         underlying_risk_profile        => $self->underlying->risk_profile,
         underlying_risk_profile_setter => $self->underlying->risk_profile_setter,
     );
+}
+
+=head2 extra_info
+
+get the extra pricing information of the contract. Is it necessary for Japan but let's do it for everyone.
+
+->extra_info('string'); # returns a string of information separated by underscore
+->extra_info('arrayref'); # returns an array reference of information
+
+=cut
+
+sub extra_info {
+    my ($self, $as_type) = @_;
+
+    die 'Supports \'string\' or \'arrayref\' type only' if (not($as_type eq 'string' or $as_type eq 'arrayref'));
+
+    # We have these keys save in data_collection.quants_bet_variables.
+    # Not going to change it for backward compatibility.
+    my %mapper = (
+        high_barrier_vol => 'iv',
+        low_barrier_vol  => 'iv_2',
+        pricing_vol      => 'iv',
+    );
+    my @extra = ([pricing_spot => $self->pricing_spot]);
+    if ($self->priced_with_intraday_model) {
+        push @extra,
+            (map { [($mapper{$_} // $_) => $self->$_] } qw(pricing_vol news_adjusted_pricing_vol long_term_prediction volatility_scaling_factor));
+    } elsif ($self->pricing_vol_for_two_barriers) {
+        push @extra, (map { [($mapper{$_} // $_) => $self->pricing_vol_for_two_barriers->{$_}] } qw(high_barrier_vol low_barrier_vol));
+    } else {
+        push @extra, [iv => $self->pricing_vol];
+    }
+
+    if ($as_type eq 'string') {
+        my $string = join '_', map { $_->[1] } @extra;
+        return $string;
+    }
+
+    return \@extra;
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.
