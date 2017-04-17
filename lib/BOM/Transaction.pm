@@ -1314,7 +1314,9 @@ sub _build_pricing_comment {
         [theta => $contract->theta],
         [vanna => $contract->vanna],
         [volga => $contract->volga],
-        [spot  => $contract->current_spot]);
+        [spot  => $contract->current_spot],
+        ($contract->can('extra_info') ? @{$contract->extra_info('arrayref')} : []),
+    );
 
     # only manual sell and buy has a price
     if ($price) {
