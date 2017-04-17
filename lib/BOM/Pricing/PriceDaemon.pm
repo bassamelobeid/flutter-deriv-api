@@ -95,8 +95,9 @@ sub run {
 
         my $next = $key->[1];
         next unless $next =~ s/^PRICER_KEYS:://;
-        my $payload = decode_json($next);
-        my $params  = {@{$payload}};
+        my $payload       = decode_json($next);
+        my $params        = {@{$payload}};
+        my $contract_type = $params->{contract_type};
 
         # If incomplete or invalid keys somehow got into pricer,
         # delete them here.
@@ -111,13 +112,14 @@ sub run {
         }
         qw(feed chronicle) or next;
 
-        stats_timing(
-            'pricer_daemon.rpc_time',
-            $response->{rpc_time},
-            {
-                tags => $self->tags(
-                    'contract_type:' . ($params->{contract_type} // join "-", @{$params->{contract_types}}),
-                    'currency:' . $params->{currency})}) if (($response->{rpc_time} // 0) > 1000);
+        if (($response->{rpc_time} // 0) > 1000) {
+            my $contract_type_string =
+                ref($contract_type)
+                ? join '_', @$contract_type
+                : $contract_type // 'unknown';
+            stats_timing('pricer_daemon.rpc_time', $response->{rpc_time},
+                {tags => $self->tags('contract_type:' . $contract_type_string, 'currency:' . $params->{currency})});
+        }
 
         my $subscribers_count = $redis->publish($key->[1], encode_json($response));
         # if None was subscribed, so delete the job
