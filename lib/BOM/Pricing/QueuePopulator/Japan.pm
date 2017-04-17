@@ -38,6 +38,8 @@ use constant JOBS_PER_BATCH => 30;
 # values are in seconds
 use constant APP_CONFIG_REFRESH_INTERVAL => 60;
 
+# This controls how many barriers each queue item represents. A higher number is more efficient,
+# but time spent per queue item needs to be less than the pricing interval.
 use constant BARRIERS_PER_BATCH => 2;
 
 use Log::Any qw($log);
