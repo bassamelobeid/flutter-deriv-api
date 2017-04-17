@@ -64,7 +64,7 @@ foreach my $single_data (@$decimate_data) {
 }
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {events => $news});
-for my $date ($now, Date::Utility->new(1491448384)) {
+for my $date ($now){#, Date::Utility->new(1491448384)) {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'holiday',
         {
@@ -76,7 +76,7 @@ for my $date ($now, Date::Utility->new(1491448384)) {
         'volsurface_delta',
         {
             symbol        => $underlying->symbol,
-            recorded_date => $date,
+            recorded_date => $date->truncate_to_day(),
             surface       => $volsurfaces->{$underlying->symbol}->{surfaces}->{'New York 10:00'},
         });
 
