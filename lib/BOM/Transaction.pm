@@ -149,6 +149,12 @@ has transaction_id => (
     isa => 'Int',
 );
 
+### For sell operations only
+has reference_id => (
+    is  => 'rw',
+    isa => 'Int',
+);
+
 has contract_id => (
     is  => 'rw',
     isa => 'Int',
@@ -756,9 +762,9 @@ sub sell {
     );
 
     my $error = 1;
-    my ($fmb, $txn);
+    my ($fmb, $txn, $buy_txn_id);
     try {
-        ($fmb, $txn) = $fmb_helper->sell_bet;
+        ($fmb, $txn, $buy_txn_id) = $fmb_helper->sell_bet;
         $error = 0;
     }
     catch {
@@ -782,12 +788,13 @@ sub sell {
             -type              => 'NoOpenPosition',
             -mesg              => 'No such open contract.',
             -message_to_client => BOM::Platform::Context::localize('This contract was not found among your open positions.'),
-        )) unless defined $txn->{id};
+        )) unless defined $txn->{id} && defined $buy_txn_id;
 
     $self->stats_stop($stats_data);
 
     $self->balance_after($txn->{balance_after});
     $self->transaction_id($txn->{id});
+    $self->reference_id($buy_txn_id);
 
     return;
 }
@@ -1123,20 +1130,30 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -message_to_client => BOM::Platform::Context::localize('This contract was not found among your open positions.'),
         );
     },
+    BI103 => Error::Base->cuss(
+        -type              => 'RoundingExceedPermittedEpsilon',
+        -mesg              => 'Rounding exceed permitted epsilon',
+        -message_to_client => BOM::Platform::Context::localize('Only a maximum of two decimal points are allowed for the amount.'),
+    ),
 );
 
 sub _recover {
-    my $self = shift;
-    my $err  = shift;
+    my $self   = shift;
+    my $err    = shift;
+    my $client = shift;
+    if (blessed($self)) {
+        $client //= $self->client;
+    }
 
     if (ref($err) eq 'ARRAY') {    # special BINARY code
         my $ref = $known_errors{$err->[0]};
-        return ref $ref eq 'CODE' ? $ref->($self, $self->client, $err->[1]) : $ref if $ref;
+        return ref $ref eq 'CODE' ? $ref->($self, $client, $err->[1]) : $ref if $ref;
     } else {
         # TODO: recover from deadlocks & co.
     }
     die $err;
 }
+
 
 sub _build_pricing_comment {
     my $args = shift;
@@ -1167,7 +1184,9 @@ sub _build_pricing_comment {
         [theta => $contract->theta],
         [vanna => $contract->vanna],
         [volga => $contract->volga],
-        [spot  => $contract->current_spot]);
+        [spot  => $contract->current_spot],
+        ($contract->can('extra_info') ? @{$contract->extra_info('arrayref')} : []),
+    );
 
     # only manual sell and buy has a price
     if ($price) {
@@ -1487,9 +1506,11 @@ sub _get_params_for_expiryqueue {
     # in expiry queue might be wrong, since barrier is set based on next tick.
     if ($contract->is_path_dependent) {
         # just check one barrier type since they are not allowed to be different.
-        if ($contract->two_barriers and $contract->high_barrier->barrier_type eq 'absolute') {
-            $hash->{up_level}   = $contract->high_barrier->as_absolute;
-            $hash->{down_level} = $contract->low_barrier->as_absolute;
+        if ($contract->two_barriers) {
+            if ($contract->high_barrier->barrier_type eq 'absolute') {
+                $hash->{up_level}   = $contract->high_barrier->as_absolute;
+                $hash->{down_level} = $contract->low_barrier->as_absolute;
+            }
         } elsif ($contract->barrier and $contract->barrier->barrier_type eq 'absolute') {
             my $which_level = ($contract->barrier->as_difference > 0) ? 'up_level' : 'down_level';
             $hash->{$which_level} = $contract->barrier->as_absolute;
