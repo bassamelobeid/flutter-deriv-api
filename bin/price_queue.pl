@@ -48,10 +48,10 @@ while (1) {
     $redis->del('pricer_jobs');
     $redis->lpush('pricer_jobs', @keys) if @keys;
 
-    # For JP pricing we're using a 2-second interval by default: we refresh the queue once for every 2 cycles on the main
+    # For JP pricing we're using a 3-second interval by default: we refresh the queue once for every 3 cycles on the main
     # queue. Note that this means the actual time we start the JP pricing could be on odd seconds, even seconds, or we may even
-    # update once every 3 seconds when the system is under particularly heavy load.
-    unless($iteration++ % 2) {
+    # update once every 4 seconds when the system is under particularly heavy load.
+    unless($iteration++ % 3) {
         DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue_jp.size', 0 + @jp_keys, {tags => ['tag:' . $internal_ip]});
         DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue_jp.not_processed', $redis->llen('pricer_jobs_jp'), {tags => ['tag:' . $internal_ip]});
         $redis->del('pricer_jobs_jp');
