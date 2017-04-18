@@ -78,19 +78,19 @@ sub send_email {
             0;
         } or return 0;
     } else {
-        unless ($skip_text2html) {
-            $message = text2html(
-                $message,
-                urls      => 1,
-                email     => 1,
-                lines     => 1,
-                metachars => 0,
-            );
-        }
 
         my $mail_message;
         if ($use_email_template) {
-            my $vars = {
+                  if  ($args_ref->{email_content_is_html} && !$skip_text2html) {
+                    $message = text2html(
+                                         $message,
+                                         urls      => 1,
+                                         email     => 1,
+                                         lines     => 1,
+                                         metachars => 0,
+                                        );
+                  }
+          my $vars = {
                 # Allows inline HTML, default is off - be very, very careful when setting this #
                 email_content_is_html => $args_ref->{'email_content_is_html'},
                 content               => $message,
