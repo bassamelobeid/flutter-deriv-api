@@ -6,7 +6,7 @@ use Email::Sender::Transport::Test;
 use Test::MockModule;
 use Test::Warnings;
 use Brands;
-use_ok('BOM::Platform::Email');
+BEGIN {use_ok('BOM::Platform::Email', qw(send_email));}
 
 my $transport_obj  = Email::Sender::Transport::Test;
 my $mocked_stuffer = Test::MockModule('Email::Stuffer');
