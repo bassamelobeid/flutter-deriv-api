@@ -227,7 +227,7 @@ sub BUILD {
 
     Carp::croak "Test DB trying to run to non development box"
         unless (BOM::Test::env() eq 'development');
-    local $ENV{TEST_DATABASE} = 1;    ## no critic (RequireLocalizedPunctuationVars)
+    $ENV{TEST_DATABASE} = 1;    ## no critic (RequireLocalizedPunctuationVars)
     return;
 }
 
