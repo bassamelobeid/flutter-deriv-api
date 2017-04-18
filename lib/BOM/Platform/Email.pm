@@ -94,7 +94,7 @@ sub send_email {
 
     my $email_stuffer = Email::Stuffer->from($fromemail)->to($email)->subject($subject)->text_body($mail_message);
     if ($attachment) {
-        $email_stuffer->attach_file($attachment)->send;
+        $email_stuffer->attach_file($attachment);
     }
 
     try {
