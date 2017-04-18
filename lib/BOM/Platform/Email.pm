@@ -17,8 +17,12 @@ use BOM::Platform::Context qw(request localize);
 use parent 'Exporter';
 our @EXPORT_OK = qw(send_email);
 
-# Note that this function has two ways to indicate errors: it may raise an exception, or return false.
-# Ideally we should pick one for consistency.
+=head2 send_email
+
+send the email. Return 1 if success, otherwise 0
+
+=cut
+
 sub send_email {
     my $args_ref           = shift;
     my $fromemail          = $args_ref->{'from'};
