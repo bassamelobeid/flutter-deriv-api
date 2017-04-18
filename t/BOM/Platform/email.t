@@ -61,11 +61,20 @@ subtest 'no use template' => sub {
 };
 
 subtest 'with template' => sub{
-  $args->{email_content_is_html} = 1;
+  $args->{use_email_template} = 1;
   ok(send_email($args));
   my $email = [$transport->deliveries]->[-1]{email};
-  like $email->get_body, qr/line1<br>line2/s, "text turn to html";
+  like $email->get_body, qr/line1\r\nline2/s, "text not turn to html";
   like $email->get_body, qr/<html>/s, "use template";
+  $args->{email_content_is_html} = 1;
+  ok(send_email($args));
+  $email = [$transport->deliveries]->[-1]{email};
+  like $email->get_body, qr/line2<br \/>/s, "text turned to html";
+  $args->{skip_text2html} = 1;
+  ok(send_email($args));
+  $email = [$transport->deliveries]->[-1]{email};
+  like $email->get_body, qr/line1\r\nline2/s, "text not turn to html";
+  
 };
 
 done_testing();
