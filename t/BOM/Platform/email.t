@@ -19,14 +19,13 @@ $mocked_stuffer->mock(
     });
 
 my $args = {};
-
+my $result;
 subtest 'args' => sub {
     throw_ok { send_email($args) } 'No email provided';
     $args->{to} = 'test@test.com';
     ok !send_email, 'failed because no email';
-    my $result;
     like(warning { $result = send_email($args) } , qr/from email missing/);
-    ok !result, "failed because no from email";
+    ok !$result, "failed because no from email";
     $args->{from} = 'from@test.com';
     like(warning { $result = send_email($args) } , qr/from email missing/);
     local $ENV{SKIP_EMAIL} = 1;
