@@ -28,7 +28,7 @@ sub send_email {
     my $fromemail          = $args_ref->{'from'};
     my $email              = $args_ref->{'to'};
     my $subject            = $args_ref->{'subject'};
-    my @message            = @{$args_ref->{'message'}};
+    my @message            = @{$args_ref->{'message'} // []};
     my $use_email_template = $args_ref->{'use_email_template'};
     my $attachment         = $args_ref->{'attachment'};
     my $skip_text2html     = $args_ref->{'skip_text2html'};
