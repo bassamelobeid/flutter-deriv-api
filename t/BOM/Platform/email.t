@@ -56,7 +56,7 @@ subtest 'support address' => sub {
     my @deliveries = $transport->deliveries;
     is_deeply( $deliveries[-1]{successes},
         ['test@test.com'], 'send email ok' );
-    is [ $deliveries[-1]{email}->get_header('From'),
+    is $deliveries[-1]{email}->get_header('From'),
       '"Binary.com" <support@binary.com>', 'From is rewrote';
 
 };
