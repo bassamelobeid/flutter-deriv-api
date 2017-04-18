@@ -8,7 +8,7 @@ use Test::Warnings;
 use Brands;
 BEGIN {use_ok('BOM::Platform::Email', qw(send_email));}
 
-my $transport_obj  = Email::Sender::Transport::Test;
+my $transport_obj  = Email::Sender::Transport::Test->new;
 my $mocked_stuffer = Test::MockModule('Email::Stuffer');
 $mocked_stuffer->mock(
     'send',
