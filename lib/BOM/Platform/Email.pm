@@ -61,11 +61,10 @@ sub send_email {
     }
 
     my $message = join("\n", @message);
-
     my $mail_message = $message;
     if ($use_email_template) {
         if ($args_ref->{email_content_is_html} && !$skip_text2html) {
-            $mail_message = text2html(
+            $message = text2html(
                 $message,
                 urls      => 1,
                 email     => 1,
