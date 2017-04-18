@@ -483,7 +483,7 @@ subtest '2017_with_extra_data' => sub {
 
         is $ask->{bs_probability},            0.76978238455266,    'matched bs probability';
         is $ask->{commission_markup},         0.005,               'matched commission markup';
-        is $ask->{intraday_delta_correction}, 0.00255344051104323, 'matched intraday delta correction';
+        is $ask->{intraday_delta_correction}, 0,                   'matched intraday delta correction';
         is $ask->{intraday_vega_correction},  -0.0216800649832659, 'matched intraday vega correction';
         is $ask->{risk_markup},               0,                   'matched risk markup';
     };
