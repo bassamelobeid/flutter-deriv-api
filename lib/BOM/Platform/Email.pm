@@ -19,7 +19,7 @@ our @EXPORT_OK = qw(send_email);
 
 =head2 send_email
 
-send the email. Return 1 if success, otherwise 0
+Send the email. Return 1 if success, otherwise 0
 
 =cut
 
