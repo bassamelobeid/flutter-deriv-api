@@ -51,5 +51,10 @@ subtest 'support address' => sub{
 
 };
 
+subtest 'no use template' , sub {
+  $args->{message} = [qw(line1 line2)];
+  ok(send_email($args));
+  is [$transport->deliveries]->[-1]{email}->get_body, "line1\nline2", 'message joined';
+};
 
 done_testing();
