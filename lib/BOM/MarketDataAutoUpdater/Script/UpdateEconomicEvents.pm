@@ -40,8 +40,6 @@ sub script_run {
         Path::Tiny::path("/feed/economic_events/$file_timestamp")->append(time . ' ' . JSON::to_json($event_param) . "\n");
     }
 
-    BOM::Platform::Chronicle::get_chronicle_writer()->set('seasonality', 'economic_events_updated', {ts => time}, Date::Utility->new(), 0);
-
     try {
 
         my $tentative_count = grep { $_->{is_tentative} } @$events_received;
@@ -74,6 +72,8 @@ sub script_run {
                 economic_events   => \@trimmed_events,
             });
         }
+
+        BOM::Platform::Chronicle::get_chronicle_writer()->set('seasonality', 'economic_events_updated', {ts => time}, Date::Utility->new(), 0);
 
         print "generated economic events impact curves for " . scalar(@underlying_symbols) . " underlying symbols.";
 
