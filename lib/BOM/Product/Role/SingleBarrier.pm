@@ -1,10 +1,9 @@
 package BOM::Product::Role::SingleBarrier;
 
 use Moose::Role;
-with 'BOM::Product::Role::BarrierBuilder';
-
 use List::Util qw(first);
-use BOM::Platform::Context qw(localize);
+
+with 'BOM::Product::Role::BarrierBuilder';
 
 has supplied_barrier => (is => 'ro');
 
@@ -63,7 +62,7 @@ sub _validate_barrier {
                 . "[max: "
                 . $max_move . "]",
             severity          => 91,
-            message_to_client => localize('Barrier is out of acceptable range.'),
+            message_to_client => ['Barrier is out of acceptable range.'],
         };
     } elsif ($self->is_path_dependent and abs($pip_move) < $self->minimum_allowable_move) {
         return {
@@ -73,13 +72,13 @@ sub _validate_barrier {
                 . "[actual: "
                 . $pip_move . "]",
             severity          => 1,
-            message_to_client => localize('Barrier must be at least [plural,_1,%d pip,%d pips] away from the spot.', $self->minimum_allowable_move),
+            message_to_client => ['Barrier must be at least [plural,_1,%d pip,%d pips] away from the spot.', $self->minimum_allowable_move],
         };
     } elsif (defined $barrier and $barrier->supplied_barrier eq '0' and not $self->is_intraday) {
         return {
             message           => 'Absolute barrier cannot be zero',
             severity          => 1,
-            message_to_client => localize('Absolute barrier cannot be zero'),
+            message_to_client => ['Absolute barrier cannot be zero'],
         };
     }
 

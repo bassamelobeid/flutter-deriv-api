@@ -3,7 +3,6 @@ package BOM::Product::Contract::Strike::Digit;
 use Moose;
 use namespace::autoclean;
 use Scalar::Util qw(looks_like_number);
-use BOM::Platform::Context qw(localize);
 
 extends 'BOM::Product::Contract::Strike';
 
@@ -22,7 +21,7 @@ sub BUILD {
         $self->add_errors({
             severity          => 110,
             message           => 'invalid supplied barrier format for digits',
-            message_to_client => localize('Barrier is not an integer between 0 to 9.'),
+            message_to_client => ['Barrier is not an integer between 0 to 9.'],
         });
         # setting supplied barrier to zero
         $self->_set_supplied_barrier(0);

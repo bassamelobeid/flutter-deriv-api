@@ -4,7 +4,6 @@ use Moose::Role;
 
 use Try::Tiny;
 use VolSurface::Utils qw( get_strike_for_spot_delta );
-use BOM::Platform::Context qw(localize);
 use List::Util qw(max);
 use Scalar::Util::Numeric qw(isint);
 
@@ -23,7 +22,7 @@ sub make_barrier {
         $self->_add_error({
             severity          => 100,
             message           => 'Undefined barrier',
-            message_to_client => localize('We could not process this contract at this time.'),
+            message_to_client => ['We could not process this contract at this time.'],
         });
     }
 
@@ -35,7 +34,7 @@ sub make_barrier {
         $self->_add_error({
             severity          => 100,
             message           => 'Barrier is not an integer',
-            message_to_client => localize('Barrier must be an integer.'),
+            message_to_client => ['Barrier must be an integer.'],
         });
     }
 
@@ -43,7 +42,7 @@ sub make_barrier {
         $self->_add_error({
             severity          => 100,
             message           => 'Intend to buy tick expiry contract with absolute barrier.',
-            message_to_client => localize('Invalid barrier.'),
+            message_to_client => ['Invalid barrier.'],
         });
     }
 
@@ -69,7 +68,7 @@ sub make_barrier {
                 $self->_add_error({
                     severity          => 100,
                     message           => "Could not apply corporate action [error: $_]",
-                    message_to_client => localize('System problems prevent proper settlement at this time.'),
+                    message_to_client => ['System problems prevent proper settlement at this time.'],
                 });
             };
         }

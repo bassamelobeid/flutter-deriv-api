@@ -131,7 +131,7 @@ sub _build_as_absolute {
             $self->add_errors({
                 severity          => 100,
                 message           => "Non-positive barrier [value: $value]",
-                message_to_client => localize('Contract barrier must be positive.'),
+                message_to_client => ['Contract barrier must be positive.'],
             });
             $value = 10 * $underlying->pip_size;
         }

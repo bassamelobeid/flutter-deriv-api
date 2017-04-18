@@ -10,7 +10,6 @@ use List::MoreUtils qw(none all);
 use BOM::Market::DataDecimate;
 use VolSurface::Empirical;
 use Quant::Framework::VolSurface;
-use BOM::Platform::Context qw(localize);
 
 ## ATTRIBUTES  #######################
 
@@ -181,14 +180,14 @@ sub _build_pricing_vol {
         warn "Volatility error: $volatility_error";
         $self->_add_error({
             message           => $volatility_error,
-            message_to_client => localize('Trading on this market is suspended due to missing market (volatility) data.'),
+            message_to_client => ['Trading on this market is suspended due to missing market (volatility) data.'],
         });
     }
 
     if ($vol <= 0) {
         $self->_add_error({
             message           => 'Zero volatility. Invalidate price.',
-            message_to_client => localize('We could not process this contract at this time.'),
+            message_to_client => ['We could not process this contract at this time.'],
         });
     }
 
