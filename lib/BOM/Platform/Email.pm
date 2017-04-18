@@ -5,7 +5,6 @@ use warnings;
 
 use URL::Encode;
 use Email::Stuffer;
-use HTML::FromText;
 use Try::Tiny;
 use Encode;
 
@@ -63,18 +62,10 @@ sub send_email {
     my $message = join("\n", @message);
     my $mail_message = $message;
     if ($use_email_template) {
-        if ($args_ref->{email_content_is_html} && !$skip_text2html) {
-            $message = text2html(
-                $message,
-                urls      => 1,
-                email     => 1,
-                lines     => 1,
-                metachars => 0,
-            );
-        }
         my $vars = {
             # Allows inline HTML, default is off - be very, very careful when setting this #
             email_content_is_html => $args_ref->{'email_content_is_html'},
+            skip_text2html        => $skip_text2html,
             content               => $message,
         };
         $vars->{text_email_template_loginid} = localize('Your Login ID: [_1]', $template_loginid) if $template_loginid;
