@@ -74,11 +74,9 @@ sub setup_ticks {
     $command .= " $feed_file";
 
     my $exit_status = system($command);
-    if ($exit_status == 0) {
+    return 1 if $exit_status == 0;
+    warn "setup ticks failed: $?";
 
-        # upon success
-        return 1;
-    }
     return;
 }
 
