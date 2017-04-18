@@ -4,7 +4,6 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-use BOM::Platform::Context qw(localize);
 use BOM::Product::Contract::Strike::Digit;
 use Pricing::Engine::Digits;
 use BOM::Product::Pricing::Greeks::Digits;
@@ -59,10 +58,9 @@ sub _validate_barrier {
 
     if (not $valid_barriers{$barrier}) {
         return {
-            severity                => 100,
-            message                 => 'No winning digits ' . "[code: " . $self->code . "] " . "[selection: " . $barrier . "]",
-            message_to_client       => localize('Digit must be in the range of [_1] to [_2].', $barrier_range[0], $barrier_range[-1]),
-            message_to_client_array => ['Digit must be in the range of [_1] to [_2].', $barrier_range[0], $barrier_range[-1]],
+            severity          => 100,
+            message           => 'No winning digits ' . "[code: " . $self->code . "] " . "[selection: " . $barrier . "]",
+            message_to_client => ['Digit must be in the range of [_1] to [_2].', $barrier_range[0], $barrier_range[-1]],
         };
     }
 

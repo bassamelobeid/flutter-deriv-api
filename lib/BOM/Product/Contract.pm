@@ -1033,8 +1033,8 @@ sub _build_is_forward_starting {
 sub _build_basis_tick {
     my $self = shift;
 
-    my $waiting_for_entry_tick = localize('Waiting for entry tick.');
-    my $missing_market_data    = localize('Trading on this market is suspended due to missing market data.');
+    my $waiting_for_entry_tick = 'Waiting for entry tick.';
+    my $missing_market_data    = 'Trading on this market is suspended due to missing market data.';
     my ($basis_tick, $potential_error);
 
     # basis_tick is only set to entry_tick when the contract has started.
@@ -1057,7 +1057,7 @@ sub _build_basis_tick {
         });
         $self->_add_error({
             message           => "Waiting for entry tick [symbol: " . $self->underlying->symbol . "]",
-            message_to_client => $potential_error,
+            message_to_client => [$potential_error],
         });
     }
 
@@ -1234,7 +1234,7 @@ sub _build_dividend_adjustment {
                 . $dividend_recorded_date->datetime . "] "
                 . "[symbol: "
                 . $self->underlying->symbol . "]",
-            message_to_client => localize('Trading on this market is suspended due to missing market (dividend) data.'),
+            message_to_client => ['Trading on this market is suspended due to missing market (dividend) data.'],
         });
 
     }
@@ -1335,7 +1335,7 @@ sub _build_pricing_spot {
                 . $self->date_pricing->datetime . "] "
                 . "[symbol: "
                 . $self->underlying->symbol . "]",
-            message_to_client => localize('We could not process this contract at this time.'),
+            message_to_client => ['We could not process this contract at this time.'],
         });
     }
 
@@ -1386,24 +1386,18 @@ sub _build_staking_limits {
         : $bet_limits->{min_payout}->{default}->{$curr};
     my $stake_min = ($self->for_sale) ? $payout_min / 20 : $payout_min / 2;
 
-    my $message_to_client_array;
     my $message_to_client;
     if ($self->for_sale) {
-        $message_to_client = localize('Contract market price is too close to final payout.');
+        $message_to_client = ['Contract market price is too close to final payout.'];
     } else {
-        $message_to_client = localize(
-            'Minimum stake of [_1] and maximum payout of [_2]',
-            to_monetary_number_format($stake_min),
-            to_monetary_number_format($payout_max));
-        $message_to_client_array =
+        $message_to_client =
             ['Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($stake_min), to_monetary_number_format($payout_max)];
     }
 
     return {
-        min                     => $stake_min,
-        max                     => $payout_max,
-        message_to_client       => $message_to_client,
-        message_to_client_array => $message_to_client_array,
+        min               => $stake_min,
+        max               => $payout_max,
+        message_to_client => $message_to_client,
     };
 }
 
@@ -1450,7 +1444,7 @@ sub _build_exit_tick {
                     . $exit_tick_date->datetime . "] "
                     . "[expiry: "
                     . $entry_tick_date->datetime . "]",
-                message_to_client => localize("Intraday contracts may not cross market open."),
+                message_to_client => ["Intraday contracts may not cross market open."],
             });
         }
     }

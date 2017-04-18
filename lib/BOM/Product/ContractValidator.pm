@@ -492,7 +492,6 @@ sub _validate_lifetime {
     my $permitted = $self->_offering_specifics->{permitted};
     my ($min_duration, $max_duration) = @{$permitted}{'min', 'max'};
 
-    my $message_to_client_array;
     my $message_to_client =
         $self->for_sale
         ? ['Resale of this contract is not offered.']
@@ -535,8 +534,7 @@ sub _validate_lifetime {
                 . $self->underlying->symbol . "] "
                 . "[code: "
                 . $self->code . "]",
-            message_to_client       => $message_to_client,
-            message_to_client_array => $message_to_client_array,
+            message_to_client => $message_to_client,
         };
     }
 
