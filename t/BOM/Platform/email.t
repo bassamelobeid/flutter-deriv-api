@@ -34,6 +34,7 @@ subtest 'args' => sub {
     $args->{subject} = "Test subject";
     ok(send_email($args), 'result success but in fact not email not sent');
     is scalar($transport->deliveries), 0, "not called yet";
+    local $ENV{SKIP_EMAIL} = 0;
     $args->{to} = "hello";
     like(warning { $result = send_email($args); }, qr/erroneous email address/ , 'bad email address');
     ok(!$result, 'failed because of bad email address');
