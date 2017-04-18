@@ -41,7 +41,7 @@ sub shortcode_to_parameters {
         $bet_type, $underlying_symbol, $payout,       $date_start,  $date_expiry,    $barrier,
         $barrier2, $prediction,        $fixed_expiry, $tick_expiry, $how_many_ticks, $forward_start,
     );
-
+    my ($initial_bet_type) = split /_/, $shortcode;
 
     my $legacy_params = {
         bet_type   => 'Invalid',    # it doesn't matter what it is if it is a legacy
@@ -49,7 +49,7 @@ sub shortcode_to_parameters {
         currency   => $currency,
     };
 
-    return $legacy_params if (not exists get_all_contract_types()->{$bet_type} or $shortcode =~ /_\d+H\d+/);
+    return $legacy_params if (not exists get_all_contract_types()->{$initial_bet_type} or $shortcode =~ /_\d+H\d+/);
 
     # Both purchase and expiry date are timestamp (e.g. a 30-min bet)
     if ($shortcode =~ /^([^_]+)_([\w\d]+)_(\d*\.?\d*)_(\d+)(?<start_cond>F?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
