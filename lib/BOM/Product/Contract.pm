@@ -1000,7 +1000,7 @@ sub _build__pricing_args {
     if ($self->priced_with_intraday_model) {
         #order is important: long_term_prediction is being set in news_adjusted_pricing_vol calucalation
         $args->{iv_with_news}         = $self->news_adjusted_pricing_vol;
-        $args->{long_term_prediction} = $self->intradayfx_volsurface->long_term_prediction;
+        $args->{long_term_prediction} = $self->long_term_prediction;
     }
 
     return $args;
