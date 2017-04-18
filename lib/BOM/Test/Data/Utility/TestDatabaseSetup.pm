@@ -25,7 +25,6 @@ sub prepare_unit_test_database {
     catch {
         Carp::croak '[' . $0 . '] preparing unit test database failed. ' . $_;
     };
-
     return 1;
 }
 
@@ -228,7 +227,7 @@ sub BUILD {
 
     Carp::croak "Test DB trying to run to non development box"
         unless (BOM::Test::env() eq 'development');
-
+    $ENV{TEST_DATABASE} = 1;
     return;
 }
 
