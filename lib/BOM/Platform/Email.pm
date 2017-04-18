@@ -25,9 +25,9 @@ Send the email. Return 1 if success, otherwise 0
 
 sub send_email {
     my $args_ref           = shift;
-    my $fromemail          = $args_ref->{'from'};
-    my $email              = $args_ref->{'to'};
-    my $subject            = $args_ref->{'subject'};
+    my $fromemail          = $args_ref->{'from'} // '';
+    my $email              = $args_ref->{'to'} // '';
+    my $subject            = $args_ref->{'subject'} // '';
     my @message            = @{$args_ref->{'message'} // []};
     my $use_email_template = $args_ref->{'use_email_template'};
     my $attachment         = $args_ref->{'attachment'};
@@ -37,14 +37,8 @@ sub send_email {
     my $request = request();
     my $language = $request ? $request->language : 'EN';
 
-    die 'No email provided' unless $email;
-
-    if (not $fromemail) {
-        warn("from email missing - [email: $email, subject: $subject]");
-        return 0;
-    }
-    if (not $subject) {
-        warn("subject missing - [from email: $fromemail, email: $email");
+    unless ($email && $fromemail && $subject) {
+        warn("from, to, or subject missed - [from: $fromemail, to: $email, subject: $subject]");
         return 0;
     }
 
