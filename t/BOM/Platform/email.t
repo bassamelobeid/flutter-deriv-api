@@ -53,9 +53,10 @@ subtest 'support address' => sub {
     my $brand = Brands->new( name => request()->brand );
     $args->{from} = $brand->emails('support');
     ok( send_email($args) );
-    is_deeply( [ $transport->deliveries ]->[-1]{successes},
+    my @deliveries = $transport->deliveries;
+    is_deeply( $deliveries[-1]{successes},
         ['test@test.com'], 'send email ok' );
-    is [ $transport->deliveries ]->[-1]{email}->get_header('From'),
+    is [ $deliveries[-1]{email}->get_header('From'),
       '"Binary.com" <support@binary.com>', 'From is rewrote';
 
 };
@@ -64,7 +65,8 @@ subtest 'no use template' => sub {
     $args->{subject} = "hello           world";
     $args->{message} = [qw(line1 line2)];
     ok( send_email($args) );
-    my $email = [ $transport->deliveries ]->[-1]{email};
+    my @deliveries = $transport->deliveries;
+    my $email = $deliveries[-1]{email};
     is $email->get_body, "line1\r\nline2=\r\n", 'message joined';
     is $email->get_header('Subject'), "hello world", 'remove continuous spaces';
 };
@@ -72,16 +74,19 @@ subtest 'no use template' => sub {
 subtest 'with template' => sub {
     $args->{use_email_template} = 1;
     ok( send_email($args) );
-    my $email = [ $transport->deliveries ]->[-1]{email};
+    my @deliveries = $transport->deliveries;
+    my $email = $deliveries[-1]{email};
     like $email->get_body, qr/line1\r\nline2/s, "text not turn to html";
     like $email->get_body, qr/<html>/s,         "use template";
     $args->{email_content_is_html} = 1;
     ok( send_email($args) );
-    $email = [ $transport->deliveries ]->[-1]{email};
+    @deliveries = $transport->deliveries;
+    $email = $deliveries[-1]{email};
     like $email->get_body, qr/line2<br \/>/s, "text turned to html";
     $args->{skip_text2html} = 1;
     ok( send_email($args) );
-    $email = [ $transport->deliveries ]->[-1]{email};
+    @deliveries = $transport->deliveries;
+    $email = $deliveries[-1]{email};
     like $email->get_body, qr/line1\r\nline2/s, "text not turn to html";
 
 };
