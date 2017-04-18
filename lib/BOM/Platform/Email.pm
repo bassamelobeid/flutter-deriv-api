@@ -68,52 +68,43 @@ sub send_email {
 
     my $message = join("\n", @message);
 
-    if ($attachment) {
-        try {
-            Email::Stuffer->from($fromemail)->to($email)->subject($subject)->text_body($message)->attach_file($attachment)->send;
-            1;
+    my $mail_message = $message;
+    if ($use_email_template) {
+        if ($args_ref->{email_content_is_html} && !$skip_text2html) {
+            $message_message = text2html(
+                $message,
+                urls      => 1,
+                email     => 1,
+                lines     => 1,
+                metachars => 0,
+            );
         }
-        catch {
-            warn("Error sending mail: ", $_) unless $ENV{BOM_SUPPRESS_WARNINGS};
-            0;
-        } or return 0;
-    } else {
-
-        my $mail_message;
-        if ($use_email_template) {
-                  if  ($args_ref->{email_content_is_html} && !$skip_text2html) {
-                    $message = text2html(
-                                         $message,
-                                         urls      => 1,
-                                         email     => 1,
-                                         lines     => 1,
-                                         metachars => 0,
-                                        );
-                  }
-          my $vars = {
-                # Allows inline HTML, default is off - be very, very careful when setting this #
-                email_content_is_html => $args_ref->{'email_content_is_html'},
-                content               => $message,
-            };
-            $vars->{text_email_template_loginid} = localize('Your Login ID: [_1]', $template_loginid) if $template_loginid;
-            if ($language eq 'JA') {
-                $vars->{japan_footer_text} = localize('{JAPAN ONLY}footer text of email template for Japan');
-            }
-            BOM::Platform::Context::template->process('common_email.html.tt', $vars, \$mail_message)
-                || die BOM::Platform::Context::template->error();
-        } else {
-            $mail_message = $message;
+        my $vars = {
+            # Allows inline HTML, default is off - be very, very careful when setting this #
+            email_content_is_html => $args_ref->{'email_content_is_html'},
+            content               => $message,
+        };
+        $vars->{text_email_template_loginid} = localize('Your Login ID: [_1]', $template_loginid) if $template_loginid;
+        if ($language eq 'JA') {
+            $vars->{japan_footer_text} = localize('{JAPAN ONLY}footer text of email template for Japan');
         }
-
-        try {
-            Email::Stuffer->from($fromemail)->to($email)->subject($subject)->html_body($mail_message)->send;
-            1;
-        }
-        catch {
-            warn("Error sending mail [$subject]: ", $_) unless $ENV{BOM_SUPPRESS_WARNINGS};
-            0;
-        } or return 0;
+        BOM::Platform::Context::template->process('common_email.html.tt', $vars, \$mail_message)
+            || die BOM::Platform::Context::template->error();
     }
+
+    my $email_stuffer = Email::Stuffer->from($fromemail)->to($email)->subject($subject)->text_body($message);
+    if ($attachment) {
+        $email_stuffer->attach_file($attachment)->send;
+    }
+
+    try {
+        Email::Stuffer->from($fromemail)->to($email)->subject($subject)->html_body($mail_message)->send;
+        1;
+    }
+    catch {
+        warn("Error sending mail [$subject]: ", $_) unless $ENV{BOM_SUPPRESS_WARNINGS};
+        0;
+    } or return 0;
 
     return 1;
 }
