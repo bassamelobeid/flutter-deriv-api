@@ -235,7 +235,7 @@ command connections => sub {
                         messages_received_from_client  => $_->stash->{introspection}{msg_type}{received},
                         messages_sent_to_client        => $_->stash->{introspection}{msg_type}{sent},
                         last_rpc_error                 => $_->stash->{introspection}{last_rpc_error},
-                        pricer_subscribtion_count      => $_->stash->{introspection}{pricer_subscribtion_count},
+                        pricer_subscribtion_count      => scalar keys $_->pricing_subscriptions,
                         }
                     }
                     grep {
