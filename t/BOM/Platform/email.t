@@ -31,7 +31,7 @@ subtest 'args' => sub {
     local $ENV{SKIP_EMAIL} = 1;
     $args->{subject} = "Test subject";
     ok(send_email($args), 'result success but in fact not email not sent');
-    is $transport_obj->successes, 0, "not called yet";
+    is scalar($transport_obj->deliveries), 0, "not called yet";
     done_testing();
 };
 
