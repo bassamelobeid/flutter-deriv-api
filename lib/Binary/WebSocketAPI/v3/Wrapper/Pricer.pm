@@ -818,15 +818,8 @@ sub _create_error_message {
     if ($response->{error}) {
         $err_code    = $response->{error}->{code};
         $err_details = $response->{error}->{details};
-        # in pricer_dameon everything happens in Eng to maximize the collisions. If translations has params it will come as message_to_client_array.
-        # eitherway it need l10n here.
-        if ($response->{error}->{message_to_client_array}) {
-            $err_message = $c->l(@{$response->{error}->{message_to_client_array}});
-            warn "Had both string error and error with parameters for $type - " . $response->{error}->{message_to_client}
-                if exists $response->{error}->{message_to_client};
-        } else {
-            $err_message = $c->l($response->{error}->{message_to_client});
-        }
+        # in pricer_dameon everything happens in Eng to maximize the collisions.
+        $err_message = $c->l(@{$response->{error}->{message_to_client}});
     } else {
         $err_code    = 'InternalServerError';
         $err_message = 'Internal server error';
