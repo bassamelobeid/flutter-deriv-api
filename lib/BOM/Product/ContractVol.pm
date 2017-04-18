@@ -274,7 +274,7 @@ has [qw(long_term_prediction)] => (
 
 sub _build_long_term_prediction {
     my $self = shift;
-
+    $self->intradayfx_volsurface->long_term_prediction // $self->news_adjusted_pricing_vol;
     return $self->intradayfx_volsurface->long_term_prediction;
 }
 
