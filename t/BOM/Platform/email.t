@@ -5,9 +5,11 @@ use Email::Sender::Transport::Test;
 use Test::MockModule;
 use Test::Warnings qw(warning);
 use Brands;
+use BOM::Platform::Context qw(request);
+
 BEGIN {use_ok('BOM::Platform::Email', qw(send_email));}
 
-my $transport_obj  = Email::Sender::Transport::Test->new;
+my $transport  = Email::Sender::Transport::Test->new;
 my $mocked_stuffer = Test::MockModule->new('Email::Stuffer');
 $mocked_stuffer->mock(
     'send',
@@ -31,8 +33,22 @@ subtest 'args' => sub {
     local $ENV{SKIP_EMAIL} = 1;
     $args->{subject} = "Test subject";
     ok(send_email($args), 'result success but in fact not email not sent');
-    is scalar($transport_obj->deliveries), 0, "not called yet";
+    is scalar($transport->deliveries), 0, "not called yet";
+    $args->{to} = "hello";
+    like(warning { $result = send_email($args); }, qr/erroneous email address/ , 'bad email address');
+    ok(!$result, 'failed because of bad email address');
     done_testing();
 };
+
+subtest 'support address' => sub{
+  $args->{to} = 'test@test.com';
+  my $brand = Brands->new(name => request()->brand);
+  $args->{from} = $brand->emails('support');
+  ok(send_email($args));
+  is_deeply([$transport->deliveries]->[-1]{successes}, [$brand->emails('support')], 'send email ok');
+  
+
+};
+
 
 done_testing();
