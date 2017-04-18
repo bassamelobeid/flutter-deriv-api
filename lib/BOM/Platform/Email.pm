@@ -40,11 +40,11 @@ sub send_email {
     die 'No email provided' unless $email;
 
     if (not $fromemail) {
-        warn("fromemail missing - [email: $email, subject: $subject]");
+        warn("from email missing - [email: $email, subject: $subject]");
         return 0;
     }
     if (not $subject) {
-        warn("subject missing - [fromemail: $fromemail, email: $email");
+        warn("subject missing - [from email: $fromemail, email: $email");
         return 0;
     }
 
