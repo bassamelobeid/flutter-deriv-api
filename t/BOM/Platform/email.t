@@ -35,6 +35,6 @@ subtest 'args' => sub {
     is $transport_obj->successes, 0, "not send yet";
     done_testing;
 
-    }
+    };
 
-    done_testing();
+done_testing();
