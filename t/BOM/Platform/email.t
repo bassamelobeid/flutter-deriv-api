@@ -23,17 +23,16 @@ subtest 'args' => sub {
     like(warning { $result = send_email($args); }, qr/missed/ , 'no email address');
     ok(!$result, 'failed because no to email');
     $args->{to} = 'test@test.com';
-    ok(!send_email($args), 'failed because no email';
-#    like(warning { $result = send_email($args) } , qr/from email missing/);
-#    ok !$result, "failed because no from email";
-#    $args->{from} = 'from@test.com';
-#    like(warning { $result = send_email($args); } , qr/from email missing/);
-#    local $ENV{SKIP_EMAIL} = 1;
-#    $args->{subject} = "Test subject";
-#    ok(send_email($args), 'result success but in fact not email not sent');
-#    is $transport_obj->successes, 0, "not send yet";
+    like(warning { $result = send_email($args); }, qr/missed/ , 'no from email address');
+    ok(!$result, 'failed because no from email');
+    $args->{from} = 'from@test.com';
+    like(warning { $result = send_email($args); }, qr/missed/ , 'no subject');
+    ok(!$result, 'failed because no subject');
+    local $ENV{SKIP_EMAIL} = 1;
+    $args->{subject} = "Test subject";
+    ok(send_email($args), 'result success but in fact not email not sent');
+    is $transport_obj->successes, 0, "not called yet";
     done_testing();
-
-    };
+};
 
 done_testing();
