@@ -46,7 +46,7 @@ subtest 'support address' => sub{
   my $brand = Brands->new(name => request()->brand);
   $args->{from} = $brand->emails('support');
   ok(send_email($args));
-  is_deeply([$transport->deliveries]->[-1]{successes}, [$brand->emails('support')], 'send email ok');
+  is_deeply([$transport->deliveries]->[-1]{successes}, ['test@test.com'], 'send email ok');
   
 
 };
