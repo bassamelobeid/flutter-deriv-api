@@ -92,13 +92,13 @@ sub send_email {
             || die BOM::Platform::Context::template->error();
     }
 
-    my $email_stuffer = Email::Stuffer->from($fromemail)->to($email)->subject($subject)->text_body($message);
+    my $email_stuffer = Email::Stuffer->from($fromemail)->to($email)->subject($subject)->text_body($mail_message);
     if ($attachment) {
         $email_stuffer->attach_file($attachment)->send;
     }
 
     try {
-        Email::Stuffer->from($fromemail)->to($email)->subject($subject)->html_body($mail_message)->send;
+        $email_stuffer->send;
         1;
     }
     catch {
