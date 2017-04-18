@@ -44,7 +44,7 @@ sub send_email {
         return 0;
     }
     if (not $subject) {
-        warn("subject missing - [fromeemail: $fromemail, email: $email");
+        warn("subject missing - [fromemail: $fromemail, email: $email");
         return 0;
     }
 
