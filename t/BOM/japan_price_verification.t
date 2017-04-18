@@ -25,7 +25,8 @@ use YAML::XS qw(LoadFile);
 
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined/');
-BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
+#BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
+BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/6-Apr-17.dump');
 my $volsurfaces = {
     1352345145 => LoadFile('/home/git/regentmarkets/bom-test/data/20121108_volsurfaces.yml'),
     1491448384 => LoadFile('/home/git/regentmarkets/bom-test/data/20170406_volsurfaces.yml'),
@@ -349,13 +350,13 @@ subtest 'verify_with_shortcode_VV' => sub {
             'opposite_contract_commission_markup'             => '0.005',
             'opposite_contract_vega_survival_weight'          => '0.338682379324212',
             'opposite_contract_market_supplement'             => '0.00832877268009393',
-            'opposite_contract_vega_market_price'             => '3.67835526075975e-19',
+            'opposite_contract_vega_market_price'             => '4.08701001864682e-17',
             'opposite_contract_vol_spread_markup'             => '0.0266906547383307',
             'opposite_contract_volga_market_price'            => '0.000412152893321351',
             'opposite_contract_vanna_correction'              => '-0.00504171685181156',
             'opposite_contract_butterfly_markup'              => 0,
             'opposite_contract_mu'                            => 0,
-            'opposite_contract_vega_correction'               => '-4.38490457620074e-19',
+            'opposite_contract_vega_correction'               => '-4.84631414498327e-17',
             'opposite_contract_volga_correction'              => '0.0133704895319055',
             'opposite_contract_payout'                        => '1000',
             'opposite_contract_S'                             => '79.817',
@@ -369,14 +370,14 @@ subtest 'verify_with_shortcode_VV' => sub {
         'market_supplement' => {
             'volga_survival_weight' => '0.338609565227373',
             'Bet_vanna'             => '9.92290408928871',
-            'vega_market_price'     => '3.67835526075975e-19',
+            'vega_market_price'     => '4.08701001864682e-17',
             'Bet_volga'             => '-95.8758208135244',
             'vega_survival_weight'  => '0.338609565227373',
             'Bet_vega'              => '3.50527902626613',
             'volga_market_price'    => '0.000412152893321351',
             'vanna_correction'      => '0.00503576836121764',
             'vanna_survival_weight' => '0.141568405833702',
-            'vega_correction'       => '4.38910304838146e-19',
+            'vega_correction'       => '4.85095804729714e-17',
             'vanna_market_price'    => '0.00358476433114794',
             'volga_correction'      => '-0.0133803252412563'
         },
@@ -467,7 +468,7 @@ subtest 'verify_with_shortcode_VV' => sub {
 
 prepare_market_data(Date::Utility->new(1491448384));
 
-subtest '2017' => sub {
+subtest '2017_with_extra_data' => sub {
     subtest 'verify_with_shortcode_IH' => sub {
         my $input = {
             shortcode       => 'CALLE_FRXUSDJPY_1000_1491448384_1491523199F_110146000_0',
@@ -483,9 +484,9 @@ subtest '2017' => sub {
 
         is $ask->{bs_probability},            0.76978238455266,    'matched bs probability';
         is $ask->{commission_markup},         0.005,               'matched commission markup';
-        is $ask->{intraday_delta_correction}, 0,                   'matched intraday delta correction';
+        is $ask->{intraday_delta_correction}, 0.00255344051104323, 'matched intraday delta correction';
         is $ask->{intraday_vega_correction},  -0.0216800649832659, 'matched intraday vega correction';
-        is $ask->{risk_markup},               0.0243572993892055,  'matched risk markup';
+        is $ask->{risk_markup},               0,                   'matched risk markup';
     };
 
     subtest 'verify_with_shortcode_Slope' => sub {
@@ -514,9 +515,9 @@ subtest '2017' => sub {
         };
 
         my $output = BOM::JapanContractDetails::verify_with_shortcode($input);
-        is $output->{ask_probability}->{risk_markup},               0.0294968173771841,  'matched risk markup';
-        is $output->{theoretical_probability}->{bs_probability},    0.39948640590055,    'matched bs probability';
-        is $output->{theoretical_probability}->{market_supplement}, -0.0747101273705034, 'matched market supplement';
+        is $output->{ask_probability}->{risk_markup},               0.00932737967138138, 'matched risk markup';
+        is $output->{theoretical_probability}->{bs_probability},    0.0799517811582356,  'matched bs probability';
+        is $output->{theoretical_probability}->{market_supplement}, 0.0511627434135013,  'matched market supplement';
         is $output->{bs_probability}->{vol},                        0.119638984890473,   'matched vol';
     };
 };
