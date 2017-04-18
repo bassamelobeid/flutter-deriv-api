@@ -26,10 +26,7 @@ use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Utils;
 use List::Util qw( first );
-use Parallel::ForkManager;
 use VolSurface::IntradayFX;
-use Sys::Info;
-use List::Util qw(max);
 
 has file => (
     is         => 'ro',
@@ -275,31 +272,31 @@ sub passes_additional_check {
 }
 
 sub warmup_intradayfx_cache {
-    my $self  = shift;
-    my $cores = max(2, Sys::Info->new->device("CPU")->count);
-    my $pm    = Parallel::ForkManager->new($cores);
-    foreach my $symbol (@{$self->symbols_to_update}) {
-        $pm->start and next;
-        my $u  = create_underlying($symbol);
-        my $vs = VolSurface::IntradayFX->new(
-            underlying       => $u,
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-            warmup_cache     => 1,
-        );
-        $vs->get_volatility({
-            from => time,
-            to   => time + 900,
-        });
-        $vs->get_volatility({
-                from                          => time,
-                to                            => time + 900,
-                include_economic_event_impact => 1,
+    my $self = shift;
 
-        });
-        $pm->finish;
+    foreach my $symbol (@{$self->symbols_to_update}) {
+        my $cr = BOM::Platform::Chronicle::get_chronicle_reader(1);
+        my $cw = BOM::Platform::Chronicle::get_chronicle_writer();
+        my $u  = create_underlying($symbol);
+        try {
+            my $vs = VolSurface::IntradayFX->new(
+                underlying       => $u,
+                chronicle_reader => $cr,
+                chronicle_writer => $cw,
+                warmup_cache     => 1,
+            );
+            $vs->get_volatility({
+                from => time,
+                to   => time + 900,
+            });
+            $vs->get_volatility({
+                    from                          => time,
+                    to                            => time + 900,
+                    include_economic_event_impact => 1,
+
+            });
+        }
     }
-    $pm->wait_all_children;
     return;
 }
 
