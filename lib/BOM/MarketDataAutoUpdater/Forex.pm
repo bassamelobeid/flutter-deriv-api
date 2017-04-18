@@ -277,7 +277,7 @@ sub passes_additional_check {
 sub warmup_intradayfx_cache {
     my $self  = shift;
     my $cores = max(2, Sys::Info->new->device("CPU")->count);
-    my $pm    = new Parallel::ForkManager($cores);
+    my $pm    = Parallel::ForkManager->new($cores);
     foreach my $symbol (@{$self->symbols_to_update}) {
         $pm->start and next;
         my $u  = create_underlying($symbol);
@@ -300,6 +300,7 @@ sub warmup_intradayfx_cache {
         $pm->finish;
     }
     $pm->wait_all_children;
+    return;
 }
 
 no Moose;
