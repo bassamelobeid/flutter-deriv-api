@@ -54,6 +54,7 @@ subtest 'support address' => sub {
     $args->{from} = $brand->emails('support');
     ok( send_email($args) );
     my @deliveries = $transport->deliveries;
+    is(scalar @deliveries, 1, 'one mail sent');
     is_deeply( $deliveries[-1]{successes},
         ['test@test.com'], 'send email ok' );
     is $deliveries[-1]{email}->get_header('From'),
