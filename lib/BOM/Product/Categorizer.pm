@@ -246,10 +246,6 @@ sub _initialize_contract_config {
     my $contract_type_config = get_all_contract_types();
 
     my $params;
-    if (my $legacy_params = $self->_legacy_contract_types->{$c_type}) {
-        $c_type = delete $legacy_params->{bet_type};
-        $params->{$_} = $legacy_params->{$_} for keys %$legacy_params;
-    }
 
     if (not exists $contract_type_config->{$c_type}) {
         $c_type = 'INVALID';
@@ -279,53 +275,6 @@ sub _initialize_barrier {
     return $barrier_info;
 }
 
-has _legacy_contract_types => (
-    is      => 'ro',
-    default => sub {
-        {
-            INTRADU => {
-                bet_type                   => 'CALL',
-                is_forward_starting        => 1,
-                starts_as_forward_starting => 1
-            },
-            INTRADD => {
-                bet_type                   => 'PUT',
-                is_forward_starting        => 1,
-                starts_as_forward_starting => 1
-            },
-            FLASHU => {
-                bet_type     => 'CALL',
-                is_intraday  => 1,
-                expiry_daily => 0
-            },
-            FLASHD => {
-                bet_type     => 'PUT',
-                is_intraday  => 1,
-                expiry_daily => 0
-            },
-            DOUBLEUP => {
-                bet_type     => 'CALL',
-                is_intraday  => 0,
-                expiry_daily => 1
-            },
-            DOUBLEDOWN => {
-                bet_type     => 'PUT',
-                is_intraday  => 0,
-                expiry_daily => 1
-            },
-            SPREADU => {
-                bet_type     => 'CALL',
-                is_intraday  => 0,
-                expiry_daily => 1
-            },
-            SPREADD => {
-                bet_type     => 'PUT',
-                is_intraday  => 0,
-                expiry_daily => 1
-            },
-        };
-    },
-);
 
 no Moose;
 __PACKAGE__->meta->make_immutable;
