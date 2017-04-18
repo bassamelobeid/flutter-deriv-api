@@ -190,12 +190,11 @@ sub revoke_oauth_app {
     my $params = shift;
 
     my $client = $params->{client};
-    my $app_id = $params->{args}{revoke_oauth_app};
     my $oauth  = BOM::Database::Model::OAuth->new;
     my $user   = BOM::Platform::User->new({email => $client->email});
     my $status = 1;
     foreach my $c1 ($user->clients) {
-        $status &&= $oauth->revoke_app($app_id, $c1->loginid);
+        $status &&= $oauth->revoke_app($params->{args}{revoke_oauth_app}, $c1->loginid);
     }
 
     return $status;
