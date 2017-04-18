@@ -52,9 +52,12 @@ subtest 'support address' => sub{
 };
 
 subtest 'no use template' , sub {
+  $args->{subject} = "hello           world";
   $args->{message} = [qw(line1 line2)];
   ok(send_email($args));
-  is [$transport->deliveries]->[-1]{email}->get_body, "line1\nline2", 'message joined';
+  my $email = [$transport->deliveries]->[-1]{email};
+  is $email->get_body, "line1\r\nline2=\r\n", 'message joined';
+  is $email->get_header('Subject'), "hello world", 'remove continuous spaces';
 };
 
 done_testing();
