@@ -15,8 +15,8 @@ $mocked_stuffer->mock(
     'send',
     sub {
         my $self = shift;
-        $self->transport($mocked_stuffer);
-        $self->send(@_);
+        $self->transport($transport);
+        $mocked_stuffer->original('send')->($self, @_);
     });
 
 my $args = {};
