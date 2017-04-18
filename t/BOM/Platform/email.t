@@ -29,7 +29,7 @@ subtest 'args' => sub {
     ok !result, "failed because no from email";
     $args->{from} = 'from@test.com';
     like(warning { $result = send_email($args) } , qr/from email missing/);
-    locale $ENV{SKIP_EMAIL} = 1;
+    local $ENV{SKIP_EMAIL} = 1;
     $args->{subject} = "Test subject";
     ok(send_email($args), 'result success but in fact not email not sent');
     is $transport_obj->successes, 0, "not send yet";
