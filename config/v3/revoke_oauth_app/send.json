@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Revoking OAuth Application Send",
-  "description":"ask for revoking my Oauth app.",
+  "title": "Revoke Oauth Application Send",
+  "description":"Used for revoking access of particular app.",
   "properties": {
     "revoke_oauth_app": {
       "type":"integer",
