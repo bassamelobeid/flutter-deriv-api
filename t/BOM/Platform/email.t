@@ -47,7 +47,7 @@ subtest 'support address' => sub{
   $args->{from} = $brand->emails('support');
   ok(send_email($args));
   is_deeply([$transport->deliveries]->[-1]{successes}, ['test@test.com'], 'send email ok');
-  
+  is [$transport->deliveries]->[-1]{email}->get_header('From'), '"Binary.com" <support@binary.com>', 'From is rewrote';
 
 };
 
