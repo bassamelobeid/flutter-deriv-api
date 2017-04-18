@@ -4,8 +4,6 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-use BOM::Platform::Context qw(localize);
-
 sub code { return 'EXPIRYRANGEE'; }
 
 sub localizable_description {

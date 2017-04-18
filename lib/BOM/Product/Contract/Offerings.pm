@@ -28,7 +28,6 @@ use BOM::Platform::Context qw(localize);
 use Finance::Asset::SubMarket;
 use Finance::Asset::SubMarket::Registry;
 use Cache::RedisDB;
-use BOM::Platform::Context qw(request);
 
 =head1 ATTRIBUTES
 

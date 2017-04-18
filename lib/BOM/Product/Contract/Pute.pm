@@ -4,8 +4,6 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-use BOM::Platform::Context qw(localize);
-
 # Static methods
 sub code { return 'PUTE'; }
 
