@@ -24,7 +24,7 @@ use Format::Util::Numbers qw(roundnear);
 use YAML::XS qw(LoadFile);
 
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
-BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
+BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined/');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
 my $volsurfaces = {
     1352345145 => LoadFile('/home/git/regentmarkets/bom-test/data/20121108_volsurfaces.yml'),
