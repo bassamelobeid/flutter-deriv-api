@@ -6,6 +6,7 @@ use Test::MockModule;
 use Test::Warnings qw(warning);
 use Brands;
 use BOM::Platform::Context qw(request);
+use Email::Folder::Search;
 
 BEGIN { use_ok( 'BOM::Platform::Email', qw(send_email) ); }
 
@@ -30,7 +31,8 @@ subtest 'args' => sub {
     $args->{subject} = "Test subject";
     ok( send_email($args), 'result success but in fact not email not sent' );
     my @msgs = $mailbox->search(
-                                email => 'test@test.com',
+                                email => $args->{to},
+                                subject => qr/$args->{subject}/,
                                );
     is scalar(@msgs), 0, "not called yet";
     local $ENV{SKIP_EMAIL} = 0;
@@ -52,10 +54,10 @@ subtest 'support address' => sub {
     ok( send_email($args) );
     my @msgs = $mailbox->search(
                                 email => 'test@test.com',
+                                subject => qr/$args->{subject}/,
                                );
     is scalar(@msgs), 1, "one mail sent";
-    diag explain($msgs[0]);
-    #  '"Binary.com" <support@binary.com>', 'From is rewrote';
+    is $msgs[0]{from}, '"Binary.com" <support@binary.com>', 'From is rewrote';
 
 };
 
