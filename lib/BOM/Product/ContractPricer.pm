@@ -462,7 +462,7 @@ sub _build_otm_threshold {
 sub _build_minimum_ask_probability {
     my $self = shift;
 
-    return ($self->is_intraday and not $self->is_atm_bet and $self->market->name eq 'forex') ? 0.2 : 0;
+    return ($self->is_intraday and $self->market->name eq 'forex') ? 0.2 : 0;
 
 }
 
