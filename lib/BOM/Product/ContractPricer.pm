@@ -67,11 +67,22 @@ has price_calculator => (
 
 =head2 otm_threshold
 
-An abbreviation for deep out of the money threshold. This is used to floor and cap prices.
+An abbreviation for deep out of the money threshold. This is used to floor prices.
 
 =cut
 
 has otm_threshold => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+=head2 minimum_ask_probability
+
+A minimum_ask_probability set to floor price on certain contract types
+
+=cut
+
+has minimum_ask_probability => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -448,6 +459,13 @@ sub _build_otm_threshold {
     return $self->market->deep_otm_threshold;
 }
 
+sub _build_minimum_ask_probability {
+    my $self = shift;
+
+    return ($self->is_intraday and not $self->is_atm_bet and $self->market->name eq 'forex') ? 0.2 : 0;
+
+}
+
 sub _build_app_markup {
     return shift->price_calculator->app_markup;
 }
@@ -632,10 +650,11 @@ sub _build_price_calculator {
     my $self = shift;
 
     return Price::Calculator->new({
-        currency              => $self->currency,
-        deep_otm_threshold    => $self->otm_threshold,
-        base_commission       => $self->base_commission,
-        app_markup_percentage => $self->app_markup_percentage,
+        currency                => $self->currency,
+        deep_otm_threshold      => $self->otm_threshold,
+        base_commission         => $self->base_commission,
+        app_markup_percentage   => $self->app_markup_percentage,
+        minimum_ask_probability => $self->minimum_ask_probability,
         ($self->has_commission_markup)      ? (commission_markup      => $self->commission_markup)      : (),
         ($self->has_commission_from_stake)  ? (commission_from_stake  => $self->commission_from_stake)  : (),
         ($self->has_payout)                 ? (payout                 => $self->payout)                 : (),
