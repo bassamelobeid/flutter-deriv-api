@@ -12,7 +12,7 @@ BEGIN { use_ok('BOM::Platform::Email', qw(send_email)); }
 
 my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
 $mailbox->init;
-local $ENV{SKIP_EMAIL} = 1;
+local $ENV{SKIP_EMAIL};
 my $args = {};
 my $result;
 subtest 'args' => sub {
