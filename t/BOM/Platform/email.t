@@ -59,6 +59,10 @@ subtest 'support address' => sub {
 
 };
 
+done_testing();
+
+=pod
+
 subtest 'no use template' => sub {
     $args->{subject} = "hello           world";
     $args->{message} = [qw(line1 line2)];
@@ -90,3 +94,5 @@ subtest 'with template' => sub {
 };
 
 done_testing();
+
+=cut
