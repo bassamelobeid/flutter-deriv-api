@@ -225,7 +225,6 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         note("tick_expiry_engine_daily_turnover's risk type is high_risk");
         note("mocked high_risk USD limit to 149.99");
         BOM::Platform::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
@@ -242,11 +241,12 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 50.00,
-            payout      => $contract->payout,
-            amount_type => 'payout',
+            client        => $cl,
+            contract      => $contract,
+            price         => 50.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            purchase_date => Date::Utility->new(),
         });
 
         my $error = do {
@@ -278,11 +278,12 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
             is $txn->buy, undef, 'bought 2nd contract';
 
             $txn = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract,
-                price       => 50.00,
-                payout      => $contract->payout,
-                amount_type => 'payout',
+                client        => $cl,
+                contract      => $contract,
+                price         => 50.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                purchase_date => Date::Utility->new(),
             });
             $txn->buy;
         };
@@ -319,11 +320,12 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
             $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract,
-                price       => 50.00,
-                payout      => $contract->payout,
-                amount_type => 'payout',
+                client        => $cl,
+                contract      => $contract,
+                price         => 50.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                purchase_date => Date::Utility->new(),
             });
             $txn->buy;
         };
@@ -344,7 +346,6 @@ subtest 'asian_daily_turnover_limit', sub {
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         note("asian_turnover_limit's risk type is high_risk");
         note("mocked high_risk USD limit to 149.99");
         BOM::Platform::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
@@ -360,11 +361,12 @@ subtest 'asian_daily_turnover_limit', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 50.00,
-            payout      => $contract->payout,
-            amount_type => 'payout',
+            client        => $cl,
+            contract      => $contract,
+            price         => 50.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            purchase_date => Date::Utility->new(),
         });
 
         my $error = do {
@@ -395,11 +397,12 @@ subtest 'asian_daily_turnover_limit', sub {
 
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract,
-                price       => 50.00,
-                payout      => $contract->payout,
-                amount_type => 'payout',
+                client        => $cl,
+                contract      => $contract,
+                price         => 50.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                purchase_date => Date::Utility->new(),
             });
 
             $txn->buy;
@@ -438,11 +441,12 @@ subtest 'asian_daily_turnover_limit', sub {
             $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract,
-                price       => 50.00,
-                payout      => $contract->payout,
-                amount_type => 'payout',
+                client        => $cl,
+                contract      => $contract,
+                price         => 50.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                purchase_date => Date::Utility->new(),
             });
 
             $txn->buy;
@@ -464,7 +468,6 @@ subtest 'intraday_spot_index_turnover_limit', sub {
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         note("intraday_spot_index_turnover_limit's risk type is high_risk");
         note("mocked high_risk USD limit to 149.99");
         BOM::Platform::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
@@ -639,7 +642,6 @@ subtest 'smartfx_turnover_limit', sub {
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => $underlying_WLDUSD,
             bet_type     => 'CALL',
@@ -749,7 +751,6 @@ subtest 'custom client limit' => sub {
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         note("tick_expiry_engine_daily_turnover's risk type is high_risk");
         note("mocked high_risk USD limit to 149.99");
         BOM::Platform::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
@@ -766,11 +767,12 @@ subtest 'custom client limit' => sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 50.00,
-            payout      => $contract->payout,
-            amount_type => 'payout',
+            client        => $cl,
+            contract      => $contract,
+            price         => 50.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            purchase_date => Date::Utility->new(),
         });
 
         my $error = do {
@@ -839,7 +841,6 @@ subtest 'non atm turnover checks' => sub {
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         note("sets non_atm tick expiry forex to extreme risk");
         note("mocked extreme_risk USD limit to 149.99");
         BOM::Platform::Config::quants->{risk_profile}{extreme_risk}{turnover}{USD} = 149.99;
@@ -856,11 +857,12 @@ subtest 'non atm turnover checks' => sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 50.00,
-            payout      => $contract->payout,
-            amount_type => 'payout',
+            client        => $cl,
+            contract      => $contract,
+            price         => 50.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            purchase_date => Date::Utility->new(),
         });
 
         my $error = do {

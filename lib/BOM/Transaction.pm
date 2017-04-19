@@ -168,10 +168,9 @@ has execute_at_better_price => (
 
 # calling server should capture time of request
 has purchase_date => (
-    is         => 'rw',
-    isa        => 'date_object',
-    coerce     => 1,
-    lazy_build => 1,
+    is     => 'rw',
+    isa    => 'date_object',
+    coerce => 1,
 );
 
 has contract_class => (
@@ -216,13 +215,6 @@ sub BUILDARGS {
 
 my %known_errors;              # forward declaration
 sub sell_expired_contracts;    # forward declaration
-
-sub _build_purchase_date {
-
-# Purchase is considered to have happened at time of request; if no such info available, then now.
-# Classic case: REQUEST_STARTTIME is present (epoch-style) in the binary.com cgi context.
-    return $ENV{REQUEST_STARTTIME} // time;
-}
 
 sub stats_start {
     my $self = shift;

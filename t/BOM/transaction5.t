@@ -1,3 +1,5 @@
+#!perl
+
 use strict;
 use warnings;
 
@@ -61,7 +63,8 @@ subtest 'validate client error message' => sub {
 
     my $transaction = BOM::Transaction->new({
         client   => $cr,
-        contract => $contract
+        contract => $contract,
+        purchase_date => Date::Utility->new(),
     });
 
     my $error = BOM::Transaction::Validation->new(
@@ -86,7 +89,8 @@ subtest 'validate client error message' => sub {
 
     $transaction = BOM::Transaction->new({
         client   => $mf,
-        contract => $contract
+        contract => $contract,
+        purchase_date => Date::Utility->new(),
     });
 
     $error = BOM::Transaction::Validation->new(

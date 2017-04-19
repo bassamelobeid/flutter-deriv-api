@@ -8,6 +8,7 @@ use Test::Exception;
 
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
+use Date::Utility;
 use Data::Hash::DotNotation;
 use BOM::Database::Model::Account;
 use BOM::Database::DataMapper::Account;
@@ -67,14 +68,13 @@ subtest 'check duplicate sell with Model' => sub {
     my $txn_buy;
     lives_ok {
         # buy
-        local $ENV{REQUEST_STARTTIME} = '2011-07-14 08:24:46';
-
         $txn_buy = BOM::Transaction->new({
-            contract    => $contract,
-            amount_type => 'payout',
-            client      => $client,
-            price       => 3.46,
-            comment     => $comment,
+            contract      => $contract,
+            amount_type   => 'payout',
+            client        => $client,
+            price         => 3.46,
+            comment       => $comment,
+            purchase_date => Date::Utility->new('2011-07-14 08:24:46'),
         });
         $txn_buy->buy(skip_validation => 1);
         $txn_id = $txn_buy->transaction_id;
@@ -123,14 +123,13 @@ subtest 'check duplicate sell with legacy line' => sub {
     my $txn_buy;
     lives_ok {
         # buy
-        local $ENV{REQUEST_STARTTIME} = '2011-07-28 06:30:39';
-
         $txn_buy = BOM::Transaction->new({
-            contract    => $contract,
-            client      => $client,
-            amount_type => 'payout',
-            price       => 1.2,
-            comment     => $comment,
+            contract      => $contract,
+            client        => $client,
+            amount_type   => 'payout',
+            price         => 1.2,
+            comment       => $comment,
+            purchase_date => Date::Utility->new('2011-07-28 06:30:39'),
         });
         $txn_buy->buy(skip_validation => 1);
         $txn_id = $txn_buy->transaction_id;
@@ -184,6 +183,7 @@ subtest 'check buy bet without quants bet params' => sub {
             client      => $client,
             price       => 1.2,
             amount_type => 'payout',
+            purchase_date => Date::Utility->new('2011-09-08 07:23:53'),
         });
         $txn->buy(skip_validation => 1);
         $txn_id = $txn->transaction_id;
