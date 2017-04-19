@@ -52,7 +52,6 @@ subtest 'support address' => sub {
     );
     is scalar(@msgs), 1, "one mail sent";
     is $msgs[0]{from}, '"Binary.com" <support@binary.com>', 'From is rewrote';
-
 };
 
 subtest 'no use template' => sub {
@@ -67,6 +66,7 @@ subtest 'no use template' => sub {
     is scalar(@msgs), 1, "one mail sent";
     like $msgs[0]->{body},    qr/line1\nline2=\n/s, 'message joined';
     is $msgs[0]->{subject}, "hello world",         'remove continuous spaces';
+   diag `cat /tmp/default.mailbox`; 
 };
 
 subtest 'with template' => sub {
