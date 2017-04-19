@@ -65,7 +65,7 @@ subtest 'no use template' => sub {
         subject => qr/hello\s+world/,
     );
     is scalar(@msgs), 1, "one mail sent";
-    is $msgs[0]->{body},    "line1\r\nline2=\r\n", 'message joined';
+    is $msgs[0]->{body},    "line1\nline2=\n", 'message joined';
     is $msgs[0]->{subject}, "hello world",         'remove continuous spaces';
 };
 
@@ -78,7 +78,7 @@ subtest 'with template' => sub {
         subject => qr/hello\s+world/,
     );
     is scalar(@msgs), 1, "one mail sent";
-    like $msgs[0]->{body}, qr/line1\r\nline2/s, "text not turn to html";
+    like $msgs[0]->{body}, qr/line1\nline2/s, "text not turn to html";
     like $msgs[0]->{body}, qr/<html>/s,         "use template";
     $args->{email_content_is_html} = 1;
     $mailbox->clear;
@@ -98,8 +98,7 @@ subtest 'with template' => sub {
         subject => qr/hello\s+world/,
     );
     is scalar(@msgs), 1, "one mail sent";
-    like $msgs[0]->{body}, qr/line1\r\nline2/s, "text not turn to html";
+    like $msgs[0]->{body}, qr/line1\nline2/s, "text not turn to html";
 };
 
 done_testing();
-
