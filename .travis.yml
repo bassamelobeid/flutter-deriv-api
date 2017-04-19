@@ -52,12 +52,9 @@ install:
     - /tmp/travis-scripts/setup_logs.sh
     - . /tmp/travis-scripts/setup_perl5lib.sh
     - /tmp/travis-scripts/setup_postfix.sh
-    - touch /tmp/default.mailbox
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
-    - ls -l /tmp/default.mailbox
     - make $TEST_SUITE
-    - ls -l /tmp/default.mailbox
     - sudo service binary_pgbouncer status
 
 after_script:
