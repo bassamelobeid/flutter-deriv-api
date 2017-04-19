@@ -52,7 +52,6 @@ use LandingCompany::Offerings qw(get_contract_specifics);
 use VolSurface::Empirical;
 
 use BOM::Platform::Chronicle;
-use BOM::Platform::Context qw(localize);
 use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Contract::Category;
@@ -858,7 +857,7 @@ sub get_time_to_settlement {
 
 =head2 longcode
 
-Returns the (localized) longcode for this contract.
+Returns the longcode for this contract.
 
 May throw an exception if an invalid expiry type is requested for this contract type.
 
@@ -874,31 +873,38 @@ sub longcode {
     $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $forward_starting_contract and $self->fixed_expiry;
     my $localizable_description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
 
-    my ($when_end, $when_start);
+    my ($payout, $when_end, $when_start) = (to_monetary_number_format($self->payout));
     if ($expiry_type eq 'intraday_fixed_expiry') {
-        $when_end   = $self->date_expiry->datetime . ' GMT';
-        $when_start = '';
+        $when_end   = [$self->date_expiry->datetime . ' GMT'];
+        $when_start = [];
     } elsif ($expiry_type eq 'intraday') {
-        $when_end = $self->get_time_to_expiry({from => $self->date_start})->as_string;
-        $when_start = ($forward_starting_contract) ? $self->date_start->db_timestamp . ' GMT' : localize('contract start time');
+        $when_end = [$self->get_time_to_expiry({from => $self->date_start})->as_string];
+        $when_start = ($forward_starting_contract) ? [$self->date_start->db_timestamp . ' GMT'] : ['contract start time'];
     } elsif ($expiry_type eq 'daily') {
         my $close = $self->underlying->calendar->closing_on($self->date_expiry);
         if ($close and $close->epoch != $self->date_expiry->epoch) {
-            $when_end = $self->date_expiry->datetime . ' GMT';
+            $when_end = [$self->date_expiry->datetime . ' GMT'];
         } else {
-            $when_end = localize('close on [_1]', $self->date_expiry->date);
+            $when_end = ['close on [_1]', $self->date_expiry->date];
         }
-        $when_start = '';
+        $when_start = [];
     } elsif ($expiry_type eq 'tick') {
-        $when_end   = $self->tick_count;
-        $when_start = localize('first tick');
+        $when_end   = [$self->tick_count];
+        $when_start = ['first tick'];
     }
-    my $payout = to_monetary_number_format($self->payout);
-    my @barriers = ($self->two_barriers) ? ($self->high_barrier, $self->low_barrier) : ($self->barrier);
-    @barriers = map { $_->display_text if $_ } @barriers;
+    my ($high_barrier_text, $barrier_text);
 
-    return localize($localizable_description,
-        ($self->currency, $payout, localize($self->underlying->display_name), $when_start, $when_end, @barriers));
+    if ($self->two_barriers) {
+        $high_barrier_text = $self->high_barrier->display_text;
+        $barrier_text      = $self->low_barrier->display_text;
+    } else {
+        $barrier_text = $self->barrier->display_text;
+    }
+
+    return [
+        $localizable_description, $self->currency, $payout,            $self->underlying->display_name,
+        $when_start,              $when_end,       $high_barrier_text, $barrier_text
+    ];
 }
 
 =head2 allowed_slippage

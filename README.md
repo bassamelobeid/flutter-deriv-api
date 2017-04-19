@@ -261,7 +261,7 @@ Like get\_time\_to\_expiry, but for settlement time rather than expiry.
 
 ## longcode
 
-Returns the (localized) longcode for this contract.
+Returns the longcode for this contract.
 
 May throw an exception if an invalid expiry type is requested for this contract type.
 

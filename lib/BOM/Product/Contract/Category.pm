@@ -18,7 +18,6 @@ This class represents available contract categories.
 
 use Moose;
 use namespace::autoclean;
-use BOM::Platform::Context qw(localize);
 use LandingCompany::Offerings qw(get_all_contract_categories);
 
 my $category_config = get_all_contract_categories();
@@ -72,19 +71,6 @@ has is_path_dependent => (
 );
 
 =head1 METHODS
-
-=head2 translated_display_name
-
-Returns the translated version of display_name.
-
-=cut
-
-sub translated_display_name {
-    my $self = shift;
-
-    return unless ($self->display_name);
-    return localize($self->display_name);
-}
 
 =head2 barrier_at_start
 

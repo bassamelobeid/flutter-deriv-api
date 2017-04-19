@@ -10,9 +10,7 @@ use Readonly;
 use Date::Utility;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Platform::Context qw(localize);
 use Format::Util::Numbers qw(roundnear);
-use feature "state";
 
 with 'MooseX::Role::Validatable';
 
@@ -237,23 +235,23 @@ sub _build_display_text {
     }
 
     if ($barrier_type eq 'absolute') {
-        $display_barrier = $strike->as_absolute;
+        $display_barrier = [$strike->as_absolute];
     } else {
         if (my $pips = $strike->pip_difference) {
             if ($self->underlying->market->name eq 'forex') {
                 $display_barrier =
-                    ($pips > 0)
-                    ? localize('entry spot plus [plural,_1,%d pip, %d pips]',  $pips)
-                    : localize('entry spot minus [plural,_1,%d pip, %d pips]', abs $pips);
+                      ($pips > 0)
+                    ? ['entry spot plus [plural,_1,%d pip, %d pips]', $pips]
+                    : ['entry spot minus [plural,_1,%d pip, %d pips]', abs $pips];
             } else {
                 my $abs_diff = $self->_proper_value(abs $strike->as_difference);
                 $display_barrier =
-                    ($pips > 0)
-                    ? localize('entry spot plus [_1]',  $abs_diff)
-                    : localize('entry spot minus [_1]', $abs_diff);
+                      ($pips > 0)
+                    ? ['entry spot plus [_1]', $abs_diff]
+                    : ['entry spot minus [_1]', $abs_diff];
             }
         } else {
-            $display_barrier = localize('entry spot');
+            $display_barrier = ['entry spot'];
         }
     }
 

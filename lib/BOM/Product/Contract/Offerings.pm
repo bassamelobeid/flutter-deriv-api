@@ -27,7 +27,6 @@ use LandingCompany::Offerings qw(get_offerings_with_filter);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Product::Contract::Category;
-use BOM::Platform::Context qw(localize);
 use BOM::Platform::Runtime;
 
 =head1 ATTRIBUTES
@@ -92,7 +91,7 @@ has c => (
 
 my %known_decorations = (
 
-    name => sub { return localize($_->display_name) },
+    name => sub { return $_->display_name },
 
     times => sub {
         my ($parent_obj, $self) = @_;
@@ -154,14 +153,14 @@ my %known_decorations = (
                 if ($early_closes) {
                     #Q::F::TradingCalendar does not have access to out localization methods, so we localiza its result here
                     # Only set the rule as Friday if it is early close due to Friday.
-                    $rule = localize($change_rules->{daily_close}->{rule})
+                    $rule = $change_rules->{daily_close}->{rule}
                         if (defined $change_rules->{daily_close}->{rule} and $early_closes->hour . 'h' eq $change_rules->{daily_close}->{to});
                     $message =
                           $self->c
                         ? $self->c->l('Closes early (at [_1])', $calendar->closing_on($when)->time_hhmm)
                         : 'Closes early (at ' . $calendar->closing_on($when)->time_hhmm . ')';
                 } elsif ($calendar->opens_late_on($when)) {
-                    $rule = localize($change_rules->{daily_open}->{rule})
+                    $rule = $change_rules->{daily_open}->{rule}
                         if (defined $change_rules->{daily_open}->{rule}
                         and $calendar->opens_late_on($when)->hour . 'h' eq $change_rules->{daily_open}->{to});
                     $message =
@@ -240,7 +239,7 @@ sub _build_tree {
                 parent      => $market_info,
             };
             foreach my $ul (
-                sort { localize($a->display_name) cmp localize($b->display_name) }
+                sort { $a->display_name cmp $b->display_name }
                 map  { create_underlying($_) } get_offerings_with_filter(
                     BOM::Platform::Runtime->instance->get_offerings_config,
                     'underlying_symbol',
