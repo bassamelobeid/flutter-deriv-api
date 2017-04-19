@@ -41,7 +41,7 @@ will use test redis instance instead of development.
 
 =cut
 
-{
+BEGIN {
     my $env = do {
         local @ARGV = ('/etc/rmg/environment');
         readline;
@@ -51,13 +51,11 @@ will use test redis instance instead of development.
     sub env {
         return $env // "";
     }
-}
 
-sub on_qa {
-    return env() =~ /^qa/;
-}
+    sub on_qa {
+        return env() =~ /^qa/;
+    }
 
-BEGIN {
     my $dir_path      = __DIR__;
     my $test_data_dir = abs_path("$dir_path/../../data");
     my $config_dir    = $test_data_dir . '/config';
