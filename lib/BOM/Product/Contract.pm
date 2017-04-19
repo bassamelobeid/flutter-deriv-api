@@ -1554,9 +1554,9 @@ sub pricing_details {
     if ($tick) {
         push @comment_fields, (exit_spot       => $tick->quote);
         push @comment_fields, (exit_spot_epoch => $tick->epoch);
-        if ($contract->two_barriers) {
-            push @comment_fields, (high_barrier => $self->high_barrier->as_absolute) if $contract->high_barrier;
-            push @comment_fields, (low_barrier  => $self->low_barrier->as_absolute)  if $contract->low_barrier;
+        if ($self->two_barriers) {
+            push @comment_fields, (high_barrier => $self->high_barrier->as_absolute) if $self->high_barrier;
+            push @comment_fields, (low_barrier  => $self->low_barrier->as_absolute)  if $self->low_barrier;
         } else {
             push @comment_fields, (barrier => $self->barrier->as_absolute) if $self->barrier;
         }
