@@ -49,7 +49,7 @@ install:
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
     - echo $PERL5LIB
-    - prove -v t/BOM/Platform/email.t
+    - /etc/rmg/bin/prove -v t/BOM/Platform/email.t
 
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
