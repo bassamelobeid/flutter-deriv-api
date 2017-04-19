@@ -1290,7 +1290,7 @@ sub _build_pricing_comment {
     my ($contract, $price, $action, $price_slippage, $requested_price, $recomputed_price, $trading_period_start) =
         @{$args}{'contract', 'price', 'action', 'price_slippage', 'requested_price', 'recomputed_price', 'trading_period_start'};
 
-    @comment_fields = @{$contract->pricing_details($action)};
+    my @comment_fields = @{$contract->pricing_details($action)};
 
     # only manual sell and buy has a price
     if ($price) {
