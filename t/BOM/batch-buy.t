@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 
+use Date::Utility;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
 use Test::More;    # tests => 4;
@@ -265,12 +266,13 @@ subtest 'batch-buy success + multisell', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $clm,
-            contract    => $contract,
-            price       => 50.00,
-            payout      => $contract->payout,
-            amount_type => 'payout',
-            multiple    => [{loginid => $cl2->loginid}, {code => 'ignore'}, {loginid => $cl1->loginid}, {loginid => $cl2->loginid},],
+            client        => $clm,
+            contract      => $contract,
+            price         => 50.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            multiple      => [{loginid => $cl2->loginid}, {code => 'ignore'}, {loginid => $cl1->loginid}, {loginid => $cl2->loginid},],
+            purchase_date => Date::Utility->new,
         });
 
         my $error = do {
@@ -367,12 +369,13 @@ subtest 'batch-buy success 2', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $clm,
-            contract    => $contract,
-            price       => 50.00,
-            payout      => $contract->payout,
-            amount_type => 'payout',
-            multiple    => [{code => 'ignore'}, {}, {code => 'ignore'},],
+            client        => $clm,
+            contract      => $contract,
+            price         => 50.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            multiple      => [{code => 'ignore'}, {}, {code => 'ignore'},],
+            purchase_date => Date::Utility->new,
         });
 
         my $error = do {
@@ -483,12 +486,13 @@ subtest 'single contract fails in database', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $clm,
-            contract    => $contract,
-            price       => 50.00,
-            payout      => $contract->payout,
-            amount_type => 'payout',
-            multiple    => [{loginid => $cl2->loginid}, {code => 'ignore'}, {loginid => $cl1->loginid}, {loginid => $cl2->loginid},],
+            client        => $clm,
+            contract      => $contract,
+            price         => 50.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            multiple      => [{loginid => $cl2->loginid}, {code => 'ignore'}, {loginid => $cl1->loginid}, {loginid => $cl2->loginid},],
+            purchase_date => Date::Utility->new,
         });
 
         my $error = do {
@@ -558,12 +562,13 @@ subtest 'batch-buy multiple databases and datadog', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $clm,
-            contract    => $contract,
-            price       => 50.00,
-            payout      => $contract->payout,
-            amount_type => 'payout',
-            multiple    => [(map { +{loginid => $_->loginid} } @cl), {code => 'ignore'}, {loginid => 'NONE000'},],
+            client        => $clm,
+            contract      => $contract,
+            price         => 50.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            multiple      => [(map { +{loginid => $_->loginid} } @cl), {code => 'ignore'}, {loginid => 'NONE000'},],
+            purchase_date => Date::Utility->new,
         });
 
         my $error = do {
