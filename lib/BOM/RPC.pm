@@ -11,7 +11,6 @@ use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use Proc::CPUUsage;
 use Time::HiRes;
 use Try::Tiny;
-use Carp qw(cluck);
 use Path::Tiny;
 use JSON::XS;
 
@@ -109,6 +108,11 @@ sub register {
 
             for my $act (@$before_actions) {
                 my $err;
+                if ($act eq 'auth') {
+                    $err = _auth($params);
+                    return $err if $err;
+                    next;
+                }
                 (($err = _auth($params)) and return $err) or next if $act eq 'auth';
 
                 die "Error: no such hook $act" unless BOM::Transaction::Validation->can($act);
@@ -117,7 +121,7 @@ sub register {
                     $err = BOM::Transaction::Validation->new({clients => [$params->{client}]})->$act($params->{client});
                 }
                 catch {
-                    cluck("Error happened when call before_action $act at method $method: $_");
+                    warn "Error happened when call before_action $act at method $method: $_";
                     $err = Error::Base->cuss({
                         -type              => 'Internal Error',
                         -mesg              => 'Internal Error',
