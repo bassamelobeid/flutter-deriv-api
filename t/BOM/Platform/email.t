@@ -65,7 +65,7 @@ subtest 'no use template' => sub {
         subject => qr/hello\s+world/,
     );
     is scalar(@msgs), 1, "one mail sent";
-    is $msgs[0]->{body},    "line1\nline2=\n", 'message joined';
+    like $msgs[0]->{body},    qr/line1\nline2=\n/s, 'message joined';
     is $msgs[0]->{subject}, "hello world",         'remove continuous spaces';
 };
 
