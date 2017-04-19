@@ -457,12 +457,14 @@ sub prepare_buy {
     return $self->prepare_bet_data_for_buy if $skip;
 
     $self->limits($self->calculate_limits) unless $self->multiple;
-
-    my $error_status = BOM::Transaction::Validation->new(
-        transaction => $self,
-        client      => $self->client,
-        clients     => [map { $_->{client} } grep { ref $_->{client} } @{$self->multiple || []}],
-    )->validate_trx_buy();
+    my @clients = grep { ref $_->{client} } @{$self->multiple || []};
+    @clients = ($self->client) unless scalar @clients;
+    my %seen;
+    @clients = grep { my $c = $_->{client}; !$seen{(\$c + 0)}++ } @clients;
+    my $error_status = BOM::Transaction::Validation->new({
+            transaction => $self,
+            clients     => \@clients,
+        })->validate_trx_buy();
 
     return $error_status if $error_status;
 
@@ -711,11 +713,16 @@ sub prepare_sell {
 
     return $self->prepare_bet_data_for_sell if $skip;
 
-    my $error_status = BOM::Transaction::Validation->new(
-        transaction => $self,
-        client      => $self->client,
-        clients     => [map { $_->{client} } grep { ref $_->{client} } @{$self->multiple || []}],
-    )->validate_trx_sell();
+    ### Prepare clients list, get uniq only...
+    my @clients = grep { ref $_->{client} } @{$self->multiple || []};
+    @clients = ($self->client) unless scalar @clients;
+    my %seen;
+    @clients = grep { my $c = $_->{client}; !$seen{(\$c + 0)}++ } @clients;
+
+    my $error_status = BOM::Transaction::Validation->new({
+            transaction => $self,
+            clients     => \@clients,
+        })->validate_trx_sell();
 
     return $error_status if $error_status;
 

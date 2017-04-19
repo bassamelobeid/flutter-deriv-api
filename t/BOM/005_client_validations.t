@@ -23,17 +23,17 @@ $client->payment_legacy_payment(
     remark       => 'here is money',
     payment_type => 'ewallet',
 );
-my $validation_obj = BOM::Transaction::Validation->new(client => $client);
+my $validation_obj = BOM::Transaction::Validation->new({clients => [$client]});
 
 subtest 'no doughflow payment for client - allow for payment agent withdrawal' => sub {
-    my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal();
+    my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal($client);
     is $allow_withdraw, 1, 'no doughflow payment no expiry date set, allow payment agent withdrawal';
 };
 
 my $expire_date_before = Date::Utility->new(time() - 86400)->date_yyyymmdd;
 $client->payment_agent_withdrawal_expiration_date($expire_date_before);
 subtest 'no doughflow payment exists, expiration date exists in past ' => sub {
-    my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal();
+    my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal($client);
     is $allow_withdraw, undef, 'no doughflow payment exists but expiration date so dont allow';
 };
 
@@ -45,21 +45,21 @@ $client->payment_doughflow(
 );
 
 subtest 'doughflow payment exists for client - not allow for payment agent withdrawal' => sub {
-    my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal();
+    my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal($client);
     is $allow_withdraw, undef, 'doughflow payment exist, not allow for payment agent withdrawal';
 };
 
 $expire_date_before = Date::Utility->new(time() - 86400)->date_yyyymmdd;
 $client->payment_agent_withdrawal_expiration_date($expire_date_before);
 subtest 'doughflow payment exists for client - with past payment_agent_withdrawal_expiration_date' => sub {
-    my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal();
+    my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal($client);
     is $allow_withdraw, undef, 'with past payment_agent_withdrawal_expiration_date';
 };
 
 my $expire_date_after = Date::Utility->new(time() + 86400)->date_yyyymmdd;
 $client->payment_agent_withdrawal_expiration_date($expire_date_after);
 subtest 'doughflow payment exists for client - with future dated payment_agent_withdrawal_expiration_date' => sub {
-    my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal();
+    my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal($client);
     is $allow_withdraw, 1, 'with future dated payment_agent_withdrawal_expiration_date';
 };
 
@@ -73,7 +73,7 @@ Test::Exception::lives_ok { $client->set_status('unwelcome', $clerk, $reason) } 
 Test::Exception::lives_ok { $client->save() } "can save to unwelcome login file";
 
 #make sure unwelcome client cannot trade
-ok(ref $validation_obj->not_allow_trade eq 'Error::Base', "unwelcome client cannot trade");
+ok(ref $validation_obj->not_allow_trade($client) eq 'Error::Base', "unwelcome client cannot trade");
 
 my $client_details = {
     broker_code     => 'MX',
@@ -98,9 +98,9 @@ my %deposit = (
 );
 
 my $client_new = Client::Account->register_and_return_new_client($client_details);
-$validation_obj = BOM::Transaction::Validation->new(client => $client_new);
+$validation_obj = BOM::Transaction::Validation->new({clients => [$client_new]});
 $client_new->set_default_account('USD');
 
-is($validation_obj->not_allow_trade, undef, "MX client without age_verified allowed to trade before 1st deposit");
+is($validation_obj->not_allow_trade($client_new), undef, "MX client without age_verified allowed to trade before 1st deposit");
 $client_new->payment_free_gift(%deposit);
-ok(ref $validation_obj->not_allow_trade eq 'Error::Base', "MX client without age_verified cannot trade after 1st deposit");
+ok(ref $validation_obj->not_allow_trade($client_new) eq 'Error::Base', "MX client without age_verified cannot trade after 1st deposit");

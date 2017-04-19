@@ -67,10 +67,10 @@ subtest 'validate client error message' => sub {
         purchase_date => Date::Utility->new(),
     });
 
-    my $error = BOM::Transaction::Validation->new(
-        client      => $cr,
-        transaction => $transaction
-    )->_is_valid_to_buy;
+    my $error = BOM::Transaction::Validation->new({
+            clients     => [$cr],
+            transaction => $transaction
+        })->_is_valid_to_buy($cr);
 
     like($error->{-message_to_client}, qr/Try out the Volatility Indices/, 'CR client got message about Volatility Indices');
 
@@ -93,10 +93,10 @@ subtest 'validate client error message' => sub {
         purchase_date => Date::Utility->new(),
     });
 
-    $error = BOM::Transaction::Validation->new(
-        client      => $mf,
-        transaction => $transaction
-    )->_is_valid_to_buy;
+    $error = BOM::Transaction::Validation->new({
+            clients     => [$mf],
+            transaction => $transaction
+        })->_is_valid_to_buy($mf);
 
     unlike($error->{-message_to_client}, qr/Try out the Volatility Indices/, 'MF client didnt got message about Volatility Indices');
 

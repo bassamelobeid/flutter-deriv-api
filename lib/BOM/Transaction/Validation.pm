@@ -14,23 +14,11 @@ use Moo;
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 use YAML::XS qw(LoadFile);
 
-has client => (
-    is       => 'rw',
+has clients => (
+    is       => 'ro',
     required => 1
 );
-has [qw/ clients transaction /] => (is => 'ro');
-
-around BUILDARGS => sub {
-    my ($orig, $class) = (shift, shift);
-
-    my $args = ref $_[0] ? shift : +{@_};
-
-    unless (defined $args->{clients} && scalar @{$args->{clients}}) {
-        $args->{clients} = [$args->{client}];
-    }
-
-    return $class->$orig(%$args);
-};
+has transaction => (is => 'ro');
 
 ################ Client and transaction validation ########################
 
@@ -39,16 +27,16 @@ sub validate_trx_sell {
     # all these validations MUST NOT use the database
     # database related validations MUST be implemented in the database
     # ask your friendly DBA team if in doubt
+    warn "Validate SELL: " . scalar @{$self->clients};
 
-    my $res = $self->_is_valid_to_sell;
+    my $res = $self->_is_valid_to_sell();
     return $res if $res;
-    $res = $self->_validate_date_pricing;
+    $res = $self->_validate_date_pricing();
     return $res if $res;
 
     for my $c (@{$self->clients}) {
-        $self->client($c);
-        for (qw/ _validate_available_currency _validate_currency check_trade_status /) {
-            $res = $self->$_;
+        for (qw/ _validate_iom_withdrawal_limit _validate_available_currency _validate_currency check_trade_status /) {
+            $res = $self->$_($c);
             return $res if $res;
         }
     }
@@ -62,13 +50,11 @@ sub validate_trx_buy {
     # all these validations MUST NOT use the database
     # database related validations MUST be implemented in the database
     # ask your friendly DBA team if in doubt
-    #
-    # Keep the transaction rate test first to limit the impact of abusive buyers
-    my $res = $self->_validate_date_pricing;
+    warn "Validate BUY: " . scalar @{$self->clients};
+    my $res = $self->_validate_date_pricing();
     return $res if $res;
 
     for my $c (@{$self->clients}) {
-        $self->client($c);
         for (
             qw/
             check_trade_status
@@ -83,7 +69,7 @@ sub validate_trx_buy {
             /
             )
         {
-            $res = $self->$_;
+            $res = $self->$_($c);
             return $res if $res;
         }
     }
@@ -94,9 +80,8 @@ sub validate_trx_buy {
     return $res if $res;
 
     for my $c (@{$self->clients}) {
-        $self->client($c);
         for (qw/ _validate_payout_limit _validate_stake_limit /) {
-            $res = $self->$_;
+            $res = $self->$_($c);
             return $res if $res;
         }
     }
@@ -104,11 +89,11 @@ sub validate_trx_buy {
 }
 
 sub _validate_available_currency {
-    my $self = shift;
+    my ($self, $client) = (shift, shift);
 
     my $currency = $self->transaction->contract->currency;
 
-    if (not grep { $currency eq $_ } @{LandingCompany::Registry::get_by_broker($self->client->broker_code)->legal_allowed_currencies}) {
+    if (not grep { $currency eq $_ } @{LandingCompany::Registry::get_by_broker($client->broker_code)->legal_allowed_currencies}) {
         return Error::Base->cuss(
             -type              => 'InvalidCurrency',
             -mesg              => "Invalid $currency",
@@ -119,15 +104,15 @@ sub _validate_available_currency {
 }
 
 sub _validate_currency {
-    my $self = shift;
+    my ($self, $client) = (shift, shift);
 
-    my $broker   = $self->client->broker_code;
+    my $broker   = $client->broker_code;
     my $currency = $self->transaction->contract->currency;
 
-    if ($self->client->default_account and $currency ne $self->client->currency) {
+    if ($client->default_account and $currency ne $client->currency) {
         return Error::Base->cuss(
             -type              => 'NotDefaultCurrency',
-            -mesg              => "not default currency for client [$currency], client currency[" . $self->client->currency . "]",
+            -mesg              => "not default currency for client [$currency], client currency[" . $client->currency . "]",
             -message_to_client => BOM::Platform::Context::localize("The provided currency [_1] is not the default currency", $currency),
         );
     }
@@ -333,10 +318,10 @@ sub _write_to_rejected {
 }
 
 sub _is_valid_to_buy {
-    my $self     = shift;
+    my ($self, $client) = (shift, shift);
     my $contract = $self->transaction->contract;
 
-    unless ($contract->is_valid_to_buy({landing_company => $self->client->landing_company->short})) {
+    unless ($contract->is_valid_to_buy({landing_company => $client->landing_company->short})) {
         return Error::Base->cuss(
             -type              => 'InvalidtoBuy',
             -mesg              => $contract->primary_validation_error->message,
@@ -385,7 +370,7 @@ Validate the withdrawal limit for IOM region
 
 sub _validate_iom_withdrawal_limit {
     my $self   = shift;
-    my $client = $self->client;
+    my $client = shift;
 
     return if $client->is_virtual;
 
@@ -435,7 +420,7 @@ sub _validate_iom_withdrawal_limit {
 # because we recompute the price and that's the price that we going to transact with!
 sub _validate_stake_limit {
     my $self     = shift;
-    my $client   = $self->client;
+    my $client   = shift;
     my $contract = $self->transaction->contract;
 
     my $landing_company = $client->landing_company;
@@ -469,8 +454,7 @@ Validate if payout is not over the client limits
 =cut
 
 sub _validate_payout_limit {
-    my $self   = shift;
-    my $client = $self->client;
+    my ($self, $client) = (shift, shift);
 
     my $contract = $self->transaction->contract;
 
@@ -512,8 +496,7 @@ Validates whether the client has provided his residence country
 =cut
 
 sub _validate_jurisdictional_restrictions {
-    my $self   = shift;
-    my $client = $self->client;
+    my ($self, $client) = (shift, shift);
 
     my $contract    = $self->transaction->contract;
     my $residence   = $client->residence;
@@ -591,8 +574,7 @@ is not able to purchase contract
 =cut
 
 sub _validate_client_status {
-    my $self   = shift;
-    my $client = $self->client;
+    my ($self, $client) = (shift, shift);
 
     if ($client->get_status('unwelcome') or $client->get_status('disabled')) {
         return Error::Base->cuss(
@@ -613,9 +595,9 @@ is not able to purchase contract
 =cut
 
 sub _validate_client_self_exclusion {
-    my $self = shift;
+    my ($self, $client) = (shift, shift);
 
-    if (my $limit_excludeuntil = $self->client->get_self_exclusion_until_dt) {
+    if (my $limit_excludeuntil = $client->get_self_exclusion_until_dt) {
         return Error::Base->cuss(
             -type => 'ClientSelfExcluded',
             -mesg => 'your account is not authorised for any further contract purchases.',
@@ -630,13 +612,13 @@ sub _validate_client_self_exclusion {
 ################ Client only validation ########################
 
 sub validate_tnc {
-    my $self = shift;
-
+    my ($self, $client) = (shift, shift);
+    warn "VALIDATE TNC";
     # we shouldn't get to this error, so we can die it directly
-    return if $self->client->is_virtual;
+    return if $client->is_virtual;
 
     my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
-    my $client_tnc_status   = $self->client->get_status('tnc_approval');
+    my $client_tnc_status   = $client->get_status('tnc_approval');
     if (not $client_tnc_status or ($client_tnc_status->reason ne $current_tnc_version)) {
         return Error::Base->cuss(
             -type              => 'ASK_TNC_APPROVAL',
@@ -649,15 +631,15 @@ sub validate_tnc {
 }
 
 sub compliance_checks {
-    my $self = shift;
+    my ($self, $client) = (shift, shift);
 
     # checks are not applicable for virtual, costarica and champion clients
-    return if $self->client->is_virtual;
-    return if $self->client->landing_company->short =~ /^(?:costarica|champion)$/;
+    return if $client->is_virtual;
+    return if $client->landing_company->short =~ /^(?:costarica|champion)$/;
 
     # as per compliance for high risk client we need to check
     # if financial assessment details are completed or not
-    if (($self->client->aml_risk_classification // '') eq 'high' and not $self->client->financial_assessment()) {
+    if (($client->aml_risk_classification // '') eq 'high' and not $client->financial_assessment()) {
         return Error::Base->cuss(
             -type              => 'FinancialAssessmentRequired',
             -mesg              => 'Please complete the financial assessment form to lift your withdrawal and trading limits.',
@@ -669,9 +651,9 @@ sub compliance_checks {
 }
 
 sub check_tax_information {
-    my $self = shift;
+    my ($self, $client) = (shift, shift);
 
-    if ($self->client->landing_company->short eq 'maltainvest' and not $self->client->get_status('crs_tin_information')) {
+    if ($client->landing_company->short eq 'maltainvest' and not $client->get_status('crs_tin_information')) {
         return Error::Base->cuss(
             -type => 'TINDetailsMandatory',
             -mesg => 'Tax-related information is mandatory for legal and regulatory requirements',
@@ -684,10 +666,10 @@ sub check_tax_information {
 # don't allow to trade for unwelcome_clients
 # and for MLT and MX we don't allow trading without confirmed age
 sub check_trade_status {
-    my $self = shift;
+    my ($self, $client) = (shift, shift);
 
-    return if $self->client->is_virtual;
-    return $self->not_allow_trade;
+    return if $client->is_virtual;
+    return $self->not_allow_trade($client);
 }
 
 =head2 allow_paymentagent_withdrawal
@@ -697,15 +679,15 @@ to check client can withdrawal through payment agent. return 1 (allow) or undef 
 =cut
 
 sub allow_paymentagent_withdrawal {
-    my $self = shift;
+    my ($self, $client) = (shift, shift);
 
-    my $expires_on = $self->client->payment_agent_withdrawal_expiration_date;
+    my $expires_on = $client->payment_agent_withdrawal_expiration_date;
 
     if ($expires_on) {
         return 1 if Date::Utility->new($expires_on)->is_after(Date::Utility->new);
     } else {
         # if expiry date is not set check for doughflow count
-        my $payment_mapper = BOM::Database::DataMapper::Payment->new({'client_loginid' => $self->client->loginid});
+        my $payment_mapper = BOM::Database::DataMapper::Payment->new({'client_loginid' => $client->loginid});
         my $doughflow_count = $payment_mapper->get_client_payment_count_by({payment_gateway_code => 'doughflow'});
         return 1 if $doughflow_count == 0;
     }
@@ -721,15 +703,11 @@ Don't allow to trade for unwelcome_clients and for MLT and MX without confirmed 
 =cut
 
 sub not_allow_trade {
-    my $self = shift;
+    my ($self, $client) = (shift, shift);
 
-    if ((
-                ($self->client->landing_company->short =~ /^(?:malta|iom)$/)
-            and not $self->client->get_status('age_verification')
-            and $self->client->has_deposits
-        )
-        or $self->client->get_status('unwelcome')
-        or $self->client->get_status('disabled'))
+    if (   (($client->landing_company->short =~ /^(?:malta|iom)$/) and not $client->get_status('age_verification') and $client->has_deposits)
+        or $client->get_status('unwelcome')
+        or $client->get_status('disabled'))
     {
         return Error::Base->cuss(
             -type              => 'PleaseContactSupport',
