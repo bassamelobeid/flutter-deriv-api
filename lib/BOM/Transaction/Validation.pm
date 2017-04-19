@@ -27,7 +27,6 @@ sub validate_trx_sell {
     # all these validations MUST NOT use the database
     # database related validations MUST be implemented in the database
     # ask your friendly DBA team if in doubt
-    warn "Validate SELL: " . scalar @{$self->clients};
 
     my $res = $self->_is_valid_to_sell();
     return $res if $res;
@@ -50,7 +49,7 @@ sub validate_trx_buy {
     # all these validations MUST NOT use the database
     # database related validations MUST be implemented in the database
     # ask your friendly DBA team if in doubt
-    warn "Validate BUY: " . scalar @{$self->clients};
+
     my $res = $self->_validate_date_pricing();
     return $res if $res;
 
@@ -613,7 +612,7 @@ sub _validate_client_self_exclusion {
 
 sub validate_tnc {
     my ($self, $client) = (shift, shift);
-    warn "VALIDATE TNC";
+
     # we shouldn't get to this error, so we can die it directly
     return if $client->is_virtual;
 
