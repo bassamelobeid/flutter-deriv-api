@@ -114,7 +114,7 @@ sub register {
                 die "Error: no such hook $act" unless BOM::Transaction::Validation->can($act);
 
                 try {
-                    $err = BOM::Transaction::Validation->new(client => $params->{client})->$act;
+                    $err = BOM::Transaction::Validation->new({clients => [$params->{client}]})->$act($params->{client});
                 }
                 catch {
                     cluck("Error happened when call before_action $act at method $method: $_");
