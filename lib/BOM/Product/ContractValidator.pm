@@ -245,18 +245,18 @@ sub _validate_price {
             },
             stake_outside_range => sub {
                 my ($details) = @_;
-                my $localize_params = [to_monetary_number_format($details->[0]), to_monetary_number_format($details->[1])];
+                my $params = [to_monetary_number_format($details->[0]), to_monetary_number_format($details->[1])];
                 return {
                     message           => 'stake is not within limits ' . "[stake: " . $details->[0] . "] " . "[min: " . $details->[1] . "] ",
-                    message_to_client => ['Minimum stake of [_1] and maximum payout of [_2]', @$localize_params],
+                    message_to_client => ['Minimum stake of [_1] and maximum payout of [_2]', @$params],
                 };
             },
             payout_outside_range => sub {
                 my ($details) = @_;
-                my $localize_params = [to_monetary_number_format($details->[0]), to_monetary_number_format($details->[1])];
+                my $params = [to_monetary_number_format($details->[0]), to_monetary_number_format($details->[1])];
                 return {
                     message => 'payout amount outside acceptable range ' . "[given: " . $details->[0] . "] " . "[max: " . $details->[1] . "]",
-                    message_to_client => ['Minimum stake of [_1] and maximum payout of [_2]', @$localize_params],
+                    message_to_client => ['Minimum stake of [_1] and maximum payout of [_2]', @$params],
                 };
             },
             payout_too_many_places => sub {
@@ -444,10 +444,9 @@ sub _validate_start_and_expiry_date {
         [[$start_epoch, $end_epoch], $self->market_risk_blackouts, "Trading is not available from [_2] to [_3]"],
     );
 
-    my @args = (localize($self->underlying->display_name));
-
     foreach my $blackout (@blackout_checks) {
         my ($epochs, $periods, $message_to_client) = @{$blackout}[0 .. 2];
+        my @args = ();
         foreach my $period (@$periods) {
             my $start_epoch = $period->[0];
             my $end_epoch   = $period->[1];
