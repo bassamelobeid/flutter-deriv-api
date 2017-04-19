@@ -9,20 +9,13 @@ use BOM::Platform::Context qw(request);
 
 BEGIN { use_ok( 'BOM::Platform::Email', qw(send_email) ); }
 
-my $transport      = Email::Sender::Transport::Test->new;
-my $mocked_stuffer = Test::MockModule->new('Email::Stuffer');
-$mocked_stuffer->mock(
-    'send',
-    sub {
-        my $self = shift;
-        $self->transport($transport);
-        $mocked_stuffer->original('send')->( $self, @_ );
-    }
-);
+my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
+$mailbox->init;
 
 my $args = {};
 my $result;
 subtest 'args' => sub {
+    $mailbox->clear;
     like( warning { $result = send_email($args); },
         qr/missed/, 'no email address' );
     ok( !$result, 'failed because no to email' );
@@ -36,7 +29,10 @@ subtest 'args' => sub {
     local $ENV{SKIP_EMAIL} = 1;
     $args->{subject} = "Test subject";
     ok( send_email($args), 'result success but in fact not email not sent' );
-    is scalar( $transport->deliveries ), 0, "not called yet";
+    my @msgs = $mailbox->search(
+                                email => 'test@test.com',
+                               );
+    is scalar(@msgs), 0, "not called yet";
     local $ENV{SKIP_EMAIL} = 0;
     $args->{to} = "hello";
     like(
