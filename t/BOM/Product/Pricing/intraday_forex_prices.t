@@ -99,7 +99,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
-        recorded_date => Date::Utility->new(1352345145)->truncate_to_day(),
+        recorded_date => Date::Utility->new($volsurfaces->{frxUSDJPY}->{date}),
         surface       => $volsurfaces->{frxUSDJPY}->{surfaces}->{'New York 10:00'},
     });
 my @ct = grep { !$equal{$_} } get_offerings_with_filter(
