@@ -3,6 +3,12 @@ perl:
     - "5.14.2-thr"
 matrix:
     fast_finish: true
+env:
+    - TEST_SUITE=unit_test_platform_client
+    - TEST_SUITE=unit_test_platform_all
+    - TEST_SUITE=unit_test_system
+    - TEST_SUITE=leaktest
+    - TEST_SUITE=syntax_lib
 services:
     - redis-server
 addons:
@@ -48,8 +54,8 @@ install:
 
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
-    - echo $PERL5LIB
-    - /etc/rmg/bin/prove -v t/BOM/Platform/email.t
+    - make $TEST_SUITE
+    - sudo service binary_pgbouncer status
 
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
