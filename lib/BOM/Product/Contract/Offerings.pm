@@ -16,18 +16,19 @@ my $offerings = BOM::Product::Contract::Offerings->new;
 
 use Moose;
 use namespace::autoclean;
-
+use Cache::RedisDB;
 use List::MoreUtils qw(uniq first_index);
 
+use Finance::Asset::SubMarket;
 use Finance::Asset::Market::Registry;
+use Finance::Asset::SubMarket::Registry;
+use LandingCompany::Offerings qw(get_offerings_with_filter);
+
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Product::Contract::Category;
-use LandingCompany::Offerings qw(get_offerings_with_filter);
 use BOM::Platform::Context qw(localize);
-use Finance::Asset::SubMarket;
-use Finance::Asset::SubMarket::Registry;
-use Cache::RedisDB;
+use BOM::Platform::Runtime;
 
 =head1 ATTRIBUTES
 
@@ -36,11 +37,6 @@ use Cache::RedisDB;
 The data structure representing BOM offerings.
 
 =cut
-
-has landing_company => (
-    is      => 'ro',
-    default => 'costarica',
-);
 
 has tree => (
     is         => 'ro',
@@ -60,7 +56,11 @@ has levels => (
     default  => sub {
         return [qw(markets submarkets underlyings contract_categories )];
     },
+);
 
+has landing_company => (
+    is      => 'ro',
+    default => 'costarica',
 );
 
 has date => (
