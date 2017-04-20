@@ -27,9 +27,6 @@ my $minus6mins  = Date::Utility->new(time - 360);
 my $minus5mins  = Date::Utility->new(time - 300);
 my $plus1day    = Date::Utility->new(time + 24 * 60 * 60);
 
-# Ensure we start out with a mailbox that exists
-path('/tmp/default.mailbox')->touch;
-
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -159,6 +156,8 @@ subtest 'realtime report generation' => sub {
     is($dm->get_last_generated_historical_marked_to_market_time, $now->db_timestamp, 'It ran and updated our timestamp.');
     note "Includes a lot of unit test transactions about which we don't care.";
     my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
+    $mailbox->init;
+    $mailbox->clear;
     is($called_count, 1, 'BOM::Transaction::sell_expired_contracts called only once');
     my @msgs = $mailbox->search(
         email   => 'quants-market-data@regentmarkets.com',
