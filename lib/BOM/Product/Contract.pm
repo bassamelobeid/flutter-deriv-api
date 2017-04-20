@@ -1576,6 +1576,11 @@ sub pricing_details {
             map { $_->{description} . ',' . $_->{modifier} . ',' . $_->{value} } @{$self->corporate_actions};
     }
 
+    if ($self->entry_spot) {
+        push @comment_fields, (entry_spot       => $self->entry_spot);
+        push @comment_fields, (entry_spot_epoch => $self->entry_spot_epoch);
+    }
+
     return \@comment_fields;
 }
 
