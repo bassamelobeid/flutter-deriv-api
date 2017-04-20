@@ -178,12 +178,12 @@ sub market_details {
     # across all our contracts - underlying, dates, spot values etc.
     my ($contract) = @{$self->_contracts};
     my %details = (
-        spot_time               => $contract->current_tick->epoch,
-        date_start              => $contract->date_start->epoch,
-        app_markup_percentage   => $contract->app_markup_percentage,
-        staking_limits          => $contract->staking_limits,
-        deep_otm_threshold      => $contract->otm_threshold,
-        base_commission         => $contract->base_commission,
+        spot_time             => $contract->current_tick->epoch,
+        date_start            => $contract->date_start->epoch,
+        app_markup_percentage => $contract->app_markup_percentage,
+        staking_limits        => $contract->staking_limits,
+        deep_otm_threshold    => $contract->otm_threshold,
+        base_commission       => $contract->base_commission,
     );
     $details{spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
     return \%details;

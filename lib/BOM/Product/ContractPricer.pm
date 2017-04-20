@@ -76,7 +76,6 @@ has otm_threshold => (
     lazy_build => 1,
 );
 
-
 =head2 memory_chronicle
 
 A memory-backed chronicle reader instance
@@ -634,10 +633,10 @@ sub _build_price_calculator {
     my $self = shift;
 
     return Price::Calculator->new({
-        currency                => $self->currency,
-        deep_otm_threshold      => $self->otm_threshold,
-        base_commission         => $self->base_commission,
-        app_markup_percentage   => $self->app_markup_percentage,
+        currency              => $self->currency,
+        deep_otm_threshold    => $self->otm_threshold,
+        base_commission       => $self->base_commission,
+        app_markup_percentage => $self->app_markup_percentage,
         ($self->has_commission_markup)      ? (commission_markup      => $self->commission_markup)      : (),
         ($self->has_commission_from_stake)  ? (commission_from_stake  => $self->commission_from_stake)  : (),
         ($self->has_payout)                 ? (payout                 => $self->payout)                 : (),
