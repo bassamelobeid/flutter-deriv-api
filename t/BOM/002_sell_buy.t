@@ -179,10 +179,10 @@ subtest 'check buy bet without quants bet params' => sub {
         local $ENV{REQUEST_STARTTIME} = '2011-09-08 07:23:53';
 
         my $txn = BOM::Transaction->new({
-            contract    => produce_contract('UPORDOWN_FRXUSDJPY_5_1315466633_12_SEP_11_771000_762300', 'USD'),
-            client      => $client,
-            price       => 1.2,
-            amount_type => 'payout',
+            contract      => produce_contract('UPORDOWN_FRXUSDJPY_5_1315466633_12_SEP_11_771000_762300', 'USD'),
+            client        => $client,
+            price         => 1.2,
+            amount_type   => 'payout',
             purchase_date => Date::Utility->new('2011-09-08 07:23:53'),
         });
         $txn->buy(skip_validation => 1);
@@ -195,7 +195,7 @@ subtest 'check buy bet without quants bet params' => sub {
 subtest 'check if is valid to sell is correct for sold contracts' => sub {
     my $contract = produce_contract('UPORDOWN_FRXUSDJPY_2_1311834639_29_JUL_11_784800_770900', 'USD', 1);
     is $contract->is_valid_to_sell, 0, 'correct valid to sell for contract already marked as sold';
-    is $contract->primary_validation_error->message_to_client, 'This contract has been sold.', 'This contract has been sold.';
+    is $contract->primary_validation_error->message_to_client, ['This contract has been sold.'], 'This contract has been sold.';
 };
 
 done_testing();
