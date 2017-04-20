@@ -76,16 +76,6 @@ has otm_threshold => (
     lazy_build => 1,
 );
 
-=head2 minimum_ask_probability
-
-A minimum_ask_probability set to floor price on certain contract types
-
-=cut
-
-has minimum_ask_probability => (
-    is         => 'ro',
-    lazy_build => 1,
-);
 
 =head2 memory_chronicle
 
@@ -456,14 +446,8 @@ sub _build_forqqq {
 sub _build_otm_threshold {
     my $self = shift;
 
+    return 0.2 if ($self->is_intraday and not $self->is_atm_bet and $self->market->name eq 'forex');
     return $self->market->deep_otm_threshold;
-}
-
-sub _build_minimum_ask_probability {
-    my $self = shift;
-
-    return ($self->is_intraday and not $self->is_atm_bet and $self->market->name eq 'forex') ? 0.2 : 0;
-
 }
 
 sub _build_app_markup {
@@ -654,7 +638,6 @@ sub _build_price_calculator {
         deep_otm_threshold      => $self->otm_threshold,
         base_commission         => $self->base_commission,
         app_markup_percentage   => $self->app_markup_percentage,
-        minimum_ask_probability => $self->minimum_ask_probability,
         ($self->has_commission_markup)      ? (commission_markup      => $self->commission_markup)      : (),
         ($self->has_commission_from_stake)  ? (commission_from_stake  => $self->commission_from_stake)  : (),
         ($self->has_payout)                 ? (payout                 => $self->payout)                 : (),

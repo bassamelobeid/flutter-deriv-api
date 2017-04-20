@@ -77,7 +77,7 @@ subtest 'payout' => sub {
         currency   => 'USD',
         payout     => $payout,
     });
-    cmp_ok $c->ask_price, '>', 5, 'Forex intraday atm contract price is not floor to minimum_ask_probability';
+    cmp_ok $c->ask_price, '>', 5, 'Forex intraday atm contract price is not floor';
 
     $c = produce_contract({
         bet_type   => 'CALL',
@@ -87,7 +87,8 @@ subtest 'payout' => sub {
         currency   => 'USD',
         payout     => $payout,
     });
-    is $c->ask_price, $c->minimum_ask_probability * $payout, 'Forex intraday non atm contract is floored to ' . $c->minimum_ask_probability * $payout;
+
+    is $c->ask_price, $c->otm_threshold * $payout, 'Forex intraday non atm contract is floored to ' . $c->otm_threshold * $payout;
 
     $c = produce_contract({
         bet_type        => 'CALL',
@@ -98,8 +99,8 @@ subtest 'payout' => sub {
         payout          => 1000,
         landing_company => 'japan'
     });
-    is $c->ask_price, $c->minimum_ask_probability * 1000,
-        'Forex intraday non atm contract for japan is floored to ' . $c->minimum_ask_probability * 1000;
+    is $c->ask_price, $c->otm_threshold * 1000,
+        'Forex intraday non atm contract for japan is floored to ' . $c->otm_threshold * 1000;
 
     $c = produce_contract({
         bet_type   => 'CALL',
@@ -109,7 +110,7 @@ subtest 'payout' => sub {
         currency   => 'USD',
         payout     => $payout,
     });
-    cmp_ok $c->ask_price, '>', $c->minimum_ask_probability * $payout, 'Forex daily non atm contract price is not floor to minimum_ask_probability';
+    cmp_ok $c->ask_price, '>', $c->otm_threshold * $payout, 'Forex daily non atm contract price is not floor';
 
     $c = produce_contract({
         bet_type   => 'CALL',
@@ -119,7 +120,8 @@ subtest 'payout' => sub {
         currency   => 'USD',
         payout     => $payout,
     });
-    cmp_ok $c->ask_price, '>', 5, 'VolIdx intraday non atm contract price is not floor to minimum_ask_probability';
+    
+    cmp_ok $c->ask_price, '>', $c->otm_threshold * $payout, 'VolIdx intraday non atm contract price is not floor.';
 
 };
 
@@ -243,8 +245,8 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    is $c->payout, roundnear(0.01, $stake / $c->minimum_ask_probability),
-        'Forex intraday non atm contract payout is floored to ' . $stake / $c->minimum_ask_probability;
+    is $c->payout, roundnear(0.01, $stake / $c->otm_threshold),
+        'Forex intraday non atm contract payout is floored to ' . $stake / $c->otm_threshold;
 
     $c = produce_contract({
         bet_type    => 'CALL',
@@ -256,7 +258,7 @@ subtest 'stake' => sub {
         amount      => $stake,
     });
     is $c->payout, roundnear(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
-        'Forex daily non atm contract payout is not floor to minimum_ask_probability';
+        'Forex daily non atm contract payout is not floor';
 
     $c = produce_contract({
         bet_type    => 'CALL',
@@ -268,7 +270,7 @@ subtest 'stake' => sub {
         amount      => $stake,
     });
     is $c->payout, roundnear(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
-        'VolIdx intraday non atm contract payout is not floor to minimum_ask_probability';
+        'VolIdx intraday non atm contract payout is not floor';
 
 };
 

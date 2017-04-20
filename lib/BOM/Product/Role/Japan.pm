@@ -19,9 +19,6 @@ override _build_otm_threshold => sub {
     return 0.035;    # a fixed 3.5% for japan regardless of market though we only offer forex now.
 };
 
-override _build_minimum_ask_probability => sub {
-    return 0.035;    # a fixed 3.5% for japan regardless of market though we only offer forex now.
-};
 
 # we do not want to apply this for Japan.
 override apply_market_inefficient_limit => sub {

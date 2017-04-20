@@ -184,7 +184,6 @@ sub market_details {
         staking_limits          => $contract->staking_limits,
         deep_otm_threshold      => $contract->otm_threshold,
         base_commission         => $contract->base_commission,
-        minimum_ask_probability => $contract->minimum_ask_probability,
     );
     $details{spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
     return \%details;
