@@ -1,7 +1,6 @@
 use strict;
 use warnings;
 use Test::More;
-use Email::Sender::Transport::Test;
 use Test::MockModule;
 use Test::Warnings qw(warning);
 use Brands;
