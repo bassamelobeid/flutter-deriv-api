@@ -276,13 +276,8 @@ sub sell_expired_contracts {
         }
 
         if (BOM::Platform::Config::on_production()) {
-            my $sender = Mail::Sender->new({
-                smtp    => 'localhost',
-                from    => '"Autosell" <autosell@regentmarkets.com>',
-                to      => 'quants-market-data@regentmarkets.com',
-                subject => $subject,
-            });
-            $sender->MailMsg({msg => join("\n", @msg) . "\n\n"});
+            Email::Stuffer->from('"Autosell" <autosell@regentmarkets.com>')->to('quants-market-data@regentmarkets.com')
+                ->text_body(join("\n", @msg) . "\n\n")->send;
         }
     }
 
