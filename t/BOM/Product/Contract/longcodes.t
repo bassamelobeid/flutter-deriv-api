@@ -46,17 +46,40 @@ subtest 'Proper form' => sub {
             ~
     );
     my @currencies = ('USD', 'EUR', 'RUR');    # Inexhaustive, incorrect list: just to be sure the currency is not accidentally hard-coded.
-    plan tests => scalar @shortcodes * scalar @currencies;
-
     foreach my $currency (@currencies) {
         my $expected_standard_form = qr/Win payout if .*\.$/;    # Simplified standard form to which all should adhere.
                                                                  # Can this be improved further?
         my $params;
         foreach my $shortcode (@shortcodes) {
             my $c = produce_contract($shortcode, $currency);
-            like($c->longcode, $expected_standard_form, $shortcode . ' => long code form appears ok');
+            like($c->longcode->[0], $expected_standard_form, $shortcode . ' => long code form appears ok');
         }
     }
+
+    # pick few random one to check complete equality
+    my $c = produce_contract($shortcodes[5], 'USD');
+    is_deeply(
+        $c->longcode,
+        [
+            'Win payout if [_3] is strictly higher than [_6] at [_5] after [_4].',
+            'USD', '100.00', 'NZD/USD', ['contract start time'], ['3 hours'], ['entry spot']]);
+
+    $c = produce_contract($shortcodes[15], 'EUR');
+    is_deeply(
+        $c->longcode,
+        [
+            'Win payout if [_3] is strictly higher than [_6] at [_5].',
+            'EUR', '100.00', 'ICICI Bank Ltd',
+            [], ['close on [_1]', '2014-09-19'],
+            ['entry spot']]);
+
+    $c = produce_contract($shortcodes[-1], 'RUR');
+    is_deeply(
+        $c->longcode,
+        [
+            'Win payout if [_3] stays between [_7] to [_6] through [_5].',
+            'RUR', '100.00', 'AUD/JPY', [], ['close on [_1]', '2014-03-20'],
+            ['0.931'], ['0.910']]);
 };
 
 subtest 'longcode from params for forward starting' => sub {
@@ -75,12 +98,18 @@ subtest 'longcode from params for forward starting' => sub {
     });
 
     ok $c->is_forward_starting, 'is a forward starting contract';
-    my $longcode;
 
+    my $longcode;
     like(warning { $longcode = $c->longcode }, qr/No basis tick for/, 'Got warning for no basis tick');
 
-    is $longcode, 'Win payout if Volatility 100 Index is strictly higher than entry spot at 10 minutes after 2016-10-19 10:10:00 GMT.',
-        'correct longcode';
+    is_deeply(
+        $longcode,
+        [
+            'Win payout if [_3] is strictly higher than [_6] at [_5] after [_4].',
+            'USD', '10.00',
+            'Volatility 100 Index',
+            ['2016-10-19 10:10:00 GMT'],
+            ['10 minutes'], ['entry spot']]);
 };
 
 done_testing();
