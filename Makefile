@@ -10,7 +10,8 @@ tidy:
 	find . -name '*.tidyup' -delete
 
 unit_test:
-	/etc/rmg/bin/prove --timer -l -I./t -r --exec '/etc/rmg/bin/perl -MTest::FailWarnings=-allow_deps,1' t/
+	#/etc/rmg/bin/prove --timer -l -I./t -r --exec '/etc/rmg/bin/perl -MTest::FailWarnings=-allow_deps,1' t/
+	/etc/rmg/bin/perl -Ilib -I./t t/BOM/RiskReporting/mtm.t
 
 i18n:
 	xgettext.pl -P haml=haml -P perl=pl,pm -P tt2=tt,tt2 \
