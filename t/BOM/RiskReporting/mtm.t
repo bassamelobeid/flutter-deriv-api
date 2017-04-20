@@ -150,14 +150,14 @@ subtest 'realtime report generation' => sub {
     $mocked_system->mock('on_production', sub { 1 });
 
     my $results;
+    my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
+    $mailbox->init;
+    $mailbox->clear;
     lives_ok { $results = BOM::RiskReporting::MarkedToModel->new(end => $now, send_alerts => 0)->generate } 'Report generation does not die.';
 
     note 'This may not be checking what you think.  It can not tell when things sold.';
     is($dm->get_last_generated_historical_marked_to_market_time, $now->db_timestamp, 'It ran and updated our timestamp.');
     note "Includes a lot of unit test transactions about which we don't care.";
-    my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
-    $mailbox->init;
-    $mailbox->clear;
     is($called_count, 1, 'BOM::Transaction::sell_expired_contracts called only once');
     my @msgs = $mailbox->search(
         email   => 'quants-market-data@regentmarkets.com',
