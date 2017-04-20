@@ -23,7 +23,7 @@ use File::Temp;
 use POSIX qw(strftime);
 use Try::Tiny;
 
-use Mail::Sender;
+use Email::Stuffer;
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
@@ -155,6 +155,7 @@ sub generate {
 
         $dbh->commit;
         if ($mail_content and $self->send_alerts) {
+            
             my $sender = Mail::Sender->new({
                 smtp    => 'localhost',
                 from    => 'Risk reporting <risk-reporting@binary.com>',
