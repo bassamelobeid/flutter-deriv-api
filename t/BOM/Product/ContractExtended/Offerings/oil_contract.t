@@ -18,9 +18,9 @@ reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 my @date_start = ('2016-02-15 08:15:00', '2016-02-15 08:30:00', '2016-02-16 08:30:00');
 my @duration   = ('20m',                 '24h',                 '2m');
 my @error      = (
-    qr/Trading is not available from 08:15:00 to 08:25:00/,
-    qr/Contracts on this market with a duration of under 24 hours must expire on the same trading day./,
-    qr/Trading is not offered for this duration./,
+    ['Trading is not available from [_1] to [_2]', '08:15:00', '08:25:00'],
+    ['Contracts on this market with a duration of under 24 hours must expire on the same trading day.'],
+    ['Trading is not offered for this duration.'],
 );
 my $u     = create_underlying('frxBROUSD');
 my $count = 0;
@@ -75,7 +75,7 @@ foreach my $ds (@date_start) {
     };
     my $c = produce_contract($pp);
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    like $c->primary_validation_error->message_to_client, $error[$count], "underlying $u->symbol, error is as expected [$error[$count]]";
+    is_deeply($c->primary_validation_error->message_to_client, $error[$count]);
     $count++;
 }
 
