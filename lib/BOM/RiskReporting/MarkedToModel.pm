@@ -43,7 +43,7 @@ use BOM::Transaction;
 # This report will only be run on the MLS.
 sub generate {
     my $self = shift;
-    warn "line ";
+
     my $start = time;
 
     my $pricing_date = $self->end;
@@ -62,35 +62,35 @@ sub generate {
         vega  => 0,
         gamma => 0,
     );
-    warn "line ";
+
     my $total_expired = 0;
     my $error_count   = 0;
     my $last_fmb_id   = 0;
     my %cached_underlyings;
     my $mail_content = '';
-    warn "line ";
+
     # Before starting pricing we'd like to make sure we'll have the ticks we need.
     # They'll all still be priced at that second, though.
     # Let's nap!
     while ($pricing_date->epoch + 5 > time) {
         sleep 1;
-    }    warn "line ";
+    }
     my $dbh = $self->_db->dbh;
-    try {    warn "line ";
+    try {
         # This seems to be the recommended way to do transactions
         $dbh->{AutoCommit} = 0;
         $dbh->{RaiseError} = 1;
-             warn "line ";
+
         my $book    = [];
         my $expired = [];
 
         $dbh->do(qq{DELETE FROM accounting.expired_unsold});
         $dbh->do(qq{DELETE FROM accounting.realtime_book});
-             warn "line ";
+
         foreach my $open_fmb_id (@keys) {
             $last_fmb_id = $open_fmb_id;
             my $open_fmb = $open_bets_ref->{$open_fmb_id};
-            try {    warn "line ";
+            try {
                 my $bet_params = shortcode_to_parameters($open_fmb->{short_code}, $open_fmb->{currency_code});
                 $bet_params->{date_pricing} = $pricing_date;
                 my $symbol = $bet_params->{underlying}->symbol;
@@ -98,32 +98,32 @@ sub generate {
                     if ($cached_underlyings{$symbol});
                 my $bet = produce_contract($bet_params);
                 $cached_underlyings{$symbol} ||= $bet->underlying;
-                     warn "line ";
+
                 my $current_value = $bet->theo_price;
                 my $value = $self->amount_in_usd($current_value, $open_fmb->{currency_code});
                 $totals{value} += $value;
-                     warn "line ";
-                if ($bet->is_settleable) {    warn "line ";
+
+                if ($bet->is_settleable) {
                     $total_expired++;
                     $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
                         undef, $open_fmb_id, $value);
                     # We only sell the contracts that already expired for 10+ seconds #
                     # Those other contracts will be sold by expiryd #
-                    if (time - $bet->date_expiry->epoch > 15) {    warn "line ";
+                    if (time - $bet->date_expiry->epoch > 15) {
                         $open_fmb->{market_price}                                           = $value;
                         $open_fmb->{bet}                                                    = $bet;
                         $open_bets_expired_ref->{$open_fmb->{client_loginid}}{$open_fmb_id} = $open_fmb;
                     }
-                } else {    warn "line ";
+                } else {
                     # spreaed does not have greeks
-                    map { $totals{$_} += $bet->$_ } qw(delta theta vega gamma);    warn "line ";
+                    map { $totals{$_} += $bet->$_ } qw(delta theta vega gamma);
                     $dbh->do(
                         qq{INSERT INTO accounting.realtime_book (financial_market_bet_id, market_price, delta, theta, vega, gamma)  VALUES(?, ?, ?, ?, ?, ?)},
                         undef, $open_fmb_id, $value, $bet->delta, $bet->theta, $bet->vega, $bet->gamma
                     );
                 }
             }
-            catch {    warn "line ";
+            catch {
                 $error_count++;
                 $mail_content .= "Unable to process bet [ $last_fmb_id, " . $open_fmb->{short_code} . ", $_ ]\n";
             };
@@ -133,7 +133,7 @@ sub generate {
             interval => time - $start,
             locale   => BOM::Backoffice::Request::request()->language
         );
-             warn "line ";
+
         my $status =
               'Total time ['
             . $howlong->as_string
@@ -152,25 +152,25 @@ sub generate {
         }, undef, $pricing_date->db_timestamp,
             map { $totals{$_} } qw(value delta theta vega gamma)
         );
-             warn "line ";
+
         $dbh->commit;
-        if ($mail_content and $self->send_alerts) {    warn "line ";
+        if ($mail_content and $self->send_alerts) {
             Email::Stuffer->from('Risk reporting <risk-reporting@binary.com>')->to('Quants <x-quants-alert@binary.com>')
                 ->subject('Problem in MtM bets pricing')->text_body($mail_content)->send;
         }
-             warn "line ";
+
         $dbh->disconnect;
     }
-    catch {    warn "line ";
+    catch {
         my $errmsg = ref $_ ? $_->trace : $_;
         warn('Updating realtime book transaction aborted while processing bet [' . $last_fmb_id . '] because ' . $errmsg);
         try { $dbh->rollback };
     };
-    warn "line ";
+
     $self->cache_daily_turnover($pricing_date);
-    warn "line ";
+
     $self->sell_expired_contracts($open_bets_expired_ref);
-    warn "line ";
+
     return {
         full_count => $howmany,
         errors     => $error_count,
@@ -178,7 +178,7 @@ sub generate {
     };
 }
 
-sub sell_expired_contracts {    warn "line ";
+sub sell_expired_contracts {
     my $self          = shift;
     my $open_bets_ref = shift;
 
@@ -186,12 +186,12 @@ sub sell_expired_contracts {    warn "line ";
 
     my @error_lines;
     my @client_loginids = keys %{$open_bets_ref};
-                                warn "line ";
+
     my %map_to_bb = reverse Bloomberg::UnderlyingConfig::bloomberg_to_binary();
     my $csv       = Text::CSV->new;
 
     my $rmgenv = BOM::Platform::Config::env;
-    for my $client_id (@client_loginids) {    warn "line ";
+    for my $client_id (@client_loginids) {
         my $fmb_infos = $open_bets_ref->{$client_id};
         my $client = Client::Account::get_instance({'loginid' => $client_id});
         my (@fmb_ids_to_be_sold, %bet_infos);
@@ -201,7 +201,7 @@ sub sell_expired_contracts {    warn "line ";
             my $currency       = $fmb_infos->{$id}->{currency_code};
             my $ref_number     = $fmb_infos->{$id}->{transaction_id};
             my $buy_price      = $fmb_infos->{$id}->{buy_price};
-            warn "line ";
+
             my $bet_info = {
                 loginid   => $client_id,
                 ref       => $ref_number,
@@ -210,7 +210,7 @@ sub sell_expired_contracts {    warn "line ";
                 currency  => $currency,
                 bb_lookup => '--',
             };
-            warn "line ";
+
             my $bet = $fmb_infos->{$id}{bet};
 
             if (my $bb_symbol = $map_to_bb{$bet->underlying->symbol}) {
@@ -219,14 +219,14 @@ sub sell_expired_contracts {    warn "line ";
             }
             $bet_info->{shortcode} = $bet->shortcode;
             $bet_info->{payout}    = $bet->payout;
-            warn "line ";
-            if (not defined $bet->value) {    warn "line ";
+
+            if (not defined $bet->value) {
                 # $bet->value is set when we confirm expiration status, even further above.
                 $bet_info->{reason} = 'indeterminate value';
                 push @error_lines, $bet_info;
                 next;
             }
-            if (0 + $bet->bid_price xor 0 + $expected_value) {    warn "line ";
+            if (0 + $bet->bid_price xor 0 + $expected_value) {
                 # We want to be sure that both sides agree that it is either worth nothing or payout.
                 # Sadly, you can't compare the values directly because $expected_value has been
                 # converted to USD and our payout currency might be different.
@@ -235,17 +235,17 @@ sub sell_expired_contracts {    warn "line ";
                 push @error_lines, $bet_info;
                 next;
             }
-            warn "line ";
+
             push @fmb_ids_to_be_sold, $fmb_id;
             $bet_infos{$fmb_id} = $bet_info;
         }
-                                              warn "line ";
+
         my $result = BOM::Transaction::sell_expired_contracts({
             client       => $client,
             contract_ids => \@fmb_ids_to_be_sold,
             source       => 3,                      # app id for `Binary.com riskd.pl` in auth db => oauth.apps table
         });
-        for my $failure (@{$result->{failures}}) {    warn "line ";
+        for my $failure (@{$result->{failures}}) {
             my $bet_info = $bet_infos{$failure->{fmb_id}};
             $bet_info->{reason} = $failure->{reason};
             push @error_lines, $bet_info;
@@ -253,7 +253,7 @@ sub sell_expired_contracts {    warn "line ";
 
     }
 
-    if (scalar @error_lines) {    warn "line ";
+    if (scalar @error_lines) {
         local ($/, $\) = ("\n", undef);                 # in case overridden elsewhere
         Cache::RedisDB->set('AUTOSELL', 'ERRORS', \@error_lines, 3600);
         my $sep     = '---';
@@ -274,13 +274,13 @@ sub sell_expired_contracts {    warn "line ";
                 $sep
                 );
         }
-                                  warn "line ";
-        if (BOM::Platform::Config::on_production()) {    warn "line ";
+
+        if (BOM::Platform::Config::on_production()) {
             Email::Stuffer->from('"Autosell" <autosell@regentmarkets.com>')->to('quants-market-data@regentmarkets.com')->subject($subject)
                 ->text_body(join("\n", @msg) . "\n\n")->send;
         }
     }
-                                warn "line ";
+
     return 0;
 }
 
