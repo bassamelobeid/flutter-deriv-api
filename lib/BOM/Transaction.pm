@@ -1286,11 +1286,6 @@ sub _build_pricing_comment {
         push @comment_fields, (trade => $price);
     }
 
-    if ($contract->entry_spot) {
-        push @comment_fields, (entry_spot       => $contract->entry_spot);
-        push @comment_fields, (entry_spot_epoch => $contract->entry_spot_epoch);
-    }
-
     # Record price slippage in quants bet variable.
     # To always reproduce ask price, we would want to record the slippage allowed during transaction.
     if (defined $price_slippage) {
