@@ -1270,7 +1270,7 @@ subtest 'max_turnover validation', sub {
 
         my $contract_down = produce_contract({
             underlying   => $underlying_r100,
-            bet_type     => 'FLASHD',
+            bet_type     => 'PUT',
             currency     => 'USD',
             payout       => 10.00,
             duration     => '15m',
@@ -1309,7 +1309,7 @@ subtest 'max_turnover validation', sub {
                     payout        => $contract_down->payout,
                     amount_type   => 'payout',
                     purchase_date => Date::Utility->new(),
-                })->buy, undef, 'FLASHD bet bought';
+                })->buy, undef, 'PUT bet bought';
 
             $txn->buy;
         };
@@ -1417,7 +1417,7 @@ subtest 'max_7day_turnover validation', sub {
 
         my $contract_down = produce_contract({
             underlying   => $underlying_r100,
-            bet_type     => 'FLASHD',
+            bet_type     => 'PUT',
             currency     => 'USD',
             payout       => 10.00,
             duration     => '15m',
@@ -1456,7 +1456,7 @@ subtest 'max_7day_turnover validation', sub {
                     payout        => $contract_down->payout,
                     amount_type   => 'payout',
                     purchase_date => Date::Utility->new(),
-                })->buy, undef, 'FLASHD bet bought';
+                })->buy, undef, 'PUT bet bought';
 
             $txn->buy;
         };
@@ -1511,7 +1511,7 @@ subtest 'max_30day_turnover validation', sub {
 
         my $contract_down = produce_contract({
             underlying   => $underlying_r100,
-            bet_type     => 'FLASHD',
+            bet_type     => 'PUT',
             currency     => 'USD',
             payout       => 10.00,
             duration     => '15m',
@@ -1549,7 +1549,7 @@ subtest 'max_30day_turnover validation', sub {
                     payout        => $contract_down->payout,
                     amount_type   => 'payout',
                     purchase_date => Date::Utility->new(),
-                })->buy, undef, 'FLASHD bet bought';
+                })->buy, undef, 'PUT bet bought';
 
             $txn->buy;
         };
@@ -1605,7 +1605,7 @@ subtest 'max_losses validation', sub {
 
         my $contract_down = produce_contract({
             underlying   => $underlying_r100,
-            bet_type     => 'FLASHD',
+            bet_type     => 'PUT',
             currency     => 'USD',
             payout       => 10.00,
             duration     => '15m',
@@ -1661,7 +1661,7 @@ subtest 'max_losses validation', sub {
                 amount_type   => 'payout',
                 purchase_date => Date::Utility->new(),
             });
-            is $t->buy, undef, 'FLASHD bet bought';
+            is $t->buy, undef, 'PUT bet bought';
             $t = BOM::Transaction->new({
                 client      => $cl,
                 contract    => $contract_down,
@@ -1732,7 +1732,7 @@ subtest 'max_7day_losses validation', sub {
 
         my $contract_down = produce_contract({
             underlying   => $underlying_r100,
-            bet_type     => 'FLASHD',
+            bet_type     => 'PUT',
             currency     => 'USD',
             payout       => 10.00,
             duration     => '15m',
@@ -1788,7 +1788,7 @@ subtest 'max_7day_losses validation', sub {
                 amount_type   => 'payout',
                 purchase_date => Date::Utility->new(),
             });
-            is $t->buy, undef, 'FLASHD bet bought';
+            is $t->buy, undef, 'PUT bet bought';
             $t = BOM::Transaction->new({
                 client      => $cl,
                 contract    => $contract_down,
@@ -1860,7 +1860,7 @@ subtest 'max_30day_losses validation', sub {
 
         my $contract_down = produce_contract({
             underlying   => $underlying_r100,
-            bet_type     => 'FLASHD',
+            bet_type     => 'PUT',
             currency     => 'USD',
             payout       => 10.00,
             duration     => '15m',
@@ -1916,7 +1916,7 @@ subtest 'max_30day_losses validation', sub {
                 amount_type   => 'payout',
                 purchase_date => $now,
             });
-            is $t->buy, undef, 'FLASHD bet bought';
+            is $t->buy, undef, 'PUT bet bought';
             $t = BOM::Transaction->new({
                 client      => $cl,
                 contract    => $contract_down,
