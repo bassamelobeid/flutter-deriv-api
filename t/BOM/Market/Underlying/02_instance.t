@@ -24,8 +24,8 @@ use BOM::Platform::Chronicle;
 use Finance::Asset::SubMarket;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
-use BOM::Market::Info;
 use Postgres::FeedDB::Spot;
+use LandingCompany::Offerings qw(reinitialise_offerings);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -41,6 +41,7 @@ Quant::Framework::Utils::Test::create_doc(
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
     });
 
+reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
 # INCORRECT DATA in support of in_quiet_period testing, only.
@@ -242,9 +243,6 @@ subtest 'all attributes on a variety of underlyings' => sub {
         if ($license eq 'realtime') {
             is($underlying->delay_amount, 0, 'Realtime license means no feed delay');
         }
-
-        my $ul_info = BOM::Market::Info->new(underlying => $underlying);
-        like($ul_info->combined_folder, qr%combined%, 'Combined folder looks reasonable enough');
 
         is((scalar grep { $underlying->instrument_type eq $_ } qw(forex stockindex commodities config futures)),
             1, 'Instrument type is exactly one of our allowed values');
@@ -475,13 +473,6 @@ subtest 'all methods on a selection of underlyings' => sub {
     my $eu_symbol       = $EURUSD->symbol;
     my $looks_like_euff = qr%$eu_symbol/\d{1,2}-[A-Z]{1}[a-z]{2}-\d{1,2}(?:-fullfeed\.csv|\.fullfeed)%;
 
-    my $eurusd_info = BOM::Market::Info->new(underlying => $EURUSD);
-    like($eurusd_info->fullfeed_file('19-Jan-12'), $looks_like_euff, "Standard fullfeed file looks right");
-    like($eurusd_info->fullfeed_file('1-JUN-12'),  $looks_like_euff, "Miscapitalized fullfeed file looks right");
-    like($eurusd_info->fullfeed_file('1-JUN-12', 'backtest'), $looks_like_euff, "Miscapitalized fullfeed file with override dir looks right");
-
-    throws_ok { $eurusd_info->fullfeed_file(1338794173) } qr/Bad date for fullfeed_file/, 'Sending in a nonstandard date string makes things die';
-
     my $test_date = $oldEU->for_date;
 
     is($EURUSD->spot_source->tick_at($test_date->epoch)->quote, '1.2859', 'spot_source->tick_at has some value');
@@ -510,7 +501,7 @@ subtest 'all methods on a selection of underlyings' => sub {
     };
 
     my $eod = Quant::Framework::TradingCalendar->new({
-            symbol           => 'NYSE',
+            exchange           => 'NYSE',
             underlying       => create_underlying('DJI'),
             chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader()})->closing_on(Date::Utility->new('2016-04-05'));
     foreach my $pair (qw(frxUSDJPY frxEURUSD frxAUDUSD)) {
