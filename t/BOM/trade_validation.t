@@ -964,7 +964,7 @@ subtest 'Purchase Sell Contract' => sub {
     my $expiry = $now->plus_time_interval('1d');
     $expiry = $expiry->truncate_to_day->plus_time_interval('23h59m59s');
 
-    my $bet_type = 'DOUBLEUP';
+    my $bet_type = 'CALL';
     $contract = produce_contract({
         underlying   => 'R_50',
         bet_type     => $bet_type,
