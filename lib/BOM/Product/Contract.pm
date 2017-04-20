@@ -871,12 +871,12 @@ sub longcode {
     my $forward_starting_contract = ($self->starts_as_forward_starting or $self->is_forward_starting);
     my $expiry_type = $self->tick_expiry ? 'tick' : $self->_check_is_intraday($self->date_start) == 0 ? 'daily' : 'intraday';
     $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $forward_starting_contract and $self->fixed_expiry;
-    my $localizable_description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
+    my $description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
+    my @longcode = ($description, $self->currency, to_monetary_number_format($self->payout), $self->underlying->display_name);
 
-    my ($payout, $when_end, $when_start) = (to_monetary_number_format($self->payout));
+    my ($when_end, $when_start) = ([], []);
     if ($expiry_type eq 'intraday_fixed_expiry') {
-        $when_end   = [$self->date_expiry->datetime . ' GMT'];
-        $when_start = [];
+        $when_end = [$self->date_expiry->datetime . ' GMT'];
     } elsif ($expiry_type eq 'intraday') {
         $when_end = [$self->get_time_to_expiry({from => $self->date_start})->as_string];
         $when_start = ($forward_starting_contract) ? [$self->date_start->db_timestamp . ' GMT'] : ['contract start time'];
@@ -887,24 +887,19 @@ sub longcode {
         } else {
             $when_end = ['close on [_1]', $self->date_expiry->date];
         }
-        $when_start = [];
     } elsif ($expiry_type eq 'tick') {
         $when_end   = [$self->tick_count];
         $when_start = ['first tick'];
     }
-    my ($high_barrier_text, $barrier_text);
+    push @longcode, ($when_start, $when_end);
 
     if ($self->two_barriers) {
-        $high_barrier_text = $self->high_barrier->display_text;
-        $barrier_text      = $self->low_barrier->display_text;
+        push @longcode, ($self->high_barrier->display_text, $self->low_barrier->display_text);
     } else {
-        $barrier_text = $self->barrier->display_text;
+        push @longcode, $self->barrier->display_text;
     }
 
-    return [
-        $localizable_description, $self->currency, $payout,            $self->underlying->display_name,
-        $when_start,              $when_end,       $high_barrier_text, $barrier_text
-    ];
+    return \@longcode;
 }
 
 =head2 allowed_slippage
