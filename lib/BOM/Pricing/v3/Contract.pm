@@ -153,8 +153,7 @@ sub _get_ask {
             my ($message_to_client, $code);
 
             if (my $pve = $contract->primary_validation_error) {
-
-                $message_to_client = $pve->message_to_client;
+                $message_to_client = localize($pve->message_to_client);
                 $code              = "ContractBuyValidationError";
             } else {
                 $message_to_client = localize("Cannot validate contract");
@@ -335,7 +334,7 @@ sub get_bid {
             (
                 $is_valid_to_sell
                 ? ()
-                : (validation_error => $contract->primary_validation_error->message_to_client)
+                : (validation_error => localize($contract->primary_validation_error->message_to_client))
             ),
             bid_price           => sprintf('%.2f', $contract->bid_price),
             current_spot_time   => $contract->current_tick->epoch,
