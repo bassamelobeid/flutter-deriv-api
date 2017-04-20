@@ -129,7 +129,7 @@ sub generate {
             };
         }
 
-        my $howlong = Time::Duration::Concise::Localize->new(    warn "line ";
+        my $howlong = Time::Duration::Concise::Localize->new(
             interval => time - $start,
             locale   => BOM::Backoffice::Request::request()->language
         );
