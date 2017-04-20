@@ -86,8 +86,7 @@ It handles following cases for localization and returns localized string
 =cut
 
 sub localize {
-    my $content = shift;
-    my @params  = @_;
+    my ($content, @params) = @_;
 
     my $request = request();
     my $language = $request ? $request->language : 'EN';
