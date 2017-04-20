@@ -69,18 +69,48 @@ sub template {
 
 =head2 localize
 
-Returns the localized verion of the provided string, with argument
+It handles following cases for localization and returns localized string
+
+ - basic string
+   localize('Barriers must be on either side of the spot.')
+
+ - string with parameters
+   localize('Barrier must be at least [plural,_1,%d pip,%d pips] away from the spot.', 10)
+
+ - simple array ref (message_to_client)
+   localize(['Barrier must be at least [plural,_1,%d pip,%d pips] away from the spot.', 10])
+
+ - nested array ref, params also need translations (longcode)
+   localize(['Win payout if [_3] is strictly lower than [_6] at [_5].', 'USD', '166.27', 'GBP/USD', [], ['close on [_1]', '2016-05-13'], ['entry spot']])
 
 =cut
 
 sub localize {
-    my @texts = @_;
+    my $content = shift;
+    my @params  = @_;
 
     my $request = request();
     my $language = $request ? $request->language : 'EN';
 
     my $lh = BOM::Platform::Context::I18N::handle_for($language)
         || die("could not build locale for language $language");
+
+    my @texts = ();
+    if (ref $content eq 'ARRAY') {
+        # first one is always text string
+        push @texts, shift @$content;
+        # followed by parameters
+        foreach my $elm (@$content) {
+            # some params also need localization (longcode)
+            if (ref $elm eq 'ARRAY' and scalar @$elm) {
+                push @texts, $lh->maketext(@$elm);
+            } else {
+                push @texts, $elm;
+            }
+        }
+    } else {
+        @texts = ($content, @params);
+    }
 
     return $lh->maketext(@texts);
 }
