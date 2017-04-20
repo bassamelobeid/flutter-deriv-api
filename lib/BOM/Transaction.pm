@@ -189,17 +189,6 @@ has transaction_parameters => (
     default => sub { {}; },
 );
 
-has app_markup => (
-    is         => 'ro',
-    isa        => 'Maybe[Num]',
-    lazy_build => 1
-);
-
-sub _build_app_markup {
-    my $self = shift;
-    return $self->contract->app_markup_dollar_amount;
-}
-
 sub BUILDARGS {
     my ($class, $args) = @_;
 
@@ -429,7 +418,7 @@ sub prepare_bet_data_for_buy {
             transaction_data => {
                 staff_loginid => $self->staff,
                 source        => $self->source,
-                app_markup    => $self->app_markup
+                app_markup    => $self->contract->app_markup_dollar_amount
             },
             bet_data             => $bet_params,
             quants_bet_variables => $quants_bet_variables,
