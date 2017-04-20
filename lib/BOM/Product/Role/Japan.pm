@@ -197,19 +197,17 @@ sub _subvalidate_double_barrier {
     return;
 }
 
-#compose a string contains all the pricing info that needed to be log for Japan
+# Compose a string containing all the pricing info that needed to be log for Japan
 sub japan_pricing_info {
-    my $self                 = shift;
-    my $trading_window_start = shift;
+    my ($self, $trading_window_start, $opposite_contract) = @_;
 
-    my $bid_price = $self->payout - $self->opposite_contract->ask_price;
+    my $bid_price = $self->payout - $opposite_contract->ask_price;
     my @pricing_info = ($self->shortcode, $trading_window_start, $self->ask_price, $bid_price, $self->_date_pricing_milliseconds);
 
     my $extra = $self->extra_info('string');
     my $pricing_info = join ',', @pricing_info, $extra;
 
     return "[JPLOG]," . $pricing_info . "\n";
-
 }
 
 1;
