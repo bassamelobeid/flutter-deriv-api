@@ -61,8 +61,8 @@ subtest 'validate client error message' => sub {
     my $cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 
     my $transaction = BOM::Transaction->new({
-        client   => $cr,
-        contract => $contract,
+        client        => $cr,
+        contract      => $contract,
         purchase_date => Date::Utility->new(),
     });
 
@@ -83,8 +83,8 @@ subtest 'validate client error message' => sub {
     my $mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
 
     $transaction = BOM::Transaction->new({
-        client   => $mf,
-        contract => $contract,
+        client        => $mf,
+        contract      => $contract,
         purchase_date => Date::Utility->new(),
     });
 

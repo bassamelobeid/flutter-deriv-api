@@ -562,7 +562,7 @@ subtest 'insufficient balance: buy bet for 100.01 with a balance of 100', sub {
         $acc_usd->load;
         is $acc_usd->balance + 0, 100, 'USD balance is now 100';
 
-        my $now = Date::Utility->new;
+        my $now      = Date::Utility->new;
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'FLASHU',
@@ -810,7 +810,7 @@ subtest 'max_open_bets validation', sub {
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
 
-        my $now = Date::Utility->new;
+        my $now      = Date::Utility->new;
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'FLASHU',
@@ -1846,7 +1846,7 @@ subtest 'max_30day_losses validation', sub {
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
 
-        my $now = Date::Utility->new();
+        my $now         = Date::Utility->new();
         my $contract_up = produce_contract({
             underlying   => $underlying,
             bet_type     => 'FLASHU',
