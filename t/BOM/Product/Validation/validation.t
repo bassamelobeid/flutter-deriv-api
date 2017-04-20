@@ -1120,9 +1120,8 @@ subtest 'expiry_daily expiration time' => sub {
         });
     my $c = produce_contract($params);
     ok $c->_validate_trading_times;
-    my $err = ($c->_validate_trading_times)[0]->{message_to_client};
-    is $err, 'Contracts on this market with a duration of under 24 hours must expire on the same trading day.', 'correct message';
-
+    is_deeply(($c->_validate_trading_times)[0]->{message_to_client},
+        ['Contracts on this market with a duration of under 24 hours must expire on the same trading day.']);
 };
 
 subtest 'spot reference check' => sub {
