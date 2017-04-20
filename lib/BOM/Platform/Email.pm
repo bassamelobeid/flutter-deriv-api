@@ -63,9 +63,9 @@ sub send_email {
     my $message = join("\n", @message);
     my $mail_message = $message;
     if ($use_email_template) {
+        $mail_message = '';
         my $vars = {
-
-# Allows inline HTML, default is off - be very, very careful when setting this #
+            # Allows inline HTML, default is off - be very, very careful when setting this #
             email_content_is_html => $args_ref->{'email_content_is_html'},
             skip_text2html        => $skip_text2html,
             content               => $message,
