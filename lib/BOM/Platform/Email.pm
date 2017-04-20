@@ -80,7 +80,7 @@ sub send_email {
     }
 
     my $email_stuffer = Email::Stuffer->from($fromemail)->to($email)->subject($subject);
-    if ($email_content_is_html || $use_email_template) {
+    if ($args_ref->{'email_content_is_html'} || $use_email_template) {
         $email_stuffer->html_body($mail_message);
     } else {
         $email_stuffer->text_body($mail_message);
