@@ -79,7 +79,13 @@ sub send_email {
             || die BOM::Platform::Context::template->error();
     }
 
-    my $email_stuffer = Email::Stuffer->from($fromemail)->to($email)->subject($subject)->text_body($mail_message);
+    my $email_stuffer = Email::Stuffer->from($fromemail)->to($email)->subject($subject);
+    if ($email_content_is_html || $use_email_template) {
+        $email_stuffer->html_body($mail_message);
+    } else {
+        $email_stuffer->text_body($mail_message);
+    }
+
     if ($attachment) {
         $email_stuffer->attach_file($attachment);
     }
