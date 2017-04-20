@@ -89,7 +89,7 @@ $underlying->set_combined_realtime({
 
 my $contract = produce_contract({
     underlying  => $underlying,
-    bet_type    => 'FLASHU',
+    bet_type    => 'CALL',
     currency    => $currency,
     payout      => 1000,
     date_start  => $now,
@@ -162,7 +162,7 @@ subtest 'Is contract valid to buy' => sub {
     $now = Date::Utility->new;
     my $contract1 = produce_contract({
         underlying  => $underlying,
-        bet_type    => 'FLASHU',
+        bet_type    => 'CALL',
         currency    => $currency,
         payout      => 1000,
         date_start  => $now,
@@ -201,7 +201,7 @@ subtest 'Is contract valid to sell' => sub {
 
     my $contract1 = produce_contract({
         underlying  => $underlying,
-        bet_type    => 'FLASHU',
+        bet_type    => 'CALL',
         currency    => $currency,
         payout      => 1000,
         date_start  => $now,
@@ -247,7 +247,7 @@ subtest 'contract date pricing Validation' => sub {
 
     my $contract = produce_contract({
         underlying   => create_underlying('frxUSDJPY'),
-        bet_type     => 'FLASHU',
+        bet_type     => 'CALL',
         currency     => 'GBP',
         payout       => 100,
         date_start   => $now,
@@ -287,7 +287,7 @@ subtest 'valid currency test' => sub {
 
         my $contract = produce_contract({
             underlying   => create_underlying('frxUSDJPY'),
-            bet_type     => 'FLASHU',
+            bet_type     => 'CALL',
             currency     => 'ABC',
             payout       => 100,
             date_start   => $now,
@@ -320,7 +320,7 @@ subtest 'valid currency test' => sub {
 
         my $contract = produce_contract({
             underlying   => create_underlying('frxUSDJPY'),
-            bet_type     => 'FLASHU',
+            bet_type     => 'CALL',
             currency     => 'AUD',
             payout       => 100,
             date_start   => $now,
@@ -358,7 +358,7 @@ subtest 'valid currency test' => sub {
 
         my $contract = produce_contract({
             underlying   => create_underlying('frxUSDJPY'),
-            bet_type     => 'FLASHU',
+            bet_type     => 'CALL',
             currency     => 'AUD',
             payout       => 100,
             date_start   => $now,
@@ -427,7 +427,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
         my $contract = produce_contract({
             underlying   => create_underlying('frxUSDJPY'),
-            bet_type     => 'FLASHU',
+            bet_type     => 'CALL',
             currency     => 'GBP',
             payout       => 100,
             date_start   => $now,
@@ -494,7 +494,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
         my $contract = produce_contract({
             underlying   => create_underlying('frxUSDJPY'),
-            bet_type     => 'FLASHU',
+            bet_type     => 'CALL',
             currency     => 'GBP',
             payout       => 100,
             date_start   => $now,
@@ -649,7 +649,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
         my $contract = produce_contract({
             underlying   => create_underlying('frxUSDJPY'),
-            bet_type     => 'FLASHU',
+            bet_type     => 'CALL',
             currency     => 'GBP',
             payout       => 100,
             date_start   => $now,
@@ -856,7 +856,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
 
         my $contract = produce_contract({
             underlying   => create_underlying('frxUSDJPY'),
-            bet_type     => 'FLASHU',
+            bet_type     => 'CALL',
             currency     => 'GBP',
             payout       => 100,
             date_start   => $now,

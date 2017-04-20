@@ -1954,7 +1954,6 @@ sub sell_expired_contracts {
             next;
         }
 
-
         try {
             if ($contract->is_valid_to_sell) {
                 @{$bet}{qw/sell_price sell_time/} = ($contract->bid_price, $contract->date_pricing->db_timestamp);
