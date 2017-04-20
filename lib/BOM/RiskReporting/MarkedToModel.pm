@@ -276,7 +276,7 @@ sub sell_expired_contracts {    warn "line ";
         }
                                   warn "line ";
         if (BOM::Platform::Config::on_production()) {    warn "line ";
-            Email::Stuffer->from('"Autosell" <autosell@regentmarkets.com>')->to('quants-market-data@regentmarkets.com')
+            Email::Stuffer->from('"Autosell" <autosell@regentmarkets.com>')->to('quants-market-data@regentmarkets.com')->subject($subject)
                 ->text_body(join("\n", @msg) . "\n\n")->send;
         }
     }
