@@ -387,7 +387,7 @@ subtest $method => sub {
         entry_tick   => $entry_tick,
         barrier      => 'S0P',
     });
-    $contract_expired->{shortcode} = 'CALL_SPGSWT_20_1413892500_1413906900_S0P_0';
+    $contract_expired->{shortcode} = 'CALL_SPGSWT_20_1413892500F_1413906900_S0P_0';
     $txn = BOM::Transaction->new({
             client        => $test_client2,
             contract      => $contract_expired,
