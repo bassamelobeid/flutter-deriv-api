@@ -56,13 +56,13 @@ subtest 'shortcode_to_parameters' => sub {
     is($put->{date_start},  Date::Utility->new(1352351000)->epoch,            'parsed start time');
     is($put->{date_expiry}, Date::Utility->new('2012-11-09 21:00:00')->epoch, 'parsed expiry time');
 
-    my $tickup = shortcode_to_parameters('FLASHU_frxUSDJPY_100.00_1352351000_9T_0_0', 'USD');
+    my $tickup = shortcode_to_parameters('CALL_frxUSDJPY_100.00_1352351000_9T_0_0', 'USD');
     $expected = {
         underlying   => $frxUSDJPY,
         barrier      => '0',
-        shortcode    => 'FLASHU_frxUSDJPY_100.00_1352351000_9T_0_0',
+        shortcode    => 'CALL_frxUSDJPY_100.00_1352351000_9T_0_0',
         date_expiry  => undef,
-        bet_type     => 'FLASHU',
+        bet_type     => 'CALL',
         currency     => 'USD',
         date_start   => '1352351000',
         prediction   => undef,

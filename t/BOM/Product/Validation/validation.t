@@ -457,7 +457,7 @@ subtest 'volsurfaces become old and invalid' => sub {
     });
     my $bet_params = {
         underlying   => $underlying,
-        bet_type     => 'DOUBLEDOWN',
+        bet_type     => 'PUT',
         currency     => 'USD',
         payout       => 100,
         date_start   => $starting,
@@ -630,7 +630,7 @@ subtest 'invalid start times' => sub {
     $underlying = create_underlying('GDAXI');
 
     $bet_params->{underlying}   = $underlying;
-    $bet_params->{bet_type}     = 'DOUBLEDOWN';
+    $bet_params->{bet_type}     = 'PUT';
     $bet_params->{duration}     = '7d';
     $bet_params->{date_start}   = $underlying->calendar->opening_on(Date::Utility->new('2013-03-28'));
     $bet_params->{date_pricing} = $bet_params->{date_start};
@@ -656,7 +656,7 @@ subtest 'invalid start times' => sub {
         });
 
     $bet_params->{volsurface}   = $volsurface;
-    $bet_params->{bet_type}     = 'DOUBLEDOWN';
+    $bet_params->{bet_type}     = 'PUT';
     $bet_params->{duration}     = '0d';
     $bet_params->{date_start}   = $underlying->calendar->closing_on(Date::Utility->new('2013-03-28'))->minus_time_interval('1m');
     $bet_params->{date_pricing} = $bet_params->{date_start};
@@ -707,7 +707,7 @@ subtest 'invalid expiry times' => sub {
 
     my $bet_params = {
         underlying   => $underlying,
-        bet_type     => 'DOUBLEDOWN',
+        bet_type     => 'PUT',
         currency     => 'USD',
         payout       => 100,
         date_start   => $starting,
@@ -1024,7 +1024,7 @@ subtest 'intraday indices duration test' => sub {
     }
     my $tick   = Postgres::FeedDB::Spot::Tick->new($tick_params);
     my $params = {
-        bet_type     => 'FLASHU',
+        bet_type     => 'CALL',
         underlying   => 'AS51',
         date_start   => $now,
         date_pricing => $now,
@@ -1102,7 +1102,7 @@ subtest 'expiry_daily expiration time' => sub {
     };
     my $tick   = Postgres::FeedDB::Spot::Tick->new($tick_params);
     my $params = {
-        bet_type     => 'FLASHU',
+        bet_type     => 'CALL',
         underlying   => 'AS51',
         date_start   => $now,
         date_pricing => $now,

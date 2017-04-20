@@ -63,7 +63,7 @@ subtest 'produce_contract' => sub {
     plan tests => 3;
 
     my $contract_params = {
-        bet_type   => 'FLASHD',
+        bet_type   => 'PUT',
         duration   => '4t',
         underlying => 'frxUSDJPY',
         payout     => 1,
@@ -120,7 +120,7 @@ subtest 'make_similar_contract' => sub {
 };
 
 subtest 'unknown shortcode does not die' => sub {
-    my $unknown = 'INTRADD_FRXUSDJPY_20_12_JAN_07_4_6';
+    my $unknown = 'PUT_FRXUSDJPY_20_12_JAN_07_4_6';
     lives_ok {
         my $contract = produce_contract($unknown, 'GBP');
         isa_ok $contract, 'BOM::Product::Contract::Invalid';
