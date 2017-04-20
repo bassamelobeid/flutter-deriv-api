@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 6;
 use Test::Exception;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
@@ -80,6 +80,26 @@ subtest 'surface has not change' => sub {
     $au->run;
     ok !$au->report->{TOP40}->{success}, 'update failed';
     like $au->report->{TOP40}->{reason}, qr/has not changed since last update/, 'correct error message';
+};
+
+subtest 'First Term is 7' => sub {
+    my $test_file = dirname(__FILE__) . '/fixed.xls';
+    my $au        = BOM::MarketDataAutoUpdater::Indices->new(
+        file              => $test_file,
+        symbols_to_update => [qw(ASX)]);    # wrong symbol
+    $au->run;
+    cmp_ok($au->report->{ASX}->{success}, '==', 1);
+
+};
+
+subtest 'First Term is not 7' => sub {
+    my $test_file = dirname(__FILE__) . '/exchange.xls';
+    my $au        = BOM::MarketDataAutoUpdater::Indices->new(
+        file              => $test_file,
+        symbols_to_update => [qw(ASX)]);    # wrong symbol
+    $au->run;
+    ok !$au->report->{ASX}->{success}, 'update failed';
+    like $au->report->{ASX}->{reason}, qr/Term 7 is missing from datasource for/, 'correct error message';
 };
 
 SKIP: {
