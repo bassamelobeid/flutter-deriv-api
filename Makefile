@@ -34,8 +34,7 @@ structure:
 leaktest:
 	@$(PROVE) t/leak/v3
 
-test:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/ t/
+test: structure v3_1 v3_2 v3_3 json_schema_1 json_schema_2 json_schema_3 json_schema_4 leaktest
 
 tidy:
 	find . -name '*.p?.bak' -delete
