@@ -42,7 +42,7 @@ sub validate_trx_buy {
     # all these validations MUST NOT use the database
     # database related validations MUST be implemented in the database
     # ask your friendly DBA team if in doubt
-
+    my $res;
     for my $c (@{$self->clients}) {
         for (
             qw/
@@ -75,7 +75,7 @@ sub validate_trx_buy {
         }
     }
     ### we should check pricing time just before DB query
-    my $res = $self->_validate_date_pricing();
+    $res = $self->_validate_date_pricing();
     return $res if $res;
 
     return;
