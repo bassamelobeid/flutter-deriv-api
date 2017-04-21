@@ -1,5 +1,8 @@
 use strict;
 use warnings;
+
+no indirect;
+
 use Test::More;
 use Test::Deep;
 use Test::Warnings qw(warnings);
