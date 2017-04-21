@@ -114,8 +114,8 @@ sub buy_one_bet {
         is_expired        => 1,
         is_sold           => 0,
         bet_class         => 'higher_lower_bet',
-        bet_type          => 'FLASHU',
-        short_code        => ('FLASHU_R_50_' . $payout_price . '_' . $now->epoch . '_' . $now->plus_time_interval($duration)->epoch . '_S0P_0'),
+        bet_type          => 'CALL',
+        short_code        => ('CALL_R_50_' . $payout_price . '_' . $now->epoch . '_' . $now->plus_time_interval($duration)->epoch . '_S0P_0'),
         relative_barrier  => 'S0P',
         %$args,
     };
@@ -138,7 +138,7 @@ sub buy_multiple_bets {
     my ($acc) = @_;
 
     my $now      = Date::Utility->new;
-    $buy_multiple_shortcode = ('FLASHU_R_50_200_' . $now->epoch . '_' . $now->plus_time_interval('15s')->epoch . '_S0P_0'),
+    $buy_multiple_shortcode = ('CALL_R_50_200_' . $now->epoch . '_' . $now->plus_time_interval('15s')->epoch . '_S0P_0'),
     my $bet_data = +{
         underlying_symbol => 'frxUSDJPY',
         payout_price      => 200,
@@ -151,7 +151,7 @@ sub buy_multiple_bets {
         is_expired        => 1,
         is_sold           => 0,
         bet_class         => 'higher_lower_bet',
-        bet_type          => 'FLASHU',
+        bet_type          => 'CALL',
         short_code        => $buy_multiple_shortcode,
         relative_barrier  => 'S0P',
     };
@@ -487,7 +487,7 @@ subtest 'more validation', sub {
     lives_ok {
         my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
             +{
-            bet_type => 'FLASHD',
+            bet_type => 'PUT',
             limits   => {
                 max_payout_per_symbol_and_bet_type => 1000 - 0.01,
             },
@@ -614,24 +614,24 @@ SKIP: {
                     max_turnover             => 100 - 0.01,
                     max_losses               => 100 - 0.01,
                     specific_turnover_limits => [{    # fails
-                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
+                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100 - 0.01,
                             name     => 'test1',
                         },
                         {    # passes
-                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
+                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100,
                             name     => 'test2',
                         },
                         {    # fails (leave out the CLUB bet above)
-                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY/],
+                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY/],
                             limit    => 80 - 0.01,
                             name     => 'test3',
                         },
                         {    # passes (leave out the CLUB bet above)
-                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY/],
+                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY/],
                             limit    => 80,
                             name     => 'test4',
                         },
@@ -672,24 +672,24 @@ SKIP: {
                     max_turnover             => 100,
                     max_losses               => 100 - 0.01,
                     specific_turnover_limits => [{    # fails
-                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
+                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100 - 0.01,
                             name     => 'test1',
                         },
                         {    # passes
-                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
+                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100,
                             name     => 'test2',
                         },
                         {    # fails (leave out the CLUB bet above)
-                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY/],
+                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY/],
                             limit    => 80 - 0.01,
                             name     => 'test3',
                         },
                         {    # passes (leave out the CLUB bet above)
-                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY/],
+                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY/],
                             limit    => 80,
                             name     => 'test4',
                         },
@@ -730,24 +730,24 @@ SKIP: {
                     max_turnover             => 100,
                     max_losses               => 100,
                     specific_turnover_limits => [{    # fails
-                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
+                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100 - 0.01,
                             name     => 'test1',
                         },
                         {    # passes
-                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
+                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100,
                             name     => 'test2',
                         },
                         {    # fails (leave out the CLUB bet above)
-                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY/],
+                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY/],
                             limit    => 80 - 0.01,
                             name     => 'test3',
                         },
                         {    # passes (leave out the CLUB bet above)
-                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY/],
+                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY/],
                             limit    => 80,
                             name     => 'test4',
                         },
@@ -789,14 +789,14 @@ SKIP: {
                     max_turnover             => 100,
                     max_losses               => 100,
                     specific_turnover_limits => [{    # fails
-                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
+                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 20 - 0.01,
                             daily    => 1,
                             name     => 'test1',
                         },
                         {    # passes
-                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
+                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 20,
                             daily    => 1,
@@ -819,21 +819,21 @@ SKIP: {
                     max_turnover             => 100,
                     max_losses               => 100,
                     specific_turnover_limits => [{    # passes
-                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
+                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100 - 0.01,
                             daily    => 1,
                             name     => 'test1',
                         },
                         {    # fails
-                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
+                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100 - 0.01,
                             daily    => 0,
                             name     => 'test2',
                         },
                         {    # passes
-                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
+                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100,
                             daily    => 0,
@@ -856,13 +856,13 @@ SKIP: {
                     max_turnover             => 100,
                     max_losses               => 100,
                     specific_turnover_limits => [{    # passes
-                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
+                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100,
                             name     => 'test2',
                         },
                         {    # passes (leave out the CLUB bet above)
-                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY/],
+                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY/],
                             limit    => 80,
                             name     => 'test4',
                         },
