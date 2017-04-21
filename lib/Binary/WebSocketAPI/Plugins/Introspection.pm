@@ -223,16 +223,22 @@ command connections => sub {
             connections => [
                 map {
                     my $pc = 0;
+                    my $ch = 0;
                     for my $k (keys %{$_->pricing_subscriptions}) {
                         ++$pc if defined $_->pricing_subscriptions->{$k};
-                    }
+                    };
+                    for my $k (keys($_->stash->{pricing_channel}||[])) {
+                        next if $k eq 'uuid';
+                        next if $k eq 'price_daemon_cmd';
+                        $ch += scalar keys $_->stash->{pricing_channel}{$k};
+                    };
                     +{
                         app_id                         => $_->stash->{source},
                         landing_company                => $_->landing_company_name,
                         ip                             => $_->stash->{client_ip},
                         country                        => $_->country_code,
                         client                         => $_->stash->{loginid},
-                        pricing_channel_count          => scalar keys($_->stash->{pricing_channel} || []),
+                        pricing_channel_count          => $ch,
                         last_call_received_from_client => $_->stash->{introspection}{last_call_received},
                         last_message_sent_to_client    => $_->stash->{introspection}{last_message_sent},
                         received_bytes_from_client     => $_->stash->{introspection}{received_bytes},
