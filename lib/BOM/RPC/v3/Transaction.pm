@@ -51,9 +51,9 @@ sub buy {
     }
 
     my $trx = BOM::Transaction->new({
-            client   => $client,
+            client              => $client,
             contract_parameters => $contract_parameters,
-            price    => ($price || 0),
+            price               => ($price || 0),
             (defined $payout)      ? (payout      => $payout)      : (),
             (defined $amount_type) ? (amount_type => $amount_type) : (),
             purchase_date => $purchase_date,
@@ -142,10 +142,10 @@ sub buy_contract_for_multiple_accounts {
     }
 
     my $trx = BOM::Transaction->new({
-        client   => $client,
-        multiple => $token_list_res->{result},
+        client              => $client,
+        multiple            => $token_list_res->{result},
         contract_parameters => $contract_parameters,
-        price    => ($price || 0),
+        price               => ($price || 0),
         (defined $payout)      ? (payout      => $payout)      : (),
         (defined $amount_type) ? (amount_type => $amount_type) : (),
         purchase_date => $purchase_date,
@@ -260,15 +260,18 @@ sub sell_contract_for_multiple_accounts {
 
     return +{result => $token_list_res->{result}} unless $token_list_res->{success};
 
-    my $contract_parameters = {shortcode => $shortcode, currency => $client->currency};
+    my $contract_parameters = {
+        shortcode => $shortcode,
+        currency  => $client->currency
+    };
     $contract_parameters->{landing_company} = $client->landing_company->short;
 
     my $trx = BOM::Transaction->new({
-        client   => $client,
-        multiple => $token_list_res->{result},
+        client              => $client,
+        multiple            => $token_list_res->{result},
         contract_parameters => $contract_parameters,
-        price    => ($args->{price} // 0),
-        source   => $source,
+        price               => ($args->{price} // 0),
+        source              => $source,
     });
 
     if (my $err = $trx->sell_by_shortcode) {
@@ -320,12 +323,15 @@ sub sell {
             code              => 'InvalidSellContractProposal',
             message_to_client => BOM::Platform::Context::localize('Unknown contract sell proposal')}) unless @fmbs;
 
-    my $contract_parameters = {shortcode => $fmbs[0]->{short_code}, currency => $client->currency};
+    my $contract_parameters = {
+        shortcode => $fmbs[0]->{short_code},
+        currency  => $client->currency
+    };
     $contract_parameters->{landing_company} = $client->landing_company->short;
 
     my $amount_type = $contract_parameters->{amount_type};
     my $trx         = BOM::Transaction->new({
-        client   => $client,
+        client              => $client,
         contract_parameters => $contract_parameters,
         (defined $amount_type) ? (amount_type => $amount_type) : (),
         contract_id => $id,
