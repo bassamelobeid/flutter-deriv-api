@@ -275,3 +275,5 @@ Ratio of slippage we allow for this contract, where 0.01 is 1%.
     make test
     # run one script
     prove t/BOM/001_structure.t
+    # run one script with perl
+    perl -MBOM::Test t/BOM/001_structure.t
