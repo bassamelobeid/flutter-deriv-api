@@ -51,8 +51,8 @@ lives_ok {
                 'expiry_time'       => '2010-12-02 14:00:00',
                 'is_expired'        => 1,
                 'bet_class'         => 'higher_lower_bet',
-                'bet_type'          => 'FLASHU',
-                'short_code'        => 'FLASHU_FRXUSDJPY_2_1301038969_1301038999_S0P_0',
+                'bet_type'          => 'CALL',
+                'short_code'        => 'CALL_FRXUSDJPY_2_1301038969_1301038999_S0P_0',
                 'relative_barrier'  => '1.1',
                 'absolute_barrier'  => '1673.828',
                 'prediction'        => 'up',
@@ -140,7 +140,7 @@ subtest 'Expect that all fields are the same after loading FROM account transfer
     is $higher_lower->financial_market_bet_open_record->is_expired, 1;
     is $higher_lower->financial_market_bet_open_record->is_sold, 1;
     is $higher_lower->financial_market_bet_open_record->bet_class, 'higher_lower_bet';
-    is $higher_lower->financial_market_bet_open_record->bet_type, 'FLASHU';
+    is $higher_lower->financial_market_bet_open_record->bet_type, 'CALL';
 
 
     is $higher_lower->higher_lower_bet_record->relative_barrier, 1.1;

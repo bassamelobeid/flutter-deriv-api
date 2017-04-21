@@ -49,7 +49,7 @@ lives_ok {
 my @bet_infos;
 push @bet_infos,
     {
-    bet_type          => 'FLASHU',
+    bet_type          => 'CALL',
     bet_class         => 'higher_lower_bet',
     underlying_symbol => 'frxUSDJPY',
     buy_price         => 20,
@@ -57,7 +57,7 @@ push @bet_infos,
     };
 push @bet_infos,
     {
-    bet_type          => 'FLASHD',
+    bet_type          => 'PUT',
     bet_class         => 'higher_lower_bet',
     underlying_symbol => 'frxGBPJPY',
     buy_price         => 5.50,
@@ -125,7 +125,7 @@ foreach my $bet_info (@bet_infos) {
         is $txn->{amount} + 0, $bet_info->{sell_price}, 'sell txn object';
         is $buy_txn_id2,  $buy_txn_id, 'got buy txn id during sell';
     }
-    'Buy a FLASHU bet and sell it';
+    'Buy a CALL bet and sell it';
 }
 
 my $bets;
