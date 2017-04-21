@@ -393,7 +393,6 @@ subtest $method => sub {
             contract      => $contract_expired,
             price         => 100,
             payout        => 200,
-            app_markup    => 0,
             amount_type   => 'stake',
             purchase_date => $SPGSWT_start->epoch - 101,
 
