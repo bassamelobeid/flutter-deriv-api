@@ -243,10 +243,10 @@ command connections => sub {
                         pricer_subscribtion_count      => $pc,
                         }
                     }
-               grep {
+                    grep {
                     defined
                     }
-               sort values %{$app->active_connections}
+                    sort values %{$app->active_connections}
             ],
             # Report any invalid (disconnected but not cleaned up) entries
             invalid => 0 + (grep { !defined } values %{$app->active_connections})});
