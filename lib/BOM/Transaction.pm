@@ -189,18 +189,6 @@ has transaction_parameters => (
     default => sub { {}; },
 );
 
-has app_markup => (
-    is         => 'ro',
-    isa        => 'Maybe[Num]',
-    lazy_build => 1
-);
-
-sub _build_app_markup {
-    my $self = shift;
-    return $self->contract->app_markup_dollar_amount;
-}
-
-### TODO: fix with around and hash args parsing ( ->new( test => 1 ) )
 sub BUILDARGS {
     my ($class, $args) = @_;
 
@@ -429,7 +417,7 @@ sub prepare_bet_data_for_buy {
             transaction_data => {
                 staff_loginid => $self->staff,
                 source        => $self->source,
-                app_markup    => $self->app_markup
+                app_markup    => $self->contract->app_markup_dollar_amount
             },
             bet_data             => $bet_params,
             quants_bet_variables => $quants_bet_variables,
@@ -1178,41 +1166,11 @@ sub _build_pricing_comment {
     my ($contract, $price, $action, $price_slippage, $requested_price, $recomputed_price, $trading_period_start) =
         @{$args}{'contract', 'price', 'action', 'price_slippage', 'requested_price', 'recomputed_price', 'trading_period_start'};
 
-    # IV is the pricing vol (high barrier vol if it is double barrier contract), iv_2 is the low barrier vol.
-    my $iv   = $contract->pricing_vol;
-    my $iv_2 = 0;
-
-    if ($contract->pricing_vol_for_two_barriers) {
-        $iv   = $contract->pricing_vol_for_two_barriers->{high_barrier_vol};
-        $iv_2 = $contract->pricing_vol_for_two_barriers->{low_barrier_vol};
-    }
-
-    # This way the order of the fields is well-defined.
-    my @comment_fields = map { defined $_->[1] ? @$_ : (); } (
-        [theo  => $contract->theo_price],
-        [iv    => $iv],
-        [iv_2  => $iv_2],
-        [win   => $contract->payout],
-        [div   => $contract->q_rate],
-        [int   => $contract->r_rate],
-        [delta => $contract->delta],
-        [gamma => $contract->gamma],
-        [vega  => $contract->vega],
-        [theta => $contract->theta],
-        [vanna => $contract->vanna],
-        [volga => $contract->volga],
-        [spot  => $contract->current_spot],
-        ($contract->can('extra_info') ? @{$contract->extra_info('arrayref')} : []),
-    );
+    my @comment_fields = @{$contract->pricing_details($action)};
 
     # only manual sell and buy has a price
     if ($price) {
         push @comment_fields, (trade => $price);
-    }
-
-    if ($contract->entry_spot) {
-        push @comment_fields, (entry_spot       => $contract->entry_spot);
-        push @comment_fields, (entry_spot_epoch => $contract->entry_spot_epoch);
     }
 
     # Record price slippage in quants bet variable.
@@ -1229,39 +1187,6 @@ sub _build_pricing_comment {
     # Record recomputed price in quants bet variable.
     if (defined $recomputed_price) {
         push @comment_fields, (recomputed_price => $recomputed_price);
-    }
-
-    my $tick;
-    if ($action eq 'sell') {
-        # current tick is lazy, even though the realtime cache might have changed during the course of the transaction.
-        $tick = $contract->current_tick;
-    } elsif ($action eq 'autosell_expired_contract') {
-        $tick = ($contract->is_path_dependent and $contract->hit_tick) ? $contract->hit_tick : $contract->exit_tick;
-    }
-
-    if ($tick) {
-        push @comment_fields, (exit_spot       => $tick->quote);
-        push @comment_fields, (exit_spot_epoch => $tick->epoch);
-        if ($contract->two_barriers) {
-            push @comment_fields, (high_barrier => $contract->high_barrier->as_absolute) if $contract->high_barrier;
-            push @comment_fields, (low_barrier  => $contract->low_barrier->as_absolute)  if $contract->low_barrier;
-        } else {
-            push @comment_fields, (barrier => $contract->barrier->as_absolute) if $contract->barrier;
-        }
-    }
-
-    my $news_factor = $contract->ask_probability->peek('news_factor');
-    if ($news_factor) {
-        push @comment_fields, news_fct => $news_factor->amount;
-        my $news_impact = $news_factor->peek('news_impact');
-        push @comment_fields, news_impact => $news_impact->amount if $news_impact;
-    }
-
-    if (@{$contract->corporate_actions}) {
-        push @comment_fields,
-            corporate_action => 1,
-            actions          => join '|',
-            map { $_->{description} . ',' . $_->{modifier} . ',' . $_->{value} } @{$contract->corporate_actions};
     }
 
     my $comment_str = sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
