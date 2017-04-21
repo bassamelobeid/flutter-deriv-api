@@ -8,7 +8,6 @@ use JSON::XS qw/encode_json/;
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
-use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Transaction;
 use BOM::Platform::Context qw (localize request);
 use Client::Account;
@@ -112,9 +111,6 @@ sub buy_contract_for_multiple_accounts {
     return +{result => $token_list_res->{result}} unless $token_list_res->{success};
 
     my $response;
-    # NOTE: we rely here on BOM::Product::Transaction to perform all the
-    #       client validations like client_status and self_exclusion.
-
     my $source              = $params->{source};
     my $contract_parameters = $params->{contract_parameters};
     my $args                = $params->{args};
