@@ -35,6 +35,7 @@ sub validate_trx_sell {
         my $res = $self->$_();
         return $res if $res;
     }
+    return;
 }
 
 sub validate_trx_buy {
