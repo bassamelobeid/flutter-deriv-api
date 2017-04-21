@@ -59,7 +59,7 @@ has contract => (
 
 sub _build_contract {
     my $self = shift;
-    $param = $self->contract_parameters;
+    my $param = $self->contract_parameters;
     if $param->{shortcode} {
         my $param = shortcode_to_parameters($param->{shortcode}, $param->{currency});
         $param->{landing_company} = $self->contract_parameters->{landing_company};
