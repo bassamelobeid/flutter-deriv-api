@@ -25,6 +25,7 @@ use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Runtime;
 use BOM::Platform::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
+use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
@@ -59,8 +60,9 @@ has contract => (
 sub _build_contract {
     my $self  = shift;
     my $param = $self->contract_parameters;
+
     if ($param->{shortcode}) {
-        my $param = shortcode_to_parameters($param->{shortcode}, $param->{currency});
+        $param = shortcode_to_parameters($param->{shortcode}, $param->{currency});
         $param->{landing_company} = $self->contract_parameters->{landing_company};
     }
     return produce_contract($param);
@@ -139,6 +141,11 @@ has amount_type => (
 
 sub _build_amount_type {
     my $self = shift;
+
+    my $param = $self->contract_parameters;
+    if ($param->{shortcode}) {
+        return shortcode_to_parameters($param->{shortcode}, $param->{currency})->{amount_type};
+    }
     die 'amount type is required';
 }
 
