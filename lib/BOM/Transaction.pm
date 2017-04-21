@@ -49,7 +49,6 @@ has multiple => (
 
 has contract_parameters => (
     is => 'rw',
-    default => {}
 );
 
 has contract => (
