@@ -47,9 +47,25 @@ has multiple => (
     isa => 'Maybe[ArrayRef]',
 );
 
+has contract_parameters => (
+    is => 'rw',
+    default => {}
+);
+
 has contract => (
     is => 'rw',
+    lazy_build => 1,
 );
+
+sub _build_contract {
+    my $self = shift;
+    $param = $self->contract_parameters;
+    if $param->{shortcode} {
+        my $param = shortcode_to_parameters($param->{shortcode}, $param->{currency});
+        $param->{landing_company} = $self->contract_parameters->{landing_company};
+    }
+    return produce_contract($param);
+}
 
 has price => (
     is  => 'rw',
