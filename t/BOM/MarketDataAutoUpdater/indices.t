@@ -82,7 +82,7 @@ subtest 'surface has not change' => sub {
 };
 
 subtest 'First Term is 7' => sub {
-    my $test_file = dirname(__FILE__) . '/fixed.xls';
+    my $test_file = dirname(__FILE__) . '/auto_upload.xls';
     my $au        = BOM::MarketDataAutoUpdater::Indices->new(
         file              => $test_file,
         symbols_to_update => [qw(ASX)]);    # wrong symbol
@@ -92,7 +92,7 @@ subtest 'First Term is 7' => sub {
 };
 
 subtest 'First Term is not 7' => sub {
-    my $test_file = dirname(__FILE__) . '/exchange.xls';
+    my $test_file = dirname(__FILE__) . '/auto_upload_wrong.xls';
     my $au        = BOM::MarketDataAutoUpdater::Indices->new(
         file              => $test_file,
         symbols_to_update => [qw(ASX)]);    # wrong symbol
