@@ -24,24 +24,17 @@ has transaction => (is => 'ro');
 
 sub validate_trx_sell {
     my $self = shift;
-    # all these validations MUST NOT use the database
-    # database related validations MUST be implemented in the database
-    # ask your friendly DBA team if in doubt
-
-    my $res = $self->_is_valid_to_sell();
-    return $res if $res;
-    $res = $self->_validate_date_pricing();
-    return $res if $res;
-
+    ### Client-depended checks
     for my $c (@{$self->clients}) {
-        for (qw/ _validate_iom_withdrawal_limit _validate_available_currency _validate_currency check_trade_status /) {
-            $res = $self->$_($c);
+        for (qw/ check_trade_status _validate_iom_withdrawal_limit _validate_available_currency _validate_currency /) {
+            my $res = $self->$_($c);
             return $res if $res;
         }
     }
-    ### It's quite expensive
-    $res = $self->_validate_sell_pricing_adjustment();
-    return $res;
+    for (qw/ _is_valid_to_sell _validate_sell_pricing_adjustment _validate_date_pricing /) {
+        my $res = $self->$_();
+        return $res if $res;
+    }
 }
 
 sub validate_trx_buy {
@@ -50,21 +43,18 @@ sub validate_trx_buy {
     # database related validations MUST be implemented in the database
     # ask your friendly DBA team if in doubt
 
-    my $res = $self->_validate_date_pricing();
-    return $res if $res;
-
     for my $c (@{$self->clients}) {
         for (
             qw/
             check_trade_status
-            _is_valid_to_buy
+            validate_tnc
             _validate_iom_withdrawal_limit
             _validate_available_currency
             _validate_currency
             _validate_jurisdictional_restrictions
             _validate_client_status
             _validate_client_self_exclusion
-            validate_tnc
+            _is_valid_to_buy
             /
             )
         {
@@ -73,7 +63,7 @@ sub validate_trx_buy {
         }
     }
     ### Order is very important
-    ### _validate_trade_pricing_adjustment contain some expensive calculations
+    ### _validate_trade_pricing_adjustment may contain some expensive calculations
     #### And last per-client checks must be after this calculations.
     $res = $self->_validate_trade_pricing_adjustment();
     return $res if $res;
@@ -84,6 +74,10 @@ sub validate_trx_buy {
             return $res if $res;
         }
     }
+    ### we should check pricing time just before DB query
+    my $res = $self->_validate_date_pricing();
+    return $res if $res;
+
     return;
 }
 
