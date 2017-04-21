@@ -218,9 +218,14 @@ We also want to add this information, but it's not yet available:
 
 command connections => sub {
     my ($self, $app) = @_;
+
     Future->done({
             connections => [
                 map {
+                    my $pc = 0;
+                    for my $k (keys %{$_->pricing_subscriptions}) {
+                        ++$pc if defined $_->pricing_subscriptions->{$k};
+                    }
                     +{
                         app_id                         => $_->stash->{source},
                         landing_company                => $_->landing_company_name,
@@ -235,13 +240,13 @@ command connections => sub {
                         messages_received_from_client  => $_->stash->{introspection}{msg_type}{received},
                         messages_sent_to_client        => $_->stash->{introspection}{msg_type}{sent},
                         last_rpc_error                 => $_->stash->{introspection}{last_rpc_error},
-                        pricer_subscribtion_count      => scalar keys $_->pricing_subscriptions,
+                        pricer_subscribtion_count      => $pc,
                         }
                     }
-                    grep {
+               grep {
                     defined
                     }
-                    sort values %{$app->active_connections}
+               sort values %{$app->active_connections}
             ],
             # Report any invalid (disconnected but not cleaned up) entries
             invalid => 0 + (grep { !defined } values %{$app->active_connections})});
@@ -281,11 +286,17 @@ command stats => sub {
     my $me = (grep { $_->pid == $$ } @{$pt->table})[0];
     Future->done({
             cumulative_client_connections => $app->stat->{cumulative_client_connections},
-            current_redis_connections     => $app->stat->{current_redis_connections},
+            current_redis_connections     => _get_redis_connections(),
             uptime                        => time - $^T,
             rss                           => $me->rss,
             cumulative_redis_errors       => $app->stat->{redis_errors}});
 };
+
+sub _get_redis_connections {
+    my $ret = `lsof -i -a -p $$|grep ':6[0-9][0-9][0-9] '|wc -l`;
+    chomp $ret;
+    return $ret;
+}
 
 =head2 dumpmem
 
