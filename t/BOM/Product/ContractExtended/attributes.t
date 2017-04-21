@@ -167,6 +167,8 @@ subtest 'Forward starting.' => sub {
         payout       => 100,
         currency     => 'USD',
         current_spot => 70000,
+        is_forward_starting => 1,
+        starts_as_forward_starting => 1,
     });
 
     ok(looks_like_number($bet->bid_price), 'Bid price is a number.');

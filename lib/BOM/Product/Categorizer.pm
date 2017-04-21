@@ -275,7 +275,6 @@ sub _initialize_barrier {
     return $barrier_info;
 }
 
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;

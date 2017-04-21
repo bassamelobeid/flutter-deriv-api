@@ -658,6 +658,8 @@ subtest 'invalid start times' => sub {
     $bet_params->{volsurface}   = $volsurface;
     $bet_params->{bet_type}     = 'PUT';
     $bet_params->{duration}     = '0d';
+    $bet_params->{is_intraday}  = 0;
+    $bet_params->{expiry_daily} = 1;
     $bet_params->{date_start}   = $underlying->calendar->closing_on(Date::Utility->new('2013-03-28'))->minus_time_interval('1m');
     $bet_params->{date_pricing} = $bet_params->{date_start};
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -668,9 +670,8 @@ subtest 'invalid start times' => sub {
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
         {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-
     $bet              = produce_contract($bet_params);
-    $expected_reasons = [qr/Daily duration.*is outside/];
+    $expected_reasons = [qr/blackout period/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

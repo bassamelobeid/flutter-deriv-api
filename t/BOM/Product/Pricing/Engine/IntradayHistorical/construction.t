@@ -83,6 +83,7 @@ $bet_params->{date_pricing} = $now - 300;
 
 lives_ok { $bet = produce_contract($bet_params); } 'Can create example PUT bet';
 ok !$bet->expiry_daily;
+$DB::single=1;
 ok $bet->is_forward_starting;
 is $bet->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope', 'forward starting bet incompatible with IH';
 

@@ -316,6 +316,8 @@ test_with_feed(
             market       => 'forex',
             currency     => 'USD',
             barrier      => 'S0P',
+            starts_as_forward_starting => 1,
+            is_forward_starting => 1
         };
 
         my $bet = produce_contract($bet_params);
@@ -1534,6 +1536,8 @@ test_with_feed(
             date_start => $starting,
             duration   => '30m',
             barrier    => 'S0P',
+            is_forward_starting => 1,
+            starts_as_forward_starting => 1
         };
 
         my $bet = produce_contract($bet_params);

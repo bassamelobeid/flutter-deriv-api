@@ -65,6 +65,8 @@ subtest 'flexi expiries forward starting' => sub {
         bet_type     => 'CALL',
         payout       => 100,
         currency     => $currency,
+        is_forward_starting => 1,
+        starts_as_forward_starting => 1
     );
     my $contract = produce_contract(\%params);
     ok($contract->is_intraday,   'is an intraday bet');
