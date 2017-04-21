@@ -329,11 +329,9 @@ sub sell {
     };
     $contract_parameters->{landing_company} = $client->landing_company->short;
 
-    my $amount_type = $contract_parameters->{amount_type};
     my $trx         = BOM::Transaction->new({
         client              => $client,
         contract_parameters => $contract_parameters,
-        (defined $amount_type) ? (amount_type => $amount_type) : (),
         contract_id => $id,
         price       => ($args->{price} || 0),
         source      => $source,
