@@ -173,11 +173,6 @@ has purchase_date => (
     coerce => 1,
 );
 
-has contract_class => (
-    is  => 'rw',
-    isa => 'Str',
-);
-
 has source => (
     is  => 'ro',
     isa => 'Maybe[Int]',
@@ -368,7 +363,6 @@ sub prepare_bet_data_for_buy {
     }
 
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
-    $self->contract_class($bet_class);
 
     $self->price(Format::Util::Numbers::roundnear(0.01, $self->price));
 
@@ -684,7 +678,6 @@ sub prepare_bet_data_for_sell {
     my $currency = $contract->currency;
 
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
-    $self->contract_class($bet_class);
 
     $self->price(Format::Util::Numbers::roundnear(0.01, $self->price));
 
