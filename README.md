@@ -268,3 +268,10 @@ May throw an exception if an invalid expiry type is requested for this contract 
 ## allowed\_slippage
 
 Ratio of slippage we allow for this contract, where 0.01 is 1%.
+
+# TEST
+
+    # run all test scripts
+    make test
+    # run one script
+    prove t/BOM/001_structure.t
