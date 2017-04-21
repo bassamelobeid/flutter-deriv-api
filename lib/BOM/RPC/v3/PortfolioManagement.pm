@@ -43,6 +43,7 @@ sub portfolio {
         if (!$res->{longcodes}->{$row->{short_code}}) {
             $longcode = localize('Could not retrieve contract details');
         } else {
+            # this should already be localized
             $longcode = $res->{longcodes}->{$row->{short_code}};
         }
 

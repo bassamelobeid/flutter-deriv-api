@@ -89,7 +89,7 @@ sub buy {
         purchase_time  => $trx->purchase_date->epoch,
         buy_price      => $trx->price,
         start_time     => $contract->date_start->epoch,
-        longcode       => $contract->longcode,
+        longcode       => localize($contract->longcode),
         shortcode      => $contract->shortcode,
         payout         => $trx->payout
     };
@@ -190,7 +190,7 @@ sub buy_contract_for_multiple_accounts {
             $new->{buy_price} = $el->{fmb}->{buy_price};
             $new->{start_time} =
                 Date::Utility->new($el->{fmb}->{start_time})->epoch;
-            $new->{longcode}  = $contract->longcode;
+            $new->{longcode}  = localize($contract->longcode);
             $new->{shortcode} = $el->{fmb}->{short_code};
             $new->{payout}    = $el->{fmb}->{payout_price};
         }
