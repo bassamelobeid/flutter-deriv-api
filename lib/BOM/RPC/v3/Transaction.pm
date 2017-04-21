@@ -329,12 +329,12 @@ sub sell {
     };
     $contract_parameters->{landing_company} = $client->landing_company->short;
 
-    my $trx         = BOM::Transaction->new({
+    my $trx = BOM::Transaction->new({
         client              => $client,
         contract_parameters => $contract_parameters,
-        contract_id => $id,
-        price       => ($args->{price} || 0),
-        source      => $source,
+        contract_id         => $id,
+        price               => ($args->{price} || 0),
+        source              => $source,
     });
 
     if (my $err = $trx->sell) {
