@@ -52,12 +52,12 @@ has contract_parameters => (
 );
 
 has contract => (
-    is => 'rw',
+    is         => 'rw',
     lazy_build => 1,
 );
 
 sub _build_contract {
-    my $self = shift;
+    my $self  = shift;
     my $param = $self->contract_parameters;
     if ($param->{shortcode}) {
         my $param = shortcode_to_parameters($param->{shortcode}, $param->{currency});
