@@ -21,7 +21,7 @@ sub BUILD {
         $self->add_errors({
             severity          => 110,
             message           => 'invalid supplied barrier format for digits',
-            message_to_client => ['Barrier is not an integer between 0 to 9.'],
+            message_to_client => ['Barrier is not an integer between [_1] to [_2].', 0, 9],
         });
         # setting supplied barrier to zero
         $self->_set_supplied_barrier(0);
