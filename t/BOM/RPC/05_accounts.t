@@ -388,6 +388,9 @@ subtest $method => sub {
         barrier      => 'S0P',
     });
     $contract_expired->{shortcode} = 'INTRADU_SPGSWT_20_1413892500_1413906900_S0P_0';
+
+    my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+    $mock_contract->mock(app_markup_dollar_amount => sub { 0 });
     $txn = BOM::Transaction->new({
             client        => $test_client2,
             contract      => $contract_expired,
