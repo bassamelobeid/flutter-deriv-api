@@ -193,7 +193,7 @@ sub _get_ask {
                 my $longcode =
                     eval { $contract->longcode } || '';    # if we can't get the longcode that's fine, we still want to return the original error
                 $response->{contract_parameters} = $contract_parameters;
-                $response->{longcode}            = $longcode;
+                $response->{longcode} = $longcode ? localize($longcode) : '';
             }
         } else {
             # We think this contract is valid to buy
@@ -201,7 +201,7 @@ sub _get_ask {
             my $trading_window_start = $p2->{trading_period_start} // '';
 
             $response = {
-                longcode            => $contract->longcode,
+                longcode            => localize($contract->longcode),
                 payout              => $contract->payout,
                 ask_price           => $ask_price,
                 display_value       => $ask_price,
@@ -320,7 +320,7 @@ sub get_bid {
 
     if ($contract->is_legacy) {
         return BOM::Pricing::v3::Utility::create_error({
-            message_to_client => $contract->longcode,
+            message_to_client => localize($contract->longcode),
             code              => "GetProposalFailure"
         });
     }
@@ -349,7 +349,7 @@ sub get_bid {
             date_expiry         => $contract->date_expiry->epoch,
             date_settlement     => $contract->date_settlement->epoch,
             currency            => $contract->currency,
-            longcode            => $contract->longcode,
+            longcode            => localize($contract->longcode),
             shortcode           => $contract->shortcode,
             payout              => $contract->payout,
             contract_type       => $contract->code
@@ -538,7 +538,7 @@ sub get_contract_details {
     return $response if $response;
 
     $response = {
-        longcode     => $contract->longcode,
+        longcode     => localize($contract->longcode),
         symbol       => $contract->underlying->symbol,
         display_name => $contract->underlying->display_name,
         date_expiry  => $contract->date_expiry->epoch
@@ -570,7 +570,7 @@ sub longcode {
         catch {
             warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($$params);
         };
-        $longcodes->{$s} = $longcode;
+        $longcodes->{$s} = localize($longcode);
     }
 
     return {
