@@ -34,6 +34,9 @@ structure:
 leaktest:
 	@$(PROVE) t/leak/v3
 
+test:
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/ t/
+
 tidy:
 	find . -name '*.p?.bak' -delete
 	find lib t -name '*.p[lm]' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
