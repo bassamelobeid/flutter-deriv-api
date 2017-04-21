@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Deep;
-use Test::Warnings;
+use Test::Warnings qw(warnings);
 use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use TestHelper qw/create_test_user/;
