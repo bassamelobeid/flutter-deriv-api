@@ -18,6 +18,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::Product::Contract::Category;
+use BOM::Product::ErrorMapping;
 
 has file_container => (
     is         => 'ro',
@@ -70,6 +71,7 @@ sub script_run {
     $self->add_contract_categories;
     $self->add_contract_types;
     $self->add_japan_settings;
+    $self->add_error_messages;
 
     return 0;
 }
@@ -288,6 +290,23 @@ sub add_submarkets {
                 print $fh $msgid . "\n";
                 print $fh "msgstr \"\"\n";
             }
+        }
+    }
+
+    return;
+}
+
+sub add_error_messages {
+    my $fh = $self->pot_append_fh;
+
+    my $error_mapping = BOM::Product::ErrorMapping::get_error_mapping();
+
+    foreach my $err (keys %$error_mapping) {
+        my $msgid = $self->msg_id($error_mapping->{$err});
+        if ($self->is_id_unique($msgid)) {
+            print $fh "\n";
+            print $fh $msgid . "\n";
+            print $fh "msgstr \"\"\n";
         }
     }
 
