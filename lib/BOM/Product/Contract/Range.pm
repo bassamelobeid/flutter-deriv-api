@@ -4,13 +4,15 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::AmericanExpiry';
 
+use BOM::Product::Static;
+
 sub code { return 'RANGE'; }
 
 sub localizable_description {
     return +{
-        daily                 => 'Win payout if [_3] stays between [_7] to [_6] through [_5].',
-        intraday              => 'Win payout if [_3] stays between [_7] and [_6] through [_5] after [_4].',
-        intraday_fixed_expiry => 'Win payout if [_3] stays between [_7] to [_6] through [_5].',
+        daily                 => BOM::Product::Static::get_longcodes()->{range_daily},
+        intraday              => BOM::Product::Static::get_longcodes()->{range_intraday},
+        intraday_fixed_expiry => BOM::Product::Static::get_longcodes()->{range_intraday_fixed_expiry},
     };
 }
 

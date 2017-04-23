@@ -4,17 +4,17 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-use BOM::Product::Contract::Strike::Digit;
 use Pricing::Engine::Digits;
-use BOM::Product::Pricing::Greeks::Digits;
 
-# Static methods.
+use BOM::Product::Static;
+use BOM::Product::Contract::Strike::Digit;
+use BOM::Product::Pricing::Greeks::Digits;
 
 sub code { return 'DIGITMATCH'; }
 
 sub localizable_description {
     return +{
-        tick => 'Win payout if the last digit of [_3] is [_6] after [plural,_5,%d tick,%d ticks].',
+        tick => BOM::Product::Static::get_longcodes()->{digitmatch_tick},
     };
 }
 

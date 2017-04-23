@@ -4,15 +4,16 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-# Static methods
+use BOM::Product::Static;
+
 sub code { return 'PUTE'; }
 
 sub localizable_description {
     return +{
-        tick                  => 'Win payout if [_3] after [plural,_5,%d tick,%d ticks] is lower than or equal to [_6].',
-        daily                 => 'Win payout if [_3] is lower than or equal to [_6] at [_5].',
-        intraday              => 'Win payout if [_3] is lower than or equal to [_6] at [_5] after [_4].',
-        intraday_fixed_expiry => 'Win payout if [_3] is lower than or equal to [_6] at [_5].',
+        tick                  => BOM::Product::Static::get_longcodes()->{pute_tick},
+        daily                 => BOM::Product::Static::get_longcodes()->{pute_daily},
+        intraday              => BOM::Product::Static::get_longcodes()->{pute_intraday},
+        intraday_fixed_expiry => BOM::Product::Static::get_longcodes()->{pute_intraday_fixed_expiry},
     };
 }
 

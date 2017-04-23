@@ -4,16 +4,16 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-# Static methods
+use BOM::Product::Static;
 
 sub code { return 'CALL'; }
 
 sub localizable_description {
     return +{
-        tick                  => 'Win payout if [_3] after [plural,_5,%d tick,%d ticks] is strictly higher than [_6].',
-        daily                 => 'Win payout if [_3] is strictly higher than [_6] at [_5].',
-        intraday              => 'Win payout if [_3] is strictly higher than [_6] at [_5] after [_4].',
-        intraday_fixed_expiry => 'Win payout if [_3] is strictly higher than [_6] at [_5].',
+        tick                  => BOM::Product::Static::get_longcodes()->{call_tick},
+        daily                 => BOM::Product::Static::get_longcodes()->{call_daily},
+        intraday              => BOM::Product::Static::get_longcodes()->{call_intraday},
+        intraday_fixed_expiry => BOM::Product::Static::get_longcodes()->{call_intraday_fixed_expiry},
     };
 }
 

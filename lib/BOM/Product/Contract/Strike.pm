@@ -3,14 +3,15 @@ package BOM::Product::Contract::Strike;
 use Moose;
 use namespace::autoclean;
 
+use Readonly;
+use Date::Utility;
 use POSIX qw( floor );
 use Scalar::Util qw(looks_like_number);
-use Readonly;
+use Format::Util::Numbers qw(roundnear);
 
-use Date::Utility;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use Format::Util::Numbers qw(roundnear);
+use BOM::Product::Static;
 
 with 'MooseX::Role::Validatable';
 
@@ -129,7 +130,7 @@ sub _build_as_absolute {
             $self->add_errors({
                 severity          => 100,
                 message           => "Non-positive barrier [value: $value]",
-                message_to_client => ['Contract barrier must be positive.'],
+                message_to_client => [BOM::Product::Static::get_error_mapping()->{NegativeContractBarrier}],
             });
             $value = 10 * $underlying->pip_size;
         }
