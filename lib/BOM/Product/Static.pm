@@ -1,17 +1,17 @@
-package BOM::Product::ErrorMapping;
+package BOM::Product::Static;
 
 use strict;
 use warnings;
 
 =head1 NAME
 
-BOM::Product::ErrorMapping
+BOM::Product::Static
 
 =head1 SYNOPSIS
 
 =head1 DESCRIPTION
 
-This class maps error code to error message for contract
+This class provides static configurations like error mapping, longcodes mapping
 
 =cut
 
@@ -80,14 +80,16 @@ my $config = {
         ZeroAbsoluteBarrier       => 'Absolute barrier cannot be zero.',
     },
     longcodes => {
-        asian                       => 'Win payout if the last tick of [_3] is strictly lower than the average of the [plural,_5,%d tick,%d ticks].',
+        asiand_tick                 => 'Win payout if the last tick of [_3] is strictly lower than the average of the [plural,_5,%d tick,%d ticks].',
+        asianu_tick                 => 'Win payout if the last tick of [_3] is strictly higher than the average of the [plural,_5,%d tick,%d ticks].',
         call_daily                  => 'Win payout if [_3] is strictly higher than [_6] at [_5].',
         call_intraday               => 'Win payout if [_3] is strictly higher than [_6] at [_5] after [_4].',
         call_intraday_fixed_expiry  => 'Win payout if [_3] is strictly higher than [_6] at [_5].',
-        call_tick                   => 'Win payout if [_3] after [plural,_5,%d tick,%d ticks] is higher than or equal to [_6].',
+        call_tick                   => 'Win payout if [_3] after [plural,_5,%d tick,%d ticks] is strictly higher than [_6].',
         calle_daily                 => 'Win payout if [_3] is higher than or equal to [_6] at [_5].',
         calle_intraday              => 'Win payout if [_3] is higher than or equal to [_6] at [_5] after [_4].',
         calle_intraday_fixed_expiry => 'Win payout if [_3] is higher than or equal to [_6] at [_5].',
+        calle_tick                  => 'Win payout if [_3] after [plural,_5,%d tick,%d ticks] is higher than or equal to [_6].',
         digitdiff_tick              => 'Win payout if the last digit of [_3] is not [_6] after [plural,_5,%d tick,%d ticks].',
         digiteven_tick              => 'Win payout if the last digit of [_3] is even after [_5] ticks.',
         digitmatch_tick             => 'Win payout if the last digit of [_3] is [_6] after [plural,_5,%d tick,%d ticks].',
@@ -112,14 +114,14 @@ my $config = {
         onetouch_daily                     => 'Win payout if [_3] touches [_6] through [_5].',
         onetouch_intraday                  => 'Win payout if [_3] touches [_6] through [_5] after [_4].',
         onetouch_intraday_fixed_expiry     => 'Win payout if [_3] touches [_6] through [_5].',
-        put_tick                           => 'Win payout if [_3] after [plural,_5,%d tick,%d ticks] is strictly lower than [_6].',
         put_daily                          => 'Win payout if [_3] is strictly lower than [_6] at [_5].',
         put_intraday                       => 'Win payout if [_3] is strictly lower than [_6] at [_5] after [_4].',
         put_intraday_fixed_expiry          => 'Win payout if [_3] is strictly lower than [_6] at [_5].',
-        pute_tick                          => 'Win payout if [_3] after [plural,_5,%d tick,%d ticks] is lower than or equal to [_6].',
+        put_tick                           => 'Win payout if [_3] after [plural,_5,%d tick,%d ticks] is strictly lower than [_6].',
         pute_daily                         => 'Win payout if [_3] is lower than or equal to [_6] at [_5].',
         pute_intraday                      => 'Win payout if [_3] is lower than or equal to [_6] at [_5] after [_4].',
         pute_intraday_fixed_expiry         => 'Win payout if [_3] is lower than or equal to [_6] at [_5].',
+        pute_tick                          => 'Win payout if [_3] after [plural,_5,%d tick,%d ticks] is lower than or equal to [_6].',
         range_daily                        => 'Win payout if [_3] stays between [_7] to [_6] through [_5].',
         range_intraday                     => 'Win payout if [_3] stays between [_7] and [_6] through [_5] after [_4].',
         range_intraday_fixed_expiry        => 'Win payout if [_3] stays between [_7] to [_6] through [_5].',
