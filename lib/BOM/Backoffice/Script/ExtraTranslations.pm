@@ -12,13 +12,14 @@ use YAML::XS qw(LoadFile);
 
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
-use BOM::Platform::Runtime;
 use LandingCompany::Offerings qw(get_offerings_with_filter get_all_contract_types);
+
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::Product::Contract::Category;
-use BOM::Product::ErrorMapping;
+use BOM::Product::Static;
+use BOM::Platform::Runtime;
 
 has file_container => (
     is         => 'ro',
@@ -71,6 +72,7 @@ sub script_run {
     $self->add_contract_categories;
     $self->add_contract_types;
     $self->add_japan_settings;
+    $self->add_longcodes;
     $self->add_error_messages;
 
     return 0;
@@ -188,26 +190,6 @@ sub add_contract_types {
                 print $fh "msgstr \"\"\n";
             }
         }
-
-        try {
-            if ($contract_class->localizable_description) {
-                foreach my $description_key (sort keys %{$contract_class->localizable_description}) {
-                    my $msgid = $self->msg_id($contract_class->localizable_description->{$description_key});
-                    if ($self->is_id_unique($msgid)) {
-                        print $fh "\n";
-                        print $fh "#. %1 - Payout Currency (example USD)\n";
-                        print $fh "#. %2 - Payout value (example 100)\n";
-                        print $fh "#. %3 - Underlying name (example USD/JPY)\n";
-                        print $fh "#. %4 - Starting datetime (may be 'contract start')\n";
-                        print $fh "#. %5 - Expiration datetime\n";
-                        print $fh "#. %6 - High (or single) barrier\n";
-                        print $fh "#. %7 - Low barrier (when present)\n";
-                        print $fh $msgid . "\n";
-                        print $fh "msgstr \"\"\n";
-                    }
-                }
-            }
-        };
     }
 
     return;
@@ -296,10 +278,29 @@ sub add_submarkets {
     return;
 }
 
-sub add_error_messages {
-    my $fh = $self->pot_append_fh;
+sub add_longcodes {
+    my $self = shift;
 
-    my $error_mapping = BOM::Product::ErrorMapping::get_error_mapping();
+    my $fh        = $self->pot_append_fh;
+    my $longcodes = BOM::Product::Static::get_longcodes();
+
+    foreach my $longcode (keys %$longcodes) {
+        my $msgid = $self->msg_id($longcodes->{$longcode});
+        if ($self->is_id_unique($msgid)) {
+            print $fh "\n";
+            print $fh $msgid . "\n";
+            print $fh "msgstr \"\"\n";
+        }
+    }
+
+    return;
+}
+
+sub add_error_messages {
+    my $self = shift;
+
+    my $fh            = $self->pot_append_fh;
+    my $error_mapping = BOM::Product::Static::get_error_mapping();
 
     foreach my $err (keys %$error_mapping) {
         my $msgid = $self->msg_id($error_mapping->{$err});
