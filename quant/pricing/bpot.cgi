@@ -87,11 +87,12 @@ if ($bet) {
 BOM::Backoffice::Request::template->process(
     'backoffice/bpot.html.tt',
     {
-        longcode  => localize($bet->longcode),
-        shortcode => $bet->shortcode,
-        currency  => $bet->currency . start => $start ? $start->datetime : '',
-        end => $end ? $end->datetime : '',
-        timestep => $timestep ? $timestep->as_concise_string : '',
+        longcode   => localize($bet->longcode),
+        shortcode  => $bet->shortcode,
+        currency   => $bet->currency,
+        start      => $start ? $start->datetime : '',
+        end        => $end ? $end->datetime : '',
+        timestep   => $timestep ? $timestep->as_concise_string : '',
         debug_link => $debug_link,
     }) || die BOM::Backoffice::Request::template->error;
 
