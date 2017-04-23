@@ -7,7 +7,10 @@ use Data::Dumper;
 use LandingCompany::Offerings qw(get_contract_specifics);
 
 use BOM::Platform::RiskProfile;
+use BOM::Product::Static;
 use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
+
+my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
 has landing_company => (
     is      => 'ro',
@@ -90,7 +93,7 @@ around _validate_start_and_expiry_date => sub {
     if (not $available_contracts->{$expiry_epoch}) {
         return {
             message           => 'Invalid contract expiry[' . $self->date_expiry->datetime . '] for japan at ' . $self->date_pricing->datetime . '.',
-            message_to_client => ['Invalid expiry time.'],
+            message_to_client => [$ERROR_MAPPING->{InvalidExpiryTime}],
         };
     }
 
@@ -121,7 +124,7 @@ override _validate_barrier_type => sub {
 
             return {
                 message           => 'barrier should be absolute',
-                message_to_client => ['Contracts with predefined barrier would need an absolute barrier'],
+                message_to_client => [$ERROR_MAPPING->{PredefinedNeedAbsoluteBarrier}],
             };
         }
     }
@@ -150,7 +153,7 @@ sub _subvalidate_single_barrier {
                     . $self->code
                     . '] for japan at '
                     . $self->date_pricing->datetime . '.',
-                message_to_client => ['Invalid barrier.'],
+                message_to_client => [$ERROR_MAPPING->{InvalidBarrier}],
             };
         }
     }
@@ -189,7 +192,7 @@ sub _subvalidate_double_barrier {
                     . $self->code
                     . '] for japan at '
                     . $self->date_pricing->datetime . '.',
-                message_to_client => ['Invalid barrier.'],
+                message_to_client => [$ERROR_MAPPING->{InvalidBarrier}],
             };
         }
     }
