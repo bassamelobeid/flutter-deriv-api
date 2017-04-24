@@ -175,7 +175,7 @@ is($balance, $limit, 'balance is equal to limit');
 my $price         = 100;
 my $contract_data = {
     underlying   => $underlying,
-    bet_type     => 'FLASHD',
+    bet_type     => 'PUT',
     currency     => 'USD',
     stake        => $price,
     date_start   => $now->epoch,
