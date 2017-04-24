@@ -73,7 +73,7 @@ sub script_run {
     $self->add_contract_types;
     $self->add_japan_settings;
     $self->add_longcodes;
-    $self->add_generic_text;
+    $self->add_generic_texts;
     $self->add_error_messages;
 
     return 0;
@@ -176,15 +176,8 @@ sub add_contract_types {
     foreach my $contract_type (keys %{$contract_type_config}) {
         next if ($contract_type eq 'INVALID');
 
-        my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $contract_type;
-        if (not can_load(modules => {$contract_class => undef})) {
-            $contract_class = 'BOM::Product::Contract::Invalid';
-            can_load(module => {$contract_class => undef});    # No idea what to do if this fails.
-        }
-        my $ct_config = $contract_type_config->{$contract_type};
-
-        if ($ct_config->{display_name}) {
-            my $msgid = $self->msg_id($ct_config->{display_name});
+        if (my $display_name = $contract_type_config->{$contract_type}->{display_name}) {
+            my $msgid = $self->msg_id($display_name);
             if ($self->is_id_unique($msgid)) {
                 print $fh "\n";
                 print $fh $msgid . "\n";
@@ -297,7 +290,7 @@ sub add_longcodes {
     return;
 }
 
-sub add_generic_text {
+sub add_generic_texts {
     my $self = shift;
 
     my $fh       = $self->pot_append_fh;
