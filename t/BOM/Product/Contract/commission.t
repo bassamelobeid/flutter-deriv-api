@@ -140,7 +140,7 @@ subtest 'payout' => sub {
         currency   => 'USD',
         payout     => $payout,
     });
-    cmp_ok $c->ask_price, '<', 0.2 * $payout, 'Commodities daily (< 7 days) non atm contract price is not floor to 20%';
+    is $c->ask_price, 0.2 * $payout, 'Commodities daily (< 7 days) non atm contract price is floor to 20%';
 
 
     $c = produce_contract({
@@ -151,7 +151,7 @@ subtest 'payout' => sub {
         currency   => 'USD',
         payout     => $payout,
     });
-    cmp_ok $c->ask_price, '<', 0.2 * $payout, 'Commodities daily (< 7 days) atm contract price is not floor to 20%';
+    cmp_ok $c->ask_price, '>', 0.2 * $payout, 'Commodities daily (< 7 days) atm contract price is not floor to 20%';
 
 
     $c = produce_contract({
@@ -162,12 +162,12 @@ subtest 'payout' => sub {
         currency   => 'USD',
         payout     => $payout,
     });
-    cmp_ok $c->ask_price, '<', 0.2 * $payout, 'Commodities daily (> 7 days) atm contract price is not floor to 20%';
+    cmp_ok $c->ask_price, '>', 0.2 * $payout, 'Commodities daily (> 7 days) atm contract price is not floor to 20%';
 
     $c = produce_contract({
         bet_type   => 'CALL',
         underlying => 'FCHI',
-        barrier    => 'S10000P',
+        barrier    => 'S100000P',
         duration   => '8d',
         currency   => 'USD',
         payout     => $payout,
@@ -182,7 +182,7 @@ subtest 'payout' => sub {
         currency   => 'USD',
         payout     => $payout,
     });
-    cmp_ok $c->ask_price, '<', 0.2 * $payout, 'Index daily (< 7 days) atm contract price is not floor to 20%';
+    cmp_ok $c->ask_price, '>', 0.2 * $payout, 'Index daily (< 7 days) atm contract price is not floor to 20%';
 
 
     $c = produce_contract({
@@ -193,13 +193,13 @@ subtest 'payout' => sub {
         currency   => 'USD',
         payout     => $payout,
     });
-    cmp_ok $c->ask_price, '<', 0.2 * $payout, 'Index daily (> 7 days) atm contract price is not floor to 20%';
+    cmp_ok $c->ask_price, '>', 0.2 * $payout, 'Index daily (> 7 days) atm contract price is not floor to 20%';
 
 
     $c = produce_contract({
         bet_type   => 'CALL',
         underlying => 'FCHI',
-        barrier    => 'S10000P',
+        barrier    => 'S100000P',
         duration   => '6d',
         currency   => 'USD',
         payout     => $payout,
