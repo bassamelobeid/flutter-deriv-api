@@ -898,7 +898,7 @@ sub _create_contract {
     my $purchase_date = $now->epoch - 101;
     my $contract_data = {
         underlying            => $underlying,
-        bet_type              => $args{bet_type} // 'FLASHU',
+        bet_type              => $args{bet_type} // 'CALL',
         currency              => 'USD',
         current_tick          => $args{current_tick} // $tick,
         stake                 => 100,
