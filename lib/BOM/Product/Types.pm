@@ -20,9 +20,7 @@ This module provides validated definition of various datatypes that are prevalen
 =cut
 
 use MooseX::Types::Moose qw(Int Num Str);
-use MooseX::Types -declare => [
-    'PositiveNum'
-];
+use MooseX::Types -declare => ['PositiveNum'];
 extends 'BOM::MarketData::Types';
 use Moose::Util::TypeConstraints;
 

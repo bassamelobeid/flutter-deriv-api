@@ -8,7 +8,8 @@ BEGIN {
     package TestClass;
 
     use Moose;
-    use Finance::Contract::Category;
+    use Finance::Asset::Market::Types;
+    use Finance::Contract;
     use BOM::Product::Types;
 
     has category => (
