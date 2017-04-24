@@ -57,7 +57,7 @@ sub run {
         my $subject_line = ref $self;
         $subject_line .= ' failed. Number of failures is ' . $number_failures . '. Number of errors is ' . $error . '.';
 
-        return Email::Stuffer->from('system@binary.com')->to('quants-market-data@binary.com')->subject($subject_line)->text_body($body)->send;
+        return Email::Stuffer->from('system@binary.com')->to('quants-market-data@binary.com')->subject($subject_line)->text_body($body)->send_or_die;
     }
 }
 
