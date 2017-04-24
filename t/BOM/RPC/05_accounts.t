@@ -8,7 +8,6 @@ use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use Encode qw(encode);
 use Email::Folder::Search;
-use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
