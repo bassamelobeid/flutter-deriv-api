@@ -83,7 +83,7 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 for (1 .. 10) {
     my $contract_expired = produce_contract({
         underlying   => $underlying,
-        bet_type     => 'FLASHU',
+        bet_type     => 'CALL',
         currency     => 'USD',
         stake        => 100,
         date_start   => $now->epoch - 100,
