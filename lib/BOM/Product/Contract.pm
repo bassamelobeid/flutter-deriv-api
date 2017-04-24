@@ -32,6 +32,7 @@ and defines the standard API for interacting with those contracts.
 =cut
 
 use Moose;
+extends 'Finance::Contract';
 
 require UNIVERSAL::require;
 
@@ -69,42 +70,12 @@ UNITCHECK {
     use BOM::Product::Pricing::Greeks::BlackScholes;
 }
 
-my @date_attribute = (
-    isa        => 'date_object',
-    lazy_build => 1,
-    coerce     => 1,
-);
-
 =head1 ATTRIBUTES - Construction
 
 These are the parameters we expect to be passed when constructing a new contract.
 These would be passed to L<BOM::Product::ContractFactory/produce_contract>.
 
 =cut
-
-=head2 currency
-
-The currency in which this contract is bought/sold, e.g. C<USD>.
-
-=cut
-
-has currency => (
-    is       => 'ro',
-    isa      => 'Str',
-    required => 1,
-);
-
-=head2 payout
-
-Payout amount value, see L</currency>.
-
-=cut
-
-has payout => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
-);
 
 =head2 shortcode
 
@@ -132,134 +103,15 @@ has underlying => (
     handles => [qw(market pip_size)],
 );
 
-=head1 ATTRIBUTES - Date-related
-
-=cut
-
-=head2 date_expiry
-
-When the contract expires.
-
-=cut
-
-has date_expiry => (
-    is => 'rw',
-    @date_attribute,
-);
-
-=head2 date_pricing
-
-The date at which we're pricing the contract. Provide C< undef > to indicate "now".
-
-=cut
-
-has date_pricing => (
-    is => 'ro',
-    @date_attribute,
-);
-
-=head2 date_start
-
-For American contracts, defines when the contract starts.
-
-For Europeans, this is used to determine the barrier when the requested barrier is relative.
-
-=cut
-
-has date_start => (
-    is => 'ro',
-    @date_attribute,
-);
-
-=head2 duration
-
-The requested contract duration, specified as a string indicating value with units.
-The unit is provided as a single character suffix:
-
-=over 4
-
-=item * t - ticks
-
-=item * s - seconds
-
-=item * m - minutes
-
-=item * h - hours
-
-=item * d - days
-
-=back
-
-Examples would be C< 5t > for 5 ticks, C< 3h > for 3 hours.
-
-=cut
-
-has duration => (is => 'ro');
-
-=head1 ATTRIBUTES - Tick-expiry contracts
-
-These are only valid for tick contracts.
-
-=cut
-
-=head2 tick_expiry
-
-A boolean that indicates if a contract expires after a pre-specified number of ticks.
-
-=cut
-
-has tick_expiry => (
-    is      => 'ro',
-    default => 0,
-);
-
-=head2 prediction
-
-Prediction (for tick trades) is what client predicted would happen.
-
-=cut
-
-has prediction => (
-    is  => 'ro',
-    isa => 'Maybe[Num]',
-);
-
-=head2 tick_count
-
-Number of ticks in this trade.
-
-=cut
-
-has tick_count => (
-    is  => 'ro',
-    isa => 'Maybe[Num]',
-);
-
 =head1 ATTRIBUTES - Other
 
 =cut
 
-=head2 starts_as_forward_starting
-
-This attribute tells us if this contract was initially bought as a forward starting contract.
-This should not be mistaken for is_forwarding_start attribute as that could change over time.
-
-=cut
-
-has starts_as_forward_starting => (
-    is      => 'ro',
-    default => 0,
-);
-
 #expiry_daily - Does this bet expire at close of the exchange?
-has [qw(
-        is_intraday
-        is_forward_starting
-        )
-    ] => (
+has is_intraday => (
     is         => 'ro',
     lazy_build => 1,
-    );
+);
 
 has value => (
     is       => 'rw',
@@ -273,13 +125,11 @@ has [qw(entry_tick current_tick)] => (
     lazy_build => 1,
 );
 
-has [qw(
-        current_spot)
-    ] => (
+has current_spot => (
     is         => 'rw',
     isa        => 'Maybe[PositiveNum]',
     lazy_build => 1,
-    );
+);
 
 =head2 for_sale
 
@@ -305,13 +155,6 @@ has build_parameters => (
     required => 1,
 );
 
-#fixed_expiry - A Boolean to determine if this bet has fixed or flexible expiries.
-
-has fixed_expiry => (
-    is      => 'ro',
-    default => 0,
-);
-
 has calendar => (
     is      => 'ro',
     isa     => 'Quant::Framework::TradingCalendar',
@@ -323,12 +166,6 @@ has [qw(opposite_contract opposite_contract_for_sale)] => (
     is         => 'ro',
     isa        => 'BOM::Product::Contract',
     lazy_build => 1
-);
-
-has remaining_time => (
-    is         => 'ro',
-    isa        => 'Time::Duration::Concise',
-    lazy_build => 1,
 );
 
 has corporate_actions => (
@@ -418,13 +255,6 @@ has _applicable_economic_events => (
     builder => '_build_applicable_economic_events',
 );
 
-# This is needed to determine if a contract is newly priced
-# or it is repriced from an existing contract.
-# Milliseconds matters since UI is reacting much faster now.
-has _date_pricing_milliseconds => (
-    is => 'rw',
-);
-
 has _basis_tick => (
     is         => 'ro',
     isa        => 'Postgres::FeedDB::Spot::Tick',
@@ -512,23 +342,6 @@ sub is_after_settlement {
     return 0;
 }
 
-=head2 is_atm_bet
-
-Is this contract meant to be ATM or non ATM at start?
-The status will not change throughout the lifetime of the contract due to differences in offerings for ATM and non ATM contracts.
-
-=cut
-
-sub is_atm_bet {
-    my $self = shift;
-
-    return 0 if $self->two_barriers;
-    # if not defined, it is non ATM
-    return 0 if not defined $self->supplied_barrier;
-    return 0 if $self->supplied_barrier ne 'S0P';
-    return 1;
-}
-
 =head2 is_expired
 
 Returns true if this contract is expired.
@@ -590,12 +403,6 @@ Which expiry durations we allow. Values can be:
 =item * tick
 
 =back
-
-=cut
-
-=head2 supported_start_types
-
-(removed)
 
 =cut
 
@@ -718,17 +525,6 @@ sub debug_information {
     return $self->pricing_engine->can('debug_info') ? $self->pricing_engine->debug_info : {};
 }
 
-=head2 ticks_to_expiry
-
-Number of ticks until expiry of this contract. Defaults to one more than tick_count,
-TODO JB - this is overridden in the digit/Asian contracts, any idea why?
-
-=cut
-
-sub ticks_to_expiry {
-    return shift->tick_count + 1;
-}
-
 =head2 entry_spot
 
 The entry spot price of the contract.
@@ -753,29 +549,6 @@ sub entry_spot_epoch {
 
     my $entry_tick = $self->entry_tick or return undef;
     return $self->entry_tick->epoch;
-}
-
-=head2 effective_start
-
-=over 4
-
-=item * For backpricing, this is L</date_start>.
-
-=item * For a forward-starting contract, this is L</date_start>.
-
-=item * For all other states - i.e. active, non-expired contracts - this is L</date_pricing>.
-
-=back
-
-=cut
-
-sub effective_start {
-    my $self = shift;
-
-    return
-          ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_start
-        : ($self->date_pricing->is_after($self->date_start))  ? $self->date_pricing
-        :                                                       $self->date_start;
 }
 
 =head2 expiry_type
@@ -818,24 +591,6 @@ sub date_settlement {
     }
 
     return $date_settlement;
-}
-
-=head2 get_time_to_expiry
-
-Returns a TimeInterval to expiry of the bet. For a forward start bet, it will NOT return the bet lifetime, but the time till the bet expires.
-
-If you want to get the contract life time, use:
-
-    $contract->get_time_to_expiry({from => $contract->date_start})
-
-=cut
-
-sub get_time_to_expiry {
-    my ($self, $attributes) = @_;
-
-    $attributes->{'to'} = $self->date_expiry;
-
-    return $self->_get_time_to_end($attributes);
 }
 
 =head2 get_time_to_settlement
@@ -952,21 +707,6 @@ sub _check_is_intraday {
     return 1;
 }
 
-# Send in the correct 'to'
-sub _get_time_to_end {
-    my ($self, $attributes) = @_;
-
-    my $end_point = $attributes->{to};
-    my $from = ($attributes and $attributes->{from}) ? $attributes->{from} : $self->date_pricing;
-
-    # Don't worry about how long past expiry
-    # Let it die if they gave us nonsense.
-
-    return Time::Duration::Concise->new(
-        interval => max(0, $end_point->epoch - $from->epoch),
-    );
-}
-
 sub _add_error {
     my ($self, $err) = @_;
     $err->{set_by} = __PACKAGE__;
@@ -1024,12 +764,6 @@ sub _build_is_intraday {
 
 }
 
-sub _build_is_forward_starting {
-    my $self = shift;
-
-    return ($self->allow_forward_starting and $self->date_pricing->is_before($self->date_start)) ? 1 : 0;
-}
-
 sub _build_basis_tick {
     my $self = shift;
 
@@ -1062,16 +796,6 @@ sub _build_basis_tick {
     }
 
     return $basis_tick;
-}
-
-sub _build_remaining_time {
-    my $self = shift;
-
-    my $when = ($self->date_pricing->is_after($self->date_start)) ? $self->date_pricing : $self->date_start;
-
-    return $self->get_time_to_expiry({
-        from => $when,
-    });
 }
 
 sub _build_current_spot {
