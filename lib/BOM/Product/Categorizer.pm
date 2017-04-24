@@ -18,7 +18,7 @@ But we are not there yet because there's a lot of refactoring needed to have the
 =cut
 
 use Date::Utility;
-use LandingCompany::Offerings qw(get_all_contract_types);
+use Finance::Contract::Category;
 
 use BOM::MarketData qw(create_underlying);
 use BOM::Product::Contract::Category;
@@ -243,7 +243,7 @@ sub _initialize_contract_config {
 
     die 'contract type is required' unless $c_type;
 
-    my $contract_type_config = get_all_contract_types();
+    my $contract_type_config = Finance::Contract::Category::get_all_contract_types();
 
     my $params;
 
