@@ -73,6 +73,7 @@ sub script_run {
     $self->add_contract_types;
     $self->add_japan_settings;
     $self->add_longcodes;
+    $self->add_generic_text;
     $self->add_error_messages;
 
     return 0;
@@ -286,6 +287,24 @@ sub add_longcodes {
 
     foreach my $longcode (keys %$longcodes) {
         my $msgid = $self->msg_id($longcodes->{$longcode});
+        if ($self->is_id_unique($msgid)) {
+            print $fh "\n";
+            print $fh $msgid . "\n";
+            print $fh "msgstr \"\"\n";
+        }
+    }
+
+    return;
+}
+
+sub add_generic_text {
+    my $self = shift;
+
+    my $fh       = $self->pot_append_fh;
+    my $messages = BOM::Product::Static::get_generic_mapping();
+
+    foreach my $key (keys %$messages) {
+        my $msgid = $self->msg_id($messages->{$key});
         if ($self->is_id_unique($msgid)) {
             print $fh "\n";
             print $fh $msgid . "\n";
