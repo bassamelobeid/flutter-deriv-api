@@ -141,7 +141,7 @@ subtest 'produce_batch_contract - error check' => sub {
     $args->{duration} = '1d';
     $batch            = produce_batch_contract($args);
     $ask_prices       = $batch->ask_prices;
-    is $ask_prices->{RANGE}->{'100.200-99.800'}->{ask_price}, 0.5, 'minimum ask price';
+    is $ask_prices->{RANGE}->{'100.200-99.800'}->{ask_price}, 2, 'minimum ask price';
     like(
         $ask_prices->{UPORDOWN}->{'100.200-99.800'}->{error}{message_to_client},
         qr/This contract offers no return/,
