@@ -2,6 +2,7 @@ use strict;
 use warnings;
 use Test::Most;
 use Test::Mojo;
+use Test::MockModule;
 use utf8;
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
