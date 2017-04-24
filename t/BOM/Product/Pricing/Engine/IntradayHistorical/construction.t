@@ -31,7 +31,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 initialize_realtime_ticks_db();
 
 my $bet_params = {
-    bet_type   => 'FLASHD',
+    bet_type   => 'PUT',
     underlying => 'frxUSDJPY',
     duration   => '15m',
     barrier    => 'S0P',
@@ -40,10 +40,10 @@ my $bet_params = {
 };
 
 my $bet;
-lives_ok { $bet = produce_contract($bet_params); } 'Can create example FLASHD bet';
+lives_ok { $bet = produce_contract($bet_params); } 'Can create example PUT bet';
 
 my $pe;
-lives_ok { $pe = BOM::Product::Pricing::Engine::Intraday::Forex->new({bet => $bet}) } 'Can create IH engine using FLASHD bet';
+lives_ok { $pe = BOM::Product::Pricing::Engine::Intraday::Forex->new({bet => $bet}) } 'Can create IH engine using PUT bet';
 
 throws_ok { $pe = BOM::Product::Pricing::Engine::Intraday::Forex->new() } qr/Attribute \(bet\) is required/, 'Requires bet for construction';
 
@@ -62,10 +62,10 @@ SKIP: {
     lives_ok { $pe = BOM::Product::Pricing::Engine::Intraday::Forex->new({bet => $bet}) } 'Can create IH engine using EXPIRYMISS bet';
 }
 delete $bet_params->{date_start};
-$bet_params->{bet_type} = 'DOUBLEDOWN';
+$bet_params->{bet_type} = 'PUT';
 $bet_params->{duration} = '1d';
 
-lives_ok { $bet = produce_contract($bet_params); } 'Can create example DOUBLEDOWN bet';
+lives_ok { $bet = produce_contract($bet_params); } 'Can create example PUT bet';
 ok $bet->expiry_daily;
 is $bet->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope', 'expiry_daily contract uses slope pricer';
 
@@ -77,17 +77,17 @@ throws_ok { $pe = BOM::Product::Pricing::Engine::Intraday::Forex->new({bet => $b
 
 my $now = time;
 $bet_params->{date_start}   = $now;
-$bet_params->{bet_type}     = 'INTRADD';
+$bet_params->{bet_type}     = 'PUT';
 $bet_params->{duration}     = '15m';
 $bet_params->{date_pricing} = $now - 300;
 
-lives_ok { $bet = produce_contract($bet_params); } 'Can create example INTRADD bet';
+lives_ok { $bet = produce_contract($bet_params); } 'Can create example PUT bet';
 ok !$bet->expiry_daily;
 ok $bet->is_forward_starting;
 is $bet->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope', 'forward starting bet incompatible with IH';
 
 delete $bet_params->{date_start};
-$bet_params->{bet_type}   = 'FLASHU';
+$bet_params->{bet_type}   = 'CALL';
 $bet_params->{underlying} = 'N150';
 
 lives_ok { $bet = produce_contract($bet_params); } 'Can create example N150 bet';

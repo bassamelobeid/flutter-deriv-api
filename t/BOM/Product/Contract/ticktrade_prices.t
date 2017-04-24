@@ -49,7 +49,7 @@ my $c = produce_contract({
     %$params,
     date_start   => $now,
     date_pricing => $now,
-    bet_type     => 'FLASHU'
+    bet_type     => 'CALL'
 });
 is $c->pricing_engine_name, 'Pricing::Engine::BlackScholes', 'correct pricing engine';
 is roundnear(0.0001, $c->theo_probability->amount), 0.4999, 'bs probability is 0.4999';
@@ -59,7 +59,7 @@ $c = produce_contract({
     %$params,
     date_start   => $now,
     date_pricing => $now,
-    bet_type     => 'FLASHD',
+    bet_type     => 'PUT',
 });
 is $c->pricing_engine_name, 'Pricing::Engine::BlackScholes', 'correct pricing engine';
 is roundnear(0.0001, $c->theo_probability->amount), 0.5001, 'bs probability is 0.5001';

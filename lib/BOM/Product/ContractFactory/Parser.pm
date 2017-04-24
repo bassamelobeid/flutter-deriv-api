@@ -41,28 +41,7 @@ sub shortcode_to_parameters {
         $bet_type, $underlying_symbol, $payout,       $date_start,  $date_expiry,    $barrier,
         $barrier2, $prediction,        $fixed_expiry, $tick_expiry, $how_many_ticks, $forward_start,
     );
-
-    # legacy shortcode, something to do with bet exchange
-    if ($shortcode =~ /^(.+)_E$/) {
-        $shortcode = $1;
-    }
-
-    my ($test_bet_name, $test_bet_name2) = split /_/, $shortcode;
-
-    # for CLUB, it does not have '_' which will not be captured in code above
-    # we need to handle it separately
-    if ($shortcode =~ /^CLUB/i) {
-        $test_bet_name = 'CLUB';
-    }
-    my %OVERRIDE_LIST = (
-        INTRADU    => 'CALL',
-        INTRADD    => 'PUT',
-        FLASHU     => 'CALL',
-        FLASHD     => 'PUT',
-        DOUBLEUP   => 'CALL',
-        DOUBLEDOWN => 'PUT',
-    );
-    $test_bet_name = $OVERRIDE_LIST{$test_bet_name} if exists $OVERRIDE_LIST{$test_bet_name};
+    my ($initial_bet_type) = split /_/, $shortcode;
 
     my $legacy_params = {
         bet_type   => 'Invalid',    # it doesn't matter what it is if it is a legacy
@@ -70,38 +49,10 @@ sub shortcode_to_parameters {
         currency   => $currency,
     };
 
-    return $legacy_params if (not exists get_all_contract_types()->{$test_bet_name} or $shortcode =~ /_\d+H\d+/);
-
-    if ($shortcode =~ /^(SPREADU|SPREADD)_([\w\d]+)_(\d*.?\d*)_(\d+)_(\d*.?\d*)_(\d*.?\d*)_(DOLLAR|POINT)/) {
-        return {
-            shortcode        => $shortcode,
-            bet_type         => $1,
-            underlying       => create_underlying($2),
-            amount_per_point => $3,
-            date_start       => $4,
-            stop_loss        => $5,
-            stop_profit      => $6,
-            stop_type        => lc $7,
-            currency         => $currency,
-            is_sold          => $is_sold
-        };
-    }
-
-    # Legacy shortcode: purchase is a date string e.g. '01-Jan-01'.
-    if ($shortcode =~ /^([^_]+)_([\w\d]+)_(\d+)_(\d\d?)_(\w\w\w)_(\d\d)_(\d\d?)_(\w\w\w)_(\d\d)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
-        $bet_type          = $1;
-        $underlying_symbol = $2;
-        $payout            = $3;
-        $date_start        = uc($4 . '-' . $5 . '-' . $6);
-        $date_expiry       = uc($7 . '-' . $8 . '-' . $9);
-        $barrier           = $10;
-        $barrier2          = $11;
-
-        $date_start = Date::Utility->new($date_start)->epoch;
-    }
+    return $legacy_params if (not exists get_all_contract_types()->{$initial_bet_type} or $shortcode =~ /_\d+H\d+/);
 
     # Both purchase and expiry date are timestamp (e.g. a 30-min bet)
-    elsif ($shortcode =~ /^([^_]+)_([\w\d]+)_(\d*\.?\d*)_(\d+)(?<start_cond>F?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
+    if ($shortcode =~ /^([^_]+)_([\w\d]+)_(\d*\.?\d*)_(\d+)(?<start_cond>F?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
         $bet_type          = $1;
         $underlying_symbol = $2;
         $payout            = $3;
