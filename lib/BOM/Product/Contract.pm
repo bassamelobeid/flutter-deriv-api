@@ -115,87 +115,15 @@ has underlying => (
     handles => [qw(market pip_size)],
 );
 
-=head1 ATTRIBUTES - Date-related
-
-=cut
-
-=head2 duration
-
-The requested contract duration, specified as a string indicating value with units.
-The unit is provided as a single character suffix:
-
-=over 4
-
-=item * t - ticks
-
-=item * s - seconds
-
-=item * m - minutes
-
-=item * h - hours
-
-=item * d - days
-
-=back
-
-Examples would be C< 5t > for 5 ticks, C< 3h > for 3 hours.
-
-=cut
-
-has duration => (is => 'ro');
-
-=head1 ATTRIBUTES - Tick-expiry contracts
-
-These are only valid for tick contracts.
-
-=cut
-
-=head2 tick_expiry
-
-A boolean that indicates if a contract expires after a pre-specified number of ticks.
-
-=cut
-
-has tick_expiry => (
-    is      => 'ro',
-    default => 0,
-);
-
-=head2 prediction
-
-Prediction (for tick trades) is what client predicted would happen.
-
-=cut
-
-has prediction => (
-    is  => 'ro',
-    isa => 'Maybe[Num]',
-);
-
-=head2 tick_count
-
-Number of ticks in this trade.
-
-=cut
-
-has tick_count => (
-    is  => 'ro',
-    isa => 'Maybe[Num]',
-);
-
 =head1 ATTRIBUTES - Other
 
 =cut
 
 #expiry_daily - Does this bet expire at close of the exchange?
-has [qw(
-        is_intraday
-        is_forward_starting
-        )
-    ] => (
+has is_intraday => (
     is         => 'ro',
     lazy_build => 1,
-    );
+);
 
 has value => (
     is       => 'rw',
@@ -259,12 +187,6 @@ has [qw(opposite_contract opposite_contract_for_sale)] => (
     is         => 'ro',
     isa        => 'BOM::Product::Contract',
     lazy_build => 1
-);
-
-has remaining_time => (
-    is         => 'ro',
-    isa        => 'Time::Duration::Concise',
-    lazy_build => 1,
 );
 
 has corporate_actions => (
@@ -654,17 +576,6 @@ sub debug_information {
     return $self->pricing_engine->can('debug_info') ? $self->pricing_engine->debug_info : {};
 }
 
-=head2 ticks_to_expiry
-
-Number of ticks until expiry of this contract. Defaults to one more than tick_count,
-TODO JB - this is overridden in the digit/Asian contracts, any idea why?
-
-=cut
-
-sub ticks_to_expiry {
-    return shift->tick_count + 1;
-}
-
 =head2 entry_spot
 
 The entry spot price of the contract.
@@ -689,29 +600,6 @@ sub entry_spot_epoch {
 
     my $entry_tick = $self->entry_tick or return undef;
     return $self->entry_tick->epoch;
-}
-
-=head2 effective_start
-
-=over 4
-
-=item * For backpricing, this is L</date_start>.
-
-=item * For a forward-starting contract, this is L</date_start>.
-
-=item * For all other states - i.e. active, non-expired contracts - this is L</date_pricing>.
-
-=back
-
-=cut
-
-sub effective_start {
-    my $self = shift;
-
-    return
-          ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_start
-        : ($self->date_pricing->is_after($self->date_start))  ? $self->date_pricing
-        :                                                       $self->date_start;
 }
 
 =head2 expiry_type
@@ -754,24 +642,6 @@ sub date_settlement {
     }
 
     return $date_settlement;
-}
-
-=head2 get_time_to_expiry
-
-Returns a TimeInterval to expiry of the bet. For a forward start bet, it will NOT return the bet lifetime, but the time till the bet expires.
-
-If you want to get the contract life time, use:
-
-    $contract->get_time_to_expiry({from => $contract->date_start})
-
-=cut
-
-sub get_time_to_expiry {
-    my ($self, $attributes) = @_;
-
-    $attributes->{'to'} = $self->date_expiry;
-
-    return $self->_get_time_to_end($attributes);
 }
 
 =head2 get_time_to_settlement
@@ -888,21 +758,6 @@ sub _check_is_intraday {
     return 1;
 }
 
-# Send in the correct 'to'
-sub _get_time_to_end {
-    my ($self, $attributes) = @_;
-
-    my $end_point = $attributes->{to};
-    my $from = ($attributes and $attributes->{from}) ? $attributes->{from} : $self->date_pricing;
-
-    # Don't worry about how long past expiry
-    # Let it die if they gave us nonsense.
-
-    return Time::Duration::Concise->new(
-        interval => max(0, $end_point->epoch - $from->epoch),
-    );
-}
-
 sub _add_error {
     my ($self, $err) = @_;
     $err->{set_by} = __PACKAGE__;
@@ -960,12 +815,6 @@ sub _build_is_intraday {
 
 }
 
-sub _build_is_forward_starting {
-    my $self = shift;
-
-    return ($self->allow_forward_starting and $self->date_pricing->is_before($self->date_start)) ? 1 : 0;
-}
-
 sub _build_basis_tick {
     my $self = shift;
 
@@ -998,16 +847,6 @@ sub _build_basis_tick {
     }
 
     return $basis_tick;
-}
-
-sub _build_remaining_time {
-    my $self = shift;
-
-    my $when = ($self->date_pricing->is_after($self->date_start)) ? $self->date_pricing : $self->date_start;
-
-    return $self->get_time_to_expiry({
-        from => $when,
-    });
 }
 
 sub _build_current_spot {
