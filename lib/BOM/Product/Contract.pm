@@ -32,6 +32,7 @@ and defines the standard API for interacting with those contracts.
 =cut
 
 use Moose;
+extends 'Finance::Contract';
 
 require UNIVERSAL::require;
 
