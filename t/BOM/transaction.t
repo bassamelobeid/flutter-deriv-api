@@ -840,7 +840,7 @@ subtest 'max_open_bets validation', sub {
             price         => 1.00,
             payout        => $contract->payout,
             amount_type   => 'stake',
-            purchase_date => $now,
+            purchase_date => Date::Utility->new,
         });
 
         my $error = do {
@@ -853,7 +853,7 @@ subtest 'max_open_bets validation', sub {
                     price         => 1.00,
                     payout        => $contract->payout,
                     amount_type   => 'stake',
-                    purchase_date => $now,
+                    purchase_date => Date::Utility->new,
                 })->buy, undef, '1st bet bought';
 
             is +BOM::Transaction->new({
@@ -862,7 +862,7 @@ subtest 'max_open_bets validation', sub {
                     price         => 1.00,
                     payout        => $contract->payout,
                     amount_type   => 'stake',
-                    purchase_date => $now,
+                    purchase_date => Date::Utility->new,
                 })->buy, undef, '2nd bet bought';
 
             $txn->buy;
