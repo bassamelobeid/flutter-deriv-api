@@ -22,7 +22,7 @@ use List::MoreUtils qw(uniq first_index);
 use Finance::Asset::Market::Registry;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Product::Contract::Category;
+use Finance::Contract::Category;
 use LandingCompany::Offerings qw(get_offerings_with_filter);
 use BOM::Platform::Context qw(localize);
 use Finance::Asset::SubMarket;
@@ -260,7 +260,7 @@ sub _build_tree {
                 };
                 foreach my $bc (
                     sort { $a->display_order <=> $b->display_order }
-                    map  { BOM::Product::Contract::Category->new($_) } get_offerings_with_filter(
+                    map  { Finance::Contract::Category->new($_) } get_offerings_with_filter(
                         BOM::Platform::Runtime->instance->get_offerings_config,
                         'contract_category',
                         {

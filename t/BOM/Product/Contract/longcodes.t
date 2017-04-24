@@ -49,12 +49,14 @@ subtest 'Proper form' => sub {
     plan tests => scalar @shortcodes * scalar @currencies;
 
     foreach my $currency (@currencies) {
-        my $expected_standard_form = qr/Win payout if .*\.$/;    # Simplified standard form to which all should adhere.
-                                                                 # Can this be improved further?
+        my $expected_standard_form = qr/Win payout if .*\.$/;                                   # Simplified standard form to which all should adhere.
+                                                                                                # Can this be improved further?
+        my $exepcted_legacy_from   = qr/Legacy contract. No further information is available.$/;
         my $params;
         foreach my $shortcode (@shortcodes) {
             my $c = produce_contract($shortcode, $currency);
-            like($c->longcode, $expected_standard_form, $shortcode . ' => long code form appears ok');
+            my $expected_longcode = $shortcode =~ /FLASH*|INTRA*|DOUBLE*/ ? $exepcted_legacy_from : $expected_standard_form;
+            like($c->longcode, $expected_longcode, $shortcode . ' => long code form appears ok');
         }
     }
 };

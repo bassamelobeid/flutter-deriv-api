@@ -68,6 +68,60 @@ subtest 'payout' => sub {
         base_commission => 0.001,
     });
     is $c->commission_markup->amount, $min_commission_markup, 'commission_markup amount is floored 0.002 when payout is 10';
+
+    $c = produce_contract({
+        bet_type   => 'CALL',
+        underlying => 'frxUSDJPY',
+        barrier    => 'S0P',
+        duration   => '10m',
+        currency   => 'USD',
+        payout     => $payout,
+    });
+    cmp_ok $c->ask_price, '>', 5, 'Forex intraday atm contract price is not floor';
+
+    $c = produce_contract({
+        bet_type   => 'CALL',
+        underlying => 'frxUSDJPY',
+        barrier    => 'S500P',
+        duration   => '1h',
+        currency   => 'USD',
+        payout     => $payout,
+    });
+
+    is $c->ask_price, $c->otm_threshold * $payout, 'Forex intraday non atm contract is floored to ' . $c->otm_threshold * $payout;
+
+    $c = produce_contract({
+        bet_type        => 'CALL',
+        underlying      => 'frxUSDJPY',
+        barrier         => 'S500P',
+        duration        => '1h',
+        currency        => 'JPY',
+        payout          => 1000,
+        landing_company => 'japan'
+    });
+    is $c->ask_price, $c->otm_threshold * 1000, 'Forex intraday non atm contract for japan is floored to ' . $c->otm_threshold * 1000;
+
+    $c = produce_contract({
+        bet_type   => 'CALL',
+        underlying => 'frxUSDJPY',
+        barrier    => 'S1000P',
+        duration   => '7d',
+        currency   => 'USD',
+        payout     => $payout,
+    });
+    cmp_ok $c->ask_price, '>', $c->otm_threshold * $payout, 'Forex daily non atm contract price is not floor';
+
+    $c = produce_contract({
+        bet_type   => 'CALL',
+        underlying => 'R_100',
+        barrier    => 'S100P',
+        duration   => '10m',
+        currency   => 'USD',
+        payout     => $payout,
+    });
+
+    cmp_ok $c->ask_price, '>', $c->otm_threshold * $payout, 'VolIdx intraday non atm contract price is not floor.';
+
 };
 
 subtest 'stake' => sub {
@@ -168,6 +222,53 @@ subtest 'stake' => sub {
     });
 
     is $c->payout, 5, "Stocks' payout is re-adjusted to 5 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
+
+    $c = produce_contract({
+        bet_type    => 'CALL',
+        underlying  => 'frxUSDJPY',
+        barrier     => 'S0P',
+        duration    => '10m',
+        currency    => 'USD',
+        amount_type => 'stake',
+        amount      => $stake,
+    });
+    is $c->payout, roundnear(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
+        'Forex intraday atm contract payout is not floor';
+
+    $c = produce_contract({
+        bet_type    => 'CALL',
+        underlying  => 'frxUSDJPY',
+        barrier     => 'S500P',
+        duration    => '10m',
+        currency    => 'USD',
+        amount_type => 'stake',
+        amount      => $stake,
+    });
+    is $c->payout, roundnear(0.01, $stake / $c->otm_threshold), 'Forex intraday non atm contract payout is floored to ' . $stake / $c->otm_threshold;
+
+    $c = produce_contract({
+        bet_type    => 'CALL',
+        underlying  => 'frxUSDJPY',
+        barrier     => 'S1000P',
+        duration    => '7d',
+        currency    => 'USD',
+        amount_type => 'stake',
+        amount      => $stake,
+    });
+    is $c->payout, roundnear(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
+        'Forex daily non atm contract payout is not floor';
+
+    $c = produce_contract({
+        bet_type    => 'CALL',
+        underlying  => 'R_100',
+        barrier     => 'S100P',
+        duration    => '10m',
+        currency    => 'USD',
+        amount_type => 'stake',
+        amount      => $stake,
+    });
+    is $c->payout, roundnear(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
+        'VolIdx intraday non atm contract payout is not floor';
 
 };
 

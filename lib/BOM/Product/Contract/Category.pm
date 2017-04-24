@@ -19,9 +19,9 @@ This class represents available contract categories.
 use Moose;
 use namespace::autoclean;
 use BOM::Platform::Context qw(localize);
-use LandingCompany::Offerings qw(get_all_contract_categories);
+use Finance::Contract::Category;
 
-my $category_config = get_all_contract_categories();
+my $category_config = Finance::Contract::Category::get_all_contract_categories();
 
 has code => (
     is       => 'ro',
