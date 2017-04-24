@@ -150,7 +150,7 @@ sub _create_contract {
     my $underlying    = create_underlying('R_50');
     my $contract_data = {
         underlying   => $underlying,
-        bet_type     => 'FLASHU',
+        bet_type     => 'CALL',
         currency     => 'USD',
         stake        => 100,
         date_start   => $now->epoch - 100,
