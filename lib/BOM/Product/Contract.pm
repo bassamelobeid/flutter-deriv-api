@@ -252,12 +252,10 @@ has _pricing_args => (
     lazy_build => 1,
 );
 
-
 sub _build_barrier_pip_size {
     my $self = shift;
     return $self->underlying->pip_size;
 }
-
 
 =head1 METHODS - Boolean checks
 
