@@ -445,7 +445,7 @@ sub _build_forqqq {
 sub _build_otm_threshold {
     my $self = shift;
 
-    return 0.2 if ($self->timeindays->amount <= 7 and not $self->is_atm_bet and $self->market->name eq 'forex');
+    return 0.2 if ($self->timeindays->amount <= 7 and not $self->is_atm_bet and $self->market->name ne 'volidx');
     return $self->market->deep_otm_threshold;
 }
 
