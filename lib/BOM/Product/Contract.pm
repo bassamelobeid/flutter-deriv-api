@@ -187,18 +187,6 @@ has tick_count => (
 
 =cut
 
-=head2 starts_as_forward_starting
-
-This attribute tells us if this contract was initially bought as a forward starting contract.
-This should not be mistaken for is_forwarding_start attribute as that could change over time.
-
-=cut
-
-has starts_as_forward_starting => (
-    is      => 'ro',
-    default => 0,
-);
-
 #expiry_daily - Does this bet expire at close of the exchange?
 has [qw(
         is_intraday
