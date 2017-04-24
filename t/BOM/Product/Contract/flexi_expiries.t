@@ -58,14 +58,14 @@ subtest 'flexi expiries flashs' => sub {
 
 subtest 'flexi expiries forward starting' => sub {
     my %params = (
-        underlying   => 'frxUSDJPY',
-        date_start   => $now,
-        date_pricing => $now->minus_time_interval('15m'),
-        date_expiry  => $now->plus_time_interval('1h'),
-        bet_type     => 'CALL',
-        payout       => 100,
-        currency     => $currency,
-        is_forward_starting => 1,
+        underlying                 => 'frxUSDJPY',
+        date_start                 => $now,
+        date_pricing               => $now->minus_time_interval('15m'),
+        date_expiry                => $now->plus_time_interval('1h'),
+        bet_type                   => 'CALL',
+        payout                     => 100,
+        currency                   => $currency,
+        is_forward_starting        => 1,
         starts_as_forward_starting => 1
     );
     my $contract = produce_contract(\%params);

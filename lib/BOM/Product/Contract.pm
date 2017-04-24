@@ -56,7 +56,6 @@ use BOM::Platform::Chronicle;
 use BOM::Platform::Context qw(localize);
 use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::Product::Contract::Category;
 use BOM::Platform::RiskProfile;
 use BOM::Product::Types;
 use BOM::Product::ContractValidator;
@@ -203,11 +202,6 @@ has pricing_spot => (
     lazy_build => 1,
 );
 
-has [qw(barrier_category)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 has exit_tick => (
     is         => 'ro',
     lazy_build => 1,
@@ -269,29 +263,6 @@ has _pricing_args => (
     is         => 'ro',
     isa        => 'HashRef',
     lazy_build => 1,
-);
-
-=head1 ATTRIBUTES - From contract_types.yml
-
-=head2 id
-
-=head2 pricing_code
-
-=head2 display_name
-
-=head2 sentiment
-
-=head2 other_side_code
-
-=head2 payout_type
-
-=head2 payouttime
-
-=cut
-
-has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
-    is      => 'ro',
-    default => undef,
 );
 
 =head1 METHODS - Boolean checks
@@ -375,138 +346,6 @@ sub may_settle_automatically {
 
     # For now, only trigger this condition when the bet is past expiry.
     return (not $self->get_time_to_settlement->seconds and not $self->is_valid_to_sell) ? 0 : 1;
-}
-
-=head1 METHODS - Proxied to L<BOM::Product::Contract::Category>
-
-Our C<category> attribute provides several helper methods:
-
-=cut
-
-has category => (
-    is      => 'ro',
-    isa     => 'bom_contract_category',
-    coerce  => 1,
-    handles => [qw(supported_expiries is_path_dependent allow_forward_starting two_barriers barrier_at_start)],
-);
-
-=head2 supported_expiries
-
-Which expiry durations we allow. Values can be:
-
-=over 4
-
-=item * intraday
-
-=item * daily
-
-=item * tick
-
-=back
-
-=cut
-
-=head2 is_path_dependent
-
-True if this is a path-dependent contract.
-
-=cut
-
-=head2 allow_forward_starting
-
-True if we allow forward starting for this contract type.
-
-=cut
-
-=head2 two_barriers
-
-True if the contract has two barriers.
-
-=cut
-
-=head2 barrier_at_start
-
-The starting barrier value.
-
-=cut
-
-=head2 category_code
-
-The code for this category.
-
-=cut
-
-sub category_code {
-    my $self = shift;
-    return $self->category->code;
-}
-
-=head1 METHODS - Time-related
-
-=cut
-
-=head2 timeinyears
-
-Contract duration in years.
-
-=head2 timeindays
-
-Contract duration in days.
-
-=cut
-
-has [qw(
-        timeinyears
-        timeindays
-        )
-    ] => (
-    is         => 'ro',
-    init_arg   => undef,
-    isa        => 'Math::Util::CalculatedValue::Validatable',
-    lazy_build => 1,
-    );
-
-sub _build_timeinyears {
-    my $self = shift;
-
-    my $tiy = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'time_in_years',
-        description => 'Bet duration in years',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => 0,
-        minimum     => 0.000000001,
-    });
-
-    my $days_per_year = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'days_per_year',
-        description => 'We use a 365 day year.',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => 365,
-    });
-
-    $tiy->include_adjustment('add',    $self->timeindays);
-    $tiy->include_adjustment('divide', $days_per_year);
-
-    return $tiy;
-}
-
-sub _build_timeindays {
-    my $self = shift;
-
-    my $atid = $self->get_time_to_expiry({
-            from => $self->effective_start,
-        })->days;
-
-    my $tid = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'time_in_days',
-        description => 'Duration of this bet in days',
-        set_by      => 'BOM::Product::Contract',
-        minimum     => 0.000001,
-        maximum     => 730,
-        base_amount => $atid,
-    });
-
-    return $tid;
 }
 
 =head1 METHODS - Other
@@ -1068,19 +907,6 @@ sub _build_pricing_spot {
     }
 
     return $initial_spot;
-}
-
-sub _build_barrier_category {
-    my $self = shift;
-
-    my $barrier_category;
-    if ($self->category->code eq 'callput') {
-        $barrier_category = ($self->is_atm_bet) ? 'euro_atm' : 'euro_non_atm';
-    } else {
-        $barrier_category = $LandingCompany::Offerings::BARRIER_CATEGORIES->{$self->category->code}->[0];
-    }
-
-    return $barrier_category;
 }
 
 sub _build_apply_market_inefficient_limit {

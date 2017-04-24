@@ -49,7 +49,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                 start_type        => 'spot'
             }))
     {
-        my $category_obj = BOM::Product::Contract::Category->new($contract_category);
+        my $category_obj = Finance::Contract::Category->new($contract_category);
         next if $category_obj->is_path_dependent;
         my @duration = map { $_ * 60 } (15, 20, 25, 40, 60);
         foreach my $duration (@duration) {

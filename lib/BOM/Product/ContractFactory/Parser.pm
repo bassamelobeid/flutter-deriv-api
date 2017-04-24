@@ -21,10 +21,10 @@ Some general utility subroutines related to bet parameters.
 =cut
 
 use Date::Utility;
-use LandingCompany::Offerings qw(get_all_contract_types);
 use BOM::Platform::Runtime;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
+use Finance::Contract::Category;
 use LandingCompany::Registry;
 use List::MoreUtils qw(uniq);
 
@@ -49,7 +49,7 @@ sub shortcode_to_parameters {
         currency   => $currency,
     };
 
-    return $legacy_params if (not exists get_all_contract_types()->{$initial_bet_type} or $shortcode =~ /_\d+H\d+/);
+    return $legacy_params if (not exists Finance::Contract::Category::get_all_contract_types()->{$initial_bet_type} or $shortcode =~ /_\d+H\d+/);
 
     # Both purchase and expiry date are timestamp (e.g. a 30-min bet)
     if ($shortcode =~ /^([^_]+)_([\w\d]+)_(\d*\.?\d*)_(\d+)(?<start_cond>F?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)$/) {

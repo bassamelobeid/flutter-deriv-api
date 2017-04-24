@@ -27,7 +27,7 @@ subtest 'shortcode_to_parameters' => sub {
     is($legacy->{bet_type}, 'Invalid', 'Legacy shortcode.');
 
     my $rmg_dated_call = shortcode_to_parameters('CALL_frxUSDJPY_100_10_OCT_12_17_OCT_12_S1P_S2P', 'USD');
-    is($legacy->{bet_type}, 'Invalid', 'Legacy shortcode.');    
+    is($legacy->{bet_type}, 'Invalid', 'Legacy shortcode.');
 
     my $call = shortcode_to_parameters('CALL_frxUSDJPY_100.00_1352351000_1352354600_S1P_S2P', 'USD');
     my $expected = {
