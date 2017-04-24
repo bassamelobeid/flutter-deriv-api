@@ -160,6 +160,14 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 
 my $R_100_start = Date::Utility->new('1413892500');
 
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol        => 'USD',
+        recorded_date => $R_100_start,
+    }
+);
+
 my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_100',
     epoch      => $R_100_start->epoch,
@@ -274,7 +282,7 @@ subtest $method => sub {
     );
     is($c->tcall($method, {token => $token1})->{count}, 0, 'have 0 statements if no default account');
 
-    my $contract_expired = produce_contract({
+    my $contract_expired = {
         underlying   => $underlying,
         bet_type     => 'CALL',
         currency     => 'USD',
@@ -285,13 +293,12 @@ subtest $method => sub {
         entry_tick   => $old_tick1,
         exit_tick    => $old_tick2,
         barrier      => 'S0P',
-    });
+    };
 
     my $txn = BOM::Transaction->new({
         client        => $test_client2,
-        contract      => $contract_expired,
+        contract_parameters      => $contract_expired,
         price         => 100,
-        payout        => $contract_expired->payout,
         amount_type   => 'stake',
         purchase_date => $now->epoch - 101,
     });
@@ -327,7 +334,7 @@ subtest $method => sub {
     }
 
 
-    $contract_expired = produce_contract({
+    $contract_expired = {
         underlying   => create_underlying('R_100'),
         bet_type     => 'CALL',
         currency     => 'USD',
@@ -338,15 +345,11 @@ subtest $method => sub {
         current_tick => $entry_tick,
         entry_tick   => $entry_tick,
         barrier      => 'S0P',
-    });
-    $contract_expired->{shortcode} = 'CALL_R_100_20_1413892500F_1413906900_S0P_0';
-
-    my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
-    $mock_contract->mock(app_markup_dollar_amount => sub { 0 });
+    };
 
     $txn = BOM::Transaction->new({
             client        => $test_client2,
-            contract      => $contract_expired,
+            contract_parameters      => $contract_expired,
             price         => 100,
             payout        => 200,
             amount_type   => 'stake',
@@ -364,7 +367,7 @@ subtest $method => sub {
             args  => {description => 1}});
     is(
         $result->{transactions}[0]{longcode},
-        'Win payout if Volatility 100 Index is strictly higher than entry spot at 4 hours after 2014-10-21 11:55:00 GMT.',
+        'Win payout if Volatility 100 Index is strictly higher than entry spot at 4 hours after contract start time.',
         "if have short code, then we get more details"
     );
 
@@ -423,7 +426,7 @@ subtest $method => sub {
     );
 
     #create a new transaction for test
-    my $contract_expired = produce_contract({
+    my $contract_expired = {
         underlying   => $underlying,
         bet_type     => 'CALL',
         currency     => 'USD',
@@ -434,13 +437,12 @@ subtest $method => sub {
         entry_tick   => $old_tick1,
         exit_tick    => $old_tick2,
         barrier      => 'S0P',
-    });
+    };
 
     my $txn = BOM::Transaction->new({
         client        => $test_client2,
-        contract      => $contract_expired,
+        contract_parameters      => $contract_expired,
         price         => 100,
-        payout        => $contract_expired->payout,
         amount_type   => 'stake',
         purchase_date => $now->epoch - 101,
     });
@@ -468,7 +470,7 @@ subtest $method => sub {
         'sell_time'      => Date::Utility->new($data->[1]{sell_time})->epoch,
         'buy_price'      => '100.00',
         'purchase_time'  => Date::Utility->new($data->[1]{purchase_time})->epoch,
-        'payout'         => sprintf("%.2f", $contract_expired->payout),
+        'payout'         => sprintf("%.2f", $txn->contract->payout),
         'app_id'         => undef
     };
     is_deeply($result->{transactions}[1], $expect0, 'result is correct');
