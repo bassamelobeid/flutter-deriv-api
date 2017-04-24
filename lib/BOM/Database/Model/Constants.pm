@@ -26,19 +26,16 @@ Readonly our $BET_CLASS_SPREAD_BET       => 'spread_bet';
 
 # Constant reference to volatile hash
 Readonly our $BET_CLASS_TO_TYPE_MAP => {
-    'spread_bet' => ['SPREADU', 'SPREADD'],
-    'higher_lower_bet' => [
-        'FLASHU',      'INTRADU',      'DOUBLEUP',      'FLASHD',         'INTRADD', 'DOUBLEDOWN', 'CALL', 'PUT',
-        'CALLE', 'PUTE',
-        'TWOFORONEUP', 'TWOFORWARDUP', 'TWOFORONEDOWN', 'TWOFORWARDDOWN', 'ASIANU',  'ASIAND'
-    ],
+    'spread_bet'       => ['SPREADU', 'SPREADD'],
+    'higher_lower_bet' => ['CALL',    'PUT', 'CALLE', 'PUTE', 'ASIANU', 'ASIAND'],
 
     'legacy_bet' => [
-        'CLUB',              'SPREADUP',    'SPREADDOWN',     'DOUBLEDBL',       'BEARSTOP',     'DOUBLECONTRA',
-        'DOUBLEONETOUCH',    'BULLSTOP',    'BULLPROFIT',     'BEARPROFIT',      'LIMCALL',      'LIMPUT',
-        'CUTCALL',           'CUTPUT',      'KNOCKOUTCALLUP', 'KNOCKOUTPUTDOWN', 'POOL',         'RUNBET_RUNNINGEVEN',
-        'RUNBET_RUNNINGODD', 'RUNBET_JACK', 'RUNBET_PLAT',    'OLD_MISC_BET',    'RUNBET_DIGIT', 'RUNBET_TENPCT',
-        'RUNBET_DOUBLEUP',   'RUNBET_DOUBLEDOWN',
+        'CLUB',              'SPREADUP',          'SPREADDOWN',     'DOUBLEDBL',       'BEARSTOP',      'DOUBLECONTRA',
+        'DOUBLEONETOUCH',    'BULLSTOP',          'BULLPROFIT',     'BEARPROFIT',      'LIMCALL',       'LIMPUT',
+        'CUTCALL',           'CUTPUT',            'KNOCKOUTCALLUP', 'KNOCKOUTPUTDOWN', 'POOL',          'RUNBET_RUNNINGEVEN',
+        'RUNBET_RUNNINGODD', 'RUNBET_JACK',       'RUNBET_PLAT',    'OLD_MISC_BET',    'RUNBET_DIGIT',  'RUNBET_TENPCT',
+        'RUNBET_DOUBLEUP',   'RUNBET_DOUBLEDOWN', 'FLASHU',         'INTRADU',         'DOUBLEUP',      'FLASHD',
+        'INTRADD',           'DOUBLEDOWN',        'TWOFORONEUP',    'TWOFORWARDUP',    'TWOFORONEDOWN', 'TWOFORWARDDOWN',
     ],
 
     'range_bet' => ['RANGE', 'UPORDOWN', 'EXPIRYRANGE', 'EXPIRYMISS', 'EXPIRYRANGEE', 'EXPIRYMISSE'],

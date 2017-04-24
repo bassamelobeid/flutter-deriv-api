@@ -48,7 +48,7 @@ sub insert_hl_bet {
             expiry_time       => Date::Utility->new($date->epoch + $duration)->db_timestamp,
             is_expired        => 0,
             bet_class         => 'higher_lower_bet',
-            bet_type          => 'FLASHU',
+            bet_type          => 'CALL',
             relative_barrier  => '1.1',
             absolute_barrier  => '1673.828',
             prediction        => 'up',
