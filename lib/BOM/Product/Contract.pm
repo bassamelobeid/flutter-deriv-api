@@ -70,12 +70,6 @@ UNITCHECK {
     use BOM::Product::Pricing::Greeks::BlackScholes;
 }
 
-my @date_attribute = (
-    isa        => 'date_object',
-    lazy_build => 1,
-    coerce     => 1,
-);
-
 =head1 ATTRIBUTES - Construction
 
 These are the parameters we expect to be passed when constructing a new contract.
@@ -136,41 +130,6 @@ has underlying => (
 =head1 ATTRIBUTES - Date-related
 
 =cut
-
-=head2 date_expiry
-
-When the contract expires.
-
-=cut
-
-has date_expiry => (
-    is => 'rw',
-    @date_attribute,
-);
-
-=head2 date_pricing
-
-The date at which we're pricing the contract. Provide C< undef > to indicate "now".
-
-=cut
-
-has date_pricing => (
-    is => 'ro',
-    @date_attribute,
-);
-
-=head2 date_start
-
-For American contracts, defines when the contract starts.
-
-For Europeans, this is used to determine the barrier when the requested barrier is relative.
-
-=cut
-
-has date_start => (
-    is => 'ro',
-    @date_attribute,
-);
 
 =head2 duration
 
