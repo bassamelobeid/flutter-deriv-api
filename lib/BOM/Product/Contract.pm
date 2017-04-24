@@ -1514,6 +1514,76 @@ sub extra_info {
     return \@extra;
 }
 
+sub pricing_details {
+    my ($self, $action) = @_;
+    # IV is the pricing vol (high barrier vol if it is double barrier contract), iv_2 is the low barrier vol.
+    my $iv   = $self->pricing_vol;
+    my $iv_2 = 0;
+
+    if ($self->pricing_vol_for_two_barriers) {
+        $iv   = $self->pricing_vol_for_two_barriers->{high_barrier_vol};
+        $iv_2 = $self->pricing_vol_for_two_barriers->{low_barrier_vol};
+    }
+
+    # This way the order of the fields is well-defined.
+    my @comment_fields = map { defined $_->[1] ? @$_ : (); } (
+        [theo  => $self->theo_price],
+        [iv    => $iv],
+        [iv_2  => $iv_2],
+        [win   => $self->payout],
+        [div   => $self->q_rate],
+        [int   => $self->r_rate],
+        [delta => $self->delta],
+        [gamma => $self->gamma],
+        [vega  => $self->vega],
+        [theta => $self->theta],
+        [vanna => $self->vanna],
+        [volga => $self->volga],
+        [spot  => $self->current_spot],
+        @{$self->extra_info('arrayref')},
+    );
+
+    my $tick;
+    if ($action eq 'sell') {
+        # current tick is lazy, even though the realtime cache might have changed during the course of the transaction.
+        $tick = $self->current_tick;
+    } elsif ($action eq 'autosell_expired_contract') {
+        $tick = ($self->is_path_dependent and $self->hit_tick) ? $self->hit_tick : $self->exit_tick;
+    }
+
+    if ($tick) {
+        push @comment_fields, (exit_spot       => $tick->quote);
+        push @comment_fields, (exit_spot_epoch => $tick->epoch);
+        if ($self->two_barriers) {
+            push @comment_fields, (high_barrier => $self->high_barrier->as_absolute) if $self->high_barrier;
+            push @comment_fields, (low_barrier  => $self->low_barrier->as_absolute)  if $self->low_barrier;
+        } else {
+            push @comment_fields, (barrier => $self->barrier->as_absolute) if $self->barrier;
+        }
+    }
+
+    my $news_factor = $self->ask_probability->peek('news_factor');
+    if ($news_factor) {
+        push @comment_fields, news_fct => $news_factor->amount;
+        my $news_impact = $news_factor->peek('news_impact');
+        push @comment_fields, news_impact => $news_impact->amount if $news_impact;
+    }
+
+    if (@{$self->corporate_actions}) {
+        push @comment_fields,
+            corporate_action => 1,
+            actions          => join '|',
+            map { $_->{description} . ',' . $_->{modifier} . ',' . $_->{value} } @{$self->corporate_actions};
+    }
+
+    if ($self->entry_spot) {
+        push @comment_fields, (entry_spot       => $self->entry_spot);
+        push @comment_fields, (entry_spot_epoch => $self->entry_spot_epoch);
+    }
+
+    return \@comment_fields;
+}
+
 # Don't mind me, I just need to make sure my attibutes are available.
 with 'BOM::Product::Role::Reportable';
 
