@@ -106,19 +106,6 @@ has underlying => (
 
 =cut
 
-#expiry_daily - Does this bet expire at close of the exchange?
-has is_intraday => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-has value => (
-    is       => 'rw',
-    init_arg => undef,
-    isa      => 'Num',
-    default  => 0,
-);
-
 has [qw(entry_tick current_tick)] => (
     is         => 'ro',
     lazy_build => 1,
