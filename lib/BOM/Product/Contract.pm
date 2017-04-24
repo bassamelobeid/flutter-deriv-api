@@ -190,11 +190,6 @@ has pricing_spot => (
     lazy_build => 1,
 );
 
-has [qw(barrier_category)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 has exit_tick => (
     is         => 'ro',
     lazy_build => 1,
@@ -256,29 +251,6 @@ has _pricing_args => (
     is         => 'ro',
     isa        => 'HashRef',
     lazy_build => 1,
-);
-
-=head1 ATTRIBUTES - From contract_types.yml
-
-=head2 id
-
-=head2 pricing_code
-
-=head2 display_name
-
-=head2 sentiment
-
-=head2 other_side_code
-
-=head2 payout_type
-
-=head2 payouttime
-
-=cut
-
-has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
-    is      => 'ro',
-    default => undef,
 );
 
 =head1 METHODS - Boolean checks
@@ -898,19 +870,6 @@ sub _build_pricing_spot {
     }
 
     return $initial_spot;
-}
-
-sub _build_barrier_category {
-    my $self = shift;
-
-    my $barrier_category;
-    if ($self->category->code eq 'callput') {
-        $barrier_category = ($self->is_atm_bet) ? 'euro_atm' : 'euro_non_atm';
-    } else {
-        $barrier_category = $LandingCompany::Offerings::BARRIER_CATEGORIES->{$self->category->code}->[0];
-    }
-
-    return $barrier_category;
 }
 
 sub _build_apply_market_inefficient_limit {
