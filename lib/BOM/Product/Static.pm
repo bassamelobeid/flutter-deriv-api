@@ -17,6 +17,9 @@ This class provides static configurations like error mapping, longcodes mapping
 
 my $config = {
     errors => {
+        # kept camel case because RPC/WS/Pricing follow this convention
+        # it will be consistent in case in future we want to send
+        # these as error codes to RPC/Pricing
         AlreadyExpired                    => 'This contract has already expired.',
         BarrierNotInRange                 => 'Barrier is not an integer in range of [_1] to [_2].',
         BarrierOutOfRange                 => 'Barrier is out of acceptable range.',
@@ -130,6 +133,17 @@ my $config = {
         upordown_intraday                  => 'Win payout if [_3] goes outside [_7] and [_6] through [_5] after [_4].',
         upordown_intraday_fixed_expiry     => 'Win payout if [_3] goes outside [_7] to [_6] through [_5].',
     },
+    generic => {
+        # params passed to longcode that needs translation
+        close_on                => 'close on [_1]',
+        contract_start_time     => 'contract start time',
+        entry_spot              => 'entry spot',
+        entry_spot_minus        => 'entry spot minus [_1]',
+        entry_spot_minus_plural => 'entry spot minus [plural,_1,%d pip, %d pips]',
+        entry_spot_plus         => 'entry spot plus [_1]',
+        entry_spot_plus_plural  => 'entry spot plus [plural,_1,%d pip, %d pips]',
+        first_tick              => 'first tick',
+    },
 };
 
 =head2 get_error_mapping
@@ -150,6 +164,16 @@ Return longcodes for all the contract types
 
 sub get_longcodes {
     return $config->{longcodes};
+}
+
+=head2 get_generic_mapping
+
+Return mapping for generic text used for contracts
+
+=cut
+
+sub get_generic_mapping {
+    return $config->{generic};
 }
 
 1;
