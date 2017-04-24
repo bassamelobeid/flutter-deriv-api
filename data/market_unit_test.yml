@@ -142,7 +142,7 @@ fmb_higher_lower:
     is_expired: 0
     is_sold: 0
     bet_class: higher_lower_bet
-    bet_type: FLASHU
+    bet_type: CALL
     relative_barrier: S0P
     quantity: 1
 
@@ -165,7 +165,7 @@ fmb_higher_lower_buy:
     is_expired: 0
     is_sold: 0
     bet_class: higher_lower_bet
-    bet_type: FLASHU
+    bet_type: CALL
     relative_barrier: S0P
     quantity: 1
 
@@ -189,7 +189,7 @@ fmb_higher_lower_sold_won:
     is_expired: 0
     is_sold: 0
     bet_class: higher_lower_bet
-    bet_type: FLASHU
+    bet_type: CALL
     relative_barrier: S0P
     quantity: 1
 
