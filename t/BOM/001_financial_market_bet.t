@@ -98,7 +98,7 @@ $new_client->payment_free_gift(
 );
 
 my $start_time  = Date::Utility->new->epoch;
-my $contract    = produce_contract('FLASHU_R_50_100_' . $start_time . '_5T_S0P_0', 'USD');
+my $contract    = produce_contract('CALL_R_50_100_' . $start_time . '_5T_S0P_0', 'USD');
 my $p           = $contract->build_parameters;
 my $tick_params = {
     symbol => 'not_checked',
@@ -121,7 +121,7 @@ isnt $transaction->buy, 'undef', 'successful buy';
 
 my $start_time_2  = Date::Utility->new->epoch;
 my $end_time      = $start_time_2 + 60;
-my $contract_2    = produce_contract('FLASHU_R_75_100_' . $start_time_2 . '_' . $end_time . '_S0P_0', 'USD');
+my $contract_2    = produce_contract('CALL_R_75_100_' . $start_time_2 . '_' . $end_time . '_S0P_0', 'USD');
 my $p_2           = $contract_2->build_parameters;
 my $tick_params_2 = {
     symbol => 'not_checked',
@@ -224,7 +224,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 
 my $end_time_5 = $start_time_5 + 900;
-my $contract_5 = produce_contract('FLASHU_GDAXI_100_' . $start_time_5 . '_' . $end_time_5 . '_S0P_0', 'USD');
+my $contract_5 = produce_contract('CALL_GDAXI_100_' . $start_time_5 . '_' . $end_time_5 . '_S0P_0', 'USD');
 my $p_5        = $contract_5->build_parameters;
 
 my $tick_params_5 = {
@@ -254,7 +254,7 @@ isnt $transaction_5->buy, 'undef', 'successful buy';
 restore_time;
 my $start_time_6 = Date::Utility->new->epoch;
 my $end_time_6   = $start_time_6 + 900;
-my $contract_6   = produce_contract('FLASHU_WLDEUR_100_' . $start_time_6 . '_7T_S0P_0', 'USD');
+my $contract_6   = produce_contract('CALL_WLDEUR_100_' . $start_time_6 . '_7T_S0P_0', 'USD');
 my $p_6          = $contract_6->build_parameters;
 
 my $tick_params_6 = {

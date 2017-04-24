@@ -1889,11 +1889,6 @@ sub sell_expired_contracts {
             $failure->{reason} = 'not expired';
             push @{$result->{failures}}, $failure;
             next;
-        } elsif ($contract->category_code eq 'legacy') {
-            $stats_failure{$logging_class}{Legacy}++;
-            $failure->{reason} = 'legacy';
-            push @{$result->{failures}}, $failure;
-            next;
         }
 
         try {
