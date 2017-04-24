@@ -255,13 +255,6 @@ has _applicable_economic_events => (
     builder => '_build_applicable_economic_events',
 );
 
-# This is needed to determine if a contract is newly priced
-# or it is repriced from an existing contract.
-# Milliseconds matters since UI is reacting much faster now.
-has _date_pricing_milliseconds => (
-    is => 'rw',
-);
-
 has _basis_tick => (
     is         => 'ro',
     isa        => 'Postgres::FeedDB::Spot::Tick',
@@ -349,23 +342,6 @@ sub is_after_settlement {
     return 0;
 }
 
-=head2 is_atm_bet
-
-Is this contract meant to be ATM or non ATM at start?
-The status will not change throughout the lifetime of the contract due to differences in offerings for ATM and non ATM contracts.
-
-=cut
-
-sub is_atm_bet {
-    my $self = shift;
-
-    return 0 if $self->two_barriers;
-    # if not defined, it is non ATM
-    return 0 if not defined $self->supplied_barrier;
-    return 0 if $self->supplied_barrier ne 'S0P';
-    return 1;
-}
-
 =head2 is_expired
 
 Returns true if this contract is expired.
@@ -427,12 +403,6 @@ Which expiry durations we allow. Values can be:
 =item * tick
 
 =back
-
-=cut
-
-=head2 supported_start_types
-
-(removed)
 
 =cut
 
