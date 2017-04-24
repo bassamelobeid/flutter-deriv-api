@@ -18,7 +18,7 @@ This class provides static configurations like error mapping, longcodes mapping
 my $config = {
     errors => {
         AlreadyExpired                    => 'This contract has already expired.',
-        BarrierNotInRange                 => 'Barrier is not an integer between [_1] to [_2].',
+        BarrierNotInRange                 => 'Barrier is not an integer in range of [_1] to [_2].',
         BarrierOutOfRange                 => 'Barrier is out of acceptable range.',
         CannotProcessContract             => 'We could not process this contract at this time.',
         CannotValidateContract            => 'Cannot validate contract.',
@@ -30,7 +30,7 @@ my $config = {
         EntryTickMissing                  => 'Waiting for entry tick.',
         ForwardStartTime                  => 'Start time on forward-starting contracts must be more than 5 minutes from now.',
         FutureStartTime                   => 'Start time is in the future.',
-        IncorrectPayoutDecimals           => 'Payout may not have more than two decimal places.',
+        IncorrectPayoutDecimals           => 'Payout can not have more than two decimal places.',
         IntegerBarrierRequired            => 'Barrier must be an integer.',
         InvalidBarrier                    => 'Invalid barrier.',
         InvalidBarrierForSpot             => 'Barrier must be at least [plural,_1,%d pip,%d pips] away from the spot.',
@@ -108,6 +108,7 @@ my $config = {
         expiryrangee_daily                 => 'Win payout if [_3] ends on or between [_7] to [_6] at [_5].',
         expiryrangee_intraday              => 'Win payout if [_3] ends on or between [_7] to [_6] at [_5] after [_4].',
         expiryrangee_intraday_fixed_expiry => 'Win payout if [_3] ends on or between [_7] to [_6] at [_5].',
+        legacy_contract                    => 'Legacy contract. No further information is available.',
         notouch_daily                      => 'Win payout if [_3] does not touch [_6] through [_5].',
         notouch_intraday                   => 'Win payout if [_3] does not touch [_6] through [_5] after [_4].',
         notouch_intraday_fixed_expiry      => 'Win payout if [_3] does not touch [_6] through [_5].',
@@ -141,9 +142,9 @@ sub get_error_mapping {
     return $config->{errors};
 }
 
-=head2 get_longcodes_mapping
+=head2 get_longcodes
 
-Return longcode mapping for all the contract types
+Return longcodes for all the contract types
 
 =cut
 
