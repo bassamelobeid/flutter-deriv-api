@@ -8,29 +8,7 @@ use BOM::Platform::Context qw (localize);
 use BOM::Platform::Copier;
 use Client::Account;
 
-use LandingCompany::Offerings;
-use List::Util qw(first);
-
-use Try::Tiny;
-
-=head copy_start
-
-Subscribe to trader operations
-
-Example:
-
-{
- args => {
-   copy_start => 'NvervEV35353', #trader token, required
-   min_trade_stake => 10,
-   max_trade_stake => 100,
-   trade_types     => ['CALL', 'PUT' ],
-   assets          => ['R_50'],
- },
- client => $client, # blessed object of client, required
-}
-
-=cut
+use Finance::Contract::Category;
 
 sub copy_start {
     my $params = shift;
@@ -82,7 +60,7 @@ sub copy_start {
     }
 
     my @trade_types = ref($args->{trade_types}) eq 'ARRAY' ? @{$args->{trade_types}} : $args->{trade_types};
-    my $contract_types = LandingCompany::Offerings::get_all_contract_types();
+    my $contract_types = Finance::Contract::Category::get_all_contract_types();
     for my $type (grep { $_ } @trade_types) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidTradeType',
