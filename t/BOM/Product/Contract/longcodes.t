@@ -20,27 +20,27 @@ subtest 'Proper form' => sub {
             ONETOUCH_FRXAUDJPY_100_1394502374_1394509574_S133P_0
             CALL_FRXEURUSD_100_1394502338_1394509538_S0P_0
             CALL_FRXEURUSD_100_1394502112_1394512912_S0P_0
-            CALL_FRXNZDUSD_100_1394502169_1394512969_S0P_0
-            PUT_FRXUSDJPY_100_1394502298_1394513098_S0P_0
-            CALL_FRXNZDUSD_100_1394502392_1394509592_S0P_0
-            CALL_FRXEURNOK_100_1394503200F_1394514000_S0P_0
-            PUT_FRXEURNOK_100_1394502900F_1394513700_S0P_0
-            CALL_FRXUSDJPY_100_1394501981_1394573981_S0P_0
+            FLASHU_FRXNZDUSD_100_1394502169_1394512969_S0P_0
+            FLASHD_FRXUSDJPY_100_1394502298_1394513098_S0P_0
+            FLASHU_FRXNZDUSD_100_1394502392_1394509592_S0P_0
+            INTRADU_FRXEURNOK_100_1394503200_1394514000_S0P_0
+            INTRADD_FRXEURNOK_100_1394502900_1394513700_S0P_0
+            FLASHU_FRXUSDJPY_100_1394501981_1394573981_S0P_0
             ONETOUCH_FRXAUDJPY_100_1394502043_1394538043_S300P_0
-            PUT_FRXEURNOK_100_1394590423_1394591143_S0P_0
+            FLASHD_FRXEURNOK_100_1394590423_1394591143_S0P_0
             PUT_FRXUSDJPY_100_1393816315_19_SEP_14_1014530_0
             CALL_FRXXAUUSD_100_1393816326_19_SEP_14_13431500_0
-            CALL_INICICIBC_100_1393822979_1411120800_S0P_0
-            CALL_FRXUSDJPY_100_1394501971_1396310399_S0P_0
+            DOUBLEUP_INICICIBC_100_1393822979_19_SEP_14_S0P_0
+            DOUBLEUP_FRXUSDJPY_100_1394501971_31_MAR_14_S0P_0
             ONETOUCH_FRXAUDJPY_100_1394502053_21_MAR_14_947100_0
             CALL_FRXEURUSD_100_1394502104_14_MAR_14_13870_0
-            PUT_FRXNZDUSD_100_1394502179_1394830800_S0P_0
-            PUT_FRXEURNOK_100_1394502244_1394830800_S0P_0
-            CALL_FRXUSDJPY_100_1394502289_1394830800_S0P_0
+            DOUBLEDOWN_FRXNZDUSD_100_1394502179_14_MAR_14_S0P_0
+            DOUBLEDOWN_FRXEURNOK_100_1394502244_14_MAR_14_S0P_0
+            DOUBLEUP_FRXUSDJPY_100_1394502289_14_MAR_14_S0P_0
             CALL_FRXEURUSD_100_1394502345_9_JUL_14_13871_0
             NOTOUCH_FRXAUDJPY_100_1394502360_9_JUL_14_979900_0
-            PUT_FRXNZDUSD_100_1394502401_9_JUL_14_S0P_0
-            CALL_FRXEURNOK_100_1394502431_14_MAR_14_S0P_0
+            DOUBLEDOWN_FRXNZDUSD_100_1394502401_9_JUL_14_S0P_0
+            DOUBLEUP_FRXEURNOK_100_1394502431_14_MAR_14_S0P_0
             RANGE_AS51_100_1394590984_19_MAR_14_5436_5280
             RANGE_FRXAUDJPY_100_1394591024_20_MAR_14_931040_910000
             ~
@@ -51,10 +51,12 @@ subtest 'Proper form' => sub {
     foreach my $currency (@currencies) {
         my $expected_standard_form = qr/Win payout if .*\.$/;    # Simplified standard form to which all should adhere.
                                                                  # Can this be improved further?
+        my $exepcted_legacy_from = qr/Legacy contract. No further information is available.$/; 
         my $params;
         foreach my $shortcode (@shortcodes) {
             my $c = produce_contract($shortcode, $currency);
-            like($c->longcode, $expected_standard_form, $shortcode . ' => long code form appears ok');
+            my $expected_longcode = $shortcode =~/FLASH*|INTRA*|DOUBLE*/ ? $exepcted_legacy_from : $expected_standard_form;
+            like($c->longcode, $expected_longcode, $shortcode . ' => long code form appears ok');
         }
     }
 };
