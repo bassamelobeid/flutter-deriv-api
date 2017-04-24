@@ -77,18 +77,6 @@ These would be passed to L<BOM::Product::ContractFactory/produce_contract>.
 
 =cut
 
-=head2 payout
-
-Payout amount value, see L</currency>.
-
-=cut
-
-has payout => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
-);
-
 =head2 shortcode
 
 (optional) This can be provided when creating a contract from a shortcode. If not, it will
@@ -167,13 +155,6 @@ has build_parameters => (
     isa => 'HashRef',
     # Required until it goes away entirely.
     required => 1,
-);
-
-#fixed_expiry - A Boolean to determine if this bet has fixed or flexible expiries.
-
-has fixed_expiry => (
-    is      => 'ro',
-    default => 0,
 );
 
 has calendar => (
