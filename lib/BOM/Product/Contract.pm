@@ -77,18 +77,6 @@ These would be passed to L<BOM::Product::ContractFactory/produce_contract>.
 
 =cut
 
-=head2 currency
-
-The currency in which this contract is bought/sold, e.g. C<USD>.
-
-=cut
-
-has currency => (
-    is       => 'ro',
-    isa      => 'Str',
-    required => 1,
-);
-
 =head2 payout
 
 Payout amount value, see L</currency>.
