@@ -8,12 +8,12 @@ BEGIN {
     package TestClass;
 
     use Moose;
-    use BOM::Product::Contract::Category;
+    use Finance::Contract::Category;
     use BOM::Product::Types;
 
     has category => (
         is     => 'ro',
-        isa    => 'bom_contract_category',
+        isa    => 'contract_category',
         coerce => 1,
     );
 
@@ -21,10 +21,10 @@ BEGIN {
 
 throws_ok(
     sub { TestClass->new(category => []); },
-    qr/does not pass the type constraint because: Validation failed for 'bom_contract_category' with value ARRAY/,
+    qr/does not pass the type constraint because: Validation failed for 'contract_category' with value ARRAY/,
     'type contraint ok'
 );
-lives_ok(sub { TestClass->new(category => BOM::Product::Contract::Category->new('callput')) });
-lives_ok(sub { TestClass->new(category => 'callput') }, 'coerce bom_contract_category ok');
+lives_ok(sub { TestClass->new(category => Finance::Contract::Category->new('callput')) });
+lives_ok(sub { TestClass->new(category => 'callput') }, 'coerce contract_category ok');
 
 done_testing;

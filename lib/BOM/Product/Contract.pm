@@ -56,7 +56,6 @@ use BOM::Platform::Chronicle;
 use BOM::Platform::Context qw(localize);
 use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::Product::Contract::Category;
 use BOM::Platform::RiskProfile;
 use BOM::Product::Types;
 use BOM::Product::ContractValidator;
