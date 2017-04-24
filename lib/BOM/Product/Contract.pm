@@ -76,19 +76,6 @@ These would be passed to L<BOM::Product::ContractFactory/produce_contract>.
 
 =cut
 
-=head2 shortcode
-
-(optional) This can be provided when creating a contract from a shortcode. If not, it will
-be populated from the contract parameters.
-
-=cut
-
-has shortcode => (
-    is         => 'ro',
-    isa        => 'Str',
-    lazy_build => 1,
-);
-
 =head2 underlying
 
 The underlying asset, as a L<Finance::Asset::Underlying> instance.
@@ -105,6 +92,19 @@ has underlying => (
 =head1 ATTRIBUTES - Other
 
 =cut
+
+#expiry_daily - Does this bet expire at close of the exchange?
+has is_intraday => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+has value => (
+    is       => 'rw',
+    init_arg => undef,
+    isa      => 'Num',
+    default  => 0,
+);
 
 has [qw(entry_tick current_tick)] => (
     is         => 'ro',
