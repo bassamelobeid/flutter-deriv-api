@@ -125,13 +125,11 @@ has [qw(entry_tick current_tick)] => (
     lazy_build => 1,
 );
 
-has [qw(
-        current_spot)
-    ] => (
+has current_spot => (
     is         => 'rw',
     isa        => 'Maybe[PositiveNum]',
     lazy_build => 1,
-    );
+);
 
 =head2 for_sale
 
