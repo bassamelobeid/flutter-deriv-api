@@ -18,10 +18,10 @@ But we are not there yet because there's a lot of refactoring needed to have the
 =cut
 
 use Date::Utility;
-use LandingCompany::Offerings qw(get_all_contract_types);
+use Finance::Contract::Category;
 
 use BOM::MarketData qw(create_underlying);
-use BOM::Product::Contract::Category;
+use Finance::Contract::Category;
 
 has parameters => (
     is       => 'ro',
@@ -243,7 +243,7 @@ sub _initialize_contract_config {
 
     die 'contract type is required' unless $c_type;
 
-    my $contract_type_config = get_all_contract_types();
+    my $contract_type_config = Finance::Contract::Category::get_all_contract_types();
 
     my $params;
 
@@ -255,7 +255,7 @@ sub _initialize_contract_config {
 
     $params->{$_} = $c_type_config{$_} for keys %c_type_config;
     $params->{bet_type} = $c_type;
-    $params->{category} = BOM::Product::Contract::Category->new($params->{category}) if $params->{category};
+    $params->{category} = Finance::Contract::Category->new($params->{category}) if $params->{category};
 
     return $params;
 }

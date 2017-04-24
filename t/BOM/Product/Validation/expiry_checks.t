@@ -307,17 +307,17 @@ test_with_feed(
     'Intraday down.' => sub {
 
         my $bet_params = {
-            bet_type     => 'PUT',
-            date_start   => 1205856000,                                   # 16:00:01 16:00 098.23 098.23 98.2328 TDF
-            date_expiry  => 1205859600,                                   # 17:00:00 17:00 098.33 098.36 98.3491 GFT
-            date_pricing => Date::Utility->new('2008-03-19T15:30:00Z'),
-            underlying   => 'frxUSDJPY',
-            payout       => 1000,
-            market       => 'forex',
-            currency     => 'USD',
-            barrier      => 'S0P',
+            bet_type                   => 'PUT',
+            date_start                 => 1205856000,                                   # 16:00:01 16:00 098.23 098.23 98.2328 TDF
+            date_expiry                => 1205859600,                                   # 17:00:00 17:00 098.33 098.36 98.3491 GFT
+            date_pricing               => Date::Utility->new('2008-03-19T15:30:00Z'),
+            underlying                 => 'frxUSDJPY',
+            payout                     => 1000,
+            market                     => 'forex',
+            currency                   => 'USD',
+            barrier                    => 'S0P',
             starts_as_forward_starting => 1,
-            is_forward_starting => 1
+            is_forward_starting        => 1
         };
 
         my $bet = produce_contract($bet_params);
@@ -1529,14 +1529,14 @@ test_with_feed(
         my $starting   = $oft_used_date->epoch;
 
         my $bet_params = {
-            underlying => $underlying,
-            bet_type   => 'CALL',
-            currency   => 'USD',
-            payout     => 100,
-            date_start => $starting,
-            duration   => '30m',
-            barrier    => 'S0P',
-            is_forward_starting => 1,
+            underlying                 => $underlying,
+            bet_type                   => 'CALL',
+            currency                   => 'USD',
+            payout                     => 100,
+            date_start                 => $starting,
+            duration                   => '30m',
+            barrier                    => 'S0P',
+            is_forward_starting        => 1,
             starts_as_forward_starting => 1
         };
 
