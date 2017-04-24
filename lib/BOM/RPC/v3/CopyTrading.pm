@@ -10,7 +10,7 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Copier;
 
-use LandingCompany::Offerings;
+use Finance::Contract::Category;
 
 sub copy_start {
     my $params = shift;
@@ -62,7 +62,7 @@ sub copy_start {
     }
 
     my @trade_types = ref($args->{trade_types}) eq 'ARRAY' ? @{$args->{trade_types}} : $args->{trade_types};
-    my $contract_types = LandingCompany::Offerings::get_all_contract_types();
+    my $contract_types = Finance::Contract::Category::get_all_contract_types();
     for my $type (grep { $_ } @trade_types) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidTradeType',
