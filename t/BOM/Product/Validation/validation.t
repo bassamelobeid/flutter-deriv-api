@@ -478,7 +478,7 @@ subtest 'volsurfaces become old and invalid' => sub {
     ok($bet->is_valid_to_buy, '..but when we are close in time, validates just fine.');
 
     $starting = $oft_used_date->epoch + 5 * 3600 + 600;    # Intradays are even more sensitive.
-    $starting += 4*86400;
+    $starting += 4 * 86400;
     $tick = Postgres::FeedDB::Spot::Tick->new({
         symbol => 'frxAUDUSD',
         epoch  => $starting,

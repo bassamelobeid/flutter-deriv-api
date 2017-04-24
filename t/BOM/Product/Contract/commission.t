@@ -99,8 +99,7 @@ subtest 'payout' => sub {
         payout          => 1000,
         landing_company => 'japan'
     });
-    is $c->ask_price, $c->otm_threshold * 1000,
-        'Forex intraday non atm contract for japan is floored to ' . $c->otm_threshold * 1000;
+    is $c->ask_price, $c->otm_threshold * 1000, 'Forex intraday non atm contract for japan is floored to ' . $c->otm_threshold * 1000;
 
     $c = produce_contract({
         bet_type   => 'CALL',
@@ -120,7 +119,7 @@ subtest 'payout' => sub {
         currency   => 'USD',
         payout     => $payout,
     });
-    
+
     cmp_ok $c->ask_price, '>', $c->otm_threshold * $payout, 'VolIdx intraday non atm contract price is not floor.';
 
 };
@@ -245,8 +244,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    is $c->payout, roundnear(0.01, $stake / $c->otm_threshold),
-        'Forex intraday non atm contract payout is floored to ' . $stake / $c->otm_threshold;
+    is $c->payout, roundnear(0.01, $stake / $c->otm_threshold), 'Forex intraday non atm contract payout is floored to ' . $stake / $c->otm_threshold;
 
     $c = produce_contract({
         bet_type    => 'CALL',

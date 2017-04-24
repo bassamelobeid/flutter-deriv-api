@@ -160,14 +160,14 @@ subtest 'Forward starting.' => sub {
     my $date_start  = Date::Utility->new(Date::Utility->new->truncate_to_day->epoch + 86400 + 3600);
     my $date_expiry = Date::Utility->new($date_start->epoch + 600);
     my $bet         = produce_contract({
-        bet_type     => 'PUT',
-        date_start   => $date_start,
-        date_expiry  => $date_expiry,
-        underlying   => 'R_100',
-        payout       => 100,
-        currency     => 'USD',
-        current_spot => 70000,
-        is_forward_starting => 1,
+        bet_type                   => 'PUT',
+        date_start                 => $date_start,
+        date_expiry                => $date_expiry,
+        underlying                 => 'R_100',
+        payout                     => 100,
+        currency                   => 'USD',
+        current_spot               => 70000,
+        is_forward_starting        => 1,
         starts_as_forward_starting => 1,
     });
 
