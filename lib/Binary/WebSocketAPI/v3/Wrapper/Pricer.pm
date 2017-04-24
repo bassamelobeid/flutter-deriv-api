@@ -7,6 +7,7 @@ no indirect;
 use Try::Tiny;
 use Format::Util::Numbers qw(roundnear);
 use Binary::WebSocketAPI::v3::Wrapper::System;
+use Binary::WebSocketAPI::v3::PricingSubscription;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use Time::HiRes qw(gettimeofday tv_interval);
@@ -18,7 +19,6 @@ use Price::Calculator;
 use Clone::PP qw(clone);
 use List::UtilsBy qw(bundle_by);
 use List::Util qw(min);
-use Data::Dumper;
 
 use Future::Mojo          ();
 use Future::Utils         ();
@@ -173,6 +173,8 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                 my $idx      = _make_barrier_key($barriers);
                 warn "unknown idx " . $idx . ", available: " . join ',', sort keys %$barriers_order unless exists $barriers_order->{$idx};
                 ${$proposal_array_subscriptions->{$uuid}{seq}}[$barriers_order->{$idx}] = $req_storage->{uuid};
+                # creating this key to be used by forget_all, undef - not to allow proposal_array message to be sent before real data received
+                $proposal_array_subscriptions->{$uuid}{proposals}{$req_storage->{uuid}} = undef;
                 $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
             }
         }
@@ -440,16 +442,18 @@ sub _process_proposal_open_contract_response {
 }
 
 sub _serialized_args {
-    my $h    = shift;
-    my $copy = {%$h};
-    my @a    = ();
+    my $copy = {%{+shift}};
+    my @arr  = ();
+
+    delete @{$copy}{qw(language req_id)};
+
     # We want to handle similar contracts together, so we do this and sort by
     # key in the price_queue.pl daemon
-    push @a, ('short_code', delete $copy->{short_code}) if exists $copy->{short_code};
+    push @arr, ('short_code', delete $copy->{short_code}) if exists $copy->{short_code};
     foreach my $k (sort keys %$copy) {
-        push @a, ($k, $copy->{$k});
+        push @arr, ($k, $copy->{$k});
     }
-    return 'PRICER_KEYS::' . encode_json(\@a);
+    return 'PRICER_KEYS::' . encode_json(\@arr);
 }
 
 sub _pricing_channel_for_ask {
@@ -470,7 +474,7 @@ sub _pricing_channel_for_ask {
     $args_hash{landing_company}        = $c->landing_company_name;
     $args_hash{skips_price_validation} = 1;
     my $redis_channel = _serialized_args(\%args_hash);
-    my $subchannel = $args->{amount_per_point} // $args->{amount};
+    my $subchannel    = $args->{amount};
 
     my $skip = Binary::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args);
 
@@ -501,7 +505,6 @@ sub _pricing_channel_for_bid {
 
 sub _create_pricer_channel {
     my ($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip_redis_subscr) = @_;
-
     my $pricing_channel = $c->stash('pricing_channel') || {};
 
     # already subscribed
@@ -520,8 +523,8 @@ sub _create_pricer_channel {
         and not exists $pricing_channel->{$redis_channel}
         and not $skip_redis_subscr)
     {
-        $c->redis_pricer->set($redis_channel, 1);
-        $c->stash('redis_pricer')->subscribe([$redis_channel], sub { });
+        $pricing_channel->{$redis_channel}{subscription} =
+            $c->pricing_subscriptions($redis_channel)->subscribe($c);
     }
 
     $pricing_channel->{$redis_channel}->{$subchannel}->{uuid}          = $uuid;
@@ -562,6 +565,7 @@ sub process_bid_event {
     my $type = 'proposal_open_contract';
 
     for my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
+        next if ref $stash_data ne 'HASH';
         my $results;
         unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data)) {
             my $passed_fields = $stash_data->{cache};
@@ -571,6 +575,7 @@ sub process_bid_event {
             $response->{purchase_time}   = $passed_fields->{purchase_time};
             $response->{is_sold}         = $passed_fields->{is_sold};
             $response->{longcode}        = $passed_fields->{longcode};
+            $response->{contract_id}     = $stash_data->{args}->{contract_id} if exists $stash_data->{args}->{contract_id};
             $results                     = {
                 msg_type => $type,
                 $type    => $response
@@ -609,6 +614,7 @@ sub process_proposal_array_event {
     }
 
     foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
+        next if ref $stash_data ne 'HASH';
         $stash_data->{cache}{contract_parameters}{currency} ||= $stash_data->{args}{currency};
         my %proposals;
         for my $contract_type (keys %{$response->{proposals}}) {
@@ -674,8 +680,8 @@ sub process_ask_event {
 
     my $theo_probability = delete $response->{theo_probability};
     foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
+        next if ref $stash_data ne 'HASH';
         my $results;
-
         unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
             $stash_data->{cache}->{contract_parameters}->{longcode} = $stash_data->{cache}->{longcode};
             my $adjusted_results =
@@ -715,8 +721,6 @@ sub _price_stream_results_adjustment {
     my $resp_theo_probability = shift;
 
     my $contract_parameters = $cache->{contract_parameters};
-    # skips for spreads
-    $_ eq $orig_args->{contract_type} and return $results for qw(SPREADU SPREADD);
 
     # log the instances when pricing server doesn't return theo probability
     unless (defined $resp_theo_probability) {
@@ -780,49 +784,25 @@ sub _price_stream_results_adjustment {
 }
 
 sub send_proposal_open_contract_last_time {
-    # last message (contract is sold) of proposal_open_contract stream could not be done from pricer
-    # because it should be performed with other parameters
-    my ($c, $args) = @_;
-    my $uuid = $args->{uuid};
+    my ($c, $args, $contract_id) = @_;
 
-    my $pricing_channel = $c->stash('pricing_channel');
-    return if not $pricing_channel or not $pricing_channel->{uuid}->{$uuid};
-    my $cache = $pricing_channel->{uuid}->{$uuid}->{cache};
-
-    my $forget_subscr_sub = sub {
-        my ($c, $rpc_response) = @_;
-        # cancel proposal open contract streaming which will cancel transaction subscription also
-        Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $uuid);
-    };
-
+    Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $args->{uuid});
     $c->call_rpc({
-            args        => $pricing_channel->{uuid}->{$uuid}->{args},
-            method      => 'get_bid',
+            args => {
+                proposal_open_contract => 1,
+                contract_id            => $contract_id
+            },
+            method      => 'proposal_open_contract',
             msg_type    => 'proposal_open_contract',
             call_params => {
-                short_code  => $args->{short_code},
-                contract_id => $args->{financial_market_bet_id},
-                currency    => $args->{currency_code},
-                sell_time   => $args->{sell_time},
-                is_sold     => 1,
+                token => $c->stash('token'),
             },
-            response => sub {
-                my ($rpc_response, $api_response, $req_storage) = @_;
-
-                return $api_response if $rpc_response->{error};
-
-                $api_response->{proposal_open_contract}->{buy_price}               = $cache->{buy_price};
-                $api_response->{proposal_open_contract}->{purchase_time}           = $cache->{purchase_time};
-                $api_response->{proposal_open_contract}->{transaction_ids}         = $cache->{transaction_ids};
-                $api_response->{proposal_open_contract}->{transaction_ids}->{sell} = $args->{id};
-                $api_response->{proposal_open_contract}->{sell_price}              = sprintf('%.2f', $args->{amount});
-                $api_response->{proposal_open_contract}->{sell_time}               = $args->{sell_time};
-                $api_response->{proposal_open_contract}->{is_sold}                 = 1;
-
-                return $api_response;
+            rpc_response_cb => sub {
+                my ($c, $rpc_response, $req_storage) = @_;
+                return {
+                    msg_type               => 'proposal_open_contract',
+                    proposal_open_contract => $rpc_response->{$contract_id}};
             },
-            success => $forget_subscr_sub,
-            error   => $forget_subscr_sub,
         });
     return;
 }

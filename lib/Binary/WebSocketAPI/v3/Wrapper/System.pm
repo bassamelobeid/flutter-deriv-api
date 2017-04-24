@@ -7,6 +7,7 @@ use Scalar::Util qw(looks_like_number);
 use Array::Utils qw(array_minus);
 
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
+use DataDog::DogStatsd::Helper qw(stats_dec);
 
 sub forget {
     my ($c, $req_storage) = @_;
@@ -15,6 +16,18 @@ sub forget {
         msg_type => 'forget',
         forget => forget_one($c, $req_storage->{args}->{forget}) ? 1 : 0,
     };
+}
+
+# forgeting all stream which need authentication after logout
+sub forget_after_logout {
+    my $c = shift;
+
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'balance');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'transaction');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'proposal_open_contract');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, 'proposal_open_contract');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_feed_subscription($c, 'proposal_open_contract');
+    return;
 }
 
 sub forget_all {
@@ -49,6 +62,8 @@ sub _forget_all_proposal_array {
     for my $pa_key (@$pa_keys) {
         forget_one($c, $_) for keys %{$proposal_array_subscriptions->{$pa_key}{proposals}};
         delete $proposal_array_subscriptions->{$pa_key};
+        # proposal_array also creates 'price' subscription for itself while obtains uuid - so delete it too
+        _forget_pricing_subscription($c, $pa_key);
     }
     $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
 
@@ -104,6 +119,8 @@ sub _forget_proposal_array {
     my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
     if ($proposal_array_subscriptions->{$id}) {
         _forget_pricing_subscription($c, $_) for keys %{$proposal_array_subscriptions->{$id}{proposals}};
+        # proposal_array also creates 'price' subscription for itself while obtains uuid - so delete it too
+        _forget_pricing_subscription($c, $id);
         delete $proposal_array_subscriptions->{$id};
         $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
         return [$id];
@@ -121,6 +138,7 @@ sub _get_proposal_array_proposal_ids {
 
 sub _forget_pricing_subscription {
     my ($c, $uuid) = @_;
+
     my $removed_ids     = [];
     my $pricing_channel = $c->stash('pricing_channel');
     if ($pricing_channel) {
@@ -135,11 +153,8 @@ sub _forget_pricing_subscription {
                     delete $pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd}->{$uuid};
                 }
             }
-
-            if (scalar keys %{$pricing_channel->{$channel}} == 0) {
-                $c->stash('redis_pricer')->unsubscribe([$channel]);
-                delete $pricing_channel->{$channel};
-            }
+            delete $pricing_channel->{$channel}->{subscription};
+            stats_dec('bom_websocket_api.v_3.pricing_subscriptions.clients');
         }
         $c->stash('pricing_channel' => $pricing_channel);
     }
@@ -149,6 +164,7 @@ sub _forget_pricing_subscription {
 
 sub _forget_all_pricing_subscriptions {
     my ($c, $type) = @_;
+
     my $price_daemon_cmd =
           $type eq 'proposal'               ? 'price'
         : $type eq 'proposal_open_contract' ? 'bid'
@@ -162,8 +178,7 @@ sub _forget_all_pricing_subscriptions {
         foreach my $uuid (@$removed_ids) {
             my $redis_channel = $pricing_channel->{uuid}->{$uuid}->{redis_channel};
             if ($pricing_channel->{$redis_channel}) {
-                $c->stash('redis_pricer')->unsubscribe([$redis_channel]);
-
+                stats_dec('bom_websocket_api.v_3.pricing_subscriptions.clients');
                 delete $pricing_channel->{$redis_channel};
             }
             delete $pricing_channel->{uuid}->{$uuid};
