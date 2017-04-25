@@ -57,18 +57,17 @@ subtest 'sell' => sub {
 
     #sold  contract should be hold 2 minutes and interval should more than 15
     my $now      = time;
-    my $contract = Test::BOM::RPC::Contract::create_contract(
+    my $contract_data = Test::BOM::RPC::Contract::prepare_contract(
         start_time   => $now - 60 * 2,
         interval     => '20m',
         tick_epoches => [$now - 1, $now, $now + 1, $now + 2]);
-    ok($contract);
     my $txn = BOM::Transaction->new({
         client        => $client,
-        contract      => $contract,
-        price         => $contract->ask_price,
+        contract_parameters      => $contract_data,
         purchase_date => $now - 60 * 2,
         amount_type   => 'payout',
     });
+    $txn->price($txn->contract->ask_price);
 
     my $error = $txn->buy(skip_validation => 1);
     ok(!$error, 'should no error to buy the contract');

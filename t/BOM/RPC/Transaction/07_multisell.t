@@ -101,7 +101,7 @@ for (@cl) {
 
 is 0 + @token, 4, 'got 4 tokens';
 
-my $contract = Test::BOM::RPC::Contract::create_contract();
+my (undef, $txn) = Test::BOM::RPC::Contract::prepare_contract(client=>$clm);
 
 my $result = BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts({
         client              => $clm,
@@ -118,7 +118,7 @@ my $result = BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts({
             symbol        => "R_50",
         },
         args => {
-            price  => $contract->ask_price,
+            price  => $txn->contract->ask_price,
             tokens => \@token,
         },
     });
