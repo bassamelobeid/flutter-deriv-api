@@ -69,18 +69,6 @@ sub shortcode_to_parameters {
         }
     }
 
-    # Purchase date is timestamp but expiry date is date string
-    elsif ($shortcode =~ /^([^_]+)_([\w\d]+)_(\d*\.?\d{1,2})_(\d+)_(\d\d?)_(\w\w\w)_(\d\d)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
-        $bet_type          = $1;
-        $underlying_symbol = $2;
-        $payout            = $3;
-        $date_start        = $4;
-        $date_expiry       = uc($5 . '-' . $6 . '-' . $7);
-        $barrier           = $8;
-        $barrier2          = $9;
-        $fixed_expiry      = 1;                              # This automatically defaults to fixed expiry
-    }
-
     # Contract without barrier
     elsif ($shortcode =~ /^([^_]+)_(R?_?[^_\W]+)_(\d*\.?\d*)_(\d+)_(\d+)(?<expiry_cond>[T]?)$/) {
         $bet_type          = $1;
