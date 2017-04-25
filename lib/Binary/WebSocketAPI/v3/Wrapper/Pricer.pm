@@ -746,20 +746,20 @@ sub _price_stream_results_adjustment {
     $cache->{payout} = $price_calculator->payout;
     if (my $error = $price_calculator->validate_price) {
         my $error_map = {
-            zero_stake             => sub { "Invalid stake" },
-            payout_too_many_places => sub { 'Payout may not have more than two decimal places.' },
+            zero_stake             => sub { "Invalid stake." },
+            payout_too_many_places => sub { 'Payout can not have more than two decimal places.' },
             stake_same_as_payout   => sub { 'This contract offers no return.' },
             stake_outside_range    => sub {
                 my ($details) = @_;
                 return (
-                    'Minimum stake of [_1] and maximum payout of [_2]',
+                    'Minimum stake of [_1] and maximum payout of [_2].',
                     to_monetary_number_format($details->[0]),
                     to_monetary_number_format($details->[1]));
             },
             payout_outside_range => sub {
                 my ($details) = @_;
                 return (
-                    'Minimum stake of [_1] and maximum payout of [_2]',
+                    'Minimum stake of [_1] and maximum payout of [_2].',
                     to_monetary_number_format($details->[0]),
                     to_monetary_number_format($details->[1]));
             },
