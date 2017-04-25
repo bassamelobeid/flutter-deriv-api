@@ -925,7 +925,7 @@ sub _build_exit_tick {
     my $underlying = $self->underlying;
     my $exit_tick;
     if ($self->tick_expiry) {
-        my $tick_number       = $self->ticks_to_expiry;
+        my $tick_number       = $self->tick_count;
         my @ticks_since_start = @{
             $underlying->ticks_in_between_start_limit({
                     start_time => $self->date_start->epoch + 1,

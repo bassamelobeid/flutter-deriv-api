@@ -13,10 +13,6 @@ sub localizable_description {
     };
 }
 
-sub ticks_to_expiry {
-    return shift->tick_count;
-}
-
 sub _build_pricing_engine_name {
     return 'Pricing::Engine::BlackScholes';
 }
