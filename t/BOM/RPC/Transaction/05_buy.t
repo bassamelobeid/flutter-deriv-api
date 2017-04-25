@@ -192,7 +192,7 @@ subtest 'app_markup_transaction' => sub {
         amount_type   => 'payout',
     });
     is $txn->buy(skip_validation => 1), undef, "no error in transaction buy";
-    is $txn->app_markup, 0, "no app markup";
+    is $txn->contract->app_markup_dollar_amount, 0, "no app markup";
 
     my $app_markup_percentage = 1;
     $contract = Test::BOM::RPC::Contract::create_contract(app_markup_percentage => $app_markup_percentage);
@@ -205,7 +205,7 @@ subtest 'app_markup_transaction' => sub {
         amount_type   => 'payout',
     });
     is $txn->buy(skip_validation => 1), undef, "no error in transaction buy";
-    is $txn->app_markup, $app_markup_percentage / 100 * $contract->payout,
+    is $txn->contract->app_markup_dollar_amount, $app_markup_percentage / 100 * $contract->payout,
         "transaction app_markup is app_markup_percentage of contract payout for payout amount_type";
 
     $contract = Test::BOM::RPC::Contract::create_contract(basis => 'stake');
@@ -219,7 +219,7 @@ subtest 'app_markup_transaction' => sub {
         amount_type   => 'payout',
     });
     is $txn->buy(skip_validation => 1), undef, "no error in transaction buy for stake";
-    is $txn->app_markup, 0, "no app markup for stake";
+    is $txn->contract->app_markup_dollar_amount, 0, "no app markup for stake";
 
     $app_markup_percentage = 2;
     $contract              = Test::BOM::RPC::Contract::create_contract(
@@ -235,7 +235,7 @@ subtest 'app_markup_transaction' => sub {
         amount_type   => 'payout',
     });
     is $txn->buy(skip_validation => 1), undef, "no error in transaction buy for stake";
-    is $txn->app_markup, sprintf('%.2f', $txn->payout * $app_markup_percentage / 100),
+    is $txn->contract->app_markup_dollar_amount, sprintf('%.2f', $txn->payout * $app_markup_percentage / 100),
         "in case of stake contract, app_markup is app_markup_percentage of final payout i.e transaction payout";
     cmp_ok $txn->payout, "<", $payout, "payout after app_markup_percentage is less than actual payout";
 };
