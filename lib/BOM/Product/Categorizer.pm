@@ -18,7 +18,6 @@ But we are not there yet because there's a lot of refactoring needed to have the
 =cut
 
 use Date::Utility;
-use LandingCompany::Offerings qw(get_all_contract_types);
 use Quant::Framework;
 use Finance::Contract::Category;
 
