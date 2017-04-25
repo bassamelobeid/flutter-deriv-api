@@ -471,22 +471,22 @@ sub longcode {
     my $description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
     my @longcode = ($description, $self->currency, to_monetary_number_format($self->payout), $self->underlying->display_name);
 
-    my ($when_end, $when_start) = ([], []);
+    my ($when_end, $when_start, $generic_mapping) = ([], [], BOM::Product::Static::get_generic_mapping());
     if ($expiry_type eq 'intraday_fixed_expiry') {
         $when_end = [$self->date_expiry->datetime . ' GMT'];
     } elsif ($expiry_type eq 'intraday') {
         $when_end = [$self->get_time_to_expiry({from => $self->date_start})->as_string];
-        $when_start = ($forward_starting_contract) ? [$self->date_start->db_timestamp . ' GMT'] : ['contract start time'];
+        $when_start = ($forward_starting_contract) ? [$self->date_start->db_timestamp . ' GMT'] : [$generic_mapping->{contract_start_time}];
     } elsif ($expiry_type eq 'daily') {
         my $close = $self->underlying->calendar->closing_on($self->date_expiry);
         if ($close and $close->epoch != $self->date_expiry->epoch) {
             $when_end = [$self->date_expiry->datetime . ' GMT'];
         } else {
-            $when_end = ['close on [_1]', $self->date_expiry->date];
+            $when_end = [$generic_mapping->{close_on}, $self->date_expiry->date];
         }
     } elsif ($expiry_type eq 'tick') {
         $when_end   = [$self->tick_count];
-        $when_start = ['first tick'];
+        $when_start = [$generic_mapping->{first_tick}];
     }
     push @longcode, ($when_start, $when_end);
 

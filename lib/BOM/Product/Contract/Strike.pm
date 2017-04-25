@@ -224,9 +224,7 @@ has display_text => (
 sub _build_display_text {
     my $self = shift;
 
-    my $barrier_type = $self->supplied_type;
-
-    my $display_barrier;
+    my ($barrier_type, $display_barrier) = ($self->supplied_type);
 
     # We don't have the display text to change as well for immutable longcode's sake.
     my $strike = $self;
@@ -238,21 +236,22 @@ sub _build_display_text {
     if ($barrier_type eq 'absolute') {
         $display_barrier = [$strike->as_absolute];
     } else {
+        my $generic_mapping = BOM::Product::Static::get_generic_mapping();
         if (my $pips = $strike->pip_difference) {
             if ($self->underlying->market->name eq 'forex') {
                 $display_barrier =
                       ($pips > 0)
-                    ? ['entry spot plus [plural,_1,%d pip, %d pips]', $pips]
-                    : ['entry spot minus [plural,_1,%d pip, %d pips]', abs $pips];
+                    ? [$generic_mapping->{entry_spot_plus_plural}, $pips]
+                    : [$generic_mapping->{entry_spot_minus_plural}, abs $pips];
             } else {
                 my $abs_diff = $self->_proper_value(abs $strike->as_difference);
                 $display_barrier =
                       ($pips > 0)
-                    ? ['entry spot plus [_1]', $abs_diff]
-                    : ['entry spot minus [_1]', $abs_diff];
+                    ? [$generic_mapping->{entry_spot_plus}, $abs_diff]
+                    : [$generic_mapping->{entry_spot_minus}, $abs_diff];
             }
         } else {
-            $display_barrier = ['entry spot'];
+            $display_barrier = [$generic_mapping->{entry_spot}];
         }
     }
 

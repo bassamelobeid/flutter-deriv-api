@@ -63,7 +63,7 @@ sub available_contracts_for_symbol {
         my $bc = $o->{barrier_category};
 
         my $cat = Finance::Contract::Category->new($cc);
-        $o->{contract_category_display} = localize($cat->display_name);
+        $o->{contract_category_display} = $cat->display_name;
         $o->{contract_display}          = $o->{contract_display};
 
         if ($o->{start_type} eq 'forward') {
