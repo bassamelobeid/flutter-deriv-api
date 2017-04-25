@@ -353,7 +353,6 @@ subtest 'two actions' => sub {
         };
         my $bet = produce_contract($bet_params);
         is $bet->shortcode, 'CALL_USAAPL_100_1364394000_1364673600_S0P_0', 'Can get bet shortcode';
-        note explain $bet->longcode;
         is_deeply(
             $bet->longcode,
             [

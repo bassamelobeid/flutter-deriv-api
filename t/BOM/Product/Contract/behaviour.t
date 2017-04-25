@@ -280,11 +280,11 @@ subtest 'longcode of index daily contracts' => sub {
     my $expiry_daily_longcode = $c2->longcode;
     $c2 = make_similar_contract($c, {date_pricing => $c->date_start->plus_time_interval('8h')});
     ok $c2->expiry_daily, 'is daily contract';
-    is_deeply($c2->longcode, $expiry_daily_longcode);
+    is_deeply($c2->longcode, $expiry_daily_longcode, 'longcode does not change');
     is $c->expiry_type, 'daily';
     $c2 = make_similar_contract($c, {date_pricing => $c->date_start->plus_time_interval('24h')});
     ok $c2->is_intraday, 'date_pricing reaches intraday';
-    is_deeply($c2->longcode, $expiry_daily_longcode);
+    is_deeply($c2->longcode, $expiry_daily_longcode, 'longcode does not change');
     is $c->expiry_type, 'daily';
 };
 
