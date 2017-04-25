@@ -6,7 +6,6 @@ with 'BOM::Product::Role::SingleBarrier';
 
 use BOM::Product::Pricing::Engine::BlackScholes;
 
-sub code { return 'VANILLA_CALL'; }
 
 sub ticks_to_expiry {
     die 'no ticks_to_expiry on a VANILLA_CALL contract';

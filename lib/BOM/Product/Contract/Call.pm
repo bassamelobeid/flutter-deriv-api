@@ -6,7 +6,6 @@ with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
 # Static methods
 
-sub code { return 'CALL'; }
 
 sub ticks_to_expiry {
     return shift->tick_count + 1;

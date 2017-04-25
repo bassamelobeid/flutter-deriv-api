@@ -5,7 +5,6 @@ extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
 # Static methods.
-sub code { return 'ASIAND'; }
 
 sub localizable_description {
     return +{

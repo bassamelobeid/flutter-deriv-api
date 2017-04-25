@@ -8,7 +8,6 @@ use BOM::Product::Contract::Strike::Digit;
 use Pricing::Engine::Digits;
 use BOM::Product::Pricing::Greeks::Digits;
 
-sub code { return 'DIGITODD'; }
 
 sub localizable_description {
     return +{

@@ -7,7 +7,6 @@ with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 use BOM::Platform::Context qw(localize);
 
 # Static methods
-sub code { return 'PUTE'; }
 
 sub ticks_to_expiry {
     die 'no ticks_to_expiry on a PUTE contract';

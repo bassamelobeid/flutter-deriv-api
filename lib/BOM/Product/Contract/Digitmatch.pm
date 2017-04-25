@@ -11,7 +11,6 @@ use BOM::Product::Pricing::Greeks::Digits;
 
 # Static methods.
 
-sub code { return 'DIGITMATCH'; }
 
 sub localizable_description {
     return +{

@@ -10,7 +10,6 @@ use Pricing::Engine::Digits;
 use BOM::Product::Pricing::Greeks::Digits;
 
 # Static methods.
-sub code { return 'DIGITDIFF'; }
 
 sub localizable_description {
     return +{
