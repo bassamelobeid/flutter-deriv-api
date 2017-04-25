@@ -64,6 +64,7 @@ my $bet_params = {
 };
 
 subtest 'skips price validation' => sub {
+    $bet_params->{disable_trading_at_quiet_period} = 0;
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'invalid to buy';
     is $c->payout, 1000, 'payout is 1000';

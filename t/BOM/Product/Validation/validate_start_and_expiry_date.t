@@ -312,6 +312,30 @@ subtest 'date start blackouts' => sub {
     $bet_params->{barrier}    = 'S0P';
     $c                        = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
+
+    my $GMT_21 = $bet_params->{date_pricing}->truncate_to_day->plus_time_interval('21h');
+    $bet_params->{date_pricing} = $bet_params->{date_start} = $GMT_21;
+    $bet_params->{duration} = '5h';
+    $bet_params->{current_tick} = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'frxAUDUSD',
+        epoch      => $GMT_21->epoch
+    });
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy';
+    $bet_params->{duration} = '4h59m59s';
+    $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    like(($c->primary_validation_error)[0]->{message_to_client}, qr/Trading on forex contracts with duration less than 5 hours is not available from 21:00:00 to 23:00:00/, 'throws error');
+    $bet_params->{underlying} = 'R_100';
+    $bet_params->{duration} = '4h59m59s';
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy for random';
+    $bet_params->{underlying} = 'frxAUDUSD';
+    $bet_params->{barrier} = 76.8999;
+    $bet_params->{landing_company} = 'japan';
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid for japan';
+    delete $bet_params->{landing_company};
 };
 
 subtest 'date_expiry blackouts' => sub {
