@@ -460,7 +460,7 @@ subtest 'volsurfaces become old and invalid' => sub {
     });
     my $bet_params = {
         underlying   => $underlying,
-        bet_type     => 'DOUBLEDOWN',
+        bet_type     => 'PUT',
         currency     => 'USD',
         payout       => 100,
         date_start   => $starting,
@@ -481,7 +481,7 @@ subtest 'volsurfaces become old and invalid' => sub {
     ok($bet->is_valid_to_buy, '..but when we are close in time, validates just fine.');
 
     $starting = $oft_used_date->epoch + 5 * 3600 + 600;    # Intradays are even more sensitive.
-    $starting += 4*86400;
+    $starting += 4 * 86400;
     $tick = Postgres::FeedDB::Spot::Tick->new({
         symbol => 'frxAUDUSD',
         epoch  => $starting,
@@ -633,7 +633,7 @@ subtest 'invalid start times' => sub {
     $underlying = create_underlying('GDAXI');
 
     $bet_params->{underlying}   = $underlying;
-    $bet_params->{bet_type}     = 'DOUBLEDOWN';
+    $bet_params->{bet_type}     = 'PUT';
     $bet_params->{duration}     = '7d';
     $bet_params->{date_start}   = $trading_calendar->opening_on($underlying->exchange, Date::Utility->new('2013-03-28'));
     $bet_params->{date_pricing} = $bet_params->{date_start};
@@ -659,9 +659,11 @@ subtest 'invalid start times' => sub {
         });
 
     $bet_params->{volsurface}   = $volsurface;
-    $bet_params->{bet_type}     = 'DOUBLEDOWN';
+    $bet_params->{bet_type}     = 'PUT';
     $bet_params->{duration}     = '0d';
     $bet_params->{date_start}   = $trading_calendar->closing_on($underlying->exchange, Date::Utility->new('2013-03-28'))->minus_time_interval('1m');
+    $bet_params->{is_intraday}  = 0;
+    $bet_params->{expiry_daily} = 1;
     $bet_params->{date_pricing} = $bet_params->{date_start};
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
@@ -671,9 +673,8 @@ subtest 'invalid start times' => sub {
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
         {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-
     $bet              = produce_contract($bet_params);
-    $expected_reasons = [qr/Daily duration.*is outside/];
+    $expected_reasons = [qr/blackout period/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -710,7 +711,7 @@ subtest 'invalid expiry times' => sub {
 
     my $bet_params = {
         underlying   => $underlying,
-        bet_type     => 'DOUBLEDOWN',
+        bet_type     => 'PUT',
         currency     => 'USD',
         payout       => 100,
         date_start   => $starting,
@@ -1027,7 +1028,7 @@ subtest 'intraday indices duration test' => sub {
     }
     my $tick   = Postgres::FeedDB::Spot::Tick->new($tick_params);
     my $params = {
-        bet_type     => 'FLASHU',
+        bet_type     => 'CALL',
         underlying   => 'AS51',
         date_start   => $now,
         date_pricing => $now,
@@ -1105,7 +1106,7 @@ subtest 'expiry_daily expiration time' => sub {
     };
     my $tick   = Postgres::FeedDB::Spot::Tick->new($tick_params);
     my $params = {
-        bet_type     => 'FLASHU',
+        bet_type     => 'CALL',
         underlying   => 'AS51',
         date_start   => $now,
         date_pricing => $now,

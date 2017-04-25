@@ -20,10 +20,11 @@ But we are not there yet because there's a lot of refactoring needed to have the
 use Date::Utility;
 use LandingCompany::Offerings qw(get_all_contract_types);
 use Quant::Framework;
+use Finance::Contract::Category;
 
 use BOM::Platform::Chronicle;
 use BOM::MarketData qw(create_underlying);
-use BOM::Product::Contract::Category;
+use Finance::Contract::Category;
 
 has parameters => (
     is       => 'ro',
@@ -265,13 +266,9 @@ sub _initialize_contract_config {
 
     die 'contract type is required' unless $c_type;
 
-    my $contract_type_config = get_all_contract_types();
+    my $contract_type_config = Finance::Contract::Category::get_all_contract_types();
 
     my $params;
-    if (my $legacy_params = $self->_legacy_contract_types->{$c_type}) {
-        $c_type = delete $legacy_params->{bet_type};
-        $params->{$_} = $legacy_params->{$_} for keys %$legacy_params;
-    }
 
     if (not exists $contract_type_config->{$c_type}) {
         $c_type = 'INVALID';
@@ -281,7 +278,7 @@ sub _initialize_contract_config {
 
     $params->{$_} = $c_type_config{$_} for keys %c_type_config;
     $params->{bet_type} = $c_type;
-    $params->{category} = BOM::Product::Contract::Category->new($params->{category}) if $params->{category};
+    $params->{category} = Finance::Contract::Category->new($params->{category}) if $params->{category};
 
     return $params;
 }
@@ -300,54 +297,6 @@ sub _initialize_barrier {
 
     return $barrier_info;
 }
-
-has _legacy_contract_types => (
-    is      => 'ro',
-    default => sub {
-        {
-            INTRADU => {
-                bet_type                   => 'CALL',
-                is_forward_starting        => 1,
-                starts_as_forward_starting => 1
-            },
-            INTRADD => {
-                bet_type                   => 'PUT',
-                is_forward_starting        => 1,
-                starts_as_forward_starting => 1
-            },
-            FLASHU => {
-                bet_type     => 'CALL',
-                is_intraday  => 1,
-                expiry_daily => 0
-            },
-            FLASHD => {
-                bet_type     => 'PUT',
-                is_intraday  => 1,
-                expiry_daily => 0
-            },
-            DOUBLEUP => {
-                bet_type     => 'CALL',
-                is_intraday  => 0,
-                expiry_daily => 1
-            },
-            DOUBLEDOWN => {
-                bet_type     => 'PUT',
-                is_intraday  => 0,
-                expiry_daily => 1
-            },
-            SPREADU => {
-                bet_type     => 'CALL',
-                is_intraday  => 0,
-                expiry_daily => 1
-            },
-            SPREADD => {
-                bet_type     => 'PUT',
-                is_intraday  => 0,
-                expiry_daily => 1
-            },
-        };
-    },
-);
 
 no Moose;
 __PACKAGE__->meta->make_immutable;

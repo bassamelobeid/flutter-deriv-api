@@ -190,7 +190,8 @@ subtest 'prices with economic events' => sub {
                     %$barrier,
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                is $c->theo_probability->amount, $expected->{'event_' . $c->shortcode}, 'correct ask probability [event_' . $c->shortcode . ']';
+                cmp_ok abs($c->theo_probability->amount - $expected->{'event_' . $c->shortcode}) / $c->theo_probability->amount, '<', 0.02,
+                    'correct ask probability within 2% [event_' . $c->shortcode . ']';
             }
             'survived';
         }
@@ -212,7 +213,8 @@ subtest 'atm prices with economic events' => sub {
                     barrier      => 'S0P',
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                is $c->theo_probability->amount, $expected->{'event_' . $c->shortcode}, 'correct ask probability [event_' . $c->shortcode . ']';
+                cmp_ok abs($c->theo_probability->amount - $expected->{'event_' . $c->shortcode}) / $c->theo_probability->amount, '<', 0.02,
+                    'correct ask probability within 2% [event_' . $c->shortcode . ']';
             }
             'survived';
         }

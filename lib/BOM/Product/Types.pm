@@ -17,38 +17,12 @@ Version 0.01
 
 This module provides validated definition of various datatypes that are prevalent through the BetOnMarkets system. By convention, these types are all prefixed with 'bom_' in order to avoid namespace collisions.
 
-    package MyClass;
-
-    use Moose;
-
-    use BOM::Product::Types qw( bom_contract_category );
-
-    has 'contract_category' => (
-        is  => 'rw',
-        isa => 'bom_contract_category',
-    );
-
-    package main;
-
-    my $good = new MyClass( client_loginid => 'CR1234' ); # works
-    my $bad = new MyClass( client_loginid => 'fribitz' ); # dies with an explanation
-
-
 =cut
 
 use MooseX::Types::Moose qw(Int Num Str);
-use MooseX::Types -declare => [
-    map { "bom_$_" }
-        qw(
-        contract_category
-        ),
-    'PositiveNum'
-];
+use MooseX::Types -declare => ['PositiveNum'];
 extends 'BOM::MarketData::Types';
 use Moose::Util::TypeConstraints;
-
-subtype 'bom_contract_category', as 'BOM::Product::Contract::Category';
-coerce 'bom_contract_category', from 'Str', via { BOM::Product::Contract::Category->new($_) };
 
 subtype
     'PositiveNum' => as 'Num',

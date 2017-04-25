@@ -67,7 +67,7 @@ has price_calculator => (
 
 =head2 otm_threshold
 
-An abbreviation for deep out of the money threshold. This is used to floor and cap prices.
+An abbreviation for deep out of the money threshold. This is used to floor prices.
 
 =cut
 
@@ -402,6 +402,7 @@ sub _build_forqqq {
 sub _build_otm_threshold {
     my $self = shift;
 
+    return 0.2 if ($self->timeindays->amount <= 7 and not $self->is_atm_bet and $self->market->name ne 'volidx');
     return $self->market->deep_otm_threshold;
 }
 

@@ -32,6 +32,7 @@ and defines the standard API for interacting with those contracts.
 =cut
 
 use Moose;
+extends 'Finance::Contract';
 
 require UNIVERSAL::require;
 
@@ -56,7 +57,6 @@ use BOM::Platform::Chronicle;
 use BOM::Platform::Context qw(localize);
 use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::Product::Contract::Category;
 use BOM::Platform::RiskProfile;
 use BOM::Product::Types;
 use BOM::Product::ContractValidator;
@@ -70,42 +70,12 @@ UNITCHECK {
     use BOM::Product::Pricing::Greeks::BlackScholes;
 }
 
-my @date_attribute = (
-    isa        => 'date_object',
-    lazy_build => 1,
-    coerce     => 1,
-);
-
 =head1 ATTRIBUTES - Construction
 
 These are the parameters we expect to be passed when constructing a new contract.
 These would be passed to L<BOM::Product::ContractFactory/produce_contract>.
 
 =cut
-
-=head2 currency
-
-The currency in which this contract is bought/sold, e.g. C<USD>.
-
-=cut
-
-has currency => (
-    is       => 'ro',
-    isa      => 'Str',
-    required => 1,
-);
-
-=head2 payout
-
-Payout amount value, see L</currency>.
-
-=cut
-
-has payout => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
-);
 
 =head2 shortcode
 
@@ -133,134 +103,15 @@ has underlying => (
     handles => [qw(market pip_size)],
 );
 
-=head1 ATTRIBUTES - Date-related
-
-=cut
-
-=head2 date_expiry
-
-When the contract expires.
-
-=cut
-
-has date_expiry => (
-    is => 'rw',
-    @date_attribute,
-);
-
-=head2 date_pricing
-
-The date at which we're pricing the contract. Provide C< undef > to indicate "now".
-
-=cut
-
-has date_pricing => (
-    is => 'ro',
-    @date_attribute,
-);
-
-=head2 date_start
-
-For American contracts, defines when the contract starts.
-
-For Europeans, this is used to determine the barrier when the requested barrier is relative.
-
-=cut
-
-has date_start => (
-    is => 'ro',
-    @date_attribute,
-);
-
-=head2 duration
-
-The requested contract duration, specified as a string indicating value with units.
-The unit is provided as a single character suffix:
-
-=over 4
-
-=item * t - ticks
-
-=item * s - seconds
-
-=item * m - minutes
-
-=item * h - hours
-
-=item * d - days
-
-=back
-
-Examples would be C< 5t > for 5 ticks, C< 3h > for 3 hours.
-
-=cut
-
-has duration => (is => 'ro');
-
-=head1 ATTRIBUTES - Tick-expiry contracts
-
-These are only valid for tick contracts.
-
-=cut
-
-=head2 tick_expiry
-
-A boolean that indicates if a contract expires after a pre-specified number of ticks.
-
-=cut
-
-has tick_expiry => (
-    is      => 'ro',
-    default => 0,
-);
-
-=head2 prediction
-
-Prediction (for tick trades) is what client predicted would happen.
-
-=cut
-
-has prediction => (
-    is  => 'ro',
-    isa => 'Maybe[Num]',
-);
-
-=head2 tick_count
-
-Number of ticks in this trade.
-
-=cut
-
-has tick_count => (
-    is  => 'ro',
-    isa => 'Maybe[Num]',
-);
-
 =head1 ATTRIBUTES - Other
 
 =cut
 
-=head2 starts_as_forward_starting
-
-This attribute tells us if this contract was initially bought as a forward starting contract.
-This should not be mistaken for is_forwarding_start attribute as that could change over time.
-
-=cut
-
-has starts_as_forward_starting => (
-    is      => 'ro',
-    default => 0,
-);
-
 #expiry_daily - Does this bet expire at close of the exchange?
-has [qw(
-        is_intraday
-        is_forward_starting
-        )
-    ] => (
+has is_intraday => (
     is         => 'ro',
     lazy_build => 1,
-    );
+);
 
 has value => (
     is       => 'rw',
@@ -274,13 +125,11 @@ has [qw(entry_tick current_tick)] => (
     lazy_build => 1,
 );
 
-has [qw(
-        current_spot)
-    ] => (
+has current_spot => (
     is         => 'rw',
     isa        => 'Maybe[PositiveNum]',
     lazy_build => 1,
-    );
+);
 
 =head2 for_sale
 
@@ -306,13 +155,6 @@ has build_parameters => (
     required => 1,
 );
 
-#fixed_expiry - A Boolean to determine if this bet has fixed or flexible expiries.
-
-has fixed_expiry => (
-    is      => 'ro',
-    default => 0,
-);
-
 has trading_calendar => (
     is      => 'ro',
     lazy    => 1,
@@ -331,12 +173,6 @@ has [qw(opposite_contract opposite_contract_for_sale)] => (
     is         => 'ro',
     isa        => 'BOM::Product::Contract',
     lazy_build => 1
-);
-
-has remaining_time => (
-    is         => 'ro',
-    isa        => 'Time::Duration::Concise',
-    lazy_build => 1,
 );
 
 has corporate_actions => (
@@ -370,11 +206,6 @@ has risk_profile => (
 
 # pricing_spot - The spot used in pricing.  It may have been adjusted for corporate actions.
 has pricing_spot => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-has [qw(barrier_category)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -426,13 +257,6 @@ has _applicable_economic_events => (
     builder => '_build_applicable_economic_events',
 );
 
-# This is needed to determine if a contract is newly priced
-# or it is repriced from an existing contract.
-# Milliseconds matters since UI is reacting much faster now.
-has _date_pricing_milliseconds => (
-    is => 'rw',
-);
-
 has _basis_tick => (
     is         => 'ro',
     isa        => 'Postgres::FeedDB::Spot::Tick',
@@ -447,29 +271,6 @@ has _pricing_args => (
     is         => 'ro',
     isa        => 'HashRef',
     lazy_build => 1,
-);
-
-=head1 ATTRIBUTES - From contract_types.yml
-
-=head2 id
-
-=head2 pricing_code
-
-=head2 display_name
-
-=head2 sentiment
-
-=head2 other_side_code
-
-=head2 payout_type
-
-=head2 payouttime
-
-=cut
-
-has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
-    is      => 'ro',
-    default => undef,
 );
 
 =head1 METHODS - Boolean checks
@@ -520,23 +321,6 @@ sub is_after_settlement {
     return 0;
 }
 
-=head2 is_atm_bet
-
-Is this contract meant to be ATM or non ATM at start?
-The status will not change throughout the lifetime of the contract due to differences in offerings for ATM and non ATM contracts.
-
-=cut
-
-sub is_atm_bet {
-    my $self = shift;
-
-    return 0 if $self->two_barriers;
-    # if not defined, it is non ATM
-    return 0 if not defined $self->supplied_barrier;
-    return 0 if $self->supplied_barrier ne 'S0P';
-    return 1;
-}
-
 =head2 is_expired
 
 Returns true if this contract is expired.
@@ -572,144 +356,6 @@ sub may_settle_automatically {
     return (not $self->get_time_to_settlement->seconds and not $self->is_valid_to_sell) ? 0 : 1;
 }
 
-=head1 METHODS - Proxied to L<BOM::Product::Contract::Category>
-
-Our C<category> attribute provides several helper methods:
-
-=cut
-
-has category => (
-    is      => 'ro',
-    isa     => 'bom_contract_category',
-    coerce  => 1,
-    handles => [qw(supported_expiries is_path_dependent allow_forward_starting two_barriers barrier_at_start)],
-);
-
-=head2 supported_expiries
-
-Which expiry durations we allow. Values can be:
-
-=over 4
-
-=item * intraday
-
-=item * daily
-
-=item * tick
-
-=back
-
-=cut
-
-=head2 supported_start_types
-
-(removed)
-
-=cut
-
-=head2 is_path_dependent
-
-True if this is a path-dependent contract.
-
-=cut
-
-=head2 allow_forward_starting
-
-True if we allow forward starting for this contract type.
-
-=cut
-
-=head2 two_barriers
-
-True if the contract has two barriers.
-
-=cut
-
-=head2 barrier_at_start
-
-The starting barrier value.
-
-=cut
-
-=head2 category_code
-
-The code for this category.
-
-=cut
-
-sub category_code {
-    my $self = shift;
-    return $self->category->code;
-}
-
-=head1 METHODS - Time-related
-
-=cut
-
-=head2 timeinyears
-
-Contract duration in years.
-
-=head2 timeindays
-
-Contract duration in days.
-
-=cut
-
-has [qw(
-        timeinyears
-        timeindays
-        )
-    ] => (
-    is         => 'ro',
-    init_arg   => undef,
-    isa        => 'Math::Util::CalculatedValue::Validatable',
-    lazy_build => 1,
-    );
-
-sub _build_timeinyears {
-    my $self = shift;
-
-    my $tiy = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'time_in_years',
-        description => 'Bet duration in years',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => 0,
-        minimum     => 0.000000001,
-    });
-
-    my $days_per_year = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'days_per_year',
-        description => 'We use a 365 day year.',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => 365,
-    });
-
-    $tiy->include_adjustment('add',    $self->timeindays);
-    $tiy->include_adjustment('divide', $days_per_year);
-
-    return $tiy;
-}
-
-sub _build_timeindays {
-    my $self = shift;
-
-    my $atid = $self->get_time_to_expiry({
-            from => $self->effective_start,
-        })->days;
-
-    my $tid = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'time_in_days',
-        description => 'Duration of this bet in days',
-        set_by      => 'BOM::Product::Contract',
-        minimum     => 0.000001,
-        maximum     => 730,
-        base_amount => $atid,
-    });
-
-    return $tid;
-}
-
 =head1 METHODS - Other
 
 =cut
@@ -724,17 +370,6 @@ sub debug_information {
     my $self = shift;
 
     return $self->pricing_engine->can('debug_info') ? $self->pricing_engine->debug_info : {};
-}
-
-=head2 ticks_to_expiry
-
-Number of ticks until expiry of this contract. Defaults to one more than tick_count,
-TODO JB - this is overridden in the digit/Asian contracts, any idea why?
-
-=cut
-
-sub ticks_to_expiry {
-    return shift->tick_count + 1;
 }
 
 =head2 entry_spot
@@ -761,29 +396,6 @@ sub entry_spot_epoch {
 
     my $entry_tick = $self->entry_tick or return undef;
     return $self->entry_tick->epoch;
-}
-
-=head2 effective_start
-
-=over 4
-
-=item * For backpricing, this is L</date_start>.
-
-=item * For a forward-starting contract, this is L</date_start>.
-
-=item * For all other states - i.e. active, non-expired contracts - this is L</date_pricing>.
-
-=back
-
-=cut
-
-sub effective_start {
-    my $self = shift;
-
-    return
-          ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_start
-        : ($self->date_pricing->is_after($self->date_start))  ? $self->date_pricing
-        :                                                       $self->date_start;
 }
 
 =head2 expiry_type
@@ -826,24 +438,6 @@ sub date_settlement {
     }
 
     return $date_settlement;
-}
-
-=head2 get_time_to_expiry
-
-Returns a TimeInterval to expiry of the bet. For a forward start bet, it will NOT return the bet lifetime, but the time till the bet expires.
-
-If you want to get the contract life time, use:
-
-    $contract->get_time_to_expiry({from => $contract->date_start})
-
-=cut
-
-sub get_time_to_expiry {
-    my ($self, $attributes) = @_;
-
-    $attributes->{'to'} = $self->date_expiry;
-
-    return $self->_get_time_to_end($attributes);
 }
 
 =head2 get_time_to_settlement
@@ -962,21 +556,6 @@ sub _check_is_intraday {
     return 1;
 }
 
-# Send in the correct 'to'
-sub _get_time_to_end {
-    my ($self, $attributes) = @_;
-
-    my $end_point = $attributes->{to};
-    my $from = ($attributes and $attributes->{from}) ? $attributes->{from} : $self->date_pricing;
-
-    # Don't worry about how long past expiry
-    # Let it die if they gave us nonsense.
-
-    return Time::Duration::Concise->new(
-        interval => max(0, $end_point->epoch - $from->epoch),
-    );
-}
-
 sub _add_error {
     my ($self, $err) = @_;
     $err->{set_by} = __PACKAGE__;
@@ -1034,12 +613,6 @@ sub _build_is_intraday {
 
 }
 
-sub _build_is_forward_starting {
-    my $self = shift;
-
-    return ($self->allow_forward_starting and $self->date_pricing->is_before($self->date_start)) ? 1 : 0;
-}
-
 sub _build_basis_tick {
     my $self = shift;
 
@@ -1072,16 +645,6 @@ sub _build_basis_tick {
     }
 
     return $basis_tick;
-}
-
-sub _build_remaining_time {
-    my $self = shift;
-
-    my $when = ($self->date_pricing->is_after($self->date_start)) ? $self->date_pricing : $self->date_start;
-
-    return $self->get_time_to_expiry({
-        from => $when,
-    });
 }
 
 sub _build_current_spot {
@@ -1356,19 +919,6 @@ sub _build_pricing_spot {
     return $initial_spot;
 }
 
-sub _build_barrier_category {
-    my $self = shift;
-
-    my $barrier_category;
-    if ($self->category->code eq 'callput') {
-        $barrier_category = ($self->is_atm_bet) ? 'euro_atm' : 'euro_non_atm';
-    } else {
-        $barrier_category = $LandingCompany::Offerings::BARRIER_CATEGORIES->{$self->category->code}->[0];
-    }
-
-    return $barrier_category;
-}
-
 sub _build_apply_market_inefficient_limit {
     my $self = shift;
 
@@ -1522,6 +1072,76 @@ sub extra_info {
     }
 
     return \@extra;
+}
+
+sub pricing_details {
+    my ($self, $action) = @_;
+    # IV is the pricing vol (high barrier vol if it is double barrier contract), iv_2 is the low barrier vol.
+    my $iv   = $self->pricing_vol;
+    my $iv_2 = 0;
+
+    if ($self->pricing_vol_for_two_barriers) {
+        $iv   = $self->pricing_vol_for_two_barriers->{high_barrier_vol};
+        $iv_2 = $self->pricing_vol_for_two_barriers->{low_barrier_vol};
+    }
+
+    # This way the order of the fields is well-defined.
+    my @comment_fields = map { defined $_->[1] ? @$_ : (); } (
+        [theo  => $self->theo_price],
+        [iv    => $iv],
+        [iv_2  => $iv_2],
+        [win   => $self->payout],
+        [div   => $self->q_rate],
+        [int   => $self->r_rate],
+        [delta => $self->delta],
+        [gamma => $self->gamma],
+        [vega  => $self->vega],
+        [theta => $self->theta],
+        [vanna => $self->vanna],
+        [volga => $self->volga],
+        [spot  => $self->current_spot],
+        @{$self->extra_info('arrayref')},
+    );
+
+    my $tick;
+    if ($action eq 'sell') {
+        # current tick is lazy, even though the realtime cache might have changed during the course of the transaction.
+        $tick = $self->current_tick;
+    } elsif ($action eq 'autosell_expired_contract') {
+        $tick = ($self->is_path_dependent and $self->hit_tick) ? $self->hit_tick : $self->exit_tick;
+    }
+
+    if ($tick) {
+        push @comment_fields, (exit_spot       => $tick->quote);
+        push @comment_fields, (exit_spot_epoch => $tick->epoch);
+        if ($self->two_barriers) {
+            push @comment_fields, (high_barrier => $self->high_barrier->as_absolute) if $self->high_barrier;
+            push @comment_fields, (low_barrier  => $self->low_barrier->as_absolute)  if $self->low_barrier;
+        } else {
+            push @comment_fields, (barrier => $self->barrier->as_absolute) if $self->barrier;
+        }
+    }
+
+    my $news_factor = $self->ask_probability->peek('news_factor');
+    if ($news_factor) {
+        push @comment_fields, news_fct => $news_factor->amount;
+        my $news_impact = $news_factor->peek('news_impact');
+        push @comment_fields, news_impact => $news_impact->amount if $news_impact;
+    }
+
+    if (@{$self->corporate_actions}) {
+        push @comment_fields,
+            corporate_action => 1,
+            actions          => join '|',
+            map { $_->{description} . ',' . $_->{modifier} . ',' . $_->{value} } @{$self->corporate_actions};
+    }
+
+    if ($self->entry_spot) {
+        push @comment_fields, (entry_spot       => $self->entry_spot);
+        push @comment_fields, (entry_spot_epoch => $self->entry_spot_epoch);
+    }
+
+    return \@comment_fields;
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.
