@@ -12,7 +12,8 @@
     },
     "subscribe": {
       "type": "integer",
-      "description": "Turning site status notifications on"
+      "pattern": "^(1|0)$",
+      "description": "Send this as 1 if you want to subscribe to server/website status"
     },
     "passthrough": {
       "type": "object",

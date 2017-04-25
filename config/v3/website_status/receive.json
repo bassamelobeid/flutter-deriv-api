@@ -34,11 +34,11 @@
         "site_status": {
           "type":"string",
           "pattern": "^(up|down)$",
-          "description": "Current status of the site. Up, Down or any else"
+          "description": "Current status of the site. up or down"
         },
         "message": {
           "type":"string",
-          "description": "Text for banner"
+          "description": "Text for site status banner. Contains problem description. Showed only if site_status is down"
         }
       }
     },

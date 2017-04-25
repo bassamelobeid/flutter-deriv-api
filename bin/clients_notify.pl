@@ -54,14 +54,13 @@ $redis->on(
 
 if ( $status || $message ) {
   my $is_on_value = $is_on;
-  print $redis->set($is_on_key, $is_on_value) if $is_on_value;
-  print "\n";
+  print $redis->set($is_on_key, $is_on_value), "\n" if $is_on_value;
+
   my $mess_obj = encode_json ( {
       site_status => $status  // "up",
       message     => $message // ""
   } );
-  print $redis->set($state_key, $mess_obj);
-  print "\n";
+  print $redis->set($state_key, $mess_obj), "\n";
 
   my $subscribes_count =  $redis->publish($channel_name, $mess_obj);
   print $subscribes_count . " workers subscribed\n";
