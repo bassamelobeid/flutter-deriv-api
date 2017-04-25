@@ -224,7 +224,7 @@ subtest 'longcode misbehaving for daily contracts' => sub {
     $c = produce_contract($bet_params);
     is $c->expiry_type, 'intraday';
     ok $c->is_intraday, 'date_pricing reaches intraday';
-    is_deeply($c->longcode, $expiry_daily_longcode);
+    is_deeply($c->longcode, $expiry_daily_longcode, 'longcode does not change');
 };
 
 subtest 'longcode of daily contracts crossing Thursday 21GMT expiring on Friday' => sub {
@@ -237,7 +237,7 @@ subtest 'longcode of daily contracts crossing Thursday 21GMT expiring on Friday'
     my $expiry_daily_longcode = $c2->longcode;
     $c2 = make_similar_contract($c, {date_pricing => $c->date_start->plus_time_interval('5h')});
     ok $c2->is_intraday, 'date_pricing reaches intraday';
-    is_deeply($c2->longcode, $expiry_daily_longcode);
+    is_deeply($c2->longcode, $expiry_daily_longcode, 'longcode does not change');
     is $c->expiry_type, 'daily';
 
 };
