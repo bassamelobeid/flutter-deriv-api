@@ -282,13 +282,16 @@ sub is_after_expiry {
     my $self = shift;
 
     if ($self->tick_expiry) {
-        return 1
-            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->_max_tick_expiry_duration->seconds));
-    } else {
-
-        return 1 if $self->get_time_to_expiry->seconds == 0;
+        # We've expired if we have an exit tick...
+        return 1 if $self->exit_tick;
+        # ... or if we're past our predefined max contract duration for tick trades
+        return 1 if $self->date_pricing->epoch - $self->date_start->epoch > $self->_max_tick_expiry_duration->seconds;
+        # otherwise, we're still active
+        return 0;
     }
-    return 0;
+
+    # Delegate to the same method in L<Finance::Contract>
+    return $self->next::method;
 }
 
 =head2 is_after_settlement
