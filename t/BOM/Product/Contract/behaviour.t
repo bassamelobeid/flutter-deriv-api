@@ -286,7 +286,6 @@ subtest 'longcode of index daily contracts' => sub {
     ok $c2->is_intraday, 'date_pricing reaches intraday';
     is_deeply($c2->longcode, $expiry_daily_longcode);
     is $c->expiry_type, 'daily';
-
 };
 
 subtest 'longcode of daily contract on early close day' => sub {

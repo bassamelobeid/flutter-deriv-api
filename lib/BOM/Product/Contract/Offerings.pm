@@ -20,13 +20,13 @@ use Cache::RedisDB;
 use List::MoreUtils qw(uniq first_index);
 
 use Finance::Asset::SubMarket;
+use Finance::Contract::Category;
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
 use LandingCompany::Offerings qw(get_offerings_with_filter);
 
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Product::Contract::Category;
 use BOM::Platform::Runtime;
 
 =head1 ATTRIBUTES
@@ -258,7 +258,7 @@ sub _build_tree {
                 };
                 foreach my $bc (
                     sort { $a->display_order <=> $b->display_order }
-                    map  { BOM::Product::Contract::Category->new($_) } get_offerings_with_filter(
+                    map  { Finance::Contract::Category->new($_) } get_offerings_with_filter(
                         BOM::Platform::Runtime->instance->get_offerings_config,
                         'contract_category',
                         {

@@ -39,7 +39,7 @@ for (0 .. 5) {
 subtest 'tick expiry up&down' => sub {
     my $args = {
         underlying   => 'R_100',
-        bet_type     => 'FLASHU',
+        bet_type     => 'CALL',
         date_start   => $one_day,
         date_pricing => $one_day->plus_time_interval('4s'),
         duration     => '5t',

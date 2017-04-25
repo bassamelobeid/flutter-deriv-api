@@ -47,12 +47,14 @@ subtest 'Proper form' => sub {
     );
     my @currencies = ('USD', 'EUR', 'RUR');    # Inexhaustive, incorrect list: just to be sure the currency is not accidentally hard-coded.
     foreach my $currency (@currencies) {
-        my $expected_standard_form = qr/Win payout if .*\.$/;    # Simplified standard form to which all should adhere.
-                                                                 # Can this be improved further?
+        my $expected_standard_form = qr/Win payout if .*\.$/;                                   # Simplified standard form to which all should adhere.
+                                                                                                # Can this be improved further?
+        my $exepcted_legacy_from   = qr/Legacy contract. No further information is available.$/;
         my $params;
         foreach my $shortcode (@shortcodes) {
             my $c = produce_contract($shortcode, $currency);
-            like($c->longcode->[0], $expected_standard_form, $shortcode . ' => long code form appears ok');
+            my $expected_longcode = $shortcode =~ /FLASH*|INTRA*|DOUBLE*/ ? $exepcted_legacy_from : $expected_standard_form;
+            like($c->longcode->[0], $expected_longcode, $shortcode . ' => long code form appears ok');
         }
     }
 

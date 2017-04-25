@@ -168,7 +168,7 @@ test_with_feed(
     [['2008-03-18 00:50:01', 96.938], ['2008-03-18 00:55:00', 97.013], ['2008-03-18 15:00:01', 98.359], ['2008-03-18 15:02:00', 98.318],],
     'Flash Down' => sub {
         my $bet_params = {
-            bet_type    => 'FLASHD',
+            bet_type    => 'PUT',
             date_start  => 1205801400,
             date_expiry => 1205801700,
             underlying  => 'frxUSDJPY',
@@ -194,7 +194,7 @@ test_with_feed(
     [['2008-03-18 00:50:01', 96.938], ['2008-03-18 00:55:00', 97.013], ['2008-03-18 15:00:01', 98.359], ['2008-03-18 15:02:00', 98.318],],
     'Flash Up' => sub {
         my $bet_params = {
-            bet_type    => 'FLASHU',
+            bet_type    => 'CALL',
             date_start  => 1205801400,
             date_expiry => 1205801700,
             underlying  => 'frxUSDJPY',
@@ -230,7 +230,7 @@ test_with_feed([
     'Double Down.' => sub {
 
         my $bet_params = {
-            bet_type     => 'DOUBLEDOWN',
+            bet_type     => 'PUT',
             date_expiry  => Date::Utility->new('18-Mar-08')->plus_time_interval('23h59m59s'),
             date_start   => 1204329600,
             date_pricing => Date::Utility->new('2008-03-20T17:00:00Z'),
@@ -273,7 +273,7 @@ test_with_feed([
     'Double Up.' => sub {
 
         my $bet_params = {
-            bet_type     => 'DOUBLEUP',
+            bet_type     => 'CALL',
             date_expiry  => Date::Utility->new('18-Mar-08')->plus_time_interval('23h59m59s'),
             date_start   => 1204329600,
             date_pricing => Date::Utility->new('2008-03-20T17:00:00Z'),
@@ -307,15 +307,17 @@ test_with_feed(
     'Intraday down.' => sub {
 
         my $bet_params = {
-            bet_type     => 'INTRADD',
-            date_start   => 1205856000,                                   # 16:00:01 16:00 098.23 098.23 98.2328 TDF
-            date_expiry  => 1205859600,                                   # 17:00:00 17:00 098.33 098.36 98.3491 GFT
-            date_pricing => Date::Utility->new('2008-03-19T15:30:00Z'),
-            underlying   => 'frxUSDJPY',
-            payout       => 1000,
-            market       => 'forex',
-            currency     => 'USD',
-            barrier      => 'S0P',
+            bet_type                   => 'PUT',
+            date_start                 => 1205856000,                                   # 16:00:01 16:00 098.23 098.23 98.2328 TDF
+            date_expiry                => 1205859600,                                   # 17:00:00 17:00 098.33 098.36 98.3491 GFT
+            date_pricing               => Date::Utility->new('2008-03-19T15:30:00Z'),
+            underlying                 => 'frxUSDJPY',
+            payout                     => 1000,
+            market                     => 'forex',
+            currency                   => 'USD',
+            barrier                    => 'S0P',
+            starts_as_forward_starting => 1,
+            is_forward_starting        => 1
         };
 
         my $bet = produce_contract($bet_params);
@@ -380,7 +382,7 @@ test_with_feed([
         is($bet->value, $bet->payout,
             'Bet outcome: win (for Client). Only wins if both entry and exit are the current market value, i.e. "previous tick"');
 
-        lives_ok { $bet = produce_contract('CALL_FRXUSDJPY_300_1205859000F_1205859600_S0P_0', 'USD'); } 'Create INTRADU from shortcode';
+        lives_ok { $bet = produce_contract('CALL_FRXUSDJPY_300_1205859000F_1205859600_S0P_0', 'USD'); } 'Create CALL from shortcode';
         lives_ok { $bet->is_expired } 'Expiry Check (from shortcode)';
         is($bet->is_expired,           1,      'Bet expired');
         is($bet->barrier->as_absolute, 98.353, 'Barrier is properly set based on current market value when creating Intraday Up from shortcode.');
@@ -398,7 +400,7 @@ test_with_feed([
     'Double up.' => sub {
 
         my $bet_params = {
-            bet_type     => 'DOUBLEUP',
+            bet_type     => 'CALL',
             date_expiry  => Date::Utility->new('18-Mar-08')->plus_time_interval('23h59m59s'),
             date_start   => 1204329600,
             date_pricing => Date::Utility->new('2008-03-20T17:00:00Z'),
@@ -1507,7 +1509,7 @@ test_with_feed(
 
         my $bet_params = {
             underlying => $underlying,
-            bet_type   => 'FLASHU',
+            bet_type   => 'CALL',
             currency   => 'USD',
             payout     => 100,
             date_start => $starting,
@@ -1527,13 +1529,15 @@ test_with_feed(
         my $starting   = $oft_used_date->epoch;
 
         my $bet_params = {
-            underlying => $underlying,
-            bet_type   => 'INTRADU',
-            currency   => 'USD',
-            payout     => 100,
-            date_start => $starting,
-            duration   => '30m',
-            barrier    => 'S0P',
+            underlying                 => $underlying,
+            bet_type                   => 'CALL',
+            currency                   => 'USD',
+            payout                     => 100,
+            date_start                 => $starting,
+            duration                   => '30m',
+            barrier                    => 'S0P',
+            is_forward_starting        => 1,
+            starts_as_forward_starting => 1
         };
 
         my $bet = produce_contract($bet_params);
@@ -1554,7 +1558,7 @@ test_with_feed([
 
         my $bet_params = {
             underlying => $underlying,
-            bet_type   => 'FLASHD',
+            bet_type   => 'PUT',
             currency   => 'USD',
             payout     => 100,
             date_start => $starting,
@@ -1581,7 +1585,7 @@ test_with_feed([
 
         my $bet_params = {
             underlying => $underlying,
-            bet_type   => 'FLASHD',
+            bet_type   => 'PUT',
             currency   => 'USD',
             payout     => 100,
             date_start => $starting,
@@ -1607,7 +1611,7 @@ test_with_feed([
 
         my $bet_params = {
             underlying => $underlying,
-            bet_type   => 'FLASHD',
+            bet_type   => 'PUT',
             currency   => 'USD',
             payout     => 100,
             date_start => $starting,

@@ -9,11 +9,12 @@ use Time::Duration::Concise;
 use List::Util qw(first);
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 
+use Finance::Contract::Category;
+use LandingCompany::Offerings qw(get_offerings_flyby);
+
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
-use LandingCompany::Offerings qw(get_offerings_flyby);
-use BOM::Product::Contract::Category;
 use BOM::Product::Contract::Strike;
 
 use base qw( Exporter );
@@ -61,8 +62,8 @@ sub available_contracts_for_symbol {
         my $cc = $o->{contract_category};
         my $bc = $o->{barrier_category};
 
-        my $cat = BOM::Product::Contract::Category->new($cc);
-        $o->{contract_category_display} = $cat->display_name;
+        my $cat = Finance::Contract::Category->new($cc);
+        $o->{contract_category_display} = localize($cat->display_name);
         $o->{contract_display}          = $o->{contract_display};
 
         if ($o->{start_type} eq 'forward') {

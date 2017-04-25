@@ -14,7 +14,7 @@ use Math::CDF qw(qnorm);
 use Format::Util::Numbers qw(roundnear);
 use LandingCompany::Offerings qw(get_offerings_flyby);
 
-use BOM::Product::Contract::Category;
+use Finance::Contract::Category;
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::RedisReplicated;
 use BOM::Platform::Runtime;
@@ -684,7 +684,7 @@ sub _get_offerings {
             %similar_args,
         });
 
-    return map { $_->{barriers} = BOM::Product::Contract::Category->new($_->{contract_category})->two_barriers ? 2 : 1; $_ }
+    return map { $_->{barriers} = Finance::Contract::Category->new($_->{contract_category})->two_barriers ? 2 : 1; $_ }
         grep { $supported_contract_types{$_->{contract_type}} } @offerings;
 }
 1;
