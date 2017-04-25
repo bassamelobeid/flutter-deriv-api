@@ -8,6 +8,7 @@ with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
 
 sub ticks_to_expiry {
+    # Add one since we want N ticks *after* the entry spot
     return shift->tick_count + 1;
 }
 
