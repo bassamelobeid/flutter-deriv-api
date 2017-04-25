@@ -10,6 +10,10 @@ use BOM::Platform::Context qw(localize);
 use BOM::Platform::RiskProfile;
 use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 
+override disable_trading_at_quiet_period => sub {
+    return 0;
+};
+
 has landing_company => (
     is      => 'ro',
     default => 'japan',
