@@ -9,7 +9,7 @@ use BOM::Product::Pricing::Engine::BlackScholes;
 sub code { return 'VANILLA_CALL'; }
 
 sub ticks_to_expiry {
-    return shift->tick_count + 1;
+    die 'no ticks_to_expiry on a VANILLA_CALL contract';
 }
 
 sub _build_pricing_engine_name {
