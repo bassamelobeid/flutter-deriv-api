@@ -523,7 +523,7 @@ sub _create_pricer_channel {
         and not exists $pricing_channel->{$redis_channel}
         and not $skip_redis_subscr)
     {
-        $pricing_channel->{$redis_channel}{subscription} =
+        $pricing_channel->{uuid}{$uuid}{subscription} =
             $c->pricing_subscriptions($redis_channel)->subscribe($c);
     }
 
