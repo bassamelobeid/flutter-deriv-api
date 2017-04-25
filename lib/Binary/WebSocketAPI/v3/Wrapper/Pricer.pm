@@ -523,7 +523,7 @@ sub _create_pricer_channel {
         and not exists $pricing_channel->{$redis_channel}
         and not $skip_redis_subscr)
     {
-        $pricing_channel->{$redis_channel}{subscription} =
+        $pricing_channel->{uuid}{$uuid}{subscription} =
             $c->pricing_subscriptions($redis_channel)->subscribe($c);
     }
 
@@ -564,8 +564,8 @@ sub process_bid_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
     my $type = 'proposal_open_contract';
 
-    for my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
-        next if ref $stash_data ne 'HASH';
+    my @stash_items = grep { ref($_) eq 'HASH' } values %{$pricing_channel->{$redis_channel}};
+    for my $stash_data (@stash_items) {
         my $results;
         unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data)) {
             my $passed_fields = $stash_data->{cache};
