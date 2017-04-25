@@ -98,7 +98,7 @@ subtest 'realtime report generation' => sub {
     for my $t (@times) {
         my ($start_time, $expiry_time) = @$t;
         my %bet_hash = (
-            bet_type          => 'FLASHU',
+            bet_type          => 'CALL',
             relative_barrier  => 'S0P',
             underlying_symbol => $test_symbol,
             payout_price      => 100,
@@ -164,8 +164,7 @@ subtest 'realtime report generation' => sub {
         email   => 'quants-market-data@regentmarkets.com',
         subject => qr/AutoSell Failures/
     );
-    ok(@msgs, "find the email");
-    $short_code =~ s/FLASHU/CALL/;
+    ok(@msgs,                                        "find the email");
     ok($msgs[0]{body} =~ /Shortcode:   $short_code/, "contract $short_code has error");
     my @errors = $msgs[0]{body} =~ /Shortcode:/g;
     is(scalar @errors, 1, "number of contracts that have errors ");

@@ -10,14 +10,14 @@ use Module::Load::Conditional qw( can_load );
 use Locale::Maketext::Extract;
 use YAML::XS qw(LoadFile);
 
+use Finance::Contract::Category;
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
-use LandingCompany::Offerings qw(get_offerings_with_filter get_all_contract_types);
+use LandingCompany::Offerings qw(get_offerings_with_filter);
 
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::MarketData qw(create_underlying_db);
-use BOM::Product::Contract::Category;
 use BOM::Product::Static;
 use BOM::Platform::Runtime;
 
@@ -171,7 +171,7 @@ sub add_contract_types {
 
     my $fh = $self->pot_append_fh;
 
-    my $contract_type_config = get_all_contract_types();
+    my $contract_type_config = Finance::Contract::Category::get_all_contract_types();
 
     foreach my $contract_type (keys %{$contract_type_config}) {
         next if ($contract_type eq 'INVALID');
@@ -193,7 +193,7 @@ sub add_contract_categories {
     my $self = shift;
 
     my $fh = $self->pot_append_fh;
-    my @all_categories = map { BOM::Product::Contract::Category->new($_) }
+    my @all_categories = map { Finance::Contract::Category->new($_) }
         get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'contract_category');
     foreach my $contract_category (@all_categories) {
         if ($contract_category->display_name) {
