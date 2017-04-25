@@ -342,7 +342,7 @@ TODO should be removed.
 
 =cut
 
-sub code { shift->bet_type }
+sub code { return shift->bet_type; }
 
 =head2 debug_information
 
