@@ -819,7 +819,7 @@ sub _create_error_message {
         $err_code    = $response->{error}->{code};
         $err_details = $response->{error}->{details};
         # in pricer_dameon everything happens in Eng to maximize the collisions.
-        $err_message = $c->l(@{$response->{error}->{message_to_client}});
+        $err_message = $c->l($response->{error}->{message_to_client});
     } else {
         $err_code    = 'InternalServerError';
         $err_message = 'Internal server error';
