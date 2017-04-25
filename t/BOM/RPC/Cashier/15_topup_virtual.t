@@ -185,12 +185,10 @@ my $contract_data = {
     exit_tick    => $tick2,
     barrier      => 'S0P',
 };
-my $contract = produce_contract($contract_data);
 my $txn_data = {
     client        => $test_client_vr,
-    contract      => $contract,
+    contract_parameters      => $contract_data,
     price         => $price,
-    payout        => $contract->payout,
     amount_type   => 'stake',
     purchase_date => $now->epoch,
 };
