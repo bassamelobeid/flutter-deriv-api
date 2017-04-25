@@ -13,6 +13,11 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Config;
 use BOM::Platform::Context qw(localize);
 
+has disable_trading_at_quiet_period => (
+    is      => 'ro',
+    default => 1,
+);
+
 has missing_market_data => (
     is      => 'rw',
     isa     => 'Bool',
@@ -733,6 +738,16 @@ sub _build_date_start_blackouts {
 
         if ($underlying->market->name eq 'indices' and not $self->is_intraday and not $self->is_atm_bet and $self->timeindays->amount <= 7) {
             push @periods, [$end_of_trading->minus_time_interval('1h')->epoch, $end_of_trading->epoch];
+        }
+    }
+
+    # disable contracts with duration < 5 hours at 21:00 to 23:00GMT due to quiet period.
+    if ($self->disable_trading_at_quiet_period) {
+        my $pricing_hour = $self->date_pricing->hour;
+        my $five_hour_in_years = 5 * 3600 / (86400 * 365);
+        if ($self->timeinyears->amount < $five_hour_in_years && ($pricing_hour >= 21 && $pricing_hour < 23)) {
+            my $pricing_date = $self->date_pricing->date;
+            push @periods, [map { Date::Utility->new($pricing_date)->plus_time_interval($_)->epoch } qw(21h 23h)];
         }
     }
 
