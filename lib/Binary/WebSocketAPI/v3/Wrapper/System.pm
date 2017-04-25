@@ -151,10 +151,12 @@ sub _forget_pricing_subscription {
                     delete $pricing_channel->{uuid}->{$uuid};
                     delete $pricing_channel->{$channel}->{$subchannel};
                     delete $pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd}->{$uuid};
+                    unless (keys %{$pricing_channel->{$channel}}) {
+                        stats_dec('bom_websocket_api.v_3.pricing_subscriptions.clients');
+                        delete $pricing_channel->{$channel};
+                    }
                 }
             }
-            delete $pricing_channel->{$channel}->{subscription};
-            stats_dec('bom_websocket_api.v_3.pricing_subscriptions.clients');
         }
         $c->stash('pricing_channel' => $pricing_channel);
     }
@@ -177,7 +179,9 @@ sub _forget_all_pricing_subscriptions {
         @$removed_ids = array_minus(@$removed_ids, @$proposal_array_proposal_ids);
         foreach my $uuid (@$removed_ids) {
             my $redis_channel = $pricing_channel->{uuid}->{$uuid}->{redis_channel};
-            if ($pricing_channel->{$redis_channel}) {
+            my $subchannel    = $pricing_channel->{uuid}->{$uuid}->{subchannel};
+            delete $pricing_channel->{$redis_channel}{$subchannel};
+            unless (keys %{$pricing_channel->{$redis_channel}}) {
                 stats_dec('bom_websocket_api.v_3.pricing_subscriptions.clients');
                 delete $pricing_channel->{$redis_channel};
             }
