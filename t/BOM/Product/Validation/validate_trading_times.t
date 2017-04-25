@@ -196,6 +196,7 @@ subtest 'intraday must be same day' => sub {
         barrier      => 'S0P',
         current_tick => $eod_tick,
     };
+    $bet_params->{disable_trading_at_quiet_period} = 0;
     my $c = produce_contract($bet_params);
     ok $c->underlying->intradays_must_be_same_day, 'intraday must be same day';
     ok $c->is_valid_to_buy, 'valid to buy';
