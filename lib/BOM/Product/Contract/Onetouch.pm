@@ -6,6 +6,10 @@ with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::AmericanExpiry';
 
 sub code { return 'ONETOUCH'; }
 
+sub ticks_to_expiry {
+    die 'no ticks_to_expiry on a ONETOUCH contract';
+}
+
 sub localizable_description {
     return +{
         daily                 => 'Win payout if [_3] touches [_6] through [_5].',

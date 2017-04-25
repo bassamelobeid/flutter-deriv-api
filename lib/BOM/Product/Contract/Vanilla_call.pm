@@ -8,6 +8,10 @@ use BOM::Product::Pricing::Engine::BlackScholes;
 
 sub code { return 'VANILLA_CALL'; }
 
+sub ticks_to_expiry {
+    return shift->tick_count + 1;
+}
+
 sub _build_pricing_engine_name {
     return 'BOM::Product::Pricing::Engine::BlackScholes';
 }

@@ -6,6 +6,10 @@ with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::AmericanExpiry';
 
 sub code { return 'RANGE'; }
 
+sub ticks_to_expiry {
+    die 'no ticks_to_expiry on a RANGE contract';
+}
+
 sub localizable_description {
     return +{
         daily                 => 'Win payout if [_3] stays between [_7] to [_6] through [_5].',

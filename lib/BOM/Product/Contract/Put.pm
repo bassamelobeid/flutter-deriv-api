@@ -7,6 +7,10 @@ with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 # Static methods
 sub code { return 'PUT'; }
 
+sub ticks_to_expiry {
+    return shift->tick_count + 1;
+}
+
 sub localizable_description {
     return +{
         tick                  => 'Win payout if [_3] after [plural,_5,%d tick,%d ticks] is strictly lower than [_6].',

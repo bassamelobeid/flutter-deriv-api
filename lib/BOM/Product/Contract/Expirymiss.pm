@@ -6,6 +6,10 @@ with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
 sub code { return 'EXPIRYMISS'; }
 
+sub ticks_to_expiry {
+    die 'no ticks_to_expiry on an EXPIRYMISS contract';
+}
+
 sub localizable_description {
     return +{
         daily                 => 'Win payout if [_3] ends outside [_7] to [_6] at [_5].',

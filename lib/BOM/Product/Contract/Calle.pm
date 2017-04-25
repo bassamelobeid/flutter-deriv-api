@@ -10,6 +10,10 @@ use BOM::Platform::Context qw(localize);
 
 sub code { return 'CALLE'; }
 
+sub ticks_to_expiry {
+    die 'no ticks_to_expiry on a CALLE contract';
+}
+
 sub localizable_description {
     return +{
         tick                  => 'Win payout if [_3] after [plural,_5,%d tick,%d ticks] is higher than or equal to [_6].',

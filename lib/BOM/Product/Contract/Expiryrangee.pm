@@ -8,6 +8,10 @@ use BOM::Platform::Context qw(localize);
 
 sub code { return 'EXPIRYRANGEE'; }
 
+sub ticks_to_expiry {
+    die 'no ticks_to_expiry on an EXPIRYRANGEE contract';
+}
+
 sub localizable_description {
     return +{
         daily                 => 'Win payout if [_3] ends on or between [_7] to [_6] at [_5].',
