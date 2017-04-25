@@ -13,6 +13,11 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Config;
 use BOM::Platform::Context qw(localize);
 
+has disable_trading_at_quiet_period => (
+    is      => 'ro',
+    default => 1,
+);
+
 has missing_market_data => (
     is      => 'rw',
     isa     => 'Bool',
@@ -450,6 +455,22 @@ sub _validate_start_and_expiry_date {
         [[$end_epoch],   $self->date_expiry_blackouts, "Contract may not expire between [_2] and [_3]"],
         [[$start_epoch, $end_epoch], $self->market_risk_blackouts, "Trading is not available from [_2] to [_3]"],
     );
+
+    # disable contracts with duration < 5 hours at 21:00 to 23:00GMT due to quiet period.
+    # did not inlcude this in date_start_blackouts because we want a different message to client.
+    if ($self->disable_trading_at_quiet_period and ($self->underlying->market->name eq 'forex' or $self->underlying->market->name eq 'commodities')) {
+        my $pricing_hour = $self->date_pricing->hour;
+        my $five_hour_in_years = 5 * 3600 / (86400 * 365);
+        if ($self->timeinyears->amount < $five_hour_in_years && ($pricing_hour >= 21 && $pricing_hour < 23)) {
+            my $pricing_date = $self->date_pricing->date;
+            push @blackout_checks,
+                [
+                [$start_epoch],
+                [[map { Date::Utility->new($pricing_date)->plus_time_interval($_)->epoch } qw(21h 23h)]],
+                'Trading on forex contracts with duration less than 5 hours is not available from [_2] to [_3]'
+                ];
+        }
+    }
 
     my @args = (localize($self->underlying->display_name));
 
