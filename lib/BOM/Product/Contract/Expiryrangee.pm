@@ -6,7 +6,6 @@ with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
 use BOM::Platform::Context qw(localize);
 
-
 sub ticks_to_expiry {
     die 'no ticks_to_expiry on an EXPIRYRANGEE contract';
 }

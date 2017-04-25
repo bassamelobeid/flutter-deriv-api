@@ -11,7 +11,6 @@ use BOM::Product::Pricing::Greeks::Digits;
 
 # Static methods.
 
-
 sub localizable_description {
     return +{
         tick => 'Win payout if the last digit of [_3] is [_6] after [plural,_5,%d tick,%d ticks].',
