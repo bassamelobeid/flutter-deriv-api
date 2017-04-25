@@ -864,13 +864,13 @@ map { BOM::Test::Data::Utility::UnitTestMarketData::create_doc('index', {symbol 
 
 my $data = [{
         underlying => 'AS51',
-        bet_type   => 'FLASHU',
+        bet_type   => 'CALL',
         date_start => 1428458885,
         duration   => 60,
     },
     {
         underlying => 'AS51',
-        bet_type   => 'FLASHU',
+        bet_type   => 'CALL',
         date_start => 1428458885,
         duration   => 30,
     },

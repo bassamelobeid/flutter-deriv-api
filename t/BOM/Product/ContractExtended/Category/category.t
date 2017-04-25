@@ -4,10 +4,10 @@ use warnings;
 use Test::Most tests => 7;
 use Test::Deep;
 use Test::Exception;
-use BOM::Product::Contract::Category;
+use Finance::Contract::Category;
 
 subtest 'Attribute test for unknown code' => sub {
-    my $unknown = BOM::Product::Contract::Category->new('unknown');
+    my $unknown = Finance::Contract::Category->new('unknown');
     is($unknown->code,          'unknown', 'Correct code');
     is($unknown->display_name,  undef,     'Correct display name');
     is($unknown->display_order, undef,     'Correct display order');
@@ -15,7 +15,7 @@ subtest 'Attribute test for unknown code' => sub {
 };
 
 subtest 'callput' => sub {
-    my $cat = BOM::Product::Contract::Category->new('callput');
+    my $cat = Finance::Contract::Category->new('callput');
     is $cat->code,          'callput';
     is $cat->display_order, 1;
     is $cat->display_name,  'Up/Down';
@@ -26,7 +26,7 @@ subtest 'callput' => sub {
 };
 
 subtest 'asian' => sub {
-    my $cat = BOM::Product::Contract::Category->new('asian');
+    my $cat = Finance::Contract::Category->new('asian');
     is $cat->code,          'asian';
     is $cat->display_order, 6;
     is $cat->display_name,  'Asians';
@@ -37,7 +37,7 @@ subtest 'asian' => sub {
 };
 
 subtest 'digits' => sub {
-    my $cat = BOM::Product::Contract::Category->new('digits');
+    my $cat = Finance::Contract::Category->new('digits');
     is $cat->code,          'digits';
     is $cat->display_order, 5;
     is $cat->display_name,  'Digits';
@@ -48,7 +48,7 @@ subtest 'digits' => sub {
 };
 
 subtest 'touchnotouch' => sub {
-    my $cat = BOM::Product::Contract::Category->new('touchnotouch');
+    my $cat = Finance::Contract::Category->new('touchnotouch');
     is $cat->code,          'touchnotouch';
     is $cat->display_order, 2;
     is $cat->display_name,  'Touch/No Touch';
@@ -59,7 +59,7 @@ subtest 'touchnotouch' => sub {
 };
 
 subtest 'endsinout' => sub {
-    my $cat = BOM::Product::Contract::Category->new('endsinout');
+    my $cat = Finance::Contract::Category->new('endsinout');
     is $cat->code,          'endsinout';
     is $cat->display_order, 3;
     is $cat->display_name,  'Ends In/Out';
@@ -70,7 +70,7 @@ subtest 'endsinout' => sub {
 };
 
 subtest 'staysinout' => sub {
-    my $cat = BOM::Product::Contract::Category->new('staysinout');
+    my $cat = Finance::Contract::Category->new('staysinout');
     is $cat->code,          'staysinout';
     is $cat->display_order, 4;
     is $cat->display_name,  'Stays In/Goes Out';

@@ -77,7 +77,7 @@ subtest 'payout' => sub {
         currency   => 'USD',
         payout     => $payout,
     });
-    cmp_ok $c->ask_price, '>', 5, 'Forex intraday atm contract price is not floor';
+    cmp_ok $c->ask_price, '>', 5, 'Forex intraday atm contract price is not floor to 20%';
 
     $c = produce_contract({
         bet_type   => 'CALL',
@@ -88,7 +88,123 @@ subtest 'payout' => sub {
         payout     => $payout,
     });
 
-    is $c->ask_price, $c->otm_threshold * $payout, 'Forex intraday non atm contract is floored to ' . $c->otm_threshold * $payout;
+    is $c->ask_price, 0.2 * $payout, 'Forex intraday non atm contract is floored to 20%';
+
+    $c = produce_contract({
+        bet_type   => 'CALL',
+        underlying => 'frxUSDJPY',
+        barrier    => 'S0P',
+        duration   => '6d',
+        currency   => 'USD',
+        payout     => $payout,
+    });
+    cmp_ok $c->ask_price,'>',  0.2 * $payout, 'Forex daily (< 7 days) atm contract price is floored to 20%';
+
+
+    $c = produce_contract({
+        bet_type   => 'CALL',
+        underlying => 'frxUSDJPY',
+        barrier    => 'S10000P',
+        duration   => '8d',
+        currency   => 'USD',
+        payout     => $payout,
+    });
+    cmp_ok $c->ask_price, '<', 0.2 * $payout, 'Forex daily (> 7 days) non atm contract price is not floor to 20%';
+
+
+    $c = produce_contract({
+        bet_type   => 'CALL',
+        underlying => 'frxUSDJPY',
+        barrier    => 'S10000P',
+        duration   => '6d',
+        currency   => 'USD',
+        payout     => $payout,
+    });
+    is $c->ask_price, 0.2 * $payout, 'Forex daily (< 7 days) non atm contract price is floored to 20%';
+
+    $c = produce_contract({
+        bet_type   => 'CALL',
+        underlying => 'frxXAUUSD',
+        barrier    => 'S10000P',
+        duration   => '8d',
+        currency   => 'USD',
+        payout     => $payout,
+    });
+    cmp_ok $c->ask_price, '<', 0.2 * $payout, 'Commodities daily (> 7 days) non atm contract price is not floor to 20%';
+
+    $c = produce_contract({
+        bet_type   => 'CALL',
+        underlying => 'frxXAUUSD',
+        barrier    => 'S10000P',
+        duration   => '1d',
+        currency   => 'USD',
+        payout     => $payout,
+    });
+    is $c->ask_price, 0.2 * $payout, 'Commodities daily (< 7 days) non atm contract price is floor to 20%';
+
+
+    $c = produce_contract({
+        bet_type   => 'CALL',
+        underlying => 'frxXAUUSD',
+        barrier    => 'S0P',
+        duration   => '1d',
+        currency   => 'USD',
+        payout     => $payout,
+    });
+    cmp_ok $c->ask_price, '>', 0.2 * $payout, 'Commodities daily (< 7 days) atm contract price is not floor to 20%';
+
+
+    $c = produce_contract({
+        bet_type   => 'CALL',
+        underlying => 'frxXAUUSD',
+        barrier    => 'S0P',
+        duration   => '8d',
+        currency   => 'USD',
+        payout     => $payout,
+    });
+    cmp_ok $c->ask_price, '>', 0.2 * $payout, 'Commodities daily (> 7 days) atm contract price is not floor to 20%';
+
+    $c = produce_contract({
+        bet_type   => 'CALL',
+        underlying => 'FCHI',
+        barrier    => 'S100000P',
+        duration   => '8d',
+        currency   => 'USD',
+        payout     => $payout,
+    });
+    cmp_ok $c->ask_price, '<', 0.2 * $payout, 'Index daily (> 7 days) non atm contract price is not floor to 20%';
+
+    $c = produce_contract({
+        bet_type   => 'CALL',
+        underlying => 'FCHI',
+        barrier    => 'S0P',
+        duration   => '1d',
+        currency   => 'USD',
+        payout     => $payout,
+    });
+    cmp_ok $c->ask_price, '>', 0.2 * $payout, 'Index daily (< 7 days) atm contract price is not floor to 20%';
+
+
+    $c = produce_contract({
+        bet_type   => 'CALL',
+        underlying => 'FCHI',
+        barrier    => 'S0P',
+        duration   => '8d',
+        currency   => 'USD',
+        payout     => $payout,
+    });
+    cmp_ok $c->ask_price, '>', 0.2 * $payout, 'Index daily (> 7 days) atm contract price is not floor to 20%';
+
+
+    $c = produce_contract({
+        bet_type   => 'CALL',
+        underlying => 'FCHI',
+        barrier    => 'S100000P',
+        duration   => '6d',
+        currency   => 'USD',
+        payout     => $payout,
+    });
+    is $c->ask_price, 0.2 * $payout, 'Index daily (< 7 days) non atm contract price is floored to 20%';
 
     $c = produce_contract({
         bet_type        => 'CALL',
@@ -99,29 +215,46 @@ subtest 'payout' => sub {
         payout          => 1000,
         landing_company => 'japan'
     });
-    is $c->ask_price, $c->otm_threshold * 1000,
-        'Forex intraday non atm contract for japan is floored to ' . $c->otm_threshold * 1000;
+
+    is $c->ask_price, 0.035 * 1000,
+        'Forex intraday non atm contract for japan is floored to 3.5%';
+
 
     $c = produce_contract({
-        bet_type   => 'CALL',
-        underlying => 'frxUSDJPY',
-        barrier    => 'S1000P',
-        duration   => '7d',
-        currency   => 'USD',
-        payout     => $payout,
+        bet_type        => 'CALL',
+        underlying      => 'frxUSDJPY',
+        barrier         => 'S50000P',
+        duration        => '2d',
+        currency        => 'JPY',
+        payout          => 1000,
+        landing_company => 'japan'
     });
-    cmp_ok $c->ask_price, '>', $c->otm_threshold * $payout, 'Forex daily non atm contract price is not floor';
+    is $c->ask_price, 0.035 * 1000,
+        'Forex daily non atm contract for japan is floored to 3.5%';
 
     $c = produce_contract({
         bet_type   => 'CALL',
         underlying => 'R_100',
-        barrier    => 'S100P',
+        barrier    => 'S10000P',
         duration   => '10m',
         currency   => 'USD',
         payout     => $payout,
     });
     
-    cmp_ok $c->ask_price, '>', $c->otm_threshold * $payout, 'VolIdx intraday non atm contract price is not floor.';
+    cmp_ok $c->ask_price, '>', 0.2 * $payout, 'VolIdx intraday non atm contract price is not floor 20%.';
+
+
+    $c = produce_contract({
+        bet_type   => 'CALL',
+        underlying => 'R_100',
+        barrier    => 'S10000P',
+        duration   => '1d',
+        currency   => 'USD',
+        payout     => $payout,
+    });
+    
+    cmp_ok $c->ask_price, '>', 0.2 * $payout, 'VolIdx daily non atm contract price is not floor 20%.';
+
 
 };
 
@@ -245,20 +378,45 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    is $c->payout, roundnear(0.01, $stake / $c->otm_threshold),
-        'Forex intraday non atm contract payout is floored to ' . $stake / $c->otm_threshold;
+
+    is $c->payout, roundnear(0.01, $stake / 0.2),
+        'Forex intraday non atm contract payout is floored to 20% ';
 
     $c = produce_contract({
         bet_type    => 'CALL',
         underlying  => 'frxUSDJPY',
         barrier     => 'S1000P',
-        duration    => '7d',
+        duration    => '8d',
         currency    => 'USD',
         amount_type => 'stake',
         amount      => $stake,
     });
     is $c->payout, roundnear(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
-        'Forex daily non atm contract payout is not floor';
+        'Forex daily (> 7 days) non atm contract payout is not floor';
+
+    $c = produce_contract({
+        bet_type    => 'CALL',
+        underlying  => 'frxUSDJPY',
+        barrier     => 'S0P',
+        duration    => '6d',
+        currency    => 'USD',
+        amount_type => 'stake',
+        amount      => $stake,
+    });
+    is $c->payout, roundnear(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
+        'Forex daily (< 7 days) atm contract payout is not floor';
+
+    $c = produce_contract({
+        bet_type    => 'CALL',
+        underlying  => 'frxUSDJPY',
+        barrier     => 'S500000P',
+        duration    => '6d',
+        currency    => 'USD',
+        amount_type => 'stake',
+        amount      => $stake,
+    });
+    is $c->payout, roundnear(0.01, $stake / 0.20),
+        'Forex daily (< 7 days) non atm contract payout is floor to 20%';
 
     $c = produce_contract({
         bet_type    => 'CALL',
