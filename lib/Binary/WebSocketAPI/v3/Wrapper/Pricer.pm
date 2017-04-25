@@ -565,8 +565,8 @@ sub process_bid_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
     my $type = 'proposal_open_contract';
 
-    for my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
-        next if ref $stash_data ne 'HASH';
+    my @stash_items = grep { ref($_) eq 'HASH' } values %{$pricing_channel->{$redis_channel}};
+    for my $stash_data (@stash_items) {
         my $results;
         unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data)) {
             my $passed_fields = $stash_data->{cache};
