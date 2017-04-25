@@ -89,7 +89,7 @@ subtest 'forward starting on random daily' => sub {
     ok $c->is_forward_starting;
     ok $c->_validate_start_and_expiry_date;
     my @err = $c->_validate_start_and_expiry_date;
-    is_deeply($err[0]->{message_to_client}, ['Trading is not available from [_1] to [_2]', '00:00:00', '00:01:00']);
+    is_deeply($err[0]->{message_to_client}, ['Trading is not available from [_1] to [_2].', '00:00:00', '00:01:00']);
     $c = produce_contract({
         bet_type     => 'CALL',
         underlying   => 'RDBULL',
@@ -119,7 +119,7 @@ subtest 'end of day blockout period for random nightly and random daily' => sub 
     });
     ok $c->_validate_start_and_expiry_date, 'throw error if contract ends in 1m before expiry';
     is_deeply(($c->_validate_start_and_expiry_date)[0]->{message_to_client},
-        ['Contract may not expire between [_1] and [_2]', '23:59:00', '23:59:59']);
+        ['Contract may not expire between [_1] and [_2].', '23:59:00', '23:59:59']);
     my $valid_c = make_similar_contract($c, {duration => '9m59s'});
     ok !$valid_c->_validate_start_and_expiry_date;
 };
