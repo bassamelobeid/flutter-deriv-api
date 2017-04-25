@@ -59,21 +59,16 @@ subtest 'Proper form' => sub {
     }
 
     # pick few random one to check complete equality
-    my $c = produce_contract($shortcodes[5], 'USD');
+    my $c = produce_contract($shortcodes[3], 'USD');
     is_deeply(
         $c->longcode,
         [
             'Win payout if [_3] is strictly higher than [_6] at [_5] after [_4].',
-            'USD', '100.00', 'NZD/USD', ['contract start time'], ['3 hours'], ['entry spot']]);
+            'USD', '100.00', 'EUR/USD', ['contract start time'], ['2 hours'], ['entry spot']]);
 
-    $c = produce_contract($shortcodes[15], 'EUR');
-    is_deeply(
-        $c->longcode,
-        [
-            'Win payout if [_3] is strictly higher than [_6] at [_5].',
-            'EUR', '100.00', 'ICICI Bank Ltd',
-            [], ['close on [_1]', '2014-09-19'],
-            ['entry spot']]);
+    $c = produce_contract($shortcodes[17], 'EUR');
+    is_deeply($c->longcode,
+        ['Win payout if [_3] touches [_6] through [_5].', 'EUR', '100.00', 'AUD/JPY', [], ['close on [_1]', '2014-03-21'], ['0.947']]);
 
     $c = produce_contract($shortcodes[-1], 'RUR');
     is_deeply(

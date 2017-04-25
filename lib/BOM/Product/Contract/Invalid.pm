@@ -34,7 +34,7 @@ sub _build_date_expiry {
 }
 
 sub longcode {
-    return BOM::Product::Static::get_longcodes()->{legacy_contract};
+    return [BOM::Product::Static::get_longcodes()->{legacy_contract}];
 }
 
 sub _price_from_prob        { die "Can not price legacy bet: " . shift->shortcode; }
