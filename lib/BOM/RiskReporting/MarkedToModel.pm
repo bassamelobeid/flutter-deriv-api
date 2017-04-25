@@ -160,7 +160,7 @@ sub generate {
             my $subject = 'Problem in MtM bets pricing';
 
             Email::Stuffer->from($from)->to($to)->subject($subject)->text_body($mail_content)->send
-                || warn "Send email from $from to $to subject $subject failed";
+                || warn "Sending email from $from to $to subject $subject failed";
         }
 
         $dbh->disconnect;
@@ -280,8 +280,10 @@ sub sell_expired_contracts {
         }
 
         if (BOM::Platform::Config::on_production()) {
-            Email::Stuffer->from('"Autosell" <autosell@regentmarkets.com>')->to('quants-market-data@regentmarkets.com')->subject($subject)
-                ->text_body(join("\n", @msg) . "\n\n")->send;
+            my $from = '"Autosell" <autosell@regentmarkets.com>';
+            my $to   = 'quants-market-data@regentmarkets.com';
+            Email::Stuffer->from($from)->to($to)->subject($subject)->text_body(join("\n", @msg) . "\n\n")->send
+                || warn "sending email from $from to $to subject $subject failed";
         }
     }
 
