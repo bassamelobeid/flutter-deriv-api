@@ -76,19 +76,6 @@ These would be passed to L<BOM::Product::ContractFactory/produce_contract>.
 
 =cut
 
-=head2 shortcode
-
-(optional) This can be provided when creating a contract from a shortcode. If not, it will
-be populated from the contract parameters.
-
-=cut
-
-has shortcode => (
-    is         => 'ro',
-    isa        => 'Str',
-    lazy_build => 1,
-);
-
 =head2 underlying
 
 The underlying asset, as a L<Finance::Asset::Underlying> instance.
@@ -811,31 +798,6 @@ sub _build_payout {
 
     $self->_set_price_calculator_params('payout');
     return $self->price_calculator->payout;
-}
-
-sub _build_shortcode {
-    my $self = shift;
-
-    my $shortcode_date_start = (
-               $self->is_forward_starting
-            or $self->starts_as_forward_starting
-    ) ? $self->date_start->epoch . 'F' : $self->date_start->epoch;
-    my $shortcode_date_expiry =
-          ($self->tick_expiry)  ? $self->tick_count . 'T'
-        : ($self->fixed_expiry) ? $self->date_expiry->epoch . 'F'
-        :                         $self->date_expiry->epoch;
-
-    my @shortcode_elements = ($self->code, $self->underlying->symbol, $self->payout, $shortcode_date_start, $shortcode_date_expiry);
-
-    if ($self->two_barriers) {
-        push @shortcode_elements, ($self->high_barrier->for_shortcode, $self->low_barrier->for_shortcode);
-    } elsif ($self->barrier and $self->barrier_at_start) {
-        # Having a hardcoded 0 for single barrier is dumb.
-        # We should get rid of this legacy
-        push @shortcode_elements, ($self->barrier->for_shortcode, 0);
-    }
-
-    return uc join '_', @shortcode_elements;
 }
 
 sub _build_entry_tick {
