@@ -455,6 +455,22 @@ sub _validate_start_and_expiry_date {
         [[$start_epoch, $end_epoch], $self->market_risk_blackouts, "Trading is not available from [_2] to [_3]"],
     );
 
+    # disable contracts with duration < 5 hours at 21:00 to 23:00GMT due to quiet period.
+    # did not inlcude this in date_start_blackouts because we want a different message to client.
+    if ($self->disable_trading_at_quiet_period and ($self->underlying->market->name eq 'forex' or $self->underlying->market->name eq 'commodities')) {
+        my $pricing_hour = $self->date_pricing->hour;
+        my $five_hour_in_years = 5 * 3600 / (86400 * 365);
+        if ($self->timeinyears->amount < $five_hour_in_years && ($pricing_hour >= 21 && $pricing_hour < 23)) {
+            my $pricing_date = $self->date_pricing->date;
+            push @blackout_checks,
+                [
+                [$start_epoch],
+                [[map { Date::Utility->new($pricing_date)->plus_time_interval($_)->epoch } qw(21h 23h)]],
+                'Trading on forex contracts with duration less than 5 hours is not available from [_2] to [_3]'
+                ];
+        }
+    }
+
     my @args = (localize($self->underlying->display_name));
 
     foreach my $blackout (@blackout_checks) {
@@ -738,16 +754,6 @@ sub _build_date_start_blackouts {
 
         if ($underlying->market->name eq 'indices' and not $self->is_intraday and not $self->is_atm_bet and $self->timeindays->amount <= 7) {
             push @periods, [$end_of_trading->minus_time_interval('1h')->epoch, $end_of_trading->epoch];
-        }
-    }
-
-    # disable contracts with duration < 5 hours at 21:00 to 23:00GMT due to quiet period.
-    if ($self->disable_trading_at_quiet_period) {
-        my $pricing_hour = $self->date_pricing->hour;
-        my $five_hour_in_years = 5 * 3600 / (86400 * 365);
-        if ($self->timeinyears->amount < $five_hour_in_years && ($pricing_hour >= 21 && $pricing_hour < 23)) {
-            my $pricing_date = $self->date_pricing->date;
-            push @periods, [map { Date::Utility->new($pricing_date)->plus_time_interval($_)->epoch } qw(21h 23h)];
         }
     }
 

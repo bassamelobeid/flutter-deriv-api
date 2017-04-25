@@ -325,7 +325,12 @@ subtest 'date start blackouts' => sub {
     $bet_params->{duration} = '4h59m59s';
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'invalid to buy';
-    like(($c->primary_validation_error)[0]->{message_to_client}, qr/Trading is not available from 21:00:00 to 23:00:00/, 'throws error');
+    like(($c->primary_validation_error)[0]->{message_to_client}, qr/Trading on forex contracts with duration less than 5 hours is not available from 21:00:00 to 23:00:00/, 'throws error');
+    $bet_params->{underlying} = 'R_100';
+    $bet_params->{duration} = '4h59m59s';
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy for random';
+    $bet_params->{underlying} = 'frxAUDUSD';
     $bet_params->{barrier} = 76.8999;
     $bet_params->{landing_company} = 'japan';
     $c = produce_contract($bet_params);
