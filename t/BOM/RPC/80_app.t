@@ -1,6 +1,11 @@
 use strict;
 use warnings;
+
+no indirect;
+
 use Test::More;
+use Test::Deep;
+use Test::Warnings qw(warnings);
 use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use TestHelper qw/create_test_user/;
@@ -187,15 +192,22 @@ ok $used_apps->[0]->{last_used}, 'last_used ok';
 $oauth = BOM::Database::Model::OAuth->new;    # re-connect db
 my $is_confirmed = $oauth->is_scope_confirmed($test_appid, $test_loginid);
 is $is_confirmed, 1, 'was confirmed';
-$c->call_ok(
-    'oauth_apps',
-    {
-        token => $access_token,
-        args  => {
-            oauth_apps => 1,
-            revoke_app => $test_appid,
-        },
-    })->has_no_system_error;
+cmp_deeply([
+        warnings {
+            $c->call_ok(
+                'oauth_apps',
+                {
+                    token => $access_token,
+                    args  => {
+                        oauth_apps => 1,
+                        revoke_app => $test_appid,
+                    },
+                })->has_no_system_error;
+        }
+    ],
+    bag(re(qr/Revoke called for app_id \Q$test_appid\E /)),
+    'have warning about revoke_app usage'
+);
 
 $oauth = BOM::Database::Model::OAuth->new;                                # re-connect db
 $is_confirmed = $oauth->is_scope_confirmed($test_appid, $test_loginid);

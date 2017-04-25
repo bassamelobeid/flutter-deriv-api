@@ -170,12 +170,12 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',
 });
 
-my $SPGSWT_start = Date::Utility->new('1413892500');
+my $R_100_start = Date::Utility->new('1413892500');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol        => 'SPGSWT',
-        recorded_date => $SPGSWT_start,
+        symbol        => 'R_100',
+        recorded_date => $R_100_start,
         rates         => {
             1   => 0.2,
             2   => 0.15,
@@ -191,37 +191,37 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'correlation_matrix',
     {
-        recorded_date => $SPGSWT_start,
+        recorded_date => $R_100_start,
     });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
-        symbol         => 'SPGSWT',
+        symbol         => 'R_100',
         spot_reference => 100,
-        recorded_date  => $SPGSWT_start,
+        recorded_date  => $R_100_start,
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol        => 'USD',
-        recorded_date => $SPGSWT_start,
+        recorded_date => $R_100_start,
     });
 
 my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'SPGSWT',
-    epoch      => $SPGSWT_start->epoch,
+    underlying => 'R_100',
+    epoch      => $R_100_start->epoch,
     quote      => 100
 });
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'SPGSWT',
-    epoch      => $SPGSWT_start->epoch + 30,
+    underlying => 'R_100',
+    epoch      => $R_100_start->epoch + 30,
     quote      => 111
 });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'SPGSWT',
-    epoch      => $SPGSWT_start->epoch + 14400,
+    underlying => 'R_100',
+    epoch      => $R_100_start->epoch + 14400,
     quote      => 80
 });
 
@@ -369,28 +369,24 @@ subtest $method => sub {
     is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{purchase_time})->epoch, 'transaction time correct for buy ');
     is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
     {
-        my $sell_tr = [grep {$_->{action_type} && $_->{action_type} eq 'sell'} @{$result->{transactions}}]->[0];
-        my $buy_tr  = [grep {$_->{action_type} && $_->{action_type} eq 'buy'} @{$result->{transactions}}]->[0];
+        my $sell_tr = [grep { $_->{action_type} && $_->{action_type} eq 'sell' } @{$result->{transactions}}]->[0];
+        my $buy_tr  = [grep { $_->{action_type} && $_->{action_type} eq 'buy' } @{$result->{transactions}}]->[0];
         is($sell_tr->{reference_id}, $buy_tr->{transaction_id}, 'transaction id is same for buy and sell ');
     }
 
-
     $contract_expired = produce_contract({
-        underlying   => create_underlying('SPGSWT'),
+        underlying   => 'R_100',
         bet_type     => 'CALL',
         currency     => 'USD',
         stake        => 100,
-        date_start   => $SPGSWT_start->epoch,
-        date_pricing => $SPGSWT_start->epoch,
+        date_start   => $R_100_start->epoch,
+        date_pricing => $R_100_start->epoch,
         date_expiry  => 1413906900,
         current_tick => $entry_tick,
         entry_tick   => $entry_tick,
         barrier      => 'S0P',
     });
-    $contract_expired->{shortcode} = 'CALL_SPGSWT_20_1413892500F_1413906900_S0P_0';
-
-    my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
-    $mock_contract->mock(app_markup_dollar_amount => sub { 0 });
+    $contract_expired->{shortcode} = 'CALL_R_100_20_1413892500F_1413906900_S0P_0';
 
     $txn = BOM::Transaction->new({
             client        => $test_client2,
@@ -398,7 +394,7 @@ subtest $method => sub {
             price         => 100,
             payout        => 200,
             amount_type   => 'stake',
-            purchase_date => $SPGSWT_start->epoch - 101,
+            purchase_date => $R_100_start->epoch - 101,
 
     });
     $txn->buy(skip_validation => 1);
@@ -412,7 +408,7 @@ subtest $method => sub {
             args  => {description => 1}});
     is(
         $result->{transactions}[0]{longcode},
-        'Win payout if SPGSWT is strictly higher than entry spot at 4 hours after 2014-10-21 11:55:00 GMT.',
+        'Win payout if Volatility 100 Index is strictly higher than entry spot at 4 hours after contract start time.',
         "if have short code, then we get more details"
     );
 
@@ -425,10 +421,10 @@ subtest $method => sub {
     cmp_ok(abs($result->{transactions}[1]{transaction_time} - Date::Utility->new($txns->[1]{purchase_time})->epoch),
         '<=', 2, 'transaction time correct for buy ');
     cmp_ok(abs($result->{transactions}[2]{transaction_time} - Date::Utility->new($txns->[2]{payment_time})->epoch),
-           '<=', 2, 'transaction time correct for payment');
+        '<=', 2, 'transaction time correct for payment');
     {
-        my $sell_tr = [grep {$_->{action_type} && $_->{action_type} eq 'sell'} @{$result->{transactions}}]->[0];
-        my $buy_tr  = [grep {$_->{action_type} && $_->{action_type} eq 'buy'} @{$result->{transactions}}]->[0];
+        my $sell_tr = [grep { $_->{action_type} && $_->{action_type} eq 'sell' } @{$result->{transactions}}]->[0];
+        my $buy_tr  = [grep { $_->{action_type} && $_->{action_type} eq 'buy' } @{$result->{transactions}}]->[0];
         is($sell_tr->{reference_id}, $buy_tr->{transaction_id}, 'transaction id is same for buy and sell ');
     }
 
