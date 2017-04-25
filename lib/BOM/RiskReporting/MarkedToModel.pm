@@ -155,8 +155,12 @@ sub generate {
 
         $dbh->commit;
         if ($mail_content and $self->send_alerts) {
-            Email::Stuffer->from('Risk reporting <risk-reporting@binary.com>')->to('Quants <x-quants-alert@binary.com>')
-                ->subject('Problem in MtM bets pricing')->text_body($mail_content)->send;
+            my $from    = 'Risk reporting <risk-reporting@binary.com>';
+            my $to      = 'Quants <x-quants-alert@binary.com>';
+            my $subject = 'Problem in MtM bets pricing';
+
+            Email::Stuffer->from($from)->to($to)->subject($subject)->text_body($mail_content)->send
+                || warn "Send email from $from to $to subject $subject failed";
         }
 
         $dbh->disconnect;
