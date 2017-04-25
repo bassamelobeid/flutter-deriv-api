@@ -19,7 +19,6 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Database::Model::AccessToken;
 use BOM::Database::ClientDB;
-use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Database::Model::OAuth;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
@@ -122,57 +121,3 @@ subtest 'Auth client' => sub {
 };
 
 done_testing();
-
-sub _create_contract {
-    my %args = @_;
-
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD);
-
-    my $client = $args{client};
-    #postpone 10 minutes to avoid conflicts
-    my $now = Date::Utility->new('2005-09-21 06:46:00');
-    $now = $now->plus_time_interval('10m');
-
-    my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 99,
-        underlying => 'R_50',
-    });
-
-    my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 52,
-        underlying => 'R_50',
-    });
-
-    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch,
-        underlying => 'R_50',
-    });
-    my $underlying    = create_underlying('R_50');
-    my $contract_data = {
-        underlying   => $underlying,
-        bet_type     => 'CALL',
-        currency     => 'USD',
-        stake        => 100,
-        date_start   => $now->epoch - 100,
-        date_expiry  => $now->epoch - 50,
-        current_tick => $tick,
-        entry_tick   => $old_tick1,
-        exit_tick    => $old_tick2,
-        barrier      => 'S0P',
-    };
-
-    my $contract = produce_contract($contract_data);
-    my $txn      = BOM::Transaction->new({
-        client        => $client,
-        contract      => $contract,
-        price         => 100,
-        payout        => $contract->payout,
-        amount_type   => 'stake',
-        purchase_date => $now->epoch - 101,
-    });
-
-    my $error = $txn->buy(skip_validation => 1);
-    die $error if $error;
-
-    return ($txn->contract_id, $contract);
-}
