@@ -12,10 +12,9 @@ use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
-has landing_company => (
-    is      => 'ro',
-    default => 'japan',
-);
+override disable_trading_at_quiet_period => sub {
+    return 0;
+};
 
 override _build_otm_threshold => sub {
     return 0.035;    # a fixed 3.5% for japan regardless of market though we only offer forex now.
@@ -25,6 +24,11 @@ override _build_otm_threshold => sub {
 override apply_market_inefficient_limit => sub {
     return 0;
 };
+
+has landing_company => (
+    is      => 'ro',
+    default => 'japan',
+);
 
 =head2 predefined_contracts
 

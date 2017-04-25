@@ -15,6 +15,11 @@ use BOM::Product::Static;
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
+has disable_trading_at_quiet_period => (
+    is      => 'ro',
+    default => 1,
+);
+
 has missing_market_data => (
     is      => 'rw',
     isa     => 'Bool',
@@ -452,6 +457,21 @@ sub _validate_start_and_expiry_date {
         [[$end_epoch],   $self->date_expiry_blackouts, $ERROR_MAPPING->{ContractExpiryNotAllowed}],
         [[$start_epoch, $end_epoch], $self->market_risk_blackouts, $ERROR_MAPPING->{TradingNotAvailable}],
     );
+
+    # disable contracts with duration < 5 hours at 21:00 to 23:00GMT due to quiet period.
+    # did not inlcude this in date_start_blackouts because we want a different message to client.
+    if ($self->disable_trading_at_quiet_period and ($self->underlying->market->name eq 'forex' or $self->underlying->market->name eq 'commodities')) {
+        my $pricing_hour = $self->date_pricing->hour;
+        my $five_hour_in_years = 5 * 3600 / (86400 * 365);
+        if ($self->timeinyears->amount < $five_hour_in_years && ($pricing_hour >= 21 && $pricing_hour < 23)) {
+            my $pricing_date = $self->date_pricing->date;
+            push @blackout_checks,
+                [
+                [$start_epoch],
+                [[map { Date::Utility->new($pricing_date)->plus_time_interval($_)->epoch } qw(21h 23h)]],
+                $ERROR_MAPPING->{TradingSuspendedSpecificHours}];
+        }
+    }
 
     foreach my $blackout (@blackout_checks) {
         my ($epochs, $periods, $message_to_client) = @{$blackout}[0 .. 2];
