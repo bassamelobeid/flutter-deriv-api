@@ -47,12 +47,13 @@ subtest 'validate client error message' => sub {
     my $mock_cal = Test::MockModule->new('Quant::Framework::TradingCalendar');
     $mock_cal->mock('is_open_at', sub { 0 });
 
+    my $now = Date::Utility->new;
     my $contract = produce_contract({
         underlying   => $underlying,
         bet_type     => 'CALL',
         currency     => $currency,
         payout       => 1000,
-        date_start   => Date::Utility->new,
+        date_start   => $now,
         duration     => '5d',
         current_tick => $tick,
         barrier      => 'S0P',
@@ -63,7 +64,7 @@ subtest 'validate client error message' => sub {
     my $transaction = BOM::Transaction->new({
         client        => $cr,
         contract      => $contract,
-        purchase_date => Date::Utility->new(),
+        purchase_date => $now,
     });
 
     my $error = $transaction->_is_valid_to_buy;
@@ -75,7 +76,7 @@ subtest 'validate client error message' => sub {
         bet_type     => 'CALL',
         currency     => $currency,
         payout       => 1000,
-        date_start   => Date::Utility->new,
+        date_start   => $now,
         duration     => '5d',
         current_tick => $tick,
         barrier      => 'S0P',
@@ -85,7 +86,7 @@ subtest 'validate client error message' => sub {
     $transaction = BOM::Transaction->new({
         client        => $mf,
         contract      => $contract,
-        purchase_date => Date::Utility->new(),
+        purchase_date => $now,
     });
 
     $error = $transaction->_is_valid_to_buy;
