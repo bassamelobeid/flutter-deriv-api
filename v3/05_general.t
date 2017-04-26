@@ -50,8 +50,7 @@ $t = $t->send_ok({
             req_id         => 3
         }})->message_ok;
 $res = decode_json($t->message->[1]);
-### Now it forwared
-### is $res->{error}->{code},              'ResponseTooLarge';
+
 is $res->{echo_req}->{website_status}, 1;
 is $res->{req_id}, 3;
 
