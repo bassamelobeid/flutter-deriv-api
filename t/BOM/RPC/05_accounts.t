@@ -8,7 +8,6 @@ use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use Encode qw(encode);
 use Email::Folder::Search;
-use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -25,17 +24,6 @@ use BOM::MarketData::Types;
 package MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use Test::Most;
-
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'economic_events',
-    {
-        events => [{
-                symbol       => 'USD',
-                release_date => 1,
-                source       => 'forexfactory',
-                impact       => 1,
-                event_name   => 'FOMC',
-            }]});
 
 sub tcall {
     my $self   = shift;
@@ -171,42 +159,14 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 my $R_100_start = Date::Utility->new('1413892500');
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'index',
-    {
-        symbol        => 'R_100',
-        recorded_date => $R_100_start,
-        rates         => {
-            1   => 0.2,
-            2   => 0.15,
-            7   => 0.18,
-            32  => 0.25,
-            62  => 0.2,
-            92  => 0.18,
-            186 => 0.1,
-            365 => 0.13,
-        },
 
-    });
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'correlation_matrix',
-    {
-        recorded_date => $R_100_start,
-    });
-
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'volsurface_moneyness',
-    {
-        symbol         => 'R_100',
-        spot_reference => 100,
-        recorded_date  => $R_100_start,
-    });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol        => 'USD',
         recorded_date => $R_100_start,
-    });
+    }
+);
 
 my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_100',
@@ -322,7 +282,7 @@ subtest $method => sub {
     );
     is($c->tcall($method, {token => $token1})->{count}, 0, 'have 0 statements if no default account');
 
-    my $contract_expired = produce_contract({
+    my $contract_expired = {
         underlying   => $underlying,
         bet_type     => 'CALL',
         currency     => 'USD',
@@ -333,13 +293,12 @@ subtest $method => sub {
         entry_tick   => $old_tick1,
         exit_tick    => $old_tick2,
         barrier      => 'S0P',
-    });
+    };
 
     my $txn = BOM::Transaction->new({
         client        => $test_client2,
-        contract      => $contract_expired,
+        contract_parameters      => $contract_expired,
         price         => 100,
-        payout        => $contract_expired->payout,
         amount_type   => 'stake',
         purchase_date => $now->epoch - 101,
     });
@@ -369,13 +328,14 @@ subtest $method => sub {
     is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{purchase_time})->epoch, 'transaction time correct for buy ');
     is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
     {
-        my $sell_tr = [grep { $_->{action_type} && $_->{action_type} eq 'sell' } @{$result->{transactions}}]->[0];
-        my $buy_tr  = [grep { $_->{action_type} && $_->{action_type} eq 'buy' } @{$result->{transactions}}]->[0];
+        my $sell_tr = [grep {$_->{action_type} && $_->{action_type} eq 'sell'} @{$result->{transactions}}]->[0];
+        my $buy_tr  = [grep {$_->{action_type} && $_->{action_type} eq 'buy'} @{$result->{transactions}}]->[0];
         is($sell_tr->{reference_id}, $buy_tr->{transaction_id}, 'transaction id is same for buy and sell ');
     }
 
-    $contract_expired = produce_contract({
-        underlying   => 'R_100',
+
+    $contract_expired = {
+        underlying   => create_underlying('R_100'),
         bet_type     => 'CALL',
         currency     => 'USD',
         stake        => 100,
@@ -385,12 +345,11 @@ subtest $method => sub {
         current_tick => $entry_tick,
         entry_tick   => $entry_tick,
         barrier      => 'S0P',
-    });
-    $contract_expired->{shortcode} = 'CALL_R_100_20_1413892500F_1413906900_S0P_0';
+    };
 
     $txn = BOM::Transaction->new({
             client        => $test_client2,
-            contract      => $contract_expired,
+            contract_parameters      => $contract_expired,
             price         => 100,
             payout        => 200,
             amount_type   => 'stake',
@@ -421,10 +380,10 @@ subtest $method => sub {
     cmp_ok(abs($result->{transactions}[1]{transaction_time} - Date::Utility->new($txns->[1]{purchase_time})->epoch),
         '<=', 2, 'transaction time correct for buy ');
     cmp_ok(abs($result->{transactions}[2]{transaction_time} - Date::Utility->new($txns->[2]{payment_time})->epoch),
-        '<=', 2, 'transaction time correct for payment');
+           '<=', 2, 'transaction time correct for payment');
     {
-        my $sell_tr = [grep { $_->{action_type} && $_->{action_type} eq 'sell' } @{$result->{transactions}}]->[0];
-        my $buy_tr  = [grep { $_->{action_type} && $_->{action_type} eq 'buy' } @{$result->{transactions}}]->[0];
+        my $sell_tr = [grep {$_->{action_type} && $_->{action_type} eq 'sell'} @{$result->{transactions}}]->[0];
+        my $buy_tr  = [grep {$_->{action_type} && $_->{action_type} eq 'buy'} @{$result->{transactions}}]->[0];
         is($sell_tr->{reference_id}, $buy_tr->{transaction_id}, 'transaction id is same for buy and sell ');
     }
 
@@ -467,7 +426,7 @@ subtest $method => sub {
     );
 
     #create a new transaction for test
-    my $contract_expired = produce_contract({
+    my $contract_expired = {
         underlying   => $underlying,
         bet_type     => 'CALL',
         currency     => 'USD',
@@ -478,13 +437,12 @@ subtest $method => sub {
         entry_tick   => $old_tick1,
         exit_tick    => $old_tick2,
         barrier      => 'S0P',
-    });
+    };
 
     my $txn = BOM::Transaction->new({
         client        => $test_client2,
-        contract      => $contract_expired,
+        contract_parameters      => $contract_expired,
         price         => 100,
-        payout        => $contract_expired->payout,
         amount_type   => 'stake',
         purchase_date => $now->epoch - 101,
     });
@@ -512,7 +470,7 @@ subtest $method => sub {
         'sell_time'      => Date::Utility->new($data->[1]{sell_time})->epoch,
         'buy_price'      => '100.00',
         'purchase_time'  => Date::Utility->new($data->[1]{purchase_time})->epoch,
-        'payout'         => sprintf("%.2f", $contract_expired->payout),
+        'payout'         => sprintf("%.2f", $txn->contract->payout),
         'app_id'         => undef
     };
     is_deeply($result->{transactions}[1], $expect0, 'result is correct');
