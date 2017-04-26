@@ -291,9 +291,10 @@ sub register {
             my $redis = $app->ws_redis_master;
             my @future_checks;
             for my $descr (@$limit_descriptors) {
-                my $f = Future::Mojo->new;
+                my $f         = Future::Mojo->new;
+                my $redis_key = $descr->{name} . $client_id;
                 $redis->incr(
-                    $descr->{name} . $client_id,
+                    $redis_key,
                     sub {
                         my ($redis, $error, $count) = @_;
                         if ($error) {
@@ -302,9 +303,12 @@ sub register {
                         }
                         if ($count == 1) {
                             $redis->expire(
-                                $descr->{name},
+                                $redis_key,
                                 $descr->{ttl},
                                 sub {
+                                    my ($redis, $error, $confirmation) = @_;
+                                    $app->log->warn("Expiration on $redis_key was not confirmed")
+                                        unless $confirmation;
                                     $f->done;
                                 });
                         } elsif ($count > $descr->{limit}) {
