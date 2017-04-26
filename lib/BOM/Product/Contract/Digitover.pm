@@ -9,8 +9,6 @@ use BOM::Product::Contract::Strike::Digit;
 use Pricing::Engine::Digits;
 use BOM::Product::Pricing::Greeks::Digits;
 
-sub code { return 'DIGITOVER'; }
-
 sub localizable_description {
     return +{
         tick => 'Win payout if the last digit of [_3] is strictly higher than [_6] after [_5] ticks.',

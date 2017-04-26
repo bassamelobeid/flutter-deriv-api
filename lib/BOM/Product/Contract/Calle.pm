@@ -8,7 +8,9 @@ use BOM::Platform::Context qw(localize);
 
 # Static methods
 
-sub code { return 'CALLE'; }
+sub ticks_to_expiry {
+    die 'no ticks_to_expiry on a CALLE contract';
+}
 
 sub localizable_description {
     return +{

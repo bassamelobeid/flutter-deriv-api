@@ -4,7 +4,9 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::AmericanExpiry';
 
-sub code { return 'NOTOUCH'; }
+sub ticks_to_expiry {
+    die 'no ticks_to_expiry on a NOTOUCH contract';
+}
 
 sub localizable_description {
     return +{
