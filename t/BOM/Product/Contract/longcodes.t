@@ -48,19 +48,23 @@ subtest 'Proper form' => sub {
         $c->longcode,
         [
             'Win payout if [_3] is strictly higher than [_6] at [_5] after [_4].',
-            'USD', '100.00', 'EUR/USD', ['contract start time'], ['2 hours'], ['entry spot']]);
+            'USD', '100.00', 'EUR/USD', ['contract start time'], ['3 hours'], ['entry spot']]);
 
-    $c = produce_contract($shortcodes[17], 'EUR');
-    is_deeply($c->longcode,
-        ['Win payout if [_3] touches [_6] through [_5].', 'EUR', '100.00', 'AUD/JPY', [], ['close on [_1]', '2014-03-21'], ['0.947']]);
+    $c = produce_contract($shortcodes[10], 'EUR');
+    is_deeply(
+        $c->longcode,
+        [
+            'Win payout if [_3] touches [_6] through [_5] after [_4].', 'EUR',
+            '100.00',                                                   'AUD/JPY',
+            ['contract start time'], ['10 hours'],
+            ['entry spot plus [plural,_1,%d pip, %d pips]', 300]]);
 
     $c = produce_contract($shortcodes[-1], 'RUR');
     is_deeply(
         $c->longcode,
         [
-            'Win payout if [_3] stays between [_7] to [_6] through [_5].',
-            'RUR', '100.00', 'AUD/JPY', [], ['close on [_1]', '2014-03-20'],
-            ['0.931'], ['0.910']]);
+            'Win payout if [_3] is strictly lower than [_6] at [_5] after [_4].',
+            'RUR', '100.00', 'EUR/NOK', ['contract start time'], ['12 minutes'], ['entry spot']]);
 };
 
 subtest 'longcode from params for forward starting' => sub {
