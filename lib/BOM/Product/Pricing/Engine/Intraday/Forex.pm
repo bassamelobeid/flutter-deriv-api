@@ -107,7 +107,7 @@ sub _build_base_probability {
         contract_type        => $self->bet->pricing_code,
         payout_type          => 'binary',
         underlying_symbol    => $self->bet->underlying->symbol,
-        long_term_prediction => $self->long_term_prediction,
+        long_term_prediction => $self->long_term_prediction->amount,
         %args,
     );
     return $engine->base_probability;
