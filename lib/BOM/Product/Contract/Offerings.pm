@@ -183,7 +183,7 @@ my %known_decorations = (
                           $self->c
                         ? $self->c->l('Opens late (at [_1])', $trading_calendar->opening_on($exchange, $when)->time_hhmm)
                         : 'Opens late (at ' . $trading_calendar->opening_on($exchange, $when)->time_hhmm . ')';
-                } elsif (my $holiday_desc = $trading_calendar->is_holiday_for($exchange, $when)) {
+                } elsif (my $holiday_desc = $trading_calendar->is_holiday_for($exchange->symbol, $when)) {
                     $message = $holiday_desc;
                 }
                 if ($message) {
