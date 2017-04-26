@@ -13,7 +13,7 @@ use BOM::Transaction;
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Backoffice::Request qw(request);
+use BOM::Backoffice::Request qw(request localize);
 use HTML::Entities;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -82,7 +82,7 @@ my $clientdb = BOM::Database::ClientDB->new({
 my $open_bets = $clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false']);
 foreach my $open_bet (@{$open_bets}) {
     my $bet = produce_contract($open_bet->{short_code}, $client->currency);
-    $open_bet->{description} = $bet->longcode;
+    $open_bet->{description} = localize($bet->longcode);
     if ($bet->may_settle_automatically) {
         $open_bet->{sale_price} = $bet->bid_price;
     }
