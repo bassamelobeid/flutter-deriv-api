@@ -68,12 +68,6 @@ sub is_valid_to_sell {
         $self->_add_error($self->opposite_contract_for_sale->primary_validation_error);
     }
 
-    if (scalar @{$self->corporate_actions}) {
-        $self->_add_error({
-            message           => "affected by corporate action [symbol: " . $self->underlying->symbol . "]",
-            message_to_client => localize("This contract is affected by corporate action."),
-        });
-    }
 
     my $passes_validation = $self->primary_validation_error ? 0 : 1;
     return $self->_report_validation_stats('sell', $passes_validation);
@@ -176,13 +170,6 @@ sub _validate_offerings {
     if (@$suspend_contract_types and first { $contract_code eq $_ } @{$suspend_contract_types}) {
         return {
             message           => "Trading suspended for contract type [code: " . $contract_code . "]",
-            message_to_client => $message_to_client,
-        };
-    }
-
-    if (first { $_ eq $underlying->symbol } @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions}) {
-        return {
-            message           => "Underlying trades suspended due to corporate actions [symbol: " . $underlying->symbol . "]",
             message_to_client => $message_to_client,
         };
     }

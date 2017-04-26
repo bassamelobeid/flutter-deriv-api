@@ -54,26 +54,6 @@ sub make_barrier {
         %$extra_params,,
     );
 
-    my @corporate_actions = @{$self->corporate_actions};
-    if (@corporate_actions) {
-        $self->initial_barrier($barrier);
-        foreach my $action (@corporate_actions) {
-            try {
-                $barrier = $barrier->adjust({
-                    modifier => $action->{modifier},
-                    amount   => $action->{value},
-                    reason   => $action->{type} . ': ' . $action->{description} . '(' . $action->{effective_date} . ')',
-                });
-            }
-            catch {
-                $self->_add_error({
-                    severity          => 100,
-                    message           => "Could not apply corporate action [error: $_]",
-                    message_to_client => localize('System problems prevent proper settlement at this time.'),
-                });
-            };
-        }
-    }
     return $barrier;
 }
 
