@@ -195,7 +195,7 @@ subtest 'check buy bet without quants bet params' => sub {
 subtest 'check if is valid to sell is correct for sold contracts' => sub {
     my $contract = produce_contract('UPORDOWN_FRXUSDJPY_2_1311834639_1311897600_784800_770900', 'USD', 1);
     is $contract->is_valid_to_sell, 0, 'correct valid to sell for contract already marked as sold';
-    is $contract->primary_validation_error->message_to_client, 'This contract has been sold.', 'This contract has been sold.';
+    is_deeply($contract->primary_validation_error->message_to_client, ['This contract has been sold.']);
 };
 
 done_testing();

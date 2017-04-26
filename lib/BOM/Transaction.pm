@@ -370,7 +370,7 @@ sub prepare_bet_data_for_buy {
         return Error::Base->cuss(
             -type              => 'ContractAlreadyStarted',
             -mesg              => "buy at $d1 too late for $d2 contract",
-            -message_to_client => BOM::Platform::Context::localize("Start time is in the past"));
+            -message_to_client => BOM::Platform::Context::localize("Start time is in the past."));
     }
 
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
@@ -1531,8 +1531,7 @@ sub _is_valid_to_buy {
         return Error::Base->cuss(
             -type              => 'InvalidtoBuy',
             -mesg              => $contract->primary_validation_error->message,
-            -message_to_client => $contract->primary_validation_error->message_to_client
-        );
+            -message_to_client => localize($contract->primary_validation_error->message_to_client));
     }
 
     return;
@@ -1546,8 +1545,7 @@ sub _is_valid_to_sell {
         return Error::Base->cuss(
             -type              => 'InvalidtoSell',
             -mesg              => $contract->primary_validation_error->message,
-            -message_to_client => $contract->primary_validation_error->message_to_client
-        );
+            -message_to_client => localize($contract->primary_validation_error->message_to_client));
     }
 
     return;
