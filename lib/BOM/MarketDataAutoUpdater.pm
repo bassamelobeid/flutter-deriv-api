@@ -3,7 +3,7 @@ package BOM::MarketDataAutoUpdater;
 use Moose;
 use Date::Utility;
 use BOM::Platform::Runtime;
-use Mail::Sender;
+use Email::Stuffer;
 use Cache::RedisDB;
 
 has report => (
@@ -54,20 +54,10 @@ sub run {
         Cache::RedisDB->set_nw('QUANT_EMAIL', 'FOREX_VOL', time);
 
         my $body = join "\n", (@successes, @failures, @errors);
-
-        my $sender = Mail::Sender->new({
-            smtp      => 'localhost',
-            from      => 'system@binary.com',
-            to        => 'quants-market-data@binary.com',
-            charset   => 'UTF-8',
-            b_charset => 'UTF-8',
-        });
         my $subject_line = ref $self;
         $subject_line .= ' failed. Number of failures is ' . $number_failures . '. Number of errors is ' . $error . '.';
-        return $sender->MailMsg({
-            subject => $subject_line,
-            msg     => $body
-        });
+
+        return Email::Stuffer->from('system@binary.com')->to('quants-market-data@binary.com')->subject($subject_line)->text_body($body)->send_or_die;
     }
 }
 
