@@ -14,6 +14,7 @@ use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
 use BOM::Platform::Config;
 use BOM::Market::DataDecimate;
+use Pricing::Engine::Intraday::Forex::Base;
 
 sub clone {
     my ($self, $changes) = @_;
@@ -95,18 +96,19 @@ has [qw(_delta_formula _vega_formula)] => (
 sub _build_base_probability {
     my $self = shift;
 
-    my $base_probability = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'base_probability',
-        description => 'BS pricing based on realized vols',
-        set_by      => __PACKAGE__,
-        base_amount => $self->formula->($self->_formula_args),
-        minimum     => 0,
-    });
+    my $pricing_args = $self->bet->_pricing_args;
 
-    $base_probability->include_adjustment('add', $self->intraday_delta_correction);
-    $base_probability->include_adjustment('add', $self->intraday_vega_correction);
+    my %args;
+    for my $k (qw(strikes spot discount_rate mu vol payouttime_code payout_type contract_type long_term_prediction underlying_symbol)) {
+        $args{$k} = $pricing_args->{$k} // do { warn "$k is from a method on $self"; $self->$k };
+    }
 
-    return $base_probability;
+    my $engine = Pricing::Engine::Intraday::Forex::Base->new(
+        ticks => $self->ticks_for_trend,
+        t     => $bet->_pricing_args->{t},
+        %args,
+    );
+    return $engine->base_probability;
 }
 
 =head1 probability
