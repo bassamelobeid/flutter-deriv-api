@@ -1,4 +1,4 @@
-use Test::Most 0.22 (tests => 15);
+use Test::Most 0.22 (tests => 16);
 use Test::Warn;
 use Test::MockModule;
 use File::Spec;
@@ -26,6 +26,19 @@ foreach my $language (@languages) {
         test_language_file($language);
     };
 }
+
+subtest "Test different input types" => sub {
+    is BOM::Platform::Context::localize('Barriers must be on either side of the spot.'), 'Barriers must be on either side of the spot.',
+        'Correct translation for basic string';
+    is BOM::Platform::Context::localize('Barrier must be at least [plural,_1,%d pip,%d pips] away from the spot.', 10),
+        'Barrier must be at least 10 pips away from the spot.', 'Correct translation for basic string with parameters';
+    is BOM::Platform::Context::localize(['Barrier must be at least [plural,_1,%d pip,%d pips] away from the spot.', 10]),
+        'Barrier must be at least 10 pips away from the spot.', 'Correct translation for array ref with string and simple params';
+    is BOM::Platform::Context::localize(
+        ['Win payout if [_3] is strictly lower than [_6] at [_5].', 'USD', '166.27', 'GBP/USD', [], ['close on [_1]', '2016-05-13'], ['entry spot']]),
+        'Win payout if GBP/USD is strictly lower than entry spot at close on 2016-05-13.',
+        'Correct translation for array ref with string and nested params';
+};
 
 sub test_language_file {
     my $language = shift;
