@@ -18,7 +18,6 @@ use Math::Function::Interpolator;
 
 use BOM::Market::DataDecimate;
 use List::Util qw(max);
-use BOM::Platform::Context qw(request localize);
 use Format::Util::Numbers qw( roundnear );
 use Time::Duration::Concise;
 

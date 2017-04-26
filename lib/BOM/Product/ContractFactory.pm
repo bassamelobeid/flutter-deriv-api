@@ -13,7 +13,6 @@ use Try::Tiny;
 
 use Postgres::FeedDB::Spot::Tick;
 
-use BOM::Platform::Context qw(request);
 use BOM::Product::Categorizer;
 use BOM::Product::ContractFactory::Parser qw(
     shortcode_to_parameters
