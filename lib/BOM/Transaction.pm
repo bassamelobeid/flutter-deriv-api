@@ -368,7 +368,7 @@ sub prepare_bet_data_for_buy {
         return Error::Base->cuss(
             -type              => 'ContractAlreadyStarted',
             -mesg              => "buy at $d1 too late for $d2 contract",
-            -message_to_client => BOM::Platform::Context::localize("Start time is in the past"));
+            -message_to_client => BOM::Platform::Context::localize("Start time is in the past."));
     }
 
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
