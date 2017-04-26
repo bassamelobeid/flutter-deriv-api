@@ -90,10 +90,10 @@ my $args = {
 my ($txn);
 subtest 'contract creation and purchase' => sub {
     $txn = BOM::Transaction->new({
-        client        => $client,
-        contract_parameters      => $args,
-        purchase_date => $now,
-        amount_type   => 'payout'
+        client              => $client,
+        contract_parameters => $args,
+        purchase_date       => $now,
+        amount_type         => 'payout'
     });
     $txn->price($txn->contract->ask_price);
 

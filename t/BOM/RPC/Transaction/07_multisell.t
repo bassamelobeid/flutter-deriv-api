@@ -101,7 +101,7 @@ for (@cl) {
 
 is 0 + @token, 4, 'got 4 tokens';
 
-my (undef, $txn) = Test::BOM::RPC::Contract::prepare_contract(client=>$clm);
+my (undef, $txn) = Test::BOM::RPC::Contract::prepare_contract(client => $clm);
 
 my $result = BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts({
         client              => $clm,
@@ -131,7 +131,7 @@ sleep 1;
 my $shortcode = $result->[0]->{shortcode};
 
 my $mock_txn = Test::MockModule->new('BOM::Transaction');
-$mock_txn->mock(_is_valid_to_sell => sub {  });
+$mock_txn->mock(_is_valid_to_sell => sub { });
 
 $result = BOM::RPC::v3::Transaction::sell_contract_for_multiple_accounts({
         client => $clm,

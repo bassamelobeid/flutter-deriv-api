@@ -38,7 +38,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             }]});
 
 subtest 'buy' => sub {
-    my (undef, $txn) = Test::BOM::RPC::Contract::prepare_contract(client=>$client);
+    my (undef, $txn) = Test::BOM::RPC::Contract::prepare_contract(client => $client);
 
     my $result = $c->call_ok(
         'buy_contract_for_multiple_accounts',
