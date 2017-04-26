@@ -3,6 +3,9 @@ package BOM::Product::Static;
 use strict;
 use warnings;
 
+use Exporter qw( import );
+our @EXPORT_OK = qw(get_error_mapping get_longcodes);
+
 =head1 NAME
 
 BOM::Product::Static

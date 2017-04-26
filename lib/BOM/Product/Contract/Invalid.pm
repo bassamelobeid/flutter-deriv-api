@@ -3,7 +3,7 @@ package BOM::Product::Contract::Invalid;
 use Moose;
 extends 'BOM::Product::Contract';
 
-use BOM::Product::Static;
+use BOM::Product::Static qw/get_longcodes/;
 
 sub value     { return 0 }
 sub is_legacy { return 1 }
@@ -34,7 +34,7 @@ sub _build_date_expiry {
 }
 
 sub longcode {
-    return [BOM::Product::Static::get_longcodes()->{legacy_contract}];
+    return [get_longcodes()->{legacy_contract}];
 }
 
 sub _price_from_prob        { die "Can not price legacy bet: " . shift->shortcode; }

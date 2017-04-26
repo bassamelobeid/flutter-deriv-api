@@ -4,7 +4,7 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::AmericanExpiry';
 
-use BOM::Product::Static;
+use BOM::Product::Static qw/get_longcodes/;
 
 sub ticks_to_expiry {
     die 'no ticks_to_expiry on a ONETOUCH contract';
@@ -12,9 +12,9 @@ sub ticks_to_expiry {
 
 sub localizable_description {
     return +{
-        daily                 => BOM::Product::Static::get_longcodes()->{onetouch_daily},
-        intraday              => BOM::Product::Static::get_longcodes()->{onetouch_intraday},
-        intraday_fixed_expiry => BOM::Product::Static::get_longcodes()->{onetouch_intraday_fixed_expiry},
+        daily                 => get_longcodes()->{onetouch_daily},
+        intraday              => get_longcodes()->{onetouch_intraday},
+        intraday_fixed_expiry => get_longcodes()->{onetouch_intraday_fixed_expiry},
     };
 }
 

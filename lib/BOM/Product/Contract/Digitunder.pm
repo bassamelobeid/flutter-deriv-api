@@ -6,13 +6,13 @@ with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
 use Pricing::Engine::Digits;
 
-use BOM::Product::Static;
+use BOM::Product::Static qw/get_longcodes/;
 use BOM::Product::Contract::Strike::Digit;
 use BOM::Product::Pricing::Greeks::Digits;
 
 sub localizable_description {
     return +{
-        tick => BOM::Product::Static::get_longcodes()->{digitunder_tick},
+        tick => get_longcodes()->{digitunder_tick},
     };
 }
 

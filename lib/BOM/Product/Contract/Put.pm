@@ -4,7 +4,7 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-use BOM::Product::Static;
+use BOM::Product::Static qw/get_longcodes/;
 
 sub ticks_to_expiry {
     # Add one since we want N ticks *after* the entry spot
@@ -13,10 +13,10 @@ sub ticks_to_expiry {
 
 sub localizable_description {
     return +{
-        tick                  => BOM::Product::Static::get_longcodes()->{put_tick},
-        daily                 => BOM::Product::Static::get_longcodes()->{put_daily},
-        intraday              => BOM::Product::Static::get_longcodes()->{put_intraday},
-        intraday_fixed_expiry => BOM::Product::Static::get_longcodes()->{put_intraday_fixed_expiry},
+        tick                  => get_longcodes()->{put_tick},
+        daily                 => get_longcodes()->{put_daily},
+        intraday              => get_longcodes()->{put_intraday},
+        intraday_fixed_expiry => get_longcodes()->{put_intraday_fixed_expiry},
     };
 }
 
