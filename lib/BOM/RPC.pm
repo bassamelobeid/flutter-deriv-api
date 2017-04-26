@@ -289,7 +289,6 @@ sub startup {
         ],
 
         ['active_symbols',        \&BOM::RPC::v3::MarketDiscovery::active_symbols],
-        ['get_corporate_actions', \&BOM::RPC::v3::MarketDiscovery::get_corporate_actions],
 
         ['authorize', \&BOM::RPC::v3::Authorize::authorize],
         ['logout',    \&BOM::RPC::v3::Authorize::logout],
