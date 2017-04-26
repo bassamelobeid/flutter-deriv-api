@@ -11,7 +11,6 @@ use Date::Utility;
 
 use Data::Dumper;
 use Quant::Framework::Utils::Test;
-use Quant::Framework::CorporateAction;
 use Quant::Framework::StorageAccessor;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
