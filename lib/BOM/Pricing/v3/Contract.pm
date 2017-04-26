@@ -156,7 +156,7 @@ sub _get_ask {
                 $message_to_client = localize($pve->message_to_client);
                 $code              = "ContractBuyValidationError";
             } else {
-                $message_to_client = localize("Cannot validate contract");
+                $message_to_client = localize("Cannot validate contract.");
                 $code              = "ContractValidationError";
             }
 
@@ -643,15 +643,15 @@ sub trading_times {
     for my $mkt (@$tree) {
         my $market = {};
         push @{$trading_times->{markets}}, $market;
-        $market->{name} = $mkt->{name};
+        $market->{name} = localize($mkt->{name});
         for my $sbm (@{$mkt->{submarkets}}) {
             my $submarket = {};
             push @{$market->{submarkets}}, $submarket;
-            $submarket->{name} = $sbm->{name};
+            $submarket->{name} = localize($sbm->{name});
             for my $ul (@{$sbm->{underlyings}}) {
                 push @{$submarket->{symbols}},
                     {
-                    name       => $ul->{name},
+                    name       => localize($ul->{name}),
                     symbol     => $ul->{symbol},
                     settlement => $ul->{settlement} || '',
                     events     => $ul->{events},
