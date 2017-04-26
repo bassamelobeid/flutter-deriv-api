@@ -368,8 +368,6 @@ sub get_bid {
         }
 
         $response->{is_settleable}         = $contract->is_settleable;
-        $response->{has_corporate_actions} = 1
-            if @{$contract->corporate_actions};
 
         $response->{barrier_count} = $contract->two_barriers ? 2 : 1;
         if ($contract->entry_spot) {
