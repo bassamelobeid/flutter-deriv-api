@@ -48,7 +48,7 @@ subtest 'validate client error message' => sub {
     my $mock_cal = Test::MockModule->new('Quant::Framework::TradingCalendar');
     $mock_cal->mock('is_open_at', sub { 0 });
 
-    my $now = Date::Utility->new;
+    my $now      = Date::Utility->new;
     my $contract = produce_contract({
         underlying   => $underlying,
         bet_type     => 'CALL',

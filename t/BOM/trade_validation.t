@@ -1055,10 +1055,10 @@ subtest 'Purchase Sell Contract' => sub {
     $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
 
     $bpt = BOM::Transaction->new({
-        client      => $client,
-        contract    => $contract,
-        price       => $contract->ask_price,
-        amount_type => 'payout',
+        client        => $client,
+        contract      => $contract,
+        price         => $contract->ask_price,
+        amount_type   => 'payout',
         purchase_date => Date::Utility->new($now->epoch - 1),
     });
 

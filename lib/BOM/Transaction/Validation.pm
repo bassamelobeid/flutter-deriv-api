@@ -147,14 +147,11 @@ sub _validate_sell_pricing_adjustment {
     ### TODO: move out from validation
     $self->transaction->requested_price($amount);
     $self->transaction->recomputed_price($recomputed_amount);
-    my $recomputed        = $contract->bid_probability->amount;
-    my $move              = $recomputed - $requested;
-    my $slippage          = $recomputed_amount - $amount;
-    my $commission_markup = 0;
-    if (not $contract->is_expired) {
-        $commission_markup = $contract->opposite_contract->commission_markup->amount || 0;
-    }
-    my $allowed_move = $commission_markup * 0.5;
+    my $recomputed   = $contract->bid_probability->amount;
+    my $move         = $recomputed - $requested;
+    my $slippage     = $recomputed_amount - $amount;
+    my $allowed_move = $contract->allowed_slippage;
+
     $allowed_move = 0 if $recomputed == 1;
 
     return if $move == 0;
@@ -196,14 +193,11 @@ sub _validate_trade_pricing_adjustment {
     # set the requested price and recomputed price to be store in db
     $self->transaction->requested_price($self->transaction->price);
     $self->transaction->recomputed_price($contract->ask_price);
-    my $recomputed        = $contract->ask_probability->amount;
-    my $move              = $requested - $recomputed;
-    my $slippage          = $self->transaction->price - $contract->ask_price;
-    my $commission_markup = 0;
-    if (not $contract->is_expired) {
-        $commission_markup = $contract->commission_markup->amount || 0;
-    }
-    my $allowed_move = ($contract->category->code eq 'digits') ? $commission_markup : ($commission_markup * 0.5);
+    my $recomputed   = $contract->ask_probability->amount;
+    my $move         = $requested - $recomputed;
+    my $slippage     = $self->transaction->price - $contract->ask_price;
+    my $allowed_move = $contract->allowed_slippage;
+
     $allowed_move = 0 if $recomputed == 1;
     my ($amount, $recomputed_amount) =
         $amount_type eq 'payout' ? ($self->transaction->price, $contract->ask_price) : ($self->transaction->payout, $contract->payout);
