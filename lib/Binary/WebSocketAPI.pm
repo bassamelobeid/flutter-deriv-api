@@ -187,8 +187,6 @@ sub startup {
         ['payout_currencies', {stash_params => [qw/ token landing_company_name /]}],
         ['landing_company'],
         ['landing_company_details'],
-        ['get_corporate_actions'],
-
         [
             'balance',
             {
