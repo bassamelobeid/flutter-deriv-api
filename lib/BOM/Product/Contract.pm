@@ -32,6 +32,7 @@ and defines the standard API for interacting with those contracts.
 =cut
 
 use Moose;
+extends 'Finance::Contract';
 
 require UNIVERSAL::require;
 
@@ -52,14 +53,13 @@ use LandingCompany::Offerings qw(get_contract_specifics);
 use VolSurface::Empirical;
 
 use BOM::Platform::Chronicle;
-use BOM::Platform::Context qw(localize);
 use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::Product::Contract::Category;
 use BOM::Platform::RiskProfile;
 use BOM::Product::Types;
 use BOM::Product::ContractValidator;
 use BOM::Product::ContractPricer;
+use BOM::Product::Static;
 
 # require Pricing:: modules to avoid circular dependency problems.
 UNITCHECK {
@@ -69,11 +69,7 @@ UNITCHECK {
     use BOM::Product::Pricing::Greeks::BlackScholes;
 }
 
-my @date_attribute = (
-    isa        => 'date_object',
-    lazy_build => 1,
-    coerce     => 1,
-);
+my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
 =head1 ATTRIBUTES - Construction
 
@@ -81,43 +77,6 @@ These are the parameters we expect to be passed when constructing a new contract
 These would be passed to L<BOM::Product::ContractFactory/produce_contract>.
 
 =cut
-
-=head2 currency
-
-The currency in which this contract is bought/sold, e.g. C<USD>.
-
-=cut
-
-has currency => (
-    is       => 'ro',
-    isa      => 'Str',
-    required => 1,
-);
-
-=head2 payout
-
-Payout amount value, see L</currency>.
-
-=cut
-
-has payout => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
-);
-
-=head2 shortcode
-
-(optional) This can be provided when creating a contract from a shortcode. If not, it will
-be populated from the contract parameters.
-
-=cut
-
-has shortcode => (
-    is         => 'ro',
-    isa        => 'Str',
-    lazy_build => 1,
-);
 
 =head2 underlying
 
@@ -132,134 +91,15 @@ has underlying => (
     handles => [qw(market pip_size)],
 );
 
-=head1 ATTRIBUTES - Date-related
-
-=cut
-
-=head2 date_expiry
-
-When the contract expires.
-
-=cut
-
-has date_expiry => (
-    is => 'rw',
-    @date_attribute,
-);
-
-=head2 date_pricing
-
-The date at which we're pricing the contract. Provide C< undef > to indicate "now".
-
-=cut
-
-has date_pricing => (
-    is => 'ro',
-    @date_attribute,
-);
-
-=head2 date_start
-
-For American contracts, defines when the contract starts.
-
-For Europeans, this is used to determine the barrier when the requested barrier is relative.
-
-=cut
-
-has date_start => (
-    is => 'ro',
-    @date_attribute,
-);
-
-=head2 duration
-
-The requested contract duration, specified as a string indicating value with units.
-The unit is provided as a single character suffix:
-
-=over 4
-
-=item * t - ticks
-
-=item * s - seconds
-
-=item * m - minutes
-
-=item * h - hours
-
-=item * d - days
-
-=back
-
-Examples would be C< 5t > for 5 ticks, C< 3h > for 3 hours.
-
-=cut
-
-has duration => (is => 'ro');
-
-=head1 ATTRIBUTES - Tick-expiry contracts
-
-These are only valid for tick contracts.
-
-=cut
-
-=head2 tick_expiry
-
-A boolean that indicates if a contract expires after a pre-specified number of ticks.
-
-=cut
-
-has tick_expiry => (
-    is      => 'ro',
-    default => 0,
-);
-
-=head2 prediction
-
-Prediction (for tick trades) is what client predicted would happen.
-
-=cut
-
-has prediction => (
-    is  => 'ro',
-    isa => 'Maybe[Num]',
-);
-
-=head2 tick_count
-
-Number of ticks in this trade.
-
-=cut
-
-has tick_count => (
-    is  => 'ro',
-    isa => 'Maybe[Num]',
-);
-
 =head1 ATTRIBUTES - Other
 
 =cut
 
-=head2 starts_as_forward_starting
-
-This attribute tells us if this contract was initially bought as a forward starting contract.
-This should not be mistaken for is_forwarding_start attribute as that could change over time.
-
-=cut
-
-has starts_as_forward_starting => (
-    is      => 'ro',
-    default => 0,
-);
-
 #expiry_daily - Does this bet expire at close of the exchange?
-has [qw(
-        is_intraday
-        is_forward_starting
-        )
-    ] => (
+has is_intraday => (
     is         => 'ro',
     lazy_build => 1,
-    );
+);
 
 has value => (
     is       => 'rw',
@@ -273,13 +113,11 @@ has [qw(entry_tick current_tick)] => (
     lazy_build => 1,
 );
 
-has [qw(
-        current_spot)
-    ] => (
+has current_spot => (
     is         => 'rw',
     isa        => 'Maybe[PositiveNum]',
     lazy_build => 1,
-    );
+);
 
 =head2 for_sale
 
@@ -305,13 +143,6 @@ has build_parameters => (
     required => 1,
 );
 
-#fixed_expiry - A Boolean to determine if this bet has fixed or flexible expiries.
-
-has fixed_expiry => (
-    is      => 'ro',
-    default => 0,
-);
-
 has calendar => (
     is      => 'ro',
     isa     => 'Quant::Framework::TradingCalendar',
@@ -323,12 +154,6 @@ has [qw(opposite_contract opposite_contract_for_sale)] => (
     is         => 'ro',
     isa        => 'BOM::Product::Contract',
     lazy_build => 1
-);
-
-has remaining_time => (
-    is         => 'ro',
-    isa        => 'Time::Duration::Concise',
-    lazy_build => 1,
 );
 
 has corporate_actions => (
@@ -366,11 +191,6 @@ has pricing_spot => (
     lazy_build => 1,
 );
 
-has [qw(barrier_category)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 has exit_tick => (
     is         => 'ro',
     lazy_build => 1,
@@ -392,14 +212,6 @@ has apply_market_inefficient_limit => (
     lazy_build => 1,
 );
 
-#A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.
-has _max_tick_expiry_duration => (
-    is      => 'ro',
-    isa     => 'time_interval',
-    default => '5m',
-    coerce  => 1,
-);
-
 # We can't import the Factory directly as that goes circular.
 # On the other hand, we want some extra info which only
 # becomes available here. So, require the Factory to give us
@@ -418,13 +230,6 @@ has _applicable_economic_events => (
     builder => '_build_applicable_economic_events',
 );
 
-# This is needed to determine if a contract is newly priced
-# or it is repriced from an existing contract.
-# Milliseconds matters since UI is reacting much faster now.
-has _date_pricing_milliseconds => (
-    is => 'rw',
-);
-
 has _basis_tick => (
     is         => 'ro',
     isa        => 'Postgres::FeedDB::Spot::Tick',
@@ -439,29 +244,6 @@ has _pricing_args => (
     is         => 'ro',
     isa        => 'HashRef',
     lazy_build => 1,
-);
-
-=head1 ATTRIBUTES - From contract_types.yml
-
-=head2 id
-
-=head2 pricing_code
-
-=head2 display_name
-
-=head2 sentiment
-
-=head2 other_side_code
-
-=head2 payout_type
-
-=head2 payouttime
-
-=cut
-
-has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
-    is      => 'ro',
-    default => undef,
 );
 
 =head1 METHODS - Boolean checks
@@ -481,13 +263,16 @@ sub is_after_expiry {
     my $self = shift;
 
     if ($self->tick_expiry) {
-        return 1
-            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->_max_tick_expiry_duration->seconds));
-    } else {
-
-        return 1 if $self->get_time_to_expiry->seconds == 0;
+        # We've expired if we have an exit tick...
+        return 1 if $self->exit_tick;
+        # ... or if we're past our predefined max contract duration for tick trades
+        return 1 if $self->date_pricing->epoch - $self->date_start->epoch > $self->_max_tick_expiry_duration->seconds;
+        # otherwise, we're still active
+        return 0;
     }
-    return 0;
+
+    # Delegate to the same method in L<Finance::Contract>
+    return $self->next::method;
 }
 
 =head2 is_after_settlement
@@ -510,23 +295,6 @@ sub is_after_settlement {
     }
 
     return 0;
-}
-
-=head2 is_atm_bet
-
-Is this contract meant to be ATM or non ATM at start?
-The status will not change throughout the lifetime of the contract due to differences in offerings for ATM and non ATM contracts.
-
-=cut
-
-sub is_atm_bet {
-    my $self = shift;
-
-    return 0 if $self->two_barriers;
-    # if not defined, it is non ATM
-    return 0 if not defined $self->supplied_barrier;
-    return 0 if $self->supplied_barrier ne 'S0P';
-    return 1;
 }
 
 =head2 is_expired
@@ -564,147 +332,19 @@ sub may_settle_automatically {
     return (not $self->get_time_to_settlement->seconds and not $self->is_valid_to_sell) ? 0 : 1;
 }
 
-=head1 METHODS - Proxied to L<BOM::Product::Contract::Category>
-
-Our C<category> attribute provides several helper methods:
-
-=cut
-
-has category => (
-    is      => 'ro',
-    isa     => 'bom_contract_category',
-    coerce  => 1,
-    handles => [qw(supported_expiries is_path_dependent allow_forward_starting two_barriers barrier_at_start)],
-);
-
-=head2 supported_expiries
-
-Which expiry durations we allow. Values can be:
-
-=over 4
-
-=item * intraday
-
-=item * daily
-
-=item * tick
-
-=back
-
-=cut
-
-=head2 supported_start_types
-
-(removed)
-
-=cut
-
-=head2 is_path_dependent
-
-True if this is a path-dependent contract.
-
-=cut
-
-=head2 allow_forward_starting
-
-True if we allow forward starting for this contract type.
-
-=cut
-
-=head2 two_barriers
-
-True if the contract has two barriers.
-
-=cut
-
-=head2 barrier_at_start
-
-The starting barrier value.
-
-=cut
-
-=head2 category_code
-
-The code for this category.
-
-=cut
-
-sub category_code {
-    my $self = shift;
-    return $self->category->code;
-}
-
-=head1 METHODS - Time-related
-
-=cut
-
-=head2 timeinyears
-
-Contract duration in years.
-
-=head2 timeindays
-
-Contract duration in days.
-
-=cut
-
-has [qw(
-        timeinyears
-        timeindays
-        )
-    ] => (
-    is         => 'ro',
-    init_arg   => undef,
-    isa        => 'Math::Util::CalculatedValue::Validatable',
-    lazy_build => 1,
-    );
-
-sub _build_timeinyears {
-    my $self = shift;
-
-    my $tiy = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'time_in_years',
-        description => 'Bet duration in years',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => 0,
-        minimum     => 0.000000001,
-    });
-
-    my $days_per_year = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'days_per_year',
-        description => 'We use a 365 day year.',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => 365,
-    });
-
-    $tiy->include_adjustment('add',    $self->timeindays);
-    $tiy->include_adjustment('divide', $days_per_year);
-
-    return $tiy;
-}
-
-sub _build_timeindays {
-    my $self = shift;
-
-    my $atid = $self->get_time_to_expiry({
-            from => $self->effective_start,
-        })->days;
-
-    my $tid = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'time_in_days',
-        description => 'Duration of this bet in days',
-        set_by      => 'BOM::Product::Contract',
-        minimum     => 0.000001,
-        maximum     => 730,
-        base_amount => $atid,
-    });
-
-    return $tid;
-}
-
 =head1 METHODS - Other
 
 =cut
+
+=head2 code
+
+Alias for L</bet_type>.
+
+TODO should be removed.
+
+=cut
+
+sub code { return shift->bet_type; }
 
 =head2 debug_information
 
@@ -716,17 +356,6 @@ sub debug_information {
     my $self = shift;
 
     return $self->pricing_engine->can('debug_info') ? $self->pricing_engine->debug_info : {};
-}
-
-=head2 ticks_to_expiry
-
-Number of ticks until expiry of this contract. Defaults to one more than tick_count,
-TODO JB - this is overridden in the digit/Asian contracts, any idea why?
-
-=cut
-
-sub ticks_to_expiry {
-    return shift->tick_count + 1;
 }
 
 =head2 entry_spot
@@ -753,29 +382,6 @@ sub entry_spot_epoch {
 
     my $entry_tick = $self->entry_tick or return undef;
     return $self->entry_tick->epoch;
-}
-
-=head2 effective_start
-
-=over 4
-
-=item * For backpricing, this is L</date_start>.
-
-=item * For a forward-starting contract, this is L</date_start>.
-
-=item * For all other states - i.e. active, non-expired contracts - this is L</date_pricing>.
-
-=back
-
-=cut
-
-sub effective_start {
-    my $self = shift;
-
-    return
-          ($self->date_pricing->is_after($self->date_expiry)) ? $self->date_start
-        : ($self->date_pricing->is_after($self->date_start))  ? $self->date_pricing
-        :                                                       $self->date_start;
 }
 
 =head2 expiry_type
@@ -820,24 +426,6 @@ sub date_settlement {
     return $date_settlement;
 }
 
-=head2 get_time_to_expiry
-
-Returns a TimeInterval to expiry of the bet. For a forward start bet, it will NOT return the bet lifetime, but the time till the bet expires.
-
-If you want to get the contract life time, use:
-
-    $contract->get_time_to_expiry({from => $contract->date_start})
-
-=cut
-
-sub get_time_to_expiry {
-    my ($self, $attributes) = @_;
-
-    $attributes->{'to'} = $self->date_expiry;
-
-    return $self->_get_time_to_end($attributes);
-}
-
 =head2 get_time_to_settlement
 
 Like get_time_to_expiry, but for settlement time rather than expiry.
@@ -858,7 +446,7 @@ sub get_time_to_settlement {
 
 =head2 longcode
 
-Returns the (localized) longcode for this contract.
+Returns the longcode for this contract.
 
 May throw an exception if an invalid expiry type is requested for this contract type.
 
@@ -872,33 +460,35 @@ sub longcode {
     my $forward_starting_contract = ($self->starts_as_forward_starting or $self->is_forward_starting);
     my $expiry_type = $self->tick_expiry ? 'tick' : $self->_check_is_intraday($self->date_start) == 0 ? 'daily' : 'intraday';
     $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $forward_starting_contract and $self->fixed_expiry;
-    my $localizable_description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
+    my $description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
+    my @longcode = ($description, $self->currency, to_monetary_number_format($self->payout), $self->underlying->display_name);
 
-    my ($when_end, $when_start);
+    my ($when_end, $when_start, $generic_mapping) = ([], [], BOM::Product::Static::get_generic_mapping());
     if ($expiry_type eq 'intraday_fixed_expiry') {
-        $when_end   = $self->date_expiry->datetime . ' GMT';
-        $when_start = '';
+        $when_end = [$self->date_expiry->datetime . ' GMT'];
     } elsif ($expiry_type eq 'intraday') {
-        $when_end = $self->get_time_to_expiry({from => $self->date_start})->as_string;
-        $when_start = ($forward_starting_contract) ? $self->date_start->db_timestamp . ' GMT' : localize('contract start time');
+        $when_end = [$self->get_time_to_expiry({from => $self->date_start})->as_string];
+        $when_start = ($forward_starting_contract) ? [$self->date_start->db_timestamp . ' GMT'] : [$generic_mapping->{contract_start_time}];
     } elsif ($expiry_type eq 'daily') {
         my $close = $self->underlying->calendar->closing_on($self->date_expiry);
         if ($close and $close->epoch != $self->date_expiry->epoch) {
-            $when_end = $self->date_expiry->datetime . ' GMT';
+            $when_end = [$self->date_expiry->datetime . ' GMT'];
         } else {
-            $when_end = localize('close on [_1]', $self->date_expiry->date);
+            $when_end = [$generic_mapping->{close_on}, $self->date_expiry->date];
         }
-        $when_start = '';
     } elsif ($expiry_type eq 'tick') {
-        $when_end   = $self->tick_count;
-        $when_start = localize('first tick');
+        $when_end   = [$self->tick_count];
+        $when_start = [$generic_mapping->{first_tick}];
     }
-    my $payout = to_monetary_number_format($self->payout);
-    my @barriers = ($self->two_barriers) ? ($self->high_barrier, $self->low_barrier) : ($self->barrier);
-    @barriers = map { $_->display_text if $_ } @barriers;
+    push @longcode, ($when_start, $when_end);
 
-    return localize($localizable_description,
-        ($self->currency, $payout, localize($self->underlying->display_name), $when_start, $when_end, @barriers));
+    if ($self->two_barriers) {
+        push @longcode, ($self->high_barrier->display_text, $self->low_barrier->display_text);
+    } elsif ($self->barrier) {
+        push @longcode, $self->barrier->display_text;
+    }
+
+    return \@longcode;
 }
 
 =head2 allowed_slippage
@@ -916,6 +506,11 @@ sub allowed_slippage {
 }
 
 # INTERNAL METHODS
+
+#A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.
+sub _max_tick_expiry_duration {
+    return Time::Duration::Concise->new(interval => '5m');
+}
 
 sub _offering_specifics {
     my $self = shift;
@@ -950,21 +545,6 @@ sub _check_is_intraday {
     return 0 if $closing->is_same_as($self->date_expiry) and $contract_duration >= $daily_trading_seconds;
 
     return 1;
-}
-
-# Send in the correct 'to'
-sub _get_time_to_end {
-    my ($self, $attributes) = @_;
-
-    my $end_point = $attributes->{to};
-    my $from = ($attributes and $attributes->{from}) ? $attributes->{from} : $self->date_pricing;
-
-    # Don't worry about how long past expiry
-    # Let it die if they gave us nonsense.
-
-    return Time::Duration::Concise->new(
-        interval => max(0, $end_point->epoch - $from->epoch),
-    );
 }
 
 sub _add_error {
@@ -1024,17 +604,11 @@ sub _build_is_intraday {
 
 }
 
-sub _build_is_forward_starting {
-    my $self = shift;
-
-    return ($self->allow_forward_starting and $self->date_pricing->is_before($self->date_start)) ? 1 : 0;
-}
-
 sub _build_basis_tick {
     my $self = shift;
 
-    my $waiting_for_entry_tick = localize('Waiting for entry tick.');
-    my $missing_market_data    = localize('Trading on this market is suspended due to missing market data.');
+    my $waiting_for_entry_tick = $ERROR_MAPPING->{EntryTickMissing};
+    my $missing_market_data    = $ERROR_MAPPING->{MissingMarketData};
     my ($basis_tick, $potential_error);
 
     # basis_tick is only set to entry_tick when the contract has started.
@@ -1057,21 +631,11 @@ sub _build_basis_tick {
         });
         $self->_add_error({
             message           => "Waiting for entry tick [symbol: " . $self->underlying->symbol . "]",
-            message_to_client => $potential_error,
+            message_to_client => [$potential_error],
         });
     }
 
     return $basis_tick;
-}
-
-sub _build_remaining_time {
-    my $self = shift;
-
-    my $when = ($self->date_pricing->is_after($self->date_start)) ? $self->date_pricing : $self->date_start;
-
-    return $self->get_time_to_expiry({
-        from => $when,
-    });
 }
 
 sub _build_current_spot {
@@ -1234,7 +798,7 @@ sub _build_dividend_adjustment {
                 . $dividend_recorded_date->datetime . "] "
                 . "[symbol: "
                 . $self->underlying->symbol . "]",
-            message_to_client => localize('Trading on this market is suspended due to missing market (dividend) data.'),
+            message_to_client => [$ERROR_MAPPING->{MissingDividendMarketData}],
         });
 
     }
@@ -1248,31 +812,6 @@ sub _build_payout {
 
     $self->_set_price_calculator_params('payout');
     return $self->price_calculator->payout;
-}
-
-sub _build_shortcode {
-    my $self = shift;
-
-    my $shortcode_date_start = (
-               $self->is_forward_starting
-            or $self->starts_as_forward_starting
-    ) ? $self->date_start->epoch . 'F' : $self->date_start->epoch;
-    my $shortcode_date_expiry =
-          ($self->tick_expiry)  ? $self->tick_count . 'T'
-        : ($self->fixed_expiry) ? $self->date_expiry->epoch . 'F'
-        :                         $self->date_expiry->epoch;
-
-    my @shortcode_elements = ($self->code, $self->underlying->symbol, $self->payout, $shortcode_date_start, $shortcode_date_expiry);
-
-    if ($self->two_barriers) {
-        push @shortcode_elements, ($self->high_barrier->for_shortcode, $self->low_barrier->for_shortcode);
-    } elsif ($self->barrier and $self->barrier_at_start) {
-        # Having a hardcoded 0 for single barrier is dumb.
-        # We should get rid of this legacy
-        push @shortcode_elements, ($self->barrier->for_shortcode, 0);
-    }
-
-    return uc join '_', @shortcode_elements;
 }
 
 sub _build_entry_tick {
@@ -1335,7 +874,7 @@ sub _build_pricing_spot {
                 . $self->date_pricing->datetime . "] "
                 . "[symbol: "
                 . $self->underlying->symbol . "]",
-            message_to_client => localize('We could not process this contract at this time.'),
+            message_to_client => [$ERROR_MAPPING->{CannotProcessContract}],
         });
     }
 
@@ -1344,19 +883,6 @@ sub _build_pricing_spot {
     }
 
     return $initial_spot;
-}
-
-sub _build_barrier_category {
-    my $self = shift;
-
-    my $barrier_category;
-    if ($self->category->code eq 'callput') {
-        $barrier_category = ($self->is_atm_bet) ? 'euro_atm' : 'euro_non_atm';
-    } else {
-        $barrier_category = $LandingCompany::Offerings::BARRIER_CATEGORIES->{$self->category->code}->[0];
-    }
-
-    return $barrier_category;
 }
 
 sub _build_apply_market_inefficient_limit {
@@ -1386,24 +912,18 @@ sub _build_staking_limits {
         : $bet_limits->{min_payout}->{default}->{$curr};
     my $stake_min = ($self->for_sale) ? $payout_min / 20 : $payout_min / 2;
 
-    my $message_to_client_array;
     my $message_to_client;
     if ($self->for_sale) {
-        $message_to_client = localize('Contract market price is too close to final payout.');
+        $message_to_client = [$ERROR_MAPPING->{MarketPricePayoutClose}];
     } else {
-        $message_to_client = localize(
-            'Minimum stake of [_1] and maximum payout of [_2]',
-            to_monetary_number_format($stake_min),
-            to_monetary_number_format($payout_max));
-        $message_to_client_array =
-            ['Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($stake_min), to_monetary_number_format($payout_max)];
+        $message_to_client =
+            [$ERROR_MAPPING->{StakePayoutLimits}, to_monetary_number_format($stake_min), to_monetary_number_format($payout_max)];
     }
 
     return {
-        min                     => $stake_min,
-        max                     => $payout_max,
-        message_to_client       => $message_to_client,
-        message_to_client_array => $message_to_client_array,
+        min               => $stake_min,
+        max               => $payout_max,
+        message_to_client => $message_to_client,
     };
 }
 
@@ -1450,7 +970,7 @@ sub _build_exit_tick {
                     . $exit_tick_date->datetime . "] "
                     . "[expiry: "
                     . $entry_tick_date->datetime . "]",
-                message_to_client => localize("Intraday contracts may not cross market open."),
+                message_to_client => [$ERROR_MAPPING->{CrossMarketIntraday}],
             });
         }
     }

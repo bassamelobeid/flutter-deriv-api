@@ -76,7 +76,7 @@ subtest 'ON 25D BF > 1.' => sub {
         date_expiry => $shortterm_expiry->epoch,
         volsurface  => $surface,
         barrier     => 'S0P',
-        bet_type    => 'FLASHU',
+        bet_type    => 'CALL',
     );
 
     lives_ok {
@@ -95,7 +95,7 @@ subtest 'ON 25D BF > 1.' => sub {
         date_expiry => $shortterm_expiry->epoch,
         volsurface  => $surface,
         barrier     => 'S0P',
-        bet_type    => 'FLASHU',
+        bet_type    => 'CALL',
     );
 
     lives_ok {

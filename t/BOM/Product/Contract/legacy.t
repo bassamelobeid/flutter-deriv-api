@@ -30,7 +30,7 @@ subtest 'General.' => sub {
     my $contract = produce_contract($contract_params);
 
     isa_ok $contract, 'BOM::Product::Contract::Invalid';
-    like($contract->longcode, qr/Legacy .* No further information is available/, 'Legacy bet longcode.');
+    is_deeply($contract->longcode, ['Legacy contract. No further information is available.']);
     throws_ok { $contract->bid_price } qr/legacy bet type/i, 'Pricing legacy bet.';
     throws_ok { $contract->shortcode } qr/legacy bet type/i, 'Legacy bet shortcode.';
 
@@ -44,9 +44,9 @@ subtest 'SPREAD' => sub {
     is($legacy->{bet_type}, 'Invalid', 'Legacy shortcode.');
 
     my $contract = produce_contract($legacy);
-    is $contract->bet_type, 'INVALID',                                               'Invalid contract type';
-    is $contract->code,     'INVALID',                                               'Invalid contract type';
-    is $contract->longcode, 'Legacy contract. No further information is available.', 'correct longcode for legacy contract';
+    is $contract->bet_type, 'INVALID', 'Invalid contract type';
+    is $contract->code,     'INVALID', 'Invalid contract type';
+    is_deeply($contract->longcode, ['Legacy contract. No further information is available.']);
 };
 
 done_testing;
