@@ -98,7 +98,7 @@ sub _build_base_probability {
 
     my $pricing_args = $self->bet->_pricing_args;
 
-    my %args = (map { $_ => $pricing_args->{$_} } qw(spot t discount_rate mu payouttime_code));
+    my %args = (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code));
 
     my $engine = Pricing::Engine::Intraday::Forex::Base->new(
         ticks                => $self->ticks_for_trend,
@@ -108,6 +108,8 @@ sub _build_base_probability {
         payout_type          => 'binary',
         underlying_symbol    => $self->bet->underlying->symbol,
         long_term_prediction => $self->long_term_prediction->amount,
+        discount_rate        => 0,
+        mu                   => 0,
         %args,
     );
     return $engine->base_probability;
