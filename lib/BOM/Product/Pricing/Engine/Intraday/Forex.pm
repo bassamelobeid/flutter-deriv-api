@@ -98,10 +98,9 @@ sub _build_base_probability {
 
     my $pricing_args = $self->bet->_pricing_args;
 
-    my %args;
-    for my $k (qw(spot t discount_rate mu payouttime_code long_term_prediction)) {
-        $args{$k} = $pricing_args->{$k} // do { warn "$k is from a method on $self"; $self->$k };
-    }
+    my %args = (
+        map { $_ => $pricing_args->{$_} } qw(spot t discount_rate mu payouttime_code)
+    );
 
     my $engine = Pricing::Engine::Intraday::Forex::Base->new(
         ticks   => $self->ticks_for_trend,
@@ -110,6 +109,7 @@ sub _build_base_probability {
 	contract_type => $self->bet->pricing_code,
 	payout_type => 'binary',
 	underlying_symbol => $self->bet->underlying->symbol,
+	long_term_prediction => $self->long_term_prediction,
         %args,
     );
     return $engine->base_probability;
