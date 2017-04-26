@@ -86,7 +86,6 @@ sub _init {
                     'terms_conditions_version' => 'Version 39 2015-12-04'
                 },
                 'quants' => {
-                    'underlyings' => {'disabled_due_to_corporate_actions' => []},
                     'markets'     => {
                         'disabled' => ['sectors'],
                     },
