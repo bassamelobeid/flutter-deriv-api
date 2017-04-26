@@ -134,3 +134,11 @@ weekend vols : fxvol_wknd.csv, quantovol_wknd.csv
 - volatility file type from SuperDerivatives e.g. auto_upload.xls, auto_upload_stocks.xls
 
 Output: category='volatility_surfaces' 
+
+# TEST
+    # run all test scripts
+    make test
+    # run one script
+    prove t/BOM/001_structure.t
+    # run one script with perl
+    perl -MBOM::Test t/BOM/001_structure.t
