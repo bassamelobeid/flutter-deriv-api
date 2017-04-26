@@ -6,7 +6,9 @@ with 'BOM::Product::Role::SingleBarrier';
 
 use BOM::Product::Pricing::Engine::BlackScholes;
 
-sub code { return 'VANILLA_PUT'; }
+sub ticks_to_expiry {
+    die 'no ticks_to_expiry on a VANILLA_PUT contract';
+}
 
 sub _build_pricing_engine_name {
     return 'BOM::Product::Pricing::Engine::BlackScholes';

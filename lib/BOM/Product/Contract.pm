@@ -334,6 +334,16 @@ sub may_settle_automatically {
 
 =cut
 
+=head2 code
+
+Alias for L</bet_type>.
+
+TODO should be removed.
+
+=cut
+
+sub code { return shift->bet_type; }
+
 =head2 debug_information
 
 Pricing engine internal debug information hashref.

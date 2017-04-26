@@ -4,7 +4,9 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::AmericanExpiry';
 
-sub code { return 'UPORDOWN'; }
+sub ticks_to_expiry {
+    die 'no ticks_to_expiry on an UPORDOWN contract';
+}
 
 sub localizable_description {
     return +{

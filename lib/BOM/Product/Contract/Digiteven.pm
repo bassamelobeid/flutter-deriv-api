@@ -8,8 +8,6 @@ use BOM::Product::Contract::Strike::Digit;
 use Pricing::Engine::Digits;
 use BOM::Product::Pricing::Greeks::Digits;
 
-sub code { return 'DIGITEVEN'; }
-
 sub localizable_description {
     return +{
         tick => 'Win payout if the last digit of [_3] is even after [_5] ticks.',

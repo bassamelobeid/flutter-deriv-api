@@ -78,6 +78,12 @@ To be able to settle, it need pass the settlement time and has valid exit tick
 
 # METHODS - Other
 
+## code
+
+Alias for ["bet\_type"](#bet_type).
+
+TODO should be removed.
+
 ## debug\_information
 
 Pricing engine internal debug information hashref.
