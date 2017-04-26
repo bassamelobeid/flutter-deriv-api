@@ -13,7 +13,6 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use HTML::Entities;
 
-use BOM::MarketData::Fetcher::CorporateAction;
 use Bloomberg::FileDownloader;
 use Bloomberg::RequestFiles;
 use BOM::BloombergCalendar;
