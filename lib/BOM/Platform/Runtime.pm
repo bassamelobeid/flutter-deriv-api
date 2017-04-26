@@ -44,7 +44,6 @@ sub get_offerings_config {
     $config_args->{suspend_buy}            = $runtime->app_config->quants->underlyings->suspend_buy;
     $config_args->{suspend_contract_types} = $runtime->app_config->quants->features->suspend_contract_types;
 
-    $config_args->{disabled_due_to_corporate_actions} = $runtime->app_config->quants->underlyings->disabled_due_to_corporate_actions;
     $config_args->{disabled_markets}                  = $runtime->app_config->quants->markets->disabled;
 
     return $config_args;
