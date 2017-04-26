@@ -185,11 +185,11 @@ my $contract_data = {
     barrier      => 'S0P',
 };
 my $txn_data = {
-    client        => $test_client_vr,
-    contract_parameters      => $contract_data,
-    price         => $price,
-    amount_type   => 'stake',
-    purchase_date => $now->epoch,
+    client              => $test_client_vr,
+    contract_parameters => $contract_data,
+    price               => $price,
+    amount_type         => 'stake',
+    purchase_date       => $now->epoch,
 };
 my $txn = BOM::Transaction->new($txn_data);
 is($txn->buy(skip_validation => 1), undef, 'buy contract without error');

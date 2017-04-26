@@ -67,14 +67,14 @@ sub prepare_contract {
         barrier               => 'S0P',
         app_markup_percentage => $args{app_markup_percentage} // 0
     };
-    
+
     my $txn;
     if ($args{client}) {
-        $txn =BOM::Transaction->new({
-            client        => $args{client},
-            contract_parameters      => $contract_data,
-            purchase_date => $start_time,
-            amount_type   => 'payout',
+        $txn = BOM::Transaction->new({
+            client              => $args{client},
+            contract_parameters => $contract_data,
+            purchase_date       => $start_time,
+            amount_type         => 'payout',
         });
         return ($contract_data, $txn);
     }

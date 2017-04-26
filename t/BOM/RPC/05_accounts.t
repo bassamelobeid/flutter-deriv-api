@@ -165,8 +165,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => 'USD',
         recorded_date => $R_100_start,
-    }
-);
+    });
 
 my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_100',
@@ -296,11 +295,11 @@ subtest $method => sub {
     };
 
     my $txn = BOM::Transaction->new({
-        client        => $test_client2,
-        contract_parameters      => $contract_expired,
-        price         => 100,
-        amount_type   => 'stake',
-        purchase_date => $now->epoch - 101,
+        client              => $test_client2,
+        contract_parameters => $contract_expired,
+        price               => 100,
+        amount_type         => 'stake',
+        purchase_date       => $now->epoch - 101,
     });
 
     $txn->buy(skip_validation => 1);
@@ -328,11 +327,10 @@ subtest $method => sub {
     is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{purchase_time})->epoch, 'transaction time correct for buy ');
     is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
     {
-        my $sell_tr = [grep {$_->{action_type} && $_->{action_type} eq 'sell'} @{$result->{transactions}}]->[0];
-        my $buy_tr  = [grep {$_->{action_type} && $_->{action_type} eq 'buy'} @{$result->{transactions}}]->[0];
+        my $sell_tr = [grep { $_->{action_type} && $_->{action_type} eq 'sell' } @{$result->{transactions}}]->[0];
+        my $buy_tr  = [grep { $_->{action_type} && $_->{action_type} eq 'buy' } @{$result->{transactions}}]->[0];
         is($sell_tr->{reference_id}, $buy_tr->{transaction_id}, 'transaction id is same for buy and sell ');
     }
-
 
     $contract_expired = {
         underlying   => create_underlying('R_100'),
@@ -348,12 +346,12 @@ subtest $method => sub {
     };
 
     $txn = BOM::Transaction->new({
-            client        => $test_client2,
-            contract_parameters      => $contract_expired,
-            price         => 100,
-            payout        => 200,
-            amount_type   => 'stake',
-            purchase_date => $R_100_start->epoch - 101,
+            client              => $test_client2,
+            contract_parameters => $contract_expired,
+            price               => 100,
+            payout              => 200,
+            amount_type         => 'stake',
+            purchase_date       => $R_100_start->epoch - 101,
 
     });
     $txn->buy(skip_validation => 1);
@@ -380,10 +378,10 @@ subtest $method => sub {
     cmp_ok(abs($result->{transactions}[1]{transaction_time} - Date::Utility->new($txns->[1]{purchase_time})->epoch),
         '<=', 2, 'transaction time correct for buy ');
     cmp_ok(abs($result->{transactions}[2]{transaction_time} - Date::Utility->new($txns->[2]{payment_time})->epoch),
-           '<=', 2, 'transaction time correct for payment');
+        '<=', 2, 'transaction time correct for payment');
     {
-        my $sell_tr = [grep {$_->{action_type} && $_->{action_type} eq 'sell'} @{$result->{transactions}}]->[0];
-        my $buy_tr  = [grep {$_->{action_type} && $_->{action_type} eq 'buy'} @{$result->{transactions}}]->[0];
+        my $sell_tr = [grep { $_->{action_type} && $_->{action_type} eq 'sell' } @{$result->{transactions}}]->[0];
+        my $buy_tr  = [grep { $_->{action_type} && $_->{action_type} eq 'buy' } @{$result->{transactions}}]->[0];
         is($sell_tr->{reference_id}, $buy_tr->{transaction_id}, 'transaction id is same for buy and sell ');
     }
 
@@ -440,11 +438,11 @@ subtest $method => sub {
     };
 
     my $txn = BOM::Transaction->new({
-        client        => $test_client2,
-        contract_parameters      => $contract_expired,
-        price         => 100,
-        amount_type   => 'stake',
-        purchase_date => $now->epoch - 101,
+        client              => $test_client2,
+        contract_parameters => $contract_expired,
+        price               => 100,
+        amount_type         => 'stake',
+        purchase_date       => $now->epoch - 101,
     });
 
     $txn->buy(skip_validation => 1);

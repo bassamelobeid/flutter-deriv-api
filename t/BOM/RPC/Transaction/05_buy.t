@@ -70,7 +70,7 @@ subtest 'buy' => sub {
 
     }
 
-    my (undef, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(client=>$client);
+    my (undef, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(client => $client);
 
     $params->{source}              = 1;
     $params->{contract_parameters} = {
@@ -118,7 +118,7 @@ subtest 'buy' => sub {
 };
 
 subtest 'app_markup' => sub {
-    my (undef, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(client=>$client);
+    my (undef, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(client => $client);
 
     my $params = {
         language            => 'EN',
@@ -157,7 +157,10 @@ subtest 'app_markup' => sub {
 
     delete $params->{args}->{price};
 
-    (undef, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(client=>$client,app_markup_percentage => 1);
+    (undef, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(
+        client                => $client,
+        app_markup_percentage => 1
+    );
     $params->{contract_parameters}->{app_markup_percentage} = 1;
 
     $params->{args}->{price} = $txn_con->contract->ask_price;
@@ -165,7 +168,10 @@ subtest 'app_markup' => sub {
     is $result->{buy_price}, $ask_price + 1, "buy_price is ask_price plus + app_markup same for payout";
 
     # check for stake contracts
-    (undef, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(client=>$client,basis => 'stake');
+    (undef, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(
+        client => $client,
+        basis  => 'stake'
+    );
 
     $payout = $txn_con->contract->payout;
 
@@ -183,44 +189,50 @@ subtest 'app_markup' => sub {
 };
 
 subtest 'app_markup_transaction' => sub {
-    my ($contract_details, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(client=>$client);
+    my ($contract_details, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(client => $client);
 
     my $now = time - 180;
     my $txn = BOM::Transaction->new({
-        client        => $client,
-        contract_parameters      => $contract_details,
-        price         => $txn_con->contract->ask_price,
-        purchase_date => $now,
-        amount_type   => 'payout',
+        client              => $client,
+        contract_parameters => $contract_details,
+        price               => $txn_con->contract->ask_price,
+        purchase_date       => $now,
+        amount_type         => 'payout',
     });
     is $txn->buy(skip_validation => 1), undef, "no error in transaction buy";
     is $txn->contract->app_markup_dollar_amount, 0, "no app markup";
 
     my $app_markup_percentage = 1;
-    ($contract_details, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(client=>$client,app_markup_percentage => $app_markup_percentage);
+    ($contract_details, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(
+        client                => $client,
+        app_markup_percentage => $app_markup_percentage
+    );
 
-    $now      = time - 120;
-    $txn      = BOM::Transaction->new({
-        client        => $client,
-        contract_parameters      => $contract_details,
-        price         => $txn_con->contract->ask_price,
-        purchase_date => $now,
-        amount_type   => 'payout',
+    $now = time - 120;
+    $txn = BOM::Transaction->new({
+        client              => $client,
+        contract_parameters => $contract_details,
+        price               => $txn_con->contract->ask_price,
+        purchase_date       => $now,
+        amount_type         => 'payout',
     });
     is $txn->buy(skip_validation => 1), undef, "no error in transaction buy";
     is $txn->contract->app_markup_dollar_amount, $app_markup_percentage / 100 * $txn_con->contract->payout,
         "transaction app_markup is app_markup_percentage of contract payout for payout amount_type";
 
-    ($contract_details, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(client=>$client,basis => 'stake');
+    ($contract_details, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(
+        client => $client,
+        basis  => 'stake'
+    );
 
     my $payout = $txn_con->contract->payout;
     $now = time - 60;
     $txn = BOM::Transaction->new({
-        client        => $client,
-        contract_parameters      => $contract_details,
-        price         => $txn_con->contract->ask_price,
-        purchase_date => $now,
-        amount_type   => 'payout',
+        client              => $client,
+        contract_parameters => $contract_details,
+        price               => $txn_con->contract->ask_price,
+        purchase_date       => $now,
+        amount_type         => 'payout',
     });
     is $txn->buy(skip_validation => 1), undef, "no error in transaction buy for stake";
     is $txn->contract->app_markup_dollar_amount, 0, "no app markup for stake";
@@ -233,11 +245,11 @@ subtest 'app_markup_transaction' => sub {
     );
     $now = time;
     $txn = BOM::Transaction->new({
-        client        => $client,
-        contract_parameters      => $contract_details,
-        price         => $txn_con->contract->ask_price,
-        purchase_date => $now,
-        amount_type   => 'payout',
+        client              => $client,
+        contract_parameters => $contract_details,
+        price               => $txn_con->contract->ask_price,
+        purchase_date       => $now,
+        amount_type         => 'payout',
     });
     is $txn->buy(skip_validation => 1), undef, "no error in transaction buy for stake";
     is $txn->contract->app_markup_dollar_amount, sprintf('%.2f', $txn->payout * $app_markup_percentage / 100),
