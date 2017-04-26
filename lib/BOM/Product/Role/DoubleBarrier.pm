@@ -1,10 +1,12 @@
 package BOM::Product::Role::DoubleBarrier;
 
 use Moose::Role;
+use List::Util qw(first);
 with 'BOM::Product::Role::BarrierBuilder';
 
-use List::Util qw(first);
-use BOM::Platform::Context qw(localize);
+use BOM::Product::Static;
+
+my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
 sub BUILD {
     my $self = shift;
@@ -14,7 +16,7 @@ sub BUILD {
             $self->_add_error({
                 severity          => 5,
                 message           => 'High and low barriers inverted',
-                message_to_client => localize('High barrier must be higher than low barrier.'),
+                message_to_client => [$ERROR_MAPPING->{InvalidHighBarrier}],
             });
             $self->low_barrier($barrier1);
             $self->high_barrier($barrier2);
@@ -22,7 +24,7 @@ sub BUILD {
             $self->_add_error({
                 severity          => 100,
                 message           => 'High and low barriers must be different',
-                message_to_client => localize('High and low barriers must be different.'),
+                message_to_client => [$ERROR_MAPPING->{SameBarriersNotAllowed}],
             });
             $self->low_barrier(
                 $barrier1->adjust({
@@ -105,14 +107,14 @@ sub _validate_barrier {
         return {
             severity          => 100,
             message           => 'At least one barrier is undefined on double barrier contract.',
-            message_to_client => localize('The barriers are improperly entered for this contract.'),
+            message_to_client => [$ERROR_MAPPING->{InvalidBarrier}],
         };
     }
     if ($high_barrier->supplied_type ne $low_barrier->supplied_type) {
         return {
             severity          => 5,
             message           => 'Mixed absolute and relative barriers',
-            message_to_client => localize('Proper barriers could not be determined.'),
+            message_to_client => [$ERROR_MAPPING->{NonDeterminedBarriers}],
         };
     }
     if ($self->is_path_dependent) {
@@ -129,7 +131,7 @@ sub _validate_barrier {
                     . "[low: "
                     . $low_barrier->as_absolute . "]",
                 severity          => 1,
-                message_to_client => localize('Barriers must be on either side of the spot.'),
+                message_to_client => [$ERROR_MAPPING->{InvalidBarrierRange}],
             };
         } elsif (abs($high_pip_move) < $min_allowed or abs($low_pip_move) < $min_allowed) {
             return {
@@ -141,7 +143,7 @@ sub _validate_barrier {
                     . "[min: "
                     . $min_allowed . "]",
                 severity          => 1,
-                message_to_client => localize('Barrier must be at least [plural,_1,%d pip,%d pips] away from the spot.', $min_allowed),
+                message_to_client => [$ERROR_MAPPING->{InvalidBarrierForSpot}, $min_allowed],
             };
         }
     }
@@ -162,8 +164,8 @@ sub _validate_barrier {
                     . $max_move . "]",
                 severity          => 91,
                 message_to_client => ($label eq 'low')
-                ? localize('Low barrier is out of acceptable range. Please adjust the low barrier.')
-                : localize('High barrier is out of acceptable range. Please adjust the high barrier.'),
+                ? [$ERROR_MAPPING->{InvalidLowBarrrierRange}]
+                : [$ERROR_MAPPING->{InvalidHighLowBarrrierRange}],
                 ,
             };
         }
