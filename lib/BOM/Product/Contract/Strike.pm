@@ -3,16 +3,15 @@ package BOM::Product::Contract::Strike;
 use Moose;
 use namespace::autoclean;
 
+use Readonly;
+use Date::Utility;
 use POSIX qw( floor );
 use Scalar::Util qw(looks_like_number);
-use Readonly;
+use Format::Util::Numbers qw(roundnear);
 
-use Date::Utility;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Platform::Context qw(localize);
-use Format::Util::Numbers qw(roundnear);
-use feature "state";
+use BOM::Product::Static;
 
 with 'MooseX::Role::Validatable';
 
@@ -131,7 +130,7 @@ sub _build_as_absolute {
             $self->add_errors({
                 severity          => 100,
                 message           => "Non-positive barrier [value: $value]",
-                message_to_client => localize('Contract barrier must be positive.'),
+                message_to_client => [BOM::Product::Static::get_error_mapping()->{NegativeContractBarrier}],
             });
             $value = 10 * $underlying->pip_size;
         }
@@ -225,9 +224,7 @@ has display_text => (
 sub _build_display_text {
     my $self = shift;
 
-    my $barrier_type = $self->supplied_type;
-
-    my $display_barrier;
+    my ($barrier_type, $display_barrier) = ($self->supplied_type);
 
     # We don't have the display text to change as well for immutable longcode's sake.
     my $strike = $self;
@@ -237,23 +234,24 @@ sub _build_display_text {
     }
 
     if ($barrier_type eq 'absolute') {
-        $display_barrier = $strike->as_absolute;
+        $display_barrier = [$strike->as_absolute];
     } else {
+        my $generic_mapping = BOM::Product::Static::get_generic_mapping();
         if (my $pips = $strike->pip_difference) {
             if ($self->underlying->market->name eq 'forex') {
                 $display_barrier =
-                    ($pips > 0)
-                    ? localize('entry spot plus [plural,_1,%d pip, %d pips]',  $pips)
-                    : localize('entry spot minus [plural,_1,%d pip, %d pips]', abs $pips);
+                      ($pips > 0)
+                    ? [$generic_mapping->{entry_spot_plus_plural}, $pips]
+                    : [$generic_mapping->{entry_spot_minus_plural}, abs $pips];
             } else {
                 my $abs_diff = $self->_proper_value(abs $strike->as_difference);
                 $display_barrier =
-                    ($pips > 0)
-                    ? localize('entry spot plus [_1]',  $abs_diff)
-                    : localize('entry spot minus [_1]', $abs_diff);
+                      ($pips > 0)
+                    ? [$generic_mapping->{entry_spot_plus}, $abs_diff]
+                    : [$generic_mapping->{entry_spot_minus}, $abs_diff];
             }
         } else {
-            $display_barrier = localize('entry spot');
+            $display_barrier = [$generic_mapping->{entry_spot}];
         }
     }
 

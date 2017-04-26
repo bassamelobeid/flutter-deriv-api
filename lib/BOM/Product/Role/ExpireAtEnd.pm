@@ -1,9 +1,7 @@
 package BOM::Product::Role::ExpireAtEnd;
 
 use Moose::Role;
-
 use Time::Duration::Concise;
-use BOM::Platform::Context qw(localize);
 
 override is_expired => sub {
     my $self = shift;

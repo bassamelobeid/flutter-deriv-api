@@ -4,13 +4,15 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-use BOM::Product::Contract::Strike::Digit;
 use Pricing::Engine::Digits;
+
+use BOM::Product::Static qw/get_longcodes/;
+use BOM::Product::Contract::Strike::Digit;
 use BOM::Product::Pricing::Greeks::Digits;
 
 sub localizable_description {
     return +{
-        tick => 'Win payout if the last digit of [_3] is odd after [_5] ticks.',
+        tick => get_longcodes()->{digitodd_tick},
     };
 }
 

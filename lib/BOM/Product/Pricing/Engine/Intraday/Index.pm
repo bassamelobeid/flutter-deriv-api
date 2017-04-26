@@ -4,7 +4,6 @@ use Moose;
 extends 'BOM::Product::Pricing::Engine::Intraday';
 
 use Time::Duration::Concise;
-use BOM::Platform::Context qw(localize);
 
 =head2 probability
 
