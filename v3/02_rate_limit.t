@@ -12,6 +12,7 @@ use lib "$Bin/../lib";
 use BOM::Test::Helper qw/build_wsapi_test/;
 
 use JSON;
+use Mojo::IOLoop::Delay;
 
 my $t = build_wsapi_test();
 my $c = $t->app->build_controller;
@@ -59,6 +60,7 @@ subtest "hit limits 'proposal' / 'proposal_open_contract' for virtual account" =
     my $f = Future->needs_all(@futures);
     Mojo::IOLoop->one_tick while !$f->is_ready;
     ok $f->is_failed;
+
 };
 
 subtest "hit limits 'portfolio' / 'profit_table' for virtual account" => sub {
@@ -95,24 +97,25 @@ subtest "get error code (verify_email)" => sub {
     is $res->{error}->{code}, 'RateLimit';
 };
 
-subtest "unknown test with obfuscated logic what it checks" => sub {
-    my $res2;
-    my $i = 0;
-    while ($i < 500) {
-        $t->tx->send({json => {payout_currencies => 1}}, sub { Mojo::IOLoop->stop });
-        Mojo::IOLoop->start;
-        note "still waiting after $i iterations" unless $i % 100;
-        $res2 = decode_json($t->_wait->[1]);
-        last if $res2->{error};
-        ++$i;
-    }
-    TODO: {
-        # So on QA, both of these pass, but Travis consistently fails to hit the limit, works as expected when reducing the limit
-        # so it seems to be just due to slower performance
-        local $TODO = 'Travis run is too slow for the rate limit to trigger, the minute expires before the rate limit kicks in';
-        is $res2->{error}->{code}, 'RateLimit';
-        is $i, 240, "RateLimit for payout_currencies happened after expected number of iterations";
-    }
+subtest "expiration of limits" => sub {
+    my $f1 = Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'portfolio', 0);
+    Mojo::IOLoop->one_tick while !$f1->is_ready;
+    ok $f1->is_failed, "limit hit";
+
+    note "let's wait expiration";
+    Mojo::IOLoop::Delay->new->steps(
+        sub {
+            my $delay = shift;
+            my $end = $delay->begin;
+            my $t; $t = Mojo::IOLoop->timer(61 => sub {
+                Mojo::IOLoop->remove($t);
+                $end->();
+            });
+        }
+    )->wait;
+    my $f2 = Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'portfolio', 0);
+    Mojo::IOLoop->one_tick while !$f2->is_ready;
+    ok $f2->is_done, "no limit hit";
 };
 
 $t->finish_ok;
