@@ -60,7 +60,10 @@ my $params = {
 my $bet = produce_contract($params);
 is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'uses Intraday Historical pricing engine');
 
-my $amount = $bet->pricing_engine->economic_events_volatility_risk_markup->amount;
+my $amount;
+warning_like {
+$amount = $bet->pricing_engine->economic_events_volatility_risk_markup->amount;
+} qr/basis tick/, 'warns';
 
 is($bet->pricing_engine->economic_events_spot_risk_markup->amount, 0.01, 'correct spot risk markup');
 cmp_ok($amount, '<', $bet->pricing_engine->economic_events_spot_risk_markup->amount, 'vol risk markup is lower than higher range');
