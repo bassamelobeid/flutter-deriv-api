@@ -24,6 +24,7 @@ use BOM::Platform::Context qw(localize request);
 
 use BOM::Platform::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
+use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
@@ -47,9 +48,25 @@ has multiple => (
     isa => 'Maybe[ArrayRef]',
 );
 
-has contract => (
+has contract_parameters => (
     is => 'rw',
 );
+
+has contract => (
+    is         => 'rw',
+    lazy_build => 1,
+);
+
+sub _build_contract {
+    my $self  = shift;
+    my $param = $self->contract_parameters;
+
+    if ($param->{shortcode}) {
+        $param = shortcode_to_parameters($param->{shortcode}, $param->{currency});
+        $param->{landing_company} = $self->contract_parameters->{landing_company};
+    }
+    return produce_contract($param);
+}
 
 has price => (
     is  => 'rw',
@@ -124,6 +141,11 @@ has amount_type => (
 
 sub _build_amount_type {
     my $self = shift;
+
+    my $param = $self->contract_parameters;
+    if ($param->{shortcode}) {
+        return shortcode_to_parameters($param->{shortcode}, $param->{currency})->{amount_type};
+    }
     die 'amount type is required';
 }
 
@@ -171,11 +193,6 @@ has purchase_date => (
     is     => 'rw',
     isa    => 'date_object',
     coerce => 1,
-);
-
-has contract_class => (
-    is  => 'rw',
-    isa => 'Str',
 );
 
 has source => (
@@ -355,8 +372,6 @@ sub prepare_bet_data_for_buy {
     }
 
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
-
-    $self->contract_class($bet_class);
 
     $self->price(Format::Util::Numbers::roundnear(0.01, $self->price));
 
@@ -649,7 +664,6 @@ sub prepare_bet_data_for_sell {
     my $currency = $contract->currency;
 
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
-    $self->contract_class($bet_class);
 
     $self->price(Format::Util::Numbers::roundnear(0.01, $self->price));
 
