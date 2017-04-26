@@ -329,6 +329,7 @@ subtest 'date start blackouts' => sub {
     is_deeply(
         ($c->primary_validation_error)[0]->{message_to_client},
         ['Trading on forex contracts with duration less than 5 hours is not available from [_2] to [_3]', '21:00:00', '23:00:00'],
+        'throws error'
     );
     $bet_params->{underlying} = 'R_100';
     $bet_params->{duration}   = '4h59m59s';

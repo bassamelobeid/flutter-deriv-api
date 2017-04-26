@@ -6,8 +6,6 @@ with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
 use BOM::Product::Static;
 
-sub code { return 'ASIAND'; }
-
 sub localizable_description {
     return +{
         tick => BOM::Product::Static::get_longcodes()->{asiand_tick},

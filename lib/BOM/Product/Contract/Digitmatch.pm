@@ -10,8 +10,6 @@ use BOM::Product::Static;
 use BOM::Product::Contract::Strike::Digit;
 use BOM::Product::Pricing::Greeks::Digits;
 
-sub code { return 'DIGITMATCH'; }
-
 sub localizable_description {
     return +{
         tick => BOM::Product::Static::get_longcodes()->{digitmatch_tick},

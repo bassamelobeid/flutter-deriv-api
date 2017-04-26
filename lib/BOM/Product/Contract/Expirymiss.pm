@@ -6,7 +6,9 @@ with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
 use BOM::Product::Static;
 
-sub code { return 'EXPIRYMISS'; }
+sub ticks_to_expiry {
+    die 'no ticks_to_expiry on an EXPIRYMISS contract';
+}
 
 sub localizable_description {
     return +{

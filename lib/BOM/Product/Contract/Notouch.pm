@@ -6,7 +6,9 @@ with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::AmericanExpiry';
 
 use BOM::Product::Static;
 
-sub code { return 'NOTOUCH'; }
+sub ticks_to_expiry {
+    die 'no ticks_to_expiry on a NOTOUCH contract';
+}
 
 sub localizable_description {
     return +{
