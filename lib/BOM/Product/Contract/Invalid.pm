@@ -47,7 +47,15 @@ sub _build_bid_probability  { return 1; }
 sub _build_theo_probability { return 1; }
 sub _build_bs_probability   { return 1; }
 sub is_valid_to_buy         { return 0; }
-sub is_valid_to_sell        { return 0 }
+
+sub is_valid_to_sell {
+    my $self = shift;
+    $self->_add_error({
+        message           => 'Invalid legacy contract',
+        message_to_client => [$ERROR_MAPPING->{CannotValidateContract}],
+    });
+    return 0;
+}
 
 no Moose;
 __PACKAGE__->meta->make_immutable;
