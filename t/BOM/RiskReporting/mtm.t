@@ -163,7 +163,7 @@ subtest 'realtime report generation' => sub {
         email   => 'quants-market-data@regentmarkets.com',
         subject => qr/AutoSell Failures/
     );
-    ok(@msgs, "find the email");
+    ok(@msgs,                                        "find the email");
     ok($msgs[0]{body} =~ /Shortcode:   $short_code/, "contract $short_code has error");
     my @errors = $msgs[0]{body} =~ /Shortcode:/g;
     is(scalar @errors, 1, "number of contracts that have errors ");

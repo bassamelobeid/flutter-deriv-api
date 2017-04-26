@@ -47,13 +47,30 @@ sub _configure_for_request {
 # need to update this sub to get language as input, as of now
 # language is always EN for backoffice
 sub localize {
-    my @texts = @_;
+    my ($content, @params) = @_;
 
     my $request = request();
     my $language = $request ? $request->language : 'EN';
 
     my $lh = BOM::Platform::Context::I18N::handle_for($language)
         || die("could not build locale for language $language");
+
+    my @texts = ();
+    if (ref $content eq 'ARRAY') {
+        # first one is always text string
+        push @texts, shift @$content;
+        # followed by parameters
+        foreach my $elm (@$content) {
+            # some params also need localization (longcode)
+            if (ref $elm eq 'ARRAY' and scalar @$elm) {
+                push @texts, $lh->maketext(@$elm);
+            } else {
+                push @texts, $elm;
+            }
+        }
+    } else {
+        @texts = ($content, @params);
+    }
 
     return $lh->maketext(@texts);
 }

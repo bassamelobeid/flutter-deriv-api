@@ -9,6 +9,9 @@ This package is to output contract's pricing parameters that will be used by Jap
 use strict;
 use warnings;
 use lib qw(/home/git/regentmarkets/bom-backoffice);
+use Path::Tiny;
+use Excel::Writer::XLSX;
+use LandingCompany::Registry;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel PrintContentType_XSendfile);
 use BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -17,9 +20,7 @@ use BOM::Platform::Runtime;
 use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Backoffice::Sysinit ();
-use LandingCompany::Registry;
-use Path::Tiny;
-use Excel::Writer::XLSX;
+use BOM::Backoffice::Request;
 
 sub parse_file {
     my ($file, $landing_company) = @_;
@@ -188,7 +189,7 @@ sub verify_with_shortcode {
 
     $pricing_parameters->{contract_details} = {
         short_code             => $short_code,
-        description            => $original_contract->longcode,
+        description            => BOM::Backoffice::Request::localize($original_contract->longcode),
         ccy                    => $original_contract->currency,
         payout                 => $original_contract->payout,
         trade_time             => $start->datetime,
