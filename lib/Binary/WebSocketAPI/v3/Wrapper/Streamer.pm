@@ -16,6 +16,103 @@ use Time::HiRes qw(gettimeofday);
 use utf8;
 use Try::Tiny;
 
+sub website_status {
+    my ($self, $req_storage) = @_;
+
+    my $args = $req_storage->{args};
+
+    ### TODO: to config
+    my $channel_name = "NOTIFY::broadcast::channel";
+    my $redis        = $self->ws_redis_write;
+    my $shared_info  = $self->redis_connections($channel_name);
+
+    my $callback = sub {
+        $self->call_rpc({
+                args        => $args,
+                method      => 'website_status',
+                call_params => {
+                    country_code => $self->country_code,
+                },
+                response => sub {
+                    my $rpc_response   = shift;
+                    my $website_status = {};
+                    $rpc_response->{clients_country} //= '';
+                    $website_status->{$_} = $rpc_response->{$_} for qw|api_call_limits clients_country supported_languages terms_conditions_version|;
+                    my $shared_info = $self->redis_connections($channel_name);
+                    Scalar::Util::weaken(my $c_copy = $self);
+                    $shared_info->{broadcast_notifications}{\$self + 0}{'c'}            = $c_copy;
+                    $shared_info->{broadcast_notifications}{\$self + 0}{echo}           = $args;
+                    $shared_info->{broadcast_notifications}{\$self + 0}{website_status} = $rpc_response;
+
+                    my $slave_redis = $self->ws_redis_read;
+                    ### to config
+                    my $current_state = undef;
+                    $current_state = $slave_redis->get("NOTIFY::broadcast::state")
+                        if $slave_redis;
+
+                    $current_state = eval { decode_json($current_state) }
+                        if $current_state && !ref $current_state;
+                    $website_status->{site_status} = $current_state->{site_status} // 'up';
+                    $website_status->{message}     = $current_state->{message}     // ''
+                        if $website_status->{site_status} eq 'down';
+
+                    return {
+                        website_status => $website_status,
+                        msg_type       => 'website_status'
+                    };
+                }
+            });
+    };
+
+    if (!$args->{subscribe} || $args->{subscribe} == 0) {
+        delete $shared_info->{broadcast_notifications}{\$self + 0};
+        &$callback();
+        return;
+    }
+    if ($shared_info->{broadcast_notifications}{\$self + 0}) {
+        &$callback();
+        return;
+    }
+
+    $redis->subscribe([$channel_name], $callback);
+    return;
+}
+
+sub send_notification {
+    my ($shared, $message, $channel) = @_;
+
+    return if !$shared || !ref $shared || !$shared->{broadcast_notifications} || !ref $shared->{broadcast_notifications};
+    my $is_on_key = 0;
+    foreach my $c_addr (keys %{$shared->{broadcast_notifications}}) {
+        my $client_shared = $shared->{broadcast_notifications}{$c_addr};
+        unless (defined $client_shared->{c}->tx) {
+            my $redis = $client_shared->{c}->ws_redis_write;
+
+            delete $shared->{broadcast_notifications}{$c_addr};
+            $redis->unsubscribe([$channel])
+                if (scalar keys %{$shared->{broadcast_notifications}}) == 0 && $redis && $channel;
+            next;
+        }
+
+        unless ($is_on_key) {
+            my $slave_redis = $client_shared->{c}->ws_redis_read;
+            $is_on_key = "NOTIFY::broadcast::is_on";    ### TODO: to config
+            return unless $slave_redis->get($is_on_key);    ### Need 1 for continuing
+        }
+
+        $message = eval { decode_json $message } unless ref $message eq 'HASH';
+        delete $message->{message} if $message->{site_status} ne 'down';
+
+        $client_shared->{c}->send({
+                json => {
+                    website_status => {%{$client_shared->{website_status}}, %$message},
+                    echo_req       => $client_shared->{echo},
+                    msg_type       => 'website_status'
+                }});
+    }
+    return;
+}
+
 sub ticks {
     my ($c, $req_storage) = @_;
 
