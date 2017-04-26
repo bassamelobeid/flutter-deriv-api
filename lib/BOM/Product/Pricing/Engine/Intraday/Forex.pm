@@ -853,7 +853,7 @@ sub _build_economic_events_spot_risk_markup {
     my $five_minutes = 5 * 60;
     my $qfs          = Volatility::Seasonality->new;
     my @news_array =
-        grep { $_->{magnitude} > 1 && $start->epoch - $five_minutes >= $_->{release_epoch} && $_->{release_epoch} <= $end->epoch + $five_minutes }
+        grep { $_->{magnitude} > 1 && $_->{release_epoch} >= $start->epoch - $five_minutes && $_->{release_epoch} <= $end->epoch + $five_minutes }
         @{$qfs->categorize_events($bet->underlying->symbol, $self->economic_events) // []};
 
     my $base_amount      = (scalar(@news_array) > 0) ? 0.01 : 0;
