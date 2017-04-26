@@ -460,7 +460,7 @@ sub prepare_buy {
     return $self->prepare_bet_data_for_buy if $skip;
     my @clients = ($self->client);
     if ($self->multiple) {
-        @clients = map { $_->{client} } grep { ref $_->{client} } @{$self->multiple || []};
+        @clients = map { $_->{client} } grep { ref $_->{client} } @{$self->multiple};
     } else {
         $self->limits($self->calculate_limits);
     }
@@ -718,7 +718,7 @@ sub prepare_sell {
     ### Prepare clients list, get uniq only...
     my @clients = ($self->client);
     if ($self->multiple) {
-        @clients = map { $_->{client} } grep { ref $_->{client} } @{$self->multiple || []};
+        @clients = map { $_->{client} } grep { ref $_->{client} } @{$self->multiple};
     }
 
     my $error_status = BOM::Transaction::Validation->new({
