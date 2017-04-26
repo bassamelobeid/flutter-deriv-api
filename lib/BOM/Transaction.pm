@@ -447,8 +447,7 @@ sub prepare_buy {
     $self->limits($self->calculate_limits) unless $self->multiple;
     my @clients = map { $_->{client} } grep { ref $_->{client} } @{$self->multiple || []};
     @clients = ($self->client) unless scalar @clients;
-    my %seen;
-    @clients = grep { !$seen{(\$_ + 0)}++ } @clients;
+
     my $error_status = BOM::Transaction::Validation->new({
             transaction => $self,
             clients     => \@clients,
@@ -704,8 +703,6 @@ sub prepare_sell {
     ### Prepare clients list, get uniq only...
     my @clients = map { $_->{client} } grep { ref $_->{client} } @{$self->multiple || []};
     @clients = ($self->client) unless scalar @clients;
-    my %seen;
-    @clients = grep { !$seen{(\$_ + 0)}++ } @clients;
 
     my $error_status = BOM::Transaction::Validation->new({
             transaction => $self,

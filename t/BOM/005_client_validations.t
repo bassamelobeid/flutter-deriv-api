@@ -9,6 +9,7 @@ use Test::Exception;
 use Date::Utility;
 use Client::Account;
 use BOM::Transaction::Validation;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $rose_client = Client::Account->new({loginid => 'CR2002'});
 my $loginid     = $rose_client->loginid;
