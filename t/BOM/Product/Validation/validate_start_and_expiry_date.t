@@ -179,7 +179,7 @@ subtest 'date start blackouts' => sub {
     $bet_params->{current_tick} = $usdjpy_friday_three_minute_before_tick;
     $c                          = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy at 3 mins before friday close';
-    like(($c->primary_validation_error)[0]->{message_to_client}, qr/Trading is not available from 20:55:00 to 21:00:00/, 'throws error');
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not available from [_1] to [_2].', '20:55:00', '21:00:00']);
 
     note('Testing date_start blackouts for frxAUDUSD on Monday ');
 
@@ -187,7 +187,7 @@ subtest 'date start blackouts' => sub {
     $bet_params->{duration}   = '10m';
     $c                        = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy at 10 mins forward starting of forex on Monday morning';
-    like(($c->primary_validation_error)[0]->{message_to_client}, qr/Trading is not available from 00:00:00 to 00:10:00/, 'throws error');
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not available from [_1] to [_2].', '00:00:00', '00:10:00']);
 
     $bet_params->{underlying} = 'R_100';
     $c = produce_contract($bet_params);
@@ -221,7 +221,7 @@ subtest 'date start blackouts' => sub {
     $bet_params->{duration}     = '1h';
     $c                          = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    like(($c->primary_validation_error)[0]->{message_to_client}, qr/from 01:30:00 to 01:40:00/, 'throws error');
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not available from [_1] to [_2].', '01:30:00', '01:40:00']);
     $bet_params->{date_pricing} = $hsi_open->plus_time_interval('1m');
     $bet_params->{date_start}   = $hsi_open->epoch + 600;
     $bet_params->{duration}     = '1h';
@@ -238,7 +238,7 @@ subtest 'date start blackouts' => sub {
     $bet_params->{current_tick} = $hsi_weekday_tick;
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    like(($c->primary_validation_error)[0]->{message_to_client}, qr/from 07:25:00 to 07:40:00/, 'throws error');
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not available from [_1] to [_2].', '07:25:00', '07:40:00']);
 
     note('Multiday contract on HSI');
     my $new_day           = $weekday->plus_time_interval('1d');
@@ -265,7 +265,8 @@ subtest 'date start blackouts' => sub {
     $bet_params->{duration} = '5d';
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    like(($c->primary_validation_error)[0]->{message_to_client}, qr/from 06:40:00 to 07:40:00/, 'throws error');
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not available from [_1] to [_2].', '06:40:00', '07:40:00']);
+
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
@@ -325,9 +326,9 @@ subtest 'date start blackouts' => sub {
     $bet_params->{duration} = '4h59m59s';
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'invalid to buy';
-    like(
+    is_deeply(
         ($c->primary_validation_error)[0]->{message_to_client},
-        qr/Trading on forex contracts with duration less than 5 hours is not available from 21:00:00 to 23:00:00/,
+        ['Trading on forex contracts with duration less than 5 hours is not available from [_2] to [_3]', '21:00:00', '23:00:00'],
         'throws error'
     );
     $bet_params->{underlying} = 'R_100';
@@ -374,7 +375,7 @@ subtest 'date_expiry blackouts' => sub {
     $bet_params->{duration} = '59m1s';
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    like(($c->primary_validation_error)[0]->{message_to_client}, qr/between 07:39:00 and 07:40:00/, 'throws error');
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Contract may not expire between [_1] and [_2].', '07:39:00', '07:40:00']);
 
     my $usdjpy_close = create_underlying('frxAUDUSD')->calendar->closing_on($new_week);
     my $pricing_date = $usdjpy_close->minus_time_interval('6h');
@@ -424,7 +425,7 @@ subtest 'date expiry blackout - year end holidays for equity' => sub {
     my $c = produce_contract($bet_params);
     ok !$c->is_atm_bet,      'not ATM contract';
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    like($c->primary_validation_error->message_to_client, qr/not expire between 2016-12-30 and 2017-01-05/, 'throws error');
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Contract may not expire between [_1] and [_2].', '2016-12-30', '2017-01-05']);
     $bet_params->{barrier} = 'S0P';
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy for ATM';
@@ -492,5 +493,5 @@ subtest 'market_risk blackouts' => sub {
     $bet_params->{current_tick} = $xauusd_tick;
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    like(($c->primary_validation_error)[0]->{message_to_client}, qr/from 21:00:00 to 23:59:59/, 'throws error');
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not available from [_1] to [_2].', '21:00:00', '23:59:59']);
 };

@@ -53,13 +53,13 @@ use LandingCompany::Offerings qw(get_contract_specifics);
 use VolSurface::Empirical;
 
 use BOM::Platform::Chronicle;
-use BOM::Platform::Context qw(localize);
 use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Platform::RiskProfile;
 use BOM::Product::Types;
 use BOM::Product::ContractValidator;
 use BOM::Product::ContractPricer;
+use BOM::Product::Static;
 
 # require Pricing:: modules to avoid circular dependency problems.
 UNITCHECK {
@@ -68,6 +68,8 @@ UNITCHECK {
     use BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
     use BOM::Product::Pricing::Greeks::BlackScholes;
 }
+
+my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
 =head1 ATTRIBUTES - Construction
 
@@ -444,7 +446,7 @@ sub get_time_to_settlement {
 
 =head2 longcode
 
-Returns the (localized) longcode for this contract.
+Returns the longcode for this contract.
 
 May throw an exception if an invalid expiry type is requested for this contract type.
 
@@ -458,33 +460,35 @@ sub longcode {
     my $forward_starting_contract = ($self->starts_as_forward_starting or $self->is_forward_starting);
     my $expiry_type = $self->tick_expiry ? 'tick' : $self->_check_is_intraday($self->date_start) == 0 ? 'daily' : 'intraday';
     $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $forward_starting_contract and $self->fixed_expiry;
-    my $localizable_description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
+    my $description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
+    my @longcode = ($description, $self->currency, to_monetary_number_format($self->payout), $self->underlying->display_name);
 
-    my ($when_end, $when_start);
+    my ($when_end, $when_start, $generic_mapping) = ([], [], BOM::Product::Static::get_generic_mapping());
     if ($expiry_type eq 'intraday_fixed_expiry') {
-        $when_end   = $self->date_expiry->datetime . ' GMT';
-        $when_start = '';
+        $when_end = [$self->date_expiry->datetime . ' GMT'];
     } elsif ($expiry_type eq 'intraday') {
-        $when_end = $self->get_time_to_expiry({from => $self->date_start})->as_string;
-        $when_start = ($forward_starting_contract) ? $self->date_start->db_timestamp . ' GMT' : localize('contract start time');
+        $when_end = [$self->get_time_to_expiry({from => $self->date_start})->as_string];
+        $when_start = ($forward_starting_contract) ? [$self->date_start->db_timestamp . ' GMT'] : [$generic_mapping->{contract_start_time}];
     } elsif ($expiry_type eq 'daily') {
         my $close = $self->underlying->calendar->closing_on($self->date_expiry);
         if ($close and $close->epoch != $self->date_expiry->epoch) {
-            $when_end = $self->date_expiry->datetime . ' GMT';
+            $when_end = [$self->date_expiry->datetime . ' GMT'];
         } else {
-            $when_end = localize('close on [_1]', $self->date_expiry->date);
+            $when_end = [$generic_mapping->{close_on}, $self->date_expiry->date];
         }
-        $when_start = '';
     } elsif ($expiry_type eq 'tick') {
-        $when_end   = $self->tick_count;
-        $when_start = localize('first tick');
+        $when_end   = [$self->tick_count];
+        $when_start = [$generic_mapping->{first_tick}];
     }
-    my $payout = to_monetary_number_format($self->payout);
-    my @barriers = ($self->two_barriers) ? ($self->high_barrier, $self->low_barrier) : ($self->barrier);
-    @barriers = map { $_->display_text if $_ } @barriers;
+    push @longcode, ($when_start, $when_end);
 
-    return localize($localizable_description,
-        ($self->currency, $payout, localize($self->underlying->display_name), $when_start, $when_end, @barriers));
+    if ($self->two_barriers) {
+        push @longcode, ($self->high_barrier->display_text, $self->low_barrier->display_text);
+    } elsif ($self->barrier) {
+        push @longcode, $self->barrier->display_text;
+    }
+
+    return \@longcode;
 }
 
 =head2 allowed_slippage
@@ -603,8 +607,8 @@ sub _build_is_intraday {
 sub _build_basis_tick {
     my $self = shift;
 
-    my $waiting_for_entry_tick = localize('Waiting for entry tick.');
-    my $missing_market_data    = localize('Trading on this market is suspended due to missing market data.');
+    my $waiting_for_entry_tick = $ERROR_MAPPING->{EntryTickMissing};
+    my $missing_market_data    = $ERROR_MAPPING->{MissingMarketData};
     my ($basis_tick, $potential_error);
 
     # basis_tick is only set to entry_tick when the contract has started.
@@ -627,7 +631,7 @@ sub _build_basis_tick {
         });
         $self->_add_error({
             message           => "Waiting for entry tick [symbol: " . $self->underlying->symbol . "]",
-            message_to_client => $potential_error,
+            message_to_client => [$potential_error],
         });
     }
 
@@ -794,7 +798,7 @@ sub _build_dividend_adjustment {
                 . $dividend_recorded_date->datetime . "] "
                 . "[symbol: "
                 . $self->underlying->symbol . "]",
-            message_to_client => localize('Trading on this market is suspended due to missing market (dividend) data.'),
+            message_to_client => [$ERROR_MAPPING->{MissingDividendMarketData}],
         });
 
     }
@@ -870,7 +874,7 @@ sub _build_pricing_spot {
                 . $self->date_pricing->datetime . "] "
                 . "[symbol: "
                 . $self->underlying->symbol . "]",
-            message_to_client => localize('We could not process this contract at this time.'),
+            message_to_client => [$ERROR_MAPPING->{CannotProcessContract}],
         });
     }
 
@@ -908,24 +912,18 @@ sub _build_staking_limits {
         : $bet_limits->{min_payout}->{default}->{$curr};
     my $stake_min = ($self->for_sale) ? $payout_min / 20 : $payout_min / 2;
 
-    my $message_to_client_array;
     my $message_to_client;
     if ($self->for_sale) {
-        $message_to_client = localize('Contract market price is too close to final payout.');
+        $message_to_client = [$ERROR_MAPPING->{MarketPricePayoutClose}];
     } else {
-        $message_to_client = localize(
-            'Minimum stake of [_1] and maximum payout of [_2]',
-            to_monetary_number_format($stake_min),
-            to_monetary_number_format($payout_max));
-        $message_to_client_array =
-            ['Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($stake_min), to_monetary_number_format($payout_max)];
+        $message_to_client =
+            [$ERROR_MAPPING->{StakePayoutLimits}, to_monetary_number_format($stake_min), to_monetary_number_format($payout_max)];
     }
 
     return {
-        min                     => $stake_min,
-        max                     => $payout_max,
-        message_to_client       => $message_to_client,
-        message_to_client_array => $message_to_client_array,
+        min               => $stake_min,
+        max               => $payout_max,
+        message_to_client => $message_to_client,
     };
 }
 
@@ -972,7 +970,7 @@ sub _build_exit_tick {
                     . $exit_tick_date->datetime . "] "
                     . "[expiry: "
                     . $entry_tick_date->datetime . "]",
-                message_to_client => localize("Intraday contracts may not cross market open."),
+                message_to_client => [$ERROR_MAPPING->{CrossMarketIntraday}],
             });
         }
     }
