@@ -18,15 +18,10 @@ has barrier => (
     builder => '_build_barrier',
 );
 
-has original_barrier => (
-    is  => 'rw',
-    isa => 'Maybe[BOM::Product::Contract::Strike]',
-);
 
 sub _build_barrier {
     my $self    = shift;
     my $barrier = $self->make_barrier($self->supplied_barrier);
-    $self->original_barrier($self->initial_barrier) if defined $self->initial_barrier;
     return $barrier;
 }
 has barriers_for_pricing => (
