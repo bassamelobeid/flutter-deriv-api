@@ -23,7 +23,7 @@ use File::Temp;
 use POSIX qw(strftime);
 use Try::Tiny;
 
-use Mail::Sender;
+use Email::Stuffer;
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
@@ -155,13 +155,12 @@ sub generate {
 
         $dbh->commit;
         if ($mail_content and $self->send_alerts) {
-            my $sender = Mail::Sender->new({
-                smtp    => 'localhost',
-                from    => 'Risk reporting <risk-reporting@binary.com>',
-                to      => 'Quants <x-quants-alert@binary.com>',
-                subject => 'Problem in MtM bets pricing',
-            });
-            $sender->MailMsg({msg => $mail_content});
+            my $from    = 'Risk reporting <risk-reporting@binary.com>';
+            my $to      = 'Quants <x-quants-alert@binary.com>';
+            my $subject = 'Problem in MtM bets pricing';
+
+            Email::Stuffer->from($from)->to($to)->subject($subject)->text_body($mail_content)->send
+                || warn "Sending email from $from to $to subject $subject failed";
         }
 
         $dbh->disconnect;
@@ -281,13 +280,10 @@ sub sell_expired_contracts {
         }
 
         if (BOM::Platform::Config::on_production()) {
-            my $sender = Mail::Sender->new({
-                smtp    => 'localhost',
-                from    => '"Autosell" <autosell@regentmarkets.com>',
-                to      => 'quants-market-data@regentmarkets.com',
-                subject => $subject,
-            });
-            $sender->MailMsg({msg => join("\n", @msg) . "\n\n"});
+            my $from = '"Autosell" <autosell@regentmarkets.com>';
+            my $to   = 'quants-market-data@regentmarkets.com';
+            Email::Stuffer->from($from)->to($to)->subject($subject)->text_body(join("\n", @msg) . "\n\n")->send
+                || warn "sending email from $from to $to subject $subject failed";
         }
     }
 
