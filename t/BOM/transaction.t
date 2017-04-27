@@ -1670,7 +1670,7 @@ subtest 'max_losses validation', sub {
             });
             is $t->buy, undef, 'CALL bet bought';
             $t = BOM::Transaction->new({
-                purchase_date => $contract->date_start,
+                purchase_date => $contract_up->date_start,
                 client        => $cl,
                 contract      => $contract_up,
                 contract_id   => $t->contract_id,
@@ -1688,7 +1688,7 @@ subtest 'max_losses validation', sub {
             });
             is $t->buy, undef, 'PUT bet bought';
             $t = BOM::Transaction->new({
-                purchase_date => $contract->date_start,
+                purchase_date => $contract_down->date_start,
                 client        => $cl,
                 contract      => $contract_down,
                 contract_id   => $t->contract_id,
@@ -1802,7 +1802,7 @@ subtest 'max_7day_losses validation', sub {
             });
             is $t->buy, undef, 'CALL bet bought';
             $t = BOM::Transaction->new({
-                purchase_date => $contract->date_start,
+                purchase_date => $contract_up->date_start,
                 client        => $cl,
                 contract      => $contract_up,
                 contract_id   => $t->contract_id,
@@ -1820,7 +1820,7 @@ subtest 'max_7day_losses validation', sub {
             });
             is $t->buy, undef, 'PUT bet bought';
             $t = BOM::Transaction->new({
-                purchase_date => $contract->date_start,
+                purchase_date => $contract_down->date_start,
                 client        => $cl,
                 contract      => $contract_down,
                 contract_id   => $t->contract_id,
@@ -1935,7 +1935,7 @@ subtest 'max_30day_losses validation', sub {
             });
             is $t->buy, undef, 'CALL bet bought';
             $t = BOM::Transaction->new({
-                purchase_date => $contract->date_start,
+                purchase_date => $contract_up->date_start,
                 client        => $cl,
                 contract      => $contract_up,
                 contract_id   => $t->contract_id,
@@ -1953,7 +1953,7 @@ subtest 'max_30day_losses validation', sub {
             });
             is $t->buy, undef, 'PUT bet bought';
             $t = BOM::Transaction->new({
-                purchase_date => $contract->date_start,
+                purchase_date => $contract_down->date_start,
                 client        => $cl,
                 contract      => $contract_down,
                 contract_id   => $t->contract_id,
