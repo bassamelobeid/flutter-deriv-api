@@ -54,7 +54,7 @@ sub is_valid_to_buy {
         message_to_client => [get_error_mapping()->{CannotValidateContract}],
     });
     return 0;
- }
+}
 
 sub is_valid_to_sell {
     my $self = shift;
