@@ -136,7 +136,7 @@ sub run {
                 surface          => $raw_volsurface->{surface},
             });
             if ($volsurface->is_valid) {
-$DB::single=1;
+                $DB::single = 1;
                 if (exists $otc_list{'OTC_' . $symbol}) {
                     my $otc         = create_underlying('OTC_' . $symbol);
                     my $otc_surface = $volsurface->clone({
@@ -144,7 +144,7 @@ $DB::single=1;
                     });
                     if (exists $volsurface->surface->{7}) {
                         $otc_surface->save;
-		        $self->report->{$symbol}->{success} = 1;
+                        $self->report->{$symbol}->{success} = 1;
                     } else {
                         $self->report->{$symbol} = {
                             success => 0,
@@ -155,7 +155,7 @@ $DB::single=1;
 
                 if (exists $volsurface->surface->{7}) {
                     $volsurface->save;
-		    $self->report->{$symbol}->{success} = 1;
+                    $self->report->{$symbol}->{success} = 1;
                 } else {
                     $self->report->{$symbol} = {
                         success => 0,
