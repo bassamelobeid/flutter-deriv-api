@@ -424,7 +424,8 @@ sub _process_proposal_open_contract_response {
                     $args->{contract_id} = $contract->{contract_id};
                     Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel(
                         $c, 'subscribe', delete $contract->{account_id},    # should not go to client
-                        $uuid, $args);
+                        $uuid, $args
+                    );
                 }
             }
             my $result = {$uuid ? (id => $uuid) : (), %{$contract}};
