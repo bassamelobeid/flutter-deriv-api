@@ -71,7 +71,7 @@ subtest 'range' => sub {
         isa_ok $c, 'BOM::Product::Contract::Range';
         is $c->code,         'RANGE';
         is $c->pricing_code, 'RANGE';
-        is $c->ask_price,    0.5;
+        is $c->ask_price,    2;
         is roundnear(0.001, $c->pricing_vol), 0.184;
         is $c->sentiment, 'low_vol';
         ok $c->is_path_dependent;

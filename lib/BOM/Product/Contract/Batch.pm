@@ -2,7 +2,7 @@ package BOM::Product::Contract::Batch;
 
 use Moose;
 use BOM::Product::Categorizer;
-use BOM::Platform::Context qw (localize);
+use BOM::Product::Static;
 
 =head1 NAME
 
@@ -138,7 +138,7 @@ sub ask_prices {
             } else {
                 $contract_info->{error} = {
                     code              => 'ContractValidationError',
-                    message_to_client => localize("Cannot validate contract")};
+                    message_to_client => [BOM::Product::Static::get_error_mapping()->{CannotValidateContract}]};
             }
             # When the date_expiry is smaller than date_start, we can not price, display the payout|stake on error message
             if ($contract->date_expiry->epoch <= $contract->date_start->epoch) {

@@ -61,7 +61,7 @@ subtest 'predefined_contracts' => sub {
     $c                             = produce_contract($bet_params);
     ok %{$c->predefined_contracts}, 'has predefined_contracts for japan';
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    like($c->primary_validation_error->message_to_client, qr/Invalid expiry time/, 'throws error');
+    is_deeply($c->primary_validation_error->message_to_client, ['Invalid expiry time.']);
     note('sets predefined_contracts with valid expiry time.');
     my $expiry_epoch = $now->plus_time_interval('1h')->epoch;
     delete $bet_params->{duration};
@@ -86,7 +86,7 @@ subtest 'predefined_contracts' => sub {
                 expired_barriers   => ['100.010'],
             }});
     ok !$c->is_valid_to_buy, 'not valid to buy if barrier expired';
-    like($c->primary_validation_error->message_to_client, qr/Invalid barrier/, 'throws error');
+    is_deeply($c->primary_validation_error->message_to_client, ['Invalid barrier.']);
 
     $bet_params->{bet_type}     = 'EXPIRYMISS';
     $bet_params->{high_barrier} = '101';
@@ -97,7 +97,7 @@ subtest 'predefined_contracts' => sub {
                 available_barriers => [['99.100', '100.000']],
             }});
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    like($c->primary_validation_error->message_to_client, qr/Invalid barrier/, 'throws error');
+    is_deeply($c->primary_validation_error->message_to_client, ['Invalid barrier.']);
     $c = produce_contract({
         %$bet_params,
         payout   => 1000,
@@ -115,7 +115,7 @@ subtest 'predefined_contracts' => sub {
                 expired_barriers   => [['99.000', '101.000']],
             }});
     ok !$c->is_valid_to_buy, 'not valid to buy if barrier expired';
-    like($c->primary_validation_error->message_to_client, qr/Invalid barrier/, 'throws error');
+    is_deeply($c->primary_validation_error->message_to_client, ['Invalid barrier.']);
 };
 
 done_testing();

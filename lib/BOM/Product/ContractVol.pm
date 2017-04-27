@@ -3,16 +3,16 @@ package BOM::Product::Contract;    ## no critic ( RequireFilenameMatchesPackage 
 use strict;
 use warnings;
 
-## ATTRIBUTES  #######################
-
-use BOM::MarketData::Fetcher::VolSurface;
 use List::MoreUtils qw(none all);
-use BOM::Market::DataDecimate;
 use VolSurface::IntradayFX;
 use Quant::Framework::VolSurface;
-use BOM::Platform::Context qw(localize);
+use BOM::Market::DataDecimate;
+use BOM::MarketData::Fetcher::VolSurface;
+use BOM::Product::Static;
 
 ## ATTRIBUTES  #######################
+
+my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
 has economic_events_for_volatility_calculation => (
     is         => 'ro',
@@ -174,14 +174,14 @@ sub _build_pricing_vol {
         warn "Volatility error: $volatility_error";
         $self->_add_error({
             message           => $volatility_error,
-            message_to_client => localize('Trading on this market is suspended due to missing market (volatility) data.'),
+            message_to_client => [$ERROR_MAPPING->{MissingVolatilityMarketData}],
         });
     }
 
     if ($vol <= 0) {
         $self->_add_error({
             message           => 'Zero volatility. Invalidate price.',
-            message_to_client => localize('We could not process this contract at this time.'),
+            message_to_client => [$ERROR_MAPPING->{CannotProcessContract}],
         });
     }
 

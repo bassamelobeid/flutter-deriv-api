@@ -117,36 +117,16 @@ subtest 'produce_batch_contract - error check' => sub {
 
     my $batch      = produce_batch_contract($args);
     my $ask_prices = $batch->ask_prices;
-    like(
-        $ask_prices->{RANGE}->{'100.200-99.800'}->{error}{message_to_client},
-        qr/not offered for this duration/,
-        'throws an error for invalid duration'
-    );
-    like(
-        $ask_prices->{UPORDOWN}->{'100.200-99.800'}->{error}{message_to_client},
-        qr/not offered for this duration/,
-        'throws an error for invalid duration'
-    );
-    like(
-        $ask_prices->{RANGE}->{'100.250-98.750'}->{error}{message_to_client},
-        qr/not offered for this duration/,
-        'throws an error for invalid duration'
-    );
-    like(
-        $ask_prices->{UPORDOWN}->{'100.250-98.750'}->{error}{message_to_client},
-        qr/not offered for this duration/,
-        'throws an error for invalid duration'
-    );
+    is_deeply($ask_prices->{RANGE}->{'100.200-99.800'}->{error}{message_to_client},    ['Trading is not offered for this duration.'],);
+    is_deeply($ask_prices->{UPORDOWN}->{'100.200-99.800'}->{error}{message_to_client}, ['Trading is not offered for this duration.'],);
+    is_deeply($ask_prices->{RANGE}->{'100.250-98.750'}->{error}{message_to_client},    ['Trading is not offered for this duration.'],);
+    is_deeply($ask_prices->{UPORDOWN}->{'100.250-98.750'}->{error}{message_to_client}, ['Trading is not offered for this duration.'],);
 
     $args->{duration} = '1d';
     $batch            = produce_batch_contract($args);
     $ask_prices       = $batch->ask_prices;
-    is $ask_prices->{RANGE}->{'100.200-99.800'}->{ask_price}, 0.5, 'minimum ask price';
-    like(
-        $ask_prices->{UPORDOWN}->{'100.200-99.800'}->{error}{message_to_client},
-        qr/This contract offers no return/,
-        'throws an error for invalid duration'
-    );
+    is $ask_prices->{RANGE}->{'100.200-99.800'}->{ask_price}, 2, 'minimum ask price';
+    is_deeply($ask_prices->{UPORDOWN}->{'100.200-99.800'}->{error}{message_to_client}, ['This contract offers no return.'],);
     is $ask_prices->{RANGE}->{'100.250-98.750'}->{ask_price},    2.35, 'correct ask price';
     is $ask_prices->{UPORDOWN}->{'100.250-98.750'}->{ask_price}, 8.4,  'correct ask price';
 
