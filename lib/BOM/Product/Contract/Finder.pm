@@ -11,13 +11,13 @@ use VolSurface::Utils qw(get_strike_for_spot_delta);
 
 use Quant::Framework;
 use BOM::Platform::Chronicle;
+use Finance::Contract::Category;
+use LandingCompany::Offerings qw(get_offerings_flyby);
+
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
-use LandingCompany::Offerings qw(get_offerings_flyby);
-use Finance::Contract::Category;
 use BOM::Product::Contract::Strike;
-use BOM::Platform::Context qw(localize);
 
 use base qw( Exporter );
 our @EXPORT_OK = qw(available_contracts_for_symbol);
@@ -66,8 +66,8 @@ sub available_contracts_for_symbol {
         my $bc = $o->{barrier_category};
 
         my $cat = Finance::Contract::Category->new($cc);
-        $o->{contract_category_display} = localize($cat->display_name);
-        $o->{contract_display}          = localize($o->{contract_display});
+        $o->{contract_category_display} = $cat->display_name;
+        $o->{contract_display}          = $o->{contract_display};
 
         if ($o->{start_type} eq 'forward') {
             my @trade_dates;

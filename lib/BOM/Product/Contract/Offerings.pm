@@ -16,21 +16,20 @@ my $offerings = BOM::Product::Contract::Offerings->new;
 
 use Moose;
 use namespace::autoclean;
-
+use Cache::RedisDB;
 use List::MoreUtils qw(uniq first_index);
 
+use Finance::Asset::SubMarket;
+use Finance::Contract::Category;
 use Finance::Asset::Market::Registry;
+use Finance::Asset::SubMarket::Registry;
+use LandingCompany::Offerings qw(get_offerings_with_filter);
+
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use Finance::Contract::Category;
-use LandingCompany::Offerings qw(get_offerings_with_filter);
-use BOM::Platform::Context qw(localize);
-use Finance::Asset::SubMarket;
-use Finance::Asset::SubMarket::Registry;
-use Cache::RedisDB;
-use BOM::Platform::Context qw(request);
 use BOM::Platform::Chronicle;
 use Quant::Framework;
+use BOM::Platform::Runtime;
 
 =head1 ATTRIBUTES
 
@@ -39,11 +38,6 @@ use Quant::Framework;
 The data structure representing BOM offerings.
 
 =cut
-
-has landing_company => (
-    is      => 'ro',
-    default => 'costarica',
-);
 
 has tree => (
     is         => 'ro',
@@ -63,7 +57,11 @@ has levels => (
     default  => sub {
         return [qw(markets submarkets underlyings contract_categories )];
     },
+);
 
+has landing_company => (
+    is      => 'ro',
+    default => 'costarica',
 );
 
 has date => (
@@ -105,7 +103,7 @@ sub _build_trading_calendar {
 
 my %known_decorations = (
 
-    name => sub { return localize($_->display_name) },
+    name => sub { return $_->display_name },
 
     times => sub {
         my ($parent_obj, $self) = @_;
@@ -169,14 +167,14 @@ my %known_decorations = (
                 if ($early_closes) {
                     #Q::F::TradingCalendar does not have access to out localization methods, so we localiza its result here
                     # Only set the rule as Friday if it is early close due to Friday.
-                    $rule = localize($change_rules->{daily_close}->{rule})
+                    $rule = $change_rules->{daily_close}->{rule}
                         if (defined $change_rules->{daily_close}->{rule} and $early_closes->hour . 'h' eq $change_rules->{daily_close}->{to});
                     $message =
                           $self->c
                         ? $self->c->l('Closes early (at [_1])', $trading_calendar->closing_on($exchange, $when)->time_hhmm)
                         : 'Closes early (at ' . $trading_calendar->closing_on($exchange, $when)->time_hhmm . ')';
                 } elsif ($trading_calendar->opens_late_on($exchange, $when)) {
-                    $rule = localize($change_rules->{daily_open}->{rule})
+                    $rule = $change_rules->{daily_open}->{rule}
                         if (defined $change_rules->{daily_open}->{rule}
                         and $trading_calendar->opens_late_on($exchange, $when)->hour . 'h' eq $change_rules->{daily_open}->{to});
                     $message =
@@ -255,7 +253,7 @@ sub _build_tree {
                 parent      => $market_info,
             };
             foreach my $ul (
-                sort { localize($a->display_name) cmp localize($b->display_name) }
+                sort { $a->display_name cmp $b->display_name }
                 map  { create_underlying($_) } get_offerings_with_filter(
                     BOM::Platform::Runtime->instance->get_offerings_config,
                     'underlying_symbol',

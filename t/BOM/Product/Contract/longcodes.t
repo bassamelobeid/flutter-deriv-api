@@ -15,39 +15,21 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 subtest 'Proper form' => sub {
     my @shortcodes = (
         qw~
-            CALL_R_50_100_1393816285_6_MAR_14_7582422_0
             CALL_RDBULL_100_1393816299_1393828299_S0P_0
             ONETOUCH_FRXAUDJPY_100_1394502374_1394509574_S133P_0
             CALL_FRXEURUSD_100_1394502338_1394509538_S0P_0
             CALL_FRXEURUSD_100_1394502112_1394512912_S0P_0
-            FLASHU_FRXNZDUSD_100_1394502169_1394512969_S0P_0
-            FLASHD_FRXUSDJPY_100_1394502298_1394513098_S0P_0
-            FLASHU_FRXNZDUSD_100_1394502392_1394509592_S0P_0
-            INTRADU_FRXEURNOK_100_1394503200_1394514000_S0P_0
-            INTRADD_FRXEURNOK_100_1394502900_1394513700_S0P_0
-            FLASHU_FRXUSDJPY_100_1394501981_1394573981_S0P_0
+            CALL_FRXNZDUSD_100_1394502169_1394512969_S0P_0
+            PUT_FRXUSDJPY_100_1394502298_1394513098_S0P_0
+            CALL_FRXNZDUSD_100_1394502392_1394509592_S0P_0
+            CALL_FRXEURNOK_100_1394503200_1394514000_S0P_0
+            PUT_FRXEURNOK_100_1394502900_1394513700_S0P_0
+            CALL_FRXUSDJPY_100_1394501981_1394573981_S0P_0
             ONETOUCH_FRXAUDJPY_100_1394502043_1394538043_S300P_0
-            FLASHD_FRXEURNOK_100_1394590423_1394591143_S0P_0
-            PUT_FRXUSDJPY_100_1393816315_19_SEP_14_1014530_0
-            CALL_FRXXAUUSD_100_1393816326_19_SEP_14_13431500_0
-            DOUBLEUP_INICICIBC_100_1393822979_19_SEP_14_S0P_0
-            DOUBLEUP_FRXUSDJPY_100_1394501971_31_MAR_14_S0P_0
-            ONETOUCH_FRXAUDJPY_100_1394502053_21_MAR_14_947100_0
-            CALL_FRXEURUSD_100_1394502104_14_MAR_14_13870_0
-            DOUBLEDOWN_FRXNZDUSD_100_1394502179_14_MAR_14_S0P_0
-            DOUBLEDOWN_FRXEURNOK_100_1394502244_14_MAR_14_S0P_0
-            DOUBLEUP_FRXUSDJPY_100_1394502289_14_MAR_14_S0P_0
-            CALL_FRXEURUSD_100_1394502345_9_JUL_14_13871_0
-            NOTOUCH_FRXAUDJPY_100_1394502360_9_JUL_14_979900_0
-            DOUBLEDOWN_FRXNZDUSD_100_1394502401_9_JUL_14_S0P_0
-            DOUBLEUP_FRXEURNOK_100_1394502431_14_MAR_14_S0P_0
-            RANGE_AS51_100_1394590984_19_MAR_14_5436_5280
-            RANGE_FRXAUDJPY_100_1394591024_20_MAR_14_931040_910000
+            PUT_FRXEURNOK_100_1394590423_1394591143_S0P_0
             ~
     );
     my @currencies = ('USD', 'EUR', 'RUR');    # Inexhaustive, incorrect list: just to be sure the currency is not accidentally hard-coded.
-    plan tests => scalar @shortcodes * scalar @currencies;
-
     foreach my $currency (@currencies) {
         my $expected_standard_form = qr/Win payout if .*\.$/;                                   # Simplified standard form to which all should adhere.
                                                                                                 # Can this be improved further?
@@ -56,9 +38,33 @@ subtest 'Proper form' => sub {
         foreach my $shortcode (@shortcodes) {
             my $c = produce_contract($shortcode, $currency);
             my $expected_longcode = $shortcode =~ /FLASH*|INTRA*|DOUBLE*/ ? $exepcted_legacy_from : $expected_standard_form;
-            like($c->longcode, $expected_longcode, $shortcode . ' => long code form appears ok');
+            like($c->longcode->[0], $expected_longcode, $shortcode . ' => long code form appears ok');
         }
     }
+
+    # pick few random one to check complete equality
+    my $c = produce_contract($shortcodes[3], 'USD');
+    is_deeply(
+        $c->longcode,
+        [
+            'Win payout if [_3] is strictly higher than [_6] at [_5] after [_4].',
+            'USD', '100.00', 'EUR/USD', ['contract start time'], ['3 hours'], ['entry spot']]);
+
+    $c = produce_contract($shortcodes[10], 'EUR');
+    is_deeply(
+        $c->longcode,
+        [
+            'Win payout if [_3] touches [_6] through [_5] after [_4].', 'EUR',
+            '100.00',                                                   'AUD/JPY',
+            ['contract start time'], ['10 hours'],
+            ['entry spot plus [plural,_1,%d pip, %d pips]', 300]]);
+
+    $c = produce_contract($shortcodes[-1], 'RUR');
+    is_deeply(
+        $c->longcode,
+        [
+            'Win payout if [_3] is strictly lower than [_6] at [_5] after [_4].',
+            'RUR', '100.00', 'EUR/NOK', ['contract start time'], ['12 minutes'], ['entry spot']]);
 };
 
 subtest 'longcode from params for forward starting' => sub {
@@ -77,12 +83,18 @@ subtest 'longcode from params for forward starting' => sub {
     });
 
     ok $c->is_forward_starting, 'is a forward starting contract';
-    my $longcode;
 
+    my $longcode;
     like(warning { $longcode = $c->longcode }, qr/No basis tick for/, 'Got warning for no basis tick');
 
-    is $longcode, 'Win payout if Volatility 100 Index is strictly higher than entry spot at 10 minutes after 2016-10-19 10:10:00 GMT.',
-        'correct longcode';
+    is_deeply(
+        $longcode,
+        [
+            'Win payout if [_3] is strictly higher than [_6] at [_5] after [_4].',
+            'USD', '10.00',
+            'Volatility 100 Index',
+            ['2016-10-19 10:10:00 GMT'],
+            ['10 minutes'], ['entry spot']]);
 };
 
 done_testing();

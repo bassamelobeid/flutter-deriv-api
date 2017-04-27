@@ -4,12 +4,11 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-# Static methods.
-sub code { return 'ASIAND'; }
+use BOM::Product::Static qw/get_longcodes/;
 
 sub localizable_description {
     return +{
-        tick => 'Win payout if the last tick of [_3] is strictly lower than the average of the [plural,_5,%d tick,%d ticks].',
+        tick => get_longcodes()->{asiand_tick},
     };
 }
 

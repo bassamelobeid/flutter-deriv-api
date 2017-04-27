@@ -109,7 +109,8 @@ subtest 'trading hours' => sub {
     $args->{current_tick} = $usdjpy_weekend_tick;
     $c = produce_contract($args);
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    like(($c->primary_validation_error)[0]->{message_to_client}, qr/market is presently/, 'throws error message');
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client},
+        ['This market is presently closed. Try out the Volatility Indices which are always open.']);
 
     my $hsi_open         = $weekday->plus_time_interval('1h30m');
     my $hsi_time         = $hsi_open->plus_time_interval('11m');
@@ -127,7 +128,8 @@ subtest 'trading hours' => sub {
     $args->{date_start} = $args->{date_pricing} = $hsi_time->minus_time_interval('22m');
     $c = produce_contract($args);
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    like(($c->primary_validation_error)[0]->{message_to_client}, qr/market is presently/, 'throws error message');
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client},
+        ['This market is presently closed. Try out the Volatility Indices which are always open.']);
 
     # for forward starting
     $args->{date_pricing} = $hsi_open->minus_time_interval('20m');
@@ -135,7 +137,8 @@ subtest 'trading hours' => sub {
     $c                    = produce_contract($args);
     ok $c->is_forward_starting, 'forward starting';
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    like(($c->primary_validation_error)[0]->{message_to_client}, qr/market must be open at the start time/, 'throws error message');
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client},
+        ['The market must be open at the start time. Try out the Volatility Indices which are always open.']);
     $args->{date_start} = $hsi_open->plus_time_interval('11m');
     $c = produce_contract($args);
     ok $c->is_forward_starting, 'forward starting';
@@ -152,7 +155,7 @@ subtest 'trading hours' => sub {
     $args->{current_tick} = $hsi_weekday_tick;
     $c = produce_contract($args);
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    like(($c->primary_validation_error)[0]->{message_to_client}, qr/must expire during trading hours/, 'throws error message');
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Contract must expire during trading hours.']);
 };
 
 subtest 'invalid expiry time for multiday contracts' => sub {

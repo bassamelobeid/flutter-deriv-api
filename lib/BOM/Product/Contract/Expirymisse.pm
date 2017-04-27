@@ -4,15 +4,17 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-use BOM::Platform::Context qw(localize);
+use BOM::Product::Static qw/get_longcodes/;
 
-sub code { return 'EXPIRYMISSE'; }
+sub ticks_to_expiry {
+    die 'no ticks_to_expiry on an EXPIRYMISSE contract';
+}
 
 sub localizable_description {
     return +{
-        daily                 => 'Win payout if [_3] ends on or outside [_7] to [_6] at [_5].',
-        intraday              => 'Win payout if [_3] ends on or outside [_7] to [_6] at [_5] after [_4].',
-        intraday_fixed_expiry => 'Win payout if [_3] ends on or outside [_7] to [_6] at [_5].',
+        daily                 => get_longcodes()->{expirymisse_daily},
+        intraday              => get_longcodes()->{expirymisse_intraday},
+        intraday_fixed_expiry => get_longcodes()->{expirymisse_intraday_fixed_expiry},
     };
 }
 
