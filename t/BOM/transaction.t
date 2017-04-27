@@ -1183,14 +1183,14 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
             current_tick => $tick,
             barrier      => 'S0P',
         });
-
+        my $now = Date::Utility->new();
         my $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
             price         => 5.20,
             payout        => $contract->payout,
             amount_type   => 'payout',
-            purchase_date => Date::Utility->new(),
+            purchase_date => $now,
         });
 
         my $error = do {
@@ -1206,7 +1206,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
                     price         => 5.20,
                     payout        => $contract->payout,
                     amount_type   => 'payout',
-                    purchase_date => Date::Utility->new(),
+                    purchase_date => $now,
                 })->buy, undef, '1st bet bought';
 
             is +BOM::Transaction->new({
@@ -1215,7 +1215,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
                     price         => 5.20,
                     payout        => $contract->payout,
                     amount_type   => 'payout',
-                    purchase_date => Date::Utility->new(),
+                    purchase_date => $now,
                 })->buy, undef, '2nd bet bought';
 
             $txn->buy;

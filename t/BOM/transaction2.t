@@ -241,12 +241,11 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client        => $cl,
-            contract      => $contract,
-            price         => 50.00,
-            payout        => $contract->payout,
-            amount_type   => 'payout',
-            purchase_date => Date::Utility->new(),
+            client      => $cl,
+            contract    => $contract,
+            price       => 50.00,
+            payout      => $contract->payout,
+            amount_type => 'payout',
         });
 
         my $error = do {
@@ -277,14 +276,6 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
 
-            $txn = BOM::Transaction->new({
-                client        => $cl,
-                contract      => $contract,
-                price         => 50.00,
-                payout        => $contract->payout,
-                amount_type   => 'payout',
-                purchase_date => Date::Utility->new(),
-            });
             $txn->buy;
         };
         SKIP: {
@@ -320,12 +311,11 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
             $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Transaction->new({
-                client        => $cl,
-                contract      => $contract,
-                price         => 50.00,
-                payout        => $contract->payout,
-                amount_type   => 'payout',
-                purchase_date => Date::Utility->new(),
+                client      => $cl,
+                contract    => $contract,
+                price       => 50.00,
+                payout      => $contract->payout,
+                amount_type => 'payout',
             });
             $txn->buy;
         };
@@ -361,12 +351,11 @@ subtest 'asian_daily_turnover_limit', sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client        => $cl,
-            contract      => $contract,
-            price         => 50.00,
-            payout        => $contract->payout,
-            amount_type   => 'payout',
-            purchase_date => Date::Utility->new(),
+            client      => $cl,
+            contract    => $contract,
+            price       => 50.00,
+            payout      => $contract->payout,
+            amount_type => 'payout',
         });
 
         my $error = do {
@@ -397,12 +386,11 @@ subtest 'asian_daily_turnover_limit', sub {
 
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Transaction->new({
-                client        => $cl,
-                contract      => $contract,
-                price         => 50.00,
-                payout        => $contract->payout,
-                amount_type   => 'payout',
-                purchase_date => Date::Utility->new(),
+                client      => $cl,
+                contract    => $contract,
+                price       => 50.00,
+                payout      => $contract->payout,
+                amount_type => 'payout',
             });
 
             $txn->buy;
@@ -441,12 +429,11 @@ subtest 'asian_daily_turnover_limit', sub {
             $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Transaction->new({
-                client        => $cl,
-                contract      => $contract,
-                price         => 50.00,
-                payout        => $contract->payout,
-                amount_type   => 'payout',
-                purchase_date => Date::Utility->new(),
+                client      => $cl,
+                contract    => $contract,
+                price       => 50.00,
+                payout      => $contract->payout,
+                amount_type => 'payout',
             });
 
             $txn->buy;
@@ -767,12 +754,11 @@ subtest 'custom client limit' => sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client        => $cl,
-            contract      => $contract,
-            price         => 50.00,
-            payout        => $contract->payout,
-            amount_type   => 'payout',
-            purchase_date => Date::Utility->new(),
+            client      => $cl,
+            contract    => $contract,
+            price       => 50.00,
+            payout      => $contract->payout,
+            amount_type => 'payout',
         });
 
         my $error = do {
@@ -857,12 +843,11 @@ subtest 'non atm turnover checks' => sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client        => $cl,
-            contract      => $contract,
-            price         => 50.00,
-            payout        => $contract->payout,
-            amount_type   => 'payout',
-            purchase_date => Date::Utility->new(),
+            client      => $cl,
+            contract    => $contract,
+            price       => 50.00,
+            payout      => $contract->payout,
+            amount_type => 'payout',
         });
 
         my $error = do {
