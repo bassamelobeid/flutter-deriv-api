@@ -26,9 +26,7 @@ This variable will be set if test is running on qa devbox. If it is set the syst
 
 This variable will be set if test is running on qa devbox. If it is set the Cache::RedisDB will use test redis instance instead of development.
 
-=cu
-
-t=item $ENV{BOM_TEST_REDIS_RAND}
+=item $ENV{BOM_TEST_REDIS_RAND}
 
 This variable will be set if test is running on qa devbox. If it is set the BOM::Platform::Config::randsrv will use test redis instance instead of development.
 
@@ -38,6 +36,8 @@ This variable will be set if test is running on qa devbox. If it is set the BOM:
 
 This variable will be set if test is running on qa devbox. If it is set the BOM::Platform::RedisReplicated and other bom services
 will use test redis instance instead of development.
+
+=back
 
 =cut
 
@@ -77,4 +77,10 @@ BEGIN {
 }
 
 1;
+
+=head1 TEST
+
+    make test
+
+=cut
 
