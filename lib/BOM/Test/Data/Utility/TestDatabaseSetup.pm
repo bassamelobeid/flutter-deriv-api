@@ -141,6 +141,14 @@ sub _migrate_changesets {
             $self->_db_migrations_dir . '/unit_test_dml.sql'
         );
     }
+    if ((-f $self->_db_migrations_dir . '/hack_devbox_foreign_servers.sql') && $self->_db_name =~ m/_test/) {
+        $m->psql({
+                before => "SET session_replication_role TO 'replica';\n",
+                after  => ";\nSET session_replication_role TO 'origin';\n"
+            },
+            $self->_db_migrations_dir . '/hack_devbox_foreign_servers.sql'
+        );
+    }
 
     foreach (@bouncer_dbs) {
         $b_db = $_;
