@@ -747,20 +747,20 @@ sub _price_stream_results_adjustment {
     $cache->{payout} = $price_calculator->payout;
     if (my $error = $price_calculator->validate_price) {
         my $error_map = {
-            zero_stake             => sub { "Invalid stake" },
-            payout_too_many_places => sub { 'Payout may not have more than two decimal places.' },
+            zero_stake             => sub { "Invalid stake." },
+            payout_too_many_places => sub { 'Payout can not have more than two decimal places.' },
             stake_same_as_payout   => sub { 'This contract offers no return.' },
             stake_outside_range    => sub {
                 my ($details) = @_;
                 return (
-                    'Minimum stake of [_1] and maximum payout of [_2]',
+                    'Minimum stake of [_1] and maximum payout of [_2].',
                     to_monetary_number_format($details->[0]),
                     to_monetary_number_format($details->[1]));
             },
             payout_outside_range => sub {
                 my ($details) = @_;
                 return (
-                    'Minimum stake of [_1] and maximum payout of [_2]',
+                    'Minimum stake of [_1] and maximum payout of [_2].',
                     to_monetary_number_format($details->[0]),
                     to_monetary_number_format($details->[1]));
             },
@@ -819,15 +819,8 @@ sub _create_error_message {
     if ($response->{error}) {
         $err_code    = $response->{error}->{code};
         $err_details = $response->{error}->{details};
-        # in pricer_dameon everything happens in Eng to maximize the collisions. If translations has params it will come as message_to_client_array.
-        # eitherway it need l10n here.
-        if ($response->{error}->{message_to_client_array}) {
-            $err_message = $c->l(@{$response->{error}->{message_to_client_array}});
-            warn "Had both string error and error with parameters for $type - " . $response->{error}->{message_to_client}
-                if exists $response->{error}->{message_to_client};
-        } else {
-            $err_message = $c->l($response->{error}->{message_to_client});
-        }
+        # in pricer_dameon everything happens in Eng to maximize the collisions.
+        $err_message = $c->l($response->{error}->{message_to_client});
     } else {
         $err_code    = 'InternalServerError';
         $err_message = 'Internal server error';
