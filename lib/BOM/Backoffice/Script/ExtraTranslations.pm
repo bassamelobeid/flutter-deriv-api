@@ -10,14 +10,16 @@ use Module::Load::Conditional qw( can_load );
 use Locale::Maketext::Extract;
 use YAML::XS qw(LoadFile);
 
+use Finance::Contract::Category;
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
-use BOM::Platform::Runtime;
-use LandingCompany::Offerings qw(get_offerings_with_filter get_all_contract_types);
+use LandingCompany::Offerings qw(get_offerings_with_filter);
+
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::MarketData qw(create_underlying_db);
-use BOM::Product::Contract::Category;
+use BOM::Product::Static;
+use BOM::Platform::Runtime;
 
 has file_container => (
     is         => 'ro',
@@ -70,6 +72,9 @@ sub script_run {
     $self->add_contract_categories;
     $self->add_contract_types;
     $self->add_japan_settings;
+    $self->add_longcodes;
+    $self->add_generic_texts;
+    $self->add_error_messages;
 
     return 0;
 }
@@ -166,46 +171,19 @@ sub add_contract_types {
 
     my $fh = $self->pot_append_fh;
 
-    my $contract_type_config = get_all_contract_types();
+    my $contract_type_config = Finance::Contract::Category::get_all_contract_types();
 
     foreach my $contract_type (keys %{$contract_type_config}) {
         next if ($contract_type eq 'INVALID');
 
-        my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $contract_type;
-        if (not can_load(modules => {$contract_class => undef})) {
-            $contract_class = 'BOM::Product::Contract::Invalid';
-            can_load(module => {$contract_class => undef});    # No idea what to do if this fails.
-        }
-        my $ct_config = $contract_type_config->{$contract_type};
-
-        if ($ct_config->{display_name}) {
-            my $msgid = $self->msg_id($ct_config->{display_name});
+        if (my $display_name = $contract_type_config->{$contract_type}->{display_name}) {
+            my $msgid = $self->msg_id($display_name);
             if ($self->is_id_unique($msgid)) {
                 print $fh "\n";
                 print $fh $msgid . "\n";
                 print $fh "msgstr \"\"\n";
             }
         }
-
-        try {
-            if ($contract_class->localizable_description) {
-                foreach my $description_key (sort keys %{$contract_class->localizable_description}) {
-                    my $msgid = $self->msg_id($contract_class->localizable_description->{$description_key});
-                    if ($self->is_id_unique($msgid)) {
-                        print $fh "\n";
-                        print $fh "#. %1 - Payout Currency (example USD)\n";
-                        print $fh "#. %2 - Payout value (example 100)\n";
-                        print $fh "#. %3 - Underlying name (example USD/JPY)\n";
-                        print $fh "#. %4 - Starting datetime (may be 'contract start')\n";
-                        print $fh "#. %5 - Expiration datetime\n";
-                        print $fh "#. %6 - High (or single) barrier\n";
-                        print $fh "#. %7 - Low barrier (when present)\n";
-                        print $fh $msgid . "\n";
-                        print $fh "msgstr \"\"\n";
-                    }
-                }
-            }
-        };
     }
 
     return;
@@ -215,7 +193,7 @@ sub add_contract_categories {
     my $self = shift;
 
     my $fh = $self->pot_append_fh;
-    my @all_categories = map { BOM::Product::Contract::Category->new($_) }
+    my @all_categories = map { Finance::Contract::Category->new($_) }
         get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'contract_category');
     foreach my $contract_category (@all_categories) {
         if ($contract_category->display_name) {
@@ -288,6 +266,60 @@ sub add_submarkets {
                 print $fh $msgid . "\n";
                 print $fh "msgstr \"\"\n";
             }
+        }
+    }
+
+    return;
+}
+
+sub add_longcodes {
+    my $self = shift;
+
+    my $fh        = $self->pot_append_fh;
+    my $longcodes = BOM::Product::Static::get_longcodes();
+
+    foreach my $longcode (keys %$longcodes) {
+        my $msgid = $self->msg_id($longcodes->{$longcode});
+        if ($self->is_id_unique($msgid)) {
+            print $fh "\n";
+            print $fh $msgid . "\n";
+            print $fh "msgstr \"\"\n";
+        }
+    }
+
+    return;
+}
+
+sub add_generic_texts {
+    my $self = shift;
+
+    my $fh       = $self->pot_append_fh;
+    my $messages = BOM::Product::Static::get_generic_mapping();
+
+    foreach my $key (keys %$messages) {
+        my $msgid = $self->msg_id($messages->{$key});
+        if ($self->is_id_unique($msgid)) {
+            print $fh "\n";
+            print $fh $msgid . "\n";
+            print $fh "msgstr \"\"\n";
+        }
+    }
+
+    return;
+}
+
+sub add_error_messages {
+    my $self = shift;
+
+    my $fh            = $self->pot_append_fh;
+    my $error_mapping = BOM::Product::Static::get_error_mapping();
+
+    foreach my $err (keys %$error_mapping) {
+        my $msgid = $self->msg_id($error_mapping->{$err});
+        if ($self->is_id_unique($msgid)) {
+            print $fh "\n";
+            print $fh $msgid . "\n";
+            print $fh "msgstr \"\"\n";
         }
     }
 

@@ -19,7 +19,6 @@ use BOM::Platform::Config;
 PrintContentType();
 BrokerPresentation("QUANT BACKOFFICE");
 
-use Mail::Sender;
 use ForexFactory;
 use BOM::Platform::Config;
 use BOM::Platform::Runtime;
