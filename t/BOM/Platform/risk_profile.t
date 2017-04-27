@@ -192,8 +192,8 @@ subtest 'get_current_profile_definitions' => sub {
             },
         ],
         'stocks' => [{
-                'turnover_limit' => 10000,
-                'payout_limit'   => 1000,
+                'turnover_limit' => 1000,
+                'payout_limit'   => 100,
                 'name'           => 'OTC Stocks',
                 'profile_name'   => 'extreme_risk'
             }
