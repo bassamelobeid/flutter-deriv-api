@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Test::Exception;
 
 use Quant::Framework::Underlying;
@@ -106,6 +106,27 @@ subtest 'get_risk_profile' => sub {
     is $limit->[0]->{name},         'volidx_turnover_limit', 'correct name';
     is $limit->[0]->{risk_profile}, 'low_risk',              'risk_profile is low';
     is $limit->[0]->{market},       'volidx',                'market specific';
+};
+
+subtest 'comma separated entries' => sub {
+    note("set custom_product_profiles to no_business for frxUSDJPY & frxAUDJPY");
+    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+        '{"xxx": {"market": "forex", "underlying_symbol": "frxUSDJPY,frxAUDJPY", "risk_profile": "no_business", "name": "test custom"}}');
+    is $args{symbol}, 'R_100', 'symbol is R_100';
+    my $rp = BOM::Platform::RiskProfile->new(%args);
+    is $rp->get_risk_profile, 'low_risk', 'risk profile for R_100 is low_risk';
+    $args{market_name} = 'forex';
+    $args{symbol}      = 'frxUSDJPY';
+    $rp                = BOM::Platform::RiskProfile->new(%args);
+    is $rp->get_risk_profile, 'no_business', 'risk profile for frxUSDJPY is no_business';
+    $args{symbol} = 'frxAUDJPY';
+    $rp = BOM::Platform::RiskProfile->new(%args);
+    is $rp->get_risk_profile, 'no_business', 'risk profile for frxAUDJPY is no_business';
+    $args{symbol} = 'frxAUDUSD';
+    $rp = BOM::Platform::RiskProfile->new(%args);
+    is $rp->get_risk_profile, 'low_risk', 'risk profile for frxAUDUSD is low_risk';
+    $args{market_name} = 'volidx';
+    $args{symbol}      = 'R_100';
 };
 
 subtest 'custom client profile' => sub {
