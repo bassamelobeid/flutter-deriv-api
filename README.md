@@ -1,6 +1,9 @@
-# bom-oauth
+# NAME
+
+bom-oauth
 
 # TEST
+
     # run all test scripts
     make test
     # run one script
