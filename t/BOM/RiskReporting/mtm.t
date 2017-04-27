@@ -27,9 +27,6 @@ my $minus6mins  = Date::Utility->new(time - 360);
 my $minus5mins  = Date::Utility->new(time - 300);
 my $plus1day    = Date::Utility->new(time + 24 * 60 * 60);
 
-# Ensure we start out with a mailbox that exists
-path('/tmp/default.mailbox')->touch;
-
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -153,18 +150,20 @@ subtest 'realtime report generation' => sub {
     $mocked_system->mock('on_production', sub { 1 });
 
     my $results;
+    my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
+    $mailbox->init;
+    $mailbox->clear;
     lives_ok { $results = BOM::RiskReporting::MarkedToModel->new(end => $now, send_alerts => 0)->generate } 'Report generation does not die.';
 
     note 'This may not be checking what you think.  It can not tell when things sold.';
     is($dm->get_last_generated_historical_marked_to_market_time, $now->db_timestamp, 'It ran and updated our timestamp.');
     note "Includes a lot of unit test transactions about which we don't care.";
-    my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
     is($called_count, 1, 'BOM::Transaction::sell_expired_contracts called only once');
     my @msgs = $mailbox->search(
         email   => 'quants-market-data@regentmarkets.com',
         subject => qr/AutoSell Failures/
     );
-    ok(@msgs, "find the email");
+    ok(@msgs,                                        "find the email");
     ok($msgs[0]{body} =~ /Shortcode:   $short_code/, "contract $short_code has error");
     my @errors = $msgs[0]{body} =~ /Shortcode:/g;
     is(scalar @errors, 1, "number of contracts that have errors ");

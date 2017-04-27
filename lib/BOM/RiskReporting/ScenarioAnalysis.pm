@@ -24,7 +24,7 @@ use IO::Handle;
 use File::Path qw(make_path);
 use File::Temp;
 use List::Util qw(min sum);
-use Mail::Sender;
+use Email::Stuffer;
 use Text::CSV_XS;
 use Time::Duration::Concise::Localize;
 
@@ -167,17 +167,8 @@ sub generate {
         . $ignored
         . '] out of scope contracts ignored.';
     $scenario_message .= "\n\n" . $status;
-    my $sender = Mail::Sender->new({
-        smtp    => 'localhost',
-        from    => 'Risk reporting <risk-reporting@binary.com>',
-        to      => '<x-risk@binary.com>',
-        subject => $subject,
-    });
-    $sender->MailFile({
-        msg  => $scenario_message,
-        file => [$scenario_fh, $raw_fh],
-    });
-
+    Email::Stuffer->from('Risk reporting <risk-reporting@binary.com>')->to('<x-risk@binary.com>')->subject($subject)->text_body($scenario_message)
+        ->attach_file($scenario_fh, $raw_fh)->send;
     return;
 }
 
