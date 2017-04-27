@@ -45,7 +45,9 @@ if ($r->param('update_limit')) {
     foreach my $key (@known_keys) {
         if (my $value = $r->param($key)) {
             if (first { $value eq $_ } @{$known_values{$key}}) {
-                $ref{$key} = $value;
+                # we should not allow more than one value for risk_profile
+                die 'You could not specify multiple risk profile' if $key eq 'risk_profile' and $values =~ /,/;
+                $ref{$key} = [split ',', $value];
             } else {
                 print "Unrecognized value[" . encode_entities($r->param($key)) . "] for $key. Nothing is updated!!";
                 code_exit_BO();
@@ -53,7 +55,7 @@ if ($r->param('update_limit')) {
         }
     }
 
-    my $uniq_key = substr(md5_hex(join('_', sort { $a cmp $b } values %ref)), 0, 16);
+    my $uniq_key = substr(md5_hex(sort { $a <=> $b } values %ref), 0, 16);
 
     # if we just want to add client into watchlist, custom conditions is not needed
     my $has_custom_conditions = keys %ref;
