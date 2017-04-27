@@ -1067,7 +1067,7 @@ subtest 'Purchase Sell Contract' => sub {
         contract      => $contract,
         price         => $contract->ask_price,
         amount_type   => 'payout',
-        purchase_date => $contract->date_start,
+        purchase_date => Date::Utility->new($now->epoch - 1),
     });
 
     $error = $bpt->buy;
