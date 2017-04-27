@@ -26,18 +26,6 @@ sub BUILD {
                 message           => 'High and low barriers must be different',
                 message_to_client => [$ERROR_MAPPING->{SameBarriersNotAllowed}],
             });
-            $self->low_barrier(
-                $barrier1->adjust({
-                        modifier => 'subtract',
-                        amount   => $self->pip_size,
-                        reason   => 'High and low barriers same'
-                    }));
-            $self->high_barrier(
-                $barrier2->adjust({
-                        modifier => 'add',
-                        amount   => $self->pip_size,
-                        reason   => 'High and low barriers same'
-                    }));
         }
     }
 
