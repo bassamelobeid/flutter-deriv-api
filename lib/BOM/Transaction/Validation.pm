@@ -313,8 +313,7 @@ sub _is_valid_to_buy {
         return Error::Base->cuss(
             -type              => 'InvalidtoBuy',
             -mesg              => $contract->primary_validation_error->message,
-            -message_to_client => localize($contract->primary_validation_error->message_to_client)
-        );
+            -message_to_client => localize($contract->primary_validation_error->message_to_client));
     }
 
     return;
@@ -328,8 +327,7 @@ sub _is_valid_to_sell {
         return Error::Base->cuss(
             -type              => 'InvalidtoSell',
             -mesg              => $contract->primary_validation_error->message,
-            -message_to_client => localize($contract->primary_validation_error->message_to_client)
-        );
+            -message_to_client => localize($contract->primary_validation_error->message_to_client));
     }
 
     return;
@@ -395,10 +393,10 @@ sub _validate_iom_withdrawal_limit {
 
     if ($remaining_withdrawal_eur <= 0) {
         return Error::Base->cuss(
-            -type              => 'iomWithdrawalLimit',
-            -mesg              => $client->loginid . ' caught in IOM withdrawal limit check',
-            -message_to_client => localize(
-                "Due to regulatory requirements, you are required to authenticate your account in order to continue trading."),
+            -type => 'iomWithdrawalLimit',
+            -mesg => $client->loginid . ' caught in IOM withdrawal limit check',
+            -message_to_client =>
+                localize("Due to regulatory requirements, you are required to authenticate your account in order to continue trading."),
         );
     }
     return;
@@ -467,9 +465,7 @@ sub _validate_payout_limit {
                 -mesg              => $client->loginid . ' payout [' . $payout . '] over custom limit[' . $custom_limit . ']',
                 -message_to_client => ($custom_limit == 0)
                 ? localize('This contract is unavailable on this account.')
-                : localize(
-                    'This contract is limited to ' . to_monetary_number_format($custom_limit) . ' payout on this account.'
-                ),
+                : localize('This contract is limited to ' . to_monetary_number_format($custom_limit) . ' payout on this account.'),
             );
         }
     }
@@ -493,10 +489,10 @@ sub _validate_jurisdictional_restrictions {
 
     if (!$residence && $loginid !~ /^VR/) {
         return Error::Base->cuss(
-            -type              => 'NoResidenceCountry',
-            -mesg              => 'Client cannot place contract as we do not know their residence.',
-            -message_to_client => localize(
-                'In order for you to place contracts, we need to know your Residence (Country). Please update your settings.'),
+            -type => 'NoResidenceCountry',
+            -mesg => 'Client cannot place contract as we do not know their residence.',
+            -message_to_client =>
+                localize('In order for you to place contracts, we need to know your Residence (Country). Please update your settings.'),
         );
     }
 
@@ -522,10 +518,9 @@ sub _validate_jurisdictional_restrictions {
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
     if ($residence && $market_name eq 'volidx' && $countries_instance->volidx_restricted_country($residence)) {
         return Error::Base->cuss(
-            -type => 'RandomRestrictedCountry',
-            -mesg => 'Clients are not allowed to place Volatility Index contracts as their country is restricted.',
-            -message_to_client =>
-                localize('Sorry, contracts on Volatility Indices are not available in your country of residence'),
+            -type              => 'RandomRestrictedCountry',
+            -mesg              => 'Clients are not allowed to place Volatility Index contracts as their country is restricted.',
+            -message_to_client => localize('Sorry, contracts on Volatility Indices are not available in your country of residence'),
         );
     }
 
@@ -535,10 +530,9 @@ sub _validate_jurisdictional_restrictions {
         && $countries_instance->financial_binaries_restricted_country($residence))
     {
         return Error::Base->cuss(
-            -type => 'FinancialBinariesRestrictedCountry',
-            -mesg => 'Clients are not allowed to place financial products contracts as their country is restricted.',
-            -message_to_client =>
-                localize('Sorry, contracts on Financial Products are not available in your country of residence'),
+            -type              => 'FinancialBinariesRestrictedCountry',
+            -mesg              => 'Clients are not allowed to place financial products contracts as their country is restricted.',
+            -message_to_client => localize('Sorry, contracts on Financial Products are not available in your country of residence'),
         );
     }
 
@@ -587,10 +581,9 @@ sub _validate_client_self_exclusion {
 
     if (my $limit_excludeuntil = $client->get_self_exclusion_until_dt) {
         return Error::Base->cuss(
-            -type => 'ClientSelfExcluded',
-            -mesg => 'your account is not authorised for any further contract purchases.',
-            -message_to_client =>
-                localize('Sorry, you have excluded yourself from the website until [_1].', $limit_excludeuntil),
+            -type              => 'ClientSelfExcluded',
+            -mesg              => 'your account is not authorised for any further contract purchases.',
+            -message_to_client => localize('Sorry, you have excluded yourself from the website until [_1].', $limit_excludeuntil),
         );
     }
 
