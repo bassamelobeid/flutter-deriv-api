@@ -3,7 +3,7 @@ package BOM::Product::Contract::Invalid;
 use Moose;
 extends 'BOM::Product::Contract';
 
-use BOM::Product::Static qw/get_longcodes/;
+use BOM::Product::Static qw/get_longcodes get_error_mapping/;
 
 sub value     { return 0 }
 sub is_legacy { return 1 }
@@ -52,7 +52,7 @@ sub is_valid_to_sell {
     my $self = shift;
     $self->_add_error({
         message           => 'Invalid legacy contract',
-        message_to_client => [$ERROR_MAPPING->{CannotValidateContract}],
+        message_to_client => [get_error_mapping()->{CannotValidateContract}],
     });
     return 0;
 }
