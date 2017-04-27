@@ -615,8 +615,8 @@ sub process_proposal_array_event {
         $c->proposal_array_collector;
     }
 
-    foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
-        next if ref $stash_data ne 'HASH';
+    my @stash_items = grep { ref($_) eq 'HASH' } values %{$pricing_channel->{$redis_channel}};
+    for my $stash_data (@stash_items) {
         $stash_data->{cache}{contract_parameters}{currency} ||= $stash_data->{args}{currency};
         my %proposals;
         for my $contract_type (keys %{$response->{proposals}}) {
@@ -681,8 +681,8 @@ sub process_ask_event {
     return process_proposal_array_event($c, $response, $redis_channel, $pricing_channel) if exists $response->{proposals};
 
     my $theo_probability = delete $response->{theo_probability};
-    foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
-        next if ref $stash_data ne 'HASH';
+    my @stash_items = grep { ref($_) eq 'HASH' } values %{$pricing_channel->{$redis_channel}};
+    for my $stash_data (@stash_items) {
         my $results;
         unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
             $stash_data->{cache}->{contract_parameters}->{longcode} = $stash_data->{cache}->{longcode};
