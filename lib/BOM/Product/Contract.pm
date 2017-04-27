@@ -813,10 +813,6 @@ sub _build_pricing_spot {
         });
     }
 
-    if ($self->underlying->market->prefer_discrete_dividend) {
-        $initial_spot += $self->dividend_adjustment->{spot};
-    }
-
     return $initial_spot;
 }
 
