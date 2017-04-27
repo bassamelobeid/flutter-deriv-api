@@ -137,12 +137,6 @@ sub _apply_barrier_adjustment {
         $barrier *= $shift;
     }
 
-    if ($self->underlying->market->prefer_discrete_dividend) {
-        my $barrier_adjustment       = $self->dividend_adjustment->{barrier};
-        my $barrier_adj_future_value = $barrier_adjustment * exp($self->r_rate * $self->timeinyears->amount);
-        $barrier += $barrier_adj_future_value;
-    }
-
     return $barrier;
 }
 

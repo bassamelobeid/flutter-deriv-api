@@ -162,13 +162,6 @@ has tentative_events => (
     lazy_build => 1,
 );
 
-# We adopt "near-far" methodology to price in dividends by adjusting spot and strike.
-# This returns a hash reference with spot and barrrier adjustment for the bet period.
-has dividend_adjustment => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 has is_sold => (
     is      => 'ro',
     isa     => 'Bool',
@@ -747,42 +740,6 @@ sub _build_opposite_contract {
     }
 
     return $opp_contract;
-}
-
-
-sub _build_dividend_adjustment {
-    my $self = shift;
-
-    my $dividend_adjustment = $self->underlying->dividend_adjustments_for_period({
-        start => $self->date_pricing,
-        end   => $self->date_expiry,
-    });
-
-    my @corporate_actions = $self->underlying->get_applicable_corporate_actions_for_period({
-        start => $self->date_pricing->truncate_to_day,
-        end   => Date::Utility->new,
-    });
-
-    my $dividend_recorded_date = $dividend_adjustment->{recorded_date};
-
-    if (scalar @corporate_actions
-        and (my $action = first { Date::Utility->new($_->{effective_date})->is_after($dividend_recorded_date) } @corporate_actions))
-    {
-
-        warn "Missing dividend data: corp actions are " . join(',', @corporate_actions) . " and found date for action " . $action;
-        $self->_add_error({
-            message => 'Dividend is not updated  after corporate action'
-                . "[dividend recorded date : "
-                . $dividend_recorded_date->datetime . "] "
-                . "[symbol: "
-                . $self->underlying->symbol . "]",
-            message_to_client => [$ERROR_MAPPING->{MissingDividendMarketData}],
-        });
-
-    }
-
-    return $dividend_adjustment;
-
 }
 
 sub _build_payout {
