@@ -473,11 +473,12 @@ subtest 'sell a bet', sub {
             $mocked_validator->mock('_validate_trade_pricing_adjustment', sub { });
             $mocked->mock('price', sub { $contract->bid_price });
             $txn = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract,
-                contract_id => $fmb->{id},
-                price       => $contract->bid_price,
-                source      => 23,
+                purchase_date => $contract->date_start,
+                client        => $cl,
+                contract      => $contract,
+                contract_id   => $fmb->{id},
+                price         => $contract->bid_price,
+                source        => 23,
             });
             $txn->sell;
         };
@@ -1669,10 +1670,11 @@ subtest 'max_losses validation', sub {
             });
             is $t->buy, undef, 'CALL bet bought';
             $t = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract_up,
-                contract_id => $t->contract_id,
-                price       => 0,
+                purchase_date => $contract->date_start,
+                client        => $cl,
+                contract      => $contract_up,
+                contract_id   => $t->contract_id,
+                price         => 0,
             });
             is $t->sell(skip_validation => 1), undef, 'CALL bet sold';
 
@@ -1686,10 +1688,11 @@ subtest 'max_losses validation', sub {
             });
             is $t->buy, undef, 'PUT bet bought';
             $t = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract_down,
-                contract_id => $t->contract_id,
-                price       => 0,
+                purchase_date => $contract->date_start,
+                client        => $cl,
+                contract      => $contract_down,
+                contract_id   => $t->contract_id,
+                price         => 0,
             });
             is $t->sell(skip_validation => 1), undef, 'CALL bet sold';
 
@@ -1799,10 +1802,11 @@ subtest 'max_7day_losses validation', sub {
             });
             is $t->buy, undef, 'CALL bet bought';
             $t = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract_up,
-                contract_id => $t->contract_id,
-                price       => 0,
+                purchase_date => $contract->date_start,
+                client        => $cl,
+                contract      => $contract_up,
+                contract_id   => $t->contract_id,
+                price         => 0,
             });
             is $t->sell(skip_validation => 1), undef, 'CALL bet sold';
 
@@ -1816,10 +1820,11 @@ subtest 'max_7day_losses validation', sub {
             });
             is $t->buy, undef, 'PUT bet bought';
             $t = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract_down,
-                contract_id => $t->contract_id,
-                price       => 0,
+                purchase_date => $contract->date_start,
+                client        => $cl,
+                contract      => $contract_down,
+                contract_id   => $t->contract_id,
+                price         => 0,
             });
             is $t->sell(skip_validation => 1), undef, 'CALL bet sold';
 
@@ -1930,10 +1935,11 @@ subtest 'max_30day_losses validation', sub {
             });
             is $t->buy, undef, 'CALL bet bought';
             $t = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract_up,
-                contract_id => $t->contract_id,
-                price       => 0,
+                purchase_date => $contract->date_start,
+                client        => $cl,
+                contract      => $contract_up,
+                contract_id   => $t->contract_id,
+                price         => 0,
             });
             is $t->sell(skip_validation => 1), undef, 'CALL bet sold';
 
@@ -1947,10 +1953,11 @@ subtest 'max_30day_losses validation', sub {
             });
             is $t->buy, undef, 'PUT bet bought';
             $t = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract_down,
-                contract_id => $t->contract_id,
-                price       => 0,
+                purchase_date => $contract->date_start,
+                client        => $cl,
+                contract      => $contract_down,
+                contract_id   => $t->contract_id,
+                price         => 0,
             });
             is $t->sell(skip_validation => 1), undef, 'CALL bet sold';
 
@@ -2259,12 +2266,13 @@ subtest 'transaction slippage' => sub {
         $mocked->mock('limits', sub { {} });
 
         my $transaction = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            contract_id => $fmb_id,
-            price       => $price,
-            amount_type => 'payout',
-            source      => 23,
+            purchase_date => $contract->date_start,
+            client        => $cl,
+            contract      => $contract,
+            contract_id   => $fmb_id,
+            price         => $price,
+            amount_type   => 'payout',
+            source        => 23,
         });
 
         ok !$transaction->sell, 'no error when sell';

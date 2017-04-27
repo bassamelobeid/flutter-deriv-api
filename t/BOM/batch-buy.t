@@ -253,7 +253,6 @@ subtest 'batch-buy success + multisell', sub {
         is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
         is + ($bal = $acc2->balance + 0), 5000, 'USD balance #2 is 5000 got: ' . $bal;
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'CALL',
@@ -314,8 +313,9 @@ subtest 'batch-buy success + multisell', sub {
             $contract = produce_contract($contract_parameters);
             ok($contract, 'contract have produced');
             my $trx = BOM::Transaction->new({
-                    client   => $clm,
-                    multiple => [{
+                    purchase_date => $contract->date_start,
+                    client        => $clm,
+                    multiple      => [{
                             loginid  => $cl2->loginid,
                             currency => $clm->currency
                         },
@@ -359,7 +359,6 @@ subtest 'batch-buy success 2', sub {
 
         top_up $clm, 'USD', 0;      # the manager has no money
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'CALL',
@@ -421,7 +420,6 @@ subtest 'contract already started', sub {
 
         top_up $clm, 'USD', 0;      # the manager has no money
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'CALL',
@@ -484,7 +482,6 @@ subtest 'single contract fails in database', sub {
         is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
         is + ($bal = $acc2->balance + 0), 90,   'USD balance #2 is 90 got: ' . $bal;
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'CALL',
@@ -563,7 +560,6 @@ subtest 'batch-buy multiple databases and datadog', sub {
         my @acc;
         isnt + (push @acc, $_->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account #' . @acc for (@cl);
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'CALL',

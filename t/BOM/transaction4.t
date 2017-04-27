@@ -86,8 +86,9 @@ subtest 'Validate legal_allowed_underlyings' => sub {
     };
     my $c           = produce_contract($contract_args);
     my $transaction = BOM::Transaction->new({
-        client   => $jp,
-        contract => $c,
+        purchase_date => $contract->date_start,
+        client        => $jp,
+        contract      => $c,
     });
     ok !BOM::Transaction::Validation->new({
             clients     => [$jp],
@@ -97,8 +98,9 @@ subtest 'Validate legal_allowed_underlyings' => sub {
     $contract_args->{underlying} = 'frxAUDCAD';
     $c                           = produce_contract($contract_args);
     $transaction                 = BOM::Transaction->new({
-        client   => $jp,
-        contract => $c,
+        purchase_date => $contract->date_start,
+        client        => $jp,
+        contract      => $c,
     });
     my $error = BOM::Transaction::Validation->new({
             clients     => [$jp],
@@ -112,8 +114,9 @@ subtest 'Validate legal_allowed_underlyings' => sub {
     $contract_args->{bet_type} = 'CALL';
     $c                         = produce_contract($contract_args);
     $transaction               = BOM::Transaction->new({
-        client   => $cr,
-        contract => $c,
+        client        => $cr,
+        contract      => $c,
+        purchase_date => $contract->date_start,
     });
     ok !BOM::Transaction::Validation->new({
             clients     => [$cr],
@@ -137,8 +140,9 @@ subtest 'Validate legal allowed contract types' => sub {
     };
     my $c           = produce_contract($contract_args);
     my $transaction = BOM::Transaction->new({
-        client   => $jp,
-        contract => $c,
+        purchase_date => $contract->date_start,
+        client        => $jp,
+        contract      => $c,
     });
     ok !BOM::Transaction::Validation->new({
             clients     => [$jp],
@@ -148,8 +152,9 @@ subtest 'Validate legal allowed contract types' => sub {
     $contract_args->{bet_type} = 'CALL';
     $c                         = produce_contract($contract_args);
     $transaction               = BOM::Transaction->new({
-        client   => $jp,
-        contract => $c,
+        client        => $jp,
+        purchase_date => $contract->date_start,
+        contract      => $c,
     });
     my $error = BOM::Transaction::Validation->new({
             clients     => [$jp],
@@ -162,8 +167,9 @@ subtest 'Validate legal allowed contract types' => sub {
     $contract_args->{currency} = 'USD';
     $c                         = produce_contract($contract_args);
     $transaction               = BOM::Transaction->new({
-        client   => $cr,
-        contract => $c,
+        purchase_date => $contract->date_start,
+        client        => $cr,
+        contract      => $c,
     });
     ok !BOM::Transaction::Validation->new({
             clients     => [$cr],
@@ -173,8 +179,9 @@ subtest 'Validate legal allowed contract types' => sub {
     $contract_args->{bet_type} = 'CALLE';
     $c                         = produce_contract($contract_args);
     $transaction               = BOM::Transaction->new({
-        client   => $cr,
-        contract => $c,
+        purchase_date => $contract->date_start,
+        client        => $cr,
+        contract      => $c,
     });
     ok !BOM::Transaction::Validation->new({
             clients     => [$cr],
@@ -188,8 +195,9 @@ subtest 'Validate Jurisdiction Restriction' => sub {
     lives_ok { $client->save({'log' => 0, 'clerk' => 'raunak'}); } "Can save residence changes back to the client";
 
     my $transaction = BOM::Transaction->new({
-        client   => $client,
-        contract => $contract,
+        purchase_date => $contract->date_start,
+        client        => $client,
+        contract      => $contract,
     });
 
     my $error = BOM::Transaction::Validation->new({
@@ -218,8 +226,9 @@ subtest 'Validate Jurisdiction Restriction' => sub {
     });
 
     my $new_transaction = BOM::Transaction->new({
-        client   => $client,
-        contract => $new_contract,
+        purchase_date => $contract->date_start,
+        client        => $client,
+        contract      => $new_contract,
     });
 
     $error = BOM::Transaction::Validation->new({
@@ -248,8 +257,9 @@ subtest 'Validate Jurisdiction Restriction' => sub {
     });
 
     my $new_transaction2 = BOM::Transaction->new({
-        client   => $client,
-        contract => $new_contract2,
+        purchase_date => $contract->date_start,
+        client        => $client,
+        contract      => $new_contract2,
     });
 
     $error = BOM::Transaction::Validation->new({
@@ -271,8 +281,9 @@ subtest 'Validate Jurisdiction Restriction' => sub {
     });
 
     my $new_transaction3 = BOM::Transaction->new({
-        client   => $client,
-        contract => $new_contract3,
+        purchase_date => $contract->date_start,
+        client        => $client,
+        contract      => $new_contract3,
     });
 
     $error = BOM::Transaction::Validation->new({
@@ -294,8 +305,9 @@ subtest 'Validate Jurisdiction Restriction' => sub {
     });
 
     my $new_transaction4 = BOM::Transaction->new({
-        client   => $client,
-        contract => $new_contract4,
+        purchase_date => $contract->date_start,
+        client        => $client,
+        contract      => $new_contract4,
     });
 
     $error = BOM::Transaction::Validation->new({
@@ -306,8 +318,9 @@ subtest 'Validate Jurisdiction Restriction' => sub {
 
     lives_ok { $client->residence('sg') } 'set residence to Singapore to test jurisdiction validation for random';
     $new_transaction = BOM::Transaction->new({
-        client   => $client,
-        contract => $new_contract,
+        purchase_date => $contract->date_start,
+        client        => $client,
+        contract      => $new_contract,
     });
     $error = BOM::Transaction::Validation->new({
             clients     => [$client],
@@ -317,8 +330,9 @@ subtest 'Validate Jurisdiction Restriction' => sub {
 
     lives_ok { $client->residence('es') } 'set residence to Spain to test jurisdiction validation for random';
     $new_transaction = BOM::Transaction->new({
-        client   => $client,
-        contract => $new_contract,
+        purchase_date => $contract->date_start,
+        client        => $client,
+        contract      => $new_contract,
     });
     $error = BOM::Transaction::Validation->new({
             clients     => [$client],
@@ -328,8 +342,9 @@ subtest 'Validate Jurisdiction Restriction' => sub {
 
     lives_ok { $client->residence('gr') } 'set residence to Greece to test jurisdiction validation for random';
     $new_transaction = BOM::Transaction->new({
-        client   => $client,
-        contract => $new_contract,
+        purchase_date => $contract->date_start,
+        client        => $client,
+        contract      => $new_contract,
     });
     $error = BOM::Transaction::Validation->new({
             clients     => [$client],
@@ -339,8 +354,9 @@ subtest 'Validate Jurisdiction Restriction' => sub {
 
     lives_ok { $client->residence('lu') } 'set residence to Luxembourg to test jurisdiction validation for random';
     $new_transaction = BOM::Transaction->new({
-        client   => $client,
-        contract => $new_contract,
+        purchase_date => $contract->date_start,
+        client        => $client,
+        contract      => $new_contract,
     });
     $error = BOM::Transaction::Validation->new({
             clients     => [$client],
@@ -350,8 +366,9 @@ subtest 'Validate Jurisdiction Restriction' => sub {
 
     lives_ok { $client->residence('fr') } 'set residence to France to test jurisdiction validation for random';
     $new_transaction = BOM::Transaction->new({
-        client   => $client,
-        contract => $new_contract,
+        purchase_date => $contract->date_start,
+        client        => $client,
+        contract      => $new_contract,
     });
     $error = BOM::Transaction::Validation->new({
             clients     => [$client],
@@ -361,8 +378,9 @@ subtest 'Validate Jurisdiction Restriction' => sub {
 
     lives_ok { $client->residence('it') } 'set residence to Italy to test jurisdiction validation for random';
     $new_transaction = BOM::Transaction->new({
-        client   => $client,
-        contract => $new_contract,
+        purchase_date => $contract->date_start,
+        client        => $client,
+        contract      => $new_contract,
     });
     $error = BOM::Transaction::Validation->new({
             clients     => [$client],
@@ -388,8 +406,9 @@ subtest 'Validate Jurisdiction Restriction' => sub {
     });
 
     my $new_transaction5 = BOM::Transaction->new({
-        client   => $client,
-        contract => $new_contract5,
+        purchase_date => $contract->date_start,
+        client        => $client,
+        contract      => $new_contract5,
     });
 
     $error = BOM::Transaction::Validation->new({
@@ -401,8 +420,9 @@ subtest 'Validate Jurisdiction Restriction' => sub {
     lives_ok { $client->residence('be') } 'set residence to Belgium to test jurisdiction validation for random and financial binaries contracts';
 
     $new_transaction = BOM::Transaction->new({
-        client   => $client,
-        contract => $new_contract5,
+        purchase_date => $contract->date_start,
+        client        => $client,
+        contract      => $new_contract5,
     });
 
     $error = BOM::Transaction::Validation->new({
@@ -413,8 +433,9 @@ subtest 'Validate Jurisdiction Restriction' => sub {
     is($error, undef, 'Belgium clients are allowed to trade random underlyings');
 
     $new_transaction = BOM::Transaction->new({
-        client   => $client,
-        contract => $new_contract2,
+        purchase_date => $contract->date_start,
+        client        => $client,
+        contract      => $new_contract2,
     });
 
     $error = BOM::Transaction::Validation->new({
@@ -433,8 +454,9 @@ subtest 'Validate Jurisdiction Restriction' => sub {
     );
 
     $new_transaction = BOM::Transaction->new({
-        client   => $client,
-        contract => $new_contract3,
+        purchase_date => $contract->date_start,
+        client        => $client,
+        contract      => $new_contract3,
     });
 
     $error = BOM::Transaction::Validation->new({
@@ -453,8 +475,9 @@ subtest 'Validate Jurisdiction Restriction' => sub {
     );
 
     $new_transaction = BOM::Transaction->new({
-        client   => $client,
-        contract => $new_contract4,
+        purchase_date => $contract->date_start,
+        client        => $client,
+        contract      => $new_contract4,
     });
 
     $error = BOM::Transaction::Validation->new({
@@ -486,8 +509,9 @@ subtest 'Validate Jurisdiction Restriction' => sub {
     });
 
     $new_transaction = BOM::Transaction->new({
-        client   => $client,
-        contract => $new_contract,
+        purchase_date => $contract->date_start,
+        client        => $client,
+        contract      => $new_contract,
     });
 
     $error = BOM::Transaction::Validation->new({
@@ -510,8 +534,9 @@ subtest 'Validate Unwelcome Client' => sub {
     lives_ok { $client->save() } "can save to unwelcome login file";
 
     my $transaction = BOM::Transaction->new({
-        client   => $client,
-        contract => $contract,
+        purchase_date => $contract->date_start,
+        client        => $client,
+        contract      => $contract,
     });
 
     my $error = BOM::Transaction::Validation->new({
@@ -536,8 +561,9 @@ subtest 'Validate Disabled Client' => sub {
     lives_ok { $client->save() } "can save to disabled login file";
 
     my $transaction = BOM::Transaction->new({
-        client   => $client,
-        contract => $contract,
+        purchase_date => $contract->date_start,
+        client        => $client,
+        contract      => $contract,
     });
 
     my $error = BOM::Transaction::Validation->new({

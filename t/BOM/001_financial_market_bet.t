@@ -272,7 +272,6 @@ my $tick_6 = Postgres::FeedDB::Spot::Tick->new($tick_params_6);
 $p_6->{date_pricing} = $start_time_6;
 $p_6->{current_tick} = $tick_6;
 $contract_6          = produce_contract($p_6);
-local $ENV{REQUEST_STARTTIME} = $start_time_6;
 my $transaction_6 = BOM::Transaction->new({
     price         => 51.88,
     client        => $new_client,

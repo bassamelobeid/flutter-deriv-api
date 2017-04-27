@@ -602,11 +602,12 @@ subtest 'BUY - trade pricing adjustment' => sub {
         # sale back slippage check
         $requested_price = $contract->bid_price + ($allowed_move * $contract->payout + 0.1);
         $transaction = BOM::Transaction->new({
-            client      => $client,
-            contract    => $contract,
-            action      => 'SELL',
-            price       => $requested_price,
-            amount_type => 'payout',
+            purchase_date => $contract->date_start,
+            client        => $client,
+            contract      => $contract,
+            action        => 'SELL',
+            price         => $requested_price,
+            amount_type   => 'payout',
         });
         $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
@@ -624,11 +625,12 @@ subtest 'BUY - trade pricing adjustment' => sub {
         # amount_type = payout, price increase < allowed move
         $price = $contract->bid_price - ($allowed_move * $contract->payout / 2);
         $transaction = BOM::Transaction->new({
-            client      => $client,
-            contract    => $contract,
-            action      => 'SELL',
-            price       => $price,
-            amount_type => 'payout',
+            purchase_date => $contract->date_start,
+            client        => $client,
+            contract      => $contract,
+            action        => 'SELL',
+            price         => $price,
+            amount_type   => 'payout',
         });
         $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
@@ -642,11 +644,12 @@ subtest 'BUY - trade pricing adjustment' => sub {
         # amount_type = payout, price increase > allowable move => better execution price
         $price = $contract->bid_price - ($allowed_move * $contract->payout * 2);
         $transaction = BOM::Transaction->new({
-            client      => $client,
-            contract    => $contract,
-            action      => 'SELL',
-            price       => $price,
-            amount_type => 'payout',
+            purchase_date => $contract->date_start,
+            client        => $client,
+            contract      => $contract,
+            action        => 'SELL',
+            price         => $price,
+            amount_type   => 'payout',
         });
         $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
@@ -864,10 +867,11 @@ subtest 'SELL - sell pricing adjustment' => sub {
 
         my $price = $contract->bid_price - ($allowed_move * $contract->payout) + 0.1;
         my $transaction = BOM::Transaction->new({
-            client   => $client,
-            contract => $contract,
-            action   => 'SELL',
-            price    => $price,
+            purchase_date => $contract->date_start,
+            client        => $client,
+            contract      => $contract,
+            action        => 'SELL',
+            price         => $price,
         });
         my $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
@@ -924,10 +928,11 @@ subtest 'SELL - sell pricing adjustment' => sub {
         # amount_type = payout, sell price increase > allowed move
         my $requested_price = $contract->bid_price + ($allowed_move * $contract->payout + 0.1);
         my $transaction = BOM::Transaction->new({
-            client   => $client,
-            contract => $contract,
-            action   => 'SELL',
-            price    => $requested_price,
+            purchase_date => $contract->date_start,
+            client        => $client,
+            contract      => $contract,
+            action        => 'SELL',
+            price         => $requested_price,
         });
 
         my $error = BOM::Transaction::Validation->new({
@@ -945,10 +950,11 @@ subtest 'SELL - sell pricing adjustment' => sub {
         # amount_type = payout, sell price decrease < allowed move
         my $price = $contract->bid_price + ($allowed_move * $contract->payout - 0.1);
         $transaction = BOM::Transaction->new({
-            client   => $client,
-            contract => $contract,
-            action   => 'SELL',
-            price    => $price,
+            purchase_date => $contract->date_start,
+            client        => $client,
+            contract      => $contract,
+            action        => 'SELL',
+            price         => $price,
         });
 
         $error = BOM::Transaction::Validation->new({
@@ -962,10 +968,11 @@ subtest 'SELL - sell pricing adjustment' => sub {
         # amount_type = payout, sell price increase => better execution price
         $price = $contract->bid_price - ($allowed_move * $contract->payout * 2);
         $transaction = BOM::Transaction->new({
-            client   => $client,
-            contract => $contract,
-            action   => 'SELL',
-            price    => $price,
+            purchase_date => $contract->date_start,
+            client        => $client,
+            contract      => $contract,
+            action        => 'SELL',
+            price         => $price,
         });
         $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
@@ -994,10 +1001,11 @@ subtest 'SELL - sell pricing adjustment' => sub {
         });
 
         my $transaction = BOM::Transaction->new({
-            client   => $client,
-            contract => $contract,
-            action   => 'SELL',
-            price    => undef,
+            purchase_date => $contract->date_start,
+            client        => $client,
+            contract      => $contract,
+            action        => 'SELL',
+            price         => undef,
         });
         my $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
@@ -1062,7 +1070,6 @@ subtest 'Purchase Sell Contract' => sub {
         purchase_date => Date::Utility->new($now->epoch - 1),
     });
 
-    $ENV{REQUEST_STARTTIME} = $now->epoch - 1;
     $error = $bpt->buy;
     is($error, undef, 'Able to purchase the contract successfully');
 
@@ -1095,11 +1102,12 @@ subtest 'Purchase Sell Contract' => sub {
     my $mocked = Test::MockModule->new('BOM::Transaction::Validation');
     $mocked->mock('_validate_sell_pricing_adjustment', sub { });
     $error = BOM::Transaction->new({
-            client      => $client,
-            contract    => $contract,
-            price       => $contract->bid_price,
-            contract_id => $bpt->contract_id,
-            amount_type => 'payout'
+            purchase_date => $contract->date_start,
+            client        => $client,
+            contract      => $contract,
+            price         => $contract->bid_price,
+            contract_id   => $bpt->contract_id,
+            amount_type   => 'payout'
         })->sell;
 
     is($error, undef, 'Able to sell the contract successfully');
@@ -1120,12 +1128,14 @@ subtest 'validate stake limit' => sub {
     Test::MockObject::Extends->new($contract);
     $contract->mock('ask_price', sub { 0.5 });
     my $transaction = BOM::Transaction->new({
-        client      => $client,
-        contract    => $contract,
-        action      => 'BUY',
-        price       => 0.5,
-        payout      => 100,
-        amount_type => 'stake',
+            client        => $client,
+            contract      => $contract,
+            action        => 'BUY',
+            price         => 0.5,
+            payout        => 100,
+            amount_type   => 'stake',
+            purchase_date => $contract->date_start,
+
     });
     ok !BOM::Transaction::Validation->new({
             transaction => $transaction,
@@ -1141,12 +1151,13 @@ subtest 'validate stake limit' => sub {
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
     $contract->mock('ask_price', sub { 5 });
     $transaction = BOM::Transaction->new({
-        client      => $client,
-        contract    => $contract,
-        action      => 'BUY',
-        price       => 5,
-        payout      => 100,
-        amount_type => 'stake',
+        client        => $client,
+        contract      => $contract,
+        action        => 'BUY',
+        price         => 5,
+        payout        => 100,
+        amount_type   => 'stake',
+        purchase_date => $contract->date_start,
     });
     ok !BOM::Transaction::Validation->new({
             transaction => $transaction,

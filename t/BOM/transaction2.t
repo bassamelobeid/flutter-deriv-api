@@ -768,11 +768,12 @@ subtest 'custom client limit' => sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 50.00,
-            payout      => $contract->payout,
-            amount_type => 'payout',
+            purchase_date => $contract->date_start,
+            client        => $cl,
+            contract      => $contract,
+            price         => 50.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
         });
 
         my $error = do {
@@ -857,11 +858,12 @@ subtest 'non atm turnover checks' => sub {
         });
 
         my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 50.00,
-            payout      => $contract->payout,
-            amount_type => 'payout',
+            purchase_date => $contract->date_start,
+            client        => $cl,
+            contract      => $contract,
+            price         => 50.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
         });
 
         my $error = do {
