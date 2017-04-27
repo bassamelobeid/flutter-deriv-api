@@ -93,7 +93,7 @@ sub _build_custom_profiles {
         +{
         risk_profile => $risk_profile,
         name         => $self->contract_info->{$setter} . '_turnover_limit',
-        $setter      => $self->contract_info->{$setter},
+        $setter      => [$self->contract_info->{$setter}],
         };
 
     return \@profiles;
