@@ -6,18 +6,15 @@ use Data::Dumper;
 
 use LandingCompany::Offerings qw(get_contract_specifics);
 
-use BOM::Platform::Context qw(localize);
 use BOM::Platform::RiskProfile;
+use BOM::Product::Static;
 use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
+
+my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
 override disable_trading_at_quiet_period => sub {
     return 0;
 };
-
-has landing_company => (
-    is      => 'ro',
-    default => 'japan',
-);
 
 override _build_otm_threshold => sub {
     return 0.035;    # a fixed 3.5% for japan regardless of market though we only offer forex now.
@@ -27,6 +24,11 @@ override _build_otm_threshold => sub {
 override apply_market_inefficient_limit => sub {
     return 0;
 };
+
+has landing_company => (
+    is      => 'ro',
+    default => 'japan',
+);
 
 =head2 predefined_contracts
 
@@ -95,7 +97,7 @@ around _validate_start_and_expiry_date => sub {
     if (not $available_contracts->{$expiry_epoch}) {
         return {
             message           => 'Invalid contract expiry[' . $self->date_expiry->datetime . '] for japan at ' . $self->date_pricing->datetime . '.',
-            message_to_client => localize('Invalid expiry time.'),
+            message_to_client => [$ERROR_MAPPING->{InvalidExpiryTime}],
         };
     }
 
@@ -126,7 +128,7 @@ override _validate_barrier_type => sub {
 
             return {
                 message           => 'barrier should be absolute',
-                message_to_client => localize('Contracts with predefined barrier would need an absolute barrier'),
+                message_to_client => [$ERROR_MAPPING->{PredefinedNeedAbsoluteBarrier}],
             };
         }
     }
@@ -155,7 +157,7 @@ sub _subvalidate_single_barrier {
                     . $self->code
                     . '] for japan at '
                     . $self->date_pricing->datetime . '.',
-                message_to_client => localize('Invalid barrier.'),
+                message_to_client => [$ERROR_MAPPING->{InvalidBarrier}],
             };
         }
     }
@@ -194,7 +196,7 @@ sub _subvalidate_double_barrier {
                     . $self->code
                     . '] for japan at '
                     . $self->date_pricing->datetime . '.',
-                message_to_client => localize('Invalid barrier.'),
+                message_to_client => [$ERROR_MAPPING->{InvalidBarrier}],
             };
         }
     }
