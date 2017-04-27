@@ -28,7 +28,6 @@ my $config = {
         BarrierOutOfRange                 => 'Barrier is out of acceptable range.',
         CannotProcessContract             => 'We could not process this contract at this time.',
         CannotValidateContract            => 'Cannot validate contract.',
-        ContractAffectedByCorporateAction => 'This contract is affected by corporate action.',
         ContractAlreadySold               => 'This contract has been sold.',
         ContractExpiryNotAllowed          => 'Contract may not expire between [_1] and [_2].',
         CrossMarketIntraday               => 'Intraday contracts may not cross market open.',
