@@ -3,6 +3,8 @@ package BOM::Product::Contract;    ## no critic ( RequireFilenameMatchesPackage 
 use strict;
 use warnings;
 
+use Moose;
+
 use List::MoreUtils qw(none all);
 use VolSurface::IntradayFX;
 use BOM::Market::DataDecimate;
