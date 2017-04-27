@@ -172,6 +172,7 @@ sub statement {
                 if (exists $res->{error}) {
                     $struct->{longcode} = localize('Could not retrieve contract details');
                 } else {
+                    # this should be already localize
                     $struct->{longcode} = $res->{longcode};
                 }
             }
@@ -249,6 +250,7 @@ sub profit_table {
             if (!$res->{longcodes}->{$row->{short_code}}) {
                 $trx{longcode} = localize('Could not retrieve contract details');
             } else {
+                # this should already be localized
                 $trx{longcode} = $res->{longcodes}->{$row->{short_code}};
             }
         }

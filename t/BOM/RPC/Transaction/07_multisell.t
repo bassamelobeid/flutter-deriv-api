@@ -10,8 +10,8 @@ use BOM::RPC::v3::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Product::Contract;
 use Test::BOM::RPC::Contract;
+use BOM::Transaction;
 
 {
     use BOM::Database::Model::AccessToken;
@@ -101,7 +101,7 @@ for (@cl) {
 
 is 0 + @token, 4, 'got 4 tokens';
 
-my $contract = Test::BOM::RPC::Contract::create_contract();
+my (undef, $txn) = Test::BOM::RPC::Contract::prepare_contract(client => $clm);
 
 my $result = BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts({
         client              => $clm,
@@ -118,7 +118,7 @@ my $result = BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts({
             symbol        => "R_50",
         },
         args => {
-            price  => $contract->ask_price,
+            price  => $txn->contract->ask_price,
             tokens => \@token,
         },
     });
@@ -130,8 +130,8 @@ my $buy_trx_ids = {map { $_->{transaction_id} => 1 } grep { $_->{transaction_id}
 sleep 1;
 my $shortcode = $result->[0]->{shortcode};
 
-my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
-$mock_contract->mock(is_valid_to_sell => sub { note "mocked Contract->is_valid_to_sell returning true"; 1 });
+my $mock_txn = Test::MockModule->new('BOM::Transaction');
+$mock_txn->mock(_is_valid_to_sell => sub { });
 
 $result = BOM::RPC::v3::Transaction::sell_contract_for_multiple_accounts({
         client => $clm,

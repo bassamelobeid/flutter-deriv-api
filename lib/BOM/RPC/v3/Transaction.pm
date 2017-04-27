@@ -8,8 +8,6 @@ use JSON::XS qw/encode_json/;
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
-use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Transaction;
 use BOM::Platform::Context qw (localize request);
 use Client::Account;
@@ -71,7 +69,7 @@ sub buy {
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
     $contract_parameters->{landing_company} = $client->landing_company->short;
     my $amount_type = $contract_parameters->{amount_type};
-    my ($contract, $response);
+    my $response;
 
     try {
         die
@@ -79,16 +77,6 @@ sub buy {
     }
     catch {
         warn __PACKAGE__ . " buy pre_validate_start_expire_dates failed, parameters: " . encode_json($contract_parameters);
-        $response = BOM::RPC::v3::Utility::create_error({
-                code              => 'ContractCreationFailure',
-                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
-    };
-    return $response if $response;
-    try {
-        $contract = produce_contract($contract_parameters);
-    }
-    catch {
-        warn __PACKAGE__ . " buy produce_contract failed, parameters: " . encode_json($contract_parameters);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
@@ -105,9 +93,9 @@ sub buy {
     }
 
     my $trx = BOM::Transaction->new({
-            client   => $client,
-            contract => $contract,
-            price    => ($price || 0),
+            client              => $client,
+            contract_parameters => $contract_parameters,
+            price               => ($price || 0),
             (defined $payout)      ? (payout      => $payout)      : (),
             (defined $amount_type) ? (amount_type => $amount_type) : (),
             purchase_date => $purchase_date,
@@ -117,12 +105,21 @@ sub buy {
             : (),
         });
 
-    if (my $err = $trx->buy) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => $err->get_type,
-            message_to_client => $err->{-message_to_client},
-        });
+    try {
+        if (my $err = $trx->buy) {
+            $response = BOM::RPC::v3::Utility::create_error({
+                code              => $err->get_type,
+                message_to_client => $err->{-message_to_client},
+            });
+        }
     }
+    catch {
+        warn __PACKAGE__ . " buy buy failed, parameters: " . encode_json($contract_parameters);
+        $response = BOM::RPC::v3::Utility::create_error({
+                code              => 'ContractCreationFailure',
+                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+    };
+    return $response if $response;
 
     ### TODO: Decrease params count
     try {
@@ -147,9 +144,9 @@ sub buy {
         balance_after  => sprintf('%.2f', $trx->balance_after),
         purchase_time  => $trx->purchase_date->epoch,
         buy_price      => $trx->price,
-        start_time     => $contract->date_start->epoch,
-        longcode       => $contract->longcode,
-        shortcode      => $contract->shortcode,
+        start_time     => $trx->contract->date_start->epoch,
+        longcode       => localize($trx->contract->longcode),
+        shortcode      => $trx->contract->shortcode,
         payout         => $trx->payout
     };
 
@@ -172,10 +169,7 @@ sub buy_contract_for_multiple_accounts {
 
     return +{result => $token_list_res->{result}} unless $token_list_res->{success};
 
-    my ($contract, $response);
-    # NOTE: we rely here on BOM::Product::Transaction to perform all the
-    #       client validations like client_status and self_exclusion.
-
+    my $response;
     my $source              = $params->{source};
     my $contract_parameters = $params->{contract_parameters};
     my $args                = $params->{args};
@@ -196,17 +190,6 @@ sub buy_contract_for_multiple_accounts {
         return $response if $response;
     }
 
-    try {
-        $contract = produce_contract($contract_parameters);
-    }
-    catch {
-        warn __PACKAGE__ . " buy_contract_for_multiple_accounts produce_contract failed, parameters: " . encode_json($contract_parameters);
-        $response = BOM::RPC::v3::Utility::create_error({
-                code              => 'ContractCreationFailure',
-                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
-    };
-    return $response if $response;
-
     my $price = $args->{price};
     if (defined $amount_type and $amount_type eq 'stake') {
         return BOM::RPC::v3::Utility::create_error({
@@ -218,22 +201,31 @@ sub buy_contract_for_multiple_accounts {
     }
 
     my $trx = BOM::Transaction->new({
-        client   => $client,
-        multiple => $token_list_res->{result},
-        contract => $contract,
-        price    => ($price || 0),
+        client              => $client,
+        multiple            => $token_list_res->{result},
+        contract_parameters => $contract_parameters,
+        price               => ($price || 0),
         (defined $payout)      ? (payout      => $payout)      : (),
         (defined $amount_type) ? (amount_type => $amount_type) : (),
         purchase_date => $purchase_date,
         source        => $source,
     });
 
-    if (my $err = $trx->batch_buy) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => $err->get_type,
-            message_to_client => $err->{-message_to_client},
-        });
+    try {
+        if (my $err = $trx->batch_buy) {
+            $response = BOM::RPC::v3::Utility::create_error({
+                code              => $err->get_type,
+                message_to_client => $err->{-message_to_client},
+            });
+        }
     }
+    catch {
+        warn __PACKAGE__ . " buy_contract_for_multiple_accounts failed, parameters: " . encode_json($contract_parameters);
+        $response = BOM::RPC::v3::Utility::create_error({
+                code              => 'ContractCreationFailure',
+                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+    };
+    return $response if $response;
 
     for my $el (@{$token_list_res->{result}}) {
         my $new = {};
@@ -249,7 +241,7 @@ sub buy_contract_for_multiple_accounts {
             $new->{buy_price} = $el->{fmb}->{buy_price};
             $new->{start_time} =
                 Date::Utility->new($el->{fmb}->{start_time})->epoch;
-            $new->{longcode}  = $contract->longcode;
+            $new->{longcode}  = localize($trx->contract->longcode);
             $new->{shortcode} = $el->{fmb}->{short_code};
             $new->{payout}    = $el->{fmb}->{payout_price};
         }
@@ -327,16 +319,18 @@ sub sell_contract_for_multiple_accounts {
 
     return +{result => $token_list_res->{result}} unless $token_list_res->{success};
 
-    my $contract_parameters = shortcode_to_parameters($shortcode, $client->currency);
+    my $contract_parameters = {
+        shortcode => $shortcode,
+        currency  => $client->currency
+    };
     $contract_parameters->{landing_company} = $client->landing_company->short;
-    my $contract = produce_contract($contract_parameters);
 
     my $trx = BOM::Transaction->new({
-        client   => $client,
-        multiple => $token_list_res->{result},
-        contract => $contract,
-        price    => ($args->{price} // 0),
-        source   => $source,
+        client              => $client,
+        multiple            => $token_list_res->{result},
+        contract_parameters => $contract_parameters,
+        price               => ($args->{price} // 0),
+        source              => $source,
     });
 
     if (my $err = $trx->sell_by_shortcode) {
@@ -388,18 +382,18 @@ sub sell {
             code              => 'InvalidSellContractProposal',
             message_to_client => BOM::Platform::Context::localize('Unknown contract sell proposal')}) unless @fmbs;
 
-    my $contract_parameters =
-        shortcode_to_parameters($fmbs[0]->{short_code}, $client->currency);
+    my $contract_parameters = {
+        shortcode => $fmbs[0]->{short_code},
+        currency  => $client->currency
+    };
     $contract_parameters->{landing_company} = $client->landing_company->short;
-    my $amount_type = $contract_parameters->{amount_type};
-    my $contract    = produce_contract($contract_parameters);
-    my $trx         = BOM::Transaction->new({
-        client   => $client,
-        contract => $contract,
-        (defined $amount_type) ? (amount_type => $amount_type) : (),
-        contract_id => $id,
-        price       => ($args->{price} || 0),
-        source      => $source,
+
+    my $trx = BOM::Transaction->new({
+        client              => $client,
+        contract_parameters => $contract_parameters,
+        contract_id         => $id,
+        price               => ($args->{price} || 0),
+        source              => $source,
     });
 
     if (my $err = $trx->sell) {

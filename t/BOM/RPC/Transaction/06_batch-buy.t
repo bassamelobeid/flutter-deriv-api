@@ -105,7 +105,7 @@ is 0 + @token, 4, 'got 4 tokens';
 
 subtest 'normal contract', sub {
     my @balances = balances @cl;
-    my $contract = Test::BOM::RPC::Contract::create_contract();
+    my (undef, $txn) = Test::BOM::RPC::Contract::prepare_contract(client => $clm);
 
     my $result = BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts {
         client              => $clm,
@@ -122,7 +122,7 @@ subtest 'normal contract', sub {
             symbol        => "R_50",
         },
         args => {
-            price  => $contract->ask_price,
+            price  => $txn->contract->ask_price,
             tokens => \@token,
         },
     };
