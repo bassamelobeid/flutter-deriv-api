@@ -36,7 +36,8 @@ my %known_profiles   = map { $_ => 1 } keys %$limit_profile;
 my %allowed_multiple = (
     market            => 1,
     submarket         => 1,
-    underlying_symbol => 1
+    underlying_symbol => 1,
+    landing_company   => 1,
 );
 
 if ($r->param('update_limit')) {
