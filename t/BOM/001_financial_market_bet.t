@@ -16,6 +16,8 @@ use BOM::MarketData::Types;
 
 use Client::Account;
 use BOM::Transaction;
+use BOM::Transaction::Validation;
+
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -105,6 +107,9 @@ my $tick_params = {
     epoch  => $start_time,
     quote  => 100
 };
+
+my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+$mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
 
 my $tick = Postgres::FeedDB::Spot::Tick->new($tick_params);
 $p->{date_pricing} = $start_time;
@@ -267,7 +272,6 @@ my $tick_6 = Postgres::FeedDB::Spot::Tick->new($tick_params_6);
 $p_6->{date_pricing} = $start_time_6;
 $p_6->{current_tick} = $tick_6;
 $contract_6          = produce_contract($p_6);
-local $ENV{REQUEST_STARTTIME} = $start_time_6;
 my $transaction_6 = BOM::Transaction->new({
     price         => 51.88,
     client        => $new_client,
