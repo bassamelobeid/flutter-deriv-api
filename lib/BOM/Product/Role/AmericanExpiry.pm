@@ -1,8 +1,7 @@
 package BOM::Product::Role::AmericanExpiry;
 
 use Moose::Role;
-
-use BOM::Platform::Context qw(localize);
+use BOM::Product::Static;
 
 override is_expired => sub {
     my $self = shift;
@@ -15,7 +14,7 @@ override is_expired => sub {
             alert             => 1,
             severity          => 100,
             message           => 'Path-dependent barrier at spot at start',
-            message_to_client => localize("This contract has already expired."),
+            message_to_client => [BOM::Product::Static::get_error_mapping()->{AlreadyExpired}],
         });
         # Was expired at start, making it an unfair bet, so value goes to 0 without regard to bet conditions.
         $self->value(0);

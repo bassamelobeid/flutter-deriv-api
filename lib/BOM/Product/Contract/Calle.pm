@@ -4,9 +4,7 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-use BOM::Platform::Context qw(localize);
-
-# Static methods
+use BOM::Product::Static qw/get_longcodes/;
 
 sub ticks_to_expiry {
     die 'no ticks_to_expiry on a CALLE contract';
@@ -14,10 +12,10 @@ sub ticks_to_expiry {
 
 sub localizable_description {
     return +{
-        tick                  => 'Win payout if [_3] after [plural,_5,%d tick,%d ticks] is higher than or equal to [_6].',
-        daily                 => 'Win payout if [_3] is higher than or equal to [_6] at [_5].',
-        intraday              => 'Win payout if [_3] is higher than or equal to [_6] at [_5] after [_4].',
-        intraday_fixed_expiry => 'Win payout if [_3] is higher than or equal to [_6] at [_5].',
+        tick                  => get_longcodes()->{calle_tick},
+        daily                 => get_longcodes()->{calle_daily},
+        intraday              => get_longcodes()->{calle_intraday},
+        intraday_fixed_expiry => get_longcodes()->{calle_intraday_fixed_expiry},
     };
 }
 
