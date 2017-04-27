@@ -108,8 +108,6 @@ sub _build_absolute_barrier_multiplier {
     return $self->underlying->market->absolute_barrier_multiplier;
 }
 
-
-
 =head1 ATTRIBUTES - Other
 
 =cut
