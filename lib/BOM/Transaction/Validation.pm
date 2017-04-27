@@ -91,7 +91,7 @@ sub _validate_available_currency {
         return Error::Base->cuss(
             -type              => 'InvalidCurrency',
             -mesg              => "Invalid $currency",
-            -message_to_client => BOM::Platform::Context::localize("The provided currency [_1] is invalid.", $currency),
+            -message_to_client => localize("The provided currency [_1] is invalid.", $currency),
         );
     }
     return;
@@ -107,7 +107,7 @@ sub _validate_currency {
         return Error::Base->cuss(
             -type              => 'NotDefaultCurrency',
             -mesg              => "not default currency for client [$currency], client currency[" . $client->currency . "]",
-            -message_to_client => BOM::Platform::Context::localize("The provided currency [_1] is not the default currency", $currency),
+            -message_to_client => localize("The provided currency [_1] is not the default currency", $currency),
         );
     }
 
@@ -115,7 +115,7 @@ sub _validate_currency {
         return Error::Base->cuss(
             -type              => 'IllegalCurrency',
             -mesg              => "Illegal $currency for $broker",
-            -message_to_client => BOM::Platform::Context::localize("[_1] transactions may not be performed with this account.", $currency),
+            -message_to_client => localize("[_1] transactions may not be performed with this account.", $currency),
         );
     }
     return;
@@ -135,7 +135,7 @@ sub _validate_sell_pricing_adjustment {
         return Error::Base->cuss(
             -type              => 'BetExpired',
             -mesg              => 'Contract expired with a new price',
-            -message_to_client => BOM::Platform::Context::localize('The contract has expired'),
+            -message_to_client => localize('The contract has expired'),
         );
     }
 
@@ -209,7 +209,7 @@ sub _validate_trade_pricing_adjustment {
     return Error::Base->cuss(
         -type              => 'BetExpired',
         -mesg              => 'Bet expired with a new price[' . $recomputed_amount . '] (old price[' . $amount . '])',
-        -message_to_client => BOM::Platform::Context::localize('The contract has expired'),
+        -message_to_client => localize('The contract has expired'),
     ) if $contract->is_expired;
 
     if ($allowed_move == 0) {
@@ -257,9 +257,9 @@ sub _write_to_rejected {
 
     my $what_changed = $p->{action} eq 'sell' ? 'sell price' : undef;
     $what_changed //= $self->transaction->amount_type eq 'payout' ? 'price' : 'payout';
-    my $market_moved = BOM::Platform::Context::localize('The underlying market has moved too much since you priced the contract. ');
+    my $market_moved = localize('The underlying market has moved too much since you priced the contract. ');
     my $contract     = $self->transaction->contract;
-    $market_moved .= BOM::Platform::Context::localize(
+    $market_moved .= localize(
         'The contract [_4] has changed from [_1][_2] to [_1][_3].',
         $contract->currency,
         to_monetary_number_format($p->{amount}),
@@ -313,7 +313,7 @@ sub _is_valid_to_buy {
         return Error::Base->cuss(
             -type              => 'InvalidtoBuy',
             -mesg              => $contract->primary_validation_error->message,
-            -message_to_client => $contract->primary_validation_error->message_to_client
+            -message_to_client => localize($contract->primary_validation_error->message_to_client)
         );
     }
 
@@ -328,7 +328,7 @@ sub _is_valid_to_sell {
         return Error::Base->cuss(
             -type              => 'InvalidtoSell',
             -mesg              => $contract->primary_validation_error->message,
-            -message_to_client => $contract->primary_validation_error->message_to_client
+            -message_to_client => localize($contract->primary_validation_error->message_to_client)
         );
     }
 
@@ -345,7 +345,7 @@ sub _validate_date_pricing {
         return Error::Base->cuss(
             -type              => 'InvalidDatePricing',
             -mesg              => 'Bet was validated for a time [' . $contract->date_pricing->epoch . '] too far from now[' . time . ']',
-            -message_to_client => BOM::Platform::Context::localize('This contract cannot be properly validated at this time.'));
+            -message_to_client => localize('This contract cannot be properly validated at this time.'));
     }
     return;
 }
@@ -397,7 +397,7 @@ sub _validate_iom_withdrawal_limit {
         return Error::Base->cuss(
             -type              => 'iomWithdrawalLimit',
             -mesg              => $client->loginid . ' caught in IOM withdrawal limit check',
-            -message_to_client => BOM::Platform::Context::localize(
+            -message_to_client => localize(
                 "Due to regulatory requirements, you are required to authenticate your account in order to continue trading."),
         );
     }
@@ -423,7 +423,7 @@ sub _validate_stake_limit {
         return Error::Base->cuss(
             -type => 'StakeTooLow',
             -mesg => $client->loginid . ' stake [' . $contract->ask_price . '] is lower than minimum allowable stake [' . $stake_limit . ']',
-            -message_to_client => BOM::Platform::Context::localize(
+            -message_to_client => localize(
                 "This contract's price is [_1][_2]. Contracts purchased from [_3] must have a purchase price above [_1][_4]. Please accordingly increase the contract amount to meet this minimum stake.",
                 $currency,
                 to_monetary_number_format($contract->ask_price),
@@ -456,7 +456,7 @@ sub _validate_payout_limit {
             return Error::Base->cuss(
                 -type              => 'NoBusiness',
                 -mesg              => $client->loginid . ' manually disabled by quants',
-                -message_to_client => BOM::Platform::Context::localize('This contract is unavailable on this account.'),
+                -message_to_client => localize('This contract is unavailable on this account.'),
             );
         }
 
@@ -466,8 +466,8 @@ sub _validate_payout_limit {
                 -type              => 'PayoutLimitExceeded',
                 -mesg              => $client->loginid . ' payout [' . $payout . '] over custom limit[' . $custom_limit . ']',
                 -message_to_client => ($custom_limit == 0)
-                ? BOM::Platform::Context::localize('This contract is unavailable on this account.')
-                : BOM::Platform::Context::localize(
+                ? localize('This contract is unavailable on this account.')
+                : localize(
                     'This contract is limited to ' . to_monetary_number_format($custom_limit) . ' payout on this account.'
                 ),
             );
@@ -495,7 +495,7 @@ sub _validate_jurisdictional_restrictions {
         return Error::Base->cuss(
             -type              => 'NoResidenceCountry',
             -mesg              => 'Client cannot place contract as we do not know their residence.',
-            -message_to_client => BOM::Platform::Context::localize(
+            -message_to_client => localize(
                 'In order for you to place contracts, we need to know your Residence (Country). Please update your settings.'),
         );
     }
@@ -507,7 +507,7 @@ sub _validate_jurisdictional_restrictions {
         return Error::Base->cuss(
             -type              => 'NotLegalContractCategory',
             -mesg              => 'Clients are not allowed to trade on this contract category as its restricted for this landing company',
-            -message_to_client => BOM::Platform::Context::localize('Please switch accounts to trade this contract.'),
+            -message_to_client => localize('Please switch accounts to trade this contract.'),
         );
     }
 
@@ -515,7 +515,7 @@ sub _validate_jurisdictional_restrictions {
         return Error::Base->cuss(
             -type              => 'NotLegalMarket',
             -mesg              => 'Clients are not allowed to trade on this markets as its restricted for this landing company',
-            -message_to_client => BOM::Platform::Context::localize('Please switch accounts to trade this market.'),
+            -message_to_client => localize('Please switch accounts to trade this market.'),
         );
     }
 
@@ -525,7 +525,7 @@ sub _validate_jurisdictional_restrictions {
             -type => 'RandomRestrictedCountry',
             -mesg => 'Clients are not allowed to place Volatility Index contracts as their country is restricted.',
             -message_to_client =>
-                BOM::Platform::Context::localize('Sorry, contracts on Volatility Indices are not available in your country of residence'),
+                localize('Sorry, contracts on Volatility Indices are not available in your country of residence'),
         );
     }
 
@@ -538,7 +538,7 @@ sub _validate_jurisdictional_restrictions {
             -type => 'FinancialBinariesRestrictedCountry',
             -mesg => 'Clients are not allowed to place financial products contracts as their country is restricted.',
             -message_to_client =>
-                BOM::Platform::Context::localize('Sorry, contracts on Financial Products are not available in your country of residence'),
+                localize('Sorry, contracts on Financial Products are not available in your country of residence'),
         );
     }
 
@@ -547,7 +547,7 @@ sub _validate_jurisdictional_restrictions {
         return Error::Base->cuss(
             -type              => 'NotLegalUnderlying',
             -mesg              => 'Clients are not allowed to trade on this underlying as its restricted for this landing company',
-            -message_to_client => BOM::Platform::Context::localize('Please switch accounts to trade this underlying.'),
+            -message_to_client => localize('Please switch accounts to trade this underlying.'),
         );
     }
 
@@ -568,7 +568,7 @@ sub _validate_client_status {
         return Error::Base->cuss(
             -type              => 'ClientUnwelcome',
             -mesg              => 'your account is not authorised for any further contract purchases.',
-            -message_to_client => BOM::Platform::Context::localize('Sorry, your account is not authorised for any further contract purchases.'),
+            -message_to_client => localize('Sorry, your account is not authorised for any further contract purchases.'),
         );
     }
 
@@ -590,7 +590,7 @@ sub _validate_client_self_exclusion {
             -type => 'ClientSelfExcluded',
             -mesg => 'your account is not authorised for any further contract purchases.',
             -message_to_client =>
-                BOM::Platform::Context::localize('Sorry, you have excluded yourself from the website until [_1].', $limit_excludeuntil),
+                localize('Sorry, you have excluded yourself from the website until [_1].', $limit_excludeuntil),
         );
     }
 
@@ -611,7 +611,7 @@ sub validate_tnc {
         return Error::Base->cuss(
             -type              => 'ASK_TNC_APPROVAL',
             -mesg              => 'Terms and conditions approval is required',
-            -message_to_client => BOM::Platform::Context::localize('Terms and conditions approval is required.'),
+            -message_to_client => localize('Terms and conditions approval is required.'),
         );
     }
 

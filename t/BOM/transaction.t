@@ -1190,7 +1190,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
             price         => 5.20,
             payout        => $contract->payout,
             amount_type   => 'payout',
-            purchase_date => Date::Utility->new(),
+            purchase_date => Date::Utility->new(time+2),
         });
 
         my $error = do {
@@ -1215,7 +1215,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
                     price         => 5.20,
                     payout        => $contract->payout,
                     amount_type   => 'payout',
-                    purchase_date => Date::Utility->new(),
+                    purchase_date => Date::Utility->new(time+1),
                 })->buy, undef, '2nd bet bought';
 
             $txn->buy;
