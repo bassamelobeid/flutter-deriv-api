@@ -10,7 +10,6 @@ use HTML::Entities;
 
 use List::Util qw( first );
 use Try::Tiny;
-use Mail::Sender;
 
 use Client::Account;
 
