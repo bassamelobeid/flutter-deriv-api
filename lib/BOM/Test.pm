@@ -72,7 +72,7 @@ BEGIN {
         $ENV{REDIS_CACHE_SERVER} = $ENV{BOM_CACHE_SERVER} = '127.0.1.3:6385';
 
         $ENV{DB_POSTFIX} = '_test';
-        $ENV{RPC_URL}    = 'http://127.0.0.1:5005/';
+        $ENV{RPC_URL}    = 'http://127.0.0.1:15005/';
     }
 }
 
