@@ -29,10 +29,15 @@ PrintContentType();
 BrokerPresentation('Product Management');
 BOM::Backoffice::Auth0::can_access(['Quants']);
 
-my $staff          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
-my $r              = request();
-my $limit_profile  = BOM::Platform::Config::quants->{risk_profile};
-my %known_profiles = map { $_ => 1 } keys %$limit_profile;
+my $staff            = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $r                = request();
+my $limit_profile    = BOM::Platform::Config::quants->{risk_profile};
+my %known_profiles   = map { $_ => 1 } keys %$limit_profile;
+my %allowed_multiple = (
+    market            => 1,
+    submarket         => 1,
+    underlying_symbol => 1
+);
 
 if ($r->param('update_limit')) {
     my @known_keys = qw(contract_category market submarket underlying_symbol start_type expiry_type barrier_category landing_company);
@@ -46,8 +51,8 @@ if ($r->param('update_limit')) {
         if (my $value = $r->param($key)) {
             if (first { $value eq $_ } @{$known_values{$key}}) {
                 # we should not allow more than one value for risk_profile
-                die 'You could not specify multiple risk profile' if $key eq 'risk_profile' and $value =~ /,/;
-                $ref{$key} = [split ',', $value];
+                die 'You could not specify multiple value for ' . $key if not $allowed_multiple{$key} and $value =~ /,/;
+                $ref{$key} = $value;
             } else {
                 print "Unrecognized value[" . encode_entities($r->param($key)) . "] for $key. Nothing is updated!!";
                 code_exit_BO();
@@ -55,7 +60,7 @@ if ($r->param('update_limit')) {
         }
     }
 
-    my $uniq_key = substr(md5_hex(sort { $a <=> $b } values %ref), 0, 16);
+    my $uniq_key = substr(md5_hex(sort { $a cmp $b } values %ref), 0, 16);
 
     # if we just want to add client into watchlist, custom conditions is not needed
     my $has_custom_conditions = keys %ref;
