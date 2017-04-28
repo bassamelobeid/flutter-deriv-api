@@ -277,19 +277,12 @@ sub _match_conditions {
     my $ci = {%{$self->contract_info}, %$additional_info};
     foreach my $key (keys %$custom) {
         next if exists $_no_condition{$key};    # skip test
-        return unless exists $ci->{$key};       # no match if contract_info does not contain the searched key
-
         $real_tests_performed = 1;
-        # comma separated
-        if ($custom->{$key} =~ /,/) {
-            next if exists $ci->{$key} and first { $ci->{$key} eq $_ } (split ',', $custom->{$key});    # match: continue with next condition
-        } else {
-            next if exists $ci->{$key} and $custom->{$key} eq $ci->{$key};                              # match: continue with next condition
-        }
-        return;                                                                                         # no match
+        next if exists $ci->{$key} and first { $ci->{$key} eq $_ } (split ',', $custom->{$key});    # match: continue with next condition
+        return;                                                                                     # no match
     }
 
-    return $real_tests_performed;                                                                       # all conditions match
+    return $real_tests_performed;                                                                   # all conditions match
 }
 
 no Moose;
