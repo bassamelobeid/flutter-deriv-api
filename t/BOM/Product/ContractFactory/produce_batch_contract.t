@@ -12,6 +12,11 @@ use Postgres::FeedDB::Spot::Tick;
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use Date::Utility;
+use JSON qw(to_json);
+
+my %custom_otm =
+    map { $_ => {conditions => {expiry_type => 'daily', is_atm_bet => 0}, value => 0.2,} } qw(forex indices commodities stocks);
+BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(to_json(\%custom_otm));
 
 my $now = Date::Utility->new('2017-03-15');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
