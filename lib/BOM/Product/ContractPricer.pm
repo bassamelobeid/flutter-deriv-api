@@ -3,6 +3,7 @@ package BOM::Product::Contract;    ## no critic ( RequireFilenameMatchesPackage 
 use strict;
 use warnings;
 
+use JSON qw(from_json);
 use Price::Calculator;
 use Math::Util::CalculatedValue::Validatable;
 use List::MoreUtils qw(none all);
