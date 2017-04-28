@@ -126,7 +126,7 @@ sub buy {
         check_copiers({
                 action        => 'buy',
                 client        => $client,
-                contract      => $contract,
+                contract      => $trx->contract,
                 price         => $price,
                 payout        => $payout,
                 amount_type   => $amount_type,
@@ -411,7 +411,7 @@ sub sell {
         check_copiers({
                 action   => 'sell',
                 client   => $client,
-                contract => $contract,
+                contract => $trx->contract,
                 price    => $args->{price},
                 source   => $source
             }) if $client->allow_copiers;
