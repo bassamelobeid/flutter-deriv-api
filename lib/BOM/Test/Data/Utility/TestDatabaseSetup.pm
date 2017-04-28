@@ -19,7 +19,7 @@ sub prepare_unit_test_database {
     print "db_migrations_dir is " . $self->_db_migrations_dir . "\n";
     try {
         $self->_migrate_changesets;
-        $self->_alter_user_mapping;
+        $self->_alter_user_mapping if ($self->_db_migrations_dir =~ /rmgdb/);
         $self->_post_import_operations;
     }
     catch {
@@ -141,14 +141,14 @@ sub _migrate_changesets {
             $self->_db_migrations_dir . '/unit_test_dml.sql'
         );
     }
-    #if ((-f $self->_db_migrations_dir . '/hack_devbox_foreign_servers.sql') && $self->_db_name =~ m/_test/) {
-    #    $m->psql({
-    #            before => "SET session_replication_role TO 'replica';\n",
-    #            after  => ";\nSET session_replication_role TO 'origin';\n"
-    #        },
-    #        $self->_db_migrations_dir . '/hack_devbox_foreign_servers.sql'
-    #    );
-    #}
+    if ((-f $self->_db_migrations_dir . '/hack_devbox_foreign_servers.sql') && $self->_db_name =~ m/_test/) {
+        $m->psql({
+                before => "SET session_replication_role TO 'replica';\n",
+                after  => ";\nSET session_replication_role TO 'origin';\n"
+            },
+            $self->_db_migrations_dir . '/hack_devbox_foreign_servers.sql'
+        );
+    }
 
     foreach (@bouncer_dbs) {
         $b_db = $_;
@@ -173,10 +173,9 @@ sub _migrate_changesets {
 
 sub _alter_user_mapping {
     my $self = shift;
-    my $user_mapping_sql = $self->_db_migrations_dir . '/devbox_server_user_mapping.sql';
-    return unless (-e $user_mapping_sql);
+    return if ($self->_db_migrations_dir !~ /rmgdb/);
 
-    $self->_migrate_file($user_mapping_sql);
+    $self->_migrate_file($self->_db_migrations_dir . '/devbox_server_user_mapping.sql');
     return 1;
 }
 
