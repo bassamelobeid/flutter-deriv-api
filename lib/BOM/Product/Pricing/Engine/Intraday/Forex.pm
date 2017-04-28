@@ -90,14 +90,11 @@ sub _build_base_probability {
         long_term_prediction => $self->long_term_prediction->amount,
         discount_rate        => 0,
         mu                   => 0,
-        (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code))
-    );
+        (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code)));
 
-    my $engine = Pricing::Engine::Intraday::Forex::Base->new(
-        %args,
-    );
+    my $engine           = Pricing::Engine::Intraday::Forex::Base->new(%args,);
     my $base_probability = $engine->base_probability;
-    if(RECORD_INTRADAY_PROBABILITIES) {
+    if (RECORD_INTRADAY_PROBABILITIES) {
         my @fields = qw(
             spot
             t
