@@ -179,6 +179,11 @@ quants:
       isa: json_string
       global: 1
       default: '{}'
+    custom_otm_threshold:
+      description: "Custom OTM threshold specification."
+      isa: json_string
+      global: 1
+      default: '{}'
 system:
   description: "Various parameters determining core application functionality"
   isa: section
