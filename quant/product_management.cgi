@@ -127,6 +127,34 @@ if ($r->param('delete_client')) {
     BOM::Platform::Runtime->instance->app_config->save_dynamic;
 }
 
+if ($r->param('update_otm')) {
+    my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold);
+    unless (($r->param('underlying_symbol') or $r->param('market')) and $r->param('otm_value')) {
+        die 'Must specify either underlying symbol/market and otm value to set custom OTM threshold';
+    }
+
+    # underlying symbol supercedes market
+    my $which = $r->param('underlying_symbol') // $r->param('market');
+    $current->{$which} = {
+        conditions => {map { $_ => $r->param($_) } grep { $r->param($_) } qw(expiry_type barrier_category)},
+        value      => $r->param('otm_value'),
+    };
+    BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(to_json($current));
+    BOM::Platform::Runtime->instance->app_config->save_dynamic;
+}
+
+if ($r->param('delete_otm')) {
+    my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold);
+    unless ($r->param('underlying_symbol') or $r->param('market')) {
+        die 'Must specify either underlying symbol/market to delete custom OTM threshold';
+    }
+
+    my $which = $r->param('underlying_symbol') // $r->param('market');
+    delete $current->{$which};
+    BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(to_json($current));
+    BOM::Platform::Runtime->instance->app_config->save_dynamic;
+}
+
 Bar("Limit Definitions");
 
 my $limit_defs          = BOM::Platform::Config::quants->{risk_profile};
@@ -210,6 +238,14 @@ Bar("Update Limit");
 
 BOM::Backoffice::Request::template->process(
     'backoffice/update_limit.html.tt',
+    {
+        url => request()->url_for('backoffice/quant/product_management.cgi'),
+    }) || die BOM::Backoffice::Request::template->error;
+
+Bar("Custom OTM Threshold");
+
+BOM::Backoffice::Request::template->process(
+    'backoffice/custom_otm_threshold.html.tt',
     {
         url => request()->url_for('backoffice/quant/product_management.cgi'),
     }) || die BOM::Backoffice::Request::template->error;
