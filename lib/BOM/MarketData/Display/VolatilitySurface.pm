@@ -244,8 +244,8 @@ sub get_forward_vol {
 
     my %weights;
     for (my $i = 1; $i <= $days[scalar(@days) - 1]; $i++) {
-        my $date = Date::Utility->new({epoch => ($volsurface->recorded_date->epoch + $i * 86400)});
-        $weights{$i} = create_underlying($volsurface->symbol, $volsurface->for_date)->_builder->build_trading_calendar->weight_on($date);
+        $weights{$i} = create_underlying($volsurface->symbol, $volsurface->for_date)
+            ->_builder->build_trading_calendar->weight_on($volsurface->recorded_date->epoch + $i * 86400);
     }
 
     my $forward_vols;
