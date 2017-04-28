@@ -32,16 +32,15 @@ sub check_copiers {
     ### TODO: Add checking of trade permission in copy_start
     my @multiple = map { +{loginid => $_} } @$copiers;
     my $trx = BOM::Transaction->new({
-        client   => $params->{client},
-        multiple => \@multiple,
-        contract => $params->{contract},
-        price    => ($params->{price} || 0),
-        (defined $params->{payout})      ? (payout        => $params->{payout})        : (),
-        (defined $params->{amount_type}) ? (amount_type   => $params->{amount_type})   : (),
-        ($params->{action} eq 'buy')     ? (purchase_date => $params->{purchase_date}) : (),
-        source => $params->{source},
-        purchase_date => Date::Utility->new()
-    });
+            client   => $params->{client},
+            multiple => \@multiple,
+            contract => $params->{contract},
+            price    => ($params->{price} || 0),
+            (defined $params->{payout})      ? (payout        => $params->{payout})        : (),
+            (defined $params->{amount_type}) ? (amount_type   => $params->{amount_type})   : (),
+            ($params->{action} eq 'buy')     ? (purchase_date => $params->{purchase_date}) : (),
+            source        => $params->{source},
+            purchase_date => Date::Utility->new()});
 
     $params->{action} eq 'buy' ? $trx->batch_buy : $trx->sell_by_shortcode;
 

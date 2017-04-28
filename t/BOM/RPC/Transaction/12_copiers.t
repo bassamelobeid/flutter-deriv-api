@@ -267,7 +267,9 @@ lives_ok {
     like(
         warning {
             ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
-        }, qr/COPY TRADING BUY.*YOUR ACCOUNT BALANCE.*IS INSUFFICIENT TO BUY THIS CONTRACT/ , 'we warned about influence ballance'
+        },
+        qr/COPY TRADING BUY.*YOUR ACCOUNT BALANCE.*IS INSUFFICIENT TO BUY THIS CONTRACT/,
+        'we warned about influence ballance'
     );
     $balance -= $buy_price;
     is($balance_after + 0, $balance, 'correct balance_after');
