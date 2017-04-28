@@ -451,7 +451,7 @@ sub _build_otm_threshold {
     # underlying symbol supercedes market
     foreach my $to_match ($self->underlying->symbol, $self->market->name) {
         if (my $custom = $custom_otm->{$to_match}) {
-            my $match = not first { $custom->{$_} ne $self->$_ } keys %{$custom->{conditions}};
+            my $match = not first { $custom->{conditions}{$_} ne $self->$_ } keys %{$custom->{conditions}};
             return $custom->{value} if $match;
         }
     }
