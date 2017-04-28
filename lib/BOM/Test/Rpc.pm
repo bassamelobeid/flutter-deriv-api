@@ -32,8 +32,6 @@ sub config {
                   workers  => 10,
                   clients  => 1,
                   pid_file => '$cfg->{pid_file}',
-                  user     => 'nobody',
-                  group    => 'nogroup',
                   inactivity_timeout => 3600,
                   heartbeat_timeout => 120,
                  }
