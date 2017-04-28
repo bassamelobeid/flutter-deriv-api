@@ -187,14 +187,10 @@ subtest 'VannaVolga::Calibrated' => sub {
 };
 
 subtest 'Intraday::Forex' => sub {
-    plan tests => 3;
-
     my $engine = BOM::Product::Pricing::Engine::Intraday::Forex->new(bet => $short_term);
 
-    isa_ok($engine->intraday_delta_correction, 'Math::Util::CalculatedValue::Validatable', 'intraday_delta_correction');
-    isa_ok($engine->intraday_vega_correction,  'Math::Util::CalculatedValue::Validatable', 'intraday_vega_correction');
     isa_ok($engine->probability,               'Math::Util::CalculatedValue::Validatable', 'probability');
-
+    done_testing;
 };
 
 subtest 'Slope' => sub {
