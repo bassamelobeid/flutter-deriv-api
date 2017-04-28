@@ -14,12 +14,7 @@ use Moose;
 extends 'BOM::Product::Pricing::Engine';
 with 'BOM::Product::Pricing::Engine::Role::StandardMarkup';
 
-use Math::Function::Interpolator;
-
 use BOM::Market::DataDecimate;
-use List::Util qw(max);
-use Format::Util::Numbers qw( roundnear );
-use Time::Duration::Concise;
 
 =head2 tick_source
 
@@ -33,34 +28,6 @@ has tick_source => (
         BOM::Market::DataDecimate->new;
     },
 );
-
-has [qw(period_opening_value period_closing_value)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-## PRIVATE ##
-
-has [qw(_vol_interval _trend_interval)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__vol_interval {
-    my $self = shift;
-
-    my $bet_seconds = roundnear(1, $self->bet->timeindays->amount * 86400);
-
-    return Time::Duration::Concise->new(interval => max(900, $bet_seconds));
-}
-
-sub _build__trend_interval {
-    my $self = shift;
-
-    my $bet_seconds = roundnear(1, $self->bet->timeindays->amount * 86400);
-
-    return Time::Duration::Concise->new(interval => max(120, $bet_seconds));
-}
 
 no Moose;
 __PACKAGE__->meta->make_immutable;

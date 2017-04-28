@@ -1,7 +1,8 @@
 package BOM::Product::Pricing::Engine::Intraday::Index;
 
 use Moose;
-extends 'BOM::Product::Pricing::Engine::Intraday';
+extends 'BOM::Product::Pricing::Engine';
+with 'BOM::Product::Pricing::Engine::Role::StandardMarkup';
 
 use Time::Duration::Concise;
 

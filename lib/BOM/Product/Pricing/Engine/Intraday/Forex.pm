@@ -1,15 +1,30 @@
 package BOM::Product::Pricing::Engine::Intraday::Forex;
 
 use Moose;
-extends 'BOM::Product::Pricing::Engine::Intraday';
+extends 'BOM::Product::Pricing::Engine';
+with 'BOM::Product::Pricing::Engine::Role::StandardMarkup';
 
 use List::Util qw(max min sum first);
 use Array::Utils qw(:all);
 
+use BOM::Market::DataDecimate;
 use Volatility::Seasonality;
 use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
 use Pricing::Engine::Intraday::Forex::Base;
+
+=head2 tick_source
+
+The source of the ticks used for this pricing. 
+
+=cut
+
+has tick_source => (
+    is      => 'ro',
+    default => sub {
+        BOM::Market::DataDecimate->new;
+    },
+);
 
 has inefficient_period => (
     is      => 'ro',
