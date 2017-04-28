@@ -1,6 +1,6 @@
 #!/etc/rmg/bin/perl
 
-use Test::More tests => 4;
+use Test::More tests => 3;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::MarketData qw(create_underlying);
