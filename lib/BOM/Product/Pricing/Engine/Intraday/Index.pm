@@ -46,13 +46,19 @@ has _supported_types => (
 sub _build_probability {
     my $self = shift;
 
+    my $bet  = $self->bet;
+    my $args = $bet->_pricing_args;
+    die "Intraday::Index does not support 2-barrier contracts" if $bet->two_barriers;
+
+    my @formula_args = ($args->{spot}, $args->{barrier1}, $args->{t}, 0, 0, $self->pricing_vol, $args->{payouttime_code});
+
     my $prob_cv = Math::Util::CalculatedValue::Validatable->new({
         name        => 'theoretical_probability',
         description => 'theoretical probability for intraday index',
         set_by      => __PACKAGE__,
         minimum     => 0.5,                                            # we don't go lower than 0.5
         maximum     => 1,
-        base_amount => $self->formula->($self->_formula_args),
+        base_amount => $self->formula->(@formula_args),
     });
 
     $prob_cv->include_adjustment('add', $self->risk_markup);
