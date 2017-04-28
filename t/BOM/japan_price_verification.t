@@ -515,8 +515,8 @@ subtest '2017_with_extra_data' => sub {
 
         my $output = BOM::JapanContractDetails::verify_with_shortcode($input);
         is $output->{ask_probability}->{risk_markup},               0.00932737967138138, 'matched risk markup';
-        is $output->{theoretical_probability}->{bs_probability},    0.0799517811582356,  'matched bs probability';
-        is $output->{theoretical_probability}->{market_supplement}, 0.0511627434135013,  'matched market supplement';
+        is $output->{theoretical_probability}->{bs_probability},    0.212226990932264,   'matched bs probability';
+        is $output->{theoretical_probability}->{market_supplement}, 0.0488884919520667,  'matched market supplement';
         is $output->{bs_probability}->{vol},                        0.119638984890473,   'matched vol';
     };
 };
