@@ -278,7 +278,7 @@ sub _tentative_events_markup {
             }
         }
 
-        my %args = (map { $_ => $bet->pricing_args->{$_} } qw(spot t payouttime_code));
+        my %args = (map { $_ => $bet->_pricing_args->{$_} } qw(spot t payouttime_code));
 
         my $engine = Pricing::Engine::Intraday::Forex::Base->new(
             ticks                => $self->ticks_for_trend,
