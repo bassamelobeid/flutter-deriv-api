@@ -61,7 +61,7 @@ sub _build_base_probability {
 
     my %args = (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code));
 
-    my $vol = $pricing_args->{iv};
+    my $vol    = $pricing_args->{iv};
     my $engine = Pricing::Engine::Intraday::Forex::Base->new(
         ticks                => $self->ticks_for_trend,
         strikes              => [$pricing_args->{barrier1}],
@@ -187,7 +187,7 @@ sub _tentative_events_markup {
 
         my %args = (map { $_ => $bet->_pricing_args->{$_} } qw(spot t payouttime_code));
 
-        my $vol = $pricing_args->{iv};
+        my $vol    = $pricing_args->{iv};
         my $engine = Pricing::Engine::Intraday::Forex::Base->new(
             ticks                => $self->ticks_for_trend,
             strikes              => [$adjusted_barrier],
@@ -498,7 +498,7 @@ sub _build_economic_events_volatility_risk_markup {
         my $markup_base_amount = 0;
         # since we are parsing in both vols now, we just check for difference in vol to determine if there's a markup
         my $news_adjusted_pricing_vol = $self->bet->_pricing_args->{iv_with_news};
-        my $pricing_args = $self->bet->_pricing_args;
+        my $pricing_args              = $self->bet->_pricing_args;
         if ($pricing_args->{iv} != $news_adjusted_pricing_vol) {
             my $tv_without_news = $self->base_probability->amount;
 
