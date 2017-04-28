@@ -140,6 +140,5 @@ print BOM::TentativeEvents::generate_tentative_events_form({
     upload_url => request()->url_for('backoffice/quant/market_data_mgmt/update_tentative_events.cgi'),
 });
 
-
 code_exit_BO();
 
