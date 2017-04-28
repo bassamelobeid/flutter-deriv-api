@@ -436,8 +436,13 @@ sub get_untrusted_types {
         },
         {
             'linktype' => 'jpactivationpending',
-            'comments' => 'JP Activation Pending',
+            'comments' => 'jp activation pending',
             'code'     => 'jp_activation_pending'
+        },
+        {
+            'linktype' => 'jptransactiondetail',
+            'comments' => 'jp bank details stored',
+            'code'     => 'jp_transaction_detail'
         }];
 }
 

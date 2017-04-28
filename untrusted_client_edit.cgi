@@ -122,6 +122,14 @@ foreach my $login_id (split(/\s+/, $clientID)) {
             $client->clr_status('jp_activation_pending');
             $printline = $client->save ? $remove_success_msg : $remove_error_msg;
         }
+    } elsif ($client_status_type eq 'jptransactiondetail') {
+        if ($action eq 'insert_data') {
+            $client->set_status('jp_transaction_detail', $clerk, $reason);
+            $printline = $client->save ? $insert_success_msg : $insert_error_msg;
+        } elsif ($action eq 'remove_data') {
+            $client->clr_status('jp_transaction_detail');
+            $printline = $client->save ? $remove_success_msg : $remove_error_msg;
+        }
     }
 
     # print success/fail message

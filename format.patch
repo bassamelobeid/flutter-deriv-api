@@ -1,0 +1,38 @@
+diff --git a/subs/subs_backoffice_clientdetails.pm b/subs/subs_backoffice_clientdetails.pm
+index 414e49f..76a1db7 100644
+--- a/subs/subs_backoffice_clientdetails.pm
++++ b/subs/subs_backoffice_clientdetails.pm
+@@ -436,8 +436,13 @@ sub get_untrusted_types {
+         },
+         {
+             'linktype' => 'jpactivationpending',
+-            'comments' => 'JP Activation Pending',
++            'comments' => 'jp activation pending',
+             'code'     => 'jp_activation_pending'
++        }
++        {
++            'linktype' => 'jptransactiondetail',
++            'comments' => 'jp transaction details stored',
++            'code'     => 'jp_transaction_detail'
+         }];
+ }
+ 
+diff --git a/untrusted_client_edit.cgi b/untrusted_client_edit.cgi
+index 272835e..18dd909 100755
+--- a/untrusted_client_edit.cgi
++++ b/untrusted_client_edit.cgi
+@@ -122,6 +122,14 @@ foreach my $login_id (split(/\s+/, $clientID)) {
+             $client->clr_status('jp_activation_pending');
+             $printline = $client->save ? $remove_success_msg : $remove_error_msg;
+         }
++    } elsif ($client_status_type eq 'jptransactiondetail') {
++        if ($action eq 'insert_data') {
++            $client->set_status('jp_transaction_detail', $clerk, $reason);
++            $printline = $client->save ? $insert_success_msg : $insert_error_msg;
++        } elsif ($action eq 'remove_data') {
++            $client->clr_status('jp_transaction_detail');
++            $printline = $client->save ? $remove_success_msg : $remove_error_msg;
++        }
+     }
+ 
+     # print success/fail message
