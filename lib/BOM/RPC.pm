@@ -214,7 +214,7 @@ sub startup {
             [qw(auth validate_tnc check_trade_status compliance_checks check_tax_information)]
         ],
 
-        ['active_symbols',        \&BOM::RPC::v3::MarketDiscovery::active_symbols],
+        ['active_symbols', \&BOM::RPC::v3::MarketDiscovery::active_symbols],
 
         ['authorize', \&BOM::RPC::v3::Authorize::authorize],
         ['logout',    \&BOM::RPC::v3::Authorize::logout],
