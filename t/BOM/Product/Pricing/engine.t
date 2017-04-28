@@ -189,7 +189,7 @@ subtest 'VannaVolga::Calibrated' => sub {
 subtest 'Intraday::Forex' => sub {
     my $engine = BOM::Product::Pricing::Engine::Intraday::Forex->new(bet => $short_term);
 
-    isa_ok($engine->probability,               'Math::Util::CalculatedValue::Validatable', 'probability');
+    isa_ok($engine->probability, 'Math::Util::CalculatedValue::Validatable', 'probability');
     done_testing;
 };
 
