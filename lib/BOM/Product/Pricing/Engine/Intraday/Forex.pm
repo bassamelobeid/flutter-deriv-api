@@ -6,12 +6,9 @@ extends 'BOM::Product::Pricing::Engine::Intraday';
 use List::Util qw(max min sum first);
 use Array::Utils qw(:all);
 
-use Math::Business::BlackScholes::Binaries::Greeks::Delta;
-use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use Volatility::Seasonality;
 use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
-use BOM::Platform::Config;
 use Pricing::Engine::Intraday::Forex::Base;
 
 has inefficient_period => (
