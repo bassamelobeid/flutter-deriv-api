@@ -172,6 +172,7 @@ sub statement {
                 if (exists $res->{error}) {
                     $struct->{longcode} = localize('Could not retrieve contract details');
                 } else {
+                    # this should be already localize
                     $struct->{longcode} = $res->{longcode};
                 }
             }
@@ -249,6 +250,7 @@ sub profit_table {
             if (!$res->{longcodes}->{$row->{short_code}}) {
                 $trx{longcode} = localize('Could not retrieve contract details');
             } else {
+                # this should already be localized
                 $trx{longcode} = $res->{longcodes}->{$row->{short_code}};
             }
         }
@@ -304,7 +306,7 @@ sub get_account_status {
     # differentiate between social and password based accounts
     my $user = BOM::Platform::User->new({email => $client->email});
     push @status, 'has_password' if $user->password;
-    push @status, 'unwelcome' if not $already_unwelcomed and not $client->allow_trade;
+    push @status, 'unwelcome' if not $already_unwelcomed and BOM::Transaction::Validation->new({clients => [$client]})->not_allow_trade($client);
 
     return {
         status              => \@status,
