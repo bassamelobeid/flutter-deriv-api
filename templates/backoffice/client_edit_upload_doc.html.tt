@@ -19,11 +19,9 @@
     <option value="bankstatement">Bank statement</option>
     <option value="amlglobalcheck">AML Global Check</option>
     <option value="docverification">Doc Verification (Autodoc)</option>
-
     <option value="vf_face_id">Video Verification Screenshot - Face & ID</option>
     <option value="vf_id">Video Verification Screenshot - ID</option>
     <option value="vf_poa">Video Verification Screenshot - POA</option>
-
     <option value="other">Other</option>
   </select>
   <select name=docformat_[% n %]>
