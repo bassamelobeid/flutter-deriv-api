@@ -366,7 +366,7 @@ sub get_bid {
             return;
         }
 
-        $response->{is_settleable}         = $contract->is_settleable;
+        $response->{is_settleable} = $contract->is_settleable;
 
         $response->{barrier_count} = $contract->two_barriers ? 2 : 1;
         if ($contract->entry_spot) {
@@ -375,10 +375,10 @@ sub get_bid {
             $response->{entry_spot}      = $entry_spot;
             $response->{entry_tick_time} = $contract->entry_spot_epoch;
             if ($contract->two_barriers) {
-                $response->{high_barrier}          = $contract->high_barrier->as_absolute;
-                $response->{low_barrier}           = $contract->low_barrier->as_absolute;
+                $response->{high_barrier} = $contract->high_barrier->as_absolute;
+                $response->{low_barrier}  = $contract->low_barrier->as_absolute;
             } elsif ($contract->barrier) {
-                $response->{barrier}          = $contract->barrier->as_absolute;
+                $response->{barrier} = $contract->barrier->as_absolute;
             }
         }
 
