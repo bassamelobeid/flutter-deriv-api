@@ -198,7 +198,7 @@ sub _tentative_events_markup {
 
     my $markup = 0;
 
-    my $barrier = $bet->barrier->as_absolute;
+    my $barrier          = $bet->barrier->as_absolute;
     my $adjusted_barrier = $self->_get_barrier_for_tentative_events($barrier);
 
     #if there is a change needed in the barriers due to tentative events:
@@ -207,7 +207,8 @@ sub _tentative_events_markup {
         #For one-touch and no-touch, If barrier crosses the spot because of our barrier adjustments, just make sure prob will be 100%
         if ($type eq 'ONETOUCH' or $type eq 'NOTOUCH') {
             if (   ($barrier < $bet->pricing_spot and $adjusted_barrier >= $bet->pricing_spot)
-                or ($barrier > $bet->pricing_spot and $adjusted_barrier <= $bet->pricing_spot)) {
+                or ($barrier > $bet->pricing_spot and $adjusted_barrier <= $bet->pricing_spot))
+            {
                 return Math::Util::CalculatedValue::Validatable->new({
                     name        => 'economic_events_volatility_risk_markup',
                     description => 'markup to account for volatility risk of economic events',
@@ -548,7 +549,7 @@ sub _build_economic_events_volatility_risk_markup {
                 mu                   => 0,
                 %args,
             );
-            my $tv_with_news    = $engine->base_probability->amount;
+            my $tv_with_news = $engine->base_probability->amount;
 
             $markup_base_amount = max(0, $tv_with_news - $tv_without_news);
         }
