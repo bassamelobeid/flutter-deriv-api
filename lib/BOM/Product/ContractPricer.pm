@@ -445,7 +445,16 @@ sub _build_forqqq {
 sub _build_otm_threshold {
     my $self = shift;
 
-    return 0.2 if ($self->timeindays->amount <= 7 and not $self->is_atm_bet and $self->market->name ne 'volidx');
+    my $custom_otm = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold // {});
+
+    # underlying symbol supercedes market
+    foreach my $to_match ($self->underlying->symbol, $self->market->name) {
+        if (my $custom = $custom_otm->{$to_match}) {
+            my $match = not first { $custom->{$_} ne $self->$_ } keys %{$custom->{conditions}};
+            return $custom->{value} if $match;
+        }
+    }
+    # this is the default depp OTM threshold set in yaml per market
     return $self->market->deep_otm_threshold;
 }
 
