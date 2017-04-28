@@ -36,11 +36,6 @@ has economic_events => (
     default => sub { [] },
 );
 
-has coefficients => (
-    is      => 'ro',
-    default => sub { $coefficient },
-);
-
 has [qw(long_term_prediction)] => (
     is         => 'ro',
     lazy_build => 1,
@@ -139,62 +134,6 @@ sub _build_probability {
     $ifx_prob->include_adjustment('add',   $self->risk_markup);
 
     return $ifx_prob;
-}
-
-sub _build__delta_formula {
-    my $self = shift;
-
-    my $formula_name = 'Math::Business::BlackScholes::Binaries::Greeks::Delta::' . lc $self->bet->pricing_code;
-
-    return \&$formula_name;
-}
-
-=head1 intraday_delta
-
-The delta of this option, given our inputs.  Math::Util::CalculatedValue::Validatable
-
-=cut
-
-sub _build_intraday_delta {
-    my $self = shift;
-
-    my $idd = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'intraday_delta',
-        description => 'the delta to use for pricing this bet',
-        set_by      => __PACKAGE__,
-        base_amount => $self->_delta_formula->($self->_formula_args),
-    });
-
-    return $idd;
-}
-
-sub _build__vega_formula {
-    my $self = shift;
-
-    my $formula_name = 'Math::Business::BlackScholes::Binaries::Greeks::Vega::' . lc $self->bet->pricing_code;
-
-    return \&$formula_name;
-}
-
-=head1 intraday_vega
-
-The vega of this option given our computed inputs.  Math::Util::CalculatedValue::Validatable
-
-=cut
-
-sub _build_intraday_vega {
-    my $self = shift;
-
-    my $bet = $self->bet;
-
-    my $idv = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'intraday_vega',
-        description => 'the vega to use for pricing this bet',
-        set_by      => __PACKAGE__,
-        base_amount => $self->_vega_formula->($self->_formula_args),
-    });
-
-    return $idv;
 }
 
 sub _build_economic_events_markup {
@@ -433,50 +372,6 @@ sub _build_slope {
     return (sqrt(1 - (($ticks_per_sec - 2)**2) / 4));
 }
 
-=head1 intraday_trend
-
-ASSUMPTIONS: If there's no ticks to calculate trend, we will assume there's no trend. But we will not sell since volatility calculation (which uses the same set of ticks), will fail.
-
-The current observed trend in the market movements.  Math::Util::CalculatedValue::Validatable
-
-=cut
-
-sub _build_intraday_trend {
-    my $self = shift;
-
-    my $bet              = $self->bet;
-    my $duration_in_secs = $bet->timeindays->amount * 86400;
-
-    my @ticks    = @{$self->ticks_for_trend};
-    my $average  = (@ticks) ? sum(map { $_->{quote} } @ticks) / @ticks : $bet->_pricing_args->{spot};
-    my $avg_spot = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'average_spot',
-        description => 'mean of spot over 2 * duration of the contract',
-        set_by      => __PACKAGE__,
-        base_amount => $average,
-    });
-
-    my $trend = 0;
-    # Lookback seconds is only set to zero if @ticks has less than or equal to one element.
-    # But let's be extra careful here.
-    my $lookback_seconds = $self->lookback_seconds;
-    if (@ticks > 1 and $lookback_seconds > 0) {
-        $trend = ((($bet->_pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($lookback_seconds / 2)) * $self->slope;
-    }
-    my $calibration_coef = $self->coefficients->{$bet->underlying->symbol};
-    my $trend_cv         = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'intraday_trend',
-        description => 'Intraday trend based on historical data',
-        minimum     => $calibration_coef->{trend_min} * $self->slope,
-        maximum     => $calibration_coef->{trend_max} * $self->slope,
-        set_by      => __PACKAGE__,
-        base_amount => $trend,
-    });
-    $trend_cv->include_adjustment('info', $avg_spot);
-
-    return $trend_cv;
-}
-
 has more_than_short_term_cutoff => (
     is         => 'ro',
     lazy_build => 1,
@@ -486,130 +381,6 @@ sub _build_more_than_short_term_cutoff {
     my $self = shift;
 
     return ($self->bet->get_time_to_expiry->minutes >= 15) ? 1 : 0;
-}
-
-sub calculate_intraday_bounceback {
-    my ($self, $t_mins, $st_or_lt) = @_;
-
-    my $calibration_coef = $self->coefficients->{$self->bet->underlying->symbol};
-    my $slope            = $self->slope;
-
-    my $bounceback_base_intraday_trend = $self->calculate_bounceback_base($t_mins, $st_or_lt, $self->intraday_trend->amount);
-
-    if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_st') {
-        $bounceback_base_intraday_trend =
-            ($self->bet->pricing_code eq 'CALL') ? $bounceback_base_intraday_trend : $bounceback_base_intraday_trend * -1;
-    }
-
-    return $bounceback_base_intraday_trend;
-}
-
-sub calculate_bounceback_base {
-    my ($self, $t_mins, $st_or_lt, $trend_value) = @_;
-
-    my @coef_name = map { $_ . $st_or_lt } qw(A B C D);
-    my $calibration_coef = $self->coefficients->{$self->bet->underlying->symbol};
-    my ($coef_A, $coef_B, $coef_C, $coef_D) = map { $calibration_coef->{$_} } @coef_name;
-    my $coef_D_multiplier = ($st_or_lt eq '_lt') ? 1 : 1 / $coef_D;
-    my $duration_in_secs = $t_mins * 60;
-
-    return $coef_A / ($coef_D * $coef_D_multiplier) * $duration_in_secs**$coef_B * (1 / (1 + exp($coef_C * $trend_value * $coef_D)) - 0.5);
-}
-
-sub calculate_expected_spot {
-    my ($self, $t) = @_;
-
-    my $bet = $self->bet;
-    my $expected_spot =
-        $self->intraday_trend->peek_amount('average_spot') * $self->calculate_intraday_bounceback($t, "_lt") * sqrt($t * 60) +
-        $bet->_pricing_args->{spot};
-    return $expected_spot;
-}
-
-sub _get_short_term_delta_correction {
-    my $self = shift;
-
-    return $self->calculate_intraday_bounceback(min($self->bet->get_time_to_expiry->minutes, 15), "_st");
-}
-
-sub _get_long_term_delta_correction {
-    my $self = shift;
-
-    my $bet           = $self->bet;
-    my $args          = $bet->_pricing_args;
-    my $pricing_spot  = $args->{spot};
-    my $duration_mins = $args->{t} * 365 * 24 * 60;
-    $duration_mins = max($duration_mins, 15);
-    my $duration_t = $duration_mins / (365 * 24 * 60);                    #convert back to year's fraction
-    my $expected_spot = $self->calculate_expected_spot($duration_mins);
-
-    my @barrier_args = ($bet->two_barriers) ? ($args->{barrier1}, $args->{barrier2}) : ($args->{barrier1});
-    my $spot_tv = $self->formula->($pricing_spot, @barrier_args, $duration_t, 0, 0, $self->pricing_vol, $args->{payouttime_code});
-    my $spot_tv_cv = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'tv_priced_with_current_spot',
-        description => 'bs probability priced with current spot',
-        set_by      => __PACKAGE__,
-        base_amount => $spot_tv,
-    });
-    my $expected_spot_tv = $self->formula->($expected_spot, @barrier_args, $duration_t, 0, 0, $self->pricing_vol, $args->{payouttime_code});
-
-    my $delta_cv = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'intraday_bounceback',
-        description => 'Intraday bounceback based on historical data',
-        set_by      => __PACKAGE__,
-        base_amount => $expected_spot_tv,
-    });
-    $delta_cv->include_adjustment('subtract', $spot_tv_cv);
-    return $delta_cv->amount;
-}
-
-sub _build_intraday_delta_correction {
-    my $self = shift;
-
-    my $delta_c;
-    my @info_cv;
-
-    if ($self->bet->get_time_to_expiry->minutes < 10) {
-        $delta_c = $self->_get_short_term_delta_correction;
-    } elsif ($self->bet->get_time_to_expiry->minutes > 20) {
-        $delta_c = $self->_get_long_term_delta_correction;
-    } else {
-        my $t     = $self->bet->get_time_to_expiry->minutes;
-        my $alpha = (20 - $t) / 10;
-        my $beta  = ($t - 10) / 10;
-
-        my $short_term = $self->_get_short_term_delta_correction;
-        my $long_term  = $self->_get_long_term_delta_correction;
-
-        $delta_c = ($alpha * $short_term) + ($beta * $long_term);
-
-        push @info_cv,
-            Math::Util::CalculatedValue::Validatable->new({
-                name        => 'delta_correction_short_term_value',
-                description => 'delta_correction_short_term_value',
-                set_by      => __PACKAGE__,
-                base_amount => $short_term
-            });
-
-        push @info_cv,
-            Math::Util::CalculatedValue::Validatable->new({
-                name        => 'delta_correction_long_term_value',
-                description => 'delta_correction_long_term_value',
-                set_by      => __PACKAGE__,
-                base_amount => $long_term
-            });
-    }
-
-    my $delta_cv = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'intraday_delta_correction',
-        description => 'Intraday delta correction based on historical data',
-        set_by      => __PACKAGE__,
-        base_amount => $delta_c,
-    });
-
-    $delta_cv->include_adjustment('info', $_) for @info_cv;
-
-    return $delta_cv;
 }
 
 =head1 intraday_vanilla_delta
@@ -739,69 +510,6 @@ sub _build_risk_markup {
     }
 
     return $risk_markup;
-}
-
-has jump_metric => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_jump_metric {
-    my $self = shift;
-
-    my $bet = $self->bet;
-    # jump metric is built on top of 2-minute lookback window.
-    my @ticks = sort { $a <=> $b } map { $_->{quote} } @{
-        $self->tick_source->retrieve({
-                underlying   => $bet->underlying,
-                interval     => Time::Duration::Concise->new(interval => '2m'),
-                ending_epoch => $bet->date_pricing->epoch,
-                aggregated   => 0,
-            })};
-
-    my $median = do {
-        my $median_spot = $bet->_pricing_args->{spot};
-        if (@ticks > 1) {
-            my $size  = @ticks;
-            my $index = int($size / 2);
-            $median_spot = ($size % 2) ? $ticks[$index] : (($ticks[$index] + $ticks[$index - 1]) / 2);
-        } else {
-            # if redis cache is close to empty, we want to know about it.
-            warn "Failed to fetch ticks from redis cache for " . $bet->underlying->symbol;
-        }
-        $median_spot;
-    };
-
-    my $metric = ($median - $bet->_pricing_args->{spot}) / $median;
-
-    return $metric;
-}
-
-has [qw(intraday_vega_correction intraday_vega)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-has [qw(_vega_formula _delta_formula)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_intraday_vega_correction {
-    my $self = shift;
-
-    my $vmr = BOM::Platform::Config::quants->{commission}->{intraday}->{historical_vol_meanrev};
-    my $vc  = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'vega_correction',
-        description => 'correction for uncertianty of vol',
-        set_by      => 'quants.commission.intraday.historical_vol_meanrev',
-        base_amount => $vmr,
-    });
-
-    $vc->include_adjustment('multiply', $self->intraday_vega);
-    $vc->include_adjustment('multiply', $self->long_term_prediction);
-
-    return $vc;
 }
 
 has [qw(economic_events_volatility_risk_markup economic_events_spot_risk_markup)] => (
