@@ -5,7 +5,6 @@ extends 'BOM::Product::Pricing::Engine::Intraday';
 
 use List::Util qw(max min sum first);
 use Array::Utils qw(:all);
-use YAML::XS qw(LoadFile);
 
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
@@ -13,18 +12,7 @@ use Volatility::Seasonality;
 use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
 use BOM::Platform::Config;
-use BOM::Market::DataDecimate;
 use Pricing::Engine::Intraday::Forex::Base;
-
-sub clone {
-    my ($self, $changes) = @_;
-    return $self->new({
-        bet => $self->bet,
-        %$changes
-    });
-}
-
-my $coefficient = LoadFile('/home/git/regentmarkets/bom/config/files/intraday_trend_calibration.yml');
 
 has inefficient_period => (
     is      => 'ro',
