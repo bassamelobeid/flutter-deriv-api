@@ -7,6 +7,7 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Copier;
 use Client::Account;
+use Try::Tiny;
 
 use Finance::Contract::Category;
 

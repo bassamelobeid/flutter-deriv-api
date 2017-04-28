@@ -40,6 +40,7 @@ sub check_copiers {
         (defined $params->{amount_type}) ? (amount_type   => $params->{amount_type})   : (),
         ($params->{action} eq 'buy')     ? (purchase_date => $params->{purchase_date}) : (),
         source => $params->{source},
+        purchase_date => Date::Utility->new()
     });
 
     $params->{action} eq 'buy' ? $trx->batch_buy : $trx->sell_by_shortcode;

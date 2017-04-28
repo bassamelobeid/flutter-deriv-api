@@ -22,14 +22,15 @@ use Test::Mojo;
 use BOM::Test::RPC::Client;
 use Test::BOM::RPC::Contract;
 use BOM::Platform::Client::IDAuthentication;
+use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 Crypt::NamedKeys->keyfile('/etc/rmg/aes_keys.yml');
-my $mock_rpc = Test::MockModule->new('BOM::RPC');
-$mock_rpc->mock(_validate_tnc => sub { note "mocked RPC->validate_tnc returning nothing"; undef });
+my $mock_rpc = Test::MockModule->new('BOM::Transaction::Validation');
+$mock_rpc->mock(_validate_tnc => sub { note "mocked BOM::Transaction::Validation->validate_tnc returning nothing"; undef });
 
 sub db {
     return BOM::Database::ClientDB->new({
@@ -130,7 +131,7 @@ sub buy_one_bet {
 
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
-    my $contract = Test::BOM::RPC::Contract::create_contract();
+    my $contract = produce_contract(Test::BOM::RPC::Contract::prepare_contract());
 
     my $params = {
         language            => 'EN',
@@ -201,7 +202,6 @@ lives_ok {
             client => $copier
         });
 
-    #is($res && $res->{error}{code},'PermissionDenied', "start following attepmt. PermissionDenied");
     ok($res && $res->{status}, "start following");
     $trader_acc_mapper = BOM::Database::DataMapper::Account->new({
         'client_loginid' => $trader->loginid,
