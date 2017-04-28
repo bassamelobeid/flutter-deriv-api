@@ -97,11 +97,6 @@ sub absolute_barrier_multiplier {
     return $self->underlying->market->absolute_barrier_multiplier;
 }
 
-sub basis_tick_quote {
-    my $self = shift;
-    return $self->_basis_tick->quote;
-}
-
 sub supplied_barrier_type {
     my $self = shift;
     return $self->high_barrier->supplied_type if $self->two_barriers;
