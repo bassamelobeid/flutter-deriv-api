@@ -108,8 +108,9 @@ sub _build_base_probability {
             discount_rate
             mu
         );
+        my $ticks = $self->ticks_for_trend;
         $args{strike} = (delete $args{strikes})->[0];
-        my @data = ($base_probability, @args{@fields}, $ticks->[0]{epoch}, $ticks->[-1]{epoch}, map { $_->{quote} } @$ticks);
+        my @data = ($base_probability->amount, @args{@fields}, $ticks->[0]{epoch}, $ticks->[-1]{epoch}, map { $_->{quote} } @$ticks);
         $intraday_probability_log_fh->print(join(',', @data) . "\n");
     }
     return $base_probability;
