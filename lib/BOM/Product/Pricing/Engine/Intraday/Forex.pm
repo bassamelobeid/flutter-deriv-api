@@ -259,47 +259,28 @@ sub _tentative_events_markup {
 
     my $markup = 0;
 
-    my @barrier_args =
-          ($bet->two_barriers)
-        ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute)
-        : ($bet->barrier->as_absolute);
-
-    my @adjusted_barriers = map { $self->_get_barrier_for_tentative_events($_) } @barrier_args;
+    my $barrier = $bet->barrier->as_absolute;
+    my $adjusted_barrier = $self->_get_barrier_for_tentative_events($barrier);
 
     #if there is a change needed in the barriers due to tentative events:
-    my $barriers_changed = 0;
-    for my $i (0 .. scalar @barrier_args - 1) {
-        #barriers sometimes are numbers and somtime string. so using array_diff does not help
-        $barriers_changed = 1 if $barrier_args[$i] != $adjusted_barriers[$i];
-    }
-
-    if ($barriers_changed) {
+    if ($barrier != $adjusted_barrier) {
         my $type = $bet->code;
         #For one-touch and no-touch, If barrier crosses the spot because of our barrier adjustments, just make sure prob will be 100%
         if ($type eq 'ONETOUCH' or $type eq 'NOTOUCH') {
-            for my $i (0 .. scalar @barrier_args - 1) {
-                if (   ($barrier_args[$i] < $bet->pricing_spot and $adjusted_barriers[$i] >= $bet->pricing_spot)
-                    or ($barrier_args[$i] > $bet->pricing_spot and $adjusted_barriers[$i] <= $bet->pricing_spot))
-                {
-                    return Math::Util::CalculatedValue::Validatable->new({
-                        name        => 'economic_events_volatility_risk_markup',
-                        description => 'markup to account for volatility risk of economic events',
-                        set_by      => __PACKAGE__,
-                        base_amount => 1.0,
-                    });
-                }
+            if (   ($barrier < $bet->pricing_spot and $adjusted_barrier >= $bet->pricing_spot)
+                or ($barrier > $bet->pricing_spot and $adjusted_barrier <= $bet->pricing_spot)) {
+                return Math::Util::CalculatedValue::Validatable->new({
+                    name        => 'economic_events_volatility_risk_markup',
+                    description => 'markup to account for volatility risk of economic events',
+                    set_by      => __PACKAGE__,
+                    base_amount => 1.0,
+                });
             }
         }
 
-        my $barrier_hash = {};
-        if ($bet->two_barriers) {
-            $barrier_hash->{high_barrier} = $adjusted_barriers[0];
-            $barrier_hash->{low_barrier}  = $adjusted_barriers[1];
-        } else {
-            $barrier_hash->{barrier} = $adjusted_barriers[0];
-        }
-
-        my $new_bet = BOM::Product::ContractFactory::make_similar_contract($bet, $barrier_hash);
+        my $new_bet = BOM::Product::ContractFactory::make_similar_contract($bet, {
+            barrier => $adjusted_barrier,
+        });
         my $new_prob = $new_bet->pricing_engine->base_probability;
 
         $new_prob = $new_prob->amount if Scalar::Util::blessed($new_prob) && $new_prob->isa('Math::Util::CalculatedValue::Validatable');
