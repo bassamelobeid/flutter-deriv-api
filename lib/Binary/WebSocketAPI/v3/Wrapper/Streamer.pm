@@ -582,7 +582,7 @@ sub process_transaction_updates {
                         Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time(
                             $c, $payload,
                             $channel->{$type}->{contract_id},
-                            $channel->{$type}{args});
+                            $channel->{$type}->{args});
                     }
                 } elsif ($channel and exists $channel->{$type}->{account_id}) {
                     _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
