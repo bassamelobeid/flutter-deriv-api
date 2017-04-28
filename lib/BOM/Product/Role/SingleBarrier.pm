@@ -18,7 +18,6 @@ has barrier => (
     builder => '_build_barrier',
 );
 
-
 sub _build_barrier {
     my $self    = shift;
     my $barrier = $self->make_barrier($self->supplied_barrier);

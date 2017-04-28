@@ -156,7 +156,6 @@ has [qw(opposite_contract opposite_contract_for_sale)] => (
     lazy_build => 1
 );
 
-
 has tentative_events => (
     is         => 'ro',
     lazy_build => 1,
