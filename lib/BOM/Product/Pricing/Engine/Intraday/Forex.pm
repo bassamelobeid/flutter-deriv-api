@@ -822,10 +822,26 @@ sub _build_economic_events_volatility_risk_markup {
         # since we are parsing in both vols now, we just check for difference in vol to determine if there's a markup
         if ($self->pricing_vol != $self->news_adjusted_pricing_vol) {
             my $tv_without_news = $self->base_probability->amount;
-            my $tv_with_news    = $self->clone({
-                    pricing_vol    => $self->news_adjusted_pricing_vol,
-                    intraday_trend => $self->intraday_trend,
-                })->base_probability->amount;
+
+            # Re-calculate  base probability using the news_adjusted_pricing_vol
+            my $pricing_args = $self->bet->_pricing_args;
+
+            my %args = (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code));
+
+            my $engine = Pricing::Engine::Intraday::Forex::Base->new(
+                ticks                => $self->ticks_for_trend,
+                strikes              => [$pricing_args->{barrier1}],
+                vol                  => $self->news_adjusted_pricing_vol,
+                contract_type        => $self->bet->pricing_code,
+                payout_type          => 'binary',
+                underlying_symbol    => $self->bet->underlying->symbol,
+                long_term_prediction => $self->long_term_prediction->amount,
+                discount_rate        => 0,
+                mu                   => 0,
+                %args,
+            );
+            my $tv_with_news    = $engine->base_probability->amount;
+
             $markup_base_amount = max(0, $tv_with_news - $tv_without_news);
         }
 
