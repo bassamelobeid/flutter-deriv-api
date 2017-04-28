@@ -146,8 +146,8 @@ subtest 'display_decimals' => sub {
             epoch => time,
             quote => 8
         });
-        is roundnear(0.0001, $stock->dividend_rate_for(0.5)), 0.0103, 'correct dividend rate for stocks';
-        is $stock->dividend_rate_for(1.0), 0.0073, 'correct dividend rate for stocks';
+        is roundnear(0.0001, $stock->dividend_rate_for(0.5)), 0, 'correct dividend rate for stocks';
+        is $stock->dividend_rate_for(1.0), 0, 'correct dividend rate for stocks';
         Cache::RedisDB->del('QUOTE', $stock->symbol);
     };
 };
