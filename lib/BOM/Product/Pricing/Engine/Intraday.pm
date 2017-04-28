@@ -34,7 +34,7 @@ has tick_source => (
     },
 );
 
-has [qw(period_opening_value period_closing_value long_term_vol)] => (
+has [qw(period_opening_value period_closing_value)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -60,32 +60,6 @@ sub _build__trend_interval {
     my $bet_seconds = roundnear(1, $self->bet->timeindays->amount * 86400);
 
     return Time::Duration::Concise->new(interval => max(120, $bet_seconds));
-}
-
-=head2 long_term_vol
-
-The long_term vol used to compute vega and constrain our intraday historical vol.
-
-Presently represent the 1W tenor.  Math::Util::CalculatedValue::Validatable.
-
-=cut
-
-sub _build_long_term_vol {
-    my $self = shift;
-
-    my $from = $self->bet->effective_start;
-
-    return Math::Util::CalculatedValue::Validatable->new({
-            name        => 'long_term_vol',
-            description => 'long term (1 week) vol)',
-            set_by      => __PACKAGE__,
-            base_amount => $self->bet->volsurface->get_volatility({
-                    delta => 50,
-                    from  => $from,
-                    to    => $from->plus_time_interval('7d'),
-                }
-            ),
-        });
 }
 
 sub _formula_args {
