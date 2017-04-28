@@ -21,19 +21,10 @@ has economic_events => (
     default => sub { [] },
 );
 
-has [qw(long_term_prediction)] => (
+has long_term_prediction => (
     is         => 'ro',
     lazy_build => 1,
 );
-
-has [qw(pricing_vol news_adjusted_pricing_vol)] => (
-    is         => 'rw',
-    lazy_build => 1,
-);
-
-sub _build_news_adjusted_pricing_vol {
-    return shift->bet->_pricing_args->{iv_with_news};
-}
 
 sub _build_long_term_prediction {
     return Math::Util::CalculatedValue::Validatable->new({
@@ -41,10 +32,6 @@ sub _build_long_term_prediction {
             description => 'long term prediction for intraday historical model',
             set_by      => __PACKAGE__,
             base_amount => shift->bet->_pricing_args->{long_term_prediction}});
-}
-
-sub _build_pricing_vol {
-    return shift->bet->_pricing_args->{iv};
 }
 
 has _supported_types => (
@@ -61,17 +48,11 @@ has _supported_types => (
 );
 
 has [
-    qw(base_probability probability intraday_delta_correction short_term_prediction long_term_prediction economic_events_markup intraday_trend intraday_vanilla_delta risk_markup)
+    qw(base_probability probability short_term_prediction long_term_prediction economic_events_markup intraday_trend intraday_vanilla_delta risk_markup)
     ] => (
     is         => 'ro',
     lazy_build => 1,
     );
-
-## PRIVATE ##
-has [qw(_delta_formula _vega_formula)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
 
 sub _build_base_probability {
     my $self = shift;
@@ -80,10 +61,11 @@ sub _build_base_probability {
 
     my %args = (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code));
 
+    my $vol = $pricing_args->{iv};
     my $engine = Pricing::Engine::Intraday::Forex::Base->new(
         ticks                => $self->ticks_for_trend,
         strikes              => [$pricing_args->{barrier1}],
-        vol                  => $self->pricing_vol,
+        vol                  => $vol,
         contract_type        => $self->bet->pricing_code,
         payout_type          => 'binary',
         underlying_symbol    => $self->bet->underlying->symbol,
@@ -205,10 +187,11 @@ sub _tentative_events_markup {
 
         my %args = (map { $_ => $bet->_pricing_args->{$_} } qw(spot t payouttime_code));
 
+        my $vol = $pricing_args->{iv};
         my $engine = Pricing::Engine::Intraday::Forex::Base->new(
             ticks                => $self->ticks_for_trend,
             strikes              => [$adjusted_barrier],
-            vol                  => $self->pricing_vol,
+            vol                  => $vol,
             contract_type        => $bet->pricing_code,
             payout_type          => 'binary',
             underlying_symbol    => $bet->underlying->symbol,
@@ -514,18 +497,19 @@ sub _build_economic_events_volatility_risk_markup {
     } else {
         my $markup_base_amount = 0;
         # since we are parsing in both vols now, we just check for difference in vol to determine if there's a markup
-        if ($self->pricing_vol != $self->news_adjusted_pricing_vol) {
+        my $news_adjusted_pricing_vol = $self->bet->_pricing_args->{iv_with_news};
+        my $pricing_args = $self->bet->_pricing_args;
+        if ($pricing_args->{iv} != $news_adjusted_pricing_vol) {
             my $tv_without_news = $self->base_probability->amount;
 
             # Re-calculate  base probability using the news_adjusted_pricing_vol
-            my $pricing_args = $self->bet->_pricing_args;
 
             my %args = (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code));
 
             my $engine = Pricing::Engine::Intraday::Forex::Base->new(
                 ticks                => $self->ticks_for_trend,
                 strikes              => [$pricing_args->{barrier1}],
-                vol                  => $self->news_adjusted_pricing_vol,
+                vol                  => $news_adjusted_pricing_vol,
                 contract_type        => $self->bet->pricing_code,
                 payout_type          => 'binary',
                 underlying_symbol    => $self->bet->underlying->symbol,
