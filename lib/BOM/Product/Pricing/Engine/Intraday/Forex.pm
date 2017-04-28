@@ -278,10 +278,21 @@ sub _tentative_events_markup {
             }
         }
 
-        my $new_bet = BOM::Product::ContractFactory::make_similar_contract($bet, {
-            barrier => $adjusted_barrier,
-        });
-        my $new_prob = $new_bet->pricing_engine->base_probability;
+        my %args = (map { $_ => $bet->pricing_args->{$_} } qw(spot t payouttime_code));
+
+        my $engine = Pricing::Engine::Intraday::Forex::Base->new(
+            ticks                => $self->ticks_for_trend,
+            strikes              => [$adjusted_barrier],
+            vol                  => $self->pricing_vol,
+            contract_type        => $bet->pricing_code,
+            payout_type          => 'binary',
+            underlying_symbol    => $bet->underlying->symbol,
+            long_term_prediction => $self->long_term_prediction->amount,
+            discount_rate        => 0,
+            mu                   => 0,
+            %args,
+        );
+        my $new_prob = $engine->base_probability;
 
         $new_prob = $new_prob->amount if Scalar::Util::blessed($new_prob) && $new_prob->isa('Math::Util::CalculatedValue::Validatable');
 
