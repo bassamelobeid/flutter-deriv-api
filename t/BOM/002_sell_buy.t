@@ -84,12 +84,13 @@ subtest 'check duplicate sell with Model' => sub {
     lives_ok {
         # sell
         my $txn = BOM::Transaction->new({
-            contract    => $contract,
-            client      => $client,
-            amount_type => 'payout',
-            price       => 1.95,
-            comment     => $comment,
-            contract_id => $txn_buy->contract_id,
+            contract      => $contract,
+            client        => $client,
+            amount_type   => 'payout',
+            price         => 1.95,
+            comment       => $comment,
+            contract_id   => $txn_buy->contract_id,
+            purchase_date => $contract->date_start,
         });
         $txn->sell(skip_validation => 1);
         $txn_id = $txn->transaction_id;
@@ -160,12 +161,13 @@ subtest 'check duplicate sell with legacy line' => sub {
 
     # sell with Transaction::buy_sell_contract
     my $txn = BOM::Transaction->new({
-        contract    => $contract,
-        client      => $client,
-        price       => 0,
-        amount_type => 'payout',
-        comment     => $comment,
-        contract_id => $txn_buy->contract_id,
+        contract      => $contract,
+        client        => $client,
+        price         => 0,
+        amount_type   => 'payout',
+        comment       => $comment,
+        contract_id   => $txn_buy->contract_id,
+        purchase_date => $contract->date_start,
     });
     my $error = $txn->sell(skip_validation => 1);
     is $error->get_type, 'NoOpenPosition', 'error is NoOpenPosition';
@@ -176,7 +178,6 @@ subtest 'check buy bet without quants bet params' => sub {
 
     lives_ok {
         # buy
-        local $ENV{REQUEST_STARTTIME} = '2011-09-08 07:23:53';
 
         my $txn = BOM::Transaction->new({
             contract      => produce_contract('UPORDOWN_FRXUSDJPY_5_1315466633_1315785600_771000_762300', 'USD'),

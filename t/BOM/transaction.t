@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 21;
+use Test::More tests => 22;
 use Test::Exception;
 use Guard;
 use Crypt::NamedKeys;
@@ -14,6 +14,7 @@ use BOM::Platform::Client::Utility;
 
 use Date::Utility;
 use BOM::Transaction;
+use BOM::Transaction::Validation;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -30,6 +31,10 @@ use LandingCompany::Offerings qw(reinitialise_offerings);
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
+
+my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+
+$mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
 
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine
 #Because the code to prepare market data is called for all pricings in Contract
@@ -306,6 +311,9 @@ my $acc_aud;
 lives_ok {
     $cl = create_client;
 
+    #make sure client can trade
+    ok(!BOM::Transaction::Validation->new({clients => [$cl]})->not_allow_trade($cl), "client can trade");
+
     top_up $cl, 'USD', 5000;
 
     isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
@@ -457,20 +465,23 @@ subtest 'sell a bet', sub {
                 exit_tick    => $tick,
                 barrier      => 'S0P',
         });
-
-        note 'bid price: ' . $contract->bid_price;
-
-        my $mocked = Test::MockModule->new('BOM::Transaction');
-        $mocked->mock('_validate_trade_pricing_adjustment', sub { });
-        $mocked->mock('price',                              sub { $contract->bid_price });
-        my $txn = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            contract_id => $fmb->{id},
-            price       => $contract->bid_price,
-            source      => 23,
-        });
-        my $error = $txn->sell;
+        my $txn;
+        #note 'bid price: ' . $contract->bid_price;
+        my $error = do {
+            my $mocked           = Test::MockModule->new('BOM::Transaction');
+            my $mocked_validator = Test::MockModule->new('BOM::Transaction::Validation');
+            $mocked_validator->mock('_validate_trade_pricing_adjustment', sub { });
+            $mocked->mock('price', sub { $contract->bid_price });
+            $txn = BOM::Transaction->new({
+                purchase_date => $contract->date_start,
+                client        => $cl,
+                contract      => $contract,
+                contract_id   => $fmb->{id},
+                price         => $contract->bid_price,
+                source        => 23,
+            });
+            $txn->sell;
+        };
         is $error, undef, 'no error';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
@@ -556,7 +567,7 @@ subtest 'sell a bet', sub {
 };
 
 subtest 'insufficient balance: buy bet for 100.01 with a balance of 100', sub {
-    plan tests => 8;
+    plan tests => 7;
     lives_ok {
         top_up $cl, 'USD', 100 - $trx->{balance_after};
         $acc_usd->load;
@@ -582,9 +593,10 @@ subtest 'insufficient balance: buy bet for 100.01 with a balance of 100', sub {
             purchase_date => $now,
         });
         my $error = $txn->buy;
+
         SKIP: {
             skip 'no error', 5
-                unless isa_ok $error, 'Error::Base';
+                if not defined $error || ref $error ne 'Error::Base';
 
             is $error->get_type, 'InsufficientBalance', 'error is InsufficientBalance';
 
@@ -698,7 +710,7 @@ subtest 'exactly sufficient balance: buy bet for 100 with balance of 100', sub {
 };
 
 subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_balance 99.99', sub {
-    plan tests => 9;
+    plan tests => 8;
     lives_ok {
         $acc_usd->load;
         unless ($acc_usd->balance + 0 == 100) {
@@ -732,9 +744,11 @@ subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_
 
             $txn->buy;
         };
+
         SKIP: {
             skip 'no error', 6
-                unless isa_ok $error, 'Error::Base';
+                if not defined $error
+                or ref $error ne 'Error::Base';
 
             is $error->get_type, 'AccountBalanceExceedsLimit', 'error is AccountBalanceExceedsLimit';
 
@@ -799,7 +813,7 @@ subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_
 };
 
 subtest 'max_open_bets validation', sub {
-    plan tests => 11;
+    plan tests => 10;
     lives_ok {
         my $cl = create_client;
 
@@ -827,7 +841,7 @@ subtest 'max_open_bets validation', sub {
             price         => 1.00,
             payout        => $contract->payout,
             amount_type   => 'stake',
-            purchase_date => $now,
+            purchase_date => Date::Utility->new,
         });
 
         my $error = do {
@@ -840,7 +854,7 @@ subtest 'max_open_bets validation', sub {
                     price         => 1.00,
                     payout        => $contract->payout,
                     amount_type   => 'stake',
-                    purchase_date => $now,
+                    purchase_date => Date::Utility->new,
                 })->buy, undef, '1st bet bought';
 
             is +BOM::Transaction->new({
@@ -849,14 +863,15 @@ subtest 'max_open_bets validation', sub {
                     price         => 1.00,
                     payout        => $contract->payout,
                     amount_type   => 'stake',
-                    purchase_date => $now,
+                    purchase_date => Date::Utility->new,
                 })->buy, undef, '2nd bet bought';
 
             $txn->buy;
         };
         SKIP: {
             skip 'no error', 5
-                unless isa_ok $error, 'Error::Base';
+                if not defined $error
+                or ref $error ne 'Error::Base';
 
             is $error->get_type, 'OpenPositionLimit', 'error is OpenPositionLimit';
 
@@ -871,7 +886,6 @@ subtest 'max_open_bets validation', sub {
 };
 
 subtest 'max_open_bets validation: selling bets on the way', sub {
-    plan tests => 9;
     lives_ok {
         my $cl = create_client;
 
@@ -948,9 +962,10 @@ subtest 'max_open_bets validation: selling bets on the way', sub {
             ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn_id_buy_expired_contract;
             is $fmb->{is_sold}, 0, 'have expired but unsold contract in DB';
 
-            $txn->buy;
+            return $txn->buy;
         };
 
+        ok $error, 'got error';
         is $error->get_type, 'OpenPositionLimit', 'error is OpenPositionLimit';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn_id_buy_expired_contract;
@@ -960,7 +975,7 @@ subtest 'max_open_bets validation: selling bets on the way', sub {
 };
 
 subtest 'max_payout_open_bets validation', sub {
-    plan tests => 24;
+    plan tests => 22;
     lives_ok {
         my $cl = create_client;
 
@@ -1016,7 +1031,8 @@ subtest 'max_payout_open_bets validation', sub {
         };
         SKIP: {
             skip 'no error', 5
-                unless isa_ok $error, 'Error::Base';
+                if not defined $error
+                or ref $error ne 'Error::Base';
 
             is $error->get_type, 'OpenPositionPayoutLimit', 'error is OpenPositionPayoutLimit';
 
@@ -1081,14 +1097,15 @@ subtest 'max_payout_open_bets validation', sub {
         my $error = do {
             my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 29.99"; 29.99 });
-            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
 
             if ($now->is_a_weekend or ($now->day_of_week == 5 and $contract->date_expiry->is_after($now->truncate_to_day->plus_time_interval('21h'))))
             {
                 $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-                $mock_transaction->mock(_validate_date_pricing => sub { note "mocked Transaction->_validate_date_pricing returning nothing"; () });
-                $mock_transaction->mock(_is_valid_to_buy       => sub { note "mocked Transaction->_is_valid_to_buy returning nothing";       () });
+                $mock_validation->mock(
+                    _validate_date_pricing => sub { note "mocked Transaction::Validation->_validate_date_pricing returning nothing"; () });
+                $mock_validation->mock(_is_valid_to_buy => sub { note "mocked Transaction::Validation->_is_valid_to_buy returning nothing"; () });
 
             }
             is +BOM::Transaction->new({
@@ -1113,7 +1130,8 @@ subtest 'max_payout_open_bets validation', sub {
         };
         SKIP: {
             skip 'no error', 5
-                unless isa_ok $error, 'Error::Base';
+                if not defined $error
+                or ref $error ne 'Error::Base';
 
             is $error->get_type, 'OpenPositionPayoutLimit', 'error is OpenPositionPayoutLimit';
 
@@ -1129,10 +1147,10 @@ subtest 'max_payout_open_bets validation', sub {
         $error = do {
             my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 30.00"; 30.00 });
-            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
 
             if ($now->is_a_weekend) {
-                $mock_transaction->mock(_is_valid_to_buy => sub { note "mocked Transaction->_is_valid_to_buy returning nothing"; () });
+                $mock_validation->mock(_is_valid_to_buy => sub { note "mocked Transaction::Validation->_is_valid_to_buy returning nothing"; () });
             }
 
             $txn->buy;
@@ -1146,7 +1164,7 @@ subtest 'max_payout_open_bets validation', sub {
 };
 
 subtest 'max_payout_per_symbol_and_bet_type validation', sub {
-    plan tests => 12;
+    plan tests => 11;
     lives_ok {
         my $cl = create_client;
 
@@ -1166,14 +1184,14 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
             current_tick => $tick,
             barrier      => 'S0P',
         });
-
+        my $now = Date::Utility->new();
         my $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
             price         => 5.20,
             payout        => $contract->payout,
             amount_type   => 'payout',
-            purchase_date => Date::Utility->new(),
+            purchase_date => $now,
         });
 
         my $error = do {
@@ -1189,7 +1207,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
                     price         => 5.20,
                     payout        => $contract->payout,
                     amount_type   => 'payout',
-                    purchase_date => Date::Utility->new(),
+                    purchase_date => $now,
                 })->buy, undef, '1st bet bought';
 
             is +BOM::Transaction->new({
@@ -1198,14 +1216,15 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
                     price         => 5.20,
                     payout        => $contract->payout,
                     amount_type   => 'payout',
-                    purchase_date => Date::Utility->new(),
+                    purchase_date => $now,
                 })->buy, undef, '2nd bet bought';
 
             $txn->buy;
         };
         SKIP: {
             skip 'no error', 4
-                unless isa_ok $error, 'Error::Base';
+                if not defined $error
+                or ref $error ne 'Error::Base';
 
             is $error->get_type, 'PotentialPayoutLimitForSameContractExceeded', 'error is PotentialPayoutLimitForSameContractExceeded';
 
@@ -1247,7 +1266,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
 };
 
 subtest 'max_turnover validation', sub {
-    plan tests => 21;
+    plan tests => 19;
     lives_ok {
         my $cl = create_client;
 
@@ -1315,7 +1334,8 @@ subtest 'max_turnover validation', sub {
         };
         SKIP: {
             skip 'no error', 6
-                unless isa_ok $error, 'Error::Base';
+                if not defined $error
+                or ref $error ne 'Error::Base';
 
             is $error->get_type, 'DailyTurnoverLimitExceeded', 'error is DailyTurnoverLimitExceeded';
 
@@ -1338,7 +1358,8 @@ subtest 'max_turnover validation', sub {
         };
         SKIP: {
             skip 'no error', 6
-                unless isa_ok $error, 'Error::Base';
+                if not defined $error
+                or ref $error ne 'Error::Base';
 
             is $error->get_type, 'DailyTurnoverLimitExceeded', 'error is DailyTurnoverLimitExceeded';
 
@@ -1394,7 +1415,7 @@ subtest 'max_turnover validation', sub {
 };
 
 subtest 'max_7day_turnover validation', sub {
-    plan tests => 12;
+    plan tests => 11;
     lives_ok {
         my $cl = create_client;
 
@@ -1461,8 +1482,9 @@ subtest 'max_7day_turnover validation', sub {
             $txn->buy;
         };
         SKIP: {
-            skip 'no error', 5
-                unless isa_ok $error, 'Error::Base';
+            skip 'no error', 6
+                if not defined $error
+                or ref $error ne 'Error::Base';
 
             is $error->get_type, '7DayTurnoverLimitExceeded', 'error is 7DayTurnoverLimitExceeded';
 
@@ -1488,7 +1510,7 @@ subtest 'max_7day_turnover validation', sub {
 };
 
 subtest 'max_30day_turnover validation', sub {
-    plan tests => 12;
+    plan tests => 11;
     lives_ok {
         my $cl = create_client;
 
@@ -1555,7 +1577,8 @@ subtest 'max_30day_turnover validation', sub {
         };
         SKIP: {
             skip 'no error', 5
-                unless isa_ok $error, 'Error::Base';
+                if not defined $error
+                or ref $error ne 'Error::Base';
 
             is $error->get_type, '30DayTurnoverLimitExceeded', 'error is 30DayTurnoverLimitExceeded';
 
@@ -1581,7 +1604,7 @@ subtest 'max_30day_turnover validation', sub {
 };
 
 subtest 'max_losses validation', sub {
-    plan tests => 14;
+    plan tests => 13;
     lives_ok {
         my $cl = create_client;
 
@@ -1628,9 +1651,10 @@ subtest 'max_losses validation', sub {
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            my $mock_validation  = Test::MockModule->new('BOM::Transaction::Validation');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-            $mock_transaction->mock(
-                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
             my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(
@@ -1646,10 +1670,11 @@ subtest 'max_losses validation', sub {
             });
             is $t->buy, undef, 'CALL bet bought';
             $t = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract_up,
-                contract_id => $t->contract_id,
-                price       => 0,
+                purchase_date => $contract_up->date_start,
+                client        => $cl,
+                contract      => $contract_up,
+                contract_id   => $t->contract_id,
+                price         => 0,
             });
             is $t->sell(skip_validation => 1), undef, 'CALL bet sold';
 
@@ -1663,10 +1688,11 @@ subtest 'max_losses validation', sub {
             });
             is $t->buy, undef, 'PUT bet bought';
             $t = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract_down,
-                contract_id => $t->contract_id,
-                price       => 0,
+                purchase_date => $contract_down->date_start,
+                client        => $cl,
+                contract      => $contract_down,
+                contract_id   => $t->contract_id,
+                price         => 0,
             });
             is $t->sell(skip_validation => 1), undef, 'CALL bet sold';
 
@@ -1674,7 +1700,8 @@ subtest 'max_losses validation', sub {
         };
         SKIP: {
             skip 'no error', 5
-                unless isa_ok $error, 'Error::Base';
+                if not defined $error
+                or ref $error ne 'Error::Base';
 
             is $error->get_type, 'DailyLossLimitExceeded', 'error is DailyLossLimitExceeded';
 
@@ -1691,9 +1718,10 @@ subtest 'max_losses validation', sub {
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            my $mock_validation  = Test::MockModule->new('BOM::Transaction::Validation');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-            $mock_transaction->mock(
-                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
             my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(
@@ -1708,7 +1736,7 @@ subtest 'max_losses validation', sub {
 };
 
 subtest 'max_7day_losses validation', sub {
-    plan tests => 14;
+    plan tests => 13;
     lives_ok {
         my $cl = create_client;
 
@@ -1755,9 +1783,10 @@ subtest 'max_7day_losses validation', sub {
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            my $mock_validation  = Test::MockModule->new('BOM::Transaction::Validation');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-            $mock_transaction->mock(
-                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
             my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(
@@ -1773,10 +1802,11 @@ subtest 'max_7day_losses validation', sub {
             });
             is $t->buy, undef, 'CALL bet bought';
             $t = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract_up,
-                contract_id => $t->contract_id,
-                price       => 0,
+                purchase_date => $contract_up->date_start,
+                client        => $cl,
+                contract      => $contract_up,
+                contract_id   => $t->contract_id,
+                price         => 0,
             });
             is $t->sell(skip_validation => 1), undef, 'CALL bet sold';
 
@@ -1790,10 +1820,11 @@ subtest 'max_7day_losses validation', sub {
             });
             is $t->buy, undef, 'PUT bet bought';
             $t = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract_down,
-                contract_id => $t->contract_id,
-                price       => 0,
+                purchase_date => $contract_down->date_start,
+                client        => $cl,
+                contract      => $contract_down,
+                contract_id   => $t->contract_id,
+                price         => 0,
             });
             is $t->sell(skip_validation => 1), undef, 'CALL bet sold';
 
@@ -1801,7 +1832,8 @@ subtest 'max_7day_losses validation', sub {
         };
         SKIP: {
             skip 'no error', 5
-                unless isa_ok $error, 'Error::Base';
+                if not defined $error
+                or ref $error ne 'Error::Base';
 
             is $error->get_type, '7DayLossLimitExceeded', 'error is 7DayLossLimitExceeded';
 
@@ -1818,9 +1850,10 @@ subtest 'max_7day_losses validation', sub {
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            my $mock_validation  = Test::MockModule->new('BOM::Transaction::Validation');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-            $mock_transaction->mock(
-                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
             my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(get_limit_for_7day_losses => sub { note "mocked Client->get_limit_for_7day_losses returning " . (3 * 5.20); 3 * 5.20 }
@@ -1835,7 +1868,7 @@ subtest 'max_7day_losses validation', sub {
 };
 
 subtest 'max_30day_losses validation', sub {
-    plan tests => 14;
+    plan tests => 13;
     lives_ok {
         my $cl = create_client;
 
@@ -1883,9 +1916,10 @@ subtest 'max_30day_losses validation', sub {
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            my $mock_validation  = Test::MockModule->new('BOM::Transaction::Validation');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-            $mock_transaction->mock(
-                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
             my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(
@@ -1901,10 +1935,11 @@ subtest 'max_30day_losses validation', sub {
             });
             is $t->buy, undef, 'CALL bet bought';
             $t = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract_up,
-                contract_id => $t->contract_id,
-                price       => 0,
+                purchase_date => $contract_up->date_start,
+                client        => $cl,
+                contract      => $contract_up,
+                contract_id   => $t->contract_id,
+                price         => 0,
             });
             is $t->sell(skip_validation => 1), undef, 'CALL bet sold';
 
@@ -1918,10 +1953,11 @@ subtest 'max_30day_losses validation', sub {
             });
             is $t->buy, undef, 'PUT bet bought';
             $t = BOM::Transaction->new({
-                client      => $cl,
-                contract    => $contract_down,
-                contract_id => $t->contract_id,
-                price       => 0,
+                purchase_date => $contract_down->date_start,
+                client        => $cl,
+                contract      => $contract_down,
+                contract_id   => $t->contract_id,
+                price         => 0,
             });
             is $t->sell(skip_validation => 1), undef, 'CALL bet sold';
 
@@ -1929,7 +1965,8 @@ subtest 'max_30day_losses validation', sub {
         };
         SKIP: {
             skip 'no error', 5
-                unless isa_ok $error, 'Error::Base';
+                if not defined $error
+                or ref $error ne 'Error::Base';
 
             is $error->get_type, '30DayLossLimitExceeded', 'error is 30DayLossLimitExceeded';
 
@@ -1946,9 +1983,10 @@ subtest 'max_30day_losses validation', sub {
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            my $mock_validation  = Test::MockModule->new('BOM::Transaction::Validation');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-            $mock_transaction->mock(
-                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
             my $mock_client = Test::MockModule->new('Client::Account');
             $mock_client->mock(
@@ -2144,7 +2182,8 @@ subtest 'transaction slippage' => sub {
         });
 
         # we just want to _validate_trade_pricing_adjustment
-        my $mocked = Test::MockModule->new('BOM::Transaction');
+        my $mocked = Test::MockModule->new('BOM::Transaction::Validation');
+        $mocked->unmock_all();
         $mocked->mock($_ => sub { '' })
             for (
             qw/
@@ -2158,10 +2197,12 @@ subtest 'transaction slippage' => sub {
             _is_valid_to_buy
             _validate_date_pricing
             _validate_payout_limit
+            validate_tnc
             _validate_stake_limit/
             );
         # no limits
-        $mocked->mock('limits', sub { {} });
+        my $mocked_tr = Test::MockModule->new('BOM::Transaction');
+        $mocked_tr->mock('limits', sub { {} });
 
         my $price = $contract->ask_price - ($allowed_move * $contract->payout / 2);
         my $transaction = BOM::Transaction->new({
@@ -2175,6 +2216,7 @@ subtest 'transaction slippage' => sub {
 
         ok !$transaction->buy, 'buy without error.';
         my ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $transaction->transaction_id;
+
         is $fmb->{buy_price}, $price, 'buy at requested price';
         is $qv1->{price_slippage}, -0.25, 'slippage stored';
         is $qv1->{requested_price}, $price, 'correct requested price stored';
@@ -2208,7 +2250,7 @@ subtest 'transaction slippage' => sub {
         my $price = $contract->bid_price + ($allowed_move * $contract->payout - 0.1);
 
         # we just want to _validate_trade_pricing_adjustment
-        my $mocked = Test::MockModule->new('BOM::Transaction');
+        my $mocked = Test::MockModule->new('BOM::Transaction::Validation');
         $mocked->mock($_ => sub { '' })
             for (
             qw/
@@ -2219,16 +2261,18 @@ subtest 'transaction slippage' => sub {
             _validate_currency
             _validate_date_pricing/
             );
+
         # no limits
         $mocked->mock('limits', sub { {} });
 
         my $transaction = BOM::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            contract_id => $fmb_id,
-            price       => $price,
-            amount_type => 'payout',
-            source      => 23,
+            purchase_date => $contract->date_start,
+            client        => $cl,
+            contract      => $contract,
+            contract_id   => $fmb_id,
+            price         => $price,
+            amount_type   => 'payout',
+            source        => 23,
         });
 
         ok !$transaction->sell, 'no error when sell';

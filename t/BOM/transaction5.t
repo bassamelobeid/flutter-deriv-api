@@ -11,6 +11,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Transaction;
+use BOM::Transaction::Validation;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::MarketData qw(create_underlying);
@@ -47,7 +48,7 @@ subtest 'validate client error message' => sub {
     my $mock_cal = Test::MockModule->new('Quant::Framework::TradingCalendar');
     $mock_cal->mock('is_open_at', sub { 0 });
 
-    my $now = Date::Utility->new;
+    my $now      = Date::Utility->new;
     my $contract = produce_contract({
         underlying   => $underlying,
         bet_type     => 'CALL',
@@ -67,7 +68,11 @@ subtest 'validate client error message' => sub {
         purchase_date => $now,
     });
 
-    my $error = $transaction->_is_valid_to_buy;
+    my $error = BOM::Transaction::Validation->new({
+            clients     => [$cr],
+            transaction => $transaction
+        })->_is_valid_to_buy($cr);
+
     like($error->{-message_to_client}, qr/Try out the Volatility Indices/, 'CR client got message about Volatility Indices');
 
 # same params, but new object - not to hold prev error
@@ -89,7 +94,11 @@ subtest 'validate client error message' => sub {
         purchase_date => $now,
     });
 
-    $error = $transaction->_is_valid_to_buy;
+    $error = BOM::Transaction::Validation->new({
+            clients     => [$mf],
+            transaction => $transaction
+        })->_is_valid_to_buy($mf);
+
     unlike($error->{-message_to_client}, qr/Try out the Volatility Indices/, 'MF client didnt got message about Volatility Indices');
 
 };

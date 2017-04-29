@@ -16,6 +16,7 @@ use BOM::Platform::Client::Utility;
 use ExpiryQueue ();
 
 use BOM::Transaction;
+use BOM::Transaction::Validation;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 
@@ -252,7 +253,6 @@ subtest 'batch-buy success + multisell', sub {
         is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
         is + ($bal = $acc2->balance + 0), 5000, 'USD balance #2 is 5000 got: ' . $bal;
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'CALL',
@@ -279,10 +279,13 @@ subtest 'batch-buy success + multisell', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-            $mock_transaction->mock(_validate_trade_pricing_adjustment =>
-                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+            $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             ExpiryQueue::queue_flush;
@@ -310,8 +313,9 @@ subtest 'batch-buy success + multisell', sub {
             $contract = produce_contract($contract_parameters);
             ok($contract, 'contract have produced');
             my $trx = BOM::Transaction->new({
-                    client   => $clm,
-                    multiple => [{
+                    purchase_date => $contract->date_start,
+                    client        => $clm,
+                    multiple      => [{
                             loginid  => $cl2->loginid,
                             currency => $clm->currency
                         },
@@ -326,9 +330,9 @@ subtest 'batch-buy success + multisell', sub {
             my $err = do {
                 my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
                 $mock_contract->mock(is_valid_to_sell => sub { note "mocked Contract->is_valid_to_sell returning true"; 1 });
-                my $mock_transaction = Test::MockModule->new('BOM::Transaction');
-                $mock_transaction->mock(
-                    _validate_sell_pricing_adjustment => sub { note "mocked Transaction->_validate_sell_pricing_adjustment returning nothing"; () });
+                my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+                $mock_validation->mock(_validate_sell_pricing_adjustment =>
+                        sub { note "mocked Transaction::Validation->_validate_sell_pricing_adjustment returning nothing"; () });
                 $trx->sell_by_shortcode;
             };
 
@@ -355,7 +359,6 @@ subtest 'batch-buy success 2', sub {
 
         top_up $clm, 'USD', 0;      # the manager has no money
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'CALL',
@@ -382,10 +385,12 @@ subtest 'batch-buy success 2', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-            $mock_transaction->mock(
-                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+            $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             $txn->batch_buy;
@@ -400,6 +405,9 @@ subtest 'batch-buy success 2', sub {
             },
             {code => 'ignore'},
         ];
+
+        delete $txn->multiple->[0]->{limits};
+        delete $txn->multiple->[1]->{limits};
         is_deeply $txn->multiple, $expected, 'nothing bought';
     }
     'survived';
@@ -412,7 +420,6 @@ subtest 'contract already started', sub {
 
         top_up $clm, 'USD', 0;      # the manager has no money
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'CALL',
@@ -439,10 +446,13 @@ subtest 'contract already started', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-            $mock_transaction->mock(
-                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+            $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             $txn->batch_buy;
@@ -472,7 +482,6 @@ subtest 'single contract fails in database', sub {
         is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
         is + ($bal = $acc2->balance + 0), 90,   'USD balance #2 is 90 got: ' . $bal;
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'CALL',
@@ -499,10 +508,13 @@ subtest 'single contract fails in database', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-            $mock_transaction->mock(
-                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+            $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             ExpiryQueue::queue_flush;
@@ -548,7 +560,6 @@ subtest 'batch-buy multiple databases and datadog', sub {
         my @acc;
         isnt + (push @acc, $_->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account #' . @acc for (@cl);
 
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'CALL',
@@ -575,15 +586,19 @@ subtest 'batch-buy multiple databases and datadog', sub {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-            $mock_transaction->mock(
-                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+            $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             ExpiryQueue::queue_flush;
             # note explain +ExpiryQueue::queue_status;
             reset_datadog;
+
             $txn->batch_buy;
         };
 
