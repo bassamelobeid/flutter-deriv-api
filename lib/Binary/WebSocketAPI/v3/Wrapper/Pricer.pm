@@ -422,9 +422,11 @@ sub _process_proposal_open_contract_response {
                     next;
                 } else {
                     # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
+                    $args->{contract_id} = $contract->{contract_id};
                     Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel(
                         $c, 'subscribe', delete $contract->{account_id},    # should not go to client
-                        $uuid, {contract_id => $contract->{contract_id}});
+                        $uuid, $args
+                    );
                 }
             }
             my $result = {$uuid ? (id => $uuid) : (), %{$contract}};
@@ -785,14 +787,11 @@ sub _price_stream_results_adjustment {
 }
 
 sub send_proposal_open_contract_last_time {
-    my ($c, $args, $contract_id) = @_;
+    my ($c, $args, $contract_id, $stash_data) = @_;
 
     Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $args->{uuid});
     $c->call_rpc({
-            args => {
-                proposal_open_contract => 1,
-                contract_id            => $contract_id
-            },
+            args        => $stash_data,
             method      => 'proposal_open_contract',
             msg_type    => 'proposal_open_contract',
             call_params => {
