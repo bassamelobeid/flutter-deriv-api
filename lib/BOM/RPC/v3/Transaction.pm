@@ -267,6 +267,7 @@ sub sell_contract_for_multiple_accounts {
     $contract_parameters->{landing_company} = $client->landing_company->short;
 
     my $trx = BOM::Transaction->new({
+        purchase_date       => Date::Utility->new(),
         client              => $client,
         multiple            => $token_list_res->{result},
         contract_parameters => $contract_parameters,
@@ -330,6 +331,7 @@ sub sell {
     $contract_parameters->{landing_company} = $client->landing_company->short;
 
     my $trx = BOM::Transaction->new({
+        purchase_date       => Date::Utility->new(),
         client              => $client,
         contract_parameters => $contract_parameters,
         contract_id         => $id,
