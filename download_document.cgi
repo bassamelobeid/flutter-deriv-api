@@ -81,7 +81,7 @@ if (request()->param('deleteit') eq 'yes') {
     code_exit_BO();
 }
 
-if (my ($type) = $path =~ /\.(tif|txt|csv|xls|doc|gif|png|bmp|jpg|jpeg|pdf|zip)$/i) {
+if (my ($type) = $path =~ /\.(tif|txt|csv|xls|doc|gif|png|bmp|jpg|jpeg|pdf|zip|mp4)$/i) {
     if (-f -r $full_path) {
         PrintContentType_XSendfile($full_path, (lc($type) eq 'pdf' ? 'application/pdf' : 'application/octet-stream'));
 
