@@ -136,6 +136,7 @@ sub authorize {
                 $is_all_approved = $oauth_model->confirm_scope($app_id, $c1->loginid);
             }
         } else {
+            delete $c->session->{_is_app_approved};
             my $uri = $redirect_handle->($response_type, 'scope_denied', $state);
             return $c->redirect_to($uri);
         }
