@@ -467,49 +467,50 @@ has [qw(economic_events_volatility_risk_markup economic_events_spot_risk_markup)
 sub _build_economic_events_volatility_risk_markup {
     my $self = shift;
 
-    my $markup;
-    my $tentative_events_markup = $self->_tentative_events_markup;
-
-    if ($tentative_events_markup->amount != 0) {
-        $markup = $tentative_events_markup;
-    } else {
-        my $markup_base_amount = 0;
-        # since we are parsing in both vols now, we just check for difference in vol to determine if there's a markup
-        my $news_adjusted_pricing_vol = $self->bet->_pricing_args->{iv_with_news};
-        my $pricing_args              = $self->bet->_pricing_args;
-        if ($pricing_args->{iv} != $news_adjusted_pricing_vol) {
-            my $tv_without_news = $self->base_probability->amount;
-
-            # Re-calculate  base probability using the news_adjusted_pricing_vol
-
-            my %args = (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code));
-
-            my $engine = Pricing::Engine::Intraday::Forex::Base->new(
-                ticks                => $self->ticks_for_trend,
-                strikes              => [$pricing_args->{barrier1}],
-                vol                  => $news_adjusted_pricing_vol,
-                contract_type        => $self->bet->pricing_code,
-                payout_type          => 'binary',
-                underlying_symbol    => $self->bet->underlying->symbol,
-                long_term_prediction => $self->long_term_prediction->amount,
-                discount_rate        => 0,
-                mu                   => 0,
-                %args,
-            );
-            my $tv_with_news = $engine->base_probability->amount;
-
-            $markup_base_amount = max(0, $tv_with_news - $tv_without_news);
-        }
-
-        $markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'economic_events_volatility_risk_markup',
-            description => 'markup to account for volatility risk of economic events',
-            set_by      => __PACKAGE__,
-            base_amount => $markup_base_amount,
-        });
+    # Tentative event markup takes precedence
+    if((my $tentative_events_markup = $self->_tentative_events_markup)->amount) {
+        return $tentative_events_markup;
     }
 
-    return $markup;
+    my $markup_base_amount = 0;
+
+    # since we are parsing in both vols now, we just check for difference in vol to determine if there's a markup
+    my $pricing_args              = $self->bet->_pricing_args;
+    my $news_adjusted_pricing_vol = $pricing_args->{iv_with_news};
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'economic_events_volatility_risk_markup',
+        description => 'markup to account for volatility risk of economic events',
+        set_by      => __PACKAGE__,
+        base_amount => 0,
+    }) if $pricing_args->{iv} == $news_adjusted_pricing_vol;
+
+    # Otherwise, we fall back to news-adjusted probability
+    my $tv_without_news = $self->base_probability->amount;
+
+    # Re-calculate  base probability using the news_adjusted_pricing_vol
+
+    my %args = (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code));
+
+    my $engine = Pricing::Engine::Intraday::Forex::Base->new(
+        ticks                => $self->ticks_for_trend,
+        strikes              => [$pricing_args->{barrier1}],
+        vol                  => $news_adjusted_pricing_vol,
+        contract_type        => $self->bet->pricing_code,
+        payout_type          => 'binary',
+        underlying_symbol    => $self->bet->underlying->symbol,
+        long_term_prediction => $self->long_term_prediction->amount,
+        discount_rate        => 0,
+        mu                   => 0,
+        %args,
+    );
+    my $tv_with_news = $engine->base_probability->amount;
+
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'economic_events_volatility_risk_markup',
+        description => 'markup to account for volatility risk of economic events',
+        set_by      => __PACKAGE__,
+        base_amount => max(0, $tv_with_news - $tv_without_news),
+    });
 }
 
 sub _build_economic_events_spot_risk_markup {
