@@ -532,12 +532,13 @@ sub _build_economic_events_spot_risk_markup {
         my $effective_news_time = _get_effective_news_time($news->{release_epoch}, $start->epoch, $contract_duration);
         # +1e-9 is added to prevent a division by zero error if news magnitude is 1
         my $decay_coef = -log(2 / ($news->{magnitude} + 1e-9)) / $news->{duration};
+        my $bias = $news->{bias};
         my @triangle;
         foreach my $time (@time_samples) {
             if ($time < $effective_news_time) {
                 push @triangle, 0;
             } else {
-                my $chunk = $news->{bias} * exp(-$decay_coef * ($time - $effective_news_time));
+                my $chunk = $bias * exp(-$decay_coef * ($time - $effective_news_time));
                 push @triangle, $chunk;
             }
         }
