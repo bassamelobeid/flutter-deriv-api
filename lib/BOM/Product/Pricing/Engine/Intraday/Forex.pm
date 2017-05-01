@@ -72,7 +72,7 @@ has [
 sub _build_base_probability {
     my $self = shift;
 
-    my $bet  = $self->bet;
+    my $bet          = $self->bet;
     my $pricing_args = $bet->_pricing_args;
 
     my %args = (
@@ -85,12 +85,9 @@ sub _build_base_probability {
         long_term_prediction => $self->long_term_prediction->amount,
         discount_rate        => 0,
         mu                   => 0,
-        (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code))
-    );
+        (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code)));
 
-    my $engine = Pricing::Engine::Intraday::Forex::Base->new(
-        %args,
-    );
+    my $engine = Pricing::Engine::Intraday::Forex::Base->new(%args,);
     return $engine->base_probability;
 }
 
