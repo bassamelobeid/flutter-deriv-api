@@ -146,7 +146,7 @@ sub _migrate_changesets {
                 before => "SET session_replication_role TO 'replica';\n",
                 after  => ";\nSET session_replication_role TO 'origin';\n"
             },
-            $self->_db_migrations_dir . '/devbox_foreign_servers_for_testdb.sql';
+            $self->_db_migrations_dir . '/devbox_foreign_servers_for_testdb.sql'
         );
     }
 
