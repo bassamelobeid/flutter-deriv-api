@@ -526,7 +526,7 @@ sub _build_economic_events_spot_risk_markup {
 
     my $contract_duration = $bet->remaining_time->seconds;
     my $lookback          = $start->minus_time_interval($contract_duration + 3600);
-    my $news_array        = $self->_get_economic_events($lookback, $end);
+    my $news_array        = $self->_get_economic_events;
 
     my @combined = (0) x scalar(@time_samples);
     foreach my $news (@$news_array) {
@@ -558,7 +558,7 @@ sub _build_economic_events_spot_risk_markup {
 }
 
 sub _get_economic_events {
-    my ($self, $start, $end) = @_;
+    my ($self) = @_;
 
     my $qfs = Volatility::Seasonality->new;
     my $events = $qfs->categorize_events($self->bet->underlying->symbol, $self->economic_events);
