@@ -209,7 +209,12 @@ sub cashier {
 
     ## if cashier provider == 'epg', we'll return epg url
     if ($provider eq 'epg') {
-        return _get_epg_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language});
+        return _get_epg_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language});
+    }
+
+    ## if currency == XBT, use btc cashier
+    if ($currency eq 'XBT') {
+        return _get_btc_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language});
     }
 
     # hit DF's CreateCustomer API
@@ -348,18 +353,26 @@ sub _get_handoff_token_key {
     return $handoff_token->key;
 }
 
-sub _get_epg_url {
-    my ($loginid, $website_name, $currency, $action, $language) = @_;
+sub _get_epg_cashier_url {
+    return _get_cashier_url('epg', @_);
+}
 
-    BOM::Platform::AuditLog::log('redirecting to epg');
+sub _get_btc_cashier_url {
+    return _get_cashier_url('btc', @_);
+}
+
+sub _get_cashier_url {
+    my ($prefix, $loginid, $website_name, $currency, $action, $language) = @_;
+
+    BOM::Platform::AuditLog::log("redirecting to $prefix");
 
     $language = uc($language // 'EN');
 
     my $url = 'https://';
     if (($website_name // '') =~ /qa/) {
-        $url .= 'www.' . lc($website_name) . '/epg';
+        $url .= 'www.' . lc($website_name) . "/$prefix";
     } else {
-        $url .= 'epg.binary.com/epg';
+        $url .= "$prefix.binary.com/$prefix";
     }
 
     $url .= "/handshake?token=" . _get_handoff_token_key($loginid) . "&loginid=$loginid&currency=$currency&action=$action&l=$language";
