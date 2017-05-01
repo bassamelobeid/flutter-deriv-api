@@ -69,11 +69,7 @@ sub mt5_new_account {
 
     my $group;
     if ($account_type eq 'demo') {
-        if ($client and $client->residence eq 'jp') {
-            $group = 'demo\japan_virtual';
-        } else {
-            $group = 'demo\\' . $brand->name . '_virtual';
-        }
+        $group = 'demo\\' . $brand->name . '_virtual';
     } elsif ($account_type eq 'gaming' or $account_type eq 'financial') {
         # 5 Sept 2016: only CR and Champion fully authenticated client can open MT real a/c
         return BOM::RPC::v3::Utility::permission_error() if ($client->landing_company->short !~ /^(?:costarica|champion)$/);
