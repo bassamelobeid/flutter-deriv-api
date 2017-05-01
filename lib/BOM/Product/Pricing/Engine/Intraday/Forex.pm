@@ -301,7 +301,7 @@ sub _build_ticks_for_trend {
 
     my $bet              = $self->bet;
     my $duration_in_secs = $bet->timeindays->amount * 86400;
-    my $lookback_secs    = $duration_in_secs * 2;              # lookback twice the duratiom
+    my $lookback_secs    = $duration_in_secs * 2;              # lookback twice the duration
     my $period_start     = $bet->date_pricing->epoch;
 
     my $remaining_interval = Time::Duration::Concise::Localize->new(interval => $lookback_secs);
