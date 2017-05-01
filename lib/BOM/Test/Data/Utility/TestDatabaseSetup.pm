@@ -173,9 +173,10 @@ sub _migrate_changesets {
 
 sub _alter_user_mapping {
     my $self = shift;
-    return if ($self->_db_migrations_dir !~ /rmgdb/);
+    my $user_mapping_sql = $self->_db_migrations_dir . '/devbox_server_user_mapping.sql';
+    return unless (-e $user_mapping_sql);
 
-    $self->_migrate_file($self->_db_migrations_dir . '/devbox_server_user_mapping.sql');
+    $self->_migrate_file($user_mapping_sql);
     return 1;
 }
 
