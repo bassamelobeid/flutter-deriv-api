@@ -586,13 +586,7 @@ sub _get_effective_news_time {
     return $effective_time;
 }
 
-has volatility_scaling_factor => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_volatility_scaling_factor',
-);
-
-sub _build_volatility_scaling_factor {
+sub volatility_scaling_factor {
     return shift->bet->_pricing_args->{volatility_scaling_factor};
 }
 
