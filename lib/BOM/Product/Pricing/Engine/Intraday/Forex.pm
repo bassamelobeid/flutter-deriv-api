@@ -402,9 +402,8 @@ sub _build_risk_markup {
         });
         $risk_markup->include_adjustment('add', $iv_risk);
     }
-    my $open_at_start = $bet->underlying->calendar->is_open_at($bet->date_start);
 
-    if ($open_at_start and $bet->underlying->is_in_quiet_period($bet->date_pricing)) {
+    if ($bet->underlying->calendar->is_open_at($bet->date_start) and $bet->underlying->is_in_quiet_period($bet->date_pricing)) {
         my $quiet_period_markup = Math::Util::CalculatedValue::Validatable->new({
             name        => 'quiet_period_markup',
             description => 'Intraday::Forex markup factor for underlyings in the quiet period',
@@ -424,37 +423,27 @@ sub _build_risk_markup {
         $risk_markup->include_adjustment('add', $illiquid_market_markup);
     }
 
-    $risk_markup->include_adjustment('add', $self->vol_spread_markup) if not $bet->is_atm_bet;
-
-    if (not $self->bet->is_atm_bet and $self->inefficient_period) {
-        my $end_of_day_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'intraday_eod_markup',
-            description => '10% markup for inefficient period',
-            set_by      => __PACKAGE__,
-            base_amount => 0.1,
-        });
-        $risk_markup->include_adjustment('add', $end_of_day_markup);
-    }
-
-    if ($self->bet->is_atm_bet and $self->inefficient_period) {
-        my $end_of_day_markup = Math::Util::CalculatedValue::Validatable->new({
+    if($bet->is_atm_bet) {
+        $risk_markup->include_adjustment('add', Math::Util::CalculatedValue::Validatable->new({
             name        => 'intraday_eod_markup',
             description => '5% markup for inefficient period',
             set_by      => __PACKAGE__,
             base_amount => 0.05,
-        });
-        $risk_markup->include_adjustment('add', $end_of_day_markup);
-    }
-
-    if (not $self->bet->is_atm_bet and $bet->remaining_time->minutes <= 15) {
-        my $amount                         = $shortterm_risk_interpolator->linear($bet->remaining_time->minutes);
-        my $shortterm_kurtosis_risk_markup = Math::Util::CalculatedValue::Validatable->new({
+        })) if $self->inefficient_period
+    } else {
+        $risk_markup->include_adjustment('add', $self->vol_spread_markup);
+        $risk_markup->include_adjustment('add', Math::Util::CalculatedValue::Validatable->new({
+            name        => 'intraday_eod_markup',
+            description => '10% markup for inefficient period',
+            set_by      => __PACKAGE__,
+            base_amount => 0.1,
+        })) if $self->inefficient_period;
+        $risk_markup->include_adjustment('add', Math::Util::CalculatedValue::Validatable->new({
             name        => 'short_term_kurtosis_risk_markup',
             description => 'shortterm markup added for kurtosis risk for contract less than 15 minutes',
             set_by      => __PACKAGE__,
-            base_amount => $amount,
-        });
-        $risk_markup->include_adjustment('add', $shortterm_kurtosis_risk_markup);
+            base_amount => $shortterm_risk_interpolator->linear($bet->remaining_time->minutes),
+        })) if $bet->remaining_time->minutes <= 15;
     }
 
     return $risk_markup;
