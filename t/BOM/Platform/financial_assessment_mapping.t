@@ -10,7 +10,7 @@ my @all_keys =
 my $input_mapping = BOM::Platform::Account::Real::default::get_financial_input_mapping();
 
 subtest "check for all keys" => sub {
-    is_deeply([keys %{$input_mapping}], \@all_keys, 'correct keys for financial input mapping');
+    is_deeply([sort keys %{$input_mapping}], [sort @all_keys], 'correct keys for financial input mapping');
 };
 
 subtest "check if keys are valid" => sub {
