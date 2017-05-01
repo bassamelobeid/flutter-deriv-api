@@ -348,42 +348,6 @@ sub _build_ticks_for_trend {
     return $ticks;
 }
 
-has lookback_seconds => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_lookback_seconds {
-    my $self             = shift;
-    my @ticks            = @{$self->ticks_for_trend};
-    my $duration_in_secs = $self->bet->timeindays->amount * 86400;
-    my $lookback_secs    = 0;
-
-    $lookback_secs = $ticks[-1]->{epoch} - $ticks[0]->{epoch} if scalar(@ticks) > 1;
-
-    # If gotten lookback ticks period is lower then 80% of duration*2
-    # that means we have not enought ticks to make price
-    # we should use gotten lookback period to correct probability
-    my $ticks_per_sec = $lookback_secs / 2 / $duration_in_secs;
-    if ($ticks_per_sec <= 0.8) {
-        return $lookback_secs;
-    }
-    return $duration_in_secs * 2;
-}
-
-has slope => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_slope {
-    my $self             = shift;
-    my $duration_in_secs = $self->bet->timeindays->amount * 86400;
-
-    my $ticks_per_sec = $self->lookback_seconds / $duration_in_secs;
-    return (sqrt(1 - (($ticks_per_sec - 2)**2) / 4));
-}
-
 has more_than_short_term_cutoff => (
     is         => 'ro',
     lazy_build => 1,
