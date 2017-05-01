@@ -63,7 +63,7 @@ has _supported_types => (
 );
 
 has [
-    qw(base_probability probability short_term_prediction long_term_prediction economic_events_markup intraday_trend intraday_vanilla_delta risk_markup)
+    qw(base_probability probability long_term_prediction economic_events_markup intraday_vanilla_delta risk_markup)
     ] => (
     is         => 'ro',
     lazy_build => 1,
