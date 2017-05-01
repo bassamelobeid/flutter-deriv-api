@@ -69,12 +69,6 @@ has [
     lazy_build => 1,
     );
 
-# If true, will record all parameters and base_probability values to a log file
-use constant RECORD_INTRADAY_PROBABILITIES => 0;
-
-my $intraday_probability_log_fh;
-open $intraday_probability_log_fh, '>>:encoding(UTF-8)', '/var/lib/binary/intraday_probability.csv' or die $! if RECORD_INTRADAY_PROBABILITIES;
-
 sub _build_base_probability {
     my $self = shift;
 
@@ -97,27 +91,7 @@ sub _build_base_probability {
     my $engine = Pricing::Engine::Intraday::Forex::Base->new(
         %args,
     );
-    my $base_probability = $engine->base_probability;
-    if(RECORD_INTRADAY_PROBABILITIES) {
-        my @fields = qw(
-            spot
-            t
-            payouttime_code
-            strike
-            vol
-            contract_type
-            payout_type
-            underlying_symbol
-            long_term_prediction
-            discount_rate
-            mu
-        );
-        my $ticks = $self->ticks_for_trend;
-        $args{strike} = (delete $args{strikes})->[0];
-        my @data = ($bet->shortcode, $base_probability->amount, @args{@fields}, $ticks->[0]{epoch}, $ticks->[-1]{epoch}, map { $_->{quote} } @$ticks);
-        $intraday_probability_log_fh->print(join(',', @data) . "\n");
-    }
-    return $base_probability;
+    return $engine->base_probability;
 }
 
 =head1 probability
