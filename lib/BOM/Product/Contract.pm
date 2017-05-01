@@ -92,6 +92,23 @@ has underlying => (
     handles => [qw(market pip_size)],
 );
 
+=head2 absolute_barrier_multiplier
+
+Should barrier multiplier be applied for absolute barried on this market
+
+=cut
+
+has 'absolute_barrier_multiplier' => (
+    is         => 'ro',
+    isa        => 'Bool',
+    lazy_build => 1,
+);
+
+sub _build_absolute_barrier_multiplier {
+    my $self = shift;
+    return $self->underlying->market->absolute_barrier_multiplier;
+}
+
 =head1 ATTRIBUTES - Other
 
 =cut
