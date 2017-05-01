@@ -19,7 +19,6 @@ sub prepare_unit_test_database {
     print "db_migrations_dir is " . $self->_db_migrations_dir . "\n";
     try {
         $self->_migrate_changesets;
-        $self->_alter_user_mapping;
         $self->_post_import_operations;
     }
     catch {
@@ -168,15 +167,6 @@ sub _migrate_changesets {
         };
     }
 
-    return 1;
-}
-
-sub _alter_user_mapping {
-    my $self = shift;
-    my $user_mapping_sql = $self->_db_migrations_dir . '/devbox_server_user_mapping.sql';
-    return unless (-e $user_mapping_sql);
-
-    $self->_migrate_file($user_mapping_sql);
     return 1;
 }
 
