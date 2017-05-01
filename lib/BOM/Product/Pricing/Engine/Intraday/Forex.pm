@@ -70,7 +70,7 @@ has [
     );
 
 # If true, will record all parameters and base_probability values to a log file
-use constant RECORD_INTRADAY_PROBABILITIES => 1;
+use constant RECORD_INTRADAY_PROBABILITIES => 0;
 
 my $intraday_probability_log_fh;
 open $intraday_probability_log_fh, '>>:encoding(UTF-8)', '/var/lib/binary/intraday_probability.csv' or die $! if RECORD_INTRADAY_PROBABILITIES;
