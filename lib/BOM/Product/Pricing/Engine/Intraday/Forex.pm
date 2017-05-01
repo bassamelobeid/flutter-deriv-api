@@ -177,55 +177,56 @@ sub _tentative_events_markup {
         });
     }
 
-    my $markup = 0;
-
     my $barrier          = $bet->barrier->as_absolute;
     my $adjusted_barrier = $self->_get_barrier_for_tentative_events($barrier);
-
-    #if there is a change needed in the barriers due to tentative events:
-    if ($barrier != $adjusted_barrier) {
-        my $type = $bet->code;
-        #For one-touch and no-touch, If barrier crosses the spot because of our barrier adjustments, just make sure prob will be 100%
-        if ($type eq 'ONETOUCH' or $type eq 'NOTOUCH') {
-            if (   ($barrier < $bet->pricing_spot and $adjusted_barrier >= $bet->pricing_spot)
-                or ($barrier > $bet->pricing_spot and $adjusted_barrier <= $bet->pricing_spot))
-            {
-                return Math::Util::CalculatedValue::Validatable->new({
-                    name        => 'economic_events_volatility_risk_markup',
-                    description => 'markup to account for volatility risk of economic events',
-                    set_by      => __PACKAGE__,
-                    base_amount => 1.0,
-                });
-            }
-        }
-
-        my %args = (map { $_ => $bet->_pricing_args->{$_} } qw(spot t payouttime_code));
-
-        my $vol    = $bet->_pricing_args->{iv};
-        my $engine = Pricing::Engine::Intraday::Forex::Base->new(
-            ticks                => $self->ticks_for_trend,
-            strikes              => [$adjusted_barrier],
-            vol                  => $vol,
-            contract_type        => $bet->pricing_code,
-            payout_type          => 'binary',
-            underlying_symbol    => $bet->underlying->symbol,
-            long_term_prediction => $self->long_term_prediction->amount,
-            discount_rate        => 0,
-            mu                   => 0,
-            %args,
-        );
-        my $new_prob = $engine->base_probability;
-
-        $new_prob = $new_prob->amount if Scalar::Util::blessed($new_prob) && $new_prob->isa('Math::Util::CalculatedValue::Validatable');
-
-        $markup = max(0, $new_prob - $self->base_probability->amount);
-    }
 
     return Math::Util::CalculatedValue::Validatable->new({
         name        => 'economic_events_volatility_risk_markup',
         description => 'markup to account for volatility risk of economic events',
         set_by      => __PACKAGE__,
-        base_amount => $markup,
+        base_amount => 0,
+    }) if $barrier == $adjusted_barrier;
+
+    # There is a change needed in the barriers due to tentative events:
+    my $type = $bet->code;
+    #For one-touch and no-touch, If barrier crosses the spot because of our barrier adjustments, just make sure prob will be 100%
+    if ($type eq 'ONETOUCH' or $type eq 'NOTOUCH') {
+        if (   ($barrier < $bet->pricing_spot and $adjusted_barrier >= $bet->pricing_spot)
+            or ($barrier > $bet->pricing_spot and $adjusted_barrier <= $bet->pricing_spot))
+        {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'economic_events_volatility_risk_markup',
+                description => 'markup to account for volatility risk of economic events',
+                set_by      => __PACKAGE__,
+                base_amount => 1.0,
+            });
+        }
+    }
+
+    my %args = (map { $_ => $bet->_pricing_args->{$_} } qw(spot t payouttime_code));
+
+    my $vol    = $bet->_pricing_args->{iv};
+    my $engine = Pricing::Engine::Intraday::Forex::Base->new(
+        ticks                => $self->ticks_for_trend,
+        strikes              => [$adjusted_barrier],
+        vol                  => $vol,
+        contract_type        => $bet->pricing_code,
+        payout_type          => 'binary',
+        underlying_symbol    => $bet->underlying->symbol,
+        long_term_prediction => $self->long_term_prediction->amount,
+        discount_rate        => 0,
+        mu                   => 0,
+        %args,
+    );
+    my $new_prob = $engine->base_probability;
+
+    $new_prob = $new_prob->amount if Scalar::Util::blessed($new_prob) && $new_prob->isa('Math::Util::CalculatedValue::Validatable');
+
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'economic_events_volatility_risk_markup',
+        description => 'markup to account for volatility risk of economic events',
+        set_by      => __PACKAGE__,
+        base_amount => max(0, $new_prob - $self->base_probability->amount),
     });
 }
 
