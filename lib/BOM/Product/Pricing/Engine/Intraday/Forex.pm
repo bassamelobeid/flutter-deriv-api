@@ -78,23 +78,27 @@ open $intraday_probability_log_fh, '>>:encoding(UTF-8)', '/var/lib/binary/intrad
 sub _build_base_probability {
     my $self = shift;
 
-    my $pricing_args = $self->bet->_pricing_args;
+    my $bet  = $self->bet;
+    my $pricing_args = $bet->_pricing_args;
 
     my %args = (
         ticks                => $self->ticks_for_trend,
         strikes              => [$pricing_args->{barrier1}],
         vol                  => $pricing_args->{iv},
-        contract_type        => $self->bet->pricing_code,
+        contract_type        => $bet->pricing_code,
         payout_type          => 'binary',
-        underlying_symbol    => $self->bet->underlying->symbol,
+        underlying_symbol    => $bet->underlying->symbol,
         long_term_prediction => $self->long_term_prediction->amount,
         discount_rate        => 0,
         mu                   => 0,
-        (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code)));
+        (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code))
+    );
 
-    my $engine           = Pricing::Engine::Intraday::Forex::Base->new(%args,);
+    my $engine = Pricing::Engine::Intraday::Forex::Base->new(
+        %args,
+    );
     my $base_probability = $engine->base_probability;
-    if (RECORD_INTRADAY_PROBABILITIES) {
+    if(RECORD_INTRADAY_PROBABILITIES) {
         my @fields = qw(
             spot
             t
@@ -110,7 +114,7 @@ sub _build_base_probability {
         );
         my $ticks = $self->ticks_for_trend;
         $args{strike} = (delete $args{strikes})->[0];
-        my @data = ($base_probability->amount, @args{@fields}, $ticks->[0]{epoch}, $ticks->[-1]{epoch}, map { $_->{quote} } @$ticks);
+        my @data = ($bet->shortcode, $base_probability->amount, @args{@fields}, $ticks->[0]{epoch}, $ticks->[-1]{epoch}, map { $_->{quote} } @$ticks);
         $intraday_probability_log_fh->print(join(',', @data) . "\n");
     }
     return $base_probability;
