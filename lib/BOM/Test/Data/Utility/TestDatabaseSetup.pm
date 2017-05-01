@@ -19,7 +19,7 @@ sub prepare_unit_test_database {
     print "db_migrations_dir is " . $self->_db_migrations_dir . "\n";
     try {
         $self->_migrate_changesets;
-        $self->_alter_user_mapping if ($self->_db_migrations_dir =~ /rmgdb/);
+        $self->_alter_user_mapping;
         $self->_post_import_operations;
     }
     catch {
