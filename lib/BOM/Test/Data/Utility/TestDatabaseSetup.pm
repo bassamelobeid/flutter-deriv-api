@@ -16,7 +16,7 @@ BEGIN {
 
 sub prepare_unit_test_database {
     my $self = shift;
-    print "db_migrations_dir is " . $self->_db_migrations_dir . "\n";
+
     try {
         $self->_migrate_changesets;
         $self->_post_import_operations;
