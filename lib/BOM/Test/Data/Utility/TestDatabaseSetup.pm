@@ -140,12 +140,13 @@ sub _migrate_changesets {
             $self->_db_migrations_dir . '/unit_test_dml.sql'
         );
     }
-    if ((-f $self->_db_migrations_dir . '/hack_devbox_foreign_servers.sql') && $self->_db_name =~ m/_test/) {
+    # TODO the file devbox_server_user_mapping.sql was removed because it seems be useless. Will recover it back if necessary later.
+    if ((-f $self->_db_migrations_dir . '/devbox_foreign_servers_for_testdb.sql') && $self->_db_name =~ m/_test/) {
         $m->psql({
                 before => "SET session_replication_role TO 'replica';\n",
                 after  => ";\nSET session_replication_role TO 'origin';\n"
             },
-            $self->_db_migrations_dir . '/hack_devbox_foreign_servers.sql'
+            $self->_db_migrations_dir . '/devbox_foreign_servers_for_testdb.sql';
         );
     }
 
