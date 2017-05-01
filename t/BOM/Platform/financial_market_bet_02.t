@@ -134,12 +134,13 @@ sub buy_one_bet {
     return ($txn->{id}, $bet->{id}, $txn->{balance_after});
 }
 my $buy_multiple_shortcode;
+
 sub buy_multiple_bets {
     my ($acc) = @_;
 
-    my $now      = Date::Utility->new;
+    my $now = Date::Utility->new;
     $buy_multiple_shortcode = ('CALL_R_50_200_' . $now->epoch . '_' . $now->plus_time_interval('15s')->epoch . '_S0P_0'),
-    my $bet_data = +{
+        my $bet_data = +{
         underlying_symbol => 'frxUSDJPY',
         payout_price      => 200,
         buy_price         => 20,
@@ -154,7 +155,7 @@ sub buy_multiple_bets {
         bet_type          => 'CALL',
         short_code        => $buy_multiple_shortcode,
         relative_barrier  => 'S0P',
-    };
+        };
 
     my $fmb = BOM::Database::Helper::FinancialMarketBet->new({
         bet_data     => $bet_data,
@@ -169,20 +170,20 @@ sub buy_multiple_bets {
 }
 
 sub sell_by_shortcode {
-    my ($shortcode,$acc) = @_;
+    my ($shortcode, $acc) = @_;
 
-    my $now      = Date::Utility->new->plus_time_interval('1s');
+    my $now = Date::Utility->new->plus_time_interval('1s');
 
     my $fmb = BOM::Database::Helper::FinancialMarketBet->new({
-        bet_data         => +{
-            'sell_price' => '18',
-            'sell_time' => $now->db_timestamp,
-            'id' => undef
-        },
-        account_data     => [map { +{client_loginid => $_->client_loginid, currency_code => $_->currency_code} } @$acc],
-        transaction_data => {staff_loginid => 'CL001'},
-        db               => db,
-    });
+            bet_data => +{
+                'sell_price' => '18',
+                'sell_time'  => $now->db_timestamp,
+                'id'         => undef
+            },
+            account_data     => [map           { +{client_loginid => $_->client_loginid, currency_code => $_->currency_code} } @$acc],
+            transaction_data => {staff_loginid => 'CL001'},
+            db               => db,
+        });
     my $res = $fmb->sell_by_shortcode($shortcode);
 
     return $res;
@@ -1569,36 +1570,37 @@ subtest 'batch_buy', sub {
     'survived buy_multiple_bets';
 
     lives_ok {
-        my $res = sell_by_shortcode($buy_multiple_shortcode, [$acc1, $acc2, $acc3] );
+        my $res = sell_by_shortcode($buy_multiple_shortcode, [$acc1, $acc2, $acc3]);
         # note explain $res;
         is ref $res, 'ARRAY';
         my $r = shift @$res;
         is ref $r, 'HASH';
-        isnt $r->{fmb},                        undef,         'got FMB';
-        isnt $r->{txn},                        undef,         'got TXN';
-        ok $buy_trx_ids->{$r->{buy_tr_id}},                   'got buy transaction id';
+        isnt $r->{fmb}, undef, 'got FMB';
+        isnt $r->{txn}, undef, 'got TXN';
+        ok $buy_trx_ids->{$r->{buy_tr_id}}, 'got buy transaction id';
         is $r->{txn}{financial_market_bet_id}, $r->{fmb}{id}, 'txn fmb id matches';
-        is $r->{txn}{amount},                  '18.00',       'txn amount';
-        ok $r->{loginid},                                     'got login id';
+        is $r->{txn}{amount}, '18.00', 'txn amount';
+        ok $r->{loginid}, 'got login id';
 
         $r = shift @$res;
         is ref $r, 'HASH';
-        ok $r->{fmb},                                 'got FMB';
-        ok $r->{txn},                                 'got TXN';
-        is $r->{e_code},        'BI050',              'got error code';
+        ok $r->{fmb},           'got FMB';
+        ok $r->{txn},           'got TXN';
+        is $r->{e_code},        'BI050', 'got error code';
         is $r->{e_description}, 'Contract not found', 'got error description';
-        ok $r->{loginid},                             'got login id';
+        ok $r->{loginid},       'got login id';
 
         $r = shift @$res;
         is ref $r, 'HASH';
-        isnt $r->{fmb},                        undef,         'got FMB';
-        isnt $r->{txn},                        undef,         'got TXN';
-        ok $buy_trx_ids->{$r->{buy_tr_id}},                   'got buy transaction id';
+        isnt $r->{fmb}, undef, 'got FMB';
+        isnt $r->{txn}, undef, 'got TXN';
+        ok $buy_trx_ids->{$r->{buy_tr_id}}, 'got buy transaction id';
         is $r->{txn}{financial_market_bet_id}, $r->{fmb}{id}, 'txn fmb id matches';
-        is $r->{txn}{amount},                  '18.00',       'txn amount';
-        ok $r->{loginid},                                     'got login id';
+        is $r->{txn}{amount}, '18.00', 'txn amount';
+        ok $r->{loginid}, 'got login id';
 
-    } 'sell_by_shortcode';
+    }
+    'sell_by_shortcode';
 
     dies_ok {
         my $res = buy_multiple_bets [$acc1, $acc4, $acc3];

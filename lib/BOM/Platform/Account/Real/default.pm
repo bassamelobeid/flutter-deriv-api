@@ -319,7 +319,7 @@ sub get_financial_input_mapping {
             }
         },
         account_turnover => {
-            'label'            => 'The anticipated account turnover',
+            'label'           => 'The anticipated account turnover',
             'possible_answer' => {
                 'Less than $25,000'   => 0,
                 '$25,000 - $50,000'   => 0,
