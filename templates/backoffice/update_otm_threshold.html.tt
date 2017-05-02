@@ -12,9 +12,9 @@
             <td> e.g. frxUSDJPY. Supports comma separated string.</td>
         </tr>
         <tr>
-            <td>Barrier category: </td>
-            <td><input type="text" name="barrier_category" value=''></input></td>
-            <td> e.g. euro_atm | euro_non_atm</td>
+            <td>Is ATM contract: </td>
+            <td><input type="text" name="is_atm_bet" value=''></input></td>
+            <td> e.g. Boolean, 1 or 0</td>
         </tr>
         <tr>
             <td>Expiry Type: </td>

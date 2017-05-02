@@ -135,10 +135,12 @@ if ($r->param('update_otm')) {
 
     # underlying symbol supercedes market
     my $which = $r->param('underlying_symbol') // $r->param('market');
-    $current->{$which} = {
-        conditions => {map { $_ => $r->param($_) } grep { $r->param($_) } qw(expiry_type barrier_category)},
-        value      => $r->param('otm_value'),
-    };
+    foreach my $key (split ',', $which) {
+        $current->{$key} = {
+            conditions => {map { $_ => $r->param($_) } grep { $r->param($_) } qw(expiry_type is_atm_bet)},
+            value      => $r->param('otm_value'),
+        };
+    }
     BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(to_json($current));
     BOM::Platform::Runtime->instance->app_config->save_dynamic;
 }
