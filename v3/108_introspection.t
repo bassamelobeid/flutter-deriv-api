@@ -146,14 +146,14 @@ my %contract = (
 $t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
 
 $intro_stats = send_introspection_cmd('stats');
-cmp_ok $intro_stats->{current_redis_connections}, '==', 5, '5 redis connections after proposal subscription';
+cmp_ok $intro_stats->{current_redis_connections}, '==', 3, '3 redis connections after proposal subscription';
 
 $t->{_bom}{redis_server}->stop;
 
 $t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
 
 $intro_stats = send_introspection_cmd('stats');
-cmp_ok $intro_stats->{current_redis_connections}, '==', 5, '5 connections after redis stop and connection attempt';
+cmp_ok $intro_stats->{current_redis_connections}, '==', 2, '2 connections after redis stop and connection attempt';
 cmp_ok $intro_stats->{cumulative_redis_errors}, '==', 1, 'Got 1 redis error';
 
 $t->{_bom}{redis_server}->start;
@@ -180,19 +180,19 @@ cmp_ok $intro_conn->{connections}[0]{messages_sent_to_client}{time}, '==', 2, '2
 
 # number of pricer subs
 
-cmp_ok $intro_conn->{connections}[0]{pricer_subscribtion_count}, '==', 1, 'current 1 price subscription';
+cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 1, 'current 1 price subscription';
 $contract{amount} = 200;
 $t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
 $intro_conn = send_introspection_cmd('connections');
-cmp_ok $intro_conn->{connections}[0]{pricer_subscribtion_count}, '==', 1, 'current 1 price subscription';
+cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 1, 'current 1 price subscription';
 $contract{duration} = 14;
 $t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
 $intro_conn = send_introspection_cmd('connections');
-cmp_ok $intro_conn->{connections}[0]{pricer_subscribtion_count}, '==', 2, 'now 2 price subscription';
+cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 2, 'now 2 price subscription';
 
 $t = $t->send_ok({ json => { "forget_all" => 'proposal'}})->message_ok;
 $intro_conn = send_introspection_cmd('connections');
-cmp_ok $intro_conn->{connections}[0]{pricer_subscribtion_count}, '==', 0, 'no more price subscription';
+cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 0, 'no more price subscription';
 
 
 done_testing;
