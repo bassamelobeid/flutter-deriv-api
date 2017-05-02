@@ -23,7 +23,7 @@ sub website_status {
 
     ### TODO: to config
     my $channel_name = "NOTIFY::broadcast::channel";
-    my $redis        = $self->ws_redis_write;
+    my $redis        = $self->ws_redis_master;
     my $shared_info  = $self->redis_connections($channel_name);
 
     my $callback = sub {
@@ -44,7 +44,7 @@ sub website_status {
                     $shared_info->{broadcast_notifications}{\$self + 0}{echo}           = $args;
                     $shared_info->{broadcast_notifications}{\$self + 0}{website_status} = $rpc_response;
 
-                    my $slave_redis = $self->ws_redis_read;
+                    my $slave_redis = $self->ws_redis_slave;
                     ### to config
                     my $current_state = undef;
                     $current_state = $slave_redis->get("NOTIFY::broadcast::state")
@@ -86,7 +86,7 @@ sub send_notification {
     foreach my $c_addr (keys %{$shared->{broadcast_notifications}}) {
         my $client_shared = $shared->{broadcast_notifications}{$c_addr};
         unless (defined $client_shared->{c}->tx) {
-            my $redis = $client_shared->{c}->ws_redis_write;
+            my $redis = $client_shared->{c}->ws_redis_master;
 
             delete $shared->{broadcast_notifications}{$c_addr};
             $redis->unsubscribe([$channel])
@@ -95,7 +95,7 @@ sub send_notification {
         }
 
         unless ($is_on_key) {
-            my $slave_redis = $client_shared->{c}->ws_redis_read;
+            my $slave_redis = $client_shared->{c}->ws_redis_slave;
             $is_on_key = "NOTIFY::broadcast::is_on";    ### TODO: to config
             return unless $slave_redis->get($is_on_key);    ### Need 1 for continuing
         }
@@ -266,8 +266,9 @@ sub ticks_history {
 }
 
 sub process_realtime_events {
-    my ($shared_info, $msg, $chan) = @_;
-    my $payload = decode_json($msg);
+    my ($shared_info, $message, $chan) = @_;
+
+    my @m = split(';', $message);
 
     for my $user_id (keys %{$shared_info->{per_user}}) {
         my $per_user_info = $shared_info->{per_user}->{$user_id};
@@ -287,7 +288,7 @@ sub process_realtime_events {
             my $arguments = $feed_channels_type->{$channel}->{args};
             my $cache     = $feed_channels_type->{$channel}->{cache};
 
-            if ($type eq 'tick' and $payload->{symbol} eq $symbol) {
+            if ($type eq 'tick' and $m[0] eq $symbol) {
                 unless ($c->tx) {
                     _feed_channel_unsubscribe($c, $symbol, $type, $req_id);
                     next;
@@ -296,14 +297,11 @@ sub process_realtime_events {
                 my $tick = {
                     id     => $feed_channels_type->{$channel}->{uuid},
                     symbol => $symbol,
-                    epoch  => $payload->{epoch},
-                    quote  => $payload->{spot},
-                    bid    => $payload->{bid},
-                    ask    => $payload->{ask},
-                };
+                    epoch  => $m[1],
+                    quote  => $m[2]};
 
                 if ($cache) {
-                    $feed_channel_cache->{$channel}->{$payload->{epoch}} = $tick;
+                    $feed_channel_cache->{$channel}->{$m[1]} = $tick;
                 } else {
                     $c->send({
                             json => {
@@ -315,20 +313,19 @@ sub process_realtime_events {
                                 tick => $tick
                             }}) if $c->tx;
                 }
-            } elsif ($payload->{symbol} eq $symbol) {
+            } elsif ($m[0] eq $symbol) {
                 unless ($c->tx) {
                     _feed_channel_unsubscribe($c, $symbol, $type, $req_id);
                     next;
                 }
 
-                $payload->{ohlc} =~ /$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);?/;
-                my $epoch = $payload->{epoch};
-                my $ohlc  = {
+                $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);?/;
+                my $ohlc = {
                     id        => $feed_channels_type->{$channel}->{uuid},
-                    epoch     => $epoch,
+                    epoch     => $m[1],
                     open_time => ($type and looks_like_number($type))
-                    ? $epoch - $epoch % $type
-                    : $epoch - $epoch % 60,    #defining default granularity
+                    ? $m[1] - $m[1] % $type
+                    : $m[1] - $m[1] % 60,    #defining default granularity
                     symbol      => $symbol,
                     granularity => $type,
                     open        => $1,
@@ -338,7 +335,7 @@ sub process_realtime_events {
                 };
 
                 if ($cache) {
-                    $feed_channel_cache->{$channel}->{$epoch} = $ohlc;
+                    $feed_channel_cache->{$channel}->{$m[1]} = $ohlc;
                 } else {
                     $c->send({
                             json => {
