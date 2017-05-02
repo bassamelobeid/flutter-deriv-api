@@ -1,7 +1,7 @@
 [% IF existing_custom.keys %]
     <table>
         <tr>
-            <td>OTM id</td>
+            <td>OTM ID</td>
             <td>Condition</td>
             <td>Deep OTM value</td>
         </tr>
@@ -9,7 +9,9 @@
             <tr>
                 <td>[% id %]</td>
                 <td>
-                    [% IF existing_custom.$id.conditions.underlying_symbol %]underlying symbol ([% existing_custom.$id.conditions.underlying_symbol %]) [% END %] [% IF existing_custom.$id.conditions.expiry_type %] expiry_type ([% existing_custom.$id.conditions.expiry_type %])[% END %] [% IF existing_custom.$id.conditions.exists('is_atm_bet') %] is_atm_bet ([% existing_custom.$id.conditions.is_atm_bet %])[% END %]
+                    [% FOREACH data IN existing_custom.$id.conditions.keys %]
+                        [% IF existing_custom.$id.conditions.defined(data) %] [% data %] ([% existing_custom.$id.conditions.$data %]) [% END %]
+                    [% END %]
                 </td>
                 <td>[% existing_custom.$id.value  %]</td>
             </tr>
@@ -23,7 +25,7 @@
         <tr>
             <td>Market: </td>
             <td><input type="text" name="market"></input></td>
-            <td> e.g. forex</td>
+            <td> e.g. forex. Supports comma separated string.</td>
         </tr>
         <tr>
             <td>Underlying symbol: </td>

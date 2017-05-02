@@ -138,15 +138,15 @@ if ($r->param('update_otm')) {
     }
 
     # underlying symbol supercedes market
-    my $which = defined $r->param('underlying_symbol') ? 'underlying_symbol' : 'market';
+    my $which = $r->param('underlying_symbol') ? 'underlying_symbol' : 'market';
     my @common_inputs = qw(expiry_type is_atm_bet);
-    foreach my $key (split ',', $r->param($which)) {
-        my $string = join '', grep { defined $r->param($_) } @common_inputs;
+    foreach my $key (map {s/\s+//; $_}split ',', $r->param($which)) {
+        my $string = join '', grep { $r->param($_) } @common_inputs;
         my $uniq_key = substr(md5_hex($key . $string), 0, 16);
         $current->{$uniq_key} = {
             conditions => {
                 $which => $key,
-                map { $_ => $r->param($_) } grep { defined $r->param($_) } @common_inputs
+                map { $_ => $r->param($_) || undef } @common_inputs
             },
             value => $r->param('otm_value'),
         };
