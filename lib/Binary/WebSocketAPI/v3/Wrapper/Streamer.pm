@@ -23,7 +23,7 @@ sub website_status {
 
     ### TODO: to config
     my $channel_name = "NOTIFY::broadcast::channel";
-    my $redis        = $self->ws_redis_write;
+    my $redis        = $self->ws_redis_master;
     my $shared_info  = $self->redis_connections($channel_name);
 
     my $callback = sub {
@@ -44,7 +44,7 @@ sub website_status {
                     $shared_info->{broadcast_notifications}{\$self + 0}{echo}           = $args;
                     $shared_info->{broadcast_notifications}{\$self + 0}{website_status} = $rpc_response;
 
-                    my $slave_redis = $self->ws_redis_read;
+                    my $slave_redis = $self->ws_redis_slave;
                     ### to config
                     my $current_state = undef;
                     $current_state = $slave_redis->get("NOTIFY::broadcast::state")
@@ -86,7 +86,7 @@ sub send_notification {
     foreach my $c_addr (keys %{$shared->{broadcast_notifications}}) {
         my $client_shared = $shared->{broadcast_notifications}{$c_addr};
         unless (defined $client_shared->{c}->tx) {
-            my $redis = $client_shared->{c}->ws_redis_write;
+            my $redis = $client_shared->{c}->ws_redis_master;
 
             delete $shared->{broadcast_notifications}{$c_addr};
             $redis->unsubscribe([$channel])
@@ -95,7 +95,7 @@ sub send_notification {
         }
 
         unless ($is_on_key) {
-            my $slave_redis = $client_shared->{c}->ws_redis_read;
+            my $slave_redis = $client_shared->{c}->ws_redis_slave;
             $is_on_key = "NOTIFY::broadcast::is_on";    ### TODO: to config
             return unless $slave_redis->get($is_on_key);    ### Need 1 for continuing
         }
