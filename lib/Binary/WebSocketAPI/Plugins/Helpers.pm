@@ -122,14 +122,9 @@ sub register {
         [ws_redis_slave => $redis_url->($ws_redis_cfg->{read})],
     );
 
-    my $redis_connections_counter_sub = sub {
-        my ($redis, $info) = @_;
-        $app->stat->{current_redis_connections}++;
-    };
     my $redis_on_error_sub = sub {
         my ($redis, $err) = @_;
         $app->log->warn("redis error: $err");
-        $app->stat->{current_redis_connections}-- if $err eq 'Connection refused';
         $app->stat->{redis_errors}++;
     };
 
@@ -139,7 +134,6 @@ sub register {
             $helper_name => sub {
                 state $redis = do {
                     my $redis = Mojo::Redis2->new(url => $redis_url);
-                    $redis->on(connection => $redis_connections_counter_sub);
                     $redis->on(error      => $redis_on_error_sub);
                     $redis->on(message    => $on_msg_sub) if $on_message;
                     $redis;
@@ -154,7 +148,6 @@ sub register {
         shared_redis => sub {
             state $redis = do {
                 my $redis = Mojo::Redis2->new(url => $chronicle_redis_url);
-                $redis->on(connection => $redis_connections_counter_sub);
                 $redis->on(error      => $redis_on_error_sub);
                 $redis->on(
                     message => sub {
@@ -198,7 +191,6 @@ sub register {
 
             if (not $c->stash->{redis}) {
                 my $redis = Mojo::Redis2->new(url => $chronicle_redis_url);
-                $redis->on(connection => $redis_connections_counter_sub);
                 $redis->on(error      => $redis_on_error_sub);
                 $redis->on(
                     message => sub {
