@@ -525,7 +525,7 @@ sub _build_economic_events_spot_risk_markup {
         grep { $_->{magnitude} > 1 && $_->{release_epoch} >= $start->epoch - $five_minutes && $_->{release_epoch} <= $end->epoch + $five_minutes }
         @{$qfs->categorize_events($bet->underlying->symbol, $self->economic_events) // []};
 
-    my $base_amount = (scalar(@news_array) > 0) ? 0.01 : 0;
+    my $base_amount = @news_array ? 0.01 : 0;
     my $spot_risk_markup = Math::Util::CalculatedValue::Validatable->new({
         name        => 'economic_events_spot_risk_markup',
         description => 'flat 1% markup to account for spot risk if there\'s applicable economic events',
