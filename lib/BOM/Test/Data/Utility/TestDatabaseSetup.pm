@@ -19,7 +19,6 @@ sub prepare_unit_test_database {
 
     try {
         $self->_migrate_changesets;
-        $self->_alter_user_mapping if ($self->_db_migrations_dir =~ /rmgdb/);
         $self->_post_import_operations;
     }
     catch {
@@ -140,6 +139,15 @@ sub _migrate_changesets {
             $self->_db_migrations_dir . '/unit_test_dml.sql'
         );
     }
+    # TODO the file devbox_server_user_mapping.sql was removed because it seems be useless. Will recover it back if necessary later.
+    if ((-f $self->_db_migrations_dir . '/devbox_foreign_servers_for_testdb.sql') && $self->_db_name =~ m/_test/) {
+        $m->psql({
+                before => "SET session_replication_role TO 'replica';\n",
+                after  => ";\nSET session_replication_role TO 'origin';\n"
+            },
+            $self->_db_migrations_dir . '/devbox_foreign_servers_for_testdb.sql'
+        );
+    }
 
     foreach (@bouncer_dbs) {
         $b_db = $_;
@@ -159,14 +167,6 @@ sub _migrate_changesets {
         };
     }
 
-    return 1;
-}
-
-sub _alter_user_mapping {
-    my $self = shift;
-    return if ($self->_db_migrations_dir !~ /rmgdb/);
-
-    $self->_migrate_file($self->_db_migrations_dir . '/devbox_server_user_mapping.sql');
     return 1;
 }
 
