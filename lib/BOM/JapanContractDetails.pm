@@ -244,16 +244,16 @@ sub _get_pricing_parameter_from_IH_pricer {
             discounted_probability => $discounted_probability->amount,
             bs_probability         => $bs_probability,
             commission_markup      => $commission_markup,
+            risk_markup            => $pe->risk_markup->amount,
             map { $_ => $pe->base_probability->peek_amount($_) } qw(intraday_delta_correction intraday_vega_correction),
-            risk_markup => $pe->risk_markup->amount,
         };
 
     } else {
         $pricing_parameters->{ask_probability} = {
             bs_probability    => $bs_probability,
             commission_markup => $commission_markup,
+            risk_markup       => $pe->risk_markup->amount,
             map { $_ => $pe->base_probability->peek_amount($_) } qw(intraday_delta_correction intraday_vega_correction),
-            risk_markup => $pe->risk_markup->amount,
         };
     }
     my @bs_keys      = ('S', 'K', 't', 'discount_rate', 'mu', 'vol');
@@ -266,16 +266,18 @@ sub _get_pricing_parameter_from_IH_pricer {
 
     $pricing_parameters->{intraday_vega_correction} = {
         historical_vol_mean_reversion => BOM::Platform::Config::quants->{commission}->{intraday}->{historical_vol_meanrev},
-        long_term_prediction => $pe->long_term_prediction->amount,
-        intraday_vega => $pe->base_probability->peek_amount('intraday_vega'),
+        long_term_prediction          => $pe->long_term_prediction->amount,
+        intraday_vega                 => $pe->base_probability->peek_amount('intraday_vega'),
     };
 
     my $intraday_delta_correction = $pe->base_probability->peek_amount('intraday_delta_correction');
     $pricing_parameters->{intraday_delta_correction} = {
-          short_term_delta_correction => $contract->get_time_to_expiry->minutes < 10 ? $pe->base_probability->peek_amount('delta_correction_short_term_value')
+        short_term_delta_correction => $contract->get_time_to_expiry->minutes < 10
+        ? $pe->base_probability->peek_amount('delta_correction_short_term_value')
         : $contract->get_time_to_expiry->minutes > 20 ? 0
         : $pe->base_probability->peek_amount('delta_correction_short_term_value'),
-        long_term_delta_correction => $contract->get_time_to_expiry->minutes > 20 ? $pe->base_probability->peek_amount('delta_correction_long_term_value')
+        long_term_delta_correction => $contract->get_time_to_expiry->minutes > 20
+        ? $pe->base_probability->peek_amount('delta_correction_long_term_value')
         : $contract->get_time_to_expiry->minutes < 10 ? 0
         :                                               $pe->base_probability->peek_amount('delta_correction_long_term_value'),
     };
