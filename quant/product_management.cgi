@@ -133,6 +133,10 @@ if ($r->param('update_otm')) {
         die 'Must specify either underlying symbol/market and otm value to set custom OTM threshold';
     }
 
+    if ($r->param('otm_value') > 1) {
+        die 'Maximum value of OTM threshold is 1.';
+    }
+
     # underlying symbol supercedes market
     my $which = $r->param('underlying_symbol') // $r->param('market');
     foreach my $key (split ',', $which) {
@@ -151,7 +155,7 @@ if ($r->param('delete_otm')) {
         die 'Must specify either underlying symbol/market to delete custom OTM threshold';
     }
 
-    my $which = $r->param('underlying_symbol') // $r->param('market');
+    my $which = $r->param('underlying_symbol');
     delete $current->{$which};
     BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(to_json($current));
     BOM::Platform::Runtime->instance->app_config->save_dynamic;
