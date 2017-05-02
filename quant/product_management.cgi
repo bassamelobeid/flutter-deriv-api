@@ -247,7 +247,7 @@ BOM::Backoffice::Request::template->process(
 Bar("Custom OTM Threshold");
 
 BOM::Backoffice::Request::template->process(
-    'backoffice/custom_otm_threshold.html.tt',
+    'backoffice/update_otm_threshold.html.tt',
     {
         url => request()->url_for('backoffice/quant/product_management.cgi'),
     }) || die BOM::Backoffice::Request::template->error;
