@@ -67,22 +67,21 @@ sub mt5_new_account {
             message_to_client => localize('Investor password cannot be same as main password.')}
     ) if (($args->{mainPassword} // '') eq ($args->{investPassword} // ''));
 
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidSubAccountType',
+            message_to_client => localize('Invalid sub account type.')}
+    ) if ($account_type =~ /^demo|financial$/ and $mt5_account_type !~ /^cent|standard|stp$/);
     my $group;
     if ($account_type eq 'demo') {
         $group = 'demo\\' . $brand->name . '_virtual';
     } elsif ($account_type eq 'gaming' or $account_type eq 'financial') {
         # 5 Sept 2016: only CR and Champion fully authenticated client can open MT real a/c
-        return BOM::RPC::v3::Utility::permission_error() if ($client->landing_company->short !~ /^(?:costarica|champion)$/);
+        return BOM::RPC::v3::Utility::permission_error() if ($client->landing_company->short !~ /^costarica|champion$/);
 
-        if ($account_type eq 'financial') {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'FinancialAssessmentMandatory',
-                    message_to_client => localize('Please complete financial assessment.')}) unless $client->financial_assessment();
-
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'InvalidSubAccountType',
-                    message_to_client => localize('Invalid sub account type.')}) unless ($mt5_account_type =~ /^(?:cent|standard|stp)$/);
-        }
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'FinancialAssessmentMandatory',
+                message_to_client => localize('Please complete financial assessment.')}
+        ) if ($account_type eq 'financial' and not $client->financial_assessment());
 
         # get MT company from countries.yml
         my $mt_key         = 'mt_' . $account_type . '_company';
