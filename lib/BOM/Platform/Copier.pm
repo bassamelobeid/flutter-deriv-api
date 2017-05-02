@@ -41,9 +41,7 @@ sub update_or_create {
 
     for my $p (qw/assets trade_types/) {
         $args->{$p} ||= '*';
-        if ($args->{$p} and ref $args->{$p} ne 'ARRAY') {
-            $args->{$p} = [$args->{$p}];
-        }
+        $args->{$p} = [$args->{$p}] if ref $args->{$p} ne 'ARRAY';
     }
 
     for my $asset (@{$args->{assets}}) {
