@@ -139,9 +139,12 @@ if ($r->param('update_otm')) {
 
     # underlying symbol supercedes market
     my $which = $r->param('underlying_symbol') // $r->param('market');
+    my @common_inputs = qw(expiry_type is_atm_bet);
     foreach my $key (split ',', $which) {
-        $current->{$key} = {
-            conditions => {map { $_ => $r->param($_) } grep { $r->param($_) } qw(expiry_type is_atm_bet)},
+        my $string = join '', grep {$r->param($_)} @common_inputs;
+        my $uniq_key = substr(md5_hex($key), 0, 16);
+        $current->{$uniq_key} = {
+            conditions => {underlying_symbol => $key, map { $_ => $r->param($_) } grep { defined $r->param($_) } @common_inputs},
             value      => $r->param('otm_value'),
         };
     }
@@ -151,12 +154,11 @@ if ($r->param('update_otm')) {
 
 if ($r->param('delete_otm')) {
     my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold);
-    unless ($r->param('underlying_symbol') or $r->param('market')) {
-        die 'Must specify either underlying symbol/market to delete custom OTM threshold';
+    unless ($r->param('otm_id')) {
+        die 'Please specify otm id to delete.';
     }
 
-    my $which = $r->param('underlying_symbol');
-    delete $current->{$which};
+    delete $current->{$r->param('otm_id')};
     BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(to_json($current));
     BOM::Platform::Runtime->instance->app_config->save_dynamic;
 }

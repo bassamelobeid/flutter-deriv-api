@@ -1,11 +1,15 @@
 [% IF existing_custom.keys %]
     <table>
         <tr>
+            <td>OTM id</td>
             <td>Condition</td>
             <td>Deep OTM value</td>
         </tr>
-        [% FOREACH symbol IN existing_custom.keys %]
-            <tr>                <td>underlying symbol ([% symbol %]) [% IF existing_custom.$symbol.conditions.expiry_type %] expiry_type ([% existing_custom.$symbol.conditions.expiry_type %])[% END %] [% IF existing_custom.$symbol.conditions.is_atm_bet %] is_atm_bet ([% existing_custom.$symbol.conditions.is_atm_bet %])[% END %]
+        [% FOREACH id IN existing_custom.keys %]
+            <tr>
+                <td>[% id %]</td>
+                <td>
+                    [% IF existing_custom.$id.conditions.underlying_symbol %]underlying symbol ([% existing_custom.$id.conditions.underlying_symbol %]) [% END %] [% IF existing_custom.$id.conditions.expiry_type %] expiry_type ([% existing_custom.$id.conditions.expiry_type %])[% END %] [% IF existing_custom.$id.conditions.exists(is_atm_bet) %] is_atm_bet ([% existing_custom.$id.conditions.is_atm_bet %])[% END %]
                 </td>
                 <td>[% existing_custom.$symbol.value  %]</td>
             </tr>
@@ -44,8 +48,14 @@
         <tr>
             <td><input type="submit" name="update_otm" value="Update"></td>
         </tr>
+
         <tr>
-            <td><input type="submit" name="delete_otm" value="Delete"></td><td>Specify underlying symbol to delete.</td>
+            <td>OTM id: </td>
+            <td><input type="text" name="otm_id" value=''></input></td>
+            <td> required to delete OTM threshold</td>
+        </tr>
+        <tr>
+            <td><input type="submit" name="delete_otm" value="Delete"></td>
         </tr>
     </table>
 </form>
