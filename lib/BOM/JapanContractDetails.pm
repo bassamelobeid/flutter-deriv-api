@@ -244,14 +244,16 @@ sub _get_pricing_parameter_from_IH_pricer {
             discounted_probability => $discounted_probability->amount,
             bs_probability         => $bs_probability,
             commission_markup      => $commission_markup,
-            map { $_ => $pe->$_->amount } qw(_intraday_delta_correction _intraday_vega_correction risk_markup),
+            map { $_ => $pe->base_probability->peek_amount($_) } qw(intraday_delta_correction intraday_vega_correction),
+            risk_markup => $pe->risk_markup->amount,
         };
 
     } else {
         $pricing_parameters->{ask_probability} = {
             bs_probability    => $bs_probability,
             commission_markup => $commission_markup,
-            map { $_ => $pe->$_->amount } qw(_intraday_delta_correction _intraday_vega_correction risk_markup),
+            map { $_ => $pe->base_probability->peek_amount($_) } qw(intraday_delta_correction intraday_vega_correction),
+            risk_markup => $pe->risk_markup->amount,
         };
     }
     my @bs_keys = ('S', 'K', 't', 'discount_rate', 'mu', 'vol');
@@ -266,7 +268,7 @@ sub _get_pricing_parameter_from_IH_pricer {
         map { $_ => $pe->$_->amount } qw(intraday_vega long_term_prediction),
     };
 
-    my $intraday_delta_correction = $pe->_intraday_delta_correction;
+    my $intraday_delta_correction = $pe->base_probability->peek_amount('intraday_delta_correction');
     $pricing_parameters->{intraday_delta_correction} = {
           short_term_delta_correction => $contract->get_time_to_expiry->minutes < 10 ? $pe->_get_short_term_delta_correction
         : $contract->get_time_to_expiry->minutes > 20 ? 0
