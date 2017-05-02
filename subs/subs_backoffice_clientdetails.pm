@@ -29,9 +29,11 @@ sub print_client_details {
     # IDENTITY sECTION
     my @mrms_options = BOM::Backoffice::FormAccounts::GetSalutations();
 
+    warn "date_of_birth is " . ($client->date_of_birth // '');
     # Extract year/month/day as numeric values, if we have them
-    my ($dob_year, $dob_month, $dob_day) = map { ; 0 + $_ } ($client->date_of_birth // '') =~ /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
-
+    my ($dob_year, $dob_month, $dob_day) = ($client->date_of_birth // '') =~ /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
+    $dob_day += 0;
+    warn "dob_month is $dob_month";
     my $dob_day_optionlist = BOM::Backoffice::FormAccounts::DOB_DayList($dob_day);
     my $dob_day_options;
     $dob_day_options .= qq|<option value="$_->{value}">$_->{value}</option>| for @$dob_day_optionlist;
