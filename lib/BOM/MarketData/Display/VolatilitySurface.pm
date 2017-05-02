@@ -248,8 +248,7 @@ sub get_forward_vol {
         Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($volsurface->for_date), $volsurface->for_date);
     my %weights;
     for (my $i = 1; $i <= $days[scalar(@days) - 1]; $i++) {
-        my $date = Date::Utility->new({epoch => ($volsurface->recorded_date->epoch + $i * 86400)});
-        $weights{$i} = $trading_calendar->weight_on($volsurface->underlying, $date);
+        $weights{$i} = $trading_calendar->weight_on($volsurface->underlying, $volsurface->recorded_date->epoch + $i * 86400);
     }
 
     my $forward_vols;
