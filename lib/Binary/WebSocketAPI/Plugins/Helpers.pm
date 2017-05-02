@@ -134,8 +134,8 @@ sub register {
             $helper_name => sub {
                 state $redis = do {
                     my $redis = Mojo::Redis2->new(url => $redis_url);
-                    $redis->on(error      => $redis_on_error_sub);
-                    $redis->on(message    => $on_msg_sub) if $on_message;
+                    $redis->on(error => $redis_on_error_sub);
+                    $redis->on(message => $on_msg_sub) if $on_message;
                     $redis;
                 };
                 return $redis;
@@ -148,7 +148,7 @@ sub register {
         shared_redis => sub {
             state $redis = do {
                 my $redis = Mojo::Redis2->new(url => $chronicle_redis_url);
-                $redis->on(error      => $redis_on_error_sub);
+                $redis->on(error => $redis_on_error_sub);
                 $redis->on(
                     message => sub {
                         my ($self, $msg, $channel) = @_;
@@ -191,7 +191,7 @@ sub register {
 
             if (not $c->stash->{redis}) {
                 my $redis = Mojo::Redis2->new(url => $chronicle_redis_url);
-                $redis->on(error      => $redis_on_error_sub);
+                $redis->on(error => $redis_on_error_sub);
                 $redis->on(
                     message => sub {
                         my ($self, $msg, $channel) = @_;
