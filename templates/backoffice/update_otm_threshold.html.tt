@@ -11,7 +11,7 @@
                 <td>
                     [% IF existing_custom.$id.conditions.underlying_symbol %]underlying symbol ([% existing_custom.$id.conditions.underlying_symbol %]) [% END %] [% IF existing_custom.$id.conditions.expiry_type %] expiry_type ([% existing_custom.$id.conditions.expiry_type %])[% END %] [% IF existing_custom.$id.conditions.exists(is_atm_bet) %] is_atm_bet ([% existing_custom.$id.conditions.is_atm_bet %])[% END %]
                 </td>
-                <td>[% existing_custom.$symbol.value  %]</td>
+                <td>[% existing_custom.$id.value  %]</td>
             </tr>
         [% END %]
     </table>
