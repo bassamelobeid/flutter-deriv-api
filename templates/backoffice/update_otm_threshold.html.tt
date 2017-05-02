@@ -39,13 +39,13 @@
         <tr>
             <td>OTM value: </td>
             <td><input type="text" name="otm_value" value=''></input></td>
-            <td> e.g. 0.01</td>
+            <td> e.g. 0.01 (maximum is 1)</td>
         </tr>
         <tr>
             <td><input type="submit" name="update_otm" value="Update"></td>
         </tr>
         <tr>
-            <td><input type="submit" name="delete_otm" value="Delete"></td>
+            <td><input type="submit" name="delete_otm" value="Delete"></td><td>Specify underlying symbol to delete.</td>
         </tr>
     </table>
 </form>
