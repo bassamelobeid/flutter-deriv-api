@@ -71,9 +71,10 @@ sub mt5_new_account {
             code              => 'InvalidSubAccountType',
             message_to_client => localize('Invalid sub account type.')}
     ) if ($account_type =~ /^demo|financial$/ and $mt5_account_type !~ /^cent|standard|stp$/);
+
     my $group;
     if ($account_type eq 'demo') {
-        $group = 'demo\\' . $brand->name . '_virtual';
+        $group = 'demo\\' . $brand->name . '_' . $mt5_account_type . '_virtual';
     } elsif ($account_type eq 'gaming' or $account_type eq 'financial') {
         # 5 Sept 2016: only CR and Champion fully authenticated client can open MT real a/c
         return BOM::RPC::v3::Utility::permission_error() if ($client->landing_company->short !~ /^costarica|champion$/);
@@ -83,18 +84,14 @@ sub mt5_new_account {
                 message_to_client => localize('Please complete financial assessment.')}
         ) if ($account_type eq 'financial' and not $client->financial_assessment());
 
+        my ($residence, $mt_key, $countries_list, $mt_company) =
+            ($client->residence, 'mt_' . $account_type . '_company', $brand->countries_instance->countries_list);
         # get MT company from countries.yml
-        my $mt_key         = 'mt_' . $account_type . '_company';
-        my $mt_company     = 'none';
-        my $residence      = $client->residence;
-        my $countries_list = $brand->countries_instance->countries_list;
         if (defined $countries_list->{$residence} && defined $countries_list->{$residence}->{$mt_key}) {
             $mt_company = $countries_list->{$residence}->{$mt_key};
         }
 
-        if ($mt_company eq 'none') {
-            return BOM::RPC::v3::Utility::permission_error();
-        }
+        return BOM::RPC::v3::Utility::permission_error() unless $mt_company;
 
         # populate mt5 agent account associated with affiliate token
         $args->{agent} = _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
