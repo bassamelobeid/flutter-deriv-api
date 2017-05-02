@@ -19,7 +19,8 @@ sub get_copiers_cnt {
 
 sub get_trade_copiers {
     my ($self, $args) = @_;
-
+    ### This SQL query can be written in more obvious way but this long query is faster.
+    ### Please, check with DBA if you want to change it
     return $self->db->dbh->selectcol_arrayref(<<'SQL', undef, @{$args}{qw/trader_id trade_type asset price/}) || [];
 SELECT DISTINCT copier_id from (
     SELECT copier_id
