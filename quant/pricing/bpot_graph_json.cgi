@@ -89,7 +89,7 @@ while ($graph_more) {
         foreach my $attr (keys %prices) {
             my $amount;
             if ($attr eq 'pricing_iv') {
-                $amount = $bet->pricing_args->{iv};
+                $amount = $bet->_pricing_args->{iv};
             } else {
                 $amount = ($expired and $attr =~ /probability$/) ? $value : (ref $bet->$attr) ? $bet->$attr->amount : $bet->$attr;
             }
