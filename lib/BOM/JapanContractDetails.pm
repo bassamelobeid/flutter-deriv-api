@@ -266,17 +266,18 @@ sub _get_pricing_parameter_from_IH_pricer {
 
     $pricing_parameters->{intraday_vega_correction} = {
         historical_vol_mean_reversion => BOM::Platform::Config::quants->{commission}->{intraday}->{historical_vol_meanrev},
-        map { $_ => $pe->$_->amount } qw(intraday_vega long_term_prediction),
+        long_term_prediction => $pe->long_term_prediction->amount,
+        intraday_vega => $pe->base_probability->peek_amount('intraday_vega'),
     };
 
     my $intraday_delta_correction = $pe->base_probability->peek_amount('intraday_delta_correction');
     $pricing_parameters->{intraday_delta_correction} = {
-          short_term_delta_correction => $contract->get_time_to_expiry->minutes < 10 ? $pe->_get_short_term_delta_correction
+          short_term_delta_correction => $contract->get_time_to_expiry->minutes < 10 ? $pe->base_probability->peek_amount('delta_correction_short_term_value')
         : $contract->get_time_to_expiry->minutes > 20 ? 0
-        : $intraday_delta_correction->peek_amount('delta_correction_short_term_value'),
-        long_term_delta_correction => $contract->get_time_to_expiry->minutes > 20 ? $pe->_get_long_term_delta_correction
+        : $pe->base_probability->peek_amount('delta_correction_short_term_value'),
+        long_term_delta_correction => $contract->get_time_to_expiry->minutes > 20 ? $pe->base_probability->peek_amount('delta_correction_long_term_value')
         : $contract->get_time_to_expiry->minutes < 10 ? 0
-        :                                               $intraday_delta_correction->peek_amount('delta_correction_long_term_value'),
+        :                                               $pe->base_probability->peek_amount('delta_correction_long_term_value'),
     };
 
     $pricing_parameters->{commission_markup} = {
