@@ -35,7 +35,6 @@ sub test_offerings {
     my %s = map { $_ => 1 } get_offerings_with_filter($offerings_config, $seek);
     ok !$s{$symbol}, "$symbol is not offered";
 
-
     $path->$type($orig);
     $offerings_config = BOM::Platform::Runtime->instance->get_offerings_config;
     reinitialise_offerings($offerings_config);
