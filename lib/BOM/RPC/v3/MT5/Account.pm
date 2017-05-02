@@ -56,10 +56,14 @@ sub mt5_new_account {
     my $mt5_suspended = _is_mt5_suspended();
     return $mt5_suspended if $mt5_suspended;
 
-    my ($client, $args) = @{$params}{qw/client arg/};
+    my ($client, $args) = @{$params}{qw/client args/};
     my $account_type     = delete $args->{account_type};
     my $mt5_account_type = delete $args->{mt5_account_type} // '';
     my $brand            = Brands->new(name => request()->brand);
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidAccountType',
+            message_to_client => localize('Invalid account type.')}) if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'MT5SamePassword',
@@ -74,7 +78,7 @@ sub mt5_new_account {
     if ($account_type eq 'demo') {
         if ($mt5_account_type) {
             return $invalid_sub_type_error unless ($mt5_account_type =~ /^cent|standard|stp$/);
-            $group = 'demo\\' . $brand->name . '_' . $mt5_account_type . '_virtual';
+            $group = 'demo\\' . $brand->name . '_' . $mt5_account_type;
         } else {
             $group = 'demo\\' . $brand->name . '_virtual';
         }
@@ -105,10 +109,6 @@ sub mt5_new_account {
         $group = 'real\\' . $mt_company;
         $group .= "_$mt5_account_type" if $account_type eq 'financial';
         $group .= "_$residence" if (first { $residence eq $_ } @{$brand->countries_with_own_mt5_group});
-    } else {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidAccountType',
-                message_to_client => localize('Invalid account type.')});
     }
 
     # client can have only 1 MT demo & 1 MT real a/c
