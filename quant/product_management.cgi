@@ -50,7 +50,7 @@ if ($r->param('update_limit')) {
 
     foreach my $key (@known_keys) {
         if (my $value = $r->param($key)) {
-            if (first { $value eq $_ } @{$known_values{$key}}) {
+            if (first { $value =~ $_ } @{$known_values{$key}}) {
                 # we should not allow more than one value for risk_profile
                 die 'You could not specify multiple value for ' . $key if not $allowed_multiple{$key} and $value =~ /,/;
                 $ref{$key} = $value;
