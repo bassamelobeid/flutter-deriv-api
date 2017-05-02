@@ -7,7 +7,7 @@ test:
 	@$(PROVE) $$(ls -1d t/BOM)
 
 suite_schema:
-	/etc/rmg/bin/prove t/schema_suite/suite.t
+	@$(PROVE) $$(ls -1d t/schema_suite)
 
 tidy:
 	find . -name '*.p?.bak' -delete
