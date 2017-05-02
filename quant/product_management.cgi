@@ -250,7 +250,7 @@ BOM::Backoffice::Request::template->process(
     'backoffice/update_otm_threshold.html.tt',
     {
         url => request()->url_for('backoffice/quant/product_management.cgi'),
-        existing_custom => from_json(BOM::Platform::Runtime->instance->quants->custom_otm_threshold),
+        existing_custom => from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold),
     }) || die BOM::Backoffice::Request::template->error;
 
 code_exit_BO();

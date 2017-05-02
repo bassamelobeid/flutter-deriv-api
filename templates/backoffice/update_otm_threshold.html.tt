@@ -1,12 +1,14 @@
-[% IF existin_params.keys %]
+[% IF existing_custom.keys %]
     <table>
         <tr>
             <td>Condition</td>
             <td>Deep OTM value</td>
         </tr>
-        [% FOREACH symbol IN existing_params.keys %]
-            <tr>underlying symbol ([% symbol %]) [% IF existing_params.$symbol.conditions.expiry_type %] expiry_type ([% existing_params.$symbol.conditions.expiry_type %])[% END %] [% IF existing_params.$symbol.conditions.is_atm_bet %] is_atm_bet ([% existing_params.$symbol.conditions.is_atm_bet %])[% END %]</tr>
-            <tr>[% exisint_params.$symbol.value  %]</tr>
+        [% FOREACH symbol IN existing_custom.keys %]
+            <tr>                <td>underlying symbol ([% symbol %]) [% IF existing_custom.$symbol.conditions.expiry_type %] expiry_type ([% existing_custom.$symbol.conditions.expiry_type %])[% END %] [% IF existing_custom.$symbol.conditions.is_atm_bet %] is_atm_bet ([% existing_custom.$symbol.conditions.is_atm_bet %])[% END %]
+                </td>
+                <td>[% existing_custom.$symbol.value  %]</td>
+            </tr>
         [% END %]
     </table>
 [% END %]
