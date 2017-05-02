@@ -138,14 +138,17 @@ if ($r->param('update_otm')) {
     }
 
     # underlying symbol supercedes market
-    my $which = $r->param('underlying_symbol') // $r->param('market');
+    my $which = defined $r->param('underlying_symbol') ? 'underlying_symbol' : 'market';
     my @common_inputs = qw(expiry_type is_atm_bet);
-    foreach my $key (split ',', $which) {
-        my $string = join '', grep {$r->param($_)} @common_inputs;
-        my $uniq_key = substr(md5_hex($key), 0, 16);
+    foreach my $key (split ',', $r->param($which)) {
+        my $string = join '', grep { defined $r->param($_) } @common_inputs;
+        my $uniq_key = substr(md5_hex($key . $string), 0, 16);
         $current->{$uniq_key} = {
-            conditions => {underlying_symbol => $key, map { $_ => $r->param($_) } grep { defined $r->param($_) } @common_inputs},
-            value      => $r->param('otm_value'),
+            conditions => {
+                $which => $key,
+                map { $_ => $r->param($_) } grep { defined $r->param($_) } @common_inputs
+            },
+            value => $r->param('otm_value'),
         };
     }
     BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(to_json($current));
@@ -255,7 +258,7 @@ Bar("Custom OTM Threshold");
 BOM::Backoffice::Request::template->process(
     'backoffice/update_otm_threshold.html.tt',
     {
-        url => request()->url_for('backoffice/quant/product_management.cgi'),
+        url             => request()->url_for('backoffice/quant/product_management.cgi'),
         existing_custom => from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold),
     }) || die BOM::Backoffice::Request::template->error;
 
