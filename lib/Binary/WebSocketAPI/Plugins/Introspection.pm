@@ -247,7 +247,7 @@ command connections => sub {
                         messages_received_from_client  => $_->stash->{introspection}{msg_type}{received},
                         messages_sent_to_client        => $_->stash->{introspection}{msg_type}{sent},
                         last_rpc_error                 => $_->stash->{introspection}{last_rpc_error},
-                        pricer_subscribtion_count      => $pc,
+                        pricer_subscription_count      => $pc,
                         }
                     }
                     grep {
@@ -300,19 +300,19 @@ command stats => sub {
 };
 
 sub _get_redis_connections {
-    my $app = shift;
+    my $app         = shift;
     my $connections = 0;
-    my @redises = ();
+    my @redises     = ();
     my %uniq;
 
-    for my $c (values %{ $app->active_connections // {}}) {
+    for my $c (values %{$app->active_connections // {}}) {
         push @redises, $c->redis;
     }
     push @redises, $app->shared_redis;
     push @redises, $app->redis_pricer;
     push @redises, $app->ws_redis_master;
     push @redises, $app->ws_redis_slave;
-    push @redises, values %{ Binary::WebSocketAPI::v3::Instance::Redis::instances() };
+    push @redises, values %{Binary::WebSocketAPI::v3::Instance::Redis::instances()};
     for my $r (@redises) {
         my $con = $r->{connections} // {};
         for my $c (values %$con) {

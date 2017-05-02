@@ -141,7 +141,7 @@ sub register {
                     my $redis = Mojo::Redis2->new(url => $redis_url);
                     $redis->on(connection => $redis_connections_counter_sub);
                     $redis->on(error      => $redis_on_error_sub);
-                    $redis->on(message => $on_msg_sub) if $on_message;
+                    $redis->on(message    => $on_msg_sub) if $on_message;
                     $redis;
                 };
                 return $redis;
