@@ -56,7 +56,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix');
 my %custom_otm =
-    map { $_ => {conditions => {expiry_type => 'daily', is_atm_bet => 0}, value => 0.2,} } qw(forex indices commodities stocks);
+    map { rand(1234) => {conditions => {market => $_, expiry_type => 'daily', is_atm_bet => 0}, value => 0.2,} } qw(forex indices commodities stocks);
 BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(to_json(\%custom_otm));
 
 subtest 'payout' => sub {

@@ -446,15 +446,25 @@ sub _build_forqqq {
 sub _build_otm_threshold {
     my $self = shift;
 
-    my $custom_otm = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold // {});
+    my $custom_otm       = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold // {});
+    my @known_conditions = qw(expiry_type is_atm_bet);
+    my %mapper           = (
+        underlying_symbol => $self->underlying->symbol,
+        market            => $self->market->name,
+    );
 
     # underlying symbol supercedes market
-    foreach my $to_match ($self->underlying->symbol, $self->market->name) {
-        if (my $custom = $custom_otm->{$to_match}) {
-            my $match = not first { $custom->{conditions}{$_} ne $self->$_ } keys %{$custom->{conditions}};
-            return $custom->{value} if $match;
+    foreach my $symbol (qw(underlying_symbol market)) {
+        foreach my $data_ref (values %$custom_otm) {
+            my $conditions = $data_ref->{conditions};
+
+            if (defined $conditions->{$symbol} and $conditions->{$symbol} eq $mapper{$symbol}) {
+                my $match = not first { $conditions->{$_} ne $self->$_ } @known_conditions;
+                return $data_ref->{value} if $match;
+            }
         }
     }
+
     # this is the default depp OTM threshold set in yaml per market
     return $self->market->deep_otm_threshold;
 }
