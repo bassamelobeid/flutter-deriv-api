@@ -15,7 +15,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Copier;
 
-sub check_copiers {
+sub trade_copiers {
     my $params = shift;
 
     my $copiers = BOM::Database::DataMapper::Copier->new(
@@ -30,6 +30,7 @@ sub check_copiers {
 
     return unless $copiers && ref $copiers eq 'ARRAY' && scalar @$copiers;
     ### TODO: Add checking of trade permission in copy_start
+    ### Note: this array of hashes will be modified by BOM::Transaction with the results per each client
     my @multiple = map { +{loginid => $_} } @$copiers;
     my $trx = BOM::Transaction->new({
             client   => $params->{client},
@@ -47,11 +48,11 @@ sub check_copiers {
     for my $el (grep { $_->{error} } @multiple) {
         warn "[COPY TRADING "
             . uc $params->{action} . "] "
-            . encode_json + {
-            trader_id => $params->{client}->loginid,
-            copier    => $el->{loginid},
-            code      => $el->{code},
-            error     => $el->{error}};
+            . encode_json({
+                trader_id => $params->{client}->loginid,
+                copier    => $el->{loginid},
+                code      => $el->{code},
+                error     => $el->{error}});
     }
     return 1;
 }
@@ -121,9 +122,8 @@ sub buy {
     };
     return $response if $response;
 
-    ### TODO: Decrease params count
     try {
-        check_copiers({
+        trade_copiers({
                 action        => 'buy',
                 client        => $client,
                 contract      => $trx->contract,
@@ -407,8 +407,7 @@ sub sell {
     }
 
     try {
-        ### TODO: Decrease params count
-        check_copiers({
+        trade_copiers({
                 action   => 'sell',
                 client   => $client,
                 contract => $trx->contract,
