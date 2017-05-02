@@ -19,6 +19,7 @@ use Variable::Disposition qw(retain_future);
 use Socket qw(:crlf);
 use Proc::ProcessTable;
 use feature 'state';
+use Binary::WebSocketAPI::v3::Instance::Redis;
 
 # How many seconds to allow per command - anything that takes more than a few milliseconds
 # is probably a bad idea, please do not rely on this for any meaningful protection
@@ -292,16 +293,33 @@ command stats => sub {
     my $me = (grep { $_->pid == $$ } @{$pt->table})[0];
     Future->done({
             cumulative_client_connections => $app->stat->{cumulative_client_connections},
-            current_redis_connections     => _get_redis_connections(),
+            current_redis_connections     => _get_redis_connections($app),
             uptime                        => time - $^T,
             rss                           => $me->rss,
             cumulative_redis_errors       => $app->stat->{redis_errors}});
 };
 
 sub _get_redis_connections {
-    my $ret = `lsof -i -a -p $$|grep ':6[0-9][0-9][0-9] '|wc -l`;
-    chomp $ret;
-    return $ret;
+    my $app = shift;
+    my $connections = 0;
+    my @redises = ();
+    my %uniq;
+
+    for my $c (values %{ $app->active_connections // {}}) {
+        push @redises, $c->redis;
+    }
+    push @redises, $app->shared_redis;
+    push @redises, $app->redis_pricer;
+    push @redises, $app->ws_redis_master;
+    push @redises, $app->ws_redis_slave;
+    push @redises, values %{ Binary::WebSocketAPI::v3::Instance::Redis::instances() };
+    for my $r (@redises) {
+        my $con = $r->{connections} // {};
+        for my $c (values %$con) {
+            $connections++ if $c->{id} && !$uniq{$c->{id}}++;
+        }
+    }
+    return $connections;
 }
 
 =head2 dumpmem
