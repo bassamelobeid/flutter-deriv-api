@@ -1,13 +1,13 @@
 M=[ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
 export PERL5OPT=-MTest::FailWarnings=-allow_deps,1
-P=sudo /etc/rmg/bin/prove --timer -rl
+P=/etc/rmg/bin/prove --timer -rl
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 test:
 	@$(PROVE) $$(ls -1d t/BOM)
 
 suite_schema:
-	@$(PROVE) $$(ls -1d t/schema_suite)
+	/etc/rmg/bin/prove t/schema_suite/suite.t
 
 tidy:
 	find . -name '*.p?.bak' -delete
