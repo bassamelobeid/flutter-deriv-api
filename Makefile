@@ -12,9 +12,6 @@ json_schema_1:
 json_schema_2:
 	@$(PROVE) /home/git/regentmarkets/bom-rpc/t/schema_suite/suite.t :: suite02.conf
 
-json_schema_3:
-	@$(PROVE) /home/git/regentmarkets/bom-rpc/t/schema_suite/suite.t :: suite03.conf
-
 tidy:
 	find . -name '*.p?.bak' -delete
 	find lib t -name '*.p[lm]' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
