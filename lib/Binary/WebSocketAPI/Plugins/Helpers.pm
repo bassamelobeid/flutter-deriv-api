@@ -97,10 +97,24 @@ sub register {
     };
     my $chronicle_redis_url = $redis_url->($chronicle_cfg->{read});
 
-    my @redises = ([ws_redis_master => $redis_url->($ws_redis_cfg->{write})], [ws_redis_slave => $redis_url->($ws_redis_cfg->{read})],);
+    # for 'website_status' with 'subscribe' option, see also bin/clients_notify.pl
+    my $ws_redis_master_on_message = sub {
+        my ($self, $msg, $channel) = @_;
+        if ($channel eq "NOTIFY::broadcast::channel") {
+            my $shared_info = $app->redis_connections($channel);
+            Binary::WebSocketAPI::v3::Wrapper::Streamer::send_notification($shared_info, $msg, $channel);
+        }
+    };
+
+    my @redises = ([
+            ws_redis_master => $redis_url->($ws_redis_cfg->{write}),
+            on_message      => $ws_redis_master_on_message
+        ],
+        [ws_redis_slave => $redis_url->($ws_redis_cfg->{read})],
+    );
 
     for my $redis_info (@redises) {
-        my ($helper_name, $redis_url) = @$redis_info;
+        my ($helper_name, $redis_url, $on_message, $on_msg_sub) = @$redis_info;
         $app->helper(
             $helper_name => sub {
                 state $redis = do {
@@ -110,59 +124,12 @@ sub register {
                             my ($self, $err) = @_;
                             $app->log->warn("redis error: $err");
                         });
+                    $redis->on(message => $on_msg_sub) if $on_message;
                     $redis;
                 };
                 return $redis;
             });
     }
-
-    my $ws_redis_read_config  = YAML::XS::LoadFile('/etc/rmg/ws-redis.yml')->{read};
-    my $ws_redis_write_config = YAML::XS::LoadFile('/etc/rmg/ws-redis.yml')->{write};
-    my $ws_redis_read_url     = do {
-        my ($host, $port, $password) = @{$ws_redis_read_config}{qw/host port password/};
-        "redis://" . (defined $password ? "dummy:$password\@" : "") . "$host:$port";
-    };
-    my $ws_redis_write_url = do {
-        my ($host, $port, $password) = @{$ws_redis_write_config}{qw/host port password/};
-        "redis://" . (defined $password ? "dummy:$password\@" : "") . "$host:$port";
-    };
-
-    ### Blue master
-    $app->helper(
-        ws_redis_write => sub {
-            state $ws_redis_write = do {
-                my $redis = Mojo::Redis2->new(url => $ws_redis_write_url);
-                $redis->on(
-                    error => sub {
-                        my ($self, $err) = @_;
-                        $app->log->warn("ws write redis error: $err");
-                    });
-                $redis->on(
-                    message => sub {
-                        my ($self, $msg, $channel) = @_;
-
-                        my $shared_info = $app->redis_connections($channel);
-                        Binary::WebSocketAPI::v3::Wrapper::Streamer::send_notification($shared_info, $msg, $channel);
-                    });
-                $redis;
-            };
-            return $ws_redis_write;
-        });
-
-    ### Blue slave
-    $app->helper(
-        ws_redis_read => sub {
-            state $ws_redis_read = do {
-                my $redis = Mojo::Redis2->new(url => $ws_redis_read_url);
-                $redis->on(
-                    error => sub {
-                        my ($self, $err) = @_;
-                        $app->log->warn("ws read redis error: $err");
-                    });
-                $redis;
-            };
-            return $ws_redis_read;
-        });
 
     # one redis connection (Mojo::Redis2 instance) per worker, i.e. shared among multiple clients, connected to
     # the same worker
