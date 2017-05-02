@@ -1,3 +1,16 @@
+[% IF existin_params.keys %]
+    <table>
+        <tr>
+            <td>Condition</td>
+            <td>Deep OTM value</td>
+        </tr>
+        [% FOREACH symbol IN existing_params.keys %]
+            <tr>underlying symbol ([% symbol %]) [% IF existing_params.$symbol.conditions.expiry_type %] expiry_type ([% existing_params.$symbol.conditions.expiry_type %])[% END %] [% IF existing_params.$symbol.conditions.is_atm_bet %] is_atm_bet ([% existing_params.$symbol.conditions.is_atm_bet %])[% END %]</tr>
+            <tr>[% exisint_params.$symbol.value  %]</tr>
+        [% END %]
+    </table>
+[% END %]
+
 <p>Update custom OTM threshold (to delete a custom threshold set the market/underlying_symbol and click 'Delete' button): </p>
 <form action="[% url | none %]" method="POST">
     <table>
