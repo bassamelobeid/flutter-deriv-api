@@ -26,14 +26,15 @@ before_install:
     - sudo mkdir -p /home/git/regentmarkets
 
     - /tmp/travis-scripts/setup_cpan.sh
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
-    - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-myaffiliates
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-transaction
+    - /tmp/travis-scripts/parallel_clone_branch.sh
+      regentmarkets/bom-test
+      regentmarkets/bom
+      regentmarkets/bom-platform
+      regentmarkets/bom-postgres
+      binary-com/translations-websockets-api
+      regentmarkets/bom-market
+      regentmarkets/bom-myaffiliates
+      regentmarkets/bom-transaction
     - /tmp/travis-scripts/redis.sh
 
 install:
