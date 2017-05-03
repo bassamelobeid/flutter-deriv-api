@@ -141,12 +141,12 @@ if ($r->param('update_otm')) {
     my $which = $r->param('underlying_symbol') ? 'underlying_symbol' : 'market';
     my @common_inputs = qw(expiry_type is_atm_bet);
     foreach my $key (map { my $input = $_; $input =~ s/\s+//; $input } split ',', $r->param($which)) {
-        my $string = join '', grep { $r->param($_) } @common_inputs;
+        my $string = join '', map {$r->param($_)} grep { $r->param($_) ne '' } @common_inputs;
         my $uniq_key = substr(md5_hex($key . $string), 0, 16);
         $current->{$uniq_key} = {
             conditions => {
                 $which => $key,
-                map { $_ => $r->param($_) || undef } @common_inputs
+                map { $_ => $r->param($_) } grep {$r->param($_) ne ''} @common_inputs
             },
             value => $r->param('otm_value'),
         };
