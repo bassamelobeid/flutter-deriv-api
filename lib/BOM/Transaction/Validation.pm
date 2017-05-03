@@ -445,7 +445,7 @@ sub _validate_payout_limit {
     my $contract = $self->transaction->contract;
 
     my $rp    = $contract->risk_profile;
-    my @cl_rp = $rp->get_client_profiles($client);
+    my @cl_rp = $rp->get_client_profiles($client->loginid, $client->landing_company->short);
 
     # setups client specific payout and turnover limits, if any.
     if (@cl_rp) {
