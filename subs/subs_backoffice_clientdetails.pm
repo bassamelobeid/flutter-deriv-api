@@ -29,14 +29,10 @@ sub print_client_details {
     # IDENTITY sECTION
     my @mrms_options = BOM::Backoffice::FormAccounts::GetSalutations();
 
-    my ($dob_day, $dob_month, $dob_year);
-    if ($client->date_of_birth =~ /^(\d\d\d\d)-(\d\d)-(\d\d)$/) {
-        $dob_day   = $3;
-        $dob_month = $2;
-        $dob_year  = $1;
-
-        $dob_day =~ s/^0//;
-    }
+    # Extract year/month/day if we have them
+    my ($dob_year, $dob_month, $dob_day) = ($client->date_of_birth // '') =~ /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
+    # make dob_day as numeric values because there is no prefix '0' in dob_daylist
+    $dob_day += 0;
 
     my $dob_day_optionlist = BOM::Backoffice::FormAccounts::DOB_DayList($dob_day);
     my $dob_day_options;
