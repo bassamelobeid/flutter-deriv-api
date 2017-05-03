@@ -26,18 +26,7 @@ before_install:
     - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
 
     - /tmp/travis-scripts/setup_cpan.sh
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-feed
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-populator
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-websocket-tests
-    - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/php-mt5-webapi
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-transaction
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-pricing
+    - /tmp/travis-scripts/parallel_clone_branch.sh regentmarkets/bom-test regentmarkets/bom regentmarkets/bom-platform regentmarkets/bom-feed regentmarkets/bom-populator regentmarkets/bom-postgres regentmarkets/bom-websocket-tests binary-com/translations-websockets-api regentmarkets/bom-market regentmarkets/php-mt5-webapi regentmarkets/bom-transaction regentmarkets/bom-pricing
 
     - /tmp/travis-scripts/redis.sh
 
