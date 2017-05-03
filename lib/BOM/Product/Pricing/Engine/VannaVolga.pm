@@ -55,7 +55,7 @@ use Moose;
 use namespace::autoclean;
 
 extends 'BOM::Product::Pricing::Engine';
-with 'BOM::Product::Pricing::Engine::Role::StandardMarkup';
+with 'BOM::Product::Pricing::Engine::Role::RiskMarkup';
 with 'BOM::Product::Pricing::Engine::Role::MarketPricedPortfolios';
 
 use BOM::Product::ContractFactory qw( make_similar_contract );
