@@ -6,8 +6,11 @@ PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 test:
 	@$(PROVE) $$(ls -1d t/BOM)
 
-suite_schema:
-	@$(PROVE) $$(ls -1d t/schema_suite)
+json_schema_1:
+	@$(PROVE) /home/git/regentmarkets/bom-rpc/t/schema_suite/suite.t :: suite01.conf
+
+json_schema_2:
+	@$(PROVE) /home/git/regentmarkets/bom-rpc/t/schema_suite/suite.t :: suite02.conf
 
 tidy:
 	find . -name '*.p?.bak' -delete
