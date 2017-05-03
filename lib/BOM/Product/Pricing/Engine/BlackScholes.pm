@@ -13,7 +13,7 @@ Prices options using the GBM (Geometric Brownian Motion) model.
 use Moose;
 
 extends 'BOM::Product::Pricing::Engine';
-with 'BOM::Product::Pricing::Engine::Role::StandardMarkup';
+with 'BOM::Product::Pricing::Engine::Role::RiskMarkup';
 
 has _supported_types => (
     is      => 'ro',
