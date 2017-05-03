@@ -22,7 +22,6 @@ before_install:
     - sudo mkdir -p /home/git/regentmarkets
     - . /tmp/travis-scripts/setup_perl.sh
     - /tmp/travis-scripts/fixHostName.sh
-    - /tmp/travis-scripts/postgres.sh
 
     - /tmp/travis-scripts/parallel_clone_branch.sh
       regentmarkets/bom-test
