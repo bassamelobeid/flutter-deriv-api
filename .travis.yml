@@ -22,7 +22,6 @@ before_install:
     - dpkg -l | grep postgres
     - pg_lsclusters
     - /tmp/travis-scripts/fixHostName.sh
-    - /tmp/travis-scripts/postgres.sh
     - sudo cp -a $HOME/build/regentmarkets/bom-postgres /home/git/regentmarkets/
 
     - /tmp/travis-scripts/parallel_clone_branch.sh
