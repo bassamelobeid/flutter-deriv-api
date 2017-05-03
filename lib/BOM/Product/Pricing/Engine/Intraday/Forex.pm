@@ -32,8 +32,7 @@ has inefficient_period => (
 );
 
 has economic_events => (
-    is      => 'ro',
-    default => sub { [] },
+    is => 'ro',
 );
 
 has long_term_prediction => (
@@ -62,12 +61,10 @@ has _supported_types => (
     },
 );
 
-has [
-    qw(base_probability probability short_term_prediction long_term_prediction economic_events_markup intraday_trend intraday_vanilla_delta risk_markup)
-    ] => (
+has [qw(base_probability probability long_term_prediction economic_events_markup intraday_vanilla_delta risk_markup)] => (
     is         => 'ro',
     lazy_build => 1,
-    );
+);
 
 sub _build_base_probability {
     my $self = shift;
@@ -177,55 +174,56 @@ sub _tentative_events_markup {
         });
     }
 
-    my $markup = 0;
-
     my $barrier          = $bet->barrier->as_absolute;
     my $adjusted_barrier = $self->_get_barrier_for_tentative_events($barrier);
 
-    #if there is a change needed in the barriers due to tentative events:
-    if ($barrier != $adjusted_barrier) {
-        my $type = $bet->code;
-        #For one-touch and no-touch, If barrier crosses the spot because of our barrier adjustments, just make sure prob will be 100%
-        if ($type eq 'ONETOUCH' or $type eq 'NOTOUCH') {
-            if (   ($barrier < $bet->pricing_spot and $adjusted_barrier >= $bet->pricing_spot)
-                or ($barrier > $bet->pricing_spot and $adjusted_barrier <= $bet->pricing_spot))
-            {
-                return Math::Util::CalculatedValue::Validatable->new({
-                    name        => 'economic_events_volatility_risk_markup',
-                    description => 'markup to account for volatility risk of economic events',
-                    set_by      => __PACKAGE__,
-                    base_amount => 1.0,
-                });
-            }
+    return Math::Util::CalculatedValue::Validatable->new({
+            name        => 'economic_events_volatility_risk_markup',
+            description => 'markup to account for volatility risk of economic events',
+            set_by      => __PACKAGE__,
+            base_amount => 0,
+        }) if $barrier == $adjusted_barrier;
+
+    # There is a change needed in the barriers due to tentative events:
+    my $type = $bet->code;
+    #For one-touch and no-touch, If barrier crosses the spot because of our barrier adjustments, just make sure prob will be 100%
+    if ($type eq 'ONETOUCH' or $type eq 'NOTOUCH') {
+        if (   ($barrier < $bet->pricing_spot and $adjusted_barrier >= $bet->pricing_spot)
+            or ($barrier > $bet->pricing_spot and $adjusted_barrier <= $bet->pricing_spot))
+        {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'economic_events_volatility_risk_markup',
+                description => 'markup to account for volatility risk of economic events',
+                set_by      => __PACKAGE__,
+                base_amount => 1.0,
+            });
         }
-
-        my %args = (map { $_ => $bet->_pricing_args->{$_} } qw(spot t payouttime_code));
-
-        my $vol    = $bet->_pricing_args->{iv};
-        my $engine = Pricing::Engine::Intraday::Forex::Base->new(
-            ticks                => $self->ticks_for_trend,
-            strikes              => [$adjusted_barrier],
-            vol                  => $vol,
-            contract_type        => $bet->pricing_code,
-            payout_type          => 'binary',
-            underlying_symbol    => $bet->underlying->symbol,
-            long_term_prediction => $self->long_term_prediction->amount,
-            discount_rate        => 0,
-            mu                   => 0,
-            %args,
-        );
-        my $new_prob = $engine->base_probability;
-
-        $new_prob = $new_prob->amount if Scalar::Util::blessed($new_prob) && $new_prob->isa('Math::Util::CalculatedValue::Validatable');
-
-        $markup = max(0, $new_prob - $self->base_probability->amount);
     }
+
+    my %args = (map { $_ => $bet->_pricing_args->{$_} } qw(spot t payouttime_code));
+
+    my $vol    = $bet->_pricing_args->{iv};
+    my $engine = Pricing::Engine::Intraday::Forex::Base->new(
+        ticks                => $self->ticks_for_trend,
+        strikes              => [$adjusted_barrier],
+        vol                  => $vol,
+        contract_type        => $bet->pricing_code,
+        payout_type          => 'binary',
+        underlying_symbol    => $bet->underlying->symbol,
+        long_term_prediction => $self->long_term_prediction->amount,
+        discount_rate        => 0,
+        mu                   => 0,
+        %args,
+    );
+    my $new_prob = $engine->base_probability;
+
+    $new_prob = $new_prob->amount if Scalar::Util::blessed($new_prob) && $new_prob->isa('Math::Util::CalculatedValue::Validatable');
 
     return Math::Util::CalculatedValue::Validatable->new({
         name        => 'economic_events_volatility_risk_markup',
         description => 'markup to account for volatility risk of economic events',
         set_by      => __PACKAGE__,
-        base_amount => $markup,
+        base_amount => max(0, $new_prob - $self->base_probability->amount),
     });
 }
 
@@ -301,7 +299,7 @@ sub _build_ticks_for_trend {
 
     my $bet              = $self->bet;
     my $duration_in_secs = $bet->timeindays->amount * 86400;
-    my $lookback_secs    = $duration_in_secs * 2;              # lookback twice the duratiom
+    my $lookback_secs    = $duration_in_secs * 2;              # lookback twice the duration
     my $period_start     = $bet->date_pricing->epoch;
 
     my $remaining_interval = Time::Duration::Concise::Localize->new(interval => $lookback_secs);
@@ -401,9 +399,8 @@ sub _build_risk_markup {
         });
         $risk_markup->include_adjustment('add', $iv_risk);
     }
-    my $open_at_start = $bet->underlying->calendar->is_open_at($bet->date_start);
 
-    if ($open_at_start and $bet->underlying->is_in_quiet_period($bet->date_pricing)) {
+    if ($bet->underlying->calendar->is_open_at($bet->date_start) and $bet->underlying->is_in_quiet_period($bet->date_pricing)) {
         my $quiet_period_markup = Math::Util::CalculatedValue::Validatable->new({
             name        => 'quiet_period_markup',
             description => 'Intraday::Forex markup factor for underlyings in the quiet period',
@@ -423,37 +420,33 @@ sub _build_risk_markup {
         $risk_markup->include_adjustment('add', $illiquid_market_markup);
     }
 
-    $risk_markup->include_adjustment('add', $self->vol_spread_markup) if not $bet->is_atm_bet;
-
-    if (not $self->bet->is_atm_bet and $self->inefficient_period) {
-        my $end_of_day_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'intraday_eod_markup',
-            description => '10% markup for inefficient period',
-            set_by      => __PACKAGE__,
-            base_amount => 0.1,
-        });
-        $risk_markup->include_adjustment('add', $end_of_day_markup);
-    }
-
-    if ($self->bet->is_atm_bet and $self->inefficient_period) {
-        my $end_of_day_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'intraday_eod_markup',
-            description => '5% markup for inefficient period',
-            set_by      => __PACKAGE__,
-            base_amount => 0.05,
-        });
-        $risk_markup->include_adjustment('add', $end_of_day_markup);
-    }
-
-    if (not $self->bet->is_atm_bet and $bet->remaining_time->minutes <= 15) {
-        my $amount                         = $shortterm_risk_interpolator->linear($bet->remaining_time->minutes);
-        my $shortterm_kurtosis_risk_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'short_term_kurtosis_risk_markup',
-            description => 'shortterm markup added for kurtosis risk for contract less than 15 minutes',
-            set_by      => __PACKAGE__,
-            base_amount => $amount,
-        });
-        $risk_markup->include_adjustment('add', $shortterm_kurtosis_risk_markup);
+    if ($bet->is_atm_bet) {
+        $risk_markup->include_adjustment(
+            'add',
+            Math::Util::CalculatedValue::Validatable->new({
+                    name        => 'intraday_eod_markup',
+                    description => '5% markup for inefficient period',
+                    set_by      => __PACKAGE__,
+                    base_amount => 0.05,
+                })) if $self->inefficient_period;
+    } else {
+        $risk_markup->include_adjustment('add', $self->vol_spread_markup);
+        $risk_markup->include_adjustment(
+            'add',
+            Math::Util::CalculatedValue::Validatable->new({
+                    name        => 'intraday_eod_markup',
+                    description => '10% markup for inefficient period',
+                    set_by      => __PACKAGE__,
+                    base_amount => 0.1,
+                })) if $self->inefficient_period;
+        $risk_markup->include_adjustment(
+            'add',
+            Math::Util::CalculatedValue::Validatable->new({
+                    name        => 'short_term_kurtosis_risk_markup',
+                    description => 'shortterm markup added for kurtosis risk for contract less than 15 minutes',
+                    set_by      => __PACKAGE__,
+                    base_amount => $shortterm_risk_interpolator->linear($bet->remaining_time->minutes),
+                })) if $bet->remaining_time->minutes <= 15;
     }
 
     return $risk_markup;
@@ -467,49 +460,50 @@ has [qw(economic_events_volatility_risk_markup economic_events_spot_risk_markup)
 sub _build_economic_events_volatility_risk_markup {
     my $self = shift;
 
-    my $markup;
-    my $tentative_events_markup = $self->_tentative_events_markup;
+    # Tentative event markup takes precedence
+    if ((my $tentative_events_markup = $self->_tentative_events_markup)->amount) {
+        return $tentative_events_markup;
+    }
 
-    if ($tentative_events_markup->amount != 0) {
-        $markup = $tentative_events_markup;
-    } else {
-        my $markup_base_amount = 0;
-        # since we are parsing in both vols now, we just check for difference in vol to determine if there's a markup
-        my $news_adjusted_pricing_vol = $self->bet->_pricing_args->{iv_with_news};
-        my $pricing_args              = $self->bet->_pricing_args;
-        if ($pricing_args->{iv} != $news_adjusted_pricing_vol) {
-            my $tv_without_news = $self->base_probability->amount;
+    my $markup_base_amount = 0;
 
-            # Re-calculate  base probability using the news_adjusted_pricing_vol
-
-            my %args = (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code));
-
-            my $engine = Pricing::Engine::Intraday::Forex::Base->new(
-                ticks                => $self->ticks_for_trend,
-                strikes              => [$pricing_args->{barrier1}],
-                vol                  => $news_adjusted_pricing_vol,
-                contract_type        => $self->bet->pricing_code,
-                payout_type          => 'binary',
-                underlying_symbol    => $self->bet->underlying->symbol,
-                long_term_prediction => $self->long_term_prediction->amount,
-                discount_rate        => 0,
-                mu                   => 0,
-                %args,
-            );
-            my $tv_with_news = $engine->base_probability->amount;
-
-            $markup_base_amount = max(0, $tv_with_news - $tv_without_news);
-        }
-
-        $markup = Math::Util::CalculatedValue::Validatable->new({
+    # since we are parsing in both vols now, we just check for difference in vol to determine if there's a markup
+    my $pricing_args              = $self->bet->_pricing_args;
+    my $news_adjusted_pricing_vol = $pricing_args->{iv_with_news};
+    return Math::Util::CalculatedValue::Validatable->new({
             name        => 'economic_events_volatility_risk_markup',
             description => 'markup to account for volatility risk of economic events',
             set_by      => __PACKAGE__,
-            base_amount => $markup_base_amount,
-        });
-    }
+            base_amount => 0,
+        }) if $pricing_args->{iv} == $news_adjusted_pricing_vol;
 
-    return $markup;
+    # Otherwise, we fall back to news-adjusted probability
+    my $tv_without_news = $self->base_probability->amount;
+
+    # Re-calculate  base probability using the news_adjusted_pricing_vol
+
+    my %args = (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code));
+
+    my $engine = Pricing::Engine::Intraday::Forex::Base->new(
+        ticks                => $self->ticks_for_trend,
+        strikes              => [$pricing_args->{barrier1}],
+        vol                  => $news_adjusted_pricing_vol,
+        contract_type        => $self->bet->pricing_code,
+        payout_type          => 'binary',
+        underlying_symbol    => $self->bet->underlying->symbol,
+        long_term_prediction => $self->long_term_prediction->amount,
+        discount_rate        => 0,
+        mu                   => 0,
+        %args,
+    );
+    my $tv_with_news = $engine->base_probability->amount;
+
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'economic_events_volatility_risk_markup',
+        description => 'markup to account for volatility risk of economic events',
+        set_by      => __PACKAGE__,
+        base_amount => max(0, $tv_with_news - $tv_without_news),
+    });
 }
 
 sub _build_economic_events_spot_risk_markup {
@@ -525,19 +519,20 @@ sub _build_economic_events_spot_risk_markup {
 
     my $contract_duration = $bet->remaining_time->seconds;
     my $lookback          = $start->minus_time_interval($contract_duration + 3600);
-    my $news_array        = $self->_get_economic_events($lookback, $end);
+    my $news_array        = $self->_get_economic_events;
 
     my @combined = (0) x scalar(@time_samples);
     foreach my $news (@$news_array) {
         my $effective_news_time = _get_effective_news_time($news->{release_epoch}, $start->epoch, $contract_duration);
         # +1e-9 is added to prevent a division by zero error if news magnitude is 1
         my $decay_coef = -log(2 / ($news->{magnitude} + 1e-9)) / $news->{duration};
+        my $bias = $news->{bias};
         my @triangle;
         foreach my $time (@time_samples) {
             if ($time < $effective_news_time) {
                 push @triangle, 0;
             } else {
-                my $chunk = $news->{bias} * exp(-$decay_coef * ($time - $effective_news_time));
+                my $chunk = $bias * exp(-$decay_coef * ($time - $effective_news_time));
                 push @triangle, $chunk;
             }
         }
@@ -556,7 +551,7 @@ sub _build_economic_events_spot_risk_markup {
 }
 
 sub _get_economic_events {
-    my ($self, $start, $end) = @_;
+    my ($self) = @_;
 
     my $qfs = Volatility::Seasonality->new;
     my $events = $qfs->categorize_events($self->bet->underlying->symbol, $self->economic_events);
@@ -584,16 +579,6 @@ sub _get_effective_news_time {
     return $effective_time;
 }
 
-has volatility_scaling_factor => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_volatility_scaling_factor',
-);
-
-sub _build_volatility_scaling_factor {
-    return shift->bet->_pricing_args->{volatility_scaling_factor};
-}
-
 has vol_spread => (
     is      => 'ro',
     lazy    => 1,
@@ -609,7 +594,7 @@ sub _build_vol_spread {
         description => 'markup added to account for variable ticks interval for volatility calculation.',
         minimum     => 0,
         maximum     => 0.1,
-        base_amount => (0.1 * (1 - ($self->volatility_scaling_factor)**2)) / 2,
+        base_amount => 0,
     });
 
     return $vol_spread;
