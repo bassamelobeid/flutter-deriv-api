@@ -65,6 +65,19 @@ sub mt5_new_account {
             code              => 'InvalidAccountType',
             message_to_client => localize('Invalid account type.')}) if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
 
+    my $residence = $client->residence;
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'NoResidence',
+            message_to_client => localize('Please set your country of residence.')}) unless $residence;
+
+    my ($mt_key, $countries_list, $mt_company, $group) = ('mt_' . $account_type . '_company', $brand->countries_instance->countries_list, 'none');
+
+    # get MT company from countries.yml
+    if (defined $countries_list->{$residence} && defined $countries_list->{$residence}->{$mt_key}) {
+        $mt_company = $countries_list->{$residence}->{$mt_key};
+    }
+    return BOM::RPC::v3::Utility::permission_error() if ($mt_company eq 'none');
+
     return BOM::RPC::v3::Utility::create_error({
             code              => 'MT5SamePassword',
             message_to_client => localize('Investor password cannot be same as main password.')}
@@ -74,13 +87,15 @@ sub mt5_new_account {
             code              => 'InvalidSubAccountType',
             message_to_client => localize('Invalid sub account type.')});
 
-    my $group;
     if ($account_type eq 'demo') {
+        # demo will have demo for financial and demo for gaming
         if ($mt5_account_type) {
             return $invalid_sub_type_error unless ($mt5_account_type =~ /^cent|standard|stp$/);
-            $group = 'demo\\' . $brand->name . '_' . $mt5_account_type;
+            $group = 'demo\\' . $mt_company . '_' . $mt5_account_type;
         } else {
-            $group = 'demo\\' . $brand->name . '_virtual';
+            # this needs to change or move to config if
+            # we add more brands, its done to keep consistency
+            $group = 'demo\costarica';
         }
     } elsif ($account_type eq 'gaming' or $account_type eq 'financial') {
         # 5 Sept 2016: only CR and Champion fully authenticated client can open MT real a/c
@@ -93,15 +108,6 @@ sub mt5_new_account {
                     code              => 'FinancialAssessmentMandatory',
                     message_to_client => localize('Please complete financial assessment.')}) unless $client->financial_assessment();
         }
-
-        my ($residence, $mt_key, $countries_list, $mt_company) =
-            ($client->residence, 'mt_' . $account_type . '_company', $brand->countries_instance->countries_list);
-        # get MT company from countries.yml
-        if (defined $countries_list->{$residence} && defined $countries_list->{$residence}->{$mt_key}) {
-            $mt_company = $countries_list->{$residence}->{$mt_key};
-        }
-
-        return BOM::RPC::v3::Utility::permission_error() unless $mt_company;
 
         # populate mt5 agent account associated with affiliate token
         $args->{agent} = _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
