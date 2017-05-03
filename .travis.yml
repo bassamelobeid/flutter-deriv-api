@@ -20,7 +20,6 @@ before_install:
     - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/regentmarkets
 
-    - /tmp/travis-scripts/setup_cpan.sh
     - /tmp/travis-scripts/parallel_clone_branch.sh
       regentmarkets/bom-test
       regentmarkets/bom
