@@ -10,7 +10,7 @@ use YAML::XS;
 use Scalar::Util ();
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
-use Binary::WebSocketAPI::v3::Instance::Redis qw| pricer_write |;
+use Binary::WebSocketAPI::v3::Instance::Redis qw| ws_redis_master ws_redis_slave redis_pricer shared_redis |;
 
 use Locale::Maketext::ManyPluralForms {
     'EN'      => ['Gettext' => '/home/git/binary-com/translations-websockets-api/src/en.po'],
@@ -87,115 +87,14 @@ sub register {
             };
         });
 
-    # read it once, and share between workers
-    my $chronicle_cfg = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/chronicle.yml');
-    my $ws_redis_cfg  = YAML::XS::LoadFile($ENV{BOM_TEST_WS_REDIS}         // '/etc/rmg/ws-redis.yml');
-    my $redis_url     = sub {
-        my $cfg = shift;
-        my ($host, $port, $password) = @{$cfg}{qw/host port password/};
-        "redis://" . ($password ? "x:$password\@" : "") . "$host:$port";
-    };
-    my $chronicle_redis_url = $redis_url->($chronicle_cfg->{read});
-
-    my @redises = ([ws_redis_master => $redis_url->($ws_redis_cfg->{write})], [ws_redis_slave => $redis_url->($ws_redis_cfg->{read})],);
-
-    for my $redis_info (@redises) {
-        my ($helper_name, $redis_url) = @$redis_info;
+    for my $redis_name ( qw| ws_redis_master ws_redis_slave redis_pricer shared_redis |) {
         $app->helper(
-            $helper_name => sub {
-                state $redis = do {
-                    my $redis = Mojo::Redis2->new(url => $redis_url);
-                    $redis->on(
-                        error => sub {
-                            my ($self, $err) = @_;
-                            $app->log->warn("redis error: $err");
-                        });
-                    $redis;
-                };
-                return $redis;
+            $redis_name => sub {
+                my $c = shift;
+                $c->stash( $redis_name => Binary::WebSocketAPI::v3::Instance::Redis->$redis_name() );
+                return $c->stash($redis_name);
             });
     }
-
-    my $ws_redis_read_config  = YAML::XS::LoadFile('/etc/rmg/ws-redis.yml')->{read};
-    my $ws_redis_write_config = YAML::XS::LoadFile('/etc/rmg/ws-redis.yml')->{write};
-    my $ws_redis_read_url     = do {
-        my ($host, $port, $password) = @{$ws_redis_read_config}{qw/host port password/};
-        "redis://" . (defined $password ? "dummy:$password\@" : "") . "$host:$port";
-    };
-    my $ws_redis_write_url = do {
-        my ($host, $port, $password) = @{$ws_redis_write_config}{qw/host port password/};
-        "redis://" . (defined $password ? "dummy:$password\@" : "") . "$host:$port";
-    };
-
-    ### Blue master
-    $app->helper(
-        ws_redis_write => sub {
-            state $ws_redis_write = do {
-                my $redis = Mojo::Redis2->new(url => $ws_redis_write_url);
-                $redis->on(
-                    error => sub {
-                        my ($self, $err) = @_;
-                        $app->log->warn("ws write redis error: $err");
-                    });
-                $redis->on(
-                    message => sub {
-                        my ($self, $msg, $channel) = @_;
-
-                        my $shared_info = $app->redis_connections($channel);
-                        Binary::WebSocketAPI::v3::Wrapper::Streamer::send_notification($shared_info, $msg, $channel);
-                    });
-                $redis;
-            };
-            return $ws_redis_write;
-        });
-
-    ### Blue slave
-    $app->helper(
-        ws_redis_read => sub {
-            state $ws_redis_read = do {
-                my $redis = Mojo::Redis2->new(url => $ws_redis_read_url);
-                $redis->on(
-                    error => sub {
-                        my ($self, $err) = @_;
-                        $app->log->warn("ws read redis error: $err");
-                    });
-                $redis;
-            };
-            return $ws_redis_read;
-        });
-
-    # one redis connection (Mojo::Redis2 instance) per worker, i.e. shared among multiple clients, connected to
-    # the same worker
-    $app->helper(
-        shared_redis => sub {
-            state $redis = do {
-                my $redis = Mojo::Redis2->new(url => $chronicle_redis_url);
-                $redis->on(
-                    error => sub {
-                        my ($self, $err) = @_;
-                        $app->log->warn("redis error: $err");
-                    });
-                $redis->on(
-                    message => sub {
-                        my ($self, $msg, $channel) = @_;
-
-                        return warn "Misuse shared_redis: the message on channel '$channel' is not expected"
-                            if $channel !~ /^FEED::/;
-
-                        my $shared_info = $app->redis_connections($channel);
-                        Binary::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($shared_info, $msg, $channel);
-                    });
-                $redis;
-            };
-            return $redis;
-        });
-
-    my $redis_connections = {};
-    $app->helper(
-        redis_connections => sub {
-            my ($c, $key) = @_;
-            return $redis_connections->{$key} //= {};
-        });
 
     my $pricing_subscriptions = {};
     $app->helper(
@@ -209,37 +108,6 @@ sub register {
             $pricing_subscriptions->{$key} = $subscribe;
             Scalar::Util::weaken($pricing_subscriptions->{$key});
             return $pricing_subscriptions->{$key};
-        });
-
-    $app->helper(
-        redis => sub {
-            my $c = shift;
-
-            if (not $c->stash->{redis}) {
-                my $redis = Mojo::Redis2->new(url => $chronicle_redis_url);
-                $redis->on(
-                    error => sub {
-                        my ($self, $err) = @_;
-                        warn("error: $err");
-                    });
-                $redis->on(
-                    message => sub {
-                        my ($self, $msg, $channel) = @_;
-
-                        Binary::WebSocketAPI::v3::Wrapper::Streamer::process_transaction_updates($c, $msg)
-                            if $channel =~ /^TXNUPDATE::transaction_/;
-                    });
-                $c->stash->{redis} = $redis;
-            }
-            return $c->stash->{redis};
-        });
-
-    $app->helper(
-        redis_pricer => sub {
-            my $c = shift;
-            ### Instance::Redis
-            $c->stash->{redis_pricer} = pricer_write();
-            return $c->stash->{redis_pricer};
         });
 
     $app->helper(

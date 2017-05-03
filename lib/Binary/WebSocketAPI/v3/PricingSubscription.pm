@@ -2,7 +2,7 @@ package Binary::WebSocketAPI::v3::PricingSubscription;
 
 use strict;
 use warnings;
-use Binary::WebSocketAPI::v3::Instance::Redis qw| pricer_write |;
+use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
 
 use Moo;
 
@@ -25,7 +25,7 @@ sub BUILD {
 }
 
 sub _build_redis_server {
-    return pricer_write;
+    return redis_pricer;
 }
 
 sub subscribe {
