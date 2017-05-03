@@ -579,10 +579,6 @@ sub _get_effective_news_time {
     return $effective_time;
 }
 
-sub volatility_scaling_factor {
-    return shift->bet->_pricing_args->{volatility_scaling_factor};
-}
-
 has vol_spread => (
     is      => 'ro',
     lazy    => 1,
@@ -598,7 +594,7 @@ sub _build_vol_spread {
         description => 'markup added to account for variable ticks interval for volatility calculation.',
         minimum     => 0,
         maximum     => 0.1,
-        base_amount => (0.1 * (1 - ($self->volatility_scaling_factor)**2)) / 2,
+        base_amount => 0,
     });
 
     return $vol_spread;
