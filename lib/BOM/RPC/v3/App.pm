@@ -196,7 +196,6 @@ sub oauth_apps {
         DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.app.revoke.count', {tags => ["app_id:$app_id"]});
         my $user = BOM::Platform::User->new({email => $client->email});
         foreach my $client ($user->clients) {
-            warn "Revoke called for app_id " . $app_id . " on " . $client->loginid . " via app_id " . ($params->{source} // 'unknown') . "\n";
             $oauth->revoke_app($app_id, $client->loginid);
         }
     }
