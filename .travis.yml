@@ -22,7 +22,6 @@ before_install:
     - pg_lsclusters
     - /tmp/travis-scripts/postgres.sh
 
-    - /tmp/travis-scripts/setup_cpan.sh
     - /tmp/travis-scripts/parallel_clone_branch.sh
       regentmarkets/bom-test
       regentmarkets/bom-platform
