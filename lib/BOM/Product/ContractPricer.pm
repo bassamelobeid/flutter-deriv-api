@@ -459,7 +459,7 @@ sub _build_otm_threshold {
             my $conditions = $data_ref->{conditions};
 
             if (defined $conditions->{$symbol} and $conditions->{$symbol} eq $mapper{$symbol}) {
-                my $match = not first { $conditions->{$_} ne $self->$_ } @known_conditions;
+                my $match = not first { $conditions->{$_} ne $self->$_ } grep { $conditions->{$_} } @known_conditions;
                 return $data_ref->{value} if $match;
             }
         }
