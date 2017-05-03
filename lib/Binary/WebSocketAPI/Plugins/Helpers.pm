@@ -87,11 +87,11 @@ sub register {
             };
         });
 
-    for my $redis_name ( qw| ws_redis_master ws_redis_slave redis_pricer shared_redis |) {
+    for my $redis_name (qw| ws_redis_master ws_redis_slave redis_pricer shared_redis |) {
         $app->helper(
             $redis_name => sub {
                 my $c = shift;
-                $c->stash( $redis_name => Binary::WebSocketAPI::v3::Instance::Redis->$redis_name() );
+                $c->stash($redis_name => Binary::WebSocketAPI::v3::Instance::Redis->$redis_name());
                 return $c->stash($redis_name);
             });
     }

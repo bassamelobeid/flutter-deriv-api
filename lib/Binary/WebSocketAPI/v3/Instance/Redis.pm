@@ -115,6 +115,7 @@ sub shared_redis {
         message => sub {
             my ($self, $msg, $channel) = @_;
             return unless $channel =~ /^FEED::/ || $channel =~ /^TXNUPDATE::transaction_/;
+
             if ($self->{shared_info}{$channel}) {
                 foreach my $c_key (keys %{$self->{shared_info}{$channel}}) {
                     next unless looks_like_number($c_key);
@@ -123,9 +124,9 @@ sub shared_redis {
                         next;
                     }
                     Binary::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($self->{shared_info}{$channel}{$c_key}, $msg, $channel)
-                          if $channel =~ /^FEED::/;
+                        if $channel =~ /^FEED::/;
                     Binary::WebSocketAPI::v3::Wrapper::Streamer::process_transaction_updates($self->{shared_info}{$channel}{$c_key}, $msg, $channel)
-                          if $channel =~ /^TXNUPDATE::transaction_/;
+                        if $channel =~ /^TXNUPDATE::transaction_/;
                 }
             }
         });

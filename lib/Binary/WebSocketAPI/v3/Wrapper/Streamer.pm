@@ -26,7 +26,7 @@ sub website_status {
     ### TODO: to config
     my $channel_name = "NOTIFY::broadcast::channel";
     my $redis        = ws_redis_master;
-    my $shared_info = $redis->{shared_info};
+    my $shared_info  = $redis->{shared_info};
 
     my $callback = sub {
         $self->call_rpc({
@@ -278,65 +278,64 @@ sub process_realtime_events {
         my $arguments = $feed_channels_type->{$channel}->{args};
         my $cache     = $feed_channels_type->{$channel}->{cache};
 
-            if ($type eq 'tick' and $m[0] eq $symbol) {
-                unless ($c->tx) {
-                    _feed_channel_unsubscribe($c, $symbol, $type, $req_id);
-                    next;
-                }
+        if ($type eq 'tick' and $m[0] eq $symbol) {
+            unless ($c->tx) {
+                _feed_channel_unsubscribe($c, $symbol, $type, $req_id);
+                next;
+            }
 
-                my $tick = {
-                    id     => $feed_channels_type->{$channel}->{uuid},
-                    symbol => $symbol,
-                    epoch  => $m[1],
-                    quote  => $m[2]};
+            my $tick = {
+                id     => $feed_channels_type->{$channel}->{uuid},
+                symbol => $symbol,
+                epoch  => $m[1],
+                quote  => $m[2]};
 
-                if ($cache) {
-                    $feed_channel_cache->{$channel}->{$m[1]} = $tick;
-                } else {
-                    $c->send({
-                            json => {
-                                msg_type => 'tick',
-                                echo_req => $arguments,
-                                (exists $arguments->{req_id})
-                                ? (req_id => $arguments->{req_id})
-                                : (),
-                                tick => $tick
-                            }}) if $c->tx;
-                }
-            } elsif ($m[0] eq $symbol) {
-                unless ($c->tx) {
-                    _feed_channel_unsubscribe($c, $symbol, $type, $req_id);
-                    next;
-                }
+            if ($cache) {
+                $feed_channel_cache->{$channel}->{$m[1]} = $tick;
+            } else {
+                $c->send({
+                        json => {
+                            msg_type => 'tick',
+                            echo_req => $arguments,
+                            (exists $arguments->{req_id})
+                            ? (req_id => $arguments->{req_id})
+                            : (),
+                            tick => $tick
+                        }}) if $c->tx;
+            }
+        } elsif ($m[0] eq $symbol) {
+            unless ($c->tx) {
+                _feed_channel_unsubscribe($c, $symbol, $type, $req_id);
+                next;
+            }
 
-                $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);?/;
-                my $ohlc = {
-                    id        => $feed_channels_type->{$channel}->{uuid},
-                    epoch     => $m[1],
-                    open_time => ($type and looks_like_number($type))
-                    ? $m[1] - $m[1] % $type
-                    : $m[1] - $m[1] % 60,    #defining default granularity
-                    symbol      => $symbol,
-                    granularity => $type,
-                    open        => $1,
-                    high        => $2,
-                    low         => $3,
-                    close       => $4
-                };
+            $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);?/;
+            my $ohlc = {
+                id        => $feed_channels_type->{$channel}->{uuid},
+                epoch     => $m[1],
+                open_time => ($type and looks_like_number($type))
+                ? $m[1] - $m[1] % $type
+                : $m[1] - $m[1] % 60,    #defining default granularity
+                symbol      => $symbol,
+                granularity => $type,
+                open        => $1,
+                high        => $2,
+                low         => $3,
+                close       => $4
+            };
 
-                if ($cache) {
-                    $feed_channel_cache->{$channel}->{$m[1]} = $ohlc;
-                } else {
-                    $c->send({
-                            json => {
-                                msg_type => 'ohlc',
-                                echo_req => $arguments,
-                                (exists $arguments->{req_id})
-                                ? (req_id => $arguments->{req_id})
-                                : (),
-                                ohlc => $ohlc
-                            }}) if $c->tx;
-                }
+            if ($cache) {
+                $feed_channel_cache->{$channel}->{$m[1]} = $ohlc;
+            } else {
+                $c->send({
+                        json => {
+                            msg_type => 'ohlc',
+                            echo_req => $arguments,
+                            (exists $arguments->{req_id})
+                            ? (req_id => $arguments->{req_id})
+                            : (),
+                            ohlc => $ohlc
+                        }}) if $c->tx;
             }
         }
     }
@@ -354,7 +353,7 @@ sub _feed_channel_subscribe {
     # we use stash hash ( = stash hash address) as user id,
     # as we don't want to deal with user_login, user_id, user_email
     # unauthorized users etc.
-    weaken($shared_info->{\$c+0}{c} = $c);
+    weaken($shared_info->{\$c + 0}{c} = $c);
 
     # check that the current worker is already (globally) subscribed
     if (!$shared_info->{symbols}->{$symbol}) {
@@ -411,9 +410,9 @@ sub _feed_channel_subscribe {
 sub _feed_channel_unsubscribe {
     my ($c, $symbol, $type, $req_id) = @_;
 
-    my $shared_info   = shared_redis->{shared_info}{"FEED::$symbol"};
+    my $shared_info = shared_redis->{shared_info}{"FEED::$symbol"};
 
-    my $per_user_info = $shared_info->{\$c+0} //= {};
+    my $per_user_info = $shared_info->{\$c + 0} //= {};
 
     my $feed_channel_type  = $c->stash('feed_channel_type')  // {};
     my $feed_channel_cache = $c->stash('feed_channel_cache') // {};
@@ -430,7 +429,7 @@ sub _feed_channel_unsubscribe {
     # as we subscribe to transaction channel for proposal_open_contract so need to forget that also
     _transaction_channel($c, 'unsubscribe', $args->{account_id}, $uuid) if $type =~ /^proposal_open_contract:/;
 
-    delete $shared_info->{\$c+0};
+    delete $shared_info->{\$c + 0};
     if (!keys %{$shared_info // {}}) {
         $shared_info->{symbols}->{$symbol} = 0;
         shared_redis->unsubscribe(["FEED::$symbol"], sub { });
@@ -443,9 +442,9 @@ sub _transaction_channel {
     my ($c, $action, $account_id, $type, $args) = @_;
     my $uuid;
 
-    my $redis              = shared_redis;
+    my $redis = shared_redis;
     ### TODO: Move to redis instance shared_info
-    my $channel            = $c->stash('transaction_channel');
+    my $channel = $c->stash('transaction_channel');
     my $already_subscribed = $channel ? exists $channel->{$type} : undef;
 
     if ($action) {
@@ -454,7 +453,7 @@ sub _transaction_channel {
             $uuid = _generate_uuid_string();
 
             $redis->subscribe([$channel_name], sub { }) unless (keys %$channel);
-            $redis->{shared_info}{$channel_name}{\$c+0}{c} = $c;
+            $redis->{shared_info}{$channel_name}{\$c + 0}{c} = $c;
             ### TODO: Move to shared_info
             $channel->{$type}->{args}        = $args;
             $channel->{$type}->{uuid}        = $uuid;
@@ -464,7 +463,7 @@ sub _transaction_channel {
         } elsif ($action eq 'unsubscribe' and $already_subscribed) {
             delete $channel->{$type};
             unless (keys %$channel) {
-                delete $redis->{shared_info}{$channel_name}{\$c+0};
+                delete $redis->{shared_info}{$channel_name}{\$c + 0};
                 $redis->unsubscribe([$channel_name], sub { });
                 delete $c->stash->{transaction_channel};
             }
@@ -477,18 +476,19 @@ sub _transaction_channel {
 sub process_transaction_updates {
     my ($shared_info, $message, $channel_name) = @_;
 
-    my $c = $shared_info->{c};
+    my $c       = $shared_info->{c};
     my $channel = $c->stash('transaction_channel');
     return unless $channel;
 
     my $payload = JSON::from_json($message);
     return unless $payload && ref $payload eq 'HASH';
 
-    my $args    = {};
+    my $args = {};
     foreach my $type (keys %{$channel}) {
-        if (exists $payload->{error}
-                and exists $payload->{error}->{code}
-                and $payload->{error}->{code} eq 'TokenDeleted') {
+        if (    exists $payload->{error}
+            and exists $payload->{error}->{code}
+            and $payload->{error}->{code} eq 'TokenDeleted')
+        {
             _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
             next;
         }
@@ -524,58 +524,55 @@ sub process_transaction_updates {
                         : Date::Utility->new($payload->{purchase_time})->epoch;
 
                     $c->call_rpc({
-                        url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
-                        args        => $args,
-                        method      => 'get_contract_details',
-                        call_params => {
-                            token           => $c->stash('token'),
-                            short_code      => $payload->{short_code},
-                            currency        => $payload->{currency_code},
-                            language        => $c->stash('language'),
-                            landing_company => $c->landing_company_name,
-                        },
-                        rpc_response_cb => sub {
-                            my ($c, $rpc_response, $req_storage) = @_;
+                            url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
+                            args        => $args,
+                            method      => 'get_contract_details',
+                            call_params => {
+                                token           => $c->stash('token'),
+                                short_code      => $payload->{short_code},
+                                currency        => $payload->{currency_code},
+                                language        => $c->stash('language'),
+                                landing_company => $c->landing_company_name,
+                            },
+                            rpc_response_cb => sub {
+                                my ($c, $rpc_response, $req_storage) = @_;
 
-                            if (exists $rpc_response->{error}) {
-                                Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
-                                return $c->new_error(
-                                    'transaction',
-                                    $rpc_response->{error}->{code},
-                                    $rpc_response->{error}->{message_to_client});
-                            } else {
-                                $details->{$type}->{contract_id}   = $payload->{financial_market_bet_id};
-                                $details->{$type}->{purchase_time} = Date::Utility->new($payload->{purchase_time})->epoch
-                                    if ($payload->{action_type} eq 'sell');
-                                $details->{$type}->{longcode}     = $rpc_response->{longcode};
-                                $details->{$type}->{symbol}       = $rpc_response->{symbol};
-                                $details->{$type}->{display_name} = $rpc_response->{display_name};
-                                $details->{$type}->{date_expiry}  = $rpc_response->{date_expiry};
-                                $details->{$type}->{barrier}      = $rpc_response->{barrier} if exists $rpc_response->{barrier};
-                                $details->{$type}->{high_barrier} = $rpc_response->{high_barrier} if $rpc_response->{high_barrier};
-                                $details->{$type}->{low_barrier}  = $rpc_response->{low_barrier} if $rpc_response->{low_barrier};
-                                return $details;
-                            }
-                        },
-                    });
+                                if (exists $rpc_response->{error}) {
+                                    Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
+                                    return $c->new_error('transaction', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
+                                } else {
+                                    $details->{$type}->{contract_id}   = $payload->{financial_market_bet_id};
+                                    $details->{$type}->{purchase_time} = Date::Utility->new($payload->{purchase_time})->epoch
+                                        if ($payload->{action_type} eq 'sell');
+                                    $details->{$type}->{longcode}     = $rpc_response->{longcode};
+                                    $details->{$type}->{symbol}       = $rpc_response->{symbol};
+                                    $details->{$type}->{display_name} = $rpc_response->{display_name};
+                                    $details->{$type}->{date_expiry}  = $rpc_response->{date_expiry};
+                                    $details->{$type}->{barrier}      = $rpc_response->{barrier} if exists $rpc_response->{barrier};
+                                    $details->{$type}->{high_barrier} = $rpc_response->{high_barrier} if $rpc_response->{high_barrier};
+                                    $details->{$type}->{low_barrier}  = $rpc_response->{low_barrier} if $rpc_response->{low_barrier};
+                                    return $details;
+                                }
+                            },
+                        });
                 } else {
                     $details->{$type}->{longcode}         = $payload->{payment_remark};
                     $details->{$type}->{transaction_time} = Date::Utility->new($payload->{payment_time})->epoch;
                     $c->send({json => $details});
                 }
             } elsif ($type =~ /\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/
-                         and $payload->{action_type} eq 'sell'
-                         and exists $payload->{financial_market_bet_id}
-                         and $payload->{financial_market_bet_id} eq $channel->{$type}->{contract_id})
-                {
-                    $payload->{sell_time} = Date::Utility->new($payload->{sell_time})->epoch;
-                    $payload->{uuid}      = $type;
+                and $payload->{action_type} eq 'sell'
+                and exists $payload->{financial_market_bet_id}
+                and $payload->{financial_market_bet_id} eq $channel->{$type}->{contract_id})
+            {
+                $payload->{sell_time} = Date::Utility->new($payload->{sell_time})->epoch;
+                $payload->{uuid}      = $type;
 
-                    Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time(
-                        $c, $payload,
-                        $channel->{$type}->{contract_id},
-                        $channel->{$type}->{args});
-                }
+                Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time(
+                    $c, $payload,
+                    $channel->{$type}->{contract_id},
+                    $channel->{$type}->{args});
+            }
         } elsif ($channel and exists $channel->{$type}->{account_id}) {
             _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
         }
