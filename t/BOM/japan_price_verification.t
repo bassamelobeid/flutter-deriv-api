@@ -472,7 +472,7 @@ subtest 'verify_with_shortcode_VV' => sub {
 
     my $output = BOM::JapanContractDetails::verify_with_shortcode($input);
     is $output->{ask_probability}->{risk_markup},               0.0294968173771841,  'matched risk markup';
-    is $output->{theoretical_probability}->{bs_probability},    0.212226990932264,    'matched bs probability';
+    is $output->{theoretical_probability}->{bs_probability},    0.212226990932264,   'matched bs probability';
     is $output->{theoretical_probability}->{market_supplement}, -0.0795906058222446, 'matched market supplement';
     is $output->{bs_probability}->{vol},                        0.119638984890473,   'matched vol';
 };
