@@ -17,7 +17,6 @@ before_install:
     - . /tmp/travis-scripts/setup_perl.sh
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
     - /tmp/travis-scripts/fixHostName.sh
-    - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/regentmarkets
 
     - /tmp/travis-scripts/parallel_clone_branch.sh
