@@ -11,8 +11,6 @@ env:
     - TEST_SUITE=syntax_lib
 services:
     - redis-server
-addons:
-    postgresql: "9.4"
 cache: apt
 before_install:
     - git clone https://d4a95fecbf54180e8fd6ad876e49b62083f3fb62@github.com/regentmarkets/travis-scripts /tmp/travis-scripts-init
