@@ -33,7 +33,6 @@ has inefficient_period => (
 
 has economic_events => (
     is       => 'ro',
-    required => 1,
 );
 
 has long_term_prediction => (
