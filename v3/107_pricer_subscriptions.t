@@ -5,7 +5,7 @@ use Test::More;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema launch_redis build_mojo_test build_test_R_50_data/;
+use BOM::Test::Helper qw/test_schema build_mojo_test build_test_R_50_data/;
 
 use Devel::Refcount qw| refcount |;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
