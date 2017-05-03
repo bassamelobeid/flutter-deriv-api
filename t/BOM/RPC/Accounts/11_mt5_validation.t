@@ -41,15 +41,15 @@ subtest 'new account' => sub {
     $c->call_ok($method, $params)->has_error->error_message_is('Invalid account type.', 'Correct error message for invalid account type');
     $params->{args}->{account_type} = 'demo';
 
-    my $residence = $client->residence;
+    my $residence = $test_client->residence;
 
-    $client->residence('');
-    $client->save;
+    $test_client->residence('');
+    $test_client->save;
 
     $c->call_ok($method, $params)->has_error->error_message_is('Please set your country of residence.', 'Residence not set');
 
-    $client->residence($residence);
-    $client->save;
+    $test_client->residence($residence);
+    $test_client->save;
 
     $params->{args}->{mainPassword}   = 'Abc123';
     $params->{args}->{investPassword} = 'Abc123';
