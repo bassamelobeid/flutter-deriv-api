@@ -13,7 +13,7 @@ To run tests you need get [bom-websocket-tests](https://github.com/regentmarkets
 ## Introspection
 
 Binary WebSocket API proxy server also starts HTTP server for debug/monitoring poproses.
-Server binds to local IP and listens on a random port, which is logged during WS API start.
+Server binds to local IP and listens on a random port, which is logged during WS API start. Port is random for reload safety.
 Server waits a command to be received and sends back JSON formatted output.
 Commands are:
 
