@@ -1,6 +1,4 @@
-language: perl
-perl:
-    - "5.14.2-thr"
+language: c
 matrix:
     fast_finish: true
 env:
