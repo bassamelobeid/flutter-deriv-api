@@ -262,8 +262,9 @@ sub ticks_history {
 }
 
 sub process_realtime_events {
-    my ($shared_info, $msg, $chan) = @_;
-    my $payload = decode_json($msg);
+    my ($shared_info, $message, $chan) = @_;
+
+    my @m = split(';', $message);
 
     # pick the per-user controller to send-back notifications to
     # related users only
@@ -277,68 +278,65 @@ sub process_realtime_events {
         my $arguments = $feed_channels_type->{$channel}->{args};
         my $cache     = $feed_channels_type->{$channel}->{cache};
 
-        if ($type eq 'tick' and $payload->{symbol} eq $symbol) {
-            unless ($c->tx) {
-                _feed_channel_unsubscribe($c, $symbol, $type, $req_id);
-                next;
-            }
+            if ($type eq 'tick' and $m[0] eq $symbol) {
+                unless ($c->tx) {
+                    _feed_channel_unsubscribe($c, $symbol, $type, $req_id);
+                    next;
+                }
 
-            my $tick = {
-                id     => $feed_channels_type->{$channel}->{uuid},
-                symbol => $symbol,
-                epoch  => $payload->{epoch},
-                quote  => $payload->{spot},
-                bid    => $payload->{bid},
-                ask    => $payload->{ask},
-            };
+                my $tick = {
+                    id     => $feed_channels_type->{$channel}->{uuid},
+                    symbol => $symbol,
+                    epoch  => $m[1],
+                    quote  => $m[2]};
 
-            if ($cache) {
-                $feed_channel_cache->{$channel}->{$payload->{epoch}} = $tick;
-            } else {
-                $c->send({
-                    json => {
-                        msg_type => 'tick',
-                        echo_req => $arguments,
-                        (exists $arguments->{req_id})
-                            ? (req_id => $arguments->{req_id})
-                            : (),
-                        tick => $tick
-                    }}) if $c->tx;
-            }
-        } elsif ($payload->{symbol} eq $symbol) {
-            unless ($c->tx) {
-                _feed_channel_unsubscribe($c, $symbol, $type, $req_id);
-                next;
-            }
+                if ($cache) {
+                    $feed_channel_cache->{$channel}->{$m[1]} = $tick;
+                } else {
+                    $c->send({
+                            json => {
+                                msg_type => 'tick',
+                                echo_req => $arguments,
+                                (exists $arguments->{req_id})
+                                ? (req_id => $arguments->{req_id})
+                                : (),
+                                tick => $tick
+                            }}) if $c->tx;
+                }
+            } elsif ($m[0] eq $symbol) {
+                unless ($c->tx) {
+                    _feed_channel_unsubscribe($c, $symbol, $type, $req_id);
+                    next;
+                }
 
-            $payload->{ohlc} =~ /$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);?/;
-            my $epoch = $payload->{epoch};
-            my $ohlc  = {
-                id        => $feed_channels_type->{$channel}->{uuid},
-                epoch     => $epoch,
-                open_time => ($type and looks_like_number($type))
-                    ? $epoch - $epoch % $type
-                    : $epoch - $epoch % 60,    #defining default granularity
-                symbol      => $symbol,
-                granularity => $type,
-                open        => $1,
-                high        => $2,
-                low         => $3,
-                close       => $4
-            };
+                $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);?/;
+                my $ohlc = {
+                    id        => $feed_channels_type->{$channel}->{uuid},
+                    epoch     => $m[1],
+                    open_time => ($type and looks_like_number($type))
+                    ? $m[1] - $m[1] % $type
+                    : $m[1] - $m[1] % 60,    #defining default granularity
+                    symbol      => $symbol,
+                    granularity => $type,
+                    open        => $1,
+                    high        => $2,
+                    low         => $3,
+                    close       => $4
+                };
 
-            if ($cache) {
-                $feed_channel_cache->{$channel}->{$epoch} = $ohlc;
-            } else {
-                $c->send({
-                    json => {
-                        msg_type => 'ohlc',
-                        echo_req => $arguments,
-                        (exists $arguments->{req_id})
-                            ? (req_id => $arguments->{req_id})
-                            : (),
-                        ohlc => $ohlc
-                    }}) if $c->tx;
+                if ($cache) {
+                    $feed_channel_cache->{$channel}->{$m[1]} = $ohlc;
+                } else {
+                    $c->send({
+                            json => {
+                                msg_type => 'ohlc',
+                                echo_req => $arguments,
+                                (exists $arguments->{req_id})
+                                ? (req_id => $arguments->{req_id})
+                                : (),
+                                ohlc => $ohlc
+                            }}) if $c->tx;
+                }
             }
         }
     }
