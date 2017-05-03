@@ -25,7 +25,6 @@ before_install:
     - /tmp/travis-scripts/postgres.sh
     - sudo cp -a $HOME/build/regentmarkets/bom-postgres /home/git/regentmarkets/
 
-    - /tmp/travis-scripts/setup_cpan.sh
     - /tmp/travis-scripts/parallel_clone_branch.sh
       regentmarkets/bom-test
       regentmarkets/bom
