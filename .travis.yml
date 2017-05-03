@@ -1,4 +1,4 @@
-language: c
+language: perl
 matrix:
     fast_finish: true
 env:
