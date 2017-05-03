@@ -1340,7 +1340,7 @@ subtest 'max_turnover validation', sub {
             is $error->get_type, 'DailyTurnoverLimitExceeded', 'error is DailyTurnoverLimitExceeded';
 
             like $error->{-message_to_client}, qr/daily turnover limit of USD15\.59/, 'message_to_client contains limit';
-            like $error->{-message_to_client}, qr/If you wish to raise these limits, please authenticate your account/,
+            like $error->{-message_to_client}, qr/Please contact our customer support team if you wish to increase your daily turnover limit/,
                 'message_to_client contains authentication notice';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
@@ -1364,7 +1364,7 @@ subtest 'max_turnover validation', sub {
             is $error->get_type, 'DailyTurnoverLimitExceeded', 'error is DailyTurnoverLimitExceeded';
 
             like $error->{-message_to_client}, qr/daily turnover limit of USD15\.59/, 'message_to_client contains limit';
-            unlike $error->{-message_to_client}, qr/If you wish to raise these limits, please authenticate your account/,
+            unlike $error->{-message_to_client}, qr/Please contact our customer support team if you wish to increase your daily turnover limit/,
                 'message_to_client does not contain authentication notice if the client is already authenticated';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
