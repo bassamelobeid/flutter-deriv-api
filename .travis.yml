@@ -22,7 +22,6 @@ before_install:
     - sudo mkdir -p /home/git
     - sudo rm -f /tmp/unittest_*
 
-    - /tmp/travis-scripts/setup_cpan.sh
     - /tmp/travis-scripts/parallel_clone_branch.sh
       regentmarkets/bom-test
       regentmarkets/bom
