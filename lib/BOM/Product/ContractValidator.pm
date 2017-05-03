@@ -210,7 +210,12 @@ sub _validate_feed {
         and $self->date_pricing->epoch - $underlying->max_suspend_trading_feed_delay->seconds > $self->current_tick->epoch)
     {
         # only throw errors for quote too old, if the exchange is open at pricing time
-        warn "Quote too old for " . $underlying->symbol;
+        warn "Quote too old for "
+            . $underlying->symbol
+            . ", epoch "
+            . $self->current_tick->epoch
+            . " with max tick age "
+            . $underlying->max_suspend_trading_feed_delay->seconds;
         return {
             message           => "Quote too old [symbol: " . $underlying->symbol . "]",
             message_to_client => [$ERROR_MAPPING->{OldMarketData}],
