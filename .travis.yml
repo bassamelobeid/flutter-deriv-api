@@ -16,7 +16,6 @@ before_install:
     - /tmp/travis-scripts/fixHostName.sh
     - dpkg -l | grep postgres
     - pg_lsclusters
-    - /tmp/travis-scripts/postgres.sh
 
     - /tmp/travis-scripts/parallel_clone_branch.sh
       regentmarkets/bom
